@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.162 2004-04-04 10:36:31 theine Exp $
+! $Id: ionization.f90,v 1.163 2004-04-04 19:52:30 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -34,7 +34,7 @@ module Ionization
   
   public :: ioncalc, ioninit 
 ! For radiation calculations 
-  public :: scale_height_xy,Hminus_opacity
+  public :: scale_height_xy
 ! Boundary conditions
   public :: bc_ss_flux,bc_ss_temp_old,bc_ss_energy
   public :: bc_ss_temp_x,bc_ss_temp_y,bc_ss_temp_z
@@ -130,7 +130,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.162 2004-04-04 10:36:31 theine Exp $")
+           "$Id: ionization.f90,v 1.163 2004-04-04 19:52:30 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -559,7 +559,7 @@ module Ionization
 !
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine eoscalc_farray(f,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,lnchi)
 !
 !   Calculate thermodynamical quantities
 !
@@ -571,17 +571,34 @@ module Ionization
 !
       use Cdata
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out), optional :: lnrho,ss
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: ee,pp
-      real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(out), optional :: lnrho,ss
+      real, dimension(psize), intent(out), optional :: yH,lnTT
+      real, dimension(psize), intent(out), optional :: ee,pp,lnchi
+      real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions
 !
-      lnrho_=f(l1:l2,m,n,ilnrho)
-      ss_=f(l1:l2,m,n,iss)
-      yH_=f(l1:l2,m,n,iyH)
-      lnTT_=f(l1:l2,m,n,ilnTT)
+      select case (psize)
+
+      case (nx)
+        lnrho_=f(l1:l2,m,n,ilnrho)
+        ss_=f(l1:l2,m,n,iss)
+        yH_=f(l1:l2,m,n,iyH)
+        lnTT_=f(l1:l2,m,n,ilnTT)
+
+      case (mx)
+        lnrho_=f(:,m,n,ilnrho)
+        ss_=f(:,m,n,iss)
+        yH_=f(:,m,n,iyH)
+        lnTT_=f(:,m,n,ilnTT)
+
+      case default
+        call stop_it("eoscalc: no such pencil size")
+
+      end select
+
       TT_=exp(lnTT_)
       fractions=(1+yH_+xHe)
 
@@ -592,7 +609,14 @@ module Ionization
       if (present(ee)) ee=1.5*fractions*ss_ion*TT_+yH_*ee_ion
       if (present(pp)) pp=fractions*exp(lnrho_)*TT_*ss_ion
 !
-      if (ldiagnos) then
+!  Hminus opacity
+!
+      if (present(lnchi)) then
+         lnchi=2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_) &
+              +TT_ion_/TT_+log(yH_+yMetals)+log(1-yH_)+lnchi0
+      endif
+!
+      if (ldiagnos.and.psize==nx) then
         if (i_yHmax/=0) call max_mn_name(yH_,i_yHmax)
         if (i_yHm/=0) call sum_mn_name(yH_,i_yHm)
         if (i_TTmax/=0) call max_mn_name(TT_,i_TTmax)
@@ -970,53 +994,6 @@ module Ionization
       df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
 !
     endsubroutine saha
-!***********************************************************************
-    subroutine Hminus_opacity(f,lnchi)
-!
-!  calculate source function and opacity
-!
-!  24-mar-03/axel+tobi: coded
-!
-      use Cdata
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: lnchi
-      real, dimension(mx) :: lnrho,yH,lnTT
-      !real :: kx,ky,kz
-!
-!  test
-!
-      !if(radcalc_test) then
-        !if(lroot.and.ip<12) print*,'radcalc: using simple profiles for testing'
-        !
-        ! Periodic profiles
-        !
-        !kx=2*pi/Lx
-        !ky=2*pi/Ly
-        !kz=2*pi/Lz
-        !Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
-                   !*spread(spread(cos(ky*y),1,mx),3,mz) &
-                   !*spread(spread(cos(kz*z),1,mx),2,my)
-        !lnchi=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
-                !*spread(spread(cos(2*ky*y),1,mx),3,mz) &
-                !*spread(spread(cos(2*kz*z),1,mx),2,my)
-!
-        !return
-      !endif
-
-      do n=1,mz
-      do m=1,my
-
-         lnrho=f(:,m,n,ilnrho)
-         yH=f(:,m,n,iyH)
-         lnTT=f(:,m,n,ilnTT)
-         lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
-                      +TT_ion_*exp(-lnTT)+log(yH+yMetals)+log(1-yH)+lnchi0
-
-      enddo
-      enddo
-!
-    endsubroutine Hminus_opacity
 !***********************************************************************
     subroutine scale_height_xy(radz0,nrad,f,H_xy)
 !

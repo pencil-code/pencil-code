@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.56 2004-04-04 10:36:31 theine Exp $
+! $Id: ionization_fixed.f90,v 1.57 2004-04-04 19:52:30 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -102,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.56 2004-04-04 10:36:31 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.57 2004-04-04 19:52:30 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -436,7 +436,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine eoscalc_farray(f,yH,lnTT,ee,pp)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,lnchi)
 !
 !   Calculate thermodynamical quantities
 !
@@ -448,29 +448,52 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Cdata
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: ee,pp
-      real, dimension(nx) :: yHi,lnTTi,TT
-      real, dimension(nx) :: lnrho,ss
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(out), optional :: lnrho,ss,yH,lnTT
+      real, dimension(psize), intent(out), optional :: ee,pp,lnchi
+      real, dimension(psize) :: lnrho_,ss_,lnTT_,TT_,yH_
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
-      ss=f(l1:l2,m,n,iss)
-      lnTTi=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-      TT=exp(lnTTi)
-      yHi=yH0
+      select case (psize)
+
+      case (nx)
+        lnrho_=f(l1:l2,m,n,ilnrho)
+        ss_=f(l1:l2,m,n,iss)
+
+      case (mx)
+        lnrho_=f(:,m,n,ilnrho)
+        ss_=f(:,m,n,iss)
+
+      case default
+        call stop_it("eoscalc: no such pencil size")
+
+      end select
+
+      lnTT_=lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
+      TT_=exp(lnTT_)
+      yH_=yH0
 !
-      if (present(yH))    yH=yHi
-      if (present(lnTT))  lnTT=lnTTi
-      if (present(ee))    ee=1.5*(1+yHi+xHe-xH2)*ss_ion*TT+yHi*ss_ion*TT_ion
-      if (present(pp))    pp=(1+yHi+xHe-xH2)*exp(lnrho)*TT*ss_ion
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(ss))    ss=ss_
+      if (present(yH))    yH=yH_
+      if (present(lnTT))  lnTT=lnTT_
+      if (present(ee))    ee=1.5*(1+yH_+xHe-xH2)*ss_ion*TT_+yH_*ss_ion*TT_ion
+      if (present(pp))    pp=(1+yH_+xHe-xH2)*exp(lnrho_)*TT_*ss_ion
 !
-      if (ldiagnos) then
-        if (i_yHmax/=0) call max_mn_name(yHi,i_yHmax)
-        if (i_yHm/=0) call sum_mn_name(yHi,i_yHm)
-        if (i_TTmax/=0) call max_mn_name(TT,i_TTmax)
-        if (i_TTm/=0) call sum_mn_name(TT,i_TTm)
+!  Hminus opacity
+!
+      if (present(lnchi)) then
+        lnchi=2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_) &
+             +TT_ion_/TT_+log(yH_)+log(1-yH_)+lnchi0
+      endif
+!
+      if (ldiagnos.and.psize==nx) then
+        if (i_yHmax/=0) call max_mn_name(yH_,i_yHmax)
+        if (i_yHm/=0) call sum_mn_name(yH_,i_yHm)
+        if (i_TTmax/=0) call max_mn_name(TT_,i_TTmax)
+        if (i_TTm/=0) call sum_mn_name(TT_,i_TTm)
       endif
 !
     endsubroutine eoscalc_farray
@@ -640,38 +663,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 
       write(unit,NML=ionization_run_pars)
     endsubroutine write_ionization_run_pars
-!***********************************************************************
-    subroutine Hminus_opacity(f,lnchi)
-!
-!  calculate Hminus opacity
-!
-!  24-mar-03/axel+tobi: coded
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: lnchi
-      real, dimension(mx) :: lnrho,ss,yH,lnTT
-
-      if (yH0<tini.or.yH0>(1-epsi)) then
-        call stop_it("Hminus_opacity: yH0 must not be too close to 0 or 1")
-      endif
-
-      do n=1,mz
-      do m=1,my
-
-        lnrho=f(:,m,n,ilnrho)
-        ss=f(:,m,n,iss)
-        yH=yH0
-        lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-        lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
-                   +TT_ion_*exp(-lnTT)+log(yH)+log(1-yH)+lnchi0
-
-      enddo
-      enddo
-
-    endsubroutine Hminus_opacity
 !***********************************************************************
     subroutine scale_height_xy(radz0,nrad,f,H_xy)
 !

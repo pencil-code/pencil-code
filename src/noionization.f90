@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.107 2004-04-04 10:36:31 theine Exp $
+! $Id: noionization.f90,v 1.108 2004-04-04 19:52:30 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.107 2004-04-04 10:36:31 theine Exp $')
+           '$Id: noionization.f90,v 1.108 2004-04-04 19:52:30 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -357,7 +357,7 @@ module Ionization
       if (ip==0) print*,f !(keep compiler quiet)
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine eoscalc_farray(f,yH,lnTT,ee,pp)
+    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,lnchi)
 !
 !   Calculate thermodynamical quantities
 !
@@ -372,23 +372,39 @@ module Ionization
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out), optional :: yH,lnTT,ee,pp
-      real, dimension(nx) :: lnTTi
-      real, dimension(nx) :: lnrho,ss
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,lnchi
+      real, dimension(psize) :: lnTT_
+      real, dimension(psize) :: lnrho,ss
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
-      ss=f(l1:l2,m,n,iss)
-      lnTTi=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+      select case (psize)
+
+      case (nx)
+        lnrho=f(l1:l2,m,n,ilnrho)
+        ss=f(l1:l2,m,n,iss)
+      case (mx)
+        lnrho=f(:,m,n,ilnrho)
+        ss=f(:,m,n,iss)
+      case default
+        call stop_it("eoscalc: no such pencil size")
+
+      end select
+
+      lnTT_=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
 !
       if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
       if (present(yH)) yH=impossible
-      if (present(lnTT)) lnTT=lnTTi
+      if (present(lnTT)) lnTT=lnTT_
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
       if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
 !
-     if (ldiagnos) then
-        if (i_TTmax/=0) call max_mn_name(exp(lnTTi),i_TTmax)
-        if (i_TTm/=0)   call sum_mn_name(exp(lnTTi),i_TTm)
+     if (ldiagnos.and.psize==nx) then
+        if (i_TTmax/=0) call max_mn_name(exp(lnTT_),i_TTmax)
+        if (i_TTm/=0)   call sum_mn_name(exp(lnTT_),i_TTm)
+      endif
+!
+      if (present(lnchi)) then
+        call stop_it("eoscalc: sorry,no Hminus opacity with noionization")
       endif
 !
     endsubroutine eoscalc_farray

@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.57 2004-04-04 13:39:57 ajohan Exp $
+! $Id: radiation_ray.f90,v 1.58 2004-04-04 19:52:30 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -111,7 +111,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.57 2004-04-04 13:39:57 ajohan Exp $")
+           "$Id: radiation_ray.f90,v 1.58 2004-04-04 19:52:30 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -202,8 +202,9 @@ module Radiation
 !
 !  03-apr-04/tobi: coded
 !
-      use Cdata, only: m,n,ilnTT,x,y,z
+      use Cdata, only: m,n,x,y,z
       use Mpicomm, only: stop_it
+      use Ionization, only: eoscalc
 
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(mx) :: lnTT
@@ -214,7 +215,7 @@ module Radiation
       case ('LTE')
         do n=1,mz
         do m=1,my
-          lnTT=f(:,m,n,ilnTT)
+          call eoscalc(f,mx,lnTT=lnTT)
           Srad(:,m,n)=arad*exp(4*lnTT)
         enddo
         enddo
@@ -242,20 +243,31 @@ module Radiation
 !
 !  03-apr-04/tobi: coded
 !
-      use Cdata, only: ilnrho,x,y,z
-      use Ionization, only: Hminus_opacity
+      use Cdata, only: ilnrho,x,y,z,m,n
+      use Ionization, only: eoscalc
       use Mpicomm, only: stop_it
 
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx) :: tmp,lnrho
       logical, save :: lfirst=.true.
 
       select case (opacity_type)
 
       case ('Hminus')
-        call Hminus_opacity(f,lnchi)
+        do m=1,my
+        do n=1,mz
+          call eoscalc(f,mx,lnchi=tmp)
+          lnchi(:,m,n)=tmp
+        enddo
+        enddo
 
       case ('kappa_cst')
-        lnchi(:,:,:)=log(kappa_cst)+f(:,:,:,ilnrho)
+        do m=1,my
+        do n=1,mz
+          call eoscalc(f,mx,lnrho=lnrho)
+          lnchi(:,m,n)=log(kappa_cst)+lnrho
+        enddo
+        enddo
 
       case ('blob')
         if (lfirst) then

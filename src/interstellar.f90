@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.89 2004-04-03 16:59:53 mee Exp $
+! $Id: interstellar.f90,v 1.90 2004-04-04 19:52:30 theine Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.89 2004-04-03 16:59:53 mee Exp $")
+           "$Id: interstellar.f90,v 1.90 2004-04-04 19:52:30 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -433,7 +433,7 @@ print*,'SNI inrerval = ',t_interval_SNI
              rho(:)=exp(f(l1:l2,m,n,ilnrho))
              ss(:)=f(l1:l2,m,n,iss)
 
-             call eoscalc(f,yH=yH,lnTT=lnTT)
+             call eoscalc(f,nx,yH=yH,lnTT=lnTT)
              TT=exp(lnTT)
 
              rho_cloud(:)=0.0
@@ -851,7 +851,7 @@ print*,ee_SN,rho_SN,c_SN
             lnrho=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho) 
             ss=f(l1:l2,m,n,iss)
-            call eoscalc(f,yH=yH,lnTT=lnTT,ee=ee_old)
+            call eoscalc(f,nx,yH=yH,lnTT=lnTT,ee=ee_old)
             TT=exp(lnTT)
 
             ! Apply perturbations
