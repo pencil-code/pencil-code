@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.1 2002-10-07 20:39:22 dobler Exp $ 
+! $Id: notimeavg.f90,v 1.2 2002-10-09 14:02:31 dobler Exp $ 
 
 module Timeavg
 
@@ -40,9 +40,12 @@ module Timeavg
 !
     endsubroutine update_timeavgs
 !***********************************************************************
-    subroutine write_timeavgs()
+    subroutine wsnap_timeavgs(chsnap,llabel)
 !
-    endsubroutine write_timeavgs
+      character (len=*) :: chsnap
+      logical llabel
+!
+    endsubroutine wsnap_timeavgs
 !***********************************************************************
 
 endmodule Timeavg

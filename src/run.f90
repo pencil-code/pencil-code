@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.102 2002-10-07 20:39:22 dobler Exp $
+! $Id: run.f90,v 1.103 2002-10-09 14:02:31 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.102 2002-10-07 20:39:22 dobler Exp $")
+             "$Id: run.f90,v 1.103 2002-10-09 14:02:31 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -160,8 +160,8 @@
             endif
           endif
           !
-          !  remove wiggles in lnrho in sporadic time intervals
-          !  Necessary if the Reynolds number is large.
+          !  Remove wiggles in lnrho in sporadic time intervals.
+          !  Necessary for large Reynolds numbers on moderate-sized grids.
           !  iwig=500 is a typical value. For iwig=0 no action is taken.
           !  (The two queries below must come separately on compaq machines.)
           !
@@ -192,7 +192,6 @@
           !
           if(lout) call write_xyaverages()
           if(lout) call write_zaverages()
-          if(lout) call write_timeavgs()
           if(lout) call prints()
           if (ialive /= 0) then ! set ialive=0 to fully switch this off
             if (mod(it,ialive)==0) &
@@ -200,6 +199,7 @@
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
           call wsnap(trim(directory_snap)//'/VAR',f,.true.)
+          call wsnap_timeavgs(trim(directory_snap)//'/TAVG',.true.)
           call wvid(trim(directory))
           !
           !  save snapshot every isnap steps in case the run gets interrupted
@@ -208,6 +208,7 @@
           if (isave /= 0) then
             if (mod(it,isave)==0) then
               call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
+              call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',.false.)
               call wtime(trim(directory)//'/time.dat',t)
             endif
           endif
