@@ -780,6 +780,9 @@ module Sub
         write(1) z1,z2,ztop
         write(1) hcond0,hcond1,hcond2,whcond
         write(1) mpoly0,mpoly1,mpoly2,isothtop
+        ! The following parameters need to be communicated to IDL
+        ! Note: logicals will be written as Fortran integers
+        write(1) lgravz,lgravr
       endif
 !
     endsubroutine wparam

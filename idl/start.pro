@@ -59,6 +59,8 @@ hcond0=(hcond1=(hcond2=(whcond=zero)))
 mpoly0=(mpoly1=(mpoly2=zero))
 isothtop=0L
 bx_ext=(by_ext=(bz_ext=zero))
+lgravz=(lgravr=0L)
+;
 pfile=datatopdir+'/'+'param.dat'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
@@ -70,6 +72,7 @@ if (cpar gt 0) then begin
   readu,1, z1,z2,ztop
   readu,1, hcond0,hcond1,hcond2,whcond
   readu,1, mpoly0,mpoly1,mpoly2,isothtop
+  readu,1, lgravz,lgravr
   close,1
 endif else begin
   print, 'Warning: cannot find file ', pfile
