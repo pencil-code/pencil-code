@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.143 2003-01-23 18:37:55 brandenb Exp $
+### $Id: Makefile,v 1.144 2003-01-25 13:20:42 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -39,11 +39,17 @@ include Makefile.local
 ## Default settings
 FC=f90
 FFLAGS=-O3
+F90FLAGS=
+F77FLAGS=
 CFLAGS=-O3 -DFUNDERSC=1
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
 ## `perldoc adapt-mkfile' for full documentation of the syntax.
+## Compiler flags:
+##   FFLAGS are used by both the F90 compiler $(FC) and $(F77);
+##   F90FLAGS are only used by $(FC)
+##   F77FLAGS are only used by $(F77)
 
 ### Begin machine dependent
 
@@ -79,7 +85,8 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ## Linux:
 #FC=f95
-#FFLAGS=-O3 -u
+#FFLAGS=-O3
+#F90FLAGS=-u
 #LDMPI=
 #FC=mpif90 # (Samos)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
@@ -97,15 +104,15 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O3 -ipo #PACX #(fe[0-9])
 #FFLAGS=-fast -lm #(erland|igor|tycho)
 #FFLAGS=-O3 -ipo #(fe[0-9])
-#FFLAGS=-O4 -u -C -gline -Wc,-malign-double #(Mephisto)
-#FFLAGS=-O4 -u #(nl3)
+#FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
+#FFLAGS=-O4 #(nl3)
 #FFLAGS= -O3 -tpp7 -xMKW #(Cosmo)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
-#F77=$(FC) -O4
-#F77=$(FC) -O4 -dusty #(nl3|Mephisto)
+#F77=$(FC)
+#F77=$(FC) -dusty #(nl3|Mephisto)
 #F77=$(FC) -lm  #(tycho|erland)
-#F77=$(FC) -O3 #(Cincinnatus|Owen|Master|cosmo)
+#F77=$(FC) #(Cincinnatus|Owen|Master|Cosmo)
 
 ## SunOS:
 #FC=pghpf #(Lomond)
@@ -145,11 +152,11 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 .SUFFIXES: .f90 .mod
 
 .f.o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) -c $*.f
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
 .mod.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 
