@@ -1,5 +1,5 @@
 &run_pars
-  nt=100, it1=5, cdt=0.4, cdtv=0.80, isave=50, itorder=3,
+  nt=10, it1=5, cdt=0.4, cdtv=0.80, isave=50, itorder=3,
   dsnap=10., dvid=0.5,
 /
 &hydro_run_pars

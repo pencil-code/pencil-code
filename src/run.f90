@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.34 2002-06-04 11:08:37 brandenb Exp $
+! $Id: run.f90,v 1.35 2002-06-05 23:45:57 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.34 $", &
-             "$Date: 2002-06-04 11:08:37 $")
+             "$Revision: 1.35 $", &
+             "$Date: 2002-06-05 23:45:57 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -125,6 +125,7 @@ print*,'bef time loop: dx=',dx
 !
           call rk_2n(f,df)
           if (lforcing) call addforce(f)
+          if(lout) call wzaverages
           if(lout) call prints
           call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.12 2002-05-29 07:09:06 brandenb Exp $
+! $Id: prints.f90,v 1.13 2002-06-05 23:45:57 brandenb Exp $
 
 module Print
 
@@ -22,11 +22,13 @@ module Print
       use Cdata
       use Sub
       use Hydro
+      use Magnetic
 !
       logical,save :: first=.true.
       character (len=320) :: fform,legend
       character (len=1) :: comma=','
       integer :: iname
+      real :: bmz
 !
 !  If the timestep (=dt) is to be outputted, it is known only after
 !  rk_2n, so the best place to enter it into the save list is here
@@ -34,6 +36,13 @@ module Print
       if (i_t/=0) call save_name(tdiagnos,i_t)
       if (i_dt/=0) call save_name(dt,i_dt)
       if (i_it/=0) call save_name(float(it-1),i_it)
+!
+!  Magnetic energy in horizontally averaged field
+!
+      if (i_bmz/=0.and.lroot) then
+        bmz=sum(fnamez(:,i_bxmz)**2+fnamez(:,i_bymz)**2)/nz
+        call save_name(bmz,i_bmz)
+      endif
 !
 !  produce the format
 !  must set cform(1) explicitly, and then do iname>=2 in loop
@@ -63,6 +72,29 @@ module Print
       first = .false.
 !
     endsubroutine Prints
+!***********************************************************************
+    subroutine wzaverages
+!
+!  reads and registers print parameters gathered from the different
+!  modules and marked in `print.in'
+!
+!   6-jun-02/axel: coded
+!
+      use Cdata
+      use Sub
+      use Hydro
+!
+      logical,save :: first=.true.
+!
+      if(lroot.and.nnamez>0) then
+        open(1,file='tmp/zaverages.dat',position='append')
+        write(1,'(1pe12.5)') t
+        write(1,'(1p,8e10.3)') fnamez(:,1:nnamez)
+        close(1)
+      endif
+      first = .false.
+!
+    endsubroutine wzaverages
 !***********************************************************************
 
 endmodule Print

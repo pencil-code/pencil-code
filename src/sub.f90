@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.49 2002-05-31 20:43:45 dobler Exp $ 
+! $Id: sub.f90,v 1.50 2002-06-05 23:45:57 brandenb Exp $ 
 
 module Sub 
 
@@ -94,6 +94,27 @@ module Sub
       itype_name(iname)=ilabel_sum
 !
     endsubroutine sum_mn_name
+!***********************************************************************
+    subroutine zsum_mn_name(a,iname)
+!
+!  successively calculate sum of a, where a is supplied
+!  at each call. This routine initializes counter when m=n=1.
+!
+!   5-jun-02/axel: adapted from sum_mn_name
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname,n_nghost
+!
+      n_nghost=n-nghost
+      if (lfirstpoint) then
+        fnamez(n_nghost,iname)=sum(a)
+      else
+        fnamez(n_nghost,iname)=fnamez(n_nghost,iname)+sum(a)
+      endif
+!
+    endsubroutine zsum_mn_name
 !***********************************************************************
     subroutine max_mn(a,res)
 !

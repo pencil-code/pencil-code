@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.32 2002-06-04 08:19:54 brandenb Exp $
+! $Id: register.f90,v 1.33 2002-06-05 23:45:57 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -56,7 +56,7 @@ module Register
       use Entropy
       use Magnetic
 !
-      integer :: iname
+      integer :: iname,inamez
       logical :: lreset
 !
 !  read in the list of variables to be printed
@@ -68,6 +68,16 @@ module Register
       close(1)
 99    nname=iname-1
       if (lroot) print*,'nname=',nname
+!
+!  read in the list of variables for xy-averages
+!
+      open(1,file='zaver.in')
+      do inamez=1,mnamez
+        read(1,*,end=98) cnamez(inamez)
+      enddo
+      close(1)
+98    nnamez=inamez-1
+      if (lroot) print*,'nnamez=',nnamez
 !
 !  check which variables are set
 !

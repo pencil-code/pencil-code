@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.34 2002-06-05 08:52:45 brandenb Exp $
+! $Id: magnetic.f90,v 1.35 2002-06-05 23:45:57 brandenb Exp $
 
 module Magnetic
 
@@ -31,6 +31,7 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
+  integer :: i_bxmz=0,i_bymz=0,i_bmz
 
   contains
 
@@ -67,8 +68,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.34 $", &
-           "$Date: 2002-06-05 08:52:45 $")
+           "$Revision: 1.35 $", &
+           "$Date: 2002-06-05 23:45:57 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -194,7 +195,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A
-      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb
+      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by
       real :: tmp,eta_out1
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
@@ -207,6 +208,13 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         if (i_abm/=0) call sum_mn_name(ab,i_abm)
         if (i_b2m/=0) call sum_mn_name(b2,i_b2m)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
+!
+!  this doesn't need to be as frequent (check later)
+!
+        if (i_bxmz/=0) bx=bb(:,1)
+        if (i_bymz/=0) by=bb(:,2)
+        if (i_bxmz/=0) call zsum_mn_name(bx,i_bxmz)
+        if (i_bymz/=0) call zsum_mn_name(by,i_bymz)
       endif
 !
 !  possibility to add external field
@@ -300,7 +308,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       use Cdata
       use Sub
 !
-      integer :: iname
+      integer :: iname,inamez
       logical :: lreset
 !
 !  reset everything in case of reset
@@ -310,6 +318,8 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
       endif
 !
+!  check for those quantities that we want to evaluate online
+!
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
@@ -317,6 +327,14 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
+        call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
+      enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',i_bxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',i_bymz)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -333,6 +351,9 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       write(3,*) 'iax=',iax
       write(3,*) 'iay=',iay
       write(3,*) 'iaz=',iaz
+      write(3,*) 'nnamez=',nnamez
+      write(3,*) 'i_bxmz=',i_bxmz
+      write(3,*) 'i_bymz=',i_bymz
       close(3)
 !
     endsubroutine rprint_magnetic

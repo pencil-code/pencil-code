@@ -176,7 +176,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.19 $ $}
+\date{\today,~ $ $Revision: 1.20 $ $}
 
 % ====================================================================== %
 
@@ -205,7 +205,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.19 $ $}
+  \emph{\today,~ $ $Revision: 1.20 $ $}
 
 
 \end{center}
@@ -564,6 +564,12 @@ column (with format \file{'(f10.3)'}), followed by the mean squared velocity,
 $\bra{\uu^2}$, \file{u2m} in the second column (with format \file{'(1pe13.4)'}),
 and the kinetic helicity, $\bra{\oo\cdot\uu}$,  \file{oum} in the last column
 (with the default format \file{'(1pe10.2)'}).
+
+In the \file{zaver.in}, $z$-dependent (horizontal) averages are listed.
+They are written in the file \file{tmp/zaverages.dat}. At the moment we
+can also output in \file{print.in} the associated mean square value
+of the horizontal field, but this requires that in \file{zaver.in} the
+quantities \code{bxmz} and \code{bymz} are set.
 
 % ---------------------------------------------------------------------- %
 \subsection{Helper scripts}
@@ -1065,7 +1071,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.19 2002-06-05 08:52:45 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.20 2002-06-05 23:45:57 brandenb Exp $ $}
 
 
 \end{document}

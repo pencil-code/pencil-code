@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.40 2002-06-05 08:52:45 brandenb Exp $
+! $Id: cdata.f90,v 1.41 2002-06-05 23:45:57 brandenb Exp $
 
 module Cdata
 
@@ -45,12 +45,13 @@ module Cdata
 !
 !  in this section are all the things related to printing
 !
-  integer :: nname
+  integer :: nname,nnamez
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
-  integer, parameter :: mname=100,mname_extra=2
+  integer, parameter :: mname=100,mnamez=20
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
-  character (len=30) :: cname(mname),cform(mname),cform_extra(mname_extra)
+  real, dimension (nz,mnamez) :: fnamez
+  character (len=30) :: cname(mname),cform(mname),cnamez(mnamez),cformz(mnamez)
 
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false.
