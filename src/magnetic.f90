@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.145 2003-10-31 18:23:20 brandenb Exp $
+! $Id: magnetic.f90,v 1.146 2003-11-05 14:20:54 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -21,6 +21,7 @@ module Magnetic
   implicit none
 
   character (len=labellen) :: initaa='zero',initaa2='zero'
+  character (len=labellen) :: ires='eta-const'
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
@@ -54,7 +55,7 @@ module Magnetic
        eta,B_ext,alpha_effect, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       bthresh,bthresh_per_brms
+       bthresh,bthresh_per_brms,ires
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -102,7 +103,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.145 2003-10-31 18:23:20 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.146 2003-11-05 14:20:54 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -246,13 +247,14 @@ module Magnetic
       use Slices
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
       real, dimension (nx,3) :: gpxb,glnrho,uxj
-      real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
+      real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb,del6A,fres
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb
@@ -370,9 +372,22 @@ module Magnetic
 !
       call cross_mn(uu,bb,uxB)
 !
+!  calculate restive term
+!  (either normal resisitivity or sixth order hyper resistivity)
+!
+      if (ires .eq. 'eta-const') then
+        fres=eta*del2A
+      elseif (ires .eq. 'hyper6') then
+        call del6v(f,iaa,del6A)
+        fres=eta*del6A
+      else
+        if (lroot) print*,'daa_dt: no such ires:',ires
+        call stop_it("")
+      endif
+!
 !  add to dA/dt
 !
-      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+eta*del2A
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+fres
 !
 !  add alpha effect if alpha_effect /= 0
 !      
