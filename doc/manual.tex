@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.188 2003-08-03 07:51:33 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.189 2003-08-06 16:47:04 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -341,7 +341,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-08-03 07:51:33 $ $,~ $ $Revision: 1.188 $ $}
+\date{$ $Date: 2003-08-06 16:47:04 $ $,~ $ $Revision: 1.189 $ $}
 
 % ====================================================================== %
 
@@ -374,7 +374,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-08-03 07:51:33 $ $,~ $ $Revision: 1.188 $ $}
+  \emph{$ $Date: 2003-08-06 16:47:04 $ $,~ $ $Revision: 1.189 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3311,7 +3311,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-08-03 07:51:33 $ $,~ $ $Revision: 1.188 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-08-06 16:47:04 $ $,~ $ $Revision: 1.189 $ $}}}
 
 \section{Timings}
 
@@ -4489,6 +4489,8 @@ and
 \index{Radiative transfer}
 \label{S-radi-trans}
 
+\subsubsection{Solving the radiative transfer equation}
+
 A formal solution of Eq.~(\ref{radiative-transfer}) is given by
 \begin{equation}
   I(\tau) = I(\tau_0) e^{-(\tau-\tau_0)}
@@ -4529,6 +4531,137 @@ or
   \delta\tau
   = \frac{\chi_{k+1}-\chi_k}{\ln\frac{\chi_{k+1}}{\ln\chi_k}} \, \delta x
 \end{equation}
+
+
+\subsubsection{Angular integration}
+
+% ---------------------------------------------------------------------- %
+\begin{table}[htb]
+  \renewcommand{\arraystretch}{2.3}
+  \centering
+  \caption{Sums $\sqrt{4\pi}Y_l^m(\vartheta_i,\varphi_i)$ for special
+    sets of directions.
+    For all degrees and orders up to $l=8$ not mentioned in this table,
+    the sums are $0$.
+    The label `Non-h.~f-d.' stands for `non-horizontal face-diagonals',
+    i.e.~the eight face diagonals that are not in the horizonatal plane.
+  }
+  \label{Tab-Ylm-sums}
+  \footnotesize
+  \begin{tabular}{lr@{\qquad}r@{\qquad}rr@{\qquad}rr@{\qquad}rrr}
+  \toprule
+    Directions   & $Y_0^0$   & $Y_2^0$      & $Y_4^0$          & $Y_4^{\pm4}$             & $Y_6^0$                    & $Y_6^{\pm4}$                & $Y_8^0$                     & $Y_8^{\pm4}$                 & $Y_8^{\pm8}$                  \\
+  \midrule
+    Coord.       &  $6$      & $0$          &  $\dfrac{21}{2}$ &  $\dfrac{3}{4}\sqrt{70}$ &  $\dfrac{3}{4}\sqrt{13}$   & $-\dfrac{3}{8}\sqrt{182}$   & $\dfrac{99}{32}\sqrt{17}$   & $\dfrac{3}{32}\sqrt{2618}$   & $\dfrac{3}{64}\sqrt{24310}$   \\
+    Face diag.   & $12$      & $0$          & $-\dfrac{21}{4}$ & $-\dfrac{3}{8}\sqrt{70}$ & $-\dfrac{39}{16}\sqrt{13}$ &  $\dfrac{39}{32}\sqrt{182}$ & $\dfrac{891}{256}\sqrt{17}$ & $\dfrac{27}{256}\sqrt{2618}$ & $\dfrac{27}{512}\sqrt{24310}$ \\
+    Space diag.  &  $8$      & $0$          & $-\dfrac{28}{3}$ & $-\dfrac{2}{3}\sqrt{70}$ & $\dfrac{16}{9}\sqrt{13}$  & $-\dfrac{8}{9}\sqrt{182}$   & $\dfrac{11}{9}\sqrt{17}$    & $\dfrac{1}{27}\sqrt{2618}$   & $\dfrac{1}{54}\sqrt{24310}$   \\
+  \midrule
+    Non-h.~f-d.  &  $8$      & $2\sqrt{5}$  & $-\dfrac{39}{4}$ &  $\dfrac{3}{8}\sqrt{70}$ & $-\dfrac{19}{16}\sqrt{13}$ & $\dfrac{27}{32}\sqrt{182}$  & $\dfrac{611}{256}\sqrt{17}$ & $\dfrac{51}{256}\sqrt{2618}$ & $\dfrac{3}{512}\sqrt{24310}$  \\
+    Coord.
+    $x$, $y$     &  $4$      & $-2\sqrt{5}$ & $\dfrac{9}{2}$   &  $\dfrac{4}{3}\sqrt{70}$ & $-\dfrac{5}{4}\sqrt{13}$   & $-\dfrac{3}{8}\sqrt{182}$   & $\dfrac{35}{32}\sqrt{17}$   & $\dfrac{3}{32}\sqrt{2618}$   & $\dfrac{3}{64}\sqrt{24310}$   \\
+    Coord. $z$   &  $2$      & $2\sqrt{5}$  & $6$              &  $0$                     & $2\sqrt{13}$               & $0$                         & $2\sqrt{17}$                & $0$                          & $0$                           \\
+  \bottomrule
+  \end{tabular}
+\end{table}
+% ---------------------------------------------------------------------- %
+
+For angular integration over the full solid angle, we make the ansatz
+\begin{equation}
+  \int\limits_{4\pi} f(\vartheta,\varphi)\,\frac{d\omega}{4\pi}
+  = \sum_{i=1}^{N} w_i f(\vartheta_i,\varphi_i) + R_N \; .
+\end{equation}
+Table \ref{Tab-Ylm-sums} shows the sums
+$\sqrt{4\pi}Y_l^m(\vartheta_i,\varphi_i)$ over special sets of directions
+$(\vartheta_i,\varphi_i)$.
+Using these numbers and requiring that angular integration is exact for
+$l\le l_{\rm max}$, we find the following weights $w_i$ for different sets
+of directions (see also \cite{Abramowitz-Stegun}, \S 25.4.65):
+
+\begin{enumerate}
+\item \emph{Axes}
+
+  \begin{tabular}{@{}lr}
+    Coordinate axes: & 1/6
+  \end{tabular}
+
+  $l_{\rm max} = 3$
+
+\item \emph{Face diagonals}
+
+  \begin{tabular}{@{}lr}
+    Face diagonals: & 1/12
+  \end{tabular}
+
+  $l_{\rm max} = 3$
+
+\item \emph{Space diagonals}
+
+  \begin{tabular}{@{}lr}
+    Space diagonals: & 1/8
+  \end{tabular}
+
+  $l_{\rm max} = 3$
+
+\item \emph{Axes + face diagonals}
+
+  \begin{tabular}{@{}lr}
+    Coordinate axes: & 1/30 \\
+    Face diagonals:  & 1/15 \\
+  \end{tabular}
+
+  $l_{\rm max} = 5$
+
+\item \emph{Axes + space diagonals}
+
+  \begin{tabular}{@{}lr}
+    Coordinate axes: & 1/15 \\
+    Space diagonals: & 3/40 \\
+  \end{tabular}
+
+  $l_{\rm max} = 5$
+
+\item \emph{Face + space diagonals}
+
+  \begin{tabular}{@{}lr}
+    Face diagonals:  &  2/15 \\
+    Space diagonals: & -3/40 \\
+  \end{tabular}
+
+  $l_{\rm max} = 5$
+
+\item \emph{Axes, face + space diagonals}
+
+  \begin{tabular}{@{}lr}
+    Coordinate axes: & 1/21 \\
+    Face diagonals:  & 4/105 \\
+    Space diagonals: & 9/280 \\
+  \end{tabular}
+
+  $l_{\rm max} = 7$
+
+\item \emph{Axes, non-horizontal face diagonals}
+
+  \begin{tabular}{@{}lr}
+    Coordinate axes $x$, $y$: & 1/10 \\
+    Coordinate axes $z$:      & 1/30 \\
+    Non-hor.~face diagonals:  & 1/15 \\
+  \end{tabular}
+
+  $l_{\rm max} = 3$
+
+\item \emph{Axes, non-horizontal face diagonals, space diagonals}
+
+  \begin{tabular}{@{}lr}
+    Coordinate axes $x$, $y$: & 12/215 \\
+    Coordinate axes $z$:      & 10/129 \\
+    Non-hor.~face diagonals:  & -14/645 \\
+    Space diagonals:          & 171/1720 \\
+  \end{tabular}
+
+  $l_{\rm max} = 5$
+
+\end{enumerate}
+
 
 % ====================================================================== %
 
@@ -5642,60 +5775,82 @@ initial condition.
 % r e f
 \begin{thebibliography}{99}
 
-\bibitem{2Nstorage} Williamson, J. H.,~
-  \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
-\bibitem{NS90} Nordlund, \AA., Stein, R. F.,
-  \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
-\bibitem{BNST95} Brandenburg, A., Nordlund, \AA., Stein, R. F.,
-  \& Torkelsson, U.,~
-  \emph{Astrophys. J.} \textbf{446}, 741--754 (1995)
-  ``Dynamo-generated turbulence and large scale magnetic fields
-in a Keplerian shear flow''
-\bibitem{BJNRST96} Brandenburg, A., Jennings, R. L., Nordlund, \AA.,
-Rieutord, M., Stein, R. F., \& Tuominen, I.,~
-  \emph{J. Fluid Mech.} \textbf{306}, 325--352 (1996)
-  ``Magnetic structures in a dynamo simulation''
-\bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,~
-  \emph{Numerical Recipes in Fortran 90}, 2nd ed., Cambridge (1996)
+\bibitem{Abramowitz-Stegun} Abramowitz, A., Stegun, I. A.,
+  \emph{Pocketbook of Mathematical Functions\/},
+  Harri Deutsch, Frankfurt (1984)
+
+\bibitem{Ref-2} Brandenburg, A.,
+  \emph{Astrophys. J.} \textbf{550}, 824--840 (2001)
+  ``The inverse cascade and nonlinear alpha-effect in simulations
+  of isotropic helical hydromagnetic turbulence''
+
 \bibitem{Ref-1} Brandenburg, A., in \emph{Advances in non-linear dynamos},
   ed.\ A.\ Ferriz-Mas \& M.\ N\'u\~nez Jim\'enez,
   (The Fluid Mechanics of Astrophysics and Geophysics, Vol.\ {\bf9})
   Taylor \& Francis, London and New York, pp.~269--344 (2003);
   \url{http://arXiv.org/abs/astro-ph/0109497}
-\bibitem{Ref-4} Brandenburg, A., Dobler, W.,~
+
+\bibitem{Ref-4} Brandenburg, A., Dobler, W.,
   \emph{Astron. Astrophys.} \textbf{369}, 329--338 (2001)
   ``Large scale dynamos with helicity loss through boundaries''
-\bibitem{SH88} Stanescu, D., Habashi, W. G.,~
-  \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
-\bibitem{KR80} Krause, F., R\"adler, K.-H.,~
-  \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
-  Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
-\bibitem{Ref-2} Brandenburg, A.,~
-  \emph{Astrophys. J.} \textbf{550}, 824--840 (2001)
-  ``The inverse cascade and nonlinear alpha-effect in simulations
-of isotropic helical hydromagnetic turbulence''
-\bibitem{BH01} Brandenburg, A., \& Hazlehurst, J.,~
+
+\bibitem{BH01} Brandenburg, A., \& Hazlehurst, J.,
   \emph{Astron. Astrophys.} \textbf{370}, 1092--1102 (2001)
   ``Evolution of highly buoyant thermals in a stratified layer''
-\bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.,~
-\emph{MNRAS} \textbf{276}, 651--662 (1995)
-``Galactic fountains as magnetic pumps''
-\bibitem{HTM84}Hurlburt, N. E., Toomre, J., \& Massaguer, J. M.,~
-  \emph{Astrophys. J.} \textbf{282}, 557--573 (1984)
-  ``Two-dimensional compressible convection extending over multiple scale heights''
-\bibitem{BDS02}Brandenburg, A., Dobler, W., \& Subramanian, K.,~
+
+\bibitem{BDS02}Brandenburg, A., Dobler, W., \& Subramanian, K.,
   \emph{Astron. Nachr.} \textbf{323}, 99--122 (2002)
   ``Magnetic helicity in stellar dynamos: new numerical experiments''
-\bibitem{GNG87}Goodman, J., Narayan, R. \& Goldreich, P.,~
+
+\bibitem{BJNRST96} Brandenburg, A., Jennings, R. L., Nordlund, \AA.,
+  Rieutord, M., Stein, R. F., \& Tuominen, I.,
+  \emph{J. Fluid Mech.} \textbf{306}, 325--352 (1996)
+  ``Magnetic structures in a dynamo simulation''
+
+\bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.,
+  \emph{MNRAS} \textbf{276}, 651--662 (1995)
+  ``Galactic fountains as magnetic pumps''
+
+\bibitem{BNST95} Brandenburg, A., Nordlund, \AA., Stein, R. F.,
+  \& Torkelsson, U.,
+  \emph{Astrophys. J.} \textbf{446}, 741--754 (1995)
+  ``Dynamo-generated turbulence and large scale magnetic fields
+  in a Keplerian shear flow''
+
+\bibitem{Collatz66}Collatz, L.,
+  \emph{The numerical treatment of differential equations},
+  Springer-Verlag, New York, p. 164 (1966)
+
+\bibitem{GNG87}Goodman, J., Narayan, R. \& Goldreich, P.,
   \emph{Month. Not. Roy. Soc.} \textbf{225}, 695--711 (1987)
   ``The stability of accretion tori -- II. Nonlinear evolution
   to discrete planets''
-\bibitem{Collatz66}Collatz, L.,~
-  \emph{The numerical treatment of differential equations},
-  Springer-Verlag, New York, p. 164 (1966)
-\bibitem{Lele92}Lele, S. K.,~
+
+\bibitem{HTM84}Hurlburt, N. E., Toomre, J., \& Massaguer, J. M.,
+  \emph{Astrophys. J.} \textbf{282}, 557--573 (1984)
+  ``Two-dimensional compressible convection extending over multiple scale
+  heights''
+
+\bibitem{KR80} Krause, F., R\"adler, K.-H.,
+  \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
+  Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
+
+\bibitem{Lele92}Lele, S. K.,
   \emph{J. Comp. Phys.} \textbf{103}, 16--42 (1992)
   ``Compact finite difference schemes with spectral-like resolution''
+
+\bibitem{NS90} Nordlund, \AA., Stein, R. F.,
+  \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
+
+\bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
+  \emph{Numerical Recipes in Fortran 90}, 2nd ed., Cambridge (1996)
+
+\bibitem{SH88} Stanescu, D., Habashi, W. G.,
+  \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
+
+\bibitem{2Nstorage} Williamson, J. H.,
+  \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
+
 \end{thebibliography}
 
 
@@ -5709,7 +5864,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.188 2003-08-03 07:51:33 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.189 2003-08-06 16:47:04 dobler Exp $ $}
 
 
 \end{document}
