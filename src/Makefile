@@ -41,7 +41,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #OPTFLAGS=-fast -O5
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
 #F77=$(FC)
-#LIBSIG=
+#LIBSIG=-lsig
 
 ## Linux:
 #FC=f95

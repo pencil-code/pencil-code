@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.46 2002-06-15 11:29:35 brandenb Exp $
+! $Id: run.f90,v 1.47 2002-06-16 05:37:26 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -30,10 +30,10 @@
         logical :: stop=.false.,reload=.false.
         real :: Wall_clock_time
 !
-!  initialize MPI
+!  initialize MPI (currently disabled; didn't work)
 !
-!       call siginit
-!       call signonbrutal
+!!      call siginit
+!!      call signonbrutal
 !
 !  initialize MPI and register physics modules
 !  (must be done before lroot can be used, for example)
@@ -44,8 +44,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.46 $", &
-             "$Date: 2002-06-15 11:29:35 $")
+             "$Revision: 1.47 $", &
+             "$Date: 2002-06-16 05:37:26 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -129,6 +129,7 @@
           if (lforcing) call addforce(f)
           if(lout) call write_xyaverages
           if(lout) call prints
+          call outpui(trim(directory)//'/alive.info',it,1) !(all procs alive?)
           call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))
 !
