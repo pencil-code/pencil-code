@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.46 2004-10-30 15:24:41 ajohan Exp $
+! $Id: visc_const.f90,v 1.47 2004-10-31 11:40:32 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -63,7 +63,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.46 2004-10-30 15:24:41 ajohan Exp $")
+           "$Id: visc_const.f90,v 1.47 2004-10-31 11:40:32 ajohan Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -80,11 +80,13 @@ module Viscosity
 !  20-nov-02/tony: coded
 !
       use Cdata
-
-      if (((ivisc=='nu-const' .or. ivisc=='hyper_nu-const') .and. nu/=0.) &
+!
+!  Some viscosity types need the rate-of-strain tensor and grad(lnrho)
+!
+      if (((ivisc=='nu-const' .or. ivisc=='hyper3_nu-const') .and. nu/=0.) &
           .or. (ivisc=='smagorinsky_simplified')) then
-         lneed_sij=.true.
-         lneed_glnrho=.true.
+        lneed_sij=.true.
+        lneed_glnrho=.true.
       endif
 !
     endsubroutine initialize_viscosity
