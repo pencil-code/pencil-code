@@ -26,7 +26,7 @@ if (-e "LOCK") then
   echo "rm LOCK"
   exit
 endif
-touch LOCK
+if (! -e "NEVERLOCK") touch LOCK
 
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
@@ -81,7 +81,7 @@ endif
 if ($booted_lam) lamhalt
 
 # remove LOCK file
-rm -f LOCK
+if (-e "LOCK") rm -f LOCK
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
@@ -94,3 +94,11 @@ rm -f LOCK
 # qsub -l ncpus=16,mem=1gb,cput=400:00:00 -q parallel run.csh
 # qsub -l nodes=128,walltime=10:00:00 -q workq run.csh
 # eval `env-setup lam`; qsub -v PATH -pe lam 8 -j y -o run.log run.csh
+
+
+
+
+
+
+
+
