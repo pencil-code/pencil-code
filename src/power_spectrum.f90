@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.7 2002-10-07 11:28:25 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.8 2002-10-08 14:44:54 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -36,7 +36,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.7 2002-10-07 11:28:25 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.8 2002-10-08 14:44:54 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -111,6 +111,7 @@ module  power_spectrum
   if (iproc==root) then
      if (ip<10) print*,'Writing power spectra of variable',sp &
           ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
+     spectrum_sum=.5*spectrum_sum
      open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
      write(1,*) t
      write(1,*) spectrum_sum
