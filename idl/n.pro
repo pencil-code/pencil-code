@@ -3,6 +3,7 @@
 ;  to generate an index catalogue of what is written
 ;
 @tmp/hydro
+@tmp/density
 @tmp/magnetic
 print,'nname=',nname
 ;
@@ -15,8 +16,13 @@ if i_u2m ne 0 then u2m=reform(a(i_u2m-1,*))
 if i_um2 ne 0 then um2=reform(a(i_um2-1,*))
 if i_b2m ne 0 then b2m=reform(a(i_b2m-1,*))
 if i_bm2 ne 0 then bm2=reform(a(i_bm2-1,*))
+if i_abm ne 0 then abm=reform(a(i_abm-1,*))
+if i_jbm ne 0 then jbm=reform(a(i_jbm-1,*))
 ;
+;!p.multi=[0,1,2]
 plot,t,u2m,yst=0
+oplot,t,b2m,col=122
+!p.multi=0
 ;save,file='hydro.sav',t,jmax2,j2m,bmax2,b2m
 ;save,file='magnetic.sav',t,jmax2,j2m,bmax2,b2m
 END

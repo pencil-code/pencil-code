@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.9 2002-06-04 11:08:37 brandenb Exp $ 
+! $Id: param_io.f90,v 1.10 2002-06-05 08:52:46 brandenb Exp $ 
 module Param_IO
 
 !
@@ -18,7 +18,7 @@ module Param_IO
   namelist /init_pars/ &
        ip,xyz0,Lxyz,lperi
   namelist /run_pars/ &
-       ip,nt,it1,dt,cdtv,isave,itorder, &
+       ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin, &
        tinit,tdamp,dampu,dampuext,rdamp,wdamp, &
        bcx,bcy,bcz
@@ -117,8 +117,8 @@ module Param_IO
 !
 !  timestep
 !
-      ldt=dt.lt.0.
-      if (ldt) cdt=abs(dt)
+      ldt=cdt/=0.
+      if (ldt.and.lroot) print*,'timestep based on CFL cond; cdt=',cdt
 !
     endsubroutine read_runpars
 !***********************************************************************

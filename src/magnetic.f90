@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.33 2002-06-01 09:36:38 brandenb Exp $
+! $Id: magnetic.f90,v 1.34 2002-06-05 08:52:45 brandenb Exp $
 
 module Magnetic
 
@@ -67,8 +67,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.33 $", &
-           "$Date: 2002-06-01 09:36:38 $")
+           "$Revision: 1.34 $", &
+           "$Date: 2002-06-05 08:52:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -80,12 +80,11 @@ module Magnetic
     subroutine init_aa(f,xx,yy,zz)
 !
 !  initialise magnetic field; called from start.f90
-!  AB: maybe we should here all different routines (such as rings)
+!  AB: maybe we should here call different routines (such as rings)
 !  AB: and others, instead of accummulating all this in a huge routine.
-!   7-nov-2001/wolf: coded
+!  We have an init parameter (initaa) to stear magnetic i.c. independently.
 !
-!  Not sure what to do about init; I want to have an init parameter
-!  (called in initaa) to stear magnetic i.c. independently.
+!   7-nov-2001/wolf: coded
 !
       use Cdata
       use Sub
@@ -96,7 +95,7 @@ module Magnetic
       real, dimension(3) :: axis,disp
       real    :: phi,theta,ct,st,cp,sp
       real    :: fring,Iring,R0,width
-      integer :: init,i
+      integer :: i
 !
 !  Gaussian noise
 !
@@ -194,8 +193,8 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
-      real, dimension (nx,3) :: del2A,dAdy,shearA
-      real, dimension (nx) :: var1,rho1,J2,TT1,uy0,b2,b2tot,ab,jb
+      real, dimension (nx,3) :: del2A
+      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb
       real :: tmp,eta_out1
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)

@@ -176,7 +176,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.18 $ $}
+\date{\today,~ $ $Revision: 1.19 $ $}
 
 % ====================================================================== %
 
@@ -205,7 +205,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.18 $ $}
+  \emph{\today,~ $ $Revision: 1.19 $ $}
 
 
 \end{center}
@@ -747,10 +747,32 @@ Not all parameters are used for a given scenario.
 \midrule
   \var{nt}     & number of time steps to carry out. \\
   \var{it1}    & write monitoring output every \var{it1} time steps.\\
-  \var{dt}     & time step $\delta t$ if positive,
-                 $\delta t/\delta t_{\rm Courant}$ if negative. A typical
-                 value is \code{dt=-0.4}. Using less can be useful as a
+  \var{dt}     & time step $\delta t$ (if set and different from zero).\\
+  \var{cdt}    & CFL (or Courant) coefficient,
+                 $\delta t/\delta t_{\rm Courant}$. A typical
+                 value is \code{cdt=0.4}. Using less can be useful as a
                  temporary fix until the source of the problem is found.\\
+  \var{cdtv}   & viscous time step; actual time step is given by
+                 \begin{equation}
+                   \delta t
+                   = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
+                                     {U_{\rm max}} ,
+                                c_{\delta t_v}
+                                \frac{\delta x_{\rm min}^2}
+                                     {D_{\rm max}}
+                         \right) \; ,
+                 \end{equation}
+                 where
+                 $\delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z)$;
+                 $U_{\rm max} \equiv \max\left(|\uv|
+                                     + \sqrt{\cs^2{+}\vA^2}\right)$,
+                 $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed,
+                 respectively;
+                 and $D_{\rm max} = \max(\nu,\chi,\eta)$, where
+                 $\nu$ denotes kinematic viscosity,
+                 $\chi = \lambda/(c_p\varrho)$ thermal diffusivity and
+                 $\eta$ the magnetic diffusivity.
+                 \\
   \var{isave}  & update snapshot file \file{var.dat} every \var{isave}
                  time steps. \\
   \var{iorder} & order of time step. Set \code{iorder=1} for Euler
@@ -763,7 +785,6 @@ Not all parameters are used for a given scenario.
                  units. \\
   \var{dvid}   & write two-dimensional sections for generation of videos
                  every \var{dsnap} time units. \\
-  \var{dforce} & force every \var{dforce} time units [???]. \\
   \var{dtmin}  & abort if time step $\delta t < \delta t_{\rm min}$. \\
   \var{tinit}  & ??? \\
   \var{tdamp}  & damp velocities in the initial time interval
@@ -783,28 +804,6 @@ Not all parameters are used for a given scenario.
                  $\cs$ and $\varrho$ at $z=z_{\rm top}$. \\
   \var{ivisc}  & switch for viscosity term
                  \Note{which value gives which term?} \\
-  \var{cdtv}   & weight of diffusive/viscous relative to advective time
-                 step for determining the Courant step
-                 \begin{equation}
-                   \delta t_{\rm Cou}
-                   = \min\left( \frac{\delta x_{\rm min}}
-                                     {U_{\rm max}} ,
-                                c_{\delta t_v}
-                                \frac{\delta x_{\rm min}^2}
-                                     {D_{\rm max}}
-                         \right) \; ,
-                 \end{equation}
-                 where
-                 $\delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z)$;
-                 $U_{\rm max} \equiv \max\left(|\uv|
-                                     + \sqrt{\cs^2{+}\vA^2}\right)$,
-                 $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed,
-                 respectively;
-                 and $D_{\rm max} = \max(\nu,\chi,\eta)$, where
-                 $\nu$ denotes kinematic viscosity,
-                 $\chi = \lambda/(c_p\varrho)$ thermal diffusivity and
-                 $\eta$ the magnetic diffusivity.
-                 \\
   \var{hcond[0-2]}, \var{whcond}
                & heat conductivities, see Sec~\ref{Input-params}; leave
                  these empty unless you want to override the settings from
@@ -1066,7 +1065,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.18 2002-05-31 04:43:55 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.19 2002-06-05 08:52:45 brandenb Exp $ $}
 
 
 \end{document}
