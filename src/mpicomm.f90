@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.67 2002-11-19 20:17:08 ngrs Exp $
+! $Id: mpicomm.f90,v 1.68 2002-11-19 20:53:33 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -63,6 +63,7 @@ module Mpicomm
   integer :: nprocs
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
+  integer :: io_perm=20,io_succ=21
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
@@ -614,6 +615,45 @@ module Mpicomm
       call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
                       MPI_COMM_WORLD, ierr)
     endsubroutine mpireduce_sum
+!***********************************************************************
+    subroutine start_serialize()
+!
+!  Do block between start_serialize and end_serialize serially in iproc
+!  order. root goes first, then sends proc1 permission, waits for succes,
+!  then sends proc2 permisssion, waits for success, etc. 
+!
+!  19-nov-02/wolf: coded
+!
+      integer :: i,buf
+      integer, dimension(MPI_STATUS_SIZE) :: status
+!
+      buf = 0
+      if (.not. lroot) then     ! root starts, others wait for permission
+        call MPI_RECV(buf,1,MPI_INTEGER,root,io_perm,MPI_COMM_WORLD,status,ierr)
+      endif
+!
+    endsubroutine start_serialize
+!***********************************************************************
+    subroutine end_serialize()
+!
+!  do block between start_serialize and end_serialize serially in iproc order
+!  19-nov-02/wolf: coded
+!
+      integer :: i,buf
+      integer, dimension(MPI_STATUS_SIZE) :: status
+!
+      buf = 0
+      if (lroot) then
+        do i=1,ncpus-1            ! send permission, wait for success message
+          call MPI_SEND(buf,1,MPI_INTEGER,i,io_perm,MPI_COMM_WORLD,ierr)
+          call MPI_RECV(buf,1,MPI_INTEGER,i,io_succ,MPI_COMM_WORLD,status,ierr)
+        enddo
+      else                  ! tell root we're done
+        call MPI_SEND(buf,1,MPI_INTEGER,root,io_succ,MPI_COMM_WORLD,ierr)
+      endif
+!
+!call mpibarrier()
+    endsubroutine end_serialize
 !***********************************************************************
     subroutine mpibarrier()
 !

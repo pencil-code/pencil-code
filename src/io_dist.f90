@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.46 2002-11-13 20:43:59 brandenb Exp $
+! $Id: io_dist.f90,v 1.47 2002-11-19 20:53:33 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -80,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.46 2002-11-13 20:43:59 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.47 2002-11-19 20:53:33 dobler Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -119,11 +119,13 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
+      use Mpicomm, only: start_serialize,end_serialize
 !
       character (len=*) :: file
       integer :: nn,mode
       real, dimension (mx,my,mz,nn) :: a
 !
+      if (lserial_io) call start_serialize()
       open(1,file=file,form='unformatted')
       if (ip<=8) print*,'open, mx,my,mz,nn=',mx,my,mz,nn
       read(1) a
@@ -145,6 +147,7 @@ contains
       endif
 !
       close(1)
+      if (lserial_io) call end_serialize()
     endsubroutine input
 !***********************************************************************
     subroutine output_vect(file,a,nn)
@@ -154,16 +157,21 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
+      use Mpicomm, only: start_serialize,end_serialize
 !
       integer :: nn
       real, dimension (mx,my,mz,nn) :: a
       character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
+      !
+      if (lserial_io) call start_serialize()
       open(91,file=file,form='unformatted')
       write(91) a
       write(91) t,x,y,z,dx,dy,dz,deltay
       close(91)
+      if (lserial_io) call end_serialize()
+!
     endsubroutine output_vect
 !***********************************************************************
     subroutine output_scal(file,a,nn)
@@ -173,7 +181,7 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: lroot,stop_it,start_serialize,end_serialize
 !
       integer :: nn
       real, dimension (mx,my,mz) :: a
@@ -181,10 +189,12 @@ contains
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
       if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
+      if (lserial_io) call start_serialize()
       open(91,file=file,form='unformatted')
       write(91) a
       write(91) t,x,y,z,dx,dy,dz,deltay
       close(91)
+      if (lserial_io) call end_serialize()
     endsubroutine output_scal
 !***********************************************************************
     subroutine output_pencil_vect(file,a,ndim)

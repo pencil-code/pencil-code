@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.82 2002-11-19 14:12:22 mee Exp $ 
+! $Id: param_io.f90,v 1.83 2002-11-19 20:53:33 dobler Exp $ 
 
 module Param_IO
 
@@ -36,7 +36,7 @@ module Param_IO
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
-       random_gen
+       random_gen,lserial_io
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
@@ -46,7 +46,7 @@ module Param_IO
        lwrite_zaverages,test_nonblocking, &
        ix,iy,iz,iz2, &
        bcx,bcy,bcz, &
-       ttransient,tavg,idx_tavg
+       ttransient,tavg,idx_tavg,lserial_io
   contains
 
 !***********************************************************************

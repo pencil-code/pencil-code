@@ -238,6 +238,12 @@ module Mpicomm
       fsum=fsum_tmp
     endsubroutine mpireduce_sum
 !***********************************************************************
+    subroutine start_serialize()
+    endsubroutine start_serialize
+!***********************************************************************
+    subroutine end_serialize()
+    endsubroutine end_serialize
+!***********************************************************************
     subroutine mpibarrier()
     endsubroutine mpibarrier
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.111 2002-11-19 14:12:22 mee Exp $
+! $Id: cdata.f90,v 1.112 2002-11-19 20:53:33 dobler Exp $
 
 module Cdata
 
@@ -59,7 +59,7 @@ module Cdata
   logical :: lmpicomm=.false., lforcing=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
-  logical :: lwrite_ic=.false.,lnowrite=.false.
+  logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
   logical :: linterstellar=.false.
