@@ -89,6 +89,9 @@ for i=0,ncpus-1 do begin        ; read data from individual files
     if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
       print,'MHD with entropy'
       readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
+      print,'hydro without entropy, but with magnetic field'
+      readu,1,uu_loc,lnrho_loc,aa_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
       print,'hydro with entropy, but no magnetic field'
       readu,1,uu_loc,lnrho_loc,ss_loc
