@@ -1,4 +1,4 @@
-$Id: README,v 1.1 2002-07-19 00:42:32 brandenb Exp $
+$Id: README,v 1.2 2002-07-19 01:01:27 brandenb Exp $
 
 In manual.tex we try to keep a reasonably up-to-date description of the code.
 For latex installations that don't have some of the less frequent style files,
@@ -6,3 +6,4 @@ we keep a selection in the texinputs/ directory.
 
 In DISCUSSION we find some of the items where possible changes are imminent.
 
+In TESTS you find a selection of test results that have been checked in.

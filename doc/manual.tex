@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.57 2002-07-18 23:49:36 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.58 2002-07-19 01:01:27 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -182,7 +182,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.57 $ $}
+\date{\today,~ $ $Revision: 1.58 $ $}
 
 % ====================================================================== %
 
@@ -211,7 +211,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.57 $ $}
+  \emph{\today,~ $ $Revision: 1.58 $ $}
 
 
 \end{center}
@@ -588,7 +588,7 @@ This is accomplished by the script \file{lnsrc}, which is located in
 \file{\$PENCIL_HOME/bin} and is thus now in your executable path.
 
 For concreteness, let us assume you want to use \file{samples/conv-slab}
-as your \dfn{run dirctory}, i.\,e~you want to run a three-layer slab model
+as your \dfn{run directory}, i.\,e~you want to run a three-layer slab model
 of solar convection.
 You then do the following:
 \begin{alltt}
@@ -2014,6 +2014,13 @@ The special syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
 boundary condition $a$ at the left/lower boundary, but
 $b$ at the right/upper one.
 
+If you build a new run.in file from another one with a different number
+if variables (\var{noentropy} from \var{entropy}, for example), you need
+to remember to adjust the {\it length} of the \var{bcx} to \var{bcz} arrays.
+The advantage of the present approach is that it is very easy to exchange
+all boundary conditions by a new set of boundary conditions in a particular
+direction. (Make everything periodic, for example, or switch off shearing
+sheet boundary conditions and have stress-free instead.
 
 % ---------------------------------------------------------------------- %
 
@@ -2948,7 +2955,7 @@ horizontal sections for time $t=100$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.57 2002-07-18 23:49:36 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.58 2002-07-19 01:01:27 brandenb Exp $ $}
 
 
 \end{document}
