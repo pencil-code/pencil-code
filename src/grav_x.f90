@@ -1,4 +1,4 @@
-! $Id: grav_x.f90,v 1.6 2004-09-18 07:54:29 brandenb Exp $
+! $Id: grav_x.f90,v 1.7 2004-09-20 12:42:21 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -27,7 +27,8 @@ module Gravity
 !  parameters used throughout entire module
 !  xinfty is currently prescribed (=0)
 !
-  real, dimension(nx) :: gravx_pencil,potx_pencil
+  real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
+  real, dimension(nx) :: potx_pencil=0.
   real :: gravx=0.,xinfty=0.,xgrav=0.,dgravx=0., pot_ratio=1.
 
 ! parameters needed for compatibility
@@ -74,7 +75,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_x.f90,v 1.6 2004-09-18 07:54:29 brandenb Exp $")
+           "$Id: grav_x.f90,v 1.7 2004-09-20 12:42:21 ajohan Exp $")
 !
       lgrav =.true.
       lgravx=.true.

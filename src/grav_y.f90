@@ -1,4 +1,4 @@
-! $Id: grav_y.f90,v 1.4 2004-09-16 15:28:58 ajohan Exp $
+! $Id: grav_y.f90,v 1.5 2004-09-20 12:42:21 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -26,7 +26,8 @@ module Gravity
 !
 !  parameters used throughout entire module
 !
-  real, dimension(nx) :: gravy_pencil=0.,poty_pencil=0.
+  real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
+  real, dimension(nx) :: poty_pencil=0.
   real :: gravy=0.,yinfty=0.,ygrav=0.,dgravy=0.,pot_ratio=1.
   real :: kx_gg=1.,ky_gg=1.,kz_gg=1.
 !
@@ -74,7 +75,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_y.f90,v 1.4 2004-09-16 15:28:58 ajohan Exp $")
+           "$Id: grav_y.f90,v 1.5 2004-09-20 12:42:21 ajohan Exp $")
 !
       lgrav =.true.
       lgravy=.true.

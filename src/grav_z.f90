@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.64 2004-09-16 15:28:58 ajohan Exp $
+! $Id: grav_z.f90,v 1.65 2004-09-20 12:42:21 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -30,7 +30,7 @@ module Gravity
 !  For a single polytrope, zinfty (calculated in the
 !  density module) is the height where rho=cs2=0.
 
-  real, dimension(nx) :: gravz_pencil
+  real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
   real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
@@ -104,7 +104,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.64 2004-09-16 15:28:58 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.65 2004-09-20 12:42:21 ajohan Exp $")
 !
       lgrav =.true.
       lgravz=.true.

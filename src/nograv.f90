@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.38 2004-09-20 08:02:32 ajohan Exp $
+! $Id: nograv.f90,v 1.39 2004-09-20 12:42:21 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,6 +25,7 @@ module Gravity
     module procedure potential_point
   endinterface
 
+  real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
   real :: z1,z2,zref,zgrav,gravz,zinfty,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
@@ -62,7 +63,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.38 2004-09-20 08:02:32 ajohan Exp $")
+           "$Id: nograv.f90,v 1.39 2004-09-20 12:42:21 ajohan Exp $")
 !
       lgrav = .false.
       lgravz = .false.
