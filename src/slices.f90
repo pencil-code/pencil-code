@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.17 2003-08-08 08:49:38 dobler Exp $
+! $Id: slices.f90,v 1.18 2003-09-01 07:56:10 nilshau Exp $
 
 !  This module produces slices for animation purposes
 
@@ -9,13 +9,15 @@ module Slices
   implicit none
 
   real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
-  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2,ss_xy,ss_xy2,lncc_xy,lncc_xy2
+  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
+  real, dimension (nx,ny) :: divu_xy,divu_xy2
+  real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
-  real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz
+  real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
-  real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz
+  real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
 
   contains
 
@@ -63,6 +65,8 @@ module Slices
 !
 !  13-nov-02/axel: added more fields, use wslice.
 !
+      use Sub
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       character (len=*) :: path
       integer :: j
@@ -76,6 +80,10 @@ module Slices
           uu_xy(:,:,j)=f(l1:l2,m1:m2,iz,j+iuu-1)
           uu_xy2(:,:,j)=f(l1:l2,m1:m2,iz2,j+iuu-1)
         enddo
+        call wslice(path//'divu.yz',divu_yz,x(ix),ny,nz)
+        call wslice(path//'divu.xz',divu_xz,y(iy),nx,nz)
+        call wslice(path//'divu.xy',divu_xy,z(iz),nx,ny)
+        call wslice(path//'divu.Xy',divu_xy2,z(iz2),nx,ny)
         call wslice(path//'ux.yz',uu_yz(:,:,1),x(ix),ny,nz)
         call wslice(path//'uy.yz',uu_yz(:,:,2),x(ix),ny,nz)
         call wslice(path//'uz.yz',uu_yz(:,:,3),x(ix),ny,nz)

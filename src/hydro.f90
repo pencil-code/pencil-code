@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.101 2003-08-28 14:35:11 mee Exp $
+! $Id: hydro.f90,v 1.102 2003-09-01 07:56:10 nilshau Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -86,7 +86,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.101 2003-08-28 14:35:11 mee Exp $")
+           "$Id: hydro.f90,v 1.102 2003-09-01 07:56:10 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -318,6 +318,7 @@ module Hydro
       use Cdata
       use Sub
       use IO
+      use Slices
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -351,6 +352,16 @@ module Hydro
            print*,'duu_dt: call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
       call gij(f,iuu,uij)
       divu=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
+!
+!  write divu-slices for output in wvid in run.f90
+!  Note: ix is the index with respect to array with ghost zones.
+!
+        if(lvid.and.lfirst) then
+           divu_yz(m-m1+1,n-n1+1)=divu(ix-l1+1)
+           if (m.eq.iy)  divu_xz(:,n-n1+1)=divu
+           if (n.eq.iz)  divu_xy(:,m-m1+1)=divu
+           if (n.eq.iz2) divu_xy2(:,m-m1+1)=divu
+        endif
 !
 !  calculate rate of strain tensor
 !
