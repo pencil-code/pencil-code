@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.44 2002-07-10 15:57:39 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.45 2002-07-11 15:27:13 brandenb Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -183,7 +183,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.44 $ $}
+\date{\today,~ $ $Revision: 1.45 $ $}
 
 % ====================================================================== %
 
@@ -212,7 +212,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.44 $ $}
+  \emph{\today,~ $ $Revision: 1.45 $ $}
 
 
 \end{center}
@@ -1111,7 +1111,8 @@ state; to get more insight, you should have a look at the code.
   \var{initlnrho}
                & initialization of density. Currently valid choices are
                  `zero' ($\ln\varrho=0$),
-                 `hydrostatic-z' (hydrostatic vertical stratification),
+                 `isothermal' (isothermal stratification),
+                 `polytropic\_simple' (polytropic stratification),
                  `hydrostatic-z-2' (hydrostatic vertical stratification
                                     for isentropic atmosphere),
                  `rho-jump' (density jump of width \var{widthlnrho}),
@@ -1123,7 +1124,7 @@ state; to get more insight, you should have a look at the code.
   \var{gamma}  & adiabatic index $\gamma=c_p/c_v$. \\
   \var{cs0,rho0}
                & reference values of sound speed and density,
-                 i.\,e.~values at height \name{zref}. \\
+                 i.\,e.~values at height \var{zref}. \\
   \var{ampllnrho},
   \var{widthlnrho}
                & amplitude and width for some types of initial densities. \\
@@ -1137,10 +1138,20 @@ state; to get more insight, you should have a look at the code.
 \midrule
   \multicolumn{2}{c}{Namelist \name{grav_init_pars}} \\
 \midrule
+  \var{zref}
+               & reference height where in the initial stratification
+                 $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{entropy_init_pars}} \\
 \midrule
+  \var{initss}
+               & initialization of entropy. Currently valid choices are
+                 `nothing' (leaves the initialization done in the density
+                 module unchanged),
+                 `zero' (put $s=0$ explicitly; this may overwrite the
+                 initialization done in the density module),
+                 `isothermal' (isothermal stratification).\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{magnetic_init_pars}} \\
@@ -1853,7 +1864,7 @@ $g_z=-\dd\Phi/\dd z$.
 Use \var{grav_profile='const'} (which is already the default)
 together with \var{gravz}$=-1$ to get
 \begin{equation} \label{constgrav-gravz-init}
-\Phi=(z-z_\infty)|g_z|,\quad g_z=-1.
+\Phi=(z-z_\infty)(-g_z),\quad g_z=-1.
 \end{equation}
 Use \var{grav_profile='linear'} to get
 \begin{equation} \label{disc-gravz-init}
@@ -1913,16 +1924,23 @@ and implies that
 For hydrostatic equilibrium we require $\tilde{h}+\Phi=\tilde{h}_{\rm ext}$.
 For gravity potentials that vanish at infinity, we can have
 $\tilde{h}_{\rm ext}\neq0$, i.e.\ a finite pseudo enthalpy at infinity.
-For $g_z=-1$ or $g_z=-{1\over2}z^2$, this is not the case, so we put
+For $g_z=-1$ or $g_z=-z$, this is not the case, so we put
 $\tilde{h}_{\rm ext}=0$, and therefore $\tilde{h}=-\Phi$.
 Using $c_{\rm s}^2=(\gamma-1)h$ together with (\ref{hhtilde}) we find
 \begin{equation}
 c_{\rm s}^2=-{\gamma\over m+1}\,\Phi.
 \end{equation}
 In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
-$z=z_{\rm ref}$, we have to choose
+$z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
 \begin{equation}\label{zinfty}
-z_\infty=z_{\rm ref}+(m+1)c_{\rm s0}^2/(\gamma g_z).
+z_\infty=z_{\rm ref}+(m+1)c_{\rm s0}^2/(-\gamma g_z)
+\quad\mbox{for \var{grav_profile='const'}},
+\end{equation}
+and
+\begin{equation}\label{zinfty}
+z_\infty^2=z_{\rm ref}^2
++(m+1)c_{\rm s0}^2/({\textstyle{1\over2}}\gamma\Omega^2)
+\quad\mbox{for \var{grav_profile='linear'}}.
 \end{equation}
 
 Thus, when using \var{initlnrho='polytropic\_simple'} we calculate
@@ -1966,7 +1984,7 @@ to approach the Boussinesq case.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.44 2002-07-10 15:57:39 dobler Exp $ $}
+$ $Id: manual.tex,v 1.45 2002-07-11 15:27:13 brandenb Exp $ $}
 
 
 \end{document}
