@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.181 2004-05-27 11:04:48 ajohan Exp $ 
+! $Id: sub.f90,v 1.182 2004-05-27 15:40:01 ajohan Exp $ 
 
 module Sub 
 
@@ -169,27 +169,6 @@ module Sub
       endif
 !
     endsubroutine max_mn_name
-!***********************************************************************
-    subroutine min_mn_name(a,iname,lsqrt,l_dt)
-!
-!  successively calculate minimum of a, which is supplied at each call.
-!  Start from zero if lfirstpoint=.true.
-!
-!  25-may-04/anders: adapted from max_mn_name
-!
-      use Cdata
-!
-      real, dimension (nx) :: a
-      integer :: iname
-      logical, optional :: lsqrt,l_dt
-!
-      if (lfirstpoint) then
-        fname(iname)=minval(a)
-      else
-        fname(iname)=amin1(fname(iname),minval(a))
-      endif
-!
-    endsubroutine min_mn_name
 !***********************************************************************
     subroutine sum_mn_name(a,iname,lsqrt)
 !
