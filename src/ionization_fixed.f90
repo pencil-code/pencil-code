@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.57 2004-04-04 19:52:30 theine Exp $
+! $Id: ionization_fixed.f90,v 1.58 2004-04-05 14:37:40 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -102,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.57 2004-04-04 19:52:30 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.58 2004-04-05 14:37:40 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -222,7 +222,9 @@ module Ionization
         write (1,*) 'lnrho_e_=',lnrho_e_
         write (1,*) 'ss_ion=',ss_ion
         write (1,*) 'ee_ion=',ee_ion
+        write (1,*) 'kappa0=',kappa0
         write (1,*) 'lnchi0=',lnchi0
+        write (1,*) 'Srad0=',Srad0
         write (1,*) 'lnTTss=',lnTTss
         write (1,*) 'lnTTlnrho=',lnTTlnrho
         write (1,*) 'lnTT0=',lnTT0
