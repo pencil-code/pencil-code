@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.136 2004-07-04 03:13:40 theine Exp $
+! $Id: start.f90,v 1.137 2004-07-22 09:52:39 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.136 2004-07-04 03:13:40 theine Exp $")
+             "$Id: start.f90,v 1.137 2004-07-22 09:52:39 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -199,8 +199,8 @@
         call init_rad     (f,xx,yy,zz)
         call init_lncc    (f,xx,yy,zz)
         call init_chiral  (f,xx,yy,zz)
-        call init_uud     (f,xx,yy,zz)
-        call init_nd      (f,xx,yy,zz)
+        call init_uud     (f)
+        call init_nd      (f)
         call init_ecr     (f,xx,yy,zz)
         call init_special (f,xx,yy,zz)
 !

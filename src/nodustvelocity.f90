@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.18 2004-06-12 06:07:37 brandenb Exp $
+! $Id: nodustvelocity.f90,v 1.19 2004-07-22 09:52:39 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.18 2004-06-12 06:07:37 brandenb Exp $")
+           "$Id: nodustvelocity.f90,v 1.19 2004-07-22 09:52:39 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -76,7 +76,7 @@ module Dustvelocity
 !
     endsubroutine copy_bcs_dust
 !***********************************************************************
-    subroutine init_uud(f,xx,yy,zz)
+    subroutine init_uud(f)
 !
 !  initialise uu and lnrho; called from start.f90
 !  Should be located in the Dustvelocity module, if there was one.
@@ -87,9 +87,8 @@ module Dustvelocity
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if (ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if (ip==0) print*,f  !(keep compiler quiet)
     endsubroutine init_uud
 !***********************************************************************
     subroutine duud_dt(f,df,uu,rho1,cs2,uud,divud,ud2,udij)

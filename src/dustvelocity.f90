@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.69 2004-07-08 14:46:35 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.70 2004-07-22 09:52:39 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.69 2004-07-08 14:46:35 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.70 2004-07-22 09:52:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -352,7 +352,7 @@ module Dustvelocity
 !
     endsubroutine copy_bcs_dust
 !***********************************************************************
-    subroutine init_uud(f,xx,yy,zz)
+    subroutine init_uud(f)
 !
 !  initialise uud; called from start.f90
 !
@@ -367,7 +367,6 @@ module Dustvelocity
       use Ionization, only: pressure_gradient
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (nx) :: rho,cs2,rhod,cp1tilde
       integer :: k
 !
@@ -399,26 +398,6 @@ module Dustvelocity
         else
           call stop_it("init_uud: Terminal velocity initial condition with no dust drag is not consistent!")
         endif
-      
-      case('Beltrami-x')
-        do k=1,ndustspec
-          call beltrami(ampluud,f,iuud(k),kx=kx_uud)
-        enddo
-      case('Beltrami-y')
-        do k=1,ndustspec
-          call beltrami(ampluud,f,iuud(k),ky=ky_uud)
-        enddo
-      case('Beltrami-z')
-        do k=1,ndustspec
-          call beltrami(ampluud,f,iuud(k),kz=kz_uud)
-        enddo
-      case('sound-wave')
-        do k=1,ndustspec
-          f(:,:,:,iudx(k)) = ampluud*sin(kx_uud*xx)
-          print*,'init_uud: iudx,ampluud,kx_uud=', &
-              iudx(k), ampluud, kx_uud
-        enddo
-      case default
 !
 !  Catch unknown values
 !
@@ -427,8 +406,6 @@ module Dustvelocity
         call stop_it("")
 
       endselect
-!
-      if (ip==0) print*,yy,zz ! keep compiler quiet
 !
     endsubroutine init_uud
 !***********************************************************************

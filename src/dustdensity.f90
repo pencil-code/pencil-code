@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.113 2004-07-08 13:12:43 ajohan Exp $
+! $Id: dustdensity.f90,v 1.114 2004-07-22 09:52:39 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -117,7 +117,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.113 2004-07-08 13:12:43 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.114 2004-07-22 09:52:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -204,7 +204,7 @@ module Dustdensity
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
-    subroutine init_nd(f,xx,yy,zz)
+    subroutine init_nd(f)
 !
 !  initialise nd; called from start.f90
 !
@@ -219,7 +219,6 @@ module Dustdensity
       use Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: mdpeak,rhodmt=0.
       integer :: i,j,k,l
 !
@@ -326,8 +325,6 @@ module Dustdensity
           STOP "init_nd: Imaginary ice density values"
         endif
       enddo
-!
-      if(ip==0) print*,xx,yy,zz ! keep compiler quiet
 !
     endsubroutine init_nd
 !***********************************************************************
