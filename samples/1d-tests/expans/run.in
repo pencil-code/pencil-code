@@ -2,13 +2,13 @@
 !  sample file for 1-D sound wave
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2002-10-09 17:41:32 brandenb Exp $'
+  cvsid='$Id: run.in,v 1.2 2002-12-05 12:42:44 brandenb Exp $'
   nt=5000, it1=10, cdt=0.1, cdtv=0.20, isave=50, itorder=3,
   dsnap=20., dvid=1., tmax=80.
   bcx = 's','s','s','s','s'
 /
 &hydro_run_pars
-  nu=0.03
+  nu=0.05
 /
 &density_run_pars
   cdiffrho=0.,  !(mass diffusion not currently used)

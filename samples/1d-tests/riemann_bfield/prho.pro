@@ -1,4 +1,4 @@
-; $Id: prho.pro,v 1.1 2002-10-11 07:13:53 brandenb Exp $
+; $Id: prho.pro,v 1.2 2002-12-05 12:43:21 brandenb Exp $
 ;
 ;  expansion shock, to be compared with Fig 1 of S.A.E.G. Falle (2002)
 ;  ApJL 577, L123-L126 "Rarefaction shocks, shock errors, and low
@@ -8,7 +8,7 @@
 !p.charsize=1.5
 !p.title='t=30'
 !x.title='x'
-!y.title='u'
+!y.title='!7q!6'
 circ_sym,.4,0
 ;
 ;  in Falle's paper shock was initially at x=?

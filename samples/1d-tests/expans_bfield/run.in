@@ -2,20 +2,21 @@
 !  sample file for 1-D sound wave
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2002-10-09 18:09:56 brandenb Exp $'
-  nt=5000, it1=10, cdt=0.1, cdtv=0.20, isave=50, itorder=3,
+  cvsid='$Id: run.in,v 1.3 2002-12-05 12:43:13 brandenb Exp $'
+  nt=5000, it1=10, cdt=0.4, cdtv=0.20, isave=50, itorder=3,
   dsnap=20., dvid=1., tmax=100.
   bcx = 's','s','s','s','s','s','a2','a2'
+  bcx = 's','s','s','s','s','a2','a2','a2'
 /
 &hydro_run_pars
-  nu=0.03
+  nu=0.07
 /
 &density_run_pars
   cdiffrho=0.,  !(mass diffusion not currently used)
 /
 &entropy_run_pars
-  lcalc_heatcond_constchi=T,chi=2e-4
+  lcalc_heatcond_constchi=T,chi=0.07
 /
 &magnetic_run_pars
-  eta=2e-3, B_ext=-.7,0.,0.
+  eta=0.07, B_ext=-.7,0.,0.
 /
