@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.19 2002-10-30 05:44:38 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.20 2002-10-30 18:21:16 dobler Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -22,6 +22,8 @@ module  power_spectrum
 !***********************************************************************
     subroutine power(f,sp)
 !
+!  Calculate power spectra (on shperical shells) of the variable
+!  specified by `sp'.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
@@ -39,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.19 2002-10-30 05:44:38 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.20 2002-10-30 18:21:16 dobler Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -126,6 +128,9 @@ module  power_spectrum
 !***********************************************************************
   subroutine powerhel(f,sp)
 !
+!  Calculate power and helicity spectra (on shperical shells) of the
+!  variable specified by `sp', i.e. either the spectra of uu and kinetic
+!  helicity, or those of bb and magnetic helicity..
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
@@ -144,7 +149,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.19 2002-10-30 05:44:38 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.20 2002-10-30 18:21:16 dobler Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -159,8 +164,8 @@ module  power_spectrum
   !
   !  initialize power spectrum to zero
   !
-  spectrum=0
-  spectrumhel=0
+  spectrum=0.
+  spectrumhel=0.
   !
   !  loop over all the components
   !
