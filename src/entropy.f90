@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.68 2002-06-19 21:23:23 brandenb Exp $
+! $Id: entropy.f90,v 1.69 2002-06-20 10:30:49 dobler Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.68 $", &
-           "$Date: 2002-06-19 21:23:23 $")
+           "$Revision: 1.69 $", &
+           "$Date: 2002-06-20 10:30:49 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,6 +92,9 @@ module Entropy
       if (lgravz) then
 
         select case(initss)
+
+        case(0)
+          f(:,:,:,ient) = 0.
 
         case(1)
           !
@@ -174,7 +177,11 @@ module Entropy
           f(:,:,:,ient) = f(:,:,:,ient) + ss0
 
         case default
-          f(:,:,:,ient) = 0.
+          !
+          !  Catch unknown values
+          !
+          if (lroot) print*,'There is no such value for initss:', initss
+          call stop_it("")
 
         endselect
 

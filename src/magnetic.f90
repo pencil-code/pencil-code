@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.51 2002-06-20 09:47:19 dobler Exp $
+! $Id: magnetic.f90,v 1.52 2002-06-20 10:30:49 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -79,8 +79,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.51 $", &
-           "$Date: 2002-06-20 09:47:19 $")
+           "$Revision: 1.52 $", &
+           "$Date: 2002-06-20 10:30:49 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -112,100 +112,113 @@ module Magnetic
       real    :: fring,Iring,R0,width
       integer :: i
 !
-!  Gaussian noise
-!
-      if (initaa==0) then
+      select case(initaa)
+
+      case(0)
+        !
+        !  Gaussian noise
+        !
         call gaunoise(amplaa,f,iax,iaz)
-!
-!  Beltrami field
-!
-      elseif (initaa==1) then
+
+      case(1)
+        !
+        !  Beltrami field
+        !
         call beltrami(amplaa,f,iaa)
-!
-!  Beltrami field
-!
-      elseif (initaa==11) then
+
+      case(11)
+        !
+        !  One more Beltrami field
+        !
         call beltrami_x(amplaa,f,iaa)
-!
-!  Beltrami field
-!
-      elseif (initaa==12) then
+
+      case(12)
+        !
+        !  Yet another Beltrami field
+        !
         call beltrami_y(amplaa,f,iaa)
-!
-!  Horizontal flux tube
-!
-      elseif (initaa==2) then
+
+      case(2)
+        !
+        !  Horizontal flux tube
+        !
         call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
-!
-!  Horizontal flux layer
-!
-      elseif (initaa==22) then
+
+      case(22)
+        !
+        !  Horizontal flux layer
+        !
         call hlayer(amplaa,f,iaa,xx,yy,zz,widthaa)
-!
-!  Horizontal flux layer
-!
-      elseif (initaa==23) then
+
+      case(23)
+        !
+        !  Horizontal flux layer
+        !
         call uniform_x(amplaa,f,iaa,xx,yy,zz)
-!
-!  Vertical field, Bz=coskx
-!
-      elseif (initaa==3) then
+
+      case(3)
+        !
+        !  Vertical field, Bz=coskx
+        !
         call vfield(amplaa,f,iaa,xx)
-!
-!  Magnetic flux rings. Constructed from a canonical ring which is the
-!  rotated and translated:
-!    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
-!  where AA0(xxx) is the canonical ring and D the rotation matrix
-!  corresponding to a rotation by phi around z, followed by a rotation by
-!  theta around y.
-!  The array was already initialized to zero before calling this routine.
-!
-      elseif (initaa==12) then
-      if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
-        ! fringX is the magnetic flux, IringX the current
-        if (lroot) then
-          print*, 'Initialising magnetic flux rings'
-        endif
-        do i=1,2
-          if (i==1) then
-            fring = fring1      ! magnetic flux along ring
-            Iring = Iring1      ! current along ring (for twisted flux tube)
-            R0    = Rring1      ! radius of ring
-            width = wr1         ! ring thickness
-            axis  = axisr1 ! orientation
-            disp  = dispr1    ! position
-          else
-            fring = fring2
-            Iring = Iring2
-            R0    = Rring2
-            width = wr2
-            axis  = axisr2
-            disp  = dispr2
+
+      case(12)
+        !
+        !  Magnetic flux rings. Constructed from a canonical ring which is the
+        !  rotated and translated:
+        !    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
+        !  where AA0(xxx) is the canonical ring and D the rotation matrix
+        !  corresponding to a rotation by phi around z, followed by a
+        !  rotation by theta around y.
+        !  The array was already initialized to zero before calling this
+        !  routine.
+        !
+        if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
+          ! fringX is the magnetic flux, IringX the current
+          if (lroot) then
+            print*, 'Initialising magnetic flux rings'
           endif
-          phi   = atan2(axis(2),axis(1)+epsi)
-          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
-          ct = cos(theta); st = sin(theta)
-          cp = cos(phi)  ; sp = sin(phi)
-          ! Calculate D^(-1)*(xxx-disp)
-          xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
-          yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
-          zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
-          call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
-          ! calculate D*tmpv
-          f(:,:,:,iax) = f(:,:,:,iax) + amplaa*( &
-               + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
-          f(:,:,:,iay) = f(:,:,:,iay) + amplaa*( &
-               + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
-          f(:,:,:,iaz) = f(:,:,:,iaz) + amplaa*( &
-               - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
-        enddo
-      endif
-      if (lroot) print*, 'Magnetic flux rings initialized'
-!
-!  some other (crazy) initial condition
-!  (was useful to initialize all points with finite values)
-!
-      elseif (initaa==3) then
+          do i=1,2
+            if (i==1) then
+              fring = fring1      ! magnetic flux along ring
+              Iring = Iring1      ! current along ring (for twisted flux tube)
+              R0    = Rring1      ! radius of ring
+              width = wr1         ! ring thickness
+              axis  = axisr1 ! orientation
+              disp  = dispr1    ! position
+            else
+              fring = fring2
+              Iring = Iring2
+              R0    = Rring2
+              width = wr2
+              axis  = axisr2
+              disp  = dispr2
+            endif
+            phi   = atan2(axis(2),axis(1)+epsi)
+            theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
+            ct = cos(theta); st = sin(theta)
+            cp = cos(phi)  ; sp = sin(phi)
+            ! Calculate D^(-1)*(xxx-disp)
+            xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
+            yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
+            zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
+            call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
+            ! calculate D*tmpv
+            f(:,:,:,iax) = f(:,:,:,iax) + amplaa*( &
+                 + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
+            f(:,:,:,iay) = f(:,:,:,iay) + amplaa*( &
+                 + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
+            f(:,:,:,iaz) = f(:,:,:,iaz) + amplaa*( &
+                 - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
+          enddo
+        endif
+        if (lroot) print*, 'Magnetic flux rings initialized'
+
+      case(3)
+        !
+        !  some other (crazy) initial condition
+        !  (was useful to initialize all points with finite values)
+        !
         f(:,:,:,iax) = spread(spread(sin(2*x),2,my),3,mz)*&
                        spread(spread(sin(3*y),1,mx),3,mz)*&
                        spread(spread(cos(1*z),1,mx),2,my)
@@ -215,8 +228,16 @@ module Magnetic
         f(:,:,:,iaz) = spread(spread(sin(3*x),2,my),3,mz)*&
                        spread(spread(sin(4*y),1,mx),3,mz)*&
                        spread(spread(cos(2*z),1,mx),2,my)
-        if (lroot) print*, 'sinusoidal magnetic field: for debug purposes'
-      endif
+        if (lroot) print*, 'sinusoidal magnetic field: for debugging purposes'
+
+      case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*, 'There is no such such value for initaa:', initaa
+        call stop_it("")
+
+      endselect
 !
 !  allow for pressure equilibrium (for isothermal tube)
 !  assume that ghost zones have already been set.
