@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.45 2004-04-07 13:03:29 ajohan Exp $
+### $Id: Makefile.src,v 1.46 2004-04-08 19:38:12 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -112,7 +112,7 @@ FCCLEANER=
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 ##FC=ifc_6.0 -i_dynamic #(nw46|nq1)
-#FC=ifort #(nw*|hamlet|ns0|lynx)
+#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)
@@ -141,7 +141,7 @@ FCCLEANER=
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS=-O3 #(nw*|nl6|nl11|wormhole|sandin|lynx)
+#FFLAGS=-O3 #(nw[0-9]*|nl6|nl11|wormhole|sandin|lynx)
 #FFLAGS=-fast -xNW -tpp7 -vec_report0 #(cosmo)
 #FFLAGS=-O3 #(barilko)
 #FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole)
@@ -164,7 +164,7 @@ FCCLEANER=
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
-#F77FLAGS=-w90 #(nw*|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
+#F77FLAGS=-w90 #(nw[0-9]*|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
 
@@ -241,6 +241,8 @@ start_deps_f90=$(comm_deps) $(DEBUG).o
 start_deps=$(start_deps_f90)
 run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
+validate_deps=$(comm_deps) $(DEBUG).o 
+validate=validate.o $(validate_deps)
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 read_videofiles_deps=cparam.o cdata.o general.o
@@ -273,7 +275,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
 code:
-	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x $(FCCLEANER)
+	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x validate.x $(FCCLEANER)
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
@@ -281,11 +283,15 @@ start.x: $(start) Makefile.local
 run.x: $(run) Makefile.local
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
+validate.x: $(validate) Makefile.local
+	$(LD) $(LDFLAGS) $(validate) $(LDMPI) $(LIBSIG) -o validate.x 
+
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+	$(LD) $(LDFLAGS) $(validate) $(LDMPI) $(LIBSIG) -o validate.x 
 #shorthand for this
 l:
 	$(MAKE) linkonly
@@ -350,6 +356,7 @@ read_vectorfiles.x: $(read_vectorfiles)
 ## ---------------------------------------------------------------------- #
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
+validate.o:  validate.f90 $(validate_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #
