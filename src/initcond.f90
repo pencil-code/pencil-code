@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.50 2003-06-16 04:41:10 brandenb Exp $ 
+! $Id: initcond.f90,v 1.51 2003-06-17 16:57:14 torkel Exp $ 
 
 module Initcond 
  
@@ -987,7 +987,7 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,ky,kz
 !
-      if (lroot) print*, 'uu: trilinear in ', ivar
+      if (lroot) print*, 'sinusoidal modulation of uu: ', ivar
 !
       ky=2*pi/Ly
       kz=2.*pi/Lz

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.91 2003-06-16 09:19:22 nilshau Exp $
+! $Id: hydro.f90,v 1.92 2003-06-17 16:57:14 torkel Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -43,6 +43,7 @@ module Hydro
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
+  integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
@@ -84,7 +85,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.91 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: hydro.f90,v 1.92 2003-06-17 16:57:14 torkel Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -305,6 +306,7 @@ module Hydro
 !   7-jun-02/axel: incoporated from subroutine pde
 !  10-jun-02/axel+mattias: added Coriolis force
 !  23-jun-02/axel: glnrho and fvisc are now calculated in here
+!  17-jun-03/ulf:  ux2, uy2 and uz2 added as diagnostic quantities
 !
       use Cdata
       use Sub
@@ -315,6 +317,7 @@ module Hydro
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,ugu,oo,glnrho
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2
+      real, dimension (nx) :: ux2, uy2, uz2 ! ux^2, uy^2, uz^2
       real :: c2,s2
       integer :: i,j
 !
@@ -412,6 +415,18 @@ module Hydro
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
         if (i_divu2m/=0) call sum_mn_name(divu**2,i_divu2m)
+        if (i_ux2m/=0) then
+           ux2 = uu(:,1)*uu(:,1)
+           call sum_mn_name(ux2,i_ux2m)
+        endif
+        if (i_uy2m/=0) then
+           uy2 = uu(:,2)*uu(:,2)
+           call sum_mn_name(uy2,i_uy2m)
+        endif
+        if (i_uz2m/=0) then
+           uz2 = uu(:,3)*uu(:,3)
+           call sum_mn_name(uz2,i_uz2m)
+        endif
 !
 !  mean heating term
 !
@@ -614,6 +629,7 @@ module Hydro
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0
+        i_ux2m=0; i_uy2m=0; i_uz2m=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
         i_divu2m=0; i_epsK=0
@@ -629,6 +645,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
         call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
+        call parse_name(iname,cname(iname),cform(iname),'ux2m',i_ux2m)
+        call parse_name(iname,cname(iname),cform(iname),'uy2m',i_uy2m)
+        call parse_name(iname,cname(iname),cform(iname),'uz2m',i_uz2m)
         call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
         call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
         call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
@@ -667,6 +686,9 @@ module Hydro
       write(3,*) 'i_oum=',i_oum
       write(3,*) 'i_urms=',i_urms
       write(3,*) 'i_umax=',i_umax
+      write(3,*) 'i_ux2m=',i_ux2m
+      write(3,*) 'i_uy2m=',i_uy2m
+      write(3,*) 'i_uz2m=',i_uz2m
       write(3,*) 'i_orms=',i_orms
       write(3,*) 'i_omax=',i_omax
       write(3,*) 'i_ruxm=',i_ruxm

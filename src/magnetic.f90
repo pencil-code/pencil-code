@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.112 2003-06-16 09:19:22 nilshau Exp $
+! $Id: magnetic.f90,v 1.113 2003-06-17 16:57:14 torkel Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -34,7 +34,7 @@ module Magnetic
        kx_aa2,ky_aa2,kz_aa2, lpress_equil
 
   ! run parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./)
+  real, dimension(3) :: B_ext=(/0.,1.e-4,0./)
   real :: eta=0.,height_eta=0.,eta_out=0.
   real :: tau_aa_exterior=0.
 
@@ -46,6 +46,7 @@ module Magnetic
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
+  integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_uxDxuxbm=0
@@ -85,7 +86,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.112 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.113 2003-06-17 16:57:14 torkel Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -215,6 +216,7 @@ module Magnetic
 !
 !  22-nov-01/nils: coded
 !   1-may-02/wolf: adapted for pencil_modular
+!  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
 !
       use Cdata
       use Sub
@@ -228,6 +230,7 @@ module Magnetic
       real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
+      real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1
       integer :: j
 !
@@ -255,6 +258,18 @@ module Magnetic
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
         if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
+        if (i_bx2m/=0) then
+           bx2 = bb(:,1)*bb(:,1)
+           call sum_mn_name(bx2,i_bx2m)
+        endif
+        if (i_by2m/=0) then
+           by2 = bb(:,2)*bb(:,2)
+           call sum_mn_name(by2,i_by2m)
+        endif
+        if (i_bz2m/=0) then
+           bz2 = bb(:,3)*bb(:,3)
+           call sum_mn_name(bz2,i_bz2m)
+        endif
 !
 !  this doesn't need to be as frequent (check later)
 !
@@ -469,6 +484,7 @@ module Magnetic
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_epsM=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
+        i_bx2m=0; i_by2m=0; i_bz2m=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_uxDxuxbm=0.
@@ -491,6 +507,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
         call parse_name(iname,cname(iname),cform(iname),'vArms',i_vArms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',i_vAmax)
+        call parse_name(iname,cname(iname),cform(iname),'bx2m',i_bx2m)
+        call parse_name(iname,cname(iname),cform(iname),'by2m',i_by2m)
+        call parse_name(iname,cname(iname),cform(iname),'bz2m',i_bz2m)
         call parse_name(iname,cname(iname),cform(iname),'uxbm',i_uxbm)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
@@ -537,6 +556,9 @@ module Magnetic
       write(3,*) 'i_jmax=',i_jmax
       write(3,*) 'i_vArms=',i_vArms
       write(3,*) 'i_vAmax=',i_vAmax
+      write(3,*) 'i_bx2m=',i_bx2m
+      write(3,*) 'i_by2m=',i_by2m
+      write(3,*) 'i_bz2m=',i_bz2m
       write(3,*) 'i_uxbm=',i_uxbm
       write(3,*) 'i_oxuxbm=',i_oxuxbm
       write(3,*) 'i_jxbxbm=',i_jxbxbm
