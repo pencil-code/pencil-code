@@ -1,0 +1,22 @@
+#!/bin/csh
+
+# Name:   cvs-add-rundir
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   22-Jul-2002
+# Description:
+#   Add the current run directory to the CVS repository. Assumes that the
+#   directory above (`..') is already under CVS.
+# Usage:
+#   [create new run directory; lnsrc; mkinpars; tune parameters]
+#   newrundir>  cvs-add-rundir
+
+set rundir = `pwd`
+
+(cd ..; cvs add $rundir:t)
+cvs add *.in
+cvs add src
+cvs add src/*.local
+
+exit:
+
+# End of file cvs-add-rundir
