@@ -37,9 +37,10 @@ module Cdata
 !
   integer :: nname
   integer :: ilabel_max=-1,ilabel_sum=1
-  integer, parameter :: mname=100
+  integer, parameter :: mname=100,mname_extra=2
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
+  character (LEN=30) :: cname(mname),cform(mname),cform_extra(mname_extra)
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
@@ -51,6 +52,5 @@ module Cdata
   character (LEN=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (LEN=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
   character (LEN=12) :: directory
-  character (LEN=30) :: cname(mname),cform(mname)
 
 endmodule Cdata

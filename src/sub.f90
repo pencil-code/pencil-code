@@ -871,6 +871,8 @@ module Sub
 !
 !  Read startup parameters
 !  21-jan-02/wolf: coded
+!  ?Is there a good reason to have this routine in sub.f90?
+!  ?How about register.f90, for example?
 !
       use Cdata
 !     use Mpicomm
@@ -1404,7 +1406,7 @@ module Sub
         cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='1pe10.2'
+        cform='1p,e10.2'  !!(the nag-f95 compiler requires a comma after 1p)
         length=iform0-1
       endif
 !

@@ -1,6 +1,6 @@
 urms(f10.5)
-umax
-brms
-bmax
+umax(f10.5)
+brms(f10.5)
+bmax(f10.5)
 jrms(f10.5)
-jmax
+jmax(f10.5)
