@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.152 2003-11-25 09:23:25 nilshau Exp $
+! $Id: magnetic.f90,v 1.153 2003-11-25 12:54:45 mcmillan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -33,8 +33,11 @@ module Magnetic
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
+  real :: eta_int=0.,eta_ext=0.,wres=.01
   integer :: nbvec,nbvecmax=nx*ny*nz/4
   logical :: lpress_equil=.false.
+  ! dgm: for hyper diffusion in any spatial variation of eta
+  logical :: lres_hyper=.false.,leta_const=.true.
   character (len=40) :: kinflow=''
   real :: alpha_effect
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
@@ -44,7 +47,7 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       kx_aa2,ky_aa2,kz_aa2, lpress_equil
+       kx_aa2,ky_aa2,kz_aa2,lpress_equil
 
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
@@ -55,7 +58,8 @@ module Magnetic
        eta,B_ext,alpha_effect, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       bthresh,bthresh_per_brms,iresistivity
+       bthresh,bthresh_per_brms,iresistivity,lres_hyper, &
+       eta_int,eta_ext,wres
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -104,7 +108,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.152 2003-11-25 09:23:25 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.153 2003-11-25 12:54:45 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -249,7 +253,7 @@ module Magnetic
       use Slices
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
-      use Mpicomm, only: stop_it
+!      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -262,6 +266,8 @@ module Magnetic
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
+      real, dimension (nx) :: eta_mn,divA            ! dgm: 
+      real, dimension (nx,3) :: geta,eta_mn3,divA3   ! for eta_spatial
       real :: tmp,eta_out1,B_ext21=1.
       integer :: j
 !
@@ -408,17 +414,35 @@ module Magnetic
       call cross_mn(uu,bb,uxB)
 !
 !  calculate restive term
-!  (either normal resisitivity or sixth order hyper resistivity)
 !
-      if (iresistivity .eq. 'eta-const') then
-        fres=eta*del2A
-      elseif (iresistivity .eq. 'hyper6') then
+! dgm: 
+! 
+      call eta_spatial(f,eta_mn,geta,divA)
+!
+      if (lres_hyper) then
         call del6v(f,iaa,del6A)
-        fres=eta*del6A
-      else
-        if (lroot) print*,'daa_dt: no such iresistivity:',iresistivity
-        call stop_it("")
+        del2A=del6A
       endif
+!
+      if (leta_const) then
+        fres=eta*del2A
+      else
+        eta_mn3=spread(eta_mn,2,3)
+        divA3=spread(divA,2,3)
+        fres=eta_mn3*del2A + geta*divA3
+      endif
+!
+! dgm: old section (without eta_spatial)
+!        
+!       if (ires .eq. 'eta-const') then
+!         fres=eta*del2A
+!       elseif (ires .eq. 'hyper6') then
+!         call del6v(f,iaa,del6A)
+!         fres=eta*del6A
+!       else
+!         if (lroot) print*,'daa_dt: no such ires:',ires
+!         call stop_it("")
+!       endif
 !
 !  add to dA/dt
 !
@@ -600,6 +624,74 @@ module Magnetic
       endif
 !     
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine eta_spatial(f,eta_mn,geta,divA)
+!
+!   24-nov-03/dave: coded 
+!
+      use Cdata
+      use Sub, only: div
+      use MPIcomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: eta_mn,divA
+      real, dimension (nx,3) :: geta
+!
+!   initialize gradient eta and divergence A
+!
+      eta_mn=0.
+      geta=0.
+      divA=0.
+!
+      if (iresistivity .eq. 'eta-const') then
+        leta_const=.true.
+      else if (iresistivity .eq. 'hyper6') then
+        leta_const=.true.
+        lres_hyper=.true.
+      else if (iresistivity .eq. 'shell') then
+        leta_const=.false.
+        call eta_shell(eta_mn,geta)
+        call div(f,iaa,divA)
+      else
+        if (lroot) print*,'daa_dt: no such ires:',iresistivity
+        call stop_it("")
+      endif
+!
+    endsubroutine eta_spatial
+!***********************************************************************
+    subroutine eta_shell(eta_mn,geta)
+!
+!   24-nov-03/dave: coded 
+!
+      use Cdata
+      use Sub, only: step, der_step
+!
+      real, dimension (nx) :: eta_mn
+      real, dimension (nx) :: prof,eta_r
+      real, dimension (nx,3) :: geta
+      real :: d_int=0.,d_ext=0.
+!
+      eta_r=0.
+!
+      if (eta_int > 0.) d_int=eta_int-eta
+      if (eta_ext > 0.) d_ext=eta_ext-eta
+!
+!     calculate steps in resistivity
+!
+      prof=step(r_mn,r_int,wres)
+      eta_mn=d_int*(1-prof)
+      prof=step(r_mn,r_ext,wres)
+      eta_mn=eta_mn+d_ext*prof
+!
+!     calculate radial derivative of steps and gradient of eta
+!
+      prof=der_step(r_mn,r_int,wres)
+      eta_r=-d_int*prof
+      prof=der_step(r_mn,r_ext,wres)
+      eta_r=eta_r+d_ext*prof
+      geta=evr*spread(eta_r,2,3)
+!
+    endsubroutine eta_shell
 !***********************************************************************
     subroutine calc_bthresh()
 !
