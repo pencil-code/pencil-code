@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.21 2003-11-06 20:19:18 nilshau Exp $
+! $Id: nohydro.f90,v 1.22 2004-01-30 14:26:50 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.21 2003-11-06 20:19:18 nilshau Exp $")
+           "$Id: nohydro.f90,v 1.22 2004-01-30 14:26:50 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -120,7 +120,7 @@ module Hydro
 !
       if (lfirst.and.ldt) then
         call dot2_mn(uu,u2)
-        maxadvec2=amax1(maxadvec2,u2)
+        maxadvec2=max_for_dt(maxadvec2,u2)
       endif
 !
 !  Calculate maxima and rms values for diagnostic purposes

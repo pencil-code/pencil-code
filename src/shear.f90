@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.13 2004-01-28 13:33:47 ajohan Exp $
+! $Id: shear.f90,v 1.14 2004-01-30 14:26:50 dobler Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.13 2004-01-28 13:33:47 ajohan Exp $")
+           "$Id: shear.f90,v 1.14 2004-01-30 14:26:50 dobler Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -132,7 +132,7 @@ module Shear
 !
 !  take shear into account for calculating time step
 !
-      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,uy0**2)
+      if (lfirst.and.ldt) maxadvec2=max_for_dt(maxadvec2,uy0**2)
 !
     end subroutine shearing
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.146 2004-01-18 20:30:05 brandenb Exp $
+! $Id: hydro.f90,v 1.147 2004-01-30 14:26:50 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -107,7 +107,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.146 2004-01-18 20:30:05 brandenb Exp $")
+           "$Id: hydro.f90,v 1.147 2004-01-30 14:26:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -468,7 +468,7 @@ module Hydro
 !  maximum squared avection speed
 !
       if (headtt.or.ldebug) print*,'duu_dt: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
-      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2)
+      if (lfirst.and.ldt) maxadvec2=max_for_dt(maxadvec2,u2)
 !
 !  damp motions in some regions for some time spans if desired
 !

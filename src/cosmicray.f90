@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.21 2003-12-05 04:01:05 snod Exp $
+! $Id: cosmicray.f90,v 1.22 2004-01-30 14:26:50 dobler Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -84,7 +84,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.21 2003-12-05 04:01:05 snod Exp $")
+           "$Id: cosmicray.f90,v 1.22 2004-01-30 14:26:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -245,9 +245,9 @@ module CosmicRay
 !
       if (lfirst.and.ldt) then
         if(lvariable_tensor_diff)then
-           maxdiffus=amax1(maxdiffus,cosmicray_diff,maxval(vKperp),maxval(vKpara))
+           maxdiffus=max_for_dt(maxdiffus,cosmicray_diff,maxval(vKperp),maxval(vKpara))
         else
-           maxdiffus=amax1(maxdiffus,cosmicray_diff,Kperp,Kpara)   
+           maxdiffus=max_for_dt(maxdiffus,cosmicray_diff,Kperp,Kpara)   
         endif
       endif
 !

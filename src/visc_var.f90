@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.21 2003-12-10 14:47:20 nilshau Exp $
+! $Id: visc_var.f90,v 1.22 2004-01-30 14:26:50 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.21 2003-12-10 14:47:20 nilshau Exp $")
+           "$Id: visc_var.f90,v 1.22 2004-01-30 14:26:50 dobler Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -204,7 +204,7 @@ module Viscosity
           if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)
             fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-            maxdiffus=amax1(maxdiffus,nu)
+            maxdiffus=max_for_dt(maxdiffus,nu)
           else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"
@@ -243,7 +243,7 @@ module Viscosity
           if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)
             fvisc=2.*nu_var*sglnrho+nu_var*(del2u+1./3.*graddivu)
-            maxdiffus=amax1(maxdiffus,nu_var)
+            maxdiffus=max_for_dt(maxdiffus,nu_var)
           else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc=",ivisc

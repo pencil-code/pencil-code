@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.11 2003-10-24 13:17:31 dobler Exp $
+! $Id: temperature.f90,v 1.12 2004-01-30 14:26:50 dobler Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -88,7 +88,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.11 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: temperature.f90,v 1.12 2004-01-30 14:26:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -271,7 +271,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !
       lnTT=f(l1:l2,m,n,ilnTT)
       cs2=gamma1*exp(lnTT)
-      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
+      if (lfirst.and.ldt) maxadvec2=max_for_dt(maxadvec2,cs2)
       if (ip<8.and.lroot.and.imn==1) print*,'maxadvec2,cs2=',maxadvec2,cs2
       if (headtt) print*,'entropy: cs20=',cs20
 !
@@ -361,7 +361,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+      if (lfirst.and.ldt) maxdiffus=max_for_dt(maxdiffus,(gamma*chi+chi_t))
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
@@ -411,7 +411,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chix+chi_t))
+      if (lfirst.and.ldt) maxdiffus=max_for_dt(maxdiffus,(gamma*chix+chi_t))
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
@@ -533,7 +533,7 @@ endif
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chix+chi_t))
+      if (lfirst.and.ldt) maxdiffus=max_for_dt(maxdiffus,(gamma*chix+chi_t))
 !--   if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond

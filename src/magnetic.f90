@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.171 2004-01-21 16:13:58 brandenb Exp $
+! $Id: magnetic.f90,v 1.172 2004-01-30 14:26:50 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -113,7 +113,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.171 2004-01-21 16:13:58 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.172 2004-01-30 14:26:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -499,8 +499,8 @@ module Magnetic
 !  and maximum diffusion.
 !
         if (lfirst.and.ldt) then
-          maxadvec2=amax1(maxadvec2,va2)
-          maxdiffus=amax1(maxdiffus,etatotal_max)
+          maxadvec2=max_for_dt(maxadvec2,va2)
+          maxdiffus=max_for_dt(maxdiffus,etatotal_max)
           !  diagnose
           if (ldiagnos.and.i_dteta/=0) then
             call max_mn_name(spread(etatotal_max,1,nx)/dxmin**2/cdtvDim,i_dteta,l_dt=.true.)

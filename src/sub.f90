@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.154 2004-01-24 17:21:01 dobler Exp $ 
+! $Id: sub.f90,v 1.155 2004-01-30 14:26:50 dobler Exp $ 
 
 module Sub 
 
@@ -26,6 +26,11 @@ module Sub
   interface cvs_id              ! Overload the cvs_id function
     module procedure cvs_id_1
     module procedure cvs_id_3
+  endinterface
+
+  interface max_for_dt
+    module procedure max_for_dt_n_n
+    module procedure max_for_dt_n_1
   endinterface
 
   contains
@@ -2793,6 +2798,43 @@ module Sub
       endif
 !
     endsubroutine blob
+!***********************************************************************
+    function max_for_dt_n_n(oldmax,f)
+!
+!  Normally the same as amax1, unless we have chosen to manipulate data
+!  before taking the maximum value. Designed for calculation of time step,
+!  where one may want to exclude certain regions, etc.
+!
+!  Currently coded as an (assumed-size) array-valued function as a plug-in
+!  replacement for amax1; if this should decrease performance, we will
+!  need to rewrite it as a subroutine. 
+!
+!  30-jan-04/wolf: coded
+!
+      use Cdata
+!
+      real, dimension(:) :: oldmax,f
+      real, dimension(size(oldmax)) :: max_for_dt_n_n
+
+      max_for_dt_n_n = amax1(oldmax,f)
+
+    endfunction max_for_dt_n_n
+!***********************************************************************
+    function max_for_dt_n_1(oldmax,f)
+!
+!  Like max_for_dt_n_n, but with a different signature of argument shapes.
+!
+!  30-jan-04/wolf: coded
+!
+      use Cdata
+!
+      real, dimension(:) :: oldmax
+      real, dimension(size(oldmax)) :: max_for_dt_n_1
+      real               :: f
+
+      max_for_dt_n_1 = amax1(oldmax,f)
+
+    endfunction max_for_dt_n_1
 !***********************************************************************
 
 

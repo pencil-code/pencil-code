@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.260 2004-01-14 17:47:39 mcmillan Exp $
+! $Id: entropy.f90,v 1.261 2004-01-30 14:26:50 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.260 2004-01-14 17:47:39 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.261 2004-01-30 14:26:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -813,7 +813,7 @@ module Entropy
 !
 !  use sound speed in Courant condition
 !
-      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
+      if (lfirst.and.ldt) maxadvec2=max_for_dt(maxadvec2,cs2)
       if (ip<8.and.lroot.and.imn==1) print*, &
                         'dss_dt: maxadvec2,cs2=',maxadvec2,cs2
       if (headtt) print*, &
@@ -976,7 +976,7 @@ module Entropy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+      if (lfirst.and.ldt) maxdiffus=max_for_dt(maxdiffus,(gamma*chi+chi_t))
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
@@ -1037,7 +1037,7 @@ module Entropy
 !
       if (lfirst.and.ldt) then
         chitotal_max=chi_t+chi_shock*maxval(shock)
-        maxdiffus=amax1(maxdiffus,chitotal_max)
+        maxdiffus=max_for_dt(maxdiffus,chitotal_max)
         ! diagnose
         if (ldiagnos.and.i_dtchi/=0) then
           call max_mn_name(spread(chitotal_max,1,nx)/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
@@ -1095,7 +1095,7 @@ module Entropy
 !
       if (lfirst.and.ldt) then
         chitotal=gamma*chix+chi_t
-        maxdiffus=amax1(maxdiffus,maxval(chitotal))
+        maxdiffus=max_for_dt(maxdiffus,maxval(chitotal))
         ! diagnose
         if (ldiagnos.and.i_dtchi/=0) then
           call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
@@ -1226,7 +1226,7 @@ endif
 !
       if (lfirst.and.ldt) then
         chitotal=gamma*chix+chi_t
-        maxdiffus=amax1(maxdiffus,maxval(chitotal))
+        maxdiffus=max_for_dt(maxdiffus,maxval(chitotal))
         ! diagnose
         if (ldiagnos.and.i_dtchi/=0) then
           call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)

@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.17 2003-11-29 18:21:01 theine Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.18 2004-01-30 14:26:50 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -99,7 +99,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.17 2003-11-29 18:21:01 theine Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.18 2004-01-30 14:26:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -335,9 +335,9 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !  This must include the imposed field (if there is any)
 !
       if (lfirst.and.ldt) then
-        maxadvec2=amax1(maxadvec2,B2)
-        maxdiffus=amax1(maxdiffus,nu)
-        maxdiffus=amax1(maxdiffus,eta)
+        maxadvec2=max_for_dt(maxadvec2,B2)
+        maxdiffus=max_for_dt(maxdiffus,nu)
+        maxdiffus=max_for_dt(maxdiffus,eta)
       endif
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
