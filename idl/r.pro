@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.23 2002-06-20 21:17:53 dobler Exp $
+; $Id: r.pro,v 1.24 2002-06-28 07:45:43 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -35,7 +35,7 @@ dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Generating and reading param2.nml..'
   spawn, '../../../bin/nl2idl -f param2 tmp/param2.nml > tmp/param2.pro'
-  resolve_routine, 'param2', /IS_FUNCTION, /COMPILE_FULL_FILE
+  resolve_routine, 'param2', /IS_FUNCTION
   par2=param2()
   if (lhydro) then begin
     cs0=par2.cs0 & nu=par2.nu
