@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.248 2004-04-13 08:40:57 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.249 2004-05-26 16:53:24 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -87,9 +87,7 @@
                          % contents disappear
 
 \usepackage{amssymb}
-\usepackage{expdlist}
-\usepackage{booktabs}
-\usepackage{longtable}
+\usepackage{expdlist,booktabs,units,longtable}
 
 \usepackage{fancyvrb}
 %\DefineShortVerb{\|}
@@ -106,7 +104,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage{hyperref}
+\usepackage[dvipdfm]{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -372,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-04-13 08:40:57 $ $,~ $ $Revision: 1.248 $ $}
+%\date{$ $Date: 2004-05-26 16:53:24 $ $,~ $ $Revision: 1.249 $ $}
 
 % ====================================================================== %
 
@@ -407,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-04-13 08:40:57 $ $,~ $ $Revision: 1.248 $ $}\\
+  \emph{$ $Date: 2004-05-26 16:53:24 $ $,~ $ $Revision: 1.249 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -2222,26 +2220,122 @@ A full list of input parameters is given in Appendix~\ref{S-all-parameters}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{How can I run in physical units?}
+\subsection{Physical units}
 \label{physdim}
 \index{Units}
 \index{SI units}
 \index{cgs units}
 
-You can run the code in physical units.  Suppose you want the unit length
-to be $1\,{\rm kpc}$, then you would say \code{unit_length='3e21'}.
-It might then be handy to put \code{unit_velocity='1e5'}, which means
-1~km/s. This implies a time unit of $3\times10^{16}\,{\rm s}$, which
-is roughly $1\,{\rm Gyr}$.
-(Of course, politically correct would be to say \code{unit_system='SI'}
-in which case you say \code{unit_length='3e19'}. More accurate would be
-\code{unit_length='3.1e19'}.)
-For km/s you'd then say \code{unit_velocity='1e3'}.
-If you are used to work with hot stuff, you'd choose
-\code{unit_temperature='1e6'} for mega-Kelvin.
-If you prefer dimensionless units then just don't worry, because unity
-is the default. But if you are doing things like ionization it is really
-best to work with physical dimensions.
+Many calculations are unit-agnostic, in the sense that all results remain
+the same independent of the unit system in which you interpret the numbers.
+E.\,g.~if you simulate a simple hydrodynamical flow in a box of length $L=1.$
+and get a maximum velocity of $u_{\rm max}=0.5$ after $t=3$ time units,
+then you may interpret this as
+$L=\unit[1]{m}$, $u_{\rm max}=\unit[0.5]{m/s}$, $t=\unit[3]{s}$,
+or as $L=\unit[1]{pc}$, $u_{\rm max}=\unit[0.5]{pc/Myr}$, $t=\unit[3]{Myr}$,
+depending on the physical system you have in mind.
+The units you are using must of course be consistent, thus in the second
+example above, the units for diffusivities would be $\unit{pc^2/Myr}$,
+etc.
+
+The units of magnetic field and temperature are determined by the values
+$\mu_0=1$ and $c_p=1$ used internally by the code\footnote{
+  Note that $c_p=1$ is only assumed if you use the module
+  \name{noionization.f90}.
+  If you work with \name{ionization.f90}, temperature units are specified
+  by \var{unit_temperature} as described below.
+}.
+This means that if your units for density and velocity are
+$[\varrho]$ and $[v]$, then magnetic fields will be in
+\begin{equation} \label{unit-B}
+  [B] = \sqrt{\mu_0\,[\varrho]\,[v]^2} \; ,
+\end{equation}
+and temperatures are in
+\begin{equation} \label{unit-T}
+  [T] = \frac{[v]^2}{c_p}
+      = \frac{\gamma{-}1}{\gamma}\,\frac{[v]^2}{\mathcal{R}/\mu} \; .
+\end{equation}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Units of magnetic field and temperature for some choices of
+    $[\varrho]$ and $[v]$ according to Eqs.~(\ref{unit-B}) and
+    (\ref{unit-T}).
+    Values are for a monoatomic gas ($\gamma=5/3$) of mean atomic
+    weight $\bar{\mu}_{\rm g} = \bar{\mu}/\unit[1]{g}$ in grams.}
+  \label{Tab-units-B-T}
+  \newcommand{\fracstrut}{\rule[-2.0ex]{0pt}{5.2ex}}%
+  \begin{tabular}{ll@{\quad}ll}
+  \toprule
+    $[\varrho]$    
+        & $[v]$ 
+            & $[B]$
+                & $[T]$ \\
+  \midrule
+    $\unit[1]{kg/m^3}$
+        & $\unit[1]{m/s}$
+            & $\unit[1.12]{mT} = \unit[11.2]{G}$
+                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
+                   \times \unit[2.89\EE{-5}]{K}$\\
+    $\unit[1]{g/cm^3}$
+        & $\unit[1]{cm/s}$
+            & $\unit[3.54\EE{-7}]{T} = \unit[3.54]{mG}$
+                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
+                   \times \unit[2.89]{nK}$ \\
+    $\unit[1]{g/cm^3}$
+        & $\unit[1]{km/s}$
+            & $\unit[35.4]{T} = \unit[354]{kG}$
+                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
+                   \times \unit[28.9]{K}$ \\
+    $\unit[1]{g/cm^3}$
+        & $\unit[10]{km/s}$
+            & $\unit[354]{T} = \unit[3.54]{MG}$
+                & $\fracstrut\left(\dfrac{\bar{\mu}_{\rm g}}{0.6}\right)
+                   \times \unit[2\,890]{K}$ \\
+  \bottomrule
+  \end{tabular}  
+\end{table}
+
+For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
+shows the resulting units of magnetic field and temperature.
+
+On the other hand, as soon as material equations are used (e.\,g.~one of
+the popular parameterizations for radiative losses, Kramer's opacity,
+Spitzer's conductivities or ionization, which implies well-defined
+ionization energies), the corresponding routines in the code need to know
+the units you are using.
+This information is specified in \file{start.in} or \file{run.in} through
+the parameters \var{unit_system},
+\var{unit_length},  \var{unit_velocity},  \var{unit_density} and 
+\var{unit_temperature}\footnote{
+  Note: the parameter \var{unit_temperature} is currently only used in
+  connection with \name{ionization.f90}.
+  If you are working with \name{noionization.f90}, the temperature unit is
+  completely determined by Eq.~(\ref{unit-T}) above. 
+} like e.\,g.
+\begin{Verbatim}
+  unit_system='SI',
+  unit_length=3.09e16, unit_velocity=978.  ! [l]=1pc, [v]=1pc/Myr
+\end{Verbatim}
+
+Note: The default unit system is \code{unit_system='cgs'} which is a
+synonym for \code{unit_system='babylonian cubits'}.
+
+
+%% You can run the code in physical units.  Suppose you want the unit length
+%% to be $1\,{\rm kpc}$, then you would say \code{unit_length=3e21}.
+%% It might then be handy to put \code{unit_velocity=1e5}, which means
+%% 1~km/s. This implies a time unit of $3\times10^{16}\,{\rm s}$, which
+%% is roughly $1\,{\rm Gyr}$.
+%% (Of course, politically correct would be to say \code{unit_system='SI'}
+%% in which case you say \code{unit_length=3e19}. More accurate would be
+%% \code{unit_length=3.1e19}.)
+%% For km/s you'd then say \code{unit_velocity=1e3}.
+%% If you are used to work with hot stuff, you'd choose
+%% \code{unit_temperature='1e6'} for mega-Kelvin.
+%% If you prefer dimensionless units then just don't worry, because unity
+%% is the default. But if you are doing things like ionization it is really
+%% best to work with physical dimensions.
 
 % ---------------------------------------------------------------------- %
 
@@ -4108,7 +4202,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-04-13 08:40:57 $ $,~ $ $Revision: 1.248 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-05-26 16:53:24 $ $,~ $ $Revision: 1.249 $ $}
 
 \section{Timings}
 
@@ -4875,6 +4969,7 @@ continue from \file{VAR1} at $128^3$ (on
   \prompt{unix> } cd $PENCIL_HOME; cvs co -d remesh pencil-remesh
   \prompt{unix> } setenv PATH $\{PATH\}:$PENCIL_HOME/remesh/bin
   \end{alltt}
+  % a $ for font-lock
 
 \item Create another run directory with current \file{VAR1} as
   \file{var.dat} (remesh.csh so far only works with \file{var.dat}):
@@ -6342,7 +6437,7 @@ the latest set of parameters, you need to look at the code.
                  (which is the default).
                  \emph{This is currently only correct with
                  \file{noionization.f90}}.
-                 Superseeded by \var{iheatcond}. \\
+                 Superseded by \var{iheatcond}. \\
   \var{chi} [$0.$]
                & value of $\chi$ when \code{lcalc_heatcond_constchi=T}. \\
   \var{widthss} [start]
@@ -7086,7 +7181,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.248 2004-04-13 08:40:57 dobler Exp $ $}
+$ $Id: manual.tex,v 1.249 2004-05-26 16:53:24 dobler Exp $ $}
 
 
 \end{document}
@@ -7153,4 +7248,6 @@ $ $Id: manual.tex,v 1.248 2004-04-13 08:40:57 dobler Exp $ $}
 % LocalWords:  BJNRST Ferri cleanf rundir cvsci gpgrowth mkdatadir mkdotin pacx
 % LocalWords:  mkinpars mkproc mkwww scpdatadir backtick pTTss gcc glibc LD IGG
 % LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff NEWDIR copson ks
-% LocalWords:  hyperviscous geodynamo DM coords substeps dec
+% LocalWords:  hyperviscous geodynamo DM coords substeps dec noionization pc ll
+% LocalWords:  Kramer's Myr Spitzer's Kippenhahn Weigert Remeshing remeshing
+% LocalWords:  phiaver
