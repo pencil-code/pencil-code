@@ -49,10 +49,10 @@ zero = 0*one
 ;
 ;  Read startup parameters
 ;
-x0=zero & y0=zero & z0=zero
-Lx=zero & Ly=zero & Lz=zero
-cs0=zero & gamma=zero & gamma1=zero
-bx_ext=zero & by_ext=zero & bz_ext=zero
+x0=(y0=(z0=zero))
+Lx=(Ly=(Lz=zero))
+cs0=(gamma=(gamma1=zero))
+bx_ext=(by_ext=(bz_ext=zero))
 pfile=datatopdir+'/'+'param.dat'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
