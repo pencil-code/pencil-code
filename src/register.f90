@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.75 2003-04-27 10:49:15 brandenb Exp $
+! $Id: register.f90,v 1.76 2003-05-07 10:15:05 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -129,7 +129,7 @@ module Register
 !  convert physical constants
 !
       if (unit_system=='cgs') then
-        print*,'units of length,velocity,density are given in cgs'
+        if(lionization) print*,'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
         k_B=k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs/unit_mass
@@ -139,7 +139,7 @@ module Register
         sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
       elseif (unit_system=='SI') then
-        print*,'units of length,velocity,density are given in SI'
+        if(lionization) print*,'unit_velocity, unit_density, etc, are in SI'
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs*1e-3/unit_mass
         m_e=m_e_cgs*1e-3/unit_mass

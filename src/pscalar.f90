@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.20 2003-05-07 05:25:45 brandenb Exp $
+! $Id: pscalar.f90,v 1.21 2003-05-07 10:15:05 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -15,12 +15,12 @@ module Pscalar
   logical :: nopscalar=.false.
 
   ! input parameters
-  real :: ampllncc=.1, widthlncc=.5
+  real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
   real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc
+       radius_lncc,epsilon_lncc,widthlncc,cc_min
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
@@ -62,7 +62,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.20 2003-05-07 05:25:45 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.21 2003-05-07 10:15:05 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -124,6 +124,14 @@ module Pscalar
       select case(initlncc2)
         case('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
       endselect
+!
+!  add floor value if cc_min is set
+!
+      if(cc_min/=0.) then
+        lncc_min=alog(cc_min)
+        if(lroot) print*,'set floor value for cc; cc_min=',cc_min
+        f(:,:,:,ilncc)=amax1(lncc_min,f(:,:,:,ilncc))
+      endif
 !
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lncc
