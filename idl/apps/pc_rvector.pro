@@ -1,13 +1,15 @@
-;  $Id: pc_rvector.pro,v 1.8 2003-08-18 18:08:02 brandenb Exp $
+;  $Id: pc_rvector.pro,v 1.9 2003-08-20 16:09:42 nilshau Exp $
 ;
 ;  Reads pre-selected vectors and plots in a 3-D box.
 ;  Data must be preprocessed with read_vectorfiles.x
 ;
 ;  18-aug-03/axel: coded
 ;
-pro pc_rvector,nxyz=nxyz,png=png
+pro pc_rvector,nxyz=nxyz,png=png,cltbl=cltbl,backval=backval
 ;
 default,nxyz,64*2
+default,cltbl,5
+default,backval,1
 print,'Assumed default box size is: nxyz=',nxyz
 print,'(If not ok, then set nxyz!)'
 ;
@@ -15,7 +17,7 @@ print,'(If not ok, then set nxyz!)'
 ;
 siz=2
 fo='(f6.1)'
-loadct,5
+loadct,cltbl
 ;
 ;  open MPEG file, if keyword is set
 ;
@@ -41,8 +43,8 @@ while not eof(lun) do begin
     if nread gt 0 then begin
       pc_vectors_selected,ll-4,mm-4,nn-1,bbx,bby,bbz,$
         indgen(nxyz),indgen(nxyz),indgen(nxyz),$
-        ax=30,az=30,len=5,back=255
-      xyouts,-5,-5,'!8t!6='+string(t,fo=fo),siz=siz,col=1
+        ax=30,az=30,len=5,back=backval
+      xyouts,-5,-5,'!8t!6='+string(t,fo=fo),siz=siz,col=255-backval
       wait,.05
       ;
       if keyword_set(png) then begin
