@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.157 2003-09-08 14:47:34 theine Exp $
+! $Id: run.f90,v 1.158 2003-10-12 05:45:16 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.157 2003-09-08 14:47:34 theine Exp $")
+             "$Id: run.f90,v 1.158 2003-10-12 05:45:16 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -335,7 +335,7 @@
           write(*,'(A,1pG12.4,A,1pG9.2,A)') &
                ' Wall clock time [sec]=', wall_clock_time, &
                ' (+/- ', real(mpiwtick()),')'
-          if (it>1) write(*,'(A,F8.2)') &
+          if (it>1) write(*,'(A,F9.3)') &
                ' Wall clock time/timestep/meshpoint [microsec]=', &
                wall_clock_time/count/nw/ncpus/1e-6
           print*

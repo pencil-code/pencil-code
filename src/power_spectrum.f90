@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -325,8 +325,10 @@ module  power_spectrum
     a_re=f(l1:l2,m1:m2,n1:n2,iss)
     a_im=0.
   elseif (sp=='cc') then
-    !old-- a_re=exp(f(l1:l2,m1:m2,n1:n2,ilncc)
     a_re=f(l1:l2,m1:m2,n1:n2,ilncc)
+    a_im=0.
+  elseif (sp=='cr') then
+    a_re=f(l1:l2,m1:m2,n1:n2,iecr)
     a_im=0.
   endif
   !
@@ -404,7 +406,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.50 2003-09-02 18:17:49 theine Exp $
+! $Id: prints.f90,v 1.51 2003-10-12 05:45:16 brandenb Exp $
 
 module Print
 
@@ -239,7 +239,6 @@ module Print
       endif
 !
       if(ip==0) print*,ch       ! (keep compiler quiet)
-
 !
     endsubroutine write_zaverages
 !***********************************************************************

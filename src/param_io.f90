@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.137 2003-10-09 16:43:15 ngrs Exp $ 
+! $Id: param_io.f90,v 1.138 2003-10-12 05:45:16 brandenb Exp $ 
 
 module Param_IO
 
@@ -64,7 +64,7 @@ module Param_IO
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
-       ro_spec,ss_spec,cc_spec, &
+       ro_spec,ss_spec,cc_spec,cr_spec, &
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
