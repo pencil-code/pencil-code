@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.38 2003-07-02 14:33:35 theine Exp $
+! $Id: radiation_exp.f90,v 1.39 2003-07-02 15:18:36 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -78,7 +78,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.38 2003-07-02 14:33:35 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.39 2003-07-02 15:18:36 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -185,7 +185,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer1'
+      if(lroot.and.headt) print*,'radtransfer'
 !
 !  calculate source function and opacity
 !
@@ -207,9 +207,9 @@ module Radiation
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if (rad2>0 .and. rad2<=rad2max) then 
-        call radtransfer_intr(f,lrad,mrad,nrad)
-        call radtransfer_comm(  lrad,mrad,nrad)
-        call radtransfer_revi(f,lrad,mrad,nrad)
+        call radtransfer_intrinsic(f,lrad,mrad,nrad)
+        call radtransfer_communicate(  lrad,mrad,nrad)
+        call radtransfer_revision(f,lrad,mrad,nrad)
         endif
       enddo
       enddo
@@ -217,7 +217,7 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
-    subroutine radtransfer_intr(f,lrad,mrad,nrad)
+    subroutine radtransfer_intrinsic(f,lrad,mrad,nrad)
 !
 !  Integration radiation transfer equation along rays
 !
@@ -235,11 +235,11 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_intr'
+      if(lroot.and.headt) print*,'radtransfer_intrinsic'
 !
-!  calculate intrinsic intensity and optical depth
+!  calculate intrinsicinsic intensity and optical depth
 !
-      call intensity_intr(lrad,mrad,nrad,tau,Irad)
+      call intensity_intrinsic(lrad,mrad,nrad,tau,Irad)
 !
 !  add contribution to the heating rate Q
 !
@@ -272,9 +272,9 @@ module Radiation
         Irad_xy(:,:,:)=Irad(:,:,n2-radz0+1:n2)
      endif
 !
-    endsubroutine radtransfer_intr
+    endsubroutine radtransfer_intrinsic
 !***********************************************************************
-    subroutine intensity_intr(lrad,mrad,nrad,tau,Irad)
+    subroutine intensity_intrinsic(lrad,mrad,nrad,tau,Irad)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -298,7 +298,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_intr'
+        print*,'intensity_intrinsic'
         first=.false.
       endif
 !
@@ -340,9 +340,9 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity_intr
+    endsubroutine intensity_intrinsic
 !***********************************************************************
-    subroutine radtransfer_comm(lrad,mrad,nrad)
+    subroutine radtransfer_communicate(lrad,mrad,nrad)
 !
 !  Integration radioation transfer equation along rays
 !
@@ -360,7 +360,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_comm'
+      if(lroot.and.headt) print*,'radtransfer_communicate'
 !
 !  set ghost zones, data from preceeding processor
 !
@@ -376,7 +376,7 @@ module Radiation
       !
       !  propagate boundary values
       !
-      call intensity_comm(lrad,mrad,nrad,Irad0)
+      call intensity_communicate(lrad,mrad,nrad,Irad0)
       !
       !  set boundary values for following processor
       !
@@ -390,9 +390,9 @@ module Radiation
       if (nrad>0) Irad0_xy(:,:,:)=Irad0(:,:,n2-radz0+1:n2)
       call radcomm_xy_send(nrad,radz0,Irad_xy,tag_xy)
 !
-    endsubroutine radtransfer_comm
+    endsubroutine radtransfer_communicate
 !***********************************************************************
-    subroutine intensity_comm(lrad,mrad,nrad,Irad0)
+    subroutine intensity_communicate(lrad,mrad,nrad,Irad0)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -411,7 +411,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_comm'
+        print*,'intensity_communicate'
         first=.false.
       endif
 !
@@ -438,9 +438,9 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity_comm
+    endsubroutine intensity_communicate
 !***********************************************************************
-    subroutine radtransfer_revi(f,lrad,mrad,nrad)
+    subroutine radtransfer_revision(f,lrad,mrad,nrad)
 !
 !  Integration radioation transfer equation along rays
 !
@@ -458,7 +458,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_revi'
+      if(lroot.and.headt) print*,'radtransfer_revision'
 !
 !  set ghost zones, data from next processor (or opposite boundary)
 !
@@ -471,12 +471,12 @@ module Radiation
 !
 !  do the ray, and add corresponding contribution to Q
 !
-      call intensity_revi(lrad,mrad,nrad,Irad0,Irad)
+      call intensity_revision(lrad,mrad,nrad,Irad0,Irad)
       f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
 !
-    endsubroutine radtransfer_revi
+    endsubroutine radtransfer_revision
 !***********************************************************************
-    subroutine intensity_revi(lrad,mrad,nrad,Irad0,Irad)
+    subroutine intensity_revision(lrad,mrad,nrad,Irad0,Irad)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -498,7 +498,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_revi'
+        print*,'intensity_revision'
         first=.false.
       endif
 !
@@ -536,7 +536,7 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity_revi
+    endsubroutine intensity_revision
 !***********************************************************************
     subroutine radiative_cooling(f,df)
 !
