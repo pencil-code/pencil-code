@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.111 2004-07-07 10:46:39 ajohan Exp $
+! $Id: dustdensity.f90,v 1.112 2004-07-07 13:06:25 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -46,7 +46,7 @@ module Dustdensity
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ndmt,i_rhodmt,i_rhoimt,i_ssrm,i_ssrmax
-  integer, dimension(ndustspec) :: i_ndm=0,i_rhodm=0,i_ndmin
+  integer, dimension(ndustspec) :: i_ndm=0,i_rhodm=0,i_ndmin=0,i_ndmax=0
 
   contains
 
@@ -116,7 +116,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.111 2004-07-07 10:46:39 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.112 2004-07-07 13:06:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -415,6 +415,7 @@ module Dustdensity
         if (ldiagnos) then
           if (i_ndm(k) /= 0) call sum_mn_name(nd(:,k),i_ndm(k))
           if (i_ndmin(k) /= 0) call max_mn_name(-nd(:,k),i_ndmin(k),lneg=.true.)
+          if (i_ndmax(k) /= 0) call max_mn_name(nd(:,k),i_ndmax(k))
           if (i_rhodm(k) /= 0) then
             if (lmdvar) then
               call sum_mn_name(nd(:,k)*f(l1:l2,m,n,imd(k)),i_rhodm(k))
@@ -845,12 +846,8 @@ module Dustdensity
 !  reset everything in case of reset
 !
       if (lreset) then
-        i_ndm    = 0
-        i_ndmin  = 0
-        i_ndmt   = 0
-        i_rhodm  = 0
-        i_rhodmt = 0
-        i_rhoimt = 0
+        i_ndm=0; i_ndmin=0; i_ndmax=0; i_ndmt=0; i_rhodm=0; i_rhodmt=0
+        i_rhoimt=0
       endif
 
       call chn(ndustspec,sdustspec)
@@ -860,6 +857,7 @@ module Dustdensity
       if (lwr .and. ndustspec /= 1) then
         write(3,*) 'i_ndm=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_ndmin=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_ndmax=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
       endif
 !
@@ -878,6 +876,8 @@ module Dustdensity
           call parse_name(iname,cname(iname),cform(iname), &
               'ndmin'//trim(sdust),i_ndmin(k))
           call parse_name(iname,cname(iname),cform(iname), &
+              'ndmax'//trim(sdust),i_ndmax(k))
+          call parse_name(iname,cname(iname),cform(iname), &
               'rhodm'//trim(sdust),i_rhodm(k))
         enddo
 !
@@ -891,6 +891,8 @@ module Dustdensity
               write(3,*) 'i_ndm'//trim(sdust)//'=',i_ndm(k)
           if (i_ndmin(k) /= 0) &
               write(3,*) 'i_ndmin'//trim(sdust)//'=',i_ndmin(k)
+          if (i_ndmax(k) /= 0) &
+              write(3,*) 'i_ndmax'//trim(sdust)//'=',i_ndmax(k)
           if (i_rhodm(k) /= 0) &
               write(3,*) 'i_rhodm'//trim(sdust)//'=',i_rhodm(k)
         endif
