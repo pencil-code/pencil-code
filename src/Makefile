@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.100 2002-09-30 20:00:45 dobler Exp $
+### $Id: Makefile,v 1.101 2002-10-01 02:45:10 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -138,7 +138,7 @@ start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
 run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
 run_deps=$(run_deps_f90) $(DEBUG).o $(FFT).o
-start=start.o initcond.o $(start_deps)
+start=start.o $(start_deps)
 run=run.o $(run_deps)
 
 start.x: $(start) Makefile.local

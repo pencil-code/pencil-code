@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.64 2002-09-26 16:21:25 brandenb Exp $
+! $Id: hydro.f90,v 1.65 2002-10-01 02:45:10 brandenb Exp $
 
 module Hydro
 
@@ -72,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.64 2002-09-26 16:21:25 brandenb Exp $")
+           "$Id: hydro.f90,v 1.65 2002-10-01 02:45:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -261,7 +261,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,ugu,oo,fvisc,glnrho,sglnrho,del2u,graddivu
-      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1,ux,uy,uz
+      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1,rho,ux,uy,uz
       real :: c2,s2
       integer :: i,j
 !
@@ -418,11 +418,12 @@ module Hydro
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
         !
-        !  mean velocities
+        !  mean momenta (should perhaps rename variables i_uxm -> i_ruxm)
         !
-        if (i_uxm/=0) then; ux=uu(:,1); call sum_mn_name(ux,i_uxm); endif
-        if (i_uym/=0) then; uy=uu(:,2); call sum_mn_name(uy,i_uym); endif
-        if (i_uzm/=0) then; uz=uu(:,3); call sum_mn_name(uz,i_uzm); endif
+        if (i_uxm+i_uym+i_uzm/=0) rho=exp(f(l1:l2,m,n,ilnrho))
+        if (i_uxm/=0) then; ux=uu(:,1); call sum_mn_name(rho*ux,i_uxm); endif
+        if (i_uym/=0) then; uy=uu(:,2); call sum_mn_name(rho*uy,i_uym); endif
+        if (i_uzm/=0) then; uz=uu(:,3); call sum_mn_name(rho*uz,i_uzm); endif
         !
         !  things related to vorticity
         !
@@ -459,13 +460,14 @@ module Hydro
 !
 !  20-aug-02/axel: adapted from damp_uym
 !   7-sep-02/axel: corrected mpireduce_sum (was mpireduce_max)
+!   1-oct-02/axel: turned into correction of momentum rather than velocity
 !
       use Cdata
       use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension(nx) :: ux
+      real, dimension(nx) :: rho,ux
       real, dimension(1) :: fsum_tmp,fsum
       real :: tau_damp_uxm1
       real, save :: uxm=0.,ux_sum=0.
@@ -484,9 +486,10 @@ module Hydro
       endif
 !
       ux=f(l1:l2,m,n,iux)
-      call sum_mn(ux,ux_sum)
+      rho=exp(f(l1:l2,m,n,ilnrho))
+      call sum_mn(rho*ux,ux_sum)
       tau_damp_uxm1=1./tau_damp_uxm
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_damp_uxm1*uxm
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_damp_uxm1*uxm/rho
 !
     endsubroutine damp_uxm
 !***********************************************************************
@@ -496,13 +499,14 @@ module Hydro
 !  This can be useful in situations where a mean flow is generated.
 !
 !  18-aug-02/axel: coded
+!   1-oct-02/axel: turned into correction of momentum rather than velocity
 !
       use Cdata
       use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension(nx) :: uy
+      real, dimension(nx) :: rho,uy
       real, dimension(1) :: fsum_tmp,fsum
       real :: tau_damp_uym1
       real, save :: uym=0.,uy_sum=0.
@@ -521,9 +525,10 @@ module Hydro
       endif
 !
       uy=f(l1:l2,m,n,iuy)
-      call sum_mn(uy,uy_sum)
+      rho=exp(f(l1:l2,m,n,ilnrho))
+      call sum_mn(rho*uy,uy_sum)
       tau_damp_uym1=1./tau_damp_uym
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_uym1*uym
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_uym1*uym/rho
 !
     endsubroutine damp_uym
 !***********************************************************************
