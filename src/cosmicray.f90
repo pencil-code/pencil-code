@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.18 2003-12-02 21:25:13 snod Exp $
+! $Id: cosmicray.f90,v 1.19 2003-12-02 22:00:36 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -83,7 +83,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.18 2003-12-02 21:25:13 snod Exp $")
+           "$Id: cosmicray.f90,v 1.19 2003-12-02 22:00:36 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -217,7 +217,7 @@ module CosmicRay
 !
 !  tensor diffusion, or, alternatively scalar diffusion or no diffusion
 !
-      if ((Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
+      if (Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
         if(headtt) print*,'decr_dt: Kperp,Kpara=',Kperp,Kpara
         call tensor_diffusion(f,df,gecr,bij,bb,vKperp,vKpara)
       elseif (cosmicray_diff/=0.) then
@@ -301,7 +301,7 @@ module CosmicRay
 !***********************************************************************
     subroutine tensor_diffusion(f,df,gecr,bij,bb,vKperp,vKpara)
 !
-!  calculates tensor diffusion with variable tensor
+!  calculates tensor diffusion with variable tensor (or constant tensor)
 !  
 !  vKperp*del2ecr + d_i(vKpara)d_i(gecr) + (vKpara-vKperp) d_i ( n_i n_j d_j ecr)
 !      + n_i n_j d_i(ecr)d_j(vKpara-vKperp)   
@@ -372,33 +372,50 @@ module CosmicRay
         enddo
       enddo
 !
-!  add extra terms
+!  if variable tensor, add extra terms and add result into decr/dt 
 !
-     if(lvariable_tensor_diff)then
+      if(lvariable_tensor_diff)then
+!
+!  set vKpara, vKperp
+!
+
         do i=1,nx
         vKpara(i)=Kpara
-! *(abs (x(i)))
+! *(abs (x(i)))                       !!!! tidy this up !!!!!
         end do
         vKperp(:)=Kperp
-        gvKperp(:,:)=0.0  ! assume constant kpara,kperp
+
+!
+!  set gvKpara, gvKperp
+!
+        gvKperp(:,:)=0.0  ! !!!!!!!!!!!!!!!!!!!!!
         gvKpara(:,:)=0.0
+!
+!  add first part of tensor d_i    !!!!
+!
         call dot_mn(gvKperp,gecr,tmpj)
+!
+!       
+!
         do j=1,3
           do i=1,3
-            tmpj(:)=tmpj(:)+bunit(:,i)*bunit(:,j)*   &
-             gecr(:,i)*(gvKpara(:,j)-gvKperp(:,j))
+            tmpj(:)=tmpj(:)+bunit(:,i)*bunit(:,j)*   &   !!! !!!!!
+            gecr(:,i)*(gvKpara(:,j)-gvKperp(:,j))
           enddo
         end do           
 !
-!  and add result to the decr/dt equation
+!  
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+vKperp*del2ecr+(vKpara-vKperp)*tmp &
          + tmpj 
 
-     else
-         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+Kperp*del2ecr+(Kpara-Kperp)*tmp
+      else
+!
+!  for constant tensor, just add result into the decr/dt equation
+!
+        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+Kperp*del2ecr+(Kpara-Kperp)*tmp
  
-     end if     
+      end if     
 !
     endsubroutine tensor_diffusion
 !***********************************************************************
