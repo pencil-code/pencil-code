@@ -1,0 +1,403 @@
+%%%%%%%%%%%%%%%%%%%%%%            -*-LaTeX-*-
+%%%   manual.tex   %%%
+%%%%%%%%%%%%%%%%%%%%%%
+%%
+%%  Date:   06-Mar-2002
+%%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+%%  Description: 
+% 
+\ifx\pdfoutput\undefined        % not running pdflatex
+  \documentclass[12pt,twoside,notitlepage,a4paper]{article}
+\else                           % running pdflatex
+  \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
+\fi
+
+\usepackage[bookmarks=false]{hyperref}
+%\usepackage{german,a4}
+%\usepackage[german,british]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{newcent,helvet}
+\renewcommand{\ttdefault}{cmtt}
+
+\usepackage[it,footnotesize]{caption2}
+\setlength{\abovecaptionskip}{5pt} % Space before caption
+\setlength{\belowcaptionskip}{5pt} % Space after caption
+
+\usepackage[bf,sf,small,nonindentfirst]{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
+%\titleformat{\subsubsection}{\normalfontitshape}{\thesubsubsection}{.5em}{}
+%\titlespacing{\subsubsection}{0pt}{*1}{*-1}
+\usepackage{fancyhdr}
+\usepackage{fancybox}
+
+\usepackage{alltt}
+
+\usepackage{graphicx}
+\usepackage{parskip,a4,vmargin}
+\setpapersize{A4}
+\setmargrb{20mm}{15mm}{20mm}{15mm}
+
+\frenchspacing
+\sloppy
+
+%%% Page headings
+\pagestyle{fancy}
+\renewcommand{\sectionmark}[1]{% Don't upcase the section title
+  \markright{\thesection.\ #1}}
+\fancyhead{}                    % clear header
+\fancyhead[LE,RO]{\thepage}
+\fancyhead[CE]{\textsc{The MHD code}}
+\fancyhead[CO]{\rightmark}
+%
+\fancyfoot{}
+
+% ---------------------------------------------------------------------- %
+
+%%% Macros
+
+%% Bold face \tt prompts (only works within `alltt' or \tt environment)
+\newcommand{\prompt}[1]{{\ttfamily\bfseries{}#1}}
+
+%% keys, names, paths, files, etc.
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\kbd}[1]{\texttt{\textsl{#1}\/}}
+\newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
+\newcommand{\samp}[1]{`\code{#1}'}
+\newcommand{\var}[1]{\textsl{#1}\/}
+\newcommand{\env}[1]{\code{#1}}
+\newcommand{\file}[1]{`\texttt{#1}'}
+\newcommand{\command}[1]{\code{#1}}
+\newcommand{\cmd}[1]{\command{#1}}
+\newcommand{\option}[1]{`\command{#1}'}
+\newcommand{\dfn}[1]{\textsl{#1}\/}
+%\newcommand{\cite}[1]{}
+\newcommand{\acronym}[1]{\textsc{#1}}
+%\newcommand{\url}[1]{}
+\newcommand{\email}[1]{\code{#1}}
+
+\newcommand{\name}[1]{\textsl{#1}\/}
+\newcommand{\Path}[1]{\file{#1}}
+
+%
+\newcommand{\bsT}{{\fontencoding{T1}\selectfont{\symbol{92}}}}
+\newcommand{\bcks}{{\symbol{92}}}
+\newcommand{\bs}{\bcks}       % Save us creation of a couple of fonts
+
+%% Maths operators
+% \newcommand{\arcosh} {\mathop{\rm arcosh}\nolimits}
+% \newcommand{\arcoth} {\mathop{\rm arcoth}\nolimits}
+% \newcommand{\sgn}    {\mathop{\rm sgn}\nolimits}
+\newcommand{\grad}    {\mathop{\rm grad}\nolimits}
+\newcommand{\Div}     {\mathop{\rm div}\nolimits}
+\newcommand{\curl}    {\mathop{\rm curl}\nolimits}
+\newcommand{\rot}     {\curl}
+\newcommand{\Laplace} {\mathop{\Delta}\nolimits}
+\newcommand{\erfc}    {\mathop{\rm erfc}\nolimits}
+\newcommand{\erf}     {\mathop{\rm erf}\nolimits}
+
+\newcommand{\vekt}[1] {\mathbf{#1}}
+\newcommand{\const}   {\mbox{\rm const}}
+
+%% Maths variables
+\newcommand{\Av}            {\vekt{A}}
+% \newcommand{\av}            {\vekt{a}}
+
+\newcommand{\Bv}            {\vekt{B}}
+% \newcommand{\bv}            {\vekt{b}}
+
+\newcommand{\Cool}          {{\cal C}}
+\newcommand{\cs}            {c_{\rm s}}
+\newcommand{\csnull}        {c_{{\rm s},0}}
+
+% \newcommand{\Ev}            {\vekt{E}}
+% \newcommand{\ev}            {\vekt{e}}
+% \newcommand{\ex}            {\ev_{x}}
+% \newcommand{\ey}            {\ev_{y}}
+% \newcommand{\ez}            {\ev_{z}}
+
+% \newcommand{\Fv}            {\vekt{F}}
+
+\newcommand{\gv}            {\vekt{g}}
+
+\newcommand{\Heat}          {{\cal H}}
+
+\newcommand{\jv}            {\vekt{j}}
+
+% \newcommand{\nullvekt}      {\vekt{0}}
+
+\newcommand{\Ra}            {\mathrm{Ra}}
+\newcommand{\Reynolds}      {\mathrm{Re}}
+\newcommand{\Rm}            {\mathrm{Rm}}
+
+\newcommand{\uv}            {\vekt{u}}
+
+% \newcommand{\Vol}           {{\cal V}}
+% \newcommand{\vA}            {v_{\rm A}}
+
+\newcommand{\xv}            {\vekt{x}}
+
+% \newcommand{\zerovect}      {\nullvekt}
+
+% ---------------------------------------------------------------------- %
+
+\title{{\sffamily\bfseries Installing and Using the MHD code}}
+%\subtitle{A very preliminary manual}
+\author{Axel Brandenburg \& Wolfgang Dobler}
+
+% ====================================================================== %
+
+\begin{document}
+\pagestyle{empty}
+
+%\maketitle
+
+\begin{titlepage}
+  \begin{center}
+
+  \large
+
+  \vspace*{3cm}
+
+  {\Large\sffamily\bfseries Installing and Using the MHD code}
+
+  \vspace{0.5cm}
+
+  {\sffamily A very preliminary manual}
+
+  \vspace{1.5cm}
+
+  {Axel Brandenburg \& Wolfgang Dobler}
+
+
+  \vspace{2cm}
+
+  \emph{\today}
+
+
+\end{center}
+
+\end{titlepage}
+
+
+\newpage
+\mbox{}
+\vfill
+
+Copyright \copyright{} 2001,2002 Axel Brandenburg \& Wolfgang Dobler 
+\bigskip
+
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+Permission is granted to copy and distribute modified versions
+of this manual under the conditions for verbatim copying,
+provided that the entire resulting derived work is distributed under the
+terms of a permission notice identical to this one.
+
+
+\clearpage
+\pagestyle{plain}
+\pagenumbering{roman}
+
+\tableofcontents
+\clearpage
+\pagestyle{fancy}
+\pagenumbering{arabic}
+
+\chapter{Obtaining the Code}
+
+To obtain the MHD code, you should use \name{CVS} (concurrent version
+system, see \url{http://fill.this.in}).
+You proceed as follows:
+
+\begin{enumerate}
+
+\item Get a \name{CVS} client from \url{http://fill.this.in} and install it
+
+\item Get the password for anonymous \name{CVS} access to the MHD code
+
+\item Set your environment variable \env{CVSROOT} (you probably want to
+  put this into your \file{.cshrc} or \file{.profile} setup files):
+  \begin{alltt}
+  \prompt{csh> } setenv CVSROOT \bs
+        :pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS \
+  \end{alltt}
+  (all in one line, without the backslash) or
+  \begin{alltt}
+  \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS
+  \prompt{sh> } export CVSROOT \
+  \end{alltt}
+
+\item Log in:
+  \begin{alltt}
+  \prompt{unix> } cvs login
+  cvs pasword: ........ \
+\end{alltt}
+
+\item Go to wherever you want the code:
+  \begin{alltt}
+  \prompt{unix> } cd \file{somewhere} \
+  \end{alltt}
+
+\item Check the code out:
+  \begin{alltt}
+  \prompt{unix> } cvs checkout -d mhd f90/pencil_modular \
+  \end{alltt} 
+  This creates a subdirectory \file{mhd} of your current directory
+  \file{somewhere} and populates it with the MHD code's subdirectories.
+
+\end{enumerate}
+
+
+% ====================================================================== %
+
+\section{Getting Started}
+
+To get yourself started, you should run the comvection example which is
+provided as the default configuration of the code.
+
+
+% ====================================================================== %
+
+\section{The Equations}
+
+The equations solved by the MHD code are basically the standard
+compressible MHD equations. However, the modular structure allows to
+implement different versions of the MHD equations, as well as to switch
+some of the equations off.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Continuity equation}
+
+\begin{equation}
+  \frac{D\ln\varrho}{Dt}
+  = - \Div\uv \; .
+\end{equation}
+
+Here $\varrho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
+$D/Dt \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
+derivative.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Equation of motion}
+
+\begin{equation}
+  \frac{D\uv}{Dt}
+   =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
+      - \grad\Phi
+      + \frac{\jv\times\Bv}{\varrho}
+      + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv \right) \; .
+\end{equation}
+Here, $\cs^2 = \gamma p/\varrho$ is the (squared) sound speed,
+$\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
+$\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
+the magnetic flux density, and $\nu$ is kinematic viscosity.
+Note that the viscous term used here is only correct if the dynamical
+viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
+
+
+% ---------------------------------------------------------------------- %
+\subsection{Induction equation}
+
+\begin{equation}
+  \frac{\partial\Av}{\partial t}
+  = \uv\times\Bv + \eta\mu_0\jv \; .
+\end{equation}
+
+Here $\Av$ is the magnetic vector potential, $\Bv = \curl\Av$ the magnetic
+flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
+($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
+magnetic vacuum permeability.
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Entropy equation}
+
+The current thermodynamics module \file{entropy} formulates the thermal
+part of the physics in terms of \emph{entropy} $s$, rather than thermal
+energy $e$, which you may be more familiar with.
+Thus the two fundamental thermodynamical variables are $\ln\varrho$
+and $s$.
+The reason for this choice of variables is that entropy is the natural
+physical variable for (at least) convection processes: the sign of the
+entropy gradient determines convective (in)stability, the
+\emph{Rayleigh number} is proportional to the entropy gradient, etc.
+
+\begin{equation}
+  \varrho T\frac{Ds}{Dt}
+   =  \Heat - \Cool
+      + \Div(\lambda\grad T)
+      + \mu_0 \jv^2
+      + 2\varrho\nu {\sf S}^2 \; .
+\end{equation}
+
+Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
+$\Heat$ and $\Cool$ are explicit heating and cooling terms,
+$\lambda$ is the thermal conductivity, and
+\begin{equation}
+  {\sf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
+                 -\frac{1}{3} \delta_{ik}\Div\uv
+\end{equation}
+is the shear tensor.
+
+    
+% ====================================================================== %
+
+\section{Using the Code}
+
+Here's how to use the code \ldots
+
+
+
+    
+% ====================================================================== %
+
+\section{Experimenting with the \LaTeX{} macros}
+
+
+\bs{}code:    \code{call remove\_file()}
+
+\bs{}kbd:     \kbd{M-x comment-region}
+
+\bs{}key:     \key{F1}
+
+\bs{}samp:    \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}
+
+\bs{}var:     \var{ivisc}
+
+\bs{}env:     \env{CVSROOT}
+
+\bs{}file:    \file{~/tmp/var.dat}
+
+\bs{}command: \command{rm -f *}
+
+\bs{}option:  \option{-l}, \option{--long-listing}
+
+\bs{}dfn:     A \dfn{definition} is a specification sufficiently obfuscated
+           to be miunderstood 
+
+\bs{}cite:    See \cite{Abramowitz & Stegun}
+
+\bs{}acronym: \acronym{MNRAS}
+
+\bs{}url:     \url{http://www.nowhere.net/second_page.html}
+
+\bs{}email:   \email{nobody@nowhere.nil}
+
+
+
+
+% ====================================================================== %
+
+\section{Index}
+
+
+
+\end{document}
+
+% End of file manual.tex
