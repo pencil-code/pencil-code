@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.257 2003-11-01 12:43:42 theine Exp $
+### $Id: Makefile,v 1.258 2003-11-01 12:45:19 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -132,10 +132,6 @@ LDONLYFLAGS=
 #F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4|monolith)
 ##FFLAGS=-O3 -ipo #(fe[0-3])
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
-#FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
-#FFLAGS=-O3 #(fe[0-9])
-#FFLAGS=-O3 -xMKW -tpp7 -ipo #(fe[0-9])
-#FFLAGS=-O3 -xW #(fe[0-9])
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-O3 #(nw46|ns0|nl6|nl11|wormhole|sandin)
