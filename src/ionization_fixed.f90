@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.3 2003-08-09 19:47:27 mee Exp $
+! $Id: ionization_fixed.f90,v 1.4 2003-08-10 04:24:40 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -74,7 +74,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.3 2003-08-09 19:47:27 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.4 2003-08-10 04:24:40 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -143,8 +143,6 @@ module Ionization
       endif
 !
 ! Set the reference sound speed (used for noionisation to impossible)
-!
-      cs20=impossible
 !
       lnTTss=(2./3.)/(1.+yH0+xHe)/ss_ion
       lnTTlnrho=2./3.
