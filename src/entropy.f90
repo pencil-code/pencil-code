@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.284 2004-03-18 16:15:59 brandenb Exp $
+! $Id: entropy.f90,v 1.285 2004-03-19 15:28:07 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.284 2004-03-18 16:15:59 brandenb Exp $")
+           "$Id: entropy.f90,v 1.285 2004-03-19 15:28:07 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1584,7 +1584,8 @@ endif
 !  Inverse width of the transition is given by dheat_buffer1.
 !
       if(tauheat_buffer/=0.) then
-        profile_buffer=0.5*(1.+tanh(dheat_buffer1*(abs(z(n))-zheat_buffer)))
+        profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)**2-zheat_buffer**2)))
+!        profile_buffer=1.+0.5*(tanh(dheat_buffer1*(z(n)-z(n1)-zheat_buffer)) + tanh(dheat_buffer1*(z(n)-z(n2)-zheat_buffer)))
         heat=heat+profile_buffer*ss*(TTheat_buffer-1/TT1)/(rho1*tauheat_buffer)
       endif
 !
