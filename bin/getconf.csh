@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.49 2003-04-22 10:52:09 dobler Exp $
+# $Id: getconf.csh,v 1.50 2003-05-20 18:38:46 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -44,6 +44,12 @@ if ($mpi) then
     set mpirunops = "-c2c -O"
 #    set mpirunops = " c0-7"
 #    set mpirunops = "-c2c c8-13"
+
+  else if (($hn =~ copson.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
+    set mpirun = /opt/score/bin/mpirun
+    set mpirunops = ""
+#    set mpirun = /opt/score/bin/scout 
+#    set mpirunops = "-wait"
 
   else if ($hn =~ nq* || $hn =~ ns*) then
     echo "Use options for the Nordita cluster"
@@ -139,6 +145,8 @@ if ($mpi) then
     set npops = "-np $ncpus"
   else if ($mpirun =~ *mpiexec*) then
     set npops = "-n $ncpus"
+  else if ($mpirun =~ *scout*) then
+    set npops = "-nodes $ncpus"
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
   endif

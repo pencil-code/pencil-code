@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.177 2003-05-17 13:36:20 anders Exp $
+### $Id: Makefile,v 1.178 2003-05-20 18:38:46 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -96,7 +96,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #F90FLAGS= # (fire)
 #F90FLAGS=
 #LDMPI=
-#FC=mpif90 # (Samos|fire)
+#FC=mpif90 # (Samos|fire|copson[0-9]*)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
