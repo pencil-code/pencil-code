@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.27 2004-05-26 13:24:52 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.28 2004-05-27 15:41:29 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -88,7 +88,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.27 2004-05-26 13:24:52 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.28 2004-05-27 15:41:29 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -326,7 +326,7 @@ module Pscalar
         call dot2_mn(gcc,gcc2); gcc1=sqrt(gcc2)
         if (i_rhoccm/=0) call sum_mn_name(rho*cc/unit_rhocc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)
-        if (i_ccmin/=0) call min_mn_name(cc,i_ccmin)
+        if (i_ccmin/=0) call max_mn_name(-cc,i_ccmin)
         if (i_lnccmz/=0) call xysum_mn_name_z(cc,i_lnccmz)
         if (i_ucm/=0) call sum_mn_name(uu(:,3)*cc,i_ucm)
         if (i_uudcm/=0) call sum_mn_name(uu(:,3)*ugcc,i_uudcm)

@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.47 2004-05-26 08:54:25 ajohan Exp $
+! $Id: pscalar.f90,v 1.48 2004-05-27 15:41:29 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -79,7 +79,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.47 2004-05-26 08:54:25 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.48 2004-05-27 15:41:29 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -257,7 +257,7 @@ module Pscalar
         rho=exp(f(l1:l2,m,n,ilnrho))
         if (i_rhoccm/=0) call sum_mn_name(rho*cc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)
-        if (i_ccmin/=0) call min_mn_name(cc,i_ccmin)
+        if (i_ccmin/=0) call max_mn_name(-cc,i_ccmin)
         if (i_lnccmz/=0) call xysum_mn_name_z(lncc,i_lnccmz)
         if (i_ucm/=0) call sum_mn_name(uu(:,3)*cc,i_ucm)
         if (i_uudcm/=0) call sum_mn_name(uu(:,3)*cc*uglncc,i_uudcm)
