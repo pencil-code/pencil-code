@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   11-Nov-2001
-;;;  $Id: pvert.pro,v 1.17 2003-08-08 20:09:59 dobler Exp $
+;;;  $Id: pvert.pro,v 1.18 2003-12-30 13:22:36 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;    Plot vertical profiles of uz, lnrho and entropy.
@@ -19,21 +19,28 @@
 default, pvert_layout, [0,2,2]
 default, nprofs, 10              ; set to N for only N profiles, 0 for all
 
-s = texsyms()
+sym = texsyms()
 
 nign = 3                        ; Number of close-to-bdry points to ignore
 
 ;
 ; construct vector of vertical pencils to plot
 ;
-Nxmax = mx-2*nign
-Nymax = my-2*nign
+Nxmax = mx-2*nign > 1
+Nymax = my-2*nign > 1
 Nmax = Nxmax*Nymax
 if ((nprofs le 0) or (nprofs gt Nmax)) then nprofs = Nmax
 ixp=[[mx/2]] & iyp=[[my/2]]     ; case nprofs=1
 if (nprofs gt 1) then begin
   Nxp = sqrt(nprofs+1e-5)*Nxmax/Nymax > 1
   Nyp = sqrt(nprofs+1e-5)*Nymax/Nxmax > 1
+  Nxyp = Nxp*Nyp
+  ;; Correct for case where Nxp or Nyp was <<1 and thus Nxp*Nyp>>nprofs
+  if (Nxp eq 1) then begin
+    Nyp = Nyp*nprofs/Nxyp > 1
+  endif else if (Ny eq 1) then begin
+    Nxp = Nxp*nprofs/Nxyp > 1
+  endif
   Nxyp = Nxp*Nyp
   ixp = nign + spread( indgen(Nxp)*Nxmax/Nxp, 1, Nyp )
   iyp = nign + spread( indgen(Nyp)*Nymax/Nyp, 0, Nxp )
@@ -66,7 +73,7 @@ for ivar = 0,3 do begin
   case ivar of
     0: begin
       var = lnrho
-      title = '!6ln '+s.varrho
+      title = '!6ln '+sym.varrho
       if (ny eq 1) then xr = minmax(var[*,3,*]) else xr = minmax(var)
       if (n_elements(lnrhoinit) gt 0) then xr = minmax([xr,lnrhoinit])
     end
