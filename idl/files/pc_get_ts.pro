@@ -3,8 +3,8 @@
 ;   Get time series for various parameters from data snapshots
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2003-10-10 12:30:21 $
-;  $Revision: 1.1 $
+;  $Date: 2003-10-10 12:44:50 $
+;  $Revision: 1.2 $
 ;
 ;  10-oct-03/anders: coded (coding layout adapted from Tony)
 ;
@@ -34,7 +34,9 @@ pro pc_get_ts,t_arr=t_arr,array=array,snap_start=snap_start,snap_end=snap_end, $
     print, "/HELP: Display this usage information, and exit."
     print, ""
     print, "Types currently implemented:"
+    print, "type='uxdmean': Mean dust x velocity (AJ)"
     print, "type='uydmean': Mean dust y velocity (AJ)"
+    print, "type='udmean': Mean dust velocity (AJ)"
     print, ""
     print, "Feel free to add more."
     return
@@ -64,13 +66,22 @@ array=fltarr(snap_end-snap_start+1)
 t_arr=fltarr(snap_end-snap_start+1)
 
 for nsnap=snap_start,snap_end do begin
-  if (type eq 'udymean') then begin
-    varfile='VAR'+strcompress(nsnap,/remove_all)
+  varfile='VAR'+strcompress(nsnap,/remove_all)
+  if (type eq 'udxmean') then begin
     pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
                 QUIET=QUIET
-    t_arr(nsnap-snap_start)=t
+    array(nsnap-snap_start)=mean(uud(*,*,*,0))
+  end else if (type eq 'udymean') then begin
+    pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
+                QUIET=QUIET
     array(nsnap-snap_start)=mean(uud(*,*,*,1))
-  endif
+  end else if (type eq 'udmean') then begin
+    pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
+                QUIET=QUIET
+    array(nsnap-snap_start)= $
+        mean(sqrt(uud(*,*,*,0)^2+uud(*,*,*,1)^2+uud(*,*,*,2)^2))
+  end
+  t_arr(nsnap-snap_start)=t
 endfor
 
 
