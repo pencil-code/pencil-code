@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.76 2004-03-03 18:05:55 mee Exp $
+! $Id: interstellar.f90,v 1.77 2004-03-04 10:44:01 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -56,7 +56,7 @@ module Interstellar
   double precision, parameter :: solar_mass_cgs=1.989e33
   real, parameter :: h_SNI_cgs=1.00295e19,h_SNII_cgs=2.7774e18
   real, parameter :: rho_crit_cgs=1.e-24,TT_crit_cgs=4000.
-  double precision, parameter :: ampl_SN_cgs=10D51
+  double precision, parameter :: ampl_SN_cgs=10D50
 
   ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
   real :: TT_SN_min=impossible
@@ -139,7 +139,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.76 2004-03-03 18:05:55 mee Exp $")
+           "$Id: interstellar.f90,v 1.77 2004-03-04 10:44:01 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -746,7 +746,7 @@ find_SN: do n=n1,n2
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
       real :: EE_SN=0.,EE2_SN=0.
-      real :: rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,lnTT_SN_new,TT_SN_new,dv
+      real :: rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new,TT_SN_new,dv
       
       real, dimension(nx) :: deltarho, deltaEE
       real, dimension(1) :: fmpi1, fmpi1_tmp
@@ -781,7 +781,8 @@ find_SN: do n=n1,n2
                               yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
       TT_SN=exp(lnTT_SN)
 
-      call eoscalc(ilnrho_ee,lnrho_SN,ee_SN+c_SN/rho_SN, &
+      ee_SN_new = ee_SN+c_SN/rho_SN
+      call eoscalc(ilnrho_ee,lnrho_SN,ee_SN_new, &
                               ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
 
@@ -799,12 +800,10 @@ find_SN: do n=n1,n2
          ! ASSUME: SN will fully ionize the gas at its centre
          if (lmove_mass) then
            call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
-           lnrho_SN_new=alog(rho_SN_new)
+           lnrho_SN_new=log(rho_SN_new)
+           ee_SN_new=(ee_SN*rho_SN+c_SN)/rho_SN_new
 
-           call eoscalc(ilnrho_ss,lnrho_SN_new,ss_SN_new, &
-                                 yH=yH_SN_new,lnTT=lnTT_SN_new,ee=ee_SN)
-           TT_SN_new=exp(lnTT_SN_new)
-           call eoscalc(ilnrho_ee,lnrho_SN_new,(ee_SN*rho_SN+c_SN)/rho_SN_new, &
+           call eoscalc(ilnrho_ee,lnrho_SN_new,ee_SN_new, &
                                  ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 
@@ -825,7 +824,7 @@ find_SN: do n=n1,n2
       endif
       
 
-      EE_SN=0. !; EE_SN2=0.
+      EE_SN=0. ! EE_SN2=0.
       do n=n1,n2
          do m=m1,m2
             
@@ -849,7 +848,8 @@ find_SN: do n=n1,n2
               lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
             endif
   
-            call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,lnTT,yH)
+            call perturb_energy(lnrho,(ee_old*rho_old+deltaEE)/exp(lnrho),ss,lnTT,yH)
+            !call eoscalc(ilnrho_ee,lnrho,ee_old+(deltaEE/rho_old),ss=ss,lnTT=lnTT,yH=yH)
             TT=exp(lnTT)
 
             ! Save changes 

@@ -1,9 +1,9 @@
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2004-03-03 18:05:55 mee Exp $',
+  cvsid='$Id: run.in,v 1.5 2004-03-04 10:44:01 mee Exp $',
   nt=5, it1=1, isave=50, itorder=3
   cdt=0.4, cdtv=0.08, dtmin=1e-9
   dsnap=2., dvid=2.
-  ip=14
+  ip=20
 /
 &hydro_run_pars
   Omega=25.0

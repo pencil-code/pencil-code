@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.101 2004-03-02 13:09:51 mee Exp $
+! $Id: noionization.f90,v 1.102 2004-03-04 10:44:01 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -57,6 +57,9 @@ module Ionization
   ! run parameters
   namelist /ionization_run_pars/ xHe
 
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_TTm=0,i_TTmax=0
+
   contains
 
 !***********************************************************************
@@ -86,7 +89,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.101 2004-03-02 13:09:51 mee Exp $')
+           '$Id: noionization.f90,v 1.102 2004-03-04 10:44:01 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -113,6 +116,8 @@ module Ionization
       else
         cp=1.       
       endif
+
+      print*,'initialize_ionization: cp=',cp
 
       cp1=1./cp
 
@@ -169,6 +174,23 @@ module Ionization
 ! 
       logical :: lreset,lwr
       logical, optional :: lwrite
+      integer :: iname
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_TTmax=0
+        i_TTm=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'rprint_noionization: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'TTm',i_TTm)
+        call parse_name(iname,cname(iname),cform(iname),'TTmax',i_TTmax)
+      enddo
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
@@ -181,7 +203,6 @@ module Ionization
         write(3,*) 'ilnTT=',ilnTT
       endif
 !   
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_ionization
 !***********************************************************************
     subroutine ioninit(f)
@@ -205,8 +226,9 @@ module Ionization
       real, dimension(nx), intent(in) :: lnrho,ee
       real, dimension(nx), intent(out) :: ss,lnTT,yH
 
-      ss=(log(ee*gamma*gamma1/cs20)-gamma1*(lnrho-lnrho0))/gamma
-      lnTT=log(gamma*cp1*ee)
+      call eoscalc_pencil(ilnrho_ee,lnrho,ee,ss=ss,lnTT=lnTT)
+ !     ss=(log(ee*gamma*gamma1/cs20)-gamma1*(lnrho-lnrho0))/gamma
+ !     lnTT=log(gamma*cp1*ee)
       yH=impossible
     end subroutine perturb_energy
 !***********************************************************************
@@ -223,16 +245,14 @@ module Ionization
       if (ip==0) print*,lnrho,pp
     end subroutine perturb_mass
 !***********************************************************************
-    subroutine getdensity(EE,lnTT,yH,rho)
+    subroutine getdensity(EE,TT,yH,rho)
       use Mpicomm, only: stop_it
       
-      real, intent(in) :: EE,lnTT,yH
-      real, intent(out) :: rho
+      real, intent(in) :: EE,TT,yH
+      real, intent(inout) :: rho
 
-      call stop_it('getdensity: NOT IMPLEMENTED IN NO IONIZATION')
-      !rho = EE / ((1.5*(1+yH+xHe)*TT + yH*TT_ion) * ss_ion)
-      if (ip==0) print*,EE,lnTT,yH
-      rho=0.
+      rho = gamma * EE / (TT*cp)
+      if (ip==0) print*,yH
 
     end subroutine getdensity
 !***********************************************************************
@@ -343,6 +363,7 @@ module Ionization
 !                   subroutine pressure_gradient
 !
       use Cdata
+      use Sub, only: max_mn_name, sum_mn_name
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
@@ -359,6 +380,11 @@ module Ionization
       if (present(lnTT)) lnTT=lnTTi
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
       if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
+!
+     if (ldiagnos) then
+        if (i_TTmax/=0) call max_mn_name(exp(lnTTi),i_TTmax)
+        if (i_TTm/=0)   call sum_mn_name(exp(lnTTi),i_TTm)
+      endif
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
