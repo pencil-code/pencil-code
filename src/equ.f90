@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.94 2002-08-17 08:40:21 brandenb Exp $
+! $Id: equ.f90,v 1.95 2002-08-30 14:19:51 dobler Exp $
 
 module Equ
 
@@ -227,7 +227,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.94 2002-08-17 08:40:21 brandenb Exp $")
+           "$Id: equ.f90,v 1.95 2002-08-30 14:19:51 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -374,7 +374,7 @@ module Equ
 !
     endsubroutine pde
 !***********************************************************************
-      subroutine rmwig(f,df,ivar,explog)
+    subroutine rmwig(f,df,ivar,explog)
 !
 !  Remove small scale oscillations (`wiggles') from a component of f,
 !  normally from lnrho. Sometimes necessary since Nyquist oscillations in
@@ -385,6 +385,122 @@ module Equ
 !  imn here (including communication and boundary conditions[?]) and
 !  collect the result in df, from where it is applied to f after the
 !  loop.
+!    This version removes in the three directions consecutively (damping
+!  each Nyquist frequency fully). This implies three sets of
+!  communication, but that seems to be the way to do it.
+!
+!  30-Aug-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Boundcond
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      logical, optional :: explog
+      integer :: ivar
+!
+      if (lroot) then
+        if (ivar == ilnrho) then
+          print*,'RMWIG: removing wiggles in lnrho, t=',t
+        else
+          write(*,'(" ",A,I3,A,G12.5)') &
+               'RMWIG: removing wiggles in variable ', ivar, 't=', t
+        endif
+      endif
+!
+!  Check whether we want to smooth the actual variable f, or exp(f)
+!  The latter can be useful if the variable is lnrho or lncc.
+!
+      if (present(explog)) then
+        f(:,:,:,ivar)=exp(f(:,:,:,ivar))
+        if(lroot) print*,'RMWIG: turn f into exp(f), ivar=',ivar
+      endif
+!
+!  Apply boundconds and smooth in all three directions consecutively
+!  Note 1: we _can't_ do all boundconds first and then call all rmwig_1d.
+!  That's an experimental fact which I [wd] don't exactly understand.
+!  Note2: this will clearly cause trouble for explog=T and most boundary
+!  conditions, because these are now applied to exp(f), rather than to f.
+!  Could mend this by exp-ing and log-ing three times, but am reluctant
+!  to do so.
+!
+      call boundconds_x(f)
+      call rmwig_1d(f,df,ivar,1) ! x direction
+      call boundconds_y(f)
+      call rmwig_1d(f,df,ivar,2) ! y direction
+      call boundconds_z(f)
+      call rmwig_1d(f,df,ivar,3) ! z direction
+!
+!  Revert back to f if we have been working on exp(f)
+!
+      if (present(explog)) then
+        f(l1:l2,m1:m2,n1:n2,ivar)=alog(f(l1:l2,m1:m2,n1:n2,ivar))
+        if(lroot) print*,'RMWIG: turn f back into alog(f), ivar=',ivar
+      endif
+!
+    endsubroutine rmwig
+!***********************************************************************
+    subroutine rmwig_1d(f,df,ivar,idir)
+!
+!  Remove small scale oscillations (`wiggles') in the x direction from
+!  the ivar component of f (normally lnrho).
+!
+!  30-Aug-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Deriv
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx) :: tmp
+      integer :: ivar,idir
+!
+!  Initiate communication of ghost zones
+!AB: We don't need to communicate all variables though; just lnrho
+!WD: I wouldn't care, since this should be applied quite infrequently
+      call initiate_isendrcv_bdry(f)
+!
+!  do loop over y and z
+!  set indices and check whether communication must now be completed
+!
+      lfirstpoint=.true.        ! true for very first m-n loop
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        if (necessary(imn)) then 
+          call finalise_isendrcv_bdry(f)
+        endif
+        call der6(f,ivar,tmp,idir,IGNOREDX=.true.)
+        df(l1:l2,m,n,ivar) = 1./64.*tmp
+      enddo
+!
+!  Not necessary to do this in a (cache-efficient) loop updating in
+!  timestep, since this routine will be applied only infrequently.
+!
+      f(l1:l2,m1:m2,n1:n2,ivar) = &
+           f(l1:l2,m1:m2,n1:n2,ivar) + df(l1:l2,m1:m2,n1:n2,ivar)
+!
+    endsubroutine rmwig_1d
+!***********************************************************************
+      subroutine rmwig_old(f,df,ivar,explog)
+!
+!  Remove small scale oscillations (`wiggles') from a component of f,
+!  normally from lnrho. Sometimes necessary since Nyquist oscillations in
+!  lnrho do not affect the equation of motion at all (dlnrho=0); thus, in
+!  order to keep lnrho smooth one needs to smooth lnrho in sporadic time
+!  intervals.
+!    Since this is a global operation, we need to do a full loop through
+!  imn here (including communication and boundary conditions[?]) and
+!  collect the result in df, from where it is applied to f after the
+!  loop.
+!
+!  This version uses an additive operator D_x^6+D_y^6+D_z^6, and fully
+!  damps only the diagonal Nyquist wave number. Multiplicative damping in
+!  the three directions is almost certainly better; see the new rmwig().
+!  The current routine is kept for testing only and should be reomved at
+!  some point.
 !
 !  8-Jul-02/wolf: coded
 !
@@ -423,7 +539,7 @@ module Equ
 !
       if (present(explog)) then
         f(:,:,:,ivar)=exp(f(:,:,:,ivar))
-        if(lroot) print*,'turns the whole array into exp(f), ivar=',ivar
+        if(lroot) print*,'RMWIG: turn f into exp(f), ivar=',ivar
       endif
 !
 !  do loop over y and z
@@ -453,10 +569,10 @@ module Equ
 !
       if (present(explog)) then
         f(l1:l2,m1:m2,n1:n2,ivar)=alog(f(l1:l2,m1:m2,n1:n2,ivar))
-        if(lroot) print*,'turns the whole array back into alog(f), ivar=',ivar
+        if(lroot) print*,'RMWIG: turn f back into alog(f), ivar=',ivar
       endif
 !
-    endsubroutine rmwig
+    endsubroutine rmwig_old
 !***********************************************************************
 
 endmodule Equ

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.82 2002-08-18 15:13:55 brandenb Exp $ 
+! $Id: sub.f90,v 1.83 2002-08-30 14:19:51 dobler Exp $ 
 
 module Sub 
 
@@ -921,9 +921,9 @@ module Sub
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !
-      call der6(f,k,d6fdx,1,IGNOREDX=.TRUE.)
-      call der6(f,k,d6fdy,2,IGNOREDX=.TRUE.)
-      call der6(f,k,d6fdz,3,IGNOREDX=.TRUE.)
+      call der6(f,k,d6fdx,1,IGNOREDX=.true.)
+      call der6(f,k,d6fdy,2,IGNOREDX=.true.)
+      call der6(f,k,d6fdz,3,IGNOREDX=.true.)
       del6f = d6fdx + d6fdy + d6fdz
 !
     endsubroutine del6_nodx
