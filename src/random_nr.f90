@@ -1,4 +1,4 @@
-! $Id: random_nr.f90,v 1.3 2002-09-04 03:17:18 brandenb Exp $ 
+! $Id: random_nr.f90,v 1.4 2002-09-20 10:08:11 dobler Exp $ 
 
 module Random_nr
 
@@ -40,10 +40,11 @@ module Random_nr
 ! 28-aug-02/wolf: Adapted from Numerical Recipes
 !
       implicit none
+!
       integer, parameter :: k4b=selected_int_kind(9)
       integer(k4b), intent(inout) :: idum
       real :: ran
-
+!
       ! "Minimal" random number generator of Park and Miller combined
       ! with a Marsaglia shift sequence. Returns a uniform random deviate
       ! between 0.0 and 1.0 (exclusive of the endpoint values). This fully

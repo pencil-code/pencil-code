@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.43 2002-09-05 16:21:33 brandenb Exp $
+! $Id: mpicomm.f90,v 1.44 2002-09-20 10:08:11 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -32,7 +32,7 @@ module Mpicomm
   real, dimension (nx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (nx,nghost,nghost,mvar) :: llbufi,lubufi,uubufi,ulbufi
   real, dimension (nx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
-  real, dimension (nghost,my,mz,mvar) :: fahi, falo, fbhi, fblo, fao, fbo ! For shear
+  real, dimension (nghost,my,mz,mvar) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
@@ -43,12 +43,16 @@ module Mpicomm
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
   integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !(corners)
-  integer :: isend_rq_tolastya,isend_rq_tonextya,irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
-  integer :: isend_rq_tolastyb,isend_rq_tonextyb,irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
+  integer :: isend_rq_tolastya,isend_rq_tonextya, &
+             irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
+  integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
+             irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
-  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul,isend_stat_Tuu,isend_stat_Tlu
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu,irecv_stat_Fll,irecv_stat_Ful
+  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
+                                         isend_stat_Tuu,isend_stat_Tlu
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
+                                         irecv_stat_Fll,irecv_stat_Ful
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
