@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.44 2003-04-09 13:41:20 brandenb Exp $
+; $Id: r.pro,v 1.45 2003-04-09 14:50:56 theine Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.44 2003-04-09 13:41:20 brandenb Exp $
+;;; $Id: r.pro,v 1.45 2003-04-09 14:50:56 theine Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -168,9 +168,12 @@ if (par.lradiation ne 0) then begin
     TT=fltarr(mx,my,mz)*one
     readu,1,Qrad,Srad,kappa,TT
     print, FORMAT=fmt, 'Qrad   =', $
-      minmax(Qrad), mean(Qrad,/DOUBLE), rms(Qrad,/DOUBLE), $
-      minmax(Srad), mean(Srad,/DOUBLE), rms(Srad,/DOUBLE), $
-      minmax(kappa), mean(kappa,/DOUBLE), rms(kappa,/DOUBLE), $
+      minmax(Qrad), mean(Qrad,/DOUBLE), rms(Qrad,/DOUBLE)
+    print, FORMAT=fmt, 'Srad   =', $
+      minmax(Srad), mean(Srad,/DOUBLE), rms(Srad,/DOUBLE)
+    print, FORMAT=fmt, 'kappa   =', $
+      minmax(kappa), mean(kappa,/DOUBLE), rms(kappa,/DOUBLE)
+    print, FORMAT=fmt, 'TT   =', $
       minmax(TT), mean(TT,/DOUBLE), rms(TT,/DOUBLE)
   end
 end
