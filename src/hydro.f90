@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.88 2003-04-26 09:21:06 brandenb Exp $
+! $Id: hydro.f90,v 1.89 2003-05-08 14:30:58 tarek Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -18,13 +18,15 @@ module Hydro
   real :: ampluu=0., widthuu=.1, urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
+  real :: initpower=1.
   character (len=labellen) :: inituu='zero'
+
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
        uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu, &
        uy_left,uy_right, &
-       Omega
+       Omega,initpower
 
   ! run parameters
 !ajwm - sij declaration moved to cdata.f90
@@ -82,7 +84,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.88 2003-04-26 09:21:06 brandenb Exp $")
+           "$Id: hydro.f90,v 1.89 2003-05-08 14:30:58 tarek Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -246,6 +248,10 @@ module Hydro
         f(:,:,:,iuz) = prof*exp(-0.5*(tmp**2)/widthuu**2)
         tmp = sqrt((xx-(x0+0.5*Lx))**2+(yy-(y0+0.8*Ly))**2) ! dist. from spot 1
         f(:,:,:,iuz) = f(:,:,:,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
+
+      case('powern') 
+        ! initial spectrum k^power
+        call powern(ampluu,initpower,f,iux,iuz)
   
       case default
         !

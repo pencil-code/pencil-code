@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.40 2003-05-05 18:48:52 brandenb Exp $
+! $Id: prints.f90,v 1.41 2003-05-08 14:30:58 tarek Exp $
 
 module Print
 
@@ -111,7 +111,8 @@ module Print
 !
 !  if the line contains unreadible characters, then comment out line
 !
-        index_a=(index(line,'***') .or. index(line,'???'))
+!  TY: changed .or. to +. Could not compile with NAG f95 with .or.
+        index_a=(index(line,'***') +  index(line,'???'))
         if (index_a > 0) then
           line(1:1)='#'
         endif

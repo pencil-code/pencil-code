@@ -414,7 +414,7 @@ subroutine transform_i(a_re,a_im)
 !
 end subroutine transform_i
 !***********************************************************************
-subroutine transform_fftpack(a_re,a_im)
+subroutine transform_fftpack(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data
@@ -428,36 +428,52 @@ subroutine transform_fftpack(a_re,a_im)
   real,dimension(4*nx+15) :: wsavex
   real,dimension(4*ny+15) :: wsavey
   real,dimension(4*nz+15) :: wsavez
+  logical :: lforward=.true.
+  integer,optional :: direction
   integer :: l,m,n
+
+  if (present(direction).and. (direction.eq.-1)) lforward=.false.
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
+  if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
   call cffti(nx,wsavex)
   do m=1,ny
   do n=1,nz
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call cfftf(nx,ax,wsavex)
+    if (lforward) then 
+        call cfftf(nx,ax,wsavex)
+    else 
+        call cfftb(nx,ax,wsavex)
+    endif
     a_re(:,m,n)=real(ax)
     a_im(:,m,n)=aimag(ax)
   enddo
   enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in y'
+  if(lroot .AND. ip<10) print*,'doing FFTpack in y, direction =',direction
   call cffti(ny,wsavey)
   do l=1,nx
   do n=1,nz
     ay=cmplx(a_re(l,:,n),a_im(l,:,n))
-    call cfftf(ny,ay,wsavey)
+    if (lforward) then 
+        call cfftf(ny,ay,wsavey)
+    else 
+        call cfftb(ny,ay,wsavey)
+    endif
     a_re(l,:,n)=real(ay)
     a_im(l,:,n)=aimag(ay)
   enddo
   enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in z'
+  if(lroot .AND. ip<10) print*,'doing FFTpack in z, direction =',direction
   call cffti(nz,wsavez)
   do l=1,nx
   do m=1,ny
     az=cmplx(a_re(l,m,:),a_im(l,m,:))
-    call cfftf(nz,az,wsavez)
+    if (lforward) then 
+       call cfftf(nz,az,wsavez)
+    else 
+       call cfftb(nz,az,wsavez)
+    endif
     a_re(l,m,:)=real(az)
     a_im(l,m,:)=aimag(az)
   enddo
@@ -465,8 +481,11 @@ subroutine transform_fftpack(a_re,a_im)
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
+
+  if (lforward) then 
+    a_re=a_re/nwgrid
+    a_im=a_im/nwgrid
+  endif
 !
 end subroutine transform_fftpack
 !***********************************************************************

@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.172 2003-05-07 05:25:44 brandenb Exp $
+### $Id: Makefile,v 1.173 2003-05-08 14:30:58 tarek Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -10,8 +10,8 @@ LDMPI=-lmpi
 MPICOMM      = nompicomm
 GLOBAL       = noglobal
 IO           =   io_dist
-FFT          = nofft
-FFTPACK      = nofftpack
+FFT          = fft
+FFTPACK      = fftpack
 POWER        = nopower_spectrum
 DEBUG        =   debug_c
 
@@ -101,9 +101,9 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FC=mpif77 #(ns0)
 #FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=pgf90 #(erland|igor|tycho|linux29|onsager)
-#FC=f95 #(mmtf)
 #FC=ifc #(cosmo|nl6|mmtf)
+#FC=f95 #(karbala)
+#FC=pgf90 #(erland|igor|tycho|linux29|onsager)
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
@@ -119,7 +119,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI= # (Samos|fire)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
-#F77=$(FC) -dusty #(nl3|Mephisto|mmtf)
+#F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager)
 #F77=$(FC) #(Cincinnatus|Owen|Master|Cosmo)
 

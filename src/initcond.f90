@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.36 2003-05-07 05:25:44 brandenb Exp $ 
+! $Id: initcond.f90,v 1.37 2003-05-08 14:30:58 tarek Exp $ 
 
 module Initcond 
  
@@ -10,6 +10,7 @@ module Initcond
 
   use Cdata
   use General
+  use Mpicomm
 
   implicit none
 
@@ -50,108 +51,6 @@ module Initcond
       endif
 !
     endsubroutine sinxsinz
-!***********************************************************************
-    subroutine gaussian(ampl,f,i,kx,ky,kz)
-!
-!  gaussian bump
-!
-!   2-may-03/axel: coded
-!
-      integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl,k=1.
-!
-!  wavenumber k
-!
-!  set x-wave
-!
-      if (present(kx)) then
-        k=kx
-        if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kx=',k
-        else
-          if (lroot) print*,'wave: kx,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*x)**2),2,my),3,mz)
-        endif
-      endif
-!
-!  set y-wave
-!
-      if (present(ky)) then
-        k=ky
-        if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; ky=',k
-        else
-          if (lroot) print*,'wave: ky,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*y)**2),1,mx),3,mz)
-        endif
-      endif
-!
-!  set z-wave
-!
-      if (present(kz)) then
-        k=kz
-        if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kz=',k
-        else
-          if (lroot) print*,'wave: kz,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*z)**2),1,mx),2,my)
-        endif
-      endif
-!
-    endsubroutine gaussian
-!***********************************************************************
-    subroutine parabola(ampl,f,i,kx,ky,kz)
-!
-!  gaussian bump
-!
-!   2-may-03/axel: coded
-!
-      integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl,k=1.
-!
-!  wavenumber k
-!
-!  set x-wave
-!
-      if (present(kx)) then
-        k=kx
-        if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kx=',k
-        else
-          if (lroot) print*,'wave: kx,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*x)**2),2,my),3,mz)
-        endif
-      endif
-!
-!  set y-wave
-!
-      if (present(ky)) then
-        k=ky
-        if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; ky=',k
-        else
-          if (lroot) print*,'wave: ky,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*y)**2),1,mx),3,mz)
-        endif
-      endif
-!
-!  set z-wave
-!
-      if (present(kz)) then
-        k=kz
-        if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kz=',k
-        else
-          if (lroot) print*,'wave: kz,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*z)**2),1,mx),2,my)
-        endif
-      endif
-!
-    endsubroutine parabola
 !***********************************************************************
     subroutine wave(ampl,f,i,kx,ky,kz)
 !
@@ -481,7 +380,7 @@ module Initcond
 !
       print*,'planet: hmin=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
-!
+!'
 !  have to use explicit indices here, because ghostzones are not set
 !
       if(lentropy) then
@@ -890,5 +789,53 @@ module Initcond
       print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
     endsubroutine tor_pert
 !***********************************************************************
+    subroutine powern(ampl,initpower,f,i1,i2)
+!   Produces k^initpower spectrum.
+!   Still just one processor.
+!
+!   07-may-03 tarek : coded
+!
+      integer :: i,i1,i2
+      real, dimension (nx,ny,nz) :: k2
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx,ny,nz) :: u_re,u_im
+      real :: ampl,initpower
+      
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
+      else
+        call gaunoise_vect(1.,f,i1,i2) ! which has a k^2. spectrum
+        if (initpower.ne.2.) then 
+          
+         k2=      (spread(spread(cshift &
+             ((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx,2,ny),3,nz))**2.
+         k2= k2 + (spread(spread(cshift &
+             ((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly,1,nx),3,nz))**2.
+         k2= k2 + (spread(spread(cshift &
+             ((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz,1,nx),2,ny))**2.
 
+        k2(1,1,1) = 1.  ! Avoid division by zero 
+
+        do i=i1,i2
+          u_re=f(l1:l2,m1:m2,n1:n2,i)
+          u_im=0. 
+          !  fft of gausian noise w/ k^2 spectrum
+          call transform_fftpack(u_re,u_im,1)
+          ! change to k^n spectrum
+          u_re =(k2)**(.25*initpower-.5)*u_re 
+          u_im =(k2)**(.25*initpower-.5)*u_im 
+          ! back to real space 
+          call transform_fftpack(u_re,u_im,-1)
+          if (lroot) print*,'change to k^',initpower,' spectrum : var  i=',i
+          f(l1:l2,m1:m2,n1:n2,i)=ampl*u_re
+        enddo             
+
+      endif !(n.ne.2.)
+    endif !(ampl.eq.0)
+!
+    endsubroutine powern
+
+
+!***********************************************************************
 endmodule Initcond

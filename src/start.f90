@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.85 2003-04-26 09:21:07 brandenb Exp $
+! $Id: start.f90,v 1.86 2003-05-08 14:30:58 tarek Exp $
 !
 !***********************************************************************
       program start
@@ -34,7 +34,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.85 2003-04-26 09:21:07 brandenb Exp $")
+             "$Id: start.f90,v 1.86 2003-05-08 14:30:58 tarek Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -71,7 +71,7 @@
         if (.not.lperi(1).and.nxgrid<2) stop 'for nonperiodic: must have nxgrid>1'
         if (.not.lperi(2).and.nygrid<2) stop 'for nonperiodic: must have nygrid>1'
         if (.not.lperi(3).and.nzgrid<2) stop 'for nonperiodic: must have nzgrid>1'
-!
+!'
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
