@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.23 2002-07-19 17:56:30 dobler Exp $
+! $Id: grav_r.f90,v 1.24 2002-07-19 19:09:15 dobler Exp $
 
 module Gravity
 
@@ -51,7 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.23 2002-07-19 17:56:30 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.24 2002-07-19 19:09:15 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -224,9 +224,6 @@ if (headt .and. lfirst) call output_pencil('tmp/proc0/gg0.dat',gg_mn,3)
 !  remove this if you are sure rr is already calculated elsewhere      
 !
       rr=sqrt(xx**2+yy**2+zz**2)
-
-print*,'CPOT = ', cpot
-
       pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
               / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
 !

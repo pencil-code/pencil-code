@@ -1,4 +1,4 @@
- ! $Id: global_gg_halo.f90,v 1.1 2002-07-18 23:17:50 dobler Exp $
+ ! $Id: global_gg_halo.f90,v 1.2 2002-07-19 19:09:15 dobler Exp $
 
 module Global
 
@@ -7,6 +7,20 @@ module Global
 !  variables which are globally needed --- here this is the gravity field
 !  gg, and the halo profile for identifying a spherical halo region
 !  outside a star.
+!
+!  Tests on Linux boxes show the following performance results when
+!  comparing set/get_global access to the global field gg with
+!  recomputing gg all the time (ratonal approximation based on cpot):
+!
+!      size     recomputing    get/set_global  difference
+!    ------------------------------------------------------
+!      64^3       4.34            3.94           0.40
+!     128^3       4.06            3.74           0.32
+!     170^3       4.04            3.72           0.32
+!
+!  Listed are musec/pt/step on Kabul (1.9 GHz Athlon, serial execution).
+!
+
 !
   use Cparam
   use Mpicomm
@@ -23,8 +37,15 @@ module Global
     module procedure get_global_scal
   endinterface
 
-  real, dimension (mx,my,mz,3) :: gg=1.
-  real, dimension (mx,my,mz)   :: halo=0.
+!
+!  we could (and should in some sense) initialize gg and halo; however,
+!  with the Intel compiler this produces significantly larger
+!  executables, compiles far longer, and (for 256^3) results in the
+!  compiler message `Size of initialised array entity exceeds
+!  implementation limit'
+!
+  real, dimension (mx,my,mz,3) :: gg
+  real, dimension (mx,my,mz)   :: halo
 
   contains
 
