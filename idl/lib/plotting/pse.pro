@@ -78,7 +78,8 @@ pro pse, $
       if (strpos(cmd,psa_class[j]) eq 0) then begin
         ; check for end-of-word (tedious whithout character classes)
         nextchar = strmid(cmd,strlen(psa_class[j]),1)
-        if (nextchar eq '' or nextchar eq ',' or nextchar eq '&') then last=1
+        if (nextchar eq '' or nextchar eq ',' or nextchar eq '&' $
+	    or nextchar eq ';' or nextchar eq ' ') then last=1
       endif
     endfor
     i = i+1
