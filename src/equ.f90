@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.73 2002-07-04 21:46:47 dobler Exp $
+! $Id: equ.f90,v 1.74 2002-07-05 06:28:40 brandenb Exp $
 
 module Equ
 
@@ -113,7 +113,6 @@ module Equ
         call mpireduce_sum(fnamez,fsumz,nnamez*nz*nprocz)
         if(lroot) fnamez=fsumz/(nx*ny*nprocy)
       endif
-
 !
     endsubroutine xyaverages
 !***********************************************************************
@@ -213,7 +212,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.73 2002-07-04 21:46:47 dobler Exp $")
+           "$Id: equ.f90,v 1.74 2002-07-05 06:28:40 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -221,10 +220,11 @@ module Equ
       if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
 !
 !  initiate communication and do boundary conditions
+!  need to call boundconds, because it also deals with x-boundaries!
 !
       if (ldebug) print*,'bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-!      call boundconds(f)
+      call boundconds(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -233,10 +233,7 @@ module Equ
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) then
-          call finalise_isendrcv_bdry(f)
-          call boundconds(f)
-        endif
+        if (necessary(imn)) call finalise_isendrcv_bdry(f)
 !
 !  coordinates are needed all the time
 !  (but not for isotropic turbulence!)
@@ -277,6 +274,7 @@ module Equ
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?
 !  WD: there is some virtue in calling all of the dXX_dt in equ.f90
+!  AB: but it is not really a new dXX_dt, because XX=uu.
 !
         if (lhydro) then
           if(lgrav) call duu_dt_grav(f,df)
@@ -316,10 +314,12 @@ module Equ
 !  In rms_mn sum of all u^2 (etc) is accumulated
 !  Calculate maximum advection speed for timestep; needs to be done at
 !  the first substep of each time step
+!  Note that we are (currently) accumulating the maximum value,
+!  not the maximum squared!
 !
         if (lfirst.and.ldt) then
           fac=cdt/(cdtv*dxmin)
-          call max_mn(sqrt(maxadvec2)+(fac*maxdiffus)**2,UUmax)
+          call max_mn(sqrt(maxadvec2)+(fac*maxdiffus),UUmax)
         endif
 !
 !  calculate density diagnostics: mean density

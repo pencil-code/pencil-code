@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.62 2002-07-04 21:46:47 dobler Exp $
+! $Id: magnetic.f90,v 1.63 2002-07-05 06:28:40 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.62 2002-07-04 21:46:47 dobler Exp $")
+           "$Id: magnetic.f90,v 1.63 2002-07-05 06:28:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -309,10 +309,8 @@ module Magnetic
 !
 !  calculate dA/dt
 !
-      ! df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
-      ! df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+eta*del2A
-!call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
+      !call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry:
 !  Note that eta_out is total eta in halo (not eta_out+eta)
