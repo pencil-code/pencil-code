@@ -67,5 +67,6 @@ endif
 
 # cut & paste for job submission for PBS
 # qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start.csh
+# qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long start.csh
 # qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel start.csh
 # qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start.csh
