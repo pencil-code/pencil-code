@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.23 2003-11-01 12:43:42 theine Exp $
+! $Id: slices.f90,v 1.24 2003-11-02 04:00:18 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -12,17 +12,17 @@ module Slices
   real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
   real, dimension (nx,ny) :: divu_xy,divu_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
-  real, dimension (nx,ny) :: TT_xy,TT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
+  real, dimension (nx,ny) :: lnTT_xy,lnTT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
   real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2,shock_xy,shock_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
-  real, dimension (nx,nz) :: TT_xz,yH_xz,ecr_xz
+  real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz
   real, dimension (nx,nz) :: Qrad_xz,shock_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
-  real, dimension (ny,nz) :: TT_yz,yH_yz,ecr_yz
+  real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz
   real, dimension (ny,nz) :: Qrad_yz,shock_yz
 
   contains
@@ -182,14 +182,14 @@ module Slices
 !  Temperature
 !
       if (lionization) then
-        TT_yz=f(ix,m1:m2,n1:n2,iTT)
-        TT_xz=f(l1:l2,iy,n1:n2,iTT)
-        TT_xy=f(l1:l2,m1:m2,iz,iTT)
-        TT_xy2=f(l1:l2,m1:m2,iz2,iTT)
-        call wslice(path//'TT.yz',TT_yz,x(ix),ny,nz)
-        call wslice(path//'TT.xz',TT_xz,y(iy),nx,nz)
-        call wslice(path//'TT.xy',TT_xy,z(iz),nx,ny)
-        call wslice(path//'TT.Xy',TT_xy2,z(iz2),nx,ny)
+        lnTT_yz=f(ix,m1:m2,n1:n2,ilnTT)
+        lnTT_xz=f(l1:l2,iy,n1:n2,ilnTT)
+        lnTT_xy=f(l1:l2,m1:m2,iz,ilnTT)
+        lnTT_xy2=f(l1:l2,m1:m2,iz2,ilnTT)
+        call wslice(path//'lnTT.yz',lnTT_yz,x(ix),ny,nz)
+        call wslice(path//'lnTT.xz',lnTT_xz,y(iy),nx,nz)
+        call wslice(path//'lnTT.xy',lnTT_xy,z(iz),nx,ny)
+        call wslice(path//'lnTT.Xy',lnTT_xy2,z(iz2),nx,ny)
       endif
 !
 !  Degree of ionization

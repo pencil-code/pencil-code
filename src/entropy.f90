@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.236 2003-11-01 10:50:00 theine Exp $
+! $Id: entropy.f90,v 1.237 2003-11-02 04:00:18 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.236 2003-11-01 10:50:00 theine Exp $")
+           "$Id: entropy.f90,v 1.237 2003-11-02 04:00:18 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,8 +236,8 @@ module Entropy
         TT_int = 1+beta1*(1/r_int-1)
 !       set up cooling parameters for spherical shell in terms of
 !       sound speeds
-        call get_soundspeed(TT_ext,cs2_ext)
-        call get_soundspeed(TT_int,cs2_int)
+        call get_soundspeed(log(TT_ext),cs2_ext)
+        call get_soundspeed(log(TT_int),cs2_int)
 !
     endselect
 !
@@ -621,7 +621,7 @@ module Entropy
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real :: T_c=500.0,T_w=8.0e3,T_i=8.0e3,T_h=1.0e6 !,k_B=0.0144
-      real :: rho,lnrho,pp,pp0,ss,TT,yH 
+      real :: rho,lnrho,pp,pp0,ss,lnTT,yH 
       real, dimension(2) :: fmpi2
 !      real, dimension(1) :: fmpi1
 !      integer :: iproctop
@@ -664,7 +664,7 @@ module Entropy
            (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
            
           if (lionization) then
-            call perturb_mass(lnrho,pp,ss,TT,yH) 
+            call perturb_mass(lnrho,pp,ss,lnTT,yH) 
             f(l1:l2,m,n,iss)=ss
             !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
             if (n == n1 .and. m == m1) cs2bot=0.
@@ -723,7 +723,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gss,gshock
       real, dimension (nx) :: ugss,uglnrho,divu
-      real, dimension (nx) :: lnrho,ss,yH,TT,rho1,cs2,TT1,cp1tilde
+      real, dimension (nx) :: lnrho,ss,yH,lnTT,rho1,cs2,TT1,cp1tilde
       real, dimension (nx) :: rho,ee,shock
       real :: zbot,ztop,xi,profile_cor
       integer :: j,ju
@@ -749,13 +749,13 @@ module Entropy
 !  yH and TT have already been calculated in the beginning of pencil loop
 !
       ss=f(l1:l2,m,n,iss)
-      call ionget(f,yH,TT)
-      call thermodynamics(lnrho,ss,yH,TT,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
+      call ionget(f,yH,lnTT)
+      call thermodynamics(lnrho,yH,lnTT,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
 !
-      if (headtt) print*,'dss_dt: cs2,TT,cp1tilde=',cs2(1),TT(1),cp1tilde(1)
+      if (headtt) print*,'dss_dt: cs2,lnTT,cp1tilde=',cs2(1),lnTT(1),cp1tilde(1)
 !
 !  use sound speed in Courant condition
 !
@@ -795,7 +795,7 @@ module Entropy
 !  T is now calculated in thermodynamics, calculate 1/T (==TT1)
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
 !  
-      TT1=1./TT
+      TT1=exp(-lnTT)
 !
 !ajwm - lviscosity always true and there is not a noviscosity module
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
@@ -824,12 +824,12 @@ module Entropy
           (heat_uniform /= 0) .or. &
           (cool_ext /= 0 .AND. cool_int /= 0) .or. &
           (lsinus_heat)) &
-        call calc_heat_cool(f,df,rho1,cs2,cp1tilde,ss,TT,TT1)
+        call calc_heat_cool(f,df,rho1,cs2,cp1tilde,ss,TT1)
 !
 !  interstellar radiative cooling and UV heating
 !
       if (linterstellar) &
-        call calc_heat_cool_interstellar(df,rho1,TT,TT1,yH)
+        call calc_heat_cool_interstellar(df,rho1,TT1,yH)
         !
 !  possibility of entropy relaxation in exterior region
 !
@@ -1141,7 +1141,7 @@ endif
 !
     endsubroutine calc_heatcond
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,rho1,cs2,cp1tilde,ss,TT,TT1)
+    subroutine calc_heat_cool(f,df,rho1,cs2,cp1tilde,ss,TT1)
 !
 !  add combined heating and cooling
 !
@@ -1154,7 +1154,7 @@ endif
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rho1,cs2,ss,cp1tilde,TT,TT1
+      real, dimension (nx) :: rho1,cs2,ss,cp1tilde,TT1
       real, dimension (nx) :: heat,prof
       real :: ssref,zbot,ztop,TTref,profile_buffer,xi,profile_cor
 !
@@ -1245,7 +1245,7 @@ endif
         if(z(n)>=z_cor) then
           xi=(z(n)-z_cor)/(ztop-z_cor)
           profile_cor=xi**2*(3-2*xi)
-          heat=heat+profile_cor*(TT_cor-TT)/(rho1*tau_cor*cp1tilde)
+          heat=heat+profile_cor*(TT_cor-1/TT1)/(rho1*tau_cor*cp1tilde)
         endif
       endif
 !
@@ -1255,18 +1255,18 @@ endif
 !
       if(tauheat_buffer/=0.) then
         profile_buffer=0.5*(1.+tanh(dheat_buffer1*(abs(z(n))-zheat_buffer)))
-        heat=heat+profile_buffer*ss*(TTheat_buffer-TT)/(rho1*tauheat_buffer)
+        heat=heat+profile_buffer*ss*(TTheat_buffer-1/TT1)/(rho1*tauheat_buffer)
       endif
 !
 !  add sinusoidal heating and cooling and maintain original sinusoidal entropy
 !  in the x direction.
 !      
       if(lsinus_heat) then 
-        heat = heat + TT/rho1*( &         ! Heating
-            chi*gamma*kx_ss**2*ampl_ss*sin(kx_ss*x(l1:l2) + pi) - &
-            chi*gamma**2*kx_ss**2*ampl_ss**2*cos(kx_ss*x(l1:l2) + pi)**2)
-        heat = heat + TT/rho1*( &         ! Advection term
-            -f(l1:l2,m,n,iux)*kx_ss*ampl_ss*cos(kx_ss*x(l1:l2) + pi) )
+        heat = heat + &                   ! Heating
+            (chi*gamma*kx_ss**2*ampl_ss*sin(kx_ss*x(l1:l2) + pi) - &
+             chi*gamma**2*kx_ss**2*ampl_ss**2*cos(kx_ss*x(l1:l2) + pi)**2)/(rho1*TT1)
+        heat = heat + &                   ! Advection term
+            (-f(l1:l2,m,n,iux)*kx_ss*ampl_ss*cos(kx_ss*x(l1:l2) + pi))/(rho1*TT1)
       endif
 !
 !  add to entropy equation

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.133 2003-10-28 21:16:57 theine Exp $
+! $Id: ionization.f90,v 1.134 2003-11-02 04:00:18 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -69,7 +69,8 @@ module Ionization
   end interface
 
   !  secondary parameters calculated in initialize
-  real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,Srad0,xHe_term
+  real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
+  real :: ss_ion,ee_ion,kappa0,lnchi0,Srad0,xHe_term
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   integer :: l
 
@@ -111,18 +112,18 @@ module Ionization
 !  set indices for auxiliary variables
 !
       iyH = mvar + naux +1; naux = naux + 1 
-      iTT = mvar + naux +1; naux = naux + 1 
+      ilnTT = mvar + naux +1; naux = naux + 1 
 
       if ((ip<=8) .and. lroot) then
         print*, 'register_ionization: ionization nvar = ', nvar
         print*, 'register_ionization: iyH = ', iyH
-        print*, 'register_ionization: iTT = ', iTT
+        print*, 'register_ionization: ilnTT = ', ilnTT
       endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.133 2003-10-28 21:16:57 theine Exp $")
+           "$Id: ionization.f90,v 1.134 2003-11-02 04:00:18 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -135,12 +136,12 @@ module Ionization
 !
       aux_var(aux_count)=',yh $'
       aux_count=aux_count+1
-      if (naux < maux)  aux_var(aux_count)=',TT $'
-      if (naux == maux) aux_var(aux_count)=',TT'
+      if (naux < maux)  aux_var(aux_count)=',lnTT $'
+      if (naux == maux) aux_var(aux_count)=',lnTT'
       aux_count=aux_count+1
       if (lroot) then
         write(15,*) 'yH = fltarr(mx,my,mz)*one'
-        write(15,*) 'TT = fltarr(mx,my,mz)*one'
+        write(15,*) 'lnTT = fltarr(mx,my,mz)*one'
       endif
 !
     endsubroutine register_ionization
@@ -186,7 +187,9 @@ module Ionization
 !
       mu1yHxHe=1+3.97153*xHe
       TT_ion=chiH/k_B
+      lnTT_ion=log(TT_ion)
       TT_ion_=chiH_/k_B
+      lnTT_ion_=log(chiH_/k_B)
       lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
@@ -195,6 +198,7 @@ module Ionization
       ss_ion=k_B/m_H/mu1yHxHe
       ee_ion=ss_ion*TT_ion
       kappa0=sigmaH_/m_H/mu1yHxHe
+      lnchi0=log(kappa0)-log(4.0)
       Srad0=sigmaSB*TT_ion**4/pi
 !
       if (xHe>0) then
@@ -235,7 +239,7 @@ module Ionization
 !*******************************************************************
     subroutine rprint_ionization(lreset,lwrite)
 !
-!  Writes iyH and iTT to index.pro file
+!  Writes iyH and ilnTT to index.pro file
 !
 !  14-jun-03/axel: adapted from rprint_radiation
 !
@@ -276,7 +280,7 @@ module Ionization
           write(3,*) 'i_TTm=',i_TTm
           write(3,*) 'nname=',nname
           write(3,*) 'iyH=',iyH
-          write(3,*) 'iTT=',iTT
+          write(3,*) 'ilnTT=',ilnTT
         endif
       endif
 !   
@@ -308,50 +312,53 @@ module Ionization
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: lnrho,ss,yH,lnTT_
+      real, dimension (mx) :: lnTT
+      real :: lnrho,ss,yH
 !
       do n=1,mz
       do m=1,my
-      do l=1,mx
-         lnrho=f(l,m,n,ilnrho)
-         ss=f(l,m,n,iss)
-         yH=f(l,m,n,iyH)
-         call rtsafe('lnrho|ss',lnrho,ss,yHmin,yHmax,yH)
-         f(l,m,n,iyH)=yH
-         lnTT_=(2./3.)*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
-                           +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                           +xHe_term)/(1.+yH+xHe) &
-                          +lnrho-2.5)
-         f(l,m,n,iTT)=exp(lnTT_)*TT_ion
-      enddo
+        do l=1,mx
+           lnrho=f(l,m,n,ilnrho)
+           ss=f(l,m,n,iss)
+           yH=f(l,m,n,iyH)
+           call rtsafe('lnrho|ss',lnrho,ss,yHmin,yHmax,yH)
+           f(l,m,n,iyH)=yH
+           lnTT(l)=(ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                    +yH*(2*log(yH)-lnrho_e-lnrho_p)+xHe_term)/(1+yH+xHe)
+        enddo
+        lnTT=(2.0/3.0)*(lnTT+f(:,m,n,ilnrho)-2.5)+lnTT_ion
+        f(:,m,n,ilnTT)=lnTT
       enddo
       enddo
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
+    subroutine perturb_energy_point(lnrho,ee,ss,lnTT,yH)
 !
 !  DOCUMENT ME!
 !      
       real,intent(in) :: lnrho,ee
-      real, intent(out) :: ss,TT,yH
+      real, intent(out) :: ss,lnTT,yH
+      real :: TT
 
       yH=0.5*yHmax
       call rtsafe('lnrho|ee',lnrho,ee,yHmin,yHmax*min(ee/ee_ion,1.0),yH)
       
       TT=(ee-yH*ee_ion)/(1.5*(1.+yH+xHe)*ss_ion)
+      lnTT=log(TT)
       ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
                  -yH*(2*log(yH)-lnrho_e-lnrho_p) &
                  -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
 
     end subroutine perturb_energy_point
 !***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
+    subroutine perturb_energy_pencil(lnrho,ee,ss,lnTT,yH)
 !
 !  DOCUMENT ME!
 !
       real, dimension(nx) ,intent(in) :: lnrho,ee
-      real, dimension(nx) ,intent(out) :: ss,TT,yH
+      real, dimension(nx) ,intent(out) :: ss,lnTT,yH
+      real, dimension(nx) :: TT
       real :: temp
 
       temp=0.5*min(ee(1)/ee_ion,1.0)
@@ -363,35 +370,39 @@ module Ionization
       enddo
 
       TT=(ee-yH*ee_ion)/(1.5*(1.+yH+xHe)*ss_ion)
+      lnTT=log(TT)
       ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
                  -yH*(2*log(yH)-lnrho_e-lnrho_p) &
                  -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
 
     end subroutine perturb_energy_pencil
 !***********************************************************************
-    subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
+    subroutine perturb_mass_point(lnrho,pp,ss,lnTT,yH)
 !
 !  DOCUMENT ME!
 !
       real,intent(in) :: lnrho,pp
-      real, intent(out) :: ss,TT,yH
+      real, intent(out) :: ss,lnTT,yH
+      real :: TT
 
       yH=0.5
       call rtsafe('lnrho|pp',lnrho,pp,yHmin,yHmax,yH)
       
       TT=pp/((1.+yH+xHe)*ss_ion*exp(lnrho))
+      lnTT=log(TT)
       ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
                  -yH*(2*log(yH)-lnrho_e-lnrho_p) &
                  -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
        
     end subroutine perturb_mass_point
 !***********************************************************************
-    subroutine perturb_mass_pencil(lnrho,pp,ss,TT,yH)
+    subroutine perturb_mass_pencil(lnrho,pp,ss,lnTT,yH)
 !
 !  DOCUMENT ME!
 !
       real, dimension(nx) ,intent(in) :: lnrho,pp
-      real, dimension(nx) ,intent(out) :: ss,TT,yH
+      real, dimension(nx) ,intent(out) :: ss,lnTT,yH
+      real, dimension(nx) :: TT
       real :: temp
 
       temp=0.5
@@ -402,38 +413,39 @@ module Ionization
       enddo
 
       TT=pp/((1.+yH+xHe)*ss_ion*exp(lnrho))
+      lnTT=log(TT)
       ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
                  -yH*(2*log(yH)-lnrho_e-lnrho_p) &
                  -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
 
     end subroutine perturb_mass_pencil
 !***********************************************************************
-    subroutine getdensity(EE,TT,yH,rho)
+    subroutine getdensity(EE,lnTT,yH,rho)
 !
 !  DOCUMENT ME!
 !
-      real, intent(in) :: EE,TT,yH
+      real, intent(in) :: EE,lnTT,yH
       real, intent(out) :: rho
 
-      rho=EE/(1.5*(1.+yH+xHe)*ss_ion*TT+yH*ee_ion)
+      rho=EE/(1.5*(1.+yH+xHe)*ss_ion*exp(lnTT)+yH*ee_ion)
 
     end subroutine getdensity
 !***********************************************************************
-    subroutine ionget_pencil(f,yH,TT)
+    subroutine ionget_pencil(f,yH,lnTT)
 !
 !  extract ionization fraction and temperature from f array pencilwise
 !
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out) :: yH,TT
+      real, dimension(nx), intent(out) :: yH,lnTT
 !
       yH=f(l1:l2,m,n,iyH)
-      TT=f(l1:l2,m,n,iTT)
+      lnTT=f(l1:l2,m,n,ilnTT)
 !
     endsubroutine ionget_pencil
 !***********************************************************************
-    subroutine ionget_point(lnrho,ss,yH,TT)
+    subroutine ionget_point(lnrho,ss,yH,lnTT)
 !
 !   extract ionization fraction and temperature from f array
 !   for an arbitrary point
@@ -441,21 +453,20 @@ module Ionization
       use Cdata
 !
       real, intent(in) :: lnrho,ss
-      real, intent(out) :: yH,TT
+      real, intent(out) :: yH,lnTT
       real :: lnTT_
 !
       yH=0.5
       call rtsafe('lnrho|ss',lnrho,ss,yHmin,yHmax,yH)
 
-      lnTT_=(2./3.)*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
-                        +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                        +xHe_term)/(1.+yH+xHe) &
-                       +lnrho-2.5)
-      TT=exp(lnTT_)*TT_ion
+      lnTT=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                       +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                       +xHe_term)/(1+yH+xHe) &
+                      +lnrho-2.5)+lnTT_ion
 !
     endsubroutine ionget_point
 !***********************************************************************
-    subroutine ionput_pencil(f,yH,TT)
+    subroutine ionput_pencil(f,yH,lnTT)
 !
 !  DOCUMENT ME!
 !
@@ -463,16 +474,16 @@ module Ionization
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out) :: yH,TT
+      real, dimension(nx), intent(out) :: yH,lnTT
 !
       call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION")
       if (ip==0) yH=0           !(keep compiler quiet)
-      if (ip==0) TT=0           !(keep compiler quiet)
+      if (ip==0) lnTT=0           !(keep compiler quiet)
       if (ip==0) print*,f       !(keep compiler quiet)      
 !
     endsubroutine ionput_pencil
 !***********************************************************************
-    subroutine ionput_point(lnrho,ss,yH,TT)
+    subroutine ionput_point(lnrho,ss,yH,lnTT)
 !
 !  DOCUMENT ME!
 !
@@ -480,17 +491,17 @@ module Ionization
       use Mpicomm, only: stop_it
 !
       real, intent(in) :: lnrho,ss
-      real, intent(out) :: yH,TT
+      real, intent(out) :: yH,lnTT
 !
       call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION")
       if (ip==0) yH=0           !(keep compiler quiet)
-      if (ip==0) TT=0           !(keep compiler quiet)
+      if (ip==0) lnTT=0           !(keep compiler quiet)
       if (ip==0) print*,lnrho   !(keep compiler quiet)
       if (ip==0) print*,ss      !(keep compiler quiet)
 !
     endsubroutine ionput_point
 !***********************************************************************
-    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_pencil(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -505,44 +516,42 @@ module Ionization
       use General
       use Sub
 !
-      real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
+      real, dimension(nx), intent(in) :: lnrho,yH,lnTT
       real, dimension(nx), intent(out), optional :: cs2,cp1tilde,ee,pp
       real, dimension(nx) :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real, dimension(nx) :: dffdlnrho,dydlnrho,dlnPdlnrho
-      real, dimension(nx) :: dlnTT_dss,dffdss,dydss,dlnPdss
+      real, dimension(nx) :: dlnTT_dss,dffdss,dydss,dlnPdss,TT,TT1
+!
+      TT=exp(lnTT)
+      TT1=1/TT
 !
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
       if (present(cs2).or.present(cp1tilde)) then
-         ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
-            +log(1.-yH)-2.*log(yH)
-         dlnTT_dy=((2./3.)*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yH+xHe)
-         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
+         ff=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1.-yH)-2.*log(yH)
+         dlnTT_dy=((2.0/3.0)*(lnrho_H-lnrho_p-ff-TT_ion*TT1)-1)/(1+yH+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion*TT1)-1/(1-yH)-2/yH
       endif
       if (present(cs2)) then
-         dlnTT_dlnrho=(2./3.)
-         dffdlnrho=(2./3.)*TT_ion/TT
+         dlnTT_dlnrho=(2.0/3.0)
+         dffdlnrho=(2.0/3.0)*TT_ion*TT1
          dydlnrho=-dffdlnrho/dffdy
-         dlnPdlnrho=1.+dydlnrho/(1.+yH+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-         cs2=(1.+yH+xHe)*ss_ion*TT*dlnPdlnrho
+         dlnPdlnrho=1+dydlnrho/(1+yH+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1+yH+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=(2./3.)/((1.+yH+xHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yH+xHe)*ss_ion)
+         dlnTT_dss=(2.0/3.0)/((1+yH+xHe)*ss_ion)
+         dffdss=(1+dffdlnrho)/((1+yH+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yH+xHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1+yH+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
-      if (present(pp)) pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
-!
-      if (ip==0) print*,ss      !(keep compiler quiet)
-!
-! wd: Do we really need ss as arguments if we never use it?
+      if (present(ee)) ee=1.5*(1+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      if (present(pp)) pp=(1+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
       if (ldiagnos) then
         if (i_yHmax/=0) call max_mn_name(yH,i_yHmax)
@@ -553,7 +562,7 @@ module Ionization
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
-    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_point(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -568,44 +577,42 @@ module Ionization
       use General
       use Sub
 !
-      real, intent(in) ::lnrho,ss,yH,TT
+      real, intent(in) ::lnrho,yH,lnTT
       real, intent(out), optional :: cs2,cp1tilde,ee,pp
       real :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real :: dffdlnrho,dydlnrho,dlnPdlnrho
-      real :: dlnTT_dss,dffdss,dydss,dlnPdss
+      real :: dlnTT_dss,dffdss,dydss,dlnPdss,TT,TT1
+!
+      TT=exp(lnTT)
+      TT1=1/TT
 !
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
       if (present(cs2).or.present(cp1tilde)) then
-         ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
-            +log(1.-yH)-2.*log(yH)
-         dlnTT_dy=((2./3.)*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yH+xHe)
-         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
+         ff=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1.-yH)-2.*log(yH)
+         dlnTT_dy=((2.0/3.0)*(lnrho_H-lnrho_p-ff-TT_ion*TT1)-1)/(1+yH+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion*TT1)-1/(1-yH)-2/yH
       endif
       if (present(cs2)) then
-         dlnTT_dlnrho=(2./3.)
-         dffdlnrho=(2./3.)*TT_ion/TT
+         dlnTT_dlnrho=(2.0/3.0)
+         dffdlnrho=(2.0/3.0)*TT_ion*TT1
          dydlnrho=-dffdlnrho/dffdy
-         dlnPdlnrho=1.+dydlnrho/(1.+yH+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-         cs2=(1.+yH+xHe)*ss_ion*TT*dlnPdlnrho
+         dlnPdlnrho=1+dydlnrho/(1+yH+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1+yH+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=(2./3.)/((1.+yH+xHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yH+xHe)*ss_ion)
+         dlnTT_dss=(2.0/3.0)/((1+yH+xHe)*ss_ion)
+         dffdss=(1+dffdlnrho)/((1+yH+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yH+xHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1+yH+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
-      if (present(pp)) pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
-!
-      if (ip==0) print*,ss      !(keep compiler quiet)
-!
-! wd: Do we really need ss as arguments if we never use it?
+      if (present(ee)) ee=1.5*(1+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      if (present(pp)) pp=(1+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
 !***********************************************************************
@@ -719,35 +726,36 @@ module Ionization
       real, intent(out)            :: f,df
 !
       real :: lnrho,ss,ee,pp
-      real :: lnTT_,dlnTT_
+      real :: lnTT_,dlnTT_,TT1_
 !
       select case (variables)
       case ('lnrho|ss')
         lnrho=variable1
         ss=variable2
-        lnTT_=(2./3.)*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
-                        +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                        +xHe_term)/(1.+yH+xHe) &
-                       +lnrho-2.5)
+        lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                         +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                         +xHe_term)/(1+yH+xHe) &
+                        +lnrho-2.5)
       case ('lnrho|ee')
         lnrho=variable1
         ee=variable2
-        lnTT_=log(ee/ee_ion-yH)-log(1.5*(1.+yH+xHe))
+        lnTT_=log(ee/ee_ion-yH)-log(1.5*(1+yH+xHe))
       case ('lnrho|pp')
         lnrho=variable1
         pp=variable2
-        lnTT_=log(pp)-lnrho-log((1.+yH+xHe)*ee_ion)
+        lnTT_=log(pp)-lnrho-log((1+yH+xHe)*ee_ion)
       case default
         call stop_it("saha: I don't get what the independent variables are.")
       end select
 !
-      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
-      dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
-      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+      TT1_=exp(-lnTT_)
+      f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
+      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)/(1+yH+xHe)
+      df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
 !
     endsubroutine saha
 !***********************************************************************
-    subroutine radcalc(f,kaprho,Srad)
+    subroutine radcalc(f,lnchi,Srad)
 !
 !  calculate source function and opacity
 !
@@ -756,8 +764,8 @@ module Ionization
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: kaprho,Srad
-      real, dimension(mx) :: lnrho,yH,TT
+      real, dimension(mx,my,mz), intent(out) :: lnchi,Srad
+      real, dimension(mx) :: lnrho,yH,lnTT,TT
       real :: kx,ky,kz
 !
 !  test
@@ -773,14 +781,9 @@ module Ionization
         Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
                    *spread(spread(cos(ky*y),1,mx),3,mz) &
                    *spread(spread(cos(kz*z),1,mx),2,my)
-        kaprho=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
-                 *spread(spread(cos(2*ky*y),1,mx),3,mz) &
-                 *spread(spread(cos(2*kz*z),1,mx),2,my)
-        !
-        ! kaprho=const and S = tau^n
-        !
-!        kaprho = 1.e2
-!        Srad = spread(spread((z*kaprho(1,1,1))**3,1,mx),2,my)
+        lnchi=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
+                *spread(spread(cos(2*ky*y),1,mx),3,mz) &
+                *spread(spread(cos(2*kz*z),1,mx),2,my)
 !
         return
       endif
@@ -792,7 +795,8 @@ module Ionization
 !
          lnrho=f(:,m,n,ilnrho)
          yH=f(:,m,n,iyH)
-         TT=f(:,m,n,iTT)
+         lnTT=f(:,m,n,ilnTT)
+         TT=exp(lnTT)
 !
 !  calculate source function
 !
@@ -800,8 +804,9 @@ module Ionization
 !
 !  calculate opacity
 !
-         kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
-                          *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+         lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
+                      +TT_ion_/TT+log(yH)+log(1-yH)+lnchi0
+
 !
       enddo
       enddo
@@ -818,23 +823,23 @@ module Ionization
       integer, intent(in) :: radz0,nrad
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(mx,my,radz0), intent(out) :: H_xy
-      real, dimension(mx,my,radz0) :: yH_xy,TT_xy
+      real, dimension(mx,my,radz0) :: yH_xy,lnTT_xy
 !
       if (nrad>0) then
         yH_xy=f(:,:,n1-radz0:n1-1,iyH)
-        TT_xy=f(:,:,n1-radz0:n1-1,iTT)
+        lnTT_xy=f(:,:,n1-radz0:n1-1,ilnTT)
       endif
 !
       if (nrad<0) then
         yH_xy=f(:,:,n2+1:n2+radz0,iyH)
-        TT_xy=f(:,:,n2+1:n2+radz0,iTT)
+        lnTT_xy=f(:,:,n2+1:n2+radz0,ilnTT)
       endif
 !
-      H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
+      H_xy=(1.+yH_xy+xHe)*ss_ion*exp(lnTT_xy)/gravz
 !
     endsubroutine scale_height_xy
 !***********************************************************************
-    subroutine get_soundspeed(TT,cs2)
+    subroutine get_soundspeed(lnTT,cs2)
 !
 !  Calculate sound speed for given temperature
 !
@@ -842,12 +847,12 @@ module Ionization
 !
       use Mpicomm
 !
-      real, intent(in)  :: TT
+      real, intent(in)  :: lnTT
       real, intent(out) :: cs2
 !
       call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
 !
-      if (ip==0) print*, TT     !(keep compiler quiet)
+      if (ip==0) print*, lnTT     !(keep compiler quiet)
       if (ip==0) cs2=0          !(keep compiler quiet)
 !
     end subroutine get_soundspeed
@@ -946,7 +951,7 @@ module Ionization
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        TT_xy=f(:,:,n1,iTT)
+        TT_xy=exp(f(:,:,n1,ilnTT))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
@@ -981,7 +986,7 @@ module Ionization
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n2,ilnrho))
-        TT_xy=f(:,:,n2,iTT)
+        TT_xy=exp(f(:,:,n2,ilnTT))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
@@ -1391,7 +1396,7 @@ module Ionization
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,nghost) :: lnrho,ss,yH,TT,K,sqrtK,yH_term,one_yH_term
+      real, dimension (mx,my,nghost) :: lnrho,ss,yH,lnTT,TT,K,sqrtK,yH_term,one_yH_term
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
@@ -1408,11 +1413,12 @@ module Ionization
 !
       case('bot')
         do i=1,nghost
-          f(:,:,n1-i,iTT) = f(:,:,n1+i,iTT) 
+          f(:,:,n1-i,ilnTT) = f(:,:,n1+i,ilnTT) 
         enddo
 !
         lnrho=f(:,:,1:n1-1,ilnrho)
-        TT=f(:,:,1:n1-1,iTT)
+        lnTT=f(:,:,1:n1-1,ilnTT)
+        TT=exp(lnTT)
 !
         K=exp(lnrho_e-lnrho-TT_ion/TT)*(TT/TT_ion)**1.5
         sqrtK=sqrt(K)
@@ -1440,11 +1446,12 @@ module Ionization
 !
       case('top')
         do i=1,nghost
-          f(:,:,n2+i,iTT) = f(:,:,n2-i,iTT) 
+          f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT) 
         enddo
 !
         lnrho=f(:,:,n2+1:mz,ilnrho)
-        TT=f(:,:,n2+1:mz,iTT)
+        lnTT=f(:,:,n2+1:mz,ilnTT)
+        TT=exp(lnTT)
 !
         K=exp(lnrho_e-lnrho-TT_ion/TT)*(TT/TT_ion)**1.5
         sqrtK=sqrt(K)

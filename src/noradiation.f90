@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.22 2003-10-24 13:17:31 dobler Exp $
+! $Id: noradiation.f90,v 1.23 2003-11-02 04:00:18 theine Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -46,7 +46,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.22 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: noradiation.f90,v 1.23 2003-11-02 04:00:18 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -158,7 +158,7 @@ module Radiation
         write(3,*) 'iQrad=',iQrad
         write(3,*) 'iSrad=',iSrad
         write(3,*) 'ikappa=',ikappa
-        write(3,*) 'iTT=',iTT
+        write(3,*) 'ilnTT=',ilnTT
       endif
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)

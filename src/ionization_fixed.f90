@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.36 2003-10-28 21:16:57 theine Exp $
+! $Id: ionization_fixed.f90,v 1.37 2003-11-02 04:00:18 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -50,7 +50,8 @@ module Ionization
   real :: lnTTss,lnTTlnrho,lnTT0
 
   ! secondary parameters calculated in initialize
-  real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,Srad0
+  real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
+  real :: ss_ion,ee_ion,kappa0,lnchi0,Srad0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   real :: xHe_term,yH_term,one_yH_term
 
@@ -88,7 +89,7 @@ module Ionization
       lionization_fixed=.true.
 !
       iyH = 0
-      iTT = 0
+      ilnTT = 0
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_ionization: ionization nvar = ', nvar
@@ -97,7 +98,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.36 2003-10-28 21:16:57 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.37 2003-11-02 04:00:18 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -143,7 +144,9 @@ module Ionization
       if(headtt) print*,'initialize_ionization: assume cp is not 1, yH0=',yH0
       mu1yHxHe=1.+3.97153*xHe  
       TT_ion=chiH/k_B
+      lnTT_ion=log(chiH/k_B)
       TT_ion_=chiH_/k_B
+      lnTT_ion_=log(chiH_/k_B)
       lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
@@ -152,6 +155,7 @@ module Ionization
       ss_ion=k_B/m_H/mu1yHxHe      
       ee_ion=ss_ion*TT_ion
       kappa0=sigmaH_/m_H/mu1yHxHe
+      lnchi0=log(kappa0)-log(4.0)
       Srad0=sigmaSB*TT_ion**4/pi
 !
       if(lroot) then
@@ -188,7 +192,7 @@ module Ionization
       lnTTss=(2./3.)/(1.+yH0+xHe)/ss_ion
       lnTTlnrho=2./3.
 !
-      lnTT0=log(TT_ion)+(2./3.)*((yH_term+one_yH_term+xHe_term)/(1+yH0+xHe)-2.5)
+      lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/(1+yH0+xHe)-2.5)
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
@@ -221,7 +225,7 @@ module Ionization
 !*******************************************************************
     subroutine rprint_ionization(lreset,lwrite)
 !
-!  Writes iyH and iTT to index.pro file
+!  Writes iyH and ilnTT to index.pro file
 !
 !  14-jun-03/axel: adapted from rprint_radiation
 !
@@ -262,7 +266,7 @@ module Ionization
           write(3,*) 'i_TTm=',i_TTm
           write(3,*) 'nname=',nname
           write(3,*) 'iyH=',iyH
-          write(3,*) 'iTT=',iTT
+          write(3,*) 'ilnTT=',ilnTT
         endif
       endif
 !
@@ -285,32 +289,38 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
+    subroutine perturb_energy_point(lnrho,ee,ss,lnTT,yH)
       real,intent(in) :: lnrho,ee
-      real, intent(out) :: ss,TT,yH
+      real, intent(out) :: ss,lnTT,yH
+      real :: TT
 !
         yH=yH0
+        lnTT=log(TT)
         TT=(2./3.)*TT_ion*(ee/ee_ion-yH0)/(1.+yH0+xHe)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
 !      
     end subroutine perturb_energy_point
 !***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
+    subroutine perturb_energy_pencil(lnrho,ee,ss,lnTT,yH)
       real, dimension(nx), intent(in) :: lnrho,ee
-      real, dimension(nx), intent(out) :: ss,TT,yH
+      real, dimension(nx), intent(out) :: ss,lnTT,yH
+      real, dimension(nx) :: TT
 !
         yH=yH0
         TT=(2./3.)*TT_ion*(ee/ee_ion-yH0)/(1.+yH0+xHe)
+        lnTT=log(TT)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
 !
     end subroutine perturb_energy_pencil
 !***********************************************************************
-    subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
+    subroutine perturb_mass_point(lnrho,pp,ss,lnTT,yH)
       real,intent(in) :: lnrho,pp
-      real, intent(out) :: ss,TT,yH
+      real, intent(out) :: ss,lnTT,yH
+      real :: TT
 !      real :: yH,K
 !
         TT= pp / ((1. + yH0 + xHe) * ss_ion * exp(lnrho))
+        lnTT=log(TT)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
         yH=yH0
 !        TT= (EE/exp(lnrho)-yH0*ss_ion*TT_ion*2. ) / &
@@ -321,12 +331,14 @@ module Ionization
 !
     end subroutine perturb_mass_point
 !***********************************************************************
-    subroutine perturb_mass_pencil(lnrho,pp,ss,TT,yH)
+    subroutine perturb_mass_pencil(lnrho,pp,ss,lnTT,yH)
       real, dimension(nx), intent(in) :: lnrho,pp
-      real, dimension(nx), intent(out) :: ss,TT,yH
+      real, dimension(nx), intent(out) :: ss,lnTT,yH
+      real, dimension(nx) :: TT
 !      real, dimension(nx) :: yH,K
 !
         TT= pp / ((1. + yH0 + xHe) * ss_ion * exp(lnrho))
+        lnTT=log(TT)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
         yH=yH0
 !        TT= 1.5 * (EE/exp(lnrho)-yH0*ss_ion*TT_ion ) / &
@@ -337,74 +349,74 @@ module Ionization
 !
     end subroutine perturb_mass_pencil
 !***********************************************************************
-    subroutine getdensity(EE,TT,yH,rho)
+    subroutine getdensity(EE,lnTT,yH,rho)
 
       use Mpicomm, only: stop_it
       
-      real, intent(in) :: EE,TT,yH
+      real, intent(in) :: EE,lnTT,yH
       real, intent(out) :: rho
 
-      rho = EE / ((1.5*(1.+yH+xHe)*TT + yH*TT_ion) * ss_ion) 
+      rho = EE / ((1.5*(1.+yH+xHe)*exp(lnTT) + yH*TT_ion) * ss_ion) 
 
     end subroutine getdensity
 !***********************************************************************
-    subroutine ionget_pencil(f,yH,TT)
+    subroutine ionget_pencil(f,yH,lnTT)
 !
 !  'extract' ionization fraction and temperature from f array pencilwise
 !
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out) :: yH,TT
+      real, dimension(nx), intent(out) :: yH,lnTT
       real, dimension(nx) :: lnrho,ss
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
 !
       yH=yH0
-      TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
+      lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
     endsubroutine ionget_pencil
 !***********************************************************************
-    subroutine ionget_point(lnrho,ss,yH,TT)
+    subroutine ionget_point(lnrho,ss,yH,lnTT)
 !
 !  'extract' ionization fraction and temperature from f array
 !  for an arbitrary point
 !
       real, intent(in) :: lnrho,ss
-      real, intent(out) :: yH,TT
+      real, intent(out) :: yH,lnTT
 !
       yH=yH0
-      TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
+      lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
     endsubroutine ionget_point
 !***********************************************************************
-    subroutine ionput_pencil(f,yH,TT)
+    subroutine ionput_pencil(f,yH,lnTT)
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out) :: yH,TT
+      real, dimension(nx), intent(out) :: yH,lnTT
       real, dimension(nx) :: lnrho,ss
 !
       call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION_FIXED")
 !
     endsubroutine ionput_pencil
 !***********************************************************************
-    subroutine ionput_point(lnrho,ss,yH,TT)
+    subroutine ionput_point(lnrho,ss,yH,lnTT)
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
       real, intent(in) :: lnrho,ss
-      real, intent(out) :: yH,TT
+      real, intent(out) :: yH,lnTT
 !
       call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION_FIXED")
 !
     endsubroutine ionput_point
 !***********************************************************************
-    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_pencil(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -417,8 +429,11 @@ module Ionization
 !
       use Sub
 !
-      real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
+      real, dimension(nx), intent(in) :: lnrho,yH,lnTT
       real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
+      real, dimension(nx) :: TT
+!
+      TT=exp(lnTT)
 !
       if (present(cs2))      cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TT
       if (present(cp1tilde)) cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
@@ -434,7 +449,7 @@ module Ionization
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
-    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_point(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -445,8 +460,11 @@ module Ionization
 !   2-feb-03/axel: simple example coded
 !  15-jun-03/axel: made compatible with current ionization routine
 !
-      real, intent(in) :: lnrho,ss,yH,TT
+      real, intent(in) :: lnrho,yH,lnTT
       real, optional :: cs2,cp1tilde,ee,pp
+      real :: TT
+!
+      TT=exp(lnTT)
 !
       if (present(cs2))      cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TT
       if (present(cp1tilde)) cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
@@ -493,7 +511,7 @@ module Ionization
       write(unit,NML=ionization_run_pars)
     endsubroutine write_ionization_run_pars
 !***********************************************************************
-    subroutine radcalc(f,kaprho,Srad)
+    subroutine radcalc(f,lnchi,Srad)
 !
 !  calculate source function and opacity
 !
@@ -502,8 +520,8 @@ module Ionization
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: kaprho,Srad
-      real, dimension(mx) :: lnrho,ss,yH,TT
+      real, dimension(mx,my,mz), intent(out) :: lnchi,Srad
+      real, dimension(mx) :: lnrho,ss,yH,lnTT,TT
       real :: kx,ky,kz
 !
 !  test
@@ -516,7 +534,7 @@ module Ionization
         Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
                    *spread(spread(cos(ky*y),1,mx),3,mz) &
                    *spread(spread(cos(kz*z),1,mx),2,my)
-        kaprho=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
+        lnchi=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
                  *spread(spread(cos(2*ky*y),1,mx),3,mz) &
                  *spread(spread(cos(2*kz*z),1,mx),2,my)
         return
@@ -530,7 +548,8 @@ module Ionization
          lnrho=f(:,m,n,ilnrho)
          ss=f(:,m,n,iss)
          yH=yH0
-         TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
+         lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+         TT=exp(lnTT)
 !
 !  calculate source function
 !
@@ -538,8 +557,10 @@ module Ionization
 !
 !  calculate opacity
 !
-         kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
-                          *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+         !kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
+         !                *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+         lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
+                      +TT_ion_/TT+log(yH)+log(1-yH)+lnchi0
 !
       enddo
       enddo

@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.10 2003-10-16 17:13:00 brandenb Exp $
+! $Id: nointerstellar.f90,v 1.11 2003-11-02 04:00:18 theine Exp $
 
 !  This modules solves contains ISM and SNe 
 
@@ -44,7 +44,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.10 2003-10-16 17:13:00 brandenb Exp $")
+           "$Id: nointerstellar.f90,v 1.11 2003-11-02 04:00:18 theine Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -67,17 +67,17 @@ module Interstellar
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
-    subroutine calc_heat_cool_interstellar(df,rho1,TT,TT1,yH)
+    subroutine calc_heat_cool_interstellar(df,rho1,TT1,yH)
 !
 !  adapted from calc_heat_cool
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (nx), intent(in) :: rho1,TT,TT1,yH
+      real, dimension (nx), intent(in) :: rho1,TT1,yH
 !
 ! (to keep compiler quiet)
-      if (ip==0) print*,'calc_heat_cool_interstellar',df,rho1,TT,TT1,yH
+      if (ip==0) print*,'calc_heat_cool_interstellar',df,rho1,TT1,yH
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
