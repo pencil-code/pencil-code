@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.10 2003-08-26 16:40:36 mee Exp $
+! $Id: ionization_fixed.f90,v 1.11 2003-08-28 00:21:10 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -74,7 +74,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.10 2003-08-26 16:40:36 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.11 2003-08-28 00:21:10 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -247,7 +247,7 @@ print*,'perturb_energy_point: ee, ee0, eeTT = ',ee,ee0,eeTT
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
 
-      rho = EE / ((1.5*(1+yH+xHe)*TT + yH*TT_ion) * ss_ion)
+      rho = EE / ((1.5*(1.+yH+xHe)*TT + yH*TT_ion) * ss_ion) 
 
     end subroutine getdensity
 !***********************************************************************
