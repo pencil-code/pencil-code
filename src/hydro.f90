@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.150 2004-03-04 07:47:34 dobler Exp $
+! $Id: hydro.f90,v 1.151 2004-03-09 16:53:29 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -64,7 +64,8 @@ module Hydro
   integer :: i_uxpt=0,i_uypt=0,i_uzpt=0
   integer :: i_dtu=0,i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
-  integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0
+  integer :: i_ox2m=0, i_oy2m=0, i_oz2m=0
+  integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0, i_oxoym=0, i_oxozm=0, i_oyozm=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0,i_rumax=0
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
@@ -108,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.150 2004-03-04 07:47:34 dobler Exp $")
+           "$Id: hydro.f90,v 1.151 2004-03-09 16:53:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -382,8 +383,6 @@ module Hydro
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock
-      real, dimension (nx) :: ux2, uy2, uz2 ! ux^2, uy^2, uz^2
-      real, dimension (nx) :: uxuy, uxuz, uyuz
       real, dimension (nx) :: u2u13
       real :: c2,s2
       integer :: i,j
@@ -542,30 +541,12 @@ module Hydro
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
         if (i_divu2m/=0) call sum_mn_name(divu**2,i_divu2m)
-        if (i_ux2m/=0) then
-           ux2 = uu(:,1)*uu(:,1)
-           call sum_mn_name(ux2,i_ux2m)
-        endif
-        if (i_uy2m/=0) then
-           uy2 = uu(:,2)*uu(:,2)
-           call sum_mn_name(uy2,i_uy2m)
-        endif
-        if (i_uz2m/=0) then
-           uz2 = uu(:,3)*uu(:,3)
-           call sum_mn_name(uz2,i_uz2m)
-        endif
-        if (i_uxuym/=0) then
-           uxuy = uu(:,1)*uu(:,2)
-           call sum_mn_name(uxuy,i_uxuym)
-        endif
-        if (i_uxuzm/=0) then
-           uxuz = uu(:,1)*uu(:,3)
-           call sum_mn_name(uxuz,i_uxuzm)
-        endif
-        if (i_uyuzm/=0) then
-           uyuz = uu(:,2)*uu(:,3)
-           call sum_mn_name(uyuz,i_uyuzm)
-        endif
+        if (i_ux2m/=0) call sum_mn_name(uu(:,1)**2,i_ux2m)
+        if (i_uy2m/=0) call sum_mn_name(uu(:,2)**2,i_uy2m)
+        if (i_uz2m/=0) call sum_mn_name(uu(:,3)**2,i_uz2m)
+        if (i_uxuym/=0) call sum_mn_name(uu(:,1)*uu(:,2),i_uxuym)
+        if (i_uxuzm/=0) call sum_mn_name(uu(:,1)*uu(:,3),i_uxuzm)
+        if (i_uyuzm/=0) call sum_mn_name(uu(:,2)*uu(:,3),i_uyuzm)
         !
         !  kinetic field components at one point (=pt)
         !
@@ -625,6 +606,13 @@ module Hydro
             if(i_omax/=0) call max_mn_name(o2,i_omax,lsqrt=.true.)
             if(i_o2m/=0)  call sum_mn_name(o2,i_o2m)
           endif
+          !
+          if (i_ox2m/=0) call sum_mn_name(oo(:,1)**2,i_ox2m)
+          if (i_oy2m/=0) call sum_mn_name(oo(:,2)**2,i_oy2m)
+          if (i_oz2m/=0) call sum_mn_name(oo(:,3)**2,i_oz2m)
+          if (i_oxoym/=0) call sum_mn_name(oo(:,1)*oo(:,2),i_oxoym)
+          if (i_oxozm/=0) call sum_mn_name(oo(:,1)*oo(:,3),i_oxozm)
+          if (i_oyozm/=0) call sum_mn_name(oo(:,2)*oo(:,3),i_oyozm)
         endif
         !
         !  < u2 u1,3 >
@@ -931,8 +919,8 @@ module Hydro
         i_uxpt=0; i_uypt=0; i_uzpt=0
         i_dtu=0; i_dtv=0; i_urms=0; i_umax=0; i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0; i_rumax=0
-        i_ux2m=0; i_uy2m=0; i_uz2m=0
-        i_uxuym=0; i_uxuzm=0; i_uyuzm=0
+        i_ux2m=0; i_uy2m=0; i_uz2m=0; i_uxuym=0; i_uxuzm=0; i_uyuzm=0
+        i_ox2m=0; i_oy2m=0; i_oz2m=0; i_oxoym=0; i_oxozm=0; i_oyozm=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
         i_divu2m=0; i_epsK=0
@@ -958,6 +946,12 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uxuym',i_uxuym)
         call parse_name(iname,cname(iname),cform(iname),'uxuzm',i_uxuzm)
         call parse_name(iname,cname(iname),cform(iname),'uyuzm',i_uyuzm)
+        call parse_name(iname,cname(iname),cform(iname),'ox2m',i_ox2m)
+        call parse_name(iname,cname(iname),cform(iname),'oy2m',i_oy2m)
+        call parse_name(iname,cname(iname),cform(iname),'oz2m',i_oz2m)
+        call parse_name(iname,cname(iname),cform(iname),'oxoym',i_oxoym)
+        call parse_name(iname,cname(iname),cform(iname),'oxozm',i_oxozm)
+        call parse_name(iname,cname(iname),cform(iname),'oyozm',i_oyozm)
         call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
         call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
         call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
@@ -1020,6 +1014,12 @@ module Hydro
         write(3,*) 'i_uxuym=',i_uxuym
         write(3,*) 'i_uxuzm=',i_uxuzm
         write(3,*) 'i_uyuzm=',i_uyuzm
+        write(3,*) 'i_ox2m=',i_ox2m
+        write(3,*) 'i_oy2m=',i_oy2m
+        write(3,*) 'i_oz2m=',i_oz2m
+        write(3,*) 'i_oxoym=',i_oxoym
+        write(3,*) 'i_oxozm=',i_oxozm
+        write(3,*) 'i_oyozm=',i_oyozm
         write(3,*) 'i_orms=',i_orms
         write(3,*) 'i_omax=',i_omax
         write(3,*) 'i_ruxm=',i_ruxm
