@@ -34,7 +34,7 @@ if (top[0] ge 0) then begin
     ssinit[top] = ssref $
                   + (1-mpoly2*(gamma-1))/gamma $
                     * alog(1.+beta*(z[top]-zref)/Tref)
-    zint = zrefz2 < ztop
+;;;    zint = zrefz2 < ztop
     lnrhoref = lnrhoref + mpoly2*alog(1.+beta*(zint-zref)/Tref)
     ssref = ssref $
             + (1-mpoly2*(gamma-1))/gamma * alog(1.+beta*(zint-zref)/Tref)
