@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.11 2004-05-06 17:11:50 mee Exp $
+; $Id: pc_read_dim.pro,v 1.12 2004-05-07 08:51:19 ajohan Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-06 17:11:50 $
-;  $Revision: 1.11 $
+;  $Date: 2004-05-07 08:51:19 $
+;  $Revision: 1.12 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -140,9 +140,9 @@ nx = mx - (2 * nghostx)
 ny = my - (2 * nghosty)
 nz = mz - (2 * nghostz)
 mw = mx * my * mz
-l1 = nghostx & l2 = mx-nghostx
-m1 = nghosty & m2 = my-nghosty
-n1 = nghostz & n2 = mz-nghostz
+l1 = nghostx & l2 = mx-nghostx-1
+m1 = nghosty & m2 = my-nghosty-1
+n1 = nghostz & n2 = mz-nghostz-1
 
 nxgrid=nx*nprocx
 nygrid=ny*nprocy
