@@ -4,13 +4,16 @@
 #  . $HOME/f90/pencil_modular/sourceme.sh
 #  into your .bashrc
 #
-CDPATH="./:../:../../:../../../:$HOME"
-PATH=".:../bin:../../bin:../../../bin:../../../../bin:${HOME}/bin:${PATH}"
-IDL_PATH="+../idl:+../../idl:+../../../idl:tmp:+$HOME/idl:<IDL_DEFAULT>"
+if [ -z  $sourceme ]; then 
+  CDPATH="./:../:../../:../../../:$HOME"
+  PATH="${PATH}:.:../bin:../../bin:../../../bin:../../../../bin:${HOME}/bin"
+  IDL_PATH="+../idl:+../../idl:+../../../idl:tmp:+$HOME/idl:<IDL_DEFAULT>"
 
-export CDPATH PATH IDL_PATH
+  export CDPATH PATH IDL_PATH
 
-# alias local='cp -p $1 tmp.$$; \rm $1; mv tmp.$$ $1; chmod u+w $1'
-local() {
+  # alias local='cp -p $1 tmp.$$; \rm $1; mv tmp.$$ $1; chmod u+w $1'
+  local() {
   cp -p $1 tmp.$$; \rm $1; mv tmp.$$ $1; chmod u+w $1;
-}
+  }
+  export sourceme="set"
+fi
