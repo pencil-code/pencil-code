@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.199 2004-06-22 05:05:02 brandenb Exp $
+! $Id: magnetic.f90,v 1.200 2004-06-22 12:30:27 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.199 2004-06-22 05:05:02 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.200 2004-06-22 12:30:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -223,6 +223,7 @@ module Magnetic
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('uniform-Bz'); call uniform_z(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
+      case('vfield2'); call vfield2(amplaa,f,iaa,xx)
       case('xjump'); call bjump(f,iaz,by_left,by_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)

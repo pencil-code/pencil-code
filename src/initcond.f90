@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.113 2004-06-18 05:47:11 brandenb Exp $ 
+! $Id: initcond.f90,v 1.114 2004-06-22 12:30:27 ajohan Exp $ 
 
 module Initcond 
  
@@ -1497,6 +1497,30 @@ module Initcond
       endif
 !
     endsubroutine vfield
+!***********************************************************************
+    subroutine vfield2(ampl,f,i,xx)
+!
+!  Vertical field, zero on boundaries
+!
+!  22-jun-04/anders: adapted from vfield
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx
+      real :: ampl,kx
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'vfield2: set variable to zero; i=',i
+      else
+        kx=2*pi/Lx
+        print*,'vfield2: implement x-dependent vertical field'
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=ampl*cos(kx*xx)
+        f(:,:,:,i+2)=0.
+      endif
+!
+    endsubroutine vfield2
 !***********************************************************************
     subroutine posnoise_vect(ampl,f,i1,i2)
 !
