@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.26 2004-05-25 13:22:48 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.27 2004-05-26 13:24:52 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -23,7 +23,7 @@ module Pscalar
 
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
   character (len=40) :: tensor_pscalar_file
-  logical :: nopscalar=.false.,reinitalize_lncc=.false.,lupwind1stcc=.false.
+  logical :: nopscalar=.false.,reinitalize_lncc=.false.
 
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
@@ -42,7 +42,7 @@ module Pscalar
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0, &
-       reinitalize_lncc,lupwind1stcc,lpscalar_turb_diff
+       reinitalize_lncc,lpscalar_turb_diff
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_ccmin=0.,i_lnccm=0,i_lnccmz=0
@@ -88,7 +88,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.26 2004-05-25 13:22:48 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.27 2004-05-26 13:24:52 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -278,15 +278,9 @@ module Pscalar
 !
 !  passive scalar equation
 !
-        if(lhydro .and. .not. lupwind1stcc) then
-          call grad(f,ilncc,gcc)
-          call dot_mn(uu,gcc,ugcc)
-          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-ugcc
-        else
-          call gradf_upw1st(f,uu,ilncc,gcc)
-          call dot_mn(uu,gcc,ugcc)
-          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-ugcc
-        endif
+        call gradf_upw1st(f,uu,ilncc,gcc)
+        call dot_mn(uu,gcc,ugcc)
+        df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-ugcc
 !
 !  diffusion operator
 !
