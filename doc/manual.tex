@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.111 2002-09-30 09:45:24 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.112 2002-09-30 13:08:07 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -313,7 +313,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.111 $ $}
+\date{\today,~ $ $Revision: 1.112 $ $}
 
 % ====================================================================== %
 
@@ -345,7 +345,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.111 $ $}
+  \emph{\today,~ $ $Revision: 1.112 $ $}
 
   \vspace{\stretch{3}}
 
@@ -484,7 +484,7 @@ you can more efficiently \emph{read the source code}, which contains a
 reasonable amount of comments.
 For further enhancements that you may want to add to the code, you can
 take as an example the lines in the code that deal with related variables,
-functions, diagnostics, equations etc., which whave already been implemented.
+functions, diagnostics, equations etc., which have already been implemented.
 Just remember: \cmd{grep} is one of your best friends when you want to
 understand how certain variables or functions are used in the code.
 
@@ -624,7 +624,7 @@ This includes all problems in
   \path{http://www.nordita.dk/data/brandenb/pencil-code}.
   Alternatively, just email \email{Wolfgang.Dobler@kis.uni-freiburg.de}
   or \email{Axel.Brandenburg@nordita.dk}.
-  Priviledged users with write access to the original repository should
+  Privileged users with write access to the original repository should
   continue to use it.\footnote{%
     In that case you'd say
     \code{setenv CVSROOT :pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS},
@@ -720,6 +720,22 @@ this by:
 \item Run \cmd{cvs update}:
   \begin{alltt}
   \prompt{unix> } cvs up -D "26 Nov 2002"\
+  \end{alltt}
+\end{enumerate}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Obtaining and unpacking the tarball}
+
+\begin{enumerate}
+\item Download the tarball file, pencil-code_X.tar.gz,
+  where X is the release number, after registering on
+  \path{http://www.nordita.dk/data/brandenb/pencil-code/}
+\item Put it into a convenient directory and unpack it:
+  \begin{alltt}
+  \prompt{unix> } mv pencil-code_X.tar.gz somewhere/; cd somewhere
+  \prompt{unix> } gunzip pencil-code_X.tar.gz
+  \prompt{unix> } tar xf pencil-code_X.tar \
   \end{alltt}
 \end{enumerate}
 
@@ -836,7 +852,7 @@ This step requires some input from you, but you only have to do this once
 for each machine you want to run the code on.
 See Sect.~\ref{adapt-mkfile} for a description of the steps you need to
 take here.
-(If you are lucky and use compileres similar to the ones we have, you may
+(If you are lucky and use compilers similar to the ones we have, you may
 be able to skip this step; but blame yourself if things don't compile, then.)
 
 
@@ -909,7 +925,7 @@ You are now ready to start the code:
 This runs \file[start.x]{src/start.x} to construct an initial condition based on
 the parameters set in \file{start.in}.
 This initial condition is stored in \file[var.dat]{tmp/proc0/var.dat} (and
-in \file[var.dat]{tmp/proc1/var.dat}, etc. if you run the multiprocessor
+in \file[var.dat]{tmp/proc1/var.dat}, etc.\ if you run the multiprocessor
 version).
 
 % ---------------------------------------------------------------------- %
@@ -1113,7 +1129,7 @@ e.\,g.~\file[conv-slab/src/]{samples/conv-slab/src}.
 
 It may be a good idea to keep your own runs also under \name{CVS}, but
 this would normally be a different repository. On the machine where you
-are running the code, you may want to check them out into a subdircetory
+are running the code, you may want to check them out into a subdirectory
 of \file{pencil-code/}.
 For example, we have our own runs in a repository called
 \file[pencil-runs/]{pencil-runs}, so we do
@@ -1217,7 +1233,7 @@ choose certain \name{modules}\footnote{%
   For example each of the three modules \name{grav_z}, \name{grav_r} and
   \name{nograv} define a Fortran module \name{Gravity}.
 }, which tell the code whether or not entropy, magnetic fields,
-hydrodynamics, forcing, etc.~should be invoked.
+hydrodynamics, forcing, etc.\ should be invoked.
 For example, the settings for forced turbulent MHD simulations are
 \begin{verbatim}
   HYDRO    =   hydro
@@ -1355,7 +1371,7 @@ Each of the directories can contain the following files:
   the given processor;
 \item[\file{seed.dat}] the random seed for the next time step (saved for
   reasons of reproducibility).
-  For multi-procesor runs with velocity forcing, the files
+  For multi-processor runs with velocity forcing, the files
   \file[seed.dat]{proc$N$/seed.dat} must all contain the same numbers,
   because globally coherent waves of given wavenumber are used;
 \item[{\file[X.xy]{$X$.xy}, \file[X.xz]{$X$.xz}, \file[X.yz]{$X$.yz}}]
@@ -1490,7 +1506,7 @@ Here is a list of the more important ones.
 \item[auto-test] Verify that the code compiles and runs in a set of run
   directories and compare the results to the reference output.
   These tests are carried out routinely to ensure that the \name{CVS}
-  version of the code is inu a usable state.
+  version of the code is in a usable state.
 \item[copy-snapshots] Copy snapshots from a processor-local directory to
   the global directory.
   Supposed to be started in the background before \file{run.x} is invoked.
@@ -1587,7 +1603,7 @@ The syntax of a namelist (in an input file like \file{start.in}) is
     ip=5, Lxyz=2,4,2
   /
 \end{verbatim}
---- in this example, the name of the namlist is \name{init_pars}, and we
+--- in this example, the name of the namelist is \name{init_pars}, and we
 read just two variables (all other variables in
 the namelist retain their previous value): \var{ip}, which is set to $5$,
 and \var{Lxyz}, which is a vector of length three and is set to $(2,4,5)$.
@@ -1619,7 +1635,7 @@ As an example, we give here the start parameters for
   /
 \end{alltt}
 The three entries specifying the location, size and periodicity of the box
-are just given for demonstartion purposes here --- in fact a periodic box
+are just given for demonstration purposes here --- in fact a periodic box
 from $-\pi$ to $-\pi$ in all three directions is the default.
 In this run, for reproducibility, we use a random number generator from
 the Numerical Recipies \cite{NR}, rather than the compiler's builtin
@@ -2518,6 +2534,7 @@ the code.
    2 & Nq2   & 9.3  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
    2 & Nq1+2 & 8.3  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
    4 & Nq1+2 & 5.4  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
+   4 & Nq1235& 4.1  & $128^3$ & magn/noentro &        & 11-sep-02 & AB \\
    4 & Nq0-3 & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
    4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
    4 & fe1   & 3.39 &  $32^3$ & magn/noentro &        & 16-aug-02 & AB \\
@@ -2881,7 +2898,8 @@ and so the stratification is given by
 \subsubsection{Changing the stratification}
 
 Natural: measure length in units of $c_{\rm s0}^2/g_z$.
-Can increase stratification by moving $z_{\rm top}$ close to $z_\infty$.
+Can increase stratification by moving $z_{\rm top}$ close to $z_\infty$
+or, better still, keeping $z_{\rm top}=0$ and moving $z_{\rm bot}\to-\infty$.
 Disadvantage: in the limit of weak stratification, the box size will
 be very small (in nondimensional units).
 
@@ -2900,6 +2918,36 @@ The limit of vanishing stratification corresponds to
 $c_{\rm s0}\rightarrow\infty$. This seems optimal if we want
 to approach the Boussinesq case.
 
+\subsubsection{The Rayleigh number}
+
+Brandenburg et al.\ (1996) defined the Rayleigh number as
+\begin{equation}\label{Radef}
+\mbox{Ra}={gd^4\over\overline{\nu}\;\overline{\chi}}
+\left(-{\mbox{d}s/c_{\rm p}\over\mbox{d}z}\right)_{\rm hydrostat},
+\end{equation}
+where the (negative) entropy gradient was evaluated in the middle
+of the box for the associated hydrostatic reference solution, and
+$\overline\chi=K/(\overline\rho c_{\rm p})$ and either $\overline\nu=\nu$
+(if $\nu$ was assumed constant) or $\overline\nu=\mu/\overline\rho$
+(if $\mu$ was assumed constant). Note that $\overline\rho$ is the average
+mass in the box per volume, which is conserved. For a polytrope we have
+\begin{equation}\label{sgradient}
+\left(-{\mbox{d}s/c_{\rm p}\over\mbox{d}z}\right)_{\rm hydrostat}
+=\left[1-(m+1)\left(1-{1\over\gamma}\right)\right]
+{1\over z_{\infty}-z_{\rm m}},
+\end{equation}
+where $z_{\rm m}=(z_1+z_2)/2$. This factor was also present in
+the definition of Hurlburt \& Toomre (1984), but their definition
+differs slightly from Eq.~(\ref{Radef}). Since the Rayleigh number is
+proportional to $\rho^2$, their definition included the extra factor
+$[(z_{\infty}-z_{\rm m})/d]^2$. Therefore
+\begin{equation}\label{Rdef}
+\mbox{Ra}_{\rm HT}=\left({z_{\infty}-z_{\rm m}\over d}\right)^{2m}
+\left({\overline\rho\over\rho_{\rm top}}\right)^2\mbox{Ra}
+\end{equation}
+
+%\subsubsection{Relation to the setup of Hurlburt \& Toomre}
+
 \subsubsection{Entropy boundary condition}
 
 This discussion only applies to the case of convection in a slab.
@@ -2909,11 +2957,11 @@ Assuming that the density in the ghost zones has already been
 updated, we can calculate the entropy gradient from
 \begin{equation}\label{Fbot}
 F_{\rm bot}=-K{c_{\rm s}^2\over\gamma-1}\left(
-(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s\over\dd z}\right),
+(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s/c_{\rm p}\over\dd z}\right),
 \end{equation}
 which gives
 \begin{equation}\label{Fbot2}
-{\dd s\over\dd z}=-{\gamma-1\over\gamma}\left(
+{\dd s/c_{\rm p}\over\dd z}=-{\gamma-1\over\gamma}\left(
 {F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right).
 \end{equation}
 
@@ -3922,7 +3970,7 @@ the latest set of parameters, you need to look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.111 2002-09-30 09:45:24 dobler Exp $ $}
+$ $Id: manual.tex,v 1.112 2002-09-30 13:08:07 brandenb Exp $ $}
 
 
 \end{document}
