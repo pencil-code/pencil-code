@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.86 2003-06-16 09:46:16 nilshau Exp $
+! $Id: register.f90,v 1.87 2003-06-19 21:42:09 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -346,6 +346,8 @@ module Register
       write(3,*) 'i_dtc=',i_dtc
       write(3,*) 'i_walltime=',i_walltime
       write(3,*) 'nname=',nname
+!ajwm Not really the correct place to put this...?
+      write(3,*) 'ishock=',ishock
 !
     endsubroutine rprint_general
 !***********************************************************************

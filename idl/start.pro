@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.52 2003-06-18 17:47:06 dobler Exp $
+;;; $Id: start.pro,v 1.53 2003-06-19 21:42:09 mee Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -52,7 +52,7 @@ nghostx=0L & nghosty=0L & nghostz=0L
 ;
 close,1
 openr,1,datadir+'/'+dimfile
-readf,1,mx,my,mz,nvar
+readf,1,mx,my,mz,nvar,naux
 readf,1,prec
 readf,1,nghostx,nghosty,nghostz
 close,1
