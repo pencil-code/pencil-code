@@ -1,0 +1,88 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+                                                                                
+exec $perl -x -S $0 "$@";     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+                                                                                
+# Name:   emailfromcvs
+# Author: Antony Mee (A.J.Mee@ncl.ac.uk)
+# Started:   17-Feb-2004
+# CVS: $Id: emailfromcvs,v 1.1 2004-02-18 08:32:30 dobler Exp $
+# Usage:
+#   emailfromcvs cvs_user_id subject to_addr_1 <to_addr_2> .....
+# Description:
+#   Lookup cvs_user_id in cvsemail file and sent the contents
+#   of STDIN to the specified users with the specified subject. 
+# Example:
+#    emailfromcvs mee 'Committed changes' brandenb@nordita.dk 
+# Complain to:
+#   A.J.Mee@ncl.ac.uk
+
+# History:
+#   17-feb-04/tony: first release
+#
+
+# ---------------------------------------------------------------------- #
+
+use strict;
+
+die usage() if (@ARGV < 3); 
+
+my $cvsid = shift;
+my $subject= shift;
+my $to = join (",",@ARGV);
+my $from = "";
+# my $mailprog = "/usr/sbin/sendmail -t";
+my $mailprog = "cat";
+my $cvsemailfile = "/home/mee/bin/axelcvsIRL";
+
+open(CVSEMAIL,"<$cvsemailfile");
+while (<CVSEMAIL>) {
+    chop;
+    my ($id, $addr, $irl) = split(/:/, $_);
+    if ($cvsid =~ $id) 
+    {
+      $from = "$irl <$addr>";
+      last;
+    }
+    
+}
+close(CVSEMAIL);
+
+my @message=<STDIN>;
+open(MAIL,"| $mailprog");
+print MAIL "To: $to\n";
+print MAIL "From: $from\n";
+print MAIL "Subject: $subject\n\n";
+print MAIL @message;
+close(MAIL);
+
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+        # Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+
