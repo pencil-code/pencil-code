@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.151 2003-11-24 13:20:33 dobler Exp $
+! $Id: magnetic.f90,v 1.152 2003-11-25 09:23:25 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -21,7 +21,7 @@ module Magnetic
   implicit none
 
   character (len=labellen) :: initaa='zero',initaa2='zero'
-  character (len=labellen) :: ires='eta-const'
+  character (len=labellen) :: iresistivity='eta-const'
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
@@ -55,7 +55,7 @@ module Magnetic
        eta,B_ext,alpha_effect, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       bthresh,bthresh_per_brms,ires
+       bthresh,bthresh_per_brms,iresistivity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -104,7 +104,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.151 2003-11-24 13:20:33 dobler Exp $")
+           "$Id: magnetic.f90,v 1.152 2003-11-25 09:23:25 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -410,13 +410,13 @@ module Magnetic
 !  calculate restive term
 !  (either normal resisitivity or sixth order hyper resistivity)
 !
-      if (ires .eq. 'eta-const') then
+      if (iresistivity .eq. 'eta-const') then
         fres=eta*del2A
-      elseif (ires .eq. 'hyper6') then
+      elseif (iresistivity .eq. 'hyper6') then
         call del6v(f,iaa,del6A)
         fres=eta*del6A
       else
-        if (lroot) print*,'daa_dt: no such ires:',ires
+        if (lroot) print*,'daa_dt: no such iresistivity:',iresistivity
         call stop_it("")
       endif
 !
