@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.147 2003-02-02 15:12:52 brandenb Exp $
+! $Id: entropy.f90,v 1.148 2003-03-29 21:41:41 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -75,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.147 2003-02-02 15:12:52 brandenb Exp $")
+           "$Id: entropy.f90,v 1.148 2003-03-29 21:41:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -384,7 +384,7 @@ module Entropy
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
 !
       call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
-      if (headtt) print*,'dss_dt: cs2,TT1,cp1tilde=',cs2(1),TT1(1),cp1tilde(1)
+      if (headtt) print*,'dss_dt: cs2,TT,cp1tilde=',cs2(1),1./TT1(1),cp1tilde(1)
 !
 !  use sound speed in Courant condition
 !

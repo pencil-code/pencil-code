@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.20 2003-03-29 11:14:32 brandenb Exp $
+! $Id: ionization.f90,v 1.21 2003-03-29 21:41:41 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -50,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.20 2003-03-29 11:14:32 brandenb Exp $")
+           "$Id: ionization.f90,v 1.21 2003-03-29 21:41:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -137,6 +137,7 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp-cv=1 and cp=2.5'
         dlnPdlnrho=gamma
         dlnPdss=gamma1
+        !lnTT=gamma1*(lnrho+ss/ss_ion-ss0)
         lnTT=gamma1*(lnrho+ss-ss0)
         TT=exp(lnTT); TT1=1./TT
         cs2=ss_ion*TT*dlnPdlnrho
