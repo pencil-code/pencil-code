@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.10 2004-05-06 09:06:17 mee Exp $
+; $Id: pc_read_dim.pro,v 1.11 2004-05-06 17:11:50 mee Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-06 09:06:17 $
-;  $Revision: 1.10 $
+;  $Date: 2004-05-06 17:11:50 $
+;  $Revision: 1.11 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -79,8 +79,7 @@ COMPILE_OPT IDL2,HIDDEN
   ENDIF
 
 ; Default data directory
-
-default, datadir, 'data'
+default,datadir,'data'
 
 ;
 ; Initialize / set default returns for ALL variables
@@ -97,6 +96,9 @@ nz=0L
 nghostx=0L
 nghosty=0L
 nghostz=0L
+ipx=-1L
+ipy=-1L
+ipz=-1L
 nprocx=0L
 nprocy=0L
 nprocz=0L
@@ -105,7 +107,7 @@ nprocz=0L
 GET_LUN, file
 
 ; Build the full path and filename
-if keyword_set(proc) then begin
+if (n_elements(proc) eq 1) then begin
     filename=datadir+'/proc'+str(proc)+'/dim.dat'   ; Read processor box dimensions
 endif else begin
     filename=datadir+'/dim.dat'            ; Read global box dimensions
@@ -120,13 +122,18 @@ if (found gt 0) then begin
   readf,file,mx,my,mz,mvar,maux
   readf,file,precision
   readf,file,nghostx,nghosty,nghostz
-  readf,file,nprocx,nprocy,nprocz
+  if (n_elements(proc) eq 1) then begin
+    readf,file,ipx,ipy,ipz
+    nprocx=1L & nprocy=1L & nprocz=1L
+  endif else begin
+    readf,file,nprocx,nprocy,nprocz
+  endelse
   close,file 
   FREE_LUN,file
-end else begin
+endif else begin
   FREE_LUN,file
   message, 'ERROR: cannot find file ' + filename
-end
+endelse
 
 ; Calculate any derived quantities
 nx = mx - (2 * nghostx)
@@ -145,6 +152,8 @@ mxgrid = nxgrid + (2 * nghostx)
 mygrid = nygrid + (2 * nghosty)
 mzgrid = nzgrid + (2 * nghostz)
 
+
+
 precision = (strtrim(precision,2))        ; drop leading zeros
 precision = strmid(precision,0,1)
 
@@ -156,16 +165,18 @@ object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar','maux', $
                         'nghostx','nghosty','nghostz', $
                         'nxgrid','nygrid','nzgrid', $
                         'mxgrid','mygrid','mzgrid', $
+                        'ipx','ipy','ipz', $
                         'nprocx','nprocy','nprocz'], $
                        mx,my,mz,mw,mvar,maux,precision,nx,ny,nz,nghostx,nghosty,nghostz, $
                        nxgrid, nygrid, nzgrid, $
                        mxgrid, mygrid, mzgrid, $
+                       ipx, ipy, ipz, $
                        nprocx,nprocy,nprocz)
 
 
 ; If requested print a summary
 if keyword_set(PRINT) then begin
-  if keyword_set(proc) then begin
+  if (n_elements(proc) eq 1) then begin
       print, 'For processor ',proc,' calculation domain:'
   endif else begin
       print, 'For GLOBAL calculation domain:'

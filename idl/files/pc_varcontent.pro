@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.1 2004-05-05 17:10:31 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.2 2004-05-06 17:11:50 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param
 COMPILE_OPT IDL2,HIDDEN
 
@@ -52,7 +52,9 @@ varcontent=REPLICATE({varcontent_all, variable:'UNKNOWN', $
                                       idlvarloc:'dummy_loc', $
                                       idlinitloc:'fltarr(mxloc,myloc,mzloc)*one', $
                                       skip:0},totalvars+1)
-
+;for i=1L,totalvars do begin
+;  varcontent[i].idlvar='dummy'+str(i)
+;endfor
 ;
 ; Declare ALL variables that MAY OCCUR
 ;
