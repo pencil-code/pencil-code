@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.165 2004-04-30 09:30:50 ajohan Exp $
+! $Id: ionization.f90,v 1.166 2004-05-18 15:20:17 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -21,6 +21,8 @@ module Ionization
   private  
 
   public :: eoscalc,pressure_gradient,temperature_gradient,temperature_hessian
+  public :: eoscalc_point  ! either this, or call overloaded function
+                           ! eoscalc() in hydro.f90
   public :: perturb_energy, perturb_mass
   public :: get_soundspeed
   public :: getmu
@@ -135,7 +137,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.165 2004-04-30 09:30:50 ajohan Exp $")
+           "$Id: ionization.f90,v 1.166 2004-05-18 15:20:17 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
