@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.6 2002-08-18 12:04:40 brandenb Exp $
+! $Id: shear.f90,v 1.7 2002-08-20 13:20:07 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.6 2002-08-18 12:04:40 brandenb Exp $")
+           "$Id: shear.f90,v 1.7 2002-08-20 13:20:07 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -52,6 +52,7 @@ module Shear
 !  2-jul-02/nils: coded
 !  6-jul-02/axel: runs through all nvar variables; added timestep check
 ! 16-aug-02/axel: use now Sshear which is calculated in param_io.f90
+! 20-aug-02/axel: added magnetic stretching term
 !
       use Cparam
       use Deriv
@@ -77,12 +78,20 @@ module Shear
 ! we have got shear. The rest of the Coriolis force is calculated 
 ! in hydro.
 !
-      if (theta==0) then
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*f(l1:l2,m,n,iux)
-      else
-        if (headtt) print*,'Sure you want Sshear with finite theta??'
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-             -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
+      if (lhydro) then
+        if (theta==0) then
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-Sshear*f(l1:l2,m,n,iux)
+        else
+          if (headtt) print*,'Sure you want Sshear with finite theta??'
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+               -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
+        endif
+      endif
+!
+!  Magnetic stretching term
+!
+      if (lmagnetic) then
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*f(l1:l2,m,n,iay)
       endif
 !
 !  take shear into account for calculating time step
