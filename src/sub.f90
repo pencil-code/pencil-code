@@ -1,3 +1,5 @@
+! $Id: sub.f90,v 1.48 2002-05-30 08:04:26 brandenb Exp $ 
+
 module Sub 
 
   use Io
