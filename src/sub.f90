@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.86 2002-09-26 16:21:26 brandenb Exp $ 
+! $Id: sub.f90,v 1.87 2002-10-04 14:38:52 dobler Exp $ 
 
 module Sub 
 
@@ -1738,9 +1738,32 @@ module Sub
         character (len=*) :: fname
 !
         open(1,FILE=fname)
-        close(1,STATUS="DELETE")
+        close(1,STATUS='DELETE')
 !
       endsubroutine remove_file
+!***********************************************************************
+      function read_line_from_file(fname)
+!
+!  Read the first line from a file; return empty string if file is empty
+!  4-oct-02/wolf: coded
+!
+        use Cparam
+!
+        character (len=linelen) :: read_line_from_file,line
+        character (len=*) :: fname
+        logical :: exist
+!
+        read_line_from_file=''  ! default
+        inquire(FILE=fname,EXIST=exist)
+        if (exist) then
+          open(1,FILE=fname,ERR=666)
+          read(1,*,END=666,ERR=666) line
+          close(1)
+          read_line_from_file = line
+        endif
+666     return
+!
+      endfunction read_line_from_file
 !***********************************************************************
       subroutine rmwig0(f)
 !

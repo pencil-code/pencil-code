@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.95 2002-10-04 07:54:39 dobler Exp $
+! $Id: run.f90,v 1.96 2002-10-04 14:38:52 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.95 2002-10-04 07:54:39 dobler Exp $")
+             "$Id: run.f90,v 1.96 2002-10-04 14:38:52 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -68,7 +68,7 @@
 !
 !  read parameters and output parameter list
 !
-        call read_runpars(PRINT=.true.)
+        call read_runpars(FILE=.true.)
         call rprint_list(.false.)
 !
 !  print resolution
@@ -151,7 +151,7 @@
             call mpibcast_logical(reload, 1)
             if (reload) then
               if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
-              call read_runpars(PRINT=.true.) !(Re-read configuration)
+              call read_runpars(PRINT=.true.,FILE=.true.) !(Re-read configuration)
               call rprint_list(.true.) !(Re-read output list)
               if (lroot) call remove_file("RELOAD")
               reload = .false.

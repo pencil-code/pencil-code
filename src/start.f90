@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.68 2002-10-02 20:11:14 dobler Exp $
+! $Id: start.f90,v 1.69 2002-10-04 14:38:52 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.68 2002-10-02 20:11:14 dobler Exp $")
+             "$Id: start.f90,v 1.69 2002-10-04 14:38:52 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -44,7 +44,7 @@
 !  read parameters from start.in
 !  call also rprint_list, because it writes iuu, ilnrho, ient, and iaa to disk.
 !
-        call read_inipars()
+        call read_startpars(FILE=.true.)
         call rprint_list(.false.)
 !
 !  print resolution

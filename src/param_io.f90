@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.63 2002-10-04 09:21:42 brandenb Exp $ 
+! $Id: param_io.f90,v 1.64 2002-10-04 14:38:52 dobler Exp $ 
 
 module Param_IO
 
@@ -69,7 +69,7 @@ module Param_IO
 !
     endsubroutine get_datadir
 !***********************************************************************
-    subroutine read_inipars()
+    subroutine read_startpars(print,file)
 !
 !  read input parameters (done by each processor)
 !
@@ -79,6 +79,7 @@ module Param_IO
 !
 
       integer :: ierr
+      logical, optional :: print,file
       character (len=30) :: label='[none]'
 !
 !  open namelist file
@@ -109,21 +110,26 @@ module Param_IO
       label='[none]'
       close(1)
 !
-!  output on the console, but only when root processor
-!
 !  print cvs id from first line
+!
       if(lroot) call cvs_id(cvsid)
 !
-      if (lroot.and.ip<14) then
-                        write(*,NML=init_pars          )
-        if (lhydro    ) write(*,NML=hydro_init_pars    )
-        if (ldensity  ) write(*,NML=density_init_pars  )
-        if (lgrav     ) write(*,NML=grav_init_pars     )
-        if (lentropy  ) write(*,NML=entropy_init_pars  )
-        if (lmagnetic ) write(*,NML=magnetic_init_pars )
-        if (lradiation) write(*,NML=radiation_init_pars)
-        if (lpscalar  ) write(*,NML=pscalar_init_pars  )
-        if (lshear    ) write(*,NML=shear_init_pars    )
+!  Give online feedback if called with the PRINT optional argument
+!  Note: Some compiler's [like Compaq's] code crashes with the more
+!  compact `if (present(print) .and. print)' 
+!
+      if (present(print)) then
+        if (print) then
+          call print_startpars()
+        endif
+      endif
+!
+!  Write parameters to log file
+!
+      if (present(file)) then
+        if (file) then
+          call print_startpars(FILE=trim(datadir)//'/params.log')
+        endif
       endif
 !
 !  set gamma1, cs20, and lnrho0
@@ -165,9 +171,46 @@ module Param_IO
       endif
       call stop_it('')
 !
-    endsubroutine read_inipars
+    endsubroutine read_startpars
 !***********************************************************************
-    subroutine read_runpars(print)
+    subroutine print_startpars(file)
+!
+!  print input parameters
+!  4-oct02/wolf: adapted
+!
+      use Cdata
+!
+      character (len=*), optional :: file
+      integer :: unit=6         ! default unit is 6=stdout
+!
+      if (lroot) then
+        if (present(file)) then
+          unit = 1
+          open(unit,FILE=file)
+          write(unit,*) &
+               '# -------------------------------------------------------------'
+          write(unit,'(A,A)') ' # ', 'Initializing'
+          write(unit,*) '# t=', t
+        endif
+!
+                        write(unit,NML=init_pars          )
+        if (lhydro    ) write(unit,NML=hydro_init_pars    )
+        if (ldensity  ) write(unit,NML=density_init_pars  )
+        if (lgrav     ) write(unit,NML=grav_init_pars     )
+        if (lentropy  ) write(unit,NML=entropy_init_pars  )
+        if (lmagnetic ) write(unit,NML=magnetic_init_pars )
+        if (lradiation) write(unit,NML=radiation_init_pars)
+        if (lpscalar  ) write(unit,NML=pscalar_init_pars  )
+        if (lshear    ) write(unit,NML=shear_init_pars    )
+!
+        if (present(file)) then
+          close(unit)
+        endif
+      endif
+!
+    endsubroutine print_startpars
+!***********************************************************************
+    subroutine read_runpars(print,file)
 !
 !  read input parameters
 !
@@ -179,7 +222,7 @@ module Param_IO
       use Mpicomm, only: stop_it
 !
       integer :: ierr
-      logical, optional :: print
+      logical, optional :: print,file
       character (len=30) :: label='[none]'
 !
 !  set default values
@@ -241,6 +284,14 @@ module Param_IO
       if (present(print)) then
         if (print) then
           call print_runpars()
+        endif
+      endif
+!
+!  Write parameters to log file
+!
+      if (present(file)) then
+        if (file) then
+          call print_runpars(FILE=trim(datadir)//'/params.log')
         endif
       endif
 !  
@@ -315,24 +366,47 @@ module Param_IO
 !
     endsubroutine read_runpars
 !***********************************************************************
-    subroutine print_runpars
+    subroutine print_runpars(file)
 !
 !  print input parameters
 !  14-sep-01/axel: inserted from run.f90
 !  31-may-02/wolf: renamed from cprint to print_runpars
+!   4-oct-02/wolf: added log file stuff
 !
       use Cdata
 !
-      if (lroot.and.ip<14) then
-                        write(*,NML=run_pars          )
-        if (lhydro    ) write(*,NML=hydro_run_pars    )
-        if (lforcing  ) write(*,NML=forcing_run_pars  )
-        if (lgrav     ) write(*,NML=grav_run_pars     )
-        if (lentropy  ) write(*,NML=entropy_run_pars  )
-        if (lmagnetic ) write(*,NML=magnetic_run_pars )
-        if (lradiation) write(*,NML=radiation_run_pars)
-        if (lpscalar  ) write(*,NML=pscalar_run_pars  )
-        if (lshear    ) write(*,NML=shear_run_pars    )
+      character (len=*), optional :: file
+      integer :: unit=6         ! default unit is 6=stdout
+      character (len=linelen) :: line
+!
+      if (lroot) then
+        line = read_line_from_file('RELOAD') ! get first line from file RELOAD
+        if (present(file)) then
+          unit = 1
+          open(unit,FILE=file,position='append')
+          write(unit,*) &
+               '# -------------------------------------------------------------'
+          !
+          ! Add comment from `RELOAD' and time
+          !
+          write(unit,'(A,A)') ' # ', trim(line)
+          write(unit,*) '# t=', t
+        endif
+!
+                        write(unit,NML=run_pars          )
+        if (lhydro    ) write(unit,NML=hydro_run_pars    )
+        if (lforcing  ) write(unit,NML=forcing_run_pars  )
+        if (lgrav     ) write(unit,NML=grav_run_pars     )
+        if (lentropy  ) write(unit,NML=entropy_run_pars  )
+        if (lmagnetic ) write(unit,NML=magnetic_run_pars )
+        if (lradiation) write(unit,NML=radiation_run_pars)
+        if (lpscalar  ) write(unit,NML=pscalar_run_pars  )
+        if (lshear    ) write(unit,NML=shear_run_pars    )
+!
+        if (present(file)) then
+          close(unit)
+        endif
+
       endif
 !
     endsubroutine print_runpars
