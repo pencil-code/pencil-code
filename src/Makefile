@@ -44,8 +44,8 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(Nq[0-9]+)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
-#OPTFLAGS=-O4
-#F77=$(FC) -dusty
+#F77=$(FC) -O4 -dusty
+#F77=$(FC) -O3 #(Cincinnatus|Owen)
 
 ## SunOS:
 #FC=pghpf #(Lomond)
