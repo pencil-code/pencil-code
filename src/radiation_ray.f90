@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.47 2003-11-10 18:22:11 theine Exp $
+! $Id: radiation_ray.f90,v 1.48 2003-11-10 18:33:31 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.47 2003-11-10 18:22:11 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.48 2003-11-10 18:33:31 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -206,6 +206,8 @@ module Radiation
 !
       do idir=1,ndir
 !
+        call raydirection
+!
         call Qintrinsic
 !
         if (lperiodic_ray) then
@@ -233,6 +235,12 @@ module Radiation
 !  identifier
 !
     if(ldebug.and.headt) print*,'raydirection'
+!
+!  get direction components
+!
+      lrad=dir(idir,1)
+      mrad=dir(idir,2)
+      nrad=dir(idir,3)
 !
 !  determine start and stop positions
 !
@@ -291,16 +299,6 @@ module Radiation
 !  identifier
 !
       if(ldebug.and.headt) print*,'Qintrinsic'
-!
-!  get direction components
-!
-      lrad=dir(idir,1)
-      mrad=dir(idir,2)
-      nrad=dir(idir,3)
-!
-!  Determine certain variables depending on the ray direction
-!
-      call raydirection
 !
 !  line elements
 !
