@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.97 2004-08-22 19:14:31 brandenb Exp $
+! $Id: interstellar.f90,v 1.98 2004-08-24 19:58:58 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -147,7 +147,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.97 2004-08-22 19:14:31 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.98 2004-08-24 19:58:58 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -222,24 +222,24 @@ module Interstellar
 ! Turn off cooling: 'no'
 ! cooling_select in interstellar_init_pars added
 !
-      If (cooling_select == 'RB') Then
-         Print*,'initialize_interstellar: default RB cooling function'
+      if (cooling_select == 'RB') then
+         if (lroot) print*,'initialize_interstellar: default RB cooling function'
          coolT_cgs=(/ 300.D0,     2000.D0,    8000.D0,    1.D5,    4.D7,     1.D9 /)
          coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, 0.D0   /)
          coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
-      Else If (cooling_select == 'SS') Then
+      else if (cooling_select == 'SS') then
          ! These are the SS et al (2002) coefficients multiplied by m_proton**2 to obtain 
          ! same units as RB above
-         Print*,'initialize_interstellar: SS cooling function'
+         if (lroot) print*,'initialize_interstellar: SS cooling function'
          coolT_cgs=(/ 10.D0,     141.D0,    313.D0,    6102.D0,    1.D5,     1.D9 /)
          coolH_cgs=(/ 9.54D-32, 2.54D-29, 3.10D-28, 5.58D-40, 0.D0, 0.D0 /)
          coolB=(/ 2.12,     1.0,      0.56,     3.67,    0. ,      0.   /)
-      Else If (cooling_select == 'no') Then
-         Print*,'initialize_interstellar: no cooling applied'
+      else if (cooling_select == 'no') then
+         if (lroot) print*,'initialize_interstellar: no cooling applied'
          coolT_cgs=0.D0
          coolH_cgs=0.D0
          coolB=0.D0
-      End If
+      end if
 !
       coolH = coolH_cgs / unit_Lambda * (unit_temperature**coolB) / (mu*m_H)**2 * coolingfunction_scalefactor
       coolT = coolT_cgs / unit_temperature
