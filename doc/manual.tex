@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.63 2002-07-22 08:52:21 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.64 2002-07-22 12:46:52 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -201,7 +201,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.63 $ $}
+\date{\today,~ $ $Revision: 1.64 $ $}
 
 % ====================================================================== %
 
@@ -230,7 +230,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.63 $ $}
+  \emph{\today,~ $ $Revision: 1.64 $ $}
 
 
 \end{center}
@@ -1441,10 +1441,15 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \var{lperi} specifies whether a direction is considered
                  periodic (in which case the last point is omitted) or not.
                  In all cases, three ghost zones will be added. \\
-  \var{lwrite_ic}
-               & ???. \\
-  \var{lnowrite}
-               & ???. \\
+  \var{lwrite_ic} [\code{F}]
+               & If set \code{T}, the initial data are written into the
+                 file \file{VAR0}. This is generally useful, but doing this
+                 all the time uses up plenty of disk space.\\
+  \var{lnowrite} [\code{F}]
+               & If set \code{T}, all initialization files are written,
+                 except file{var.dat}. This option allows you to use old
+                 file{var.dat} files, but updates all other initialization
+                 files. This could be useful after having changed the code.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
@@ -1650,7 +1655,8 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{kz_aa} [$1.$]
                & wavenumbers used by some initial fields. \\
   \var{lpress_equil} [F]
-               & flag for pressure equilibrium (used by some initial fields) \\
+               & flag for pressure equilibrium (can be used in connection
+                 with all initial fields) \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{pscalar_init_pars}} \\
@@ -3017,7 +3023,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.63 2002-07-22 08:52:21 dobler Exp $ $}
+$ $Id: manual.tex,v 1.64 2002-07-22 12:46:52 brandenb Exp $ $}
 
 
 \end{document}
