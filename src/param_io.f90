@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.3 2002-06-02 07:51:40 brandenb Exp $ 
+! $Id: param_io.f90,v 1.4 2002-06-02 21:04:39 brandenb Exp $ 
 module Param_IO
 
 !
@@ -80,8 +80,6 @@ module Param_IO
       if (lentropy ) read(1,NML=entropy_run_pars )
       if (lmagnetic) read(1,NML=magnetic_run_pars)
       close(1)
-      cs20=cs0**2 !(goes into cdata module)
-      ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma   !!AB: this looks like it belongs to entropy
 !
 !  Write data to file for IDL
 !

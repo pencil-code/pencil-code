@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.33 2002-06-01 02:56:21 brandenb Exp $
+! $Id: start.f90,v 1.34 2002-06-02 21:04:39 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,8 +31,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.33 $", &
-             "$Date: 2002-06-01 02:56:21 $")
+             "$Revision: 1.34 $", &
+             "$Date: 2002-06-02 21:04:39 $")
 !
 !  set default values
 !
@@ -78,8 +78,7 @@
 !
 !        rr=sqrt(xx**2+yy**2+zz**2)
 !        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
-!
-        cs20=cs0**2 ! (goes into cdata module)
+!AB: what's the plan here? grav_r?
 !
 !  different initial conditions
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.49 2002-06-02 07:51:39 brandenb Exp $
+! $Id: entropy.f90,v 1.50 2002-06-02 21:04:39 brandenb Exp $
 
 module Entropy
 
@@ -54,8 +54,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.49 $", &
-           "$Date: 2002-06-02 07:51:39 $")
+           "$Revision: 1.50 $", &
+           "$Date: 2002-06-02 21:04:39 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -89,11 +89,16 @@ module Entropy
              print*, 'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
         !
         select case(initss)
-        case(1)               ! density stratification
-          ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
-          f(:,:,:,ient) = ss0 + (-alog(gamma) + alog(cs20))/gamma &
-                              + grads0 * zz
+!
+!  linear profile of ss, centered around ss=0.
+!
+        case(1)
+          f(:,:,:,ient) = grads0*zz
+!
+!  convection setup
+!
         case(4)               ! piecewise polytropic
+          cs20=cs0**2
           ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           ! top region
           ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
@@ -186,24 +191,19 @@ module Entropy
 !
 !  sound speed squared
 !
+      cs20=cs0**2
       ss=f(l1:l2,m,n,ient)
       lnrho=f(l1:l2,m,n,ilnrho)
-!  no cs20 if we adopt s[/c_p] = 1/gamma*ln(p) - ln(rho)
-!      cs2=cs20*exp(gamma1*lnrho+gamma*ss)
-      if (gamma /= 1.) then
-        cs2=gamma*exp(gamma1*lnrho+gamma*ss)
-      else                      ! isothermal case
-        cs2=cs20
-      endif
-      if (headtt) print*,'dss_dt: calculated cs2'
+      cs2=cs20*exp(gamma1*lnrho+gamma*ss)
+if (headtt) print*,'m,n,cs2=',m,n,cs2
+if (headtt) print*,'lnrho=',lnrho
+if (headtt) print*,'ss=',ss
 !
 !  pressure gradient term
 !
-      !gpprho=cs20*glnrho  !(in isothermal case)
       do j=1,3
         gpprho(:,j)=cs2*(glnrho(:,j)+gss(:,j))
       enddo
-      if (headtt) print*,'dss_dt: calculated gpprho'
 !
 !  advection term
 !
@@ -217,7 +217,6 @@ module Entropy
         enddo
         sij(:,j,j)=sij(:,j,j)-.333333*divu
       enddo
-      if (headtt) print*,'dss_dt: calculated sij'
 !
       sij2=0.
       do j=1,3
@@ -225,7 +224,6 @@ module Entropy
         sij2=sij2+sij(:,i,j)**2
       enddo
       enddo
-      if (headtt) print*,'dss_dt: calculated sij2'
 !
       if (headtt) print*,'dss_dt: cs2=',cs2
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
@@ -418,6 +416,7 @@ module Entropy
       character (len=*) :: errmesg
 !
       errmesg=""
+      cs20=cs0**2
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !
