@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.111 2004-04-15 12:38:26 ajohan Exp $
+! $Id: noionization.f90,v 1.112 2004-04-16 07:36:56 ajohan Exp $
 
 !  Dummy routine for noionization
 
@@ -47,14 +47,14 @@ module Ionization
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
-  real :: xHe=0.1,nu_mol=0.
+  real :: xHe=0.1
   real :: cp=impossible, cp1=impossible
 
   ! input parameters
   namelist /ionization_init_pars/ xHe,cp
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,cp,nu_mol
+  namelist /ionization_run_pars/ xHe,cp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_TTm=0,i_TTmax=0
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.111 2004-04-15 12:38:26 ajohan Exp $')
+           '$Id: noionization.f90,v 1.112 2004-04-16 07:36:56 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !

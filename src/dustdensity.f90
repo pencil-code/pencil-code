@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.61 2004-04-15 12:39:25 ajohan Exp $
+! $Id: dustdensity.f90,v 1.62 2004-04-16 07:36:33 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.61 2004-04-15 12:39:25 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.62 2004-04-16 07:36:33 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -619,7 +619,8 @@ module Dustdensity
       use Cdata
       use Sub
       use Entropy, only: nu_turb
-      use Ionization, only: pressure_gradient,eoscalc_point,ilnrho_ss,nu_mol
+      use Ionization, only: pressure_gradient,eoscalc_point,ilnrho_ss
+      use Viscosity, only: nu_mol
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu
