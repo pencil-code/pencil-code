@@ -11,6 +11,7 @@ module Sub
 
   interface notanumber              ! Overload the `notanumber' function
     module procedure notanumber_1
+    module procedure notanumber_2
     module procedure notanumber_3
   endinterface
 
@@ -1248,6 +1249,25 @@ module Sub
         notanumber_1 = (any(f /= g) .or. any(f == g+1))
 !
       endfunction notanumber_1
+!***********************************************************************
+      function notanumber_2(f)
+!
+!  Check for denormalised floats (in fact NaN or -Inf, Inf).
+!  The test used here should work on all architectures even if
+!  optimisation is high (something like `if (any(f /= f+1))' would be
+!  optimised away).
+!  Version for 2d arrays.
+!
+!  1-may-02/wolf: coded
+!d
+        logical :: notanumber_2
+        real, dimension(:,:) :: f
+        real, dimension(size(f,1),size(f,2)) :: g
+
+        g = f
+        notanumber_2 = (any(f /= g) .or. any(f == g+1))
+!
+      endfunction notanumber_2
 !***********************************************************************
       function notanumber_3(f)
 !

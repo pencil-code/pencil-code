@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.20 $", &
-           "$Date: 2002-05-01 18:16:12 $")
+           "$Revision: 1.21 $", &
+           "$Date: 2002-05-01 19:57:05 $")
 !
 !
       if (nvar > mvar) then
@@ -140,8 +140,12 @@ module Register
           call output(trim(directory)//'/pot.dat',pot,1)
 
           ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
-          lnrho0 = alog(cs20/gamma)/gamma1
-          f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
+          if (gamma /= 1) then
+            lnrho0 = alog(cs20/gamma)/gamma1
+            f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
+          else                  ! isothermal
+            f(:,:,:,ilnrho) = alog(rho0)
+          endif
         endif
         !
       case(2)               ! oblique sound wave

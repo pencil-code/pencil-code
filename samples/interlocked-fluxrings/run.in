@@ -3,12 +3,12 @@
 0.,0.,0.,		tinit,tdamp,dampu
 0.,1.2,0.2,		dampuext,rdamp,wdamp
 14,,,,			ip,ix,iy,iz
-,1e-2,0,0.08,		cs,nu,ivisc,cdtv
+,0e-2,0,0.08,		cs,nu,ivisc,cdtv
 1e-2,1,1,1,		hcond0,hcond1,hcond2,whcond
 0.e-2,0.,0.,0.,		eta,Bx_ext,By_ext,Bz_ext
 0.,			cdiffrho,
 -0.1,			gravz
-5.,0.25,0.,0.2		cheat,wheat,cool,wcool
+0.,0.25,0.,0.2		cheat,wheat,cool,wcool
 0.0625,			Fheat
 0,2e-1,.3,		iforce,force,relhel
 p,p,p,p,p,p,p,p,	bcx

@@ -43,8 +43,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-05-01 18:16:12 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2002-05-01 19:57:05 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -118,7 +118,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1)
+    subroutine daa_dt(f,df,uu,rho1,TT1,cs2)
 !
 !  magnetic field evolution
 !
@@ -137,8 +137,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A,dAdy,shearA
-      real, dimension (nx) :: var1, rho1, J2, TT1, cs2,uy0
-      real :: gamma1
+      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0
 !
     !  aa=f(l1:l2,m,n,iax:iaz)
       call curl(f,iaa,bb)
@@ -178,7 +177,7 @@ module Magnetic
 !
 !  debug output
 !
-      if (ip<=4) then
+      if (headt .and. lfirst .and. ip<=4) then
         call output_pencil(trim(directory)//'/aa.dat',aa,3)
         call output_pencil(trim(directory)//'/bb.dat',bb,3)
         call output_pencil(trim(directory)//'/jj.dat',jj,3)

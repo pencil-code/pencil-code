@@ -268,7 +268,7 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
-      real, dimension(nx) :: rho,rho1,nurho1,nu_var,cs2,chi,diff,del2lam
+      real, dimension(nx) :: rho,rho1,nurho1,nu_var,cs2,TT1,chi,diff,del2lam
       real, dimension(nx) :: pdamp
       real :: diffrho
       integer :: i,j
@@ -278,8 +278,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.27 $", &
-           "$Date: 2002-05-01 18:16:12 $")
+           "$Revision: 1.28 $", &
+           "$Date: 2002-05-01 19:57:05 $")
 !
 !  initiate communication
 !
@@ -350,7 +350,11 @@ module Equ
 !
 !  entropy equation
 !
-        if (lentropy) call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
+        if (lentropy) then
+          call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
+        else
+          call stop_it('How do you get cs2, rho1, TT1?')
+        endif
 !
 !  thermal part of eq. of motion (pressure force)
 !
@@ -358,7 +362,7 @@ module Equ
 !
 !  magnetic part
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1)
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,cs2)
 
 !
 !  damping terms (artificial, but sometimes useful):

@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.37 $", &
-           "$Date: 2002-05-01 18:16:12 $")
+           "$Revision: 1.38 $", &
+           "$Date: 2002-05-01 19:57:05 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -127,7 +127,7 @@ use IO
 !
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
+    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
 !
 !  calculate right hand side of entropy equation
 !
@@ -143,9 +143,9 @@ use IO
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
-      real, dimension (nx) :: divu,rho1,cs2,chi
+      real, dimension (nx) :: divu,rho1,cs2,TT1,chi
       real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
-      real, dimension (nx) :: ss,lnrho,TT1,lambda
+      real, dimension (nx) :: ss,lnrho,lambda
       real, dimension (nx) :: heat,prof
       real :: ssref,z_prev=-1.23e20
       integer :: i,j
@@ -153,7 +153,7 @@ use IO
       save :: z_prev,lambda,glhc
 !
       intent(in) :: f,uu,uij,divu,rho1,glnrho
-      intent(out) :: df,gpprho,cs2,chi
+      intent(out) :: df,gpprho,cs2,TT1,chi
 !
 !  coordinates
 !
@@ -167,7 +167,11 @@ use IO
       lnrho=f(l1:l2,m,n,ilnrho)
 !  no cs20 if we adopt s[/c_p] = 1/gamma*ln(p) - ln(rho)
 !      cs2=cs20*exp(gamma1*lnrho+gamma*ss)
-      cs2=gamma*exp(gamma1*lnrho+gamma*ss)
+      if (gamma /= 1.) then
+        cs2=gamma*exp(gamma1*lnrho+gamma*ss)
+      else                      ! isothermal case
+        cs2=cs20
+      endif
 !
 !  pressure gradient term
 !
@@ -223,17 +227,22 @@ use IO
       call dot_mn(glnT,glnTlambda,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
 
-      if (headt .and. lfirst) then
+      if (headt) then
+        if (notanumber(glhc)) print*,'NaNs in glhc'
+        if (notanumber(rho1)) print*,'NaNs in rho1'
+        if (notanumber(lambda)) print*,'NaNs in lambda'
+        if (notanumber(chi)) print*,'NaNs in chi'
+        if (notanumber(thdiff)) print*,'NaNs in thdiff'
+        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
+      endif
+
+      if (headt .and. lfirst .and. ip<=4) then
         call output_pencil(trim(directory)//'/chi.dat',chi,1)
         call output_pencil(trim(directory)//'/lambda.dat',lambda,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
-
-      if (headt) then
-        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
-      endif
-
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+
 !
 !  Vertical case:
 !  Heat at bottom, cool top layers
