@@ -1,0 +1,18 @@
+#!/bin/csh
+#
+#  $Id: reload,v 1.1 2004-01-26 12:47:34 brandenb Exp $
+#
+#  interface to input information for log file
+#
+#  Usage:
+#     reload "decription of change"
+#  Alternative usage, if one is already in run1
+#     reload
+#
+if ($#argv > 0) then
+  echo $1 > RELOAD
+else
+  echo "==> Write short (40 chars) description of your change!"
+  echo "You will see the result next time you say summarize-history"
+endif
+#
