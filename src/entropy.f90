@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.275 2004-03-05 15:10:36 dobler Exp $
+! $Id: entropy.f90,v 1.276 2004-03-05 15:31:29 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -36,7 +36,7 @@ module Entropy
   real :: center2_x=0., center2_y=0., center2_z=0.
   real :: kx_ss
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
-  real :: hcond0=0.
+  real :: hcond0=impossible
   real :: hcond1=impossible,hcond2=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.275 2004-03-05 15:10:36 dobler Exp $")
+           "$Id: entropy.f90,v 1.276 2004-03-05 15:31:29 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -147,6 +147,25 @@ module Entropy
 !
 !  radiative diffusion: initialize flux etc
 !
+      !
+      !  Kbot and hcond0 are used interchangibly, so if one is 
+      !  =impossible, set it to the other's value
+      !
+      if (hcond0 == impossible) then
+        if (Kbot == impossible) then
+          hcond0 = 0.
+          Kbot = 0.
+        else                    ! Kbot = possible
+          hcond0 = Kbot
+        endif
+      else                      ! hcond0 = possible
+        if (Kbot == impossible) then
+          Kbot = hcond0
+        else
+          print*, 'WARNING: You should not set Kbot and hcond0 at the same time'
+        endif
+      endif
+      !
       if (lgravz) then
         if (lmultilayer) then
           !
@@ -1681,7 +1700,7 @@ endif
 !  23-jan-2002/wolf: coded
 !  18-sep-2002/axel: added lmultilayer switch
 !
-      use Cdata, only: nx,lgravz,lgravr
+      use Cdata, only: nx,lgravz
       use Sub, only: step
       use Gravity
 !
@@ -1696,9 +1715,7 @@ endif
         else
           hcond=Kbot
         endif
-      endif
-
-      if (lgravr) then
+      else
         hcond = hcond0
       endif
 !
@@ -1711,7 +1728,7 @@ endif
 !  NB: *Must* be in sync with heatcond() above.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr
+      use Cdata, only: nx,lgravz
       use Sub, only: der_step
       use Gravity
 !
@@ -1723,9 +1740,7 @@ endif
         glhc(:,3) = (hcond1-1)*der_step(z,z1,-widthss) &
                     + (hcond2-1)*der_step(z,z2,widthss)
         glhc(:,3) = hcond0*glhc(:,3)
-      endif
-
-      if (lgravr) then
+      else
         glhc = 0.
       endif
 !
