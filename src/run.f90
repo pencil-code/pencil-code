@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.187 2004-07-10 15:33:52 brandenb Exp $
+! $Id: run.f90,v 1.188 2004-07-22 12:17:57 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -29,6 +29,8 @@
         use Power_spectrum
         use Timeavg
         use Interstellar
+        use Dustvelocity, only: init_uud
+        use Dustdensity, only: init_nd
 !
         implicit none
 !
@@ -36,10 +38,12 @@
         real, dimension (mx,my,mz,mvar) :: df
         double precision :: time1,time2
         integer :: count
-        logical :: stop=.false.,reload=.false.
+        logical :: stop=.false.,reload=.false.,lreinit=.false.
         real :: wall_clock_time, time_per_step
         real :: time_last_diagnostic, time_this_diagnostic
-        integer ::  it_last_diagnostic
+        integer :: it_last_diagnostic
+        integer :: ivar,nreinit=0
+        character (len=5), dimension(10) :: reinit_vars=''
 !
         lrun = .true.
 !
@@ -51,7 +55,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.187 2004-07-10 15:33:52 brandenb Exp $")
+             "$Id: run.f90,v 1.188 2004-07-22 12:17:57 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -213,6 +217,47 @@
               call wparam2()
               if (lroot) call remove_file("RELOAD")
               reload = .false.
+            endif
+            !
+            !  re-init variables if file `REINIT' exists; then remove
+            !  the file. Currently only works for uud and nd, because these
+            !  variables don't need xx, yy or zz for initial condition.
+            !
+            if (lroot) inquire(FILE="REINIT", EXIST=lreinit)
+            call mpibcast_logical(lreinit, 1)
+            if (lreinit) then
+              if (lroot) write(0,*) 'Found REINIT file -- reiniting variables:'
+              open(1,file='REINIT',action='read',form='formatted')
+              nreinit=1
+              !
+              !  read variable names from REINIT file
+              !
+              do while (ierr == 0)
+                read(1,'(A5)',IOSTAT=ierr) reinit_vars(nreinit)
+                if (reinit_vars(nreinit) /= '') then
+                  if (lroot) write(0,*) '  '//reinit_vars(nreinit)
+                  nreinit=nreinit+1
+                endif
+              enddo
+              nreinit=nreinit-1
+              !
+              !  reinit all variables present in REINIT file
+              !
+              do ivar=1,nreinit
+                select case (reinit_vars(ivar))
+                  case ('uud')
+                    f(:,:,:,minval(iudx):maxval(iudz))=0.
+                    call init_uud(f)
+                  case ('nd')
+                    f(:,:,:,ind)=0.
+                    call init_nd(f)
+                  case default
+                    if (lroot) print*, 'reinit: Skipping unknown variable ', &
+                        reinit_vars(ivar)
+                endselect
+              enddo
+              if (lroot) call remove_file("REINIT")
+              lreinit = .false.
             endif
           endif
           !
