@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.33 2002-06-01 02:56:21 brandenb Exp $
+! $Id: run.f90,v 1.34 2002-06-04 11:08:37 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.33 $", &
-             "$Date: 2002-06-01 02:56:21 $")
+             "$Revision: 1.34 $", &
+             "$Date: 2002-06-04 11:08:37 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -160,8 +160,8 @@ print*,'bef time loop: dx=',dx
 !
         if(lroot) then
           Wall_clock_time=(time2-time1)/real(count_rate)
-          print*,'Wall clock time=',Wall_clock_time,' (+/- ', 1./count_rate,')'
-          if (it>1) print*, 'time/step/pt [microsec]=', &
+          print*,'Wall clock time [sec]=',Wall_clock_time,' (+/- ', 1./count_rate,')'
+          if (it>1) print*, 'Wall clock time/timestep/meshpoint [microsec]=', &
                Wall_clock_time/(it-1)/nw/ncpus/1e-6
         endif
         call mpifinalize

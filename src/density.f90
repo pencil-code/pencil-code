@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.2 2002-06-04 10:02:30 brandenb Exp $
+! $Id: density.f90,v 1.3 2002-06-04 11:08:37 brandenb Exp $
 
 module Density
 
@@ -8,7 +8,7 @@ module Density
 
   integer :: initlnrho=0
   real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
-          rho_left=1., rho_right=1., cdiffrho, &
+          rho_left=1., rho_right=1., cdiffrho=0., &
           cs20, cs2top, gamma1
 
   namelist /density_init_pars/ &
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.2 $", &
-           "$Date: 2002-06-04 10:02:30 $")
+           "$Revision: 1.3 $", &
+           "$Date: 2002-06-04 11:08:37 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

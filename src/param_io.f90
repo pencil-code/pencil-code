@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.8 2002-06-04 09:12:33 brandenb Exp $ 
+! $Id: param_io.f90,v 1.9 2002-06-04 11:08:37 brandenb Exp $ 
 module Param_IO
 
 !
@@ -32,8 +32,8 @@ module Param_IO
 !
       open(1,FILE='start.in',FORM='formatted')
                      read(1,NML=init_pars         )
-      if (ldensity)  read(1,NML=density_init_pars   )
       if (lhydro)    read(1,NML=hydro_init_pars   )
+      if (ldensity)  read(1,NML=density_init_pars   )
       ! forcing needs no init parameters
       if (lgrav)     read(1,NML=grav_init_pars  )
       if (lentropy)  read(1,NML=entropy_init_pars )
@@ -77,6 +77,7 @@ module Param_IO
       open(1,file='run.in',form='formatted')
                      read(1,NML=run_pars         )
       if (lhydro   ) read(1,NML=hydro_run_pars )
+      if (ldensity ) read(1,NML=density_run_pars )
       if (lforcing ) read(1,NML=forcing_run_pars )
       if (lgrav    ) read(1,NML=grav_run_pars  )
       if (lentropy ) read(1,NML=entropy_run_pars )
@@ -207,6 +208,7 @@ module Param_IO
         open(1,FILE='tmp/param2.nml',DELIM='apostrophe')
                        write(1,NML=run_pars         )
         if (lhydro   ) write(1,NML=hydro_run_pars   )
+        if (ldensity ) write(1,NML=density_run_pars   )
         if (lforcing ) write(1,NML=forcing_run_pars )
         if (lgrav    ) write(1,NML=grav_run_pars  )
         if (lentropy ) write(1,NML=entropy_run_pars )

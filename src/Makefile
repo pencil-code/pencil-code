@@ -16,7 +16,6 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
 #FFLAGS= -64 -O3 -mips4 #(ukaff|origin)
 #F77=$(FC)
-#MPICOMM=mpicomm#(ukaff)
 CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ## OSF1:
@@ -65,10 +64,6 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O5 -qsuffix=f=f90
 
 ### End machine dependent
-
-# Switch off MPI for all machines (unless commented out)
-#LDMPI=
-#MPICOMM=nompi
 
 LD=$(FC)
 LDFLAGS=$(FFLAGS)

@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.17 2002-06-04 08:12:02 brandenb Exp $
+! $Id: cparam.f90,v 1.18 2002-06-04 11:08:37 brandenb Exp $
 
 module Cparam
 
@@ -14,9 +14,7 @@ module Cparam
 !  one needs to adjust nvar.
 !  This part is now isolated in a separate cparam.local file.
 !
-include 'cparam.local'
-! integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
-! integer, parameter :: nxgrid=200,nygrid=1,nzgrid=1,mvar=4
+  include 'cparam.local'
 !
 !  derived and fixed parameters
 !

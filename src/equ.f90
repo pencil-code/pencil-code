@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.52 2002-06-04 10:02:30 brandenb Exp $
+! $Id: equ.f90,v 1.53 2002-06-04 11:08:37 brandenb Exp $
 
 module Equ
 
@@ -160,7 +160,7 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,lnrho,uglnrho,u2,o2,ou
-      real, dimension(nx) :: rho1,nu_var,chi,diff,del2lam
+      real, dimension(nx) :: rho,rho1,nu_var,chi,diff,del2lam
       real, dimension(nx) :: pdamp
       real :: diffrho,fac
       integer :: i,j
@@ -171,8 +171,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.52 $", &
-           "$Date: 2002-06-04 10:02:30 $")
+           "$Revision: 1.53 $", &
+           "$Date: 2002-06-04 11:08:37 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -345,7 +345,9 @@ module Equ
           endif
           if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
           if (i_um2/=0) call max_mn_name(u2,i_um2)
-!         rho=exp(f(l1:l2,m,n,ilnrho))
+          rho=exp(f(l1:l2,m,n,ilnrho))
+          if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
+!
 !         call max_mn (u2,u2max)
 !         call rms2_mn(u2,urms)
 !         call max_mn (o2,o2max)
