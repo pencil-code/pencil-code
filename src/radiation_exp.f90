@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.89 2003-08-08 18:09:46 theine Exp $
+! $Id: radiation_exp.f90,v 1.90 2003-08-30 13:49:07 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.89 2003-08-08 18:09:46 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.90 2003-08-30 13:49:07 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -339,7 +339,7 @@ module Radiation
 !
 !  y-direction
 !
-      if (bc_rad1(2)=='p'.and.bc_rad2(2)=='p'.and.lrad==0.and.nrad==0.and.nprocy>1) then
+      if (bc_rad1(2)=='p'.and.bc_rad2(2)=='p'.and.lrad==0.and.nrad==0) then
 !
         if (mrad>0) then
           if (ipy==0) then
@@ -350,12 +350,12 @@ module Radiation
           endif
           Irad0_zx=Irad0_zx*emtau(:,m2-rady0+1:m2,:)+Irad(:,m2-rady0+1:m2,:)
           emtau0_zx=emtau0_zx*emtau(:,m2-rady0+1:m2,:)
-          if (ipy/=nprocy-1) then
-            call radboundary_zx_send(rady0,mrad,idir,Irad0_zx,emtau0_zx)
-          else
+          if (ipy==nprocy-1) then
             Irad0_zx(l1:l2,:,n1:n2)=Irad0_zx(l1:l2,:,n1:n2) &
                                /(1-emtau0_zx(l1:l2,:,n1:n2))
             call radboundary_zx_send(rady0,mrad,idir,Irad0_zx)
+          else
+            call radboundary_zx_send(rady0,mrad,idir,Irad0_zx,emtau0_zx)
           endif 
         endif
 !
@@ -368,12 +368,12 @@ module Radiation
           endif
           Irad0_zx=Irad0_zx*emtau(:,m1:m1+rady0-1,:)+Irad(:,m1:m1+rady0-1,:)
           emtau0_zx=emtau0_zx*emtau(:,m1:m1+rady0-1,:)
-          if (ipy/=0) then
-            call radboundary_zx_send(rady0,mrad,idir,Irad0_zx,emtau0_zx)
-          else
+          if (ipy==0) then
             Irad0_zx(l1:l2,:,n1:n2)=Irad0_zx(l1:l2,:,n1:n2) &
                                /(1-emtau0_zx(l1:l2,:,n1:n2))
             call radboundary_zx_send(rady0,mrad,idir,Irad0_zx)
+          else
+            call radboundary_zx_send(rady0,mrad,idir,Irad0_zx,emtau0_zx)
           endif 
         endif
 !
@@ -381,7 +381,7 @@ module Radiation
 !
 !  z-direction
 !
-      if (bc_rad1(3)=='p'.and.bc_rad2(3)=='p'.and.lrad==0.and.mrad==0.and.nprocz>1) then
+      if (bc_rad1(3)=='p'.and.bc_rad2(3)=='p'.and.lrad==0.and.mrad==0) then
 !
         if (nrad>0) then
           if (ipz==0) then
@@ -392,12 +392,12 @@ module Radiation
           endif
           Irad0_xy=Irad0_xy*emtau(:,:,n2-radz0+1:n2)+Irad(:,:,n2-radz0+1:n2)
           emtau0_xy=emtau0_xy*emtau(:,:,n2-radz0+1:n2)
-          if (ipz/=nprocz-1) then
-            call radboundary_xy_send(radz0,nrad,idir,Irad0_xy,emtau0_xy)
-          else
+          if (ipz==nprocz-1) then
             Irad0_xy(l1:l2,m1:m2,:)=Irad0_xy(l1:l2,m1:m2,:) &
                                /(1-emtau0_xy(l1:l2,m1:m2,:))
             call radboundary_xy_send(radz0,nrad,idir,Irad0_xy)
+          else
+            call radboundary_xy_send(radz0,nrad,idir,Irad0_xy,emtau0_xy)
           endif 
         endif
 !
@@ -410,12 +410,12 @@ module Radiation
           endif
           Irad0_xy=Irad0_xy*emtau(:,:,n1:n1+radx0-1)+Irad(:,:,n1:n1+radx0-1)
           emtau0_xy=emtau0_xy*emtau(:,:,n1:n1+radx0-1)
-          if (ipz/=0) then
-            call radboundary_xy_send(radz0,nrad,idir,Irad0_xy,emtau0_xy)
-          else
+          if (ipz==0) then
             Irad0_xy(l1:l2,m1:m2,:)=Irad0_xy(l1:l2,m1:m2,:) &
                                /(1-emtau0_xy(l1:l2,m1:m2,:))
             call radboundary_xy_send(radz0,nrad,idir,Irad0_xy)
+          else
+            call radboundary_xy_send(radz0,nrad,idir,Irad0_xy,emtau0_xy)
           endif 
         endif
 !
@@ -715,7 +715,7 @@ module Radiation
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (ipy/=0) then
+        case ('p'); if (nprocy>1) then
                       call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
                     else
                       if (lrad==0.and.nrad==0) then
@@ -747,7 +747,7 @@ module Radiation
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (ipy/=nprocy-1) then
+        case ('p'); if (nprocy>1) then
                       call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
                     else
                       if (lrad==0.and.nrad==0) then
@@ -804,7 +804,7 @@ module Radiation
 !
 !  periodic boundary consition
 !
-        case ('p'); if (ipz/=0) then
+        case ('p'); if (nprocz>1) then
                       call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
                     else
                       if (lrad==0.and.mrad==0) then
@@ -846,7 +846,7 @@ module Radiation
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (ipz/=nprocz-1) then
+        case ('p'); if (nprocz>1) then
                       call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
                     else
                       if (lrad==0.and.mrad==0) then
