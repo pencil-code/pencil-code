@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.125 2004-09-12 16:31:31 theine Exp $
+! $Id: mpicomm.f90,v 1.126 2004-10-06 19:55:07 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -102,6 +102,10 @@ module Mpicomm
   integer, parameter :: tautag_zx=400,tautag_xy=450
   integer, parameter :: Qtag_peri_zx=1000,Qtag_peri_xy=2000
   integer, parameter :: tautag_peri_zx=3000,tautag_peri_xy=4000
+!
+!  Communicators
+!
+  integer :: MPI_COMM_ROW
 !
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
@@ -232,6 +236,10 @@ module Mpicomm
            ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
       call setup_mm_nn()
+!
+!  Define new communicator that includes all processors with common ipz
+!
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipz, MPI_COMM_ROW, ierr)
 !
     endsubroutine mpicomm_init
 !***********************************************************************
