@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.135 2003-06-10 19:54:29 mee Exp $
+! $Id: run.f90,v 1.136 2003-06-10 20:07:15 mee Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.135 2003-06-10 19:54:29 mee Exp $")
+             "$Id: run.f90,v 1.136 2003-06-10 20:07:15 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -222,7 +222,7 @@
           if(lout.and.lroot.and.i_walltime/=0) then
              time2=mpiwtime()
              wall_clock_time = (time2-time1)
-             call save_name(wall_clock_time/1.E-6,i_walltime) 
+             call save_name(wall_clock_time,i_walltime) 
           endif
           if(lout) call prints()
           !
