@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
-;;;  $Date: 2004-09-15 02:37:47 $
-;;;  $Revision: 1.2 $
+;;;  $Date: 2004-09-15 21:34:44 $
+;;;  $Revision: 1.3 $
 ;;;  Description:
 ;;;    Scatter-plot data, but bin them first in order to reduce the
 ;;;    size of thusly created PostScript files. For 60^3 data points,
@@ -16,7 +16,7 @@
 ;;;  Usage: like `plot', but with the additional key words
 ;;;      NX=nx, NY=ny       --- set vertical and horizontal number of points
 ;;;      /CONTOUR           --- do contour plot (by default filled)
-;;;      FILL=fill          --- /CONTOUR, FILL=0 does contour lines
+;;;      /FILL              --- /CONTOUR, FILL=0 does contour lines
 ;;;      NLEVELS=nlevels    --- set NLEVELS for /CONTOUR (default=60)
 ;;;      /PLOTIMAGE         --- use PLOTIMAGE to display density
 ;;;                             (faster than CONTOUR and PS files are
@@ -24,7 +24,16 @@
 ;;;      /INVERT            --- invert data for /CONTOUR (default is
 ;;;                             white for no data, dark for dense data
 ;;;                             with standard colour maps)
-;;;      OVERPLOT=overplot  --- do overplotting (kind of `oplot_binned')
+;;;      /OVERPLOT          --- do overplotting (kind of `oplot_binned')
+;;;      /EQUX, /EQUY       --- equalize in x/y, i.e. normalize
+;;;                             vertical/horizontal sum of counts to
+;;;                             unity (except where there is no
+;;;                             point). Useful with /PLOTIMAGE or
+;;;                             /CONTOUR when plotting over radius
+;;;                             data in cubic box
+;;;      ENHANCE=enhance    --- multiply density map with ENHANCE,
+;;;                             which must be a non-negative 2d array
+;;;                             of size NX x NY
 ;;;      DENSITY=density    --- return density map (only values 0 an 1
 ;;;                             unless /CONTOUR was sepcified
 ;;;      XCOORDS=xcoords    --- corresponding x coordinates
@@ -41,6 +50,7 @@
 ;;;    plot_binned, xx, ff, NX=60, NY=40, /PLOTIMAGE, /XLOG, /YLOG
 ;;;    plot_binned, xx, ff, NX=60, NY=40, /CONTOUR
 ;;;    plot_binned, xx, ff, NX=60, NY=40, /CONTOUR, /INVERT
+;;;    plot_binned, xx, ff, NX=60, NY=40, /PLOTIMAGE, /EQUX
 ;;;    
 ;;;  To do:
 ;;;    Reduce memory usage: xx,yy,good,xind,yind all use the same
@@ -57,6 +67,8 @@ pro plot_binned, xvar, yvar, $
                  PSYM=psym, $
                  SYMSIZE=symsize, $
                  COLOR=color, $
+                 EQUX=equx, EQUY=equy, $
+                 ENHANCE=enhance, $
                  DENSITY=map, XCOORDS=mapx, YCOORDS=mapy, $
                  _EXTRA=extra
 
@@ -69,11 +81,15 @@ if (n_elements(plotimage) eq 0) then plotimage = 0
 if (n_elements(invert)    eq 0) then invert    = 0
 if (n_elements(fill)      eq 0) then fill      = 1
 if (n_elements(nlevels)   eq 0) then nlevels   = 60
-if (n_elements(color)     eq 0) then color     = !p.color
+if (n_elements(equx)      eq 0) then equx      = 0
+if (n_elements(equy)      eq 0) then equy      = 0
+if (n_elements(enhance)   eq 0) then enhance   = -1
 
 ;; Sanitize keywords
 if (plotimage ne 0) then contour=0
 if ((plotimage ne 0) or (contour ne 0)) then scatter=0 else scatter=1 
+if ((equx ne 0) and (equy ne 0)) then $
+    message, '/EQUX and /EQUY keywords are mutualy exclusive'
 
 ;; Save so we can reset later to avoid plotting to a new frame
 pmulti1 = !p.multi
@@ -91,7 +107,7 @@ if (n_elements(overplot) eq 0) then begin
   pmulti2 = !p.multi       ; save so we can exit with correct !p.multi
 endif
 
-xr = !x.crange                  ; >B: for /xlog, this is alog10(data_range)
+xr = !x.crange                  ; NB: for /xlog, this is alog10(data_range)
 yr = !y.crange
 
 dmx = (xr[1]-xr[0])*1./Nmx
@@ -124,11 +140,34 @@ endelse
 
 map = hist_2d(xx, yy, $
               MIN1=xr[0], MAX1=xr[1], BIN1=dmx, $
-              MIN2=yr[0], MAX2=yr[1], BIN2=dmy)
+              MIN2=yr[0], MAX2=yr[1], BIN2=dmy) * 1.D0
 ;; hist and hist_2d do really bizarre things to the last bin. Here
 ;; this just means we should remove the last entry in each
 ;; direction:
 map = map[0:NMx-1,0:NMy-1]
+
+;; Equalize if requested
+if (equx ne 0) then begin
+  for ix=0,NMx-1 do begin
+    sum = total(1.D0*abs(map[ix,*]))
+    if (sum gt 0) then map[ix,*] = map[ix,*]/sum
+  endfor
+endif
+;
+if (equy ne 0) then begin
+  for iy=0,NMy-1 do begin
+    sum = total(1.D0*abs(map[*,iy]))
+    if (sum gt 0) then map[*,iy] = map[*,iy]/sum
+  endfor
+endif
+
+;; Multiply with ENHANCE, if requested
+if (enhance[0] ge 0) then begin
+  s = size(enhance)
+  if ((s[0] ne 2) or (s[1] ne NMx) or (s[2] ne NMy)) then $
+      message, 'NHANCE must be of size '+strtrim(NMx,2)+'x'+strtrim(NMy,2)
+  map = map*enhance
+endif
 
 if (scatter eq 0) then !p.multi = pmulti1
 
