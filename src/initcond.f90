@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.8 2002-08-15 19:09:06 nilshau Exp $ 
+! $Id: initcond.f90,v 1.9 2002-08-19 06:48:46 brandenb Exp $ 
 
 module Initcond 
  
@@ -174,7 +174,7 @@ module Initcond
 !   6-jul-02/axel: coded
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,psi,hh,h0
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,h0
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius,hmax,hmin
       real :: gamma,eps2,rad2,radius2
       integer :: i,j
@@ -201,11 +201,11 @@ module Initcond
         delta=sqrt(delta2)
       endif
 !
-!  calculate psi, hh, and h0
+!  calculate hh, and h0
+!AB: currently, h0 is not yet implemented correctly!
 !
-!      h0=ampl**(gamma-1.)-zz**2/delta2
-!      h0=0.
-      rr2=xx**2+eps2*yy**2  !+zz**2/Rz**2
+      h0=ampl**(gamma-1.)-zz**2/delta2
+      rr2=xx**2+eps2*yy**2+zz**2/delta2
       hh=+.5*delta2*Omega**2*(radius2-rr2)
 !
 !  limit dynamical range to 1:100

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.59 2002-08-03 23:16:37 dobler Exp $
+! $Id: start.f90,v 1.60 2002-08-19 06:48:46 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -32,7 +32,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.59 2002-08-03 23:16:37 dobler Exp $")
+             "$Id: start.f90,v 1.60 2002-08-19 06:48:46 brandenb Exp $")
 !
 !  Initialise random number generator in processor-dependent fashion.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -142,6 +142,8 @@
         call outpui(trim(directory)//'/seed.dat',seed,nseed)
 !
         call mpifinalize
+        if (lroot) print*
+        if (lroot) print*,'start.x has completed successfully'
         if (lroot) print* ! (finish with an empty line)
 !
       endprogram

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.79 2002-08-17 08:40:22 brandenb Exp $
+! $Id: magnetic.f90,v 1.80 2002-08-19 06:48:46 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.79 2002-08-17 08:40:22 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.80 2002-08-19 06:48:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,6 +128,7 @@ module Magnetic
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
+      case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
       case('Alfven-circ-x')
         !
         !  circularly polarised Alfven wave in x direction
@@ -245,6 +246,7 @@ module Magnetic
       if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
       if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
       if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
+      if (headtt) print*,'B_ext=',B_ext
 !
 !  calculating the current jj, and simultaneously del2A.
 !
@@ -542,6 +544,24 @@ module Magnetic
 !
       first = .false.
     endsubroutine calc_mfield
+!***********************************************************************
+    subroutine alfven_z(ampl,f,iuu,iaa,zz,kz)
+!
+!  Alfven wave propagating in the z-direction
+!
+!  18-aug-02/axel: coded
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: zz
+      real :: ampl,kz
+      integer :: iuu,iaa
+!
+!  ux and Ay
+!
+      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
+      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
+!
+    endsubroutine alfven_z
 !***********************************************************************
     subroutine fluxrings(f,ivar,xx,yy,zz)
 !

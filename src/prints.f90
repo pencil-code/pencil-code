@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.28 2002-08-05 23:31:44 dobler Exp $
+! $Id: prints.f90,v 1.29 2002-08-19 06:48:46 brandenb Exp $
 
 module Print
 
@@ -28,7 +28,7 @@ module Print
       logical,save :: first=.true.
       character (len=320) :: fform,legend,line
       character (len=1) :: comma=','
-      integer :: iname,index_d
+      integer :: iname,index_d,index_a
 !
 !  If the timestep (=dt) is to be written, it is known only after
 !  rk_2n, so the best place to enter it into the save list is here
@@ -77,6 +77,13 @@ module Print
         index_d=index(line,'. ')
         if (index_d >= 1) then
           line(index_d:index_d)=' '
+        endif
+!
+!  if the line contains multiple asterisks then comment out line
+!
+        index_a=index(line,'***')
+        if (index_a > 0) then
+          line(1:1)='#'
         endif
 !
 !  append to diagnostics file
