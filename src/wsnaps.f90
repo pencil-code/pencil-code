@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.48 2004-04-02 20:51:45 dobler Exp $
+! $Id: wsnaps.f90,v 1.49 2004-04-03 17:00:57 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -30,6 +30,7 @@ contains
       use Radiation
       use Viscosity, only: calc_viscosity
       use Ionization
+      use General
       use Sub
       use Io
 !
@@ -50,7 +51,7 @@ contains
 !  file keeps the information about number and time of last snapshot
 !
       if (enum) then
-        file=trim(datadir)//'/tsnap.dat'
+        call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in read_snaptime, but only available to root processor
