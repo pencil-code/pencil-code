@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.29 2003-06-30 11:46:38 dobler Exp $
+! $Id: radiation_exp.f90,v 1.30 2003-06-30 12:07:29 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.29 2003-06-30 11:46:38 dobler Exp $")
+           "$Id: radiation_exp.f90,v 1.30 2003-06-30 12:07:29 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -388,7 +388,7 @@ module Radiation
 !
 !  send Ibuf_xy to ipz-1
 !
-      if(ipz/=nprocz-1) then
+      if(ipz/=0) then
         if (first) print*,'radtransfer_comm: send_Irad0_xym, zuneigh=',zuneigh,tag_xym
         Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,-radz:-1) &
                   +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
