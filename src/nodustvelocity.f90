@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.16 2004-02-11 14:58:01 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.17 2004-02-27 15:59:51 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.16 2004-02-11 14:58:01 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.17 2004-02-27 15:59:51 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -67,6 +67,14 @@ module Dustvelocity
 !  18-mar-03/axel: dummy routine
 !
     endsubroutine initialize_dustvelocity
+!***********************************************************************
+    subroutine copy_bcs_dust
+!
+!  Copy boundary conditions after first dust species to end of array
+!
+!  27-feb-04/anders: dummy routine
+!
+    endsubroutine copy_bcs_dust
 !***********************************************************************
     subroutine init_uud(f,xx,yy,zz)
 !

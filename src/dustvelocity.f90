@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.40 2004-02-26 15:56:51 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.41 2004-02-27 15:59:51 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.40 2004-02-26 15:56:51 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.41 2004-02-27 15:59:51 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -224,46 +224,46 @@ module Dustvelocity
           lfeedback_gas(i) = .false.
         enddo
       endif
+    endsubroutine initialize_dustvelocity
+!***********************************************************************
+    subroutine copy_bcs_dust
+!
+!  Copy boundary conditions on first dust species to all others
+!    
+!  27-feb-04/anders: Copied from initialize_dustvelocity
+!
+      integer :: i
 !
 !  Copy boundary conditions after first dust species to end of array
 !
-      bcx(ind(ndustspec)+1:)  = bcx(ind(1)+1:)
-      bcx1(ind(ndustspec)+1:) = bcx1(ind(1)+1:)
-      bcx2(ind(ndustspec)+1:) = bcx2(ind(1)+1:)
-
-      bcy(ind(ndustspec)+1:)  = bcy(ind(1)+1:)
-      bcy1(ind(ndustspec)+1:) = bcy1(ind(1)+1:)
-      bcy2(ind(ndustspec)+1:) = bcy2(ind(1)+1:)
-
-      bcy(ind(ndustspec)+1:)  = bcy(ind(1)+1:)
-      bcy1(ind(ndustspec)+1:) = bcy1(ind(1)+1:)
-      bcy2(ind(ndustspec)+1:) = bcy2(ind(1)+1:)
+      if (lmdvar) then
+        bcx(irhod(ndustspec)+1:)  = bcx(irhod(1)+1:)
+        bcy(irhod(ndustspec)+1:)  = bcy(irhod(1)+1:)
+        bcz(irhod(ndustspec)+1:)  = bcz(irhod(1)+1:)
 !
 !  Copy boundary conditions on first dust species to all species
 !
-      do i=2,ndustspec
-        bcx(iudx(ndustspec):ind(ndustspec))=bcx(iudx(1):ind(1))
-        bcx1(iudx(ndustspec):ind(ndustspec))=bcx1(iudx(1):ind(1))
-        bcx2(iudx(ndustspec):ind(ndustspec))=bcx2(iudx(1):ind(1))
-        
-        bcy(iudx(ndustspec):ind(ndustspec))=bcy(iudx(1):ind(1))
-        bcy1(iudx(ndustspec):ind(ndustspec))=bcy1(iudx(1):ind(1))
-        bcy2(iudx(ndustspec):ind(ndustspec))=bcy2(iudx(1):ind(1))
-        
-        bcz(iudx(ndustspec):ind(ndustspec))=bcz(iudx(1):ind(1))
-        bcz1(iudx(ndustspec):ind(ndustspec))=bcz1(iudx(1):ind(1))
-        bcz2(iudx(ndustspec):ind(ndustspec))=bcz2(iudx(1):ind(1))
-      enddo
-!
-      if (ndustspec>1 .and. lroot .and. ip<14) then
-        print*, 'initialize_dustvelocity: ', &
-            'Copied bcs on first dust species to all others'
-        print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
-        print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
-        print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
+        do i=2,ndustspec
+          bcx(iudx(i):irhod(i))=bcx(iudx(1):irhod(1))
+          bcy(iudx(i):irhod(i))=bcy(iudx(1):irhod(1))
+          bcz(iudx(i):irhod(i))=bcz(iudx(1):irhod(1))
+        enddo
+      else  
+        bcx(ind(ndustspec)+1:)  = bcx(ind(1)+1:)
+        bcy(ind(ndustspec)+1:)  = bcy(ind(1)+1:)
+        bcz(ind(ndustspec)+1:)  = bcz(ind(1)+1:)
+        do i=2,ndustspec
+          bcx(iudx(i):ind(i))=bcx(iudx(1):ind(1))
+          bcy(iudx(i):ind(i))=bcy(iudx(1):ind(1))
+          bcz(iudx(i):ind(i))=bcz(iudx(1):ind(1))
+        enddo
       endif
 !
-    endsubroutine initialize_dustvelocity
+      if (ndustspec>1 .and. lroot) then
+        print*, 'copy_bcs_dust: Copied bcs on first dust species to all others'
+      endif
+!
+    endsubroutine copy_bcs_dust
 !***********************************************************************
     subroutine init_uud(f,xx,yy,zz)
 !
@@ -423,14 +423,15 @@ module Dustvelocity
 !
         if (Omega/=0.) then
           if (theta==0) then
-            if (headtt) print*,'duud_dt: add Coriolis force; Omega=',Omega
+            if (headtt .and. k .eq. 1) &
+                print*,'duud_dt: add Coriolis force; Omega=',Omega
             c2=2*Omega
             df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + &
                 c2*uud(:,2,k)
             df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - &
                 c2*uud(:,1,k)
           else
-            if (headtt) print*, &
+            if (headtt .and. k .eq. 1) print*, &
                 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
             c2=2*Omega*cos(theta*pi/180.)
             s2=2*Omega*sin(theta*pi/180.)
@@ -494,7 +495,7 @@ module Dustvelocity
 !
 !  maximum squared advection speed
 !
-        if (headtt.or.ldebug) print*, &
+        if ((headtt.or.ldebug) .and. (ip<6)) print*, &
             'duud_dt: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2(:,k))
         if (lfirst.and.ldt) call max_for_dt(ud2(:,k),maxadvec2)
 !
@@ -503,7 +504,7 @@ module Dustvelocity
 !  The length of the timestep is not known here (--> moved to prints.f90)
 !
         if (ldiagnos) then
-          if (headtt.or.ldebug) print*, &
+          if ((headtt.or.ldebug) .and. (ip<6)) print*, &
               'duud_dt: Calculate maxima and rms values...'
           if (i_udrms(k)/=0) &
               call sum_mn_name(ud2(:,k),i_udrms(k),lsqrt=.true.)
