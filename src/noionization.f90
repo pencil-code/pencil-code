@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.32 2003-06-28 13:09:56 theine Exp $
+! $Id: noionization.f90,v 1.33 2003-06-30 09:33:57 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -67,7 +67,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.32 2003-06-28 13:09:56 theine Exp $")
+           "$Id: noionization.f90,v 1.33 2003-06-30 09:33:57 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -313,57 +313,62 @@ module Ionization
 !
     endsubroutine thermodynamics_arbpoint
 !***********************************************************************
-    function opacity(f)
+    subroutine opacity(f,kaprho)
 !
 !  calculate opacity
 !
 !  26-jun-03/tobi: coded
+!  30-jun-03/tobi: was a function, needed to turn into subroutine
 !
       use Cdata
       use Density, only:cs20,lnrho0,gamma
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx) :: lnrho,ss,yH,TT,kappa,opacity
+      real, dimension (mx,my,mz) :: kaprho
+      real, dimension (mx) :: lnrho,ss,yH,TT,kappa
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
-      ss=f(l1:l2,m,n,ient)
-      yH=yH0
-      TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+!  (but TT is not currently consistent with fixed ionization)
+!
+      lnrho(l0:l3)=f(l0:l3,m,n,ilnrho)
+      ss(l0:l3)=f(l0:l3,m,n,ient)
+      yH(l0:l3)=yH0
+      TT(l0:l3)=cs20*exp(gamma1*(lnrho(l0:l3)-lnrho0)+gamma*ss(l0:l3))/gamma1
 !
 !  opacity: if lkappa_es then take electron scattering opacity only;
 !  otherwise use Hminus opacity (but may need to add kappa_es as well).
+!  The factor 2 in front of lnrho takes care of the extra rho factor in kaprho
 !
-      kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 & 
-            *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+      kaprho(l0:l3,m,n)=.25*exp(2.*lnrho(l0:l3)-lnrho_e_)*(TT_ion_/TT(l0:l3))**1.5 & 
+            *exp(TT_ion_/TT(l0:l3))*yH(l0:l3)*(1.-yH(l0:l3))*kappa0
 !
-!  return value
-!
-      opacity=kappa*exp(lnrho)
-!
-    endfunction opacity
+    endsubroutine opacity
 !***********************************************************************
-    function sourcefunction(f)
+    subroutine sourcefunction(f,Srad)
 !
 !  calculate opacity
 !
 !  26-jun-03/tobi: coded
+!  30-jun-03/tobi: was a function, needed to turn into subroutine
 !
       use Cdata
       use Density, only:cs20,lnrho0,gamma
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx) :: lnrho,ss,TT,sourcefunction
+      real, dimension (mx,my,mz), intent(out) :: Srad
+      real, dimension (mx) :: lnrho,ss,TT
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
-      ss=f(l1:l2,m,n,ient)
+!  need to calculate within ghost zones
+!  (but TT is not currently consistent with fixed ionization)
 !
-      TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+      lnrho(l0:l3)=f(l0:l3,m,n,ilnrho)
+      ss(l0:l3)=f(l0:l3,m,n,ient)
+      TT(l0:l3)=cs20*exp(gamma1*(lnrho(l0:l3)-lnrho0)+gamma*ss(l0:l3))/gamma1
 !
-!  return value
+!  final expression
 !
-      sourcefunction=sigmaSB*TT**4/pi
-! 
-    endfunction sourcefunction
+      Srad(l0:l3,m,n)=sigmaSB*TT(l0:l3)**4/pi
+!
+    endsubroutine sourcefunction
 !***********************************************************************
     subroutine ioncalc(f)
 !

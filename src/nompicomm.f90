@@ -215,7 +215,7 @@ module Mpicomm
 !
     endsubroutine send_Irad0_xy
 !***********************************************************************
-    subroutine receive_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+    subroutine recv_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
 !
 !  send intensities
 !
@@ -228,7 +228,7 @@ module Mpicomm
 !
       nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
 !
-    endsubroutine receive_Irad0_xy
+    endsubroutine recv_Irad0_xy
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.81 2003-06-30 05:15:17 brandenb Exp $
+! $Id: mpicomm.f90,v 1.82 2003-06-30 09:33:57 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -580,18 +580,19 @@ module Mpicomm
 !  buffer size
 !
       nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
+print*,iproc,'send_Irad0_xy: nbuf_xy=',nbuf_xy
 !
 !  initiate and finalize straight away
 !
-print*,'send_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
+print*,iproc,'send_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
       call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tag_xy,MPI_COMM_WORLD,isend_xy,ierr)
-print*,'send_Irad0_xy: wait(1), err=',ierr,isend_xy
+print*,iproc,'send_Irad0_xy: wait(1), err,isend_xy=',ierr,isend_xy
       call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
-print*,'send_Irad0_xy: wait(2), err=',ierr,isend_xy
+print*,iproc,'send_Irad0_xy: wait(2), err,isend_xy=',ierr,isend_xy
 !
     endsubroutine send_Irad0_xy
 !***********************************************************************
-    subroutine receive_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+    subroutine recv_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
 !
 !  send intensities
 !
@@ -603,16 +604,18 @@ print*,'send_Irad0_xy: wait(2), err=',ierr,isend_xy
 !  buffer size
 !
       nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
+print*,iproc,'recv_Irad0_xy: nbuf_xy=',nbuf_xy
 !
 !  initiate and finalize straight away
 !
-print*,'receive_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
+print*,iproc,'recv_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
       call MPI_IRECV(Ibuf_xy,nbufy,MPI_REAL,ipz_dest,tolowy,MPI_COMM_WORLD,irecv_xy,ierr)
-print*,'receive_Irad0_xy: wait(1), err=',ierr,irecv_xy
+print*,iproc,'recv_Irad0_xy: wait(1), err,irecv_xy=',ierr,irecv_xy
       call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
-print*,'receive_Irad0_xy: wait(2), err=',ierr,irecv_xy
+print*,iproc,'recv_Irad0_xy: wait(2), err,irecv_xy=',ierr,irecv_xy
+print*,iproc,'recv_Irad0_xy: Ibuf_xy=',Ibuf_xy
 !
-    endsubroutine receive_Irad0_xy
+    endsubroutine recv_Irad0_xy
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !

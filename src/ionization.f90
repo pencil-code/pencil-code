@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.56 2003-06-28 13:09:56 theine Exp $
+! $Id: ionization.f90,v 1.57 2003-06-30 09:33:57 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -66,7 +66,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.56 2003-06-28 13:09:56 theine Exp $")
+           "$Id: ionization.f90,v 1.57 2003-06-30 09:33:57 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -470,6 +470,8 @@ module Ionization
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz) :: kaprho
+!
+!  The factor 2 in front of lnrho takes care of the extra rho factor in kaprho
 !
       kaprho(l0:l3,m,n)=.25*exp(2.*f(l0:l3,m,n,ilnrho)-lnrho_e_) &
                         *(TT_ion_/f(l0:l3,m,n,iTT))**1.5 &

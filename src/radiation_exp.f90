@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.26 2003-06-30 05:15:17 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.27 2003-06-30 09:33:57 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.26 2003-06-30 05:15:17 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.27 2003-06-30 09:33:57 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -349,8 +349,8 @@ module Radiation
         !
         !  receive from previous processor
         !
-        if (first) print*,'radtransfer_comm: receive_Irad0_xyp, zuneigh=',zuneigh,tag_xyp
-        call receive_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xyp)
+        if (first) print*,'radtransfer_comm: recv_Irad0_xyp, zuneigh=',zuneigh,tag_xyp
+        call recv_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xyp)
         Irad0_xy(:,:,:,:,:,1:radz)=Ibuf_xy(:,:,:,:,:,1:radz)
       endif
 !
@@ -380,8 +380,8 @@ module Radiation
         !
         !  receive from previous processor
         !
-        if (first) print*,'radtransfer_comm: receive_Irad0_xym, zuneigh=',zuneigh,tag_xym
-        call receive_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
+        if (first) print*,'radtransfer_comm: recv_Irad0_xym, zuneigh=',zuneigh,tag_xym
+        call recv_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
         Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy
       endif
 !
