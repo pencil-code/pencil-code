@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.108 2003-10-16 17:13:00 brandenb Exp $
+! $Id: mpicomm.f90,v 1.109 2003-10-31 19:17:08 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -934,15 +934,17 @@ module Mpicomm
 !     original          2x2 blocks         each block
 !                       transposed         transposed
 !
-        do px=0,nprocy-1
-          do i=1,ny
-            do j=i+1,ny
-              tmp_z=a(i+px*ny,j,:)
-              a(i+px*ny,j,:)=a(j+px*ny,i,:)
-              a(j+px*ny,i,:)=tmp_z
+        if (ny>1) then
+          do px=0,nprocy-1
+            do i=1,ny
+              do j=i+1,ny
+                tmp_z=a(i+px*ny,j,:)
+                a(i+px*ny,j,:)=a(j+px*ny,i,:)
+                a(j+px*ny,i,:)=tmp_z
+              enddo
             enddo
           enddo
-        enddo
+        endif
 !
 !  Doing x-z transpose if var='z'
 !
