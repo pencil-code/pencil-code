@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.84 2002-08-02 21:47:57 dobler Exp $
+### $Id: Makefile,v 1.85 2002-08-02 22:50:15 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -66,7 +66,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O # (Samos)
 ##FFLAGS=-O3 -I/usr/lib/lam/include -static #(Nq[0-9]+)
 #FFLAGS=-fast -DPGF90 #(nq0)
-#FFLAGS=-O3 -static #(nq0)
+#FFLAGS=-O3 #(nq0)
 #FFLAGS=-fast -lm #(erland|igor|tycho)
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Mephisto)
 #FFLAGS=-O4 -u #(nl3)

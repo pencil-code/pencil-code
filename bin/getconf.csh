@@ -24,12 +24,14 @@ if ($mpi) then
   else if (($hn =~ cincinnatus*) || ($hn =~ owen*) || ($hn =~ master)) then
     set mpirun = /usr/lib/lam/bin/mpirun
     set mpirunops = "-c2c"
-    set mpirunops = "-c2c c0-7"
+    set mpirunops = "-c2c -O"
 #    set mpirunops = " c0-7"
 #    set mpirunops = "-c2c c8-13"
   else if ($hn =~ nq*) then
     set mpirun = /usr/lib/lam/bin/mpirun
     set mpirun = /usr/bin/mpirun
+#    set mpirun = /usr/local/mpich-1.2.1/bin/mpirun
+#    set mpirunops = "-machinefile machines"
   else
     set mpirun = mpirun
   endif
