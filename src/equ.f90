@@ -41,9 +41,14 @@ module Equ
       call wparam2()
 !
 !  Give online feedback if called with the PRINT optional argument
+!  Note: Some compiler's [like Compaq's] code crashes with the more
+!  compact 
+!    `if (present(print) .and. print)' 
 !
-      if (present(print) .and. print) then
-        call cprint()
+      if (present(print)) then
+        if (print) then
+          call cprint()
+        endif
       endif
 !  
 !  make sure ix,iy,iz are not outside the boundaries
@@ -252,8 +257,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.19 $", &
-           "$Date: 2002-02-28 20:31:06 $")
+           "$Revision: 1.20 $", &
+           "$Date: 2002-03-01 09:14:08 $")
 !
 !  initiate communication
 !
