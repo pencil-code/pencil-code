@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.90 2002-10-01 16:02:44 brandenb Exp $
+! $Id: run.f90,v 1.91 2002-10-02 10:37:04 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.90 2002-10-01 16:02:44 brandenb Exp $")
+             "$Id: run.f90,v 1.91 2002-10-02 10:37:04 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -130,22 +130,27 @@
             !
             ! exit DO loop if file `STOP' exists
             !
-            inquire(FILE="STOP", EXIST=stop)
+            if (lroot) inquire(FILE="STOP", EXIST=stop)
+            call mpibcast_logical(stop, 1)
             if (stop.or.t>tmax) then
-              if (lroot.and.stop) write(0,*) "done: found STOP file"
-              if (lroot.and.t>tmax) write(0,*) "done: t > tmax"
+              if (lroot) then
+                if (stop) write(0,*) "done: found STOP file"
+                if (t>tmax) write(0,*) "done: t > tmax"
+                call remove_file("STOP")
+              endif
               exit Time_loop
             endif
             !
             !  re-read parameters if file `RELOAD' exists; then remove
             !  the file
             !
-            inquire(FILE="RELOAD", EXIST=reload)
+            if (lroot) inquire(FILE="RELOAD", EXIST=reload)
+            call mpibcast_logical(reload, 1)
             if (reload) then
               if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
               call read_runpars(PRINT=.true.) !(Re-read configuration)
               call rprint_list(.true.) !(Re-read output list)
-              call mpibarrier() ! all CPUs must see RELOAD before it is removed
+              call mpibarrier() ! all CPUs must read RELOAD before it is removed
               if (lroot) call remove_file("RELOAD")
               reload = .false.
             endif

@@ -19,6 +19,10 @@ module Mpicomm
     module procedure mpibcast_real_arr
   endinterface
 
+  interface mpibcast_logical		! Overload
+    module procedure mpibcast_logical_scl
+  endinterface
+
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   logical, dimension (ny*nz) :: necessary=.false.
@@ -197,6 +201,15 @@ module Mpicomm
 !    
       dummy=ibcast_array
     endsubroutine mpibcast_int
+!***********************************************************************
+    subroutine mpibcast_logical_scl(ibcast_array,nbcast_array)
+!
+      integer :: nbcast_array
+      logical :: ibcast_array,dummy
+!    
+      if (nbcast_array/=1) stop "problem in mpibcast_real_scl"
+      dummy=ibcast_array
+    endsubroutine mpibcast_logical_scl
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,nbcast_array)
 !

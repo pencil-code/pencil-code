@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.47 2002-09-24 15:21:07 nilshau Exp $
+! $Id: mpicomm.f90,v 1.48 2002-10-02 10:37:04 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -19,6 +19,10 @@ module Mpicomm
   interface mpibcast_real		! Overload the `mpibcast_real' function
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
+  endinterface
+
+  interface mpibcast_logical		! Overload
+    module procedure mpibcast_logical_scl
   endinterface
 
   include 'mpif.h'
@@ -535,6 +539,14 @@ module Mpicomm
 !
       call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,root,MPI_COMM_WORLD,ierr)
     endsubroutine mpibcast_int
+!***********************************************************************
+    subroutine mpibcast_logical_scl(lbcast_array,nbcast_array)
+!
+      integer :: nbcast_array
+      logical :: lbcast_array
+!
+      call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,root,MPI_COMM_WORLD,ierr)
+    endsubroutine mpibcast_logical_scl
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,nbcast_array)
 !
