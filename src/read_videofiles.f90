@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.6 2003-09-02 13:43:12 dobler Exp $
+! $Id: read_videofiles.f90,v 1.7 2003-10-26 16:23:27 theine Exp $
 
 !***********************************************************************
       program rvid_box
@@ -27,6 +27,11 @@
       real :: t
       real :: slice_xpos=0., slice_ypos=0., slice_zpos=0., slice_z2pos=0.
 !
+      real :: min_xy_loc=huge(min_xy_loc),max_xy_loc=-huge(max_xy_loc)
+      real :: min_xy2_loc=huge(min_xy2_loc),max_xy2_loc=-huge(max_xy2_loc)
+      real :: min_xz_loc=huge(min_xz_loc),max_xz_loc=-huge(max_xz_loc)
+      real :: min_yz_loc=huge(min_yz_loc),max_yz_loc=-huge(max_yz_loc)
+!
       character (len=120) :: file='',fullname='',wfile=''
       character (len=120) :: datadir='data',path=''
       character (len=5) :: chproc=''
@@ -54,6 +59,8 @@
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
         call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof)
+        min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
+        max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
         if(eof) goto 999
         xy2(:,1+ipy*ny:ny+ipy*ny)=xy2_loc
       enddo
@@ -73,6 +80,8 @@
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
         call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof)
+        min_xy_loc=min(min_xy_loc,minval(xy_loc))
+        max_xy_loc=max(max_xy_loc,maxval(xy_loc))
         if(eof) goto 999
         xy(:,1+ipy*ny:ny+ipy*ny)=xy_loc
       enddo
@@ -92,6 +101,8 @@
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
         call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof)
+        min_xz_loc=min(min_xz_loc,minval(xz_loc))
+        max_xz_loc=max(max_xz_loc,maxval(xz_loc))
         if(eof) goto 999
         xz(:,1+ipz*nz:nz+ipz*nz)=xz_loc
       enddo
@@ -110,6 +121,8 @@
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
         call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof)
+        min_yz_loc=min(min_yz_loc,minval(yz_loc))
+        max_yz_loc=max(max_yz_loc,maxval(yz_loc))
         if(eof) goto 999
         yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=yz_loc
       enddo
@@ -120,6 +133,13 @@
       print*,'written full set of slices at t=',t
       enddo
 999   continue
+      print*,'-------------------------------------------------'
+      print*,'minimum and maximum values:'
+      print*,'xy-plane:',min_xy_loc,max_xy_loc
+      print*,'xy2-plane:',min_xy2_loc,max_xy2_loc
+      print*,'xz-plane:',min_xz_loc,max_xz_loc
+      print*,'yz-plane:',min_yz_loc,max_yz_loc
+      print*,'-------------------------------------------------'
       print*,'finished OK'
       end
 !***********************************************************************
