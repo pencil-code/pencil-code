@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.86 2003-08-08 05:07:26 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.87 2003-08-08 09:37:02 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.86 2003-08-08 05:07:26 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.87 2003-08-08 09:37:02 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -533,6 +533,7 @@ module Radiation
           raysteps=(l-llstart)/lrad
           if (mrad/=0) raysteps=min(raysteps,(m-mmstart)/mrad)
           if (nrad/=0) raysteps=min(raysteps,(n-nnstart)/nrad)
+          raysteps=raysteps+1
           Irad0(l,m,n)=Irad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
         enddo
         enddo
@@ -546,6 +547,7 @@ module Radiation
           raysteps=(m-mmstart)/mrad
           if (nrad/=0) raysteps=min(raysteps,(n-nnstart)/nrad)
           if (lrad/=0) raysteps=min(raysteps,(l-llstart)/lrad)
+          raysteps=raysteps+1
           Irad0(l,m,n)=Irad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
         enddo
         enddo
@@ -559,6 +561,7 @@ module Radiation
           raysteps=(n-nnstart)/nrad
           if (lrad/=0) raysteps=min(raysteps,(l-llstart)/lrad)
           if (mrad/=0) raysteps=min(raysteps,(m-mmstart)/mrad)
+          raysteps=raysteps+1
           Irad0(l,m,n)=Irad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
         enddo
         enddo
