@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.37 2002-08-18 12:27:04 brandenb Exp $
+! $Id: mpicomm.f90,v 1.38 2002-09-03 21:36:28 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -605,6 +605,77 @@ module Mpicomm
       call mpifinalize
       STOP
     endsubroutine stop_it
+!***********************************************************************
+    subroutine transp(a,b,var)
+!
+!  Doing the transpose of information distributed on several processors
+!
+!  03.09.02/nils: coded
+!
+      real, dimension(nx,ny,nz,nvar) :: send_buf, recv_buf
+      real, dimension(nz) :: tmp
+      integer :: i,j,proc,sendc,recvc,sender
+      character :: var
+!
+      sendc=nx*ny*nz/(nprocy*nprocz)
+      recvc=nx*ny*nz/(nprocy**2*nprocz)
+!
+!  Doing x-y transpose if var='y'
+!
+if (var=='y') then
+!
+!  Scatter information to different processors (x-y transpose)
+!
+      do i=0,nprocz-1
+         if (ipz==i) then
+            do i=1,nprocy
+               sender=i+ipz*nprocy
+               call MPI_SCATTER(send_buf,sendc,MPI_REAL,recv_buf,recvc,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
+            enddo
+         end if
+      enddo
+!
+!  Transposing the recived data (x-y transpose)
+!      
+      do proc=1,nprocy
+         do i=1,ny/nprocy
+            do j=ny/nprocy
+               tmp=recv_buf(i,j,proc)
+               recv_buf(i,j,:,proc)= recv_buf(j,i,:,proc)
+               recv_buf(j,i,:,proc)=tmp
+            enddo
+         enddo
+      enddo
+!
+!  Doing x-z transpose if var='z'
+!
+elseif (var=='z') then
+!
+!  Scatter information to different processors (x-z transpose)
+!
+      do i=0,nprocy-1
+         if (ipy==i) then
+            do i=1,nprocz
+               sender=i+ipz*nprocy
+               call MPI_SCATTER(send_buf,sendc,MPI_REAL,recv_buf,recvc,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
+            enddo
+         end if
+      enddo
+!
+!  Transposing the recived data (x-z transpose)
+!      
+      do proc=1,nprocz
+         do i=1,nz/nprocz
+            do j=nz/nprocz
+               tmp=recv_buf(i,:,j,proc)
+               recv_buf(i,:,j,proc)= recv_buf(j,:,i,proc)
+               recv_buf(j,:,i,proc)=tmp
+            enddo
+         enddo
+      enddo
+   end if
+!
+ end subroutine transp
 !***********************************************************************
 
 endmodule Mpicomm
