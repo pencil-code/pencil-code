@@ -6,10 +6,12 @@ module Forcing
 
   implicit none
 
-  real :: force,relhel
+  integer :: iforce=1,iforce2=1,kfountain=5
+  real :: force=0.,relhel=1.,height=pi,fountain=1.
 
   namelist /forcing_run_pars/ &
-       iforce,force,relhel
+       iforce,force,relhel,height, &
+       iforce2,kfountain,fountain
 
   contains
 
@@ -34,32 +36,39 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-05-29 04:57:20 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2002-05-30 07:12:45 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
     subroutine addforce(f)
 !
-      use Cdata
-!
 !  add forcing at the end of each time step
 !  Since forcing is constant during one time step,
 !  this can be added as an Euler 1st order step
+!
+      use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f
 !
 !  calculate and add forcing function
 !
-      if(iforce==1) call forcing1(f)
-      if(iforce==2) call forcing2(f)
+      if(iforce==1) call forcing_irro(f)
+      if(iforce==2) call forcing_hel(f)
+      if(iforce==3) call forcing_fountain(f)
+!
+!  add *additional* forcing function
+!
+      if(iforce2==1) call forcing_fountain(f)
 !
     endsubroutine addforce
 !***********************************************************************
-    subroutine forcing1(f)
+    subroutine forcing_irro(f)
 !
 !  add acoustic forcing function, using a set of precomputed wavevectors
 !  This forcing drives pressure waves
+!
+!  10-sep-01/axel: coded
 !
       use Mpicomm
       use Cdata
@@ -120,11 +129,13 @@ module Forcing
         enddo
       enddo
 !
-    endsubroutine forcing1
+    endsubroutine forcing_irro
 !***********************************************************************
-    subroutine forcing2(f)
+    subroutine forcing_hel(f)
 !
 !  add helical forcing function, using a set of precomputed wavevectors
+!
+!  10-apr-00/axel: coded
 !
       use Mpicomm
       use Cdata
@@ -133,6 +144,7 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
+      real, dimension (mz) :: tmpz
       real, dimension (mx,my,mz,mvar) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -227,6 +239,14 @@ module Forcing
       fx=exp(cmplx(0.,kx*x+phase))*fact
       fy=exp(cmplx(0.,ky*y))
       fz=exp(cmplx(0.,kz*z))
+!
+!  add possibility of z-profile in the forcing
+!
+      if (height/=0.) then
+        tmpz=(z/height)**2
+        fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+      endif
+!
       if (ip.le.5) print*,'fx=',fx
       if (ip.le.5) print*,'fy=',fy
       if (ip.le.5) print*,'fz=',fz
@@ -250,7 +270,73 @@ module Forcing
 !
       if (ip.le.12) print*,'forcing OK'
 !
-    endsubroutine forcing2
+    endsubroutine forcing_hel
+!***********************************************************************
+    subroutine forcing_fountain(f)
+!
+!  add some artificial fountain flow
+!  (to check for example small scale magnetic helicity loss)
+!
+!  30-may-02/axel: coded
+!
+      use Mpicomm
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: sxx,cxx
+      real, dimension (mx) :: sx,cx
+      real, dimension (my) :: sy,cy
+      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
+      real :: kx,ky,kz,ffnorm,fac
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      kx=kfountain
+      ky=kfountain
+      kz=1.
+!
+      sx=sin(kx*x); cx=cos(kx*x)
+      sy=sin(ky*y); cy=cos(ky*y)
+      sz=sin(kz*z); cz=cos(kz*z)
+!
+!  abbreviation
+!
+      sxx=sx(l1:l2)
+      cxx=cx(l1:l2)
+!
+!  g(z) and g'(z)
+!  use z-profile to cut off
+!
+      if (height/=0.) then
+        tmpz=(z/height)**2
+        gz=sz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+      endif
+!
+      fac=1./(60.*dz)
+      gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
+      gg(4:mz-3)=fac*(45.*(gz(5:mz-2)-gz(3:mz-4)) &
+                      -9.*(gz(6:mz-1)-gz(2:mz-5)) &
+                         +(gz(7:mz)  -gz(1:mz-6)))
+!
+!  make sign antisymmetric
+!
+      where(z<0) ss=-1.
+      gz1=-ss*gz !!(negative for z>0)
+      ffnorm=fountain*nu*dt
+!
+!  set forcing function
+!
+      do n=n1,n2
+      do m=m1,m2
+        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+ffnorm*(+sxx*cy(m)*gz1(n)+cxx*sy(m)*gg(n))
+        f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ffnorm*(-cxx*sy(m)*gz1(n)+sxx*cy(m)*gg(n))
+        f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ffnorm*sxx*sy(m)*gz(n)*2.
+      enddo
+      enddo
+!
+    endsubroutine forcing_fountain
 !***********************************************************************
 
 endmodule Forcing

@@ -37,8 +37,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-05-30 07:12:45 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -48,14 +48,12 @@ module Entropy
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       use Cdata
-      use sub, only: step
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
-      real, dimension (mz) :: stp
-      real :: ampl,beta1,cs2int,ssint
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       cs2 = cs20                ! (Really needed?)
+      if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
 !
     endsubroutine init_ent
 !***********************************************************************
@@ -74,11 +72,12 @@ module Entropy
       logical, save :: first=.true.
 !
       intent(in) :: f,uu,uij,divu,rho1,glnrho
-      intent(out) :: df,gpprho,cs2,TT1,chi
+      intent(out) :: gpprho,cs2,TT1,chi !(df is dummy)
 !
       if (first) then
-        cs2 = cs20
         TT1 = 0.
+        chi = 0.
+        cs2 = cs20
         if (gamma /= 1) then
           if (lroot) print*, 'Noentropy, thus resetting gamma to 1'
           gamma = 1
@@ -86,6 +85,7 @@ module Entropy
         first=.false.
       endif
       gpprho=cs20*glnrho
+      if(ip==1) print*,f,df,uu,uij,divu,rho1,glnrho,gpprho  !(to remove compiler warnings)
 !
     endsubroutine dss_dt
 !***********************************************************************
@@ -97,12 +97,11 @@ module Entropy
 !  23-jan-02/wolf: coded
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
-           hcond0,hcond1,hcond2,whcond
-      use Sub, only: step
+      use Cdata, only: ip
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
+      if(ip==1) print*,x,y,z,hcond  !(to remove compiler warnings)
 !
     endsubroutine heatcond
 !***********************************************************************
@@ -114,12 +113,11 @@ module Entropy
 !  23-jan-02/wolf: coded
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
-      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
-           hcond0,hcond1,hcond2,whcond
-      use Sub, only: der_step
+      use Cdata, only: ip
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc
+      if(ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
 !
     endsubroutine gradloghcond
 !***********************************************************************

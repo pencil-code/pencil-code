@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.29 2002-05-29 07:09:06 brandenb Exp $
+! $Id: magnetic.f90,v 1.30 2002-05-30 07:12:45 brandenb Exp $
 
 module Magnetic
 
@@ -23,10 +23,11 @@ module Magnetic
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx) :: va2
-  real :: eta=0.
+  real :: eta=0.,height_eta=0.,eta_out=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext
+       eta,B_ext, &
+       height_eta,eta_out
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
@@ -66,8 +67,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.29 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.30 $", &
+           "$Date: 2002-05-30 07:12:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -195,13 +196,11 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A,dAdy,shearA
       real, dimension (nx) :: var1,rho1,J2,TT1,uy0,b2,b2tot,ab,jb
+      real :: tmp,eta_out1
+!
+!  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
       call curl(f,iaa,bb)
-!
-!  calculate max and rms field
-!  at the moment (and in future?) calculate max(b^2) and mean(b^2), w/o sqrt.
-!  Here we don't want to include the imposed field (if there is any)
-!
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
         call dot_mn(aa,bb,ab)
@@ -217,7 +216,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
       if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
 !
-!  calculating the current jj
+!  calculating the current jj, and simultaneously del2A.
 !
       call del2v_etc(f,iaa,del2A,curlcurl=jj)
 !
@@ -238,6 +237,16 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
     !  df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
     !  df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
       df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)+uxB+eta*del2A
+!
+!  Possibility of adding extra diffusivity in some halo of given geometry:
+!  Note that eta_out is total eta in halo (not eta_out+eta)
+!
+      if(height_eta/=0.) then
+        if (headtt) print*,'halo diffusivity; height_eta,eta_out=',height_eta,eta_out
+        tmp=(z(n)/height_eta)**2
+        eta_out1=eta_out*(1.-exp(-tmp**5/amax1(1.-tmp,1e-5)))-eta
+        df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-eta_out1*jj
+      endif
 !
 !  add JxB/rho to momentum equation
 !
@@ -310,6 +319,17 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
       enddo
+!
+!  write column where which magnetic variable is stored
+!
+      open(3,file='tmp/magnetic.col')
+      write(3,*) 'i_abm',i_abm
+      write(3,*) 'i_jbm',i_jbm
+      write(3,*) 'i_b2m',i_b2m
+      write(3,*) 'i_bm2',i_bm2
+      write(3,*) 'i_j2m',i_j2m
+      write(3,*) 'i_jm2',i_jm2
+      close(3)
 !
     endsubroutine rprint_magnetic
 !***********************************************************************

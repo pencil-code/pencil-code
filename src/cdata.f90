@@ -36,7 +36,7 @@ module Cdata
   integer :: iperx,ipery,iperz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
-  integer :: ivisc,iforce=0
+  integer :: ivisc
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
 !

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.30 2002-05-29 04:57:20 brandenb Exp $
+! $Id: run.f90,v 1.31 2002-05-30 07:12:45 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -42,8 +42,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.30 $", &
-             "$Date: 2002-05-29 04:57:20 $")
+             "$Revision: 1.31 $", &
+             "$Date: 2002-05-30 07:12:45 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -72,7 +72,7 @@
 !
 !  read seed field parameters (only if forcing is turned on)
 !
-        if (iforce/=0) then
+        if (lforcing) then
           if (lroot) print*,'reading seed file'
           call inpui(trim(directory)//'/seed.dat',seed,2)
           call random_seed(put=seed)
@@ -120,7 +120,7 @@
 !  time advance
 !
           call rk_2n(f,df)
-          if (iforce/=0) call addforce(f)
+          if (lforcing) call addforce(f)
           if(lout) call prints
           call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))
@@ -146,7 +146,7 @@
 !
 !  write seed parameters (only if forcing is turned on)
 !
-        if (iforce/=0) then
+        if (lforcing) then
           call random_seed(get=seed)
           call outpui(trim(directory)//'/seed.dat',seed,2)
         endif

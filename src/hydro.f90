@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.7 2002-05-29 07:09:06 brandenb Exp $
+! $Id: hydro.f90,v 1.8 2002-05-30 07:12:45 brandenb Exp $
 
 module Hydro
 
@@ -53,8 +53,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2002-05-30 07:12:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -81,7 +81,7 @@ module Hydro
       real, dimension (nx,1) :: rmn
       real :: zmax,lnrho0
       real :: beta1,lnrhoint,cs2int
-      integer :: init,i
+      integer :: i
 !
 !  init corresponds to different initializations (called from start).
 !  If init does't match, f=0 is assumed (default).
