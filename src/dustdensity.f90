@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.55 2004-04-07 12:04:54 ajohan Exp $
+! $Id: dustdensity.f90,v 1.56 2004-04-07 13:08:20 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.55 2004-04-07 12:04:54 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.56 2004-04-07 13:08:20 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -356,7 +356,7 @@ module Dustdensity
 !  Check for grain mass interval overflows
 !
         do k=1,ndustspec
-          i_targ = -1
+          i_targ = k
           if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
             do j=k+1,ndustspec+1 
               i_targ = j
@@ -368,28 +368,21 @@ module Dustdensity
               if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
             enddo
           endif
-          if (i_targ == -1) then
-            ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
-            rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
-            if (lrhoice) rhoinew(:,k) = rhoinew(:,k) + f(l1:l2,m,n,irhoi(k))
-          elseif (i_targ >= 1 .and. i_targ <= ndustspec) then
+
+          if (i_targ == ndustspec+1) i_targ = ndustspec
+          
+          if (i_targ >= 1 .and. i_targ <= ndustspec) then
             ndnew(:,i_targ) = ndnew(:,i_targ) + f(l1:l2,m,n,ind(k))
             rhodnew(:,i_targ) = rhodnew(:,i_targ) + f(l1:l2,m,n,irhod(k))
             if (lrhoice) &
                 rhoinew(:,i_targ) = rhoinew(:,i_targ)+f(l1:l2,m,n,irhoi(k))
           elseif (i_targ == 0) then
-            if (lkeepinitnd) then
-              print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
-              call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
-            endif
+            !if (lkeepinitnd) then
+            !  print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
+            !  call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
+            !endif
             f(l1:l2,m,n,ilncc) = &
                 f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*unit_md*rho1
-          elseif (i_targ == ndustspec+1) then
-            ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
-            rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
-            if (lrhoice) rhoinew(:,k) = rhoinew(:,k) + f(l1:l2,m,n,irhoi(k))
-            print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
-            call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
         f(l1:l2,m,n,ind)   = ndnew(:,:)
@@ -444,7 +437,8 @@ module Dustdensity
           if (lmdvar) then
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
             if (lrhoice) then
-              if (dndfac(1) < 0. .and. f(l1,m,n,irhoi(k)) <= 0) then
+              if (dndfac(1) < 0. .and. &
+                  f(l1,m,n,irhoi(k))/f(l1,m,n,irhod(k)) <= 0.01) then
                 ! Do nothing when there is no ice in the dust grains
               elseif (nd(1,k) >= 0.) then
                 df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
