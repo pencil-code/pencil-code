@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.128 2002-10-06 14:52:55 brandenb Exp $
+! $Id: entropy.f90,v 1.129 2002-10-16 14:42:19 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -71,7 +71,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.128 2002-10-06 14:52:55 brandenb Exp $")
+           "$Id: entropy.f90,v 1.129 2002-10-16 14:42:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -423,11 +423,11 @@ module Entropy
             endif
           endif
           FbotKbot=Fbot/(hcond0*hcond1)
-!
-!  other alternative: single layer system, Fbot given,
-!  calculate hcond and FbotKbot=Fbot/K, where K=hcond is radiative conductivity
-!
         else
+          !
+          !  Wolfgang, in future we should define chiz=chi(z) or Kz=K(z) here.
+          !  calculate hcond and FbotKbot=Fbot/K, where K=hcond is radiative conductivity
+          !
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
           FbotKbot=Fbot/Kbot
           if(lroot) print*,'ss_run_hook: Fbot,Kbot=',Fbot,Kbot
@@ -438,7 +438,8 @@ module Entropy
 !***********************************************************************
     subroutine calc_heatcond_constchi(f,df,rho1,glnrho,gss)
 !
-!  heat conduction for constant value of chi=K/(rho*cp)
+!  Heat conduction for constant value of chi=K/(rho*cp)
+!  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !
@@ -465,8 +466,12 @@ module Entropy
       call del2(f,ilnrho,del2lnrho)
       glnT = gamma*gss + gamma1*glnrho
       glnP = gamma*gss + gamma*glnrho
-      call dot_mn(glnT,glnP,g2)
+      call dot_mn(glnP,glnT,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
+      if(chi_t/=0.) then
+        call dot_mn(glnP,gss,g2)
+        thdiff = thdiff + chi_t*(del2ss+g2)
+      endif
 !
 !  add heat conduction to entropy equation
 !
@@ -478,7 +483,6 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
-!--   if (headtt) print*,'calc_heatcond_simple: maxdiffus=',maxdiffus
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
@@ -528,7 +532,6 @@ module Entropy
 !  gamma*chix*del2ss
 !
       if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chix+chi_t))
-!--   if (headtt) print*,'calc_heatcond_simple: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************

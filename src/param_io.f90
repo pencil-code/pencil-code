@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.67 2002-10-07 20:39:22 dobler Exp $ 
+! $Id: param_io.f90,v 1.68 2002-10-16 14:42:19 brandenb Exp $ 
 
 module Param_IO
 
@@ -25,7 +25,7 @@ module Param_IO
   ! run parameters
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0
-  logical :: lrmwig_full=.false.,lrmwig_xyaverage=.false.
+  logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
   ! under IRIX -- at least for the moment
@@ -40,7 +40,7 @@ module Param_IO
        dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec, &
        directory_snap,random_gen, &
-       lrmwig_full,lrmwig_xyaverage, &
+       lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        test_nonblocking, &
        bcx,bcy,bcz, &
        ttransient,tavg,idx_tavg 

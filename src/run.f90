@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.103 2002-10-09 14:02:31 dobler Exp $
+! $Id: run.f90,v 1.104 2002-10-16 14:42:19 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.103 2002-10-09 14:02:31 dobler Exp $")
+             "$Id: run.f90,v 1.104 2002-10-16 14:42:19 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -112,7 +112,6 @@
         if (lgravr) call setup_grav()
 !
         call wglobal()
-
 !
 !  advance equations
 !  NOTE: headt=.true. in order to print header titles
@@ -169,7 +168,7 @@
             if (mod(it,iwig).eq.0) then
               if (lrmwig_xyaverage) call rmwig_xyaverage(f,ilnrho)
               if (lrmwig_full) call rmwig(f,df,ilnrho,awig)
-              !call rmwig(f,df,ilnrho,explog=.true.)
+              if (lrmwig_rho) call rmwig(f,df,ilnrho,awig,explog=.true.)
             endif
           endif
           !

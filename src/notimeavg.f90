@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.2 2002-10-09 14:02:31 dobler Exp $ 
+! $Id: notimeavg.f90,v 1.3 2002-10-16 14:42:19 brandenb Exp $ 
 
 module Timeavg
 
@@ -45,6 +45,7 @@ module Timeavg
       character (len=*) :: chsnap
       logical llabel
 !
+      if(chsnap=='X') llabel=.false. !(to keep compiler quiet)
     endsubroutine wsnap_timeavgs
 !***********************************************************************
 

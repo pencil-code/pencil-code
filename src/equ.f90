@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.101 2002-10-09 14:05:31 mee Exp $
+! $Id: equ.f90,v 1.102 2002-10-16 14:42:19 brandenb Exp $
 
 module Equ
 
@@ -228,7 +228,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.101 2002-10-09 14:05:31 mee Exp $")
+           "$Id: equ.f90,v 1.102 2002-10-16 14:42:19 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -356,6 +356,11 @@ module Equ
             if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
             if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
           endif
+          !
+          !  Mach number, rms and max
+          !
+          if (i_Marms/=0) call sum_mn_name(u2/cs2,i_Marms,lsqrt=.true.)
+          if (i_Mamax/=0) call max_mn_name(u2/cs2,i_Mamax,lsqrt=.true.)
         endif
 !
 !  end of loops over m and n
@@ -391,6 +396,51 @@ module Equ
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
+      real :: del_average,rhom1,rhom2
+      integer :: ivar
+!
+!  calculate horizontal average and smooth in the vertical direction
+!
+      do n=1,mz
+        xyaver(n)=sum(exp(f(l1:l2,m1:m2,n,ivar)))/(nx*ny)
+      enddo
+      call smooth_4th(xyaver,xyaver_smooth,.true.)
+rhom1=sum(xyaver(n1:n2))/nz
+rhom2=sum(xyaver_smooth(n1:n2))/nz
+!
+      do n=1,mz
+        del_average=xyaver(n)-xyaver_smooth(n)
+        f(l1:l2,m1:m2,n,ivar)=alog(exp(f(l1:l2,m1:m2,n,ivar))-del_average)
+      enddo
+!
+!  print identifier
+!
+      if (lroot) then
+        if (ivar == ilnrho) then
+          print*,'RMWIG: removing wiggles in xyaverage of rho, t=',t,rhom1,rhom2
+        else
+          write(*,'(" ",A,I3,A,G12.5)') &
+          'RMWIG: removing wiggles in xyaverage of variable ', ivar, 't=', t
+        endif
+      endif
+!
+    endsubroutine rmwig_xyaverage
+!***********************************************************************
+    subroutine rmwig_lnxyaverage(f,ivar)
+!
+!  Removes wiggles from the xyaverage of variable ivar.
+!  This routine works currently only on one processor, which
+!  may not be too bad an approximation even several procs.
+!  This routine operates only on the log of rho, so its not mass conserving
+!
+!  28-Sep-02/axel: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mz) :: xyaver,xyaver_smooth
       real :: del_average
       integer :: ivar
 !
@@ -417,7 +467,7 @@ module Equ
         f(l1:l2,m1:m2,n,ivar)=f(l1:l2,m1:m2,n,ivar)-del_average
       enddo
 !
-    endsubroutine rmwig_xyaverage
+    endsubroutine rmwig_lnxyaverage
 !***********************************************************************
       subroutine smooth_4th(a,b,lbdry)
 !

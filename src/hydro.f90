@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.72 2002-10-09 17:37:32 brandenb Exp $
+! $Id: hydro.f90,v 1.73 2002-10-16 14:42:19 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -40,6 +40,7 @@ module Hydro
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
+  integer :: i_Marms=0,i_Mamax=0
 
   contains
 
@@ -76,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.72 2002-10-09 17:37:32 brandenb Exp $")
+           "$Id: hydro.f90,v 1.73 2002-10-16 14:42:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -597,6 +598,7 @@ module Hydro
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0
+        i_Marms=0; i_Mamax=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -614,6 +616,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
         call parse_name(iname,cname(iname),cform(iname),'ruym',i_ruym)
         call parse_name(iname,cname(iname),cform(iname),'ruzm',i_ruzm)
+        call parse_name(iname,cname(iname),cform(iname),'Marms',i_Marms)
+        call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -629,6 +633,8 @@ module Hydro
       write(3,*) 'i_ruxm=',i_ruxm
       write(3,*) 'i_ruym=',i_ruym
       write(3,*) 'i_ruzm=',i_ruzm
+      write(3,*) 'i_Marms=',i_Marms
+      write(3,*) 'i_Mamax=',i_Mamax
       write(3,*) 'nname=',nname
       write(3,*) 'iuu=',iuu
       write(3,*) 'iux=',iux
