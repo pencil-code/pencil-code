@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.30 2002-08-18 12:04:40 brandenb Exp $
+! $Id: io_dist.f90,v 1.31 2002-09-21 14:05:52 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -60,6 +60,34 @@ module Io
 
 contains
 
+!***********************************************************************
+    subroutine register_io()
+!
+!  dummy routine
+!  20-sep-02/wolf: coded
+!
+      use Cdata, only: iproc,directory
+      use General
+      use Sub
+      use Mpicomm, only: lroot,stop_it
+!
+      logical, save :: first=.true.
+      character (len=4) :: chproc
+!
+      if (.not. first) call stop_it('register_io called twice')
+      first = .false.
+!
+!  identify version number
+!
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.31 2002-09-21 14:05:52 dobler Exp $")
+
+!
+!  set directory name for the output (one subdirectory for each processor)
+!
+      call chn(iproc,chproc)
+      directory='tmp/proc'//chproc
+!
+    endsubroutine register_io
 !***********************************************************************
     subroutine input(file,a,nn,mode)
 !

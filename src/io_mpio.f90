@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.2 2002-09-20 10:36:50 dobler Exp $
+! $Id: io_mpio.f90,v 1.3 2002-09-21 14:05:52 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -6,11 +6,11 @@
 
 !!!  Parallel IO via MPI2 (i.e. all process write to the same file, e.g.
 !!!  tmp/var.dat
-!!!  19-sep-2002/wolf: started
+!!!  19-sep-02/wolf: started
 
 module Io
 
-  use Cparam
+  use Cdata
 
   implicit none
  
@@ -23,14 +23,6 @@ module Io
     module procedure output_pencil_vect
     module procedure output_pencil_scal
   endinterface
-
-  include 'mpif.h'
-!  include 'mpiof.h'
-
-  integer :: ierr
-  integer, dimension(3) :: globalsize=(/nx,ny,nz/)
-  integer, dimension(3) :: localsize=(/ nx/nprocx,ny/nprocy,nz/nprocz /)
-  integer(kind=MPI_OFFSET_KIND) :: dist_zero
 
   !
   ! Interface to external C function(s).
@@ -66,9 +58,128 @@ module Io
   !
   external output_penciled_scal_c
   external output_penciled_vect_c
+!
+  include 'mpif.h'
+!  include 'mpiof.h'
+!
+  integer, dimension(MPI_STATUS_SIZE) :: status
+! LAM-MPI does not know the MPI2 constant MPI_OFFSET_KIND, 8 is hopfully OK
+!  integer(kind=MPI_OFFSET_KIND) :: dist_zero=0
+  integer(kind=8) :: dist_zero=0
+  integer :: io_filetype,io_memtype,io_filetype_v,io_memtype_v
+  integer :: fhandle,ierr
+  logical :: io_initialized=.false.
 
 contains
 
+!***********************************************************************
+    subroutine register_io()
+!
+!  define MPI data types needed for MPI-IO
+!  closely follwing Gropp et al. `Using MPI-2'
+!  20-sep-02/wolf: coded
+!
+      use Cdata, only: iproc,directory
+      use Sub
+      use Mpicomm, only: lroot,stop_it
+!
+      integer, dimension(3) :: globalsize=(/nxgrid,nygrid,nzgrid/)
+      integer, dimension(3) :: localsize =(/nx    ,ny    ,nz    /)
+      integer, dimension(3) :: memsize   =(/mx    ,my    ,mz    /)
+      integer, dimension(3) :: start_index,mem_start_index
+      logical, save :: first=.true.
+!
+!      if (.not. first) call stop_it('register_io called twice')
+      first = .false.
+!
+!  identify version number
+!
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.3 2002-09-21 14:05:52 dobler Exp $")
+!
+!  global indices of first element of iproc's data in the file
+!
+      start_index(1) = ipx*localsize(1)
+      start_index(2) = ipy*localsize(2)
+      start_index(3) = ipz*localsize(3)
+!
+!  construct the new datatype `io_filetype' 
+!
+      call MPI_TYPE_CREATE_SUBARRAY(3, &
+               globalsize, localsize, start_index, &
+               MPI_ORDER_FORTRAN, MPI_REAL, &
+               io_filetype, ierr)
+      call MPI_TYPE_COMMIT(io_filetype,ierr)
+!
+!  create a derived datatype describing the data layout in memory
+!  (i.e. including the ghost zones)
+!
+      mem_start_index = nghost
+      call MPI_TYPE_CREATE_SUBARRAY(3, &
+               memsize, localsize, mem_start_index, &
+               MPI_ORDER_FORTRAN, MPI_REAL, &
+               io_memtype, ierr)
+      call MPI_TYPE_COMMIT(io_memtype,ierr)
+!
+      io_initialized=.true.
+!
+!  set directory name for the output (one common directory for all processors)
+!
+      directory='tmp/allprocs'
+!
+    endsubroutine register_io
+!***********************************************************************
+    subroutine commit_io_type_vect(nn)
+!
+!  For a new value of nn, commit MPI types needed for output_vect(). If
+!  called with the same value of nn as the previous time, do nothing.
+!  20-sep-02/wolf: coded
+!
+!      use Cdata
+!
+      integer, dimension(4) :: globalsize_v,localsize_v,memsize_v
+      integer, dimension(4) :: start_index_v,mem_start_index_v
+      integer,save :: lastnn=-1 ! value of nn at previous call
+      integer :: nn
+
+!
+      if (nn /= lastnn) then
+        if (lastnn > 0) then
+          ! free old types, so we can re-use them
+          call MPI_TYPE_FREE(io_filetype_v, ierr)
+          call MPI_TYPE_FREE(io_memtype_v, ierr)
+        endif
+        globalsize_v=(/nxgrid,nygrid,nzgrid,nn/)
+        localsize_v =(/nx    ,ny    ,nz    ,nn/)
+        memsize_v   =(/mx    ,my    ,mz    ,nn/)
+!
+!  global indices of first element of iproc's data in the file
+!
+        start_index_v(1) = ipx*nx
+        start_index_v(2) = ipy*ny
+        start_index_v(3) = ipz*nz
+        start_index_v(4) = 0
+!
+!  construct the new datatype `io_filetype_n' 
+!
+        call MPI_TYPE_CREATE_SUBARRAY(4, &
+                 globalsize_v, localsize_v, start_index_v, &
+                 MPI_ORDER_FORTRAN, MPI_REAL, &
+                 io_filetype_v, ierr)
+        call MPI_TYPE_COMMIT(io_filetype_v,ierr)
+!
+!  create a derived datatype describing the data layout in memory
+!  (i.e. including the ghost zones)
+!
+        mem_start_index_v(1:3) = nghost
+        mem_start_index_v(4)   = 0
+        call MPI_TYPE_CREATE_SUBARRAY(4, &
+                 memsize_v, localsize_v, mem_start_index_v, &
+                 MPI_ORDER_FORTRAN, MPI_REAL, &
+                 io_memtype_v, ierr)
+        call MPI_TYPE_COMMIT(io_memtype_v,ierr)
+      endif
+!
+    endsubroutine commit_io_type_vect
 !***********************************************************************
     subroutine input(file,a,nn,mode)
 !
@@ -76,139 +187,102 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
+      use Mpicomm, only: lroot,stop_it
 !
       character (len=*) :: file
-      integer :: nn,mode
+      integer :: nn,mode                  ,i
       real, dimension (mx,my,mz,nn) :: a
 !
-      open(1,file=file,form='unformatted')
-      if (ip<=8) print*,'open, mx,my,mz,nn=',mx,my,mz,nn
-      read(1) a
-      if (ip<=8) print*,'read ',file
-      if (mode==1) then
+      if (ip<=8) print*,'INPUT: mx,my,mz,nn=',mx,my,mz,nn
+      if (.not. io_initialized) &
+           call stop_it("INPUT: Need to call init_io first")
 !
-!  check whether we want to read deltay from snapshot
+      call commit_io_type_vect(nn)
 !
-        if (lshear) then
-          read(1) t,x,y,z,dx,dy,dz,deltay
-        else
-          read(1) t,x,y,z,dx,dy,dz
-        endif
+!  open file and set view (specify which file positions we can access)
 !
-        if (ip<=3) print*,'ip,x',ip,x
-        if (ip<=3) print*,'y',y
-        if (ip<=3) print*,'z',z
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+               MPI_MODE_RDONLY, &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, io_filetype_v, &
+               "native", MPI_INFO_NULL, ierr)
 !
-!  assume uniform mesh; use the first two *interior* points
-!  to calculate mesh spacing
+!  read data
 !
-        dxmax=max(dx,dy,dz)
-        dxmin=min(dx,dy,dz)
-        Lx=dx*nx*nprocx
-        Ly=dy*ny*nprocy
-        Lz=dz*nz*nprocz
+      call MPI_FILE_READ_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
+      call MPI_FILE_CLOSE(fhandle, ierr)
+      
 !
-        if (ip<=4) print*
-        if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
-        if (ip<=8) print*,'pi,nu=',pi,nu
-      endif
-!
-      close(1)
     endsubroutine input
 !***********************************************************************
     subroutine output_vect(file,a,nn)
 !
-!  write snapshot file, always write time and mesh, could add other things
-!  version for vector field
-!  11-apr-97/axel: coded
+!  write snapshot file; currently without ghost zones and any meta data
+!  like time, etc.
+!    Looks like we nee to commit the MPI type anew each time we are called,
+!  since nn may vary.
+!  20-sep-02/wolf: coded
 !
       use Cdata
+      use Mpicomm, only: lroot,stop_it
 !
-      integer :: nn
       real, dimension (mx,my,mz,nn) :: a
+      integer :: nn
       character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
-      open(91,file=file,form='unformatted')
-      write(91) a
-      write(91) t,x,y,z,dx,dy,dz,deltay
-      close(91)
-    endsubroutine output_vect
-!***********************************************************************
-    subroutine output_scal(file,a,nn)
+      if (.not. io_initialized) &
+           call stop_it("OUTPUT: Need to call init_io first")
 !
-!  write snapshot file, always write time and mesh, could add other things
-!  version for scalar field
-!  11-apr-97/axel: coded
-!
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
-!
-      integer :: nn
-      real, dimension (mx,my,mz) :: a
-      character (len=*) :: file
-!
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
-      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
-      open(91,file=file,form='unformatted')
-      write(91) a
-      write(91) t,x,y,z,dx,dy,dz,deltay
-      close(91)
-    endsubroutine output_scal
-!***********************************************************************
-    subroutine output_scal_mpio(file,a,nn)
-!
-!  write snapshot file; currently without ghost zones and any meta data
-!  like time, etc.
-!  19-sep-02/wolf: coded
-!
-      use Cdata
-      use Mpicomm, only: lroot,stop_it
-!
-      integer :: nn
-      real, dimension (mx,my,mz) :: a
-      character (len=*) :: file
-      integer, dimension(3) :: start_index
-      integer :: filetype,fhandle
-      integer, dimension(MPI_STATUS_SIZE) :: status
-
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
-      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
-      !
-      !  global indices of first element of iproc's data in the file
-      !
-      start_index(1) = ipx*localsize(1)
-      start_index(2) = ipy*localsize(2)
-      start_index(3) = ipz*localsize(3)
-      !
-      !  construct the new datatype `filetype' 
-      !
-      call MPI_TYPE_CREATE_SUBARRAY(3, &
-               globalsize, localsize, start_index, &
-               MPI_ORDER_FORTRAN, MPI_REAL, &
-               filetype, ierr)
-      call MPI_TYPE_COMMIT(filetype,ierr)
+      call commit_io_type_vect(nn)
       !
       !  open file and set view (specify which file positions we can access)
       !
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
-      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, filetype, "native", &
-               MPI_INFO_NULL, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, io_filetype_v, &
+               "native", MPI_INFO_NULL, ierr)
       !
       !  write data
       !
-      call MPI_FILE_WRITE_ALL(fhandle, a, product(localsize), MPI_REAL, &
-               status, ierr)
+      call MPI_FILE_WRITE_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
       call MPI_FILE_CLOSE(fhandle, ierr)
+!
+    endsubroutine output_vect
+!***********************************************************************
+    subroutine output_scal(file,a,nn)
+!
+!  write snapshot file; currently without ghost zones and any meta data
+!  like time, etc.
+!  20-sep-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm, only: lroot,stop_it
+!
+      real, dimension (mx,my,mz) :: a
+      integer :: nn
+      character (len=*) :: file
 
-!      open(91,file=file,form='unformatted')
-!      write(91) a
-!      write(91) t,x,y,z,dx,dy,dz,deltay
-!      close(91)
-
-    endsubroutine output_scal_mpio
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
+      if (.not. io_initialized) &
+           call stop_it("OUTPUT: Need to call init_io first")
+      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
+!
+!  open file and set view (specify which file positions we can access)
+!
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+               ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, io_filetype, &
+               "native", MPI_INFO_NULL, ierr)
+!
+!  write data
+!
+      call MPI_FILE_WRITE_ALL(fhandle, a, 1, io_memtype, status, ierr)
+      call MPI_FILE_CLOSE(fhandle, ierr)
+!
+    endsubroutine output_scal
 !***********************************************************************
     subroutine output_pencil_vect(file,a,ndim)
 !
@@ -274,10 +348,13 @@ contains
 !  11-oct-98/axel: adapted
 !
       use Cdata
+      use Mpicomm, only: lroot,stop_it
 !
       integer :: nn
       character (len=*) :: file
       real, dimension (mx,my,mz,nn) :: a
+!
+      call stop_it("OUTPUS doesn't work with io_mpio yet -- but wasn't used anyway")
 !
       open(1,file=file,form='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
@@ -285,34 +362,149 @@ contains
       close(1)
     endsubroutine outpus
 !***********************************************************************
-    subroutine wgrid (file)
+    subroutine commit_gridio_types(nglobal,nlocal,mlocal,ipvar,filetype,memtype)
+!
+!  define MPI data types needed for MPI-IO of grid files
+!  20-sep-02/wolf: coded
+!
+      integer :: nglobal,nlocal,mlocal,ipvar
+      integer :: filetype,memtype
+!
+!  construct new datatype `filetype'
+!
+      call MPI_TYPE_CREATE_SUBARRAY(1, &
+               nglobal, nlocal, ipvar*nlocal, &
+               MPI_ORDER_FORTRAN, MPI_REAL, &
+               filetype, ierr)
+      call MPI_TYPE_COMMIT(filetype,ierr)
+!
+!  create a derived datatype describing the data layout in memory
+!  (i.e. including the ghost zones)
+!
+      call MPI_TYPE_CREATE_SUBARRAY(1, &
+               mlocal, nlocal, nghost, &
+               MPI_ORDER_FORTRAN, MPI_REAL, &
+               memtype, ierr)
+      call MPI_TYPE_COMMIT(memtype,ierr)
+!
+    endsubroutine commit_gridio_types
+!***********************************************************************
+    subroutine write_grid_data(file,nglobal,nlocal,mlocal,ipvar,var)
+!
+!  write grid positions for var to file
+!  20-sep-02/wolf: coded
+!
+      real, dimension(*) :: var ! x, y or z
+      integer :: nglobal,nlocal,mlocal,ipvar
+      integer :: filetype,memtype
+      character (len=*) :: file
+!
+      call commit_gridio_types(nglobal,nlocal,mlocal,ipvar,filetype,memtype)
+!
+!  open file and set view (specify which file positions we can access)
+!
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+               ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, filetype, &
+               "native", MPI_INFO_NULL, ierr)
+!
+!  write data and free type handle
+!
+      call MPI_FILE_WRITE_ALL(fhandle, var, 1, memtype, status, ierr)
+      call MPI_FILE_CLOSE(fhandle, ierr)
+!
+      call MPI_TYPE_FREE(filetype, ierr)
+      call MPI_TYPE_FREE(memtype, ierr)
+!
+    endsubroutine write_grid_data
+!***********************************************************************
+    subroutine read_grid_data(file,nglobal,nlocal,mlocal,ipvar,var)
+!
+!  read grid positions for var to file
+!  20-sep-02/wolf: coded
+!
+      real, dimension(*) :: var ! x, y or z
+      integer :: nglobal,nlocal,mlocal,ipvar
+      integer :: filetype,memtype
+      character (len=*) :: file
+!
+      call commit_gridio_types(nglobal,nlocal,mlocal,ipvar,filetype,memtype)
+!
+!  open file and set view (specify which file positions we can access)
+!
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+               MPI_MODE_RDONLY, &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, filetype, &
+               "native", MPI_INFO_NULL, ierr)
+!
+!  read data and free type handle
+!
+      call MPI_FILE_READ_ALL(fhandle, var, 1, memtype, status, ierr)
+      call MPI_FILE_CLOSE(fhandle, ierr)
+!
+      call MPI_TYPE_FREE(filetype, ierr)
+      call MPI_TYPE_FREE(memtype, ierr)
+!
+    endsubroutine read_grid_data
+!***********************************************************************
+    subroutine wgrid(file)
 !
 !  Write processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: t,x,y,z,dx,dy,dz
+      use Cdata, only: dx,dy,dz
 !
-      character (len=*) :: file
+      character (len=*) :: file ! not used
 !
-      open(1,FILE=file,FORM='unformatted')
-      write(1) t,x,y,z,dx,dy,dz
-      write(1) dx,dy,dz
+      call write_grid_data(trim(directory)//'/gridx.dat',nxgrid,nx,mx,ipx,x)
+      call write_grid_data(trim(directory)//'/gridy.dat',nygrid,ny,my,ipy,y)
+      call write_grid_data(trim(directory)//'/gridz.dat',nzgrid,nz,mz,ipz,z)
+!
+! write dx,dy,dz to their own file
+!
+      if (lroot) then
+        open(1,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
+        write(1) dx,dy,dz
+      endif
 !
     endsubroutine wgrid
 !***********************************************************************
-    subroutine rgrid (file)
+    subroutine rgrid(file)
 !
 !  Read processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: x,y,z,dx,dy,dz
+      use Cdata, only: dx,dy,dz
 !
       real :: tdummy
-      character (len=*) :: file
+      integer :: i
+      character (len=*) :: file ! not used
 !
-      open(1,FILE=file,FORM='unformatted')
-      read(1) tdummy,x,y,z,dx,dy,dz
+      call read_grid_data(trim(directory)//'/gridx.dat',nxgrid,nx,mx,ipx,x)
+      call read_grid_data(trim(directory)//'/gridy.dat',nygrid,ny,my,ipy,y)
+      call read_grid_data(trim(directory)//'/gridz.dat',nzgrid,nz,mz,ipz,z)
+!
+!  read dx,dy,dz from file
+!  We can't just compute them, since different
+!  procs may obtain different results at machine precision, which causes
+!  nasty communication failures with shearing sheets.
+!
+      open(1,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
       read(1) dx,dy,dz
+!
+!  reconstruct ghost values
+!
+      do i=1,nghost
+        x(l1-i) = x(l1) - i*dx
+        y(m1-i) = y(m1) - i*dy
+        z(n1-i) = z(n1) - i*dz
+        !
+        x(l2+i) = x(l2) + i*dx
+        y(m2+i) = y(m2) + i*dy
+        z(n2+i) = z(n2) + i*dz        
+      enddo
 !
     endsubroutine rgrid
 !***********************************************************************

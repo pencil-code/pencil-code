@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.44 2002-09-20 10:08:11 dobler Exp $
+! $Id: mpicomm.f90,v 1.45 2002-09-21 14:05:52 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -81,10 +81,9 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !
       use General
-      use Cdata, only: lmpicomm,directory
+      use Cdata, only: lmpicomm
 !
       integer :: i,m,n
-      character (len=4) :: chproc
 !
 !  get processor number, number of procs, and whether we are root
 !
@@ -211,11 +210,6 @@ module Mpicomm
           imn=imn+1
         enddo
       enddo
-!
-!  produce a directory name for the output
-!
-      call chn(iproc,chproc)
-      directory='tmp/proc'//chproc
 !
     endsubroutine mpicomm_init
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.46 2002-07-29 09:13:22 brandenb Exp $
+! $Id: register.f90,v 1.47 2002-09-21 14:05:53 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -22,6 +22,7 @@ module Register
       use Cdata
       use Mpicomm
       use Sub
+      use IO
       use Gravity
       use Hydro
       use Forcing
@@ -38,6 +39,9 @@ module Register
 !  initialize nvar; is increased by the following routines
 !
       nvar = 0 
+!
+      call register_io
+!
       call register_hydro
       call register_density
       call register_forcing

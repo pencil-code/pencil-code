@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.48 2002-09-19 07:35:08 brandenb Exp $
+! $Id: density.f90,v 1.49 2002-09-21 14:05:52 dobler Exp $
 
 module Density
 
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.48 2002-09-19 07:35:08 brandenb Exp $")
+           "$Id: density.f90,v 1.49 2002-09-21 14:05:52 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -85,6 +85,7 @@ module Density
 !
       use Mpicomm
       use Sub
+      use IO
       use Global
       use Gravity
       use Initcond

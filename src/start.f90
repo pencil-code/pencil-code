@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.60 2002-08-19 06:48:46 brandenb Exp $
+! $Id: start.f90,v 1.61 2002-09-21 14:05:53 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -14,6 +14,7 @@
         use Initcond
         use Mpicomm
         use Sub
+        use IO
         use Register
         use Global
         use Param_IO
@@ -32,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.60 2002-08-19 06:48:46 brandenb Exp $")
+             "$Id: start.f90,v 1.61 2002-09-21 14:05:53 dobler Exp $")
 !
 !  Initialise random number generator in processor-dependent fashion.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)

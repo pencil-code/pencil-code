@@ -1,8 +1,8 @@
-! $Id: sub.f90,v 1.83 2002-08-30 14:19:51 dobler Exp $ 
+! $Id: sub.f90,v 1.84 2002-09-21 14:05:53 dobler Exp $ 
 
 module Sub 
 
-  use Io
+!  use Io
 
   implicit none
 

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.79 2002-09-19 07:35:08 brandenb Exp $
+! $Id: run.f90,v 1.80 2002-09-21 14:05:53 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -14,6 +14,7 @@
         use General
         use Mpicomm
         use Sub
+        use IO
         use Register
         use Global
         use Param_IO
@@ -45,7 +46,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.79 2002-09-19 07:35:08 brandenb Exp $")
+             "$Id: run.f90,v 1.80 2002-09-21 14:05:53 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
