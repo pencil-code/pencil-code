@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.66 2002-06-25 14:58:47 dobler Exp $ 
+! $Id: sub.f90,v 1.67 2002-06-25 15:15:22 dobler Exp $ 
 
 module Sub 
 
@@ -1284,10 +1284,10 @@ module Sub
 !  index_d is the position of the dot
 !
       length=iform1-1
-      index_e=index(cform,'e')
-      index_f=index(cform,'f')
-      index_g=index(cform,'g')
-      index_i=index(cform,'i')
+      index_e=scan(cform,'eE')
+      index_f=scan(cform,'fF')
+      index_g=scan(cform,'gG')
+      index_i=scan(cform,'iI')
       index_d=index(cform,'.')
       index_r=index(cform,')')
       index1=max(index_e,index_f,index_g,index_i)
@@ -1305,6 +1305,7 @@ module Sub
 ! in case of errors:
 !
 99    print*,'noform: formatting problem'
+      print*,'problematic cnumber= <',cnumber,'>'
       number=10
       goto 10     
     endfunction noform
