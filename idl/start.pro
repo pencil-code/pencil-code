@@ -15,9 +15,10 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 @yder2_6th_ghost
 @zder2_6th_ghost
 ;
+default, proc, 0
 default, datatopdir, 'tmp'
-default, datadir, datatopdir+'/proc0'
 default, file, 'var.dat'
+datadir=datatopdir+'/proc'+str(proc)
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;

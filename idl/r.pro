@@ -2,8 +2,7 @@
 ;;;  r.pro  ;;;
 ;;;;;;;;;;;;;;;
 
-;;; Read the data produced by one processor with the fortran minimal
-;;; hydro code.
+;;; Read the data produced on one processor
 ;;; Assumes you have run `start.pro' once before.
 
 ;
