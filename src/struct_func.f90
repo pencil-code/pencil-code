@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.11 2003-01-21 11:54:46 nilshau Exp $
+! $Id: struct_func.f90,v 1.12 2003-01-21 12:42:28 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -104,47 +104,41 @@ module struct_func
   do direction=1,nr_directions
      do l=1,nx
         if ((iproc==root) .and. (lpostproc)) print*,'l=',l
-!        do ll=l+1,nx
         do lb_ll=1,lb_nxgrid
-!           separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
-!           if (separation .eq. 2**(sep-1)) then
+           !separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
            separation=2**(lb_ll-1)
-           ll1=mod(l+separation,nx)
-           ll2=mod(l-separation+nx,nx)
-           if (ll2 .eq. 0) ll2=nx
-!           if (ll .le. nx) then
-if (iproc == root) print*,ll1,ll2,l,separation
-              dvect1=vect(l,:,:)-vect(ll1,:,:)
-              dvect2=vect(l,:,:)-vect(ll2,:,:)
-              if (llpdf) then !if pdf=.true.
-                 i_du1=1+int((dvect1-pdf_min)*n_pdf/(pdf_max-pdf_min))
-                 i_du1=min(max(i_du1,1),n_pdf)  !(make sure its inside array bdries)
-                 i_du2=1+int((dvect2-pdf_min)*n_pdf/(pdf_max-pdf_min))
-                 i_du2=min(max(i_du2,1),n_pdf)  !(make sure its inside array bdries)
-                 !
-                 !  Calculating pdf
-                 !
-                 do m=1,ny
-                    do n=1,nz
-                       p_du(i_du1(m,n),lb_ll,direction) &
-                            =p_du(i_du1(m,n),lb_ll,direction)+1
-                       p_du(i_du2(m,n),lb_ll,direction) &
-                            =p_du(i_du2(m,n),lb_ll,direction)+1
-                    enddo
-                 enddo
-              endif
+           ll1=mod(l+separation-1,nx)+1
+           ll2=mod(l-separation+nx-1,nx)+1
+           dvect1=vect(l,:,:)-vect(ll1,:,:)
+           dvect2=vect(l,:,:)-vect(ll2,:,:)
+           if (llpdf) then !if pdf=.true.
+              i_du1=1+int((dvect1-pdf_min)*n_pdf/(pdf_max-pdf_min))
+              i_du1=min(max(i_du1,1),n_pdf)  !(make sure its inside array bdries)
+              i_du2=1+int((dvect2-pdf_min)*n_pdf/(pdf_max-pdf_min))
+              i_du2=min(max(i_du2,1),n_pdf)  !(make sure its inside array bdries)
               !
-              if (llsf) then
-                 !
-                 !  Calculates sf
-                 !
-                 do q=1,qmax   
-                    sf(lb_ll,q,direction) &
-                         =sf(lb_ll,q,direction) &
-                         +sum(abs(dvect1(:,:))**q)+sum(abs(dvect2(:,:))**q)
+              !  Calculating pdf
+              !
+              do m=1,ny
+                 do n=1,nz
+                    p_du(i_du1(m,n),lb_ll,direction) &
+                         =p_du(i_du1(m,n),lb_ll,direction)+1
+                    p_du(i_du2(m,n),lb_ll,direction) &
+                         =p_du(i_du2(m,n),lb_ll,direction)+1
                  enddo
-              endif
- !          endif
+              enddo
+           endif
+           !
+           if (llsf) then
+              !
+              !  Calculates sf
+              !
+              do q=1,qmax   
+                 sf(lb_ll,q,direction) &
+                      =sf(lb_ll,q,direction) &
+                      +sum(abs(dvect1(:,:))**q)+sum(abs(dvect2(:,:))**q)
+              enddo
+           endif
         enddo
      enddo
      if (nr_directions .gt. 1) then
@@ -173,8 +167,8 @@ if (iproc == root) print*,ll1,ll2,l,separation
   !
   if(llsf) then
      call mpireduce_sum(sf,sf_sum,imax*qmax*3)  !Is this safe???
-     sf_sum=sf_sum/(nw*ncpus)
-     sf_sum(imax,:,:)=2*sf_sum(imax,:,:)
+     sf_sum=sf_sum/(nw*ncpus*2)
+     !sf_sum(imax,:,:)=2*sf_sum(imax,:,:)
   endif
   !
   !  Writing output file
