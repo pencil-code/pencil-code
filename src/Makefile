@@ -27,6 +27,7 @@ IO=io_dist
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
 #F77=$(FC)
 #LIBSIG=
+#CFLAGS=-O3 -DFUNDERSC=1
 
 ## Linux:
 #FC=f95
@@ -42,7 +43,6 @@ IO=io_dist
 #FC=mpif90 # (Samos)
 #FFLAGS=-O # (Samos)
 #LDMPI= # (Samos)
-#CC=cc
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 
 ## SunOS:
