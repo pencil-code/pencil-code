@@ -1,3 +1,4 @@
+;  $Id: readstartpars.pro,v 1.8 2003-08-08 07:49:16 brandenb Exp $
 ;
 ;  Read startup parameters
 ;
@@ -35,8 +36,6 @@ if (cpar gt 0) then begin
   if (lmagnetic) then begin
     eta=par2.eta
     b_ext=par2.b_ext
-;print,'AXEL'
-print,'Specht'
   endif
 endif else begin
   if (quiet le 4) then print, 'Warning: cannot find file ', pfile

@@ -1,3 +1,4 @@
+;  $Id: pencilconstants.pro,v 1.4 2003-08-08 07:49:16 brandenb Exp $
 ;
 ; constants in cgs units
 ;

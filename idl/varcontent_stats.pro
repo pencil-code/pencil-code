@@ -1,3 +1,4 @@
+;  $Id: varcontent_stats.pro,v 1.5 2003-08-08 07:49:16 brandenb Exp $
 ;
 ;  Summarize data
 ;  omit ghost zones in the analysis

@@ -1,3 +1,4 @@
+;  $Id: varcontent.pro,v 1.6 2003-08-08 07:49:16 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
