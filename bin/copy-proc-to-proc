@@ -1,0 +1,17 @@
+#!/bin/csh
+#$Id: copy-proc-to-proc,v 1.1 2002-11-14 16:31:42 brandenb Exp $
+#
+#  Example:
+#     copy-proc-to-proc grid.dat ../hydro256e
+#     copy-proc-to-proc seed.dat ../hydro256e
+#     copy-proc-to-proc dim.dat ../hydro256e
+
+#  will copy all var.dat files fron current directory to var.dat in
+#  another run directory.
+#  Used for restarting in a different directory.
+
+set procdirs  =  `ls data | grep proc `
+foreach proc ($procdirs)
+  echo "cp data/$proc/$1 $2/data/$proc"
+  cp data/$proc/$1 $2/data/$proc
+end

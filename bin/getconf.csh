@@ -3,6 +3,8 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
+# $Id: getconf.csh,v 1.41 2002-11-14 16:31:42 brandenb Exp $
+#
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
 # is used by both start.csh and run.csh

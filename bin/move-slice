@@ -1,0 +1,14 @@
+#!/bin/csh
+#$Id: move-slice,v 1.1 2002-11-14 16:31:42 brandenb Exp $
+#
+#  Example:
+#     move-slice data2
+#  Moves all slice files from the underlying proc directories to
+#  the directory data2 that must have been produced beforehand
+#  using "mkproc-tree 128", for example.
+
+set procdirs  =  `ls | grep proc `
+foreach proc ($procdirs)
+  echo "mv $proc/slice* $1/$proc"
+  mv $proc/slice* $1/$proc
+end
