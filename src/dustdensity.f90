@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.47 2004-03-31 15:37:12 ajohan Exp $
+! $Id: dustdensity.f90,v 1.48 2004-04-01 14:29:55 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -24,14 +24,14 @@ module Dustdensity
   real, dimension(ndustspec) :: cdiffnd=0
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=0.
   real :: cdiffnd_all, mdave0=1., adpeak=5e-4
-  real :: mmon,mumon,surfmon,supsatfac=1.,supsatfac1=1.
-  character (len=labellen) :: initnd='zero', dust_chemistry='ice'
+  real :: supsatfac=1.,supsatfac1=1.
+  character (len=labellen) :: initnd='zero'
   logical :: ldustnucleation=.false.,ldustgrowth=.true.,ldustcoagulation=.true.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
-      adpeak, dust_chemistry, ldustnucleation, ldustgrowth, ldustcoagulation, &
+      adpeak, ldustnucleation, ldustgrowth, ldustcoagulation, &
       lcalcdkern, supsatfac, lkeepinitnd
 
   namelist /dustdensity_run_pars/ &
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.47 2004-03-31 15:37:12 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.48 2004-04-01 14:29:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -158,28 +158,6 @@ module Dustdensity
         lcalcdkern = .false.
 
       endselect
-
-      select case (dust_chemistry)
-
-      case ('ice')
-        if (headtt) &
-            print*, 'initialize_dustdensity: dust_chemistry = ', dust_chemistry
-        mumon = 18
-        mmon  = mumon*1.6733e-24 
-
-        select case (dust_geometry)
-        case('sphere')
-          surfmon = surfd(1)*(mmon/md(1))**(1.-dimd1)
-        endselect
-
-        if (lroot) print*, &
-            'initialize_dustdensity: mmon, surfmon = ', mmon, surfmon
-
-      case default
-        call stop_it &
-            ("initialize_dustdensity: No valid dust chemistry specified.")
-
-      endselect
 !
 !  If *_all set, make all empty *(:) = *_all
 !
@@ -215,7 +193,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: mdpeak,rhodtot=0.
-      integer :: i,j,k
+      integer :: i,j,k,l
 !
 !  different initializations of nd (called from start).
 !
@@ -229,20 +207,32 @@ module Dustdensity
       case('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
         print*,'init_nd: Initial dust distribution of MRN77'
         do k=1,ndustspec
-          mdpeak = 4/3.*pi*adpeak**3*rhods
+          mdpeak = 4/3.*pi*adpeak**3*rhods/unit_md
           if (md(k) .le. mdpeak) then
             f(:,:,:,ind(k)) = ad(k)**(-3.5)*3/(4*pi*rhods)**(1/3.)* &
-                (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))
+                (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))*unit_md**(1/3.)
           else
             f(:,:,:,ind(k)) = ad(k)**(-7)*3/(4*pi*rhods)**(1/3.)* &
-                (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))*adpeak**(3.5)
+                (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))*adpeak**(3.5)* &
+                unit_md**(1/3.)
           endif
           rhodtot = rhodtot + f(l1,m1,n1,ind(k))*md(k)
         enddo
 
         do k=1,ndustspec
           f(:,:,:,ind(k)) = &
-              f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/rhodtot
+              f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodtot*unit_md)
+        enddo
+        
+        do l=1,mx
+          do m=1,my
+            do n=1,mz
+              if (exp(f(l,m,n,ilnrho)) < 1e-15) then
+                f(l,m,n,ind(:)) = 0.
+                f(l,m,n,irhod(:)) = 0.
+              endif
+            enddo
+          enddo
         enddo
         
       case('const_nd'); f(:,:,:,ind) = nd_const
@@ -250,7 +240,7 @@ module Dustdensity
         if (eps_dtog .lt. 0.) &
             call stop_it("init_nd: Negative eps_dtog!")
         do k=1,ndustspec
-          f(:,:,:,ind(k)) = eps_dtog/md(k)*exp(f(:,:,:,ilnrho))
+          f(:,:,:,ind(k)) = eps_dtog*exp(f(:,:,:,ilnrho))/(md(k)*unit_md)
         enddo
       case('frac_of_gas_glo')
         if (eps_dtog .lt. 0.) &
@@ -259,7 +249,7 @@ module Dustdensity
           do j=1,my
             do k=1,ndustspec
               f(i,j,:,ind(k)) = &
-                  eps_dtog/md(k)*exp(f(4,4,:,ilnrho))
+                  eps_dtog*exp(f(4,4,:,ilnrho))/(md(k)*unit_md)
             enddo
           enddo
         enddo
@@ -325,6 +315,7 @@ module Dustdensity
 !
       intent(in)  :: uud,divud
       intent(out) :: df,gnd
+
 !
 !  identify module and boundary conditions
 !
@@ -370,7 +361,7 @@ module Dustdensity
               call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
             endif
             f(l1:l2,m,n,ilncc) = &
-                f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
+                f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*unit_md*rho1
           elseif (i_targ .eq. ndustspec+1) then
             ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
             rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
@@ -410,10 +401,11 @@ module Dustdensity
 !  Currently not working (it is much more complex than sketched here)
 !
       if (ldustnucleation) then
+        call stop_it('dnd_dt: Dust nucleation currently not implemented')
         call get_nofluxcond(f,nofluxcond,rho)
         dndfac = surfd(1)*nofluxcond*nd(:,1)
         df(l1:l2,m,n,ind(1)) = df(l1:l2,m,n,ind(1)) + dndfac
-        df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc)  - md(1)*rho1*dndfac
+        df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc)  - md(1)*unit_md*rho1*dndfac
       endif
 !
 !  Dust growth due to condensation on grains
@@ -427,13 +419,11 @@ module Dustdensity
                 .and. lkeepinitnd) then
               ! Do nothing when mass is set to decrease below initial
             else
-              df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac
+              df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
               df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
             endif
           else
-            dndfac = surfd(k)*mfluxcond(:)*nd(:,k)/md(k)
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + dndfac
-            df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc)  - md(k)*rho1*dndfac
+            call stop_it('dnd_dt: Dust condensation only works with lmdvar')
           endif
         enddo
       endif
@@ -446,7 +436,8 @@ module Dustdensity
             call dot_mn (f(l1:l2,m,n,iudx(i):iudz(i)), &
                 f(l1:l2,m,n,iudx(j):iudz(j)),udiudj)
             deltaud_drift = sqrt(udiudj)
-            deltaud_therm = sqrt( 8*k_B/(pi*TT1) * (md(i)+md(j))/(md(i)*md(j)) )
+            deltaud_therm = sqrt( 8*k_B/(pi*TT1) * &
+                (md(i)+md(j))/(md(i)*md(j)*unit_md) )
             deltaud = sqrt(deltaud_drift**2+deltaud_therm**2)
             dkern(:,i,j) = scolld(i,j)*deltaud
             dkern(:,j,i) = dkern(:,i,j)
@@ -460,12 +451,12 @@ module Dustdensity
         do i=1,ndustspec
           do j=i,ndustspec
             dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
-            if (minval(dndfac) .ne. 0.) then
+            if (minval(dndfac) /= 0.) then
               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
               df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
               do k=j,ndustspec+1
-                if (md(i) + md(j) .ge. mdminus(k) &
-                    .and. md(i) + md(j) .lt. mdplus(k)) then
+                if (md(i) + md(j) >= mdminus(k) &
+                    .and. md(i) + md(j) < mdplus(k)) then
                   if (lmdvar) then
                     df(l1:l2,m,n,ind(k))   = df(l1:l2,m,n,ind(k)) - dndfac
                     df(l1:l2,m,n,irhod(i)) = &
@@ -502,10 +493,8 @@ module Dustdensity
             ugnd - f(l1:l2,m,n,ind(k))*divud(:,k)
 
         if (lmdvar) then
-          call grad(f,irhod(k),grhod(:,:,k))
-          call dot_mn(uud(:,:,k),grhod(:,:,k),ugrhod)
           df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) - &
-              ugrhod - f(l1:l2,m,n,irhod(k))*divud(:,k)
+              md(k)*(ugnd - f(l1:l2,m,n,ind(k))*divud(:,k))
         endif
 !
 !  mass diffusion, in units of dxmin*cs0

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.41 2004-02-27 15:59:51 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.42 2004-04-01 14:29:55 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -28,13 +28,17 @@ module Dustvelocity
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
   real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
   real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
+  real :: mmon,mumon,surfmon
+  double precision :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
   character (len=labellen) :: inituud='zero'
-  character (len=labellen) :: draglaw='epstein_cst', dust_geometry='sphere'
+  character (len=labellen) :: draglaw='epstein_cst'
+  character (len=labellen) :: dust_geometry='sphere', dust_chemistry='ice'
 
   namelist /dustvelocity_init_pars/ &
-       rhods, md0, ad0, deltamd, draglaw, dust_geometry, ampluud, inituud
+       rhods, md0, ad0, deltamd, draglaw, dust_geometry, ampluud, inituud, &
+       dust_chemistry
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
@@ -101,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.41 2004-02-27 15:59:51 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.42 2004-04-01 14:29:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -134,6 +138,7 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use Mpicomm, only: stop_it
+      use Pscalar, only: unit_rhocc
 !
       integer :: i,j
 !
@@ -147,9 +152,30 @@ module Dustvelocity
         endif
       endif
 !
+!  Set dust mass unit
+!
+      select case (dust_chemistry)
+
+      case ('ice')
+        if (headtt) &
+            print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
+        mumon = 18
+        mmon  = mumon*1.6733e-24
+        unit_md = mmon
+        if (lpscalar) unit_rhocc = unit_md
+
+        if (lroot) print*, &
+            'initialize_dustvelocity: mmon, surfmon = ', mmon, surfmon
+
+      case default
+        call stop_it &
+            ("initialize_dustvelocity: No valid dust chemistry specified.")
+
+      endselect
+!
 !  Dust physics parameters
 !
-      if (ad0 .ne. 0.) md0 = 4/3.*pi*ad0**3
+      if (ad0 .ne. 0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
 
       do i=1,ndustspec
         mdminus(i) = md0*deltamd**(i-1)
@@ -169,6 +195,8 @@ module Dustvelocity
         
         call get_dustsurface
         call get_dustcrosssection
+
+        surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
         
 
       case default
@@ -583,7 +611,7 @@ module Dustvelocity
 !
     integer :: i
 !    
-    ad(1)    = (0.75*md(1)/(pi*rhods))**dimd1
+    ad(1)    = (0.75*md(1)*unit_md/(pi*rhods))**dimd1
     surfd(1) = 4*pi*ad(1)**2
     do i=2,ndustspec
       ad(i)  = ad(1)*(md(i)/md(1))**dimd1
