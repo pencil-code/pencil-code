@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.109 2004-06-08 21:24:11 brandenb Exp $ 
+! $Id: initcond.f90,v 1.110 2004-06-09 12:55:26 ajohan Exp $ 
 
 module Initcond 
  
@@ -1073,15 +1073,15 @@ module Initcond
 !      
     endsubroutine planet
 !***********************************************************************
-    subroutine vortex_2d(f,xx,yy,b_ell)
+    subroutine vortex_2d(f,xx,yy,b_ell,width,rbound)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
 !   8-jun-04/anders: adapted from planet
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,r_ell2,xi
-      real :: sigma,eps_ell,a_ell,b_ell
+      real, dimension (mx,my,mz) :: xx,yy,r_ell,xi
+      real :: sigma,eps_ell,a_ell,b_ell,width,rbound
 !
 !  calculate sigma
 !
@@ -1096,10 +1096,8 @@ module Initcond
 !
 !  Limit vortex to within r_ell
 !        
-      r_ell2 = xx**2/b_ell**2+yy**2/a_ell**2
-      xi=0.
-      where (r_ell2 <= 1.) xi=1.
-      print*, minval(xi), maxval(xi)
+      r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
+      xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
 !
 !  Calculate velocities (Kepler speed subtracted)
 !

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.169 2004-06-08 14:17:22 brandenb Exp $
+! $Id: hydro.f90,v 1.170 2004-06-09 12:55:26 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.169 2004-06-08 14:17:22 brandenb Exp $")
+           "$Id: hydro.f90,v 1.170 2004-06-09 12:55:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -345,7 +345,7 @@ module Hydro
 
       case('vortex_2d')
         ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
-        call vortex_2d(f,xx,yy,b_ell)
+        call vortex_2d(f,xx,yy,b_ell,width,rbound)
   
       case default
         !
