@@ -4,7 +4,7 @@ pro boxbotex_scl,inxy,imxy,imxz,imyz,$
          amax=amax,amin=amin,thick=thick,zpos=zpos,scale=scale,title=title,$
          length=length,xpos=xpos,ip=ip,box=box,$
          centred=centred,shell=shell,r_int=r_int,r_ext=r_ext,$
-         zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr
+         zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr,magnify=magnify,nobottom=nobottom
 ;
 ; n=15
 ; inxy=reform(uuu(*,*,n,0))
@@ -105,6 +105,7 @@ if n_elements(zpos) eq 0 then zpos=1.1
 if n_elements(zof) eq 0 then zof=1.40
 if n_elements(scale) eq 0 then scale=1.0
 if n_elements(length) eq 0 then length=1.0
+if n_elements(magnify) eq 0 then magnify=1.0
 if n_elements(ip) eq 0 then ip=0
 if keyword_set(shell) then begin            
   if n_elements(zrr1) eq 0 or n_elements(zrr2) eq 0 or $
@@ -251,6 +252,8 @@ erase
 ;Set up scaling
 sf=1.25/scale
 if (xmax*npx ge ymax*npy) then maxscale=xmax*npx*sf else maxscale=ymax*npy*sf
+;AB: maxscale adjusted via inverse magnify parameter
+maxscale=maxscale/magnify
 range=[0,maxscale]
 scale3,xrange=range,yrange=range,zrange=range,$
         ax=(360+xrot) mod 360,az=zrot
@@ -274,8 +277,10 @@ if not keyword_set(centred) then begin
   if xrot gt 0 then begin
     polyfill,verts(*,[4,5,6,7]),/t3d,pattern=zimg, $
         image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
-    polyfill,verts(*,[8,9,10,11]),/t3d,pattern=zimgbot, $
-        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+    if not keyword_set(nobottom) then begin
+      polyfill,verts(*,[8,9,10,11]),/t3d,pattern=zimgbot, $
+          image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+    endif
   endif else begin
     polyfill,verts(*,[0,1,2,3]),/t3d,pattern=zimg, $
         image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]]
