@@ -44,6 +44,12 @@ if (! $?_sourceme) then		# called for the fist time?
     if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/bin to PATH"
     set path = ( $path $PENCIL_HOME/bin )
     #  Set IDL path
+    if ($?DXMACROS) then
+      setenv DXMACROS "${PENCIL_HOME}/dx/macros:$DXMACROS"
+    else
+      setenv DXMACROS "${PENCIL_HOME}/dx/macros"
+    endif
+
     if ($?IDL_PATH) then
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:$IDL_PATH"
     else

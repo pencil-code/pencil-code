@@ -53,10 +53,12 @@ if [ -z $_sourceme ]; then	# called for the first time?
     PATH=${PATH}:$PENCIL_HOME/bin
     
     IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
+
+    DXMACROS="${PENCIL_HOME}/dx/macros:${DXMACROS}"
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
-    export PATH IDL_PATH _sourceme
+    export PATH DXMACROS IDL_PATH _sourceme
     
   else
     echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
