@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.31 2003-06-24 11:05:42 dobler Exp $
+;;;  $Id: rall.pro,v 1.32 2003-06-24 11:25:04 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -177,38 +177,10 @@ yy = spread(y, [0,2], [mx,mz])
 zz = spread(z, [0,1], [mx,my])
 rr = sqrt(xx^2+yy^2+zz^2)
 ;
-;  Summarise data
+;  Summarize data
 ;
-xyz = ['x', 'y', 'z']
-fmt = '(A9,A,4G15.6)'
-if (quiet le 2) then begin
-  print, '  var             minval         maxval          mean           rms'
-  ;
-  ;
-  for iv=1,totalvars do begin
-    if (varcontent[iv].skip eq 2) then begin
-      for j=0,2 do begin
-        cmd = "print, FORMAT=fmt,strmid('"+varcontent[iv].idlvar+"_'+xyz["+str(j)+"]+'        ',0,8),'=', " $
-            + "minmax("+varcontent[iv].idlvar+"(*,*,*,"+str(j)+")), " $
-            + "mean("+varcontent[iv].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE), " $
-            + "rms("+varcontent[iv].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE)"
-        if (execute(cmd,1) ne 1) then $
-            message, 'Error printing stats for ' + varcontent[iv].variable
-      endfor
-    endif else begin
-      cmd = "print, FORMAT=fmt,strmid('"+varcontent[iv].idlvar+"        ',0,8),'=', " $
-        + "minmax("+varcontent[iv].idlvar+"(*,*,*)), " $
-        + "mean("+varcontent[iv].idlvar+"(*,*,*),/DOUBLE), " $
-        + "rms("+varcontent[iv].idlvar+"(*,*,*),/DOUBLE)"
-      if (execute(cmd,1) ne 1) then $
-          message, 'Error printing stats for ' + varcontent[iv].variable
-    endelse
-    iv=iv+varcontent[iv].skip
-  endfor
-  ;
-  print,'t = ',t
-;
-endif
+@varcontent_stats
+
 
 ; reset datadir to more reasonable default
 datadir=datatopdir+'/proc0'

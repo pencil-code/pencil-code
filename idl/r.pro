@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.52 2003-06-23 19:11:27 dobler Exp $
+; $Id: r.pro,v 1.53 2003-06-24 11:25:04 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.52 2003-06-23 19:11:27 dobler Exp $
+;;; $Id: r.pro,v 1.53 2003-06-24 11:25:04 dobler Exp $
 
 ;
 ;  read data
@@ -70,7 +70,7 @@ yy = spread(y, [0,2], [mx,mz])
 zz = spread(z, [0,1], [mx,my])
 rr = sqrt(xx^2+yy^2+zz^2)
 ;
-;  Summarise data
+;  Summarize data
 ;
 ;
 @varcontent_stats
