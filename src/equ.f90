@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.219 2004-07-03 02:13:14 theine Exp $
+! $Id: equ.f90,v 1.220 2004-07-16 13:45:38 nilshau Exp $
 
 module Equ
 
@@ -261,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.219 2004-07-03 02:13:14 theine Exp $")
+           "$Id: equ.f90,v 1.220 2004-07-16 13:45:38 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -302,7 +302,7 @@ module Equ
 !
       if (lionization)    call ioncalc(f)
       if (lradiation_ray) call radtransfer(f)
-      if (lvisc_shock.or.lvisc_hyper) then
+      if (lvisc_shock.or.lvisc_hyper.or.lvisc_smagorinsky) then
         if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
       endif
 !  Turbulence parameters (alpha, scale height, etc.)      
@@ -516,6 +516,12 @@ module Equ
 !  m,n loop.
 !      
       if (lvisc_hyper .and. ldiagnos) fname(i_epsK)=epsK_hyper
+!
+!  in case of lvisc_LES=true nu_smag is calculated for the whole array 
+!  at not just for one pencil, it must therefore be added outside the
+!  m,n loop.
+!       
+      if (lvisc_LES .and. ldiagnos) fname(i_nu_LES)=nu_LES
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step

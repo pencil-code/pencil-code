@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.243 2004-07-08 12:01:47 ajohan Exp $
+! $Id: cdata.f90,v 1.244 2004-07-16 13:45:38 nilshau Exp $
 
 module Cdata
 
@@ -35,7 +35,7 @@ module Cdata
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_ref=0.0
-  real :: ttransient=0.
+  real :: ttransient=0.,nu_LES=0.
   real, dimension (2) :: fran1,fran2
 
   real, dimension(3) :: border_frac=0.0
@@ -72,7 +72,7 @@ module Cdata
   integer :: igg=0,igx=0,igy=0,igz=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper=0
-  integer :: iecr=0
+  integer :: iecr=0,ismagorinsky
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
   integer :: nt=1000000,it1=10
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
@@ -120,7 +120,7 @@ module Cdata
 
   ! other variables (needs to be consistent with reset list in register.90)
   integer :: i_t=0,i_it=0,i_dt=0,i_walltime=0,i_timeperstep=0
-  integer :: i_rcylmphi=0,i_phimphi=0,i_zmphi=0,i_rmphi=0
+  integer :: i_rcylmphi=0,i_phimphi=0,i_zmphi=0,i_rmphi=0, i_nu_LES
 
   !  initialization of various switches; actual settings depends on the
   !  modules that are linked in (see Makefile.local) and can, in some cases,
@@ -145,7 +145,8 @@ module Cdata
   logical :: lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
-  logical :: lvisc_shock=.false.,lvisc_hyper=.false.
+  logical :: lvisc_shock=.false.,lvisc_hyper=.false.,lvisc_LES=.false.
+  logical :: lvisc_smagorinsky
   logical :: lcosmicray=.false.
   logical :: lselfgravity=.false.
   logical :: lmonolithic_io=.false.

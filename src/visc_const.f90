@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.34 2004-07-15 18:36:16 brandenb Exp $
+! $Id: visc_const.f90,v 1.35 2004-07-16 13:45:38 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -34,6 +34,9 @@ module Viscosity
   ! run parameters
   namelist /viscosity_run_pars/ nu, ivisc, nu_mol, C_smag
  
+  ! other variables (needs to be consistent with reset list below)
+  !integer :: i_nu_LES=0
+
   contains
 
 !***********************************************************************
@@ -60,7 +63,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.34 2004-07-15 18:36:16 brandenb Exp $")
+           "$Id: visc_const.f90,v 1.35 2004-07-16 13:45:38 nilshau Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -78,7 +81,7 @@ module Viscosity
 
       use Cdata
 
-      if ((nu /= 0. .and. ivisc=='nu-const') .or. (ivisc=='smagorinsky')) then
+      if ((nu /= 0. .and. ivisc=='nu-const') .or. (ivisc=='smagorinsky_simplified')) then
          lneed_sij=.true.
          lneed_glnrho=.true.
       endif
@@ -103,6 +106,7 @@ module Viscosity
 !
       if (lreset) then
         i_dtnu=0
+        i_nu_LES=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -110,6 +114,7 @@ module Viscosity
       if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtnu',i_dtnu)
+        call parse_name(iname,cname(iname),cform(iname),'nu_LES',i_nu_LES)
       enddo
 !
 !  write column where which ionization variable is stored
@@ -117,6 +122,7 @@ module Viscosity
       if (present(lwrite)) then
         if (lwrite) then
           write(3,*) 'i_dtnu=',i_dtnu
+          write(3,*) 'i_nu_LES=',i_nu_LES
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'ishock=',ishock
           write(3,*) 'itest=',0
@@ -248,26 +254,13 @@ module Viscosity
 !          call max_for_dt(nu,maxdiffus)
           diffus_nu=max(diffus_nu,nu*dxyz_2)
 
-        case ('smagorinsky')
-!AB: the 2S.gradnu_smag is currently not implemented.
-!AB: Since this involves out-of-pencil derivatives, we may want
-!AB: to have this term optional (smagorinsky_simplified).
-!AB: Maybe the damage from smagorinsky_simplified is minor.
-!NILS: We then need something like the visc_shock or visc_hyper
-!NILS: modules where we allocate some auxilliary chunks of memory.
-!NILS: I guess it would be a good idea to call such a module for example 
-!NILS: visc_LES
-!NILS: such that we can use that module for possible other large eddy 
-!NILS: simulations aswell?
-!AB: visc_LES sounds good, although I would wait with renaming modules.
-!AB: Some LES may require more memory, and should be in a separate module.
-!AB: Thus, visc_smagorinsky is ok for the time being.
-!AB: But we can still keep the smagorinsky_simplified in visc_const.
+        case ('smagorinsky_simplified')
           !
-          !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_smag
-          !  where nu_smag=(C_smag*dxmax)**2*sqrt(SS)
+          !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
+          !  where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS)
           !
           if (headtt) print*,'viscous force: Smagorinsky'
+          if (headtt) lvisc_LES=.true.
           if(ldensity) then
             call multm2_mn(sij,sij2)
             SS12=sqrt(2*sij2)
@@ -278,13 +271,22 @@ module Viscosity
             tmp1=del2u+1./3.*graddivu
             call multsv_mn(nu_smag,tmp1,tmp2)
             fvisc=2*nusglnrho+tmp2
-            diffus_nu=max(diffus_nu,nu_smag*dxyz_2)!Should we still use nu here
-!AB: yes, I think it is still a good idea to allow nu to be added.
-          else
+            diffus_nu=max(diffus_nu,nu_smag*dxyz_2)
+            !
+            ! Add ordinary viscosity if nu /= 0
+            !
+            if (nu /= 0.) then
+            !
+            !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+            !  -- the correct expression for nu=const
+            !
+               fvisc=fvisc+2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
+               diffus_nu=max(diffus_nu,nu*dxyz_2)
+            endif
+         else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='smagorinsky'"
-          endif
-          
+         endif
         case default
           !
           !  Catch unknown values
@@ -301,8 +303,13 @@ module Viscosity
 !
 !  set viscous time step
 !
-      if (ldiagnos.and.i_dtnu/=0) then
-        call max_mn_name(diffus_nu/cdtv,i_dtnu,l_dt=.true.)
+      if (ldiagnos) then
+         if (i_dtnu/=0) then
+            call max_mn_name(diffus_nu/cdtv,i_dtnu,l_dt=.true.)
+         endif
+         if (i_nu_LES /= 0) then
+            call sum_mn_name(nu_smag,i_nu_LES)
+         endif
       endif
 !
       if(ip==0) print*,divu  !(keep compiler quiet)

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.181 2004-07-14 19:32:15 dobler Exp $
+! $Id: hydro.f90,v 1.182 2004-07-16 13:45:38 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -126,7 +126,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.181 2004-07-14 19:32:15 dobler Exp $")
+           "$Id: hydro.f90,v 1.182 2004-07-16 13:45:38 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -626,8 +626,9 @@ module Hydro
 !
         if (i_epsK/=0) then
            if (.not. lvisc_hyper) then
-              if (ivisc .eq. 'smagorinsky') then
-                 call multm2_mn(sij,SS12)            
+              if (ivisc .eq. 'smagorinsky_simplified') then
+                 call multm2_mn(sij,sij2)
+                 SS12=sqrt(2*sij2)
                  !nu_smag=(C_smag*dxmax)**2.*SS12     
               endif
               rho=exp(f(l1:l2,m,n,ilnrho))
