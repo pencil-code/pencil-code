@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.51 2004-03-14 13:58:59 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.52 2004-03-19 15:27:45 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -94,7 +94,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.51 2004-03-14 13:58:59 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.52 2004-03-19 15:27:45 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -317,15 +317,17 @@ module Ionization
 !
     end subroutine perturb_mass
 !***********************************************************************
-    subroutine getdensity(EE,lnTT,yH,rho)
+    subroutine getdensity(EE,TT,yH,rho)
 
       use Mpicomm, only: stop_it
       
-      real, intent(in) :: EE,lnTT,yH
+      real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
+      real :: lnrho
+print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
+      lnrho = log(EE) - log(1.5*(1.+yH+xHe)*ss_ion*TT + yH*ee_ion)
 
-      rho = EE / ((1.5*(1.+yH+xHe)*exp(lnTT) + yH*TT_ion) * ss_ion) 
-
+      rho=exp(max(lnrho,-15.))
     end subroutine getdensity
 !***********************************************************************
     subroutine getentropy_pencil(lnrho,lnTT,ss)
@@ -495,7 +497,7 @@ module Ionization
       case (ilnrho_ee)
         lnrho_ = var1
         ee_    = var2
-        TT_    = (2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe)
+        TT_    = (2.0/3.0)*TT_ion*(ee_/ee_ion-yH0)/(1+yH0+xHe)
         lnTT_  = log(TT_)
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         rho_   = exp(lnrho_)
