@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.35 2004-01-30 15:57:02 mcmillan Exp $
+! $Id: cparam.f90,v 1.36 2004-01-30 16:12:19 dobler Exp $
 
 module Cparam
 
@@ -38,10 +38,6 @@ module Cparam
 !  use here symbol mreduce, use nreduce in call
 !
   integer, parameter :: mreduce=6
-!
-! default size for dust index arrays 
-  integer, parameter :: ndustspec=1  
-!
   integer :: ip=14
 !
 !  length of strings for boundary condition,
