@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.28 2004-10-27 14:52:56 ajohan Exp $
+! $Id: nodensity.f90,v 1.29 2004-10-27 14:56:24 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -51,7 +51,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.28 2004-10-27 14:52:56 ajohan Exp $")
+           "$Id: nodensity.f90,v 1.29 2004-10-27 14:56:24 ajohan Exp $")
 !
 !ajwm Necessary? added incase
       gamma=1.
@@ -127,7 +127,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gshock
-      real, dimension (nx) :: lnrho,divu,shock
+      real, dimension (nx) :: lnrho,rho,divu,shock
 !
 !  will be accessed in noentropy
 !
