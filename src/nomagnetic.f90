@@ -10,6 +10,9 @@ module Magnetic
   namelist /magnetic_init_pars/ dummy
   namelist /magnetic_run_pars/  dummy
 
+  ! run parameters
+  real :: va2=0.
+
   contains
 
 !***********************************************************************
@@ -34,8 +37,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.3 $", &
-           "$Date: 2002-05-11 12:18:48 $")
+           "$Revision: 1.4 $", &
+           "$Date: 2002-05-19 07:55:25 $")
 !
     endsubroutine register_aa
 !***********************************************************************

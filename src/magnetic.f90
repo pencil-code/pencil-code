@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.21 2002-05-13 18:52:54 dobler Exp $
+! $Id: magnetic.f90,v 1.22 2002-05-19 07:55:25 brandenb Exp $
 
 module Magnetic
 
@@ -20,6 +20,7 @@ module Magnetic
 
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
+  real, dimension (nx) :: va2
   real :: eta=0.
 
   namelist /magnetic_run_pars/ &
@@ -65,8 +66,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.21 $", &
-           "$Date: 2002-05-13 18:52:54 $")
+           "$Revision: 1.22 $", &
+           "$Date: 2002-05-19 07:55:25 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -150,14 +151,12 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
 !  magnetic field evolution
 !
-!  1-may-02/wolf: adapted from nils' version
-!
-!
 !  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J
 !  add JxB/rho to momentum equation
 !  add eta mu_0 J2/rho to entropy equation
 !
-!  22-nov-01/nils erland
+!  22-nov-01/nils: coded
+!   1-may-02/wolf: adapted for pencil_modular
 !
       use Cdata
       use Sub
@@ -165,14 +164,17 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A,dAdy,shearA
-      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0,b2
+      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0,b2,b2tot
 !
     !  aa=f(l1:l2,m,n,iax:iaz)
+print*,'calculate bb'
       call curl(f,iaa,bb)
 !
 !  calculate max and rms field
-!  at the moment (and in future?) calculate max(b^2) and mean(b^2).
+!  at the moment (and in future?) calculate max(b^2) and mean(b^2), w/o sqrt.
+!  Here we don't want to include the imposed field (if there is any)
 !
+print*,'enter diagnos in magnet'
       if (ldiagnos) then
         call dot2_mn(bb,b2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms)
@@ -191,9 +193,13 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
 !  calculating JxB/rho, uxB, J^2 and var1
 !
+print*,'cross product'
       call cross_mn(jj,bb,JxB)
+print*,'multiply with rho1'
       call multsv_mn(JxB,rho1,JxBr)
+print*,'uxB'
       call cross_mn(uu,bb,uxB)
+print*,'calculate J2'
       call dot2_mn(jj,J2)
     !  var1=qshear*Omega*aa(:,2)
 !
@@ -205,10 +211,12 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
     !  df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
     !  df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
+print*,'add to daa'
       df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)+uxB+eta*del2A
 !
 !  add JxB/rho to momentum equation
 !
+print*,'add JxBr'
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
 !
 !  add eta mu_0 J2/rho to entropy equation
@@ -216,9 +224,18 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
       if (ient>0) df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
 !
+!  For the timestep calculation, need maximum Alfven speed.
+!  This must include the imposed field (if there is any)
+!
+        if (lfirst.and.ldt) then
+          b2tot=b2+B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+          va2=b2tot*rho1
+        endif
+!
 !  calculate max and rms current density
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
+print*,'diagnos on J'
       if (ldiagnos) then
         call dot2_mn(jj,j2)
         if (i_jrms/=0) call sum_mn_name(j2,i_jrms)

@@ -37,7 +37,7 @@ module Equ
       if (lmagnetic) read(1,NML=magnetic_run_pars)
       close(1)
       cs20=cs0**2 !(goes into cdata module)
-      ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
+      ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma   !!AB: this looks like it belongs to entropy
 !
 !  Write data to file for IDL
 !
@@ -348,8 +348,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.39 $", &
-           "$Date: 2002-05-11 12:18:48 $")
+           "$Revision: 1.40 $", &
+           "$Date: 2002-05-19 07:55:25 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -375,17 +375,19 @@ module Equ
 !
 !  do all the neccessary derivatives here
 !
+print*,'before gij; m,n=',m,n
         call gij(f,iuu,uij)
         call grad(f,ilnrho,glnrho)
 !
 !  coordinates are needed all the time
 !
+print*,'coordinates; m,n=',m,n
         x_mn = x(l1:l2)
         y_mn = spread(y(m),1,nx)
         z_mn = spread(z(n),1,nx)
         r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)
 !
-!  rho1 (=1/rho) is needed by viscous term and heat conduction
+!  rho1 (=1/rho) is needed for viscous term, heat conduction, and Lorentz force
 !
         rho1=exp(-f(l1:l2,m,n,ilnrho))
 !
@@ -401,12 +403,19 @@ module Equ
           enddo
         else
           if (headtt) print*,'reduced viscous force'
+print*,'reduced viscous force 2'
+print*,'reduced viscous force 2, f(22,22,22,1)=',f(22,22,22,1)
+print*,'ux=',f(:,m,n,1)
+print*,'uy=',f(:,m,n,2)
+print*,'uz=',f(:,m,n,3)
           call del2v(f,iuu,del2u)
+if (m==4.and.n==4) print*,'del2u=',del2u
           fvisc=nu*del2u
         endif
 !
 !  abbreviations
 !
+print*,'set uu; m,n=',m,n
         uu=f(l1:l2,m,n,iux:iuz)
 !
 !  auxiliary terms
@@ -423,20 +432,26 @@ module Equ
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - ugu + fvisc
 !
 !  entropy equation
-!  needs to be called once even with noentropy, because it is here that
-!  we set cs2 and TT1
+!  needs to be called every time even with noentropy,
+!  because it is here that we set cs2, TT1, and gpprho
 !
-        if (lentropy .or. headtt) then
+print*,'before entropy; m,n=',m,n
+!       if (lentropy .or. headtt) then
           call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
-        endif
-        if (lentropy) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
+!       endif
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
+        !!if (lentropy) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
+print*,'after entropy; gpprho',m,n
+if (m==21.and.n==11) print*,'after entropy; gpprho',gpprho
 !
 !  thermal part of eq. of motion (pressure force)
 !
 !
 !  magnetic part
 !
+print*,'enter daa_dt'
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,cs2)
+print*,'after daa_dt'
 !
 !  damping terms (artificial, but sometimes useful):
 !
@@ -472,6 +487,7 @@ module Equ
 !
 !  continuity equation
 !
+print*,'continuity'
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
 !
 !  mass diffusion
@@ -483,6 +499,7 @@ module Equ
 !
 !  write slices for animation
 !
+print*,'slizes'
         if (n.eq.iz) then
           divu_slice(:,m-m1+1)=divu
           do j=1,3
@@ -491,24 +508,30 @@ module Equ
         endif
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
+!  va2 is set in magnetic (or nomagnetic)
 !  In rms_mn sum of all u^2 (etc) is accumulated
 !  Calculate maximum advection speed for timestep; needs to be done at
-! every step
+!  the first substep of each time step
 !
+print*,'calculate UUmax'
         if (lfirst.and.ldt) then
           diff = nu
           if (lentropy)  diff = max(diff, chi)
-          call max_mn(u2+cs2,UUmax)
+if (m==iy.and.n==iz) print*,'u2=',u2
+if (m==iy.and.n==iz) print*,'va2=',va2
+          call max_mn(u2+cs2+va2,UUmax)
           call max_mn(diff,viscmax)
         endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
 !
+print*,'enter diagonos; m,n=',m,n
         if (ldiagnos) then
           t_diag = t            ! diagnostic quantities are for this time
           if (i_urms/=0) call sum_mn_name(u2,i_urms)
           if (i_umax/=0) call max_mn_name(u2,i_umax)
+print*,'inside diagonos; m,n=',m,n
 !         oo(:,1)=uij(:,3,2)-uij(:,2,3)
 !         oo(:,2)=uij(:,1,3)-uij(:,3,1)
 !         oo(:,3)=uij(:,2,1)-uij(:,1,2)

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.26 2002-05-13 18:52:54 dobler Exp $
+! $Id: start.f90,v 1.27 2002-05-19 07:55:25 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,8 +34,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.26 $", &
-             "$Date: 2002-05-13 18:52:54 $")
+             "$Revision: 1.27 $", &
+             "$Date: 2002-05-19 07:55:25 $")
 !
 !  read input parameter (by each processor)
 !
@@ -123,7 +123,7 @@
 !
         seed(1)=1000
         call outpui(trim(directory)//'/seed.dat',seed,1)
-        if (iproc < 10) print*,'iproc,seed=',iproc,seed
+        if (iproc < 10) print*,'iproc,seed(1:2)=',iproc,seed
 !
         call mpifinalize
 !

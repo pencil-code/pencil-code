@@ -38,8 +38,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-05-11 12:18:48 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-05-19 07:55:25 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -64,6 +64,7 @@ module Entropy
     subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
+!  19-may-02/axel: added isothermal pressure gradient
 !
       use Cdata
 !
@@ -74,6 +75,9 @@ module Entropy
       real, dimension (nx) :: cs2,TT1
       logical, save :: first=.true.
 !
+      intent(in) :: f,uu,uij,divu,rho1,glnrho
+      intent(out) :: df,gpprho,cs2,TT1,chi
+!
       if (first) then
         cs2 = cs20
         TT1 = 1./cs20           ! Assumes R/mu = 1, ehich is probably OK,
@@ -83,7 +87,9 @@ module Entropy
         gamma = 1
         first=.false.
       else
-        print*,"Noentropy dss_dt: This can't happen"
+        !print*,"Noentropy dss_dt: This can't happen"
+        print*,"Noentropy dss_dt: calculate entropy gradient"
+        gpprho=cs20*glnrho
       endif
 !
     endsubroutine dss_dt
@@ -92,7 +98,8 @@ module Entropy
 !
 !  calculate the heat conductivity lambda
 !  NB: if you modify this profile, you *must* adapt gradloghcond below.
-!  23-jan-2002/wolf: coded
+!
+!  23-jan-02/wolf: coded
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
@@ -108,7 +115,8 @@ module Entropy
 !
 !  calculate grad(log lambda), where lambda is the heat conductivity
 !  NB: *Must* be in sync with heatcond() above.
-!  23-jan-2002/wolf: coded
+!
+!  23-jan-02/wolf: coded
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &

@@ -40,7 +40,6 @@ module Register
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Initialize: nvar /= mvar')
       endif
-
 !
     endsubroutine initialize
 !***********************************************************************

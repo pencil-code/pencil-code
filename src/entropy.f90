@@ -54,8 +54,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.41 $", &
-           "$Date: 2002-05-13 18:52:54 $")
+           "$Revision: 1.42 $", &
+           "$Date: 2002-05-19 07:55:25 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -178,8 +178,9 @@ use IO
       intent(in) :: f,uu,uij,divu,rho1,glnrho
       intent(out) :: df,gpprho,cs2,TT1,chi
 !
-!  coordinates
+!  begin by calculating all necessary dervatives
 !
+      if (headtt) print*,'just entered dss_dt'
       call grad(f,ient,gss)
       call del2(f,ient,del2ss)
       call del2(f,ilnrho,del2lnrho)

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.23 2002-05-04 12:55:19 brandenb Exp $
+! $Id: run.f90,v 1.24 2002-05-19 07:55:25 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -23,27 +23,26 @@
         use Timestep
 !
         implicit none
-!
         real, dimension (mx,my,mz,mvar) :: f,df
         integer :: time1,time2,count_rate
-!        real :: time1,time2     ! cpu_time can measure longer times than
-                                ! system clock, but takes 15 seconds to
-                                ! calibrate at startup with Intel F95
         logical :: stop=.false.,reload=.false.
-!     
+        real :: Wall_clock_time
+!
 !  initialize MPI
 !
-!        call siginit
-!        call signonbrutal
+!       call siginit
+!       call signonbrutal
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.23 $", &
-             "$Date: 2002-05-04 12:55:19 $")
+             "$Revision: 1.24 $", &
+             "$Date: 2002-05-19 07:55:25 $")
 !
-        call initialize         ! register modules, etc.
+!  initialize MPI and register physics modules
+!
+        call initialize
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -83,7 +82,7 @@
         if (iforce/=0) then
           if (lroot) print*,'reading seed file'
           call inpui(trim(directory)//'/seed.dat',seed,2)
-          if (iproc < 10) print*,'iproc,seed=',iproc,seed
+          if (iproc < 10) print*,'iproc,seed(1:2)=',iproc,seed
           call random_seed(put=seed)
         endif
 !
@@ -127,7 +126,7 @@
               reload = .false.
             endif
           endif
-
+!
           if (iforce==1) call forcing1
           if (iforce==2) call forcing2
 !
@@ -135,11 +134,14 @@
 !
           call rk_2n(f,df)
           if(lout) call prints
+print*,'after prints'
           call wsnap(trim(directory)//'/VAR',f)
           call wvid(trim(directory))
+print*,'after wvid'
 !
 !  save snapshot every isnap steps in case the run gets interrupted
 !
+print*,'before writing ghost zones for snapshot'
           if (mod(it,isave).eq.0) then
 !  update ghost zones for var.dat (cheap, since done infrequently)
             call initiate_isendrcv_bdry(f)
@@ -147,6 +149,7 @@
 !  write data
             call output(trim(directory)//'/var.dat',f,mvar)
           endif
+print*,'after writing ghost zones for snapshot'
 !
           headt=.false.
           if (it>=nt) exit Time_loop
@@ -155,6 +158,7 @@
             exit Time_loop
           endif
         enddo Time_loop
+print*,'end of time loop'
         if(lroot) call system_clock(count=time2)
 !        if(lroot) call cpu_time(time2)
 !
@@ -162,10 +166,12 @@
 !  dvar is written for analysis purposes only
 !
 !  update ghost zones for var.dat (cheap, since done once)
+print*,'set ghost zones 2'
         call initiate_isendrcv_bdry(f)
         call finalise_isendrcv_bdry(f)
         call output(trim(directory)//'/var.dat',f,mvar)
         if (ip<=10) call output(trim(directory)//'/dvar.dat',df,mvar)
+print*,'after ghost zones 2'
 !
 !  write seed parameters (only if forcing is turned on)
 !
@@ -178,9 +184,10 @@
 !  for diagnostic purposes
 !
         if(lroot) &
-             print*,'Wall clock time=',(time2-time1)/real(count_rate), &
-                    ' (+/- ', 1./count_rate,')'
-             print*,'time/step/pt [microsec]=',(time2-time1)/real(count_rate)/(it-1)/mw/1e-6
+             Wall_clock_time=(time2-time1)/real(count_rate)
+             print*,'Wall clock time=',Wall_clock_time,' (+/- ', 1./count_rate,')'
+             if (it>1) print*,'time/step/pt [microsec]=',Wall_clock_time/(it-1)/mw/1e-6
         call mpifinalize
 !
+print*,'end of run'
       endprogram run
