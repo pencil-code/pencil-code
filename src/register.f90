@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2002-04-10 16:26:31 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2002-04-29 19:58:04 $")
 !
 !
       if (nvar > mvar) then
@@ -147,9 +147,11 @@ module Register
         !
       case(2)               ! oblique sound wave
         if (lroot) print*,'oblique sound wave'
-        f(:,:,:,ilnrho)=ampl*cos(xx+2*yy)*sqrt(5.)
-        f(:,:,:,iux)=ampl*cos(xx+2*yy)
-        f(:,:,:,iuy)=ampl*cos(xx+2*yy)*2.
+        tmp = 2*pi*(xx/Lx+2*yy/Ly-zz/Lz)    ! phase
+        f(:,:,:,ilnrho)=ampl*cos(tmp)*sqrt(1.**2+2.**2+1.**2)/sqrt(gamma)
+        f(:,:,:,iux)=ampl*cos(tmp)
+        f(:,:,:,iuy)=ampl*cos(tmp)*2.
+        f(:,:,:,iuz)=ampl*cos(tmp)*(-1)
       case(3)               ! uu = (sin 2x, sin 3y , cos z)
         if (lroot) print*,'uu harmonic (what is this good for?)'
         f(:,:,:,iux)=spread(spread(sin(2*x),2,my),3,mz)* &
