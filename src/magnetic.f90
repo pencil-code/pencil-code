@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.68 2002-07-09 18:37:49 dobler Exp $
+! $Id: magnetic.f90,v 1.69 2002-07-16 08:29:44 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -21,7 +21,7 @@ module Magnetic
   real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5,z0aa=0.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa=0.,ky_aa=0.,kz_aa=0.
-  logical :: lpress_equil
+  logical :: lpress_equil=.false.
   character(len=40) :: kinflow=''
 
   namelist /magnetic_init_pars/ &
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.68 2002-07-09 18:37:49 dobler Exp $")
+           "$Id: magnetic.f90,v 1.69 2002-07-16 08:29:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

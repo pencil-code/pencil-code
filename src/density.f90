@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.32 2002-07-12 00:22:59 brandenb Exp $
+! $Id: density.f90,v 1.33 2002-07-16 08:29:44 dobler Exp $
 
 module Density
 
@@ -12,9 +12,9 @@ module Density
 
   real :: cs0=1., rho0=1.
   real :: cs20, lnrho0
-  real :: ampllnrho=1., gamma=5./3., widthlnrho=.1
+  real :: ampllnrho=0., gamma=5./3., widthlnrho=.1
   real :: rho_left=1., rho_right=1., cdiffrho=0.
-  real :: cs2bot, cs2top, gamma1
+  real :: cs2bot=1., cs2top=1., gamma1
   real :: radius_lnrho=.5,kx_lnrho=0.,ky_lnrho=0.,kz_lnrho=0.
   real :: mpoly=1.5
   real :: eps_planet=.5
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.32 2002-07-12 00:22:59 brandenb Exp $")
+           "$Id: density.f90,v 1.33 2002-07-16 08:29:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

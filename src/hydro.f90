@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.46 2002-07-15 14:04:36 nilshau Exp $
+! $Id: hydro.f90,v 1.47 2002-07-16 08:29:44 dobler Exp $
 
 module Hydro
 
@@ -12,7 +12,7 @@ module Hydro
 
   ! init parameters
   real :: ampluu=0., widthuu=.1, urand=0., kx_uu=0., ky_uu=0., kz_uu=0.
-  real :: uu_left=1.,uu_right=1.,uu_lower=1.,uu_upper=1.
+  real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   character (len=labellen) :: inituu='zero'
 
   namelist /hydro_init_pars/ &
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.46 2002-07-15 14:04:36 nilshau Exp $")
+           "$Id: hydro.f90,v 1.47 2002-07-16 08:29:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.50 2002-07-15 13:10:06 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.51 2002-07-16 08:29:44 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -184,7 +184,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.50 $ $}
+\date{\today,~ $ $Revision: 1.51 $ $}
 
 % ====================================================================== %
 
@@ -213,7 +213,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.50 $ $}
+  \emph{\today,~ $ $Revision: 1.51 $ $}
 
 
 \end{center}
@@ -332,6 +332,19 @@ The requirements for using the Pencil-MPI code are modest: you can use it
 on any Unix system with a F90/F95 compiler. If you have \name{IDL} as
 well, you will be able to visualize the results, but other tools such as
 \name{DX} (OpenDX, data explorer) can also be used.
+
+\bigskip
+
+If you want to make creative use of the code, this manual will contain far
+too little information.
+Its major aim is to give you an idea of the way the code is organized, so
+you can more efficinetly \emph{read the source code}.
+For many enhancments you would like to add, you can follow the
+lines of other variables, functions, diagnostics, equations etc.~ which we
+have already implemented.
+Remember: \cmd{grep} is one of your best friends when you want to
+understand how certain variables or functions are used in the code.
+
 
 \bigskip
 
@@ -1119,8 +1132,8 @@ double precision, $\varepsilon\approx10^{-15}$.
                  $u_i \mapsto u_i \times u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
                  in both cases, ${\cal U}_{[0.5,0.5]}$ is a uniformly
                  distributed random variable on the interval $[-0.5,0.5]$.\\
-  \var{uu_left} [$1.$], \\
-  \var{uu_right} [$1.$]
+  \var{uu_left} [$0.$], \\
+  \var{uu_right} [$0.$]
                & needed for \code{inituu='shock-tube'}.\\
 %
 \midrule
@@ -1146,14 +1159,14 @@ double precision, $\varepsilon\approx10^{-15}$.
                & \label{cs0-rho0-init}%
                  reference values of sound speed and density,
                  i.\,e.~values at height \var{zref}. \\
-  \var{ampllnrho} [$1.$], \\
+  \var{ampllnrho} [$0.$], \\
   \var{widthlnrho} [$0.1$]
                & amplitude and width for some types of initial densities. \\
   \var{rho_left} [$1.$], \\
   \var{rho_right} [$1.$]
                & needed for \code{initlnrho='shock-tube'}. \\
-  \var{cs2bot} [--], \\
-  \var{cs2top} [--]
+  \var{cs2bot} [$1.$], \\
+  \var{cs2top} [$1.$]
                & sound speed at bottom and top. Needed for some types of
                  stratification. \\
 %
@@ -1173,8 +1186,8 @@ double precision, $\varepsilon\approx10^{-15}$.
                  or linear profile $g_z = \texttt{gravz}\cdot z$
                  (\code{grav_profile='linear'}, for accretion discs and
                  similar). \\
-  \var{z1} [--], \\
-  \var{z2} [--]
+  \var{z1} [$0.$], \\
+  \var{z2} [$1.$]
                & specific to the solar convection case
                  \code{initlnrho='piecew-poly'}.
                  The stable layer is $z_0 < z < z_1$, the unstable layer
@@ -1228,9 +1241,9 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{whcond} [$2\varepsilon$]
                & width of transition region between layers for
                  \code{initss=piecew-poly}. \\
-  \var{mpoly0} [--], \\
-  \var{mpoly1} [--], \\
-  \var{mpoly2} [--]
+  \var{mpoly0} [$1.5$], \\
+  \var{mpoly1} [$1.5$], \\
+  \var{mpoly2} [$1.5$]
                & specific to the solar convection case
                  \code{initss=piecew-poly}:
                  polytropic indices of unstable (\var{mpoly0}), stable
@@ -1240,7 +1253,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                  thermal (plus hydrostatic) equilibrium is assumed for all
                  three layers, which results in a piecewise polytropic
                  stratification. \\
-  \var{isothtop} [--]
+  \var{isothtop} [$0$]
                & flag for isothermal top layer for \code{initss=piecew-poly}. \\
   \var{khor_ss} [$1.$]
                & horizontal wave number for \code{initss=hexagonal} \\
@@ -1272,9 +1285,9 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \code{`Beltrami-x'} ($x$-dependent Beltrami wave),
                  \code{`Beltrami-y'} ($y$-dependent Beltrami wave),
                  \code{`Beltrami-z'} ($z$-dependent Beltrami wave). \\
-  \var{amplaa} []
+  \var{amplaa} [$0.$]
                & amplitude for some types of initial magnetic fields. \\
-  \var{amplaa2} []
+  \var{amplaa2} [$0.$]
                & amplitude for some types of magnetic field perturbation. \\
   \var{fring\{1,2\}} [$0.$], \\
   \var{Iring\{1,2\}} [$0.$], \\
@@ -1294,7 +1307,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{ky_aa} [$1.$], \\
   \var{kz_aa} [$1.$]
                & wavenumbers used by some initial fields. \\
-  \var{lpress_equil} [--]
+  \var{lpress_equil} [F]
                & flag for pressure equilibrium (used by some initial fields) \\
 %
 \midrule
@@ -1424,7 +1437,7 @@ the latest information, you should have a look at the code.
 \midrule
   \var{nu} [$0.$]
                & kinematical viscosity. \\
-  \var{ivisc} [--]
+  \var{ivisc} [$0$]
                & select form of viscous term:
                  \begin{description}
                  \item[\code{ivisc=0}] Simplified viscous force
@@ -1440,7 +1453,7 @@ the latest information, you should have a look at the code.
   \var{Omega} [$0.$]
                & magnitude of angular velocity for Coriolis force (note:
                  no centrifugal force is implemented). \\
-  \var{theta} [$$]
+  \var{theta} [$0.$]
                & direction of angular velocity ($\vartheta=0$ for
                  $z$-direction, $\vartheta=\pi/2$ for $x$-direction. \\
   \var{tinit} [$0.$]
@@ -1495,11 +1508,11 @@ the latest information, you should have a look at the code.
   \var{isothtop} [start]
                & flag for isothermal top layer for solar convection case.
                  See start parameters, p.~\pageref{hcond0123-init}. \\
-  \var{cheat} [--], \\
-  \var{wheat} [--]
+  \var{cheat} [$0.$], \\
+  \var{wheat} [$0.1$]
                & strength and width of heating region. \\
   \var{cool} [$0.$], \\
-  \var{wcool} [--]
+  \var{wcool} [$0.1$]
                & strength and width of cooling region. \\
   \var{Fheat} [start]
                & heat flux for boundary condition \option{c1}.
@@ -1545,7 +1558,7 @@ the latest information, you should have a look at the code.
 \midrule
   \var{pscalar_diff} [$0.$]
                & diffusion for passive scalar concentration $c$. \\
-  \var{tensor_pscalar_diff} [--]
+  \var{tensor_pscalar_diff} [$0.$]
                & coefficient for non-isotropic diffusion of passive scalar. \\
 %
 \midrule
@@ -1604,7 +1617,7 @@ the latest information, you should have a look at the code.
 % ---------------------------------------------------------------------- %
 
 
-\paragraph{The time step}
+\subsection{The time step}
 \label{time-step}
 
 The time step is normally specified as Courant time step through the
@@ -1638,6 +1651,56 @@ diffusivities, use the run parameter \var{dt} (see p.~\ref{dt-run}).
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Boundary conditions}
+\label{boundconds}
+
+Boundary conditions are implemented through three layers of
+\name{ghost points} on either boundary, which is a quite natural choice
+for an MPI code that uses ghost zones for representing values located on
+the neighboring processors anyway.
+The desired type of boundary condition is set through the parameters
+\var{bc\{x,y,z\}} in \file{run.in}; the nomenclature used is as follows.
+Set \var{bc\{x,y,z\}} to a sequence of letters like
+\begin{alltt}
+  bcx = 'p','p','p', 'p',  'p'
+\end{alltt}
+for periodic boundaries, or
+\begin{alltt}
+  bcz = 's','s','a','a2','c1:c2'
+\end{alltt}
+for non-periodic ones.
+Each element corresponds to one of the
+variables, which are
+$u_x$, $u_y$, $u_z$, $\ln\varrho$, $s/c_p$, $A_x$, $A_x$, $A_x$, $\ln c$
+(minus the unused variables) in this order.
+\begin{description}
+\item[\option{p}] periodic boundary condition
+\item[\option{a}] antisymmetric condition w.\,r.\,t.~the
+  boundary, i.\,e.~vanishing value
+\item[\option{s}] symmetric condition w.\,r.\,t.~the
+  boundary, i.\,e.~vanishing first derivative
+\item[\option{a2}] antisymmetry w.\,r.\,t.~the
+  arbitrary value on the boundary, i.\,e.~vanishing
+  second derivative
+\item[\option{c1}] special boundary condition for
+  $\ln\varrho$ and $s$: constant heat flux through the
+  boundary
+\item[\option{c2}] special boundary condition for
+  $\ln\varrho$ and $s$: constant temperature at the
+  boundary
+\item[\option{ce}] special boundary condition for
+  $s$: constant temperature at the boundary for
+  arbitrarily set $\ln\varrho$
+\item[\option{db}] low-order one-sided derivatives (``no
+    boundary condition'') for density
+\end{description}
+The special syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
+boundary condition $a$ at the left/lower boundary, but
+$b$ at the right/upper one.
+
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Output files}
 
 \begin{itemize}
@@ -1659,7 +1722,6 @@ diffusivities, use the run parameter \var{dt} (see p.~\ref{dt-run}).
       \var{entropy} or \var{noentropy}, etc, are invoked.
 \item \file{tmp/param.nml}
 \end{itemize}
-
 
 
 % ---------------------------------------------------------------------- %
@@ -1828,54 +1890,6 @@ A better way to achieve isothermality is to use the \name{noentropy}
 module.
 
 
-% ====================================================================== %
-
-\section{Boundary conditions}
-\label{boundconds}
-Boundary conditions are implemented through three layers of
-\name{ghost points} on either boundary, which is a quite natural choice
-for an MPI code that uses ghost zones for representing values located on
-the neighboring processors anyway.
-The desired type of boundary condition is set through the parameters
-\var{bc\{x,y,z\}} in \file{run.in}; the nomenclature used is as follows.
-Set \var{bc\{x,y,z\}} to a sequence of letters like
-\begin{alltt}
-  bcx = 'p','p','p', 'p',  'p'
-\end{alltt}
-for periodic boundaries, or
-\begin{alltt}
-  bcz = 's','s','a','a2','c1:c2'
-\end{alltt}
-for non-periodic ones.
-Each element corresponds to one of the
-variables, which are
-$u_x$, $u_y$, $u_z$, $\ln\varrho$, $s/c_p$, $A_x$, $A_x$, $A_x$, $\ln c$
-(minus the unused variables) in this order.
-\begin{description}
-\item[\option{p}] periodic boundary condition
-\item[\option{a}] antisymmetric condition w.\,r.\,t.~the
-  boundary, i.\,e.~vanishing value
-\item[\option{s}] symmetric condition w.\,r.\,t.~the
-  boundary, i.\,e.~vanishing first derivative
-\item[\option{a2}] antisymmetry w.\,r.\,t.~the
-  arbitrary value on the boundary, i.\,e.~vanishing
-  second derivative
-\item[\option{c1}] special boundary condition for
-  $\ln\varrho$ and $s$: constant heat flux through the
-  boundary
-\item[\option{c2}] special boundary condition for
-  $\ln\varrho$ and $s$: constant temperature at the
-  boundary
-\item[\option{ce}] special boundary condition for
-  $s$: constant temperature at the boundary for
-  arbitrarily set $\ln\varrho$
-\item[\option{db}] low-order one-sided derivatives (``no
-    boundary condition'') for density
-\end{description}
-The special syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
-boundary condition $a$ at the left/lower boundary, but
-$b$ at the right/upper one.
-
 
 % ====================================================================== %
 
@@ -2004,120 +2018,6 @@ and contents of the file \file{zaver.in}.
 \footnote{May want to rename it to \file{xy\_aver.in}; what do you think?}
 New such variables can be added by using the existing averaging
 procedures as examples.
-
-
-% ====================================================================== %
-
-\section{Timings}
-
-In Table~\ref{Ttimescale} we list the results of timings of the code on
-different machines.
-Shown is (amon other quantities) the wall clock time per mesh point
-(excluding the ghost zones) and per full 3-stage time step.
-
-As these results were assembled during the development phase of the code
-(that hasn't really finished yet\ldots), you may not get the same numbers,
-but they should give some orientation of what to expect for you specific
-application on your specific hardware.
-Not that the timer currently used will overflow on some machines (after
-about 50 minutes), so you should not blindly trust the timings given by
-the code.
-
-
-% ---------------------------------------------------------------------- %
-\begin{table}[htb]
-  \begin{center}
-    \caption{
-      Wall clock time per mesh point (excluding the ghost zones)
-      and per full 3-stage time step.
-      The Mhd machine has 4 processors per node sharing memory;
-      for easier comparison, we list the memory per CPU (i.\,e.~memory per
-      node, divided by 4).
-    }
-    \label{Ttimescale}
-    \begin{small}
-    \begin{tabular}{rllrlrll}
-    \toprule
-   \mcc{proc(s)}
-     & \mcc{machine}
-             & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
-                    & \mcc{resol.} 
-                              & \mcc{what}
-                                             & \mcc{mem./proc}
-                                                      & \mcc{when}&\mcc{who}\\
-    \midrule
-   1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 Mb & 20-may-02 & AB \\
-   1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 Mb & 20-may-02 & AB \\
-   1 & Nq1   &  10  &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
-   1 & Ukaff & 9.2  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
-   2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
-   4 & Nq[0-3]
-             & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
-   4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
-   4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
-   8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   8 & Kabul & 1.25 & $64^2{\times}128$                                  
-                              & nomagn/entro &        & 11-jul-02 & WD \\
-   8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 Mb & 20-jun-02 & WD \\
-   8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
-  16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
-  16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
-  16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
-  16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
-  16 & Kabul & 0.51 & $256^3$ & magn/noentro &   9 Mb & 20-jun-02 & WD \\
-  32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
-  32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
-  64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
-    \bottomrule
-    \end{tabular}
-    \end{small}
-  \end{center}
-\end{table}
-% ---------------------------------------------------------------------- %
-
-The machines we have used can be characterized as follows:
-\begin{description}
-\item[Nl3:] 500\,MHz Pentium??? single CPU;
-  ??? memory;
-  RedHat Linux 6.2 ???
-\item[Nq0:] 931\,MHz Pentium III single CPU;
-  RedHat Linux 7.3;
-  0.5\,GB memory
-\item[Nq{[1-4]}:] 869\,MHz Pentium III dual-CPU cluster;
-  RedHat Linux 7.3;
-  0.77\,GB memory per (dual) node
-\item[Nq{[5-6]}:] 1.2\,GHz Athlon dual-CPU cluster;
-  RedHat Linux 7.3;
-  1\,GB memory per (dual) node
-\item[Kabul:] 1.9\,GHz Athlon dual-CPU cluster;
-  1\,GB memory per (dual) node;
-  Gigabit ethernet;
-  SuSE Linux 8.0;
-  LAM-MPI
-\item[Ukaff:] SGI Origin 3000;
-  400\,MHz IP35 CPUs;
-  IRIX 6.5;
-  native MPI
-\item[Mhd:] EV6 Compaq cluster with 4 CPUs per node;
-  4\,;GB memory per node (i.\,e.~1\,GB per CPU)
-  OSF1 4.0;
-  native MPI
-\end{description}
-
-%WD: The following should be in table or is outdated (???):
-
-%Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
-%CVS:  run.f90               version 1.18          of 2002/03/05 17:43:13 
-%CVS:  register.f90          version 1.15          of 2002/03/08 15:43:19 
-%CVS:  entropy.f90           version 1.33          of 2002/03/09 20:18:55 
-%CVS:  magnetic.f90          version 1.6           of 2002/01/30 16:56:30 
-%CVS:  grav_z.f90            version 1.5           of 2002/01/23 19:56:13 
-
-%Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
-%7288 with 32x32x64 (single processor, linux)
-%print,38*38*71.*8.*2.*4./1e6
 
 
 
@@ -2277,6 +2177,122 @@ Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 
 % ====================================================================== %
 \appendix
+
+
+% ====================================================================== %
+
+\section{Timings}
+
+In Table~\ref{Ttimescale} we list the results of timings of the code on
+different machines.
+Shown is (amon other quantities) the wall clock time per mesh point
+(excluding the ghost zones) and per full 3-stage time step.
+
+As these results were assembled during the development phase of the code
+(that hasn't really finished yet\ldots), you may not get the same numbers,
+but they should give some orientation of what to expect for you specific
+application on your specific hardware.
+Not that the timer currently used will overflow on some machines (after
+about 50 minutes), so you should not blindly trust the timings given by
+the code.
+
+
+% ---------------------------------------------------------------------- %
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+      Wall clock time per mesh point (excluding the ghost zones)
+      and per full 3-stage time step.
+      The Mhd machine has 4 processors per node sharing memory;
+      for easier comparison, we list the memory per CPU (i.\,e.~memory per
+      node, divided by 4).
+    }
+    \label{Ttimescale}
+    \begin{small}
+    \begin{tabular}{rllrlrll}
+    \toprule
+   \mcc{proc(s)}
+     & \mcc{machine}
+             & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
+                    & \mcc{resol.} 
+                              & \mcc{what}
+                                             & \mcc{mem./proc}
+                                                      & \mcc{when}&\mcc{who}\\
+    \midrule
+   1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 Mb & 20-may-02 & AB \\
+   1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 Mb & 20-may-02 & AB \\
+   1 & Nq1   &  10  &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
+   1 & Ukaff & 9.2  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
+   2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
+   4 & Nq[0-3]
+             & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
+   4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
+   4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
+   8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   8 & Kabul & 1.25 & $64^2{\times}128$                                  
+                              & nomagn/entro &        & 11-jul-02 & WD \\
+   8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 Mb & 20-jun-02 & WD \\
+   8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
+  16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
+  16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
+  16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
+  16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
+  16 & Kabul & 0.51 & $256^3$ & magn/noentro &   9 Mb & 20-jun-02 & WD \\
+  32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
+  32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
+  64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
+    \bottomrule
+    \end{tabular}
+    \end{small}
+  \end{center}
+\end{table}
+% ---------------------------------------------------------------------- %
+
+The machines we have used can be characterized as follows:
+\begin{description}
+\item[Nl3:] 500\,MHz Pentium??? single CPU;
+  ??? memory;
+  RedHat Linux 6.2 ???
+\item[Nq0:] 931\,MHz Pentium III single CPU;
+  RedHat Linux 7.3;
+  0.5\,GB memory
+\item[Nq{[1-4]}:] 869\,MHz Pentium III dual-CPU cluster;
+  RedHat Linux 7.3;
+  0.77\,GB memory per (dual) node
+\item[Nq{[5-6]}:] 1.2\,GHz Athlon dual-CPU cluster;
+  RedHat Linux 7.3;
+  1\,GB memory per (dual) node
+\item[Kabul:] 1.9\,GHz Athlon dual-CPU cluster;
+  1\,GB memory per (dual) node;
+  Gigabit ethernet;
+  SuSE Linux 8.0;
+  LAM-MPI
+\item[Ukaff:] SGI Origin 3000;
+  400\,MHz IP35 CPUs;
+  IRIX 6.5;
+  native MPI
+\item[Mhd:] EV6 Compaq cluster with 4 CPUs per node;
+  4\,;GB memory per node (i.\,e.~1\,GB per CPU)
+  OSF1 4.0;
+  native MPI
+\end{description}
+
+%WD: The following should be in table or is outdated (???):
+
+%Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
+%CVS:  run.f90               version 1.18          of 2002/03/05 17:43:13 
+%CVS:  register.f90          version 1.15          of 2002/03/08 15:43:19 
+%CVS:  entropy.f90           version 1.33          of 2002/03/09 20:18:55 
+%CVS:  magnetic.f90          version 1.6           of 2002/01/30 16:56:30 
+%CVS:  grav_z.f90            version 1.5           of 2002/01/23 19:56:13 
+
+%Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
+%7288 with 32x32x64 (single processor, linux)
+%print,38*38*71.*8.*2.*4./1e6
+
+% ====================================================================== %
 
 
 \section{Some specific initial conditions}
@@ -2511,7 +2527,7 @@ to approach the Boussinesq case.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.50 2002-07-15 13:10:06 dobler Exp $ $}
+$ $Id: manual.tex,v 1.51 2002-07-16 08:29:44 dobler Exp $ $}
 
 
 \end{document}

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.73 2002-07-15 14:04:36 nilshau Exp $
+! $Id: cdata.f90,v 1.74 2002-07-16 08:29:44 dobler Exp $
 
 module Cdata
 
@@ -28,9 +28,9 @@ module Cdata
 ! wparam (Sub) as well, so they need to be declared here
 !AB: Are you sure this cannot be avoided?? It is no longer in Boundcond!!
   real :: hcond0=0,hcond1=0,hcond2=0,whcond=2*epsi
-  real :: mpoly0,mpoly1,mpoly2
-  real :: cheat,wheat,cool=0.,wcool,Fheat
-  integer:: isothtop
+  real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
+  real :: Fheat
+  integer:: isothtop=0
 
   real :: Omega=0.,qshear=0.
 
@@ -41,7 +41,7 @@ module Cdata
   integer :: ie,iff,ifx,ify,ifz
   integer :: nt=0,it1=10
   integer :: it,ix=(mx+1)/2,iy=(my+1)/2,iz=(mz+1)/2
-  integer :: ivisc
+  integer :: ivisc=0
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi

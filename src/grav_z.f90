@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.18 2002-07-08 19:28:14 brandenb Exp $
+! $Id: grav_z.f90,v 1.19 2002-07-16 08:29:44 dobler Exp $
 
 module Gravity
 
@@ -12,7 +12,7 @@ module Gravity
 !  For a single polytrope, zinfty (calculated in the
 !  density module) is the height where rho=cs2=0.
 
-  real :: z1,z2,zref=0.,gravz=-1.,zinfty
+  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty
   character (len=30) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
@@ -55,7 +55,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.18 2002-07-08 19:28:14 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.19 2002-07-16 08:29:44 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.

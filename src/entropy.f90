@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.93 2002-07-11 06:58:25 nilshau Exp $
+! $Id: entropy.f90,v 1.94 2002-07-16 08:29:44 dobler Exp $
 
 module Entropy
 
@@ -10,6 +10,7 @@ module Entropy
 
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.
+  real :: cheat=0.,wheat=0.1,cool=0.,wcool=0.1
   real :: chi_t=0.,ss0=0.,khor_ss=1.
   character (len=labellen) :: initss='nothing',pertss='zero'
 
@@ -60,7 +61,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.93 2002-07-11 06:58:25 nilshau Exp $")
+           "$Id: entropy.f90,v 1.94 2002-07-16 08:29:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
