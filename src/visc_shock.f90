@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.3 2002-11-25 13:12:16 mee Exp $
+! $Id: visc_shock.f90,v 1.4 2002-11-26 10:15:57 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -13,8 +13,8 @@ module Viscosity
 
 !  real :: nu=0.
   real :: nu_shock = 0.
-  real, dimension(mx,my,mz) :: nu_effective
-  character (len=labellen) :: ivisc='nu-const'
+  real, dimension(mx,my,mz) :: shock_characteristic
+  character (len=labellen) :: ivisc=''
   integer :: icalculated = -1
 
   ! input parameters
@@ -22,7 +22,7 @@ module Viscosity
   namelist /viscosity_init_pars/ dummy
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, ivisc, nu_shock
+  namelist /viscosity_run_pars/ nu, nu_shock
  
   contains
 
@@ -49,7 +49,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.3 2002-11-25 13:12:16 mee Exp $")
+           "$Id: visc_shock.f90,v 1.4 2002-11-26 10:15:57 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -65,10 +65,10 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 
-      if (nu /= 0. .and. (ivisc=='nu-const')) then
+ !     if (nu /= 0. .and. (ivisc=='nu-const')) then
          lneed_sij=.true.
          lneed_glnrho=.true.
-      endif
+ !     endif
 
     endsubroutine initialize_viscosity
 !***********************************************************************
@@ -82,29 +82,26 @@ module Viscosity
       real, dimension (mx,my,mz) :: tmp
 
       if (nu_shock /= 0.) then
-         call visc_divu(f,nu_effective)
+         call shock_divu(f,shock_characteristic)
 
-         nu_effective = -nu_effective
-
-         where (nu_effective<0.) nu_effective=0.
+         shock_characteristic=amax1(0., -shock_characteristic)
          
-         call visc_max5(nu_effective,tmp)
-         call visc_smooth(tmp,nu_effective)
+         call shock_max5(shock_characteristic,tmp)
+         call shock_smooth(tmp,shock_characteristic)
 
 !ajwm Shouldn't be dx in all directions! min(dx,dy,dz) ?         
-         nu_effective = nu_shock * nu_effective * dx * dx + nu
+         shock_characteristic = shock_characteristic * dx**2 
       else
-         nu_effective = nu
+         shock_characteristic = 0.
       end if
 
       icalculated = it
 !ajwm debug onyl line:-
-
-print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective),sum(nu_effective*1.D0)/(mx*my*mz*1.D0)
+!print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective),sum(nu_effective*1.D0)/(mx*my*mz*1.D0)
     endsubroutine calc_viscosity
 !***********************************************************************
 !ajwm Utility routines - poss need moving elsewhere
-    subroutine visc_max5(f,maxf)
+    subroutine shock_max5(f,maxf)
 !
 !  return array maxed with by 2 points either way
 !  skipping 1 data point all round
@@ -195,9 +192,9 @@ print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective)
         maxf=f
       endif
 !
-    endsubroutine visc_max5
+    endsubroutine shock_max5
 
-    subroutine visc_smooth(f,smoothf)
+    subroutine shock_smooth(f,smoothf)
 !
 !  return array smoothed with by 2 points either way
 !  skipping 3 data point all round 
@@ -259,9 +256,9 @@ print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective)
         smoothf=f
       endif
 
-    endsubroutine visc_smooth
+    endsubroutine shock_smooth
 !***********************************************************************
-    subroutine visc_divu(f,df)
+    subroutine shock_divu(f,df)
 !
 !  calculate divergence of a vector U, get scalar
 !  accurate to 2nd order, explicit,  centred an left and right biased 
@@ -310,7 +307,7 @@ print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective)
                       - 4.*f(:,:,mz-1,iuz) &
                       +    f(:,:,mz-2,iuz))/(2.*dz)
 
-    endsubroutine visc_divu
+    endsubroutine shock_divu
 
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,rho1,TT1)
@@ -326,26 +323,33 @@ print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective)
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: rho1,TT1
       real, dimension (nx) :: sij2
+      real, dimension (nx,3) :: gshock_characteristic, sgshock_characteristic
 
       if ( icalculated<it ) call calc_viscosity(f)
+ !          call grad(spread(shock_characteristic,4,1),1,gshock_characteristic)
+ !           call multmv_mn(sij,spread((nu_shock*shock_characteristic(l1:l2,m,n) + nu),2,3) * glnrho,sglnrho)
+ !           call multmv_mn(sij,gshock_characteristic,sgshock_characteristic)
+
+!            fvisc=2*sglnrho+nu*(del2u+1./3.*graddivu)
+!            fvisc=fvisc + 2*nu_shock*sgshock_characteristic
 !
 !  traceless strainmatrix squared
 !
       call multm2_mn(sij,sij2)
 !
-      select case(ivisc)
-       case ('simplified', '0')
-         if (headtt) print*,'no heating: ivisc=',ivisc
-       case('rho_nu-const', '1')
+!      select case(ivisc)
+!       case ('simplified', '0')
+!         if (headtt) print*,'no heating: ivisc=',ivisc
+!       case('rho_nu-const', '1')
+!         if (headtt) print*,'viscous heating: ivisc=',ivisc
+!         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2*rho1
+!       case('nu-const', '2')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2*rho1
-       case('nu-const', '2')
-         if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2
-       case default
-         if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
-         call stop_it("")
-      endselect
+         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2 + TT1*nu_shock*(shock_characteristic(l1:l2,m,n)**2)
+!       case default
+!         if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
+!         call stop_it("")
+!      endselect
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -360,7 +364,8 @@ print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective)
       use Sub
 
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: glnrho,del2u, graddivu,fvisc,sglnrho
+      real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho 
+      real, dimension (nx,3) :: gshock_characteristic, sgshock_characteristic
       real, dimension (nx) :: murho1,rho1
       integer :: i
 
@@ -372,63 +377,50 @@ print *,'nu_effective: max min avg = ',maxval(nu_effective),minval(nu_effective)
 !  viscosity operator
 !  rho1 is pre-calculated in equ
 !
-      if (nu /= 0.) then
-        select case (ivisc)
+      if (nu_shock /= 0.) then
 
-        case ('simplified', '0')
-          !
-          !  viscous force: nu*del2v
-          !  -- not physically correct (no momentum conservation), but
-          !  numerically easy and in most cases qualitatively OK
-          !
-          if (headtt) print*,'viscous force: nu*del2v'
-          call del2v(f,iuu,del2u)
-          fvisc=nu*del2u
-          maxdiffus=amax1(maxdiffus,nu)
+         !
+         !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+         !  -- the correct expression for nu=const
+         !
+         if (headtt) print*,'viscous force: (nu_total) *(del2u+graddivu/3+2S.glnrho) + 2S.gnu_total)'
+         call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+         if(ldensity) then
+            call grad(spread(shock_characteristic,4,1),1,gshock_characteristic)
+            call multmv_mn(sij,spread((nu_shock*shock_characteristic(l1:l2,m,n) + nu),2,3) * glnrho,sglnrho)
+            call multmv_mn(sij,gshock_characteristic,sgshock_characteristic)
 
-        case('rho_nu-const', '1')
-          !
-          !  viscous force: mu/rho*(del2u+graddivu/3)
-          !  -- the correct expression for rho*nu=const (=rho0*nu)
-          !
-          if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
-          if (.not.ldensity) &
-               print*, "ldensity better be .true. for ivisc='rho_nu-const'"
-          murho1=(nu*rho0)*rho1  !(=mu/rho)
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          do i=1,3
-            fvisc(:,i)=murho1*(del2u(:,i)+1./3.*graddivu(:,i))
-          enddo
-          maxdiffus=amax1(maxdiffus,murho1)
-
-        case('nu-const')
-          !
-          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
-          !  -- the correct expression for nu=const
-          !
-          if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          if(ldensity) then
-            call multmv_mn(sij,glnrho,sglnrho)
-            fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
+            fvisc=2*sglnrho+nu*(del2u+1./3.*graddivu)
+            fvisc=fvisc + 2*nu_shock*sgshock_characteristic
+!ajwm what's this???
             maxdiffus=amax1(maxdiffus,nu)
-          else
+         else
             if(lfirstpoint) &
-                 print*,"ldensity better be .true. for ivisc='nu-const'"
-          endif
-
-        case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'No such such value for ivisc: ', trim(ivisc)
-        call stop_it('calc_viscous_forcing')
-
-        endselect
-
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
-      else ! (nu=0)
-        if (headtt) print*,'no viscous force: (nu=0)'
+                 print*,"ldensity better be .true. for shock viscosity"
+         endif
+         
+         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+      else ! (nu_shock=0)
+         if (nu /= 0.) then
+            !
+            !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+            !  -- the correct expression for nu=const
+            !
+            if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
+            call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+            if(ldensity) then
+               call multmv_mn(sij,glnrho,sglnrho)
+               fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
+               maxdiffus=amax1(maxdiffus,nu)
+            else
+               if(lfirstpoint) &
+                    print*,"ldensity better be .true. for ivisc='nu-const'"
+            endif
+            
+            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+         else ! (nu=0)
+            if (headtt) print*,'no viscous force: (nu=0)'
+         endif
       endif
 
     end subroutine calc_viscous_force
