@@ -65,20 +65,26 @@ if (cpar gt 0) then begin
   @tmp/param.pro
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
   Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
-  ;AB: the following is not defined if nohydro.
-  ;cs0=par.cs0 & rho0=par.rho0
-  ;gamma=par.gamma & gamma1=gamma-1.
-  lgravz=par.lgravz & lgravr = par.lgravr
-  ;lhydro=par.lhydro
-  ;ldensity=par.ldensity
-  lforcing=par.lforcing
-  lentropy=par.lentropy
-  lmagnetic=par.lmagnetic
+  ;
+  lhydro    = par.lhydro
+  lgravz    = par.lgravz
+  lgravr    = par.lgravr
+  ldensity  = par.ldensity
+  lforcing  = par.lforcing
+  lentropy  = par.lentropy
+  lmagnetic = par.lmagnetic
+  ;
+  if (ldensity) then begin
+    cs0=par.cs0 & rho0=par.rho0
+    gamma=par.gamma & gamma1=gamma-1.
+  endif
+  ;
   if (lgravz) then begin
     z1=par.z1 & z2=par.z2
     ztop=par.ztop & z3=ztop
     gravz=par.gravz
   endif
+  ;
   if (lentropy) then begin
     hcond0=par.hcond0 & hcond1=par.hcond1
     hcond2=par.hcond2 & whcond=par.whcond

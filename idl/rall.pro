@@ -53,16 +53,23 @@ default, dataopdir, 'tmp'
 default, file, 'var.dat'
 ;
 x = fltarr(mx) & y = fltarr(my) & z = fltarr(mz)
-uu    = fltarr(mx,my,mz,3)*one
-lnrho = fltarr(mx,my,mz)*one
-if (ient ne 0) then ss = fltarr(mx,my,mz)*one
-if (iaa ne 0) then aa = fltarr(mx,my,mz,3)*one
-;
 xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
-uu_loc = fltarr(mxloc,myloc,mzloc,3)*one
-lnrho_loc = fltarr(mxloc,myloc,mzloc)*one
-if (ient ne 0) then ss_loc = fltarr(mxloc,myloc,mzloc)*one
-if (iaa ne 0) then aa_loc = fltarr(mxloc,myloc,mzloc,3)*one
+if (lhydro) then begin
+  uu    = fltarr(mx,my,mz,3)*one
+  uu_loc = fltarr(mxloc,myloc,mzloc,3)*one
+endif
+if (ldensity) then begin
+  lnrho = fltarr(mx,my,mz)*one
+  lnrho_loc = fltarr(mxloc,myloc,mzloc)*one
+endif
+if (lentropy ) then begin
+  ss = fltarr(mx,my,mz)*one
+  ss_loc = fltarr(mxloc,myloc,mzloc)*one
+endif
+if (lmagnetic) then begin
+  aa = fltarr(mx,my,mz,3)*one
+  aa_loc = fltarr(mxloc,myloc,mzloc,3)*one
+endif
 ;
 for i=0,ncpus-1 do begin        ; read data from individual files
   datadir=datatopdir+'/proc'+strtrim(i,2)
@@ -81,19 +88,19 @@ for i=0,ncpus-1 do begin        ; read data from individual files
     ;
     if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
       print,'MHD with entropy'
-      readu,1,uu,lnrho,ss,aa
+      readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
       print,'hydro with entropy, but no magnetic field'
-      readu,1,uu,lnrho,ss
+      readu,1,uu_loc,lnrho_loc,ss_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
       print,'hydro with no entropy and no magnetic field'
-      readu,1,uu,lnrho
+      readu,1,uu_loc,lnrho_loc
     end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
       print,'just velocity (Burgers)'
-      readu,1,uu
+      readu,1,uu_loc
     end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
-      print,'just magnetic ffield (kinematic)
-      readu,1,aa
+      print,'just magnetic ffield (kinematic)'
+      readu,1,aa_loc
     end else begin
       print,'not prepared...'
     end
@@ -151,19 +158,21 @@ zz = spread(x, [0,1], [mx,my])
 xyz = ['x', 'y', 'z']
 fmt = '(A,4G15.6)'
 print, ' var        minval         maxval            mean           rms'
-;for j=0,2 do $
-;    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
-;    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
-;print, FORMAT=fmt, 'lnrho  =', $
-;    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
-;if (lentropy) then $
-;    print, FORMAT=fmt, 'ss  =', $
-;      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
-;if (lmagnetic) then $
-;    for j=0,2 do $
-;      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
-;      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
-;
+if (lhydro) then $
+    for j=0,2 do $
+      print, FORMAT=fmt, 'uu_'+xyz[j]+'   =', $
+      minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
+if (ldensity) then $
+    print, FORMAT=fmt, 'lnrho  =', $
+      minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
+if (lentropy) then $
+    print, FORMAT=fmt, 'ss     =', $
+      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
+if (lmagnetic) then $
+    for j=0,2 do $
+      print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
+      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+
 print,'t = ',t
 
 ; reset datadir to more reasonable default

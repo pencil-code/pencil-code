@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.18 2002-06-13 15:55:49 brandenb Exp $
+; $Id: r.pro,v 1.19 2002-06-14 17:21:17 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -27,9 +27,9 @@ if (iaa ne 0)    then aa = fltarr(mx,my,mz,3)*one
 ;
 pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
-;if (cpar gt 0) then begin
-;  print, 'Reading param2.nml..'
-;  spawn, '../../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
+if (cpar gt 0) then begin
+  print, 'Reading param2.nml..'
+  spawn, '../../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
 ;  @tmp/param2.pro
 ; cs0=par.cs0 & nu=par.nu
 ;  cs0=1. & nu=0.
@@ -38,14 +38,12 @@ dummy=findfile(pfile, COUNT=cpar)
 ; cheat=par.cheat & wheat=par.wheat
 ; cool=par.cool & wcool=par.wcool
 ; Fheat=par.Fheat
-;endif else begin
-;  print, 'Warning: cannot find file ', pfile
-;endelse
+endif else begin
+  print, 'Warning: cannot find file ', pfile
+endelse
 
 ;
 ;  Read data
-;
-;AB: the following is not quite save, nvar=7 could mean other things...
 ;
 close,1
 openr,1, datadir+'/'+file, /F77
@@ -66,7 +64,7 @@ openr,1, datadir+'/'+file, /F77
     print,'just velocity (Burgers)'
     readu,1,uu
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
-    print,'just magnetic ffield (kinematic)
+    print,'just magnetic ffield (kinematic)'
     readu,1,aa
   end else begin
     print,'not prepared...'
@@ -84,20 +82,25 @@ rr = sqrt(xx^2+yy^2+zz^2)
 ;
 xyz = ['x', 'y', 'z']
 fmt = '(A,4G15.6)'
-print, ' var        minval         maxval            mean           rms'
+print, '  var            minval         maxval          mean           rms'
 ;AB:  does not work ok for kinematic case. I suggest to use only f.
-;for j=0,2 do $
-;    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
-;    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
-;print, FORMAT=fmt, 'lnrho  =', $
-;    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
-;if (lentropy) then $
-;    print, FORMAT=fmt, 'ss  =', $
-;      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
-;if (lmagnetic) then $
-;    for j=0,2 do $
-;      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
-;      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+;WD: Ought to work now (the namelist lphysics need to know about the
+;    relevant logicals). What is f ?
+;
+if (lhydro) then $
+    for j=0,2 do $
+      print, FORMAT=fmt, 'uu_'+xyz[j]+'   =', $
+      minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
+if (ldensity) then $
+    print, FORMAT=fmt, 'lnrho  =', $
+    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
+if (lentropy) then $
+    print, FORMAT=fmt, 'ss     =', $
+      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
+if (lmagnetic) then $
+    for j=0,2 do $
+      print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
+      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
 ;
 print,'t = ',t
 ;
