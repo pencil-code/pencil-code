@@ -1,4 +1,4 @@
-;  $Id: varcontent_stats.pro,v 1.5 2003-08-08 07:49:16 brandenb Exp $
+;  $Id: varcontent_stats.pro,v 1.6 2004-02-03 10:10:59 ajohan Exp $
 ;
 ;  Summarize data
 ;  omit ghost zones in the analysis
@@ -31,6 +31,8 @@ if (quiet le 2) then begin
     endelse
     iv=iv+varcontent[iv].skip
   endfor
+endif
+if (quiet le 3) then begin 
   ;
   print,'t = ',t
   ;
