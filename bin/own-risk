@@ -11,8 +11,9 @@
 # Use at your own risk (one backup copy is made, though).
 
 find . -path '*/CVS/Repository' -exec \
-  perl -i.bak -pe 's{pencil_modular_runs}{pencil-runs}' {} \;
-  #perl -i.bak -pe 's{pencil_modular}{pencil-code}' {} \;
-  #perl -i.bak -pe 's{pencil_modular/runs}{pencil_modular_runs}' {} \;
+  perl -i.bak -pe \
+    's{pencil_modular/runs}{pencil-runs}; \
+     s{pencil_modular_runs($|/)}{pencil-runs$1}; \
+     s{pencil_modular($|/)}{pencil-code$1}' {} \;
 
 # End of file own-risc
