@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.39 2004-02-24 14:15:23 ajohan Exp $
+! $Id: dustdensity.f90,v 1.40 2004-02-25 15:56:40 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.39 2004-02-24 14:15:23 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.40 2004-02-25 15:56:40 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -307,17 +307,19 @@ module Dustdensity
 !
       use Sub
       use Density, only: cs0
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3,ndustspec) :: gnd,grhod,uud
-      real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,deltaud,rho,rho1
+      real, dimension (nx,ndustspec) :: nd,divud,deltand,deltarhod
+      real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,rho,rho1
+      real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm
       real, dimension (nx) :: TT1,ugrhod
       real, dimension (nx) :: mfluxcond, nofluxcond
       real :: diffnd
-      integer :: i,j,k
+      integer :: i,j,k,i_targ
       logical :: lfirstpoint2
 !
       intent(in)  :: uud,divud
@@ -325,17 +327,22 @@ module Dustdensity
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'dnd_dt: SOLVE dnd_dt'
-      if (headtt) call identify_bcs('nd',ind(1))
-      if (lmdvar .and. headtt) then
-        call identify_bcs('rhod',irhod(1))
-      endif
+      if (headtt .or. ldebug)  print*,'dnd_dt: SOLVE dnd_dt'
+      if (headtt)              call identify_bcs('nd',ind(1))
+      if (lmdvar .and. headtt) call identify_bcs('rhod',irhod(1))
 !
 !  Recalculate grain masses from nd and rhod
 !
-      if (lmdvar) then
+      if (lmdvar .and. itsub .eq. 1) then
+        deltand(:,:)   = 0.
+        deltarhod(:,:) = 0.
         do k=1,ndustspec
-          if (f(l1,m,n,ind(k)) .ne. 0) then
+!
+!  Set small negative values to zero (give negative mass)
+!          
+          if (f(l1,m,n,ind(k)) .lt. 0.)   f(l1,m,n,ind(k))   = 0.
+          if (f(l1,m,n,irhod(k)) .lt. 0.) f(l1,m,n,irhod(k)) = 0.
+          if (f(l1,m,n,ind(k)) .gt. 0. .and. f(l1,m,n,irhod(k)) .gt. 0.) then
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
           else
             md(k) = 0.5*(mdminus(k)+mdplus(k))
@@ -345,44 +352,39 @@ module Dustdensity
 !  Check for grain mass interval overflows
 !      
         do k=1,ndustspec
-          if (md(k) .lt. mdminus(k)) then
-            do j=k-1,0,-1
-              if (j .eq. 0) then
-                f(l1:l2,m,n,ilncc) = &
-                    f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
-                f(l1:l2,m,n,ind(k))   = 0.
-                f(l1:l2,m,n,irhod(k)) = 0.
-                md(k) = 0.5*(mdminus(k)+mdplus(k))
-              else
-                if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) then
-                  f(l1:l2,m,n,ind(j))   = &
-                      f(l1:l2,m,n,ind(j)) + f(l1:l2,m,n,ind(k))
-                  f(l1:l2,m,n,irhod(j)) = &
-                      f(l1:l2,m,n,irhod(j)) + f(l1:l2,m,n,irhod(k))
-                  f(l1:l2,m,n,ind(k))   = 0.
-                  f(l1:l2,m,n,irhod(k)) = 0.
-                  md(k) = 0.5*(mdminus(k)+mdplus(k))
-                  exit
-                endif
-              endif
+          i_targ = -1
+          if (md(k) .ge. mdplus(k)) then
+            do j=k+1,ndustspec+1
+              i_targ = j
+              if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) exit
             enddo
-          else
-            if (md(k) .ge. mdplus(k)) then
-              do j=k+1,ndustspec+1
-                if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) then
-                  f(l1:l2,m,n,ind(j))   = &
-                      f(l1:l2,m,n,ind(j)) + f(l1:l2,m,n,ind(k))
-                  f(l1:l2,m,n,irhod(j)) = &
-                      f(l1:l2,m,n,irhod(j)) + f(l1:l2,m,n,irhod(k))
-                  f(l1:l2,m,n,ind(k))   = 0.
-                  f(l1:l2,m,n,irhod(k)) = 0.
-                  md(k) = 0.5*(mdminus(k)+mdplus(k))
-                  exit
-                endif
-              enddo
-            endif
+          elseif (md(k) .lt. mdminus(k)) then
+            do j=k-1,0,-1
+              i_targ = j
+              if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) exit
+            enddo
+          endif
+          if (i_targ .ge. 1 .and. i_targ .le. ndustspec) then
+            deltand(l1:l2,i_targ)   = &
+                deltand(l1:l2,i_targ) + f(l1:l2,m,n,ind(k))
+            deltarhod(l1:l2,i_targ) = &
+                deltarhod(l1:l2,i_targ) + f(l1:l2,m,n,irhod(k))
+            deltand(l1:l2,k)        = deltand(l1:l2,k) - f(l1:l2,m,n,ind(k))
+            deltarhod(l1:l2,k)      = deltarhod(l1:l2,k) - f(l1:l2,m,n,irhod(k))
+            md(k) = 0.5*(mdminus(k)+mdplus(k))
+          elseif (i_targ .eq. 0) then
+            print*, 'dnd_dt: WARNING: Dust grains lost to gas!'
+            f(l1:l2,m,n,ilncc) = &
+                f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
+            deltand(l1:l2,k) = deltand(l1:l2,k) - f(l1:l2,n,m,ind(k))
+            deltarhod(l1:l2,k) = deltarhod(l1:l2,k) - f(l1:l2,n,m,irhod(k))
+            md(k) = 0.5*(mdminus(k)+mdplus(k))
+          elseif (i_targ .eq. ndustspec+1) then
+            call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
+        f(l1:l2,m,n,ind)   = f(l1:l2,m,n,ind)   + deltand(l1:l2,:)
+        f(l1:l2,m,n,irhod) = f(l1:l2,m,n,irhod) + deltarhod(l1:l2,:)
       endif
 !
 !  Abbreviations
@@ -426,7 +428,9 @@ module Dustdensity
           do j=i,ndustspec
             call dot_mn (f(l1:l2,m,n,iudx(i):iudz(i)), &
                 f(l1:l2,m,n,iudx(j):iudz(j)),udiudj)
-            deltaud = sqrt(udiudj)
+            deltaud_drift = sqrt(udiudj)
+            deltaud_therm = sqrt( 8*k_B/(pi*TT1) * (md(i)+md(j))/(md(i)*md(j)) )
+            deltaud = sqrt(deltaud_drift**2+deltaud_therm**2)
             dkern(:,i,j) = scolld(i,j)*deltaud
             dkern(:,j,i) = dkern(:,i,j)
           enddo
