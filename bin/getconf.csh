@@ -23,6 +23,7 @@ if ($mpi) then
   else if ($hn =~ nq*) then
     set mpirun = /usr/pgi/linux86/bin/mpirun
     set mpirun = mpirun
+    set mpirun = /usr/lib/lam/bin/mpirun
   else
     set mpirun = mpirun
   endif
