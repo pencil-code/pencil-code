@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.23 2004-01-31 14:01:22 dobler Exp $
+! $Id: nohydro.f90,v 1.24 2004-02-22 09:12:42 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -16,6 +16,8 @@ module Hydro
 
   implicit none
 
+  real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
+
   integer :: dummyuu           ! We cannot define empty namelists
   namelist /hydro_init_pars/ dummyuu
   namelist /hydro_run_pars/  dummyuu
@@ -24,14 +26,16 @@ module Hydro
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
-  integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
+  integer :: i_uxpt=0,i_uypt=0,i_uzpt=0
+  integer :: i_dtu=0,i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
   integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0
-  integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
+  integer :: i_ruxm=0,i_ruym=0,i_ruzm=0,i_rumax=0
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
-  integer :: i_Marms=0,i_Mamax=0 
+  integer :: i_Marms=0,i_Mamax=0
   integer :: i_divu2m=0,i_epsK=0
+  integer :: i_urmphi=0,i_upmphi=0,i_uzmphi=0,i_u2mphi=0,i_oumphi=0
 
   contains
 
@@ -57,7 +61,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.23 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: nohydro.f90,v 1.24 2004-02-22 09:12:42 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -103,14 +107,19 @@ module Hydro
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu,glnrho,gshock
-      real, dimension (nx) :: divu,u2,rho1,shock
+      real, dimension (nx,3) :: uu,oo,glnrho,gshock
+      real, dimension (nx) :: u2,divu,o2,ou,rho1,shock
 !
       if (kinflow=='ABC') then
         if (headtt) print*,'ABC flow'
         uu(:,1)=ABC_A*sin(kz_aa*z(n))    +ABC_C*cos(ky_aa*y(m))
         uu(:,2)=ABC_B*sin(kx_aa*x(l1:l2))+ABC_A*cos(kz_aa*z(n))
         uu(:,3)=ABC_C*sin(ky_aa*y(m))    +ABC_B*cos(kx_aa*x(l1:l2))
+      elseif (kinflow=='roberts') then
+        if (headtt) print*,'Glen Roberts flow; kx_aa,ky_aa=',kx_aa,ky_aa
+        uu(:,1)=+sin(kx_aa*x(l1:l2))*cos(ky_aa*y(m))
+        uu(:,2)=-cos(kx_aa*x(l1:l2))*sin(ky_aa*y(m))
+        uu(:,3)=+sin(kx_aa*x(l1:l2))*sin(ky_aa*y(m))*sqrt(2.)
       else
         if (headtt) print*,'uu=0'
         uu=0.
@@ -129,6 +138,8 @@ module Hydro
 !
       if (ldiagnos) then
         call dot2_mn(uu,u2)
+        if (i_urms/=0) call sum_mn_name(u2,i_urms,lsqrt=.true.)
+        if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
       endif
@@ -158,12 +169,15 @@ module Hydro
 !
       if (lreset) then
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
-        i_urms=0; i_umax=0; i_orms=0; i_omax=0
-        i_ruxm=0; i_ruym=0; i_ruzm=0
+        i_uxpt=0; i_uypt=0; i_uzpt=0
+        i_dtu=0; i_dtv=0; i_urms=0; i_umax=0; i_orms=0; i_omax=0
+        i_ruxm=0; i_ruym=0; i_ruzm=0; i_rumax=0
         i_ux2m=0; i_uy2m=0; i_uz2m=0
+        i_uxuym=0; i_uxuzm=0; i_uyuzm=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
         i_divu2m=0; i_epsK=0
+        i_urmphi=0; i_upmphi=0; i_uzmphi=0; i_u2mphi=0; i_oumphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -172,8 +186,34 @@ module Hydro
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'u2m',i_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
-!       call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
-!       call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
+        call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
+        call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
+        call parse_name(iname,cname(iname),cform(iname),'dtu',i_dtu)
+        call parse_name(iname,cname(iname),cform(iname),'dtv',i_dtv)
+        call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
+        call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
+        call parse_name(iname,cname(iname),cform(iname),'ux2m',i_ux2m)
+        call parse_name(iname,cname(iname),cform(iname),'uy2m',i_uy2m)
+        call parse_name(iname,cname(iname),cform(iname),'uz2m',i_uz2m)
+        call parse_name(iname,cname(iname),cform(iname),'uxuym',i_uxuym)
+        call parse_name(iname,cname(iname),cform(iname),'uxuzm',i_uxuzm)
+        call parse_name(iname,cname(iname),cform(iname),'uyuzm',i_uyuzm)
+        call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
+        call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
+        call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
+        call parse_name(iname,cname(iname),cform(iname),'ruym',i_ruym)
+        call parse_name(iname,cname(iname),cform(iname),'ruzm',i_ruzm)
+        call parse_name(iname,cname(iname),cform(iname),'rumax',i_rumax)
+        call parse_name(iname,cname(iname),cform(iname),'umx',i_umx)
+        call parse_name(iname,cname(iname),cform(iname),'umy',i_umy)
+        call parse_name(iname,cname(iname),cform(iname),'umz',i_umz)
+        call parse_name(iname,cname(iname),cform(iname),'Marms',i_Marms)
+        call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
+        call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
+        call parse_name(iname,cname(iname),cform(iname),'epsK',i_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'uxpt',i_uxpt)
+        call parse_name(iname,cname(iname),cform(iname),'uypt',i_uypt)
+        call parse_name(iname,cname(iname),cform(iname),'uzpt',i_uzpt)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -183,16 +223,22 @@ module Hydro
         write(3,*) 'i_um2=',i_um2
         write(3,*) 'i_o2m=',i_o2m
         write(3,*) 'i_oum=',i_oum
+        write(3,*) 'i_dtu=',i_dtu
+        write(3,*) 'i_dtv=',i_dtv
         write(3,*) 'i_urms=',i_urms
         write(3,*) 'i_umax=',i_umax
         write(3,*) 'i_ux2m=',i_ux2m
         write(3,*) 'i_uy2m=',i_uy2m
         write(3,*) 'i_uz2m=',i_uz2m
+        write(3,*) 'i_uxuym=',i_uxuym
+        write(3,*) 'i_uxuzm=',i_uxuzm
+        write(3,*) 'i_uyuzm=',i_uyuzm
         write(3,*) 'i_orms=',i_orms
         write(3,*) 'i_omax=',i_omax
         write(3,*) 'i_ruxm=',i_ruxm
         write(3,*) 'i_ruym=',i_ruym
         write(3,*) 'i_ruzm=',i_ruzm
+        write(3,*) 'i_rumax=',i_rumax
         write(3,*) 'i_umx=',i_umx
         write(3,*) 'i_umy=',i_umy
         write(3,*) 'i_umz=',i_umz
@@ -205,12 +251,20 @@ module Hydro
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy
         write(3,*) 'iuz=',iuz
+        write(3,*) 'i_uxpt=',i_uxpt
+        write(3,*) 'i_uypt=',i_uypt
+        write(3,*) 'i_uzpt=',i_uzpt
         write(3,*) 'i_uxmz=',i_uxmz
         write(3,*) 'i_uymz=',i_uymz
         write(3,*) 'i_uzmz=',i_uzmz
         write(3,*) 'i_uxmxy=',i_uxmxy
         write(3,*) 'i_uymxy=',i_uymxy
         write(3,*) 'i_uzmxy=',i_uzmxy
+        write(3,*) 'i_urmphi=',i_urmphi
+        write(3,*) 'i_upmphi=',i_upmphi
+        write(3,*) 'i_uzmphi=',i_uzmphi
+        write(3,*) 'i_u2mphi=',i_u2mphi
+        write(3,*) 'i_oumphi=',i_oumphi
       endif
 !
     endsubroutine rprint_hydro
