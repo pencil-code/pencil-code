@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.8 2003-07-21 00:48:32 brandenb Exp $
+! $Id: dustvelocity.f90,v 1.9 2003-08-01 13:49:13 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -67,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.8 2003-07-21 00:48:32 brandenb Exp $")
+           "$Id: dustvelocity.f90,v 1.9 2003-08-01 13:49:13 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -286,13 +286,6 @@ module Dustvelocity
         if (i_udxmxy/=0) call zsum_mn_name_xy(udx,i_udxmxy)
         if (i_udymxy/=0) call zsum_mn_name_xy(udy,i_udymxy)
         if (i_udzmxy/=0) call zsum_mn_name_xy(udz,i_udzmxy)
-!        !
-!        !  mean momenta
-!        !
-!        if (i_rudxm+i_rudym+i_rudzm/=0) rho=exp(f(l1:l2,m,n,ilnrho))
-!        if (i_rudxm/=0) then; udx=uud(:,1); call sum_mn_name(rho*udx,i_rudxm); endif
-!        if (i_rudym/=0) then; udy=uud(:,2); call sum_mn_name(rho*udy,i_rudym); endif
-!        if (i_rudzm/=0) then; udz=uud(:,3); call sum_mn_name(rho*udz,i_rudzm); endif
         !
         !  things related to vorticity
         !
@@ -334,52 +327,29 @@ module Dustvelocity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
-        i_urms=0; i_umax=0; i_orms=0; i_omax=0
-        i_ruxm=0; i_ruym=0; i_ruzm=0
-        i_umx=0; i_umy=0; i_umz=0
-        i_Marms=0; i_Mamax=0
-        i_divu2m=0; i_epsKd=0
+        i_ud2m=0; i_udm2=0; i_oudm=0; i_od2m=0
+        i_udrms=0; i_udmax=0; i_odrms=0; i_odmax=0
+        i_udmx=0; i_udmy=0; i_udmz=0
+        i_divud2m=0; i_epsKd=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'u2m',i_u2m)
-        call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
-        call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
-        call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
-        call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
-        call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
-        call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
-        call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
-        call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
-        call parse_name(iname,cname(iname),cform(iname),'ruym',i_ruym)
-        call parse_name(iname,cname(iname),cform(iname),'ruzm',i_ruzm)
-        call parse_name(iname,cname(iname),cform(iname),'umx',i_umx)
-        call parse_name(iname,cname(iname),cform(iname),'umy',i_umy)
-        call parse_name(iname,cname(iname),cform(iname),'umz',i_umz)
-        call parse_name(iname,cname(iname),cform(iname),'Marms',i_Marms)
-        call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
-        call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
+        call parse_name(iname,cname(iname),cform(iname),'ud2m',i_ud2m)
+        call parse_name(iname,cname(iname),cform(iname),'udm2',i_udm2)
+        call parse_name(iname,cname(iname),cform(iname),'od2m',i_od2m)
+        call parse_name(iname,cname(iname),cform(iname),'oudm',i_oudm)
+        call parse_name(iname,cname(iname),cform(iname),'udrms',i_udrms)
+        call parse_name(iname,cname(iname),cform(iname),'udmax',i_udmax)
+        call parse_name(iname,cname(iname),cform(iname),'odrms',i_odrms)
+        call parse_name(iname,cname(iname),cform(iname),'odmax',i_odmax)
+        call parse_name(iname,cname(iname),cform(iname),'udmx',i_udmx)
+        call parse_name(iname,cname(iname),cform(iname),'udmy',i_udmy)
+        call parse_name(iname,cname(iname),cform(iname),'udmz',i_udmz)
+        call parse_name(iname,cname(iname),cform(iname),'divud2m',i_divud2m)
         call parse_name(iname,cname(iname),cform(iname),'epsKd',i_epsKd)
-      enddo
-!
-!  check for those quantities for which we want xy-averages
-!
-      do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',i_uxmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',i_uymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',i_uzmz)
-      enddo
-!
-!  check for those quantities for which we want z-averages
-!
-      do ixy=1,nnamexy
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',i_uxmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',i_uymxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',i_uzmxy)
       enddo
 !
 !  write column where which magnetic variable is stored
