@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.143 2003-11-21 18:04:39 dobler Exp $ 
+! $Id: sub.f90,v 1.144 2003-11-22 03:33:47 brandenb Exp $ 
 
 module Sub 
 
@@ -19,6 +19,7 @@ module Sub
     module procedure notanumber_1
     module procedure notanumber_2
     module procedure notanumber_3
+    module procedure notanumber_4
   endinterface
 
   interface cvs_id              ! Overload the cvs_id function
@@ -2165,7 +2166,7 @@ module Sub
 !
         logical :: notanumber_0
         real :: f,g
-
+!
         g=f
         notanumber_0 = &
              ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
@@ -2184,9 +2185,9 @@ module Sub
         logical :: notanumber_1
         real, dimension(:) :: f
         real, dimension(size(f,1)) :: g
-
+!
         g=f
-        notanumber_1 = &
+        notanumber_1 = any&
              ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
       endfunction notanumber_1
@@ -2204,11 +2205,10 @@ module Sub
         logical :: notanumber_2
         real, dimension(:,:) :: f
         real, dimension(size(f,1),size(f,2)) :: g
-
+!
         g=f
-        notanumber_2 = &
+        notanumber_2 = any&
              ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
-
 !
       endfunction notanumber_2
 !***********************************************************************
@@ -2225,12 +2225,32 @@ module Sub
         logical :: notanumber_3
         real, dimension(:,:,:) :: f
         real, dimension(size(f,1),size(f,2),size(f,3)) :: g
-
+!
         g=f
-        notanumber_3 = &
+        notanumber_3 = any&
              ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
       endfunction notanumber_3
+!***********************************************************************
+      function notanumber_4(f)
+!
+!  Check for denormalised floats (in fact NaN or -Inf, Inf).
+!  The test used here should work on all architectures even if
+!  optimisation is high (something like `if (any(f /= f+1))' would be
+!  optimised away).
+!  Version for 4d arrays.
+!
+!  24-jan-02/wolf: coded
+!
+        logical :: notanumber_4
+        real, dimension(:,:,:,:) :: f
+        real, dimension(size(f,1),size(f,2),size(f,3),size(f,4)) :: g
+!
+        g=f
+        notanumber_4 = any&
+             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+!
+      endfunction notanumber_4
 !***********************************************************************
       subroutine parse_bc(bc,bc1,bc2)
 !
