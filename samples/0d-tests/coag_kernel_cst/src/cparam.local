@@ -7,7 +7,7 @@
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
-! NDUSTSPEC CONTRIBUTION 80
+! NDUSTSPEC CONTRIBUTION 77
 !
 !***************************************************************
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
