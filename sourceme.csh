@@ -25,7 +25,8 @@ if (! $?PENCIL_HOME) then
 	 (-d $_dir/src)          && \
 	 (-d $_dir/samples)         \
        ) then
-      setenv PENCIL_HOME `\cd $_dir; \pwd`
+      back_again=`pwd`     
+      cd $_dir; setenv PENCIL_HOME `pwd`; cd $back_again
       goto found
     endif
   end
