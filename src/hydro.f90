@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.107 2003-10-06 14:37:47 ngrs Exp $
+! $Id: hydro.f90,v 1.108 2003-10-07 10:57:47 nilshau Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -47,6 +47,7 @@ module Hydro
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
+  integer :: i_uxpt=0,i_uypt=0,i_uzpt=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
@@ -90,7 +91,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.107 2003-10-06 14:37:47 ngrs Exp $")
+           "$Id: hydro.f90,v 1.108 2003-10-07 10:57:47 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -336,7 +337,7 @@ module Hydro
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2
       real, dimension (nx) :: ux2, uy2, uz2 ! ux^2, uy^2, uz^2
       real :: c2,s2
-      integer :: i,j
+      integer :: i,j,lpoint,mpoint,npoint
 !
       intent(in) :: f,rho1
       intent(out) :: df,uu,glnrho,divu,u2
@@ -474,6 +475,18 @@ module Hydro
         if (i_uz2m/=0) then
            uz2 = uu(:,3)*uu(:,3)
            call sum_mn_name(uz2,i_uz2m)
+        endif
+        !
+        !  kinetic field components at one point (=pt)
+        !  for now we take the middle of the root processor
+        !
+        lpoint=(l1+l2)/2
+        mpoint=(m1+m2)/2
+        npoint=(n1+n2)/2
+        if (lroot.and.m==mpoint.and.n==npoint) then
+          if (i_uxpt/=0) call save_name(uu(lpoint,1),i_uxpt)
+          if (i_uypt/=0) call save_name(uu(lpoint,2),i_uypt)
+          if (i_uzpt/=0) call save_name(uu(lpoint,3),i_uzpt)
         endif
 !
 !  mean heating term
@@ -688,6 +701,7 @@ module Hydro
 !
       if (lreset) then
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
+        i_uxpt=0; i_uypt=0; i_uzpt=0
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0
         i_ux2m=0; i_uy2m=0; i_uz2m=0
@@ -721,6 +735,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
         call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',i_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'uxpt',i_uxpt)
+        call parse_name(iname,cname(iname),cform(iname),'uypt',i_uypt)
+        call parse_name(iname,cname(iname),cform(iname),'uzpt',i_uzpt)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -767,6 +784,9 @@ module Hydro
       write(3,*) 'iux=',iux
       write(3,*) 'iuy=',iuy
       write(3,*) 'iuz=',iuz
+      write(3,*) 'i_uxpt=',i_uxpt
+      write(3,*) 'i_uypt=',i_uypt
+      write(3,*) 'i_uzpt=',i_uzpt
       write(3,*) 'i_uxmz=',i_uxmz
       write(3,*) 'i_uymz=',i_uymz
       write(3,*) 'i_uzmz=',i_uzmz
