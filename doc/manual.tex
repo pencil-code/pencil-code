@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.234 2004-03-11 16:35:59 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.235 2004-03-12 15:22:54 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-11 16:35:59 $ $,~ $ $Revision: 1.234 $ $}
+%\date{$ $Date: 2004-03-12 15:22:54 $ $,~ $ $Revision: 1.235 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-11 16:35:59 $ $,~ $ $Revision: 1.234 $ $}\\
+  \emph{$ $Date: 2004-03-12 15:22:54 $ $,~ $ $Revision: 1.235 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1622,10 +1622,12 @@ code.
 
 \paragraph{File structure}
 Snapshot files consist of the following
-\name[Fortran record]{Fortran records} (a \name{Fortran record} is marked
-by the 4-byte integer byte count of the data in the record at the
-beginning and the end, i.e.~has the form
-$\left< N_{\rm bytes}, \mathtt{raw\_data}, N_{\rm bytes} \right>$):
+\name[Fortran record]{Fortran records}\footnote{
+  \label{Footnote-Fortran-record}%
+  A \name{Fortran record} is marked by the 4-byte integer byte count of
+  the data in the record at the beginning and the end, i.e.~has the form
+  $\left< N_{\rm bytes}, \mathtt{raw\_data}, N_{\rm bytes} \right>$
+} :
 \begin{enumerate}
 \item variable vector \verb|f| [$\var{mx}{\times}\var{my}{\times}\var{mz}$]
 \item time $t$ [1],
@@ -1652,20 +1654,119 @@ file:
 \subsection{Video files and slices}
 \label{S-slices}
 
-\name{Video files} and \name{slice files} are used interchangeably.
-The output interval is given by \var{dvid} in code time units.
-The quantities to be written should be entered into the file \file{video.in}.
-The slice position is set in \name{run_pars} and can be either
-\var{slice_position='p'} (default, for periphery) or
-\var{slice_position='m'} (for middle of the box).
-Afterwards, one runs \file{src/read_videofiles.x} interactively
-in the run directory. This procedure assembles the right files from
-the different processors from \file{data/proc}$N$/ and puts them
-into \file{data/}.
-Note: remember to delete unused slices \cmd{rm data/proc*/slice*}.
-For visualization, you can use the idl procedure, e.g.\ as
-\file{rvid_box,'lnrho',amin=-.1,amax=.1}.
-It accepts the \file{/png} argument for writing png files for making videos.
+We use the terms \name{video files} and \name{slice files} interchangeably.
+These files contain a time series of values of one variable in a given
+plane.
+The output frequency of these video snapshots is set by the parameter
+\var{dvid} (in code time units).
+
+When output to video files is activated (by some settings in \file{run.in}
+and the existence of \file{video.in}, slices are written for four planes:
+\begin{enumerate}
+\item $x$-$z$ plane ($y$ index \var{iy}; file suffix \code{.xz}) 
+\item $y$-$z$ plane ($y$ index \var{ix}; suffix \code{.yz})
+\item $x$-$y$ plane ($y$ index \var{iz}; suffix \code{.xy})
+\item another slice parallel to the $x$-$y$ plane
+  ($y$ index \var{iz2}; suffix \code{.Xy})
+\end{enumerate}
+You can specify the position of the slice planes by setting the parameters
+\var{ix}, \var{iy}, \var{iz} and \var{iz2} in the namelist \name{run_pars} 
+in \file{run.in}.
+Alternatively, you can set the input parameter \var{slice_position} to one
+of \code{'p'} (periphery of box) or \code{'m'} (middle of box).
+
+In the file \file{video.in} of your run directory, you can choose for
+which variables you want to get video files;
+valid choices are listed in \S~\ref{S-video.in-params}.
+
+The \name{slice files} are written in each processor directory
+\file{data/proc*/} and have a file name indicating the individual variable
+(e.\,g.~\file{slice_ux.yz} for a slice of $u_x$ in the $y$-$z$ plane).
+Before visualizing slices one normally wants to combine the sub-slices
+written by each processor into one global slice (for each plane and
+variable).
+This is done by running \file{src/read_videofiles.x}, which will prompt
+for the variable name, read the individual sub-slices and write global
+slices to \file{data/}
+Once all global slices have been assembled you may want to remove the
+local slices \file[]{data/proc*/slice*}.
+
+For visualization of slices, you can use the \name{IDL} routine
+\file{rvid_box}, which allows the flag \option{/png} for writing
+\name{PNG} images that can then be combined into an \name{MPEG} movie
+using \name{mpeg_encode}.
+Based on \file{rvid_box}, you can write your own video routines in
+\name{IDL}.
+
+
+\paragraph{An example}
+Suppose you have set up a run using \name{entropy.f90} and
+\name{magnetic.f90} (most probably together witih \name{hydro.f90} and
+other modules).
+In order to animate slices of entropy $s$ and the $z$-component $B_z$ of
+the magnetic field, in planes passing through the center of the box, do the
+following:
+\begin{enumerate}
+
+\item Write the following lines to \file{video.in} in your run directory:
+  \begin{Verbatim}
+  ss
+  bb
+  \end{Verbatim}
+
+\item Edit \file{run.in} and in the namelist \name{run_pars} set
+  \var{dvid} and \var{slice_position} to
+  reasonable values, say
+  \begin{Verbatim}
+  dvid=0.05
+  slice_position='m'
+  \end{Verbatim}
+
+\item Run the Pencil Code:
+  \begin{alltt}
+  \prompt{unix> } start.csh
+  \prompt{unix> } run.csh
+  \end{alltt}
+
+\item Run \file{src/read_videofiles.x} to assemble global slice files from
+  those scattered across \file{data/proc*/}:
+  \begin{alltt}
+  \prompt{unix> } src/read_videofiles.x
+    enter name of variable (lnrho, ux, ..., bz):  \emph{ss}
+  \prompt{unix> } src/read_videofiles.x
+    enter name of variable (lnrho, ux, ..., bz):  \emph{bz} \
+  \end{alltt}
+
+\item Start \name{IDL} and run \file{rvid_box}:
+  \begin{alltt}
+  \prompt{unix> } idl
+  \prompt{IDL> } rvid_box,'bz'
+  \prompt{IDL> } rvid_box,'ss',min=-0.3,max=2. \
+  \end{alltt}
+  etc.
+
+\end{enumerate}
+
+
+\paragraph{File structure}
+\name[slice files]{Slice files} consist of one Fortran record (see footnote
+on page \pageref{Footnote-Fortran-record}) for each slice, which contains
+the data of the variable (without ghost zones), the time $t$ of the
+snapshot and the position of the sliced variable (e.\,g.~the $x$ position
+for a $y$-$z$ slice):
+\begin{enumerate}
+\item data$_1$ [$\var{nx}{\times}\var{ny}{\times}\var{nz}$],
+  time $t_1$ [1],
+  position$_1$ [1]
+\item data$_2$ [$\var{nx}{\times}\var{ny}{\times}\var{nz}$],
+  time $t_2$ [1],
+  position$_2$ [1]
+\item data$_3$ [$\var{nx}{\times}\var{ny}{\times}\var{nz}$],
+  time $t_3$ [1],
+  position$_3$ [1]
+\item[etc.]
+\end{enumerate}
+
 
 % ---------------------------------------------------------------------- %
 
@@ -3786,7 +3887,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-11 16:35:59 $ $,~ $ $Revision: 1.234 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-12 15:22:54 $ $,~ $ $Revision: 1.235 $ $}
 
 \section{Timings}
 
@@ -5790,6 +5891,27 @@ the latest set of parameters, you need to look at the code.
                  scales as little as possible) every \var{iwig} time steps to
                  logarithmic density (sometimes necessary with convection
                  simulations). \\
+  \var{ix} [$-1$], 
+  \var{iy} [$-1$], 
+  \var{iz} [$-1$], 
+  \var{iz2} [$-1$]
+               & position of slice planes for video files.
+                 Any negative value of some of these variables will be
+                 overwritten according to the value of
+                 \var{slice_position}.
+                 See \S~\ref{S-slices}) for details. \\
+  \var{slice_position} ['p']
+               & symbolic specification of slice position.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{'p'}] (\emph{periphery} of the box)
+                 \item[\code{'m'}] (\emph{middle} of the box)
+                 \item[\code{'e'}] (\emph{equator} for half-sphere
+                   calculations, i.\,e.~$x$, $y$ centered, $z$ bottom)
+                 \end{description}
+                 These settings are overridden by explicitly setting
+                 \var{ix}, \var{iy}, \var{iz} or \var{iz2}.
+                 See \S~\ref{S-slices}) for details. \\
   \var{tavg} [$0$]
                & averaging time $\tau_{\rm avg}$ for time averages (if
                  $\ne 0$); at the same time, time interval for writing
@@ -6207,6 +6329,101 @@ possible inputs to the file \file{print.in}.
 % ---------------------------------------------------------------------- %
 
 
+
+\subsection{List of parameters for \file{video.in}}\
+\label{S-video.in-params}
+
+The following table lists all (at the time of writing, March 2004)
+possible inputs to the file \file{video.in}.
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lp{0.7\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{hydro.f90}} \\
+\midrule
+  \var{uu}    & velocity vector $\uv$;
+                writes all three components separately to files
+                \file[]{u[xyz].\{xz,yz,xy,Xy\}}  \\
+  \var{oo}    & vorticity vector $\vec{\omega} = \curl\uv$;
+                writes \file[]{o[xyz].\{xz,yz,xy,Xy\}}  \\
+  \var{o2}    & enstrophy $\omega^2 = |\curl\uv|^2$;
+                writes \file[]{o2.\{xz,yz,xy,Xy\}}  \\
+  \var{divu}  & $\Div\uv$;
+                writes \file[]{divu.\{xz,yz,xy,Xy\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{density.f90}} \\
+\midrule
+  \var{lnrho} & logarithmic density $\ln\varrho$;
+                writes \file[]{lnrho.\{xz,yz,xy,Xy\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
+\midrule
+  \var{ss}    & entropy $s$;
+                writes \file[]{ss.\{xz,yz,xy,Xy\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{visc_shock.f90}} \\
+\midrule
+  \var{shock} & shock viscosity $\nu_{\rm shock}$;
+                writes \file[]{shock.\{xz,yz,xy,Xy\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Modules \file{ionization.f90} and \file{temperature.f90}}\\
+\midrule
+  \var{lnTT}  & logarithmic temperature $\ln T$;
+                writes \file[]{lnTT.\{xz,yz,xy,Xy\}}.
+
+                \emph{N.B.: This won't work with other modules, but not all
+                compilers will flag the array bound violation when
+                \code{ilnTT=0}}. \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{ionization.f90}} \\
+\midrule
+  \var{ionization} & ionization fraction $y_{\rm H}$;
+                     writes \file[]{yH.\{xz,yz,xy,Xy\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{radiation_ray.f90}} \\
+\midrule
+  \var{Qrad}  & radiative heating rate $Q_{\rm rad}$;
+                writes \file[]{Qrad.\{xz,yz,xy,Xy\}}  \\
+  \var{Isurf} & surface intensity $I_{\rm surf}$ (?);
+                writes \file[]{Isurf.xz}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
+\midrule
+  \var{aa}    & magnetic vector potential $\Av$;
+                writes \file[]{a[xyz].\{xz,yz,xy,Xy\}}  \\
+  \var{b}     & magnetic flux density $\Bv$;
+                writes \file[]{b[xyz].\{xz,yz,xy,Xy\}}  \\
+  \var{b2}    & magnetic energy density $\Bv^2$;
+                writes \file[]{b2.\{xz,yz,xy,Xy\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
+\midrule
+  \var{lncc}  & logarithmic density of passive scalar $\ln c$;
+                writes \file[]{lncc.\{xz,yz,xy,Xy\}}  \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{cosmicray.f90}} \\
+\midrule
+  \var{ecr}   & energy $e_{\rm cr}$ of cosmic rays (?);
+                writes \file[]{ec.\{xz,yz,xy,Xy\}}  \\
+%
+\bottomrule
+\end{longtable}
+% ---------------------------------------------------------------------- %
+
+
+
 \subsection{List of parameters for \file{phiaver.in}}\
 \label{S-phiaver.in-params}
 
@@ -6560,7 +6777,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.234 2004-03-11 16:35:59 dobler Exp $ $}
+$ $Id: manual.tex,v 1.235 2004-03-12 15:22:54 dobler Exp $ $}
 
 
 \end{document}
