@@ -1,12 +1,11 @@
-! $Id: wsnaps.f90,v 1.34 2003-07-14 17:27:14 dobler Exp $
+! $Id: wsnaps.f90,v 1.35 2003-07-28 10:43:42 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!
 
-!!!  Distributed IO (i.e. each process writes its own file data/procX)
-!!!  07-Nov-2001/wd: Put into separate module, so one can choose
-!!!  alternative IO mechanism.
+!!!  Write snapshot files (variables and powerspectra). Is a separate
+!!!  module, so it can be used with whatever IO module we want.
 
 module Wsnaps
 
