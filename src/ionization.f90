@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.139 2003-11-17 13:43:18 theine Exp $
+! $Id: ionization.f90,v 1.140 2003-11-18 11:02:37 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -65,7 +65,7 @@ module Ionization
 
   !  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
-  real :: ss_ion,ee_ion,kappa0,lnchi0,Srad0,xHe_term
+  real :: ss_ion,ee_ion,kappa0,lnchi0,Srad0,xHe_term,ss_ion1
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   integer :: l
 
@@ -118,7 +118,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.139 2003-11-17 13:43:18 theine Exp $")
+           "$Id: ionization.f90,v 1.140 2003-11-18 11:02:37 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -191,6 +191,7 @@ module Ionization
       lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       ss_ion=k_B/m_H/mu1yHxHe
+      ss_ion1=1/ss_ion
       ee_ion=ss_ion*TT_ion
       kappa0=sigmaH_/m_H/mu1yHxHe
       lnchi0=log(kappa0)-log(4.0)
@@ -483,27 +484,24 @@ module Ionization
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,yH,lnTT
-      real, dimension(nx) :: R,dlnTTdy,dRdy,dlnTTdlnrho
-      real, dimension(nx) :: dRdlnrho,dydlnrho,dlnPPdlnrho
+      real, dimension(nx) :: R,dlnTTdy,dRdy,dlnTTdlnrho,temp
+      real, dimension(nx) :: dRdlnrho,dydlnrho,dlnPPdlnrho,fractions,fractions1
       real, dimension(nx) :: dlnTTdss,dRdss,dydss,dlnPPdss,TT1
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
       TT1=exp(-lnTT)
+      fractions=(1+yH+xHe)
+      fractions1=1/fractions
 !
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH)-2*log(yH)
-      dlnTTdy=((2.0/3.0)*(lnrho_H-lnrho_p-R-TT_ion*TT1)-1)/(1+yH+xHe)
+      dlnTTdy=(2*(lnrho_H-lnrho_p-R-TT_ion*TT1)-3)/3*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH)-2/yH
-      dlnTTdlnrho=(2.0/3.0)
-      dRdlnrho=(2.0/3.0)*TT_ion*TT1
-      dydlnrho=-dRdlnrho/dRdy
-      dlnTTdss=(2.0/3.0)/((1+yH+xHe)*ss_ion)
-      dRdss=(1+dRdlnrho)/((1+yH+xHe)*ss_ion)
-      dydss=-dRdss/dRdy
-      dlnPPdss=dydss/(1+yH+xHe)+dlnTTdy*dydss+dlnTTdss
-      dlnPPdlnrho=1+dydlnrho/(1+yH+xHe)+dlnTTdy*dydlnrho+dlnTTdlnrho
-      cs2=(1+yH+xHe)*ss_ion*dlnPPdlnrho/TT1
+      temp=(dlnTTdy+fractions1)/dRdy
+      dlnPPdlnrho=(5-2*TT_ion*TT1*temp)/3
+      dlnPPdss=ss_ion1*fractions1*(dlnPPdlnrho-temp-1)
+      cs2=fractions*ss_ion*dlnPPdlnrho/TT1
       cp1tilde=dlnPPdss/dlnPPdlnrho
 !
     endsubroutine pressure_gradient
