@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.7 2003-11-06 17:33:04 dobler Exp $
+; $Id: pc_read_ts.pro,v 1.8 2004-03-26 14:09:38 dobler Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2003-11-06 17:33:04 $
-;  $Revision: 1.7 $
+;  $Date: 2004-03-26 14:09:38 $
+;  $Revision: 1.8 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -159,7 +159,7 @@ while (fileposition ne -1) do begin
   ncols = n_elements(labels)
   newheader='^#--'
  
-  data = input_table(fullfilename,DOUBLE=DOUBLE,  $
+  data = input_table(fullfilename,DOUBLE=double,  $
                      STOP_AT=newheader,FILEPOSITION=fileposition)
   if ((size(data))[1] ne ncols) then begin
     message, /INFO, 'Inconsistency: label number different from column number'

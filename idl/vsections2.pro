@@ -5,11 +5,11 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   26-Nov-2001
-;;;  $Id: vsections2.pro,v 1.12 2003-12-29 09:57:29 dobler Exp $
+;;;  $Id: vsections2.pro,v 1.13 2004-03-26 14:09:38 dobler Exp $
 ;;;
 ;;;  Description:
-;;;   Plot velocity, density and entropy field in three horizontal
-;;;   sections. Same as vsections, but cuts x=const are shown
+;;;   Plot velocity, density and entropy field in three vertical
+;;;   sections (x=const).
 
 ; ---------------------------------------------------------------------- ;
 pro _opstuff, z, r, LGRAVZ=lgravz, LGRAVR=lgravr
@@ -23,6 +23,7 @@ pro _opstuff, z, r, LGRAVZ=lgravz, LGRAVR=lgravr
 ;
   default, lgravz, 0L
   default, lgravr, 0L
+  default, zlevels, [0]
   if (lgravz)  then begin
     ophline,z, LINE=hline, THICK=3, COLOR=hcol1
     ophline,z, LINE=hline,          COLOR=hcol2
@@ -78,7 +79,7 @@ endif else begin
 endelse
 
 if (absolute) then begin
-  zruu = minmax(uu[*,*,*,1])
+  zruu = minmax(uu[*,*,*,0])
 endif else begin
   undefine, zruu                ; ZRANGE=<undef> is like no ZRANGE kw at all
 endelse

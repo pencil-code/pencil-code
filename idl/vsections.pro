@@ -5,11 +5,11 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   26-Nov-2001
-;;;  $Id: vsections.pro,v 1.19 2003-12-29 09:57:29 dobler Exp $
+;;;  $Id: vsections.pro,v 1.20 2004-03-26 14:09:38 dobler Exp $
 ;;;
 ;;;  Description:
-;;;   Plot velocity, density and entropy field in three horizontal
-;;;   sections.
+;;;   Plot velocity, density and entropy field in three vertical
+;;;   sections (y=const).
 
 ; ---------------------------------------------------------------------- ;
 pro _opstuff, z, r, LGRAVZ=lgravz, LGRAVR=lgravr

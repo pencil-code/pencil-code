@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   26-Nov-2001
-;;;  $Id: hsections.pro,v 1.17 2003-12-29 09:57:29 dobler Exp $
+;;;  $Id: hsections.pro,v 1.18 2004-03-26 14:09:38 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Plot velocity, density and entropy field in three horizontal
@@ -58,7 +58,7 @@ save_state
 wput
 
 !p.multi = [0,3,2]
-!p.charsize = 2
+if (!d.name eq 'X') then !p.charsize = 2
 !x.title = '!8x!X'
 !y.title = '!8y!X'
 
@@ -80,13 +80,18 @@ endif else begin
 endelse
 
 ratio = (!y.range[1]-!y.range[0])/(!x.range[1]-!x.range[0])
-plot_3d_vect, uu[*,*,nz1,*],x,y, /KEEP, TITLE=tit+sz1+'!X', ZRANGE=zruu, $
+plot_3d_vect, uu[*,*,nz1,*],x,y, $
+    /KEEP, TITLE=tit+sz1+'!X', ZRANGE=zruu, $
     POSITION=aspect_pos(ratio,MARGIN=0.1)
 _opstuff, sqrt(1-z[nz1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
-plot_3d_vect, uu[*,*,nz2,*],x,y, /KEEP, TITLE=tit+sz2+'!X', ZRANGE=zruu, $
+;
+plot_3d_vect, uu[*,*,nz2,*],x,y, $
+    /KEEP, TITLE=tit+sz2+'!X', ZRANGE=zruu, $
     POSITION=aspect_pos(ratio,MARGIN=0.1)
 _opstuff, sqrt(1-z[nz2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
-plot_3d_vect, uu[*,*,nz3,*],x,y, /KEEP, TITLE=tit+sz3+'!X', ZRANGE=zruu, $
+;
+plot_3d_vect, uu[*,*,nz3,*],x,y, $
+    /KEEP, TITLE=tit+sz3+'!X', ZRANGE=zruu, $
     POSITION=aspect_pos(ratio,MARGIN=0.1)
 _opstuff, sqrt(1-z[nz3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
@@ -99,24 +104,22 @@ endif else begin
   undefine, levss                 ; LEVELS=<undef> is like no LEVELS kw at all
 endelse
 
-epsi=1.e-6
-
 contourfill, ss[*,*,nz1],x,y, TITLE=tit+sz1+'!X', LEVELS=levss, $
     POSITION=aspect_pos(ratio,MARGIN=0.1)
 var = reform(lnrho[*,*,nz1])
-contour, var, x, y, /OVER, LEV=linspace(minmax(var),nrholevs,/UNIQ)
+contour, var, x, y, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, sqrt(1-z[nz1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ss[*,*,nz2],x,y, TITLE=tit+sz2+'!X', LEVELS=levss, $
     POSITION=aspect_pos(ratio,MARGIN=0.1)
 var = reform(lnrho[*,*,nz2])
-contour, var, x, y, /OVER, LEV=linspace(minmax(var),nrholevs,/UNIQ)
+contour, var, x, y, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, sqrt(1-z[nz2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ss[*,*,nz3],x,y, TITLE=tit+sz3+'!X', LEVELS=levss, $
     POSITION=aspect_pos(ratio,MARGIN=0.1)
 var = reform(lnrho[*,*,nz3])
-contour, var, x, y, /OVER, LEV=linspace(minmax(var),nrholevs,/UNIQ)
+contour, var, x, y, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, sqrt(1-z[nz3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
 wget
