@@ -1,0 +1,4 @@
+#!/bin/sh
+list=`cat $1 | sed -e 's/\(p%[a-zA-Z0-9]*\)/\1\n/g' | sed -e 's/.*\(p%[a-zA-Z0-9]*\).*/\1/g' | grep 'p%' | sort | uniq | xargs | sed -e 's/p\%//g; s/ /,/g'`
+
+echo "# PENCILS $list"
