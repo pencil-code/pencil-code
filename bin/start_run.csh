@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.35 2004-09-22 10:10:56 ajohan Exp $
+# CVS: $Id: start_run.csh,v 1.36 2004-09-22 10:13:48 ajohan Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -143,7 +143,7 @@ date
 # On machines with local scratch disc, copy var.dat back to the data
 # directory
 if ($local_disc) then
-  echo "Copying final var.dat back from local scratch disk"
+  echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash.dat back from local scratch disks"
   copy-snapshots -v var.dat     >&! copy-snapshots2.log
   copy-snapshots -v -1          >>& copy-snapshots2.log
   copy-snapshots -v dxyz.dat    >>& copy-snapshots2.log
