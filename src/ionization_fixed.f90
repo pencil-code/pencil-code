@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.42 2003-11-21 09:01:07 theine Exp $
+! $Id: ionization_fixed.f90,v 1.43 2004-02-06 16:23:32 dobler Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -87,7 +87,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.42 2003-11-21 09:01:07 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.43 2004-02-06 16:23:32 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -330,7 +330,7 @@ module Ionization
       call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION_FIXED")
       if (ip==0) print*,lnrho
       if (ip==0) print*,lnTT
-      if (ip==0) print*,ss
+      if (ip==0) ss=0.
 !
     endsubroutine getentropy_pencil
 !***********************************************************************
@@ -345,7 +345,7 @@ module Ionization
       call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION_FIXED")
       if (ip==0) print*,lnrho
       if (ip==0) print*,lnTT
-      if (ip==0) print*,ss
+      if (ip==0) ss=0.
 !
     endsubroutine getentropy_point
 !***********************************************************************
@@ -624,6 +624,9 @@ module Ionization
       real, intent(out) :: cs2
 !
       call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
+!
+      if (ip==0) print*,TT       ! (keep compiler quiet)
+      if (ip==0) cs2=0.         ! (keep compiler quiet)
 !
     end subroutine get_soundspeed
 !***********************************************************************
