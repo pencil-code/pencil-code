@@ -7,7 +7,8 @@
 #PBS -l ncpus=1
 #PBS -q p-long
 ##PBS -l nodes=nq0+nq4+nq2+nq3
-#PBS -l nodes=nq0
+##PBS -l nodes=nq0
+#PBS -l nodes=nq1+nq2
 
 #setenv PGHPF_HOST -file=$PBS_NODEFILE
 if ($?PBS_NODEFILE) then
