@@ -61,6 +61,7 @@ else
   set size = $lsout[5]
 
   while (1)
+    echo
     date
     foreach node ($nodelist)
       if ($debug) echo "node=$node"
@@ -70,8 +71,9 @@ else
         set VARsize = $lsout[5]
         if ($VARsize >= $size) then
 	  # if file is ready, copy it and delete original 
-	  if ($debug) echo "Copying ${node}:$SCRATCH_DIR/$file to $targetdir/$file"
-	  $SSH $node "cp $SCRATCH_DIR/$file $targetdir/proc$i/ && rm $SCRATCH_DIR/$file"
+	  if ($debug) echo "Moving ${node}:$SCRATCH_DIR/$file to $targetdir/$file"
+	  if ($debug) echo "$SSH $node 'mv $SCRATCH_DIR/$file $targetdir/$file'"
+	  $SSH $node "mv -f $SCRATCH_DIR/$file $targetdir/$file"
         else
 	  if ($debug) echo "Size of $SCRATCH_DIR/$file < $size, so not copying yet"
         endif
@@ -79,7 +81,7 @@ else
     end
 
     if (! $?varfile) then
-      sleep 300			# only check every 5 minutes
+      sleep 10			# only check every 5 minutes
     endif
   end
 

@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.61 2003-08-14 14:21:40 dobler Exp $
+# $Id: getconf.csh,v 1.62 2003-08-14 17:33:51 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -62,7 +62,7 @@ if ($?PBS_NODEFILE) then
   setenv NODELIST \
   `cat $PBS_NODEFILE | grep -v '^#.*' | sed 's/:[0-9]*//' | xargs printf ":%s" | sed s/^://`
 else
-  setenv NODELIST "$hn"
+  if (! $?NODELIST) setenv NODELIST "$hn"
 endif
 
 ## ------------------------------
@@ -83,11 +83,18 @@ else if ($hn =~ sleipner) then
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node*) ) then
-  set mpirun = /usr/lib/lam/bin/mpirun
-  set mpirunops = "-c2c -O"
-#  set mpirunops = "-c2c c8-13"
-
+  # Choose appropriate mpirun version (LAM vs. MPICH)
+  if (`fgrep -c lam_mpi src/start.x`> 0) then
+    set mpirun = /usr/lib/lam/bin/mpirun
+    set mpirunops = "-c2c -O"
+  else if (`fgrep -c MPICHX src/start.x`> 0) then
+    set mpirun = /usr/lib/mpich/bin/mpirun
+  else
+    set mpirun 'printf "%s\n" "Cannot find out which mpirun to use"'
+  endif
+  
 set local_disc = 1
+set one_local_disc = 0
 set local_binary = 0
 setenv SCRATCH_DIR /var/tmp/dobler
 
@@ -103,6 +110,7 @@ else if ($hn =~ nq* || $hn =~ ns*) then
     echo "PBS job"
     cat $PBS_NODEFILE > lamhosts
     set local_disc = 1
+    set one_local_disc = 0
     set local_binary = 1	# (really needed?)
   else
     echo "Non-PBS, running on `hostname`"

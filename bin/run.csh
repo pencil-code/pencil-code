@@ -50,12 +50,11 @@ if ($local_disc) then
     set i=0
     foreach node ($nodelist)
       echo "i = $i"
-      $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/
+      $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/
       set i=`expr $i + 1`
     end
   endif
 endif
-
 # Clean up control and data files
 rm -f STOP RELOAD fort.20
 
