@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.99 2003-09-29 10:59:25 theine Exp $
+! $Id: ionization.f90,v 1.100 2003-09-29 15:06:42 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.99 2003-09-29 10:59:25 theine Exp $")
+           "$Id: ionization.f90,v 1.100 2003-09-29 15:06:42 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -582,10 +582,14 @@ module Ionization
       integer, optional    :: iter
       integer, parameter   :: maxit=1000
 !
-      yHmax=min(ee/ee_ion,1-2*epsilon(yH))
+      yHmax=min(ee/ee_ion,1.)*(1-2*epsilon(yH))
       yHmin=2*tiny(yH)
       dyH=1
       dyHold=dyH
+      yH=min(yH,yHmax)
+!      yH=max(yH,yHmin)  ! not needed
+
+!write(0,*) '----------------------------------------------'
       call saha_ee(yH,lnrho,ee,f,df)
       do i=1,maxit
         if (present(iter)) iter=i ! checking with present() avoids segfault
@@ -624,6 +628,7 @@ module Ionization
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
 !
+!write(0,*) 'ee/ee_ion,yH=',ee/ee_ion,yH
       lnTT_=log(ee/ee_ion-yH)-log(1.5*(1.+yH+xHe))
       f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
       dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
