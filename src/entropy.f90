@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.117 2002-08-10 17:35:15 dobler Exp $
+! $Id: entropy.f90,v 1.118 2002-08-11 01:52:33 brandenb Exp $
 
 module Entropy
 
@@ -65,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.117 2002-08-10 17:35:15 dobler Exp $")
+           "$Id: entropy.f90,v 1.118 2002-08-11 01:52:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -355,6 +355,7 @@ module Entropy
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
       case default
         if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
+        call stop_it("")
       endselect
 !
 !  thermal conduction
@@ -831,6 +832,7 @@ endif
         enddo
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_flux
@@ -893,6 +895,7 @@ endif
         enddo
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_temp_old
@@ -949,6 +952,7 @@ endif
 
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_temp_x'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_temp_x
@@ -1005,6 +1009,7 @@ endif
 
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_temp_y'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_temp_y
@@ -1061,6 +1066,7 @@ endif
 
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_temp_z'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_temp_z
@@ -1109,6 +1115,7 @@ endif
 
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_stemp_x'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_stemp_x
@@ -1157,6 +1164,7 @@ endif
 
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_stemp_y'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_stemp_y
@@ -1205,6 +1213,7 @@ endif
 
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_stemp_z'"
+        call stop_it("")
       endselect
 !
     endsubroutine bc_ss_stemp_z
@@ -1216,6 +1225,7 @@ endif
 !  may-2002/nils: coded
 !  11-jul-2002/nils: moved into the entropy module
 !
+      use Mpicomm, only: stop_it
       use Cdata
 !
       character (len=3) :: topbot
@@ -1256,6 +1266,7 @@ endif
       end do
     case default
        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+        call stop_it("")
     endselect
 
     end subroutine bc_ss_energy
