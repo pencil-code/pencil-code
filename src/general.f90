@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.31 2003-11-18 12:41:43 dobler Exp $
+! $Id: general.f90,v 1.32 2003-12-17 11:33:15 nilshau Exp $
 
 module General
 
@@ -161,7 +161,7 @@ module General
             enddo
           enddo
         enddo
-      case default ! 'nr_f90'
+      case('nr_f90')
         do i=1,size(a,1)
           do j=1,size(a,2)
             do k=1,size(a,3)
@@ -169,6 +169,9 @@ module General
             enddo
           enddo
         enddo
+      case default
+        if (lroot) print*, 'No such random number generator: ', random_gen
+        STOP
       endselect
 !
     endsubroutine random_number_wrapper_3
