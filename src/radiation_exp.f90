@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.82 2003-08-06 14:56:12 theine Exp $
+! $Id: radiation_exp.f90,v 1.83 2003-08-06 18:51:47 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -34,9 +34,7 @@ module Radiation
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-  logical :: nocooling=.false.,test_radiation=.false.,output_Qrad=.false.
-  logical :: lkappa_es=.false.
-  logical :: axeltest=.false.
+  logical :: nocooling=.false.,test_radiation=.false.,lkappa_es=.false.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -45,11 +43,11 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0,i_Qradrms,i_Qradmax
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es, &
-       bc_rad,axeltest
+       radx,rady,radz,rad2max,test_radiation,lkappa_es, &
+       bc_rad
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es,nocooling, &
+       radx,rady,radz,rad2max,test_radiation,lkappa_es,nocooling, &
        bc_rad
 
   contains
@@ -85,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.82 2003-08-06 14:56:12 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.83 2003-08-06 18:51:47 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -245,7 +243,6 @@ module Radiation
 !  First initialize Qrad=-S. 
 !
       f(:,:,:,iQrad)=-Srad
-      if(axeltest) f(:,:,:,iQrad)=0
 !
 !  calculate weights
 !
@@ -254,37 +251,13 @@ module Radiation
 !  loop over rays
 !
       do idir=1,ndir
-!
-        lrad=dir(idir,1)
-        mrad=dir(idir,2)
-        nrad=dir(idir,3)
-!
-        call intensity_startstop()
         call intensity_intrinsic(f)
         call intensity_periodic()
         call intensity_communicate()
         call intensity_revision(f)
-!
       enddo
 !
     endsubroutine radtransfer
-!***********************************************************************
-    subroutine intensity_startstop()
-!
-!  calculate start and stop values for a given direction
-!
-!  11-jul-03/tobi: coded
-!
-      use Cdata
-!
-      if (lrad>=0) then; llstart=l1; llstop=l2; lsign=+1
-                   else; llstart=l2; llstop=l1; lsign=-1; endif
-      if (mrad>=0) then; mmstart=m1; mmstop=m2; msign=+1
-                   else; mmstart=m2; mmstop=m1; msign=-1; endif
-      if (nrad>=0) then; nnstart=n1; nnstop=n2; nsign=+1
-                   else; nnstart=n2; nnstop=n1; nsign=-1; endif
-!
-    endsubroutine intensity_startstop
 !***********************************************************************
     subroutine intensity_intrinsic(f)
 !
@@ -305,9 +278,24 @@ module Radiation
 !
       if(ldebug.and.headt) print*,'intensity_intrinsic'
 !
+!  get direction components
+!
+      lrad=dir(idir,1)
+      mrad=dir(idir,2)
+      nrad=dir(idir,3)
+!
 !  line elements
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
+!
+!  determine start and stop positions
+!
+      if (lrad>=0) then; llstart=l1; llstop=l2; lsign=+1
+                   else; llstart=l2; llstop=l1; lsign=-1; endif
+      if (mrad>=0) then; mmstart=m1; mmstop=m2; msign=+1
+                   else; mmstart=m2; mmstop=m1; msign=-1; endif
+      if (nrad>=0) then; nnstart=n1; nnstop=n2; nsign=+1
+                   else; nnstart=n2; nnstop=n1; nsign=-1; endif
 !
 !  set optical depth and intensity initially to zero
 !
@@ -934,24 +922,6 @@ module Radiation
       endif
 !
     endsubroutine radiative_cooling
-!***********************************************************************
-    subroutine output_radiation(lun) !
-!  Optional output of derived quantities along with VAR-file
-!  Called from wsnap
-!
-!   5-apr-03/axel: coded
-!
-      use Cdata
-      use Ionization
-!
-      integer, intent(in) :: lun
-!
-!  identifier
-!
-      !if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
-      !if(output_Qrad) write(lun) Qrad,Srad,kaprho,TT
-!
-    endsubroutine output_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !
