@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.131 2004-05-29 06:30:38 brandenb Exp $
+! $Id: start.f90,v 1.132 2004-06-02 16:27:09 bingert Exp $
 !
 !***********************************************************************
       program start
@@ -38,6 +38,7 @@
         real, dimension (mx,my,mz,mvar) :: df
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
+        real :: c_grid1
 !
         lstart = .true.
 !
@@ -46,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.131 2004-05-29 06:30:38 brandenb Exp $")
+             "$Id: start.f90,v 1.132 2004-06-02 16:27:09 bingert Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -54,12 +55,13 @@
         xyz1 = (/impossible, impossible, impossible/) ! last corner
         Lxyz = (/impossible, impossible, impossible/) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
+        lequidist=(/.true.,.true.,.true. /) ! all directions equidistant grid
 ! dgm
         lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
 !
 !  read parameters from start.in
 !  call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
-!
+
         call read_startpars(FILE=.true.)
         call rprint_list(.false.)
 !
@@ -142,6 +144,8 @@
 !  lperi indicate periodicity of given direction
 !  dgm: allow for shifted origin when non-periodic
 !
+        
+
         if (lperi(1)) then 
           dx=Lx/nxgrid
           x00=x0+.5*dx
@@ -169,9 +173,27 @@
 !
 !  set x,y,z arrays
 !
+
         do i=1,mx; x(i)=x00+(i-nghost-1+ipx*nx)*dx; enddo
         do i=1,my; y(i)=y00+(i-nghost-1+ipy*ny)*dy; enddo
-        do i=1,mz; z(i)=z00+(i-nghost-1+ipz*nz)*dz; enddo
+        do i=1,mz; zeta_grid(i)=i-nghost-1+ipz*nz; enddo 
+        if (.not. lequidist(3)) then 
+          select case(grid_func)
+          case ('linear') 
+            z=z00+zeta_grid*dz
+            zprim=dz
+            zprim2=0.
+          case ('sinh')
+            c_grid1=Lz/(sinh(coef_grid(1)*(zeta_grid(n2)-zeta_grid0))- &
+                 sinh(coef_grid(1)*(zeta_grid(n1)-zeta_grid0)))
+            z=z00+c_grid1*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
+            zprim=c_grid1*coef_grid(1)*cosh(coef_grid(1)*(zeta_grid-zeta_grid0))  
+            zprim2=c_grid1*coef_grid(1)**2*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
+          endselect
+        else
+          z=z00+zeta_grid*dz
+        endif
+        
 !
 !  write grid.dat file
 !

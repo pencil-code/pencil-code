@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.13 2004-05-07 13:52:18 ajohan Exp $
+! $Id: deriv.f90,v 1.14 2004-06-02 16:27:09 bingert Exp $
 
 module Deriv
 
@@ -13,6 +13,33 @@ module Deriv
 
 !***********************************************************************
     subroutine der_main(f,k,df,j)
+!
+!  calculate derivative df_k/dx_j
+!  accurate to 6th order, explicit, periodic
+!  replace cshifts by explicit construction -> x6.5 faster!
+!
+!  28-may-04/bing+wolf: adapted for nonequidistant grid
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: df
+      integer :: j,k
+
+      call der_equidist(f,k,df,j)
+      if (.not. lequidist(j)) then
+         if (j==1) then
+            df = df * dx / xprim(l1:l2)
+         elseif (j==2) then
+            df = df * dy / yprim(m)
+         elseif (j==3) then
+            df = df * dz / zprim(n)
+         endif
+      endif
+!
+    end subroutine der_main
+!***********************************************************************
+    subroutine der_equidist(f,k,df,j)
 !
 !  calculate derivative df_k/dx_j
 !  accurate to 6th order, explicit, periodic
@@ -60,7 +87,7 @@ module Deriv
         endif
       endif
 !
-    endsubroutine der_main
+    endsubroutine der_equidist
 !***********************************************************************
     subroutine der_other(f,df,j)
 !
@@ -112,7 +139,37 @@ module Deriv
 !
     endsubroutine der_other
 !***********************************************************************
-    subroutine der2(f,k,df,j)
+    subroutine der2(f,k,df2,j)
+!
+!  calculate 2nd derivative d^2f_k/dx_j^2
+!  accurate to 6th order, explicit, periodic
+!
+!  28-may-04/bing+wolf: adapted for nonequidistant grid
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: df2,df
+      integer :: j,k
+
+      intent(in)  :: f,k,j 
+      intent(out) :: df2
+      
+      call der2_equidist(f,k,df2,j)
+      if (.not. lequidist(j)) then
+         call der_equidist(f,k,df,j)
+         if (j==1) then
+            df2 = df2*(dx/xprim(l1:l2))**2 - df*xprim2(l1:l2)*dx/xprim(l1:l2)**3
+         elseif (j==2) then
+            df2 = df2*(dy/yprim(m))**2 - df*yprim2(m)*dy/yprim(m)**3
+         elseif (j==3) then
+            df2 = df2*(dy/zprim(n))**2 - df*zprim2(n)*dz/zprim(n)**3
+         endif
+      endif
+
+    end subroutine der2
+!***********************************************************************
+    subroutine der2_equidist(f,k,df,j)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
 !  accurate to 6th order, explicit, periodic
@@ -159,7 +216,7 @@ module Deriv
         endif
       endif
 !
-    endsubroutine der2
+    endsubroutine der2_equidist
 !***********************************************************************
     subroutine der6(f,k,df,j,ignoredx,upwind)
 !

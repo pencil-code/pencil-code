@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.231 2004-06-01 10:27:44 nilshau Exp $
+! $Id: cdata.f90,v 1.232 2004-06-02 16:27:09 bingert Exp $
 
 module Cdata
 
@@ -7,9 +7,9 @@ module Cdata
   Use Cparam
 
   integer :: itorder=3
-  real, dimension (mx) :: x
-  real, dimension (my) :: y
-  real, dimension (mz) :: z
+  real, dimension (mx) :: x,xprim,xprim2
+  real, dimension (my) :: y,yprim,yprim2
+  real, dimension (mz) :: z,zprim,zprim2,zeta_grid
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector
@@ -54,6 +54,8 @@ module Cdata
   real :: grads0=0.   ! (1/c_p)ds/dz
   real :: Omega=0.,qshear=0.,Sshear=impossible
   real :: deltay=0. !(for shear; also used in forcing and output)
+  real, dimension(1) :: coef_grid
+  real :: zeta_grid0
 
   integer, dimension(mseed) :: seed=0
   integer :: nseed=0
@@ -71,8 +73,8 @@ module Cdata
   integer :: mvar_io=0,dimensionality
   integer :: iinit
   integer, dimension(ndustspec) :: iuud,iudx,iudy,iudz,ind,imd,imi
-  logical, dimension(3) :: lperi,lshift_origin
-  character (len=labellen) ::fft_switch='fftpack'
+  logical, dimension(3) :: lperi,lshift_origin,lequidist
+  character (len=labellen) ::fft_switch='fftpack',grid_func='linear'
   character (len=1) :: slice_position='p'
 !
 !  coordinates of the point where some quantities can be printed

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.69 2004-04-02 20:51:45 dobler Exp $
+! $Id: io_dist.f90,v 1.70 2004-06-02 16:27:09 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.69 2004-04-02 20:51:45 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.70 2004-06-02 16:27:09 bingert Exp $")
 !
     endsubroutine register_io
 !
@@ -340,7 +340,7 @@ contains
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !
-      use Cdata, only: t,x,y,z,dx,dy,dz,Lx,Ly,Lz
+      use Cdata
 !
       character (len=*) :: file
 !
@@ -348,6 +348,8 @@ contains
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
       write(1) Lx,Ly,Lz
+      write(1) xprim, yprim ,zprim
+      write(1) xprim2,yprim2,zprim2
       close(1)
 !
     endsubroutine wgrid
@@ -370,6 +372,8 @@ contains
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1,IOSTAT=iostat) Lx,Ly,Lz
+      read(1) xprim, yprim ,zprim
+      read(1) xprim2,yprim2,zprim2
       close(1)
 !
 !  give notification if Lx is not read in
