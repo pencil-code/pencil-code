@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.96 2003-09-24 13:28:45 dobler Exp $
+! $Id: ionization.f90,v 1.97 2003-09-25 09:07:50 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.96 2003-09-24 13:28:45 dobler Exp $")
+           "$Id: ionization.f90,v 1.97 2003-09-25 09:07:50 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -600,7 +600,7 @@ module Ionization
 !
     endsubroutine saha
 !***********************************************************************
-    subroutine rtsafe_EE(lnrho,ee,yH)
+    subroutine rtsafe_EE(lnrho,ee,yH,iter)
 !
 !   safe newton raphson algorithm (adapted from NR) !
 !   25-aug-03/tony: modified from entropy based routine
@@ -608,14 +608,15 @@ module Ionization
       real, intent (in)    :: lnrho,ee
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=2*epsilon(1.)
+      real, parameter      :: yHacc=1e-5
       integer              :: i
-      integer, parameter   :: maxit=100
+      integer, optional    :: iter
+      integer, parameter   :: maxit=1000
 
-      yHmax=1-2*epsilon(1.)
-      yHmin=2*tiny(1.)
-      dyHold=yHmax-yHmin
-      dyH=dyHold
+      yHmax=min(ee/ss_ion/TT_ion,1.)
+      yHmin=0
+      dyH=1
+      dyHold=dyH
 !
 !  return if y is too close to 0 or 1
 !
@@ -634,6 +635,7 @@ module Ionization
 !
       call saha_ee(yH,lnrho,ee,f,df)
       do i=1,maxit
+         if (present(iter)) iter=i ! checking with present() avoids segfault
          if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
               .or.abs(2.*f).gt.abs(dyHold*df)) then
             dyHold=dyH
@@ -668,19 +670,6 @@ module Ionization
       real, intent(in)  :: yH,lnrho,ee
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
-
-      !
-      !  TEMPORARY CHECK
-      !  Will slow down ionization stuff
-      !  Please fix and remove me
-      !
-      if (ee-yH*ss_ion*TT_ion < 0) then
-        write(0,'(A)') '@*&# ABORTING: #&*@'
-        write(0,'(A," ",1pG13.6)') '  ee-yH*ss_ion*TT_ion = ', &
-             ee-yH*ss_ion*TT_ion
-        write(0,'(A)') 'BUT MUST BE POSITIVE.'
-        STOP
-      endif
 
       lnTT_=log(ee-yH*ss_ion*TT_ion) -  &
            log(1.5 * (1.+yH+xHe) * ss_ion * TT_ion )
