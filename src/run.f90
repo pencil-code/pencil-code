@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.193 2004-08-02 13:12:26 mcmillan Exp $
+! $Id: run.f90,v 1.194 2004-08-24 20:24:43 mee Exp $
 !
 !***********************************************************************
       program run
@@ -56,7 +56,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.193 2004-08-02 13:12:26 mcmillan Exp $")
+             "$Id: run.f90,v 1.194 2004-08-24 20:24:43 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -327,7 +327,9 @@
           !  time advance
           !
           call rk_2n(f,df)
-          count = count + 1     !  reliable loop count even for premature exit
+          if (lroot) then 
+            count = count + 1     !  reliable loop count even for premature exit
+          endif
           !
           !  update time averages
           !
