@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.313 2004-06-07 19:50:13 theine Exp $
+! $Id: entropy.f90,v 1.314 2004-06-08 18:22:19 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -74,9 +74,7 @@ module Entropy
        tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
-       lturbulent_heat, nu_turb0, tau_nuturb, nu_turb1, &
-       deltaT_poleq, &
-       lgaspressuregradient
+       lturbulent_heat, deltaT_poleq, lgaspressuregradient
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtc=0,i_eth=0,i_ethdivum=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -115,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.313 2004-06-07 19:50:13 theine Exp $")
+           "$Id: entropy.f90,v 1.314 2004-06-08 18:22:19 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
