@@ -1,4 +1,4 @@
-; $Id: pmd2fd_lin.pro,v 1.1 2004-01-29 13:51:48 ajohan Exp $
+; $Id: pmd2fd_lin.pro,v 1.2 2004-02-02 14:22:08 ajohan Exp $
 !p.charsize=1.5
 
 ndustspec = n_elements(ind)
@@ -14,7 +14,6 @@ nd      = fltarr(ndustspec)
 rhod    = fltarr(ndustspec)
 fd      = fltarr(ndustspec)
 fd_an   = fltarr(ndustspec)
-nd_an   = fltarr(ndustspec)
 
 for idust=0,ndustspec-1 do begin
   sdust = strtrim(string(idust),2)
@@ -34,7 +33,12 @@ endfor
 k = where((nd ne 0.) and (rhod ne 0.))
 md(k) = rhod(k)/nd(k)
 
-int = sum(nd*md)
+
+int=0.
+for k=0,ndustspec-1 do begin
+  int = int+nd(k)*md(k)
+endfor
+
 fd0 = 1.
 ;
 ; Calculate fd
@@ -47,9 +51,8 @@ eta = par.dkern_cst*int*t
 fr = exp(-eta)
 for i=0,ndustspec-1 do begin
   k = md(i)/md(0)
-  nd_an(i) = nd00*fr*exp( -md(i)/mdave0*(1-sqrt(1-fr))^2 ) / $
+  fd_an(i) = nd00*fr*exp( -md(i)/mdave0*(1-sqrt(1-fr))^2 ) / $
        ( 2*sqrt(!pi)*mdave0^(-0.5)*md(i)^1.5*(1-fr)^0.75 )
-  fd_an(i) = nd_an(i)/md(0)
 endfor
 
 plot, alog10(md/md(0)), md/md(0)*fd/fd0*md/md(0), $
