@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.70 2004-07-02 08:03:26 brandenb Exp $
+! $Id: forcing.f90,v 1.71 2004-07-19 15:08:23 brandenb Exp $
 
 module Forcing
 
@@ -61,7 +61,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.70 2004-07-02 08:03:26 brandenb Exp $")
+           "$Id: forcing.f90,v 1.71 2004-07-19 15:08:23 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -115,6 +115,12 @@ module Forcing
         profz_ampl=1.
         do n=1,mz
           profz_hel(n)=sin(z(n))
+        enddo
+      elseif (iforce_profile=='intensity') then
+        profx_ampl=1.; profx_hel=1.
+        profz_hel=1.
+        do n=1,mz
+          profz_ampl(n)=.5+.5*cos(z(n))
         enddo
       elseif (iforce_profile=='galactic') then
         profx_ampl=1.; profx_hel=1.
