@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.69 2002-10-22 12:34:28 brandenb Exp $ 
+! $Id: param_io.f90,v 1.70 2002-10-22 13:59:04 tarek Exp $ 
 
 module Param_IO
 
@@ -44,7 +44,7 @@ module Param_IO
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,test_nonblocking, &
        bcx,bcy,bcz, &
-       ttransient,tavg,idx_tavg,
+       ttransient,tavg,idx_tavg
   contains
 
 !***********************************************************************
