@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.290 2004-03-27 13:43:14 theine Exp $
+! $Id: entropy.f90,v 1.291 2004-03-29 13:52:08 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.290 2004-03-27 13:43:14 theine Exp $")
+           "$Id: entropy.f90,v 1.291 2004-03-29 13:52:08 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -504,7 +504,7 @@ module Entropy
 
       enddo
 
-      if (lnothing) print*,'init_ss: zero entropy'
+      if (lnothing.and.lroot) print*,'init_ss: zero entropy'
 !
 !  if ss_const/=0, add this constant to entropy
 !  (ss_const is already taken care of)
