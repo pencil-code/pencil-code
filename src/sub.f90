@@ -1227,6 +1227,7 @@ write(0,*) "    m[x-z]out1 = ", mxout1,myout1,mzout1
 !  optimisation is high (something like `if (any(f /= f+1))' would be
 !  optimised away).
 !  Version for 3d arrays.
+!
 !  24-jan-02/wolf: coded
 !
         logical :: notanumber_3
@@ -1242,8 +1243,9 @@ write(0,*) "    m[x-z]out1 = ", mxout1,myout1,mzout1
 !
 !  Parse boundary conditions, which may be in the form `a' (applies to
 !  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
-!  `s' for upper baoundary.
-!  24-jan-2001/wolf: coded
+!  `s' for upper boundary.
+!
+!  24-jan-02/wolf: coded
 !
         use Cparam, only: mvar,bclen
 !
@@ -1267,6 +1269,18 @@ write(0,*) "    m[x-z]out1 = ", mxout1,myout1,mzout1
         enddo
 !
       endsubroutine parse_bc
+!***********************************************************************
+      subroutine remove_file(fname)
+!
+!  Remove a file; this variant seems to be portable
+!  5-mar-02/wolf: coded
+!
+        character (LEN=*) :: fname
+!
+        open(1,FILE=fname)
+        close(1,STATUS="DELETE")
+!
+      endsubroutine remove_file
 !***********************************************************************
 
 endmodule Sub

@@ -26,7 +26,7 @@
 !        real :: time1,time2     ! cpu_time can measure longer times than
                                 ! system clock, but takes 15 seconds to
                                 ! calibrate at startup with Intel F95
-        logical :: stop
+        logical :: stop=.false.,reload=.false.
 !     
 !  initialize MPI
 !
@@ -37,8 +37,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.17 $", &
-             "$Date: 2002-03-01 15:24:41 $")
+             "$Revision: 1.18 $", &
+             "$Date: 2002-03-05 17:43:13 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -57,23 +57,6 @@
         call rparam             ! Read parameters from start.x;
                                 ! these may be overwritten by cread
         call cread(PRINT=.true.)
-!
-!  parse boundary conditions; compound conditions of the form `a:s' allow
-!  to have different variables at the lower and upper boundaries
-!
-        call parse_bc(bcx,bcx1,bcx2)
-        call parse_bc(bcy,bcy1,bcy2)
-        call parse_bc(bcz,bcz1,bcz2)
-        if (lroot) then
-          print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
-          print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
-          print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
-        endif
-!
-!  timestep
-!
-        ldt=dt.lt.0.
-        if (ldt) cdt=abs(dt)
 !
 !  read data
 !  snapshot data are saved in the tmp subdirectory.
@@ -120,12 +103,21 @@
           if (ip.le.10) print*,'it=',it
           lout=mod(it-1,it1).eq.0
           if (lout) then
-            call cread          ! Re-read configuration
             inquire(FILE="STOP", EXIST=stop)! Exit DO loop if the file
                                             ! `STOP' exists
             if (stop) then
               if (lroot) write(0,*) "Found STOP file -- quitting"
               exit Time_loop
+            endif
+!
+!  Re-read parameters if a file `RELOAD' has appeared
+!
+            inquire(FILE="RELOAD", EXIST=reload)
+            if (reload) then
+              if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
+              call cread(PRINT=.true.) ! Re-read configuration
+              call remove_file("RELOAD")
+              reload = .false.
             endif
           endif
 

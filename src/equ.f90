@@ -11,7 +11,7 @@ module Equ
 !  14-sep-01/axel: inserted from run.f90
 !
       use Cdata
-      use Sub, only: wparam2
+      use Sub, only: wparam2,parse_bc
 !
       logical, optional :: print
 !
@@ -55,6 +55,23 @@ module Equ
 !
       ix=min(ix,mx); iy=min(iy,my); iz=min(iz,mz)
       ix=max(ix,0); iy=max(iy,0); iz=max(iz,0)
+!
+!  parse boundary conditions; compound conditions of the form `a:s' allow
+!  to have different variables at the lower and upper boundaries
+!
+      call parse_bc(bcx,bcx1,bcx2)
+      call parse_bc(bcy,bcy1,bcy2)
+      call parse_bc(bcz,bcz1,bcz2)
+      if (lroot) then
+        print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
+        print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
+        print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
+      endif
+!
+!  timestep
+!
+      ldt=dt.lt.0.
+      if (ldt) cdt=abs(dt)
 !
     endsubroutine cread
 !***********************************************************************
@@ -257,8 +274,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.20 $", &
-           "$Date: 2002-03-01 09:14:08 $")
+           "$Revision: 1.21 $", &
+           "$Date: 2002-03-05 17:43:13 $")
 !
 !  initiate communication
 !
