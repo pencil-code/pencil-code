@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.164 2004-05-19 10:47:34 ajohan Exp $
+! $Id: hydro.f90,v 1.165 2004-05-21 12:38:23 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.164 2004-05-19 10:47:34 ajohan Exp $")
+           "$Id: hydro.f90,v 1.165 2004-05-21 12:38:23 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1240,8 +1240,13 @@ module Hydro
 !  Need mid-plane pressure for pressure scale height calculation
 !
       if (iproc == nprocz/2) then
-        call eoscalc(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
-            f(lpoint,mpoint,n1,iss),pp=pp0)
+        if (nprocz == 2*(nprocz/2)) then  ! Even no. of procs in z
+          call eoscalc(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
+              f(lpoint,mpoint,n1,iss),pp=pp0)
+        else                              ! Odd no. of procs in z
+          call eoscalc(ilnrho_ss,f(lpoint,mpoint,npoint,ilnrho),&
+              f(lpoint,mpoint,npoint,iss),pp=pp0)
+        endif
       endif
       call mpibcast_real(pp0,1,nprocz/2)
 !
