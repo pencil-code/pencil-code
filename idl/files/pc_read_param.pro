@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.5 2004-05-07 14:38:29 mee Exp $
+; $Id: pc_read_param.pro,v 1.6 2004-05-11 15:27:35 mee Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-07 14:38:29 $
-;  $Revision: 1.5 $
+;  $Date: 2004-05-11 15:27:35 $
+;  $Revision: 1.6 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -84,7 +84,6 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory
 
 default, datadir, 'data'
-
 pc_set_precision   ; check precision is set
 ;
 ; Initialize / set default returns for ALL variables
@@ -166,7 +165,7 @@ if (found gt 0) then begin
     
                                 ;
     if (ldensity) then begin
-      if (not object.lionization) then begin
+      if (not (object.lionization or object.lionization_fixed)) then begin
         cs0=object.cs0 & rho0=object.rho0
         gamma=object.gamma & gamma1=gamma-1.
         cs20 = cs0^2 & lnrho0 = alog(rho0)
