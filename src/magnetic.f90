@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.229 2004-10-15 17:52:02 brandenb Exp $
+! $Id: magnetic.f90,v 1.230 2004-10-25 10:42:32 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -146,7 +146,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.229 2004-10-15 17:52:02 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.230 2004-10-25 10:42:32 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -717,19 +717,21 @@ module Magnetic
         !
         ! <J^2> and J^2|max
         !
-        if (i_jrms/=0.or.i_jmax/=0.or.i_j2m/=0.or.i_jm2/=0.or.i_epsM/=0.or.i_epsM_LES/=0) then
+        if (i_jrms/=0 .or. i_jmax/=0 .or. i_j2m/=0 .or. i_jm2/=0 &
+            .or. i_epsM/=0 .or. i_epsM_LES/=0) then
           call dot2_mn(jj,j2)
           if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
           if (i_jm2/=0) call max_mn_name(j2,i_jm2)
           if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
           if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
-          if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
-          if (i_epsM/=0) call sum_mn_name(eta_smag*j2,i_epsM_LES)
+          if (i_epsM/=0 .and. iresistivity == 'eta-constant') &
+              call sum_mn_name(eta*j2,i_epsM)
+          if (i_epsM_LES/=0) call sum_mn_name(eta_smag*j2,i_epsM_LES)
         endif
         !
         ! epsM need del4A in cases with hyper resistivity
         !
-        if (i_epsM/=0 .and. iresistivity.eq.'hyper3') then
+        if (i_epsM/=0 .and. iresistivity == 'hyper3') then
           call del4v(f,iaa,del4A)
           call dot2_mn(del4A,del4A2)
           if (i_epsM/=0) call sum_mn_name(eta*del4A2,i_epsM)
