@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.43 2003-10-09 11:13:56 mcmillan Exp $
+! $Id: grav_r.f90,v 1.44 2003-10-09 12:44:17 dobler Exp $
 
 module Gravity
 
@@ -56,7 +56,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.43 2003-10-09 11:13:56 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.44 2003-10-09 12:44:17 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -87,7 +87,7 @@ module Gravity
 
       logical, save :: first=.true.
 ! geodynamo - set to false on condition of 1/r potential
-      logical :: lpoly=.true.
+      logical :: lpade=.true.
 !
 !ajwm - should this be done on RELOAD too??
    if (first) then
@@ -135,7 +135,7 @@ module Gravity
           cpot = (/ 0., 2.2679, 0., 0., 1.1697 /)
         case ('geo-kws')
           if (lroot) print*, 'initialize_gravity: 1/r potential in spherical shell'
-          lpoly=.false.
+          lpade=.false.
 ! end geodynamo
 
         case default
@@ -167,7 +167,7 @@ module Gravity
         evr(:,2) = y_mn
         evr(:,3) = z_mn
         evr = evr / spread(r_mn+epsi,2,3)
-        if (lpoly) then
+        if (lpade) then
           g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
                                   3*(cpot(1)*cpot(5)-cpot(3)), &
                                   4*cpot(1)*cpot(3), &
