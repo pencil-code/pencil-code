@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.5 2002-11-26 10:34:24 mee Exp $
+! $Id: visc_shock.f90,v 1.6 2002-11-26 15:18:15 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -49,7 +49,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.5 2002-11-26 10:34:24 mee Exp $")
+           "$Id: visc_shock.f90,v 1.6 2002-11-26 15:18:15 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -269,7 +269,6 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: df
-      real :: fac
 !
 !ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
 !ajwm Much slower using partial array?
@@ -323,7 +322,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: rho1,TT1
       real, dimension (nx) :: sij2
-      real, dimension (nx,3) :: gshock_characteristic, sgshock_characteristic
+!      real, dimension (nx,3) :: gshock_characteristic, sgshock_characteristic
 
       if ( icalculated<it ) call calc_viscosity(f)
  !          call grad(spread(shock_characteristic,4,1),1,gshock_characteristic)
@@ -366,7 +365,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho 
       real, dimension (nx,3) :: gshock_characteristic, sgshock_characteristic
-      real, dimension (nx) :: murho1,rho1
+      real, dimension (nx) :: rho1
       integer :: i
 
       intent (in) :: f, glnrho, rho1
