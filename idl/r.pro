@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.46 2003-05-08 17:19:16 brandenb Exp $
+; $Id: r.pro,v 1.47 2003-05-31 04:37:44 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.46 2003-05-08 17:19:16 brandenb Exp $
+;;; $Id: r.pro,v 1.47 2003-05-31 04:37:44 brandenb Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -160,6 +160,11 @@ end
 ;
 print,'t = ',t
 ;
+if (par.lvisc_shock ne 0) then begin
+    nu_shock=fltarr(mx,my,mz)*one
+    readu,1,nu_shock
+endif
+;
 if (par.lradiation ne 0) then begin
   if (par.output_Qrad) then begin
     Qrad=fltarr(mx,my,mz)*one
@@ -179,7 +184,7 @@ if (par.lradiation ne 0) then begin
 end
 ;
 if (par.lionization ne 0) then begin
-  if (par.output_yH or par2.output_yH) then begin
+  if (par.output_yH) then begin
     yyH=fltarr(mx,my,mz)*one
     readu,1,yyH
     print, FORMAT=fmt, 'yyH   =', $
