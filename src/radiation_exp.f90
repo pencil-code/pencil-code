@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.15 2003-06-18 19:17:56 theine Exp $
+! $Id: radiation_exp.f90,v 1.16 2003-06-19 12:43:38 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -73,7 +73,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.15 2003-06-18 19:17:56 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.16 2003-06-19 12:43:38 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -386,7 +386,7 @@ module Radiation
       do n=nstart,nstop,nrad1
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
-          dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dz
+          dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
           emdtau=exp(-dtau)
           Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
                       +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
