@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.188 2004-06-12 06:07:37 brandenb Exp $ 
+! $Id: sub.f90,v 1.189 2004-06-12 08:44:27 ajohan Exp $ 
 
 module Sub 
 
@@ -2700,31 +2700,76 @@ module Sub
 !
       endfunction notanumber_4
 !***********************************************************************
-      subroutine nan_inform_f(f,msg,lstop)
+      subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
 !
 !  Check input array (f or df) for NaN, -Inf, Inf, and output location in
 !  array.
 !
 !  30-apr-04/anders: coded
+!  12-jun-04/anders: region or intervals supplied in call
 !
         use Cdata
         use Mpicomm, only: stop_it
 !
-        real, dimension(:,:,:,:) :: f
+        real, dimension(mx,my,mz,mvar+maux) :: f
         character (len=*) :: msg
-        integer :: i,j,k,kk
+        integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=mvar+maux
+        integer, dimension(2), optional :: int1,int2,int3,int4
+        character (len=*), optional :: region
         logical, optional :: lstop
 !
-        do i=l1,l2
-          do j=m1,m2
-            do k=n1,n2
-              do kk=1,mvar+maux
-                if (notanumber(f(i,j,k,kk))) then
+!  Set intervals for different predescribed regions
+!
+        if (present(region)) then
+
+          select case (region)
+            case ('f_array')
+            case ('pencil')
+              b1=m
+              b2=m
+              c1=n
+              c2=n
+            case ('default')
+              call stop_it('nan_inform: No such region.')
+          endselect
+
+        endif
+!        
+!  Overwrite with supplied intervals
+!
+        if (present(int1)) then  ! x
+          a1=int1(1)
+          a2=int1(2)
+        endif
+
+        if (present(int2)) then  ! y
+          b1=int2(1)
+          b2=int2(2)
+        endif
+
+        if (present(int3)) then  ! z
+          c1=int3(1)
+          c2=int3(2)
+        endif
+
+        if (present(int4)) then  ! variable
+          d1=int4(1)
+          d2=int4(2)
+        endif
+!
+!  Look for NaN and inf in resulting interval
+!
+        print*, a1,a2,b1,b2,c1,c2,d1,d2
+        do a=a1,a2
+          do b=b1,b2
+            do c=c1,c2
+              do d=d1,d2
+                if (notanumber(f(a,b,c,d))) then
                   print*,'nan_inform: NaN with message "', msg, &
-                      '" encountered in the variable ', varname(kk)
-                  print*,'nan_inform: ', varname(kk), ' = ', f(i,j,k,kk)
+                      '" encountered in the variable ', varname(d)
+                  print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
                   print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-                  print*,'nan_inform: l, m, n, iproc = ', i, j, k, iproc
+                  print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
                   print*,'----------------------------'
                   if (present(lstop) .and. lstop) call stop_it('nan_stop')
                 endif
@@ -2733,67 +2778,7 @@ module Sub
           enddo
         enddo
 !
-      endsubroutine nan_inform_f
-!***********************************************************************
-      subroutine nan_inform_pencil(f,msg,lstop)
-!
-!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
-!  array.
-!
-!  11-jun-04/anders: adapted from nan_inform_f
-!
-        use Cdata
-        use Mpicomm, only: stop_it
-!
-        real, dimension(:,:,:,:) :: f
-        character (len=*) :: msg
-        integer :: i,kk
-        logical, optional :: lstop
-!
-        do i=l1,l2
-          do kk=1,mvar+maux
-            if (notanumber(f(i,m,n,kk))) then
-              print*,'nan_inform: NaN with message "', msg, &
-                  '" encountered in the variable ', varname(kk)
-              print*,'nan_inform: ', varname(kk), ' = ', f(i,m,n,kk)
-              print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-              print*,'nan_inform: l, m, n, iproc = ', i, m, n, iproc
-              print*,'----------------------------'
-              if (present(lstop) .and. lstop) call stop_it('nan_stop')
-            endif
-          enddo
-        enddo
-!
-      endsubroutine nan_inform_pencil
-!***********************************************************************
-      subroutine nan_inform_point(f,l,msg,lstop)
-!
-!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
-!  array.
-!
-!  11-jun-04/anders: adapted from nan_inform_f
-!
-        use Cdata
-        use Mpicomm, only: stop_it
-!
-        real, dimension(:,:,:,:) :: f
-        character (len=*) :: msg
-        integer :: kk,l
-        logical, optional :: lstop
-!
-        do kk=1,mvar+maux
-          if (notanumber(f(l,m,n,kk))) then
-            print*,'nan_inform: NaN with message "', msg, &
-                '" encountered in the variable ', varname(kk)
-            print*,'nan_inform: ', varname(kk), ' = ', f(l,m,n,kk)
-            print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-            print*,'nan_inform: m, n, iproc = ', m, n, iproc
-            print*,'----------------------------'
-            if (present(lstop) .and. lstop) call stop_it('nan_stop')
-          endif
-        enddo
-!
-      endsubroutine nan_inform_point
+      endsubroutine nan_inform
 !***********************************************************************
       subroutine parse_bc(bc,bc1,bc2)
 !
