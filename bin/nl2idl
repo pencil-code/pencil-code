@@ -18,11 +18,11 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.12 2003-10-31 12:42:42 dobler Exp $
+# $Id: nl2idl,v 1.13 2003-11-10 12:52:14 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
-#   Works for float, integer, character, logical (T->-1L, F->0L).
+#   Works for float, integer, character, logical (T->-1L, F->0L), complex.
 #   Works on Linux (Intel F95, NAG F95), IRIX, Compaq 
 
 use strict;
@@ -88,7 +88,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.12 2003-10-31 12:42:42 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.13 2003-11-10 12:52:14 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -305,9 +305,14 @@ sub expand_line {
 	    } elsif ($quo == $star+1) { # n*"string"
 		($pre,$mul,$val,$post) =
 		    ( $line =~ /^([^*]*)([0-9]+)\*(\"[^\"]*\")[ ,]?(.*)/ );
-	    } else {		# n*<number|T|F>
-		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*)([0-9]+)\*([^ ,]+)[ ,]?(.*)/ );
+	    } else {		# n*<number|(complex, number)|T|F>
+		if (substr($line,$star+1,1) eq '(') { # n*(complex, number)
+		    ($pre,$mul,$val,$post) =
+			( $line =~ /^([^*]*)([0-9]+)\*(\([^\)]+\))[ ,]?(.*)/ );
+		} else {	# n*<number|T|F>
+		    ($pre,$mul,$val,$post) =
+			( $line =~ /^([^*]*)([0-9]+)\*([^ ,]+)[ ,]?(.*)/ );
+		}
 	    }
 	    if (checkdef("(\$pre,\$mul,\$val,\$post)=",
 			 ($pre,$mul,$val,$post))) {
