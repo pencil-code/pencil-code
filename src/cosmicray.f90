@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.25 2004-03-20 14:39:22 snod Exp $
+! $Id: cosmicray.f90,v 1.26 2004-03-20 14:44:47 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -85,7 +85,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.25 2004-03-20 14:39:22 snod Exp $")
+           "$Id: cosmicray.f90,v 1.26 2004-03-20 14:44:47 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -167,12 +167,13 @@ module CosmicRay
 !
       select case(initecr2)
         case('wave-x'); call wave(amplecr2,f,iecr,ky=5.)
+        case('const_ecr'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
       endselect
 !
 ! 
 !  form lnecr from initecr  
 !
-!        f(:,:,:,iecr)=log(f(:,:,:,iecr))
+         f(:,:,:,iecr)=log(f(:,:,:,iecr))
       
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
