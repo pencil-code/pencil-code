@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.30 2002-09-21 16:35:50 dobler Exp $
+! $Id: boundcond.f90,v 1.31 2002-09-27 16:38:10 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -61,7 +61,7 @@ module Boundcond
             case ('s')          ! symmetry
               do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j); enddo
             case ('a')          ! antisymmetry
-              f(l1,:,:,j) = 0.  ! ensure bdry value=0 (indep.of initial cond.)
+              f(l1,:,:,j) = 0.  ! ensure bdry value=0 (indep. of initial cond.)
               do i=1,nghost; f(l1-i,:,:,j) = -f(l1+i,:,:,j); enddo
             case ('a2')         ! antisymmetry relative to boundary value
               do i=1,nghost; f(l1-i,:,:,j) = 2*f(l1,:,:,j)-f(l1+i,:,:,j); enddo
@@ -99,7 +99,7 @@ module Boundcond
             case ('s')          ! symmetry
               do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j); enddo
             case ('a')          ! antisymmetry
-              f(l2,:,:,j) = 0.  ! ensure bdry value=0 (indep.of initial cond.)
+              f(l2,:,:,j) = 0.  ! ensure bdry value=0 (indep. of initial cond.)
               do i=1,nghost; f(l2+i,:,:,j) = -f(l2-i,:,:,j); enddo
             case ('a2')            ! antisymmetry relative to boundary value
               do i=1,nghost; f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j); enddo
@@ -164,7 +164,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j); enddo
           case ('a')              ! antisymmetry
-            f(:,m1,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            f(:,m1,:,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
             do i=1,nghost; f(:,m1-i,:,j) = -f(:,m1+i,:,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,m1-i,:,j) = 2*f(:,m1,:,j)-f(:,m1+i,:,j); enddo
@@ -192,7 +192,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j); enddo
           case ('a')              ! antisymmetry
-            f(:,m2,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            f(:,m2,:,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
             do i=1,nghost; f(:,m2+i,:,j) = -f(:,m2-i,:,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,m2+i,:,j) = 2*f(:,m2,:,j)-f(:,m2-i,:,j); enddo
@@ -247,7 +247,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j); enddo
           case ('a')              ! antisymmetry
-            f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
             do i=1,nghost; f(:,:,n1-i,j) = -f(:,:,n1+i,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
@@ -284,7 +284,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j); enddo
           case ('a')              ! antisymmetry
-            f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
             do i=1,nghost; f(:,:,n2+i,j) = -f(:,:,n2-i,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
@@ -292,7 +292,8 @@ module Boundcond
             if (j==ient) call bc_ss_flux(f,'top')
             if (j==iaa)  call bc_aa_pot(f,'top')
           case ('cT')             ! constant temp. (processed in own routine)
-            if (j==ient) call bc_ss_temp_z(f,'top')
+            if (j==ilnrho) call bc_lnrho_temp_z(f,'top')
+            if (j==ient)   call bc_ss_temp_z(f,'top')
           case ('sT')             ! symmetric temp. (processed in own routine)
             if (j==ient) call bc_ss_stemp_z(f,'top')
           case ('c2')             ! complex (processed in its own routine)
@@ -301,6 +302,8 @@ module Boundcond
              call bc_db_z(f,'top',j) 
           case ('ce')             ! complex (processed in its own routine)
              if (j==ient) call bc_ss_energy(f,'top')
+          case ('')             ! complex (processed in its own routine)
+             !(don't do anything; assume that it has been set already)
           case default
             if (lroot) &
                  print*, "No such boundary condition bcz2 = ", &

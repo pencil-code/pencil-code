@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.123 2002-09-22 18:19:17 brandenb Exp $
+! $Id: entropy.f90,v 1.124 2002-09-27 16:38:10 brandenb Exp $
 
 module Entropy
 
@@ -67,7 +67,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.123 2002-09-22 18:19:17 brandenb Exp $")
+           "$Id: entropy.f90,v 1.124 2002-09-27 16:38:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1075,7 +1075,7 @@ endif
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_temp_x, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'ENTER: bc_ss_temp_z, cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.

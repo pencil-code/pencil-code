@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.50 2002-09-22 18:19:17 brandenb Exp $
+! $Id: density.f90,v 1.51 2002-09-27 16:38:10 brandenb Exp $
 
 module Density
 
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.50 2002-09-22 18:19:17 brandenb Exp $")
+           "$Id: density.f90,v 1.51 2002-09-27 16:38:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -550,6 +550,66 @@ module Density
       cs2bot=-gamma/(mpoly+1.)*pbot(1)
 !
     endsubroutine polytropic_simple
+!***********************************************************************
+    subroutine bc_lnrho_temp_z(f,topbot)
+!
+!  boundary condition for lnrho *and* ss: constant temperature
+!
+!  27-sep-2002/axel: coded
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: tmp
+      integer :: i
+!
+      if(ldebug) print*,'ENTER: bc_lnrho_temp_z, cs20,cs0=',cs20,cs0
+!
+!  Constant temperature/sound speed for entropy, i.e. antisymmetric
+!  ln(cs2) relative to cs2top/cs2bot.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!
+      case('bot')
+        if (lroot) print*,'bc_lnrho_temp_x: bot not yet implemented'
+        call stop_it("")
+!
+!  top boundary
+!
+      case('top')
+        if (ldebug) print*,'set z top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        tmp = 2/gamma*alog(cs2top/cs20)
+!
+!  set first boundary value for entropy, and then ghost points antisymmetrically
+!
+        f(:,:,n2,ient) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
+        do i=1,nghost; f(:,:,n2+i,ient) = 2*f(:,:,n2,ient)-f(:,:,n2-i,ient); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2top
+!  for the time being, we don't worry about lnrho0 (assuming that it is 0)
+!
+        tmp=gravz/cs2top
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) +f(:,:,n2-i,ient) &
+                                                  -f(:,:,n2+i,ient) +2*i*dz*tmp
+        enddo
+
+      case default
+        if(lroot) print*,"invalid argument for 'bc_ss_temp_z'"
+        call stop_it("")
+      endselect
+!
+    endsubroutine bc_lnrho_temp_z
 !***********************************************************************
 
 endmodule Density
