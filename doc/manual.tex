@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.136 2002-10-31 20:44:25 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.137 2002-11-14 19:03:57 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -333,7 +333,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.136 $ $}
+\date{\today,~ $ $Revision: 1.137 $ $}
 
 % ====================================================================== %
 
@@ -366,7 +366,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.136 $ $}
+  \emph{\today,~ $ $Revision: 1.137 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1413,10 +1413,10 @@ Each of the directories can contain the following files:
 \item[{\file[X.xy]{$X$.xy}, \file[X.xz]{$X$.xz}, \file[X.yz]{$X$.yz}}]
   two-dimensional sections of variable $X$, where $X$ stands for the
   corresponding variable. The current list includes
-  \begin{verbatim}
+\begin{verbatim}
   bx.xy  bx.xz  by.xy  by.xz  bz.xy  bz.xz  divu.xy  lnrho.xz
   ss.xz  ux.xy  ux.xz  uz.xy  uz.xz
-  \end{verbatim}
+\end{verbatim}
   Each processor writes its own slice, so these need to
   be reassembled if one wants to plot a full slice.
 \end{description}
@@ -2021,7 +2021,29 @@ useful for visualizing results from numerical simulations.
 In fact, for many applications, the 7-minute demo version of \name{IDL} is
 sufficient.
 
-The basic command sequence is:
+\bigskip
+
+To see the time evolution of velocity and magnetic field (if they are
+present in you run), start \name{IDL} and run \file{ts.pro}:
+\begin{alltt}
+  \prompt{unix> } idl
+  \prompt{IDL> }  .run ts
+\end{alltt}
+The \name{IDL} script \file{ts.pro} reads the time series data from
+\file[time_series.dat]{data/time_series.dat} and sorts the column into
+the structure \var{ts}, with the slot names corresponding to the
+name of the variables (taken from the header line of
+\file[time_series.dat]{data/time_series.dat}). 
+Thus, you can refer to time as \code{ts.t}, to the rms velocity as
+\code{ts.urms}, and in order to plot the mean density as a function of
+time, you would simply type
+\begin{alltt}
+  \prompt{IDL> } plot, ts.t, ts.rhom
+\end{alltt}
+
+\bigskip
+
+The basic command sequence for working with a snapshot is:
 \begin{alltt}
   \prompt{unix> } idl
   \prompt{IDL> }  .run start
@@ -4476,7 +4498,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.136 2002-10-31 20:44:25 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.137 2002-11-14 19:03:57 dobler Exp $ $}
 
 
 \end{document}
