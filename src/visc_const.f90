@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.30 2004-07-09 22:54:18 nilshau Exp $
+! $Id: visc_const.f90,v 1.31 2004-07-10 15:33:04 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -60,7 +60,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.30 2004-07-09 22:54:18 nilshau Exp $")
+           "$Id: visc_const.f90,v 1.31 2004-07-10 15:33:04 brandenb Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -147,7 +147,7 @@ module Viscosity
       real, dimension (nx)   :: sij2, divu,shock
       real, dimension (nx,3) :: glnrho
 !
-!  traceless strainmatrix squared
+!  traceless strain matrix squared
 !
       call multm2_mn(sij,sij2)
 !
@@ -173,6 +173,7 @@ module Viscosity
 !  calculate viscous heating term for right hand side of entropy equation
 !
 !  20-nov-02/tony: coded
+!   9-jul-04/nils: added Smagorinsky viscosity
 !
       use Cdata
       use Mpicomm
@@ -253,11 +254,19 @@ module Viscosity
           diffus_nu=max(diffus_nu,nu*dxyz_2)
 
         case ('smagorinsky')
+!AB: the 2S.gradnu_smag is currently not implemented.
+!AB: Since this involves out-of-pencil derivatives, we may want
+!AB: to have this term optional (smagorinsky_simplified).
+!AB: Maybe the damage from smagorinsky_simplified is minor.
           !
-          !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
+          !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_smag
+          !  where nu_smag=C_smag*dxmax**2*sqrt(SS)
           !
           if(ldensity) then
+!AB: below, SS12 is really sij*sij, right? So why not call it sij2?
             call multm2_mn(sij,SS12)            
+!AB: Nils, is this correct? Shouldn't C_smag be outside the parenthesis?
+!AB: Also, shouldn't there be a square root on SS12?
             nu_smag=(C_smag*dxmax)**2.*SS12
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             call multmv_mn(sij,glnrho,sglnrho)
@@ -266,6 +275,7 @@ module Viscosity
             call multsv_mn(nu_smag,tmp1,tmp2)
             fvisc=2*nusglnrho+tmp2
             diffus_nu=max(diffus_nu,nu_smag*dxyz_2)!Should we still use nu here
+!AB: yes, I think it is still a good idea to allow nu to be added.
           else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='smagorinsky'"
