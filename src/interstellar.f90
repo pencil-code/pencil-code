@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.22 2003-05-30 12:53:30 mee Exp $
+! $Id: interstellar.f90,v 1.23 2003-05-30 17:04:27 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -77,7 +77,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.22 2003-05-30 12:53:30 mee Exp $")
+           "$Id: interstellar.f90,v 1.23 2003-05-30 17:04:27 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -534,6 +534,7 @@ find_SN: do n=n1,n2
                lnrho=f(l,m,n,ilnrho)
                rho=exp(lnrho)
                ss=f(l,m,n,ient)
+!ajwm: should use thermodynamics subroutine but need to resolve temperature unit issue first
                TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1*cp1
                if (rho >= rho_crit .and. TT <= TT_crit) then
                  cum_mass=cum_mass+rho
@@ -566,7 +567,7 @@ find_SN: do n=n1,n2
       !  (This can all be made more efficient, after debugging.)
       !
       !  ??-nov-02/grs : coded from GalaxyCode                        
-      !  20-may-03/ajwm: pencil formulation and broken into subroutines
+      !  20-may-03/tony: pencil formulation and broken into subroutines
       !
       use Cdata
       use Mpicomm
@@ -584,8 +585,8 @@ find_SN: do n=n1,n2
       
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! make larger, for debug
-      real, dimension(nx) :: deltarho, deltaEE, e_old, rho_old, e_new
-      real, dimension(4) :: fmpi4, fmpi4_tmp
+      real, dimension(nx) :: deltarho, deltaEE, e_old, rho_old
+      real, dimension(3) :: fmpi3, fmpi3_tmp
       real, dimension(nx) ::  lnrho_old, ss_old,TT1, cs2, cp1tilde ! not really wanted but sideeffect of
                                                                    ! using the (No)Ionisation module
                                                                    ! thermodynamics function
@@ -603,22 +604,19 @@ find_SN: do n=n1,n2
       !
       !  Now deal with (if nec.) mass relocation
       !
-
       TT_SN_new=TT_SN+(c_SN*rho_SN*gamma*cp1)
       if(lroot) print*,'explode_SN - TT_SN, TT_SN_new :',TT_SN,TT_SN_new
 
       if (TT_SN_new < TT_limit) then
-         ! move_mass=1  
-         move_mass=0  !ngrs: switch off for debug...
+         move_mass=1  
+         !move_mass=0  !use to switch off for debug...
 
          ! The bit that BREAKS the pencil formulation...
          ! must know the total moved mass BEFORE attempting mass relocation 
-         ! could be put into a conditional
          call calcmassprofileintegral_SN(profile_integral,width_SN)      
          if (lroot.and.ip<14) print*, 'moving mass...'
       endif
-!     if (lroot) print*, &
-!           'explode_SN, TT_SN_new,TT_limit:',TT_SN_new,TT_limit
+
       
 
       do n=n1,n2
@@ -627,36 +625,34 @@ find_SN: do n=n1,n2
             if (move_mass.eq.1) then
                rho_SN_new=c_SN/TT_limit*TTunits
                mass_shell=(rho_SN_new-rho_SN)*profile_integral
-               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN,mass_shell,mass_check)
+               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
+                                                    mass_shell,mass_check)
             endif
 
             call injectenergy_SN(deltaEE,width_SN,ampl_SN,EE_SN)
             ! Apply perturbations
-            ! (\delta s)/cp = (1/gamma)*ln(1+(\delta e / e)) - (gamma1/gamma)*ln(1+(\delta rho / rho))
+            ! (\delta s)/cp = (1/gamma)*ln(1+(\delta e / e)) 
+            !                 - (gamma1/gamma)*ln(1+(\delta rho / rho))
 
             lnrho_old=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho_old)
             ss_old=f(l1:l2,m,n,ient)
 
-            call thermodynamics(lnrho_old,ss_old,cs2,TT1,cp1tilde, InternalEnergy=e_old)
+            call thermodynamics(lnrho_old,ss_old,cs2,TT1,cp1tilde, &
+                                      InternalEnergy=e_old)
 
-!            cs2=cs20*exp(gamma1*(lnrho_old-lnrho0)+gamma*ss_old)
-!            e_new = cs20 * exp(gamma*f(l1:l2,m,n,ient))*((rho_old/rho0)**(gamma-2.))/(gamma*gamma1)
-
-!            if (abs(sum(e_old-e_new)).gt.1.) then
-!               print*,e_old-e_new
-!            endif
 
             if (move_mass.eq.1) f(l1:l2,m,n,ilnrho)=alog(rho_old+deltarho)
             f(l1:l2,m,n,ient)=ss_old + &
-                 ( alog(1.+ (deltaEE  &                           ! / 12.56637061
+                 ( alog(1.+ (deltaEE  &            ! / 12.56637061
                             / (rho_old+deltarho) / e_old)) ) / gamma  
             if (move_mass.eq.1) f(l1:l2,m,n,ient) = f(l1:l2,m,n,ient) &
-                                          - (gamma1*alog(1 + deltarho / rho_old) )/ gamma
+                              - (gamma1*alog(1 + deltarho / rho_old) )/ gamma
 
-            call thermodynamics(f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,ient),cs2,TT1,cp1tilde,InternalEnergy=e_new)
-
-            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(e_old*rho_old))
+! EXTRA debug stuff
+!            call thermodynamics(f(l1:l2,m,n,ilnrho), & 
+!                  f(l1:l2,m,n,ient),cs2,TT1,cp1tilde,InternalEnergy=e_new)
+!            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(e_old*rho_old))
 
 
        enddo
@@ -669,28 +665,26 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      fmpi4_tmp=(/ mass_check, EE_SN, mass_shell, EE2_SN /)
-      call mpireduce_sum(fmpi4_tmp,fmpi4,4) 
-      call mpibcast_real(fmpi4,4)
-      mass_check=fmpi4(1)*dv
-      EE_SN=fmpi4(2)*dv; 
-      EE2_SN=fmpi4(4)*dv; 
-      mass_shell=fmpi4(3)*dv; 
+      fmpi3_tmp=(/ mass_check, EE_SN, mass_shell /)
+      call mpireduce_sum(fmpi3_tmp,fmpi3,3) 
+      call mpibcast_real(fmpi3,3)
+      mass_check=fmpi3(1)*dv
+      EE_SN=fmpi3(2)*dv; 
+! Extra debug - no longer broadcast
+!      EE2_SN=fmpi3(4)*dv; 
+      mass_shell=fmpi3(3)*dv; 
 
       if (lroot.and.ip<14) print*, &
            'explode_SN, masses:',mass_shell,mass_check
-
-      ! if (lroot.and.ip<14) print*,'profile_check', &
-      !      (profile_check)**(1./3.),cnorm_SN
      
       if (lroot) then
          open(1,file=trim(datadir)//'/time_series.dat',position='append')
-         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-              '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,EE2_SN, ')'
-         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-              '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,EE2_SN, ')'
+         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
+         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
          close(1)
       endif
       
