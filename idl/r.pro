@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.14 2002-06-01 02:56:20 brandenb Exp $
+; $Id: r.pro,v 1.15 2002-06-02 07:51:39 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -30,7 +30,7 @@ pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading param2.nml..'
-  spawn, '../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
+  spawn, '../../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
   @tmp/param2.pro
 ; cs0=par.cs0 & nu=par.nu
   cs0=1. & nu=0.

@@ -1,9 +1,10 @@
-! $Id: entropy.f90,v 1.48 2002-06-01 09:36:38 brandenb Exp $
+! $Id: entropy.f90,v 1.49 2002-06-02 07:51:39 brandenb Exp $
 
 module Entropy
 
   use Cparam
   use Cdata
+  use Hydro
 
   implicit none
 
@@ -12,13 +13,13 @@ module Entropy
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,cs0,gamma,rho0,grads0, &
+       initss,grads0, &
        hcond0,hcond1,hcond2,whcond, &
        mpoly0,mpoly1,mpoly2,isothtop
 
   ! run parameters
   namelist /entropy_run_pars/ &
-       cs0,hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
+       hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
 
   contains
 
@@ -53,8 +54,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.48 $", &
-           "$Date: 2002-06-01 09:36:38 $")
+           "$Revision: 1.49 $", &
+           "$Date: 2002-06-02 07:51:39 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -194,6 +195,7 @@ module Entropy
       else                      ! isothermal case
         cs2=cs20
       endif
+      if (headtt) print*,'dss_dt: calculated cs2'
 !
 !  pressure gradient term
 !
@@ -201,6 +203,7 @@ module Entropy
       do j=1,3
         gpprho(:,j)=cs2*(glnrho(:,j)+gss(:,j))
       enddo
+      if (headtt) print*,'dss_dt: calculated gpprho'
 !
 !  advection term
 !
@@ -214,6 +217,7 @@ module Entropy
         enddo
         sij(:,j,j)=sij(:,j,j)-.333333*divu
       enddo
+      if (headtt) print*,'dss_dt: calculated sij'
 !
       sij2=0.
       do j=1,3
@@ -221,8 +225,11 @@ module Entropy
         sij2=sij2+sij(:,i,j)**2
       enddo
       enddo
+      if (headtt) print*,'dss_dt: calculated sij2'
 !
+      if (headtt) print*,'dss_dt: cs2=',cs2
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
+      if (headtt) print*,'dss_dt: TT1 ok'
 ! this one was wrong:
 !      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
 ! hopefully correct:
@@ -230,6 +237,7 @@ module Entropy
 !
 !  Heat conduction / entropy diffusion
 !
+      if (headtt) print*,'dss_dt: lgravz=',lgravz
       if (lgravz) then
         ! For vertical geometry, we only need to calculate this for each
         ! new value of z -> speedup by about 8% at 32x32x64
@@ -245,6 +253,7 @@ module Entropy
       endif
       chi = rho1*lambda
       glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
+      if (headtt) print*,'dss_dt: lambda=',lambda
       glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
       call dot_mn(glnT,glnTlambda,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
@@ -271,7 +280,8 @@ module Entropy
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
-
+!
+      if (headtt) print*,'dss_dt: added thdiff'
 !
 !  Vertical case:
 !  Heat at bottom, cool top layers
@@ -307,6 +317,7 @@ module Entropy
         prof = step(r_mn,ztop,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
+      if (headtt) print*,'dss_dt: finished'
 
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
     endsubroutine dss_dt
@@ -393,6 +404,68 @@ module Entropy
       endif
 !
     endsubroutine gradloghcond
+!***********************************************************************
+    subroutine bc_ss(f,errmesg)
+!
+!  23-jan-2002/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: tmp_xy
+      integer :: i
+!
+      character (len=*) :: errmesg
+!
+      errmesg=""
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!
+        if (bcz1(ient) == "c1") then
+          if (bcz1(ilnrho) /= "a2") &
+               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 1."
+          tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
+                   * exp(-gamma*f(:,:,n1,ient) - gamma1*f(:,:,n1,ilnrho))
+          tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(lambda T_0)
+          do i=1,nghost
+            f(:,:,n1-i,ient) = &
+                 (2*i*dx*tmp_xy &
+                  + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
+                 )/gamma &
+                 + f(:,:,n1+i,ient)
+          enddo
+        endif
+!
+        if (bcz2(ient) == "c1") then
+          if (bcz2(ilnrho) /= "a2") &
+               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 2."
+          tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
+                   * exp(-gamma*f(:,:,n2,ient) - gamma1*f(:,:,n2,ilnrho))
+          tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(lambda T_0)
+          do i=1,nghost
+            f(:,:,n2+i,ient) = &
+                 (-2*i*dx*tmp_xy &
+                  + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
+                 )/gamma &
+                 + f(:,:,n2-i,ient)
+          enddo
+        endif
+!
+!  Do the `c2' boundary condition (fixed temperature/sound speed) for
+!  entropy and density.
+!  NB: Sound speed is set to cs0, so this is mostly useful for top boundary.  
+!
+        if (bcz2(ient) == "c2") then
+          if (bcz1(ilnrho) /= "a2") &
+               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
+          tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
+          f(:,:,n2,ient) = tmp_xy
+          do i=1,nghost
+            f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
+          enddo
+        endif
+!
+    endsubroutine bc_ss
 !***********************************************************************
 
 endmodule Entropy

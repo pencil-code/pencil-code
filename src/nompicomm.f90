@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.24 2002-05-27 12:04:32 dobler Exp $
+! $Id: nompicomm.f90,v 1.25 2002-06-02 07:51:39 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -122,6 +122,7 @@ module Mpicomm
 !
       use General
       use Boundcond
+!??   use Entropy
 !
 !  apply boundary conditions
 !
@@ -132,6 +133,10 @@ module Mpicomm
 !
       call boundconds(f,errmesg)
       if (errmesg /= "") call stop_it(trim(errmesg))
+!
+!  treat entropy boundary condition separately
+!
+!??   if (lentropy) call bc_ss(f)
 !
     endsubroutine finalise_isendrcv_bdry
 !***********************************************************************

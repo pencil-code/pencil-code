@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.10 2002-05-31 20:43:45 dobler Exp $
+! $Id: hydro.f90,v 1.11 2002-06-02 07:51:39 brandenb Exp $
 
 module Hydro
 
@@ -7,14 +7,16 @@ module Hydro
 
   implicit none
 
-  integer :: init=0
-  real :: ampl=0.,urand=0.
+  integer :: init=0,inituu=0,initlnrho=0
+  real :: cs0=1.,rho0=1.,gamma=5./3.,ampl=0.,urand=0.
+  real :: cs20,gamma1,cs2top
+!AB: why do we call it cs20, and not cs02?
 
   namelist /hydro_init_pars/ &
-       ampl,init,urand
+       cs0,rho0,gamma,ampl,init,inituu,initlnrho,urand
 
   namelist /hydro_run_pars/ &
-       nu,ivisc,cdiffrho
+       cs0,rho0,gamma,nu,ivisc,cdiffrho
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_t=0,i_it=0,i_dt=0,i_u2m=0,i_um2=0,i_oum,i_o2m
@@ -57,8 +59,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-05-31 20:43:45 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-06-02 07:51:39 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -87,7 +89,31 @@ module Hydro
       real :: beta1,lnrhoint,cs2int
       integer :: i
 !
-!  init corresponds to different initializations (called from start).
+!  inituu corresponds to different initializations of uu (called from start).
+!  If init does't match, f=0 is assumed (default).
+!
+      select case(inituu)
+      case(0)               ! random ux (Gaussian distribution)
+        if (lroot) print*,'Gaussian-distributed ux'
+        call random_number(r)
+        call random_number(p)
+        tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+        f(:,:,:,iux)=ampl*tmp
+      endselect
+!
+!  initlnrho corresponds to different initializations of lnrho (called from start).
+!  If init does't match, f=0 is assumed (default).
+!
+      select case(initlnrho)
+      case(0)
+        if (lroot) print*,'uniform lnrho'
+        f(:,:,:,ilnrho)=0.
+      case(1)
+        if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal/polytropic)'
+        f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
+      endselect
+!
+!  init corresponds to different initializations of lnrho (called from start).
 !  If init does't match, f=0 is assumed (default).
 !
       select case(init)

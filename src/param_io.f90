@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.2 2002-06-01 02:56:21 brandenb Exp $ 
+! $Id: param_io.f90,v 1.3 2002-06-02 07:51:40 brandenb Exp $ 
 module Param_IO
 
 !
@@ -19,7 +19,7 @@ module Param_IO
        ip,xyz0,Lxyz,lperi
   namelist /run_pars/ &
        ip,nt,it1,dt,cdtv,isave,itorder, &
-       dsnap,dvid,dforce,dtmin, &
+       dsnap,dvid,dtmin, &
        tinit,tdamp,dampu,dampuext,rdamp,wdamp, &
        bcx,bcy,bcz
 !

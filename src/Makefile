@@ -122,7 +122,7 @@ param_io.o:  param_io.f90 $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(physics)
 prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) slices.o
-boundcond.o: boundcond.f90 cdata.o
+boundcond.o: boundcond.f90 cdata.o $(ENTROPY).f90
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
 #
 $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o boundcond.o

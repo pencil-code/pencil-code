@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.15 2002-06-01 09:36:38 brandenb Exp $
+! $Id: noentropy.f90,v 1.16 2002-06-02 07:51:39 brandenb Exp $
 
 module Entropy
 
@@ -8,18 +8,16 @@ module Entropy
 
   use Cparam
   use Cdata
+  use Hydro
 
   implicit none
 
-  real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
-
-  ! input parameters
-  namelist /entropy_init_pars/ &
-       cs0,gamma,rho0
+  integer :: dummy
+  namelist /entropy_init_pars/ dummy
+  namelist /entropy_run_pars/ dummy
 
   ! run parameters
-  namelist /entropy_run_pars/ &
-       cs0
+  real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
 
   contains
 
@@ -44,8 +42,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-06-01 09:36:38 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-06-02 07:51:39 $")
 !
     endsubroutine register_ent
 !***********************************************************************
