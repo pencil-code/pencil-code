@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.70 2004-01-20 14:25:05 dobler Exp $
+! $Id: interstellar.f90,v 1.71 2004-02-26 12:07:53 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.70 2004-01-20 14:25:05 dobler Exp $")
+           "$Id: interstellar.f90,v 1.71 2004-02-26 12:07:53 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -419,8 +419,8 @@ module Interstellar
        if (Lxyz(2)/=0.) rate_SNII=rate_SNII/Lxyz(2)
        if (lroot) call random_number_wrapper(franSN)   
        call mpibcast_real(franSN,1)
-       ! if (lroot .and. ip < 14) &
-       !      print*,'check_SNII: rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
+        if (lrooti .and. ip < 20) &
+             print*,'check_SNII: rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
        if (franSN(1) <= prob_SNII) then
           !  position_SNII needs the mass_clouds for each processor;  
           !   communicate and store them here, to avoid recalculation.
@@ -562,7 +562,7 @@ module Interstellar
 !
 !  identifier
 !
-      if(headtt.and.ip<14) print*,'position_SNII: ENTER'
+      if(lroot.and.ip<20) print*,'position_SNII: ENTER'
 !
 !  Construct cumulative distribution function, using mass_cloud_byproc.
 !  NB: icpu=iproc+1 (iproc in [0,ncpus-1], icpu in [1,ncpus] )
@@ -591,16 +591,16 @@ module Interstellar
         exit
       endif
     enddo
-    if (lroot.and.ip<14) &
+    if (lroot.and.ip<20) &
           print*, 'position_SNII: franSN(1),iproc_SN=',franSN(1),iproc_SN
 !
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
-!    franSN(1)=(franSN(1)-cum_prob_byproc(iproc_SN)) /                      &
-!              (cum_prob_byproc(iproc_SN+1)-cum_prob_byproc(iproc_SN))
+    franSN(1)=(franSN(1)-cum_prob_byproc(iproc_SN)) /                      &
+              (cum_prob_byproc(iproc_SN+1)-cum_prob_byproc(iproc_SN))
 !
-    if (lroot) call random_number_wrapper(franSN)   
-    call mpibcast_real(franSN,1)
+!    if (lroot) call random_number_wrapper(franSN)   
+!    call mpibcast_real(franSN,1)
     if (iproc == iproc_SN) then
       cum_mass=0.0
 find_SN: do n=n1,n2
@@ -616,7 +616,7 @@ find_SN: do n=n1,n2
               cum_prob_onproc=cum_mass/mass_cloud
               if (franSN(1) <= cum_prob_onproc) then
                 l_SN=l; m_SN=m; n_SN=n
-                if (ip<14) &
+                if (ip<i20) &
                  print*,'position_SNII: cum_mass,cum_prob_onproc,franSN(1)=', &
                                   cum_mass,cum_prob_onproc,franSN(1)
                 exit find_SN
