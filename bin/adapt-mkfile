@@ -12,13 +12,13 @@ fi
 
 exec $perl -x -S $0 "$@"     # -x: start from the following line
 #======================================================================#
-#! /Good_Path/perl -w 
+#! /Good_Path/perl -w
 # line 17
 
 # Name:   adapt-mkfile
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-09-30 14:54:10 $
-# $Revision: 1.6 $
+# $Date: 2003-10-06 08:12:46 $
+# $Revision: 1.7 $
 # Description:
 #   Transform a makefile with machine-dependent information into one that
 #   is adapted to the machine we're running on.
@@ -32,7 +32,7 @@ my ($activate,$hosttag);
 my $start_tag = '^\s*###\s*begin\s*machine\s*dependent';
 my $end_tag =   '^\s*###\s*end\s*machine\s*dependent';
 # Files to include if present (option `-f' may add one)
-my $global_incfile = ("$ENV{ADAPT_MKFILE}" || "$ENV{HOME}/.adapt-mkfile.inc");
+my $global_incfile = ($ENV{ADAPT_MKFILE} || "$ENV{HOME}/.adapt-mkfile.inc");
 my @incfiles = ($global_incfile, "./.adapt-mkfile.inc");
 
 my $os = `uname -s`; chomp($os);
@@ -64,8 +64,8 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 my $doll='\$';                  # Need this to trick CVS
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.6 $';
-    my $date = '$Date: 2003-09-30 14:54:10 $';
+    my $rev = '$Revision: 1.7 $';
+    my $date = '$Date: 2003-10-06 08:12:46 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";
