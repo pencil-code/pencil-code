@@ -59,7 +59,7 @@ if ($mpi) then
     lamnodes
     set mpirun = /usr/bin/mpirun
     set mpirunops = "-O -c2c"
-  else if ($hn =~ s*p*) then
+  else if ($hn =~ s[0-9]*p[0-9]*) then
     #  is that the right place??
     echo "Use options for the Horseshoe cluster"
     set nodelist = `cat $PBS_NODEFILE`

@@ -25,8 +25,12 @@ source getconf.csh
 # Clean up control and data files
 rm -f STOP RELOAD fort.20
 
-# initilize automatic copying of snapshots back
-copy-snapshots -v >& $HOME/copy-snapshots.LOG &
+# On Horseshoe cluster, initialize automatic copying
+# of snapshots back to the data directory
+if ($hn =~ s[0-9]*p[0-9]*) then
+  echo "Use options for the Horseshoe cluster"
+  copy-snapshots -v >& copy-snapshots.log &
+endif
 
 # Run run.x
 date
@@ -40,8 +44,11 @@ date
 echo "ls -lt /scratch"
 ls -lt /scratch
 
-# initilize automatic copying of var.dat back
-copy-snapshots -v var.dat
+# On Horseshoe cluster, copy var.dat back to the data directory
+if ($hn =~ s[0-9]*p[0-9]*) then
+  echo "Use options for the Horseshoe cluster"
+  copy-snapshots -v var.dat
+endif
 
 echo "done, will now killall copy-snapshots"
 killall copy-snapshots

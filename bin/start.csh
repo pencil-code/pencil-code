@@ -58,6 +58,12 @@ time $mpirun $mpirunops $npops src/start.x
 echo ""
 date
 
+# On Horseshoe cluster, copy var.dat back to the data directory
+if ($hn =~ s[0-9]*p[0-9]*) then
+  echo "Use options for the Horseshoe cluster"
+  copy-snapshots -v var.dat
+endif
+
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
 # bsub -n  8 -q 8cpu12h mpijob dmpirun src/start.x
