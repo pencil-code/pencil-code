@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.9 2002-08-09 08:15:30 nilshau Exp $
+! $Id: radiation.f90,v 1.10 2002-08-09 09:25:12 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -22,7 +22,6 @@ module Radiation
   real :: amplee=0
   real :: ampl_pert=0
   real :: inflow=2
-  real, dimension(mx,my,mz) :: DFF_new=0
 
   ! init parameteres
   character (len=labellen) :: initrad='equil',pertee='none'
@@ -79,7 +78,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.9 2002-08-09 08:15:30 nilshau Exp $")
+           "$Id: radiation.f90,v 1.10 2002-08-09 09:25:12 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -280,7 +279,7 @@ module Radiation
          !
          if (lentropy) then
             c_entr=2*gamma1**4*rho1**(4*gamma1)/(TT1*c_gam*kappa_abs*a_SB*4*gamma)
-            c_entr=dx/c_entr
+            c_entr=dxmin/c_entr
             UUmax=max(UUmax,maxval(c_entr))
          endif
       endif
@@ -425,7 +424,7 @@ module Radiation
 !
 !  Time step criterion due to diffusion
 !
-      diffus_speed=4*c_gam*rho1*DFF/(3*kappa*dx)
+      diffus_speed=4*c_gam*rho1*DFF/(3*kappa*dxmin)
       UUmax=max(UUmax,maxval(diffus_speed))
 !
     end subroutine flux_limiter

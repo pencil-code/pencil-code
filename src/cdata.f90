@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.83 2002-08-09 08:09:22 nilshau Exp $
+! $Id: cdata.f90,v 1.84 2002-08-09 09:25:12 nilshau Exp $
 
 module Cdata
 
@@ -12,6 +12,7 @@ module Cdata
   real, dimension (mz) :: z
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
   real, dimension (nx) :: maxadvec2,maxdiffus
+  real, dimension(mx,my,mz) :: DFF_new=0
  
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real, dimension(3) :: xyz0,Lxyz
