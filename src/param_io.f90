@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.164 2004-03-02 13:12:07 mee Exp $ 
+! $Id: param_io.f90,v 1.165 2004-03-12 13:41:46 dobler Exp $ 
 
 module Param_IO
 
@@ -473,10 +473,10 @@ module Param_IO
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
       if (slice_position=='p') then
-        ix=l1
-        iy=m1
-        iz=n1
-        iz2=n2
+        if (ix<0)  ix=l1
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
         lwrite_slice_xy2=(ipz==nprocz-1)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==0)
@@ -486,10 +486,10 @@ module Param_IO
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
       elseif (slice_position=='m') then
-        ix=(l1+l2)/2
-        iy=m1
-        iz=n1
-        iz2=n2
+        if (ix<0)  ix=(l1+l2)/2
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
         if(nprocy==1) then; iy=(m1+m2)/2; endif
         if(nprocz==1) then; iz=(n1+n2)/2; iz2=(iz+n2)/2; endif
         lwrite_slice_xy2=(ipz==nprocz/2)
@@ -501,16 +501,21 @@ module Param_IO
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
       elseif (slice_position=='e') then
-        ix=(l1+l2)/2
-        iy=m1
-        iz=n1
-        iz2=n2
+        if (ix<0)  ix=(l1+l2)/2
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
         if(nprocy==1) then; iy=(m1+m2)/2; endif
         if(nprocz==1) then; iz2=(iz+n2)/2; endif
         lwrite_slice_xy2=(ipz==nprocz/4)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==nprocy/2)
         lwrite_slice_yz=.true.
+      else
+        if (lroot) print*, &
+             "READ_RUN_PARS: No such value for slice_position: '" &
+             // slice_position //"'"
+        call stop_it("")
       endif
 !
 !  write slice position to a file (for convenient post-processing)
