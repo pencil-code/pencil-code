@@ -1,0 +1,115 @@
+#!/usr/bin/perl -w
+
+# Name:   check-mm-nn
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   29-Jul-2003
+# Description:
+#   Analyse debugging output from setup_mm_nn() and represent result
+#   graphically. Use this to make sure that each pair (m,n) is referenced
+#   exactly once.
+# Usage:
+#   [Activate debugging output at the end of setup_mm_nn() in general.f90]
+#   run.csh | check-mm-nn
+#     or
+#   start.csh | check-mm-nn
+# Output format:
+#   `+' : inner cell (processed before `necessary')
+#   `-' : boundary cell (processed after `necessary')
+#   `0' : cell never referenced                        --> problem
+#   `@' : cell referenced more than once               --> problem
+
+use strict;
+
+my $marker = '==MM==NN==>';
+
+my (%inner,%outer);
+my $post=0;
+my ($iy,$iz);
+my ($miniy,$maxiy);
+my ($miniz,$maxiz);
+
+## Read data
+while (<>) {
+    next unless /^$marker (m,n=|Necessary)/;
+    if (/^$marker Necessary/) { $post=1; }
+    if (/^$marker m,n=\s*([0-9]+)\s+([0-9]+)\s*/) {
+	$iy=$1; $iz=$2;
+	if ($post) {
+	    $outer{$iy}{$iz}++;
+	}  else {
+	    $inner{$iy}{$iz}++;
+	}
+	($miniy,$maxiy) = min_max($miniy,$maxiy,$iy);
+	($miniz,$maxiz) = min_max($miniz,$maxiz,$iz);
+    }
+}
+
+## Print graph
+my ($never,$twice) = (0,0);
+for ($iz=$maxiz; $iz>=$miniz; $iz--) {
+    printf("%3d  ",$iz);
+    for ($iy=$miniy; $iy<=$maxiy; $iy++) {
+	my $count = ($inner{$iy}{$iz} || 0) + ($outer{$iy}{$iz} || 0);
+	if ($count==1) {
+	    if ($inner{$iy}{$iz}) {
+		print "+";
+	    } else {
+		print "-";
+	    }
+	} elsif ($count==0) {
+	    print "0";
+	    $never++;
+	} else {		# count > 1 --> something went wrong
+	    print "@";
+	    $twice++;
+	}
+    }
+    print "\n";
+}
+my $nspaces = $maxiy-$miniy-1;
+print "\n";
+print "     |" . " " x $nspaces . "|\n";
+$nspaces -= 3;
+printf("     %-3d%${nspaces}s%3d\n",$miniy,"",$maxiy);
+print "\n";
+
+if ($never || $twice) {
+    print " Layout is not OK:\n";
+    print " $never points never referenced,\n";
+    print " $twice points referenced more than once.\n";
+} else {
+    print " Layout looks OK.\n";    
+}
+
+
+# ---------------------------------------------------------------------- #
+sub min {
+# Return minimum of a list; skips any undefs in list
+    my @list = grep { defined($_) } @_;
+    $a = shift @list;
+    while (@list) {
+	my $b = shift @list;
+	$a = $b if ($a > $b) 
+    }
+    $a;
+}
+# ---------------------------------------------------------------------- #
+sub max {
+# Return maximum of arguments
+    my @list = grep { defined($_) } @_;
+    $a = shift @list;
+    while (@list) {
+	my $b = shift @list;
+	$a = $b if ($a < $b) 
+    }
+    $a;
+}
+# ---------------------------------------------------------------------- #
+sub min_max {
+# Return minimum and maximum of arguments
+    my @list = @_;
+    (min(@list), max(@list));
+}
+# ---------------------------------------------------------------------- #
+
+# End of file check-mm-nn
