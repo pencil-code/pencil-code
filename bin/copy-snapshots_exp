@@ -1,0 +1,175 @@
+#!/bin/csh
+# CVS: $Id: copy-snapshots_exp,v 1.1 2004-09-27 17:22:32 ajohan Exp $
+
+# Name:   copy-snapshots
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   24-Sep-2002
+# Description:
+#   Copy snapshots VAR# and TAVG# from /scratch to $PBS_O_WORKDIR (from
+#   where the code started).
+#     Relies on PBS (and on tcsh)  and is needed on Horseshoe (the Odense
+#   cluster).
+#     Should better be a Perl script.
+
+set debug = 0
+foreach argv_scalar ($argv)
+  if (($argv_scalar == "-v") || ($argv_scalar == "--verbose")) then
+    set debug = 1          # for debugging output (recommended)
+  else if (($argv_scalar == "-1")) then
+    set run_only_once = 1  # check only once for files to copy
+  else
+    set varfile = $argv_scalar
+    if ($debug) echo "varfile = <$varfile>"
+  endif
+end
+##
+## Set some necessary filesystem variables...
+##
+set pwd = `pwd`
+set targetdir = $pwd/data
+set nodelist = (`echo $NODELIST | sed 's/:/ /g'`) # unpack NODELIST
+##
+## ... and print out their values.
+##
+if ($debug) then
+  echo "SCRATCH_DIR = <$SCRATCH_DIR>"
+  echo "targetdir   = <$targetdir>"
+  echo "nodelist    = <$nodelist>"
+endif
+##
+## Produce debug output file in data directory
+##
+if($debug) then
+  echo "copy-snapshots: pid=$$ starting" >> $targetdir/copy-snaps_was_here.log
+  echo "copy-snapshots: pid=$$ args=<$*>" >> $targetdir/copy-snaps_was_here.log
+endif
+##
+## If explicit filename is given, copy that file from local scratch discs
+##
+if ($?varfile) then
+  echo "======================== $varfile ========================"
+  foreach node ($nodelist)
+    echo "------------------ working on node: $node ----------------------"
+##
+## Output directories and whereabouts of $varfile at the root processor's
+## scratch disc
+##
+    if ($debug) then
+      printf "\n  ##Checking if scratch directory is accessible\n"
+      printf "\n$SSH $node ls -ltd $SCRATCH_DIR :\n"
+      $SSH $node "ls -ltd $SCRATCH_DIR"
+      printf "\n\n  ##Checking for presence of $varfile on scratch disc\n"
+      printf "\n$SSH $node ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile :\n"
+      $SSH $node "ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile"
+      printf "\n  ##Checking for presence of $varfile in data directory\n"
+      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
+      echo
+    endif
+##
+## Copy all $varfile you find (on all nodes) to the data directory
+## (not efficient on dual-CPU systems, unless we would delete files 
+## after copying..)
+##
+    if ($debug) printf "  ##Copying proc*/$varfile and allprocs/$varfile to data directory\n\n"
+
+    set remcmd = 'cd '"$SCRATCH_DIR"'; for f in `ls proc*/'"$varfile"' allprocs/'"$varfile"' 2> /dev/null`; do echo "Copying '"$SCRATCH_DIR"'/$f to '"$targetdir"'/$f"; cp '"$SCRATCH_DIR"'/$f '"$targetdir"'/$f; done'
+
+    if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
+    
+    $SSH $node sh -c "'$remcmd'"
+    
+    if ($debug) then
+      printf "\n  ##Checking for changes to $varfile in data directory\n"
+      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
+    endif
+
+  end  # loop over nodes
+  echo "========================================================"
+else
+##
+## If no explicit filename is given, copy VARN, TIMEAVGN
+##
+  echo
+  echo "=================== VARN, TIMEAVGN ====================="
+##
+## Check for relevant files at regular intervals
+##
+  while (1)
+    echo
+    echo "=========  "`date`"  ========="
+##    
+## Check for files to copy by diffing the files copied-files.list 
+## and copy-me.list in the proc directories
+##
+    set nodenumber=0
+    foreach node ($nodelist)
+      echo "-------------------- Checking proc$nodenumber -------------------"
+      set copied_files=$targetdir/proc$nodenumber/copied-files.list
+      set copy_me=$targetdir/proc$nodenumber/copy-me.list
+##
+## Must make sure that both copy-me.list and copied-files.list exist
+##
+      if (! -e $copy_me) touch $copy_me
+      if (! -e $copied_files) touch $copied_files
+      echo " ## Comparing $copied_files with $copy_me"
+      echo
+      echo "diff $copied_files $copy_me | grep '>' | sed -e 's/> //g'"
+##
+## Only do the diff once (there could be changes in the mean time)
+##                  
+      set lines=`diff $copied_files $copy_me | grep '>' | sed -e 's/> //g'`
+      echo
+      echo $lines
+      echo
+##
+## Consider all lines as filenames and move them from relevant node
+##                  
+      foreach line ($lines)
+        echo $SSH $node mv $line $targetdir/proc$nodenumber/
+        $SSH $node mv $line $targetdir/proc$nodenumber/
+##
+## Inform copied-files.list that the file has been copied (if successful)
+##                        
+        if (! $status) then
+          echo " copy-snapshots: Move successful (exit status 0)"
+          echo $line >> $copied_files
+        else
+          echo " copy-snapshots: Could not move file (exit status 1)"
+        endif
+      end
+      set nodenumber=`expr $nodenumber + 1`
+    end
+##
+## Break infinite while loop if set to check only once for files to copy
+##
+    if ($?run_only_once) break
+##
+## Check if parent process still alive
+##                  
+    if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
+      echo " copy-snapshots: No parent process (pid $PARENT_PID) -- exiting"
+      exit 1
+    endif
+##
+## Check only every 60 seconds
+##
+    sleep 60
+
+  end # while(1)
+
+endif # no input filename given
+##
+## Finishing output
+##
+if ($debug) echo " copy-snapshots: done"
+echo "------------------------------------------------------ "
+
+#TEST-BEGIN
+if($debug) then
+  echo "copy-snapshots: pid=$$ finished" >> $targetdir/copy-snaps_was_here.log
+endif
+#TEST-END
+
+# End of file copy-snapshots
