@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.171 2003-05-05 18:48:51 brandenb Exp $
+### $Id: Makefile,v 1.172 2003-05-07 05:25:44 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -112,6 +112,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
 #F90FLAGS= #(erland|igor|tycho|linux29|onsager)
 #FFLAGS=-O3 -ipo #(fe[0-9])
+#FFLAGS=-O3 #(fe[0-9])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS= -O3 -w90 #(Cosmo)
