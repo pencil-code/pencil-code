@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.79 2003-08-26 16:40:36 mee Exp $
+! $Id: ionization.f90,v 1.80 2003-08-26 16:56:20 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -73,7 +73,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.79 2003-08-26 16:40:36 mee Exp $")
+           "$Id: ionization.f90,v 1.80 2003-08-26 16:56:20 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1097,10 +1097,10 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
       case('bot')
         do i=1,nghost
-          f(:,:,n1-i,iTT) = f(:,:,n1+i,iiTT) 
+          f(:,:,n1-i,iTT) = f(:,:,n1+i,iTT) 
         enddo
         
-        K=exp(lnrho_e-f(:,:,1:n1,ilnrho))*(f(:,:,1:n1-1,iTT)/TT_ion)**1.5 &
+        K=exp(lnrho_e-f(:,:,1:n1-1,ilnrho))*(f(:,:,1:n1-1,iTT)/TT_ion)**1.5 &
                  *exp(-TT_ion/f(:,:,1:n1-1,iTT))
         f(:,:,1:n1-1,iyH)=2./(1.+sqrt(1.+4./K ))
 
@@ -1114,8 +1114,8 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
           one_yH_term=(1.-f(:,:,1:n1-1,iyH)) &
                        *(log(1.-f(:,:,1:n1-1,iyH))-lnrho_H)
       
-        f(:,:,1:n1,iss)=((1.+f(:,:,1:n1,iyH)+xHe) &
-                       *(1.5*log(TT/TT_ion)-f(:,:,1:n1-1,ilnrho)+2.5) &
+        f(:,:,1:n1-1,iss)=((1.+f(:,:,1:n1-1,iyH)+xHe) &
+                       *(1.5*log(f(:,:,1:n1-1,iTT)/TT_ion)-f(:,:,1:n1-1,ilnrho)+2.5) &
                        - yH_term - one_yH_term - xHe_term)*ss_ion
          
          
@@ -1124,14 +1124,14 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
       case('top')
         do i=1,nghost
-          f(:,:,n2+i,iTT) = f(:,:,n2-i,iiTT) 
+          f(:,:,n2+i,iTT) = f(:,:,n2-i,iTT) 
         enddo
-        K=exp(lnrho_e-f(:,:,n2:mz,ilnrho))*(f(:,:,n2+1:mz,iTT)/TT_ion)**1.5 &
+        K=exp(lnrho_e-f(:,:,n2+1:mz,ilnrho))*(f(:,:,n2+1:mz,iTT)/TT_ion)**1.5 &
                  *exp(-TT_ion/f(:,:,n2+1:mz,iTT))
         f(:,:,n2+1:mz,iyH)=2./(1.+sqrt(1.+4./K ))
 
         yH_term=0.
-        where (f(:,:,0:n1-1,iyH)>0.) &
+        where (f(:,:,n2+1:mz,iyH)>0.) &
           yH_term=f(:,:,n2+1:mz,iyH) &
                        *(2.*log(f(:,:,n2+1:mz,iyH))-lnrho_e-lnrho_p)
 
@@ -1140,8 +1140,8 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
           one_yH_term=(1.-f(:,:,n2+1:mz,iyH)) &
                        *(log(1.-f(:,:,n2+1:mz,iyH))-lnrho_H)
       
-        f(:,:,0:n1,iss)=((1.+f(:,:,n2+1:mz,iyH)+xHe) &
-                       *(1.5*log(TT/TT_ion)-f(:,:,n2+1:mz,ilnrho)+2.5) &
+        f(:,:,n2+1:mz,iss)=((1.+f(:,:,n2+1:mz,iyH)+xHe) &
+                       *(1.5*log(f(:,:,n2+1:mz,iTT)/TT_ion)-f(:,:,n2+1:mz,ilnrho)+2.5) &
                        - yH_term - one_yH_term - xHe_term)*ss_ion
       case default
         print*,"bc_ss_stemp_z: invalid argument"
