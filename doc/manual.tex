@@ -178,7 +178,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.37 $ $}
+\date{\today,~ $ $Revision: 1.38 $ $}
 
 % ====================================================================== %
 
@@ -207,7 +207,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.37 $ $}
+  \emph{\today,~ $ $Revision: 1.38 $ $}
 
 
 \end{center}
@@ -919,55 +919,145 @@ output.
 % ---------------------------------------------------------------------- %
 
 
-In all these cases the input files are usually kept at a minimum, so most
-of the quantities are already initialized by default values.
+\subsection{Start parameters}
+\label{start-params}
+
+All input parameters in \file{start.in} (and \file{run.in}) occur in
+namelists.
+This allows arbitrary order of the parameters (\emph{within} the given
+namelist; the namelists need to appear in the correct order), as well as
+inserted Fortran comments and whitespace for readability.
+One namelist (\name{init_pars}) contains general parameters for
+initialisation and is always read in.
+All other namelists are specific to individual modules and will only
+be read if the corresponding module is used.
+
+The syntax of a namelist (in an input file like \file{start.in}) is
+\begin{verbatim}
+  &init_pars
+    ip=5, Lxyz=2,4,2
+  /
+\end{verbatim}
+--- in this example, we read just two variables (all other variables in
+the namelist retain their previous value): \var{ip}, which is set to $5$,
+and \var{Lxyz}, which is a vector of length three and is set to $(2,4,5)$.
+
+While all parameters from the namelists can be set, in most cases
+reasonable default values are preset.
+Thus, the typical file \file{start.in} will only contain a minimum set of
+variables or (if you are \emph{very} minimalistic) none at all.
 If you want to run a particular problem, the best will be to start by
 modifying a particular example which is closest to yours.
 
-
-\subsection{Start parameters}
-
-Since the text below was written we have changed to namelists.
-This means very few input parameters are generally needed,
-especially in simple situations where a set of reasonable
-default parameters is used, e.g.\ box size $(2\pi)^3$ which is
-good for most forced turbulence runs, periodic boundary
-conditions, Courant time step, order of the scheme, etc.
-If one wants to depart from that, one simply enters the right
-values under the right category (but within the category in
-arbitrary order). Below still the parameters from an older
-write-up. Many of those parameters are however specific to
-some convection tests, but at the moment convection is not
-quite ready yet.
-
-\label{start-params}
-
-Here is a list of parameters that are set in \file{start.in}
-
+The following table lists all (at the time of writing, June 2002)
+namelists with their corresponding start parameters and their default
+values (in brackets).
 Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
-
 Not all parameters are used for a given scenario.
+This lit can in many cases only give an idea of the corresponding initial
+state; to get more insight, you should have alook at the code.
 
 
 % ---------------------------------------------------------------------- %
 \begin{longtable}{lp{0.6\textwidth}}
 %\begin{tabular}{lp{0.6\textwidth}}
 \toprule
-  \multicolumn{1}{c}{\emph{Variable}}
+  \multicolumn{1}{c}{\emph{Variable (default value)}}
                & \multicolumn{1}{c}{\emph{Meaning}} \\
 \midrule
+  \multicolumn{2}{c}{Namelist \name{init_pars}}\\
+\midrule
+  \var{cvsid}  & the \name{CVS} identification string, which allows you to
+                 keep track of the version of \file{start.in}.\\
   \var{ip}     & (anti-)verbosity level: \code{ip=1} produces lots of
                  diagnostic output, \code{ip=14} virtually none. \\
-  \var{[x-z]0},
-  \var{L[x-z]},
-  \var{iper[x-z]},
-               & determine the geometry of the box.
-                 If \code{iperx=0} (box \emph{not\/} periodic in $x$), $x$
-                 ranges from $x_0$ to $x_0+L_x$; if \code{iperx=1}
-                 (periodic box in $x$), the rightmost point is
-                 $x_0+L_x-\delta x$. In all cases, three ghost zones will
-                 be added. \\
+  \var{xyz0},
+  \var{Lxyz},
+  \var{lperi}  & determine the geometry of the box. All three are vectors
+                 of the form ($x$-comp., $y$-comp., $z$-comp.); \var{xyz0}
+                 describes the left (lower) corner of the box, \var{Lxyz}
+                 the box size.
+                 \var{lperi} specifies whether a direction is conidered
+                 periodic (in which case the last point is omitted) or not.
+                 In all cases, three ghost zones will be added. \\
+  \var{lwrite_ic}
+               & ??? \\
+  \var{lnowrite}
+               & ??? \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
+\midrule
+  \var{inituu} & initialization of velocity. Currently valid choices are
+                 `zero' ($\uv=0$), 
+                 `random-normal' (random, normally-distributed $u_x$), 
+                 `sound=wave' (sound wave in $x$ direction), 
+                 `shock-tube' (polytropic standing shock). \\
+  \var{ampluu} & amplitude for some types of initial velocities. \\
+  \var{widthuu}& width for some types of initial velocities. \\
+  \var{urand}  & additional random perturbation of $\uv$. If
+                 \verb|urand>0|, the perturbation is additive,
+                 $u_i \mapsto u_i + u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
+                 if \verb|urand<0|, it is multiplicative,
+                 $u_i \mapsto u_i \times u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
+                 in both cases, ${\cal U}_{[0.5,0.5]}$ is a uniformly
+                 distributed random variable on the interval $[-0.5,0.5]$.\\
+  \var{uu_left},
+  \var{uu_right}
+               & needed for \code{inituu='shock-tube'}.\\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{density_init_pars}} \\
+\midrule
+  \var{initlnrho}
+               & initialization of density. Currently valid choices are
+                 `zero' ($\ln\varrho=0$),
+                 `hydrostatic-z' (hydrostatic vertical stratification),
+                 `hydrostatic-z-2' (hydrostatic vertical stratification
+                                    for isentropic atmosphere),
+                 `rho-jump' (density jump of width \var{widthlnrho}),
+                 `piecew-poly' (piecewise polytropic vertical
+                               stratification for solar convection),
+                 `polytropic' (polytropic vertical stratification),
+                 `sound-wave' (sound wave),
+                 `shock-tube' (polytropic standing shock).\\
+  \var{gamma}  & adiabatic index $\gamma=c_p/c_v$. \\
+  \var{cs0,rho0}
+               & reference values of sound speed and density,
+                 i.\,e.~values at height \name{zref}. \\
+  \var{ampllnrho},
+  \var{widthlnrho}
+               & amplitude and width for some types of initial densities. \\
+  \var{rho_left},
+  \var{rho_right}
+               & needed for \code{initlnrho='shock-tube'}. \\
+  \var{cs2bot},
+  \var{cs2top} & sound speed at bottom and top. Needed for some types of
+                 stratification. \\ 
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{grav_init_pars}} \\
+\midrule
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{entropy_init_pars}} \\
+\midrule
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{magnetic_init_pars}} \\
+\midrule
+
+
+
+
+
+\midrule
+  \multicolumn{2}{c}{[Old stuff:]} \\
+\midrule
+
+
+
   \var{z1}, \var{z2}, \var{ztop}
                & specific to the solar convection case.
                  The stable layer is $z_0 < z < z_1$, the unstable layer
@@ -1592,7 +1682,7 @@ Reading param.nml..
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.37 2002-06-26 21:32:44 dobler Exp $ $}
+$ $Id: manual.tex,v 1.38 2002-07-01 08:26:10 dobler Exp $ $}
 
 
 \end{document}
