@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.30 2003-05-07 04:53:58 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.31 2003-05-07 08:20:14 brandenb Exp $
 
 module Magnetic
 
@@ -18,7 +18,8 @@ module Magnetic
   real :: va2=0.
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
+  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
+  integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_uxDxuxbm=0
@@ -47,7 +48,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.30 2003-05-07 04:53:58 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.31 2003-05-07 08:20:14 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
