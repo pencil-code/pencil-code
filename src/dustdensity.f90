@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.65 2004-04-17 10:06:41 ajohan Exp $
+! $Id: dustdensity.f90,v 1.66 2004-04-17 12:28:20 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.65 2004-04-17 10:06:41 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.66 2004-04-17 12:28:20 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -621,13 +621,13 @@ module Dustdensity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: TT1,cs2
-      real, dimension (1) :: cs_sum_thisproc_arr,cs_sum_allprocs_arr
+      real, dimension (1) :: cs_sum_thisproc_arr,cs_sum_allprocs_arr,pp0_arr
       real :: cs_sum_thisproc
       real :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu,deltaud_drift2
       real :: ust,pp0,pp1,pp2,cs2p,cp1tilde,cs_sum
       real :: cs_ave,Hp,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
       integer :: i,j,l
-      save :: cs_ave,Hp,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
+      save :: alphaSS,ul0,tl0,teta,ueta,tl01,teta1
 !
 !  Calculate turbulence properties
 !
@@ -654,29 +654,40 @@ module Dustdensity
         call mpibcast_real_scl(cs_ave,1)
 !
 !  Need mid-plane pressure for scale height calculation
-!        
-        call eoscalc_point &
-            (ilnrho_ss,f(l1,m,nz/2+3,ilnrho),f(l1,m,nz/2+3,iss),pp=pp0)
+!
+        if (iproc == nprocz/2) then
+          call eoscalc_point &
+              (ilnrho_ss,f(l1,m,n1,ilnrho),f(l1,m,n1,iss),pp=pp0)
+        endif
+        call mpibcast_real_scl_nonroot(pp0,1,nprocz/2)
 !
 !  Find scale height and calculate turbulence properties
-!            
-        do i=nz/2+3,n2
+!
+        do i=n1,n2
           pp2 = pp1
           call eoscalc_point &
               (ilnrho_ss,f(l1,m,i,ilnrho),f(l1,m,i,iss),pp=pp1)
           if (pp2 > exp(-1.)*pp0 .and. pp1 <= exp(-1.)*pp0) then
-            Hp = dz*(i-(nz/2+3))
+            Hp = z(i)
             alphaSS = nu_turb/(Hp**2*Omega)
             ul0  = alphaSS*cs_ave
             tl0  = Hp/ul0
             eps_diss = nu_turb*(qshear*Omega)**2
             teta = (nu_mol/eps_diss)**0.5
             ueta = (nu_mol*eps_diss)**0.25
-            tl01 = 1/tl0
-            teta1 = 1/teta
             exit
           endif
         enddo
+!
+!  Broadcast to all processors from scale height processor
+!
+        call mpibcast_real_scl_nonroot(alphaSS,1,nprocz/2)
+        call mpibcast_real_scl_nonroot(ul0,1,nprocz/2)
+        call mpibcast_real_scl_nonroot(tl0,1,nprocz/2)
+        call mpibcast_real_scl_nonroot(teta,1,nprocz/2)
+        call mpibcast_real_scl_nonroot(ueta,1,nprocz/2)
+        tl01 = 1/tl0
+        teta1 = 1/teta
       endif
 !
 !  Relative turbulent velocity depends on stopping time regimes

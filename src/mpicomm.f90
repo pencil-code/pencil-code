@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.117 2004-02-22 14:22:09 theine Exp $
+! $Id: mpicomm.f90,v 1.118 2004-04-17 12:28:20 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -834,6 +834,17 @@ module Mpicomm
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,root,MPI_COMM_WORLD,ierr)
     endsubroutine mpibcast_real_arr
+!***********************************************************************
+    subroutine mpibcast_real_scl_nonroot(bcast_array,nbcast_array,ibcast_proc)
+!
+      integer :: nbcast_array,ibcast_proc
+      real :: bcast_array
+!
+!  this works for the general case when nbcast_array is not 1
+!  and the general case when communication is not nec. from root.
+!
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc,MPI_COMM_WORLD,ierr)
+    endsubroutine mpibcast_real_scl_nonroot
 !***********************************************************************
     subroutine mpibcast_real_nonroot(bcast_array,nbcast_array,ibcast_proc)
 !
