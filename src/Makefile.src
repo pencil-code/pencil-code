@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.15 2003-12-23 10:50:59 dobler Exp $
+### $Id: Makefile.src,v 1.16 2004-01-06 17:56:43 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -113,9 +113,9 @@ FCCLEANER=
 #FC=ifc -i_dynamic #(ns0)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
-#FC=ifc -I/usr/lib/lam/include #(morvern)  
+#FC=ifc -I/usr/lib/lam/include #(morvern)
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=ifc #(nl6|mmtf|nl19|hamlet)
+#FC=ifc #(taspd209a|nl6|mmtf|nl19|hamlet)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FC=f95 #(karbala)
 #FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4|monolith)
