@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.13 2002-10-04 11:00:42 nilshau Exp $
+! $Id: radiation.f90,v 1.14 2002-10-04 12:22:39 dobler Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -22,7 +22,8 @@ module Radiation
   real :: amplee=0
   real :: ampl_pert=0
   real :: inflow=2
-  real, dimension(mx,my,mz) :: DFF_new=0
+  real, dimension(mx,my,mz) :: DFF_new=0. ! Nils, do we need to initialize here?
+                                          ! this makes compilation much slower
 
   ! init parameteres
   character (len=labellen) :: initrad='equil',pertee='none'
@@ -79,7 +80,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.13 2002-10-04 11:00:42 nilshau Exp $")
+           "$Id: radiation.f90,v 1.14 2002-10-04 12:22:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

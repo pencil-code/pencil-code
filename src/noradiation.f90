@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.5 2002-08-09 08:15:30 nilshau Exp $
+! $Id: noradiation.f90,v 1.6 2002-10-04 12:22:39 dobler Exp $
 
 
 module Radiation
@@ -14,6 +14,7 @@ module Radiation
   ! other variables (needs to be consistent with reset list below)
   integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
   integer :: i_Egas_rms=0,i_Egas_max=0
+  real :: DFF_new=0.
 
   contains
 
@@ -36,7 +37,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.5 2002-08-09 08:15:30 nilshau Exp $")
+           "$Id: noradiation.f90,v 1.6 2002-10-04 12:22:39 dobler Exp $")
 !
     endsubroutine register_rad
 !***********************************************************************
