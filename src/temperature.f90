@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.6 2003-08-04 17:56:03 mee Exp $
+! $Id: temperature.f90,v 1.7 2003-08-28 08:57:11 mee Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -79,7 +79,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.6 2003-08-04 17:56:03 mee Exp $")
+           "$Id: temperature.f90,v 1.7 2003-08-28 08:57:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,8 +236,6 @@ iss=ilnTT  !(need to think how to deal with this...)
       use Mpicomm
       use Sub
       use Global
-      use Slices
-      use IO
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df

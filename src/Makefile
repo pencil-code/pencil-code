@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.227 2003-08-27 17:04:58 dobler Exp $
+### $Id: Makefile,v 1.228 2003-08-28 08:57:11 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -322,8 +322,8 @@ sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 cdata.o $(MPICOMM).o sub.o timestep.o $(TIMEAVG).o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o
 prints.o:    prints.f90 cdata.o sub.o param_io.o $(physics)
-equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(IO).o $(physics) boundcond.o \
-             $(GLOBAL).o slices.o
+equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) boundcond.o \
+             $(GLOBAL).o 
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 filter.o:    filter.f90 cdata.o sub.o boundcond.o
 initcond.o:  initcond.f90 cdata.o $(MPICOMM).o general.o sub.o
@@ -336,13 +336,13 @@ $(MPICOMM).o:      $(MPICOMM).f90 cdata.o general.o $(FFT).o
 $(GLOBAL).o:       $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(VISCOSITY).o:    $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
 $(SHEAR).o:	   $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
-$(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
+$(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
 $(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
-$(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(IO).o slices.o $(INTERSTELLAR).o $(IONIZATION).o
-$(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o slices.o $(FFT).o $(GRAVITY).o
+$(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(INTERSTELLAR).o $(IONIZATION).o
+$(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o
 $(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(IONIZATION).o
-$(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
-$(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o slices.o
+$(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o 
+$(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o 
 $(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTVELOCITY).o: $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
 $(DUSTDENSITY).o:  $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o

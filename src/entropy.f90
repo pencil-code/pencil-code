@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.198 2003-08-26 16:40:36 mee Exp $
+! $Id: entropy.f90,v 1.199 2003-08-28 08:57:11 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -90,7 +90,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.198 2003-08-26 16:40:36 mee Exp $")
+           "$Id: entropy.f90,v 1.199 2003-08-28 08:57:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -178,7 +178,6 @@ module Entropy
 !
       use Cdata
       use Mpicomm
-      use IO
       use Sub
       use Gravity
       use Initcond
@@ -546,8 +545,6 @@ module Entropy
       use Ionization
       use Sub
       use Global
-      use Slices
-      use IO
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.154 2003-08-15 08:58:51 brandenb Exp $
+! $Id: equ.f90,v 1.155 2003-08-28 08:57:11 mee Exp $
 
 module Equ
 
@@ -193,7 +193,6 @@ module Equ
 !
       use Cdata
       use Mpicomm
-      use Slices
       use Sub
       use Global
       use Hydro
@@ -206,7 +205,6 @@ module Equ
       use Dustvelocity
       use Dustdensity
       use Boundcond
-      use IO
       use Shear
       use Density
 !
@@ -224,7 +222,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.154 2003-08-15 08:58:51 brandenb Exp $")
+           "$Id: equ.f90,v 1.155 2003-08-28 08:57:11 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

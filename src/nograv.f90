@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.25 2003-06-27 04:47:06 brandenb Exp $
+! $Id: nograv.f90,v 1.26 2003-08-28 08:57:11 mee Exp $
 
 module Gravity
 
@@ -49,7 +49,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.25 2003-06-27 04:47:06 brandenb Exp $")
+           "$Id: nograv.f90,v 1.26 2003-08-28 08:57:11 mee Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -89,7 +89,6 @@ module Gravity
       use Cdata
 !      use Mpicomm
       use Sub
-      use Slices
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
