@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.40 2002-06-09 12:16:19 brandenb Exp $
+! $Id: run.f90,v 1.41 2002-06-10 15:30:28 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -25,7 +25,7 @@
         implicit none
 !
         real, dimension (mx,my,mz,mvar) :: f,df
-        integer :: time1,time2,count_rate
+        integer :: time1,time2,count,count_rate
         logical :: stop=.false.,reload=.false.
         real :: Wall_clock_time
 !
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.40 $", &
-             "$Date: 2002-06-09 12:16:19 $")
+             "$Revision: 1.41 $", &
+             "$Date: 2002-06-10 15:30:28 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -87,6 +87,7 @@
         if(lroot) then
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
+          count = 0
         endif
 !
 !  do loop in time
@@ -116,6 +117,7 @@
 !  time advance
 !
           call rk_2n(f,df)
+          count = count + 1     !  reliable loop count even for premature exit
           if (lforcing) call addforce(f)
           if(lout) call wzaverages
           if(lout) call prints
@@ -127,8 +129,9 @@
           if (mod(it,isave).eq.0) call wsnap(trim(directory)//'/var.dat',f,.false.)
 !
           headt=.false.
-          if (it>=nt) exit Time_loop
-          if (dt < dtmin) then
+!          if (it>=nt) exit Time_loop
+!          if (dt < dtmin) then
+          if ((it < nt) .and. (dt < dtmin)) then
             write(0,*) 'Time step has become too short: dt = ', dt
             exit Time_loop
           endif
@@ -155,8 +158,10 @@
           Wall_clock_time=(time2-time1)/real(count_rate)
           print*,'Wall clock time [sec]=',Wall_clock_time,' (+/- ', 1./count_rate,')'
           if (it>1) print*, 'Wall clock time/timestep/meshpoint [microsec]=', &
-               Wall_clock_time/(it-1)/nw/ncpus/1e-6
+               Wall_clock_time/count/nw/ncpus/1e-6
         endif
         call mpifinalize
 !
       endprogram run
+
+
