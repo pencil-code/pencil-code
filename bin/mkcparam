@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.9 2002-12-13 18:42:38 brandenb Exp $
+# CVS: $Id: mkcparam,v 1.10 2003-03-18 22:22:19 brandenb Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -35,13 +35,15 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #
 # ---------------------------------------------------------------------- #
 my %modules = ( # module_name { option => contribution to mvar, ...}, ...
-	        HYDRO     => { hydro     => 3, nohydro     => 0 },
-	        DENSITY   => { density   => 1, nodensity   => 0 },
-	        ENTROPY   => { entropy   => 1, noentropy   => 0 ,
+	        HYDRO        => { hydro        => 3, nohydro        => 0 },
+	        DENSITY      => { density      => 1, nodensity      => 0 },
+	        ENTROPY      => { entropy      => 1, noentropy      => 0 ,
                                                temperature => 1 },
-	        MAGNETIC  => { magnetic  => 3, nomagnetic  => 0 },
-		RADIATION => { radiation => 5, noradiation => 0 },
-		PSCALAR   => { pscalar   => 1, nopscalar   => 0 },
+	        MAGNETIC     => { magnetic     => 3, nomagnetic     => 0 },
+		RADIATION    => { radiation    => 5, noradiation    => 0 },
+		PSCALAR      => { pscalar      => 1, nopscalar      => 0 },
+		DUSTDENSITY  => { dustdensity  => 1, nodustdensity  => 0 },
+		DUSTVELOCITY => { dustvelocity => 3, nodustvelocity => 0 },
 	      );
 my %auxmodules=(# module_name { option => contribution to mvar, ...}, ...
 		   VISCOSITY => { visc_shock => 1, visc_const => 0 }
