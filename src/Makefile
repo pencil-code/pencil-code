@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.192 2003-06-30 11:26:57 theine Exp $
+### $Id: Makefile,v 1.193 2003-06-30 12:18:32 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -277,6 +277,9 @@ nodebug.o:         nodebug.f90 cdata.o $(MPICOMM).o
 $(POWER).o:        $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
 $(STRUCT_FUNC).o:  $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
 #axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
+
+# Needed for the underscore trick:
+mpicomm_.f90:      mpicomm.f90
 
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 TAGS: $(TAG_SOURCE)
