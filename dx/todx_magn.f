@@ -5,7 +5,7 @@
 ! directory of the run. Compile f77 todx_magn.f and run it in /tmp
 ! .net files should be linked to tmp directory (from pencil_modular/dx).
 ! Then, Data Explorer is ready to be started from tmp directory.
-      parameter(mx=38,my=70,mz=38,mvar=8)
+      parameter(mx=48,my=56,mz=48,mvar=8)
       parameter(nghost=3)
       dimension f(mx,my,mz,mvar)
       dimension x(mx),y(my),z(mz)
