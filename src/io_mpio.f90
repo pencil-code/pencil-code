@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.19 2003-07-24 19:07:26 dobler Exp $
+! $Id: io_mpio.f90,v 1.20 2003-07-28 16:30:17 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -103,7 +103,11 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.19 2003-07-24 19:07:26 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.20 2003-07-28 16:30:17 dobler Exp $")
+!
+!  consistency check
+!
+      if (.not. lmpicomm) call stop_it('Need mpicomm for io_mpio')
 !
 !  global indices of first element of iproc's data in the file
 !

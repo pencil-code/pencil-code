@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.104 2003-07-12 21:12:49 theine Exp $
+! $Id: start.f90,v 1.105 2003-07-28 16:30:17 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -30,6 +30,7 @@
 !
         integer :: i
 !       logical :: lock=.false.
+        logical :: exist
         real, dimension (mx,my,mz,mvar+maux) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
@@ -39,7 +40,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.104 2003-07-12 21:12:49 theine Exp $")
+             "$Id: start.f90,v 1.105 2003-07-28 16:30:17 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -65,7 +66,11 @@
 !  leave this around for some time [wd; rev. 1.71, 5-nov-2002]
 !        call wparam()
 !
+!  Set up directory names and check whether the directories exist
+!
         call directory_names()
+        inquire(FILE=directory_snap, EXIST=exist)
+        if (.not. exist) call stop_it('Need directory ' // trim(directory_snap))
 !
         if (any(xyz1 /= impossible)) Lxyz=xyz1-xyz0
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
