@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.167 2004-06-18 12:19:03 mcmillan Exp $
+! $Id: density.f90,v 1.168 2004-06-22 16:08:29 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.167 2004-06-18 12:19:03 mcmillan Exp $")
+           "$Id: density.f90,v 1.168 2004-06-22 16:08:29 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -720,26 +720,26 @@ module Density
       lnrho_int=mpoly*log(1+beta1*(1/r_int-1))
       lnrho_ext=lnrho0
 !
-        do imn=1,ny*nz
-          n=nn(imn)
-          m=mm(imn)
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
 !
-          call calc_unitvects_sphere()
+        call calc_unitvects_sphere()
 !
-          ! in the fluid shell
-          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=mpoly*log(1+beta1*(1/r_mn-1))
-          ! outside the fluid shell
-          if (initlnrho(1)=='geo-kws') then
-            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
-            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
-          elseif (initlnrho(1)=='geo-kws-constant-T') then
-            call potential(R=r_int,POT=pot_int)
-            call potential(R=r_ext,POT=pot_ext)
-            call potential(RMN=r_mn,POT=pot)
-            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)
-            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)
-          endif
-        enddo 
+        ! in the fluid shell
+        where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=mpoly*log(1+beta1*(1/r_mn-1))
+        ! outside the fluid shell
+        if (initlnrho(1)=='geo-kws') then
+          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
+          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
+        elseif (initlnrho(1)=='geo-kws-constant-T') then
+          call potential(R=r_int,POT=pot_int)
+          call potential(R=r_ext,POT=pot_ext)
+          call potential(RMN=r_mn,POT=pot)
+          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)
+          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)
+        endif
+      enddo 
 !      
     endsubroutine shell_lnrho
 !***********************************************************************
