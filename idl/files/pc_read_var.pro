@@ -1,17 +1,17 @@
-; $Id: pc_read_var.pro,v 1.27 2004-09-08 20:26:24 mee Exp $
+; $Id: pc_read_var.pro,v 1.28 2005-03-24 17:21:17 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-09-08 20:26:24 $
-;  $Revision: 1.27 $
+;  $Date: 2005-03-24 17:21:17 $
+;  $Revision: 1.28 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
 pro pc_read_var, t=t,                                            $
             object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
-            variables=variables,tags=tags, MAGIC=MAGIC,          $
+            variables=variables,tags=tags, MAGIC=MAGIC,       $
             TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL,                    $
             nameobject=nameobject,                               $
             dim=dim,param=param,                                 $
@@ -326,6 +326,9 @@ if keyword_set(VALIDATE_VARIABLES) then begin
     tags=tags[where(skipvariable eq 0)]
   endif
 endif
+
+;Save changs to the variables array (but don't include the effect of /TRIMALL)
+variables_in=variables
 
 if keyword_set(TRIMALL) then begin
 ;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
