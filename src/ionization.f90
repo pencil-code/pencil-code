@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.2 2003-02-03 16:03:14 theine Exp $
+! $Id: ionization.f90,v 1.3 2003-02-04 10:42:57 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -49,7 +49,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.2 2003-02-03 16:03:14 theine Exp $")
+           "$Id: ionization.f90,v 1.3 2003-02-04 10:42:57 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -87,7 +87,7 @@ module Ionization
       use General
 !
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
-      real, dimension (nx) :: yy,logTT,dlnPdlnrho,dlnPdS
+      real, dimension (nx) :: yH,logTT,dlnPdlnrho,dlnPdS
       real :: ss0=-5.5542
 !
 !  calculate cs2, 1/T, and cp1tilde
@@ -95,7 +95,7 @@ module Ionization
       if(lionization) then
         if(headtt) print*,'thermodynamics: assume cp is not 1'
         call pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdS)
-        call logtemperature(lnrho,ss,yy,logTT)
+        call logtemperature(lnrho,ss,yH,logTT)
         cs2=kB_over_mp*exp(logTT)*dlnPdlnrho
         TT1=exp(-logTT)                              ! /c_p ?
         cp1tilde=dlnPdS/dlnPdlnrho
@@ -115,7 +115,6 @@ module Ionization
 !
 !   3-feb-03/tobi: coded
 !
-      implicit none
       real, dimension(nx),intent(in)   :: lnrho,ss
       real, dimension(nx), intent(out) :: dlnPdlnrho,dlnPdS
       real, dimension(nx)              :: dlnrho,dss
@@ -132,33 +131,30 @@ module Ionization
 !
 !   3-feb-03/tobi: coded
 !
-      implicit none
       real, dimension(nx), intent(in) :: lnrho,ss
-      real, dimension(nx)             :: yy,logTT,logpressure
+      real, dimension(nx)             :: yH,logTT,logpressure
 
-      call logtemperature(lnrho,ss,yy,logTT)
-      logpressure=lnrho+log(1.+yy)+logTT
+      call logtemperature(lnrho,ss,yH,logTT)
+      logpressure=lnrho+log(1.+yH)+logTT
     endfunction logpressure
 !***********************************************************************
-    subroutine logtemperature(lnrho,ss,yy,logTT)
+    subroutine logtemperature(lnrho,ss,yH,logTT)
 !
 !   3-feb-03/tobi: coded
 !
-      implicit none
       real, dimension(nx), intent(in)  :: lnrho,ss
-      real, dimension(nx) ,intent(out) :: yy,logTT
+      real, dimension(nx) ,intent(out) :: yH,logTT
 
-      yy=ionfrac(lnrho,ss)
-      logTT=2.*(ss-log(nqp)-yy*log(nqe) &
-           -(1.+yy)*(2.5+log(m_p)-lnrho) &
-           +(1.-yy)*log(1.-yy)+2.*yy*log(yy))/(3.+3.*yy)
+      yH=ionfrac(lnrho,ss)
+      logTT=2.*(ss-log(nqp)-yH*log(nqe) &
+           -(1.+yH)*(2.5+log(m_p)-lnrho) &
+           +(1.-yH)*log(1.-yH)+2.*yH*log(yH))/(3.+3.*yH)
     endsubroutine logtemperature
 !***********************************************************************
     function ionfrac(lnrho,ss)
 !
 !   3-feb-03/tobi: coded
 !
-      implicit none
       real, dimension(nx) :: lnrho,ss
       real, dimension(nx) :: ionfrac
       integer             :: i
@@ -172,87 +168,85 @@ module Ionization
 !
 !   3-feb-03/tobi: coded
 !
-      implicit none
       real, intent (in)  :: lnrho,ss
-      real               :: yyh,yyl,dyyold,dyy,fl,fh,f,df,temp,rtsafe
-      real, parameter    :: yyacc=1.e-5
-      real, save         :: yylast=.5
+      real               :: yH_h,yH_l,dyH_old,dyH,fl,fh,f,df,temp,rtsafe
+      real, parameter    :: yHacc=1.e-5
+      real, save         :: yH_last=.5
       integer            :: i
       integer, parameter :: maxit=100
 
-      yyl=1.-yyacc
-      yyh=yyacc
-      dyyold=1.
-      dyy=dyyold
+      yH_l=1.-yHacc
+      yH_h=yHacc
+      dyH_old=1.
+      dyH=dyH_old
 
-      rtsafe=yyacc
+      rtsafe=yHacc
       call saha(rtsafe,lnrho,ss,fl,df)
       if (fl.le.0.) then
-         rtsafe=yyacc
+         rtsafe=yHacc
          return
       endif
-      rtsafe=1.-yyacc
+      rtsafe=1.-yHacc
       call saha(rtsafe,lnrho,ss,fh,df)
       if (fh.ge.0.) then
-         yylast=rtsafe
+         yH_last=rtsafe
          return
       endif
     
-      rtsafe=yylast
+      rtsafe=yH_last
       call saha(rtsafe,lnrho,ss,f,df)
 
       do i=1,maxit
-         if (((rtsafe-yyh)*df-f)*((rtsafe-yyl)*df-f).gt.0. &
-              .or.abs(2.*f).gt.abs(dyyold*df)) then
-            dyyold=dyy
-            dyy=.5*(yyh-yyl)
-            rtsafe=yyl+dyy
-            if (yyl.eq.rtsafe) then
-               yylast=rtsafe
+         if (((rtsafe-yH_h)*df-f)*((rtsafe-yH_l)*df-f).gt.0. &
+              .or.abs(2.*f).gt.abs(dyH_old*df)) then
+            dyH_old=dyH
+            dyH=.5*(yH_h-yH_l)
+            rtsafe=yH_l+dyH
+            if (yH_l.eq.rtsafe) then
+               yH_last=rtsafe
                !niter=niter+i
                return
             endif
          else
-            dyyold=dyy
-            dyy=f/df
+            dyH_old=dyH
+            dyH=f/df
             temp=rtsafe
-            rtsafe=rtsafe-dyy
+            rtsafe=rtsafe-dyH
             if (temp.eq.rtsafe) then
-               yylast=rtsafe
+               yH_last=rtsafe
                !niter=niter+i
                return
             endif
          endif
-         if (abs(dyy).lt.yyacc) then
-            yylast=rtsafe
+         if (abs(dyH).lt.yHacc) then
+            yH_last=rtsafe
             !niter=niter+i
             return
          endif
          call saha(rtsafe,lnrho,ss,f,df)
          if (f.lt.0.) then
-            yyl=rtsafe
+            yH_l=rtsafe
          else
-            yyh=rtsafe
+            yH_h=rtsafe
          endif
       enddo
       print *,'rtsafe exceeded maximum iterations',f
     endfunction rtsafe
 !***********************************************************************
-    subroutine saha(yy,lnrho,ss,f,df)
+    subroutine saha(yH,lnrho,ss,f,df)
 !
 !   3-feb-03/tobi: coded
 !
-      implicit none
-      real, intent(in)  :: yy,lnrho,ss
+      real, intent(in)  :: yH,lnrho,ss
       real, intent(out) :: f,df
       real              :: logTT,dlogTT
 
-      logTT=2.*(ss-log(nqp)-yy*log(nqe)-(1.+yy)*(2.5+log(m_p)-lnrho) &
-           +(1.-yy)*log(1.-yy)+2.*yy*log(yy))/(3.+3.*yy)
-      dlogTT=2.*(lnrho-log(m_p)-log(nqe)+2.*log(yy) &
-           -log(1.-yy)-1.5*(logTT+1.))/(3.+3.*yy)
-      f=-chiH*exp(-logTT)/k_B-1.5*((1.+yy)*dlogTT+1.)
-      df=dlogTT*(1.5+chiH*exp(-logTT)/k_B)-1./(1.-yy)-2./yy
+      logTT=2.*(ss-log(nqp)-yH*log(nqe)-(1.+yH)*(2.5+log(m_p)-lnrho) &
+           +(1.-yH)*log(1.-yH)+2.*yH*log(yH))/(3.+3.*yH)
+      dlogTT=2.*(lnrho-log(m_p)-log(nqe)+2.*log(yH) &
+           -log(1.-yH)-1.5*(logTT+1.))/(3.+3.*yH)
+      f=-chiH*exp(-logTT)/k_B-1.5*((1.+yH)*dlogTT+1.)
+      df=dlogTT*(1.5+chiH*exp(-logTT)/k_B)-1./(1.-yH)-2./yH
     endsubroutine saha
 !***********************************************************************
 endmodule ionization
