@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.178 2003-11-27 19:30:44 mee Exp $
+! $Id: equ.f90,v 1.179 2003-11-28 09:56:28 theine Exp $
 
 module Equ
 
@@ -216,7 +216,7 @@ module Equ
       use Boundcond
       use Shear
       use Density
-      use Viscosity, only: calc_viscosity
+      use Viscosity, only: calc_viscosity,lvisc_first
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -224,7 +224,7 @@ module Equ
       real, dimension (nx,3,3) :: uij,udij,bij
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb,gshock
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
-      real, dimension (nx) :: cs2, TT1, shock, UUtemp
+      real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp
       real :: facdiffus ! ,facdss,facdlnrho
 !
 !  print statements when they are first executed
@@ -233,7 +233,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.178 2003-11-27 19:30:44 mee Exp $")
+           "$Id: equ.f90,v 1.179 2003-11-28 09:56:28 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -265,9 +265,11 @@ module Equ
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
 !
-      if(lionization)    call ioncalc(f)
-      if(lradiation_ray) call radtransfer(f)
-      if(lfirst.and.(lvisc_shock .or. lvisc_hyper3)) call calc_viscosity(f)
+      if (lionization)    call ioncalc(f)
+      if (lradiation_ray) call radtransfer(f)
+      if (lvisc_shock.or.lvisc_hyper3) then
+        if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
+      endif
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -352,7 +354,7 @@ module Equ
 !
 !  Magnetic field evolution
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb)
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2)
 !
 !  cosmic ray energy density
         if (lcosmicray) call decr_dt(f,df,uu,rho1,divu,bij,bb)
@@ -390,30 +392,14 @@ module Equ
             facdiffus=cdt/(cdtv*dxmin)*dimensionality
           endif
           !
-          !  sum or maximum of the above terms?
-          !  (old_UUmax=.true. by default)
+          !  sum or maximum of the advection terms?
+          !  (lmaxadvec_sum=.false. by default)
           !
-          if (old_UUmax) then
-            call max_mn(sqrt(maxadvec2)+(facdiffus*maxdiffus),UUmax)
-          else
-            UUtemp=amax1(sqrt(maxadvec2),facdiffus*maxdiffus)
-            !
-            !  timestep limited by entropy variation
-            !
-            !if (lentropy) then
-              !maxdss=maxval(abs(df(l1:l2,m,n,iss)))
-              !facdss=cdt*dxmin/cdts
-              !UUtemp=amax1(facdss*maxdss,UUtemp)
-            !endif
-            !
-            !  timestep limited by density variation
-            !
-            !if (ldensity) then
-              !maxdlnrho=maxval(abs(df(l1:l2,m,n,ilnrho)))
-              !facdlnrho=cdt*dxmin/cdtr
-              !UUtemp=amax1(facdlnrho*maxdlnrho,UUtemp)
-            !endif
+          if (lmaxadvec_sum) then
+            UUtemp=amax1(sqrt(u2)+sqrt(cs2+va2),facdiffus*maxdiffus)
             call max_mn(UUtemp,UUmax)
+          else
+            call max_mn(sqrt(maxadvec2)+(facdiffus*maxdiffus),UUmax)
           endif
         endif
 !

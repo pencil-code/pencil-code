@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.15 2003-10-24 13:17:31 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.16 2003-11-28 09:56:28 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -99,7 +99,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.15 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.16 2003-11-28 09:56:28 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -213,7 +213,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,va2)
 !
 !  solve relativistic force-free MHD equations 
 !
@@ -394,6 +394,10 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
           enddo
           call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh,nbthresh)
         endif
+!
+!  set alven speed to zero for proper time steppeing
+!
+      va2=0
 !
 !  calculate max and rms current density
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.190 2003-11-27 19:19:35 mee Exp $
+! $Id: cdata.f90,v 1.191 2003-11-28 09:56:28 theine Exp $
 
 module Cdata
 
@@ -111,7 +111,7 @@ module Cdata
   logical :: lstart=.false., lrun=.false.
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
-  logical :: old_UUmax=.true.,old_cdtv=.true.
+  logical :: lmaxadvec_sum=.false.,old_cdtv=.true.
   logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid

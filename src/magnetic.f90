@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.159 2003-11-27 13:22:31 mcmillan Exp $
+! $Id: magnetic.f90,v 1.160 2003-11-28 09:56:28 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.159 2003-11-27 13:22:31 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.160 2003-11-28 09:56:28 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,7 +236,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2)
 !
 !  magnetic field evolution
 !
@@ -475,9 +475,9 @@ module Magnetic
 !  This must include the imposed field (if there is any)
 !  The b2 calculated above for only updated when diagnos=.true.
 !
+        call dot2_mn(bb,b2tot)
+        va2=b2tot*rho1
         if (lfirst.and.ldt) then
-          call dot2_mn(bb,b2tot)
-          va2=b2tot*rho1
           maxadvec2=amax1(maxadvec2,va2)
           maxdiffus=amax1(maxdiffus,etamax)
           !  diagnose
