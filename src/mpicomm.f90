@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.83 2003-06-30 10:14:23 brandenb Exp $
+! $Id: mpicomm.f90,v 1.84 2003-06-30 11:46:38 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -580,15 +580,19 @@ module Mpicomm
 !  buffer size
 !
       nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
-print*,iproc,'send_Irad0_xy: nbuf_xy=',nbuf_xy
+write(*,'(A,I2," -->",I2," ",A,1(I6," "))') 'send_Irad0_xy: ',iproc,ipz_dest, &
+     'nbuf_xy=',nbuf_xy
 !
 !  initiate and finalize straight away
 !
-print*,iproc,'send_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
+write(*,'(A,I2," -->",I2," ",A,2(I6," "))') 'send_Irad0_xy: ',iproc,ipz_dest,&
+     'tag_xy,isend_xy=',tag_xy,isend_xy
       call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tag_xy,MPI_COMM_WORLD,isend_xy,ierr)
-print*,iproc,'send_Irad0_xy: wait(1), err,isend_xy=',ierr,isend_xy
+write(*,'(A,I2," -->",I2," ",A,2(I6," "))') 'send_Irad0_xy: ',iproc,ipz_dest,&
+     'wait(1), err,isend_xy=',ierr,isend_xy
       call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
-print*,iproc,'send_Irad0_xy: wait(2), err,isend_xy=',ierr,isend_xy
+write(*,'(A,I2," -->",I2," ",A,2(I6," "))') 'send_Irad0_xy: ',iproc,ipz_dest,&
+     'wait(2), err,isend_xy=',ierr,isend_xy
 !
     endsubroutine send_Irad0_xy
 !***********************************************************************
@@ -604,16 +608,21 @@ print*,iproc,'send_Irad0_xy: wait(2), err,isend_xy=',ierr,isend_xy
 !  buffer size
 !
       nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
-print*,iproc,'recv_Irad0_xy: nbuf_xy=',nbuf_xy
+write(*,'(A,I2," <--",I2," ",A,1(I6," "))') 'recv_Irad0_xy: ',iproc,ipz_dest, &
+     'nbuf_xy=',nbuf_xy
 !
 !  initiate and finalize straight away
 !
-print*,iproc,'recv_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
-      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tolowy,MPI_COMM_WORLD,irecv_xy,ierr)
-print*,iproc,'recv_Irad0_xy: wait(1), err,irecv_xy=',ierr,irecv_xy
+write(*,'(A,I2," <--",I2," ",A,2(I6," "))') 'recv_Irad0_xy: ',iproc,ipz_dest,&
+     'tag_xy,isend_xy=',tag_xy,isend_xy
+      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tag_xy,MPI_COMM_WORLD,irecv_xy,ierr)
+write(*,'(A,I2," <--",I2," ",A,2(I6," "))') 'recv_Irad0_xy: ',iproc,ipz_dest,&
+     'wait(1), err,irecv_xy=',ierr,irecv_xy
       call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
-print*,iproc,'recv_Irad0_xy: wait(2), err,irecv_xy=',ierr,irecv_xy
-print*,iproc,'recv_Irad0_xy: Ibuf_xy=',Ibuf_xy
+write(*,'(A,I2," <--",I2," ",A,2(I6," "))') 'recv_Irad0_xy: ',iproc,ipz_dest,&
+     'wait(2), err,irecv_xy=',ierr,irecv_xy
+write(*,'(A,I2," <--",I2," ",A,2(G8.3," "))') 'recv_Irad0_xy: ',iproc,ipz_dest,&
+     'Ibuf_xy in ',minval(Ibuf_xy), maxval(Ibuf_xy)
 !
     endsubroutine recv_Irad0_xy
 !***********************************************************************
