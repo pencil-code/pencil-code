@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.29 2003-11-14 16:14:22 dobler Exp $
+! $Id: general.f90,v 1.30 2003-11-14 17:54:08 dobler Exp $
 
 module General
 
@@ -188,7 +188,7 @@ module General
         nseed=1
         if(present(size)) size=nseed
         if(present(get))  get=rstate(1)
-        if(present(put))  rstate(1)=min(put(1),-1)  ! ensure rstate(1) < 0
+        if(present(put))  rstate(1)=put(1)
       case default ! 'nr_f90'
         nseed=2
         if(present(size)) size=nseed
