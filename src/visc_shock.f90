@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.15 2003-01-20 16:48:39 mee Exp $
+! $Id: visc_shock.f90,v 1.16 2003-03-25 17:55:33 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.15 2003-01-20 16:48:39 mee Exp $")
+           "$Id: visc_shock.f90,v 1.16 2003-03-25 17:55:33 mee Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
@@ -261,7 +261,6 @@ module Viscosity
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: smoothf, tmp
-      integer :: j,k
 
 
 !
