@@ -9,7 +9,7 @@ elif [ -x /usr/bin/perl ]; then
 else
   perl=`which perl| sed 's/.*aliased to *//'`
 fi
-                                                                                
+
 exec $perl -x -S $0 "$@";     # -x: start from the following line
 #======================================================================#
 #! /Good_Path/perl -w
@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   emailfromcvs
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   17-Feb-2004
-# CVS: $Id: emailfromcvs,v 1.2 2004-02-18 08:38:49 dobler Exp $
+# CVS: $Id: emailfromcvs,v 1.3 2004-02-18 17:12:52 dobler Exp $
 # Usage:
 #   emailfromcvs cvs_user_id subject to_addr_1 <to_addr_2> .....
 # Description:
@@ -65,7 +65,8 @@ close(CVSEMAIL);
 my @message=<STDIN>;
 open(MAIL,"| $mailprog") or die "Cannot start $mailprog\n";
 print MAIL "To: $to\n";
-print MAIL "From: $from\n";
+print MAIL "From: Pencil-Code@nordita.dk\n";
+print MAIL "Reply-To: $from\n";
 print MAIL "Subject: $subject\n\n";
 print MAIL @message;
 close(MAIL);
