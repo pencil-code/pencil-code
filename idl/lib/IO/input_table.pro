@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; $Date: 2003-08-25 16:58:01 $
-;;; $Revision: 1.5 $
+;;; $Date: 2003-09-04 14:20:13 $
+;;; $Revision: 1.6 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -91,7 +91,6 @@ function input_table, filename, $
   endif
   
   ;; Read the data entries
-  first = 1
   line = ''
   iline = 0L                    ; line number
   idat = 0L                     ; datum number (iline - # comment lines)
@@ -115,52 +114,55 @@ function input_table, filename, $
   while ((not eof(in_file)) and (idat lt N_lines) $
                             and (not found_stop)) do begin
     readf, in_file, line
-    if (N_cols eq 0) then begin
-      N_cols = n_elements(strsplit(line,'[\ ]',/REGEX,/EXTRACT))
+    is_comm = (strmid(line,0,clen) eq cchar)
 
-      if (double) then begin
-        row  = dblarr(N_cols)
-        data = dblarr(N_cols, N_lines)
-      endif else begin
-        row  = fltarr(N_cols)
-        data = fltarr(N_cols, N_lines)
-      endelse
+    if (not is_comm) then begin
+      if (N_cols eq 0) then begin
+        N_cols = n_elements(strsplit(line,'[\ ]',/REGEX,/EXTRACT))
+
+        if (double) then begin
+          row  = dblarr(N_cols)
+          data = dblarr(N_cols, N_lines)
+        endif else begin
+          row  = fltarr(N_cols)
+          data = fltarr(N_cols, N_lines)
+        endelse
   
-      if (verb) then begin
-        print, FORMAT= $
+        if (verb) then begin
+          print, FORMAT= $
     '("Found ", I0, " column", A, " and ",I0 , " line", A, " in file ", A)', $
-            N_cols, plural(N_cols eq 1), $
-            N_lines, plural(N_lines eq 1), $
-            filename
+              N_cols, plural(N_cols eq 1), $
+              N_lines, plural(N_lines eq 1), $
+              filename
   
-        ;; Check whether there are any data at all
-        if ((N_cols lt 1) or (N_lines lt 1)) then begin
-          message, 'No data! Stopping program execution.'
+          ;; Check whether there are any data at all
+          if ((N_cols lt 1) or (N_lines lt 1)) then begin
+            message, 'No data! Stopping program execution.'
+          endif
         endif
       endif
-    endif
     
-    if (slen gt 0) then begin
-      if (stregex(line,STOP_AT,/BOOLEAN)) then begin     
-        point_lun,-in_file,fileposition  ; Save file position
-        stop_at=line                     ; Return the line
-        found_stop=-1                    ; Exit the loop
+      if (slen gt 0) then begin
+        if (stregex(line,STOP_AT,/BOOLEAN)) then begin     
+          point_lun,-in_file,fileposition ; Save file position
+          stop_at=line                    ; Return the line
+          found_stop=-1                   ; Exit the loop
+        endif
       endif
-    endif
 
-    if (not found_stop) then begin
-      is_comm = (strmid(line,0,clen) eq cchar)
-      is_empty = (strlen(line) eq 0)
-      if (not (is_comm or is_empty)) then begin ; a data line
-        reads, line, row
-        data[*,idat] = row
-        idat = idat + 1
+      if (not found_stop) then begin
+        is_empty = (strlen(line) eq 0)
+        if (not (is_empty)) then begin ; a data line
+          reads, line, row
+          data[*,idat] = row
+          idat = idat + 1
+        endif
       endif
     endif
 
     iline = iline + 1
   endwhile
-  success = 1                     ; If we get here, everything went well
+  success = 1                   ; If we get here, everything went well
   
   read_err: if (success ne 1) then begin
     print
