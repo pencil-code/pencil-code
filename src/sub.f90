@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.68 2002-06-27 22:02:59 brandenb Exp $ 
+! $Id: sub.f90,v 1.69 2002-07-02 17:03:23 nilshau Exp $ 
 
 module Sub 
 
@@ -499,6 +499,23 @@ module Sub
       enddo
 !
     endsubroutine multsv_sub
+!***********************************************************************
+    subroutine multvs_mn(a,b,c)
+!
+!  vector multiplied with scalar, gives vector
+!   22-nov-01/nils erland: coded
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: a, c
+      real, dimension (nx) :: b
+      integer :: i
+!
+      do i=1,3
+        c(:,i)=a(:,i)*b(:)
+      enddo
+!
+    endsubroutine multvs_mn
 !***********************************************************************
     subroutine cross(a,b,c)
 !
