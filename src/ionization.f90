@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.80 2003-08-26 16:56:20 mee Exp $
+! $Id: ionization.f90,v 1.81 2003-08-26 17:57:55 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -73,7 +73,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.80 2003-08-26 16:56:20 mee Exp $")
+           "$Id: ionization.f90,v 1.81 2003-08-26 17:57:55 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1082,7 +1082,6 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       real, dimension (mx,my,nghost) :: K,yH_term,one_yH_term
       integer :: i
 !
-      call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN IONIZATION")
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
