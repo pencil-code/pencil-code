@@ -1,10 +1,11 @@
-! $Id: noforcing.f90,v 1.8 2002-09-26 16:21:25 brandenb Exp $
+! $Id: noforcing.f90,v 1.9 2002-09-26 20:18:59 dobler Exp $
 
 module Forcing
 
 !! Dummy module for hydro/mhd without forcing
 
   use Cdata
+  use General
 
   implicit none
   integer :: dummy              ! We cannot define empty namelists
@@ -34,7 +35,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.8 2002-09-26 16:21:25 brandenb Exp $")
+           "$Id: noforcing.f90,v 1.9 2002-09-26 20:18:59 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
