@@ -5,8 +5,15 @@ module Gravity
 !
 
   use Cparam
+  use Cdata, only: z1,z2,ztop,gravz
 
   implicit none
+
+  namelist /grav_z_init_pars/ &
+       z1,z2,ztop,gravz
+
+  namelist /grav_z_run_pars/ &
+       gravz
 
   contains
 
@@ -30,8 +37,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_z.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-05-31 20:43:45 $")
 !
       lgrav = .true.
       lgravz = .true.

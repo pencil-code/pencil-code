@@ -24,19 +24,18 @@ if (lmagnetic) then aa = fltarr(mx,my,mz,3)*one
 ;
 ;  Read startup parameters
 ;
-pfile=datatopdir+'/'+'param2.dat'
+pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  cs0=(nu=zero)
-  hcond0=(hcond1=(hcond2=(whcond=zero)))
-  cheat=(wheat=(cool=(whcond=zero)))
-  Fheat=zero
-  openr,1, pfile, /F77
-  readu,1, cs0,nu
-  readu,1, hcond0,hcond1,hcond2,whcond
-  readu,1, cheat,wheat,cool,wcool
-  readu,1, Fheat
-  close,1
+  print, 'Reading param2.nml..'
+  spawn, '../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
+  @tmp/param2.pro
+  cs0=par.cs0 & nu=par.nu
+  hcond0=par.hcond0 & hcond1=par.hcond1
+  hcond2=par.hcond2 & whcond=par.whcond
+  cheat=par.cheat & wheat=par.wheat
+  cool=par.cool & wcool=par.wcool
+  Fheat=par.Fheat
 endif else begin
   print, 'Warning: cannot find file ', pfile
 endelse

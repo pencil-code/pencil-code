@@ -40,8 +40,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-05-31 04:20:48 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2002-05-31 20:43:45 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -77,6 +77,8 @@ module Magnetic
 !  reads and registers print parameters relevant for magnetic fields
 !  dummy routine
 !   3-may-02/axel: coded
+!
+      use Cdata, only: nname
 !
       logical :: lreset
 !

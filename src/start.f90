@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.31 2002-05-29 07:09:06 brandenb Exp $
+! $Id: start.f90,v 1.32 2002-05-31 20:43:45 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -15,10 +15,7 @@
         use Sub
         use Register
         use Global
-        use Hydro
-        use Gravity
-        use Entropy
-        use Magnetic
+        use Param_IO
 !
         implicit none
 !
@@ -34,61 +31,34 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.31 $", &
-             "$Date: 2002-05-29 07:09:06 $")
+             "$Revision: 1.32 $", &
+             "$Date: 2002-05-31 20:43:45 $")
 !
-!  set default input
+!  set default values
 !
-        x0=-pi; Lx=2*pi; iperx=1
-        y0=-pi; Ly=2*pi; ipery=1
-        z0=-pi; Lz=2*pi; iperz=1
+        xyz0 = (/   -pi,   -pi,   -pi /) ! first corner
+        Lxyz = (/ -2*pi, -2*pi, -2*pi /) ! box lengths
+        lperi =(/.true.,.true.,.true. /) ! periodicity
         z1=0; z2=1; ztop=1.32
         cs0=1; gamma=5./3.; rho0=1.
 !
-!  read input parameter (by each processor)
+!  read parameters from start.in
 !
-        open(1,FILE='start.in',FORM='formatted')
-        read(1,*) ip
-        read(1,*) x0,y0,z0
-        read(1,*) Lx,Ly,Lz
-        read(1,*) iperx,ipery,iperz
-        read(1,*) z1,z2,ztop
-        read(1,*) cs0,gamma,rho0,gravz,grads0
-        !
-        ! forcing needs no init parameters
-        if (lhydro)    read(1,NML=hydro_init_pars   )
-        if (lentropy)  read(1,NML=entropy_init_pars )
-        if (lmagnetic) read(1,NML=magnetic_init_pars)
-        close(1)
-!
-!  output on the console, but only when root processor
-!
-        if (lroot) then
-          print*, 'ip=', ip
-          print*, 'x0,y0,z0=', x0,y0,z0
-          print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
-          print*, 'iperx,ipery,iperz=', iperx,ipery,iperz 
-          print*, 'z1,z2,ztop=', z1,z2,ztop
-          print*, 'cs0,gamma,rho0,gravz,grads0=', cs0,gamma,rho0,gravz,grads0
-          !
-          ! forcing needs no init parameters
-          if (lhydro   ) write(*,NML=hydro_init_pars   )
-          if (lentropy ) write(*,NML=entropy_init_pars )
-          if (lmagnetic) write(*,NML=magnetic_init_pars)
-
-        endif
+        call read_inipars()
 !
 !  write input parameters to a parameter file (for run.x and IDL)
 !
         gamma1 = gamma-1.
         call wparam()
+        x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
+        Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
 !  generate mesh, |x| < Lx, and similar for y and z.
-!  iper{x,y,z} indicate periodicity of given direction
+!  lperi indicate periodicity of given direction
 !
-        if (iperx /= 0) then; dx = Lx/nxgrid; else; dx = Lx/(nxgrid-1); endif
-        if (ipery /= 0) then; dy = Ly/nygrid; else; dy = Ly/(nygrid-1); endif
-        if (iperz /= 0) then; dz = Lz/nzgrid; else; dz = Lz/(nzgrid-1); endif
+        if (lperi(1)) then; dx = Lx/nxgrid; else; dx = Lx/(nxgrid-1); endif
+        if (lperi(2)) then; dy = Ly/nygrid; else; dy = Ly/(nygrid-1); endif
+        if (lperi(3)) then; dz = Lz/nzgrid; else; dz = Lz/(nzgrid-1); endif
 !
 !  set x,y,z arrays
 !

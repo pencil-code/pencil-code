@@ -10,9 +10,13 @@ module Entropy
 
   real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
 
-  integer :: dummy              ! We cannot define empty namelists
-  namelist /entropy_init_pars/ dummy
-  namelist /entropy_run_pars/  dummy
+  ! input parameters
+  namelist /entropy_init_pars/ &
+       cs0,gamma,rho0
+
+  ! run parameters
+  namelist /entropy_run_pars/ &
+       cs0
 
   contains
 
@@ -37,8 +41,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-05-30 07:12:45 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-05-31 20:43:45 $")
 !
     endsubroutine register_ent
 !***********************************************************************

@@ -1,8 +1,9 @@
-! $Id: hydro.f90,v 1.9 2002-05-31 04:20:48 brandenb Exp $
+! $Id: hydro.f90,v 1.10 2002-05-31 20:43:45 dobler Exp $
 
 module Hydro
 
   use Cparam
+  use Cdata, only: nu,ivisc,cdiffrho
 
   implicit none
 
@@ -11,6 +12,9 @@ module Hydro
 
   namelist /hydro_init_pars/ &
        ampl,init,urand
+
+  namelist /hydro_run_pars/ &
+       nu,ivisc,cdiffrho
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_t=0,i_it=0,i_dt=0,i_u2m=0,i_um2=0,i_oum,i_o2m
@@ -53,8 +57,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-05-31 04:20:48 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-05-31 20:43:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

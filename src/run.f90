@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.31 2002-05-30 07:12:45 brandenb Exp $
+! $Id: run.f90,v 1.32 2002-05-31 20:43:45 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -16,13 +16,14 @@
         use Sub
         use Register
         use Global
-        use Forcing
+        use Param_IO
         use Equ
         use Slices
         use Print
         use Timestep
 !
         implicit none
+!
         real, dimension (mx,my,mz,mvar) :: f,df
         integer :: time1,time2,count_rate
         logical :: stop=.false.,reload=.false.
@@ -42,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.31 $", &
-             "$Date: 2002-05-30 07:12:45 $")
+             "$Revision: 1.32 $", &
+             "$Date: 2002-05-31 20:43:45 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -53,8 +54,10 @@
 !
 !  read parameters and output parameter list
 !
-        call rparam !(Read parameters from start.x; may be overwritten by cread)
-        call cread(PRINT=.true.)
+        call rparam !(Read parameters from start.x; may be overwritten by
+                    ! read_runpars)
+        gamma1 = gamma-1.
+        call read_runpars(PRINT=.true.)
         call rprint_list(.false.)
 !
 !  read data
@@ -110,7 +113,7 @@
             inquire(FILE="RELOAD", EXIST=reload)
             if (reload) then
               if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
-              call cread(PRINT=.true.) !(Re-read configuration)
+              call read_runpars(PRINT=.true.) !(Re-read configuration)
               call rprint_list(.true.) !(Re-read output list)
               call remove_file("RELOAD")
               reload = .false.

@@ -10,14 +10,14 @@ module Entropy
 
 
   ! input parameters
-  
   namelist /entropy_init_pars/ &
-       initss,hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2,isothtop
+       initss,cs0,gamma,rho0,grads0, &
+       hcond0,hcond1,hcond2,whcond, &
+       mpoly0,mpoly1,mpoly2,isothtop
 
   ! run parameters
-
   namelist /entropy_run_pars/ &
-       hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
+       cs0,hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
 
   contains
 
@@ -52,8 +52,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.45 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.46 $", &
+           "$Date: 2002-05-31 20:43:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -225,7 +225,6 @@ module Entropy
 ! this one was wrong:
 !      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
 ! hopefully correct:
-call output_pencil(trim(directory)//'/dssdt2.dat',df(l1:l2,m,n,ient),1)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
 !
 !  Heat conduction / entropy diffusion
@@ -270,7 +269,6 @@ call output_pencil(trim(directory)//'/dssdt2.dat',df(l1:l2,m,n,ient),1)
         call output_pencil(trim(directory)//'/lambda.dat',lambda,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
-call output_pencil(trim(directory)//'/dssdt3.dat',df(l1:l2,m,n,ient),1)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
 
 !
@@ -309,9 +307,7 @@ call output_pencil(trim(directory)//'/dssdt3.dat',df(l1:l2,m,n,ient),1)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
 
-call output_pencil(trim(directory)//'/dssdt4.dat',df(l1:l2,m,n,ient),1)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
-call output_pencil(trim(directory)//'/dssdt5.dat',df(l1:l2,m,n,ient),1)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine heatcond(x,y,z,hcond)

@@ -1,113 +1,11 @@
 module Equ
 
+  use Cdata
+
   implicit none
 
   contains
 
-!***********************************************************************
-    subroutine cread(print)
-!
-!  read input parameters
-!  14-sep-01/axel: inserted from run.f90
-!
-      use Cdata
-      use Sub, only: wparam2,parse_bc
-      use Forcing
-      use Entropy
-      use Magnetic
-!
-      logical, optional :: print
-!
-      open(1,file='run.in',form='formatted')
-      read(1,*) nt,it1,dt,isave,itorder
-      read(1,*) dsnap,dvid,dforce,dtmin
-      read(1,*) tinit,tdamp,dampu
-      read(1,*) dampuext,rdamp,wdamp
-      read(1,*) ip,ix,iy,iz
-      read(1,*) cs0,nu,ivisc,cdtv
-      read(1,*) cdiffrho
-      read(1,*) gravz
-      read(1,*) bcx
-      read(1,*) bcy
-      read(1,*) bcz
-      read(1,*) form1
-      !
-      if (lforcing ) read(1,NML=forcing_run_pars )
-      if (lentropy ) read(1,NML=entropy_run_pars )
-      if (lmagnetic) read(1,NML=magnetic_run_pars)
-      close(1)
-      cs20=cs0**2 !(goes into cdata module)
-      ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma   !!AB: this looks like it belongs to entropy
-!
-!  Write data to file for IDL
-!
-      call wparam2()
-!
-!  Give online feedback if called with the PRINT optional argument
-!  Note: Some compiler's [like Compaq's] code crashes with the more
-!  compact `if (present(print) .and. print)' 
-!
-      if (present(print)) then
-        if (print) then
-          call cprint()
-        endif
-      endif
-!  
-!  make sure ix,iy,iz are not outside the boundaries
-!
-      ix=min(ix,mx); iy=min(iy,my); iz=min(iz,mz)
-      ix=max(ix,0); iy=max(iy,0); iz=max(iz,0)
-!
-!  parse boundary conditions; compound conditions of the form `a:s' allow
-!  to have different variables at the lower and upper boundaries
-!
-      call parse_bc(bcx,bcx1,bcx2)
-      call parse_bc(bcy,bcy1,bcy2)
-      call parse_bc(bcz,bcz1,bcz2)
-      if (lroot) then
-        print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
-        print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
-        print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
-      endif
-!
-!  timestep
-!
-      ldt=dt.lt.0.
-      if (ldt) cdt=abs(dt)
-!
-    endsubroutine cread
-!***********************************************************************
-    subroutine cprint
-!
-!  print input parameters
-!  14-sep-01/axel: inserted from run.f90
-!
-      use Cdata
-      use Forcing
-      use Entropy
-      use Magnetic
-!
-      if (lroot) then
-        print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
-        print*, 'dsnap,dvid,dforce,dtmin=', dsnap,dvid,dforce,dtmin
-        print*, 'tinit,tdamp,dampu=', tinit,tdamp,dampu
-        print*, 'dampuext,rdamp,wdamp=', dampuext,rdamp,wdamp
-        print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
-        print*, 'cs0,nu,ivisc,cdtv=', cs0,nu,ivisc,cdtv
-        print*, 'cdiffrho=', cdiffrho
-        print*, 'gravz=', gravz
-        print*, 'bcx=', bcx
-        print*, 'bcy=', bcy
-        print*, 'bcz=', bcz
-        print*, 'form1=', form1
-        print*, 'cs20=', cs20
-        !
-        if (lforcing ) write(*,NML=forcing_run_pars )
-        if (lentropy ) write(*,NML=entropy_run_pars )
-        if (lmagnetic) write(*,NML=magnetic_run_pars)
-      endif
-!
-    endsubroutine cprint
 !***********************************************************************
       subroutine calc_UUmax
 !
@@ -265,8 +163,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.47 $", &
-           "$Date: 2002-05-30 16:31:35 $")
+           "$Revision: 1.48 $", &
+           "$Date: 2002-05-31 20:43:45 $")
 !
 !  initialize counter for calculating and communicating print results
 !

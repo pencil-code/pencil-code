@@ -11,6 +11,7 @@ module Cdata
 !  real, dimension (nx) :: rmn
 !
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
+  real, dimension(3) :: xyz0,Lxyz
   real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dforce,dtmin
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
@@ -33,12 +34,13 @@ module Cdata
 
   integer, dimension (2) :: seed
   integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
-  integer :: iperx,ipery,iperz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
   integer :: ivisc
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
+  logical, dimension(3) :: lperi
+
 !
 !  in this section are all the things related to printing
 !
@@ -56,7 +58,6 @@ module Cdata
   logical :: lroot=.true.
   logical :: lfirstpoint
 
-  character (len=80) :: form1
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
   character (len=12) :: directory

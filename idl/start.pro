@@ -48,31 +48,31 @@ zero = 0*one
 ;
 ;  Read startup parameters
 ;
-x0=(y0=(z0=zero))
-Lx=(Ly=(Lz=zero))
-cs0=(gamma=(gamma1=zero))
-gravz=(rho0=(grads0=zero))
-z1=(z2=(z3=zero))
-hcond0=(hcond1=(hcond2=(whcond=zero)))
-mpoly0=(mpoly1=(mpoly2=zero))
-isothtop=0L
-bx_ext=(by_ext=(bz_ext=zero))
-lgravz=(lgravr=0L)
-lentropy=(lmagnetic=(lforcing=0L))
-;
-pfile=datatopdir+'/'+'param.dat'
+pfile=datatopdir+'/'+'param.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  print, 'Reading param.dat..'
-  openr,1, pfile, /F77
-  readu,1, x0,y0,z0,Lx,Ly,Lz
-  readu,1, cs0,gamma,gamma1
-  readu,1, gravz,rho0,grads0
-  readu,1, z1,z2,ztop
-  readu,1, hcond0,hcond1,hcond2,whcond
-  readu,1, mpoly0,mpoly1,mpoly2,isothtop
-  readu,1, lgravz,lgravr,lentropy,lmagnetic,lforcing
-  close,1
+  print, 'Reading param.nml..'
+  spawn, '../../bin/nl2idl tmp/param.nml > tmp/param.pro'
+  @tmp/param.pro
+  x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
+  Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
+  cs0=par.cs0 & rho0=par.rho0
+  gamma=par.gamma & gamma1=gamma-1.
+  lgravz=par.lgravz & lgravr = par.lgravr
+  lforcing=par.lforcing
+  lentropy=par.lentropy
+  lmagnetic=par.lmagnetic
+  if (lgravz) then begin
+    z1=par.z1 & z2=par.z2
+    ztop=par.ztop & z3=ztop
+    gravz=par.gravz
+  endif
+  if (lentropy) then begin
+    hcond0=par.hcond0 & hcond1=par.hcond1
+    hcond2=par.hcond2 & whcond=par.whcond
+    mpoly0=par.mpoly0 & mpoly1=par.mpoly1
+    mpoly2=par.mpoly2 & isothtop=par.isothtop
+  endif
 endif else begin
   print, 'Warning: cannot find file ', pfile
 endelse

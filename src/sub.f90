@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.48 2002-05-30 08:04:26 brandenb Exp $ 
+! $Id: sub.f90,v 1.49 2002-05-31 20:43:45 dobler Exp $ 
 
 module Sub 
 
@@ -881,77 +881,6 @@ module Sub
 !
       close(1)
     endsubroutine wdim
-!***********************************************************************
-    subroutine wparam ()
-!
-!  Write startup parameters
-!  21-jan-02/wolf: coded
-!
-      use Cdata
-      use Mpicomm
-!
-      if (lroot) then
-        open(1,FILE='tmp/param.dat',FORM='unformatted')
-        write(1) x0,y0,z0,Lx,Ly,Lz
-        write(1) cs0,gamma,gamma1 ! Write gamma1 here to ensure it is in sync
-        write(1) gravz,rho0,grads0
-        write(1) z1,z2,ztop
-        write(1) hcond0,hcond1,hcond2,whcond
-        write(1) mpoly0,mpoly1,mpoly2,isothtop
-        ! The following parameters need to be communicated to IDL
-        ! Note: logicals will be written as Fortran integers
-        write(1) lgravz,lgravr,lentropy,lmagnetic,lforcing
-      endif
-!
-    endsubroutine wparam
-!***********************************************************************
-    subroutine rparam ()
-!
-!  Read startup parameters
-!  21-jan-02/wolf: coded
-!  ?Is there a good reason to have this routine in sub.f90?
-!  ?How about register.f90, for example?
-!
-      use Cdata
-!     use Mpicomm
-! ?AB Mpicomm is no longer used, because lroot is now in cdata
-!
-        open(1,FILE='tmp/param.dat',FORM='unformatted')
-        read(1) x0,y0,z0,Lx,Ly,Lz
-        read(1) cs0,gamma,gamma1
-        read(1) gravz,rho0,grads0
-        read(1) z1,z2,ztop
-        read(1) hcond0,hcond1,hcond2,whcond
-        read(1) mpoly0,mpoly1,mpoly2,isothtop
-!
-      if (lroot) then
-        print*, "Lx,Ly,Lz=", Lx,Ly,Lz
-        print*, "rho0,gamma,gamma1=", rho0,gamma,gamma1
-      endif
-!
-!  read the print parameter list
-!
-!     call rprint_list
-!  
-    endsubroutine rparam
-!***********************************************************************
-    subroutine wparam2 ()
-!
-!  Write runtime parameters for IDL
-!  21-jan-02/wolf: coded
-!
-      use Cdata
-      use Mpicomm
-!
-      if (lroot) then
-        open(1,FILE='tmp/param2.dat',FORM='unformatted')
-        write(1) cs0,nu
-        write(1) hcond0,hcond1,hcond2,whcond
-        write(1) cheat,wheat,cool,wcool
-        write(1) Fheat
-      endif
-!
-    endsubroutine wparam2
 !***********************************************************************
     subroutine out1 (file,tout,nout,dtout,t)
 !
