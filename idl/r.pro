@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.29 2002-07-21 21:35:00 dobler Exp $
+; $Id: r.pro,v 1.30 2002-07-28 17:12:56 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -117,6 +117,9 @@ if (lmagnetic) then $
     for j=0,2 do $
       print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
       minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+    if (cpar gt 0) then begin
+      eta=par2.eta
+    end
 ;
 print,'t = ',t
 ;
