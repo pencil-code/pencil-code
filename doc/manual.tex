@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.230 2004-01-31 11:08:03 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.231 2004-01-31 15:32:10 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-01-31 11:08:03 $ $,~ $ $Revision: 1.230 $ $}
+%\date{$ $Date: 2004-01-31 15:32:10 $ $,~ $ $Revision: 1.231 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-01-31 11:08:03 $ $,~ $ $Revision: 1.230 $ $}\\
+  \emph{$ $Date: 2004-01-31 15:32:10 $ $,~ $ $Revision: 1.231 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3295,15 +3295,65 @@ starting point.
 
 % ====================================================================== %
 
-\section{Frequently Asked Questions}
+\section{Troubleshooting / Frequently Asked Questions}
 \label{FAQ}
 \index{FAQ}\index{Frequently Asked Questions}
 
+\subsection{Setup}
+
+\subsubsection{When sourcing the \file{sourceme.sh}/\file{sourceme.csh}
+  file or running \cmd{setup-src}, I get error messages from the shell,
+  like `if: Expression Syntax.'
+  or `set: Variable name must begin with a letter.'}
+Sounds like a buggy shell setup --- either by yourself or your system
+administrator --- or a shell that is even more idiosyncratic than the ones
+we have been working with.
+
+To better diagnose the problem, collect the following information before
+filing a bug report to us:
+
+\begin{enumerate}
+
+\item \code{uname -a}
+
+\item \code{/bin/csh -v}
+
+\item \code{echo \$version}
+
+\item \code{echo \$SHELL}
+
+\item \code{ps -p \$\$}
+
+\item If you have problems while sourcing the \file{sourceme} script,
+  \begin{enumerate}
+  \item unset the \env{PENCIL_HOME} variable:
+    \begin{description}
+    \item[for \name{csh} and similar:]
+      \code{unsetenv PENCIL_HOME}
+    \item[for \name{bash} and similar:]
+      \code{unexport PENCIL_HOME; unset PENCIL_HOME}
+    \end{description}
+  \item switch your shell in verbose mode,
+    \begin{description}
+    \item[for \name{csh} and similar:]
+      \code{set verbose; set echo}
+    \item[for \name{bash} and similar:]
+      \code{set -v; set -x}
+    \item then source again.
+    \end{description}
+  \end{enumerate}
+
+\item If you have problems with \cmd{setup-src},
+  run it with \cmd{csh} in verbose mode:
+  \begin{alltt}
+    \code{/bin/csh -v -x \$PENCIL_HOME/bin/setup-src}
+  \end{alltt}
+\end{enumerate}
+
 \subsection{Compilation}
 
-\subsubsection{How do I compile the Pencil Code with the Intel
+\subsubsection{How do I compile the Pencil Code with  the Intel
   (\name{ifc}) compiler under \name{Linux}?}
-
 \name{ifc} 7.1 has bugs that prevent the Pencil Code from being compiled
 (typically you will get an `internal compiler error' during compilation of
 \file[hydro.f90]{src/hydro.f90}), so try to find an older one.
@@ -3618,7 +3668,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-01-31 11:08:03 $ $,~ $ $Revision: 1.230 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-01-31 15:32:10 $ $,~ $ $Revision: 1.231 $ $}
 
 \section{Timings}
 
@@ -6366,7 +6416,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.230 2004-01-31 11:08:03 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.231 2004-01-31 15:32:10 dobler Exp $ $}
 
 
 \end{document}
