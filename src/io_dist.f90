@@ -183,7 +183,7 @@ contains
       close(91)
     endsubroutine output_scal
 !***********************************************************************
-    subroutine output_stenc_vect(file,a,ndim,imn)
+    subroutine output_stenc_vect(file,a,ndim)
 !
 !  Write snapshot file of stenciled vector data (for debugging).
 !  Wrapper to the C routine output_stenciled_c.
@@ -205,7 +205,7 @@ contains
 !
     endsubroutine output_stenc_vect
 !***********************************************************************
-    subroutine output_stenc_scal(file,a,ndim,imn)
+    subroutine output_stenc_scal(file,a,ndim)
 !
 !  Write snapshot file of stenciled scalar data (for debugging).
 !  Wrapper to the C routine output_stenciled_c.
@@ -213,10 +213,10 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: mm,nn,lroot,stop_it
+      use Mpicomm, only: imn,mm,nn,lroot,stop_it
 
 !
-      integer :: ndim,imn
+      integer :: ndim
       real, dimension (nx) :: a
       character (LEN=*) :: file
 !

@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.23 $", &
-           "$Date: 2002-02-22 14:53:12 $")
+           "$Revision: 1.24 $", &
+           "$Date: 2002-02-22 20:04:10 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -55,10 +55,14 @@ module Entropy
 !  7-nov-2001/wolf: coded
 !
       use Cdata
+      use sub, only: step
+use Mpicomm
+use IO
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
-      real :: ampl
+      real, dimension (mz) :: stp
+      real :: ampl,beta,cs2int,ssint
       integer :: init
 !
       if (lgravz) then
@@ -67,6 +71,37 @@ module Entropy
           ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           f(:,:,:,ient) = ss0 + (-alog(gamma) + alog(cs20))/gamma &
                               + grads0 * zz
+        case(4)               ! piecewise polytropic
+ss0 = 0.
+          ! top region
+          beta = gravz/(mpoly2+1)*gamma/gamma1
+          f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
+                          * alog(1 + beta*(zz-ztop)/cs2top)
+          ! unstable region
+          ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
+                  * alog(1 + beta*(z2-ztop)/cs2top)
+          cs2int = cs2top + beta*(z2-ztop) ! cs2 at layer interface z=z2
+          beta = gravz/(mpoly0+1)*gamma/gamma1
+          tmp = ssint + (1-mpoly0*gamma1)/gamma &
+                        * alog(1 + beta*(zz-z2)/cs2int)
+          ! smoothly blend the solutions for the two regions:
+          stp = step(z,z2,whcond)
+          p = spread(spread(stp,1,mx),2,my)
+
+          f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+          ! bottom (stable) region
+          ssint = ssint + (1-mpoly0*gamma1)/gamma & ! ss at layer interface
+                        * alog(1 + beta*(z1-z2)/cs2int)
+          cs2int = cs2int + beta*(z1-z2) ! cs2 at layer interface z=z1
+          beta = gravz/(mpoly1+1)*gamma/gamma1
+          tmp = ssint + (1-mpoly1*gamma1)/gamma &
+                        * alog(1 + beta*(zz-z1)/cs2int)
+          ! smoothly blend the solutions for the two regions:
+          stp = step(z,z1,whcond)
+          p = spread(spread(stp,1,mx),2,my)
+          f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+          ! Fix origin of entropy
+          f(:,:,:,ient) = f(:,:,:,ient) + ss0
         case default
           f(:,:,:,ient) = 0.
         endselect
@@ -166,9 +201,9 @@ module Entropy
       call dot_mn(g1,g2,g1_g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g1_g2)
 
-      if (lfirst) then
-        call output_stenc(trim(directory)//'/chi.dat',chi,1,imn)
-        call output_stenc(trim(directory)//'/lambda.dat',lambda,1,imn)
+      if (headt) then
+        call output_stenc(trim(directory)//'/chi.dat',chi,1)
+        call output_stenc(trim(directory)//'/lambda.dat',lambda,1)
       endif
 
       if (headt) then
@@ -194,6 +229,9 @@ module Entropy
         ! cooling profile; maximum = 1
         ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*z(n2)
         prof = spread(exp(-0.5*((z(n2)-z(n))/wcool)**2), 1, l2-l1+1)
+if (headt) then
+  call output_stenc(trim(directory)//'/cool.dat',prof,1)
+endif
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-ssref)
       endif
 !
@@ -209,7 +247,7 @@ module Entropy
         ! surface cooling towards s=0
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
-        prof = step(r_mn,z3,wcool)
+        prof = step(r_mn,ztop,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
 
@@ -221,12 +259,9 @@ module Entropy
 !  calculate the heat conductivity lambda
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,z3,hcond0,hcond1,hcond2,whcond
+      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
+           hcond0,hcond1,hcond2,whcond
       use Sub, only: step
-
-use IO
-use Mpicomm,only:imn,directory
-
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
@@ -236,9 +271,7 @@ use Mpicomm,only:imn,directory
                   + (hcond2-1)*step(z,z2,whcond)
         hcond = hcond0*hcond
       endif
-call output_stenc(trim(directory)//'/step.dat',step(z,z2,whcond),1,imn)
-write(0,*) 'z0,z1,z2,z3 = ',z0,z1,z2,z3
-write(0,*) 'hcond0,hcond1,hcond2 = ',hcond0,hcond1,hcond2
+
       if (lgravr) then
         write(0,*) 'What should I do in heatcond() for spherical geometry?'
       endif
@@ -250,7 +283,8 @@ write(0,*) 'hcond0,hcond1,hcond2 = ',hcond0,hcond1,hcond2
 !  calculate grad(log lambda), where lambda is the heat conductivity
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,z3,hcond0,hcond1,hcond2,whcond
+      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
+           hcond0,hcond1,hcond2,whcond
       use Sub, only: der_step
 !
       real, dimension (nx) :: x,y,z

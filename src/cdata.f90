@@ -11,13 +11,14 @@ module Cdata
   real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dforce,dtmin
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
-  real :: cs0,rho0,cs20,gamma,gamma1,force,relhel
-  real :: DD,nu,cmu,cnu2,cdiffrho,hcond0,hcond1,hcond2,whcond
+  real :: cs0,rho0,cs20,gamma,gamma1,force,relhel,cs2top
+  real :: DD,nu,cmu,cnu2,cdiffrho
+  real :: hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2
   real :: t_diag,dtu,dtv
   real :: rmean,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
   real :: orms,omax,o2max,ourms,oumax
   real :: UUmax,viscmax,cdt,cdtv,x0,y0,z0,Lx,Ly,Lz
-  real :: z1,z2,z3
+  real :: z1,z2,ztop
   real :: gravz,ss0,grads0      ! (1/c_p)ds/dz
   real :: urand,cheat,wheat,cool,wcool
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)

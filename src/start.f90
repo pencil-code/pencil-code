@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.15 $", &
-             "$Date: 2002-02-14 16:59:38 $")
+             "$Revision: 1.16 $", &
+             "$Date: 2002-02-22 20:04:10 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -42,10 +42,12 @@
         read(1,*) x0,y0,z0
         read(1,*) Lx,Ly,Lz
         read(1,*) iperx,ipery,iperz
-        read(1,*) z1,z2,z3
+        read(1,*) z1,z2,ztop
         read(1,*) hcond0,hcond1,hcond2,whcond
+        read(1,*) mpoly0,mpoly1,mpoly2
         read(1,*) ampl,init,urand
         read(1,*) cs0,gamma,rho0,gravz,grads0
+        read(1,*) cs2top
         close(1)
 !
 !  output on the console, but only when root processor
@@ -55,15 +57,23 @@
           print*, 'x0,y0,z0=', x0,y0,z0
           print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
           print*, 'iperx,ipery,iperz=', iperx,ipery,iperz 
-          print*, 'z1,z2,z3=', z1,z2,z3
+          print*, 'z1,z2,ztop=', z1,z2,ztop
           print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
+          print*, 'mpoly0,mpoly1,mpoly2=', mpoly0,mpoly1,mpoly2
           print*, 'ampl,init,urand=', ampl,init,urand
           print*, 'cs0,gamma,gravz,grads0=', cs0,gamma,gravz,grads0
+          print*, 'cs2top=', cs2top 
         endif
 !
-!  ..and write to a parameter file (for run.x and IDL)
+!  override hcond1,hcond2 according to polytropic equilibrium solution
 !
-        gamma1 = gamma - 1.
+        hcond1 = (mpoly1+1.)/(mpoly0+1.)
+        hcond2 = (mpoly2+1.)/(mpoly0+1.)
+        print*, 'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+!
+!  write input parameters to a parameter file (for run.x and IDL)
+!
+        gamma1 = gamma-1.
         call wparam()
 !
 !  generate mesh, |x| < Lx, and similar for y and z.
