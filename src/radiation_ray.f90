@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.14 2003-04-05 21:22:33 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.15 2003-04-09 10:21:17 theine Exp $
 
 module Radiation
 
@@ -60,7 +60,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.14 2003-04-05 21:22:33 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.15 2003-04-09 10:21:17 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -115,7 +115,7 @@ module Radiation
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
-         yH=ionfrac(lnrho,ss)
+         yH=yyH(l1:l2,m,n)
          call ioncalc(lnrho,ss,yH,TT=TT,kappa=kappa_)
          Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
          kappa(l1:l2,m,n)=kappa_

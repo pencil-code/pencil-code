@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.11 2003-04-05 21:46:05 brandenb Exp $
+! $Id: noionization.f90,v 1.12 2003-04-09 10:21:17 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -37,10 +37,10 @@ module Ionization
     subroutine initialize_ionization()
     endsubroutine initialize_ionization
 !***********************************************************************
-    subroutine ionization_degree(f)
+    subroutine ionfrac(f)
       real, dimension (mx,my,mz,mvar), intent(in) :: f
       if(ip==0) print*,f(1,1,1,1)  !(keep compiler quiet)
-    endsubroutine ionization_degree
+    endsubroutine ionfrac
 !***********************************************************************
     subroutine output_ionization(lun)
       integer, intent(in) :: lun
@@ -118,18 +118,5 @@ module Ionization
       if (present(kappa)) kappa=kap
       if (ip==0) print*,yH  !(to keep compiler quiet)
     endsubroutine ioncalc
-!***********************************************************************
-    function ionfrac(lnrho,ss)
-!
-!   calculates the ionization fraction along the pencil
-!
-!   28-mar-03/tobi: coded
-!
-      real, dimension(nx), intent(in)  :: lnrho,ss
-      real, dimension(nx)              :: ionfrac
-
-      if(ip==0) print*,lnrho,ss  !(to keep compiler quiet)
-      ionfrac=0.
-    endfunction ionfrac
 !***********************************************************************
 endmodule ionization

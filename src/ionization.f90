@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.27 2003-04-06 17:16:46 theine Exp $
+! $Id: ionization.f90,v 1.28 2003-04-09 10:21:17 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -54,7 +54,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.27 2003-04-06 17:16:46 theine Exp $")
+           "$Id: ionization.f90,v 1.28 2003-04-09 10:21:17 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -97,7 +97,7 @@ module Ionization
     endsubroutine initialize_ionization
 
 !***********************************************************************
-    subroutine ionization_degree(f)
+    subroutine ionfrac(f)
 !
 !  calculate degree of ionization
 !
@@ -106,17 +106,22 @@ module Ionization
       use Cdata
 !
       real, dimension (mx,my,mz,mvar), intent(in) :: f
-      real, dimension (nx) :: lnrho,ss
+      real, dimension (mx,my,mz), save :: yyHlast=.5
+      real :: lnrho,ss
+      integer :: l
 !
       do n=n1,n2
       do m=m1,m2
-        lnrho=f(l1:l2,m,n,ilnrho)
-        ss=f(l1:l2,m,n,ient)
-        yyH(l1:l2,m,n)=ionfrac(lnrho,ss)
+      do l=l1,l2
+         lnrho=f(l,m,n,ilnrho)
+         ss=f(l,m,n,ient)
+         yyH(l,m,n)=rtsafe(lnrho,ss,yyHlast(l,m,n))
+         yyHlast(l,m,n)=yyH(l,m,n)
+      enddo
       enddo
       enddo
 !
-    endsubroutine ionization_degree
+    endsubroutine ionfrac
 
 !***********************************************************************
     subroutine output_ionization(lun)
@@ -245,23 +250,6 @@ module Ionization
                *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
       endif
     endsubroutine ioncalc
-!***********************************************************************
-    function ionfrac(lnrho,ss)
-!
-!   calculates the ionization fraction along the pencil
-!
-!   28-mar-03/tobi: coded
-!
-      real, dimension(nx), intent(in)  :: lnrho,ss
-      real, dimension(nx), save        :: yHlast=.5
-      real, dimension(nx)              :: ionfrac
-      integer                          :: i
-
-      do i=1,nx
-         ionfrac(i)=rtsafe(lnrho(i),ss(i),yHlast(i))
-         yHlast(i)=ionfrac(i)
-      enddo
-    endfunction ionfrac
 !***********************************************************************
     function rtsafe(lnrho,ss,yHlast)
 !
