@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.136 2002-11-17 14:24:42 ngrs Exp $
+! $Id: entropy.f90,v 1.137 2002-11-18 16:12:28 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -73,7 +73,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.136 2002-11-17 14:24:42 ngrs Exp $")
+           "$Id: entropy.f90,v 1.137 2002-11-18 16:12:28 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -104,7 +104,7 @@ module Entropy
       select case(initss)
         case('nothing'); if(lroot) print*,'init_ent: nothing'
         case('zero', '0'); f(:,:,:,ient) = 0.
-        case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,.5)
+        case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,0.)
         case('isothermal'); if(lroot) print*,'init_ent: isotherm set in density'
         case('Ferriere'); if(lroot) print*,'init_ent: Ferriere set in density'
         case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
