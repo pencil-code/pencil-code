@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.121 2004-06-01 10:27:44 nilshau Exp $
+! $Id: mpicomm.f90,v 1.122 2004-06-01 10:50:37 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1320,7 +1320,6 @@ subroutine transform_fftpack_2d(a_re,a_im,dummy)
       a_im(:,m,n)=aimag(ax)
     enddo
   enddo
-endif
 !
 !  Normalize
 !
