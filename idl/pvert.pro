@@ -30,23 +30,28 @@ for ivar = 0,3 do begin
     0: begin
       var = lam
       title = 'log density'
+      xr = minmax(var)
+      if (n_elements(laminit) gt 0) then xr = minmax([xr,laminit])
     end
     1: begin
       var = uu[*,*,*,2]
       title = '!8u!Dz!N!X'
+      xr = minmax(var)
     end
     2: begin
       var = ent
       title = 'Entropy'
+      xr = minmax(var)
+      if (n_elements(entinit) gt 0) then xr = minmax([xr,entinit])
     end
     3: begin
       var = gamma/gamma1*exp(gamma*ent+gamma1*lam)
       title = 'Temperature'
+      xr = minmax(var)
+      if (n_elements(Tinit) gt 0) then xr = minmax([xr,Tinit])
     end
   endcase
 
-  xr = minmax(var)
-  if ((ivar eq 3) and (n_elements(Tinit) gt 0)) then xr = minmax([xr,Tinit])
   plot, z, z, /NODATA, $
       XRANGE=xr, XSTYLE=3, $
       YRANGE=minmax(z), YSTYLE=3,  $
@@ -63,14 +68,17 @@ for ivar = 0,3 do begin
   ophline, [z0,z1,z2,ztop]
   if (ivar eq 1) then opvline
 
-;; overplot initial temperature profile
-  if (ivar eq 3) then begin
-    if (n_elements(Tinit) le 0) then begin
-      message, 'No Tinit -- you should run thermo.pro', /INFO
-    endif else begin
-      oplot, Tinit, z, LINE=2, COLOR=130, THICK=2
-    endelse
-  endif
+;; overplot initial profiles
+  if (n_elements(Tinit) le 0) then begin
+    message, 'No Tinit -- you should run thermo.pro', /INFO
+  endif else begin
+    case ivar of
+      0: oplot, laminit, z, LINE=2, COLOR=130, THICK=2
+      1: ;nothing to overplot
+      2: oplot, entinit, z, LINE=2, COLOR=130, THICK=2
+      3: oplot, Tinit, z, LINE=2, COLOR=130, THICK=2
+    endcase
+  endelse
 
 endfor
 
@@ -78,3 +86,5 @@ restore_state
 
 end
 ; End of file pvert.pro
+
+
