@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.93 2003-02-21 20:21:52 brandenb Exp $ 
+! $Id: param_io.f90,v 1.94 2003-02-22 13:39:04 brandenb Exp $ 
 
 module Param_IO
 
@@ -28,11 +28,11 @@ module Param_IO
   ! start parameters (units)
   ! http://www.astro.wisc.edu/~dolan/constants.html
 
-  real, parameter :: hbar_cgs=1.0545726663e-27 ! [erg*s]
-  real, parameter :: k_B_cgs=1.38065812e-16    ! [erg/K]
-  real, parameter :: m_p_cgs=1.672623110e-24   ! [g]
-  real, parameter :: m_e_cgs=9.109389754e-28   ! [g]
-  real, parameter :: eV_cgs=1.602177250e-12    ! [erg]
+  real, parameter :: hbar_cgs=1.0545726663d-27 ! [erg*s]
+  real, parameter :: k_B_cgs=1.38065812d-16    ! [erg/K]
+  real, parameter :: m_p_cgs=1.672623110d-24   ! [g]
+  real, parameter :: m_e_cgs=9.109389754d-28   ! [g]
+  real, parameter :: eV_cgs=1.602177250d-12    ! [erg]
 
   ! run parameters
   real :: tmax=1e33,awig=1.
