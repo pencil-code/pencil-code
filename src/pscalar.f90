@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.24 2003-05-15 10:25:11 brandenb Exp $
+! $Id: pscalar.f90,v 1.25 2003-05-15 14:01:39 pkapyla Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -31,7 +31,7 @@ module Pscalar
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
-  integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0
+  integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0,i_Crmsm=0
 
   contains
 
@@ -64,7 +64,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.24 2003-05-15 10:25:11 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.25 2003-05-15 14:01:39 pkapyla Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -216,6 +216,7 @@ module Pscalar
         if (i_uudcm/=0) call sum_mn_name(uu(:,3)*cc*uglncc,i_uudcm)
         if (i_Cz2m/=0) call sum_mn_name(rho*cc*z(n)**2,i_Cz2m)
         if (i_Cz4m/=0) call sum_mn_name(rho*cc*z(n)**4,i_Cz4m)
+        if (i_Crmsm/=0) call sum_mn_name((rho*cc)**2,i_Crmsm,lsqrt=.true.)
       endif
 !
     endsubroutine dlncc_dt
@@ -249,6 +250,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'uudcm',i_uudcm)
         call parse_name(iname,cname(iname),cform(iname),'Cz2m',i_Cz2m)
         call parse_name(iname,cname(iname),cform(iname),'Cz4m',i_Cz4m)
+        call parse_name(iname,cname(iname),cform(iname),'Crmsm',i_Crmsm)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -267,6 +269,7 @@ module Pscalar
       write(3,*) 'i_lnccmz=',i_lnccmz
       write(3,*) 'i_Cz2m=',i_Cz2m
       write(3,*) 'i_Cz4m=',i_Cz4m
+      write(3,*) 'i_Crmsm=',i_Crmsm
       write(3,*) 'ilncc=',ilncc
 !
     endsubroutine rprint_pscalar
