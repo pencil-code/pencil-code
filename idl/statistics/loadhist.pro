@@ -44,18 +44,21 @@ ophline,mean(mem),LINE=2
 ;; Plot histograms
 !x.title = '!6%!X'
 !y.title = '!6Relative frequency!X'
+!y.range = 0
 ;
-histo = histogram(load,MIN=0.,MAX=100.,BINSIZE=4)
-N_hist = n_elements(histo)
+histo = histogram(load,MIN=0.,MAX=100.,NBIN=25)
+N_hist = n_elements(histo)-1
 perc = indgen(N_hist)*100./(N_hist-1)
-plot, perc, histo, TITLE='!6CPU Load!X'
+plot, perc, [histo,0], $
+    TITLE='!6CPU Load!X', YRANGE=[0,1.05*max(histo)]
 opvline,mean(load),LINE=2
 
 ;
-histo = histogram(mem,MIN=0.,MAX=100.,BINSIZE=4)
-N_hist = n_elements(histo)
+histo = histogram(mem,MIN=0.,MAX=100.,NBIN=25)
+N_hist = n_elements(histo)-1
 perc = indgen(N_hist)*100./(N_hist-1)
-plot, perc, histo, TITLE='!6Memory percentage!X'
+plot, perc, histo, $
+    TITLE='!6Memory percentage!X', YRANGE=[0,1.05*max(histo)]
 opvline,mean(mem),LINE=2
 
 
