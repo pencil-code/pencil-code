@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.15 2003-10-29 16:51:12 mee Exp $
+! $Id: cosmicray.f90,v 1.16 2003-10-29 17:23:50 mee Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -76,7 +76,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.15 2003-10-29 16:51:12 mee Exp $")
+           "$Id: cosmicray.f90,v 1.16 2003-10-29 17:23:50 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -202,7 +202,7 @@ module CosmicRay
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
-      if(lnegl)then
+      if(.not.lnegl)then
         do j=0,2
           df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
         enddo
