@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.200 2003-07-29 09:43:36 brandenb Exp $
+### $Id: Makefile,v 1.201 2003-07-29 15:17:45 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -213,7 +213,7 @@ run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
-read_videofiles_deps=cparam.o general.o
+read_videofiles_deps=cparam.o cdata.o general.o
 read_videofiles=read_videofiles.o $(read_videofiles_deps)
 
 start.x: $(start) Makefile.local
@@ -242,8 +242,8 @@ run.o:       run.f90 $(run_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
-general.o:   general.f90 cparam.o
 cdata.o:     cdata.f90 cparam.o
+general.o:   general.f90 cparam.o cdata.o
 slices.o:    slices.f90 cdata.o sub.o
 deriv.o:     deriv.f90 cdata.o
 fft.o:	     fft.f

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.126 2003-07-29 14:25:12 dobler Exp $ 
+! $Id: sub.f90,v 1.127 2003-07-29 15:17:45 dobler Exp $ 
 
 module Sub 
 
@@ -1628,7 +1628,7 @@ module Sub
       character (len=*) :: file
       real, dimension(nx,3) :: vv
       real, dimension(nx) :: v2
-      real :: thresh,thresh2,dummy
+      real :: thresh,thresh2,dummy=0.
       integer :: l,lun
 !
 !  return if thresh=0 (default)
