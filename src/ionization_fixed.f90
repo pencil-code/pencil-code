@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.49 2004-02-20 21:08:23 theine Exp $
+! $Id: ionization_fixed.f90,v 1.50 2004-02-24 15:19:05 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -53,14 +53,15 @@ module Ionization
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
-  real :: yH0=.0,xHe=0.1
+  real :: yH0=.0,xHe=0.1,kappa_cst=1.
   logical :: radcalc_test=.false.
+  character (len=labellen) :: opacity_type='ionized_H'
 
   ! input parameters
-  namelist /ionization_init_pars/ yH0,xHe,radcalc_test
+  namelist /ionization_init_pars/ yH0,xHe,opacity_type,kappa_cst,radcalc_test
 
   ! run parameters
-  namelist /ionization_run_pars/ yH0,xHe,radcalc_test
+  namelist /ionization_run_pars/ yH0,xHe,opacity_type,kappa_cst,radcalc_test
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
@@ -93,7 +94,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.49 2004-02-20 21:08:23 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.50 2004-02-24 15:19:05 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -188,13 +189,15 @@ module Ionization
       lnTTlnrho=2./3.
 !
       lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/(1+yH0+xHe)-2.5)
-!
+!      
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
         print*,'initialize_ionization: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
+        if (opacity_type .eq. 'kappa_cst') &
+            print*, 'initialize_ionization: kappa_cst=',kappa_cst 
       endif
 !
       if (lroot) then
@@ -657,26 +660,32 @@ module Ionization
 !  no test
 !
       do n=1,mz
-      do m=1,my
+        do m=1,my
 !
-         lnrho=f(:,m,n,ilnrho)
-         ss=f(:,m,n,iss)
-         yH=yH0
-         lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-         TT=exp(lnTT)
+          lnrho=f(:,m,n,ilnrho)
+          ss=f(:,m,n,iss)
+          yH=yH0
+          lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+          TT=exp(lnTT)
 !
 !  calculate source function
 !
-         Srad(:,m,n)=Srad0*(TT/TT_ion)**4
+          Srad(:,m,n)=Srad0*(TT/TT_ion)**4
 !
 !  calculate opacity
 !
-         !kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
-         !                *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
-         lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
-                      +TT_ion_/TT+log(yH)+log(1-yH)+lnchi0
+          select case(opacity_type)
+
+          case ('kappa_cst')
+            lnchi(:,m,n) = log(kappa_cst)+lnrho
+
+          case ('ionized_H')
+            lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
+                +TT_ion_/TT+log(yH)+log(1-yH)+lnchi0
+
+          endselect
 !
-      enddo
+        enddo
       enddo
 !
     endsubroutine radcalc
