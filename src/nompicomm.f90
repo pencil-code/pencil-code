@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.31 2002-07-02 17:02:14 nilshau Exp $
+! $Id: nompicomm.f90,v 1.32 2002-07-04 16:52:37 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -139,7 +139,7 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: f
 !
-      if (ip==0) print*,f
+      if (ip==0) print*,'FINALIZE_ISENDRCV_BDRY: f=',f
     endsubroutine finalise_isendrcv_bdry
 !***********************************************************************
     subroutine initiate_shearing(f)

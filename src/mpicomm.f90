@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.28 2002-07-03 14:52:05 brandenb Exp $
+! $Id: mpicomm.f90,v 1.29 2002-07-04 16:52:37 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -94,7 +94,7 @@ module Mpicomm
 !  consistency checks
 !
       if (nprocx /= 1) &
-           call stop_all('Inconsistency: nprocx > 1 not implemented')
+           call stop_it('Inconsistency: nprocx > 1 not implemented')
       if (nprocs /= nprocy*nprocz) then
         if(lroot) then
           print*, 'Compiled with NCPUS = ', ncpus, &
@@ -112,7 +112,7 @@ module Mpicomm
                ') /= n[yz]grid= (', &
                nygrid, nzgrid, ")"
         endif
-        call stop_all('Inconsistency 2')
+        call stop_it('Inconsistency 2')
       endif
 !
 !  position on the processor grid
