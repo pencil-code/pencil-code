@@ -4,11 +4,27 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.62 2002-07-21 21:34:59 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.63 2002-07-22 08:52:21 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
 %     latex manual; makeindex manual; latex manual
+%   Macros for files, variables, etc (list loosely adopted from texinfo):
+%     \code:     use the line \code{call remove\_file()}
+%     \kbd:      type \kbd{M-x comment-region}
+%     \key:      press \key{F1}
+%     \samp:     \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}
+%     \var:      is determined by \var{ivisc}
+%     \env:      this sets \env{CVSROOT}
+%     \file:     written to \file{~/tmp/var.dat}
+%     \command:  use \command{rm -f *} at your own risk
+%     \option:   use CVS with the option \option{-q}
+%     \dfn:      A \dfn{definition} is a specification sufficiently obfuscated
+%                to be misunderstood 
+%     \acronym:  should we call the code \acronym{PROMPT}?
+%     \url:      \url{http://www.nowhere.net/second_page.html}
+%     \email:    \email{nobody@nowhere.nil}
+%
 
 \ifx\pdfoutput\undefined        % not running pdflatex
   \documentclass[12pt,twoside,notitlepage,a4paper]{article}
@@ -185,7 +201,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.62 $ $}
+\date{\today,~ $ $Revision: 1.63 $ $}
 
 % ====================================================================== %
 
@@ -214,7 +230,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.62 $ $}
+  \emph{\today,~ $ $Revision: 1.63 $ $}
 
 
 \end{center}
@@ -484,9 +500,8 @@ to just look into the code without hassle}
   \end{alltt}
   and check the code out:
   \begin{alltt}
-  \prompt{unix> } cvs checkout -d pencil-code \
+  \prompt{unix> } cvs checkout pencil-code \
   \end{alltt} 
-%AB: -d is not normally needed when checking things out for the first time.
   This creates a subdirectory \file{somewhere/pencil-code} and populates it with
   the pencil-code's subdirectories.
 
@@ -516,9 +531,8 @@ Here is the upgrading procedure:
   \begin{alltt}
   \prompt{unix> } cvs -q update -dP \
   \end{alltt}
-(\file{-q} means `somewhat' quiet)
-%AB: Wolfgang, I'm not sure which macro to use here and in similar cases)
-%AB: Don't know what -P does.
+  (the option \option{-q} means `somewhat' quiet \option{-d} checks out
+  new directories, and \option{-P} removes empty directories)
 \item Fix any conflicts you encounter and make sure the examples are still
   working.
 \end{enumerate}
@@ -1565,7 +1579,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{mpoly0} [$1.5$], \\
   \var{mpoly1} [$1.5$], \\
   \var{mpoly2} [$1.5$]
-               & \label{mpoly0123-init}%
+               & \label{mpoly012-init}%
                  specific to the solar convection case
                  \code{initss=piecew-poly}:
                  polytropic indices of unstable (\var{mpoly0}), stable
@@ -1751,8 +1765,7 @@ the latest information, you should have a look at the code.
                  files \file{VAR$N$}. \\
   \var{dvid} [$100.$]
                & write two-dimensional sections for generation of videos
-                 every \var{dvid} time units [to which file? Is this
-                 implemented at all?]. \\
+                 every \var{dvid} time units. \\
   \var{iwig} [$0$]
                & if $\ne 0$, apply a Nyquist filter (a filter eliminating
                  any signal at the Nyquist frequency, but affecting large
@@ -1780,7 +1793,7 @@ the latest information, you should have a look at the code.
                  \begin{description}
                  \item[\code{'simplified'}] -- simplified viscous force
                    $\Fv_{\rm visc}=\nu\Laplace\uv$
-                 \item[\code{'rho_mu-const'}] -- viscous force for
+                 \item[\code{'rho_nu-const'}] -- viscous force for
                    $\mu\equiv\varrho\nu=\const$,
                    $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv)$
                  \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
@@ -1794,20 +1807,20 @@ the latest information, you should have a look at the code.
   \var{theta} [$0.$]
                & direction of angular velocity ($\vartheta=0$ for
                  $z$-direction, $\vartheta=\pi/2$ for $x$-direction. \\
-  \var{tinit} [$0.$]
+  \var{ttrans} [$0.$]
                & initial time span for which to do something special
-                 Currently just used for heating [Should be in
-                 \name{run_pars}, rather than here]. \\
-%AB: Maybe the name ttransient or something would be more suggestive.
-  \var{dampu} [$0.$]
+                 (transient).
+                 Currently just used to smoothly switch on heating
+                 [Should be in \name{run_pars}, rather than here]. \\
+  \var{dampu} [$0.$], \\
+  \var{tdamp} [$0.$]
                & damp motions during the initial time interval
                  $0<t<t_{\rm damp}$ with a damping term $-\var{dampu}(\uv)$.
                  Useful for situations where initial conditions are not near
                  equilibrium. \\
   \var{dampuext} [$0.$], \\
-%AB: moved tdamp further down (because it's explained implicitly through dampu;
-%AB: maybe dampu could be called udamp?)
-  \var{tdamp} [$0.$], \\
+%AB: moved tdamp further down (because it's explained implicitly through dampu)
+%WD: Moved it up again, as it belongs to the same group as dampu
   \var{rdamp} [$1.2$], \\
   \var{wdamp} [$0.2$]
                & permanently damp motions in $|\xv|>r_{\rm damp}$ with
@@ -2093,7 +2106,7 @@ The basic command sequence is:
   \prompt{unix> } idl
   \prompt{IDL> }  .run start
   \prompt{IDL> }  .run r
-  \prompt{IDL> }  {\sf[specific commands]} \
+  \prompt{IDL> }  {\sl[specific commands]} \
 \end{alltt}
 You call \file{start.pro} once to initialize the fields and read in the
 startup parameters from the code.
@@ -2116,7 +2129,11 @@ large runs.
 If you want to look at just one processor, use \file{r.pro} instead.
 
 If you need the magnetic field or the current density, you can calculate
-them in IDL by saying
+them in IDL by \footnote{
+  Keep in mind that \code{jj=curl(bb)} would use iterated first derivatives
+  instead of the second derivatives and thus be numerically less accurate,
+  particularly at small scales.
+}
 \begin{alltt}
   \prompt{IDL> }  bb=curl(aa)
   \prompt{IDL> }  jj=curl2(aa)
@@ -2166,6 +2183,7 @@ derivative.
 % ---------------------------------------------------------------------- %
 
 \subsection{Equation of motion}
+\label{S-Eqn-of-motion}
 
 \begin{equation}
   \frac{D\uv}{Dt}
@@ -2173,12 +2191,12 @@ derivative.
       - \grad\Phi
       + \frac{\jv\times\Bv}{\varrho}
       + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
-      + {\sf S}\cdot\grad\ln\varrho\right) \; .
+      + {\mathsf S}\cdot\grad\ln\varrho\right) \; .
 \end{equation}
 Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
 $\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
 $\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
-the magnetic flux density, $\nu$ is kinematic viscosity, and ${\sf S}$ is
+the magnetic flux density, $\nu$ is kinematic viscosity, and ${\mathsf S}$ is
 the traceless rate-of-strain tensor (\ref{Eq-S-traceless}).
 
 If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace$, of the
@@ -2237,14 +2255,14 @@ The equation solved is
    =  \Heat - \Cool
       + \Div(\lambda\grad T)
       + \eta\mu_0 \jv^2
-      + 2\varrho\nu {\sf S}^2 \; .
+      + 2\varrho\nu {\mathsf S}^2 \; .
 \end{equation}
 
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
 $\Heat$ and $\Cool$ are explicit heating and cooling terms,
 $\lambda$ is the thermal conductivity, and
 \begin{equation} \label{Eq-S-traceless}
-  {\sf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
+  {\mathsf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
                  -\frac{1}{3} \delta_{ik}\Div\uv
 \end{equation}
 is the traceless rate-of-strain tensor.
@@ -2280,22 +2298,31 @@ times.
 
 % ====================================================================== %
 
+\section{Tuning the code for optimal performance}
+
+\subsection{Using a simplified viscosity operator}
+
+For weakly compressible flows, there is little difference between the
+simplified viscous operator (\code{ivisc='simplified'}; see
+\S\ref{S-Eqn-of-motion}) and the full operator
+(\code{ivisc='nu-const'}), while the latter is numerically considerably
+more expensive.
+
+Strictly speaking, however, the equation of motion with the simplified
+viscous operator does not conserve linear or angular momentum.
+It depends on your application whether this is a crucial shortcoming or
+totally irrelevant.
+
+Thus, our recommendation is: compare results with the full viscous term to
+an otherwise identical run with simplified viscosity.
+If you don't find any relevant difference, you can carry out your
+production runs with the simplified term, provided you do counter-checks
+every now and then.
+
+
+% ====================================================================== %
+
 \section{Adapting the code}
-
-If you want to add new physics to the code, you will in many cases want to
-add a new module \name{newphysics} together with the corresponding
-\name{nonewphysics} module.
-For a module involving a new variable, the \name{pscalar} module is a good
-prototype.
-The grep command
-\begin{alltt}
-  \prompt{unix> } grep -i pscalar src/*
-\end{alltt}
-gives you a good overview of which files you need to edit or add.
-
-If you just want to add a few new terms to the equation of motion or
-other evolution equations, \name{grav_z} or \name{forcing} may be a good
-starting point.
 
 
 % ---------------------------------------------------------------------- %
@@ -2421,6 +2448,26 @@ the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
 rather big file \file{tmp/zaverages.dat}.
 
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Adding new physics modules}
+
+If you want to add new physics to the code, you will in many cases want to
+add a new module \name{newphysics} together with the corresponding
+\name{nonewphysics} module.
+For a module involving a new variable, the \name{pscalar} module is a good
+prototype.
+The grep command
+\begin{alltt}
+  \prompt{unix> } grep -i pscalar src/*
+\end{alltt}
+gives you a good overview of which files you need to edit or add.
+
+If you just want to add a few new terms to the equation of motion or
+other evolution equations, \name{grav_z} or \name{forcing} may be a good
+starting point.
+
+
 % ====================================================================== %
 
 \section{Frequently Asked Questions}
@@ -2538,47 +2585,9 @@ Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 \end{thebibliography}
 
 
-% ====================================================================== %
-
-%\section*{Experimenting with the \LaTeX{} macros}
-
-
-%\bs{}code:    \code{call remove\_file()}
-
-%\bs{}kbd:     \kbd{M-x comment-region}
-
-%\bs{}key:     \key{F1}
-
-%\bs{}samp:    \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}
-
-%\bs{}var:     \var{ivisc}
-
-%\bs{}env:     \env{CVSROOT}
-
-%\bs{}file:    \file{~/tmp/var.dat}
-
-%\bs{}command: \command{rm -f *}
-
-%\bs{}option:  \option{-l}, \option{--long-listing}
-
-%\bs{}dfn:     A \dfn{definition} is a specification sufficiently obfuscated
-%          to be misunderstood 
-
-%\bs{}cite:    See \cite{Abramowitz & Stegun}
-
-%\bs{}acronym: \acronym{MNRAS}
-
-%\bs{}url:     \url{http://www.nowhere.net/second_page.html}
-
-%\bs{}email:   \email{nobody@nowhere.nil}
-
-
-
 
 % ====================================================================== %
 \appendix
-
-
 % ====================================================================== %
 
 \section{Timings}
@@ -3008,7 +3017,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.62 2002-07-21 21:34:59 dobler Exp $ $}
+$ $Id: manual.tex,v 1.63 2002-07-22 08:52:21 dobler Exp $ $}
 
 
 \end{document}
@@ -3048,5 +3057,6 @@ $ $Id: manual.tex,v 1.62 2002-07-21 21:34:59 dobler Exp $ $}
 % LocalWords:  endif lreset iname nname cname cform enddo Pentium GHz Athlon GB
 % LocalWords:  SuSE SGI IRIX Tru noshear RedHat ethernet ds pvert umax ssm dtc
 % LocalWords:  rms getconf sourced substep perldoc lmpi llam FC FFLAGS LDMPI mk
-% LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv
-% LocalWords:  evol hsect hsections vsect vsections vsections
+% LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv dz
+% LocalWords:  evol hsect hsections vsect vsections vsections texinfo nxgrid
+% LocalWords:  nygrid nzgrid ccc widthss ttrans
