@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.76 2004-05-07 13:52:18 ajohan Exp $
+! $Id: dustdensity.f90,v 1.77 2004-05-07 17:07:38 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -107,7 +107,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.76 2004-05-07 13:52:18 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.77 2004-05-07 17:07:38 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -893,9 +893,9 @@ module Dustdensity
 !
         if (lwr) then
           if (i_ndm(k) /= 0) &
-              write(3,*) 'i_ndm('//trim(sdust)//')=',i_ndm(k)
+              write(3,*) 'i_ndm['//trim(sdust)//']=',i_ndm(k)
           if (i_rhodm(k) /= 0) &
-              write(3,*) 'i_rhodm('//trim(sdust)//')=',i_rhodm(k)
+              write(3,*) 'i_rhodm['//trim(sdust)//']=',i_rhodm(k)
         endif
 !
 !  End loop over dust layers
