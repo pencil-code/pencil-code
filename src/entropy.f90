@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.73 2002-06-24 17:45:28 brandenb Exp $
+! $Id: entropy.f90,v 1.74 2002-06-24 17:56:19 dobler Exp $
 
 module Entropy
 
@@ -61,8 +61,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.73 $", &
-           "$Date: 2002-06-24 17:45:28 $")
+           "$Revision: 1.74 $", &
+           "$Date: 2002-06-24 17:56:19 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +181,7 @@ module Entropy
       select case (pertss)
 
       case(0)
-	f(:,:,:,ient) = f(:,:,:,ient)	
+        ! Don't perturb
 
       case (1)
         !

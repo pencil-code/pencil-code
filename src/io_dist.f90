@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.27 2002-06-24 17:45:28 brandenb Exp $
+! $Id: io_dist.f90,v 1.28 2002-06-24 17:56:19 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -22,24 +22,34 @@ module Io
     module procedure output_pencil_scal
   endinterface
 
-  ! Interface to external C function
-  ! Does not work, since a pencil can be either a 1-d or a 2-d array and the
-  ! C function does not care.
-  !   interface output_penciled_c
-  !     subroutine output_penciled_c(filename,pencil,&
-  !                                   ndim,i,iy,iz,t, &
-  !                                   nx,ny,nz,nghost,fnlen)
-  !       use Cdata, only: mx
-  
-  !       real,dimension(mx,*) :: pencil
-  !       real,dimension(mx) :: pencil
-  !       real :: t
-  !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-  !       character (len=*) :: filename
-  !     endsubroutine output_penciled_c
-  !   endinterface
-
-  external output_penciled_c   ! Note really needed, but self-documenting
+  !
+  ! Interface to external C function(s).
+  ! Need to have two different C functions in order to have F90
+  ! interfaces, since a pencil can be either a 1-d or a 2-d array.
+  !
+  interface output_penciled_vect_c
+    subroutine output_penciled_vect_c(filename,pencil,&
+                                      ndim,i,iy,iz,t, &
+                                      nx,ny,nz,nghost,fnlen)
+      use Cdata, only: mx
+      real,dimension(mx,*) :: pencil
+      real :: t
+      integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
+      character (len=*) :: filename
+    endsubroutine output_penciled_vect_c
+  endinterface
+  !
+  interface output_penciled_scal_c
+    subroutine output_penciled_scal_c(filename,pencil,&
+                                      ndim,i,iy,iz,t, &
+                                      nx,ny,nz,nghost,fnlen)
+      use Cdata, only: mx
+      real,dimension(mx) :: pencil
+      real :: t
+      integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
+      character (len=*) :: filename
+    endsubroutine output_penciled_scal_c
+  endinterface
 
 contains
 
@@ -125,7 +135,7 @@ contains
     subroutine output_pencil_vect(file,a,ndim)
 !
 !  Write snapshot file of penciled vector data (for debugging).
-!  Wrapper to the C routine output_penciled_c.
+!  Wrapper to the C routine output_penciled_vect_c.
 !
 !  15-feb-02/wolf: coded
 !
@@ -136,22 +146,23 @@ contains
       real, dimension (nx,ndim) :: a
       character (len=*) :: file
 !
-      if (ip<9.and.lroot) print*,'output_pencil_vect('//file//'): ndim=',ndim
+      if (ip<9.and.lroot.and.imn==1) &
+           print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
       if (headt .and. (imn==1)) print*, &
            'OUTPUT_PENCIL: Writing to ', trim(file), &
            ' for debugging -- this may slow things down'
 !
-       call output_penciled_c(file, a, ndim, &
-                               imn, mm(imn), nn(imn), t, &
-                               nx, ny, nz, nghost, len(file))
+       call output_penciled_vect_c(file, a, ndim, &
+                                   imn, mm(imn), nn(imn), t, &
+                                   nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_pencil_vect
 !***********************************************************************
     subroutine output_pencil_scal(file,a,ndim)
 !
 !  Write snapshot file of penciled scalar data (for debugging).
-!  Wrapper to the C routine output_penciled_c.
+!  Wrapper to the C routine output_penciled_scal_c.
 !
 !  15-feb-02/wolf: coded
 !
@@ -163,7 +174,9 @@ contains
       real, dimension (nx) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_PENCIL_SCAL'
+      if ((ip<=8) .and. lroot .and. imn==1) &
+           print*,'output_pencil_scal('//file//')'
+!
       if (ndim /= 1) &
            call stop_it("OUTPUT called with scalar field, but ndim/=1")
 !
@@ -171,9 +184,9 @@ contains
            'OUTPUT_PENCIL: Writing to ', trim(file), &
            ' for debugging -- this may slow things down'
 !
-      call output_penciled_c(file, a, ndim, &
-                              imn, mm(imn), nn(imn), t, &
-                              nx, ny, nz, nghost, len(file))
+      call output_penciled_scal_c(file, a, ndim, &
+                                  imn, mm(imn), nn(imn), t, &
+                                  nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_pencil_scal
 !***********************************************************************

@@ -15,13 +15,16 @@ HYDRO=hydro
 DENSITY=density
 IO=io_dist
 FFT=nofft
+DEBUG=debug_c
 
 ## Overwrite settings that are local to each run directory
 include Makefile.local
 
 ## Default settings
 FC=f90
+FFLAGS=-O3
 CFLAGS=-O3 -DFUNDERSC=1
+
 
 ### Begin machine dependent
 
@@ -88,6 +91,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ### End machine dependent
 
+
 LD=$(FC)
 LDFLAGS=$(FFLAGS)
 
@@ -116,9 +120,9 @@ technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o register.o pri
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
 comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
-start_deps=$(start_deps_f90) debug_c.o $(FFT).o
+start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
 run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o
-run_deps=$(run_deps_f90) debug_c.o $(FFT).o
+run_deps=$(run_deps_f90) $(DEBUG).o $(FFT).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 
@@ -153,10 +157,9 @@ $(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o
 $(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o $(FFT).o
 $(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
 $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o slices.o
-$(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o debug_c.o
+$(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o $(DEBUG).o
 # $(FFT).o:       $(FFT).f
-#
-debug_c.o:   debug_c.c
+nodebug.o:   nodebug.f90 cdata.o $(MPICOMM).o
 
 
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
