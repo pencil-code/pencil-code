@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.19 2002-08-18 13:16:11 brandenb Exp $
+;;;  $Id: rall.pro,v 1.20 2002-09-11 17:10:25 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -101,6 +101,10 @@ if (lmagnetic) then begin
   aa = fltarr(mx,my,mz,3)*one
   aa_loc = fltarr(mxloc,myloc,mzloc,3)*one
 endif
+if (lpscalar) then begin
+  lncc = fltarr(mx,my,mz)*one
+  lncc_loc = fltarr(mxloc,myloc,mzloc)*one
+endif
 ;
 for i=0,ncpus-1 do begin        ; read data from individual files
   tag='proc'+str(i)
@@ -118,12 +122,15 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   close,1
   openr,1, datadir+'/'+file, /F77
     ;
-    if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
+    if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc eq 0 then begin
       id='MHD with entropy'
       readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 and ilncc eq 0 then begin
       id='hydro without entropy, but with magnetic field'
       readu,1,uu_loc,lnrho_loc,aa_loc
+    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc ne 0 then begin
+      id='hydro with entropy, magnetic field, and passive scalar'
+      readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc,lncc_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
       id='hydro with entropy, but no magnetic field'
       readu,1,uu_loc,lnrho_loc,ss_loc
@@ -194,6 +201,8 @@ for i=0,ncpus-1 do begin        ; read data from individual files
       ss_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
   if (iaa ne 0) then aa [i0x:i1x,i0y:i1y,i0z:i1z,*] =  $
       aa_loc [i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
+  if (ilncc ne 0) then lncc[i0x:i1x,i0y:i1y,i0z:i1z]   = $
+      lncc_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
 endfor
 print
 ;
@@ -220,6 +229,9 @@ if (lmagnetic) then $
     for j=0,2 do $
       print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
       minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+if (lpscalar) then $
+    print, FORMAT=fmt, 'lncc   =', $
+      minmax(lncc), mean(lncc,/DOUBLE), rms(lncc,/DOUBLE)
 
 print,'t = ',t
 
