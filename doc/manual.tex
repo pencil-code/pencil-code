@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.78 2002-08-13 06:52:14 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.79 2002-08-13 08:25:35 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -200,6 +200,8 @@
 \newcommand{\Reynolds}      {\mathrm{Re}}
 \newcommand{\Rm}            {\mathrm{Rm}}
 
+\newcommand{\Strain}        {\boldsymbol{\mathsf{S}}}
+
 \newcommand{\uv}            {\vekt{u}}
 
 % \newcommand{\Vol}           {{\cal V}}
@@ -219,7 +221,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.78 $ $}
+\date{\today,~ $ $Revision: 1.79 $ $}
 
 % ====================================================================== %
 
@@ -248,7 +250,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.78 $ $}
+  \emph{\today,~ $ $Revision: 1.79 $ $}
 
 
 \end{center}
@@ -2336,12 +2338,12 @@ derivative.
       - \grad\Phi
       + \frac{\jv\times\Bv}{\varrho}
       + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
-      + {\mathsf S}\cdot\grad\ln\varrho\right) \; .
+      + \Strain\cdot\grad\ln\varrho\right) \; .
 \end{equation}
 Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
 $\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
 $\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
-the magnetic flux density, $\nu$ is kinematic viscosity, and ${\mathsf S}$ is
+the magnetic flux density, $\nu$ is kinematic viscosity, and $\Strain$ is
 the traceless rate-of-strain tensor (\ref{Eq-S-traceless}).
 
 If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace$, of the
@@ -2400,7 +2402,7 @@ The equation solved is
    =  \Heat - \Cool
       + \Div(\lambda\grad T)
       + \eta\mu_0 \jv^2
-      + 2\varrho\nu {\mathsf S}^2 \; .
+      + 2\varrho\nu\Strain^2 \; .
 \end{equation}
 
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
@@ -3225,7 +3227,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.78 2002-08-13 06:52:14 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.79 2002-08-13 08:25:35 dobler Exp $ $}
 
 
 \end{document}
