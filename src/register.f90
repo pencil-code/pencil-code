@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.97 2003-10-07 14:20:10 mee Exp $
+! $Id: register.f90,v 1.98 2003-10-07 15:22:43 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -109,6 +109,7 @@ module Register
 !
 !  6-nov-01/wolf: coded
 ! 23-feb-03/axel: added physical constants conversion
+!  7-oct-03/david: initialize_gravity before density, etc (its needed there)
 !
       use Cdata
       use Param_IO
