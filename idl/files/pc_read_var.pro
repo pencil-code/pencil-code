@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.22 2004-06-03 17:23:27 mee Exp $
+; $Id: pc_read_var.pro,v 1.23 2004-06-03 18:12:08 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 17:23:27 $
-;  $Revision: 1.22 $
+;  $Date: 2004-06-03 18:12:08 $
+;  $Revision: 1.23 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -16,7 +16,7 @@ pro pc_read_var, t=t,                                            $
             nameobject=nameobject,                               $
             dim=dim,param=param,                                 $
             datadir=datadir,proc=proc,                           $
-            NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP
+            STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
   COMMON pc_precision, zero, one
@@ -53,6 +53,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "                                (dim.mx,dim.my,dim.mz)                                     "
     print, ""
     print, " /NOSTATS: instruction not to print any summary statistics for the returned fields         "
+    print, "   /STATS: force printing of summary statistics even if quiet is set                       "
     print, "   /QUIET: instruction not to print any 'helpful' information                              "
     print, "    /HELP: display this usage information, and exit                                        "
     return
@@ -324,7 +325,7 @@ if (execute(makeobject) ne 1) then begin
 endif
 
 ; If requested print a summary
-if not (keyword_set(NOSTATS) or keyword_set(QUIET)) then begin
+if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(QUIET))) then begin
   pc_object_stats,object,dim=dim,QUIET=QUIET
   print,' t = ', t
 endif
