@@ -172,7 +172,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.15 $ $}
+\date{\today,~ $ $Revision: 1.16 $ $}
 
 % ====================================================================== %
 
@@ -201,7 +201,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.15 $ $}
+  \emph{\today,~ $ $Revision: 1.16 $ $}
 
 
 \end{center}
@@ -300,8 +300,8 @@ in future releases, so please get in touch with us.
 
 \vspace{5mm}
 %\noindent
-\url{Wolfgang.Dobler@kis.uni-freiburg.de}\\
-\url{Axel.Brandenburg@nordita.dk}
+\url{Wolfgang.Dobler@kis.uni-freiburg.de}\hfill Freiburg\\
+\url{Axel.Brandenburg@nordita.dk}\hfill Copenhagen
 
 \tableofcontents
 \clearpage
@@ -369,6 +369,7 @@ provided as the default configuration of the code.
 
 It is absolutely mandatory to monitor exactly what one is doing.
 IDL is a very useful tool to inspect the data in a very flexible fashion.
+(For details about the use of idl, see Sect.~\ref{S_IDLroutines}.)
 
 \subsection{A first test}
 
@@ -553,6 +554,7 @@ output.
 
 % ---------------------------------------------------------------------- %
 \subsection{IDL routines}
+\label{S_IDLroutines}
 
 Basic sequence:
 \begin{alltt}
@@ -567,6 +569,29 @@ Each time you want to read in a new snapshot, you run \file{r.pro},
 possibly after adjusting the IDL variable \var{file} to a specific snapshot
 file; by default, the file \file{var.dat} in the data directory will be
 read, which is overwritten with new data in regular intervals.
+
+If the data are scattered over different processors and you want to
+reassemble everything into one file, you say
+\begin{alltt}
+  \prompt{IDL> }  .r rall
+\end{alltt}
+Here, \file{.r} is a shorthand for \file{.run} which \file{idl} understands.
+
+If you need the magnetic field or the current density, you can calculate
+it in idl by saying
+\begin{alltt}
+  \prompt{IDL> }  bb=curl(aa)
+  \prompt{IDL> }  jj=curl2(aa)
+\end{alltt}
+
+By default the one is reading always the latest time corresponding to the file
+\file{var.dat}. If you want to read any earlier snapshots, you say (for example)
+\begin{alltt}
+  \prompt{IDL> }  file='VAR2
+  \prompt{IDL> }  .r rall
+  \prompt{IDL> }  print,t
+\end{alltt}
+and it will get the data from all processors from that snapshot.
 
 To discuss:
 \begin{itemize}
@@ -902,13 +927,15 @@ whose name will start with `no'.
 Here we give the wall clock time per mesh point (excluding the ghost zones)
 and per full 3-stage time step.
 }\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
-proc(s)& machine            &  $\mu$s/pt/step & resol.\ & what & when/who \\
+proc(s)& machine            &  $\mu$s/pt/step & resol.\ & what & Size & when/who \\
 \hline
-1     & 500MHz linux (nl3)&  30  &  $64^3$ & magn/noentro & (20-may-02/AB)\\
-1     & Origin3000 (ukaff)& 9.2  &  $64^3$ & magn/noentro & (20-may-02/AB)\\
-8     & Origin3000 (ukaff)& 1.24 &  $64^3$ & magn/noentro & (20-may-02/AB)\\
-16    & Origin3000 (ukaff)& 0.64 & $256^3$ & magn/noentro & (20-may-02/AB)\\
-32    & Origin3000 (ukaff)& 0.32 & $512^3$ & magn/noentro & (20-may-02/AB)\\
+1     & 500MHz linux (nl3)&  30  &  $64^3$ & magn/noentro & 20 Mb  & (20-may-02/AB)\\
+1     & Origin3000 (ukaff)& 9.2  &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
+8     & Origin3000 (ukaff)& 1.24 &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
+16    & Origin3000 (ukaff)& 0.61 & $128^3$ & magn/noentro &?8.8 Gb & (22-may-02/AB)\\
+16    & Origin3000 (ukaff)& 0.64 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
+32    & Origin3000 (ukaff)& 0.32 & $512^3$ & magn/noentro &        & (20-may-02/AB)\\
+64    & Origin3000 (ukaff)& 0.17 & $512^3$ & magn/noentro &        & (21-may-02/AB)\\
 \label{Ttimescale}\end{tabular}}\end{table}
 
 Below we quote the wall clock time per mesh point (including the ghost zones)
@@ -969,7 +996,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.15 2002-05-20 07:46:33 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.16 2002-05-23 04:48:28 brandenb Exp $ $}
 
 
 \end{document}
