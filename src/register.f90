@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.67 2003-03-25 20:27:47 brandenb Exp $
+! $Id: register.f90,v 1.68 2003-03-28 10:40:43 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -133,12 +133,14 @@ module Register
         m_p=m_p_cgs/unit_mass
         m_e=m_e_cgs/unit_mass
         eV=eV_cgs/unit_energy
+        sigmaH_=sigmaH_cgs/unit_length**2
       elseif (unit_system=='SI') then
         print*,'units of length,velocity,density are given in SI'
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs*1e-3/unit_mass
         m_e=m_e_cgs*1e-3/unit_mass
         eV=eV_cgs*1e-7/unit_energy
+        sigmaH_=sigmaH_cgs*1.e-4/unit_length**2
       endif
 !
 !  print parameters in code units, but only when used

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.14 2003-02-25 00:41:24 theine Exp $
+! $Id: ionization.f90,v 1.15 2003-03-28 10:40:43 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -12,7 +12,9 @@ module Ionization
   implicit none
 
   !  secondary parameters calculated in initialize
-  real :: TT_ion,lnrho_ion,ss_ion,chiH,m_H
+  real :: m_H
+  real :: TT_ion,lnrho_ion,ss_ion,chiH
+  real :: TT_ion_,lnrho_ion_,chiH_,kappa0
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
@@ -48,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.14 2003-02-25 00:41:24 theine Exp $")
+           "$Id: ionization.f90,v 1.15 2003-03-28 10:40:43 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,11 +77,15 @@ module Ionization
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      chiH=13.6*eV
-      TT_ion=chiH/k_B
       m_H=m_p+m_e
+      chiH=13.6*eV
+      chiH_=0.75*eV
+      TT_ion=chiH/k_B
+      TT_ion_=chiH_/k_B
       lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/(2.*pi))+log(m_H)
+      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/(2.*pi))+log(m_H)
       ss_ion=k_B/m_H
+      kappa0=sigmaH_/m_H
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
         print*,'TT_ion',TT_ion
@@ -112,7 +118,10 @@ module Ionization
 !
       if(lionization) then
         if(headtt) print*,'thermodynamics: assume cp is not 1'
-        call pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdss,yH,TT)
+        call ionfrac(lnrho,ss,yH)
+        call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
+                                 dlnPdss=dlnPdss, &
+                                 TT=TT)
         TT1=1./TT
         cs2=(1.+yH)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
@@ -140,51 +149,75 @@ module Ionization
       endif
 !
     endsubroutine thermodynamics
-
 !***********************************************************************
-    subroutine pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdss,yH,TT)
-      implicit none
+    subroutine ioncalc(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)
 !
-!   23-feb-03/tobi: rewritten
+!   calculates thermodynamic quantities under partial ionization
 !
-      real, dimension(nx),intent(in)   :: lnrho,ss
-      real, dimension(nx), intent(out) :: dlnPdlnrho,dlnPdss,yH,TT
+!   28-mar-03/tobi: added kappa
+!
+      real, dimension(nx),intent(in)   :: lnrho,ss,yH
+      real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
+                           intent(out) :: dlnPdlnrho,dlnPdss,TT,nH_
       real, dimension(nx)              :: lnTT_,f  ! lnTT_=log(TT/TT_ion)
       real, dimension(nx)              :: dlnTT_dy,dlnTT_dlnrho,dlnTT_dss
       real, dimension(nx)              :: dfdy,dfdlnrho,dfdss
       real, dimension(nx)              :: dydlnrho,dydss
-      real, dimension(nx), save        :: yHlast=.5
-      integer                          :: i
 
+      if (present(dlnPdlnrho).or.present(dlnPdss) &
+           .or.present(TT).or.present(kappa)) then
+         lnTT_=gamma1*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
+                        -1.5*yH*log(m_p/m_e)+(1.-yH)*log(1.-yH) &
+                        +2.*yH*log(yH))/(1.+yH)+lnrho-lnrho_ion-2.5)
+      endif
+      if (present(dlnPdlnrho).or.present(dlnPdss)) then
+         f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+         dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
+         dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+      endif
+
+      if (present(dlnPdlnrho)) then
+         dlnTT_dlnrho=gamma1
+         dfdlnrho=gamma1*exp(-lnTT_)
+         dydlnrho=-dfdlnrho/dfdy
+         dlnPdlnrho=1.+dydlnrho/(1.+yH)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+      endif
+
+      if (present(dlnPdss)) then
+         dlnTT_dss=gamma1/((1.+yH)*ss_ion)
+         dfdss=(1.+dfdlnrho)/((1.+yH)*ss_ion)
+         dydss=-dfdss/dfdy
+         dlnPdss=dydss/(1.+yH)+dlnTT_dy*dydss+dlnTT_dss
+      endif
+
+      if (present(TT).or.present(kappa)) TT=exp(lnTT_)*TT_ion
+
+      if (present(kappa)) then
+         kappa=.25*(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
+               *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+      endif
+    endsubroutine ioncalc
+!***********************************************************************
+    subroutine ionfrac(lnrho,ss,yH)
+!
+!   calculates the ionization fraction along the pencil
+!
+!   28-mar-03/tobi: coded
+!
+      real, dimension(nx), intent(in)  :: lnrho,ss
+      real, dimension(nx), save        :: yHlast=.5
+      real, dimension(nx), intent(out) :: yH
+      integer                          :: i
 
       do i=1,nx
          yH(i)=rtsafe(lnrho(i),ss(i),yHlast(i))
-         yHlast=yH(i)
-      enddo
-
-      lnTT_=gamma1*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
-                        -1.5*yH*log(m_p/m_e)+(1.-yH)*log(1.-yH) &
-                        +2.*yH*log(yH))/(1.+yH)+lnrho-lnrho_ion-2.5)
-      f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
-
-      dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
-      dlnTT_dlnrho=gamma1
-      dlnTT_dss=gamma1/((1.+yH)*ss_ion)
-
-      dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
-      dfdlnrho=gamma1*exp(-lnTT_)
-      dfdss=(1.+dfdlnrho)/((1.+yH)*ss_ion)
-
-      dydlnrho=-dfdlnrho/dfdy
-      dydss=-dfdss/dfdy
-
-      dlnPdlnrho=1.+dydlnrho/(1.+yH)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-      dlnPdss=dydss/(1.+yH)+dlnTT_dy*dydss+dlnTT_dss
-      TT=exp(lnTT_)*TT_ion
-    endsubroutine pressure_gradient
-
+         yHlast(i)=yH(i)
+      enddo    
+    end function ionfrac
 !***********************************************************************
     function rtsafe(lnrho,ss,yHlast)
+!
+!   safe newton raphson algorithm (adapted from NR)
 !
 !   23-feb-03/tobi: minor changes
 !
@@ -237,7 +270,9 @@ module Ionization
 !***********************************************************************
     subroutine saha(yH,lnrho,ss,f,df)
 !
-!   23-feb-03/tobi: rewritten
+!   we want to find the root of f
+!
+!   23-feb-03/tobi: errors fixed
 !
       real, intent(in)  :: yH,lnrho,ss
       real, intent(out) :: f,df
