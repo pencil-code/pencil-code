@@ -5,13 +5,15 @@
 
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
-MPICOMM=nompicomm
+MPICOMM=mpicomm
 GLOBAL=global_rr
 GRAVITY=nograv
 FORCING=forcing
 ENTROPY=noentropy
 MAGNETIC=magnetic
 HYDRO=hydro
-DENSITY=density
 IO=io_dist
+
+#AB: I would use this to overwrite some default.
+#AB: Can one not touch this file to make sure it always exists?
 
