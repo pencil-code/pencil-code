@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.91 2003-09-18 15:11:45 dobler Exp $
+# $Id: getconf.csh,v 1.92 2003-09-19 13:26:52 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -342,22 +342,23 @@ setenv PARENT_PID $$
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
-  echo '$mpi          = ' "<$mpi>"
-  echo '$ncpus        = ' "<$ncpus>"
-  echo '$npops        = ' "<$npops>"
-  echo '$local_disc   = ' "<$local_disc>"
-  echo '$remote_top   = ' "<$remote_top>"
-  echo '$local_binary = ' "<$local_binary>"
-  echo '$datadir      = ' "<$datadir>"
-  echo '$SCRATCH_DIR  = ' "<$SCRATCH_DIR>"
-  echo '$hn           = ' "<$hn>"
-  echo '$mpirun       = ' "<$mpirun>"
-  echo '$mpirunops    = ' "<$mpirunops>"
-  echo '$x_ops        = ' "<$x_ops>"
-  echo '$NODELIST     = ' "<$NODELIST>"
-  echo '$SSH          = ' "<$SSH>"
-  echo '$SCP          = ' "<$SCP>"
-  echo '$PARENT_PID   = ' "<$PARENT_PID>"
+  echo '$mpi            = ' "<$mpi>"
+  echo '$ncpus          = ' "<$ncpus>"
+  echo '$npops          = ' "<$npops>"
+  echo '$local_disc     = ' "<$local_disc>"
+  echo '$one_local_disc = ' "<$one_local_disc>"
+  echo '$remote_top   	= ' "<$remote_top>"
+  echo '$local_binary 	= ' "<$local_binary>"
+  echo '$datadir      	= ' "<$datadir>"
+  echo '$SCRATCH_DIR  	= ' "<$SCRATCH_DIR>"
+  echo '$hn           	= ' "<$hn>"
+  echo '$mpirun       	= ' "<$mpirun>"
+  echo '$mpirunops    	= ' "<$mpirunops>"
+  echo '$x_ops        	= ' "<$x_ops>"
+  echo '$NODELIST     	= ' "<$NODELIST>"
+  echo '$SSH          	= ' "<$SSH>"
+  echo '$SCP          	= ' "<$SCP>"
+  echo '$PARENT_PID   	= ' "<$PARENT_PID>"
 endif
 
 exit
