@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.32 2004-02-17 11:52:44 ajohan Exp $
+;  $Id: extra.pro,v 1.33 2004-02-17 11:55:48 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -54,13 +54,15 @@ if (iuu ne 0) then print
 if (iaa ne 0) then begin
   default,b_ext,[0.,0.,0.]
   for j=0,2 do print,'j,Bjrms=',j,sqrt(mean(bb(*,*,*,j)^2))
-  for j=0,2 do bbb(*,*,*,j)=bbb(*,*,*,j)+b_ext(j)
-  bmx=sqrt(mean(dot2_1d(means(means(bbb,3),2))))
-  bmy=sqrt(mean(dot2_1d(means(means(bbb,3),1))))
-  bmz=sqrt(mean(dot2_1d(means(means(bbb,2),1))))
-  print
-  print,'bmx,bmy,bmz=',bmx,bmy,bmz
-  print
+  if ny ne 1 and nz ne 1 then begin
+    for j=0,2 do bbb(*,*,*,j)=bbb(*,*,*,j)+b_ext(j)
+    bmx=sqrt(mean(dot2_1d(means(means(bbb,3),2))))
+    bmy=sqrt(mean(dot2_1d(means(means(bbb,3),1))))
+    bmz=sqrt(mean(dot2_1d(means(means(bbb,2),1))))
+    print
+    print,'bmx,bmy,bmz=',bmx,bmy,bmz
+    print
+  endif
 end
 ;
 ;  calculate vertical averages

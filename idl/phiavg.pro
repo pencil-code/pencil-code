@@ -7,17 +7,17 @@
 ;;;  Date:   11-Aug-2003
 ;;;
 ;;;  Description:
-;;;   Read some azimuthal averages and plot
+;;;    Read azimuthal averages and plot
+;;;    vname must be set to one of the fields listed in phiaver.in
 
 default, avgdir, datatopdir+'/averages'
 default, phiavgfile, 'PHIAVG1'
+default, vname, 'b2mphi'
 
 az = read_phiavg(avgdir+'/'+phiavgfile)
 
 pos = aspect((max(az.z)-min(az.z))/(max(az.rcyl)-min(az.rcyl)), $
              MARGIN=0.1)
-
-vname = 'b2mphi'
 
 if (any(tag_names(az) eq strupcase(vname))) then begin
   ;; Extract slot by string vname given above. This is awkward, but

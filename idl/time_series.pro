@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.18 2003-11-02 05:13:31 brandenb Exp $
+;  $Id: time_series.pro,v 1.19 2004-02-17 11:55:48 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -11,8 +11,14 @@ print,'nname=',nname
 default, datatopdir, 'data'
 filen=datatopdir+'/time_series.dat'
 ;
+;  fileposition
+;
+default,fileposition,0
+print,'fileposition=',fileposition
+;
 ;  read table
 ;
+;a=input_table(filen,fileposition=fileposition,/verb)
 a=input_table(filen)
 if defined(i_t) ne 0 then tt=reform(a(i_t-1,*))
 if defined(i_it) ne 0 then it=reform(a(i_it-1,*))
@@ -32,17 +38,23 @@ if defined(i_divee2m) ne 0 then divee2m=reform(a(i_divee2m-1,*))
 if defined(i_bx2m) ne 0 then bx2m=reform(a(i_bx2m-1,*))
 if defined(i_by2m) ne 0 then by2m=reform(a(i_by2m-1,*))
 if defined(i_bz2m) ne 0 then bz2m=reform(a(i_bz2m-1,*))
+if defined(i_bxbym) ne 0 then bxbym=reform(a(i_bxbym-1,*))
+if defined(i_bxbzm) ne 0 then bxbzm=reform(a(i_bxbzm-1,*))
+if defined(i_bybzm) ne 0 then bybzm=reform(a(i_bybzm-1,*))
 if defined(i_orms) ne 0 then orms=reform(a(i_orms-1,*))
 if defined(i_epsK) ne 0 then epsK=reform(a(i_epsK-1,*))
 if defined(i_epsM) ne 0 then epsM=reform(a(i_epsM-1,*))
 if defined(i_ugradpm) ne 0 then ugradpm=reform(a(i_ugradpm-1,*))
 if defined(i_brms) ne 0 then brms=reform(a(i_brms-1,*))
 if defined(i_bmax) ne 0 then bmax=reform(a(i_bmax-1,*))
+if defined(i_jrms) ne 0 then jrms=reform(a(i_jrms-1,*))
+if defined(i_jmax) ne 0 then jmax=reform(a(i_jmax-1,*))
 if defined(i_vArms) ne 0 then vArms=reform(a(i_vArms-1,*))
 if defined(i_vAmax) ne 0 then vAmax=reform(a(i_vAmax-1,*))
 if defined(i_bm2) ne 0 then bm2=reform(a(i_bm2-1,*))
 if defined(i_aybym2) ne 0 then aybym2=reform(a(i_aybym2-1,*))
 if defined(i_exaym2) ne 0 then exaym2=reform(a(i_exaym2-1,*))
+if defined(i_exjm2) ne 0 then exjm2=reform(a(i_exjm2-1,*))
 if defined(i_abm) ne 0 then abm=reform(a(i_abm-1,*))
 if defined(i_jbm) ne 0 then jbm=reform(a(i_jbm-1,*))
 if defined(i_oum) ne 0 then oum=reform(a(i_oum-1,*))
@@ -50,6 +62,8 @@ if defined(i_ssm) ne 0 then ssm=reform(a(i_ssm-1,*))
 if defined(i_TTm) ne 0 then TTm=reform(a(i_TTm-1,*))
 if defined(i_yHm) ne 0 then yHm=reform(a(i_yHm-1,*))
 if defined(i_eth) ne 0 then eth=reform(a(i_eth-1,*))
+if defined(i_epot) ne 0 then epot=reform(a(i_epot-1,*))
+if defined(i_depot) ne 0 then depot=reform(a(i_depot-1,*))
 if defined(i_ethtot) ne 0 then ethtot=reform(a(i_ethtot-1,*))
 if defined(i_ekin) ne 0 then ekin=reform(a(i_ekin-1,*))
 if defined(i_ecrm) ne 0 then ecrm=reform(a(i_ecrm-1,*))
@@ -58,6 +72,8 @@ if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
 if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
 if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))
+if defined(i_uxbm) ne 0 then uxbm=reform(a(i_uxbm-1,*))
+if defined(i_uxjm) ne 0 then uxjm=reform(a(i_uxjm-1,*))
 if defined(i_uxbmx) ne 0 then uxbmx=reform(a(i_uxbmx-1,*))
 if defined(i_uxbmy) ne 0 then uxbmy=reform(a(i_uxbmy-1,*))
 if defined(i_uxbmz) ne 0 then uxbmz=reform(a(i_uxbmz-1,*))
@@ -94,6 +110,10 @@ if defined(i_Egas_max) ne 0 then Egas_max=reform(a(i_Egas_max-1,*))
 if defined(i_Frms) ne 0 then Frms=reform(a(i_Frms-1,*))
 if defined(i_Fmax) ne 0 then Fmax=reform(a(i_Fmax-1,*))
 if defined(i_lnccm) ne 0 then lnccm=reform(a(i_lnccm-1,*))
+if defined(i_divggrms) ne 0 then divggrms=reform(a(i_divggrms-1,*))
+if defined(i_divggmax) ne 0 then divggmax=reform(a(i_divggmax-1,*))
+if defined(i_curlggrms) ne 0 then curlggrms=reform(a(i_curlggrms-1,*))
+if defined(i_curlggmax) ne 0 then curlggmax=reform(a(i_curlggmax-1,*))
 if defined(i_walltime) ne 0 then walltime=reform(a(i_walltime-1,*))
 ;
 pmulti = !p.multi

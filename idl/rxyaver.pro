@@ -1,14 +1,15 @@
-; $Id: rxyaver.pro,v 1.6 2003-10-16 17:18:39 brandenb Exp $
+; $Id: rxyaver.pro,v 1.7 2004-02-17 11:55:48 brandenb Exp $
 ;
 ;  reads the xyaver.dat file
 ;
 t=0.
+nprocz=2
 bxmz=fltarr(nz*nprocz)
 bymz=fltarr(nz*nprocz)
-nprocz=2
 ;
 close,1
 openr,1,datatopdir+'/xyaverages.dat'
+print,'read from file: ',datatopdir+'/xyaverages.dat'
 ;
 it=0
 fo='(8e10.3)'
