@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.14 2003-10-21 21:54:49 theine Exp $
+;  $Id: thermodynamics.pro,v 1.15 2003-11-02 04:02:02 theine Exp $
 
 xHe=par.xHe
 
@@ -18,17 +18,17 @@ endif else begin
     print,'Using fixed ionisation equation of state...'
     yH0=par.yH0
     yyH=reform(spread(spread(spread(yH0,0,nx),1,ny),2,nz))
-    TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
-    TTT=reform(TT(l1:l2,m1:m2,n1:n2))
+    lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+    TTT=reform(exp(TT(l1:l2,m1:m2,n1:n2)))
     cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TTT
     cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
     ee=1.5*(1.+yH0+xHe)*ss_ion*TTT+yH0*ss_ion*TT_ion
     pp=(1.+yH0+xHe)*exp(llnrho)*TTT*ss_ion
   end else begin
     print,'Using full ionisation equation of state...'
-    if (iyH ne 0 and iTT ne 0) then begin
+    if (iyH ne 0 and ilnTT ne 0) then begin
       yyH=reform(yH(l1:l2,m1:m2,n1:n2))
-      TTT=reform(TT(l1:l2,m1:m2,n1:n2))
+      TTT=reform(exp(lnTT(l1:l2,m1:m2,n1:n2)))
       ;
       ;  calculate cs2, TT1, and cp1tilde
       ;

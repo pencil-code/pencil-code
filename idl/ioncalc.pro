@@ -1,4 +1,4 @@
-pro saha,yH,lnrho,ss,f,df
+pro saha,yH,lnrho,ss,f,df,par
 ;
 ;  We want to find the root of f
 ;
@@ -15,7 +15,7 @@ pro saha,yH,lnrho,ss,f,df
 
 end
 ;*******************************************************************
-function rtsafe,lnrho,ss
+function rtsafe,lnrho,ss,par
 ;
 ;  Safe Newton-Raphson root-finding algorithm
 ;
@@ -29,7 +29,7 @@ function rtsafe,lnrho,ss
   dyHold=dyH
   yH=0.5
 
-  saha,yH,lnrho,ss,f,df
+  saha,yH,lnrho,ss,f,df,par
 
   for i=1,maxit do begin
      if ((((yH-yHmin)*df-f)*((yH-yHmax)*df-f) gt 0) $
@@ -46,7 +46,7 @@ function rtsafe,lnrho,ss
         if (temp eq yH) then return,yH
      endelse
      if (abs(dyH) lt yHacc*yH) then return,yH
-     saha,yH,lnrho,ss,f,df
+     saha,yH,lnrho,ss,f,df,par
      if (f<0) then yHmax=yH else yHmin=yH
   endfor
 
@@ -54,16 +54,40 @@ function rtsafe,lnrho,ss
 
 end
 ;*******************************************************************
-pro ioncalc,lnrho,ss,yH,TT
+pro ioncalc,lnrho,ss,par,yH,TT
 ;
 ;  Calculate ionization degree and temperature
 ;
   @data/pc_constants.pro
   xHe=par.xHe
 
-  yH=0*lnrho
+  size=size(lnrho)
+  dim=size[0]
 
-  for n=0,n_elements(lnrho)-1 do yH[n]=rtsafe(lnrho[n],ss[n])
+  if dim eq 1 then begin
+    yH=fltarr(size[1])
+    for l=0,size[1]-1 do begin
+      yH[l]=rtsafe(lnrho[l],ss[l],par)
+    endfor
+  endif
+  if dim eq 2 then begin
+    yH=fltarr(size[1],size[2])
+    for l=0,size[1]-1 do begin
+    for m=0,size[2]-1 do begin
+      yH[l,m]=rtsafe(lnrho[l,m],ss[l,m],par)
+    endfor
+    endfor
+  endif
+  if dim eq 3 then begin
+    yH=fltarr(size[1],size[2],size[3])
+    for l=0,size[1]-1 do begin
+    for m=0,size[2]-1 do begin
+    for n=0,size[3]-1 do begin
+      yH[l,m,n]=rtsafe(lnrho[l,m,n],ss[l,m,n],par)
+    endfor
+    endfor
+    endfor
+  endif
 
   lnTT_=(2./3.)*((ss/ss_ion+(1-yH)*(alog(1-yH)-lnrho_H) $
                   +yH*(2*alog(yH)-lnrho_e-lnrho_p) $

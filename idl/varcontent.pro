@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.9 2003-10-18 20:44:13 brandenb Exp $
+;  $Id: varcontent.pro,v 1.10 2003-11-02 04:02:02 theine Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -127,12 +127,12 @@ varcontent[igg].skip     = 2
 
 
 ; Special condition as can be maux or mvar variable
-if ((iTT le nvar) or (par.lwrite_aux ne 0)) then begin
-    varcontent[iTT].variable   = 'Temperature (TT)'
-    varcontent[iTT].idlvar     = 'TT'
-    varcontent[iTT].idlinit    = INIT_SCALAR
-    varcontent[iTT].idlvarloc  = 'TT_loc'
-    varcontent[iTT].idlinitloc = INIT_SCALAR_LOC
+if ((ilnTT le nvar) or (par.lwrite_aux ne 0)) then begin
+    varcontent[ilnTT].variable   = 'Log temperature (lnTT)'
+    varcontent[ilnTT].idlvar     = 'lnTT'
+    varcontent[ilnTT].idlinit    = INIT_SCALAR
+    varcontent[ilnTT].idlvarloc  = 'lnTT_loc'
+    varcontent[ilnTT].idlinitloc = INIT_SCALAR_LOC
 end
 
 ; THEN DO maux VARIABLES 
