@@ -1,0 +1,58 @@
+#! /bin/sh
+#
+#  This file tries to set the PENCIL_HOME environment variable if it
+#  doesn't exist yet, and then adds stuff to your PATH and IDL_PATH.
+#
+#  If _sourceme_quiet is set, no output is printed, which enables you to
+#  put the lines
+#    export PENCIL_HOME=[...]
+#    _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
+#  into your .bashrc
+#
+
+#  You may or may not want to put the lines
+#    setenv PENCIL_HOME [...]
+#    . $HOME/f90/pencil_modular/sourceme.sh
+#  into your .bashrc
+
+if [ -z $PENCIL_HOME ]; then
+  echo "pc_findconfig: Need to set PENCIL_HOME first.  Try using the" 
+  echo "sourceme.??? script in the root of your pencil-code directory"
+  echo "or see the manual."
+  exit 0
+fi
+
+
+if [ -z $PENCIL_CONFIG ]; then
+  #
+  # Try to identify position of this machines config in the congif path:
+  #
+  PC_HOST=`uname -n`
+  PC_DOMAIN=`hostname -d`
+  PC_SYSTEM=`uname -s`
+  config_root=$PENCIL_HOME/config
+  for _dir in   $config_root/$PC_SYSTEM/$PC_DOMAIN/$PC_HOST/ \
+	            $config_root/$PC_SYSTEM/$PC_HOST.$PC_DOMAIN/ \
+                $config_root/$PC_SYSTEM/$PC_HOST/ \
+	            $config_root/$PC_SYSTEM/$PC_DOMAIN/ \
+	            $config_root/$PC_SYSTEM/ \
+	            $config_root/ ;  do
+    if ( [ -d $_dir ] && \
+         [ -e $_dir/Makefile ]
+       ); then
+      PENCIL_CONFIG=`cd $_dir; echo $PWD`
+      export PENCIL_CONFIG
+      break
+    fi
+  done
+  unset _dir
+
+  if [ -z $PENCIL_CONFIG ]; then # no success
+    echo "sourceme.sh: Cannot locate home directory of pencil code."
+    echo "  Try sourcing me from the home directory itself, or set PENCIL_HOME"
+    exit 0
+  fi
+fi
+
+if [ -z $_sourceme_quiet ]; then echo "PENCIL_CONFIG = <$PENCIL_CONFIG>"; fi
+ 
