@@ -1,10 +1,10 @@
-$Id: run.in,v 1.11 2002-06-06 09:41:13 brandenb Exp $
+$Id: run.in,v 1.12 2002-06-06 17:59:47 vpariev Exp $
 !
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  nt=10, it1=5, cdt=0.4, cdtv=0.80, isave=50, itorder=3,
-  dsnap=10., dvid=0.5,
+  nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
+  dsnap=50, dvid=0.5,
 /
 &hydro_run_pars
   nu=5e-3, ivisc=0,
@@ -13,7 +13,7 @@ $Id: run.in,v 1.11 2002-06-06 09:41:13 brandenb Exp $
 /
 &forcing_run_pars
   iforce=2, force=0.07, relhel=1.,
-/
+
 &magnetic_run_pars
-  eta=5e-3,
+  eta=5e-2,
 /
