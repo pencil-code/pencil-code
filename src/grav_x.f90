@@ -1,4 +1,4 @@
-! $Id: grav_x.f90,v 1.3 2004-09-16 14:52:49 ajohan Exp $
+! $Id: grav_x.f90,v 1.4 2004-09-16 15:29:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -27,7 +27,7 @@ module Gravity
 !  parameters used throughout entire module
 !  xinfty is currently prescribed (=0)
 !
-  real, dimension(nx) :: gravx_profile,potx_profile
+  real, dimension(nx) :: gravx_pencil,potx_pencil
   real :: gravx=0.,xinfty=0.,xgrav=0.,dgravx=0., pot_ratio=1.
 
 ! parameters needed for compatibility
@@ -74,7 +74,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_x.f90,v 1.3 2004-09-16 14:52:49 ajohan Exp $")
+           "$Id: grav_x.f90,v 1.4 2004-09-16 15:29:47 ajohan Exp $")
 !
       lgrav =.true.
       lgravx=.true.
@@ -98,8 +98,8 @@ module Gravity
 
       case('const')
         if (lroot) print*,'initialize_gravity: constant gravx=',gravx
-        gravx_profile=gravx
-        potx_profile=-gravx*(x(l1:l2)-xinfty)
+        gravx_pencil=gravx
+        potx_pencil=-gravx*(x(l1:l2)-xinfty)
 !
 !  tanh profile
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
@@ -110,12 +110,12 @@ module Gravity
         if (lroot) print*,'initialize_gravity: tanh profile, gravx=',gravx
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
         gravx=-alog(pot_ratio)/dgravx
-        gravx_profile=gravx*.5/cosh((x(l1:l2)-xgrav)/dgravx)**2
-        potx_profile=-gravx*.5*(1.+tanh((x(l1:l2)-xgrav)/dgravx))*dgravx
+        gravx_pencil=gravx*.5/cosh((x(l1:l2)-xgrav)/dgravx)**2
+        potx_pencil=-gravx*.5*(1.+tanh((x(l1:l2)-xgrav)/dgravx))*dgravx
 
       case('sinusoidal')
         if(headtt) print*,'initialize_gravity: sinusoidal grav, gravx=',gravx
-        gravx_profile = -gravx*sin(kx_gg*x(l1:l2))
+        gravx_pencil = -gravx*sin(kx_gg*x(l1:l2))
 
       case default
         if (lroot) print*,'initialize_gravity: grav_profile not defined'
@@ -157,13 +157,13 @@ module Gravity
 !
       intent(in) :: f
 !
-!  gravity profile in the x direction
+!  Add gravity acceleration on gas and dust
 !
-      if(lhydro .and. lgravx_gas) df(l1:l2,m,n,iux) = &
-          df(l1:l2,m,n,iux) + gravx_profile
+      if(lhydro .and. lgravx_gas) &
+          df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + gravx_pencil
       if(ldustvelocity .and. lgravx_dust) then
         do k=1,ndustspec
-          df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + gravx_profile
+          df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + gravx_pencil
         enddo
       endif
 !
@@ -215,7 +215,7 @@ module Gravity
 !
 !  the different cases are already precalculated in initialize_gravity
 !
-      pot=potx_profile
+      pot=potx_pencil
 !
 !  prevent identifier from being called more than once
 !
