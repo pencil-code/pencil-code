@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.98 2004-05-27 07:47:14 ajohan Exp $
+! $Id: dustdensity.f90,v 1.99 2004-05-27 14:41:12 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.98 2004-05-27 07:47:14 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.99 2004-05-27 14:41:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -777,10 +777,13 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: k,l
 !
-      do k=1,ndustspec; do l=l1,l2; do m=m1,m2; do n=n1,n2
-        if (f(l,m,n,ind(k)) < 0.) f(l,m,n,ind(k)) = 0.
-        if (lmice .and. (f(l,m,n,imi(k)) < 0.)) f(l,m,n,imi(k)) = 0.
-      enddo; enddo; enddo; enddo
+      do l=l1,l2; do m=m1,m2; do n=n1,n2
+        do k=1,ndustspec
+          if (f(l,m,n,ind(k)) < 0.) f(l,m,n,ind(k)) = 0.
+          if (lmice .and. (f(l,m,n,imi(k)) < 0.)) f(l,m,n,imi(k)) = 0.
+        enddo
+        if (lpscalar_nolog .and. (f(l,m,n,ilncc) < 0.)) f(l,m,n,ilncc) = 1e-6
+      enddo; enddo; enddo
 !
     endsubroutine null_dust_vars
 !***********************************************************************
