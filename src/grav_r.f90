@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.50 2003-10-20 10:30:51 mcmillan Exp $
+! $Id: grav_r.f90,v 1.51 2003-10-20 10:47:13 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.50 2003-10-20 10:30:51 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.51 2003-10-20 10:47:13 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -91,8 +91,6 @@ module Gravity
       real, dimension (nx,3) :: evr,gg_mn
       real, dimension (nx) :: g_r
       real :: g_int,g_ext
-
-integer :: ijk
 
       logical, save :: first=.true.
 ! geodynamo - set to false on condition of 1/r potential
@@ -145,6 +143,8 @@ integer :: ijk
         case ('geo-kws')
           if (lroot) print*, 'initialize_gravity: 1/r potential in spherical shell'
           lpade=.false.
+          g_int = g0/r_int**2
+          g_ext = g0/r_ext**2
 ! end geodynamo
 
         case default
@@ -187,8 +187,6 @@ integer :: ijk
 
 ! geodynamo; 1/r potential in a spherical shell
         else
-          g_int = g0/r_int**2
-          g_ext = g0/r_ext**2
           where (r_mn >= r_ext) g_r=g_ext
           where (r_mn < r_ext .AND. r_mn > r_int) g_r=g0/r_mn**2
           where (r_mn <= r_int) g_r=g_int
