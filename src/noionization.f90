@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.49 2003-08-05 17:40:48 mee Exp $
+! $Id: noionization.f90,v 1.50 2003-08-06 02:22:06 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.49 2003-08-05 17:40:48 mee Exp $")
+           "$Id: noionization.f90,v 1.50 2003-08-06 02:22:06 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -177,7 +177,7 @@ module Ionization
           else 
             call stop_it("initialise_ionization: Entropy evolution NOT IMPLEMENTED with gamma=1.")
           endif
-          lnTT0=0.
+          !lnTT0=0.
         endif
 
         cs2TT=gamma1
