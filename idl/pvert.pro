@@ -99,6 +99,8 @@ for ivar = 0,3 do begin
 
 endfor
 
+xyouts, 0.45,0.5, '!8t!6=' + strtrim(t,2), /NORMAL
+
 restore_state
 
 end
