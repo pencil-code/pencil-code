@@ -6,7 +6,7 @@
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   18-Aug-2000
 ;;;  Version: 1.37
-;;;  CVS: $Revision: 1.2 $
+;;;  CVS: $Revision: 1.3 $
 ;;;
 ;;;  Description:
 ;;;   Given either a 3d array on a 2d grid (e.g. B(0:64,0:64,15,0:3)),
@@ -74,6 +74,7 @@
 ;;;   PS_FULL_RANGE --- Flag telling plot_3d_vect to use the full
 ;;;                     available colour range for PostScript. This
 ;;;                     will in general shift the colour for value zero
+;;;   XRANGE,YRANGE --- 
 ;;;   DEBUG         --- Write diagnostic output
 ;;;
 ;;;  Any other keywords are handed on to WDVELOVECT.
@@ -283,6 +284,8 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
   vec_x = vec_x[*,iyvel]
   vec_y = vec_y[ixvel,*]
   vec_y = vec_y[*,iyvel]
+print,'DEBUG: xrange=',xrange
+print,'DEBUG: yrange=',yrange
   wdvelovect, vec_x, vec_y, x_s[ixvel], y_s[iyvel],  $
       XRANGE=xrange, YRANGE=yrange, /NOPLOT, _EXTRA=extra
   sx = (xr[1]-xr[0])*!D.X_VSIZE*!X.S[1] ; Size ...

@@ -2,7 +2,7 @@
 ;;;  pse.pro  ;;;
 ;;;;;;;;;;;;;;;;;
 
-;;; Author:  wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+;;; Author:  wd (Wolfgang.Dobler@Newcastle.ac.uk)
 ;;; Date:    9-May-2000
 ;;; Version: 1.1
 
@@ -14,10 +14,6 @@
 ;;;   Key words:
 ;;;     FIXBB  - run `psfixbb' on the postscript file to get
 ;;;              shrink-wrapped BoundingBox
-;;;   To do:
-;;;     Don't switch to X unless we were using the X device before
-;;;     (could be a Z-buffer of Tektronix session for fast operation
-;;;     via modem line).
 
 pro pse, $
          FIXBB=fixbb, DEBUG=debug
@@ -29,7 +25,12 @@ pro pse, $
   default, fixbb, 0
   default, debug, 0
 
-  if (!d.name eq 'PS') then device, /CLOSE
+  if (!d.name eq 'PS') then begin
+    ;; Reset PostScript device to default settings before closing
+    device, XOFFSET=1.87, XSIZE=17.15, YOFFSET=12.70, YSIZE=11.99, $
+        SCALE_FACTOR=1.
+    device, /CLOSE
+  endif
   dev = _olddev
   if (dev eq '') then dev=strtrim(GETENV("IDL_DEVICE"))
   if (dev eq '') then dev = 'X' 
