@@ -1,11 +1,11 @@
 ;
-;  $Id: pc_closest_particles.pro,v 1.2 2005-02-17 14:19:48 ajohan Exp $
+;  $Id: pc_closest_particles.pro,v 1.3 2005-03-14 09:48:15 ajohan Exp $
 ;
 ;  Find nclost closest particles surrounding the point (x,y,z).
 ;
 ;  Author: Anders Johansen
 ;
-function pc_closest_particles, xxp, xx, nclose
+function pc_closest_particles, xxp, xx, nclose, dist2=dist2
 
 Lx=1.32
 Ly=1.32
@@ -30,13 +30,14 @@ iim=where( (xxp[*,2]-xx[2]) lt -0.5*Lz)
 if (iip[0] ne -1) then xxp[iip,2]=xxp[iip,2]-Lz
 if (iim[0] ne -1) then xxp[iim,2]=xxp[iim,2]+Lz
 
-dist2=fltarr(npar)
+r2=fltarr(npar)
 
 for k=0L,npar-1 do begin
-  dist2[k]=(xxp[k,0]-xx[0])^2 + (xxp[k,1]-xx[1])^2 + (xxp[k,2]-xx[2])^2
+  r2[k]=(xxp[k,0]-xx[0])^2 + (xxp[k,1]-xx[1])^2 + (xxp[k,2]-xx[2])^2
 endfor
 
-sort2=sort(dist2)
+sort2=sort(r2)
+dist2=r2[sort2[0:nclose-1]]
 
 return, sort2[0:nclose-1]
 
