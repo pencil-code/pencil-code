@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.8 2002-08-11 04:00:11 brandenb Exp $
+;  $Id: extra.pro,v 1.9 2002-08-21 03:38:23 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -28,6 +28,9 @@ if (ilnrho ne 0) then rho=exp(llnrho)
 if (ient ne 0) then sss=ss(l1:l2,m1:m2,n1:n2)
 if (ient ne 0) then cs2=exp(gamma1*llnrho+gamma*sss)
 if (ient ne 0) then ppp=rho*cs2/gamma
+;
+if (iuu ne 0) then for j=0,2 do print,sqrt(mean(uu(*,*,*,j)^2))
+if (iuu ne 0) then print
 ;
 ;  calculate magnetic energy of mean field in the 3 directions
 ;
