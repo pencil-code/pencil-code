@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.93 2002-09-10 17:30:04 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.94 2002-09-10 18:18:11 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -291,7 +291,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.93 $ $}
+\date{\today,~ $ $Revision: 1.94 $ $}
 
 % ====================================================================== %
 
@@ -323,7 +323,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.93 $ $}
+  \emph{\today,~ $ $Revision: 1.94 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2357,6 +2357,20 @@ can run a job with \code{nygrid=64} points in that direction, but if you
 try to run a problem with \code{nygrid=65} or \code{nygrid=94}, the code
 will stop with an inconsistency message.
 
+\subsubsection{Bandwidth-limited clusters (e.g.\ Beowulf machines)}
+
+On big Beowulf machines, a group of nodes is connected with a switch
+of modest speed, and all these groups are connected via a $n$ times
+faster uplink. When bandwidth-limited, it is important to make sure that
+consecutive processors are mapped onto the mesh such that the load on
+the uplink is indeed approximately $n$ times larger than the load on the
+modestly fast switch within each group. We are currently running on a 512
+node cluster where groups of 24 processors are linked via fast ethernet,
+which in turn are connected via a Gigabit uplink ($\sim10$ times faster).
+This means that invariably \var{nprocy}=4 is optimal. For 128 processors,
+for example we find that $\var{nprocy}\times\var{nprocz}=4\times32$ is
+optimal. For comparison, $8\times16$ is 3 times slower and $16\times8$
+is even 17 times slower.
 
 \subsubsection{How to run a sample problem in parallel}
 
@@ -3423,7 +3437,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.93 2002-09-10 17:30:04 dobler Exp $ $}
+$ $Id: manual.tex,v 1.94 2002-09-10 18:18:11 brandenb Exp $ $}
 
 
 \end{document}
