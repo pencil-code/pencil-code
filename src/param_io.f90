@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.120 2003-08-02 05:52:02 brandenb Exp $ 
+! $Id: param_io.f90,v 1.121 2003-08-02 19:22:20 mee Exp $ 
 
 module Param_IO
 
@@ -45,7 +45,7 @@ module Param_IO
   integer :: isave=100,iwig=0,ialive=0,nfilter=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
   logical :: lwrite_zaverages=.false.,lread_oldsnap=.false.
-  logical :: lwrite_aux=.false.
+  logical :: lwrite_aux=.false., lsgifix=.false.
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
   ! under IRIX -- at least for the moment
@@ -133,6 +133,7 @@ module Param_IO
 !
       integer :: ierr
       logical, optional :: print,file
+      logical :: exist
       character (len=30) :: label='[none]'
 !
 !  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
@@ -146,31 +147,81 @@ module Param_IO
 !  read through all items that *may* be present
 !  in the various modules
 !
+      inquire(FILE='SGIFIX',EXIST=lsgifix)
+
       label='init_pars'
                       read(1,NML=init_pars                 ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='hydro_init_pars'
       if (lhydro    ) read(1,NML=hydro_init_pars           ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='density_init_pars'
       if (ldensity     ) read(1,NML=density_init_pars      ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       ! no input parameters for forcing
       label='grav_init_pars'
       if (lgrav        ) read(1,NML=grav_init_pars         ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='entropy_init_pars'
       if (lentropy     ) read(1,NML=entropy_init_pars      ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='magnetic_init_pars'
       if (lmagnetic    ) read(1,NML=magnetic_init_pars     ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='radiation_init_pars'
       if (lradiation   ) read(1,NML=radiation_init_pars    ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='ionization_init_pars'
       if (lionization  ) read(1,NML=ionization_init_pars   ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='pscalar_init_pars'
       if (lpscalar     ) read(1,NML=pscalar_init_pars      ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='dustvelocity_init_pars'
       if (ldustvelocity) read(1,NML=dustvelocity_init_pars ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='dustdensity_init_pars'
       if (ldustdensity ) read(1,NML=dustdensity_init_pars  ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='interstellar_init_pars'
       if (linterstellar) read(1,NML=interstellar_init_pars ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='shear_init_pars'
       if (lshear       ) read(1,NML=shear_init_pars        ,ERR=99, IOSTAT=ierr)
       ! no input parameters for viscosity
