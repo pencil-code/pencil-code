@@ -101,11 +101,11 @@ if (field eq 2) then icol0=[128,254]
       q = size(w)
       ;
       if thresh ge 0. then begin
-	print,'TEST1'
+	;print,'TEST1'
         mag = sqrt(u^2+v^2+w^2)       ;magnitude.
       endif
       ;
-      print,minmax(mag)
+      ;print,minmax(mag)
       ugood = U
       vgood = V
       wgood = W
@@ -132,9 +132,9 @@ maxmag=length
       dx = maxmag*ugood      ;components.
       dy = maxmag*vgood
       dz = maxmag*wgood
-print,minmax(dx)
-print,minmax(dy)
-print,minmax(dz)
+;print,minmax(dx)
+;print,minmax(dy)
+;print,minmax(dz)
 
       xstylesav=!x.style
       ystylesav=!y.style
@@ -173,7 +173,7 @@ z0=min(z) & z1=max(z)
 ; draw vectors
 ; without arrowheads (for now)
 ;
-      print,'SPECHT1, arrw=',arrw
+      ;print,'SPECHT1, arrw=',arrw
       for i=0L,n_elements(l)-1L do begin ;Each point
 ;print,l(i),m(i),n(i),dx(i),dy(i),dz(i)
         if arrw eq 0 then begin
