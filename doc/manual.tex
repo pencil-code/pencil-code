@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.229 2004-01-29 15:41:14 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.230 2004-01-31 11:08:03 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-01-29 15:41:14 $ $,~ $ $Revision: 1.229 $ $}
+%\date{$ $Date: 2004-01-31 11:08:03 $ $,~ $ $Revision: 1.230 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-01-29 15:41:14 $ $,~ $ $Revision: 1.229 $ $}\\
+  \emph{$ $Date: 2004-01-31 11:08:03 $ $,~ $ $Revision: 1.230 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3618,7 +3618,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-01-29 15:41:14 $ $,~ $ $Revision: 1.229 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-01-31 11:08:03 $ $,~ $ $Revision: 1.230 $ $}
 
 \section{Timings}
 
@@ -3729,7 +3729,7 @@ application on your specific hardware.
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
   16 & fe1   & 0.75 & $128^3$ & magn/noentro & 4x4/ifc&  9-may-03 & AB \\
-  16 & mega  & 0.43 & $128^3$ & nomag/noentro& 4x4/ifc& 28-apr-03 & AB \\
+  16 & giga  & 0.43 & $128^3$ & nomag/noentro& 4x4/ifc& 28-apr-03 & AB \\
   16 & Mhd   & 2.03 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
   16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
@@ -3752,6 +3752,9 @@ application on your specific hardware.
                                                       &  7-sep-03 & AB \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomagn/noentro&  4x16  & 29-apr-03 & AB \\
+  64 & giga  & 0.23 & $256^3$ &nomagn/noentro/hyper&4x16& 8-dec-03& AB \\
+  64 & fe1   & 0.164& $512^3$ &nomagn/noentro/hyper&4x16&17-dec-03& AB \\
+  64 & giga  & 0.091& $512^3$ &nomagn/noentro/hyper&4x16&17-dec-03& AB \\
   64 & giga  & 0.150& $256^3$ & magn/noentro &  4x16  &  1-jul-03 & AB \\
   64 & giga  & 0.166& $512^3$ & magn/noentro &  4x16  & 10-jul-03 & AB \\
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
@@ -5951,6 +5954,7 @@ possible inputs to the file \file{print.in}.
   \var{orms} & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax} & $\max(|\boldsymbol{\omega}|)$ \\
   \var{oum}  & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{epsK} & $\left<2\nu\varrho\Strain^2\right>$ \\
   \var{ruxm} & $\left<\varrho u_x\right>$ \quad(mean $x$-momentum) \\
   \var{ruym} & $\left<\varrho u_y\right>$ \quad(mean $y$-momentum) \\
   \var{ruzm} & $\left<\varrho u_z\right>$ \quad(mean $z$-momentum) \\
@@ -5984,6 +5988,7 @@ possible inputs to the file \file{print.in}.
   \var{jbm} & $\left<\jv\cdot\Bv\right>$ \\
   \var{vArms} & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
   \var{vAmax} & $\max(\Bv^2/\varrho)^{1/2}$ \\
+  \var{epsM} & $\left<2\eta\mu_0\jv^2\right>$ \\
   \var{bmx} & $\left<\left<\Bv\right>_{yz}^2\right>^{1/2}$ \quad(energy of $yz$-averaged mean field) \\
   \var{bmy} & $\left<\left<\Bv\right>_{xz}^2\right>^{1/2}$ \quad(energy of $xz$-averaged mean field) \\
   \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ \quad(energy of $xy$-averaged mean field) \\
@@ -6361,7 +6366,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.229 2004-01-29 15:41:14 dobler Exp $ $}
+$ $Id: manual.tex,v 1.230 2004-01-31 11:08:03 brandenb Exp $ $}
 
 
 \end{document}
