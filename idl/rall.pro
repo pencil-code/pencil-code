@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.25 2002-11-12 08:11:43 dobler Exp $
+;;;  $Id: rall.pro,v 1.26 2002-11-13 17:30:01 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -146,9 +146,12 @@ for i=0,ncpus-1 do begin        ; read data from individual files
     end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
       id='hydro with entropy, but no magnetic field'
       readu,1,uu_loc,lnrho_loc,ss_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc eq 0 and iaa eq 0 then begin
       id='hydro with no entropy and no magnetic field'
       readu,1,uu_loc,lnrho_loc
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc ne 0 and iaa eq 0 then begin
+      id='hydro with passive scalar and no entropy and no magnetic field'
+      readu,1,uu_loc,lnrho_loc,lncc_loc
     end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
       id='just velocity (Burgers)'
       readu,1,uu_loc
