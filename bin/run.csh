@@ -27,6 +27,8 @@ if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
 endif
 
+rerun:
+
 # ---------------------------------------------------------------------- #
 
 # Common setup for start.csh, run.csh, start_run.csh:
@@ -110,6 +112,18 @@ if ($booted_lam) lamhalt
 
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
+
+# look for RERUN file 
+if (-e "RERUN") then 
+  if (-s "RERUN") then
+    cd `cat RERUN`
+  endif
+
+  rm -f RERUN
+
+  echo "Previous run status: $run_status"
+  goto rerun
+endif  
 
 exit $run_status		# propagate status of mpirun
 
