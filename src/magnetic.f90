@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.178 2004-03-21 17:34:00 snod Exp $
+! $Id: magnetic.f90,v 1.179 2004-03-21 18:56:21 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -38,7 +38,8 @@ module Magnetic
   real :: rhomin_JxB=0.,va2max_JxB=0.
   real :: omega_Bz_ext
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
-  logical :: lpress_equil=.false., llorentzforce=.true.
+  logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
+  logical :: llorentzforce=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresistivity_hyper=.false.,leta_const=.true.
   character (len=40) :: kinflow=''
@@ -50,7 +51,7 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       kx_aa2,ky_aa2,kz_aa2,lpress_equil
+       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss
 
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./),BB_ext
@@ -116,7 +117,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.178 2004-03-21 17:34:00 snod Exp $")
+           "$Id: magnetic.f90,v 1.179 2004-03-21 18:56:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -164,7 +165,8 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
       real, dimension (nx,3) :: bb
-      real, dimension (nx) :: b2
+      real, dimension (nx) :: b2,fact
+      real :: beq2
 !
       select case(initaa)
 
@@ -230,14 +232,26 @@ module Magnetic
 !
 !  allow for pressure equilibrium (for isothermal tube)
 !  assume that ghost zones have already been set.
+!  corrected expression below for gamma /= 1 case.
+!  The beq2 expression for 2*mu0*p is not general yet.
 !
-      if (lpress_equil) then
+      if (lpress_equil.or.lpress_equil_via_ss) then
         if(lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
         do n=n1,n2
         do m=m1,m2
           call curl(f,iaa,bb)
           call dot2_mn(bb,b2)
-          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
+          if (gamma==1.) then
+            f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
+          else
+            beq2=2.*rho0*cs0**2
+            fact=amax1(1e-6,1.-b2/beq2)
+            if (lentropy.and.lpress_equil_via_ss) then
+              f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
+            else
+              f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma1
+            endif
+          endif
         enddo
         enddo
       endif
