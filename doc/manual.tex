@@ -12,6 +12,7 @@
   \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
 \fi
 
+%\usepackage{url} %(do we not need this; but it's not working anyway)
 \usepackage[bookmarks=false]{hyperref}
 %\usepackage{german,a4}
 %\usepackage[german,british]{babel}
@@ -160,7 +161,7 @@
 
 \title{{\sffamily\bfseries Installing and Using the MHD code}}
 %\subtitle{A very preliminary manual}
-\author{Axel Brandenburg \& Wolfgang Dobler}
+\author{Wolfgang Dobler \& Axel Brandenburg}
 
 % ====================================================================== %
 
@@ -184,7 +185,7 @@
 
   \vspace{1.5cm}
 
-  {Axel Brandenburg \& Wolfgang Dobler}
+  {Wolfgang Dobler \& Axel Brandenburg}
 
 
   \vspace{2cm}
@@ -201,7 +202,7 @@
 \mbox{}
 \vfill
 
-Copyright \copyright{} 2001,2002 Axel Brandenburg \& Wolfgang Dobler 
+Copyright \copyright{} 2001,2002 Wolfgang Dobler \& Axel Brandenburg
 \bigskip
 
 Permission is granted to make and distribute verbatim copies of
@@ -253,7 +254,7 @@ You proceed as follows:
 \item Log in:
   \begin{alltt}
   \prompt{unix> } cvs login
-  cvs pasword: ........ \
+  cvs password: ........ \
 \end{alltt}
 
 \item Go to wherever you want the code:
@@ -275,7 +276,7 @@ You proceed as follows:
 
 \section{Getting Started}
 
-To get yourself started, you should run the comvection example which is
+To get yourself started, you should run the convection example which is
 provided as the default configuration of the code.
 
 
@@ -299,7 +300,7 @@ provided as the default configuration of the code.
 \subsubsection{Modules}
 
 
-\subsubsection{Localisation (adapt-mkfile)}
+\subsubsection{Localization (adapt-mkfile)}
 
 
 
@@ -349,7 +350,7 @@ viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
 
 \begin{equation}
   \frac{\partial\Av}{\partial t}
-  = \uv\times\Bv + \eta\mu_0\jv \; .
+  = \uv\times\Bv - \eta\mu_0\jv \; .
 \end{equation}
 
 Here $\Av$ is the magnetic vector potential, $\Bv = \curl\Av$ the magnetic
@@ -376,7 +377,7 @@ entropy gradient determines convective (in)stability, the
   \varrho T\frac{Ds}{Dt}
    =  \Heat - \Cool
       + \Div(\lambda\grad T)
-      + \mu_0 \jv^2
+      + \eta\mu_0 \jv^2
       + 2\varrho\nu {\sf S}^2 \; .
 \end{equation}
 
@@ -451,7 +452,7 @@ Not all parameters are used for a given scenario.
                  of unstable (\var{mpoly0}), stable (\var{mpoly1}) and top
                  layer (\var{mpoly2}).
                  If the flag \var{isothtop} is set, the
-                 top layer is initialised to be isothermal, otherwise
+                 top layer is initialized to be isothermal, otherwise
                  thermal (plus hydrostatic) equilibrium is assumed for all
                  three layers, which results in a piecewise polytropic
                  stratification. \\
@@ -636,7 +637,7 @@ Not all parameters are used for a given scenario.
 \bs{}option:  \option{-l}, \option{--long-listing}
 
 \bs{}dfn:     A \dfn{definition} is a specification sufficiently obfuscated
-           to be miunderstood 
+           to be misunderstood 
 
 \bs{}cite:    See \cite{Abramowitz & Stegun}
 
