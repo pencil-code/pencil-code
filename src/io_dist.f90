@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.42 2002-10-09 13:52:41 dobler Exp $
+! $Id: io_dist.f90,v 1.43 2002-10-09 14:05:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -80,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.42 2002-10-09 13:52:41 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.43 2002-10-09 14:05:31 mee Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -94,12 +94,12 @@ contains
 !
       use Cdata, only: datadir,directory,directory_snap
       use Mpicomm, only: iproc
-      use General, only: chn
+      use General, only: chn, safe_character_assign
 !
       character (len=5) :: chproc=''
 !
       call chn(iproc,chproc)
-      directory = trim(datadir)//'/proc'//chproc
+      call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
 !
 !  check whether directory_snap contains `/proc0' -- if so, revert to the
 !  default name.

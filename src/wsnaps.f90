@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.10 2002-10-09 14:01:02 dobler Exp $
+! $Id: wsnaps.f90,v 1.11 2002-10-09 14:05:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -21,6 +21,7 @@ contains
 !  Otherwise just write a snapshot without label (used for var.dat)
 !
 !  30-sep-97/axel: coded
+!  08-oct-02/tony: expanded file to handle 120 character datadir // '/tsnap.dat'
 !
       use Cdata
       use Mpicomm
@@ -30,7 +31,7 @@ contains
 !
       real, dimension (mx,my,mz,mvar) :: a
       character (len=4) :: ch
-      character (len=80) :: file
+      character (len=135) :: file
       character (len=*) :: chsnap
       logical lsnap,llabel
       integer, save :: ifirst,nsnap

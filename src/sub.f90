@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.92 2002-10-09 14:01:02 dobler Exp $ 
+! $Id: sub.f90,v 1.93 2002-10-09 14:05:31 mee Exp $ 
 
 module Sub 
 
@@ -1820,9 +1820,11 @@ module Sub
     subroutine write_dx_general(file)
 !
 !  Write .general file for data explorer (aka DX)
-!  4-oct-02/wolf: coded
+!  04-oct-02/wolf: coded
+!  08-oct-02/tony: used implementation of safe_character_assign to detect string overflows on concatenation.
 !
       use Cdata
+      use General, only: safe_character_assign
 !
       character (len=*) :: file
       character (len=datelen) :: date
@@ -1833,40 +1835,40 @@ module Sub
 !  accumulate a few lines
 !
       if (lhydro    ) then
-        field  = trim(field ) // 'uu, '
-        struct = trim(struct) // '3-vector, '
-        type   = trim(type  ) // 'float, '
-        dep    = trim(dep   ) // 'positions, ' 
+        call safe_character_assign(field,   trim(field ) // 'uu, ')
+        call safe_character_assign(struct,  trim(struct) // '3-vector, ')
+        call safe_character_assign(type,    trim(type  ) // 'float, ')
+        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
       endif
       if (ldensity  ) then
-        field  = trim(field ) // 'lnrho, '
-        struct = trim(struct) // 'scalar, '
-        type   = trim(type  ) // 'float, '
-        dep    = trim(dep   ) // 'positions, ' 
+        call safe_character_assign(field,   trim(field ) // 'lnrho, ')
+        call safe_character_assign(struct,  trim(struct) // 'scalar, ')
+        call safe_character_assign(type,    trim(type  ) // 'float, ')
+        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
       endif
       if (lentropy  ) then
-        field  = trim(field ) // 'ss, '
-        struct = trim(struct) // 'scalar, '
-        type   = trim(type  ) // 'float, '
-        dep    = trim(dep   ) // 'positions, ' 
+        call safe_character_assign(field,   trim(field ) // 'ss, ')
+        call safe_character_assign(struct,  trim(struct) // 'scalar, ')
+        call safe_character_assign(type,    trim(type  ) // 'float, ')
+        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
       endif
       if (lmagnetic ) then
-        field  = trim(field ) // 'aa, '
-        struct = trim(struct) // '3-vector, '
-        type   = trim(type  ) // 'float, '
-        dep    = trim(dep   ) // 'positions, ' 
+        call safe_character_assign(field,   trim(field ) // 'aa, ')
+        call safe_character_assign(struct,  trim(struct) // '3-vector, ')
+        call safe_character_assign(type,    trim(type  ) // 'float, ')
+        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
       endif
       if (lradiation) then
-        field  = trim(field ) // 'e_rad, ff_rad, '
-        struct = trim(struct) // 'scalar, 3-vector, '
-        type   = trim(type  ) // 'float, float, '
-        dep    = trim(dep   ) // 'positions, positions, ' 
+        call safe_character_assign(field,   trim(field ) // 'e_rad, ff_rad, ')
+        call safe_character_assign(struct,  trim(struct) // 'scalar, 3-vector, ')
+        call safe_character_assign(type,    trim(type  ) // 'float, float, ')
+        call safe_character_assign(dep,     trim(dep   ) // 'positions, positions, ')
       endif
       if (lpscalar  ) then
-        field  = trim(field ) // 'lncc, '
-        struct = trim(struct) // 'scalar, '
-        type   = trim(type  ) // 'float, '
-        dep    = trim(dep   ) // 'positions, ' 
+        call safe_character_assign(field,   trim(field ) // 'lncc, ')
+        call safe_character_assign(struct,  trim(struct) // 'scalar, ')
+        call safe_character_assign(type,    trim(type  ) // 'float, ')
+        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
       endif
 !
 !  remove trailing comma
@@ -1961,5 +1963,6 @@ module Sub
 !
     endsubroutine blob
 !***********************************************************************
+
 
 endmodule Sub

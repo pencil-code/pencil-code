@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.51 2002-10-09 14:01:48 dobler Exp $
+! $Id: mpicomm.f90,v 1.52 2002-10-09 14:05:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -21,7 +21,7 @@ module Mpicomm
     module procedure mpibcast_real_arr
   endinterface
 
-  interface mpibcast_logical		! Overload
+  interface mpibcast_logical            ! Overload
     module procedure mpibcast_logical_scl
   endinterface
 

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.30 2002-08-04 17:59:25 dobler Exp $
+! $Id: noentropy.f90,v 1.31 2002-10-09 14:05:31 mee Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.30 2002-08-04 17:59:25 dobler Exp $")
+           "$Id: noentropy.f90,v 1.31 2002-10-09 14:05:31 mee Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -122,7 +122,7 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-	i_ssm=0.
+        i_ssm=0.
       endif
 !
       do iname=1,nname

@@ -14,12 +14,12 @@ module Mpicomm
 
   implicit none
 
-  interface mpibcast_real       ! Overload the `mpibcast_real' function
+  interface mpibcast_real      ! Overload the `mpibcast_real' function
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
   endinterface
 
-  interface mpibcast_logical		! Overload
+  interface mpibcast_logical   ! Overload
     module procedure mpibcast_logical_scl
   endinterface
 

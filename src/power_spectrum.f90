@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.8 2002-10-08 14:44:54 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.9 2002-10-09 14:05:31 mee Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -36,7 +36,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.8 2002-10-08 14:44:54 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.9 2002-10-09 14:05:31 mee Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -126,12 +126,13 @@ end subroutine power
 !
 !  30-sep-97/axel: coded
 !  07-oct-02/nils: adapted from wsnap
+!  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
 !  
 !
       use Io
 !
       real, dimension (mx,my,mz,mvar) :: a
-      character (len=80) :: file
+      character (len=135) :: file
       character (len=4) :: ch
       logical lspec
       integer, save :: ifirst,nspec

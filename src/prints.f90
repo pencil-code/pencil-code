@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.31 2002-10-06 07:22:46 brandenb Exp $
+! $Id: prints.f90,v 1.32 2002-10-09 14:05:31 mee Exp $
 
 module Print
 
@@ -19,11 +19,13 @@ module Print
 !   3-may-02/axel: coded
 !  27-may-02/axel: it,t,dt added as extra save parameters
 !   7-jun-02/axel: dtc (=dt/cdt) added as extra save parameter
+!  08-oct-02/tony: added safe_character_assign when appending to fform
 !
       use Cdata
       use Sub
       use Hydro
       use Magnetic
+      use General, only: safe_character_assign
 !
       logical,save :: first=.true.
       character (len=320) :: fform,legend,line
@@ -46,10 +48,10 @@ module Print
         fform='('//cform(1)
         legend=noform(cname(1))
         do iname=2,nname
-          fform=trim(fform)//comma//cform(iname)
-          legend=trim(legend)//noform(cname(iname))
+          call safe_character_assign(fform,  trim(fform)//comma//cform(iname))
+          call safe_character_assign(legend, trim(legend)//noform(cname(iname)))
         enddo
-        fform=trim(fform)//')'
+        call safe_character_assign(fform, trim(fform)//')')
 !
 !! print*,'prints: form = ',trim(fform)
 !! print*,'prints: args = ',fname(1:nname)

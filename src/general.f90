@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.9 2002-09-26 20:07:41 dobler Exp $
+! $Id: general.f90,v 1.10 2002-10-09 14:05:31 mee Exp $
 
 module General
 
@@ -267,6 +267,31 @@ module General
       time1=time2
 !
     endsubroutine chk_time
+!***********************************************************************
+
+!***********************************************************************
+    subroutine safe_character_assign(dest,src)
+!
+!  08-oct-02/tony: coded
+!
+      character (len=*), intent(IN):: src
+      character (len=*), intent(INOUT):: dest
+      integer :: destLen, srcLen
+
+      destLen = LEN(dest)
+      srcLen = LEN(src)
+
+      if (destLen<srcLen) THEN 
+         PRINT *, &
+              "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" & 
+               //src//"' to '"//dest//"'"
+         dest=src(1:destLen)
+      else
+         dest=src
+      end if
+
+    endsubroutine safe_character_assign
+
 !***********************************************************************
 !
 end module General

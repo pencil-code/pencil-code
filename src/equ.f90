@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.100 2002-10-04 09:21:42 brandenb Exp $
+! $Id: equ.f90,v 1.101 2002-10-09 14:05:31 mee Exp $
 
 module Equ
 
@@ -141,6 +141,7 @@ module Equ
 !
 !  write into video file
 !  20-oct-97/axel: coded
+!  08-oct-02/tony: increased size of file to handle  datadir//'/tvid.dat'
 !
       use Cdata
       use Slices
@@ -150,13 +151,13 @@ module Equ
       integer, save :: ifirst,nvid
 !
       character (len=4) :: ch
-      character (len=80) :: file
+      character (len=130) :: file
       character (len=*) :: chdir
       logical lvid
 !
 !  Output vid-data in 'tvid' time intervals
 !
-      file=trim(datadir)//'/tvid.dat'
+      file = trim(datadir)//'/tvid.dat'
       if (ifirst==0) then
         open(41,file=chdir//'/divu.xy',form='unformatted')
         open(42,file=chdir//'/ux.xy',form='unformatted')
@@ -227,7 +228,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.100 2002-10-04 09:21:42 brandenb Exp $")
+           "$Id: equ.f90,v 1.101 2002-10-09 14:05:31 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
