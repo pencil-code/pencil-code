@@ -487,7 +487,7 @@ subroutine transform_cosq(a_re,direction)
     a_re=a_re/nwgrid
   endif
 !
-end subroutine transform_cosqpack
+end subroutine transform_cosq
 !***********************************************************************
 subroutine transform_fftpack(a_re,a_im,direction)
 !
