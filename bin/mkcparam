@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.25 2004-01-28 16:47:40 dobler Exp $
+# CVS: $Id: mkcparam,v 1.26 2004-01-29 11:01:34 ajohan Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -57,7 +57,8 @@ use strict;
 use Getopt::Long;
 
 my $line;
-my ($maux,$mvar,$ndustspec) = (0) x 3;
+my ($maux,$mvar) = (0) x 2;
+my $ndustspec = 1;
 
 (my $cmdname = $0) =~ s{.*/}{};
 
@@ -102,7 +103,7 @@ print OUT <<"EOF";
 !
 
 integer, parameter :: mvar=$mvar, maux=$maux
-! integer, parameter :: ndustspec=$ndustspec
+integer, parameter :: ndustspec=$ndustspec
 
 EOF
 
