@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.226 2003-10-24 13:17:31 dobler Exp $
+! $Id: entropy.f90,v 1.227 2003-10-25 16:43:50 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -26,7 +26,7 @@ module Entropy
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
-  real :: TT_int,TT_ext,cs2_int,cs2_ext
+  real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=1.,cool_ext=1.
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
@@ -63,7 +63,7 @@ module Entropy
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
        tauheat_coronal,TTheat_coronal,zheat_coronal, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
-       heat_uniform, lupw_ss, lcalc_cp
+       heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -100,7 +100,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.226 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: entropy.f90,v 1.227 2003-10-25 16:43:50 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,8 +128,11 @@ module Entropy
 !  21-jul-2002/wolf: coded
 !
       use Cdata
-      use Gravity, only: gravz
-      use Density, only: cs0,cs20
+      use Gravity, only: gravz,g0
+      use Density, only: cs0,cs20,mpoly
+      use Ionization, only: get_soundspeed
+
+      real :: beta1
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
@@ -221,8 +224,16 @@ module Entropy
 !
     select case(initss)
       case('geo-kws')
-        if (lroot) print*,'initialize_entropy: reset sound speed for spherical shell problem'
+        if (lroot) print*,'initialize_entropy: set sound speeds for spherical shell problem'
         cs20 = cs0**2
+!       temperatures at shell boundaries
+        beta1 = g0/(mpoly+1)
+        TT_ext = T0
+        TT_int = 1+beta1*(1/r_int-1)
+!       set up cooling parameters for spherical shell in terms of
+!       sound speeds
+        call get_soundspeed(TT_ext,cs2_ext)
+        call get_soundspeed(TT_int,cs2_int)
 !
     endselect
 !
@@ -555,26 +566,17 @@ module Entropy
 !
 !  20-oct-03/dave -- coded
 !
-      use Density, only: mpoly
       use Gravity, only: g0
-      use Ionization, only: ionput,get_soundspeed
+      use Density, only: mpoly
+
+      use Ionization, only: ionput
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: Temp,yH
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
-
       if (initss=='geo-kws') then
-!       temperatures at shell boundaries
-        TT_ext = T0
-        TT_int = 1+beta1*(1/r_int-1)
-!       set up cooling parameters for spherical shell in terms of
-!       sound speeds
-        !cs2_ext = TT_ext*cp*gamma1
-        call get_soundspeed(TT_ext,cs2_ext)
-        !cs2_int = TT_int*cp*gamma1
-        call get_soundspeed(TT_int,cs2_int)
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
@@ -795,7 +797,8 @@ module Entropy
           (cool /= 0) .or. &
           (tauheat_coronal /= 0) .or. &
           (tauheat_buffer /= 0) .or. &
-          (heat_uniform /= 0)) &
+          (heat_uniform /= 0) .or. &
+          (cool_ext /= 0 .AND. cool_int /= 0)) &
         call calc_heat_cool(f,df,rho1,cs2,ss,TT,TT1)
 !
 !  interstellar radiative cooling and UV heating
@@ -1185,10 +1188,21 @@ endif
         !  pick type of cooling
         !
         select case(cooltype)
-        case ('cs2', 'Temp')    ! cooling to reference temperatur cs2cool
+        case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
           heat = heat - cool*prof*rho1*(cs2-cs2cool)/cs2cool
         case ('entropy')        ! cooling to reference entropy (currently =0)
           heat = heat - cool*prof*(f(l1:l2,m,n,iss)-0.)
+! dgm
+        case ('shell')          !  heating/cooling at shell boundaries
+          heat=0.                            ! default
+          select case(initss)
+            case ('geo-kws'); heat=0.        ! can add heating later based on value of initss
+          endselect
+          prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
+          heat = heat - cool_ext*prof*rho1*(cs2-cs2_ext)/cs2_ext
+          prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
+          heat = heat - cool_int*prof*rho1*(cs2-cs2_int)/cs2_int
+!
         case default
           if (lroot) print*, &
                'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
