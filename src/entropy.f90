@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.235 2003-10-31 14:01:07 theine Exp $
+! $Id: entropy.f90,v 1.236 2003-11-01 10:50:00 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -40,8 +40,7 @@ module Entropy
   real :: hcond1=impossible,hcond2=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
-  real :: tauheat_coronal=0.,TTheat_coronal=0.,zheat_coronal=0.
-  real :: tau_coronal=0.,TT_coronal=0.,z_coronal=0.
+  real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.
   logical :: lsinus_heat=.false.
@@ -65,8 +64,7 @@ module Entropy
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
-       tauheat_coronal,TTheat_coronal,zheat_coronal, &
-       tau_coronal,TT_coronal,z_coronal, &
+       tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
        lsinus_heat
@@ -106,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.235 2003-10-31 14:01:07 theine Exp $")
+           "$Id: entropy.f90,v 1.236 2003-11-01 10:50:00 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -727,6 +725,7 @@ module Entropy
       real, dimension (nx) :: ugss,uglnrho,divu
       real, dimension (nx) :: lnrho,ss,yH,TT,rho1,cs2,TT1,cp1tilde
       real, dimension (nx) :: rho,ee,shock
+      real :: zbot,ztop,xi,profile_cor
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,lnrho,shock,gshock
@@ -736,6 +735,11 @@ module Entropy
 !
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
+!
+!  define bottom and top height
+!
+      zbot=xyz0(3)
+      ztop=xyz0(3)+Lxyz(3)
 !
 !  entropy gradient: needed for advection and pressure gradient
 !
@@ -761,13 +765,26 @@ module Entropy
       if (headtt) print*, &
                  'dss_dt: entropy (but not used with ionization): cs20=',cs20
 !
+      if (lhydro) then
+!
 !  subtract pressure gradient term in momentum equation
 !
-      if (lhydro) then
         do j=1,3
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+cp1tilde*gss(:,j))
         enddo
+!
+!  velocity damping in the coronal heating zone
+!
+        if (tau_cor>0) then
+          if (z(n)>=z_cor) then
+            xi=(z(n)-z_cor)/(ztop-z_cor)
+            profile_cor=xi**2*(3-2*xi)
+            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) &
+                             -profile_cor*f(l1:l2,m,n,iux:iuz)/tau_cor
+          endif
+        endif
+!
       endif
 !
 !  advection term
@@ -802,13 +819,12 @@ module Entropy
 !
       if ((luminosity /= 0) .or. &
           (cool /= 0) .or. &
-          (tauheat_coronal /= 0) .or. &
-          (tau_coronal /= 0) .or. &
+          (tau_cor /= 0) .or. &
           (tauheat_buffer /= 0) .or. &
           (heat_uniform /= 0) .or. &
           (cool_ext /= 0 .AND. cool_int /= 0) .or. &
           (lsinus_heat)) &
-        call calc_heat_cool(f,df,rho1,cs2,ss,TT,TT1)
+        call calc_heat_cool(f,df,rho1,cs2,cp1tilde,ss,TT,TT1)
 !
 !  interstellar radiative cooling and UV heating
 !
@@ -1125,7 +1141,7 @@ endif
 !
     endsubroutine calc_heatcond
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,rho1,cs2,ss,TT,TT1)
+    subroutine calc_heat_cool(f,df,rho1,cs2,cp1tilde,ss,TT,TT1)
 !
 !  add combined heating and cooling
 !
@@ -1138,9 +1154,9 @@ endif
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rho1,cs2,ss,TT,TT1
-      real, dimension (nx) :: heat,prof,TTdiff
-      real :: ssref,zbot,ztop,TTref,profile_buffer,xi,prof1
+      real, dimension (nx) :: rho1,cs2,ss,cp1tilde,TT,TT1
+      real, dimension (nx) :: heat,prof
+      real :: ssref,zbot,ztop,TTref,profile_buffer,xi,profile_cor
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
@@ -1225,18 +1241,12 @@ endif
 !  assume a linearly increasing reference profile, TTref
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
-      if(tauheat_coronal/=0.) then
-        TTref=(z(n)-ztop)/(zheat_coronal-ztop)*TTheat_coronal
-        TTref=(z(n)-zheat_coronal)/(ztop-zheat_coronal)*TTheat_coronal
-        heat=heat+amax1(0.,ss*(TTref-TT)/(rho1*tauheat_coronal))
-      endif
-!
-!  alternate coronal heating (and cooling)
-!
-      if(tau_coronal>0.and.z(n)>=z_coronal) then
-        xi=(z(n)-z_coronal)/(ztop-z_coronal)
-        prof1=xi**2*(3-2*xi)
-        heat=heat+ss*prof1*(TT_coronal-TT)/(rho1*tau_coronal)
+      if(tau_cor>0) then
+        if(z(n)>=z_cor) then
+          xi=(z(n)-z_cor)/(ztop-z_cor)
+          profile_cor=xi**2*(3-2*xi)
+          heat=heat+profile_cor*(TT_cor-TT)/(rho1*tau_cor*cp1tilde)
+        endif
       endif
 !
 !  add heating and cooling to a reference temperature in a buffer
