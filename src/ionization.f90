@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.42 2003-06-15 06:16:46 brandenb Exp $
+! $Id: ionization.f90,v 1.43 2003-06-15 18:48:05 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -59,7 +59,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.42 2003-06-15 06:16:46 brandenb Exp $")
+           "$Id: ionization.f90,v 1.43 2003-06-15 18:48:05 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -139,9 +139,9 @@ module Ionization
       real :: lnrho,ss,yH,lnTT_
       integer :: l
 !
-      do n=1,mz
-      do m=1,my
-      do l=1,mx
+      do n=n1,n2
+      do m=m1,m2
+      do l=l1,l2
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,ient)
          yH=f(l,m,n,iyH)
