@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.31 2002-07-11 11:07:49 nilshau Exp $
+! $Id: density.f90,v 1.32 2002-07-12 00:22:59 brandenb Exp $
 
 module Density
 
@@ -43,7 +43,7 @@ module Density
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
       use Sub
 !
       logical, save :: first=.true.
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.31 2002-07-11 11:07:49 nilshau Exp $")
+           "$Id: density.f90,v 1.32 2002-07-12 00:22:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -453,6 +453,7 @@ module Density
 !  When entropy is present, this module also initializes entropy.
 !
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
+!  11-jul-02/axel: fixed sign; should be tmp=gamma*pot/cs20
 !
       use Gravity
 !
@@ -494,15 +495,42 @@ module Density
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
 !
       use Gravity
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
-      real :: ggamma,ztop,zbot
+      real :: ggamma,ztop,zbot,zinfty2
+!
+!  identifier
+!
+      if (lroot) print*,'polytropic_simple: mpoly=',mpoly
 !
 !  zinfty is calculated such that rho=rho0 and cs2=cs20 at z=zref.
+!  Note: gravz is normally negative!
 !
-      zinfty=zref-(mpoly+1.)/gamma*cs20/gravz
-      if (lroot) print*,'polytropic_simple: mpoly=',mpoly
+      if (grav_profile=='const') then
+        zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
+      elseif (grav_profile=='linear') then
+        zinfty2=zref**2+(mpoly+1.)*cs20/(-.5*gamma*gravz)
+        if(zinfty2<0) then
+          if(lroot) print*,'polytropic_simple: zinfty**2<0 is not ok'
+          zinfty2=0. !(see what happens)
+        endif
+        zinfty=sqrt(zinfty2)
+      else
+        if(lroot) print*,'polytropic_simple: zinfty not prepared!'
+      endif
+!
+!  check whether zinfty lies outside the domain (otherwise density
+!  would vanish within the domain)
+!
+      ztop=xyz0(3)+Lxyz(3)
+      zbot=xyz0(3)
+      if(zinfty<ztop .or. (-zinfty)>zbot) then
+        if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
+        call stop_it('rho and cs2 will vanish within domain')
+      endif
+!
       ggamma=1.+1./mpoly
 !
       do n=n1,n2
@@ -518,14 +546,12 @@ module Density
 !  In spherical geometry, ztop is z at the outer edge of the box,
 !  so this calculation still makes sense.
 !
-      ztop=xyz0(3)+Lxyz(3)
       call potential(zero,0.,ztop,ptop)
       cs2top=-gamma/(mpoly+1.)*ptop(1)
 !
 !  In spherical geometry ztop should never be used.
 !  Even in slab geometry ztop is not normally used.
 !
-      zbot=xyz0(3)
       call potential(zero,0.,zbot,pbot)
       cs2bot=-gamma/(mpoly+1.)*pbot(1)
 !
