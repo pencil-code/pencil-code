@@ -1,16 +1,18 @@
-; $Id: pc_read_dim.pro,v 1.6 2004-03-23 09:16:51 ajohan Exp $
+; $Id: pc_read_dim.pro,v 1.7 2004-05-05 12:39:36 mee Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-03-23 09:16:51 $
-;  $Revision: 1.6 $
+;  $Date: 2004-05-05 12:39:36 $
+;  $Revision: 1.7 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
 pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  nx=nx, ny=ny, nz=nz, $
+                 nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, $
+                 mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid, $
                  precision=precision, $
                  nghostx=nghostx, nghosty=nghosty, nghostz=nghostz, $
                  nprocx=nprocx, nprocy=nprocy, nprocz=nprocz,$
@@ -26,6 +28,8 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
     print, ""
     print, "pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar,                                                "
     print, "             nx=nx, ny=ny, nz=nz,                                                           "
+    print, "             mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid,                                   "
+    print, "             nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid,                                   "
     print, "             precision=precision,                                                           "
     print, "             nghostx=nghostx, nghosty=nghosty, nghostz=nghostz,                             "
     print, "             nprocx=nprocx, nprocy=nprocy, nprocz=nprocz,                                   "
@@ -40,13 +44,19 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
     print, "     proc: specify a processor to get the data from eg. 0                          [integer]"
     print, "           If unspecified data is read for global calculation.                              "
     print, "                                                                                            "
-    print, "       mx: x dimension of calculation domain including ghost zones                 [integer]"
-    print, "       my: y dimension of calculation domain including ghost zones                 [integer]"
-    print, "       mz: z dimension of calculation domain including ghost zones                 [integer]"
+    print, "       mx: x dimension of processor calculation domain including ghost zones       [integer]"
+    print, "       my: y dimension of processor calculation domain including ghost zones       [integer]"
+    print, "       mz: z dimension of processor calculation domain including ghost zones       [integer]"
     print, "       mw: defined as mx * my * mz                                                 [integer]"
-    print, "       nx: x dimension of calculation domain excluding ghost zones                 [integer]"
-    print, "       ny: y dimension of calculation domain excluding ghost zones                 [integer]"
-    print, "       nz: z dimension of calculation domain excluding ghost zones                 [integer]"
+    print, "       nx: x dimension of processor calculation domain excluding ghost zones       [integer]"
+    print, "       ny: y dimension of processor calculation domain excluding ghost zones       [integer]"
+    print, "       nz: z dimension of processor calculation domain excluding ghost zones       [integer]"
+    print, "   nxgrid: x dimension of full calculation domain excluding ghost zones            [integer]"
+    print, "   nygrid: y dimension of full calculation domain excluding ghost zones            [integer]"
+    print, "   nzgrid: z dimension of full calculation domain excluding ghost zones            [integer]"
+    print, "   mxgrid: x dimension of full calculation domain including ghost zones            [integer]"
+    print, "   mygrid: y dimension of full calculation domain including ghost zones            [integer]"
+    print, "   mzgrid: z dimension of full calculation domain including ghost zones            [integer]"
     print, "     mvar: total number of computed scalar variables (NB. 1 vector = 3 scalars)    [integer]"
     print, "precision: 'S' or 'D' for Single or Double precision                             [character]"
     print, "  nghostx: number of points in x direction used for ghost zone at each boundary    [integer]"
@@ -125,6 +135,14 @@ l1 = nghostx & l2 = mx-nghostx
 m1 = nghosty & m2 = my-nghosty
 n1 = nghostz & n2 = mz-nghostz
 
+nxgrid=nx*nprocx
+nygrid=ny*nprocy
+nzgrid=nz*nprocz
+
+mxgrid = nxgrid + (2 * nghostx)
+mygrid = nygrid + (2 * nghosty)
+mzgrid = nzgrid + (2 * nghostz)
+
 precision = (strtrim(precision,2))        ; drop leading zeros
 precision = strmid(precision,0,1)
 
@@ -134,8 +152,13 @@ object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar', $
                         'precision', $
                         'nx','ny','nz', $
                         'nghostx','nghosty','nghostz', $
+                        'nxgrid','nygrid','nzgrid', $
+                        'mxgrid','mygrid','mzgrid', $
                         'nprocx','nprocy','nprocz'], $
-                       mx,my,mz,mw,mvar,precision,nx,ny,nz,nghostx,nghosty,nghostz,nprocx,nprocy,nprocz)
+                       mx,my,mz,mw,mvar,precision,nx,ny,nz,nghostx,nghosty,nghostz, $
+                       nxgrid, nygrid, nzgrid, $
+                       mxgrid, mygrid, mzgrid, $
+                       nprocx,nprocy,nprocz)
 
 
 ; If requested print a summary
@@ -151,6 +174,8 @@ if keyword_set(PRINT) then begin
   print, '               (nx,ny,nz) = (',nx,',',ny,',',nz,')'
   print, '                precision = ', precision
   print, '(nghostx,nghosty,nghostz) = (',nghostx,',',nghosty,',',nghostz,')'
+  print, '   (nxgrid,nygrid,nzgrid) = (',nxgrid,',',nygrid,',',nzgrid,')'
+  print, '   (mxgrid,mygrid,mzgrid) = (',mxgrid,',',mygrid,',',mzgrid,')'
   print, '   (nprocx,nprocy,nprocz) = (',nprocx,',',nprocy,',',nprocz,')'
 endif
 
