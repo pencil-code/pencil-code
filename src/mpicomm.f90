@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.91 2003-07-02 23:00:24 brandenb Exp $
+! $Id: mpicomm.f90,v 1.92 2003-07-03 18:33:12 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -637,12 +637,12 @@ module Mpicomm
 !
 !  should call "lower boundary"
 !
-         Ibuf_yz=0.0 !(for the time being)
+         !Ibuf_yz=0.0 !(for the time being)
       elseif(lrad<0 .and. ipx==nprocx-1) then
 !
 !  should call "upper boundary"
 !
-         Ibuf_yz=0.0 !(for the time being)
+         !Ibuf_yz=0.0 !(for the time being)
       else
          print*,'Oops: we have only one processor in x'
          idest=ipx-sign(1,lrad)
@@ -721,12 +721,12 @@ module Mpicomm
 !
 !  should call "lower boundary"
 !
-         Ibuf_zx=0. !(for the time being)
+         !Ibuf_zx=0. !(for the time being)
       elseif(mrad<0 .and. ipy==nprocy-1) then
 !
 !  should call "upper boundary"
 !
-         Ibuf_zx=0. !(for the time being)
+         !Ibuf_zx=0. !(for the time being)
       else
 !
 !  receive from processor at the beginning of ray
@@ -811,13 +811,13 @@ module Mpicomm
 !  should call "lower boundary"
 !
       if(nrad>0 .and. ipz==0) then
-         Ibuf_xy=1. !(for the time being)
+         !Ibuf_xy=1. !(for the time being)
       endif
 !
 !  should call "upper boundary"
 !
       if(nrad<0 .and. ipz==nprocz-1) then
-         Ibuf_xy=0. !(for the time being)
+         !Ibuf_xy=0. !(for the time being)
       endif
 !
 !  receive from processor at the beginning of ray

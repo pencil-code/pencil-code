@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.48 2003-07-03 15:46:22 theine Exp $
+! $Id: radiation_exp.f90,v 1.49 2003-07-03 18:33:13 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.48 2003-07-03 15:46:22 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.49 2003-07-03 18:33:13 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -151,13 +151,15 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real :: k
 !
 !  test
 !
       if(test_radiation) then
         if(lroot) print*,'radcalc: put Srad=kaprho=1 (as a test)'
-        Srad=1.
-        kaprho=1.
+        k=2*pi/Lx
+        Srad=1.+.02*spread(spread(sin(k*x),2,my),3,mz)
+        kaprho=spread(spread(cos(2*k*x),2,my),3,mz)
         return
       endif
 !
@@ -312,25 +314,58 @@ module Radiation
 !  no communication in x currently, but keep it for generality
 !
       if (lrad/=0) then
-         call radcomm_yz_recv(lrad,radx0,Irad0_yz,tag_yz)
-         if (lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz
-         if (lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
+         if (lrad>0) then
+            if (ipx==0) Irad0(l1-radx0:l1-1,:,:)=0.
+            if (ipx==0) Irad0(l1-radx0:l1-1,:,:)=Irad(l2-radx0+1:l2,:,:) &
+                                           /(1.-emtau(l2-radx0+1:l2,:,:))
+         endif
+         if (lrad<0) then
+            if (ipx==nprocx-1) Irad0(l2+1:l2+radx0,:,:)=0.
+            if (ipx==nprocx-1) Irad0(l2+1:l2+radx0,:,:)=Irad(l1:l1+radx0-1,:,:) &
+                                                  /(1.-emtau(l1:l1+radx0-1,:,:))
+         endif
+         !no communication
+         !call radcomm_yz_recv(lrad,radx0,Irad0_yz,tag_yz)
       endif
 !
-!  receive from processor in y, then set Irad0
+!  receive from processor in y,
+!  set boundary condition (if on the corresponding processor)
+!  and then set Irad0
 !
       if (mrad/=0) then
-         call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
-         if (mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
-         if (mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
+         if (mrad>0) then
+            ! ray points in positive y-direction
+            if (ipy==0) Irad0(:,m1-rady0:m1-1,:)=0.
+            if (ipy/=0) call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
+            Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
+         endif
+!
+         if (mrad<0) then
+            ! ray points in negative y-direction
+            if (ipy==nprocy-1) Irad0(:,m2+1:m2+rady0,:)=0.
+            if (ipy/=nprocy-1) call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
+            Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
+         endif
       endif
 !
-!  receive from processor in z, then set Irad0
+!  receive from processor in z,
+!  set boundary condition (if on the corresponding processor)
+!  and then set Irad0
 !
       if (nrad/=0) then
-         call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
-         if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
-         if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
+         if (nrad>0) then
+            ! upward ray
+            if (ipz==0) Irad0_xy=Srad(:,:,n1-radz0:n1-1)
+            if (ipz/=0) call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
+            Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
+         endif
+!
+         if (nrad<0) then
+            ! downward ray
+            if (ipz==nprocz-1) Irad0_xy=0.
+            if (ipz/=nprocz-1) call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
+            Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
+         endif
       endif
 !
 !  propagate boundary values
@@ -426,6 +461,9 @@ module Radiation
       enddo
 !
     endsubroutine propagate_intensity
+!***********************************************************************
+    !endsubroutine :w
+
 !***********************************************************************
     subroutine intensity_revision(f)
 !
