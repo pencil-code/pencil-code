@@ -8,7 +8,7 @@ while not eof(lun) do begin
   readu,lun,l,m,n,bx,by,bz
   ;print,l,m,n
   if l eq 0 then begin
-    vecgdv_good,nn-4,mm-4,ll-1,bbx,bby,bbz,indgen(nxyz),indgen(nxyz),indgen(nxyz),len=30
+    vecgdv_good,ll-4,mm-4,nn-1,bbx,bby,bbz,indgen(nxyz),indgen(nxyz),indgen(nxyz),len=30
     t=bx
     print,t,n_elements(ll)
     readnew=1
