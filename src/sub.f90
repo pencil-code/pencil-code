@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.186 2004-06-03 20:56:20 theine Exp $ 
+! $Id: sub.f90,v 1.187 2004-06-11 12:22:52 ajohan Exp $ 
 
 module Sub 
 
@@ -2700,7 +2700,7 @@ module Sub
 !
       endfunction notanumber_4
 !***********************************************************************
-      subroutine nan_inform(f,msg,lstop)
+      subroutine nan_inform_f(f,msg,lstop)
 !
 !  Check input array (f or df) for NaN, -Inf, Inf, and output location in
 !  array.
@@ -2709,7 +2709,7 @@ module Sub
 !
         use Cdata
         use Mpicomm, only: stop_it
-!        
+!
         real, dimension(:,:,:,:) :: f
         character (len=*) :: msg
         integer :: i,j,k,kk
@@ -2718,7 +2718,7 @@ module Sub
         do i=l1,l2
           do j=m1,m2
             do k=n1,n2
-              do kk=1,size(f,4)
+              do kk=1,mvar+maux
                 if (notanumber(f(i,j,k,kk))) then
                   print*,'nan_inform: NaN with message "', msg, &
                       '" encountered in the variable ', varname(kk)
@@ -2733,7 +2733,67 @@ module Sub
           enddo
         enddo
 !
-      endsubroutine nan_inform
+      endsubroutine nan_inform_f
+!***********************************************************************
+      subroutine nan_inform_pencil(f,msg,lstop)
+!
+!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
+!  array.
+!
+!  11-jun-04/anders: adapted from nan_inform_f
+!
+        use Cdata
+        use Mpicomm, only: stop_it
+!
+        real, dimension(:,:,:,:) :: f
+        character (len=*) :: msg
+        integer :: i,kk
+        logical, optional :: lstop
+!
+        do i=l1,l2
+          do kk=1,mvar+maux
+            if (notanumber(f(i,m,n,kk))) then
+              print*,'nan_inform: NaN with message "', msg, &
+                  '" encountered in the variable ', varname(kk)
+              print*,'nan_inform: ', varname(kk), ' = ', f(i,m,n,kk)
+              print*,'nan_inform: t, it, itsub   = ', t, it, itsub
+              print*,'nan_inform: l, m, n, iproc = ', i, m, n, iproc
+              print*,'----------------------------'
+              if (present(lstop) .and. lstop) call stop_it('nan_stop')
+            endif
+          enddo
+        enddo
+!
+      endsubroutine nan_inform_pencil
+!***********************************************************************
+      subroutine nan_inform_point(f,l,msg,lstop)
+!
+!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
+!  array.
+!
+!  11-jun-04/anders: adapted from nan_inform_f
+!
+        use Cdata
+        use Mpicomm, only: stop_it
+!
+        real, dimension(:,:,:,:) :: f
+        character (len=*) :: msg
+        integer :: kk,l
+        logical, optional :: lstop
+!
+        do kk=1,mvar+maux
+          if (notanumber(f(l,m,n,kk))) then
+            print*,'nan_inform: NaN with message "', msg, &
+                '" encountered in the variable ', varname(kk)
+            print*,'nan_inform: ', varname(kk), ' = ', f(l,m,n,kk)
+            print*,'nan_inform: t, it, itsub   = ', t, it, itsub
+            print*,'nan_inform: m, n, iproc = ', m, n, iproc
+            print*,'----------------------------'
+            if (present(lstop) .and. lstop) call stop_it('nan_stop')
+          endif
+        enddo
+!
+      endsubroutine nan_inform_point
 !***********************************************************************
       subroutine parse_bc(bc,bc1,bc2)
 !
