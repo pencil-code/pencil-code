@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.101 2002-09-20 18:14:31 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.102 2002-09-23 12:20:40 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -183,26 +183,26 @@
 %% keys, names, paths, files, etc.
 %% Examples: \name{Greeks} \name[Trojans]{Greeks}
 \newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\cmd}{\command}
 \newcommand{\kbd}[1]{\texttt{\textsl{#1}\/}}
 \newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
 \newcommand{\samp}[1]{`\code{#1}'}
 \newcommand{\var}[1]{\textsl{#1}\index[var]{#1@\emph{#1}}\/}
-\newcommand{\env}[1]{\code{#1}\index[var]{#1@\emph{#1}}}
-\newcommand{\command}[1]{\code{#1}\index{#1}}
-\newcommand{\cmd}[1]{\command{#1}}
-\newcommand{\option}[1]{`\code{#1}'\index{#1@\emph{`#1'} option}}
+\newcommand{\env}[1]{\code{#1}\index[var]{#1}}
+\newcommand{\option}[1]{`\code{#1}'\index{Option #1@Option \emph{`#1'}}}
 \newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
 %\newcommand{\cite}[1]{}
 \newcommand{\acronym}[1]{\textsc{#1}\index{#1}}
 %\newcommand{\url}[1]{}
 \newcommand{\email}[1]{\code{#1}}
 
-%\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
+%\newcommand{\command}[1]{\code{#1}\index{#1}}
 %\newcommand{\file}[1]{`\texttt{#1}'\index{#1@\texttt{#1}}}
+%\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
 \makeatletter
-\newcommand{\name}[2][]{%
-  \def\index@{#1}\textsl{#2\/}%
-  \ifx\index@\@empty\index{#2@\MakeUppercase #2}%
+\newcommand{\command}[2][]{%
+  \def\index@{#1}\code{#2}%
+  \ifx\index@\@empty\index{#2}%
   \else\index{#1}%
   \fi%
 }
@@ -210,6 +210,12 @@
   \def\index@{#1}`\texttt{#2}'%
   \ifx\index@\@empty\index[file]{#2@\texttt{#2}}%
   \else\index[file]{#1@\texttt{#1}}%
+  \fi%
+}
+\newcommand{\name}[2][]{%
+  \def\index@{#1}\textsl{#2\/}%
+  \ifx\index@\@empty\index{#2@\MakeUppercase #2}%
+  \else\index{#1}%
   \fi%
 }
 \makeatother
@@ -291,7 +297,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.101 $ $}
+\date{\today,~ $ $Revision: 1.102 $ $}
 
 % ====================================================================== %
 
@@ -323,7 +329,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.101 $ $}
+  \emph{\today,~ $ $Revision: 1.102 $ $}
 
   \vspace{\stretch{3}}
 
@@ -417,7 +423,7 @@ processor boundaries.
 The code achieves a high level of flexibility by encapsulating individual
 physical processes and variables in individual \name{modules}, which can
 be switched on or off in the file \file{Makefile.local} in the local
-\file{src} directory.
+\file[src/]{src} directory.
 In order to avoid excessive use of preprocessor directives, we were lead
 to create one dummy module for each physics module.
 For nonmagnetic hydrodynamics, e.g., one will use the module
@@ -536,9 +542,10 @@ environment, please let us know.
 
 We refrain from making any `stable releases' available at this point.
 We are still improving the code which enhances functionality.
-A set of test problems (listed in \file{\$PENCIL_HOME/bin/auto-test})
+A set of test problems (listed in
+\file[auto-test]{\$PENCIL_HOME/bin/auto-test})
 are routinely tested. This set of test problems includes those in
-\file{\$PENCIL_HOME/samples}.
+\file[samples/]{\$PENCIL_HOME/samples}.
 
 %There are two ways to obtain and install the code: If you want to use a
 %stable release, you can download it as a tarball and unpack it.
@@ -566,7 +573,7 @@ are routinely tested. This set of test problems includes those in
 
 \begin{enumerate}
 
-\item Many machines have already \name{CVS} (just say \cmd{which cvs}).
+\item Many machines have already \name{CVS} (just say \code{which cvs}).
   If not, get a \name{CVS} client from \url{http://www.cvshome.org/} and
   install it (on any machine where you want to run the code).
   Alternatively, just copy the executable from a binary compatible
@@ -578,7 +585,7 @@ Alternatively, just email \email{Wolfgang.Dobler@kis.uni-freiburg.de}
 or \email{Axel.Brandenburg@nordita.dk}.
 Priviledged users with write access to the original repository should
 continue to use it.\footnote{In that case you'd say
-\cmd{setenv CVSROOT :pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS},
+\code{setenv CVSROOT :pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS},
 assuming that \cmd{\$USER} is the userid registered in the original
 repository. The content of this repository is copied automatically every
 hour to the anonymous cvs repository.}
@@ -605,13 +612,13 @@ hour to the anonymous cvs repository.}
 \item Go to wherever you want the code (otherwise the code will land
 in your home directory, which will also be ok):
   \begin{alltt}
-  \prompt{unix> } cd \file{somewhere} \
+  \prompt{unix> } cd \file[somewhere/]{somewhere} \
   \end{alltt}
   and check the code out:
   \begin{alltt}
   \prompt{unix> } cvs checkout pencil-code \
   \end{alltt} 
-  This creates a subdirectory \file{somewhere/pencil-code} and populates it with
+  This creates a subdirectory \file[pencil-code/]{somewhere/pencil-code} and populates it with
   the pencil code's subdirectories.
 
 \end{enumerate}
@@ -634,7 +641,7 @@ Here is the upgrading procedure:
 \begin{enumerate}
 \item Go to the top directory of the code:
   \begin{alltt}
-  \prompt{unix> } cd \file{somewhere/pencil-code} \
+  \prompt{unix> } cd \file[pencil-code/]{somewhere/pencil-code} \
   \end{alltt}
 \item Run \cmd{cvs update}:
   \begin{alltt}
@@ -657,7 +664,7 @@ this by:
 \begin{enumerate}
 \item Go to the top directory of the code:
   \begin{alltt}
-  \prompt{unix> } cd \file{somewhere/pencil-code} \
+  \prompt{unix> } cd \file[pencil-code/]{somewhere/pencil-code} \
   \end{alltt}
 \item Run \cmd{cvs update}:
   \begin{alltt}
@@ -687,7 +694,7 @@ Sect.~\ref{S-IDLroutines}).
 The functionality of helper scripts and IDL routines relies on a few
 environment variables being set correctly.
 The simplest way to achieve this is to go to the top directory of the code
-(we will assume here that it is called \file{pencil}) and source one of
+(we will assume here that it is called \file[pencil/]{pencil}) and source one of
 the two scripts \file{sourceme.csh} or \file{sourceme.sh} (depending on
 the type of shell you are using):
 \begin{alltt}
@@ -747,9 +754,10 @@ In this case, you need to first undefine the environment variable
 With your environment set up correctly, you can now go to the directory
 you want to work in and set up subdirectories and links.
 This is accomplished by the script \file{setup-src}, which is located in
-\file{\$PENCIL_HOME/bin} and is thus now in your executable path.
+\file[bin/]{\$PENCIL_HOME/bin} and is thus now in your executable path.
 
-For concreteness, let us assume you want to use \file{samples/conv-slab}
+For concreteness, let us assume you want to use
+\file[conv-slab/]{samples/conv-slab}
 as your \dfn{run directory}, i.e.\ you want to run a three-layer slab model
 of solar convection.
 You then do the following:
@@ -758,9 +766,9 @@ You then do the following:
   \prompt{unix> } setup-src
   {\sl{}[Output]}
 \end{alltt}
-The script has linked a number of scripts from \file{\$PENCIL_HOME/bin},
-generated a directory \file{src} for the source code and linked the
-Fortran source files (plus a few more files) from \file{\$PENCIL_HOME/src}
+The script has linked a number of scripts from \file[bin/]{\$PENCIL_HOME/bin},
+generated a directory \file[src/]{src} for the source code and linked the
+Fortran source files (plus a few more files) from \file[src/]{\$PENCIL_HOME/src}
 to that directory:
 \begin{alltt}
   \prompt{unix> } ls
@@ -778,7 +786,7 @@ take here.
 
 \subsubsection{Running \cmd{make}}
 
-Next, you run \cmd{make} in the \file{src} subdirectory of your run
+Next, you run \cmd{make} in the \file[src/]{src} subdirectory of your run
 directory.
 Since you are using one of the predefined test problems, the settings in
 \file[Makefile.local]{src/Makefile.local} and
@@ -797,16 +805,17 @@ complete successfully; don't forget to return to the run directory,
 \subsubsection{Choosing a data directory}
 
 The code will write data like snapshot files to the subdirectory
-\file{tmp} of the run directory.
+\file[tmp/]{tmp} of the run directory.
 Since this will involve a large volume of IO-operations (at least for
 large grid sizes), one will normally try to avoid writing the data via
 NFS.
-The recommended way to set up a \file{tmp} data directory is to generate
+The recommended way to set up a \file[tmp/]{tmp} data directory is to generate
 a corresponding directory on the local disc of the computer you are
-running on and (soft-)link it to \file{./tmp}.
+running on and (soft-)link it to \file[tmp/]{./tmp}.
 Even if the link is part of an NFS directory, all the IO operations will
 be local.
-E.\,g.~if you have a local disc \file{/scratch}, you can do the following
+E.\,g.~if you have a local disc \file[/scratch/]{/scratch}, you can do the
+following
 \begin{alltt}
   \prompt{unix> } mkdir -p /scratch/\$USER/pencil-data/samples/conv-slab
   \prompt{unix> } ln -s /scratch/\$USER/pencil-data/samples/conv-slab ./tmp \
@@ -854,7 +863,7 @@ version).
     [width=1\textwidth,keepaspectratio]%
     {pvert0}
   \caption{Initial state of the three-layer convection model in
-    \file{samples/conv-slab}.
+    \file[conv-slab/]{samples/conv-slab}.
     Shown are (from left to right) density $\varrho$, vertical velocity
     $u_z$, entropy $s/c_p$ and temperature $T$ as functions of the
     vertical coordinate $z$ for about ten different vertical lines in the
@@ -991,11 +1000,11 @@ The following is not available yet.
   \prompt{unix> } cd somewhere/pencil-code
   \prompt{unix> } source sourceme.csh \quad\#(to put pencil-code/bin into your path)
   \prompt{unix> } cd runs/sample/rings
-  \prompt{unix> } setup-src \quad\#(from \file{../../../bin}, which by now should be in your path)
+  \prompt{unix> } setup-src \quad\#(from \file[bin/]{../../../bin}, which by now should be in your path)
   \prompt{unix> } cd src
   \prompt{unix> } make
   \prompt{unix> } cd ..
-  \prompt{unix> } mkdir tmp \quad{\sl\# (or [better] link directory on local disc to \file{tmp})}
+  \prompt{unix> } mkdir tmp \quad{\sl\# (or [better] link directory on local disc to \file[tmp/]{tmp})}
   \prompt{unix> } ./start.csh
   \prompt{unix> } ./run.csh
 \end{alltt}
@@ -1037,7 +1046,7 @@ and/or \var{nzgrid}=1.
 
 The overall directory structure of the code is shown in
 Fig.~\ref{Fig-Structure}.
-Under \file{pencil-code}, there are currently the following
+Under \file[pencil-code/]{pencil-code}, there are currently the following
 files and directories:
 \begin{verbatim}
   CVS/    bin/  bugs/         doc/
@@ -1045,54 +1054,57 @@ files and directories:
   README  TODO  sourceme.csh  sourceme.sh
 \end{verbatim}
 
-Almost all of the source code is contained in the directory \file{src}/,
+Almost all of the source code is contained in the directory \file{src/},
 but in order to encapsulate individual applications, the code is compiled
-separately for each run in a local \file{src} directory below the
-individual run directory, like e.g.~\file{samples/conv-slab/src}.
+separately for each run in a local \file[src/]{src} directory below the
+individual run directory, like
+e.g.~\file[conv-slab/src/]{samples/conv-slab/src}.
 
 It may be a good idea to keep your own runs also under \name{CVS}, but
 this would usually be a different repository. On the machine where you
-are running the code you may want to check in out in your \file{pencil-code}
-directory. In our case we have our own runs in a repository called
-\file{pencil-runs}, so we say
+are running the code you may want to check in out in your
+\file[pencil-code/]{pencil-code} directory.
+In our case we have our own runs in a repository called
+\file[pencil-runs/]{pencil-runs}, so we say
 \begin{alltt}
   \prompt{brandenb@fe1:/home/brandenb> } cd \$PENCIL_HOME
   \prompt{brandenb@fe1:/home/brandenb/pencil-code> } cvs co -d runs pencil-runs
 \end{alltt}
-In our case, \file{runs} contains individual run directories, grouped in
-The directory \file{runs} contains individual run directories, grouped in
-classes (like \file{spher} for spherical calculations, or \file{kinematic}
-for kinematic dynamo simulations.
+In our case, \file[runs/]{runs} contains individual run directories, grouped in
+The directory \file[runs/]{runs} contains individual run directories, grouped in
+classes (like \file[spher/]{spher} for spherical calculations, or
+\file[kinematic/]{kinematic} for kinematic dynamo simulations.
 The current list of classes is
 \begin{verbatim}
    4 1d-tests/    4 OLD/          4 convstar/    4 forced/       4 radiation/
    4 2d-tests/    4 README        4 disc/        4 kinematic/    4 rings/
    4 CVS/         4 buoy_tube/    4 discont/     4 pass_only/    4 slab_conv/
 \end{verbatim}
-The directory \file{forced}/ contains some forced turbulence runs (both
+The directory \file{forced/} contains some forced turbulence runs (both
 magnetic and nonmagnetic);
-\file{gravz}/ contains runs with vertical gravity;
-\file{rings}/ contains decaying MHD problems (interlocked flux rings as
+\file{gravz/} contains runs with vertical gravity;
+\file{rings/} contains decaying MHD problems (interlocked flux rings as
 initial condition, for example);
-and \file{kinematic}/ contains kinematic dynamo problems where the
+and \file{kinematic/} contains kinematic dynamo problems where the
 hydrodynamics is turned off entirely.
 The file \file{samples/README} should contain an up-to-date list and
 short description of the individual classes.
 
-The subdirectory \file{src} of each run directory contains a few local
+The subdirectory \file[src/]{src} of each run directory contains a few local
 configuration files (currently these are \file{Makefile.local} and
 \file{cparam.local}, together with links to
 all the \file{.f90} and \file{.c} files and the \file{Makefile} in the top
-\file{src} directory (these links are set up by the script \cmd{setup-src}.
+\file[src/]{src} directory (these links are set up by the script
+\cmd{setup-src}.
 
 General purpose visualization routines for \name{IDL} or \name{DX} are in the
-\file{idl} and \file{dx} directories, respectively.
+\file[idl/]{idl} and \file[dx/]{dx} directories, respectively.
 
-The directory \file{doc} contains this manual; \file{bin} a number of
-utility scripts (\name{csh} and \name{Perl}).
-The \file{CVS} directory is used (you guessed it) by \name{CVS}, and is
+The directory \file[doc/]{doc} contains this manual; \file[bin/]{bin} a
+number of utility scripts (mostly written in \name{csh} and \name{Perl}).
+The \file[CVS/]{CVS} directory is used (you guessed it) by \name{CVS}, and is
 not normally directly accessed by the user.
-\file{bugs}, finally is used by us for internal purposes.
+\file[bugs/]{bugs}, finally is used by us for internal purposes.
 
 \bigskip
 
@@ -1102,7 +1114,7 @@ functions for your convenience.
 If you do not want to source one of these files, you need to make sure
 your \name{IDL} path is set appropriately (provided you want to use
 \name{IDL}, that is) and you will need to address the scripts from
-\file{bin} with their explicit path name.
+\file[bin/]{bin} with their explicit path name.
 
 
 % ----------------------------------------------------------------------------- %
@@ -1378,7 +1390,7 @@ This, together with \name{CVS} allows you for example to very quickly
 compare results for identical runs on different machines.
 
 Our mechanism for picking the right set of compiler flags is based on the
-\name{Perl} script \file{adapt-mkfile} in \file{\$PENCIL_HOME/bin}, which
+\name{Perl} script \file{adapt-mkfile} in \file[bin/]{\$PENCIL_HOME/bin}, which
 processes the file \file{Makefile} to a (localized) \file{makefile}.
 When both \file{Makefile} and \file{makefile} are present, \cmd{make} will
 use the latter.
@@ -1387,7 +1399,7 @@ command
 \begin{alltt}
   \prompt{unix > } perldoc adapt-mkfile
 \end{alltt}
-provided \file{\$PENCIL_HOME/bin} is in your path.
+provided \file[bin/]{\$PENCIL_HOME/bin} is in your path.
 
 To give you an idea of how to add you own machines, let us assume you have
 several Linux boxes running a compiler \cmd{f95} that needs the options
@@ -2315,8 +2327,8 @@ reassemble everything into one file, you use
 \begin{alltt}
   \prompt{IDL> }  .r rall
 \end{alltt}
-instead of \cmd{.r r}.
-Here, \cmd{.r} is a shorthand for \cmd{.run}.
+instead of \cmd[.run]{.r r}.
+Here, \cmd[.run]{.r} is a shorthand for \cmd{.run}.
 The procedure \file{rall.pro} reads (and assembles) the data from all
 processors and correspondingly requires large amounts of memory for very
 large runs.
@@ -2346,7 +2358,8 @@ and it will get the data for that snapshot from all processors.
 To discuss:
 \begin{itemize}
 \item availability of IDL (demo version; Pvwave; Ana)?
-\item setup (include \file{../idl} and \file{../../idl} (?) in \var{!path})
+\item setup (include \file[idl/]{../idl} and \file[idl/]{../../idl} (?) in
+  \var{!path})
 \item how to get our IDL routines
 \end{itemize}
 
@@ -2391,7 +2404,8 @@ is even 17 times slower.
 
 \subsubsection{How to run a sample problem in parallel}
 
-To run the sample problem in the directory \file{samples/conv-slab} on 16
+To run the sample problem in the directory
+\file[conv-slab/]{samples/conv-slab} on 16
 CPUs, you need to do the following (in that directory):
 
 \begin{enumerate}
@@ -2439,7 +2453,7 @@ CPUs, you need to do the following (in that directory):
 
 \end{enumerate}
 
-Make sure that all CPUs see the same \file{tmp} directory; otherwise
+Make sure that all CPUs see the same \file{tmp/} directory; otherwise
 things will go wrong.
 
 Remember that in order to visualize the full domain with IDL (rather than
@@ -2528,7 +2542,7 @@ magnetic vacuum permeability.
 \index{entropy}%
 \label{entropy}%
 
-The current thermodynamics module \file{entropy} formulates the thermal
+The current thermodynamics module \name{entropy} formulates the thermal
 part of the physics in terms of \emph{entropy} $s$, rather than thermal
 energy $e$, which you may be more familiar with.
 Thus the two fundamental thermodynamical variables are $\ln\varrho$
@@ -2820,9 +2834,10 @@ make[1]: *** [cdata.o] Error 2
 
 {\em
   Check and make sure that \file{mkcparam} (directory
-  \file{\$PENCIL_HOME/bin}) is in your path.
+  \file[bin/]{\$PENCIL_HOME/bin}) is in your path.
   If this doesn't help, there may be an {\it empty} \file{cparam.inc}
-  file in your \file{src} directory. Remove \file{cparam.inc} and try again.
+  file in your \file[src/]{src} directory.
+  Remove \file{cparam.inc} and try again.
   (Note that \file{cparam.inc} is automatically generated.)\footnote{Wolfgang,
     I just added \file{*.inc} to the \file{Makefile}.}
 }
@@ -2884,7 +2899,7 @@ Reading param.nml..
 \medskip
 
 {\em
-  You don't have the subdirectory \file{tmp} in your IDL variable
+  You don't have the subdirectory \file[tmp/]{tmp} in your IDL variable
   \var{!path}.
   Make sure you source \file{sourceme.csh}/\file{sourceme.sh}
   or set a sufficient IDL path otherwise.
@@ -3055,7 +3070,7 @@ well-defined sample problems.
   \begin{center}
     \caption{
       Like Table~\ref{Ttimescale}, but for the versions from the
-      \file{samples} directory.
+      \file[samples/]{samples} directory.
     }
     \label{Ttimescale-convsample}
     \begin{small}
@@ -3415,7 +3430,7 @@ samples of the code.
 \subsection{Three-layered convection model}
 
 In Sect.~\ref{S-getting-started} we have shown the early stages of the
-convection model located in \file{samples/conv-slab}.
+convection model located in \file[conv-slab/]{samples/conv-slab}.
 To arrive at fully developed convection, you will need to run the code for
 a larger number of time steps.
 Figure~\ref{Fig-pvert2} shows the vertical profiles of four basic
@@ -3442,7 +3457,7 @@ velocity for the model for $0<t<50$.
     [width=0.7\textwidth,keepaspectratio]%
     {evol}
   \caption{Time evolution of rms and maximum velocity for the model
-    \file{samples/conv-slab}.
+    \file[conv-slab/]{samples/conv-slab}.
      Plots of this type can be produced by running the IDL script
      \file{evol.pro}.
   }
@@ -3496,7 +3511,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.101 2002-09-20 18:14:31 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.102 2002-09-23 12:20:40 dobler Exp $ $}
 
 
 \end{document}
