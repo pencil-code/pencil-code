@@ -33,10 +33,12 @@ mem = float(memstr)
 !p.psym = 10
 ;
 plot, load, TITLE='!6CPU Load!X'
-ophline,[100]
+ophline,100
+ophline,mean(load),LINE=2
 ;
 plot, mem, TITLE='!6Memory percentage!X'
 ophline,[100]
+ophline,mean(mem),LINE=2
 
 
 ;; Plot histograms
@@ -47,11 +49,14 @@ histo = histogram(load,MIN=0.,MAX=100.,BINSIZE=4)
 N_hist = n_elements(histo)
 perc = indgen(N_hist)*100./(N_hist-1)
 plot, perc, histo, TITLE='!6CPU Load!X'
+opvline,mean(load),LINE=2
+
 ;
 histo = histogram(mem,MIN=0.,MAX=100.,BINSIZE=4)
 N_hist = n_elements(histo)
 perc = indgen(N_hist)*100./(N_hist-1)
 plot, perc, histo, TITLE='!6Memory percentage!X'
+opvline,mean(mem),LINE=2
 
 
 restore_state
