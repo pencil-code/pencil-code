@@ -571,8 +571,8 @@ subroutine transform_fftpack_1d(a_re,a_im)
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
+  a_re=a_re/nxgrid
+  a_im=a_im/nxgrid
 !
 end subroutine transform_fftpack_1d
 !***********************************************************************
