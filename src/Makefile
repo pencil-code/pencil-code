@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.179 2003-05-29 09:17:13 mee Exp $
+### $Id: Makefile,v 1.180 2003-05-29 17:24:00 ngrs Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -102,6 +102,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 #(ns0)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
+#FC=ifc -I/usr/lib/lam/include #(morvern)  
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
 #FC=ifc #(cosmo|nl6|mmtf|nl19)
 #FC=f95 #(karbala)
@@ -109,6 +111,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
+#LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
@@ -121,7 +124,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI= # (Samos|fire)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
-#F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala)
+#F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4)
 #F77=$(FC) #(Cincinnatus|Owen|Master|Cosmo)
 
@@ -188,8 +191,13 @@ pacx-makefile: Makefile
 	cp pacx-makefile makefile
 cparam.inc: Makefile Makefile.local
 	mkcparam Makefile Makefile.local -o cparam.inc
-mpicomm_double.f90:
+mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
+mpicomm_.f90: mpicomm.f90
+	sed -e 's/\(MPI_[A-Z_]*\)\([ ]*(\)/\1_\2/' mpicomm.f90 | sed -e 's/\(MPI_[A-Z_]*\)\([ ]*!\)/\1_\2/' > mpicomm_.f90
+mpicomm_double_.f90: mpicomm_double.f90
+	sed -e 's/\(MPI_[A-Z_]*\)\([ ]*(\)/\1_\2/' mpicomm_double.f90 | sed -e 's/\(MPI_[A-Z_]*\)\([ ]*!\)/\1_\2/' > mpicomm_double_.f90
+
 code:
 	make start.x run.x read_videofiles.x
 

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.75 2003-05-27 09:26:00 nilshau Exp $
+! $Id: mpicomm.f90,v 1.76 2003-05-29 17:24:00 ngrs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -689,6 +689,7 @@ module Mpicomm
     function mpiwtime()
 !
       double precision :: mpiwtime
+      double precision :: MPI_WTIME   ! definition needed for mpicomm_ to work
 !
       mpiwtime = MPI_WTIME()
     endfunction mpiwtime
@@ -696,6 +697,7 @@ module Mpicomm
     function mpiwtick()
 !
       double precision :: mpiwtick
+      double precision :: MPI_WTICK   ! definition needed for mpicomm_ to work
 !
       mpiwtick = MPI_WTICK()
     endfunction mpiwtick
