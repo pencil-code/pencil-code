@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.105 2004-06-11 12:19:56 ajohan Exp $
+! $Id: dustdensity.f90,v 1.106 2004-06-14 15:00:12 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -21,7 +21,7 @@ module Dustdensity
   implicit none
   
   real, dimension(nx,ndustspec,ndustspec) :: dkern
-  real, dimension(ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
+  real, dimension(nx,ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=1.
   real :: mdave0=1., adpeak=5e-4
   real :: supsatfac=1.,supsatfac1=1.
@@ -114,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.105 2004-06-11 12:19:56 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.106 2004-06-14 15:00:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -374,32 +374,32 @@ module Dustdensity
 !  Loop over dust layers
 !
       do k=1,ndustspec
-        if (lnd_turb_diff)              nd_diff(k) = nu_turb
-        if (lmdvar .and. lmd_turb_diff) md_diff(k) = nu_turb
-        if (lmice  .and. lmi_turb_diff) mi_diff(k) = nu_turb
+        if (lnd_turb_diff) nd_diff(:,k) = nu_turb/(1.+Omega/tausd1(:,k))
+        if (lmdvar .and. lmd_turb_diff) md_diff(:,k) = nu_turb
+        if (lmice  .and. lmi_turb_diff) mi_diff(:,k) = nu_turb
 !
 !  Diffusion terms
 !
-        if (nd_diff(k) /= 0.) then
+        if (maxval(nd_diff(:,k)) /= 0.) then
           call del2(f,ind(k),del2nd)
           if (.not. lmdvar) then
             call grad(f,ilnrho,glnrho)
             call del2(f,ilnrho,del2lnrho)
             call grad(f,ind(k),gnd(:,:,k))
             call dot_mn(gnd(:,:,k),glnrho,gndglnrho)
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*( &
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(:,k)*( &
                 del2nd - nd(:,k)*del2lnrho - gndglnrho)
           else
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*del2nd
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(:,k)*del2nd
           endif
         endif
-        if (lmdvar .and. md_diff(k) /= 0.) then
+        if (lmdvar .and. maxval(md_diff(:,k)) /= 0.) then
           call del2(f,imd(k),del2md)
-          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) + md_diff(k)*del2md
+          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) + md_diff(:,k)*del2md
         endif
-        if (lmice .and. mi_diff(k) /= 0.) then
+        if (lmice .and. maxval(mi_diff(:,k)) /= 0.) then
           call del2(f,imi(k),del2mi)
-          df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) + mi_diff(k)*del2mi
+          df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) + mi_diff(:,k)*del2mi
         endif
 !
 !  Diagnostic output
