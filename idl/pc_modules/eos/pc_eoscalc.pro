@@ -36,7 +36,10 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
   
   result=0.
 
-  if (not param.lionization and not param.lionization_fixed) then begin
+  lionization = safe_get_tag(param,'lionization',default=safe_get_tag(param,'leos_ionization',default=0)) 
+  lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionization_fixed',default=0)) 
+
+  if (not lionization and not lionization_fixed) then begin
 
     if (keyword_set(lnrho_lnTT)) then begin
 
@@ -82,7 +85,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
 
     endelse
 
-  endif else if (param.lionization_fixed) then begin
+  endif else if (lionization_fixed) then begin
 
     yH0=param.yH0
     xHe=param.xHe
@@ -132,7 +135,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
       endif
 
     endelse
-  endif else if (param.lionization) then begin
+  endif else if (lionization) then begin
 
     if (keyword_set(lnrho_lnTT)) then begin
 

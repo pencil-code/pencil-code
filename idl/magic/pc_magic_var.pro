@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.8 2004-07-11 06:27:36 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.9 2004-07-19 11:27:26 mee Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-07-11 06:27:36 $
-;  $Revision: 1.8 $
+;  $Date: 2004-07-19 11:27:26 $
+;  $Revision: 1.9 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -65,6 +65,9 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
 ; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
 
+  lionization = safe_get_tag(param,'lionization',default=safe_get_tag(param,'leos_ionization',default=0)) 
+  lionization_fixed = safe_get_tag(param,'lionization_fixed',default=safe_get_tag(param,'leos_ionizationi_fixed',default=0)) 
+
   for iv=0,n_elements(variables)-1 do begin
 
     ; Magnetic field vector
@@ -84,7 +87,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     ; Sound speed squared
     endif else if variables[iv] eq 'cs2' then begin
       tags[iv]=variables[iv]
-      if (param.lionization and not param.lionization_fixed) then begin
+      if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc(lnrho,lnTT,/cs2,/lnrho_lnTT)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/cs2,/lnrho_ss)'
@@ -93,7 +96,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     ; Specific energy
     endif else if variables[iv] eq 'ee' then begin
       tags[iv]=variables[iv]
-      if (param.lionization and not param.lionization_fixed) then begin
+      if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc(lnrho,lnTT,/ee,/lnrho_lnTT)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/ee,/lnrho_ss)'
@@ -102,7 +105,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     ; Temperature
     endif else if variables[iv] eq 'tt' then begin
       tags[iv]=variables[iv]
-      if (param.lionization and not param.lionization_fixed) then begin
+      if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss)'
@@ -111,7 +114,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     ; Pressure
     endif else if variables[iv] eq 'pp' then begin
       tags[iv]=variables[iv]
-      if (param.lionization and not param.lionization_fixed) then begin
+      if (lionization and not lionization_fixed) then begin
         variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT)'
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss)'
