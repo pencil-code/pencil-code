@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.1 2004-05-28 08:26:46 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.2 2004-05-28 08:50:16 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
@@ -60,7 +60,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
     endfor
 
     sized=size(nd)
-    delta=spread(mdplus-mdminus,indgen(sized[0]),sized[1:sized[0]])
+    delta=spread(mdplus-mdminus,indgen(sized[0]-1),sized[1:sized[0]])
     
     result=nd/delta
 
