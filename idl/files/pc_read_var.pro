@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.16 2004-05-12 09:59:33 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.17 2004-05-14 12:06:59 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-12 09:59:33 $
-;  $Revision: 1.16 $
+;  $Date: 2004-05-14 12:06:59 $
+;  $Revision: 1.17 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -178,7 +178,6 @@ end
 
 content = strmid(content,2)
 IF ( not keyword_set(QUIET) ) THEN print,'File '+varfile+' contains: ', content
-IF ( not keyword_set(QUIET) ) THEN print,'Time is t=', t
 
 for i=0,ncpus-1 do begin 
   if (n_elements(proc) eq 1) then begin
@@ -313,6 +312,8 @@ if keyword_set(TRIMALL) then begin
 ;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
   variables = 'pc_noghost('+variables+',dim=dim)'
 endif
+
+IF ( not keyword_set(QUIET) ) THEN print,'Time is t=', t
 
 makeobject="object = CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
                                      arraytostring(tags,QUOTE="'") + $
