@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.4 2002-07-06 20:29:17 brandenb Exp $
+! $Id: nohydro.f90,v 1.5 2002-07-08 19:28:14 brandenb Exp $
 
 module Hydro
 
@@ -16,6 +16,7 @@ module Hydro
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
+  integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
 
   contains
 
@@ -41,7 +42,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.4 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.5 2002-07-08 19:28:14 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************

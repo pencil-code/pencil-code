@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.72 2002-07-08 06:51:51 brandenb Exp $ 
+! $Id: sub.f90,v 1.73 2002-07-08 19:28:14 brandenb Exp $ 
 
 module Sub 
 
@@ -1564,9 +1564,9 @@ module Sub
 !  copy
 !
       print*,'remove wiggles in lnrho, t=',t
-      tmp=f(:,:,:,ilnrho)
+      tmp=exp(f(:,:,:,ilnrho))
       call smooth_3d(tmp,1)
-      f(:,:,:,ilnrho)=tmp
+      f(:,:,:,ilnrho)=alog(tmp)
 !
     endsubroutine rmwig
 

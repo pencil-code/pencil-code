@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.3 2002-07-06 20:29:17 brandenb Exp $
+! $Id: nohydro_file.f90,v 1.4 2002-07-08 19:28:14 brandenb Exp $
 
 module Hydro
 
@@ -13,6 +13,7 @@ module Hydro
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
+  integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
 
   contains
 
@@ -39,8 +40,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.3 $", &
-           "$Date: 2002-07-06 20:29:17 $")
+           "$Revision: 1.4 $", &
+           "$Date: 2002-07-08 19:28:14 $")
 !
     endsubroutine register_hydro
 !***********************************************************************

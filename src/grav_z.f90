@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.17 2002-07-08 06:51:51 brandenb Exp $
+! $Id: grav_z.f90,v 1.18 2002-07-08 19:28:14 brandenb Exp $
 
 module Gravity
 
@@ -8,8 +8,11 @@ module Gravity
 
   implicit none
 
-  real :: z1,z2,zref=0.,zinfty=1.5
-  real :: gravz=-1.
+!  zref is the height where rho=rho0 and cs2=cs20.
+!  For a single polytrope, zinfty (calculated in the
+!  density module) is the height where rho=cs2=0.
+
+  real :: z1,z2,zref=0.,gravz=-1.,zinfty
   character (len=30) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
@@ -17,14 +20,13 @@ module Gravity
 !  some position which is referred to as "zinfty".
 
 !AB: Wolfgang, you should explain here the meaning of z1 and z2,
-!AB: as well as zref.
 
 !AB: Nils, could you have a look how in galactic physics (Binney & Tremaine)
 !AB: the coefficient in front of .5*z^2 is called (vertical epicyclic frequency?)
 !AB: We should introduce that instead of keeping a double meaning of gravz.
 
   namelist /grav_init_pars/ &
-       z1,z2,zref,gravz,grav_profile,zinfty
+       z1,z2,zref,gravz,grav_profile
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
@@ -53,7 +55,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.17 2002-07-08 06:51:51 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.18 2002-07-08 19:28:14 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -127,19 +129,20 @@ module Gravity
       if (lroot.and.first) print*,'potential: zinfty=',zinfty
 !
 !  different profiles, calculate also gz=-dpot/dz
+!  remember, gravz=-1 (at least negative) for z pointing upwards.
 !
       select case(grav_profile)
         case('const')
-          pot=abs(gravz)*(zmn-zinfty)
+          pot=-gravz*(zmn-zinfty)
           if(present(grav)) then
             grav(:,1:2)=0.
-            grav(:,3)=-abs(gravz)
+            grav(:,3)=gravz
           endif
         case('linear')
-          pot=.5*abs(gravz)*(zmn**2-zinfty**2)
+          pot=-.5*gravz*(zmn**2-zinfty**2)
           if(present(grav)) then
             grav(:,1:2)=0.
-            grav(:,3)=-abs(gravz)*zmn
+            grav(:,3)=gravz*zmn
           endif
         case('radial')
           if (present(rmn)) then

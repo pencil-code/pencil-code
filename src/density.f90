@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.26 2002-07-08 06:51:51 brandenb Exp $
+! $Id: density.f90,v 1.27 2002-07-08 19:28:14 brandenb Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.26 2002-07-08 06:51:51 brandenb Exp $")
+           "$Id: density.f90,v 1.27 2002-07-08 19:28:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -89,6 +89,11 @@ module Density
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int
+!
+!  Set default values for sound speed at top and bottom.
+!  These may be updated in one of the following initialization routines.
+!
+      cs2top=cs20; cs2bot=cs20
 !
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
@@ -240,9 +245,9 @@ module Density
 
       endselect
 !
-!  check whether cs2bot,cs2top have been set
+!  check that cs2bot,cs2top are ok
 !
-      if(lroot) print*,'verify(!): cs2bot,cs2top=',cs2bot,cs2top
+      if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
 !
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
@@ -442,8 +447,12 @@ module Density
       real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
       real :: ggamma,ztop,zbot
 !
-      ggamma=1.+1./mpoly
+!  zinfty is calculated such that rho=rho0 and cs2=cs20 at z=zref.
+!
+      zinfty=zref-(mpoly+1.)/gamma*cs20/gravz
       if (lroot) print*,'polytropic_simple: mpoly=',mpoly
+      ggamma=1.+1./mpoly
+!
       do n=n1,n2
       do m=m1,m2
         call potential(x(l1:l2),y(m),z(n),pot)
