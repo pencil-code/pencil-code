@@ -19,7 +19,7 @@ function texsyms, DEVICE=device
 
   default, device, !d.name
 
-  if (device eq 'PS') then begin
+  if ((device eq 'PS') and (!p.font eq 0)) then begin
     ; lowercase lsymbols
     sym = { $
               alpha      : '!7a!X' , $
