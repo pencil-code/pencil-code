@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.23 2003-02-23 07:50:38 brandenb Exp $ 
+! $Id: initcond.f90,v 1.24 2003-02-23 12:14:09 brandenb Exp $ 
 
 module Initcond 
  
@@ -230,7 +230,7 @@ module Initcond
 !
     endsubroutine beltrami
 !***********************************************************************
-    subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma)
+    subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma,ztop)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -269,15 +269,15 @@ module Initcond
 !  calculate hh
 !  add continuous vertical stratification to horizontal planet solution
 !
-      ztop=xyz1(3)
       rr2=xx**2+eps2*yy**2
       hh=+.5*delta2*Omega**2*amax1(radius2-rr2,0.)+.5*Omega**2*(ztop**2-zz**2)
-      print*,'planet solution, ztop=',ztop
+      print*,'planet: ztop=',ztop,minval(hh)
 !
 !  limit dynamical to 1% of maximum value (can always add a constant)
 !
-      !hmax=maxval(hh)
-      !hh=hh+.01*hmin
+      hh=amax1(hh,0.)
+      hmax=maxval(hh)
+      hh=hh+.01*hmax
 !
       rr2=xx**2+eps2*yy**2+zz**2/delta2
       do n=n1,n2
@@ -296,6 +296,7 @@ module Initcond
 !
 !  calculate density, depending on what gamma is
 !
+      print*,'planet: hmin=',minval(hh)
       if(gamma<=1.) print*,'must have gamma>1 for planet solution'
       if(gamma==1.) then
         f(:,:,:,ilnrho)=hh/cs20

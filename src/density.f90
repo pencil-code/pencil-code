@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.67 2003-02-02 15:12:52 brandenb Exp $
+! $Id: density.f90,v 1.68 2003-02-23 12:14:09 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.67 2003-02-02 15:12:52 brandenb Exp $")
+           "$Id: density.f90,v 1.68 2003-02-23 12:14:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -279,7 +279,7 @@ module Density
                / sqrt(kx_lnrho**2+ky_lnrho**2+kz_lnrho**2)
 
       case('planet')
-        call planet(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho,gamma)
+        call planet(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho,gamma,ztop)
 
       case('Ferriere'); call ferriere(f)
 
