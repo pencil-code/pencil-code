@@ -4,13 +4,18 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.92 2002-09-10 16:35:36 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.93 2002-09-10 17:30:04 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
-%     latex manual; makeindex manual; latex manual
+%     latex manual; makeindex -s dotted.idxsty manual; makeindex -s dotted.idxsty manual.vidx -o manual.vind; makeindex -s dotted.idxsty manual.fidx -o manual.find; latex manual
 %   Macros for files, variables, etc (list loosely adopted from texinfo):
 %
+%     \name:    Name of a program, object, etc.
+%                   \name{object}
+%               will put `Object' (capitalized) into the index;
+%                   \name[Subject]{object}
+%               will put `Subject' into the index;
 %     \code:    A fragment of code:
 %                   use the line \code{call remove\_file()}
 %     \kbd:     Keyboard input:
@@ -25,6 +30,9 @@
 %                   this sets \env{CVSROOT}
 %     \file:    A file or directory name:
 %                   written to \file{~/tmp/var.dat}
+%               Like \name, \file accepts an optional argument that will
+%               override the index entry:
+%                   \file[var.dat]{~/tmp/var.dat}
 %     \command,
 %     \cmd:     A command line:
 %                   use \command{rm -f *} at your own risk
@@ -46,9 +54,9 @@
 \else                           % running pdflatex
   \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
 \fi
+\usepackage[bookmarks=false]{hyperref}
 
 %\usepackage{url} %(do we not need this; but it's not working anyway)
-\usepackage[bookmarks=false]{hyperref}
 %\usepackage{german,a4}
 %\usepackage[german,british]{babel}
 \usepackage[latin1]{inputenc}
@@ -58,7 +66,8 @@
 \renewcommand{\ttdefault}{cmtt} % Courier is too broad
 \usepackage{amsmath}
 
-\usepackage{makeidx}
+%\usepackage{makeidx}
+\usepackage{index}              % Allow for multiple indexes
 
 \usepackage[it,footnotesize]{caption2}
 \setlength{\abovecaptionskip}{5pt} % Space before caption
@@ -88,11 +97,60 @@
 
 \usepackage{parskip,a4,vmargin}
 \setmargrb{20mm}{25mm}{20mm}{15mm}
+\usepackage{multicol}
 
 \frenchspacing
 \sloppy
 
+%%% Multiple, three-column indexes
 \makeindex
+\newindex{var}{vidx}{vind}{Variable Index}
+\newindex{file}{fidx}{find}{File Index}
+%% The following is adapted from hyperref.sty and fixes hyperrefs in the
+%% index after all of our nasty manipulations:
+\makeatletter
+  \@ifpackageloaded{hyperref}{%
+    \let\HyInd@org@wrindex\@wrindex
+    \def\@wrindex#1#2{\HyInd@@wrindex{#1}#2||\\}%
+    \def\HyInd@@wrindex#1#2|#3|#4\\{%
+      \ifx\\#3\\%
+        \HyInd@org@wrindex{#1}{#2|hyperpage}%
+      \else
+        \def\Hy@temp@A{#3}%
+        \ifx\Hy@temp@A\HyInd@ParenLeft
+          HyInd@org@wrindex{#1}{#2|#3hyperpage}%
+        \else
+          \HyInd@org@wrindex{#1}{#2|#3}%
+        \fi
+      \fi
+    }%
+  }{}
+\makeatother
+%% Redefine index to be in three columns (adapted from `index.sty'):
+\makeatletter
+\renewenvironment{theindex}{%
+  \edef\indexname{\the\@nameuse{idxtitle@\@indextype}}%
+  \if@twocolumn\@restonecolfalse
+  \else\@restonecoltrue
+  \fi
+  \columnseprule \z@
+  \columnsep 35\p@
+  \begin{multicols}{3}[\section*{\indexname}%
+    \ifx\index@prologue\@empty%
+    \else\index@prologue\bigskip
+    \fi
+  ]%
+  \@mkboth{\MakeUppercase\indexname}%
+          {\MakeUppercase\indexname}%
+  \thispagestyle{plain}%
+  \parindent\z@
+  \parskip\z@ \@plus .3\p@\relax
+  \let\item\@idxitem
+}
+{ \end{multicols}
+  \if@restonecol\onecolumn\else\clearpage\fi
+}
+\makeatother
 
 
 %%% Page headings
@@ -123,13 +181,13 @@
 
 
 %% keys, names, paths, files, etc.
+%% Examples: \name{Greeks} \name[Trojans]{Greeks}
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\kbd}[1]{\texttt{\textsl{#1}\/}}
 \newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
 \newcommand{\samp}[1]{`\code{#1}'}
-\newcommand{\var}[1]{\textsl{#1}\index{#1@\emph{#1}}\/}
-\newcommand{\env}[1]{\code{#1}\index{#1@\emph{#1}}}
-\newcommand{\file}[1]{`\texttt{#1}'\index{#1@\texttt{#1}}}
+\newcommand{\var}[1]{\textsl{#1}\index[var]{#1@\emph{#1}}\/}
+\newcommand{\env}[1]{\code{#1}\index[var]{#1@\emph{#1}}}
 \newcommand{\command}[1]{\code{#1}\index{#1}}
 \newcommand{\cmd}[1]{\command{#1}}
 \newcommand{\option}[1]{`\code{#1}'\index{#1@\emph{`#1'} option}}
@@ -139,7 +197,22 @@
 %\newcommand{\url}[1]{}
 \newcommand{\email}[1]{\code{#1}}
 
-\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
+%\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
+%\newcommand{\file}[1]{`\texttt{#1}'\index{#1@\texttt{#1}}}
+\makeatletter
+\newcommand{\name}[2][]{%
+  \def\index@{#1}\textsl{#2\/}%
+  \ifx\index@\@empty\index{#2@\MakeUppercase #2}%
+  \else\index{#1}%
+  \fi%
+}
+\newcommand{\file}[2][]{%
+  \def\index@{#1}`\texttt{#2}'%
+  \ifx\index@\@empty\index[file]{#2@\texttt{#2}}%
+  \else\index[file]{#1@\texttt{#1}}%
+  \fi%
+}
+\makeatother
 \newcommand{\Path}[1]{\file{#1}}
 
 %
@@ -218,7 +291,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.92 $ $}
+\date{\today,~ $ $Revision: 1.93 $ $}
 
 % ====================================================================== %
 
@@ -250,7 +323,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.92 $ $}
+  \emph{\today,~ $ $Revision: 1.93 $ $}
 
   \vspace{\stretch{3}}
 
@@ -694,8 +767,8 @@ take here.
 Next, you run \cmd{make} in the \file{src} subdirectory of your run
 directory.
 Since you are using one of the predefined test problems, the settings in
-\file{src/Makefile.local} and \file{src/cparam.local} are all reasonable,
-and you just do
+\file[Makefile.local]{src/Makefile.local} and
+\file[cparam.local]{src/cparam.local} are all reasonable, and you just do
 \begin{alltt}
   \prompt{unix> } cd src
   \prompt{unix> } make \
@@ -754,10 +827,11 @@ You are now ready to start the code:
   
   Fri Jul 19 13:04:38 CEST 2002
 \end{alltt}
-This runs \file{src/start.x} to construct an initial condition based on
+This runs \file[start.x]{src/start.x} to construct an initial condition based on
 the parameters set in \file{start.in}.
-This initial condition is stored in \file{tmp/proc0/var.dat} (and in
-\file{tmp/proc1/var.dat}, etc. if you run the multiprocessor version).
+This initial condition is stored in \file[var.dat]{tmp/proc0/var.dat} (and
+in \file[var.dat]{tmp/proc1/var.dat}, etc. if you run the multiprocessor
+version).
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[hbtp]
@@ -800,7 +874,7 @@ Now we run the code:
 \begin{alltt}
   \prompt{unix> } run.csh
 \end{alltt}
-This runs \file{src/run.x} and carries out \var{nt} time steps, where
+This runs \file[run.x]{src/run.x} and carries out \var{nt} time steps, where
 \var{nt} and other run time parameters are specified in \file{run.in}.
 On a decent PC (1.7\,GHz), 1000 time steps take about 3 minutes.
 
@@ -957,12 +1031,12 @@ files and directories:
   README  TODO  sourceme.csh  sourceme.sh
 \end{verbatim}
 
-Almost all of the source code is contained in the directory \file{src/},
+Almost all of the source code is contained in the directory \file{src}/,
 but in order to encapsulate individual applications, the code is compiled
 separately for each run in a local \file{src} directory below the
 individual run directory, like e.g.~\file{samples/conv-slab/src}.
 
-It may be a good idea to keep your own runs also under \var{cvs}, but
+It may be a good idea to keep your own runs also under \name{CVS}, but
 this would usually be a different repository. On the machine where you
 are running the code you may want to check in out in your \file{pencil-code}
 directory. In our case we have our own runs in a repository called
@@ -977,18 +1051,18 @@ classes (like \file{spher} for spherical calculations, or \file{kinematic}
 for kinematic dynamo simulations.
 The current list of classes is
 \begin{verbatim}
-   4 1d-tests/     4 OLD/           4 convstar/     4 forced/        4 radiation/
-   4 2d-tests/     4 README         4 disc/         4 kinematic/     4 rings/
-   4 CVS/          4 buoy_tube/     4 discont/      4 pass_only/     4 slab_conv/
+   4 1d-tests/    4 OLD/          4 convstar/    4 forced/       4 radiation/
+   4 2d-tests/    4 README        4 disc/        4 kinematic/    4 rings/
+   4 CVS/         4 buoy_tube/    4 discont/     4 pass_only/    4 slab_conv/
 \end{verbatim}
-The directory \file{forced/} contains some forced turbulence runs (both
+The directory \file{forced}/ contains some forced turbulence runs (both
 magnetic and nonmagnetic);
-\file{gravz/} contains runs with vertical gravity;
-\file{rings/} contains decaying MHD problems (interlocked flux rings as
+\file{gravz}/ contains runs with vertical gravity;
+\file{rings}/ contains decaying MHD problems (interlocked flux rings as
 initial condition, for example);
-and \file{kinematic/} contains kinematic dynamo problems where the
+and \file{kinematic}/ contains kinematic dynamo problems where the
 hydrodynamics is turned off entirely.
-The file \file{samples/README} will contain an up-to-date list and
+The file \file{samples/README} should contain an up-to-date list and
 short description of the individual classes.
 
 The subdirectory \file{src} of each run directory contains a few local
@@ -1009,7 +1083,7 @@ not normally directly accessed by the user.
 \bigskip
 
 The files \file{sourceme.csh} and \file{sourceme.sh} will set up some
-environment variables --- in particular \var{PATH} --- and aliases/shell
+environment variables --- in particular \env{PATH} --- and aliases/shell
 functions for your convenience.
 If you do not want to source one of these files, you need to make sure
 your \name{IDL} path is set appropriately (provided you want to use
@@ -1133,7 +1207,8 @@ simple test problems where an analytic solution was known.
 \subsubsection{Modularity}
 \index{modules}
 
-Each run directory has a file \file{src/Makefile.local} in which you
+Each run directory has a file \file[Makefile.local]{src/Makefile.local} in
+which you
 choose certain \name{modules}\footnote{%
   We stress once more that we are not talking about F90 modules here,
   although there is some connection, as most of our modules define F90
@@ -1293,7 +1368,7 @@ Our mechanism for picking the right set of compiler flags is based on the
 processes the file \file{Makefile} to a (localized) \file{makefile}.
 When both \file{Makefile} and \file{makefile} are present, \cmd{make} will
 use the latter.
-You can view the full documentation for \cmd{adapt-mkfile} with the
+You can view the full documentation for \file{adapt-mkfile} with the
 command
 \begin{alltt}
   \prompt{unix > } perldoc adapt-mkfile
@@ -1304,7 +1379,7 @@ To give you an idea of how to add you own machines, let us assume you have
 several Linux boxes running a compiler \cmd{f95} that needs the options
 \option{-O4 -u}, while one of them, \name{Janus}, runs a compiler \cmd{f90}
 which needs the flags \option{-O3} and requires the additional
-options \option{-lmpi -llam} for \name{MPI}.
+options \option{-lmpi} \option{-llam} for \name{MPI}.
 
 The \file{Makefile} you need will have the following section:
 \begin{alltt}
@@ -1343,7 +1418,7 @@ The \file{Makefile} you need will have the following section:
 
 Every \var{it1} time steps (\var{it1} is a runtime parameter, see
 Sect.~\ref{Run-params}), the code writes monitoring output to \name{stdout}
-and, parallel to this, to the file \file{tmp/n.dat}.
+and, parallel to this, to the file \file[n.dat]{tmp/n.dat}.
 The variables that appear in this listing and the output format are
 defined in the file \file{print.in} and can be changed without touching
 the code (even while the code is running).
@@ -1378,7 +1453,8 @@ The corresponding diagnostic output will look like
 \end{verbatim}
 
 In the file \file{zaver.in}, $z$-dependent (horizontal) averages are listed.
-They are written to the file \file{tmp/zaverages.dat}. At the moment we
+They are written to the file \file[zaverages.dat]{tmp/zaverages.dat}.
+At the moment we
 can also output in \file{print.in} the associated mean square value
 of the horizontal field, but this requires that in \file{zaver.in} the
 quantities \code{bxmz} and \code{bymz} are set.
@@ -1836,8 +1912,9 @@ the latest information, you should have a look at the code.
                  3rd-order Runge--Kutta). \\
   \var{dsnap} [$100.$]
                & save permanent snapshot every \var{dsnap} time units to
-                 files \file{VAR$n$}, where $n$ counts from $n=1$ upwards.
-                 (This information is stored in the file \file{tmp/tsnap.dat};
+                 files \file{VAR$N$}, where $N$ counts from $N=1$ upwards.
+                 (This information is stored in the file
+                 \file[tsnap.dat]{tmp/tsnap.dat};
                  see the module \var{wsnaps.f90}, which in turn uses the
                  subroutines \var{out1} and \var{out2}.) \\
   \var{dvid} [$100.$]
@@ -2112,7 +2189,11 @@ Boundary conditions are implemented through three layers of
 for an MPI code that uses ghost zones for representing values located on
 the neighboring processors anyway.
 The desired type of boundary condition is set through the parameters
-\var{bc\{x,y,z\}} in \file{run.in}; the nomenclature used is as follows.
+\var{bc\{x,y,z\}}
+\index[var]{bcx@\emph{bcx}}%
+\index[var]{bcy@\emph{bcy}}%
+\index[var]{bcz@\emph{bcz}}%
+in \file{run.in}; the nomenclature used is as follows.
 Set \var{bc\{x,y,z\}} to a sequence of letters like
 \begin{alltt}
   bcx = 'p','p','p', 'p',  'p'
@@ -2155,35 +2236,38 @@ boundary condition $a$ at the left/lower boundary, but
 $b$ at the right/upper one.
 
 If you build a new run.in file from another one with a different number
-if variables (\var{noentropy} from \var{entropy}, for example), you need
+if variables (\name{noentropy} from \name{entropy}, for example), you need
 to remember to adjust the {\it length} of the \var{bcx} to \var{bcz} arrays.
 The advantage of the present approach is that it is very easy to exchange
 all boundary conditions by a new set of boundary conditions in a particular
 direction. (Make everything periodic, for example, or switch off shearing
-sheet boundary conditions and have stress-free instead.
+sheet boundary conditions and have stress-free instead).
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Output files}
 
 \begin{itemize}
-\item \file{tmp/n.dat}, file{output diagnostics, depends on what is put in print.in}
+\item \file[n.dat]{tmp/n.dat} --- output diagnostics, depends on what is
+    put in print.in
 \item \file{tsnap.dat}, \file{tvid.dat}
-\item \file{tmp/dim.dat}
-\item \file{tmp/param.dat} \file{tmp/param2.dat}
-\item \file{tmp/proc\emph{X}/var.dat} --- detailed format
-\item \file{tmp/proc\emph{X}/VAR\emph{N}} --- same format as
-      \file{tmp/proc\emph{X}/var.dat}
-\item \file{tmp/proc\emph{X}/seed.dat} --- seed field for forcing
+\item \file[dim.dat]{tmp/dim.dat}
+\item \file[param.dat]{tmp/param.dat} \file[param2.dat]{tmp/param2.dat}
+\item \file[var.dat]{tmp/proc\emph{X}/var.dat} --- detailed format
+\item \file[VAR$N$]{tmp/proc\emph{X}/VAR\emph{N}} --- same format as
+      \file[var.dat]{tmp/proc\emph{X}/var.dat}
+\item \file[seed.dat]{tmp/proc\emph{X}/seed.dat} --- seed field for forcing
       procedure: must be the same for all processors, because globally
       coherent waves of given wavenumber are used
-\item \file{tmp/density.pro}, \file{tmp/hydro.pro}, \file{tmp/entropy.pro},
-      \file{tmp/magnetic.pro} --- can be used as include file in \name{IDL}
+\item \file[density.pro]{tmp/density.pro},
+      \file[hydro.pro]{tmp/hydro.pro}, \file[entropy.pro]{tmp/entropy.pro},
+      \file[magnetic.pro]{tmp/magnetic.pro}
+      --- can be used as include file in \name{IDL}
       and contains the column in which certain variables appear in the
       diagnostics file (\file{n.dat}). It also contains the positions of
       variables in the \file{VAR} files. These positions depend on whether
-      \var{entropy} or \var{noentropy}, etc, are invoked.
-\item \file{tmp/param.nml}
+      \name{entropy} or \name{noentropy}, etc, are invoked.
+\item \file[param.nml]{tmp/param.nml}
 \end{itemize}
 
 
@@ -2215,7 +2299,7 @@ reassemble everything into one file, you use
 \begin{alltt}
   \prompt{IDL> }  .r rall
 \end{alltt}
-instead of \cmd{.r run}.
+instead of \cmd{.r r}.
 Here, \cmd{.r} is a shorthand for \cmd{.run}.
 The procedure \file{rall.pro} reads (and assembles) the data from all
 processors and correspondingly requires large amounts of memory for very
@@ -2281,7 +2365,7 @@ CPUs, you need to do the following (in that directory):
 
 \begin{enumerate}
 
-\item Edit \file{src/Makefile.local} and replace
+\item Edit \file[Makefile.local]{src/Makefile.local} and replace
   \begin{alltt}
   MPICOMM   = nompicomm \
   \end{alltt}
@@ -2290,7 +2374,7 @@ CPUs, you need to do the following (in that directory):
   MPICOMM   =   mpicomm \
   \end{alltt}
 
-\item Edit \file{src/cparam.local} and replace
+\item Edit \file[cparam.local]{src/cparam.local} and replace
   \begin{alltt}
   integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
   integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid \
@@ -2400,7 +2484,7 @@ For isothermal hydrodynamics, see \S\ref{entropy} below.
   = \uv\times\Bv - \eta\mu_0\jv \; .
 \end{equation}
 
-Here $\Av$ is the magnetic vector potential\index{vector potential},
+Here $\Av$ is the magnetic vector potential\index{Vector potential},
 $\Bv = \curl\Av$ the magnetic
 flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
 ($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
@@ -2516,7 +2600,7 @@ multi-processor machines, the code minimizes the number of global
 reduction operations by assembling all quantities that need the maximum
 taken in \var{fmax}, and those that need to be summed up over all
 processors (mostly for calculating mean quantities) in \var{fsum} (see
-subroutine \code{diagnostic} in file \file{src/eq.f90}).
+subroutine \code{diagnostic} in file \file[equ.f90]{src/equ.f90}).
 
 As a sample variable, let us consider \var{jbm} (the volume average
 $\bigl<\jv\dot\Bv\bigr>$).
@@ -2621,7 +2705,7 @@ are referred to as \var{bmy} and \var{bmx}, respectively.
 
 {\it Disadvantage}: one needs to set the file \file{zaver.in} with
 the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
-rather big file \file{tmp/zaverages.dat}.
+rather big file \file[zaverages.dat]{tmp/zaverages.dat}.
 
 
 % ---------------------------------------------------------------------- %
@@ -2667,12 +2751,13 @@ What is the problem?
   One of the variables for the \file{makefile} has not been set, so
   \cmd{make} expands it to the empty string.
   Most probably you forgot to specify a module in
-  \file{src/Makefile.local}. One possibility is that you have upgraded
+  \file[Makefile.local]{src/Makefile.local}.
+  One possibility is that you have upgraded
   from an older version of the code that did not have some of the modules
   the new version has.
   
-  Compare your \file{src/Makefile.local} to one of the examples that
-  work.
+  Compare your \file[Makefile.local]{src/Makefile.local} to one of the
+  examples that work.
 }
 
 
@@ -2695,7 +2780,7 @@ make[1]: *** [cdata.o] Error 2
   If this doesn't help, there may be an {\it empty} \file{cparam.inc}
   file in your \file{src} directory. Remove \file{cparam.inc} and try again.
   (Note that \file{cparam.inc} is automatically generated.)\footnote{Wolfgang,
-    I just added \file{\rm *.inc} to the \file{Makefile}.}
+    I just added \file{*.inc} to the \file{Makefile}.}
 }
 
 
@@ -2969,7 +3054,7 @@ well-defined sample problems.
 
 \section{Some specific initial conditions}
 
-\subsection{Random magnetic fields: \var{initaa='gaussian-noise'}}
+\subsection{Random magnetic fields: \code{initaa='gaussian-noise'}}
 
 The $\Av$-vector is set to normally distributed, uncorrelated(?) random
 numbers in all meshpoints for all three components.
@@ -2979,7 +3064,7 @@ and the power spectrum of $\Bv$ increases like $k^4$.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Beltrami fields: \var{initaa='Beltrami-z'}}
+\subsection{Beltrami fields: \code{initaa='Beltrami-z'}}
 
 \begin{equation}
 %\Av=\pmatrix{\cos z\cr\sin z\cr0}
@@ -2989,7 +3074,7 @@ and the power spectrum of $\Bv$ increases like $k^4$.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Magnetic flux rings: \var{initaa='fluxrings'}}
+\subsection{Magnetic flux rings: \code{initaa='fluxrings'}}
 \label{fluxrings}
 
 This initial condition sets up two interlocked thin magnetic tori
@@ -3058,12 +3143,12 @@ Gravity, $\bf{g}=-\nab\Phi$, is specified in terms of a potential
 $\Phi$. In slab geometry, $\Phi=\Phi(z)$, so ${\bf g}=(0,0,g_z)$ and
 $g_z=-\dd\Phi/\dd z$.
 
-Use \var{grav_profile='const'} (which is already the default)
+Use \var{grav_profile}='const' (which is already the default)
 together with \var{gravz}$=-1$ to get
 \begin{equation} \label{constgrav-gravz-init}
   \Phi=(z-z_\infty)(-g_z),\quad (-g_z)<0.
 \end{equation}
-Use \var{grav_profile='linear'} to get
+Use \var{grav_profile}='linear' to get
 \begin{equation} \label{disc-gravz-init}
   \Phi={\textstyle\frac{1}{2}}(z^2-z_\infty^2)\nu_{\rm g}^2,
 \quad g_z=-\nu_{\rm g}^2z
@@ -3141,16 +3226,16 @@ In order that $\varrho=\varrho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
 \begin{equation}\label{zinfty}
   z_\infty = z_{\rm ref} + (m{+}1) \frac{c_{\rm s0}^2}{-\gamma g_z}
-  \quad\mbox{for \var{grav_profile='const'}},
+  \quad\mbox{for \var{grav_profile}='const'},
 \end{equation}
 and
 \begin{equation}\label{zinfty2}
   z_\infty^2
   = z_{\rm ref}^2
     + (m{+}1) \frac{c_{\rm s0}^2}{{\textstyle\frac{1}{2}}\gamma\Omega^2}
-  \quad\mbox{for \var{grav_profile='linear'}}.
+  \quad\mbox{for \var{grav_profile}='linear'}.
 \end{equation}
-Thus, when using \var{initlnrho='polytropic\_simple'} we calculate
+Thus, when using \code{initlnrho='polytropic\_simple'} we calculate
 \begin{equation}
   \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2}
   =\ln\left[-\frac{\gamma\Phi}{(m{+}1)c_{\rm s0}^2}\right]
@@ -3331,11 +3416,14 @@ horizontal sections for time $t=50$.
 % ====================================================================== %
 
 
-\printindex
+\printindex[default][This index contains options, names, definitions and
+  similar items. Files and variables have their own indexes.]
+\printindex[file]
+\printindex[var]
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.92 2002-09-10 16:35:36 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.93 2002-09-10 17:30:04 dobler Exp $ $}
 
 
 \end{document}

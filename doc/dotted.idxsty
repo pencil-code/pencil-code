@@ -1,0 +1,8 @@
+%% dotted.idxsty
+%%
+%% Makeindex style for the Pencil Code manual
+
+% Dot-filled entries (like in table of contents)
+delim_0		"\\leaders\\hbox to.6em{\\hss .\\hss}\\hfill"
+
+% End of file
