@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.206 2004-05-18 09:59:18 ajohan Exp $
+! $Id: equ.f90,v 1.207 2004-05-19 11:10:48 ajohan Exp $
 
 module Equ
 
@@ -238,7 +238,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.206 2004-05-18 09:59:18 ajohan Exp $")
+           "$Id: equ.f90,v 1.207 2004-05-19 11:10:48 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -260,9 +260,7 @@ module Equ
 !  (should consider having possibility for all modules to fiddle with the
 !   f array before boundary conditions are sent)
 !
-      if (ldustdensity .and. lmdvar .and. itsub == 1) then
-        do m=m1,m2; do n=n1,n2; call redist_mdbins(f); enddo; enddo
-      endif
+      if (ldustdensity .and. lmdvar .and. itsub == 1) call redist_mdbins(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:

@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.87 2004-05-19 11:07:12 ajohan Exp $
+! $Id: dustdensity.f90,v 1.88 2004-05-19 11:10:48 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.87 2004-05-19 11:07:12 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.88 2004-05-19 11:10:48 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -459,7 +459,7 @@ module Dustdensity
 !
 !  Loop over pencil
 !
-      do l=1,nx
+      do l=1,nx; do m=m1,m2; do n=n1,n2
         md(:) = f(3+l,m,n,imd(:))
         if (lmice) mi(:) = f(3+l,m,n,imi(:))
         mdnew = 0.5*(mdminus+mdplus)
@@ -502,7 +502,7 @@ module Dustdensity
         f(3+l,m,n,ind(:)) = ndnew(:)
         f(3+l,m,n,imd(:)) = mdnew(:)
         if (lmice) f(3+l,m,n,imi(:)) = minew(:)
-      enddo
+      enddo; enddo; enddo
 !
     endsubroutine redist_mdbins
 !***********************************************************************
