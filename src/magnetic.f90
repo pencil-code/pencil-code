@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.136 2003-10-10 01:28:02 brandenb Exp $
+! $Id: magnetic.f90,v 1.137 2003-10-10 11:49:04 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -92,7 +92,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.136 2003-10-10 01:28:02 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.137 2003-10-10 11:49:04 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -328,7 +328,15 @@ module Magnetic
 !
 !  calculating the current jj, and simultaneously del2A.
 !
-      call del2v_etc(f,iaa,del2A,curlcurl=jj)
+!  --old--   call del2v_etc(f,iaa,del2A,curlcurl=jj)
+!  The following two routines also calculate del2A and jj, but they
+!  also produce the magnetic field gradient matrix, B_{i,j}, which is
+!  needed for cosmic ray evolution. If the overhead in calculating
+!  Bij becomes noticeable (even though no extra derivatives are calculated)
+!  one should make it switchable between this one and del2v_etc.
+!
+      call bij_etc(f,iaa,bij,del2A)
+      call curl_mn(bij,jj)
 !
 !  calculate JxB/rho (when hydro is on) and J^2 (when entropy is on)
 !  add JxB/rho to momentum equation, and eta mu_0 J2/rho to entropy equation

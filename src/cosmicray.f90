@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.4 2003-10-10 01:28:02 brandenb Exp $
+! $Id: cosmicray.f90,v 1.5 2003-10-10 11:49:04 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density advection difussion equation
 !  it follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -14,7 +14,7 @@ module CosmicRay
 
   character (len=labellen) :: initecr='zero', initecr2='zero'
 
-  real, parameter :: gammacr = 4./3., gammacr1=1./3.
+  real, parameter :: gammacr=4./3., gammacr1=gammacr-1.
 
   ! input parameters
   real :: amplecr=.1, widthecr=.5, ecr_min=0., ecr_const=0.
@@ -25,12 +25,10 @@ module CosmicRay
        radius_ecr,epsilon_ecr,widthecr,ecr_const
 
   ! run parameters
-  real :: cosmicray_diff=0.,tensor_cosmicray_diff=0.
-  real :: tensordiff=0.
+  real :: cosmicray_diff=0., Kperp=0., Kpara=0.
 
   namelist /cosmicray_run_pars/ &
-       cosmicray_diff,tensor_cosmicray_diff, &
-       tensordiff
+       cosmicray_diff,Kperp,Kpara
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
@@ -66,7 +64,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.4 2003-10-10 01:28:02 brandenb Exp $")
+           "$Id: cosmicray.f90,v 1.5 2003-10-10 11:49:04 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -153,7 +151,7 @@ module CosmicRay
 !
 !  cosmic ray evolution
 !  calculate decr/dt = -uu.gecr -gammacr*ecr*divu
-!  + tensor_cosmicray_diff*[del2ecr + ...]
+!  + cosmicray_diff_perp*[del2ecr + ...]
 !
 !   09-oct-03/tony: coded
 !
@@ -179,32 +177,35 @@ module CosmicRay
       call grad(f,iecr,gecr)
       call dot_mn(uu,gecr,ugecr)
 !
-!  cosmic ray equation
+!  Evolution equation of cosmic ray energy density
 !
       ecr=f(l1:l2,m,n,iecr)
       df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)-ugecr-gammacr*ecr*divu
 !
-!  diffusion operator, do isotropic part first
+!  effect on the momentum equation
 !
-      if (cosmicray_diff/=0.) then
+      do j=0,2
+        df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*gecr(:,1+j)
+      enddo
+!
+!  tensor diffusion, or, alternatively scalar diffusion or no diffusion
+!
+      if (Kperp/=0. .or. Kpara/=0.) then
+        if(headtt) print*,'decr_dt: Kperp,Kpara=',Kperp,Kpara
+        call tensor_diff(f,df,Kperp,Kpara,gecr,bij,bb)
+      elseif (cosmicray_diff/=0.) then
         if(headtt) print*,'decr_dt: cosmicray_diff=',cosmicray_diff
         call del2(f,iecr,del2ecr)
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+cosmicray_diff*del2ecr
+      else
+        if(headtt) print*,'decr_dt: no diffusion'
       endif
-!
-!  tensor diffusion (but keep the isotropic one)
-!
-      !if (tensor_cosmicray_diff/=0.) &
-      if (tensordiff/=0.) &
-        call tensor_diff(f,df,tensordiff,gecr,bij,bb)
 !
 !  For the timestep calculation, need maximum diffusion
 !
-        if (lfirst.and.ldt) then
-          maxdiffus=amax1(maxdiffus,cosmicray_diff)
-          maxdiffus=amax1(maxdiffus,tensor_cosmicray_diff)
-          maxdiffus=amax1(maxdiffus,tensordiff)
-        endif
+      if (lfirst.and.ldt) then
+        maxdiffus=amax1(maxdiffus,cosmicray_diff,Kperp,Kpara)
+      endif
 !
 !  diagnostics
 !
@@ -258,9 +259,12 @@ module CosmicRay
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************
-    subroutine tensor_diff(f,df,tensor_cosmicray_diff,gecr,bij,bb)
+    subroutine tensor_diff(f,df,Kperp,Kpara,gecr,bij,bb)
 !
-!  reads file
+!  calculates tensor diffusion
+!  Kperp*del2ecr + (Kpara-Kperp) d_i ( n_i n_j d_j ecr) 
+!  = Kperp*del2ecr + (Kpara-Kperp) (H.G + ni*nj*Gij),
+!  where H_i = (nj bij - 2 ni nj nk bk,j)/|b|
 !
 !  10-oct-03/axel: adapted from pscalar
 !
@@ -269,10 +273,10 @@ module CosmicRay
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: ecr_ij,bij
-      real, dimension (nx,3) :: gecr,bb,bunit,del2A
-      real, dimension (nx) :: tmp,b2,b1
-      real :: tensor_cosmicray_diff
-      integer :: i,j
+      real, dimension (nx,3) :: gecr,bb,bunit,del2A,hhh,tmpj
+      real, dimension (nx) :: tmp,b2,b1,del2ecr
+      real :: Kperp,Kpara
+      integer :: i,j,k
 !
 !  calculate unit vector of bb
 !
@@ -280,40 +284,42 @@ module CosmicRay
       b1=1./amax1(tiny(b2),sqrt(b2))
       call multsv_mn(b1,bb,bunit)
 !
-!  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij
-!  for details, see tex/mhd/thcond/tensor_der.tex
+!  calculate first H_i
 !
-      !call dot_mn(bunit,gecr,scr)
-      !call dot_mn(hhh,gecr,tmp)
-      !tmp=tmp+scr**2
+      do i=1,3
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:,j)=0.
+          do k=1,3
+            tmpj(:,j)=tmpj(:,j)-2.*bunit(:,k)*bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:,j))
+        enddo
+      enddo
+      call multsv_mn(b1,hhh,hhh)
 !
-!  calculate Hessian matrix of ecr
+!  dot H with ecr gradient
+!
+      call dot_mn(hhh,gecr,tmp)
+!
+!  calculate Hessian matrix of ecr, dot with bi*bj, and add into tmp
 !
       call g2ij(f,iecr,ecr_ij)
 !
-!  dot with bi*bj
-!
-      tmp=0.
-      iy=m-m1+1
-      iz=n-n1+1
+      del2ecr=0.
       do j=1,3 
-      do i=1,3
-        tmp=tmp+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
+        del2ecr=del2ecr+ecr_ij(:,j,j)
+        do i=1,3
+          tmp=tmp+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
+        enddo
       enddo
-      enddo
-!
-!  do second part of the matrix
-!
-      call bij_etc(f,iaa,bij,del2A)
 !
 !  and add result to the decr/dt equation
 !
-      df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+tensor_cosmicray_diff*tmp
+      df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+Kperp*del2ecr+(Kpara-Kperp)*tmp
 !
     endsubroutine tensor_diff
 !***********************************************************************
 
 endmodule CosmicRay
-
-
 
