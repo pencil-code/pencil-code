@@ -279,13 +279,17 @@ module Mpicomm
       call system_clock(COUNT_RATE=count_rate)
       call system_clock(COUNT=time)
 
-      mpiwtime = (time*1.)/count_rate
-
+      if (count_rate /= 0) then
+        mpiwtime = (time*1.)/count_rate
+      else                      ! occurs with ifc 6.0 after long (> 2h) runs
+        mpiwtime = 0
+      endif
+!
     endfunction mpiwtime
 !***********************************************************************
     function mpiwtick()
 !
-!  Mimic the MPI_WTICK() function for measureing timer resolution.
+!  Mimic the MPI_WTICK() function for measuring timer resolution.
 !
 !   5-oct-2002/wolf: coded
 !
@@ -293,7 +297,11 @@ module Mpicomm
       integer :: count_rate
 !
       call system_clock(COUNT_RATE=count_rate)
-      mpiwtick = 1./count_rate
+      if (count_rate /= 0) then
+        mpiwtick = 1./count_rate
+      else                      ! occurs with ifc 6.0 after long (> 2h) runs
+        mpiwtick = 0
+      endif
 !
     endfunction mpiwtick
 !***********************************************************************
