@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.130 2003-08-11 12:11:09 nilshau Exp $ 
+! $Id: param_io.f90,v 1.131 2003-08-11 18:41:29 dobler Exp $ 
 
 module Param_IO
 
@@ -30,15 +30,15 @@ module Param_IO
   implicit none 
 
   ! physical constants, taken from:
-  ! http://www.astro.wisc.edu/~dolan/constants.html
-
-  double precision, parameter :: hbar_cgs=1.0545726663d-27 ! [erg*s]
-  double precision, parameter :: k_B_cgs=1.38065812d-16    ! [erg/K]
-  double precision, parameter :: m_p_cgs=1.672623110d-24   ! [g]
-  double precision, parameter :: m_e_cgs=9.109389754d-28   ! [g]
-  double precision, parameter :: eV_cgs=1.602177250d-12    ! [erg]
+  ! http://physics.nist.gov/cuu/Constants/index.html
+  double precision, parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
+  double precision, parameter :: k_B_cgs=1.3806503d-16     ! [erg/K]
+  double precision, parameter :: m_p_cgs=1.67262158d-24    ! [g]
+  double precision, parameter :: m_e_cgs=9.10938188d-28    ! [g]
+  double precision, parameter :: eV_cgs=1.602176462d-12    ! [erg]
+  double precision, parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
+  ! unclear source (probably just guessing?)
   double precision, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
-  double precision, parameter :: sigmaSB_cgs=5.607d-5      ! [erg/cm^2/s/K^4]
   double precision, parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
 
   ! run parameters
