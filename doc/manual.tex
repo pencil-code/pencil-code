@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.53 2002-07-17 08:49:02 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.54 2002-07-18 15:10:40 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -56,9 +56,7 @@
 \graphicspath{{figs/}}
 
 \usepackage{parskip,a4,vmargin}
-%\setpapersize{A4}  %AB: what if somebody prints it in Santa Barbara?
-%\setmargrb{20mm}{15mm}{20mm}{15mm}
-\setmargrb{20mm}{25mm}{20mm}{15mm}  %AB: just trying to adjust it for here.
+\setmargrb{20mm}{25mm}{20mm}{15mm}
 
 \frenchspacing
 \sloppy
@@ -184,7 +182,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.53 $ $}
+\date{\today,~ $ $Revision: 1.54 $ $}
 
 % ====================================================================== %
 
@@ -213,7 +211,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.53 $ $}
+  \emph{\today,~ $ $Revision: 1.54 $ $}
 
 
 \end{center}
@@ -542,6 +540,7 @@ this by:
 % ====================================================================== %
 
 \section{Getting Started}
+\label{S-getting-started}
 
 To get yourself started, you should run one or several examples which are
 provided in one of the runs/sample subdirectories.
@@ -554,20 +553,275 @@ Sect.~\ref{S-IDLroutines}).
 
 \subsection{Setup}
 
-\begin{itemize}
-\item sourceme.x (where \var{x} stands for \var{csh} or \var{sh})
-\item lnsrc (alias setup)
-\item Localize the Makefile (see Sect.~\ref{adapt-mkfile})
-\end{itemize}
-\vspace{7cm}
+\subsubsection{Environment settings}
+
+The functionality of helper scripts and IDL routines relies on a few
+environment variables being set correctly.
+The simplest way to achieve this is to go to the top directory of the code
+(we will assume here that it is called \file{pencil}) and source one of
+the two scripts \file{sourceme.csh} or \file{sourceme.sh} (depending on
+the type of shell you are using):
+\begin{alltt}
+  \prompt{csh> } cd pencil
+  \prompt{csh> } source ./sourceme.csh
+\end{alltt}
+for \name{tcsh} or \name{csh} users; or
+\begin{alltt}
+  \prompt{sh> } cd pencil
+  \prompt{sh> } . ./sourceme.sh
+\end{alltt}
+for users of \name{bash}, \name{Bourne shell}, or similar shells.
+You should get output similar to
+\begin{alltt}
+  PENCIL_HOME = </home/dobler/f90/pencil>
+  Adding /home/dobler/f90/pencil/bin to path
+\end{alltt}
+Apart from the \env{PATH} variable, the environment variable
+\env{IDL_PATH} has been set to something like
+\texttt{./idl:../idl:+\$PENCIL_HOME/bin:./tmp:<IDL_DEFAULT>} .
+
+
+\subsubsection{Linking scripts and source files}
+
+With your environment set up correctly, you can now go to the directory
+you want to work in and set up subdirectories and links.
+This is accomplished by the script \file{lnsrc}, which is located in
+\file{\$PENCIL_HOME/bin} and is thus now in your executable path.
+
+For concreteness, let us assume you want to use \file{samples/conv-slab}
+as your \dfn{run dirctory}, i.\,e~you want to run a three-layer slab model
+of solar convection.
+You then do the following:
+\begin{alltt}
+  \prompt{unix> } cd samples/conv-slab
+  \prompt{unix> } lnsrc
+  {\sl{}[Output]}
+\end{alltt}
+The script has linked a number of scripts from \file{\$PENCIL_HOME/bin},
+generated a directory \file{src} for the source code and linked the
+Fortran source files (plus a few more files) from \file{\$PENCIL_HOME/src}
+to that directory:
+\begin{alltt}
+  \prompt{unix> } ls
+  {\sl{}[Output]}
+\end{alltt}
+
+
+\subsubsection{Localizing the Makefile}
+
+This step requires some input from you, but you only have to do this once
+for each machine you want to run the code on.
+See Sect.~\ref{adapt-mkfile} for a description of the steps you need to
+take here.
+
+
+\subsubsection{Running \cmd{make}}
+
+Next, you run \cmd{make} in the \file{src} subdirectory of your run
+directory.
+Since you are using one of the predefined test problems, the settings in
+\file{src/Makefile.local} and \file{src/cparam.local} are all reasonable,
+and you just do
+\begin{alltt}
+  \prompt{unix> } cd src
+  \prompt{unix> } make \
+\end{alltt}
+If you have set up the compiler flags correctly, compilation should
+complete successfully; don't forget to return to the run directory,
+\begin{alltt}
+  \prompt{unix> } cd .. \
+\end{alltt}
+
+
+\subsubsection{Choosing a data directory}
+
+The code will write data like snapshot files to the subdirectory
+\file{tmp} of the run directory.
+Since this will involve a large volume of IO-operations (at least for
+large grid sizes), one will normally try to avoid writing the data via
+NFS.
+The recommended way to set up a \file{tmp} data directory is to generate
+a corresponding directory on the local disc of the computer you are
+running on and (soft-)link it to \file{./tmp}.
+Even if the link is part of an NFS directory, all the IO operations will
+be local.
+E.\,g.~if you have a local disc \file{/scratch}, you can do the following
+\begin{alltt}
+  \prompt{unix> } mkdir -p /scratch/\$USER/pencil-data/samples/conv-slab
+  \prompt{unix> } ln -s /scratch/\$USER/pencil-data/samples/conv-slab ./tmp \
+\end{alltt}
+
+Even if you don't have an NFS-mounted directory (say, on you notebook
+computer), it is probably still a good idea to have code and data well
+separated by a scheme like the one described above.
+
+
+\subsubsection{Running the code}
+
+You are now ready to start the code:
+\begin{alltt}
+  \prompt{unix> } start.csh\small
+  Linux cincinnatus 2.4.10-4GB #1 Tue Sep 25 12:33:54 GMT 2001 i686 unknown
+  Non-MPI version
+  Thu Jul 18 16:25:20 CEST 2002
+     src/start.x
+  CVS: hydro.f90          v. 1.47         (dobler    ) 2002/07/16 08:29:44
+  {\sl{}[\ldots]}
+  CVS: start.in           v. 1.14         (dobler    ) 2002/07/09 18:38:17
+   mx,my,mz=          38          38          38
+   
+   Adding random uu fluctuations
+   piecewise polytropic vertical stratification (lnrho)
+   init_lnrho: cs2bot,cs2top=   1.450000      0.3333330    
+   piecewise polytropic vertical stratification (ss)
+   Note: mpoly{1,2} override hcond{1,2} to    2.000000      0.5000000    
+   
+  0.030u 0.010s 0:00.08 50.0\%     0+0k 0+0io 122pf+0w
+  
+  Thu Jul 18 16:25:21 CEST 2002
+
+\end{alltt}
+This runs \file{src/start.x} to construct an initial condition based on
+the parameters set in \file{start.in}.
+This initial condition is stored in \file{tmp/proc0/var.dat} (and in
+\file{tmp/proc1/var.dat}, etc. if you run the multiprocessor version).
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=1\textwidth,keepaspectratio]%
+    {pvert0}
+  \caption{Initial state of the three-layer convection model in
+    \file{samples/conv-slab}.
+    Shown are (from left to right) density $\varrho$, vertical velocity
+    $u_z$, entropy $s/c_p$ and temperature $T$ as functions of the
+    vertical coordinate $z$ for about ten different vertical lines in the
+    computational box.
+    The dashed lines denote domain boundaries:
+    $z<-0.68$ is the lower ghost zone (points have no physical significance);
+    $-0.68<z<0$ is a stable stratified layer ($ds/dz>0$);
+    $0<z<1$ is the unstable layer ($ds/dz<0$);
+    $1<z<1.32$ is the isothermal top layer;
+    $z>1.32$ is the upper ghost zone (points have no physical significance).
+  }
+  \label{Fig-pvert0}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+If you have IDL, you can visualize the initial state with (see
+Sec.~\ref{S-IDLroutines} for details)
+\begin{alltt}
+  \prompt{unix > } idl
+  \prompt{IDL >  } .r start
+  \prompt{IDL >  } .r r
+  \prompt{IDL >  } .r thermo
+  \prompt{IDL >  } .r pvert \
+\end{alltt}
+The result should look like in Fig.~\ref{Fig-pvert0}, apart from details
+of the vertical velocity field, which is random.
+
+\bigskip
+
+Now we run the code:
+\begin{alltt}
+  \prompt{unix> } run.csh
+\end{alltt}
+This runs \file{src/run.x} and carries out \var{nt} time steps, where
+\var{nt} and other run time parameters are specified in \file{run.in}.
+On a decent PC (1.7\,GHz), 1000 time steps take about 3 minutes.
+
+The relevant part of the code's output looks like\\
+\begin{minipage}{1\textwidth}
+\bigskip
+\begin{small}
+\begin{alltt}
+ ---it------t--------dt--------urms------umax------rhom------ssm-------dtc----
+      0     0.00  7.603E-03   0.04939   0.08525  14.47076  -0.44601  4.21E-01
+     50     0.37  7.423E-03   0.00585   0.02033  14.47033  -0.44748  4.11E-01
+    100     0.74  7.520E-03   0.00597   0.01676  14.47050  -0.44789  4.17E-01
+    150     1.11  7.220E-03   0.00604   0.01696  14.47026  -0.44677  4.00E-01
+    200     1.47  7.093E-03   0.00412   0.01111  14.46917  -0.44648  3.93E-01
+    250     1.82  7.094E-03   0.00323   0.00880  14.46890  -0.44717  3.93E-01
+    300     2.18  7.094E-03   0.00293   0.00676  14.47013  -0.44768  3.93E-01
+    350     2.53  7.025E-03   0.00285   0.00693  14.47027  -0.44765  3.89E-01
+    400     2.88  6.943E-03   0.00233   0.00628  14.47022  -0.44772  3.85E-01
+    450     3.23  6.932E-03   0.00280   0.00901  14.46989  -0.44807  3.84E-01
+    500     3.57  6.927E-03   0.00280   0.00782  14.46906  -0.44796  3.84E-01
+    550     3.92  6.827E-03   0.00235   0.00675  14.46849  -0.44750  3.78E-01
+    600     4.26  6.770E-03   0.00202   0.00648  14.46838  -0.44798  3.75E-01
+    650     4.60  6.908E-03   0.00274   0.00714  14.46884  -0.44949  3.83E-01
+    700     4.95  6.992E-03   0.00175   0.00707  14.46894  -0.45078  3.88E-01
+    750     5.29  6.980E-03   0.00245   0.00865  14.46868  -0.45115  3.87E-01
+    800     5.64  6.899E-03   0.00400   0.01146  14.46840  -0.45052  3.82E-01
+    850     5.98  6.771E-03   0.00410   0.01369  14.46800  -0.44956  3.75E-01
+    900     6.32  6.687E-03   0.00352   0.01527  14.46770  -0.44909  3.71E-01
+    950     6.65  6.687E-03   0.00347   0.01641  14.46781  -0.44927  3.71E-01
+\end{alltt}
+\end{small}
+\bigskip
+\end{minipage}
+and lists
+\begin{enumerate}
+\item the number \var{it} of the current time step; 
+\item the time \var{t};
+\item the time step \var{dt};
+\item the rms velocity \var{urms}$=\sqrt{\left<\uv^2\right>}$;
+\item the maximum velocity \var{umax}$=\max |\uv|$;
+\item the mean density \var{rhom}$=\left<\varrho\right>$;
+\item the mean entropy \var{rhom}$=\left<s/c_p\right>$;
+\item the time step in units of the advective Courant step
+  \var{dtc}$=\delta t/[\min(\delta x,\delta y,\delta z)\,cs0]$.
+\end{enumerate}
+The entries in this list can be added, removed or reformatted in the file
+\file{print.in}, see Sec.~\ref{diagnostic-IO}.
+
+To visualize the resulting state, run
+\begin{alltt}
+  \prompt{IDL >  } .r r
+  \prompt{IDL >  } .r pvert \
+\end{alltt}
+and you should obtain somthing similar to Fig.~\ref{Fig-pvert1}, which
+corresponds to the state after 1000 time steps.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=1\textwidth,keepaspectratio]%
+    {pvert1}
+  \caption{Like in Fig.~\ref{Fig-pvert0}, but after 1000 time steps at
+    time $t=6.99$.
+    The dahsed lines represents the intitial condition.
+  }
+  \label{Fig-pvert1}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+For the evolution of velocity and the state at later times, see
+Sect.~\ref{S-ref-data} in the Appendix.
+
+
+\paragraph{Note:}
+If you want to run the code with \name{MPI}, you will probably need to
+adapt \file{getconf.csh}, which is defines the commands and flags used to
+run MPI jobs (and which is sourced by the scripts \file{start.csh} and
+\file{run.csh}).
+Try
+\begin{alltt}
+  csh -v getconf.csh
+  {\sl or}
+  csh -x getconf.csh
+\end{alltt}
+to see how \file{getconf.csh} makes its decisions.
+
 
 % ---------------------------------------------------------------------- %
 
-\subsection{A first test}
+\subsection{A second test}
 
 Now you are ready to compile and run a simple example (periodic,
 isothermal, non-forced MHD) where the physics is already nontrivial.
-
 
 \subsubsection{Interlocked flux rings}
 
@@ -938,6 +1192,61 @@ Here's how to use the code \ldots
 \subsection{Localization (adapt-mkfile)}
 \label{adapt-mkfile}
 
+By default, one \file{makefile} will only work on a given class of
+computers with identical (or at least similar) compilers.
+Our aim when building the pencil code was however to allow running the
+code on different machines without any need to modify files.
+This, together with \name{CVS} allows you for example to very quickly
+compare results for identical runs on different machines.
+
+Our mechanism for picking the right set of compiler flags is based on the
+\name{Perl} script \file{adapt-mkfile} in \file{\$PENCIL_HOME/bin}, which
+processes the file \file{Makefile} to a (localized) \file{makefile}.
+When both \file{Makefile} and \file{makefile} are present, \cmd{make} will
+use the latter.
+You can view the full documentation for \cmd{adapt-mkfile} with the
+command
+\begin{alltt}
+  \prompt{unix > } perldoc adapt-mkfile
+\end{alltt}
+provided \file{\$PENCIL_HOME/bin} is in you path.
+
+To give you an idea of how to add you own machines, let us assume you have
+several Linux boxes running a compiler \cmd{f95} that needs the options
+\option{-O4 -u}, while one of them, \name{Janus}, runs a compiler \cmd{f90}
+which needs the flags \option{-O3} and requires the additional
+options \option{-lmpi -llam} for \name{MPI}.
+
+The \file{Makefile} you need will have the following section:
+\begin{alltt}
+  ### Begin machine dependent
+  
+  ## IRIX64:
+  {\sl{}[\ldots]   (leave as it is in the original Makefile)}
+  ## OSF1:
+  {\sl{}[\ldots]   (leave as it is in the original Makefile)}
+  
+  ## Linux:
+  {\sl{}[\ldots]   (leave everything from original Makefile and add:)}
+  #FC=f95
+  #FFLAGS=-O3 -u
+  #FC=f90             #(Janus)
+  #FFLAGS=-O3 -u      #(Janus)
+  #LDMPI=-lmpi -llam  #(Janus)
+  
+  ## SunOS:
+  {\sl{}[\ldots]   (leave as it is in the original Makefile)}
+  ## UNICOS/mk:
+  {\sl{}[\ldots]   (leave as it is in the original Makefile)}
+  ## HI-UX/MPP:
+  {\sl{}[\ldots]   (leave as it is in the original Makefile)}
+  ## AIX:
+  {\sl{}[\ldots]   (leave as it is in the original Makefile)}
+  
+  ### End machine dependent
+\end{alltt}
+
+
 % ---------------------------------------------------------------------- %
 
 \subsection{I/O diagnostics}
@@ -997,6 +1306,7 @@ quantities \code{bxmz} and \code{bymz} are set.
   \item[nl2idl]
   \item[timestr]
   \item[x]
+  \item[tsnap]
 \end{description}
 
 \vspace{5cm}
@@ -1835,6 +2145,7 @@ viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
 For isothermal hydrodynamics, see \S\ref{entropy} below.
 
 % ---------------------------------------------------------------------- %
+
 \subsection{Induction equation}
 
 \begin{equation}
@@ -2397,6 +2708,9 @@ takes the form
   \end{pmatrix} \; .
 \end{equation}
 
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Vertical stratification}
 
 Gravity, $\bf{g}=-\nab\Phi$, is specified in terms of a potential
@@ -2541,13 +2855,99 @@ The limit of vanishing stratification corresponds to
 $c_{\rm s0}\rightarrow\infty$. This seems optimal if we want
 to approach the Boussinesq case.
 
+
 % ====================================================================== %
 
-\printindex
-\
+\section{Some reference data}
+\label{S-ref-data}
 
-\vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.53 2002-07-17 08:49:02 dobler Exp $ $}
+For reference purposes we document here some results obtained with various
+samples of the code.
+
+% ---------------------------------------------------------------------- %
+
+\subsubsection{Three-layered convection model}
+
+In Sect.~\ref{S-getting-started} we have shown the early stages of the
+convection model located in \file{samples/conv-slab}.
+To arrive at fully developed convection, you will need to run the code for
+a larger number of time steps.
+Figure~\ref{Fig-pvert2} shows the vertical profiles of four basic
+quantities at time $t=100$.
+Figure~\ref{Fig-evol} shows the time evolution of rms and maximum
+velocity for the model for $0<t<100$.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=1\textwidth,keepaspectratio]%
+    {pvert2}
+  \caption{Like in Fig.~\ref{Fig-pvert0}, but at time $t=100$.
+  }
+  \label{Fig-pvert2}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.7\textwidth,keepaspectratio]%
+    {evol}
+  \caption{Time evolution of rms and maximum velocity for the model
+    \file{samples/conv-slab}.
+     Plots of this type can be produced by running the IDL script
+     \file{evol.pro}.
+  }
+  \label{Fig-evol}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+Figures~\ref{Fig-hsection2} and \ref{Fig-vsection2} show vertical and
+horizontal sections for time $t=100$.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,height=0.65\textheight,keepaspectratio]%
+    {hsect2}
+  \caption{Horizontal section $z=0.352$ at $t=100$.
+    Left: velocity field.
+    Right: entropy (colour coded) and density (isocontours).
+    Plots of this type can be produced by running the IDL scripts
+    \file{hsections.pro})
+  }
+  \label{Fig-hsection2}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,height=0.65\textheight,keepaspectratio]%
+    {vsect2}
+  \caption{Vertical section $y=0.516$ at $t=100$.
+    Left: velocity field.
+    Right: entropy (colour coded) and density (isocontours).
+    Plots of this type can be produced by running the IDL scripts
+    \file{vsections.pro}) or \file{vsections2.pro}).
+  }
+  \label{Fig-vsection2}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+
+% ====================================================================== %
+
+
+\printindex
+
+
+\ \vfill\bigskip\noindent{\footnotesize\it
+$ $Id: manual.tex,v 1.54 2002-07-18 15:10:40 dobler Exp $ $}
 
 
 \end{document}
