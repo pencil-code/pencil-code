@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.40 2004-02-25 15:56:40 ajohan Exp $
+! $Id: dustdensity.f90,v 1.41 2004-02-26 07:42:10 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.40 2004-02-25 15:56:40 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.41 2004-02-26 07:42:10 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -365,26 +365,24 @@ module Dustdensity
             enddo
           endif
           if (i_targ .ge. 1 .and. i_targ .le. ndustspec) then
-            deltand(l1:l2,i_targ)   = &
-                deltand(l1:l2,i_targ) + f(l1:l2,m,n,ind(k))
-            deltarhod(l1:l2,i_targ) = &
-                deltarhod(l1:l2,i_targ) + f(l1:l2,m,n,irhod(k))
-            deltand(l1:l2,k)        = deltand(l1:l2,k) - f(l1:l2,m,n,ind(k))
-            deltarhod(l1:l2,k)      = deltarhod(l1:l2,k) - f(l1:l2,m,n,irhod(k))
+            deltand(:,i_targ)   = deltand(:,i_targ) + f(l1:l2,m,n,ind(k))
+            deltarhod(:,i_targ) = deltarhod(:,i_targ) + f(l1:l2,m,n,irhod(k))
+            deltand(:,k)        = deltand(:,k) - f(l1:l2,m,n,ind(k))
+            deltarhod(:,k)      = deltarhod(:,k) - f(l1:l2,m,n,irhod(k))
             md(k) = 0.5*(mdminus(k)+mdplus(k))
           elseif (i_targ .eq. 0) then
             print*, 'dnd_dt: WARNING: Dust grains lost to gas!'
             f(l1:l2,m,n,ilncc) = &
                 f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
-            deltand(l1:l2,k) = deltand(l1:l2,k) - f(l1:l2,n,m,ind(k))
-            deltarhod(l1:l2,k) = deltarhod(l1:l2,k) - f(l1:l2,n,m,irhod(k))
+            deltand(:,k) = deltand(:,k) - f(l1:l2,n,m,ind(k))
+            deltarhod(:,k) = deltarhod(:,k) - f(l1:l2,n,m,irhod(k))
             md(k) = 0.5*(mdminus(k)+mdplus(k))
           elseif (i_targ .eq. ndustspec+1) then
             call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
-        f(l1:l2,m,n,ind)   = f(l1:l2,m,n,ind)   + deltand(l1:l2,:)
-        f(l1:l2,m,n,irhod) = f(l1:l2,m,n,irhod) + deltarhod(l1:l2,:)
+        f(l1:l2,m,n,ind)   = f(l1:l2,m,n,ind)   + deltand(:,:)
+        f(l1:l2,m,n,irhod) = f(l1:l2,m,n,irhod) + deltarhod(:,:)
       endif
 !
 !  Abbreviations
