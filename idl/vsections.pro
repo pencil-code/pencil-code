@@ -57,7 +57,7 @@ save_state
 wput
 
 !p.multi = [0,3,2]
-!p.charsize = 1.8
+!p.charsize = 2
 !x.title = '!8x!X'
 !y.title = '!8z!X'
 
