@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.24 2004-05-18 11:14:55 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.25 2004-05-22 09:34:03 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -88,7 +88,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.24 2004-05-18 11:14:55 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.25 2004-05-22 09:34:03 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -114,9 +114,6 @@ module Pscalar
         f(:,:,:,ilncc)=0.
         call init_lncc_simple(f)
       endif
-!
-      if(lpscalar_turb_diff) call stop_it('initialize_pscalar: Turbulent'// &
-          ' diffusion not yet implemented for pscalar_nolog! Please do.')
 !
     endsubroutine initialize_pscalar
 !***********************************************************************
@@ -247,6 +244,7 @@ module Pscalar
 !  20-may-03/axel: coded
 !
       use Sub
+      use Hydro, only: nu_turb
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -292,6 +290,7 @@ module Pscalar
 !
 !  diffusion operator
 !
+        if (lpscalar_turb_diff) pscalar_diff=nu_turb
         if (pscalar_diff/=0.) then
           if(headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
           call dot_mn(glnrho,gcc,diff_op)
