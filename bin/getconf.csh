@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.127 2004-08-24 08:43:29 ajohan Exp $
+# $Id: getconf.csh,v 1.128 2004-08-27 13:58:13 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -522,10 +522,17 @@ else
 endif
 echo "datadir = $datadir"
 
+# Propagate current pid to copy-snapshots:
+setenv PARENT_PID $$
+
 # Make SCRATCH_DIR unique if there is only one local disc, so different
 # jobs running simultaneously will not interfere with each other. 
-if ($one_local_disc && $?JOB_ID) then
-  setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$JOB_ID
+if ($one_local_disc) then
+  if ($?JOB_ID) then
+    setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$JOB_ID
+  else
+    setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$PARENT_PID
+  endif
 endif
 
 # If local disc is used, write name into $datadir/directory_snap.
@@ -561,9 +568,6 @@ if ($os =~ IRIX*) then
 else
   rm -f SGIFIX
 endif
-
-# Propagate current pid to copy-snapshots:
-setenv PARENT_PID $$
 
 # Wrap up nodelist as (scalar, colon-separateds) environment variable
 # NODELIST for transport to sub-processes.
