@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.32 2003-07-01 13:39:57 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.33 2003-07-01 14:19:21 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.32 2003-07-01 13:39:57 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.33 2003-07-01 14:19:21 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -330,73 +330,8 @@ module Radiation
 !
 !  Vertical direction:
 !
-      !call radtransfer_comm_xyp
-      !call radtransfer_comm_xym
-!
-!  downward ray
-!  start at the top
-!
-!  top boundary (rays point downwards): I=0
-!
-      if(ipz==nprocz-1) then
-        do nrad=-radz,-1
-        do mrad=-rady,rady
-        do lrad=-radx,radx
-          Irad0_xy(:,:,:,lrad,mrad,nrad)=0.
-        enddo
-        enddo
-        enddo
-      else
-        !
-        !  receive from previous processor
-        !
-        if (first) print*,'radtransfer_comm: recv_Irad0_xym, zuneigh=',zuneigh,tag_xym
-        call recv_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
-        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy(:,:,:,:,:,1:radz)
-      endif
-!
-!  send Ibuf_xy to ipz-1
-!
-      if(ipz/=0) then
-        if (first) print*,'radtransfer_comm: send_Irad0_xym, zuneigh=',zuneigh,tag_xym
-        Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,-radz:-1) &
-                  +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
-        call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
-      endif
-!
-!  upward ray:
-!  (starting this is optimal when ipz < nprocz/2;
-!  otherwise we better start the other way around)
-!
-      if(ipz==0) then
-        !
-        !  bottom boundary (rays point upwards): I=S
-        !  (take S from the ghost zones)
-        !
-        do nrad=+1,+radz
-        do mrad=-rady,rady
-        do lrad=-radx,radx
-          Irad0_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
-        enddo
-        enddo
-        enddo
-      else
-        !
-        !  receive from previous processor
-        !
-        if (first) print*,'radtransfer_comm: recv_Irad0_xyp, zuneigh,tag_xyp=',zuneigh,tag_xyp
-        call recv_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xyp)
-        Irad0_xy(:,:,:,:,:,1:radz)=Ibuf_xy(:,:,:,:,:,1:radz)
-      endif
-!
-!  send Ibuf_xy to ipz+1
-!
-      if(ipz/=nprocz-1) then
-        if (first) print*,'radtransfer_comm: send_Irad0_xyp, zuneigh,tag_xyp=',zuneigh,tag_xyp
-        Ibuf_xy=Irad_xy(:,:,:,:,:,1:radz) &
-                  +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
-        call send_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xyp)
-      endif
+      call radtransfer_comm_xyp
+      call radtransfer_comm_xym
 !
 !  side boundaries : initially I=0
 !
@@ -424,6 +359,95 @@ module Radiation
       enddo
 !
     endsubroutine radtransfer_comm
+!***********************************************************************
+    subroutine radtransfer_comm_xyp
+!
+!  upward ray:
+!  (starting this is optimal when ipz < nprocz/2;
+!  otherwise we better start the other way around)
+!
+      use Cdata
+      use Mpicomm
+!
+      integer :: tag_xyp=101
+      integer :: lrad,mrad,nrad,rad2
+      logical, save :: first=.true.
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
+!
+      if(ipz==0) then
+!
+!  bottom boundary (rays point upwards): I=S
+!  (take S from the ghost zones)
+!
+        do nrad=+1,+radz
+        do mrad=-rady,rady
+        do lrad=-radx,radx
+          Irad0_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
+        enddo
+        enddo
+        enddo
+      else
+!
+!  receive from previous processor
+!
+        if (first) print*,'radtransfer_comm: zuneigh,tag_xyp=',zuneigh,tag_xyp
+        call recv_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xyp)
+        Irad0_xy(:,:,:,:,:,1:radz)=Ibuf_xy(:,:,:,:,:,1:radz)
+      endif
+!
+!  send Ibuf_xy to ipz+1
+!
+      if(ipz/=nprocz-1) then
+        if (first) print*,'radtransfer_comm: zuneigh,tag_xyp=',zuneigh,tag_xyp
+        Ibuf_xy=Irad_xy(:,:,:,:,:,1:radz) &
+                  +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
+        call send_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xyp)
+      endif
+!
+    endsubroutine radtransfer_comm_xyp
+!***********************************************************************
+    subroutine radtransfer_comm_xym
+!
+!  downward ray
+!  start at the top
+!
+      use Cdata
+      use Mpicomm
+!
+      integer :: tag_xym=102
+      integer :: lrad,mrad,nrad,rad2
+      logical, save :: first=.true.
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
+!
+      if(ipz==nprocz-1) then
+!
+!  top boundary (rays point downwards): I=0
+!
+        do nrad=-radz,-1
+        do mrad=-rady,rady
+        do lrad=-radx,radx
+          Irad0_xy(:,:,:,lrad,mrad,nrad)=0.
+        enddo
+        enddo
+        enddo
+      else
+!
+!  receive from previous processor
+!
+        if (first) print*,'radtransfer_comm: zuneigh,tag_xym=',zuneigh,tag_xym
+        call recv_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
+        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy(:,:,:,:,:,1:radz)
+      endif
+!
+!  send Ibuf_xy to ipz-1
+!
+      if(ipz/=0) then
+        if (first) print*,'radtransfer_comm: zuneigh,tag_xym=',zuneigh,tag_xym
+        Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,-radz:-1) &
+                  +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
+        call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
+      endif
+    endsubroutine radtransfer_comm_xym
 !***********************************************************************
     subroutine radtransfer2(f)
 !
