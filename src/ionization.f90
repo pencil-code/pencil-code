@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.146 2003-11-21 07:15:07 theine Exp $
+! $Id: ionization.f90,v 1.147 2003-11-21 11:27:04 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -110,7 +110,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.146 2003-11-21 07:15:07 theine Exp $")
+           "$Id: ionization.f90,v 1.147 2003-11-21 11:27:04 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -199,6 +199,7 @@ module Ionization
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
+        print*,'initialize_ionization: yHmin,yHmax=',yHmin,yHmax
         print*,'initialize_ionization: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
@@ -291,7 +292,7 @@ module Ionization
       do m=1,my
         lnrho=f(:,m,n,ilnrho)
         ss=f(:,m,n,iss)
-        yH=0.5
+        yH=0.5*(yHmax-yHmin)
         call rtsafe_pencil(lnrho,ss,yH)
         f(:,m,n,iyH)=yH
         lnTT=(ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
@@ -669,9 +670,9 @@ module Ionization
       integer             :: i
       integer, parameter  :: maxit=1000
 !
-      yHl=2*tiny(yHl)
-      yHh=1-2*epsilon(yHh)
-      dyH=yHh-yHl
+      yHl=yHmin
+      yHh=yHmax
+      dyH=yHmax-yHmin
       dyHold=dyH
 !
       temp=0
