@@ -1,4 +1,4 @@
-$Id: README,v 1.2 2001-11-26 10:12:05 dobler Exp $
+$Id: README,v 1.3 2002-01-20 22:35:01 dobler Exp $
 
 Modular pencil code.
 
@@ -7,7 +7,7 @@ Not yet reasonably implemented. Basic idea is as follows:
 You decide to use, or not use, modules by including them or the `no-'
 versions in the makefile. E.g. to use MPI communication, you put 
   MPICOMM=mpicomm
-inte Makefile, while in order to not use MPI, you do
+into Makefile, while in order to not use MPI, you do
   MPICOMM=nompicomm
 
 List of alternatives (not all of them implemented yet):
