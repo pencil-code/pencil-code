@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.229 2003-10-28 11:40:25 theine Exp $
+! $Id: entropy.f90,v 1.230 2003-10-30 10:55:55 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -26,7 +26,7 @@ module Entropy
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
-  real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=1.,cool_ext=1.
+  real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
@@ -34,6 +34,7 @@ module Entropy
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: center2_x=0., center2_y=0., center2_z=0.
+  real :: kx_ss
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
   real :: hcond0=0.
   real :: hcond1=impossible,hcond2=impossible
@@ -43,6 +44,7 @@ module Entropy
   real :: tau_coronal=0.,TT_coronal=0.,z_coronal=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.
+  logical :: lsinus_heat=.false.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
   logical :: lupw_ss=.false.
@@ -54,7 +56,8 @@ module Entropy
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss, thermal_background, thermal_peak, thermal_scaling, &
        center1_x, center1_y, center1_z, &
-       center2_x, center2_y, center2_z,T0
+       center2_x, center2_y, center2_z,T0, &
+       kx_ss
      
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -65,7 +68,8 @@ module Entropy
        tauheat_coronal,TTheat_coronal,zheat_coronal, &
        tau_coronal,TT_coronal,z_coronal, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
-       heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext
+       heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
+       lsinus_heat
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -102,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.229 2003-10-28 11:40:25 theine Exp $")
+           "$Id: entropy.f90,v 1.230 2003-10-30 10:55:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -267,6 +271,7 @@ module Entropy
         case('const_ss'); f(:,:,:,iss) = ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
         case('isothermal'); call isothermal_entropy(f,T0)
+        case('wave'); f(:,:,:,iss) = ampl_ss*sin(kx_ss*xx(:,:,:)+3.14159)
         case('Ferriere'); call ferriere(f) 
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
         case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -800,7 +805,8 @@ module Entropy
           (tauheat_coronal /= 0) .or. &
           (tauheat_buffer /= 0) .or. &
           (heat_uniform /= 0) .or. &
-          (cool_ext /= 0 .AND. cool_int /= 0)) &
+          (cool_ext /= 0 .AND. cool_int /= 0) .or. &
+          (lsinus_heat)) &
         call calc_heat_cool(f,df,rho1,cs2,ss,TT,TT1)
 !
 !  interstellar radiative cooling and UV heating
@@ -1240,6 +1246,15 @@ endif
       if(tauheat_buffer/=0.) then
         profile_buffer=0.5*(1.+tanh(dheat_buffer1*(abs(z(n))-zheat_buffer)))
         heat=heat+profile_buffer*ss*(TTheat_buffer-TT)/(rho1*tauheat_buffer)
+      endif
+!
+!  add sinusoidal heating and cooling and maintain original sinusoidal entropy
+!  in the x direction.
+!      
+      if(lsinus_heat) then 
+        heat = heat + TT/rho1*( &
+            chi*gamma*kx_ss**2*ampl_ss*sin(kx_ss*x(l1:l2) - 3.14159) - &
+            chi*gamma**2*kx_ss**2*ampl_ss**2*cos(kx_ss*x(l1:l2) - 3.14159)**2)
       endif
 !
 !  add to entropy equation
