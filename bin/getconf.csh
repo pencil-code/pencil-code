@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.99 2003-11-21 14:01:16 mee Exp $
+# $Id: getconf.csh,v 1.100 2004-02-09 15:52:52 mcmillan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -70,6 +70,12 @@ set mpirunops = ''
 if ($?PBS_NODEFILE) then
   if ($debug) echo "PBS job"
   set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
+else if ($?PE_HOSTFILE) then
+  if ($debug) echo "SGE PE job"
+  set nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
+  echo '--------------- PE_HOSTFILE ----------------'
+  cat $PE_HOSTFILE
+  echo '----------- PE_HOSTFILE - END --------------'
 else if ($?JOB_ID) then
   if (-e $HOME/.score/ndfile.$JOB_ID) then
     if ($debug) echo "Scout job"
@@ -77,6 +83,8 @@ else if ($?JOB_ID) then
   else
     # E.g. for wd running SGE on Kabul cluster
     echo "Apparently not a scout job"
+    PE_HOSTFILE=/usr/local/sge/default/spool/comp003/active_jobs/3078.1/pe_hostfile
+
   endif
 else
   if ($debug) echo "Setting nodelist to ($hn)"
@@ -259,8 +267,15 @@ else if ($hn =~ giga*) then
 
 else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   echo "Copson Cluster - St. Andrews"
-  set mpirun = /opt/score/bin/scout 
-  if ($?JOB_ID) then
+  set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
+  # set mpirun = /opt/score/bin/scout 
+  if ($?PE_HOSTFILE) then
+    cat $PE_HOSTFILE | sed 's/\ .*//' > $TMPDIR/hostfile
+    echo '--------------- MPI HOSTFILE ----------------'
+    cat $TMPDIR/hostfile
+    echo '----------- MPI HOSTFILE - END --------------'   
+    set mpirunops = "-local -machinefile $TMPDIR/hostfile"
+  else if ($?JOB_ID) then
     set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
   endif
 #scout -wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID \
@@ -270,18 +285,18 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
 #    set mpirun = /opt/score/bin/mpirun
 #    set mpirunops = "-machinefile $PBS_NODEFILE"
 
-  setenv SCRATCH_DIR /scratch/$JOB_ID
-  if ($?JOB_ID) then
-    if (-e $HOME/.score/ndfile.$JOB_ID) then
-      set local_disc=1
-      set one_local_disc=0
-    else
-      echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
-      set local_disc=0
-    endif
-  else
+#  setenv SCRATCH_DIR /scratch/$JOB_ID
+#  if ($?JOB_ID) then
+#    if (-e $HOME/.score/ndfile.$JOB_ID) then
+#      set local_disc=1
+#      set one_local_disc=0
+#    else
+#      echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
+#      set local_disc=0
+#    endif
+#  else
     set local_disc=0
-  endif
+#  endif
 
 else if ($hn == rasmussen) then
   echo "Rasmussen"
