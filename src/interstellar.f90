@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.86 2004-03-19 15:28:47 mee Exp $
+! $Id: interstellar.f90,v 1.87 2004-03-20 13:22:44 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.86 2004-03-19 15:28:47 mee Exp $")
+           "$Id: interstellar.f90,v 1.87 2004-03-20 13:22:44 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -187,23 +187,18 @@ module Interstellar
             call random_seed_wrapper(put=seed(1:nseed))
          endif
 !
-!AB: comment please why interstellar should be read in and what it does
+! Read randomly generated time for next SNI used to maintain the 
+! average SNI rate between runs.
 !
-         if (lroot) then
-            inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
-            if (exist) then 
-               if (lroot.and.ip<14) print*, 'initialize_interstellar: read interstellar.dat'
-                call inpup(trim(datadir)//'/interstellar.dat',  &
-                    interstellarsave,ninterstellarsave)
-               if (lroot.and.ip<14) print*, 'initialize_interstellar: t_next_SNI', &
-                    interstellarsave(1)
-            else
-               interstellarsave(1)=t_next_SNI
-            endif
-
+         inquire(file=trim(directory)//'/interstellar.dat',exist=exist)
+         if (exist) then 
+            if (lroot.and.ip<16) print*, 'initialize_interstellar: read interstellar.dat'
+            call inpup(trim(directory)//'/interstellar.dat',  &
+                 interstellarsave,ninterstellarsave)
+            if (lroot.and.ip<16) print*, 'initialize_interstellar: interstellarsave', &
+                 interstellarsave(1)
+            t_next_SNI=interstellarsave(1)
          endif
-         call mpibcast_real(interstellarsave,1)
-         t_next_SNI=interstellarsave(1)
       endif
 
       if (lroot.and.uniform_zdist_SNI) then
@@ -258,6 +253,7 @@ module Interstellar
       if (ltestSN) then
         t_interval_SNI=1.E10
         t_next_SNI=0.
+        interstellarsave(1)=t_next_SNI
       endif
 !
     endsubroutine initialize_interstellar
@@ -390,15 +386,15 @@ module Interstellar
        call position_SNI(f)
        call explode_SN(f,1)
        !  pre-determine time for next SNI
-       if (lroot) then
+     !  if (lroot) then
           if (ip<14) print*,"check_SNI: Old t_next_SNI=",t_next_SNI
           call random_number_wrapper(franSN)   
           t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
           if (ip<14) print*,'check_SNI: Next SNI at time = ',t_next_SNI
           interstellarsave(1)=t_next_SNI
           if (ip<14) print*,"check_SNI: New t_next_SNI=",t_next_SNI
-       endif
-       call mpibcast_real(t_next_SNI,1)
+    !   endif
+    !   call mpibcast_real(t_next_SNI,1)
        l_SNI=.true.
     endif
 !
@@ -431,9 +427,6 @@ module Interstellar
 !
     if (.not. l_SNI) then         ! only do if no SNI this step
 !
-!  NB: currently no 'nzskip' mechanism to prevent SNII occurring near
-!   top or bottom of box.  Non-trivial to implement with nprocz > 1 -- and
-!   shouldn't be a real problem, as mass near boundaries should be low.
        mass_cloud=0.0
        do n=n1,n2
            do m=m1,m2
@@ -475,8 +468,7 @@ module Interstellar
        rate_SNII=freq_SNII*1e-3
        if (Lxyz(1)/=0.) rate_SNII=rate_SNII/Lxyz(1)
        if (Lxyz(2)/=0.) rate_SNII=rate_SNII/Lxyz(2)
-       if (lroot) call random_number_wrapper(franSN)   
-       call mpibcast_real(franSN,1)
+       call random_number_wrapper(franSN)   
        if (lroot .and. ip < 14) then
              print*,'check_SNII: rate,prob,rnd:',freq_SNII,rate_SNII,prob_SNII,franSN(1)
              print*,'check_SNII: frac_heavy,frac_converted,mass_cloud_dim,mass_SN,tau_cloud',&
@@ -528,9 +520,9 @@ module Interstellar
     !
     !  Pick SN position (l_SN,m_SN,n_SN)
     !
-    call random_number(fran3)    ! get 3 random numbers
-                                 ! on all processors to keep
-                                 ! rnd. generators in sync
+    call random_number_wrapper(fran3)    ! get 3 random numbers
+                                         ! on all processors to keep
+                                         ! rnd. generators in sync
     if (lroot) then
        if (ltestSN) then
           if (center_SN_x.eq.impossible) then
@@ -643,8 +635,7 @@ module Interstellar
 !  Use random number to detemine which processor SN is on.
 !  (Use root processor for rand, to ensure repeatability.)
 !
-    if (lroot) call random_number_wrapper(franSN)   
-    call mpibcast_real(franSN,1)
+    call random_number_wrapper(franSN)   
     do icpu=1,ncpus
       if (cum_prob_byproc(icpu-1) <= franSN(1) .and.                      &
            franSN(1) < cum_prob_byproc(icpu)) then
@@ -660,8 +651,7 @@ module Interstellar
 !    franSN(1)=(franSN(1)-cum_prob_byproc(iproc_SN)) /                      &
 !              (cum_prob_byproc(iproc_SN+1)-cum_prob_byproc(iproc_SN))
 !
-    if (lroot) call random_number_wrapper(franSN)   
-    call mpibcast_real(franSN,1)
+    call random_number_wrapper(franSN)   
     if (iproc == iproc_SN) then
       cum_mass=0.0
 find_SN: do n=n1,n2
