@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.13 2003-02-24 23:14:44 theine Exp $
+! $Id: ionization.f90,v 1.14 2003-02-25 00:41:24 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -48,7 +48,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.13 2003-02-24 23:14:44 theine Exp $")
+           "$Id: ionization.f90,v 1.14 2003-02-25 00:41:24 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -114,13 +114,6 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp is not 1'
         call pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdss,yH,TT)
         TT1=1./TT
-!AB: Tobi plans to measure entropy in physical units, and not in kB/mp
-!AB: until this is the case, we cannot use T1=1/T, but have to use
-!AB: TT1=1/(ss_ion*TT)
-
-!Tobi: entropy is still passed to the ionization routines in units 
-!Tobi: of kB/mp, which i think is reasonable.
-        TT1=TT1/ss_ion
         cs2=(1.+yH)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
         if (ldiagnos.and.i_eth/=0) then
@@ -150,14 +143,15 @@ module Ionization
 
 !***********************************************************************
     subroutine pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdss,yH,TT)
+      implicit none
 !
 !   23-feb-03/tobi: rewritten
 !
       real, dimension(nx),intent(in)   :: lnrho,ss
       real, dimension(nx), intent(out) :: dlnPdlnrho,dlnPdss,yH,TT
-      real, dimension(nx)              :: lnTT_,dlnTT_dy
-                                                       ! lnTT_=log(TT/TT_ion)
-      real, dimension(nx)              :: f,dfdy,dfdlnrho,dfdss
+      real, dimension(nx)              :: lnTT_,f  ! lnTT_=log(TT/TT_ion)
+      real, dimension(nx)              :: dlnTT_dy,dlnTT_dlnrho,dlnTT_dss
+      real, dimension(nx)              :: dfdy,dfdlnrho,dfdss
       real, dimension(nx)              :: dydlnrho,dydss
       real, dimension(nx), save        :: yHlast=.5
       integer                          :: i
@@ -168,21 +162,24 @@ module Ionization
          yHlast=yH(i)
       enddo
 
-      lnTT_=gamma1*((ss-1.5*(1.-yH)*log(m_H/m_e) &
+      lnTT_=gamma1*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
                         -1.5*yH*log(m_p/m_e)+(1.-yH)*log(1.-yH) &
                         +2.*yH*log(yH))/(1.+yH)+lnrho-lnrho_ion-2.5)
       f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+
       dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
+      dlnTT_dlnrho=gamma1
+      dlnTT_dss=gamma1/((1.+yH)*ss_ion)
 
       dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
       dfdlnrho=gamma1*exp(-lnTT_)
-      dfdss=(1.+dfdlnrho)/((1.+yH))
+      dfdss=(1.+dfdlnrho)/((1.+yH)*ss_ion)
 
       dydlnrho=-dfdlnrho/dfdy
       dydss=-dfdss/dfdy
 
-      dlnPdlnrho=1.+dydlnrho/(1.+yH)+dlnTT_dy*dydlnrho+gamma1
-      dlnPdss=dydss/(1.+yH)+dlnTT_dy*dydss+gamma1/((1.+yH))
+      dlnPdlnrho=1.+dydlnrho/(1.+yH)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+      dlnPdss=dydss/(1.+yH)+dlnTT_dy*dydss+dlnTT_dss
       TT=exp(lnTT_)*TT_ion
     endsubroutine pressure_gradient
 
@@ -202,9 +199,11 @@ module Ionization
       dyHold=1.-2.*yHacc
       dyH=dyHold
 
-      call saha(yH0,lnrho,ss,fh,df)
+      rtsafe=yH0
+      call saha(rtsafe,lnrho,ss,fh,df)
       if (fh.le.0.) return
-      call saha(yH1,lnrho,ss,fl,df)
+      rtsafe=yH1
+      call saha(rtsafe,lnrho,ss,fl,df)
       if (fl.ge.0.) return
     
       rtsafe=yHlast
@@ -244,7 +243,7 @@ module Ionization
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
 
-      lnTT_=gamma1*((ss-1.5*(1.-yH)*log(m_H/m_e) &
+      lnTT_=gamma1*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
                         -1.5*yH*log(m_p/m_e)+(1.-yH)*log(1.-yH) &
                         +2.*yH*log(yH))/(1.+yH)+lnrho-lnrho_ion-2.5)
       f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
