@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.228 2003-10-27 13:35:20 theine Exp $
+! $Id: entropy.f90,v 1.229 2003-10-28 11:40:25 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -68,7 +68,7 @@ module Entropy
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
+  integer :: i_eth=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
 
   contains
 
@@ -102,7 +102,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.228 2003-10-27 13:35:20 theine Exp $")
+           "$Id: entropy.f90,v 1.229 2003-10-28 11:40:25 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -826,8 +826,6 @@ module Entropy
         if(i_ethtot/=0) then
           call integrate_mn_name(rho*ee,i_ethtot)
         endif
-        if(i_TTm/=0) call sum_mn_name(1./TT1,i_TTm)
-        if(i_yHm/=0) call sum_mn_name(yH,i_yHm)
         if(i_ssm/=0) call sum_mn_name(ss,i_ssm)
         if(i_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
@@ -1295,14 +1293,12 @@ endif
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_eth=0; i_TTm=0; i_yHm=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
+        i_eth=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ethtot',i_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
-        call parse_name(iname,cname(iname),cform(iname),'TTm',i_TTm)
-        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
       enddo
@@ -1312,8 +1308,6 @@ endif
       if (lwr) then
         write(3,*) 'i_ethtot=',i_ethtot
         write(3,*) 'i_eth=',i_eth
-        write(3,*) 'i_TTm=',i_TTm
-        write(3,*) 'i_yHm=',i_yHm
         write(3,*) 'i_ssm=',i_ssm
         write(3,*) 'i_ugradpm=',i_ugradpm
         write(3,*) 'nname=',nname

@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.34 2003-10-24 13:17:31 dobler Exp $
+! $Id: ionization_fixed.f90,v 1.35 2003-10-28 11:40:25 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -66,6 +66,9 @@ module Ionization
   ! run parameters
   namelist /ionization_run_pars/ yH0,xHe,radcalc_test
 
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
+
   contains
 
 !***********************************************************************
@@ -94,7 +97,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.34 2003-10-24 13:17:31 dobler Exp $")
+          "$Id: ionization_fixed.f90,v 1.35 2003-10-28 11:40:25 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -225,20 +228,42 @@ module Ionization
       use Cdata
       use Sub
 ! 
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_yHmax=0
+        i_yHm=0
+        i_TTmax=0
+        i_TTm=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
+        call parse_name(iname,cname(iname),cform(iname),'yHmax',i_yHmax)
+        call parse_name(iname,cname(iname),cform(iname),'TTm',i_TTm)
+        call parse_name(iname,cname(iname),cform(iname),'TTmax',i_TTmax)
+      enddo
 !
 !  write column where which ionization variable is stored
 !
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iyH=',iyH
-        write(3,*) 'iTT=',iTT
+      if (present(lwrite)) then
+        if (lwrite) then
+          write(3,*) 'i_yHmax=',i_yHmax
+          write(3,*) 'i_yHm=',i_yHm
+          write(3,*) 'i_TTmax=',i_TTmax
+          write(3,*) 'i_TTm=',i_TTm
+          write(3,*) 'nname=',nname
+        endif
       endif
-!   
+!
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_ionization
 !***********************************************************************
@@ -388,6 +413,8 @@ module Ionization
 !   2-feb-03/axel: simple example coded
 !  15-jun-03/axel: made compatible with current ionization routine
 !
+      use Sub
+!
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
       real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
 !
@@ -395,6 +422,13 @@ module Ionization
       if (present(cp1tilde)) cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
       if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
       if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
+!
+      if (ldiagnos) then
+        if (i_yHmax/=0) call max_mn_name(yH,i_yHmax)
+        if (i_yHm/=0) call sum_mn_name(yH,i_yHm)
+        if (i_TTmax/=0) call max_mn_name(TT,i_TTmax)
+        if (i_TTm/=0) call sum_mn_name(TT,i_TTm)
+      endif
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************

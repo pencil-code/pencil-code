@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.131 2003-10-24 13:17:31 dobler Exp $
+! $Id: ionization.f90,v 1.132 2003-10-28 11:40:25 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -85,6 +85,9 @@ module Ionization
   ! run parameters
   namelist /ionization_run_pars/ xHe,yHacc,yHmin,yHmax,radcalc_test
 
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
+
   contains
 
 !***********************************************************************
@@ -119,7 +122,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.131 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: ionization.f90,v 1.132 2003-10-28 11:40:25 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -239,18 +242,40 @@ module Ionization
       use Cdata
       use Sub
 ! 
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
+      integer :: iname
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_yHmax=0
+        i_yHm=0
+        i_TTmax=0
+        i_TTm=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
+        call parse_name(iname,cname(iname),cform(iname),'yHmax',i_yHmax)
+        call parse_name(iname,cname(iname),cform(iname),'TTm',i_TTm)
+        call parse_name(iname,cname(iname),cform(iname),'TTmax',i_TTmax)
+      enddo
 !
 !  write column where which ionization variable is stored
 !
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iyH=',iyH
-        write(3,*) 'iTT=',iTT
+      if (present(lwrite)) then
+        if (lwrite) then
+          write(3,*) 'i_yHmax=',i_yHmax
+          write(3,*) 'i_yHm=',i_yHm
+          write(3,*) 'i_TTmax=',i_TTmax
+          write(3,*) 'i_TTm=',i_TTm
+          write(3,*) 'nname=',nname
+        endif
       endif
 !   
       if(ip==0) print*,lreset  !(to keep compiler quiet)
@@ -516,6 +541,13 @@ module Ionization
       if (ip==0) print*,ss      !(keep compiler quiet)
 !
 ! wd: Do we really need ss as arguments if we never use it?
+!
+      if (ldiagnos) then
+        if (i_yHmax/=0) call max_mn_name(yH,i_yHmax)
+        if (i_yHm/=0) call sum_mn_name(yH,i_yHm)
+        if (i_TTmax/=0) call max_mn_name(TT,i_TTmax)
+        if (i_TTm/=0) call sum_mn_name(TT,i_TTm)
+      endif
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
