@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.87 2003-11-02 04:00:18 theine Exp $
+! $Id: noionization.f90,v 1.88 2003-11-03 09:47:02 dobler Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.87 2003-11-02 04:00:18 theine Exp $")
+           "$Id: noionization.f90,v 1.88 2003-11-03 09:47:02 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -119,7 +119,12 @@ module Ionization
       endif
 
       cp1=1./cp
-      lnTT0=log(cs20/(cp * gamma1))
+
+      if (gamma1 /= 0.) then
+        lnTT0=log(cs20/(cp * gamma1))
+      else                      ! gamma==1
+        lnTT0=log(cs20/cp)      ! Could the ionizers please check!
+      endif
 !   
 !  write constants to disk. In future we may want to deal with this
 !  using an include file or another module.

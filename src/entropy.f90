@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.237 2003-11-02 04:00:18 theine Exp $
+! $Id: entropy.f90,v 1.238 2003-11-03 09:47:02 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.237 2003-11-02 04:00:18 theine Exp $")
+           "$Id: entropy.f90,v 1.238 2003-11-03 09:47:02 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -948,6 +948,7 @@ module Entropy
         if(headtt) print*,'calc_heatcond_shock: use shock diffusion'
 !        thdiff = chi_shock*(shock*(del2ss+g2)+g2)
          call stop_it("calc_heatcond_shock: Errr... Check this first!")
+         thdiff = 0             !(keep picky compilers quiet)
       endif
 !
 !  add heat conduction to entropy equation
