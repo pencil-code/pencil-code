@@ -26,7 +26,7 @@ mtime = ulong64(res[0])
 
 ;; Re-read file only if it has changed
 if ((nfile ne oldfile) or (mtime gt oldmtime)) then begin
-  print,'Reading data'
+  print,'Reading data from ', nfile
   data = input_table(nfile)
   oldmtime = mtime
   oldfile = nfile
