@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.265 2004-02-11 14:59:02 ajohan Exp $
+! $Id: entropy.f90,v 1.266 2004-02-13 16:20:59 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.265 2004-02-11 14:59:02 ajohan Exp $")
+           "$Id: entropy.f90,v 1.266 2004-02-13 16:20:59 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -275,7 +275,9 @@ module Entropy
         case('const_ss'); f(:,:,:,iss) = ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
         case('isothermal'); call isothermal_entropy(f,T0)
-        case('isothermal_lnrho_ss'); call isothermal_lnrho_ss(f,T0,rho0)
+        case('isothermal_lnrho_ss')
+          print*, 'init_ss: Isothermal density and entropy stratification'
+          call isothermal_lnrho_ss(f,T0,rho0)
         case('wave'); f(:,:,:,iss) = ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
         case('Ferriere'); call ferriere(f) 
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
