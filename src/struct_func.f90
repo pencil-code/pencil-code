@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.2 2002-12-28 11:19:20 brandenb Exp $
+! $Id: struct_func.f90,v 1.3 2002-12-28 17:04:04 brandenb Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -25,6 +25,9 @@ module struct_func
 !  The following parameters may need to be readjusted:
 !  qmax should be set to the largest moment to be calculated
 !  n_pdf gives the number of bins of the PDF
+!
+!   23-dec-02/nils: adapted from postproc/src/struct_func_mpi.f90
+!   28-dec-02/axel: need also n_pdf in normalization
 !
   use Cdata
   use Sub
@@ -174,7 +177,7 @@ module struct_func
      do i=1,imax
         do j=1,3
            do direction=1,nr_directions
-              normalization=1./(dx_du*sum(p_du_sum(:,i,j,direction)))
+              normalization=1./(n_pdf*dx_du*sum(p_du_sum(:,i,j,direction)))
               p_du_sum(:,i,j,direction)=normalization*p_du_sum(:,i,j,direction)
            enddo
         enddo
