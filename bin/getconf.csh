@@ -32,7 +32,7 @@ if ($mpi) then
     set mpirunops = ''
   endif
   # Determine number of CPUS
-  set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.f90`
+  set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
   echo $ncpus CPUs
   # Number of processors
   set npops = "-np $ncpus"

@@ -2,9 +2,9 @@
 #
 # run.csh -- driver for time stepping
 #
-##PBS -S /bin/csh -W group_list=UK06005 -q UK06005
-##PBS -l ncpus=16,mem=8gb,walltime=90:00:00
-#PBS -q p-long
+#PBS -S /bin/csh -W group_list=UK06005 -q UK06005
+#PBS -l ncpus=32,mem=16gb,walltime=200:00:00
+##PBS -q p-long
 ##PBS -l nodes=nq1+nq2+nq3+nq4
 #
 if ($?PBS_O_WORKDIR) then

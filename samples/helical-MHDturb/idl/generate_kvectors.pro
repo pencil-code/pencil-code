@@ -10,10 +10,11 @@ kmax=10 & k1=4.0 & k2=5.0    ;(gives 228 vectors)
 kmax=6 & k1=1.0 & k2=2.0   ;(gives 62 vectors)
 kmax=15 & k1=14.95 & k2=15.05    ;(gives 350 vectors)
 kmax=10 & k1=4.5 & k2=5.5    ;(gives 350 vectors)
-kmax=10 & k1=2.5 & k2=3.5    ;(gives 98 vectors)
 kmax=31 & k1=26.9 & k2=27.1   ;(gives 2286 vectors)
-kmax=6  & k1=2.0 & k2=3.0   ;(gives 60 vectors)
 kmax=6  & k1=3.2 & k2=4.8   ;(gives 314 vectors)
+kmax=6  & k1=3.2 & k2=4.6   ;(gives 314 vectors)
+kmax=6  & k1=2.0 & k2=3.0   ;(gives 60 vectors)
+kmax=10 & k1=2.5 & k2=3.5    ;(gives 98 vectors)
 ;
 kav=0.
 ;
