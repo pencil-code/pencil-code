@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.87 2003-05-25 21:06:15 brandenb Exp $
+! $Id: start.f90,v 1.88 2003-05-29 07:48:14 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -25,6 +25,7 @@
 !  define parameters
 !
         integer :: i
+!       logical :: lock=.false.
         real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
@@ -34,7 +35,15 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.87 2003-05-25 21:06:15 brandenb Exp $")
+             "$Id: start.f90,v 1.88 2003-05-29 07:48:14 brandenb Exp $")
+!!
+!!  stop the code if there is a LOCK file
+!!  This should prevent simultaneous running of the code in the same directory
+!!
+!            if (lroot) then
+!              inquire(FILE="LOCK", EXIST=lock)
+!              if(lock) call stop_it("LOCK file found")
+!            endif
 !
 !  set default values: box of size (2pi)^3
 !

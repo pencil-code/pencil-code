@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.23 2003-04-05 21:22:33 brandenb Exp $
+! $Id: wsnaps.f90,v 1.24 2003-05-29 07:48:14 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -32,7 +32,7 @@ contains
       use Sub
       use Io
 !
-      real, dimension (mx,my,mz,mvar) :: a
+      real, dimension (mx,my,mz,mvar+maux) :: a
       character (len=4) :: ch
       character (len=135) :: file
       character (len=*) :: chsnap
@@ -74,6 +74,7 @@ contains
 !
 !  before closing, add possible extra (hard-to-get) output
 !
+      call output_auxiliary(lun_output,mvar,maux,a)
       call output_radiation(lun_output)
       call output_ionization(lun_output)
       close(lun_output)

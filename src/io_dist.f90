@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.52 2003-04-27 16:20:14 brandenb Exp $
+! $Id: io_dist.f90,v 1.53 2003-05-29 07:48:14 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.52 2003-04-27 16:20:14 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.53 2003-05-29 07:48:14 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -154,6 +154,21 @@ contains
       close(1)
       if (lserial_io) call end_serialize()
     endsubroutine input
+!***********************************************************************
+    subroutine output_auxiliary(lun_output,nn1,nn2,a)
+!
+!  write auxiliary information into snapshot file
+!  26-may-03/axel: adapted from output_vect
+!
+      use Cdata
+!
+      integer :: lun_output,nn1,nn2
+      real, dimension (mx,my,mz,nn1+nn2) :: a
+!
+      if ((ip<=8).and.lroot) print*,'output_auxiliary: nn1,nn2=',nn1,nn2
+      write(lun_output) a(:,:,:,nn1+1:nn1+1+nn2)
+!
+    endsubroutine output_auxiliary
 !***********************************************************************
     subroutine output_vect(file,a,nn,noclose)
 !

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.14 2003-05-05 18:48:52 brandenb Exp $
+! $Id: noionization.f90,v 1.15 2003-05-29 07:48:14 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -13,13 +13,16 @@ module Ionization
   ! global ionization parameter for yH (here a scalar set to 0)
   real :: yyH=0.
 
-  !  These parameters are used if lionization were .true.
-  real :: lnTT_ion,lnrho_ion,ss_ion
+  !  secondary parameters calculated in initialize
+  real :: m_H,m_He,mu
+  real :: TT_ion,lnrho_ion,ss_ion,chiH
+  real :: TT_ion_,lnrho_ion_,chiH_,kappa0
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
-  logical :: lionization=.false.
+  logical :: lionization=.false.,lfixed_ionization=.false.
+  real :: yH0=impossible,fHe=0.
 
   ! input parameters
   integer :: dummy 
@@ -35,6 +38,37 @@ module Ionization
     endsubroutine register_ionization
 !***********************************************************************
     subroutine initialize_ionization()
+!
+!  Perform any post-parameter-read initialization, e.g. set derived 
+!  parameters.
+!
+!   2-feb-03/axel: adapted from Interstellar module
+!
+      use Cdata
+      use General
+!
+!  ionization parameters
+!  since m_e and chiH, as well as hbar are all very small
+!  it is better to divide m_e and chiH separately by hbar.
+!
+      m_H=m_p+m_e
+      m_He=3.97153*m_H
+      mu=1.+3.97153*fHe
+      chiH=13.6*eV
+      chiH_=0.75*eV
+      TT_ion=chiH/k_B
+      TT_ion_=chiH_/k_B
+      lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
+      ss_ion=k_B/m_H/mu
+      kappa0=sigmaH_/m_H/mu
+      if(lroot) then
+        print*,'initialize_ionization: reference values for ionization'
+        print*,'TT_ion',TT_ion
+        print*,'lnrho_ion,exp(lnrho_ion)=',lnrho_ion,exp(lnrho_ion)
+        print*,'ss_ion=',ss_ion
+      endif
+
     endsubroutine initialize_ionization
 !***********************************************************************
     subroutine ionfrac(f)
@@ -65,27 +99,28 @@ module Ionization
       real, dimension (nx), intent(out), optional :: Temperature
       real, dimension (nx), intent(out), optional :: InternalEnergy
       real, dimension (nx), intent(out), optional :: IonizationFrac
-      real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
-      real, dimension (nx) :: TT,dlnPdlnrho,dlnPdS,rho,ee
-      real :: ss0=-5.5542
+      real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde,yH
+      real, dimension (nx) :: TT,dlnPdlnrho,dlnPdss,rho,ee
 !
 !  calculate cs2, 1/T, and cp1tilde
 !  leave this in, in case we may activate it
 !
-      if(lionization) then
-        if(headtt) print*,'thermodynamics: assume cp is not 1'
-        dlnPdlnrho=gamma
-        dlnPdS=gamma1
-        TT=exp(gamma1*(lnrho+ss-ss0)); TT1=1./TT
-        cs2=ss_ion*TT*dlnPdlnrho
-        cp1tilde=dlnPdS/dlnPdlnrho
-        if(present(Temperature)) Temperature=TT
+      if(lfixed_ionization) then
+        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
+        call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
+                                 dlnPdss=dlnPdss, &
+                                 TT=TT)
+        TT1=1./TT
+        cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
+        cp1tilde=dlnPdss/dlnPdlnrho
+print*,'ss_ion,TT,dlnPdlnrho=',ss_ion,TT,dlnPdlnrho
+        if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
       else
 !
 !  if ionization turned off, continue assuming cp=1
 !  with IONIZATION=noionization this is the only option
 !
-        !if(headtt) print*,'thermodynamics: assume cp=1'
+        if(headtt) print*,'thermodynamics: assume cp=1'
         cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
         TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
         if(present(Temperature)) Temperature=cs2/gamma1
@@ -99,26 +134,59 @@ module Ionization
       if(present(InternalEnergy)) InternalEnergy=ee
       if(present(IonizationFrac)) IonizationFrac=0.
 !
+if(headtt) print*,'ss_ion,yH,cs2',ss_ion,yH,cs2
     endsubroutine thermodynamics
 !***********************************************************************
     subroutine ioncalc(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)
 !
 !   calculates thermodynamic quantities under partial ionization
 !
-!   28-mar-03/tobi: added kappa
+!   29-may-03/axel: coded replacement routine for fixed radiation
 !
-      real, dimension(nx),intent(in)   :: lnrho,ss,yH
+      real, dimension(nx),intent(in)   :: lnrho,ss
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
                            intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
-      real                             :: ss0=-5.5542
+      real, dimension(nx)              :: lnTT_  ! lnTT_=log(TT/TT_ion)
+      real, dimension(nx),intent(out)  :: yH
+!
+!  initialize yH from global yyH array
+!  set equal to yH0, but limit within 1e-5 and 1-1e-5
+!
+      yH=amin1(amax1(yH0,1e-5),1.-1e-5)
+!
+!  EOS: p=(1+yH+f)*rho*s0*T
+!
+      if (present(dlnPdlnrho).or.present(dlnPdss) &
+           .or.present(TT).or.present(kappa)) then
+         lnTT_=(2./3.)*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
+                        -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
+                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
+                        /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
+         if(headtt) print*,'ss,lnrho,TT=',ss,lnrho,TT_ion*exp(lnTT_),yH,fHe
+      endif
+!
+!  dlnP/dlnrho=gamma
+!
+      if (present(dlnPdlnrho)) then
+         dlnPdlnrho=5./3.
+      endif
+!
+!  dlnP/dss=(gamma-1)/(1.+yH0+fHe)
+!
+      if (present(dlnPdss)) then
+         dlnPdss=(2./3.)/(1.+yH0+fHe)
+      endif
+!
+!  temperature (from lnTT_)
+!
+      if (present(TT).or.present(kappa)) TT=exp(lnTT_)*TT_ion
 !
 !  if kappa is needed, use electron scattering value, kappa_es
 !
-      if (present(dlnPdlnrho)) dlnPdlnrho=gamma
-      if (present(dlnPdss)) dlnPdss=gamma1
-      if (present(TT)) TT=exp(gamma1*(lnrho+ss-ss0))
-      if (present(kappa)) kappa=kappa_es
-      if (ip==0) print*,yH  !(to keep compiler quiet)
+      if (present(kappa)) then
+         kappa=kappa_es
+      endif
+!
     endsubroutine ioncalc
 !***********************************************************************
 endmodule ionization

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.157 2003-05-27 14:08:26 ngrs Exp $
+! $Id: entropy.f90,v 1.158 2003-05-29 07:48:14 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -10,6 +10,7 @@ module Entropy
   use Hydro
   use Interstellar
   use Viscosity
+  use Ionization, only: lfixed_ionization,yH0,fHe
 
   implicit none
 
@@ -36,7 +37,8 @@ module Entropy
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss, thermal_background, thermal_peak, thermal_scaling, &
        center1_x, center1_y, center1_z, &
-       center2_x, center2_y, center2_z
+       center2_x, center2_y, center2_z, &
+       yH0,fHe
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -44,7 +46,7 @@ module Entropy
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
-       heat_uniform
+       yH0,fHe,heat_uniform
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0
@@ -81,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.157 2003-05-27 14:08:26 ngrs Exp $")
+           "$Id: entropy.f90,v 1.158 2003-05-29 07:48:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -101,6 +103,12 @@ module Entropy
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
+!
+!  check which type of thermodynamics we want
+!
+      lfixed_ionization = (yH0/=impossible)
+!
+!  radiative diffusion: initialize flux etc
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -128,7 +136,8 @@ module Entropy
         else
           !
           !  Wolfgang, in future we should define chiz=chi(z) or Kz=K(z) here.
-          !  calculate hcond and FbotKbot=Fbot/K, where K=hcond is radiative conductivity
+          !  calculate hcond and FbotKbot=Fbot/K
+          !  (K=hcond is radiative conductivity)
           !
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
           FbotKbot=gamma/gamma1/(mpoly+1.)

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.114 2003-04-28 08:25:00 nilshau Exp $ 
+! $Id: sub.f90,v 1.115 2003-05-29 07:48:14 brandenb Exp $ 
 
 module Sub 
 
@@ -1978,6 +1978,18 @@ module Sub
         close(1,STATUS='DELETE')
 !
       endsubroutine remove_file
+!***********************************************************************
+      subroutine touch_file(fname)
+!
+!  touch file (used for code locking)
+!  25-may-03/axel: coded
+!
+        character (len=*) :: fname
+!
+        open(1,FILE=fname)
+        close(1)
+!
+      endsubroutine touch_file
 !***********************************************************************
       function read_line_from_file(fname)
 !

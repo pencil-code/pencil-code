@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.35 2003-05-05 18:48:52 brandenb Exp $
+! $Id: ionization.f90,v 1.36 2003-05-29 07:48:14 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -23,8 +23,9 @@ module Ionization
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
-  logical :: lionization=.true.,output_yH=.false.
+  logical :: lionization=.true.,lfixed_ionization=.false.,output_yH=.false.
   character (len=labellen) :: cionization='hydrogen'
+  real :: yH0=impossible,fHe=0.
 
   ! input parameters
   namelist /ionization_init_pars/ cionization,output_yH
@@ -55,7 +56,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.35 2003-05-05 18:48:52 brandenb Exp $")
+           "$Id: ionization.f90,v 1.36 2003-05-29 07:48:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -267,36 +268,47 @@ module Ionization
 !  initialize yH from global yyH array
 !
       yH=yyH(l1:l2,m,n)
-
+!
+!  equation of state
+!
       if (present(dlnPdlnrho).or.present(dlnPdss) &
            .or.present(TT).or.present(kappa)) then
-         lnTT_=gamma1*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
+         lnTT_=(2./3.)*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
                         -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
                         +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
                         /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
+         if(headtt) print*,'ss,lnrho,TT=',ss,lnrho,TT_ion*exp(lnTT_),yH
       endif
       if (present(dlnPdlnrho).or.present(dlnPdss)) then
          f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
          dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH+fHe)
          dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
       endif
-
+!
+!  dlnPdlnrho (corresponds to gamma for perfect gas)
+!
       if (present(dlnPdlnrho)) then
          dlnTT_dlnrho=gamma1
          dfdlnrho=gamma1*exp(-lnTT_)
          dydlnrho=-dfdlnrho/dfdy
          dlnPdlnrho=1.+dydlnrho/(1.+yH+fHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
       endif
-
+!
+!  dlnPdss (corresponds to gamma-1 for perfect gas)
+!
       if (present(dlnPdss)) then
          dlnTT_dss=gamma1/((1.+yH+fHe)*ss_ion)
          dfdss=(1.+dfdlnrho)/((1.+yH+fHe)*ss_ion)
          dydss=-dfdss/dfdy
          dlnPdss=dydss/(1.+yH+fHe)+dlnTT_dy*dydss+dlnTT_dss
       endif
-
+!
+!  temperature
+!
       if (present(TT).or.present(kappa)) TT=exp(lnTT_)*TT_ion
-
+!
+!  kappa for Hminus opacity
+!
       if (present(kappa)) then
          kappa=.25*exp(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
                *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0

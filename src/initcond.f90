@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.41 2003-05-27 14:08:26 ngrs Exp $ 
+! $Id: initcond.f90,v 1.42 2003-05-29 07:48:14 brandenb Exp $ 
 
 module Initcond 
  
@@ -158,6 +158,22 @@ module Initcond
       endif
 !
     endsubroutine gaussian
+!***********************************************************************
+    subroutine gaussian3d(ampl,f,i,xx,yy,zz,radius)
+!
+!  gaussian 3-D bump
+!
+!  28-may-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl,radius,radius21
+!
+      radius21=1./radius**2
+      f(:,:,:,i)=f(:,:,:,i)+ampl*exp(-(xx**2+yy**2+zz**2)*radius21)
+!
+    endsubroutine gaussian3d
 !***********************************************************************
     subroutine parabola(ampl,f,i,kx,ky,kz)
 !
