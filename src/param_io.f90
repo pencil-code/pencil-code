@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.118 2003-07-29 09:43:36 brandenb Exp $ 
+! $Id: param_io.f90,v 1.119 2003-07-30 14:40:28 dobler Exp $ 
 
 module Param_IO
 
@@ -565,12 +565,14 @@ module Param_IO
 !  print final warning
 !  make the warnings less dramatic looking, if we are only in start
 !
-      if(.not.lwarning.and.label=='read_startpars') then
-        print*,'check_consistency_of_lperi: dont worry, make sure run.in is ok!'
-      elseif(.not.lwarning.and.label/='read_startpars') then
-        print*,'check_consistency_of_lperi: you better stop and check!'
-        print*,'------------------------------------------------------'
-        print*
+      if (lroot .and. (.not. lwarning)) then
+        if(label=='read_startpars') then
+          print*,'[The above lperi warning is most probably meaningless]'
+        else
+          print*,'check_consistency_of_lperi: you better stop and check!'
+          print*,'------------------------------------------------------'
+          print*
+        endif
       endif
 !
     endsubroutine check_consistency_of_lperi
@@ -586,16 +588,18 @@ module Param_IO
       logical :: lwarning
       integer :: j
 !
-      if(lwarning) then
-        print*
-        print*,'------------------------------------------------------'
-        print*,'W A R N I N G'
-        lwarning=.false.
-      endif
+      if (lroot) then
+        if(lwarning) then
+          print*
+          print*,'------------------------------------------------------'
+          print*,'W A R N I N G'
+          lwarning=.false.
+        endif
 !
-      print*,'warning_lperi: inconsistency, j=',j
-      print*,'lperi(j)=',lperi(j)
-      print*,'bc=',bc
+        print*,'warning_lperi: inconsistency, j=',j
+        print*,'lperi(j)=',lperi(j)
+        print*,'bc=',bc
+      endif
 !
     endsubroutine warning_lperi
 !***********************************************************************
