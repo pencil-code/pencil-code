@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.27 2004-08-25 15:06:25 mee Exp $
+! $Id: timestep.f90,v 1.28 2004-09-20 12:27:30 ajohan Exp $
 
 module Timestep
 
@@ -73,7 +73,7 @@ module Timestep
         call pde(f,df)
         ds=ds+1.
 !
-!  If we are in the first step we need to calculate timestep dt.
+!  If we are in the first time substep we need to calculate timestep dt.
 !  This is done here because it uses UUmax which was calculated in pde.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
