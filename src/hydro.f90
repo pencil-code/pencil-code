@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.21 2002-06-09 10:13:01 brandenb Exp $
+! $Id: hydro.f90,v 1.22 2002-06-09 21:14:19 brandenb Exp $
 
 module Hydro
 
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.21 $", &
-           "$Date: 2002-06-09 10:13:01 $")
+           "$Revision: 1.22 $", &
+           "$Date: 2002-06-09 21:14:19 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -256,7 +256,7 @@ module Hydro
 !  abbreviations
 !
       uu=f(l1:l2,m,n,iux:iuz)
-      u2=uu(:,1)**2+uu(:,2)**2+uu(:,3)**2
+      call dot2_mn(uu,u2)
 !
 !  calculate velocity gradient matrix
 !
@@ -276,12 +276,12 @@ module Hydro
 !
 !  advection term
 !
-        call multmv_mn(uij,uu,ugu)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
+      call multmv_mn(uij,uu,ugu)
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
 !
 !  maximum squared avection speed
 !
-        maxadvec2=amax1(maxadvec2,u2)
+      maxadvec2=amax1(maxadvec2,u2)
 !
 !  >> Wolfgang, could you please reinstate this if you still need it?
 !  >> Your old material is now in the damping routine below.
@@ -291,23 +291,23 @@ module Hydro
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
 !  The length of the timestep is not known here (--> moved to prints.f90)
 !
-        if (ldiagnos) then
-          if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
-          if (i_um2/=0) call max_mn_name(u2,i_um2)
-          if (i_oum/=0 .or. i_o2m/=0) then
-            oo(:,1)=uij(:,3,2)-uij(:,2,3)
-            oo(:,2)=uij(:,1,3)-uij(:,3,1)
-            oo(:,3)=uij(:,2,1)-uij(:,1,2)
-            if (i_oum/=0) then
-              call dot_mn(oo,uu,ou)
-              call sum_mn_name(ou,i_oum)
-            endif
-            if (i_o2m/=0) then
-              call dot2_mn(oo,o2)
-              call sum_mn_name(o2,i_o2m)
-            endif
+      if (ldiagnos) then
+        if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
+        if (i_um2/=0) call max_mn_name(u2,i_um2)
+        if (i_oum/=0 .or. i_o2m/=0) then
+          oo(:,1)=uij(:,3,2)-uij(:,2,3)
+          oo(:,2)=uij(:,1,3)-uij(:,3,1)
+          oo(:,3)=uij(:,2,1)-uij(:,1,2)
+          if (i_oum/=0) then
+            call dot_mn(oo,uu,ou)
+            call sum_mn_name(ou,i_oum)
+          endif
+          if (i_o2m/=0) then
+            call dot2_mn(oo,o2)
+            call sum_mn_name(o2,i_o2m)
           endif
         endif
+      endif
 !
     endsubroutine duu_dt
 !***********************************************************************
