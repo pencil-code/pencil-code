@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.59 2003-10-14 07:02:24 nilshau Exp $
+! $Id: boundcond.f90,v 1.60 2003-10-21 14:34:30 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -276,6 +276,12 @@ module Boundcond
                 call bc_extrap_2_1(f,topbot,j)
               case ('e2')       ! extrapolation
                 call bc_extrap_2_2(f,topbot,j)
+              case ('b1')       ! extrapolation with zero value (improved 'a')
+                call bc_extrap0_2_0(f,topbot,j)
+              case ('b2')       ! extrapolation with zero value (improved 'a')
+                call bc_extrap0_2_1(f,topbot,j)
+              case ('b3')       ! extrapolation with zero value (improved 'a')
+                call bc_extrap0_2_2(f,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
@@ -545,7 +551,7 @@ module Boundcond
 !  Generalized antisymmetric bc (a al `a2') with removal of Nyquist wiggles
 !  Does not seem to help against wiggles -- use upwinding instead
 !
-!  TEMPORARY HACK: Commented put calculation of Nyquist, as this creates
+!  TEMPORARY HACK: Commented out calculation of Nyquist, as this creates
 !  problems for some 2D runs and this boundary condition was not really
 !  helpful so far. Will either have to find a better solution or remove
 !  this altogether. wd, 21-jun-2003
@@ -705,6 +711,149 @@ module Boundcond
       endselect
 !
     endsubroutine bc_extrap_2_2
+!***********************************************************************
+    subroutine bc_extrap0_2_0(f,topbot,j)
+!
+!  Extrapolation boundary condition for f(bdry)=0.
+!  Correct for polynomials up to 2nd order, determined no further degree
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!    9-oct-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+!
+      select case(topbot)
+
+!       case('bot')               ! bottom boundary
+!         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
+!         f(:,:,n1-1,j)=- 3*f(:,:,n1+1,j)+  f(:,:,n1+2,j)
+!         f(:,:,n1-2,j)=- 8*f(:,:,n1+1,j)+3*f(:,:,n1+2,j)
+!         f(:,:,n1-3,j)=-15*f(:,:,n1+1,j)+6*f(:,:,n1+2,j)
+
+!       case('top')               ! top boundary
+!         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
+!         f(:,:,n2+1,j)=- 3*f(:,:,n2-1,j)+  f(:,:,n2-2,j)
+!         f(:,:,n2+2,j)=- 8*f(:,:,n2-1,j)+3*f(:,:,n2-2,j)
+!         f(:,:,n2+3,j)=-15*f(:,:,n2-1,j)+6*f(:,:,n2-2,j)
+
+
+!! Nyquist-filtering
+      case('bot')               ! bottom boundary
+        f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
+        f(:,:,n1-1,j)=(1/11.)*(-17*f(:,:,n1+1,j)- 9*f(:,:,n1+2,j)+ 8*f(:,:,n1+3,j))
+        f(:,:,n1-2,j)=      2*(- 2*f(:,:,n1+1,j)-   f(:,:,n1+2,j)+   f(:,:,n1+3,j))
+        f(:,:,n1-3,j)=(3/11.)*(-27*f(:,:,n1+1,j)-13*f(:,:,n1+2,j)+14*f(:,:,n1+3,j))
+
+      case('top')               ! top boundary
+        f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
+        f(:,:,n2+1,j)=(1/11.)*(-17*f(:,:,n2-1,j)- 9*f(:,:,n2-2,j)+ 8*f(:,:,n2-3,j))
+        f(:,:,n2+2,j)=      2*(- 2*f(:,:,n2-1,j)-   f(:,:,n2-2,j)+   f(:,:,n2-3,j))
+        f(:,:,n2+3,j)=(3/11.)*(-27*f(:,:,n2-1,j)-13*f(:,:,n2-2,j)+14*f(:,:,n2-3,j))
+
+
+! !! Nyquist-transparent
+!       case('bot')               ! bottom boundary
+!         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
+!         f(:,:,n1-1,j)=(1/11.)*(-13*f(:,:,n1+1,j)-14*f(:,:,n1+2,j)+10*f(:,:,n1+3,j))
+!         f(:,:,n1-2,j)=(1/11.)*(-48*f(:,:,n1+1,j)-17*f(:,:,n1+2,j)+20*f(:,:,n1+3,j))
+!         f(:,:,n1-3,j)=         - 7*f(:,:,n1+1,j)- 4*f(:,:,n1+2,j)+ 4*f(:,:,n1+3,j)
+
+!       case('top')               ! top boundary
+!         f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
+!         f(:,:,n2+1,j)=(1/11.)*(-13*f(:,:,n2-1,j)-14*f(:,:,n2-2,j)+10*f(:,:,n2-3,j))
+!         f(:,:,n2+2,j)=(1/11.)*(-48*f(:,:,n2-1,j)-17*f(:,:,n2-2,j)+20*f(:,:,n2-3,j))
+!         f(:,:,n2+3,j)=         - 7*f(:,:,n2-1,j)- 4*f(:,:,n2-2,j)+ 4*f(:,:,n2-3,j)
+
+      case default
+        print*, "bc_extrap0_2_0: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_extrap0_2_0
+!***********************************************************************
+    subroutine bc_extrap0_2_1(f,topbot,j)
+!
+!  Extrapolation boundary condition for f(bdry)=0.
+!  Correct for polynomials up to 2nd order, determined 1 further degree
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!  NOTE: This is not the final formula, but just bc_extrap_2_1() with f(bdry)=0
+!
+!    9-oct-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
+        f(:,:,n1-1,j)=0.25*(- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
+        f(:,:,n1-2,j)=0.05*(-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
+        f(:,:,n1-3,j)=0.05*(-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
+
+      case('top')               ! top boundary
+        f(:,:,n2  ,j)=0.        ! set bdry value=0 (indep of initcond)
+        f(:,:,n2+1,j)=0.25*(- 3*f(:,:,n2-1,j)- 5*f(:,:,n2-2,j)+ 3*f(:,:,n2-3,j))
+        f(:,:,n2+2,j)=0.05*(-43*f(:,:,n2-1,j)-57*f(:,:,n2-2,j)+39*f(:,:,n2-3,j))
+        f(:,:,n2+3,j)=0.05*(-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
+
+      case default
+        print*, "bc_extrap0_2_1: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_extrap0_2_1
+!***********************************************************************
+    subroutine bc_extrap0_2_2(f,topbot,j)
+!
+!  Extrapolation boundary condition for f(bdry)=0.
+!  Correct for polynomials up to 2nd order, determined 1 further degree
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!  NOTE: This is not the final formula, but just bc_extrap_2_2() with f(bdry)=0
+!
+!    9-oct-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j,n1p4,n2m4
+!
+!  abbreviations, because otherwise the ifc compiler complains
+!  for 1-D runs without vertical extent
+!
+      n1p4=n1+4
+      n2m4=n2-4
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
+        f(:,:,n1-1,j)=0.2   *(                -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+        f(:,:,n1-2,j)=0.2   *( 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+        f(:,:,n1-3,j)=1./35.*(33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+
+      case('top')               ! top boundary
+        f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
+        f(:,:,n2+1,j)=0.2   *(                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j)+ 3*f(:,:,n2m4,j))
+        f(:,:,n2+2,j)=0.2   *(- 2*f(:,:,n2-1,j)-  9*f(:,:,n2-2,j)- 6*f(:,:,n2-3,j)+ 7*f(:,:,n2m4,j))
+        f(:,:,n2+3,j)=1./35.*(-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
+
+      case default
+        print*, "bc_extrap0_2_2: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_extrap0_2_2
 !***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
