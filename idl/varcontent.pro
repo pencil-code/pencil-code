@@ -1,4 +1,4 @@
-if (par2.lwrite_aux ne 0) then totalvars=nvar+naux else totalvars=nvar
+if (par.lwrite_aux ne 0) then totalvars=nvar+naux else totalvars=nvar
 varcontent=REPLICATE({varcontent_all, variable:'UNKNOWN', $ 
                                       idlvar:'dummy', $
                                       idlinit:'fltarr(mx,my,mz)*one', $
