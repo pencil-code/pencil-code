@@ -1,0 +1,773 @@
+//
+// time: Fri Dec 21 18:46:22 2001
+//
+// version: 3.1.2 (format), 4.1.3 (DX)
+//
+//
+// MODULE main
+// page assignment: Import	order=1, windowed=0, showing=0
+// page assignment: Render	order=5, windowed=0, showing=0
+// page assignment: entropy	order=4, windowed=0, showing=1
+// page assignment: logrho	order=3, windowed=0, showing=0
+// page assignment: uu	order=2, windowed=0, showing=0
+// workspace: width = 445, height = 713
+// layout: snap = 0, width = 50, height = 50, align = NN
+//
+macro main(
+) -> (
+) {
+    // 
+    // node Import[1]: x = 242, y = 29, inputs = 6, label = Import
+    // input[1]: defaulting = 0, visible = 1, type = 32, value = "tmp/uu-lam-ent.general"
+    // page group: Import
+    //
+main_Import_1_out_1 = 
+    Import(
+    main_Import_1_in_1,
+    main_Import_1_in_2,
+    main_Import_1_in_3,
+    main_Import_1_in_4,
+    main_Import_1_in_5,
+    main_Import_1_in_6
+    ) [instance: 1, cache: 1];
+    // 
+    // node Select[3]: x = 396, y = 211, inputs = 3, label = Select entropy
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "ent"
+    // page group: Import
+    //
+main_Select_3_out_1 = 
+    Select(
+    main_Import_1_out_1,
+    main_Select_3_in_2,
+    main_Select_3_in_3
+    ) [instance: 3, cache: 1];
+    // 
+    // node Transmitter[6]: x = 415, y = 648, inputs = 1, label = ent
+    // page group: Import
+    //
+ent = main_Select_3_out_1;
+    // 
+    // node Receiver[6]: x = 231, y = 62, inputs = 1, label = ent
+    // page group: entropy
+    //
+main_Receiver_6_out_1[cache: 0] = ent;
+    // 
+    // node Isosurface[3]: x = 216, y = 297, inputs = 6, label = Isosurface
+    // page group: entropy
+    //
+main_Isosurface_3_out_1 = 
+    Isosurface(
+    main_Receiver_6_out_1,
+    main_Isosurface_3_in_2,
+    main_Isosurface_3_in_3,
+    main_Isosurface_3_in_4,
+    main_Isosurface_3_in_5,
+    main_Isosurface_3_in_6
+    ) [instance: 3, cache: 1];
+    // 
+    // node AutoColor[1]: x = 210, y = 430, inputs = 10, label = AutoColor
+    // page group: entropy
+    //
+main_AutoColor_1_out_1,
+main_AutoColor_1_out_2 = 
+    AutoColor(
+    main_Isosurface_3_out_1,
+    main_AutoColor_1_in_2,
+    main_AutoColor_1_in_3,
+    main_AutoColor_1_in_4,
+    main_AutoColor_1_in_5,
+    main_AutoColor_1_in_6,
+    main_AutoColor_1_in_7,
+    main_AutoColor_1_in_8,
+    main_AutoColor_1_in_9,
+    main_AutoColor_1_in_10
+    ) [instance: 1, cache: 1];
+    // 
+    // node Select[1]: x = 127, y = 215, inputs = 3, label = Select uu
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "uu"
+    // page group: Import
+    //
+main_Select_1_out_1 = 
+    Select(
+    main_Import_1_out_1,
+    main_Select_1_in_2,
+    main_Select_1_in_3
+    ) [instance: 1, cache: 1];
+    // 
+    // node Transmitter[2]: x = 141, y = 648, inputs = 1, label = uu
+    // page group: Import
+    //
+uu = main_Select_1_out_1;
+    // 
+    // node Receiver[2]: x = 117, y = 27, inputs = 1, label = uu
+    // page group: uu
+    //
+main_Receiver_2_out_1[cache: 0] = uu;
+    // 
+    // node Reduce[1]: x = 132, y = 134, inputs = 2, label = Reduce
+    // input[2]: defaulting = 0, visible = 1, type = 16777221, value = { 4.0 }
+    // page group: uu
+    //
+main_Reduce_1_out_1 = 
+    Reduce(
+    main_Receiver_2_out_1,
+    main_Reduce_1_in_2
+    ) [instance: 1, cache: 1];
+    // 
+    // node AutoGlyph[1]: x = 126, y = 294, inputs = 7, label = AutoGlyph
+    // page group: uu
+    //
+main_AutoGlyph_1_out_1 = 
+    AutoGlyph(
+    main_Reduce_1_out_1,
+    main_AutoGlyph_1_in_2,
+    main_AutoGlyph_1_in_3,
+    main_AutoGlyph_1_in_4,
+    main_AutoGlyph_1_in_5,
+    main_AutoGlyph_1_in_6,
+    main_AutoGlyph_1_in_7
+    ) [instance: 1, cache: 1];
+    // 
+    // node ShowBox[1]: x = 39, y = 374, inputs = 1, label = ShowBox
+    // page group: Import
+    //
+main_ShowBox_1_out_1,
+main_ShowBox_1_out_2 = 
+    ShowBox(
+    main_Import_1_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node Tube[1]: x = 53, y = 519, inputs = 4, label = Tube
+    // input[2]: defaulting = 0, visible = 1, type = 5, value = 0.4
+    // page group: Import
+    //
+main_Tube_1_out_1 = 
+    Tube(
+    main_ShowBox_1_out_1,
+    main_Tube_1_in_2,
+    main_Tube_1_in_3,
+    main_Tube_1_in_4
+    ) [instance: 1, cache: 1];
+    // 
+    // node Transmitter[1]: x = 47, y = 651, inputs = 1, label = bbox
+    // page group: Import
+    //
+bbox = main_Tube_1_out_1;
+    // 
+    // node Receiver[1]: x = 53, y = 222, inputs = 1, label = bbox
+    // page group: Render
+    //
+main_Receiver_1_out_1[cache: 0] = bbox;
+    // 
+    // node Transmitter[3]: x = 169, y = 471, inputs = 1, label = uu_out
+    // page group: uu
+    //
+uu_out = main_AutoGlyph_1_out_1;
+    // 
+    // node Receiver[3]: x = 165, y = 181, inputs = 1, label = uu_out
+    // page group: Render
+    //
+main_Receiver_3_out_1[cache: 0] = uu_out;
+    // 
+    // node Select[2]: x = 300, y = 209, inputs = 3, label = Select lam
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "lam"
+    // page group: Import
+    //
+main_Select_2_out_1 = 
+    Select(
+    main_Import_1_out_1,
+    main_Select_2_in_2,
+    main_Select_2_in_3
+    ) [instance: 2, cache: 1];
+    // 
+    // node Transmitter[5]: x = 314, y = 644, inputs = 1, label = lam
+    // page group: Import
+    //
+lam = main_Select_2_out_1;
+    // 
+    // node Receiver[5]: x = 174, y = 103, inputs = 1, label = lam
+    // page group: logrho
+    //
+main_Receiver_5_out_1[cache: 0] = lam;
+    // 
+    // node Isosurface[2]: x = 156, y = 293, inputs = 6, label = Isosurface
+    // page group: logrho
+    //
+main_Isosurface_2_out_1 = 
+    Isosurface(
+    main_Receiver_5_out_1,
+    main_Isosurface_2_in_2,
+    main_Isosurface_2_in_3,
+    main_Isosurface_2_in_4,
+    main_Isosurface_2_in_5,
+    main_Isosurface_2_in_6
+    ) [instance: 2, cache: 1];
+    // 
+    // node Transmitter[7]: x = 166, y = 552, inputs = 1, label = lam_surface
+    // page group: logrho
+    //
+lam_surface = main_Isosurface_2_out_1;
+    // 
+    // node Receiver[7]: x = 290, y = 188, inputs = 1, label = lam_surface
+    // page group: Render
+    //
+main_Receiver_7_out_1[cache: 0] = lam_surface;
+    // 
+    // node Transmitter[8]: x = 220, y = 577, inputs = 1, label = ent_surface
+    // page group: entropy
+    //
+ent_surface = main_AutoColor_1_out_1;
+    // 
+    // node Receiver[8]: x = 456, y = 200, inputs = 1, label = ent_surface
+    // page group: Render
+    //
+main_Receiver_8_out_1[cache: 0] = ent_surface;
+    // 
+    // node Collect[1]: x = 238, y = 467, inputs = 5, label = Collect
+    // page group: Render
+    //
+main_Collect_1_out_1 = 
+    Collect(
+    main_Receiver_1_out_1,
+    main_Receiver_3_out_1,
+    main_Collect_1_in_3,
+    main_Receiver_7_out_1,
+    main_Receiver_8_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node Image[1]: x = 266, y = 604, inputs = 49, label = Image
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "Image_1"
+    // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [15.5 15.5 15.5]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-88.4198 -63.0963 50.5535]
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 72.3082
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 640
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.75
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.169868 0.205272 0.963851]
+    // input[11]: defaulting = 0, visible = 0, type = 5, value = 30.0003
+    // input[12]: defaulting = 0, visible = 0, type = 1, value = 1
+    // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
+    // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
+    // input[16]: defaulting = 1, visible = 0, type = 32, value = "none"
+    // input[17]: defaulting = 1, visible = 0, type = 1, value = 1
+    // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
+    // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
+    // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
+    // page group: Render
+    // depth: value = 24
+    // window: position = (0.4258,0.0898), size = 0.5109x0.5117
+    // internal caching: 1
+    //
+main_Image_1_out_1,
+main_Image_1_out_2,
+main_Image_1_out_3 = 
+    Image(
+    main_Image_1_in_1,
+    main_Collect_1_out_1,
+    main_Image_1_in_3,
+    main_Image_1_in_4,
+    main_Image_1_in_5,
+    main_Image_1_in_6,
+    main_Image_1_in_7,
+    main_Image_1_in_8,
+    main_Image_1_in_9,
+    main_Image_1_in_10,
+    main_Image_1_in_11,
+    main_Image_1_in_12,
+    main_Image_1_in_13,
+    main_Image_1_in_14,
+    main_Image_1_in_15,
+    main_Image_1_in_16,
+    main_Image_1_in_17,
+    main_Image_1_in_18,
+    main_Image_1_in_19,
+    main_Image_1_in_20,
+    main_Image_1_in_21,
+    main_Image_1_in_22,
+    main_Image_1_in_23,
+    main_Image_1_in_24,
+    main_Image_1_in_25,
+    main_Image_1_in_26,
+    main_Image_1_in_27,
+    main_Image_1_in_28,
+    main_Image_1_in_29,
+    main_Image_1_in_30,
+    main_Image_1_in_31,
+    main_Image_1_in_32,
+    main_Image_1_in_33,
+    main_Image_1_in_34,
+    main_Image_1_in_35,
+    main_Image_1_in_36,
+    main_Image_1_in_37,
+    main_Image_1_in_38,
+    main_Image_1_in_39,
+    main_Image_1_in_40,
+    main_Image_1_in_41,
+    main_Image_1_in_42,
+    main_Image_1_in_43,
+    main_Image_1_in_44,
+    main_Image_1_in_45,
+    main_Image_1_in_46,
+    main_Image_1_in_47,
+    main_Image_1_in_48,
+    main_Image_1_in_49
+    ) [instance: 1, cache: 1];
+    // 
+    // node Select[4]: x = 216, y = 209, inputs = 3, label = Select divu
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "divu"
+    // page group: Import
+    //
+main_Select_4_out_1 = 
+    Select(
+    main_Import_1_out_1,
+    main_Select_4_in_2,
+    main_Select_4_in_3
+    ) [instance: 4, cache: 1];
+    // 
+    // node Transmitter[4]: x = 210, y = 646, inputs = 1, label = divu
+    // page group: Import
+    //
+divu = main_Select_4_out_1;
+    // 
+    // node Receiver[4]: x = 346, y = 47, inputs = 1, label = divu
+    // page group: uu
+    //
+main_Receiver_4_out_1[cache: 0] = divu;
+// network: end of macro body
+CacheScene(main_Image_1_in_1, main_Image_1_out_1, main_Image_1_out_2);
+}
+main_Import_1_in_1 = "tmp/uu-lam-ent.general";
+main_Import_1_in_2 = NULL;
+main_Import_1_in_3 = NULL;
+main_Import_1_in_4 = NULL;
+main_Import_1_in_5 = NULL;
+main_Import_1_in_6 = NULL;
+main_Import_1_out_1 = NULL;
+main_Select_3_in_2 = "ent";
+main_Select_3_in_3 = NULL;
+main_Select_3_out_1 = NULL;
+main_Transmitter_6_out_1 = NULL;
+main_Receiver_6_out_1 = NULL;
+main_Isosurface_3_in_2 = NULL;
+main_Isosurface_3_in_3 = NULL;
+main_Isosurface_3_in_4 = NULL;
+main_Isosurface_3_in_5 = NULL;
+main_Isosurface_3_in_6 = NULL;
+main_Isosurface_3_out_1 = NULL;
+main_AutoColor_1_in_2 = NULL;
+main_AutoColor_1_in_3 = NULL;
+main_AutoColor_1_in_4 = NULL;
+main_AutoColor_1_in_5 = NULL;
+main_AutoColor_1_in_6 = NULL;
+main_AutoColor_1_in_7 = NULL;
+main_AutoColor_1_in_8 = NULL;
+main_AutoColor_1_in_9 = NULL;
+main_AutoColor_1_in_10 = NULL;
+main_AutoColor_1_out_1 = NULL;
+main_Select_1_in_2 = "uu";
+main_Select_1_in_3 = NULL;
+main_Select_1_out_1 = NULL;
+main_Transmitter_2_out_1 = NULL;
+main_Receiver_2_out_1 = NULL;
+main_Reduce_1_in_2 = { 4.0 };
+main_Reduce_1_out_1 = NULL;
+main_AutoGlyph_1_in_2 = NULL;
+main_AutoGlyph_1_in_3 = NULL;
+main_AutoGlyph_1_in_4 = NULL;
+main_AutoGlyph_1_in_5 = NULL;
+main_AutoGlyph_1_in_6 = NULL;
+main_AutoGlyph_1_in_7 = NULL;
+main_AutoGlyph_1_out_1 = NULL;
+main_ShowBox_1_out_1 = NULL;
+main_Tube_1_in_2 = 0.4;
+main_Tube_1_in_3 = NULL;
+main_Tube_1_in_4 = NULL;
+main_Tube_1_out_1 = NULL;
+main_Transmitter_1_out_1 = NULL;
+main_Receiver_1_out_1 = NULL;
+main_Transmitter_3_out_1 = NULL;
+main_Receiver_3_out_1 = NULL;
+main_Select_2_in_2 = "lam";
+main_Select_2_in_3 = NULL;
+main_Select_2_out_1 = NULL;
+main_Transmitter_5_out_1 = NULL;
+main_Receiver_5_out_1 = NULL;
+main_Isosurface_2_in_2 = NULL;
+main_Isosurface_2_in_3 = NULL;
+main_Isosurface_2_in_4 = NULL;
+main_Isosurface_2_in_5 = NULL;
+main_Isosurface_2_in_6 = NULL;
+main_Isosurface_2_out_1 = NULL;
+main_Transmitter_7_out_1 = NULL;
+main_Receiver_7_out_1 = NULL;
+main_Transmitter_8_out_1 = NULL;
+main_Receiver_8_out_1 = NULL;
+main_Collect_1_in_3 = NULL;
+main_Collect_1_out_1 = NULL;
+macro Image(
+        id,
+        object,
+        where,
+        useVector,
+        to,
+        from,
+        width,
+        resolution,
+        aspect,
+        up,
+        viewAngle,
+        perspective,
+        options,
+        buttonState = 1,
+        buttonUpApprox = "none",
+        buttonDownApprox = "none",
+        buttonUpDensity = 1,
+        buttonDownDensity = 1,
+        renderMode = 0,
+        defaultCamera,
+        reset,
+        backgroundColor,
+        throttle,
+        RECenable = 0,
+        RECfile,
+        RECformat,
+        RECresolution,
+        RECaspect,
+        AAenable = 0,
+        AAlabels,
+        AAticks,
+        AAcorners,
+        AAframe,
+        AAadjust,
+        AAcursor,
+        AAgrid,
+        AAcolors,
+        AAannotation,
+        AAlabelscale,
+        AAfont,
+        interactionMode,
+        title,
+        AAxTickLocs,
+        AAyTickLocs,
+        AAzTickLocs,
+        AAxTickLabels,
+        AAyTickLabels,
+        AAzTickLabels,
+        webOptions) -> (
+        object,
+        camera,
+        where)
+{
+    ImageMessage(
+        id,
+        backgroundColor,
+        throttle,
+        RECenable,
+        RECfile,
+        RECformat,
+        RECresolution,
+        RECaspect,
+        AAenable,
+        AAlabels,
+        AAticks,
+        AAcorners,
+        AAframe,
+        AAadjust,
+        AAcursor,
+        AAgrid,
+        AAcolors,
+        AAannotation,
+        AAlabelscale,
+        AAfont,
+        AAxTickLocs,
+        AAyTickLocs,
+        AAzTickLocs,
+        AAxTickLabels,
+        AAyTickLabels,
+        AAzTickLabels,
+        interactionMode,
+        title,
+        renderMode,
+        buttonUpApprox,
+        buttonDownApprox,
+        buttonUpDensity,
+        buttonDownDensity) [instance: 1, cache: 1];
+    autoCamera =
+        AutoCamera(
+            object,
+            "front",
+            object,
+            resolution,
+            aspect,
+            [0,1,0],
+            perspective,
+            viewAngle,
+            backgroundColor) [instance: 1, cache: 1];
+    realCamera =
+        Camera(
+            to,
+            from,
+            width,
+            resolution,
+            aspect,
+            up,
+            perspective,
+            viewAngle,
+            backgroundColor) [instance: 1, cache: 1];
+    coloredDefaultCamera = 
+	 UpdateCamera(defaultCamera,
+            background=backgroundColor) [instance: 1, cache: 1];
+    nullDefaultCamera =
+        Inquire(defaultCamera,
+            "is null + 1") [instance: 1, cache: 1];
+    resetCamera =
+        Switch(
+            nullDefaultCamera,
+            coloredDefaultCamera,
+            autoCamera) [instance: 1, cache: 1];
+    resetNull = 
+        Inquire(
+            reset,
+            "is null + 1") [instance: 2, cache: 1];
+    reset =
+        Switch(
+            resetNull,
+            reset,
+            0) [instance: 2, cache: 1];
+    whichCamera =
+        Compute(
+            "($0 != 0 || $1 == 0) ? 1 : 2",
+            reset,
+            useVector) [instance: 1, cache: 1];
+    camera = Switch(
+            whichCamera,
+            resetCamera,
+            realCamera) [instance: 3, cache: 1];
+    AAobject =
+        AutoAxes(
+            object,
+            camera,
+            AAlabels,
+            AAticks,
+            AAcorners,
+            AAframe,
+            AAadjust,
+            AAcursor,
+            AAgrid,
+            AAcolors,
+            AAannotation,
+            AAlabelscale,
+            AAfont,
+            AAxTickLocs,
+            AAyTickLocs,
+            AAzTickLocs,
+            AAxTickLabels,
+            AAyTickLabels,
+            AAzTickLabels) [instance: 1, cache: 1];
+    switchAAenable = Compute("$0+1",
+	     AAenable) [instance: 2, cache: 1];
+    object = Switch(
+	     switchAAenable,
+	     object,
+	     AAobject) [instance:4, cache: 1];
+    SWapproximation_options =
+        Switch(
+            buttonState,
+            buttonUpApprox,
+            buttonDownApprox) [instance: 5, cache: 1];
+    SWdensity_options =
+        Switch(
+            buttonState,
+            buttonUpDensity,
+            buttonDownDensity) [instance: 6, cache: 1];
+    HWapproximation_options =
+        Format(
+            "%s,%s",
+            buttonDownApprox,
+            buttonUpApprox) [instance: 1, cache: 1];
+    HWdensity_options =
+        Format(
+            "%d,%d",
+            buttonDownDensity,
+            buttonUpDensity) [instance: 2, cache: 1];
+    switchRenderMode = Compute(
+	     "$0+1",
+	     renderMode) [instance: 3, cache: 1];
+    approximation_options = Switch(
+	     switchRenderMode,
+            SWapproximation_options,
+	     HWapproximation_options) [instance: 7, cache: 1];
+    density_options = Switch(
+	     switchRenderMode,
+            SWdensity_options,
+            HWdensity_options) [instance: 8, cache: 1];
+    renderModeString = Switch(
+            switchRenderMode,
+            "software",
+            "hardware")[instance: 9, cache: 1];
+    object_tag = Inquire(
+            object,
+            "object tag")[instance: 3, cache: 1];
+    annoted_object =
+        Options(
+            object,
+            "send boxes",
+            0,
+            "cache",
+            1,
+            "object tag",
+            object_tag,
+            "ddcamera",
+            whichCamera,
+            "rendering approximation",
+            approximation_options,
+            "render every",
+            density_options,
+            "button state",
+            buttonState,
+            "rendering mode",
+            renderModeString) [instance: 1, cache: 1];
+    RECresNull =
+        Inquire(
+            RECresolution,
+            "is null + 1") [instance: 4, cache: 1];
+    ImageResolution =
+        Inquire(
+            camera,
+            "camera resolution") [instance: 5, cache: 1];
+    RECresolution =
+        Switch(
+            RECresNull,
+            RECresolution,
+            ImageResolution) [instance: 10, cache: 1];
+    RECaspectNull =
+        Inquire(
+            RECaspect,
+            "is null + 1") [instance: 6, cache: 1];
+    ImageAspect =
+        Inquire(
+            camera,
+            "camera aspect") [instance: 7, cache: 1];
+    RECaspect =
+        Switch(
+            RECaspectNull,
+            RECaspect,
+            ImageAspect) [instance: 11, cache: 1];
+    switchRECenable = Compute(
+          "$0 == 0 ? 1 : (($2 == $3) && ($4 == $5)) ? ($1 == 1 ? 2 : 3) : 4",
+            RECenable,
+            switchRenderMode,
+            RECresolution,
+            ImageResolution,
+            RECaspect,
+	     ImageAspect) [instance: 4, cache: 1];
+    NoRECobject, RECNoRerenderObject, RECNoRerHW, RECRerenderObject = Route(switchRECenable, annoted_object);
+    Display(
+        NoRECobject,
+        camera,
+        where,
+        throttle) [instance: 1, cache: 1];
+    image =
+        Render(
+            RECNoRerenderObject,
+            camera) [instance: 1, cache: 1];
+    Display(
+        image,
+        NULL,
+        where,
+        throttle) [instance: 2, cache: 1];
+    WriteImage(
+        image,
+        RECfile,
+        RECformat) [instance: 1, cache: 1];
+    rec_where = Display(
+        RECNoRerHW,
+        camera,
+        where,
+        throttle) [instance: 1, cache: 0];
+    rec_image = ReadImageWindow(
+        rec_where) [instance: 1, cache: 1];
+    WriteImage(
+        rec_image,
+        RECfile,
+        RECformat) [instance: 1, cache: 1];
+    RECupdateCamera =
+	UpdateCamera(
+	    camera,
+	    resolution=RECresolution,
+	    aspect=RECaspect) [instance: 2, cache: 1];
+    Display(
+        RECRerenderObject,
+        camera,
+        where,
+        throttle) [instance: 1, cache: 1];
+    RECRerenderObject =
+	ScaleScreen(
+	    RECRerenderObject,
+	    NULL,
+	    RECresolution,
+	    camera) [instance: 1, cache: 1];
+    image =
+        Render(
+            RECRerenderObject,
+            RECupdateCamera) [instance: 2, cache: 1];
+    WriteImage(
+        image,
+        RECfile,
+        RECformat) [instance: 2, cache: 1];
+}
+main_Image_1_in_1 = "Image_1";
+main_Image_1_in_3 = "X24,,";
+main_Image_1_in_4 = 1;
+main_Image_1_in_5 = [15.5 15.5 15.5];
+main_Image_1_in_6 = [-88.4198 -63.0963 50.5535];
+main_Image_1_in_7 = NULL;
+main_Image_1_in_8 = 640;
+main_Image_1_in_9 = 0.75;
+main_Image_1_in_10 = [0.169868 0.205272 0.963851];
+main_Image_1_in_11 = 30.0003;
+main_Image_1_in_12 = 1;
+main_Image_1_in_13 = NULL;
+main_Image_1_in_14 = 1;
+main_Image_1_in_15 = NULL;
+main_Image_1_in_16 = NULL;
+main_Image_1_in_17 = NULL;
+main_Image_1_in_18 = NULL;
+main_Image_1_in_19 = 0;
+main_Image_1_in_20 = NULL;
+main_Image_1_in_21 = NULL;
+main_Image_1_in_22 = NULL;
+main_Image_1_in_23 = NULL;
+main_Image_1_in_25 = NULL;
+main_Image_1_in_26 = NULL;
+main_Image_1_in_27 = NULL;
+main_Image_1_in_28 = NULL;
+main_Image_1_in_29 = 1;
+main_Image_1_in_30 = NULL;
+main_Image_1_in_31 = NULL;
+main_Image_1_in_32 = NULL;
+main_Image_1_in_33 = NULL;
+main_Image_1_in_34 = NULL;
+main_Image_1_in_35 = NULL;
+main_Image_1_in_36 = NULL;
+main_Image_1_in_37 = NULL;
+main_Image_1_in_38 = NULL;
+main_Image_1_in_39 = NULL;
+main_Image_1_in_40 = NULL;
+main_Image_1_in_41 = "rotate";
+main_Image_1_in_42 = NULL;
+main_Image_1_in_43 = NULL;
+main_Image_1_in_44 = NULL;
+main_Image_1_in_45 = NULL;
+main_Image_1_in_46 = NULL;
+main_Image_1_in_47 = NULL;
+main_Image_1_in_48 = NULL;
+main_Image_1_in_49 = NULL;
+main_Select_4_in_2 = "divu";
+main_Select_4_in_3 = NULL;
+main_Select_4_out_1 = NULL;
+main_Transmitter_4_out_1 = NULL;
+Executive("product version 4 1 3");
+$sync
+main();
