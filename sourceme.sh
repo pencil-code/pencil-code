@@ -4,7 +4,7 @@
 #  . $HOME/f90/pencil_modular/sourceme.sh
 #  into your .bashrc
 #
-CDPATH="../:../../:../../../:$HOME/"
+CDPATH="./:../:../../:../../../:$HOME"
 PATH=".:../bin:../../bin:../../../bin:../../../../bin:${HOME}/bin:${PATH}"
 IDL_PATH="+../idl:+../../idl:+../../../idl:tmp:+$HOME/idl:<IDL_DEFAULT>"
 
