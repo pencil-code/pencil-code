@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.12 2003-04-09 10:21:17 theine Exp $
+! $Id: noionization.f90,v 1.13 2003-04-27 10:49:15 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -110,12 +110,14 @@ module Ionization
       real, dimension(nx),intent(in)   :: lnrho,ss,yH
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
                            intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
-      real                             :: ss0=-5.5542,kap=1.
-
+      real                             :: ss0=-5.5542
+!
+!  if kappa is needed, use electron scattering value, kappa_es
+!
       if (present(dlnPdlnrho)) dlnPdlnrho=gamma
       if (present(dlnPdss)) dlnPdss=gamma1
       if (present(TT)) TT=exp(gamma1*(lnrho+ss-ss0))
-      if (present(kappa)) kappa=kap
+      if (present(kappa)) kappa=kappa_es
       if (ip==0) print*,yH  !(to keep compiler quiet)
     endsubroutine ioncalc
 !***********************************************************************

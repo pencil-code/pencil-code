@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.32 2003-04-26 09:21:07 brandenb Exp $
+! $Id: ionization.f90,v 1.33 2003-04-27 10:49:15 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -14,7 +14,7 @@ module Ionization
   ! global array for yH (very useful to avoid double calculation and
   ! to allow output along with file), but could otherwise be avoided.
   ! kappa and TT also now here
-  real, dimension (mx,my,mz) :: yyH=0.5,kappa,TT
+  real, dimension (mx,my,mz) :: yyH=0.5
 
   !  secondary parameters calculated in initialize
   real :: m_H,m_He,fHe,mu
@@ -55,7 +55,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.32 2003-04-26 09:21:07 brandenb Exp $")
+           "$Id: ionization.f90,v 1.33 2003-04-27 10:49:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -146,6 +146,48 @@ module Ionization
       if(output_yH) write(lun) yyH
 !
     endsubroutine output_ionization
+
+!***********************************************************************
+    subroutine calc_TT(TT_mn,save)
+!
+!  Save/restore quantity in array (to avoid recalculation)
+!
+!  26-apr-03/axel: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz), save :: TT
+      real, dimension(nx), intent(inout) :: TT_mn
+      logical, optional, intent(in) :: save
+!
+      if (present(save)) then
+        TT(l1:l2,m,n)=TT_mn
+      else
+        TT_mn=TT(l1:l2,m,n)
+      endif
+!
+    endsubroutine calc_TT
+
+!***********************************************************************
+    subroutine calc_kappa(kappa_mn,save)
+!
+!  Save/restore quantity in array (to avoid recalculation)
+!
+!  26-apr-03/axel: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz), save :: kappa
+      real, dimension(nx), intent(inout) :: kappa_mn
+      logical, optional, intent(in) :: save
+!
+      if (present(save)) then
+        kappa(l1:l2,m,n)=kappa_mn
+      else
+        kappa_mn=kappa(l1:l2,m,n)
+      endif
+!
+    endsubroutine calc_kappa
 
 !***********************************************************************
     subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)

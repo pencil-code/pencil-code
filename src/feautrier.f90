@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.21 2003-04-26 09:21:06 brandenb Exp $
+! $Id: feautrier.f90,v 1.22 2003-04-27 10:49:15 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,7 +14,7 @@ module Radiation
 
   implicit none
 
-  real, dimension (mx,my,mz) :: Qrad,Srad
+  real, dimension (mx,my,mz) :: Qrad,Srad,kappa,TT
   logical :: nocooling=.false.,output_Qrad=.false.
 !
 !  default values for one pair of vertical rays
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.21 2003-04-26 09:21:06 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.22 2003-04-27 10:49:15 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -88,8 +88,8 @@ module Radiation
          ss=f(l1:l2,m,n,ient)
          call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa_)
          Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
-         TT(l1:l2,m,n)=TT_
          kappa(l1:l2,m,n)=kappa_
+         TT(l1:l2,m,n)=TT_
       enddo
       enddo
 !
