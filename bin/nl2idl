@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.17 2004-05-03 14:22:52 dobler Exp $
+# $Id: nl2idl,v 1.18 2004-05-11 14:12:11 mee Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -104,7 +104,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.17 2004-05-03 14:22:52 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.18 2004-05-11 14:12:11 mee Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -130,6 +130,7 @@ if ($oneline) {
 function $funcname
 ; Returns an anonymous structure with all slots set from the namelist
 ; data in $infile.
+  COMPILE_OPT HIDDEN
  
 HEADER
 #
