@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.36 2003-08-07 17:06:56 dobler Exp $
+! $Id: wsnaps.f90,v 1.37 2003-08-08 08:49:39 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -14,9 +14,9 @@ module Wsnaps
 contains
 
 !***********************************************************************
-    subroutine wsnap(chsnap,a,msnap,enumerate)
+    subroutine wsnap(chsnap,a,msnap,enum)
 !
-!  Write snapshot file, labelled consecutively if enumerate==.true.
+!  Write snapshot file, labelled consecutively if enum==.true.
 !  Otherwise just write a snapshot without label (used for var.dat)
 !
 !  30-sep-97/axel: coded
@@ -40,29 +40,28 @@ contains
       character (len=4) :: ch
       character (len=135) :: file
       character (len=*) :: chsnap
-      logical lsnap,enumerate
+      logical lsnap,enum
       integer, save :: ifirst,nsnap
       real, save :: tsnap
 !
 !  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
 !
-      if (enumerate) then
+      if (enum) then
         file=trim(datadir)//'/tsnap.dat'
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in read_snaptime, but only available to root processor
 !
         if (ifirst==0) then
-          call read_snaptime(trim(file),tsnap,nsnap,dsnap,t)
+          call read_snaptime(file,tsnap,nsnap,dsnap,t)
           ifirst=1
         endif
 !
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently)
 !
-        call update_snaptime(trim(file),tsnap,nsnap,dsnap,t,lsnap,ch, &
-                             ENUMERATE=.true.)
+        call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,ENUM=.true.)
         if (lsnap) then
           call update_ghosts(a)
           call output(chsnap//ch,a,msnap)
@@ -121,7 +120,7 @@ contains
 !  tspec calculated in read_snaptime, but only available to root processor
 !
       if(ldo_all.and.ifirst==0) then
-         call read_snaptime(trim(file),tspec,nspec,dspec,t)
+         call read_snaptime(file,tspec,nspec,dspec,t)
          ifirst=1
       endif
 !
@@ -129,8 +128,7 @@ contains
 !  update ghost zones for var.dat (cheap, since done infrequently)
 !
       if(ldo_all) &
-           call update_snaptime(trim(file),tspec,nspec,dspec,t,lspec,ch, &
-                                ENUMERATE=.false.)
+           call update_snaptime(file,tspec,nspec,dspec,t,lspec,ch,ENUM=.false.)
       if (lspec.or.llwrite_only) then
          if (ldo_all)  call update_ghosts(a)
          if (vel_spec) call power(a,'u')

@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.9 2003-08-07 17:06:56 dobler Exp $ 
+! $Id: timeavg.f90,v 1.10 2003-08-08 08:49:38 dobler Exp $ 
 
 module Timeavg
 
@@ -86,10 +86,10 @@ module Timeavg
 !
     endsubroutine update_timeavgs
 !***********************************************************************
-    subroutine wsnap_timeavgs(chsnap,enumerate)
+    subroutine wsnap_timeavgs(chsnap,enum)
 !
 !  Write snapshot file for time averages, labelled consecutively if
-!  enumerate==.true. 
+!  enum==.true. 
 !  Otherwise write without label (used for timeavg.dat).
 !   Currently uses the same parameter dsnap as wsnaps
 !
@@ -104,14 +104,14 @@ module Timeavg
       character (len=4) :: ch
       character (len=80) :: file
       character (len=*) :: chsnap
-      logical lsnap,enumerate
+      logical :: lsnap,enum
       integer, save :: ifirst,nsnap
       real, save :: tsnap
 !
 !  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
 !
-      if (enumerate) then
+      if (enum) then
         ! file=trim(datadir)//'/tavgsnap.dat'
         call safe_character_assign(file, trim(datadir)//'/tavgsnap.dat')
 !
@@ -119,14 +119,13 @@ module Timeavg
 !  tsnap calculated in read_snaptime, but only available to root processor
 !
         if (ifirst==0) then
-          call read_snaptime(trim(file),tsnap,nsnap,dsnap,t)
+          call read_snaptime(file,tsnap,nsnap,dsnap,t)
           ifirst=1
         endif
 !
 !  Check whether we want to output snapshot.
 !
-        call update_snaptime(trim(file),tsnap,nsnap,dsnap,t,lsnap,ch, &
-                             ENUMERATE=.true.)
+        call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,ENUM=.true.)
         if (lsnap) then
           call output(chsnap//ch,f_tavg,mtavg)
         endif

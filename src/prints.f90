@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.43 2003-08-07 17:06:56 dobler Exp $
+! $Id: prints.f90,v 1.44 2003-08-08 08:49:38 dobler Exp $
 
 module Print
 
@@ -178,8 +178,7 @@ module Print
       endif
       first = .false.
       !
-      call update_snaptime(trim(file),t2davg,n2davg,d2davg,t,lnow,ch, &
-                           ENUMERATE=.true.)
+      call update_snaptime(file,t2davg,n2davg,d2davg,t,lnow,ch,ENUM=.true.)
       if (lnow) then
         if (lwrite_zaverages)   call write_zaverages()
         if (lwrite_phiaverages) call write_phiaverages()

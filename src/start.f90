@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.110 2003-08-07 17:06:56 dobler Exp $
+! $Id: start.f90,v 1.111 2003-08-08 08:49:38 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -42,7 +42,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.110 2003-08-07 17:06:56 dobler Exp $")
+             "$Id: start.f90,v 1.111 2003-08-08 08:49:38 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -59,9 +59,9 @@
 !  Will we write all slots of f?
 !
         if (lwrite_aux) then
-          mwriteaux = maux
+          mvaraux = mvar+maux
         else
-          mwriteaux = 0
+          mvaraux = mvar
         endif
 !
 !  print resolution
@@ -190,12 +190,11 @@
 !  to overwrite an existing var.dat
 !
         if (lwrite_ic) then
-          call wsnap(trim(directory_snap)//'/VAR0',f,mvar+mwriteaux, &
-                     ENUMERATE=.false.)
+          call wsnap( &
+               trim(directory_snap)//'/VAR0',f,mvaraux,ENUM=.false.)
         endif
         if (.not.lnowrite) then
-          call wsnap(trim(directory_snap)//'/var.dat',f,mvar+mwriteaux, &
-                     ENUMERATE=.false.)
+          call wsnap(trim(directory_snap)//'/var.dat',f,mvaraux,ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif
         call wdim(trim(directory)//'/dim.dat')

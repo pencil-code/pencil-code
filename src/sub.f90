@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.130 2003-08-07 17:06:56 dobler Exp $ 
+! $Id: sub.f90,v 1.131 2003-08-08 08:49:38 dobler Exp $ 
 
 module Sub 
 
@@ -1519,9 +1519,9 @@ module Sub
 !  either read or write tout and nout from or to the file
 !
       if (lroot) then
-        inquire(file=file,exist=exist)
+        inquire(FILE=trim(file),EXIST=exist)
         lun=1
-        open(lun,file=file)
+        open(lun,FILE=trim(file))
         if (exist) then
           read(lun,*) tout,nout
         else
@@ -1563,7 +1563,7 @@ module Sub
 !
     endsubroutine read_snaptime
 !***********************************************************************
-    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enumerate)
+    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
 !
       use General
 !
@@ -1576,7 +1576,7 @@ module Sub
 !
       character (len=*) :: file
       character (len=4) :: ch
-      logical lout,enumerate
+      logical lout,enum
       real :: t,tt,tout,dtout
       integer :: lun,nout
 !
@@ -1588,12 +1588,12 @@ module Sub
         tt=t
       endif
 !
-!  if enumerate=.false. we don't want to generate a running file number
+!  if enum=.false. we don't want to generate a running file number
 !  (eg in wvid)
-!  if enumerate=.true. we do want to generate character from nout for file name
+!  if enum=.true. we do want to generate character from nout for file name
 !  do this before nout has been updated to new value
 !
-      if (enumerate) call chn(nout,ch)
+      if (enum) call chn(nout,ch)
 !
 !  Mark lout=.true. when time has exceeded the value of tout
 !
@@ -1607,7 +1607,7 @@ module Sub
 !  if the disk is full, however, we need to reset the values manually
 !
         lun=1
-        open(lun,file=file)
+        open(lun,FILE=trim(file))
         write(lun,*) tout,nout
         write(lun,*) 'This file is written automatically (routine'
         write(lun,*) 'check_snaptime in sub.f90). The values above give'
@@ -1642,7 +1642,7 @@ module Sub
 !  open files when first data point
 !
       if(lfirstpoint) then
-        open(lun,file=file//'.dat',form='unformatted',position='append')
+        open(lun,FILE=trim(file)//'.dat',form='unformatted',position='append')
         write(lun) 0,0,0,t,dummy,dummy  !(marking first line)
         nvec=0
       endif
@@ -1662,7 +1662,7 @@ module Sub
 !
       if(llastpoint) then
         close(lun)
-        open(lun,file=file//'.num',position='append')
+        open(lun,FILE=trim(file)//'.num',position='append')
         write(lun,*) t,nvec
         close(lun)
       endif

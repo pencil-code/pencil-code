@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.16 2003-08-07 17:06:56 dobler Exp $
+! $Id: slices.f90,v 1.17 2003-08-08 08:49:38 dobler Exp $
 
 !  This module produces slices for animation purposes
 
@@ -50,8 +50,7 @@ module Slices
 !
 !  This routine sets lvid=T whenever its time to write a slice
 !
-      call update_snaptime(trim(file),tvid,nvid,dvid,t,lvid,ch, &
-                           ENUMERATE=.false.)
+      call update_snaptime(file,tvid,nvid,dvid,t,lvid,ch,ENUM=.false.)
 !
     endsubroutine wvid_prepare
 !***********************************************************************

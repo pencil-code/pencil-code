@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.149 2003-08-07 17:06:56 dobler Exp $
+! $Id: run.f90,v 1.150 2003-08-08 08:49:38 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.149 2003-08-07 17:06:56 dobler Exp $")
+             "$Id: run.f90,v 1.150 2003-08-08 08:49:38 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -68,9 +68,9 @@
 !  Will we write all slots of f?
 !
         if (lwrite_aux) then
-          mwriteaux = maux
+          mvaraux = mvar+maux
         else
-          mwriteaux = 0
+          mvaraux = mvar
         endif
 !
 !  print resolution
@@ -252,9 +252,8 @@
                  call outpui(trim(directory)//'/alive.info', &
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
-          call wsnap(trim(directory_snap)//'/VAR',f,mvar+mwriteaux, &
-                     ENUMERATE=.true.)
-          call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUMERATE=.true.)
+          call wsnap(trim(directory_snap)//'/VAR',f,mvaraux,ENUM=.true.)
+          call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true.)
           !
           !  Write slices (for animation purposes)
           !
@@ -265,10 +264,10 @@
           !
           if (isave /= 0) then
             if (mod(it,isave)==0) then
-              call wsnap(trim(directory_snap)//'/var.dat',f,mvar+mwriteaux, &
-                         ENUMERATE=.false.)
+              call wsnap(trim(directory_snap)//'/var.dat', &
+                         f,mvaraux,ENUM=.false.)
               call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
-                                  ENUMERATE=.false.)
+                                  ENUM=.false.)
               call wtime(trim(directory)//'/time.dat',t)
             endif
           endif
@@ -297,11 +296,10 @@
 !
         if(save_lastsnap) then
           if (lroot) print*, 'Writing final snapshot for t=', t
-          call wsnap(trim(directory_snap)//'/var.dat',f,mvar+mwriteaux, &
-                     ENUMERATE=.false.)
+          call wsnap(trim(directory_snap)//'/var.dat',f,mvaraux,ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)
-          if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,mvar, &
-                                 ENUMERATE=.false.)
+          if (ip<=10) &
+               call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
         endif
 !
 !  save spectrum snapshot

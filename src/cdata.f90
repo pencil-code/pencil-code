@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.158 2003-08-07 17:06:56 dobler Exp $
+! $Id: cdata.f90,v 1.159 2003-08-08 08:49:38 dobler Exp $
 
 module Cdata
 
@@ -52,7 +52,7 @@ module Cdata
   integer :: it,ix=l1,iy=m1,iz=n1,iz2=n2
   integer :: ilncc=0
   integer :: iproc,ipx,ipy,ipz,root=0
-  integer :: mwriteaux=0
+  integer :: mvaraux=0
   logical, dimension(3) :: lperi
   character (len=labellen) ::fft_switch='fftpack'
 
