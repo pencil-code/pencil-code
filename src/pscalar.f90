@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.11 2002-10-01 16:02:44 brandenb Exp $
+! $Id: pscalar.f90,v 1.12 2002-10-02 03:44:56 vpariev Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -20,7 +20,7 @@ module Pscalar
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc
+       radius_lncc,epsilon_lncc,widthlncc
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
@@ -62,7 +62,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.11 2002-10-01 16:02:44 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.12 2002-10-02 03:44:56 vpariev Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -82,15 +82,20 @@ module Pscalar
       use Density
       use Sub
       use Initcond
+      integer i,j,k
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
+      real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
       select case(initlncc)
         case('gaussian-noise'); call gaunoise(ampllncc,f,ilncc,ilncc)
         case('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
         case('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
         case('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
+        case('tang-discont-z')
+           print*,'init_lncc: widthlncc=',widthlncc
+        prof=.5*(1.+tanh(zz/widthlncc))
+        f(:,:,:,ilncc)=-1.+2.*prof
         case('hor-fluxtube'); call htube(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
         case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
@@ -116,7 +121,7 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glncc,glnrho
-      real, dimension (nx) :: cc,uglncc,diff_op,del2lncc
+      real, dimension (nx) :: cc,rho,uglncc,diff_op,del2lncc
 !
       intent(in)  :: f,uu,glnrho
       intent(out) :: df
@@ -259,3 +264,6 @@ module Pscalar
 !***********************************************************************
 
 endmodule Pscalar
+
+
+
