@@ -2,9 +2,14 @@ module Grid
 
   implicit none
 
+  interface grid_profile        ! Overload the grid_profile' subroutine
+    module procedure grid_profile_point
+    module procedure grid_profile_1d
+  endinterface
+
   contains
 !***********************************************************************
-    subroutine construct_grid(x,y,z,dx,dy,dz)
+    subroutine construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
 !
 !  Constructs a non-equidistant grid x(xi) of an equidistant grid xi with
 !  grid spacing dxi=1. For grid_func='linear' this is equivalent to an
@@ -43,9 +48,7 @@ module Grid
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
       real, dimension(mz), intent(out) :: z
-      real, intent(out) :: dx,dy,dz
-
-      real :: x00,y00,z00
+      real, intent(out) :: dx,dy,dz,x00,y00,z00
 
       real :: xi1lo,xi1up,g1lo,g1up
       real :: xi2lo,xi2up,g2lo,g2up
@@ -121,7 +124,6 @@ module Grid
 !
 !  y coordinate
 !
-
       call grid_profile(dummy,grid_func(2),dummy,err=err)
       if (err) call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(2))
 
@@ -161,19 +163,24 @@ module Grid
 
     endsubroutine construct_grid
 !***********************************************************************
-    elemental subroutine grid_profile(xi,grid_func,g,gder1,gder2,err)
+    subroutine grid_profile_point(xi,grid_func,g,gder1,gder2,err)
 !
 !  Specify the functional form of the grid profile function g
-!  and calculate g,g',g''
-!
+!  and calculate g,g',g''.
+!  Must be in sync with grid_profile_2.
+!  Much nicer as one `elemental subroutine', but some of our compilers
+!  don't speak F95 fluently
 !
 !  25-jun-04/tobi+wolf: coded
 !
-      real, intent(in) :: xi
-      character(len=*), intent(in) :: grid_func
-      real, intent(out) :: g
-      real, intent(out), optional :: gder1,gder2
-      logical, intent(out), optional :: err
+      real              :: xi
+      character(len=*)  :: grid_func
+      real              :: g
+      real, optional    :: gder1,gder2
+      logical, optional :: err
+!
+      intent(in)  :: xi,grid_func
+      intent(out) :: g, gder1,gder2,err
 
       if (present(err)) err=.false.
 
@@ -194,7 +201,43 @@ module Grid
 
       endselect
 
-    endsubroutine grid_profile
+    endsubroutine grid_profile_point
+!***********************************************************************
+    subroutine grid_profile_1d(xi,grid_func,g,gder1,gder2,err)
+!
+!  Same as grid_profile_1 for 1d arrays as arguments
+!
+!  25-jun-04/tobi+wolf: coded
+!
+      real, dimension(:)                    :: xi
+      character(len=*)                      :: grid_func
+      real, dimension(size(xi,1))           :: g
+      real, dimension(size(xi,1)), optional :: gder1,gder2
+      logical, optional                     :: err
+!
+      intent(in)  :: xi,grid_func
+      intent(out) :: g, gder1,gder2,err
+
+      if (present(err)) err=.false.
+
+      select case (grid_func)
+
+      case ('linear')
+        g=xi
+        if (present(gder1)) gder1=1.0
+        if (present(gder2)) gder2=0.0
+
+      case ('sinh')
+        g=sinh(xi)
+        if (present(gder1)) gder1=cosh(xi)
+        if (present(gder2)) gder2=sinh(xi)
+
+      case default
+        if (present(err)) err=.true.
+
+      endselect
+
+    endsubroutine grid_profile_1d
 !***********************************************************************
     function find_star(xi_lo,xi_up,x_lo,x_up,x_star,grid_func) result (xi_star)
 !

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.73 2004-08-18 12:00:14 ajohan Exp $
+### $Id: Makefile.src,v 1.74 2004-08-24 18:44:40 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -11,7 +11,7 @@ LDMPI=-lmpi
 
 MPICOMM      = nompicomm
 GLOBAL       = noglobal
-GRID         =   grid_equidistant
+GRID         =   grid
 IO           =   io_dist
 FFT          = nofft
 FFTPACK      = nofftpack
@@ -164,14 +164,15 @@ FCCLEANER=
 #FFLAGS=-O3 #(nw[0-9]*|nl6|nl11|wormhole|sandin|lynx)
 #FFLAGS=-fast -xNW -tpp7 -vec_report0 #(cosmo)
 #FFLAGS=-O3 -ieee=full #(barilko)
-#FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix)
+#FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix|kolmogorov)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
-#FC=ifc #(sandin|davey[12])  
+#FC=ifc -w95 #(sandin|davey[12]|kolmogorov)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(wormhole)
 #FC=ifort #(cosmo)
 #CC=icc #(cosmo)
 #CC=mpicc #(obelix)
+#CC=gcc -m32 #(kolmogorov)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11)
 #LDMPI=-L/opt/mpich/lib #(nw43)

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.138 2004-07-24 07:47:14 brandenb Exp $
+! $Id: start.f90,v 1.139 2004-08-24 18:44:40 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.138 2004-07-24 07:47:14 brandenb Exp $")
+             "$Id: start.f90,v 1.139 2004-08-24 18:44:40 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -143,7 +143,7 @@
 !
 !  generate grid
 !
-        call construct_grid(x,y,z,dx,dy,dz)
+        call construct_grid(x,y,z,dx,dy,dz,x00,y00,z00)
 !
 !  write grid.dat file
 !
@@ -153,7 +153,7 @@
 !
           if (lroot) call write_dx_general( &
                             trim(datadir)//'/var.general', &
-                            x00-nghost*dx, y00-nghost*dy, z00-nghost*dz)
+                            x0-nghost*dx, y0-nghost*dy, z0-nghost*dz)
 !
 !  as full arrays
 !
