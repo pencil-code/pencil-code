@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.204 2004-06-30 12:08:41 ajohan Exp $
+! $Id: magnetic.f90,v 1.205 2004-06-30 14:13:46 ngrs Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.204 2004-06-30 12:08:41 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.205 2004-06-30 14:13:46 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -244,6 +244,7 @@ module Magnetic
         if (lroot) print*,'init_aa: circular Alfven wave -> x'
         f(:,:,:,iay) = amplaa/kx_aa*sin(kx_aa*xx)
         f(:,:,:,iaz) = amplaa/kx_aa*cos(kx_aa*xx)
+      case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 
       case default
         !
@@ -1621,6 +1622,82 @@ module Magnetic
       endif
 
     endsubroutine force_free_jet
+!***********************************************************************
+    subroutine geo_benchmark_B(f)
+!
+!  30-june-04/grs: coded
+!
+      use Cdata
+      use Sub, only: calc_unitvects_sphere
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: theta_mn,ar,atheta,aphi
+
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        call calc_unitvects_sphere()
+        theta_mn=acos(z_mn/r_mn)
+
+! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
+          select case(initaa) 
+            case('geo-benchmark-case1')
+              if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case1'
+              where (r_mn < r_ext .and. r_mn > r_int) 
+                ar=80.*2.*(3.*sin(theta_mn)**2-2.)*                         &
+                   (   1./36.*r_mn**5 - 1./12.*(r_int+r_ext)*r_mn**4        &
+                     + 1./14.*(r_int**2+4.*r_int*r_ext+r_ext**2)*r_mn**3    &
+                     - 1./3.*(r_int**2*r_ext+r_int*r_ext**2)*r_mn**2        &
+                     + 1./25.*r_int**2*r_ext**2*r_mn                        &
+                     + 1./5.*r_int**2*r_ext**2*r_mn*log(r_mn) )
+  
+                atheta=80.*sin(theta_mn)*                                   &
+                   (   7./36.*r_mn**5 - 1./2.*(r_int+r_ext)*r_mn**4         &
+                     + 5./14.*(r_int**2+4.*r_int*r_ext+r_ext**2)*r_mn**3    &
+                     - 4./3.*(r_int**2*r_ext+r_int*r_ext**2)*r_mn**2        &
+                     + 2./25.*r_int**2*r_ext**2*r_mn                        &
+                     + 3./5.*r_int**2*r_ext**2*r_mn*log(r_mn) )
+    
+                aphi=5./8.*sin(theta_mn)*                                   &
+                   ( 4.*r_ext*r_mn - 3.*r_mn**2 - r_int**4/r_mn**2 ) 
+              endwhere
+  
+          ! debug checks -- look at a pencil near the centre...
+          if (ip<=4 .and. imn==(ny+1)*nz/2) then
+            print*,'r_int,r_ext',r_int,r_ext
+            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(r_mn), imn, iproc:', iproc, imn, minval(r_mn), maxval(r_mn)
+            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(theta_mn), imn, iproc:', iproc, imn, minval(theta_mn), maxval(theta_mn)
+            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(phi_mn), imn, iproc:', iproc, imn, minval(phi_mn), maxval(phi_mn)
+            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(ar), imn, iproc:', iproc, imn, minval(ar), maxval(ar)
+            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(atheta), imn, iproc:', iproc, imn, minval(atheta), maxval(atheta)
+            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(aphi), imn, iproc:', iproc, imn, minval(aphi), maxval(aphi)
+          endif
+
+            case('geo-benchmark-case2')
+              if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case2 not yet coded.'
+
+            case default
+              if (lroot .and. imn==1) print*,'geo_benchmark_B: case not defined!'
+              call stop_it("")
+          endselect
+
+          where (r_mn < r_ext .and. r_mn > r_int)
+            f(l1:l2,m,n,iax)=sin(theta_mn)*cos(phi_mn)*ar + cos(theta_mn)*cos(phi_mn)*atheta - sin(phi_mn)*aphi
+            f(l1:l2,m,n,iay)=sin(theta_mn)*sin(phi_mn)*ar + cos(theta_mn)*sin(phi_mn)*atheta + cos(phi_mn)*aphi
+            f(l1:l2,m,n,iaz)=cos(theta_mn)*ar - sin(theta_mn)*atheta
+          endwhere
+
+      enddo
+
+      if (ip<=14) then
+        print*,'geo_benchmark_B: minmax(ax) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iax)),maxval(f(l1:l2,m1:m2,n1:n2,iax))
+        print*,'geo_benchmark_B: minmax(ay) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iay)),maxval(f(l1:l2,m1:m2,n1:n2,iay))
+        print*,'geo_benchmark_B: minmax(az) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iaz)),maxval(f(l1:l2,m1:m2,n1:n2,iaz))
+      endif
+
+    endsubroutine geo_benchmark_B
+    
 !***********************************************************************
     subroutine bc_frozen_in_bb_z(topbot)
 !
