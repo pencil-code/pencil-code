@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.121 2003-08-02 19:22:20 mee Exp $ 
+! $Id: param_io.f90,v 1.122 2003-08-02 19:38:15 mee Exp $ 
 
 module Param_IO
 
@@ -140,6 +140,10 @@ module Param_IO
 !
       if (lshear) bcx(1:nvar)='she'
 !
+! find out if we should open and close the file everytime
+! to fix the SGI reading problem
+      inquire(FILE='SGIFIX',EXIST=lsgifix)
+!
 !  open namelist file
 !
       open(1,FILE='start.in',FORM='formatted')
@@ -147,7 +151,6 @@ module Param_IO
 !  read through all items that *may* be present
 !  in the various modules
 !
-      inquire(FILE='SGIFIX',EXIST=lsgifix)
 
       label='init_pars'
                       read(1,NML=init_pars                 ,ERR=99, IOSTAT=ierr)
@@ -375,6 +378,12 @@ module Param_IO
 !  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
 !
       if (lshear) bcx(1:nvar)='she'
+
+! find out if we should open and close the file everytime
+! to fix the SGI reading problem
+      inquire(FILE='SGIFIX',EXIST=lsgifix)
+
+
 !
 !  open namelist file
 !
@@ -385,32 +394,88 @@ module Param_IO
 !
       label='run_pars'
                          read(1,NML=run_pars              ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='hydro_run_pars'
       if (lhydro       ) read(1,NML=hydro_run_pars        ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='density_run_pars'
       if (ldensity     ) read(1,NML=density_run_pars      ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='forcing_run_pars'
       if (lforcing     ) read(1,NML=forcing_run_pars      ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='grav_run_pars'
       if (lgrav        ) read(1,NML=grav_run_pars         ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='entropy_run_pars'
       if (lentropy     ) read(1,NML=entropy_run_pars      ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='magnetic_run_pars'
       if (lmagnetic    ) read(1,NML=magnetic_run_pars     ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='radiation_run_pars'
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='ionization_run_pars'
       if (lionization  ) read(1,NML=ionization_run_pars   ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='dustvelocity_run_pars'
       if (ldustvelocity) read(1,NML=dustvelocity_run_pars ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='dustdensity_run_pars'
       if (ldustdensity ) read(1,NML=dustdensity_run_pars  ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='interstellar_run_pars'
       if (linterstellar) read(1,NML=interstellar_run_pars ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='shear_run_pars'
       if (lshear       ) read(1,NML=shear_run_pars        ,ERR=99, IOSTAT=ierr)
+      if (lsgifix) then
+         close (1)
+         open(1,FILE='start.in',FORM='formatted')
+      endif
       label='viscosity_run_pars'
       if (lviscosity   ) read(1,NML=viscosity_run_pars    ,ERR=99, IOSTAT=ierr)
       label='[none]'

@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.54 2003-07-29 14:56:20 dobler Exp $
+# $Id: getconf.csh,v 1.55 2003-08-02 19:38:15 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -193,6 +193,14 @@ if ($local_disc) then
   echo $SCRATCH_DIR >$datadir/directory_snap
 else
   if (-f $datadir/directory_snap) rm $datadir/directory_snap
+endif
+
+# Apply the SGI namelist read fix if running IRIX
+set os = `uname -s`
+if ($os ~= IRIX64) then
+  touch SGIFIX
+else
+  rm -f SGIFIX
 endif
 
 exit
