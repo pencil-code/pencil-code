@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.23 2003-08-29 20:09:57 mee Exp $
+#  $Id: mkdatadir,v 1.24 2003-09-06 19:54:01 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -19,7 +19,7 @@ echo "we are on" $hn ", the new workspace will be"
 if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
 else if ($hn =~ fe*) then
-  set str='s/people\/disk2/wkspace2/g'
+  set str='s/people\/disk2/wkspace1/g'
 else if ($hn =~ ns0*) then
   set str='s/home/data/g'
 else if ($hn =~ ns1*) then
