@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.224 2003-08-13 11:07:34 dobler Exp $
+### $Id: Makefile,v 1.225 2003-08-22 14:08:18 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -115,6 +115,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= # (fire)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
+#LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(ns0)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
