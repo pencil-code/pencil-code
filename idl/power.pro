@@ -1,6 +1,6 @@
-PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i
+PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t
 ;
-;  $Id: power.pro,v 1.9 2002-10-09 13:40:46 nilshau Exp $
+;  $Id: power.pro,v 1.10 2002-10-17 13:15:46 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -75,6 +75,7 @@ close,1
 spec1=fltarr(imax,i-1)
 urms=fltarr(i-1)
 brms=fltarr(i-1)
+t=fltarr(i-1)
 lasti=i-2
 ;
 ;  Opening file 2 if it is defined
@@ -97,6 +98,7 @@ openr,1, datatopdir+'/'+file1
     while not eof(1) do begin 
       	readf,1,time
        	readf,1,spectrum1
+	t(i-1)=time
        	spec1(*,i-1)=spectrum1
        	maxy=max(spectrum1(1:*))
        	miny=min(spectrum1(1:*))
