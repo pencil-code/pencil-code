@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.124 2004-08-23 09:32:30 ajohan Exp $
+# $Id: getconf.csh,v 1.125 2004-08-23 20:04:03 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -244,12 +244,18 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
       if (-x /opt/lam/bin/mpirun)     set mpirun=/opt/lam/bin/mpirun
       set mpirunops = "-c2c -O"
     else if (`egrep -c 'MPICHX|MPICH_DEBUG_ERRS' src/start.x` > 0) then # mpich
-      if (-x /usr/lib/mpich/bin/mpirun) set mpirun=/usr/lib/mpich/bin/mpirun
-      if (-x /opt/mpich/bin/mpirun)     set mpirun=/opt/mpich/bin/mpirun
+      if (-x /usr/lib/mpich/bin/mpirun)   set mpirun=/usr/lib/mpich/bin/mpirun
+      if (-x /opt/mpich/bin/mpirun)       set mpirun=/opt/mpich/bin/mpirun
+      if (-x /opt/mpich/ch-p4/bin/mpirun) set mpirun=/opt/mpich/ch-p4/bin/mpirun
       if ($?SGE_O_WORKDIR) then	# sge job
 	set mpirunops = "-nolocal -machinefile $SGE_O_WORKDIR/machines-$JOB_NAME-$JOB_ID"
       else			# interactive run
-	set mpirunops = "-nolocal" # or we get one CPU less
+	set mpirunops = "-nolocal" # or we get one CPU less with older mpich
+      endif
+      if ($mpirun == '/opt/mpich/ch-p4/bin/mpirun') then
+	# Don't use -nolocal with newer mpich versions, otherwise we are
+	# not able to run on single-CPU test machines
+	set mpirunops = "`echo $mpirunops | sed 's/ \?-nolocal \?/ /'`"
       endif
       else
       set mpirun 'Cannot_find_out_which_mpirun_to_use'
