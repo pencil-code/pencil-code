@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.125 2004-08-23 20:04:03 dobler Exp $
+# $Id: getconf.csh,v 1.126 2004-08-23 20:26:34 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -521,6 +521,12 @@ else
   set datadir = "data"
 endif
 echo "datadir = $datadir"
+
+# Make SCRATCH_DIR unique if there is only one local disc, so different
+# jobs running simultaneously will not interfere with each other. 
+if ($one_local_disc && $?JOB_ID) then
+  setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$JOB_ID
+endif
 
 # If local disc is used, write name into $datadir/directory_snap.
 # This will be read by the code, if the file exists.
