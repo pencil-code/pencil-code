@@ -1,18 +1,20 @@
-; $Id: pc_read_grid.pro,v 1.9 2004-06-03 17:11:23 mee Exp $
+; $Id: pc_read_grid.pro,v 1.10 2004-06-03 21:07:47 mee Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 17:11:23 $
-;  $Revision: 1.9 $
+;  $Date: 2004-06-03 21:07:47 $
+;  $Revision: 1.10 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
-pro pc_read_grid,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,object=object, dim=dim, $
+pro pc_read_grid,object=object, dim=dim, param=param, $
                  TRIMXYZ=TRIMXYZ, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
+  common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+  common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
@@ -26,14 +28,6 @@ COMPILE_OPT IDL2,HIDDEN
     print, "                                                                                            "
     print, "  datadir: specify the root data directory. Default is './data'                    [string] "
     print, "     proc: specify a processor to get the data from. Default is 0                 [integer] "
-    print, ""
-    print, "        t: array of x mesh point positions in code length units                [single(mx)]"
-    print, "        x: array of x mesh point positions in code length units                [single(mx)]"
-    print, "        y: array of y mesh point positions in code length units                [single(my)]"
-    print, "        z: array of z mesh point positions in code length units                [single(mz)]"
-    print, "       dx: x mesh spacing in code length units                                     [single]"
-    print, "       dy: y mesh spacing in code length units                                     [single]"
-    print, "       dz: z mesh spacing in code length units                                     [single]"
     print, ""
     print, "   object: optional structure in which to return all the above as tags          [structure] "
     print, ""
@@ -50,8 +44,16 @@ default, datadir, 'data'
 ; Get necessary dimensions, inheriting QUIET
 if n_elements(dim) eq 0 then  $
      pc_read_dim,object=dim,datadir=datadir,proc=proc,QUIET=QUIET 
+if n_elements(param) eq 0 then  $
+     pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
 
 ncpus=dim.nprocx*dim.nprocy*dim.nprocz
+
+; Set nx,ny,nz in common block for derivative routines
+nx=dim.nx
+ny=dim.ny
+nz=dim.nz
+lequidist=safe_get_tag(param,'lequidist')
 
 ; and check pc_precision is set!
 pc_set_precision,dim=dim,QUIET=QUIET
@@ -62,6 +64,9 @@ pc_set_precision,dim=dim,QUIET=QUIET
 t=zero
 x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
 dx=zero &  dy=zero &  dz=zero 
+Lx=zero &  Ly=zero &  Lz=zero 
+xprim=fltarr(dim.mx)*one & yprim=fltarr(dim.my)*one & zprim=fltarr(dim.mz)*one
+xprim2=fltarr(dim.mx)*one & yprim2=fltarr(dim.my)*one & zprim2=fltarr(dim.mz)*one
 
 ; Get a unit number
 GET_LUN, file
@@ -76,22 +81,12 @@ for i=0,ncpus-1 do begin
     xloc=fltarr(procdim.mx)*one  
     yloc=fltarr(procdim.my)*one 
     zloc=fltarr(procdim.mz)*one
-  endelse
-  ; Check for existance and read the data
-  dummy=findfile(filename, COUNT=countfile)
-  if (not countfile gt 0) then begin
-    FREE_LUN,file
-    message, 'ERROR: cannot find file '+ filename
-  endif
-
-  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
-
-  openr,file,filename,/F77
-    
-  if n_elements(proc) ne 0 then begin
-    readu,file, t,x,y,z
-  endif else begin
-    readu,file, t,xloc,yloc,zloc
+    xprimloc=fltarr(procdim.mx)*one  
+    yprimloc=fltarr(procdim.my)*one 
+    zprimloc=fltarr(procdim.mz)*one
+    xprim2loc=fltarr(procdim.mx)*one  
+    yprim2loc=fltarr(procdim.my)*one 
+    zprim2loc=fltarr(procdim.mz)*one
     ;
     ;  Don't overwrite ghost zones of processor to the left (and
     ;  accordingly in y and z direction makes a difference on the
@@ -131,13 +126,40 @@ for i=0,ncpus-1 do begin
       i0zloc=procdim.nghostz 
       i1zloc=procdim.mz-1L
     endelse
+  endelse
+  ; Check for existance and read the data
+  dummy=findfile(filename, COUNT=countfile)
+  if (not countfile gt 0) then begin
+    FREE_LUN,file
+    message, 'ERROR: cannot find file '+ filename
+  endif
 
+  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
+
+  openr,file,filename,/F77
+    
+  if n_elements(proc) ne 0 then begin
+    readu,file, t,x,y,z
+  endif else begin
+    readu,file, t,xloc,yloc,zloc
     x[i0x:i1x] = xloc[i0xloc:i1xloc]
     y[i0y:i1y] = yloc[i0yloc:i1yloc]
     z[i0z:i1z] = zloc[i0zloc:i1zloc]
-    
   endelse
   readu,file, dx,dy,dz
+
+  found_Lxyz=0
+  found_grid_der=0
+  ON_IOERROR, missing
+  readu,file,Lx,Ly,Lz
+  found_Lxyz=1
+  readu,file,xprim,yprim,zprim
+  readu,file,xprim2,yprim2,zprim2
+  found_grid_der=1
+
+missing:
+  ON_IOERROR, Null
+
   close,file 
 
 endfor
@@ -150,11 +172,38 @@ if (keyword_set(TRIMXYZ)) then begin
 endif
 
 ; Build structure of all the variables
-object = CREATE_STRUCT(name="pc_read_grid_" + $
+if (found_Lxyz and found_grid_der) then begin
+  object = CREATE_STRUCT(name="pc_read_grid_" + $
                           str((size(x))[1]) + '_' + $
                           str((size(y))[1]) + '_' + $
                           str((size(z))[1]), $
-                     ['t','x','y','z','dx','dy','dz'],t,x,y,z,dx,dy,dz)
+                     ['t','x','y','z','dx','dy','dz', $
+                      'Lx','Ly','Lz', $
+                      'xprim','yprim','zprim', $
+                      'xprim2','yprim2','zprim2'], $
+                       t,x,y,z,dx,dy,dz,Lx,Ly,Lz,xprim,yprim,zprim,xprim2,yprim2,zprim2)
+endif else if (found_Lxyz) then begin
+  object = CREATE_STRUCT(name="pc_read_grid_" + $
+                          str((size(x))[1]) + '_' + $
+                          str((size(y))[1]) + '_' + $
+                          str((size(z))[1]), $
+                     ['t','x','y','z','dx','dy','dz', $
+                      'Lx','Ly','Lz'], $
+                       t,x,y,z,dx,dy,dz,Lx,Ly,Lz)
+
+  xprim=zero  & yprim=zero  & zprim=zero
+  xprim2=zero & yprim2=zero & zprim2=zero
+endif else if (found_grid_der) then begin
+  object = CREATE_STRUCT(name="pc_read_grid_" + $
+                          str((size(x))[1]) + '_' + $
+                          str((size(y))[1]) + '_' + $
+                          str((size(z))[1]), $
+                     ['t','x','y','z','dx','dy','dz', $
+                      'xprim','yprim','zprim', $
+                      'xprim2','yprim2','zprim2'], $
+                       t,x,y,z,dx,dy,dz,xprim,yprim,zprim,xprim2,yprim2,zprim2)
+endif
+
 
 ; If requested print a summary
 fmt = '(A,4G15.6)'

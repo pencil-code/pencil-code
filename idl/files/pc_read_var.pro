@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.23 2004-06-03 18:12:08 mee Exp $
+; $Id: pc_read_var.pro,v 1.24 2004-06-03 21:07:47 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 18:12:08 $
-;  $Revision: 1.23 $
+;  $Date: 2004-06-03 21:07:47 $
+;  $Revision: 1.24 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -19,6 +19,7 @@ pro pc_read_var, t=t,                                            $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+  common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
@@ -66,6 +67,11 @@ default,varfile,'var.dat'
 ; Get necessary dimensions, inheriting QUIET
   if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,quiet=quiet
   if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
+
+; Call pc_read_grid to make sure any derivative stuff is correctly set in the common block
+; Don't need the data fro anything though
+  pc_read_grid,dim=dim,datadir=datadir,param=param,/QUIET 
+
   if (n_elements(proc) eq 1) then begin
     procdim=dim
   endif else begin
