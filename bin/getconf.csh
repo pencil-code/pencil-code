@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.106 2004-02-19 18:56:36 mee Exp $
+# $Id: getconf.csh,v 1.107 2004-02-23 15:12:00 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -37,6 +37,7 @@ endif
 set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 # Determine number of CPUS
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set nprocpernode = 1
 echo $ncpus CPUs
 
 # Location of executables and other default settings; can be overwritten
@@ -107,6 +108,15 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
     set local_disc = 1
     set one_local_disc = 0
     set local_binary = 0
+
+  #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
+  #  set nodelist = `cat hostfile`
+
+    if ($PE =~ mpi2) then
+      set nprocpernode = 2
+    else if ($PE =~ mpi) then
+      set nprocpernode = 4
+    endif
   else
     echo "Non-SGE, running on `hostname`"
   endif
@@ -363,10 +373,8 @@ endif
 if ($mpi) then
   # Some mpiruns need special options
   if ($mpirun =~ *mpirun*) then
-    set nprocpernode = 1
     set npops = "-np $ncpus"
   else if ($mpirun =~ *mpiexec*) then
-    set nprocpernode = 1
     set npops = "-n $ncpus"
   else if ($mpirun =~ *scout*) then
     set nnode = `expr $NSLOTS - 1`
