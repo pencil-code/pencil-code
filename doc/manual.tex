@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.178 2003-06-27 06:52:12 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.179 2003-06-27 12:10:00 theine Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-27 06:52:12 $ $,~ $ $Revision: 1.178 $ $}
+\date{$ $Date: 2003-06-27 12:10:00 $ $,~ $ $Revision: 1.179 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-27 06:52:12 $ $,~ $ $Revision: 1.178 $ $}
+  \emph{$ $Date: 2003-06-27 12:10:00 $ $,~ $ $Revision: 1.179 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2659,10 +2659,11 @@ S_i=k_{\rm B}N_i\left(\ln\left[\frac{1}{n_{\rm tot}}
 Here $N_i$ is the number of particles of a single species and $n_{\rm tot}$
 is the total number density of all particle species.
 
-Summing up the individual entropies plus the entropy of mixing
-$S_{\rm mix}=N_{\rm tot}k_{\rm B}\sum_ip_i\ln p_i$ we can get a closed
-expression for the specific entropy $s$ in terms of $y$, $\ln\rho$ and $T$,
-which may be solved for $T$.
+In addition to the individual entropies we also have to take the entropy of
+mixing, \mbox{$S_{\rm mix}=-N_{\rm tot}k_{\rm B}\sum_ip_i\ln p_i$}, into
+account. Summing up everything, we can get a closed expression for the
+specific entropy $s$ in terms of $y$, $\ln\rho$ and $T$, which may be solved
+for $T$.
 
 For given $\ln\rho$ and $s$ we are then able to calculate the ionization
 fraction $y$ by finding the root of
@@ -2675,8 +2676,8 @@ f(y)=\ln\left[\frac{1-y}{y^2}\frac{1}{n_{\rm H}}
 \end{equation}
 
 In the ionized case, several thermodynamic quantities of the gas become
-dependent on the ionization fraction $y$ such its as pressure
-$P=(1\!+y+x_{\rm He})n_{\rm H}k_{\rm B}T$ and its internal energy
+dependent on the ionization fraction $y$ such as its pressure,
+$P\!=(1\!+y+x_{\rm He})n_{\rm H}k_{\rm B}T$, and its internal energy,
 $E=\frac{3}{2}(1+y+x_{\rm He})n_{\rm H}k_{\rm B}T+y\chi_{\rm H}$, where
 $x_{\rm He}$ gives the ratio of neutral helium to the total amount of hydrogen.
 
@@ -3128,7 +3129,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-06-27 06:52:12 $ $,~ $ $Revision: 1.178 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-06-27 12:10:00 $ $,~ $ $Revision: 1.179 $ $}}}
 
 \section{Timings}
 
@@ -4159,21 +4160,21 @@ to $\ln\rho$ and $s$ needs to be known:
 \end{equation}
 Since $F=0$ for all desired solutions $(y,\ln\rho,s)$ we also have
 \begin{equation}
-dF=\left(\frac{\partial F}{\partial\ln\rho}\right)_{s,y}\!\delta\ln\rho
-   +\left(\frac{\partial F}{\partial s}\right)_{\rho,y}\!\delta s
-   +\left(\frac{\partial F}{\partial y}\right)_{\rho,s}\!\delta y=0\ ,
+dF=\frac{\partial F}{\partial\ln\rho}{\rm d}\ln\rho
+   +\frac{\partial F}{\partial s}{\rm d} s
+   +\frac{\partial F}{\partial y}{\rm d} y=0\ ,
 \end{equation}
 and thus
 \begin{equation}
 \frac{\partial y}{\partial\ln\rho}
-=\left(\frac{\delta y}{\delta\ln\rho}\right)_{\delta s=0}
-=-\frac{(\partial F/\partial\ln\rho)_{s,y}}{(\partial F/\partial y)_{\rho,s}}
+=\left(\frac{{\rm d} y}{{\rm d}\ln\rho}\right)_{{\rm d} s=0}
+=-\frac{\partial F/\partial\ln\rho}{\partial F/\partial y}
 \end{equation}
 and
 \begin{equation}
 \frac{\partial y}{\partial s}
-=\left(\frac{\delta y}{\delta s}\right)_{\delta\ln\rho=0}
-=-\frac{(\partial F/\partial s)_{\rho,y}}{(\partial F/\partial y)_{\rho,s}}.
+=\left(\frac{{\rm d} y}{{\rm d} s}\right)_{{\rm d}\ln\rho=0}
+=-\frac{\partial F/\partial s}{\partial F/\partial y}.
 \end{equation}
 
 % --------------------------------------------------------------------- %
@@ -4191,8 +4192,8 @@ Using a generalization of the trapezoidal rule,
 \begin{eqnarray}
   \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')} f(\tau')\,d\tau'
   &\approx& \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')}
-              \left[ f(\tau_0) + \frac{f(\tau){-}f(\tau_0)}{\tau-\tau_0}\,\tau'
-              \right] \; d\tau'\\
+              \left[ f(\tau_0) + \frac{f(\tau){-}f(\tau_0)}{\tau-\tau_0}\,
+	      (\tau'-\tau_0)\right] \; d\tau'\\
   &=&       \left[1{-}e^{-(\tau-\tau_0)}\right] f(\tau)
           - \frac{1 - e^{-(\tau-\tau_0)}(1+\tau{-}\tau_0)}{\tau-\tau_0}
             [f(\tau)-f(\tau_0)]
@@ -5371,7 +5372,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.178 2003-06-27 06:52:12 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.179 2003-06-27 12:10:00 theine Exp $ $}
 
 
 \end{document}
