@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.24 2002-06-16 20:35:03 dobler Exp $ 
+! $Id: param_io.f90,v 1.25 2002-06-17 20:05:29 dobler Exp $ 
 
 module Param_IO
 
@@ -54,7 +54,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.24 2002-06-16 20:35:03 dobler Exp $
+!   $Id: param_io.f90,v 1.25 2002-06-17 20:05:29 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -107,7 +107,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.24 2002-06-16 20:35:03 dobler Exp $
+!   $Id: param_io.f90,v 1.25 2002-06-17 20:05:29 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -150,8 +150,9 @@ module Param_IO
 !
 !  timestep
 !
-      ldt=cdt/=0.
-      if (ldt.and.lroot.and.ip<14) print*,'timestep based on CFL cond; cdt=',cdt
+      ldt = (dt/=0.)
+      if (.not. ldt .and. lroot .and. ip<14) &
+           print*,'timestep based on CFL cond; cdt=',cdt
 !
     endsubroutine read_runpars
 !***********************************************************************

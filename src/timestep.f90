@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.11 2002-06-04 08:12:02 brandenb Exp $
+! $Id: timestep.f90,v 1.12 2002-06-17 20:05:29 dobler Exp $
 
 module Timestep
 
@@ -65,7 +65,7 @@ module Timestep
 !  Then need to broadcast dt to all processors.
 !
         if (lfirst.and.lroot) then
-          if (ldt) dt = cdt*dxmin/UUmax
+          if (.not. ldt) dt = cdt*dxmin/UUmax
           if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif
         call mpibcast_real(dt,1)
