@@ -18,12 +18,15 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.14 2002-09-26 11:54:53 dobler Exp $
+# CVS: $Id: auto-test,v 1.15 2002-09-26 14:54:14 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
 #   the Test/Test::Harness module and because we need to do pattern
 #   matching to extract the relevant output lines.
+# To Do:
+# - Remove directory from /var/tmp when wncountering Ctl-c
+# - Investigate the return status after namelist error or similar
 
 use strict;
 use constant QUIET=>1;
@@ -47,6 +50,7 @@ my @runsdir = qw( forced/hydro1 radiation/rad1);
 my $tmpdir = "/var/tmp/pencil-tmp-$$";
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
                                                                  # for C float
+my $noheader = "Couldn't find header line";
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
 my (%opts);			# variables written by GetOptions
@@ -80,7 +84,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.14 2002-09-26 11:54:53 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.15 2002-09-26 14:54:14 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0; }
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0; }
@@ -201,13 +205,17 @@ sub test_results {
 #	print "    [Not yet implemented]";
 	my @output = split(/[\n\r]+/,$res);
 	my_ok(0,0,"",$dir,"results","quiet");
-	@output = extract_results(\@output);
-	my @ref_output = read_lines("reference.out",$rdmsg);
-	if ($rdmsg) {
-	    print " [$rdmsg]\n";
-	} else {
-	    my $comp = compare_results(\@ref_output,\@output,$diagn);
-	    my_ok($comp,1,$diagn,$dir,"results");
+	my @foutput = extract_results(\@output); # filtered output
+	if ($foutput[0] ne "$noheader") {
+	    my @ref_output = read_lines("reference.out",$rdmsg);
+	    if ($rdmsg) {
+		print " [$rdmsg]\n";
+	    } else {
+		my $comp = compare_results(\@ref_output,\@output,$diagn);
+		my_ok($comp,1,$diagn,$dir,"results");
+	    }
+	} else { # No header line found
+	    my_ok(0,1,join("/n",@output),$dir,"results");
 	}
     }
 }
@@ -241,7 +249,7 @@ sub extract_results {
     if ($body) {
 	@results;
     } else {
-	warn "Couldn't find header line\n";
+	($noheader);
     }
 }
 
