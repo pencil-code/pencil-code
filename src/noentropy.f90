@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.43 2003-09-06 18:55:30 theine Exp $
+! $Id: noentropy.f90,v 1.44 2003-09-12 11:36:38 mee Exp $
 
 module Entropy
 
@@ -17,7 +17,6 @@ module Entropy
   namelist /entropy_run_pars/  dummyss
 
   ! run parameters
-  real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
   real :: hcond0=0.,hcond1=impossible,chi=impossible
   real :: Fbot=impossible,FbotKbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible
@@ -49,7 +48,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.43 2003-09-06 18:55:30 theine Exp $")
+           "$Id: noentropy.f90,v 1.44 2003-09-12 11:36:38 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

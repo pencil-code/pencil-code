@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.201 2003-09-08 17:14:46 brandenb Exp $
+! $Id: entropy.f90,v 1.202 2003-09-12 11:36:38 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -14,13 +14,13 @@ module Entropy
 
   implicit none
 
-  real, dimension (nx) :: cs2,TT1
+  !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
-  real :: tau_ss_exterior=0., TT0=impossible,TT0top=impossible,TT0bot=impossible
+  real :: tau_ss_exterior=0.
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: center2_x=0., center2_y=0., center2_z=0.
@@ -43,8 +43,8 @@ module Entropy
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss, thermal_background, thermal_peak, thermal_scaling, &
        center1_x, center1_y, center1_z, &
-       center2_x, center2_y, center2_z, &
-       TT0
+       center2_x, center2_y, center2_z
+     
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -91,7 +91,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.201 2003-09-08 17:14:46 brandenb Exp $")
+           "$Id: entropy.f90,v 1.202 2003-09-12 11:36:38 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -442,21 +442,13 @@ module Entropy
       enddo
       enddo
 
-      if (lionization.or.lionization_fixed) then
-         TT0top=TT0
-         TT0bot=TT0
-         cs2bot=impossible
-         cs2top=impossible
-      else
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
 !
-         TT0top=impossible
-         TT0bot=impossible
-         cs2bot=cs20
-         cs2top=cs20
-      endif
+      cs2bot=cs20
+      cs2top=cs20
+     
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
