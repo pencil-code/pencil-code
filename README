@@ -1,4 +1,4 @@
-$Id: README,v 1.3 2002-01-20 22:35:01 dobler Exp $
+$Id: README,v 1.4 2002-07-02 00:50:44 brandenb Exp $
 
 Modular pencil code.
 
@@ -16,6 +16,8 @@ List of alternatives (not all of them implemented yet):
   forcing   noforcing
   magnetic  nomagnetic
   entropy   noentropy
+  density   nodensity
+  hydro     nohydro  
   io-multi io-mono io-hdf5         # write to per-process file, use one
                                    # monolithic file, or use hdf5
 
@@ -28,4 +30,4 @@ etc.) for start.f90.
 
 The physics modules require that you correctly adapt mvar (and other
 parameters?) in cparam.dat. If you forget to do so, you will get a warning
--- or possibly a compilation error.
+during run time -- or possibly already a compilation error.

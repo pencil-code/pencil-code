@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.33 2002-06-30 17:44:52 brandenb Exp $
+! $Id: hydro.f90,v 1.34 2002-07-02 00:50:44 brandenb Exp $
 
 module Hydro
 
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.33 2002-06-30 17:44:52 brandenb Exp $")
+           "$Id: hydro.f90,v 1.34 2002-07-02 00:50:44 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,6 +120,14 @@ module Hydro
         print*,'init_hydro: polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthuu))
         f(:,:,:,iux)=uu_left+(uu_right-uu_left)*prof
+
+      case('bullets')
+        !
+        !  blob-like velocity perturbations (bullets)
+        !
+        print*,'init_hydro: velocity blobs'
+        !f(:,:,:,iux)=f(:,:,:,iux)+ampluu*exp(-(xx**2+yy**2+(zz-1.)**2)/widthuu)
+        f(:,:,:,iuz)=f(:,:,:,iuz)-ampluu*exp(-(xx**2+yy**2+zz**2)/widthuu)
 
       case default
         !

@@ -1,3 +1,4 @@
+### $Id: Makefile,v 1.67 2002-07-02 00:50:44 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
