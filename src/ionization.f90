@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.41 2003-06-15 05:39:21 brandenb Exp $
+! $Id: ionization.f90,v 1.42 2003-06-15 06:16:46 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -45,10 +45,10 @@ module Ionization
       if (.not. first) call stop_it('register_ionization called twice')
       first = .false.
 !
-      iyH = mvar + naux +1
-      naux = naux + 1 
-      iTT = mvar + naux +1
-      naux = naux + 1 
+!  set indices for auxiliary variables
+!
+      iyH = mvar + naux +1; naux = naux + 1 
+      iTT = mvar + naux +1; naux = naux + 1 
 
       if ((ip<=8) .and. lroot) then
         print*, 'register_ionization: ionization nvar = ', nvar
@@ -56,16 +56,16 @@ module Ionization
         print*, 'iTT = ', iTT
       endif
 !
-!  identify version number
+!  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.41 2003-06-15 05:39:21 brandenb Exp $")
+           "$Id: ionization.f90,v 1.42 2003-06-15 06:16:46 brandenb Exp $")
 !
-!  Check we arn't registering too many auxilliary variables
+!  Check we aren't registering too many auxiliary variables
 !
-      if (nvar > mvar) then
+      if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('Register_ionization: naux > maux')
+        call stop_it('register_ionization: naux > maux')
       endif
 !
     endsubroutine register_ionization

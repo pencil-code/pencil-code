@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.7 2003-06-14 20:37:58 theine Exp $
+! $Id: radiation_exp.f90,v 1.8 2003-06-15 06:16:47 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -15,7 +15,7 @@ module Radiation
   implicit none
 
   real, dimension (mx,my,mz) :: Srad,kaprho
-  logical :: nocooling=.false.,output_Qrad=.false.
+  logical :: nocooling=.false.,test_radiation=.false.,output_Qrad=.false.
 !
 !  default values for one pair of vertical rays
 !
@@ -31,7 +31,7 @@ module Radiation
        radx,rady,radz,rad2max,output_Qrad
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,nocooling
+       radx,rady,radz,rad2max,output_Qrad,nocooling,test_radiation
 
   contains
 
@@ -54,30 +54,25 @@ module Radiation
       lradiation=.true.
       lradiation_ray=.true.
 !
-      iQrad = mvar + naux +1
-      naux = naux + 1
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_radiation: radiation nvar = ', nvar
-        print*, 'iQrad = ', iQrad
-      endif
-!
 !  set indices for auxiliary variables
 !
-      iQrad = mvar + naux + 1
-      naux = naux + 1
+      iQrad = mvar + naux +1; naux = naux + 1
+!
+      if ((ip<=8) .and. lroot) then
+        print*, 'register_radiation: radiation naux = ', naux
+        print*, 'iQrad = ', iQrad
+      endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.7 2003-06-14 20:37:58 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.8 2003-06-15 06:16:47 brandenb Exp $")
 !
-!
-!  Check we arn't registering too many auxilliary variables
+!  Check that we aren't registering too many auxilary variables
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('Register_radiation: naux > maux')
+        call stop_it('register_radiation: naux > maux')
       endif
 !
     endsubroutine register_radiation
@@ -90,7 +85,7 @@ module Radiation
 !***********************************************************************
     subroutine radcalc(f)
 !
-!  calculate source function
+!  calculate source function and opacity
 !
 !  24-mar-03/axel+tobi: coded
 !
@@ -99,6 +94,14 @@ module Radiation
 !
       real, dimension(mx,my,mz,mvar), intent(in) :: f
       real, dimension(nx) :: lnrho,ss,yH,TT,kappa
+!
+!  test
+!
+      if(test_radiation) then
+        Srad=1.
+        kaprho=1.
+        return
+      endif
 !
 !  Use the ionization module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  

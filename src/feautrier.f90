@@ -1,6 +1,6 @@
-! $Id: feautrier.f90,v 1.24 2003-06-13 11:56:11 nilshau Exp $
+! $Id: feautrier.f90,v 1.25 2003-06-15 06:16:46 brandenb Exp $
 
-!!!  NOTE: this routine will perhaps be renamed to radation_feautrier
+!!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
 
 module Radiation
@@ -53,6 +53,8 @@ module Radiation
       lradiation = .true.
       lradiation_ray = .true.
 !
+!  set indices for auxiliary variables
+!
       iQrad = mvar + naux + 1
       iSrad = mvar + naux + 2
       ikappa = mvar + naux + 3
@@ -62,13 +64,13 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.24 2003-06-13 11:56:11 nilshau Exp $")
+           "$Id: feautrier.f90,v 1.25 2003-06-15 06:16:46 brandenb Exp $")
 !
-! Check we arn't registering too many auxilliary variables
+! Check we aren't registering too many auxiliary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_viscosityfeautrier: naux > maux')
+        call stop_it('register_feautrier: naux > maux')
       endif
 !
     endsubroutine register_radiation
@@ -88,7 +90,7 @@ module Radiation
       use Cdata
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar + maux) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(nx) :: lnrho,ss,yH,kappa_,cs2,TT1,cp1tilde
 !
 !  Use the ionization module to calculate temperature
@@ -119,7 +121,7 @@ module Radiation
       use General
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar + maux) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: feautrier
       real, dimension(nz) :: kaprho,tau,Srad_,Prad_
       real, dimension(nz) :: a,b,c
@@ -184,7 +186,7 @@ module Radiation
       use General
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar + maux) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: feautrier_double
       double precision, dimension(nz) :: kaprho,tau,Srad_,Prad_
       double precision, dimension(nz) :: a,b,c
@@ -252,7 +254,7 @@ module Radiation
       use Sub
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar + maux) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
 !
 !  identifier
 !
@@ -274,7 +276,7 @@ module Radiation
       use Cdata
       use Ionization
 !
-      real, dimension (mx,my,mz,mvar + maux) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: formfactor=0.5
 !
@@ -357,10 +359,12 @@ module Radiation
 !*******************************************************************
     subroutine rprint_radiation(lreset)
 !
-!  Dummy routine for Flux Limited Diffusion routine
+!  Writes iQrad, etc, to index.pro file
+!  Also: dummy routine for Flux Limited Diffusion routine
 !  reads and registers print parameters relevant for radiative part
 !
 !  16-jul-02/nils: adapted from rprint_hydro
+!  14-jun-03/axel: moved iTT to rprint_ionization
 !
       use Cdata
       use Sub
@@ -383,7 +387,6 @@ module Radiation
       write(3,*) 'iQrad=',iQrad
       write(3,*) 'iSrad=',iSrad
       write(3,*) 'ikappa=',ikappa
-      write(3,*) 'iTT=',iTT
 !   
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_radiation
@@ -423,7 +426,7 @@ module Radiation
       use Cdata
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar + maux) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(nx) :: lnrho,ss,source,TT1,cs2,cp1tilde
 !
 !  Use the ionization module to calculate temperature

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.22 2003-06-15 05:39:21 brandenb Exp $
+! $Id: noionization.f90,v 1.23 2003-06-15 06:16:47 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -58,11 +58,11 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.22 2003-06-15 05:39:21 brandenb Exp $")
+           "$Id: noionization.f90,v 1.23 2003-06-15 06:16:47 brandenb Exp $")
 !
-!  Check we arn't registering too many auxilliary variables
+!  Check we aren't registering too many auxiliary variables
 !
-      if (nvar > mvar) then
+      if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
         call stop_it('Register_ionization: naux > maux')
       endif
