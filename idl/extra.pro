@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.19 2003-06-16 21:17:36 theine Exp $
+;  $Id: extra.pro,v 1.20 2003-06-26 11:01:31 theine Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -41,7 +41,7 @@ endif
 ;
 if (iqrad ne 0) then QQrad=Qrad(l1:l2,m1:m2,n1:n2)
 if (iqrad ne 0) then SSrad=sigmaSB*TTT^4/!pi
-if (iqrad ne 0) then kaprho=.25*exp(2*llnrho-lnrho_ion_)*(TT_ion_/TTT)^1.5 $
+if (iqrad ne 0) then kaprho=.25*exp(2*llnrho-lnrho_e_)*(TT_ion_/TTT)^1.5 $
                             *exp(TT_ion_/TTT)*yyH*(1.-yyH)*kappa0
 ;
 if (iuu ne 0) then for j=0,2 do print,sqrt(mean(uu(*,*,*,j)^2))
