@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.61 2003-08-29 12:35:21 theine Exp $
+! $Id: noionization.f90,v 1.62 2003-09-06 14:48:42 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -75,7 +75,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.61 2003-08-29 12:35:21 theine Exp $")
+           "$Id: noionization.f90,v 1.62 2003-09-06 14:48:42 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -221,7 +221,7 @@ module Ionization
       if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
       if (size(ss)==mx) ss=f(:,m,n,iss)
 !
-      TT=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))
+      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
 !
     endsubroutine ionget_pencil
 !***********************************************************************
@@ -232,7 +232,7 @@ module Ionization
       real, intent(in) :: lnrho,ss
       real, intent(out) :: yH,TT
 !
-      TT=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))
+      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
       yH=0.
 !
     endsubroutine ionget_point
@@ -255,10 +255,10 @@ module Ionization
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
       real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
 !
-      if (present(cs2)) cs2=gamma1*exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))
+      if (present(cs2)) cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       if (present(cp1tilde)) cp1tilde=1.
-      if (present(ee)) ee=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))/gamma
-      if (present(pp)) pp=gamma1*exp(gamma*ss-gamma1*(lnrho0)+alog(cs20/gamma1))/gamma
+      if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
+      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*(lnrho-lnrho0))/gamma
 !
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_pencil
@@ -281,10 +281,10 @@ module Ionization
       real, intent(in) :: lnrho,ss,yH,TT
       real, optional :: cs2,cp1tilde,ee,pp
 !
-      if (present(cs2)) cs2=gamma1*exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))
+      if (present(cs2)) cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       if (present(cp1tilde)) cp1tilde=1.
-      if (present(ee)) ee=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))/gamma
-      if (present(pp)) pp=gamma1*exp(gamma*ss-gamma1*(lnrho0)+alog(cs20/gamma1))/gamma
+      if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
+      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*(lnrho-lnrho0))/gamma
 !
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_point
