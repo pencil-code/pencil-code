@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.215 2004-06-09 11:44:35 ajohan Exp $
+! $Id: equ.f90,v 1.216 2004-06-15 04:59:25 theine Exp $
 
 module Equ
 
@@ -260,7 +260,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.215 2004-06-09 11:44:35 ajohan Exp $")
+           "$Id: equ.f90,v 1.216 2004-06-15 04:59:25 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -369,16 +369,19 @@ module Equ
         call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij,shock,gshock)
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
 !
+!  Entropy evolution
+!
+        call dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
+!
 !  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
 !
-!  Entropy (may need B-field)
+!  Passive scalar evolution
 !
-        call dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
         call dlncc_dt(f,df,uu,glnrho,cc,cc1)
 !
-!  dust equations
+!  Dust evolution
 !
         call duud_dt (f,df,uu,rho1,cs2,uud,divud,ud2,udij)
         call dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd)
