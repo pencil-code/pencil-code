@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.111 2002-09-30 09:45:24 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -83,6 +83,7 @@
                          % unnecessarily) resets this and make table of
                          % contents disappear
 
+\usepackage{amssymb}
 \usepackage{expdlist}
 \usepackage{booktabs}
 \usepackage{longtable}
@@ -193,8 +194,8 @@
 \newcommand{\samp}[1]{`\code{#1}'}
 \newcommand{\var}[1]{\textsl{#1}\index[var]{#1@\emph{#1}}\/}
 \newcommand{\env}[1]{\code{#1}\index[var]{#1}}
-\newcommand{\option}[1]{`\code{#1}'\index{Option #1@Option \emph{`#1'}}}
-\newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
+%\newcommand{\option}[1]{`\code{#1}'\index{Option #1@Option \emph{`#1'}}}
+%\newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
 %\newcommand{\cite}[1]{}
 \newcommand{\acronym}[1]{\textsc{#1}\index{#1}}
 %\newcommand{\url}[1]{}
@@ -218,6 +219,13 @@
   \else\index[file]{#1@\texttt{#1}}%
   \fi%
 }
+\newcommand{\option}[2][]{%
+  \def\index@{#1}%
+  `\code{#2}'%
+  \ifx\index@\@empty\index{Option #2@Option \emph{`#2'}}%
+  \else\index{Option #1@Option \emph{`#1'}}%
+  \fi%
+}
 \newcommand{\name}[2][]{%
   \def\index@{#1}%
   \textsl{#2\/}%
@@ -226,6 +234,7 @@
   \fi%
 }
 \makeatother
+\newcommand{\dfn}{\name}
 \newcommand{\Path}[1]{\file{#1}}
 
 %
@@ -304,7 +313,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.110 $ $}
+\date{\today,~ $ $Revision: 1.111 $ $}
 
 % ====================================================================== %
 
@@ -336,7 +345,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.110 $ $}
+  \emph{\today,~ $ $Revision: 1.111 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1112,9 +1121,10 @@ For example, we have our own runs in a repository called
   \prompt{unix> } cd \$PENCIL_HOME
   \prompt{unix> } cvs co -d runs pencil-runs
 \end{alltt}
-In this case, \file[runs/]{runs} contains individual run directories, grouped in
+In this case, \file[runs/]{runs} contains individual run directories,
+grouped in
 classes (like \file[spher/]{spher} for spherical calculations, or
-\file[kinematic/]{kinematic} for kinematic dynamo simulations.
+\file[kinematic/]{kinematic} for kinematic dynamo simulations).
 The current list of classes in our own \file{pencil-runs} repository is
 \begin{verbatim}
   1d-tests/     2d-tests/     OLD/
@@ -1140,7 +1150,7 @@ configuration files (currently these are \file{Makefile.local} and
 \file{cparam.local}), together with links to
 all the \file{.f90} and \file{.c} files and the \file{Makefile} in the top
 \file[src/]{src} directory (these links are set up by the script
-\cmd{setup-src}.
+\cmd{setup-src}).
 
 General-purpose visualization routines for \name{IDL} or \name{DX} are in the
 \file[idl/]{idl} and \file[dx/]{dx} directories, respectively.
@@ -1173,7 +1183,7 @@ manually.
 \subsection{Basic concepts}
 
 \subsubsection{Data access in pencils}
-\index{pencil design}
+\index{Pencil design}
 
 Unlike the CRAY computers that dominated supercomputing in the 80s and
 early 90s, all modern computers have a cache that constitutes a significant
@@ -1228,7 +1238,7 @@ Apart from the physics modules (equation of motion: yes, density
 [pressure]: yes, entropy equation: no, magnetic fields: yes, gravity: no,
 forcing: yes), a few technical modules can also be used or deactivated; in
 the example above, these are \name{MPI} (switched off), additional global
-variables (none), input/output (distributed), and \name{fft} (not used).
+variables (none), input/output (distributed), and \name{FFT} (not used).
 Table~\ref{Tab-modules} in the Appendix lists all currently available modules.
 
 Note that most of these \name{make} variables \emph{must} be set, but they
@@ -1348,8 +1358,9 @@ Each of the directories can contain the following files:
   For multi-procesor runs with velocity forcing, the files
   \file[seed.dat]{proc$N$/seed.dat} must all contain the same numbers,
   because globally coherent waves of given wavenumber are used;
-\item[\file{$X$.xy}, \file{$X$.xy}, \file{$X$.xy}] two-dimensional
-  sections of variable $X$. \footnote{WD: Axel, can you explain a bit more?}
+\item[{\file[X.xy]{$X$.xy}, \file[X.xz]{$X$.xz}, \file[X.yz]{$X$.yz}}]
+  two-dimensional sections of variable $X$.
+  \footnote{WD: Axel, can you explain a bit more?}
 \end{description}
 
 
@@ -1556,16 +1567,17 @@ to remember doing this by hand.
 % ---------------------------------------------------------------------- %
 
 
-\subsection{Start parameters}
+\subsection{Start and run parameters}
 \label{S-start-params}
 
-All input parameters in \file{start.in} (and \file{run.in}) occur in
-namelists.
+All input parameters in \file{start.in} and \file{run.in}are grouped in
+Fortran \name{namelists}.
 This allows arbitrary order of the parameters (\emph{within} the given
 namelist; the namelists need to appear in the correct order), as well as
-inserted Fortran comments and whitespace for readability.
-One namelist (\name{init_pars}) contains general parameters for
-initialization and is always read in.
+enhanced readability through 
+inserted Fortran comments and whitespace.
+One namelist (\name{init_pars} / \name{run_pars}) contains general
+parameters for initialization/running and is always read in.
 All other namelists are specific to individual modules and will only
 be read if the corresponding module is used.
 
@@ -1575,7 +1587,8 @@ The syntax of a namelist (in an input file like \file{start.in}) is
     ip=5, Lxyz=2,4,2
   /
 \end{verbatim}
---- in this example, we read just two variables (all other variables in
+--- in this example, the name of the namlist is \name{init_pars}, and we
+read just two variables (all other variables in
 the namelist retain their previous value): \var{ip}, which is set to $5$,
 and \var{Lxyz}, which is a vector of length three and is set to $(2,4,5)$.
 
@@ -1584,70 +1597,78 @@ reasonable default values are preset.
 Thus, the typical file \file{start.in} will only contain a minimum set of
 variables or (if you are \emph{very} minimalistic) none at all.
 If you want to run a particular problem, it is best to start by
-modifying a particular example that is closest to your application.
+modifying an existing example that is close to your application.
 
 As an example, we give here the start parameters for
 \file{samples/helical-MHDturb}
+\begin{alltt}
+  &init_pars
+    cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
+    xyz0  = -3.1416, -3.1416, -3.1416, \textsl{! first corner of box}
+    Lxyz  =  6.2832,  6.2832,  6.2832, \textsl{! box size}
+    lperi =  T     ,  T     ,  T     , \textsl{! periodic in x, y, z}
+    random_gen='nr_f90'
+  /
+  &hydro_init_pars
+  /
+  &density_init_pars
+    gamma=1.
+  /
+  &magnetic_init_pars
+    initaa='gaussian-noise', amplaa=1e-4
+  /
+\end{alltt}
+The three entries specifying the location, size and periodicity of the box
+are just given for demonstartion purposes here --- in fact a periodic box
+from $-\pi$ to $-\pi$ in all three directions is the default.
+In this run, for reproducibility, we use a random number generator from
+the Numerical Recipies \cite{NR}, rather than the compiler's builtin
+generator.
+The adiabatic index $\gamma$ is set explicitly to $1$ (the default would have
+been 5/3) to achieve an isothermal equation of state.
+The magnetic vector potential is initialized with uncorrelated, normally
+distributed random noise of amplitude $10^{-4}$.
+
+
+The run parameters for \file{samples/helical-MHDturb} are
 \begin{verbatim}
-!                     -*-f90-*-   (for emacs)
-! Initialisation parameters for forced helical MHD turbulence
-!
-&init_pars
-  cvsid='$Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $',
-  random_gen='nr_f90'
-/
-&hydro_init_pars
-/
-&density_init_pars
-  gamma=1.
-/
-&magnetic_init_pars
-  initaa='gaussian-noise', amplaa=1e-4
-/
+  &run_pars
+    cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
+    nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=20, itorder=3,
+    dsnap=50., dvid=0.5,
+    random_gen='nr_f90'
+  /
+  &hydro_run_pars
+    nu=5e-3, ivisc='nu-const',
+  /
+  &density_run_pars
+  /
+  &forcing_run_pars
+    iforce='helical', force=0.07, relhel=1.,
+  /
+  &magnetic_run_pars
+    eta=5e-3,
+  / 
 \end{verbatim}
-For reproducibility, we use not the system random number generator,
-but the f90 procedure that is given in the Numerical Recipies \cite{NR}.
-$\gamma=1$ is set explicitly (the default would have been 5/3).
-The magnetic vector potential is initialized with gaussian random noise
-with amplitude $10^{-4}$.
-
-A full list of input parameter is given in Appendix~\ref{S-all-init-params}.
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Run parameters}
-\label{S-run-params}
-
-As an example, we give here the run parameters for
-\file{samples/helical-MHDturb}
-\begin{verbatim}
-&run_pars
-  cvsid='$Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $',
-  nt=10, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
-  dsnap=50, dvid=0.5,
-  random_gen_tmp='nr_f90'
-/
-&hydro_run_pars
-  nu=5e-3, ivisc='0',
-/
-&density_run_pars
-/
-&forcing_run_pars
-  iforce='helical', force=0.07, relhel=1.,
-/
-&magnetic_run_pars
-  eta=5e-3,
-/
-\end{verbatim}
-Here we run for 10 timesteps, give output every timestep, use the 3-step scheme
-(1-step schemes only useful for tests), use again a deterministic random number
-generator\footnote{The reason we have the \_tmp in the name has to do with a
-compiler problem on \name{IRIX} machines!}. Viscosity and magnetic diffusivity
+Here we run for \var{nt}$=10$ timesteps, every second step, we write a
+line of diagnostic output; we require the time step to keep the advective
+\name{Courant number} $\le 0.4$ and the diffusive \name{Courant number}
+$\le 0.8$, save \file{var.dat} every 20 time steps, and
+use the 3-step time-stepping scheme described in Appendix~\ref{S-2N-scheme}
+(the Euler scheme \var{itorder}$=1$ is only useful for tests).
+We write permanent snapshot file \file{VAR$N$} every \var{dsnap}$=50$ time
+units and 2d slices for animation every \var{dvid}$=0.5$ time units.
+Again, we use a deterministic random number generator.
+Viscosity $\nu$ and magnetic diffusivity $\eta$
 are set to $5\times10^{-3}$ (so the mesh Reynolds number is about
 $u_{\rm rms}\delta x/\nu=0.3\times(2\pi/32)/5\times10^{-3}\approx12$,
-which is rather a bit to high!)
+which is in fact rather a bit to high).
+The parameters in \name{forcing_run_pars} specify fully helical forcing of
+a certain amplitude.
 
-A full list of input parameter is given in Appendix~\ref{S-all-run-params}.
+\bigskip
+
+A full list of input parameters is given in Appendix~\ref{S-all-parameters}.
 
 % ---------------------------------------------------------------------- %
 
@@ -1655,13 +1676,13 @@ A full list of input parameter is given in Appendix~\ref{S-all-run-params}.
 \label{time-step}
 
 The time step is normally specified as Courant time step through the
-coefficients \var{cdt} ($c_{\delta t}$) and \var{cdtv} ($c_{\delta t_v}$).
+coefficients \var{cdt} ($c_{\delta t}$) and \var{cdtv} ($c_{\delta t,{\rm v}}$).
 The resulting Courant step is given by
 \begin{equation}
   \delta t
   = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
                     {U_{\rm max}} ,
-               c_{\delta t,v}
+               c_{\delta t,{\rm v}}
                \frac{\delta x_{\rm min}^2}
                     {D_{\rm max}}
         \right) \; ,
@@ -1675,14 +1696,18 @@ where
                       + \sqrt{\cs^2{+}\vA^2}\right) \; ,
 \end{equation}
 $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed, respectively;
-and $D_{\rm max} = \max(\nu,\gamma\chi,\eta)$, where
+and
+\begin{equation} \label{Dmax}
+  D_{\rm max} = \max(\nu,\gamma\chi,\eta) ,
+\end{equation}
+where
 $\nu$ denotes kinematic viscosity,
 $\chi = K/(c_p\varrho)$ thermal
 diffusivity and $\eta$ the magnetic diffusivity.
 
 To fix the time step $\delta t$ to a value independent of velocities and
-diffusivities, set the run parameter \var{dt} to overwrite the Courant
-value (see p.~\pageref{dt-run}).
+diffusivities, explicitly set the run parameter \var{dt}, rather than
+\var{cdt} or \var{cdtv} (see p.~\pageref{dt-run}).
 
 % ---------------------------------------------------------------------- %
 
@@ -1709,9 +1734,10 @@ for periodic boundaries, or
 \end{alltt}
 for non-periodic ones.
 Each element corresponds to one of the
-variables, which are
+variables, which are those of the variables
 $u_x$, $u_y$, $u_z$, $\ln\varrho$, $s/c_p$, $A_x$, $A_x$, $A_x$, $\ln c$
-(minus the unused variables) in this order.
+that are actually used \emph{in this order}.
+The following conditions are available:
 \begin{description}
 \item[\option{p}] periodic boundary condition
 \item[\option{a}] antisymmetric condition w.\,r.\,t.~the
@@ -1736,19 +1762,17 @@ $u_x$, $u_y$, $u_z$, $\ln\varrho$, $s/c_p$, $A_x$, $A_x$, $A_x$, $\ln c$
 \item[\option{db}] low-order one-sided derivatives (``no
     boundary condition'') for density
 \end{description}
-The special syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
+The extended syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
 boundary condition $a$ at the left/lower boundary, but
 $b$ at the right/upper one.
 
-If you build a new run.in file from another one with a different number
-of variables (\name{noentropy} from \name{entropy}, for example), you need
-to remember to adjust the {\it length} of the \var{bcx} to \var{bcz} arrays.
+If you build a new \file{run.in} file from another one with a different number
+of variables (\name{noentropy} vs.~\name{entropy}, for example), you need
+to remember to adjust the {\it length} of the arrays \var{bcx} to \var{bcz}.
 The advantage of the present approach is that it is very easy to exchange
-all boundary conditions by a new set of boundary conditions in a particular
-direction. (Make everything periodic, for example, or switch off shearing
-sheet boundary conditions and have stress-free instead).\footnote{Remember
-that in the parameter list you can have the same line twice, and only the
-last one is used.}
+all boundary conditions by a new set of conditions in a particular
+direction (for example, make everything periodic, or switch off shearing 
+sheet boundary conditions and have stress-free instead).
 
 % ---------------------------------------------------------------------- %
 
@@ -1767,8 +1791,27 @@ See \emph{need 1d and 2d samples} for examples.
 \subsection{Visualization}
 \label{S-Visualization}
 
+\subsubsection{Data explorer networks}
+\label{S-openDX}
+
+A few networks for \name{DX} (\name{data explorer}) are available.
+It is quite easy to read in a snapshot file from \name{DX} (the only
+tricky thing are four extra bytes at the beginning of the file,
+representing a Fortran record marker), and we should
+document this here and have the Fortran code write a \texttt{.general}
+file.\footnote{WD: Do this\ldots}
+
+
 \subsubsection{IDL routines}
 \label{S-IDL-routines}
+
+In \file[idl/]{\$PENCIL_HOME/idl}, we provide a number of general-purpose
+\name{IDL} scripts that we are using all the time in connection with the
+Pencil Code.
+While \name{IDL} is quite an expensive software package, it is quite
+useful for visualizing results from numerical simulations.
+In fact, for many applications, the 7-minute demo version of \name{IDL} is
+sufficient.
 
 The basic command sequence is:
 \begin{alltt}
@@ -1780,23 +1823,23 @@ The basic command sequence is:
 You run \file{start.pro} once to initialize (or reinitialize,
 if the mesh size has changed, for example) the fields and read in the
 startup parameters from the code.
-Each time you want to read in a new snapshot, you run \file{r.pro} (or
-\file{rall.pro}, see below),
+To read in a new snapshot, run \file{r.pro} (or \file{rall.pro}, see below),
 possibly after adjusting the IDL variable \var{file} to a specific snapshot
-file; by default, the file \file{var.dat} in the data directory will be
-read, which is overwritten with new data in regular intervals.
+file.
 
-If the data are scattered over different processors and you want to
-reassemble everything into one file, you use
+If you are running in parallel on several processors,
+the data are scattered over different directories.
+To reassemble everything in \name{IDL}, use
 \begin{alltt}
-  \prompt{IDL> }  .r rall
+  \prompt{IDL> } .r rall
 \end{alltt}
-instead of \cmd[.run]{.r r}.
-Here, \cmd[.run]{.r} is a shorthand for \cmd{.run}.
+instead of \cmd[.run]{.r r}
+(here, \cmd[.run]{.r} is a shorthand for \cmd{.run}).
 The procedure \file{rall.pro} reads (and assembles) the data from all
 processors and correspondingly requires large amounts of memory
-(perhaps too much) for very large runs.
-If you want to look at just one processor, use \file{r.pro} instead.
+for very large runs.
+If you want to look at just the data from one processor, use \file{r.pro}
+instead.
 
 If you need the magnetic field or the current density, you can calculate
 them in IDL by \footnote{
@@ -1805,27 +1848,19 @@ them in IDL by \footnote{
   than \code{jj=curl2(aa)}, particularly at small scales.
 }
 \begin{alltt}
-  \prompt{IDL> }  bb=curl(aa)
-  \prompt{IDL> }  jj=curl2(aa)
+  \prompt{IDL> } bb=curl(aa)
+  \prompt{IDL> } jj=curl2(aa)
 \end{alltt}
 
 By default one is reading always the latest time corresponding to the file
-\file{var.dat}; if you want to read any earlier snapshots, you say (for
+\file{var.dat}; if you want to read any earlier snapshots, use (for
 example)
 \begin{alltt}
-  \prompt{IDL> }  file='VAR2'
-  \prompt{IDL> }  .r rall
-  \prompt{IDL> }  print,t
+  \prompt{IDL> } file='VAR2'
+  \prompt{IDL> } .r r {\sl(or \texttt{.r rall})}
+  \prompt{IDL> } print,t
 \end{alltt}
-and it will get the data for that snapshot from all processors.
-
-To discuss:
-\begin{itemize}
-\item availability of IDL (demo version; Pvwave; Ana)?
-\item setup (include \file[idl/]{../idl} and \file[idl/]{../../idl} (?) in
-  \var{!path})
-\item how to get our IDL routines
-\end{itemize}
+and you will get the data for that snapshot.
 
 
 % ---------------------------------------------------------------------- %
@@ -1837,35 +1872,19 @@ The code is parallelized using \name{MPI} (\dfn{message passing
 interface}) for a simple domain decomposition (data-parallelism), which is
 a straight-forward and very efficient way of parallelizing
 finite-difference codes.
-The current version has a few restrictions, which you should keep in mind
-when you use the MPI features.
+The current version has a few restrictions, which need to be kept in mind
+when using the MPI features.
 
-First, only the $y$ and $z$ directions can be distributed over several
+First, only the $y$ and $z$ directions can be distributed over different
 processors.
 Second, the global number of grid points (but excluding the ghost zones)
 in a given direction must be an exact multiple of the number of processors
 you use in that direction.
-E.\,g.~if you have \code{nprocy=8} processors for the $y$ direction, you
+For example if you have \code{nprocy=8} processors for the $y$ direction, you
 can run a job with \code{nygrid=64} points in that direction, but if you
 try to run a problem with \code{nygrid=65} or \code{nygrid=94}, the code
-will stop with an inconsistency message.
-(For us this hasn't been a serious restriction.)
-
-\subsubsection{Bandwidth-limited clusters (e.g.\ Beowulf machines)}
-\label{Bandwidth}
-
-On big Beowulf machines, a group of nodes is often connected with a switch
-of modest speed, and all these groups are connected via a $n$ times
-faster uplink. When bandwidth-limited, it is important to make sure that
-consecutive processors are mapped onto the mesh such that the load on
-the uplink is indeed approximately $n$ times larger than the load on the
-modestly fast switch within each group. We are currently running on a 512
-node cluster where groups of 24 processors are linked via fast ethernet,
-which in turn are connected via a Gigabit uplink ($\sim10$ times faster).
-This means that invariably \var{nprocy}=4 is optimal. For 128 processors,
-for example we find that $\var{nprocy}\times\var{nprocz}=4\times32$ is
-optimal. For comparison, $8\times16$ is 3 times slower and $16\times8$
-is even 17 times slower.
+will complain about an inconsistency and stop.
+(So far, this has not been a serious restriction for us.)
 
 \subsubsection{How to run a sample problem in parallel}
 
@@ -1926,6 +1945,28 @@ just the domain processed and written by one processor), you need to use
 \file{rall.pro} instead of \file{r.pro}.
 
 
+\subsubsection{Hierarchical networks (e.g.~on Beowulf clusters)}
+\label{Bandwidth}
+
+On big Beowulf clusters, a group of nodes is often connected with a switch
+of modest speed, and all these groups are connected via a $n$ times
+faster uplink switch.
+When bandwidth-limited, it is important to make sure that
+consecutive processors are mapped onto the mesh such that the load on
+the uplink is $\lesssim n$ times larger than the load on the
+slower switch within each group.
+On a 512 node cluster, where groups of 24 processors are linked via fast
+ethernet switches, which in turn are connected via a Gigabit uplink
+($\sim10$ times faster), we found that \var{nprocy}=4 is optimal.
+For 128 processors, for example we find that
+$\var{nprocy}\times\var{nprocz}=4\times32$ is the optimal layout, while.
+For comparison, $8\times16$ is 3 times slower, and $16\times8$
+is 17 (!) times slower.
+These results can be understood from the structure of the network, but the
+basic message is to watch out for such effects and to try varying
+\var{nprocy} and \var{nprocz}.
+
+
 % ====================================================================== %
 
 \section{The Equations}
@@ -1956,16 +1997,21 @@ derivative.
 \begin{equation}
   \frac{D\uv}{Dt}
    =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
-      - \grad\Phi
+      - \grad\Phi_{\rm grav}
       + \frac{\jv\times\Bv}{\varrho}
       + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
       + \Strain\cdot\grad\ln\varrho\right) \; .
 \end{equation}
 Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
-$\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
-$\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
-the magnetic flux density, $\nu$ is kinematic viscosity, and $\Strain$ is
-the traceless rate-of-strain tensor (\ref{Eq-S-traceless}).
+$\gamma=c_p/c_v$ the ratio of specific heats or \emph{adiabatic index},
+$\Phi_{\rm grav}$ is the gravity potential,
+$\jv$ the electric current density, $\Bv$
+the magnetic flux density, $\nu$ is kinematic viscosity, and
+\begin{equation} \label{Eq-S-traceless}
+  {\mathsf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
+                 -\frac{1}{3} \delta_{ik}\Div\uv
+\end{equation}
+is the traceless rate-of-strain tensor.
 
 If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace$, of the
 viscous term is used, which is not physically consistent (momentum
@@ -1973,16 +2019,16 @@ conservation is violated for compressible media), but in some cases
 this option could be a useful approximation during an initial relaxation phase;
 it does run somewhat faster).
 
-If \code{ivisc='rho_nu-const'}, it is assumed that 
-$\mu \equiv \varrho\nu = \const$ everywhere; in that
-case the input parameter $\nu$ is used to give the value of
-$\mu/\varrho_0$.
-The term involving the
-rate-of-strain tensor does not appear in the equation,
-and $\nu$ is then replaced by $\mu/\varrho$.
-
 If \code{ivisc='nu-const'}, it is assumed that 
 $\nu = \const$ everywhere.
+
+If \code{ivisc='rho_nu-const'}, it is assumed that 
+$\mu \equiv \varrho\nu = \const$ everywhere; in that
+case the input parameter \var{nu} is used to give the value of
+$\mu/\varrho_0$ (\var{rho0} is another input parameter).
+The term involving the
+rate-of-strain tensor does not appear in the equation,
+and $\nu$ is then replaced by $\mu/\varrho$, which is no longer constant.
 
 For isothermal hydrodynamics, see \S\ref{entropy} below.
 
@@ -2000,12 +2046,14 @@ $\Bv = \curl\Av$ the magnetic
 flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
 ($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
 magnetic vacuum permeability.
+This form of the induction equation corresponds to the \name{Weyl gauge}
+$\Phi=0$, where $\Phi$ denotes the scalar potential.
 
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Entropy equation}
-\index{entropy}%
+\index{Entropy}%
 \label{entropy}%
 
 The current thermodynamics module \name{entropy} formulates the thermal
@@ -2030,11 +2078,29 @@ The equation solved is
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
 $\Heat$ and $\Cool$ are explicit heating and cooling terms,
 $K$ is the radiative (thermal) conductivity, and
-\begin{equation} \label{Eq-S-traceless}
-  {\mathsf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
-                 -\frac{1}{3} \delta_{ik}\Div\uv
-\end{equation}
-is the traceless rate-of-strain tensor.
+$\Strain$ is the traceless rate-of-strain tensor.
+
+The heat conduction term can be written in the form
+\begin{eqnarray}
+\lefteqn{\frac{\Div(K\grad T)}
+              {\varrho c_p T}} \\
+%
+  &=&
+  \chi\Bigl[
+        \Laplace\ln T
+        + \grad\ln T \cdot \grad(\ln T{+}\ln\chi{+}\ln\varrho)
+      \Bigr] \\
+%
+  &=&
+  \chi \left[ \gamma\Laplace s/c_p + (\gamma{-}1)\Laplace\ln\varrho \right] \\
+  & &   + \chi \left[ \gamma\grad s/c_p
+                      + (\gamma{-}1)\grad\ln\varrho \right]
+          \cdot\left[ \gamma\left(\grad s/c_p + \grad\ln\varrho\right)
+                      + \grad\ln\chi \right] \; ,
+\end{eqnarray}
+where $\chi = K/(\varrho c_p)$ is the thermal diffusivity.
+The latter equation shows that the diffusivity for $s$ is $\gamma\chi$,
+which is what we have used in Eq.~(\ref{Dmax}).
 
 \bigskip
 
@@ -2096,7 +2162,7 @@ The equation of motion with the simplified
 viscous operator does not conserve linear or angular momentum.
 It depends on your application whether this is a crucial shortcoming or
 totally irrelevant.
-In practice, we may use the simplified viscous operator
+In practice, one may decide to use the simplified viscous operator
 during the initial relaxation phase of a long run, provided this
 is not already part of a production run.
 
@@ -2113,7 +2179,7 @@ have not yet been implemented in the code.
 In the following, we describe the steps necessary to set up a new
 diagnostic variable.
 
-This is nontrivial as, in the interest of efficient communication on
+This is nontrivial as, in order to keep latency effects low on
 multi-processor machines, the code minimizes the number of global
 reduction operations by assembling all quantities that need the maximum
 taken in \var{fmax}, and those that need to be summed up over all
@@ -2129,7 +2195,7 @@ diagnostic quantity \var{jbm} is already implemented) with
 \end{alltt}
 
 If we pretend for the sake of the exercise that no trace of \var{jbm} was
-in the code, and we were only now adding it in, we would need to do the following
+in the code, and we were only now adding it, we would need to do the following
 \begin{enumerate}
 \item add the variable \var{i_jbm} to the \emph{module variables} of
   \name{Magnetic} in both \file{magnetic.f90} and \file{nomagnetic.f90}:
@@ -2142,7 +2208,7 @@ in the code, and we were only now adding it in, we would need to do the followin
   calculate the quantity \var{jb} (the average of which will be
   \var{jbm}), and call \code{sum_mn_name}
   \begin{alltt}
-  real, dimension (nx) :: jb
+  real, dimension (nx) :: jb  {\sl! jj\(\,\cdot\,\)BB}
   {\sl[\ldots]}
   if (ldiagnos) then          {\sl! only calculate if diagnostics is required}
     if (i_jbm/=0) then        {\sl! anybody asked for jbm?}
@@ -2205,7 +2271,8 @@ replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 \subsection{Outputting new horizontal averages}
 
 Currently, only the horizontally $xy$-averaged $x$ and $y$ components
-of the magnetic field can be outputted. This is determined by the existence
+of the magnetic field can be written.
+This is determined by the existence
 and contents of the file \file{xyaver.in}.
 New such variables can be added by using the existing averaging
 procedures as examples.
@@ -2218,7 +2285,8 @@ There is currently the possibility to output also $xz$ and $yz$
 averages. This is done by averaging first in the z-direction only, so
 the result (which is available on the root processor) depends on $x$
 and $y$. From these planes we calculate then (on the root processor)
-the $xz$ and $yz$ averages. The energies of the so defined mean fields
+the $xz$ and $yz$ averages.
+The energies of the so defined mean magnetic fields
 are referred to as \var{bmy} and \var{bmx}, respectively.
 
 {\it Disadvantage}: one needs to set the file \file{zaver.in} with
@@ -2254,18 +2322,18 @@ starting point.
 
 \subsubsection{Compilation stops with the cryptic error message:}
 \begin{Verbatim}
-f95  -O3 -u -c .f90.f90
-Error : Could not open sourcefile .f90.f90
-compilation aborted for .f90.f90 (code 1)
-make[1]: *** [.f90.o] Error 1
+  f95  -O3 -u -c .f90.f90
+  Error : Could not open sourcefile .f90.f90
+  compilation aborted for .f90.f90 (code 1)
+  make[1]: *** [.f90.o] Error 1
 \end{Verbatim}
 What is the problem?
 
 \medskip
 
 {\em
-  One of the variables for the \file{makefile} has not been set, so
-  \cmd{make} expands it to the empty string.
+  One of the variables for \name{make} has not been set, so
+  \name{make} expands it to the empty string.
   Most probably you forgot to specify a module in
   \file[Makefile.local]{src/Makefile.local}.
   One possibility is that you have upgraded
@@ -2280,12 +2348,12 @@ What is the problem?
 \subsubsection{The code doesn't compile,}
 \ldots there is a problem with \var{mvar}:
 \begin{Verbatim}
-make start.x run.x
-f95 -O4 -u -Wc,-malign-double    -c cdata.f90
-Error: cdata.f90, line 71: Implicit type for MVAR
-       detected at MVAR@)
-[f95 terminated - errors found by pass 1]
-make[1]: *** [cdata.o] Error 2
+  make start.x run.x
+  f95 -O4 -u   -c cdata.f90
+  Error: cdata.f90, line 71: Implicit type for MVAR
+         detected at MVAR@)
+  [f95 terminated - errors found by pass 1]
+  make[1]: *** [cdata.o] Error 2
 \end{Verbatim}
 
 \medskip
@@ -2295,9 +2363,9 @@ make[1]: *** [cdata.o] Error 2
   \file[bin/]{\$PENCIL_HOME/bin}) is in your path.
   If this doesn't help, there may be an {\it empty} \file{cparam.inc}
   file in your \file[src/]{src} directory.
-  Remove \file{cparam.inc} and try again.
-  (Note that \file{cparam.inc} is automatically generated.)\footnote{Wolfgang,
-    I just added \file{*.inc} to the \file{Makefile}.}
+  Remove \file{cparam.inc} and try again
+  (Note that \file{cparam.inc} is automatically generated from the
+  \file{Makefile}).
 }
 
 
@@ -2307,9 +2375,9 @@ make[1]: *** [cdata.o] Error 2
 
 \subsubsection{\file{run.csh} doesn't work:}
 \begin{Verbatim}
-Invalid character ''' in NAMELIST input
-Program terminated by fatal I/O error
-Abort
+  Invalid character ''' in NAMELIST input
+  Program terminated by fatal I/O error
+  Abort
 \end{Verbatim}
 
 {\em
@@ -2321,24 +2389,27 @@ Abort
 \subsubsection{Namelist problem under IRIX}
 Under IRIX, I get
 \begin{Verbatim}
-lib-4001 : UNRECOVERABLE library error 
-
-Encountered during a namelist READ from unit 1
-Fortran unit 1 is connected to a sequential formatted text file: "run.in"
-IOT Trap
-Abort
+  lib-4001 : UNRECOVERABLE library error 
+  
+  Encountered during a namelist READ from unit 1
+  Fortran unit 1 is connected to a sequential formatted text file: "run.in"
+  IOT Trap
+  Abort
 \end{Verbatim}
 
 This is a compiler bug that has been found at least with the MIPSpro F90
 compiler version 7.3.1.3m.
-It has been reported to SGI.
+It has been reported to SGI; we hope that a fixed compiler version will
+appear soon.
 
 The error comes and goes, depending on the configuration (and possibly
 even the input parameters) you are using.
-For the time being, you will need to turn your namelist input (at least
+Until SGI fix their compiler, you can experiment with adding new variables
+to the module \name{Param_IO}; this has solved the problem once for us.
+If this trick does not help,
+you will need to turn your namelist input (at least
 \file{run.in} into Fortran statements, include them into a replacement
 version of \file{param_io.f90}, and recompile each time you make changes.
-We hope that a fixed compiler version will appear soon.
 
 
 % ---------------------------------------------------------------------- %
@@ -2347,11 +2418,11 @@ We hope that a fixed compiler version will appear soon.
 
 \subsubsection{\file{start.pro} doesn't work:}
 \begin{Verbatim}
-Reading grid.dat..
-Reading param.nml..
-% Expression must be a structure in this context: PAR.
-% Execution halted at:  $MAIN$            104
-/home/brandenb/pencil-code/runs/forced/hel1/../../../idl/start.pro
+  Reading grid.dat..
+  Reading param.nml..
+  \% Expression must be a structure in this context: PAR.
+  \% Execution halted at:  \$MAIN\$            104
+  /home/brandenb/pencil-code/runs/forced/hel1/../../../idl/start.pro
 \end{Verbatim}
 
 \medskip
@@ -2368,22 +2439,30 @@ Reading param.nml..
 
 \begin{thebibliography}{9}
 
-\bibitem{2Nstorage} Williamson, J. H., J. Comp. Phys. 35, 48 (1980)
-\bibitem{Lele92} Lele, S. K., J. Comp. Phys. 103, 16 (1992)
-\bibitem{NS90} Nordlund, \AA., Stein, R. F., Comput. Phys. Commun. 59, 119 (1990)
-\bibitem{Ref-3} Brandenburg, A., et al., J. Fluid Mech. 306, 325 (1996)
-\bibitem{BNST95} Brandenburg, A., et al., Astrophys. J., 446, 741 (1995)
-\bibitem{NR} Press, W., Flannery, B., Teukolsky, S. \& Vetterling, W. 1988
-Numerical Recipes, Cambridge University Press.
-\bibitem{Ref-1} Brandenburg, A., in Advances in non-linear dynamos,
-ed. A. Ferriz-Mas \& M. N\'u\~nez Jim\'enez (2002);
-\url{http://arXiv.org/abs/astro-ph/0109497}
-\bibitem{Ref-4} Brandenburg, A., Dobler, W., Astron. Astrophys. 369, 329 (2001)
-\bibitem{SH88} Stanescu, D., Habashi, W. G., J. Comp. Phys. 143, 674 (1988)
-\bibitem{KR80} Krause, F., R\"adler, K.-H., Mean-Field
-Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory,
-Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
-\bibitem{Ref-2} Brandenburg, A., Astrophys. J. 550, 824 (2001)
+\bibitem{2Nstorage} Williamson, J. H.,
+  \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
+\bibitem{NS90} Nordlund, \AA., Stein, R. F.,
+  \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
+\bibitem{BNST95} Brandenburg, A., et al.,
+  \emph{Astrophys. J.} \textbf{446}, 741 (1995)
+\bibitem{Ref-3} Brandenburg, A., et al.,
+  \emph{J. Fluid Mech.} \textbf{306}, 325 (1996)
+%\bibitem{NR} Press, W., Flannery, B., Teukolsky, S. \& Vetterling, W. 1988
+%Numerical Recipes, Cambridge University Press.
+\bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
+  \emph{Numerical Recipes in Fortran 90}, Cambridge (1988)
+\bibitem{Ref-1} Brandenburg, A., in \emph{Advances in non-linear dynamos},
+  ed. A. Ferriz-Mas \& M. N\'u\~nez Jim\'enez (2002);
+  \url{http://arXiv.org/abs/astro-ph/0109497}
+\bibitem{Ref-4} Brandenburg, A., Dobler, W.,
+  \emph{Astron. Astrophys.} \textbf{369}, 329 (2001)
+\bibitem{SH88} Stanescu, D., Habashi, W. G.,
+  \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
+\bibitem{KR80} Krause, F., R\"adler, K.-H.,
+  \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
+  Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
+\bibitem{Ref-2} Brandenburg, A.,
+  \emph{Astrophys. J.} \textbf{550}, 824 (2001)
 
 \end{thebibliography}
 
@@ -2401,8 +2480,8 @@ Shown is (among other quantities) the wall clock time per mesh point
 (excluding the ghost zones) and per full 3-stage time step.
 
 As these results were assembled during the development phase of the code
-(that hasn't really finished yet\ldots), you may not get the same numbers,
-but they should give some orientation of what to expect for you specific
+(that hasn't really finished yet,\ldots), you may not get the same numbers,
+but they should give some orientation of what to expect for your specific
 application on your specific hardware.
 Note that the timer currently used will overflow on some machines (after
 about 50 minutes), so you should not blindly trust the timings given by
@@ -2443,7 +2522,8 @@ the code.
    4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
    4 & fe1   & 3.39 &  $32^3$ & magn/noentro &        & 16-aug-02 & AB \\
    4 & Rasm. & 2.02 &  $64^3$ & magn/noentro &  2x2   &  8-sep-02 & AB \\
-   4 & Mhd   & 8.2  &  $64^2\times16$ & nomagn/entro & & 23-jul-02 & AB \\
+   4 & Mhd   & 8.2  &  $64^2\times16$
+                              & nomagn/entro &        & 23-jul-02 & AB \\
    4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
    8 & fe1   & 3.15 &  $64^3$ & magn/noentro &  1x8   &  8-sep-02 & AB \\
    8 & fe1   & 2.36 &  $64^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
@@ -2522,6 +2602,9 @@ The machines we have used can be characterized as follows:
   4\,GB memory per node (i.\,e.~1\,GB per CPU)
   OSF1 4.0;
   native MPI
+\item[Sander:]
+\item[Rasm.:]
+\item[Gridur:]
 \end{description}
 
 Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
@@ -2589,23 +2672,27 @@ well-defined sample problems.
 
 \section{Some specific initial conditions}
 
-\subsection{Random velocity or magnetic fields: \code{inituu} or \code{initaa='gaussian-noise'}}
+\subsection{Random velocity or magnetic fields}
 
-The $\Av$-vector is set to normally distributed, uncorrelated(?) random
+Obtained with \code{inituu='gaussian-noise'}
+(or \code{initaa='gaussian-noise'}).
+The vector $\uv$ (or $\Av$) is set to normally distributed, uncorrelated random
 numbers in all meshpoints for all three components.
 The power spectrum of
-$\Av$ increases then quadratically with wavenumber $k$ (without cutoff)
-and the power spectrum of $\Bv$ increases like $k^4$.
+$\uv$ ($\Av$) increases then quadratically with wavenumber $k$ (without cutoff)
+and the power spectrum of $\vec{\omega}$ (or $\Bv$) increases like $k^4$.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Beltrami fields: \code{inituu} or \code{initaa='Beltrami-z'}}
+\subsection{Beltrami fields}
+Obtained with \code{inituu='Beltrami-z'} or \code{initaa='Beltrami-z'}.
 
 \begin{equation}
-\Av=(\cos z,\;\sin z,\;0),\quad\mbox{or}\quad
-\uv=(\cos z,\;\sin z,\;0)
-\label{Beltrami}
+  \Av=(\cos z,\;\sin z,\;0),\quad\mbox{or}\quad
+  \uv=(\cos z,\;\sin z,\;0)
+  \label{Beltrami}
 \end{equation}
+
 
 % ---------------------------------------------------------------------- %
 
@@ -2642,7 +2729,7 @@ is Dirac's delta function.
 Any smoothed versions of $\Heavi(x)$ and $\delta(x)$ will do, as long as
 the consistency condition (\ref{Heavi-Dirac}) is satisfied.
 E.\,g.~the pairs
-\begin{equation}
+\begin{equation} \label{delta-Gaussian}
   \delta_\varepsilon(x)
   = \frac{1}{\sqrt{2\pi\varepsilon^2}} e^{-\frac{x^2}{2\varepsilon^2}} \; ,
   \quad
@@ -2658,6 +2745,11 @@ or
   = \frac{1}{2} \left( 1 + \tanh\frac{x}{\varepsilon} \right)
 \end{equation}
 are quite popular.
+Note, however, that the Gaussian profile (\ref{delta-Gaussian}) is the
+only one that yields a radially symmetric (with respect to the distance
+from the central line of the torus) magnetic field profile
+$B_varphi = B_\varphi(\sqrt{(r{-}R)^2{+}z^2})$
+if $\varepsilon$ is sufficiently small.
 
 In Cartesian coordinates, the vector potential (\ref{Av-flux-ring-cyl})
 takes the form
@@ -2690,7 +2782,7 @@ Use \var{grav_profile}='linear' to get
 \end{equation}
 where $\nu_{\rm g}$ is the vertical epicyclic frequency. For a Keplerian
 accretion disc, $\nu_{\rm g}=\Omega$. For galactic discs,
-$\nu_{\rm g}=0.5\Omega$ is respresentative of the solar neighborhood.
+$\nu_{\rm g}=0.5\Omega$ is representative of the solar neighborhood.
 
 The value of $z_\infty$ is determined such that $\varrho=\varrho_0$ and
 $c_{\rm s}^2=c_{\rm s0}^2$ at $z=z_{\rm ref}$. This depends on the
@@ -2940,7 +3032,7 @@ velocity for the model for $0<t<50$.
 \begin{figure}[hbtp]
   \centering
   \includegraphics%
-    [width=1\textwidth,keepaspectratio]%
+    [width=0.8\textwidth,keepaspectratio]%
     {pvert2}
   \caption{Like in Fig.~\ref{Fig-pvert0}, but at time $t=50$.
   }
@@ -2952,7 +3044,7 @@ velocity for the model for $0<t<50$.
 \begin{figure}[hbtp]
   \centering
   \includegraphics%
-    [width=0.7\textwidth,keepaspectratio]%
+    [width=0.5\textwidth,keepaspectratio]%
     {evol}
   \caption{Time evolution of rms and maximum velocity for the model
     \file[conv-slab/]{samples/conv-slab}.
@@ -2970,7 +3062,7 @@ horizontal sections for time $t=50$.
 \begin{figure}[hbtp]
   \centering
   \includegraphics%
-    [width=0.8\textwidth,height=0.65\textheight,keepaspectratio]%
+    [width=0.65\textwidth,height=0.65\textheight,keepaspectratio]%
     {hsect2}
   \caption{Horizontal section $z=0.352$ at $t=50$.
     Left: velocity field.
@@ -2986,7 +3078,7 @@ horizontal sections for time $t=50$.
 \begin{figure}[hbtp]
   \centering
   \includegraphics%
-    [width=0.8\textwidth,height=0.65\textheight,keepaspectratio]%
+    [width=0.65\textwidth,height=0.65\textheight,keepaspectratio]%
     {vsect2}
   \caption{Vertical section $y=0.516$ at $t=50$.
     Left: velocity field.
@@ -3003,12 +3095,19 @@ horizontal sections for time $t=50$.
 
 \section{Details about the numerical scheme}
 
-\subsection{The 2N-scheme}
+\subsection{Sixth-order spatial derivatives}
+\index{6th-order derivatives}
+\label{S-6th-order}
+
+
+\subsection{The 2N-scheme for time-stepping}
 \index{2N-scheme}
+\label{S-2N-scheme}
 
 For time stepping, higher-order schemes are necessary in order to reduce
-the amplitude error of the scheme and to allow longer time steps. Usually
-such schemes require large amounts of memory.
+the amplitude and phase errors of the scheme and, to some extent, to allow
+longer time steps.
+Usually such schemes require large amounts of memory.
 However, we here use the memory-effective $2N$-schemes that require only
 two sets of variables to be held in memory.
 Such schemes work for
@@ -3025,13 +3124,11 @@ The $2N$-schemes construct an approximation to the solution
   u^{(n)} \equiv u(t_n)
 \end{equation}
 according to the iterative procedure
-\begin{equation}
-  w_i=\alpha_i w_{i-1}+\delta t\,F(u_{i-1},t_{i-1}),
-\end{equation}
-\begin{equation}
-  u_i=u_{i-1}+\beta_i w_i.
+\begin{eqnarray}
+  w_i &=& \alpha_i w_{i-1}+\delta t\,F(u_{i-1},t_{i-1}) \;, \\
+  u_i &=& u_{i-1}+\beta_i w_i \;.
 \label{iterform0}
-\end{equation}
+\end{eqnarray}
 For a three-step scheme we have $i=1,...,3$.
 In order to advance the variable $u$ from $u^{(n)}$ at time $t^{(n)}$
 to $u^{(n+1)}$ at time $t^{(n+1)}=t^{(n)}+\delta t$ we set in \Eq{iterform0}
@@ -3098,18 +3195,19 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
 
 \section{Switchable modules}
 
-Table~\ref{Tab-modules} listas the available physics and technical
+Table~\ref{Tab-modules} lists the available physics and technical
 modules.
 
 % ---------------------------------------------------------------------- %
-\begin{table}
-  \small
-  \centering
-  \caption{%
-    Switchable modules as of September 2002.
-  }
+%\begin{table}
+\begin{center}
+  \begin{small}
+%  \caption{%
+%    Switchable modules as of September 2002.
+%  }
   \label{Tab-modules}
-  \begin{tabular}{lp{0.6\textwidth}}
+%  \begin{tabular}{lp{0.6\textwidth}}
+  \begin{longtable}{lp{0.6\textwidth}}
     \toprule
     hydro.f90      & Hydrodynamics: add variable $\uv$ with equation of
                      motion; \\
@@ -3130,6 +3228,11 @@ modules.
                      advection-diffusion equation for transport of a
                      passive scalar; \\
     nopscalar.f90  & no passive scalar, no variable $\ln c$. \\
+    \midrule
+    radiation.f90  & Radiative transfer in the flux-limited diffusion
+                     approximation.
+                     \emph{Still experimental and not working correctly}. \\
+    noradiation.f90& No radiative transfer. \\
     \midrule
     \midrule
     forcing.f90    & Add a forcing function to rhs of equation of motion
@@ -3156,8 +3259,9 @@ modules.
                      you don't need this boundary condition. \\
     \midrule
     io_dist.f90    & Distributed input/output: each processor writes to
-                     its own directory; currently there are no
-                     alternatives. \\
+                     its own directory. \\
+    io_mpio.f90    & Parallel input/output through \name{MPI-IO}.
+                     \emph{Still experimental}. \\
     \midrule
     mpicomm.f90    & Use \name{MPI} for communication on multiprocessor
                      machines; \\
@@ -3174,8 +3278,11 @@ modules.
     nodebug.f90    & don't use these debugging routines, avoiding any
                      C-Fortran interoperability problems. \\
     \bottomrule
-  \end{tabular}
-\end{table}
+  \end{longtable}
+%  \end{tabular}
+  \end{small}
+\end{center}                                
+%\end{table}
 % ---------------------------------------------------------------------- %
 
 
@@ -3183,6 +3290,7 @@ modules.
 % ====================================================================== %
 
 \section{Startup and Run-Time Parameters}
+\label{S-all-parameters}
 
 \subsection{List of startup parameters for `start.in'}
 \label{S-all-init-params}
@@ -3399,7 +3507,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{isothtop} [$0$]
                & flag for isothermal top layer for \code{initss=piecew-poly}. \\
   \var{khor_ss} [$1.$]
-               & horizontal wave number for \code{initss=hexagonal} \\
+               & horizontal wave number for \code{pertss=hexagonal} \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{magnetic_init_pars}} \\
@@ -3438,10 +3546,10 @@ double precision, $\varepsilon\approx10^{-15}$.
                & amplitude for some types of initial magnetic fields. \\
   \var{amplaa2} [$0.$]
                & amplitude for some types of magnetic field perturbation. \\
-  \var{fring\{1,2\}} [$0.$], \\
-  \var{Iring\{1,2\}} [$0.$], \\
-  \var{Rring\{1,2\}} [$1.$], \\
-  \var{wr\{1,2\}} [$0.3$]
+  \var[fring1,fring2]{fring\{1,2\}} [$0.$], \\
+  \var[Iring1,Iring2]{Iring\{1,2\}} [$0.$], \\
+  \var[Rring1,Rring2]{Rring\{1,2\}} [$1.$], \\
+  \var[wr1,wr2]{wr\{1,2\}} [$0.3$]
                & flux, current, outer and inner radius of flux ring 1/2;
                  see Sect.~\ref{fluxrings}. \\
   \var{radius} [$0.1$]
@@ -3490,14 +3598,14 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{kx_lncc} [$1.$], \\
   \var{ky_lncc} [$1.$], \\
   \var{kz_lncc} [$1.$]
-               & Wave numbers for some types of initial concentration. \\
+               & wave numbers for some types of initial concentration. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{shear_init_pars}} \\
 \midrule
   \var{qshear} [$0.$]
                & \label{qshear-init}%
-                 Degree of shear for shearing-box simulations (the
+                 degree of shear for shearing-box simulations (the
                  shearing-periodic boundaries are the $x$-boundaries and
                  are sheared in the $y$-direction). The shear velocity
                  is ${\bf U}=-q\Omega x\,{\hat{\bf y}}$. \\
@@ -3517,7 +3625,7 @@ Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
 Not all parameters are used for a given scenario.
 This list is not necessarily up to date; also, in many cases it can only
-give an idea of the corresponding initial state; to get more insight and
+give an idea of the corresponding setup; to get more insight and
 the latest set of parameters, you need to look at the code.
 
 
@@ -3531,11 +3639,11 @@ the latest set of parameters, you need to look at the code.
   \multicolumn{2}{c}{Namelist \name{init_pars}}\\
 \midrule
   \var{cvsid} [\code{''}]
-               & the \name{CVS} identification string, which allows you to
+               & \name{CVS} identification string, which allows you to
                  keep track of the version of \file{run.in}. \\
   \var{ip} [$14$]
                & (anti-)verbosity level: \code{ip=1} produces lots of
-                 diagnostic output, \code{ip=14} virtually none. \\
+                 additional diagnostic output, \code{ip=14} virtually none. \\
   \var{nt} [$0$]
                & number of time steps to run (at most). \\
   \var{it1} [$10$]
@@ -3669,7 +3777,7 @@ the latest set of parameters, you need to look at the code.
                  The function $K(z)$ is not discontinuous, as the
                  transition between the different values is smoothed over
                  the width \var{widthss}.
-                 if \var{hcond1} or \var{hcond2} are not set, they are
+                 If \var{hcond1} or \var{hcond2} are not set, they are
                  calculated according to the polytropic indices of the
                  initial profile, $K\propto m{+}1$. \\
   \var{widthss} [start]
@@ -3757,7 +3865,8 @@ the latest set of parameters, you need to look at the code.
                  \item[\code{'irrotational'}] (irrotational forcing),
                  \item[\code{'helical'}] (helical forcing),
                  \item[\code{'fountain'}] (forcing of ``fountain flow'';
-                   cf.~MNRAS 276, 651 for similar reference),
+                   cf.~\emph{MNRAS} \textbf{276}, 651 (1995)
+                   for a reference),
                  \item[\code{'horizontal-shear'}] (forcing localized
                    horizontal sinusoidal shear).
                  \end{description}
@@ -3813,7 +3922,7 @@ the latest set of parameters, you need to look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $ $}
+$ $Id: manual.tex,v 1.111 2002-09-30 09:45:24 dobler Exp $ $}
 
 
 \end{document}
@@ -3827,7 +3936,7 @@ $ $Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $ $}
 % LocalWords:  SPH CVS tex wd MHD makeindex pdflatex MPI Dobler nonperiodic src
 % LocalWords:  nonmagnetic nomagnetic IDL DX OpenDX csh Perl Perl Cygwin tgz mv
 % LocalWords:  tarball unix somewhere cd gunzip xf mhd passwd CVSROOT cshrc sh
-% LocalWords:  setenv cvs cvspass code's dP sourceme mkdir tmp tmp struct
+% LocalWords:  setenv cvs cvspass code's dP sourceme mkdir tmp tmp struct Weyl
 % LocalWords:  isotrop keepaspectratio spher gravz README cparam idl dx nograv
 % LocalWords:  nohydro nodensity noentropy rhs noforcing rr noglobal fft FFT io
 % LocalWords:  nofft dist mpicomm nompicomm DFUNDERSCORE nodebug mkfile var dat
@@ -3858,4 +3967,6 @@ $ $Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $ $}
 % LocalWords:  nygrid nzgrid ccc widthss brandenb Nils Pariev tcsh ls ln rcool
 % LocalWords:  cincinnatus CEST mx mz lnrho pf nprocy ncpus nprocz cooltype cT
 % LocalWords:  nprocx MIPSpro sourcing unsetenv alltt wsnaps timesteps kB Fbot
-% LocalWords:  ttransient fe aug Gridur isentropy Eqs
+% LocalWords:  ttransient fe aug Gridur isentropy Eqs idxsty uplink equ sep nr
+% LocalWords:  zaverages Flannery Teukolsky Vetterling rllrlrll Rasm ptimings
+% LocalWords:  Marsaglia
