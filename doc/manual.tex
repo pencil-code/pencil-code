@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.174 2003-06-24 16:19:08 theine Exp $
+%%  CVS: $Id: manual.tex,v 1.175 2003-06-24 18:54:59 theine Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-24 16:19:08 $ $,~ $ $Revision: 1.174 $ $}
+\date{$ $Date: 2003-06-24 18:54:59 $ $,~ $ $Revision: 1.175 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-24 16:19:08 $ $,~ $ $Revision: 1.174 $ $}
+  \emph{$ $Date: 2003-06-24 18:54:59 $ $,~ $ $Revision: 1.175 $ $}
 
   \vspace{\stretch{3}}
 
@@ -544,7 +544,7 @@ routines for changing the number of processors, as well as
 the shearing sheet approximation and the flux-limited diffusion
 approximation for radiative transfer
 were implemented by Nils Erland L.\ Haugen (University of Trondheim).
-Toby Heinemann added the Feautrier method for radiative transfer as well as
+Tobi Heinemann added the Feautrier method for radiative transfer as well as
 hydrogen ionization.
 Anders Johansen and Anja Andersen contributed to the implementation of
 the dust equations.
@@ -3089,7 +3089,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-06-24 16:19:08 $ $,~ $ $Revision: 1.174 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-06-24 18:54:59 $ $,~ $ $Revision: 1.175 $ $}}}
 
 \section{Timings}
 
@@ -4080,19 +4080,60 @@ Summing up everything, we get the total specific entropy
 \left(\frac{T}{T_0}\right)^{3/2}\right]+\frac{5}{2}\right)\ .
 \end{align}
 Solving for $T$ gives
-\begin{align}
-\frac{3}{2}\ln\frac{T}{T_0}&={\textstyle\frac{\frac{s}{s_0}
-+\sum_ix_i\ln\frac{x_i}{\rho_i}}{x_{\rm tot}}}
-+\ln\rho-\frac{5}{2} \\
-&={\textstyle\frac{\frac{s}{s_0}
-+(1-y)\ln\frac{1-y}{\rho_{\rm H}}+y\ln\frac{y^2}{\rho_{\rm e}\rho_{\rm p}}
-+x_{\rm He}\ln\frac{x_{\rm He}}{\rho_{\rm He}}}{x_{\rm tot}}}
-+\ln\rho-\frac{5}{2}
-\end{align}
+\[
+\frac{3}{2}\ln\frac{T}{T_0}=\frac{s/s_0
++\sum_ix_i\ln x_i/\rho_i}{x_{\rm tot}}
++\ln\rho-\frac{5}{2}\ .
+\]
 Using this expression and the constants defined above, we may obtain the
 ionization fraction $y$ for given $\ln\rho$ and $s$ by finding the root of
 \[
-f(y)=\ln\left[\frac{\rho_{\rm e}}{\rho}\left(\frac{T(y)}{T_0}\right)^{3/2}\frac{1-y}{y^2}\right]-\frac{T_0}{T(y)}
+F=\ln\left[\frac{\rho_{\rm e}}{\rho}\left(\frac{T}{T_0}\right)^{3/2}
+           \frac{1-y}{y^2}\right]-\frac{T_0}{T}\ .
+\]
+The derivative with respect to $y$ for Newton-Raphson is
+\[
+\frac{\partial F}{\partial y}
+=\left(\frac{3}{2}+\frac{T_0}{T}\right)\frac{\partial\ln T/T_0}{\partial y}
+ -\frac{1}{1-y}-\frac{2}{y}\ ,
+\]
+where
+\[
+\frac{\partial\ln T/T_0}{\partial y}
+=\frac{\frac{2}{3}\left(\ln\rho_{\rm H}/\rho_{\rm p}-F-T_0/T\right)-1}
+      {1+y+x_{\rm He}}\ .
+\]
+In order to compute the pressure gradient, the derivative of $y$ with respect
+to $\ln\rho$ and $s$ needs to be known.
+\[
+\frac{\partial\ln P}{\partial\ln\rho}
+=\frac{1}{1+y+x_{\rm He}}\frac{\partial y}{\partial\ln\rho}
++\frac{\partial\ln T}{\partial\ln\rho}
++\frac{\partial\ln T}{\partial y}\frac{\partial y}{\partial\ln\rho}+1
+\]
+\[
+\frac{\partial\ln P}{\partial s}
+=\frac{1}{1+y+x_{\rm He}}\frac{\partial y}{\partial s}
++\frac{\partial\ln T}{\partial s}
++\frac{\partial\ln T}{\partial y}\frac{\partial y}{\partial s}
+\]
+Since $F=0$ for all desired solutions $(y,\ln\rho,s)$ we also have
+\[
+dF=\left(\frac{\partial F}{\partial\ln\rho}\right)_{s,y}\!\delta\ln\rho
+   +\left(\frac{\partial F}{\partial s}\right)_{\rho,y}\!\delta s
+   +\left(\frac{\partial F}{\partial y}\right)_{\rho,s}\!\delta y=0\ ,
+\]
+and thus
+\[
+\frac{\partial y}{\partial\ln\rho}
+=\left(\frac{\delta y}{\delta\ln\rho}\right)_{\delta s=0}
+=-\frac{(\partial F/\partial\ln\rho)_{s,y}}{(\partial F/\partial y)_{\rho,s}}
+\]
+and
+\[
+\frac{\partial y}{\partial s}
+=\left(\frac{\delta y}{\delta s}\right)_{\delta\ln\rho=0}
+=-\frac{(\partial F/\partial s)_{\rho,y}}{(\partial F/\partial y)_{\rho,s}}
 \]
 
 % --------------------------------------------------------------------- %
@@ -5290,7 +5331,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.174 2003-06-24 16:19:08 theine Exp $ $}
+$ $Id: manual.tex,v 1.175 2003-06-24 18:54:59 theine Exp $ $}
 
 
 \end{document}
