@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-01-26 16:06:12 $
-# $Revision: 1.7 $
+# $Date: 2003-01-27 08:47:45 $
+# $Revision: 1.8 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -44,7 +44,6 @@ use strict;
 use Getopt::Long;
 
 my (%opts);			# Variables written by GetOptions
-my $result;
 my (%emails,%pos,%neg,%sendmailto); # Info on mailing if tests fail
 
 ## Process command line
@@ -85,6 +84,7 @@ my $first = 1;
 foreach my $host (@ARGV) {
     # Identify host
     my ($shost) = ($host =~ /([^.]*)/); # host name sans domain
+    $shost = "\u$shost";
     if ($html) {
 	unless ($first) { print "</pre>\n<p>\n<hr>\n<p>\n" };
 	print "<h2>$shost:</h2>\n\n<pre>\n";
@@ -104,13 +104,16 @@ foreach my $host (@ARGV) {
     open(POUT, "@cmd' |");
 #    print "<",join("> <",@cmd,">\n");
 #    print "<@cmd'>\n");
-    my $line;
+    my ($line,$result);
     while (defined($line=<POUT>)) {
 	print $line;
 	$result .= $line;
     }
     close(POUT);
-    $first = 0;
+    # Send emails if necessary
+    notify_on_error($result,$shost);
+
+   $first = 0;
 }
 
 ## Print footer
@@ -121,42 +124,6 @@ if ($html) {
 </html>
 END_FOOT
 }
-
-## Check for errors and send emails
-if ($emails && ($result =~ /^Failed ([0-9]+) test/m)) {
-    my $nerrors = $1;
-    if ($debug) { print STDERR "Checking who to alert by email\n" };
-    parse_emails($emails);
-    # Analyse
-    my ($main,$summary) = split(/^----*\s?\n(?=Failed)/m,$result);
-    if (defined($summary)) {
-	# Extract list of failed directories
-	my @failures = split(/\n/,$summary);
-	($nerrors) = ($failures[0] =~ /Failed ([0-9]+) test/);
-	@failures = grep /^\s*\S+\s\(.*\)\s*$/, @failures;
-	@failures = map { $_ =~ s/^\s*(\S*).*/$1/; $_ } @failures;
-	foreach my $address (keys %emails) {
-	    foreach my $fail (@failures) {
-		my $def_matches = ! any_match($fail,$neg{''}); # default rule
-		my $pos_matches = any_match($fail,$pos{$address});
-		my $neg_matches = any_match($fail,$neg{$address});
-		if (($def_matches || $pos_matches) && ! $neg_matches) {
-		    if ($debug) { 
-			print STDERR "...", substr($fail,-15,15),
-			  ": \$sendmailto{$address}++\n";
-		    }
-                    $sendmailto{$address}++;
-		}
-	    }
-	}
-	foreach my $address (keys %sendmailto) {
-	    send_mail($address,$nerrors,$summary,$main);
-	}
-    } else {
-	warn "Can't split result string --- strange";
-    }
-}
-
 
 # ---------------------------------------------------------------------- #
 sub usage {
@@ -173,6 +140,45 @@ sub usage {
         last;
     }
     $_;
+}
+# ---------------------------------------------------------------------- #
+sub notify_on_error{
+## Check for errors and send emails
+    my $result = shift;
+    my $host  = shift;
+    if ($emails && ($result =~ /^Failed ([0-9]+) test/m)) {
+	my $nerrors = $1;
+	if ($debug) { print STDERR "Checking who to alert by email\n" };
+	parse_emails($emails);
+	# Analyse
+	my ($main,$summary) = split(/^----*\s?\n(?=Failed)/m,$result);
+	if (defined($summary)) {
+	    # Extract list of failed directories
+	    my @failures = split(/\n/,$summary);
+	    ($nerrors) = ($failures[0] =~ /Failed ([0-9]+) test/);
+	    @failures = grep /^\s*\S+\s\(.*\)\s*$/, @failures;
+	    @failures = map { $_ =~ s/^\s*(\S*).*/$1/; $_ } @failures;
+	    foreach my $address (keys %emails) {
+		foreach my $fail (@failures) {
+		    my $def_matches = ! any_match($fail,$neg{''});
+		    my $pos_matches = any_match($fail,$pos{$address});
+		    my $neg_matches = any_match($fail,$neg{$address});
+		    if (($def_matches || $pos_matches) && ! $neg_matches) {
+			if ($debug) { 
+			    print STDERR "...", substr($fail,-15,15),
+			      ": \$sendmailto{$address}++\n";
+			}
+			$sendmailto{$address}++;
+		    }
+		}
+	    }
+	    foreach my $address (keys %sendmailto) {
+		send_mail($address,$nerrors,$host,$summary,$main);
+	    }
+	} else {
+	    warn "Can't split result string --- strange";
+	}
+    }
 }
 # ---------------------------------------------------------------------- #
 sub parse_emails {
@@ -219,6 +225,7 @@ sub send_mail {
 # Send an email to the given address
     my $address = shift;
     my $nerrors = shift;
+    my $host    = shift;
     my $text1   = shift;
     my $text2   = shift;
     my $mailer;
@@ -230,12 +237,12 @@ sub send_mail {
     }
 
     my $plurals = ($nerrors<=1 ? '' : 's');
-    if ($debug) {
-	print STDERR
-	  "$mailer -s 'Pencil-code: $nerrors error$plurals from autotest' "
-	  . "$address\n" };
-    open (MAIL,
- 	  "| $mailer -s '$nerrors errors from pencil-code autotest' $address");
+    my $cmdline = 
+      "$mailer "
+      . "-s '$nerrors error$plurals from pencil-code autotest on $host' "
+      . "$address";
+    if ($debug) { print STDERR "$cmdline\n" };
+    open (MAIL, "| $cmdline");
     print MAIL "$text1\n";
     print MAIL "-" x 70, "\n";
     print MAIL "$text2\n";
