@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.20 2003-01-24 01:04:51 nilshau Exp $
+! $Id: wsnaps.f90,v 1.21 2003-02-19 09:11:56 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -128,6 +128,17 @@ contains
          if (vec_spec) call power(a,'a')
          if (ab_spec)  call powerhel(a,'mag')
          if (ou_spec)  call powerhel(a,'kin')
+         if (oned) then
+            if (vel_spec) call power_1d(a,'u',1)
+            if (mag_spec) call power_1d(a,'b',1)
+            if (vec_spec) call power_1d(a,'a',1)
+            if (vel_spec) call power_1d(a,'u',2)
+            if (mag_spec) call power_1d(a,'b',2)
+            if (vec_spec) call power_1d(a,'a',2)
+            if (vel_spec) call power_1d(a,'u',3)
+            if (mag_spec) call power_1d(a,'b',3)
+            if (vec_spec) call power_1d(a,'a',3)
+         endif
          !
          !  Doing structure functions
          !
