@@ -1,6 +1,14 @@
-;  $Id: pc_varcontent.pro,v 1.12 2005-03-09 09:17:55 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.13 2005-03-10 16:26:26 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
+
+;
+;
+;
+;
+
+default,ifcr,0
+
 
 ; 
 ;  Read the positions of variables in f
