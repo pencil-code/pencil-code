@@ -15,18 +15,18 @@
 ;;;  IF FILENAME doesn't exist, try 'data/FILENAME' and
 ;;;  'data/averages/FILENAME'.
 ;;;  Examples:
-;;;    pvv_phiavg                   ; plot uu data from PHIAVG1,
-;;;    pvv_phiavg, /BB              ; plot bb data from PHIAVG1,
-;;;    pvv_phiavg, 'PHIAVG3'        ; plot uu data from PHIAVG3,
-;;;    pvv_phiavg, 'PHIAVG3', /BB   ; plot bb data from PHIAVG3,
-;;;    pvv_phiavg, avg              ; use data from struct AVG
-;;;    pvv_phiavg, avg, /STAT       ; print some rms values
+;;;    pvv_phiavg                    ; plot uu data from PHIAVG1,
+;;;    pvv_phiavg, /BB               ; plot bb data from PHIAVG1,
+;;;    pvv_phiavg, 'PHIAVG3'         ; plot uu data from PHIAVG3,
+;;;    pvv_phiavg, 'PHIAVG3', /BB    ; plot bb data from PHIAVG3,
+;;;    pvv_phiavg, avg               ; use data from struct AVG
+;;;    pvv_phiavg, avg, /STAT, OMEGA=.5 ; print some rms values
 ;;;  Advanced example:
 ;;;    avg=tavg_phiavg([800.,1e10])
 ;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT
 
 pro pvv_phiavg, arg, BB=bb, UU=uu, $
-                MARGIN=margin, RADII=radii, $
+                MARGIN=margin, RADII=radii, OMEGA=omega, $
                 CHARSIZE=charsize, MAXVEC=maxvec, $
                 STAT=stat, QUIET=quiet
 
@@ -40,8 +40,14 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
   default, margin, 0.05
   default, charsize, !p.charsize
   default, maxvec, [20,40]
-  default, STAT, stat
+  default, stat, 0
   default, quiet, 0
+  if (n_elements(omega) eq 0) then begin
+    omega = 1.
+    noomega = 1
+  endif else begin
+    noomega = 0
+  endelse
 
 
   s = size(arg)
@@ -109,47 +115,79 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
   if (stat) then begin
     nr = n_elements(avg.rcyl)
     nz = n_elements(avg.z)
-    ;; weights for use with rms(weight*var):
-    weight = spread(sqrt(avg.rcyl),1,nz)
-    weight = weight/rms(weight)
-    ; ;; weights for use with sqrt(mean(weight*var^2)):
-    ;  weight = spread(avg.rcyl,1,nz)
-    ;  weight = weight/mean(weight)
+    ; ;; weights for use with rms(weight*var):
+    ; weight = spread(sqrt(avg.rcyl),1,nz)
+    ; weight = weight/rms(weight)
+    ;; weights for use with sqrt(mean(weight*var^2)):
+    weight = spread(avg.rcyl,1,nz)
+    weight = weight/mean(weight)
 
     ;; weights for averaging over sphere
-    ;;   r_sphere < radii[0]
+    ;;   r_spher < radii[0]
     ;; or
-    ;;   radii[0] < r_sphere < radii[1]:
+    ;;   radii[0] < r_spher < radii[1]:
     ;;
     if (n_elements(radii) gt 0) then begin
-      r_spher = sqrt(spread(avg.rcyl,1,nz)^2 + spread(avg.z,0,nr))
+      r_spher = sqrt(spread(avg.rcyl,1,nz)^2 + spread(avg.z,0,nr)^2)
       if (n_elements(radii) eq 1) then begin ; just one radius -> outer
-        weight2 = weight*(r_spher lt radii[0])
+        rout = radii[0]
+        weight2 = weight*(r_spher lt rout)
       endif else begin          ; at least two radii -> [inner, outer]
-        weight2 = weight*((r_spher gt radii[0]) and (r_spher lt radii[1]))
+        rout = radii[1]
+        weight2 = weight*((r_spher gt radii[0]) and (r_spher lt rout))
       endelse
-      weight2 = weight2/rms(weight2)
-      ; weight2 = weight2/mean(weight2)
+      ; weight2 = weight2/rms(weight2)
+      weight2 = weight2/mean(weight2)
     endif else begin
+      rout = 1.e37
+      r_spher = 0.*var1
       weight2 = 0.
     endelse
-    vrm=rms(weight*var1) & vrm2=rms(weight2*var1)
-    vpm=rms(weight*var2) & vpm2=rms(weight2*var2)
-    vzm=rms(weight*var3) & vzm2=rms(weight2*var3)
-    ; vrm=sqrt(mean(weight*var1^2)) & vrm2=sqrt(mean(weight2*var1^2))
-    ; vpm=sqrt(mean(weight*var2^2)) & vpm2=sqrt(mean(weight2*var2^2))
-    ; vzm=sqrt(mean(weight*var3^2)) & vzm2=sqrt(mean(weight2*var3^2))
+    ; vrm=rms(weight*var1) & vrm2=rms(weight2*var1)
+    ; vpm=rms(weight*var2) & vpm2=rms(weight2*var2)
+    ; vzm=rms(weight*var3) & vzm2=rms(weight2*var3)
+    vrm=sqrt(mean(weight*var1^2)) & vrm2=sqrt(mean(weight2*var1^2))
+    vpm=sqrt(mean(weight*var2^2)) & vpm2=sqrt(mean(weight2*var2^2))
+    vzm=sqrt(mean(weight*var3^2)) & vzm2=sqrt(mean(weight2*var3^2))
 
-    print, 'component:  overall rms    rms over sphere'
-    print, '--------------------------------------------'
-    print, 'v_rcyl   :', vrm, vrm2
-    print, 'v_phi    :', vpm, vpm2
-    print, 'v_z      :', vzm, vzm2
-    print, '--------------------------------------------'
-    print, 'vv       :', sqrt(vrm^2+vpm^2+vzm^2), sqrt(vrm2^2+vpm2^2+vzm2^2)
+    sph = where(r_spher<rout)
+    vrmin=min(abs(var1[sph])) & vrmax=max(abs(var1))
+    vpmin=min(abs(var2[sph])) & vpmax=max(abs(var2))
+    vzmin=min(abs(var3[sph])) & vzmax=max(abs(var3))
+    vv = sqrt(var1^2+var2^2+var3^2)
+    vvmin=min(vv[sph])        & vvmax=max(vv)
+
+    print, 'component:    min         overall rms   rms over sphere   max'
+    print, '------------------------------------------------------------------'
+    print, 'v_rcyl   :', vrmin, vrm, vrm2, vrmax
+    print, 'v_phi    :', vpmin, vpm, vpm2, vpmax
+    print, 'v_z      :', vzmin, vzm, vzm2, vzmax
+    print, '------------------------------------------------------------------'
+    print, 'vv       :', vvmin, sqrt(vrm^2+vpm^2+vzm^2), $
+        sqrt(vrm2^2+vpm2^2+vzm2^2), vvmax
+
+    r_cyl = spread(avg.rcyl,1,nz)
+    rho = avg.rhomphi
+    E_pol = mean(weight2*0.5*rho*(var1^2+var3^2))
+    E_tor = mean(weight2*0.5*rho*var2^2)
+    E_rot = mean(weight2*0.5*rho*r_cyl^2*Omega^2)
+    print
+    print, '<E_kin>_sphere = '
+    print, '  pol ( /Erot):               ', E_pol, E_pol/E_rot
+    print, '  tor ( /Erot):               ', E_tor, E_tor/E_rot
+    print, 'E_rot ='
+    print, '  <1/2*rho r_cyl^2.>_sphere = ', E_rot
+
+    if (noomega) then print, 'WARNING: Assuming Omega=1.'
+
+    print, mean(weight2*r_spher^2)
+    print, mean(weight2*spread(avg.rcyl,1,nz)^2)
+    print, 'total mass: ', mean(weight2*rho)*4./3.*!pi
 
   endif
 
+    plot_binned, r_spher, avg.rhomphi
+
 
 end
-; End of file vv_phiavg.pro
+; End of file pvv_phiavg.pro
