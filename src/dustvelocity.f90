@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.61 2004-06-09 11:45:25 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.62 2004-06-12 11:01:15 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.61 2004-06-09 11:45:25 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.62 2004-06-12 11:01:15 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -203,8 +203,6 @@ module Dustvelocity
         mdplus(k)  = md0*deltamd**k
         md(k) = 0.5*(mdminus(k)+mdplus(k))
       enddo
-
-      if (ndustspec == 1) md(1) = md0
 
       select case(dust_geometry)
 
