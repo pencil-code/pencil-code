@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.8 2002-06-25 14:58:47 dobler Exp $
+! $Id: nograv.f90,v 1.9 2002-07-01 12:43:44 nilshau Exp $
 
 module Gravity
 
@@ -10,7 +10,7 @@ module Gravity
 
   implicit none
 
-  real :: z1,z2,ztop,zref,gravz ! used by Entropy and Density
+  real :: z1,z2,ztop,zref,gravz,grav_profile ! used by Entropy and Density
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /grav_init_pars/ dummy
@@ -38,7 +38,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.8 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: nograv.f90,v 1.9 2002-07-01 12:43:44 nilshau Exp $")
 !
       lgrav = .false.
       lgravz = .false.
