@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.29 $", &
-           "$Date: 2002-03-01 11:31:25 $")
+           "$Revision: 1.30 $", &
+           "$Date: 2002-03-06 17:47:59 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,7 +75,11 @@ use IO
           ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           ! top region
           ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
-          beta1 = gamma*gravz/(mpoly2+1)
+          if (isothtop) then 
+            beta1 = -0.1
+          else
+            beta1 = gamma*gravz/(mpoly2+1)
+          endif
           f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
                           * alog(1 + beta1*(zz-ztop)/cs20)
           ! unstable region

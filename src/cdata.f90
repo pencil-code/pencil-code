@@ -28,7 +28,7 @@ module Cdata
   integer :: iperx,ipery,iperz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
-  integer :: ivisc,iforce
+  integer :: ivisc,iforce,isothtop
   integer :: m,n
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.

@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-02-24 21:02:45 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-03-06 17:47:59 $")
 !
 !
       if (nvar > mvar) then
@@ -151,7 +151,11 @@ module Register
                      spread(spread(cos(1*z),1,mx),2,my)
       case(4)               ! piecewise polytropic
         ! top region
-        beta1 = gamma*gravz/(mpoly2+1)
+        if (isothtop) then
+          beta1 = -0.1
+        else
+          beta1 = gamma*gravz/(mpoly2+1)
+        endif
         f(:,:,:,ilnrho) = mpoly2*alog(1 + beta1*(zz-ztop)/cs20)
         ! unstable region
         lnrhoint =  mpoly2*alog(1 + beta1*(z2-ztop)/cs20)
@@ -163,7 +167,6 @@ module Register
         ! smoothly blend the solutions for the two regions:
         stp = step(z,z2,whcond)
         p = spread(spread(stp,1,mx),2,my)
-
         f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
         ! bottom (stable) region
         lnrhoint = lnrhoint + mpoly0*alog(1 + beta1*(z1-z2)/cs2int)
