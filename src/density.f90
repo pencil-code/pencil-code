@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.118 2003-10-14 07:02:24 nilshau Exp $
+! $Id: density.f90,v 1.119 2003-10-15 15:39:02 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.118 2003-10-14 07:02:24 nilshau Exp $")
+           "$Id: density.f90,v 1.119 2003-10-15 15:39:02 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -123,6 +123,7 @@ module Density
 !
 !  7-nov-01/wolf: coded
 ! 28-jun-02/axel: added isothermal
+! 15-oct-03/dave: added spherical shell (kws)
 !
       use Mpicomm
       use Sub
@@ -136,6 +137,8 @@ module Density
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
       real :: zbot,ztop
+      real :: lnrho_int,lnrho_ext,beta1  ! for spherical shell problems
+                                         ! not to be confused with lnrhoint
 !
 !  define bottom and top height
 !
@@ -391,6 +394,31 @@ module Density
 
       case('Ferriere'); if(lroot) print*,'init_lnrho: Ferriere set in entropy'
 
+      case('geo-kws')
+        if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell'
+        beta1 = g0/(mpoly+1)
+        lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
+        lnrho_ext = lnrho0
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+!
+!  set x_mn, y_mn, z_mn and r_mn
+!
+          x_mn = x(l1:l2)
+          y_mn = spread(y(m),1,nx)
+          z_mn = spread(z(n),1,nx)
+          r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
+
+          where (r_mn >= r_ext) 
+            f(l1:l2,m,n,ilnrho) = lnrho_ext
+          elsewhere (r_mn > r_int)
+            f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
+          elsewhere
+            f(l1:l2,m,n,ilnrho) = lnrho_int
+          endwhere
+        enddo 
+
       case default
         !
         !  Catch unknown values
@@ -441,7 +469,7 @@ module Density
 !  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
 !             with new profile (for z<zblend)
 !  isoth   -- flag for isothermal stratification;
-!  lnrhoint -- value of lnrho at the interface, i.e. at the zint on entry,
+!  lnrhoin -- value of lnrho at the interface, i.e. at the zint on entry,
 !             at the zbot on exit
 !  cs2int  -- same for cs2
 !
