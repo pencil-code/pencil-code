@@ -1,11 +1,11 @@
-! $Id: io_mpio.f90,v 1.15 2003-07-09 16:03:43 dobler Exp $
+! $Id: io_mpio.f90,v 1.16 2003-07-09 17:30:18 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!
 
 !!!  Parallel IO via MPI2 (i.e. all process write to the same file, e.g.
-!!!  tmp/var.dat
+!!!  tmp/var.dat)
 !!!  19-sep-02/wolf: started
 
 module Io
@@ -66,9 +66,10 @@ module Io
 !  include 'mpiof.h'
 !
   integer, dimension(MPI_STATUS_SIZE) :: status
-! LAM-MPI does not know the MPI2 constant MPI_OFFSET_KIND, 8 is hopfully OK
-!  integer(kind=MPI_OFFSET_KIND) :: dist_zero=0
-  integer(kind=8) :: dist_zero=0
+! LAM-MPI does not know the MPI2 constant MPI_OFFSET_KIND, but LAM
+! doesn't work with this module anyway
+!  integer(kind=8) :: dist_zero=0
+  integer(kind=MPI_OFFSET_KIND) :: dist_zero=0
   integer :: io_filetype,io_memtype,io_filetype_v,io_memtype_v
   integer :: fhandle,ierr
   logical :: io_initialized=.false.
@@ -99,7 +100,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.15 2003-07-09 16:03:43 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.16 2003-07-09 17:30:18 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -244,10 +245,10 @@ contains
 !***********************************************************************
     subroutine output_vect(file,a,nn)
 !
-!  write snapshot file; currently without ghost zones and any meta data
-!  like time, etc.
-!    Looks like we nee to commit the MPI type anew each time we are called,
+!  Write snapshot file; currently without ghost zones and grid.
+!    Looks like we need to commit the MPI type anew each time we are called,
 !  since nn may vary.
+!
 !  20-sep-02/wolf: coded
 !
       use Cdata
@@ -261,7 +262,7 @@ contains
       if (.not. io_initialized) &
            call stop_it("OUTPUT: Need to call init_io first")
 !
-      call commit_io_type_vect(nn)
+      call commit_io_type_vect(nn) ! will free old type if new one is needed
       !
       !  open file and set view (specify which file positions we can access)
       !
@@ -275,13 +276,18 @@ contains
       !
       call MPI_FILE_WRITE_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
       call MPI_FILE_CLOSE(fhandle, ierr)
+      !
+      !  write meta data (to make var.dat as identical as possible to
+      !  what a single-processor job would write with io_dist.f90)
+      !
+      call write_record_info(file, nn)
 !
     endsubroutine output_vect
 !***********************************************************************
     subroutine output_scal(file,a,nn)
 !
-!  write snapshot file; currently without ghost zones and any meta data
-!  like time, etc.
+!  Write snapshot file; currently without ghost zones and grid
+!
 !  20-sep-02/wolf: coded
 !
       use Cdata
@@ -295,19 +301,24 @@ contains
       if (.not. io_initialized) &
            call stop_it("OUTPUT: Need to call init_io first")
       if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
-!
-!  open file and set view (specify which file positions we can access)
-!
+      !
+      !  open file and set view (specify which file positions we can access)
+      !
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
       call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, io_filetype, &
                "native", MPI_INFO_NULL, ierr)
-!
-!  write data
-!
+      !
+      !  write data
+      !
       call MPI_FILE_WRITE_ALL(fhandle, a, 1, io_memtype, status, ierr)
       call MPI_FILE_CLOSE(fhandle, ierr)
+      !
+      !  write meta data (to make var.dat as identical as possible to
+      !  what a single-processor job would write with io_dist.f90)
+      !
+      call write_record_info(file, 1)
 !
     endsubroutine output_scal
 !***********************************************************************
@@ -388,6 +399,48 @@ contains
       write(1) t,x,y,z,dx,dy,dz,deltay
       close(1)
     endsubroutine outpus
+!***********************************************************************
+    subroutine write_record_info(file, nn)
+!
+!  Add record markers and time to file, so it looks as similar as
+!  possible/necessary to a file written by io_dist.f90. Currently, we
+!  don't handle writing the grid, but that does not seem to be used
+!  anyway.
+!
+      use Cdata
+      use Mpicomm, only: lroot,stop_it
+!
+      integer :: nn,reclen
+      integer(kind=MPI_OFFSET_KIND) :: fpos
+      character (len=*) :: file
+!
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, & ! MPI_FILE_OPEN is collective
+                         ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+                         MPI_INFO_NULL, fhandle, ierr)
+      if (lroot) then           ! only root writes
+        !
+        ! record markers for (already written) data block
+        !
+        fpos = 0                ! open-record marker
+        reclen = nxgrid*nygrid*nzgrid*nn*4
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        fpos = fpos + reclen+4  ! close-record marker
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        !
+        ! time in a new record
+        !
+        fpos = fpos + 4
+        reclen = 4
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        fpos = fpos + 4
+        call MPI_FILE_WRITE_AT(fhandle,fpos,t,1,MPI_REAL,status,ierr)
+        fpos = fpos + 4
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+      endif
+      !
+      call MPI_FILE_CLOSE(fhandle,ierr)
+!
+    endsubroutine write_record_info
 !***********************************************************************
     subroutine commit_gridio_types(nglobal,nlocal,mlocal,ipvar,filetype,memtype)
 !
