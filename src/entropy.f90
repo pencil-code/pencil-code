@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.311 2004-05-28 16:44:39 dobler Exp $
+! $Id: entropy.f90,v 1.312 2004-05-30 08:01:40 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -46,6 +46,7 @@ module Entropy
   real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.
+  real :: deltaT_poleq=0.
   logical :: lturbulent_heat=.false.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond=.false.,lcalc_heatcond_constchi=.false.
@@ -74,6 +75,7 @@ module Entropy
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
        lturbulent_heat, nu_turb0, tau_nuturb, nu_turb1, &
+       deltaT_poleq, &
        lgaspressuregradient
 
   ! other variables (needs to be consistent with reset list below)
@@ -113,7 +115,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.311 2004-05-28 16:44:39 dobler Exp $")
+           "$Id: entropy.f90,v 1.312 2004-05-30 08:01:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -940,7 +942,7 @@ module Entropy
         rpr(4) = 0.532258064516129d0
         rpu(4) = 0.0d0
         rpv(4) = 1.206045378311055d0
-!XX
+!
 !  s=-lnrho+alog(gamma*p)/gamma
 !
         where ( (xx>=0.) .and. (yy>=0.) )
@@ -1669,7 +1671,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,cs2,ss,cp1tilde,TT1
-      real, dimension (nx) :: heat,prof
+      real, dimension (nx) :: heat,prof,theta_profile
       real :: ssref,zbot,ztop,profile_buffer,xi,profile_cor
 !
       intent(in) :: f,rho1,cs2
@@ -1738,10 +1740,26 @@ module Entropy
           select case(initss(1))
             case ('geo-kws'); heat=0.        ! can add heating later based on value of initss
           endselect
-          prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
-          heat = heat - cool_ext*prof*(cs2-cs2_ext)/cs2_ext
-          prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
-          heat = heat - cool_int*prof*(cs2-cs2_int)/cs2_int
+          !
+          !  possibility of a latitudinal heating profile
+          !  T=T0-(2/3)*delT*P2(costheta), for testing Taylor-Proudman theorem
+          !  Note that P2(x)=(1/2)*(3*x^2-1).
+          !
+          if (deltaT_poleq/=0.) then
+            if(headtt) print*,'calc_heat_cool: deltaT_poleq=',deltaT_poleq
+            if(headtt) print*,'rcyl_mn=',rcyl_mn
+            if(headtt) print*,'z_mn=',z_mn
+            theta_profile=(1./3.-(rcyl_mn/z_mn)**2)*deltaT_poleq
+            prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
+            heat = heat - cool_ext*prof*(cs2-cs2_ext)/cs2_ext*theta_profile
+            prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
+            heat = heat - cool_int*prof*(cs2-cs2_int)/cs2_int*theta_profile
+          else
+            prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
+            heat = heat - cool_ext*prof*(cs2-cs2_ext)/cs2_ext
+            prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
+            heat = heat - cool_int*prof*(cs2-cs2_int)/cs2_int
+          endif
 !
         case default
           if (lroot) print*, &

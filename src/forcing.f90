@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.64 2004-03-17 16:45:18 nilshau Exp $
+! $Id: forcing.f90,v 1.65 2004-05-30 08:01:40 brandenb Exp $
 
 module Forcing
 
@@ -22,6 +22,7 @@ module Forcing
   logical :: lmagnetic_forcing=.false.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
+  character (len=labellen) :: iforce_profile='nothing'
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
@@ -31,7 +32,8 @@ module Forcing
        iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        zff_ampl,zff_hel, &
-       lmagnetic_forcing,max_force,dtforce,old_forcing_evector
+       lmagnetic_forcing,max_force,dtforce,old_forcing_evector, &
+       iforce_profile
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rufm=0
@@ -58,7 +60,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.64 2004-03-17 16:45:18 nilshau Exp $")
+           "$Id: forcing.f90,v 1.65 2004-05-30 08:01:40 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -104,10 +106,15 @@ module Forcing
 !  vertical profiles for amplitude and helicity of the forcing
 !  default is constant profiles for rms velocity and helicity.
 !
-      if (zff_ampl==0. .and. zff_hel==0.) then
+      if (iforce_profile=='nothing') then
         profz_ampl=1.
         profz_hel=1.
-      else
+      elseif (iforce_profile=='equator') then
+        profz_ampl=1.
+        do n=1,mz
+          profz_hel(n)=sin(z(n))
+        enddo
+      elseif (iforce_profile=='galactic') then
         do n=1,mz
           if(abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
           if(abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))

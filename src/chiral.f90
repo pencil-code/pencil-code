@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.1 2004-05-29 06:33:31 brandenb Exp $
+! $Id: chiral.f90,v 1.2 2004-05-30 08:01:40 brandenb Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -39,10 +39,10 @@ module Chiral
        xposYY_chiral,yposYY_chiral,zposYY_chiral
 
   ! run parameters
-  real :: chiral_diff=0.
+  real :: chiral_diff=0., chiral_crossinhibition=1.,chiral_fidelity=1.
 
   namelist /chiral_run_pars/ &
-       chiral_diff
+       chiral_diff,chiral_crossinhibition,chiral_fidelity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_XX_chiralmax=0, i_XX_chiralm=0
@@ -85,7 +85,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.1 2004-05-29 06:33:31 brandenb Exp $")
+           "$Id: chiral.f90,v 1.2 2004-05-30 08:01:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,6 +128,7 @@ module Chiral
 !
       select case(initXX_chiral)
         case('zero'); f(:,:,:,iXX_chiral)=0.
+        case('const'); f(:,:,:,iXX_chiral)=amplXX_chiral
         case('blob'); call blob(amplXX_chiral,f,iXX_chiral,radiusXX_chiral,xposXX_chiral,yposXX_chiral,zposXX_chiral)
         case('hat-x'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,kx=kx_XX_chiral)
         case('hat-y'); call hat(amplXX_chiral,f,iXX_chiral,widthXX_chiral,ky=ky_XX_chiral)
@@ -147,6 +148,7 @@ module Chiral
 !
       select case(initYY_chiral)
         case('zero'); f(:,:,:,iYY_chiral)=0.
+        case('const'); f(:,:,:,iYY_chiral)=amplYY_chiral
         case('blob'); call blob(amplYY_chiral,f,iYY_chiral,radiusYY_chiral,xposYY_chiral,yposYY_chiral,zposYY_chiral)
         case('hat-x'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,kx=kx_YY_chiral)
         case('hat-y'); call hat(amplYY_chiral,f,iYY_chiral,widthYY_chiral,ky=ky_YY_chiral)
@@ -179,7 +181,10 @@ module Chiral
       real, dimension (nx,3) :: uu,gXX_chiral,gYY_chiral
       real, dimension (nx) :: XX_chiral,ugXX_chiral,del2XX_chiral,dXX_chiral
       real, dimension (nx) :: YY_chiral,ugYY_chiral,del2YY_chiral,dYY_chiral
-      real, dimension (nx) :: RR_chiral,RR21_chiral,XX2_chiral,YY2_chiral
+      real, dimension (nx) :: RRXX_chiral,XX2_chiral
+      real, dimension (nx) :: RRYY_chiral,YY2_chiral
+      real, dimension (nx) :: RR21_chiral
+      real :: pp,qq
       integer :: j
 !
       intent(in)  :: f,uu
@@ -214,11 +219,30 @@ module Chiral
 !  X^2/Rtilde^2 - X*R
 !  Y^2/Rtilde^2 - Y*R
 !
-      XX_chiral=f(l1:l2,m,n,iXX_chiral); XX2_chiral=XX_chiral**2
-      YY_chiral=f(l1:l2,m,n,iYY_chiral); YY2_chiral=YY_chiral**2
-      RR_chiral=XX_chiral+YY_chiral; RR21_chiral=1./(XX2_chiral+YY2_chiral)
-      dXX_chiral=XX2_chiral*RR21_chiral-XX_chiral*RR_chiral
-      dYY_chiral=YY2_chiral*RR21_chiral-YY_chiral*RR_chiral
+!  for finite crossinhibition (=kI/kS) and finite fidelity (=f) we have
+!  R --> RX=X+Y*kI/kS, R --> RY=Y+X*kI/kS, and
+!  X2tilde=X^2/2RX, Y2tilde=Y^2/2RY.
+!
+      XX_chiral=f(l1:l2,m,n,iXX_chiral)
+      YY_chiral=f(l1:l2,m,n,iYY_chiral)
+      RRXX_chiral=XX_chiral+YY_chiral*chiral_crossinhibition
+      RRYY_chiral=YY_chiral+XX_chiral*chiral_crossinhibition
+!
+!  abbreviations for quadratic quantities
+!
+      XX2_chiral=.5*XX_chiral**2/RRXX_chiral
+      YY2_chiral=.5*YY_chiral**2/RRYY_chiral
+      RR21_chiral=1./(XX2_chiral+YY2_chiral)
+!
+!  fidelity factor
+!
+      pp=.5*(1.+chiral_fidelity)
+      qq=.5*(1.-chiral_fidelity)
+!
+!  final reaction equation
+!
+      dXX_chiral=(pp*XX2_chiral+qq*YY2_chiral)*RR21_chiral-XX_chiral*RRXX_chiral
+      dYY_chiral=(pp*YY2_chiral+qq*XX2_chiral)*RR21_chiral-YY_chiral*RRYY_chiral
       df(l1:l2,m,n,iXX_chiral)=df(l1:l2,m,n,iXX_chiral)+dXX_chiral
       df(l1:l2,m,n,iYY_chiral)=df(l1:l2,m,n,iYY_chiral)+dYY_chiral
 !

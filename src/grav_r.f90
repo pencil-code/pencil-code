@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.60 2004-04-16 17:17:14 mcmillan Exp $
+! $Id: grav_r.f90,v 1.61 2004-05-30 08:01:40 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.60 2004-04-16 17:17:14 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.61 2004-05-30 08:01:40 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -149,7 +149,7 @@ module Gravity
           cpot = (/ 0., 2.2679, 0., 0., 1.1697 /)
         case ('geo-kws')
           if (lroot) print*, 'initialize_gravity: smoothed 1/r potential in spherical shell'
-          if (r0_pot < epsi) print*, 'WARNING: r0_pot not may not be set in start.in'
+          if (r0_pot < epsi) print*, 'WARNING: grav_r: r0_pot is too small. Can be set in grav_r namelists.'
           lpade=.false.
 ! end geodynamo
 
