@@ -38,6 +38,10 @@ module Magnetic
         print*, 'iaa,iax,iay,iaz = ', iaa,iax,iay,iaz
       endif
 !
+!  identify version number
+!
+      print*, '$Id: magnetic.f90,v 1.4 2002-01-17 09:59:47 dobler Exp $'
+!
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_aa: nvar > mvar')

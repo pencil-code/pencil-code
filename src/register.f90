@@ -70,6 +70,11 @@ module Register
         print*, 'iux,iuy,iuz = ', iux,iuy,iuz
       endif
 !
+!  identify version number
+!
+      print*, '$Id: register.f90,v 1.7 2002-01-17 09:59:47 dobler Exp $'
+!
+!
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_hydro: nvar > mvar')

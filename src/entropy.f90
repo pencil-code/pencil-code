@@ -35,6 +35,10 @@ module Entropy
         print*, 'ient = ', ient
       endif
 !
+!  identify version number
+!
+      print*, '$Id: entropy.f90,v 1.9 2002-01-17 09:55:41 dobler Exp $'
+!
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_ent: nvar > mvar')

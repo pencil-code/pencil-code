@@ -25,6 +25,10 @@ module Gravity
       if (.not. first) call stop_it('register_grav called twice')
       first = .false.
 !
+!  identify version number
+!
+      print*, '$Id: grav_z.f90,v 1.3 2002-01-17 09:59:47 dobler Exp $'
+!
       lgrav = .true.
       lgravz = .true.
       lgravr = .false.
