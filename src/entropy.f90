@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-01-23 19:56:13 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-01-23 22:53:30 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -78,7 +78,7 @@ module Entropy
 !
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
+    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2)
 !
 !  calculate right hand side of entropy equation
 !
@@ -92,15 +92,27 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,gss,glnrho,gpprho
-      real, dimension (nx) :: ugss,thdiff,del2ss,divu,sij2
-      real, dimension (nx) :: cs2,ss,lnrho,TT1,r
+      real, dimension (nx,3) :: uu,glnrho,gpprho,gss,g1,g2,glhc
+      real, dimension (nx) :: divu,rho1,cs2
+      real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
+      real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g1_g2
+      real, dimension (nx) :: ss,lnrho,TT1,lambda
       real, dimension (nx) :: chi,heat,prof
       real :: ssref
       integer :: i,j
 !
+      intent(in) :: f,uu,uij,divu,rho1,glnrho
+      intent(out) :: df,gpprho,cs2
+!
+!  coordinates
+!
+      x_mn = x(l1:l2,m,n)
+      y_mn = y(l1:l2,m,n)
+      z_mn = z(l1:l2,m,n)
+!
       call grad(f,ient,gss)
       call del2(f,ient,del2ss)
+      call del2(f,ilnrho,del2lnrho)
 !
 !  sound speed squared
 !
@@ -137,15 +149,22 @@ module Entropy
       enddo
       enddo
 !
-!  Heat conduction / entropy diffusion
-!
-      chi = chi0
-      thdiff=chi*del2ss
-!
-      TT1=gamma1/cs2
+      TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
+! this one was wrong:
 !      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
 ! hopefully correct:
-      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-ugss+TT1*2.*nu*sij2+thdiff
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
+!
+!  Heat conduction / entropy diffusion
+!
+      call heatcond(x_mn,y_mn,z_mn,lambda)
+      chi = rho1*lambda
+      g1 = gamma*gss + gamma1*glnrho
+      call gradloghcond(x_mn,y_mn,z_mn, glhc)
+      g2 = g1 + glhc
+      call dot_mn(g1,g2,g1_g2)
+      thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g1_g2)
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
 !
 !  Vertical case:
 !  Heat at bottom, cool top layers
@@ -171,20 +190,61 @@ module Entropy
 !  heat at centre, cool outer layers
 !
       if (lgravr) then
-!        r = rr(l1:l2,m,n)
+!        r_mn = rr(l1:l2,m,n)
         ! central heating
         ! heating profile, normalised, so volume integral = 1
-        prof = exp(-0.5*(r/wheat)**2) * (2*pi*wheat**2)**(-1.5)
+        prof = exp(-0.5*(r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)
         heat = cheat*prof
         ! surface cooling towards s=0
         ! cooling profile; maximum = 1
-        prof = 0.5*(1+tanh((r-1.)/wcool))
+!        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
+        prof = step(r_mn,1.,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
 
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
     endsubroutine dss_dt
 !***********************************************************************
+    subroutine heatcond(x,y,z,hcond)
+!
+!  calculate the heat conductivity lambda
+!  23-jan-2002/wolf: coded
+!
+      use Cdata, only: nx,lgravz,lgravr
+      use Global
+!
+      real, dimension (nx) :: x,y,z
+      real, dimension (nx) :: hcond
+!
+      if (lgravz) then
+        hcond = hcond0 + (hcond1-hcond0)*step(z,z2,whcond)
+      endif
+
+      if (lgravr) then
+      endif
+!
+    endsubroutine heatcond
+!***********************************************************************
+    subroutine gradloghcond(x,y,z,glhc)
+!
+!  calculate grad(log lambda), where lambda is the heat conductivity
+!  23-jan-2002/wolf: coded
+!
+      use Cdata, only: nx,lgravz,lgravr
+      use Global
+!
+      real, dimension (nx) :: x,y,z
+      real, dimension (nx,3) :: glhc
+!
+      if (lgravz) then
+        glhc(:,1:2) = 0
+        glhc(:,  3) = (hcond1-hcond0)*der_step(z,z2,whcond)      
+      endif
+
+      if (lgravr) then
+      endif
+!
+    endsubroutine gradloghcond
+!***********************************************************************
 
 endmodule Entropy
-

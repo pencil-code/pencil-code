@@ -52,8 +52,6 @@ contains
         Ly=dy*my
         Lz=dz*mz
 !
-        pi=2.*asin(1.)
-!
         if (ip<=4) print*
         if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
         if (ip<=8) print*,'pi,nu=',pi,nu

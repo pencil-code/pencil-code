@@ -119,6 +119,9 @@ module Sub
       real, dimension (mx,my,mz,3) :: a
       real, dimension (nx) :: b
 !
+      intent(in) :: a
+      intent(out) :: b
+!
       b=a(l1:l2,m,n,1)**2+a(l1:l2,m,n,2)**2+a(l1:l2,m,n,3)**2
 !
     endsubroutine dot2
@@ -132,6 +135,9 @@ module Sub
 !
       real, dimension (nx,3) :: a,b
       real, dimension (nx) :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
 !
       c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
 !
@@ -148,6 +154,9 @@ module Sub
       real, dimension (nx,3) :: a
       real, dimension (nx) :: b
 !
+      intent(in) :: a
+      intent(out) :: b
+!
       b=a(:,1)**2+a(:,2)**2+a(:,3)**2
 !
     endsubroutine dot2_mn
@@ -161,6 +170,9 @@ module Sub
 !
       real, dimension (nx,3,3) :: a
       real, dimension (nx) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
 !
       b=a(:,1,1)+a(:,2,2)+a(:,3,3)
 !
@@ -177,6 +189,9 @@ module Sub
       real, dimension (nx,3) :: b,c
       real, dimension (nx) :: tmp
       integer :: i,j
+!
+      intent(in) :: a,b
+      intent(out) :: c
 !
       do i=1,3
         j=1
@@ -199,6 +214,9 @@ module Sub
       real, dimension (mx,my,mz,3) :: a
       real, dimension (mx,my,mz) :: b,c
 !
+      intent(in) :: a,b
+      intent(out) :: c
+!
       c=b*(a(:,:,:,1)**2+a(:,:,:,2)**2+a(:,:,:,3)**2)
 !
     endsubroutine dot2mu
@@ -212,6 +230,9 @@ module Sub
 !
       real, dimension (mx,my,mz,3) :: a,b
       real, dimension (mx,my,mz) :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
 !
       c=a(:,:,:,1)*b(:,:,:,1)+a(:,:,:,2)*b(:,:,:,2)+a(:,:,:,3)*b(:,:,:,3)
 !
@@ -227,19 +248,25 @@ module Sub
       real, dimension (mx,my,mz,3) :: a,b
       real, dimension (mx,my,mz) :: c
 !
+      intent(in) :: a,b
+      intent(out) :: c
+!
       c=-a(:,:,:,1)*b(:,:,:,1)-a(:,:,:,2)*b(:,:,:,2)-a(:,:,:,3)*b(:,:,:,3)
 !
     endsubroutine dotneg
 !***********************************************************************
     subroutine dotadd(a,b,c)
 !
-!  negative dot product, c=-a.b
+!  add dot product, c=c+a.b
 !  29-sep-97/axel: coded
 !
       use Cdata
 !
       real, dimension (mx,my,mz,3) :: a,b
       real, dimension (mx,my,mz) :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
 !
       c=c+a(:,:,:,1)*b(:,:,:,1)+a(:,:,:,2)*b(:,:,:,2)+a(:,:,:,3)*b(:,:,:,3)
 !
@@ -255,6 +282,9 @@ module Sub
       real, dimension (mx,my,mz,3) :: b,c
       real, dimension (mx,my,mz) :: a
       integer :: j
+!
+      intent(in) :: a,b
+      intent(out) :: c
 !
       do j=1,3
         c(:,:,:,j)=a*b(:,:,:,j)
@@ -273,6 +303,9 @@ module Sub
       real, dimension (mx,my,mz) :: b
       integer :: j
 !
+      intent(in) :: a,b,c
+      intent(out) :: d
+!
       do j=1,3
         d(:,:,:,j)=a(:,:,:,j)+b*c(:,:,:,j)
       enddo
@@ -290,6 +323,9 @@ module Sub
       real, dimension (mx,my,mz) :: b
       integer :: j
 !
+      intent(in) :: a,b,c
+      intent(out) :: d
+!
       do j=1,3
         d(:,:,:,j)=a(:,:,:,j)-b*c(:,:,:,j)
       enddo
@@ -304,6 +340,9 @@ module Sub
 !
       real, dimension (mx,my,mz,3) :: a,b,c
 !
+      intent(in) :: a,b
+      intent(out) :: c
+!
       c(:,:,:,1)=a(:,:,:,2)*b(:,:,:,3)-a(:,:,:,3)*b(:,:,:,2)
       c(:,:,:,2)=a(:,:,:,3)*b(:,:,:,1)-a(:,:,:,1)*b(:,:,:,3)
       c(:,:,:,3)=a(:,:,:,1)*b(:,:,:,2)-a(:,:,:,2)*b(:,:,:,1)
@@ -317,6 +356,9 @@ module Sub
       use Cdata
 !
       real, dimension (nx,3) :: a,b,c
+!
+      intent(in) :: a,b
+      intent(out) :: c
 !
       c(:,1)=a(:,2)*b(:,3)-a(:,3)*b(:,2)
       c(:,2)=a(:,3)*b(:,1)-a(:,1)*b(:,3)
@@ -336,6 +378,9 @@ module Sub
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: g
 !
       k1=k-1
       do i=1,3
@@ -360,6 +405,9 @@ module Sub
       real, dimension (nx) :: tmp
       integer :: k
 !
+      intent(in) :: f,k
+      intent(out) :: g
+!
       call der(f,k,tmp,1); g(:,1)=tmp
       call der(f,k,tmp,2); g(:,2)=tmp
       call der(f,k,tmp,3); g(:,3)=tmp
@@ -379,6 +427,9 @@ module Sub
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp1,tmp2
       integer :: k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: g
 !
       k1=k-1
 !
@@ -404,6 +455,9 @@ module Sub
       use Cdata
       use Deriv
 !
+      intent(in) :: f,k
+      intent(out) :: del2f
+!
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (nx) :: del2f,dfdx,dfdy,dfdz
       integer :: k
@@ -426,6 +480,9 @@ module Sub
       real, dimension (nx,3) :: del2f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del2f
 !
 !  do the del2 diffusion operator
 !
@@ -451,6 +508,9 @@ module Sub
       real, dimension (nx,3), optional :: del2,graddiv,curlcurl
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del2,graddiv,curlcurl
 !
 !  do the del2 diffusion operator
 !
@@ -1079,6 +1139,38 @@ module Sub
       enddo
 
     endfunction poly_3
+!***********************************************************************
+    function step(x,x0,width)
+!
+!  Smooth step function centred at x0; implemented as tanh profile
+!  23-jan-02/wolf: coded
+!
+      use Cdata, only: epsi
+!
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: step
+      real :: x0,width
+
+        step = 0.5*tanh((x-x0)/(width+epsi))
+!
+      endfunction step
+!***********************************************************************
+    function der_step(x,x0,width)
+!
+!  Derivative of smooth STEP() function given above (i.e. a bump profile).
+!  Adapt this if you change the STEP() profile, or you will run into
+!  inconsistenies.
+!  23-jan-02/wolf: coded
+!
+      use Cdata, only: epsi
+!
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: der_step
+      real :: x0,width
+
+      der_step = 0.5/(width*cosh((x-x0)/(width+epsi))**2)
+!
+      endfunction der_step
 !***********************************************************************
 
 endmodule Sub

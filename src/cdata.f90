@@ -15,9 +15,10 @@ module Cdata
   real :: DD,nu,cmu,cnu2,cdiffrho,chi0,chi2
   real :: t_diag,rmean,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
   real :: orms,omax,o2max,ourms,oumax
-  real :: UUmax,cdt,pi,Lx,Ly,Lz
+  real :: UUmax,cdt,Lx,Ly,Lz
   real :: gravz,ss0,grads0      ! (1/c_p)ds/dz
   real :: urand,cheat,wheat,cool,wcool
+  real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
 
   integer, dimension (2) :: seed
   integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz

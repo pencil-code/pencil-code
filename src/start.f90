@@ -30,14 +30,13 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.12 $", &
-             "$Date: 2002-01-23 19:56:13 $")
+             "$Revision: 1.13 $", &
+             "$Date: 2002-01-23 22:53:30 $")
 !
         call initialize         ! register modules, etc.
 !
 !  read input parameter (by each processor)
 !
-        pi=2*asin(1.)
         open(1,FILE='start.in',FORM='formatted')
         read(1,*) ip
         read(1,*) Lx,Ly,Lz
