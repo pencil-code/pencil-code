@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.45 2003-11-28 17:00:00 theine Exp $
+! $Id: visc_shock.f90,v 1.46 2003-11-28 19:00:34 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -34,7 +34,7 @@ module Viscosity
   namelist /viscosity_run_pars/ nu, nu_shock, lvisc_first
  
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_dtnu=0
+  integer :: i_dtnu=0,i_shockmax=0
 
   contains
 
@@ -68,7 +68,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.45 2003-11-28 17:00:00 theine Exp $")
+           "$Id: visc_shock.f90,v 1.46 2003-11-28 19:00:34 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -118,6 +118,7 @@ module Viscosity
 !
       if (lreset) then
         i_dtnu=0
+        i_shockmax=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -125,6 +126,7 @@ module Viscosity
       if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtnu',i_dtnu)
+        call parse_name(iname,cname(iname),cform(iname),'shockmax',i_shockmax)
       enddo
 !
 !  write column where which ionization variable is stored
@@ -132,6 +134,7 @@ module Viscosity
       if (present(lwrite)) then
         if (lwrite) then
           write(3,*) 'i_dtnu=',i_dtnu
+          write(3,*) 'i_shockmax=',i_dtnu
           write(3,*) 'ihyper3=',ihyper3
           write(3,*) 'ishock=',ishock
           write(3,*) 'itest=',itest
@@ -552,7 +555,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho,tmp
       real, dimension (nx,3) :: gshock
-      real, dimension (nx) :: rho1, divu,shock
+      real, dimension (nx) :: rho1,divu,shock,dtnu
 
       intent (in) :: f, glnrho, rho1
       intent (out) :: df,shock,gshock
@@ -567,8 +570,12 @@ module Viscosity
 !
 !  set viscous time step
 !
-      if (ldiagnos.and.i_dtnu/=0) then
-        call max_mn_name(spread(maxeffectivenu,1,nx)/dxmin**2/cdtvDim,i_dtnu,l_dt=.true.)
+      if (ldiagnos) then
+        if (i_dtnu/=0) then
+          dtnu=maxeffectivenu/dxmin**2/cdtvDim
+          call max_mn_name(dtnu,i_dtnu,l_dt=.true.)
+        endif
+        if (i_shockmax/=0) call max_mn_name(shock,i_shockmax)
       endif
 !
 !  shock viscosity
