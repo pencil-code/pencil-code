@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.21 2002-07-08 23:34:25 brandenb Exp $
+! $Id: boundcond.f90,v 1.22 2002-07-09 10:33:43 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -20,7 +20,7 @@ module Boundcond
     subroutine boundconds_x(f)
 !
 !  Physical boundary conditions in x except for periodic stuff.
-!  For the x-direction, this routines needs to be called immediately;
+!  For the x-direction, the routine needs to be called immediately;
 !  for the y- and z-directions is needs to be called after all
 !  communication is done, because it needs to overwrite the otherwise
 !  periodic boundary conditions that have already been solved under mpi.
@@ -105,7 +105,7 @@ module Boundcond
     subroutine boundconds_y(f)
 !
 !  Physical boundary conditions in y except for periodic stuff.
-!  For the x-direction, this routines needs to be called immediately;
+!  For the x-direction, the routine needs to be called immediately;
 !  for the y- and z-directions is needs to be called after all
 !  communication is done, because it needs to overwrite the otherwise
 !  periodic boundary conditions that have already been solved under mpi.
@@ -181,7 +181,7 @@ module Boundcond
     subroutine boundconds_z(f)
 !
 !  Physical boundary conditions in z except for periodic stuff.
-!  For the x-direction, this routines needs to be called immediately;
+!  For the x-direction, the routines needs to be called immediately;
 !  for the y- and z-directions is needs to be called after all
 !  communication is done, because it needs to overwrite the otherwise
 !  periodic boundary conditions that have already been solved under mpi.
@@ -225,7 +225,7 @@ module Boundcond
             if (j==ient) call bc_ss_temp(f,'bot')
           case ('db')
             !
-            !  Set ghost zone to reproduce one-sided boundary consition 
+            !  Set ghost zone to reproduce one-sided boundary condition 
             !  (2nd order):
             !  Finding the derivatives on the boundary using a one 
             !  sided final difference method. This derivative is being 
@@ -233,22 +233,23 @@ module Boundcond
             !  only be used for ln(rho)
             !
             do i=1,nghost
-               fder=(-3*f(:,:,n1-i+1,j)+4*f(:,:,n1-i+2,j)&
-                    -f(:,:,n1-i+3,j))/(2*dz)
-               f(:,:,n1-i,j)=f(:,:,n1-i+2,j)-2*dz*fder
+              fder=(-3*f(:,:,n1-i+1,j)+4*f(:,:,n1-i+2,j)&
+                   -f(:,:,n1-i+3,j))/(2*dz)
+              f(:,:,n1-i,j)=f(:,:,n1-i+2,j)-2*dz*fder
             end do
-         case ('ce')
+          case ('ce')
             !
-            !  This makes cs2 (temperature) constant on the boundaries
+            !  Set cs2 (temperature) in the ghost points to the value on
+            !  the boundary
             !
             if (lentropy) then 
-               cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+              cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
             else
-               cs2_2d=cs20;
+              cs2_2d=cs20;
             end if
             do i=1,nghost
-               f(:,:,n1-i,j)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
-                    +log(cs2_2d))
+              f(:,:,n1-i,j)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
+                  +log(cs2_2d))
             end do
           case default
             if (lroot) &
@@ -288,28 +289,30 @@ module Boundcond
             !  only be used for ln(rho).
             !
             do i=1,nghost
-               fder=(3*f(:,:,n2+i-1,j)-4*f(:,:,n2+i-2,j)&
+              fder=(3*f(:,:,n2+i-1,j)-4*f(:,:,n2+i-2,j)&
                     +f(:,:,n2+i-3,j))/(2*dz)
-               f(:,:,n2+i,j)=f(:,:,n2+i-2,j)+2*dz*fder
+              f(:,:,n2+i,j)=f(:,:,n2+i-2,j)+2*dz*fder
             end do
-         case ('ce')
+!
+          case ('ce')
             !
-            !  This makes cs2 (temperature) constant on the boundaries
+            !  Set cs2 (temperature) in the ghost points to the value on
+            !  the boundary
             !
             if (lentropy) then 
-               cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+              cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
             else
-               cs2_2d=cs20;
+              cs2_2d=cs20;
             end if
             do i=1,nghost
-               f(:,:,n2+i,j)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
-                    +log(cs2_2d))
+              f(:,:,n2+i,j)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
+                  +log(cs2_2d))
             end do
           case default
             if (lroot) &
                  print*, "No such boundary condition bcz2 = ", &
                          bcz2(j), " for j=", j
-              call stop_it("")
+            call stop_it("")
           endselect
         endif
       enddo
