@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.9 2003-04-01 22:12:47 theine Exp $
+! $Id: radiation_ray.f90,v 1.10 2003-04-01 22:18:30 theine Exp $
 
 module Radiation
 
@@ -58,7 +58,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.9 2003-04-01 22:12:47 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.10 2003-04-01 22:18:30 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -116,7 +116,7 @@ module Radiation
         ss=f(l1:l2,m,n,ient)
         lnrho=f(l1:l2,m,n,ilnrho)
         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature=TT)
-        Source(l1:l2,m,n)=sigmaB*TT**4/pi
+        Source(l1:l2,m,n)=sigmaSB*TT**4/pi
       enddo
       enddo
 !

@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.2 2003-04-01 22:12:47 theine Exp $
+! $Id: feautrier.f90,v 1.3 2003-04-01 22:18:30 theine Exp $
 
 module Radiation
 
@@ -53,7 +53,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.2 2003-04-01 22:12:47 theine Exp $")
+           "$Id: feautrier.f90,v 1.3 2003-04-01 22:18:30 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -84,7 +84,7 @@ module Radiation
          ss=f(l1:l2,m,n,ient)
          yH=ionfrac(lnrho,ss)
          call ioncalc(lnrho,ss,yH,TT=TT,kappa=kappa_)
-         Srad(l1:l2,m,n)=sigmaB*TT**4/pi
+         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
          kappa(l1:l2,m,n)=kappa_
       enddo
       enddo
