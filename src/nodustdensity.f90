@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.19 2004-05-12 17:27:07 ajohan Exp $
+! $Id: nodustdensity.f90,v 1.20 2004-05-20 03:58:44 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -20,6 +20,8 @@ module Dustdensity
   implicit none
 
   integer :: dummy              ! We cannot define empty namelists
+  logical :: ldustnulling=.false.
+
   namelist /dustdensity_init_pars/ dummy
   namelist /dustdensity_run_pars/  dummy
 
@@ -49,7 +51,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.19 2004-05-12 17:27:07 ajohan Exp $")
+           "$Id: nodustdensity.f90,v 1.20 2004-05-20 03:58:44 brandenb Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -110,6 +112,15 @@ module Dustdensity
 !
       if(ip==0) print*,f(1,1,1,1)
     endsubroutine redist_mdbins
+!***********************************************************************
+    subroutine null_dust_vars(f)
+!
+!  Dummy routine
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if(ip==0) print*,f(1,1,1,1)
+    endsubroutine null_dust_vars
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
