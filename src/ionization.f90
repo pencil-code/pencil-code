@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.11 2003-02-23 18:11:52 theine Exp $
+! $Id: ionization.f90,v 1.12 2003-02-24 15:43:56 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -48,7 +48,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.11 2003-02-23 18:11:52 theine Exp $")
+           "$Id: ionization.f90,v 1.12 2003-02-24 15:43:56 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -159,11 +159,13 @@ module Ionization
                                                        ! lnTT_=log(TT/TT_ion)
       real, dimension(nx)              :: f,dfdy,dfdlnrho,dfds
       real, dimension(nx)              :: dydlnrho,dyds
+      real, dimension(nx), save        :: yHlast=.5
       integer                          :: i
 
 
       do i=1,nx
-         yH(i)=rtsafe(lnrho(i),ss(i))
+         yH(i)=rtsafe(lnrho(i),ss(i),yHlast(i))
+         yHlast=yH(i)
       enddo
 
       lnTT_=gamma1*((ss-1.5*(1.-yH)*log(m_H/m_e) &
@@ -185,34 +187,25 @@ module Ionization
     endsubroutine pressure_gradient
 
 !***********************************************************************
-    function rtsafe(lnrho,ss)
+    function rtsafe(lnrho,ss,yHlast)
 !
 !   23-feb-03/tobi: minor changes
 !
-      real, intent (in)  :: lnrho,ss
-      real               :: yH0,yH1,dyHold,dyH,fl,fh,f,df,temp,rtsafe
-      real, parameter    :: yHacc=1.e-5
-      real, save         :: yHlast=.5
-      integer            :: i
-      integer, parameter :: maxit=100
+      real, intent (in)    :: lnrho,ss,yHlast
+      real                 :: yH0,yH1,dyHold,dyH,fl,fh,f,df,temp,rtsafe
+      real, parameter      :: yHacc=1.e-5
+      integer              :: i
+      integer, parameter   :: maxit=100
 
       yH1=1.-yHacc
       yH0=yHacc
       dyHold=1.
       dyH=dyHold
 
-      rtsafe=yH0
-      call saha(rtsafe,lnrho,ss,fh,df)
-      if (fh.le.0.) then
-         yHlast=rtsafe
-         return
-      endif
-      rtsafe=yH1
-      call saha(rtsafe,lnrho,ss,fl,df)
-      if (fl.ge.0.) then
-         yHlast=rtsafe
-         return
-      endif
+      call saha(yH0,lnrho,ss,fh,df)
+      if (fh.le.0.) return
+      call saha(yH1,lnrho,ss,fl,df)
+      if (fl.ge.0.) return
     
       rtsafe=yHlast
       call saha(rtsafe,lnrho,ss,f,df)
@@ -223,24 +216,15 @@ module Ionization
             dyHold=dyH
             dyH=.5*(yH0-yH1)
             rtsafe=yH1+dyH
-            if (yH1.eq.rtsafe) then
-               yHlast=rtsafe
-               return
-            endif
+            if (yH1.eq.rtsafe) return
          else
             dyHold=dyH
             dyH=f/df
             temp=rtsafe
             rtsafe=rtsafe-dyH
-            if (temp.eq.rtsafe) then
-               yHlast=rtsafe
-               return
-            endif
+            if (temp.eq.rtsafe) return
          endif
-         if (abs(dyH).lt.yHacc) then
-            yHlast=rtsafe
-            return
-         endif
+         if (abs(dyH).lt.yHacc) return
          call saha(rtsafe,lnrho,ss,f,df)
          if (f.lt.0.) then
             yH1=rtsafe
