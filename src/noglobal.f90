@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.4 2004-06-07 19:52:37 theine Exp $
+! $Id: noglobal.f90,v 1.5 2004-06-10 00:47:18 dobler Exp $
 
 module Global
 
@@ -24,6 +24,9 @@ module Global
 !***********************************************************************
     subroutine set_global_vect(var,m,n,label)
 !
+!  set (m-n)-pencil of global vector variable identified by LABEL
+!  [dummy routine]
+!
 !  18-jul-02/wolf coded
 !
       real, dimension(nx,3) :: var
@@ -37,6 +40,7 @@ module Global
     subroutine set_global_scal(var,m,n,label)
 !
 !  set (m,n)-pencil of the global scalar variable identified by LABEL
+!  [dummy routine]
 !
 !  18-jul-02/wolf coded
 !
@@ -52,7 +56,8 @@ module Global
 !***********************************************************************
     subroutine get_global_vect(var,m,n,label)
 !
-!  set (m,n)-pencil of the global vector variable identified by LABEL
+!  get (m,n)-pencil of the global vector variable identified by LABEL
+!  [dummy routine]
 !
 !  18-jul-02/wolf coded
 !
@@ -69,6 +74,7 @@ module Global
     subroutine get_global_scal(var,m,n,label)
 !
 !  set (m,n)-pencil of the global scalar variable identified by LABEL
+!  [dummy routine]
 !
 !  18-jul-02/wolf coded
 !
