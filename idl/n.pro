@@ -28,6 +28,12 @@ if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
 if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))
 if defined(i_uxuxBm) ne 0 then uxuxBm=reform(a(i_uxuxBm-1,*))
+if defined(i_Erad_rms) ne 0 then Erad_rms=reform(a(i_Erad_rms-1,*))
+if defined(i_Erad_max) ne 0 then Erad_max=reform(a(i_Erad_max-1,*))
+if defined(i_Egas_rms) ne 0 then Egas_rms=reform(a(i_Egas_rms-1,*))
+if defined(i_Egas_max) ne 0 then Egas_max=reform(a(i_Egas_max-1,*))
+if defined(i_Frms) ne 0 then Frms=reform(a(i_Frms-1,*))
+if defined(i_Fmax) ne 0 then Fmax=reform(a(i_Fmax-1,*))
 ;
 pmulti = !p.multi
 ;
