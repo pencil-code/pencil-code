@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: new,v 1.12 2003-07-30 00:21:03 brandenb Exp $
+#  $Id: new,v 1.13 2003-11-02 03:09:56 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -68,4 +68,5 @@ cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
 if (-f k.dat) cp k.dat $targetdir
+if (-f stratification.dat) cp stratification.dat $targetdir
 #
