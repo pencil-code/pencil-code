@@ -10,8 +10,8 @@
 ;;;   Calculate all relevant thermodynamical variables from lnrho and
 ;;;   ss.
 
-pp  = exp(gamma*(ss+lnrho))
-cs2 = gamma * exp(gamma*ss+gamma1*lnrho)
+pp  = cs20*rho0/gamma*exp(gamma*(ss+lnrho-lnrho0))
+cs2 = cs20 * exp(gamma*ss+gamma1*(lnrho-lnrho0))
 TT  = cs2/gamma1
 
 ;; initial profiles of temperature, density and entropy for solar
@@ -19,9 +19,9 @@ TT  = cs2/gamma1
 ssinit = (lnrhoinit = (Tinit = 0.*z))
 
 top = where(z ge z2)
-Tref = cs0^2/gamma1
+Tref = cs20/gamma1
 lnrhoref = alog(rho0)
-ssref = (2*alog(cs0) - gamma1*alog(rho0)-alog(gamma))/gamma
+ssref = 0.
 zo = [z2,ztop]
 if (isothtop eq 0) then begin   ; polytropic top layer
   beta = gamma/gamma1*gravz/(mpoly2+1)

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.23 2002-06-16 15:03:09 dobler Exp $ 
+! $Id: param_io.f90,v 1.24 2002-06-16 20:35:03 dobler Exp $ 
 
 module Param_IO
 
@@ -54,7 +54,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.23 2002-06-16 15:03:09 dobler Exp $
+!   $Id: param_io.f90,v 1.24 2002-06-16 20:35:03 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -107,7 +107,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.23 2002-06-16 15:03:09 dobler Exp $
+!   $Id: param_io.f90,v 1.24 2002-06-16 20:35:03 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -146,6 +146,7 @@ module Param_IO
 !
       gamma1=gamma-1.
       cs20=cs0**2
+      lnrho0=alog(rho0)
 !
 !  timestep
 !

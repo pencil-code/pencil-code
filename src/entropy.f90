@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.64 2002-06-14 04:38:16 brandenb Exp $
+! $Id: entropy.f90,v 1.65 2002-06-16 20:35:03 dobler Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.64 $", &
-           "$Date: 2002-06-14 04:38:16 $")
+           "$Revision: 1.65 $", &
+           "$Date: 2002-06-16 20:35:03 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -79,6 +79,7 @@ module Entropy
       use Sub, only: step
       use Mpicomm
       use IO
+      use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,p,xx,yy,zz
@@ -99,10 +100,11 @@ module Entropy
              print*, 'Note(case specific!): mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
         !
         select case(initss)
-!
-!  constant ss
-!
+
         case(1)
+          !
+          !  ss = const.
+          !
           !ss0=alog(-gamma1*gravz*zinfty)/gamma
           !print*,'isentropic stratification; ss=',ss0
           f(:,:,:,ient)=0.
@@ -112,35 +114,37 @@ module Entropy
             f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
             !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
           endif
-!
-!  linear profile of ss, centered around ss=0.
-!
+
         case(2)
+          !
+          !  linear profile of ss, centered around ss=0.
+          !
           f(:,:,:,ient) = grads0*zz
-!
-!  convection setup
-!
-        case(4)               ! piecewise polytropic
+
+        case(4)
+          !
+          !  piecewise polytropic convection setup
+          !  cs0, rho0 and ss0=0 refer to height z=zref
           cs20=cs0**2
-          ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
+          ss0 = 0.
           ! top region
-          ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
+          ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
           if (isothtop /= 0) then ! isothermal top layer
             beta1 = 0.
-            f(:,:,:,ient) = -gamma1*gravz*(zz-ztop)/cs20
+            f(:,:,:,ient) = -gamma1*gravz*(zz-zref)/cs20
             ! unstable region
-            ssint = -gamma1*gravz*(z2-ztop)/cs20 ! ss at layer interface z=z2
+            ssint = -gamma1*gravz*(z2-zref)/cs20 ! ss at layer interface z=z2
           else
             beta1 = gamma*gravz/(mpoly2+1)
-            tmp = 1 + beta1*(zz-ztop)/cs20
+            tmp = 1 + beta1*(zz-zref)/cs20
             tmp = max(tmp,epsi)  ! ensure arg to log is positive
             f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
                             * alog(tmp)
             ! unstable region
             ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
-                    * alog(1 + beta1*(z2-ztop)/cs20)
+                    * alog(1 + beta1*(z2-zref)/cs20)
           endif
-          cs2int = cs20 + beta1*(z2-ztop) ! cs2 at layer interface z=z2
+          cs2int = cs20 + beta1*(z2-zref) ! cs2 at layer interface z=z2
           beta1 = gamma*gravz/(mpoly0+1)
           tmp = 1 + beta1*(zz-z2)/cs2int
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -166,9 +170,12 @@ module Entropy
           f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
           ! Fix origin of entropy
           f(:,:,:,ient) = f(:,:,:,ient) + ss0
+
         case default
           f(:,:,:,ient) = 0.
+
         endselect
+
       endif
 !
       if (lgravr) then
@@ -214,7 +221,7 @@ module Entropy
 !  include in maximum advection speed (for timestep)
 !
       ss=f(l1:l2,m,n,ient)
-      cs2=cs20*exp(gamma1*lnrho+gamma*ss)
+      cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
       if (headtt) print*,'entropy: cs20=',cs20
 !
@@ -291,6 +298,7 @@ module Entropy
       use Global
       use Slices
       use IO
+      use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnTlambda,glhc
@@ -384,6 +392,7 @@ module Entropy
         ! surface cooling towards s=0
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
+print*,'FIXME: what am I doing with ztop in spherical geometry?'
         prof = step(r_mn,ztop,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
@@ -433,9 +442,9 @@ module Entropy
 !  NB: if you modify this profile, you *must* adapt gradloghcond below.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,z1,z2, &
-           hcond0,hcond1,hcond2,whcond
+      use Cdata, only: nx,lgravz,lgravr,hcond0,hcond1,hcond2,whcond
       use Sub, only: step
+      use Gravity
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
@@ -459,9 +468,9 @@ module Entropy
 !  NB: *Must* be in sync with heatcond() above.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,z1,z2, &
-           hcond0,hcond1,hcond2,whcond
+      use Cdata, only: nx,lgravz,lgravr,hcond0,hcond1,hcond2,whcond
       use Sub, only: der_step
+      use Gravity
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc
@@ -488,6 +497,7 @@ module Entropy
 !  11-jun-2002/axel: moved into the entropy module
 !
       use Cdata
+      use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: tmp_xy
@@ -502,8 +512,9 @@ module Entropy
         if (bcz1(ient) == "c1") then
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 1."
-          tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
-                   * exp(-gamma*f(:,:,n1,ient) - gamma1*f(:,:,n1,ilnrho))
+          tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
+                   * exp(-gamma*f(:,:,n1,ient) &
+                         - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
           tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(lambda T_0)
           do i=1,nghost
             f(:,:,n1-i,ient) = &
@@ -517,8 +528,9 @@ module Entropy
         if (bcz2(ient) == "c1") then
           if (bcz2(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 2."
-          tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
-                   * exp(-gamma*f(:,:,n2,ient) - gamma1*f(:,:,n2,ilnrho))
+          tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
+                   * exp(-gamma*f(:,:,n2,ient) &
+                         - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
           tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(lambda T_0)
           do i=1,nghost
             f(:,:,n2+i,ient) = &
@@ -531,16 +543,19 @@ module Entropy
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for
 !  entropy and density.
-!  NB: Sound speed is set to cs at the top for isoentropic density profile, 
-!  so this is mostly useful for top boundary.  
+!  NB(vpariev): Sound speed is set to cs at the top for isoentropic
+!  density profile,so this is mostly useful for top boundary.  
+!  wd: sound speed is _always_ cs, so what's the point here?
 !
         if (bcz2(ient) == "c2") then
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
           !! tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
-          zinfty=-cs20/(gamma1*gravz)
-          cs2top=cs20*(1-z(n2)/zinfty)
-          tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs2top/cs20)) / gamma
+!          zinfty=-cs20/(gamma1*gravz)
+          zinfty=zref-cs20/(gamma1*gravz)
+          cs2top=cs20*(1-(ztop-zref)/zinfty)
+          tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
+                   + alog(cs2top/cs20)) / gamma
           f(:,:,n2,ient) = tmp_xy
           do i=1,nghost
             f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.13 2002-06-10 13:07:14 brandenb Exp $
+! $Id: grav_z.f90,v 1.14 2002-06-16 20:35:03 dobler Exp $
 
 module Gravity
 
@@ -7,15 +7,17 @@ module Gravity
 !
 
   use Cparam
-  use Cdata, only: z1,z2,ztop,gravz
 
   implicit none
 
+  real :: z1,z2,ztop,zref=0.
+  real :: gravz=0.
+
   namelist /grav_init_pars/ &
-       z1,z2,ztop,gravz
+       z1,z2,zref,gravz
 
   namelist /grav_run_pars/ &
-       gravz
+       zref,gravz
 
   contains
 
@@ -39,8 +41,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_z.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-06-10 13:07:14 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-06-16 20:35:03 $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -87,7 +89,7 @@ if (headtt) print*,'duu_dt_grav: gravz=',gravz
 !  gravity potential
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: nx,gravz
+      use Cdata, only: nx
 !
 !  the following looks stupid, but otherwise it's not ok,
 !  especially in 1-D

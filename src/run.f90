@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.48 2002-06-16 13:45:14 brandenb Exp $
+! $Id: run.f90,v 1.49 2002-06-16 20:35:03 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -44,8 +44,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.48 $", &
-             "$Date: 2002-06-16 13:45:14 $")
+             "$Revision: 1.49 $", &
+             "$Date: 2002-06-16 20:35:03 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -53,10 +53,20 @@
         ix=mx/2; iy=my/2; iz=mz/2
         dtmin=1e-6  !!(AB: this should be an input parameter, better dimless)
 !
+!  read parameters from start.x (default values; may be overwritten by
+!  read_runpars)
+!
+        call rparam()
+!
+!  derived parameters (that may still be overwritten)
+!  [might better be put into another routine, possibly even in rparam or
+!  read_runpars]
+!
+        Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1) ! heat flux through
+                                                       ! polytropic atmosphere
+!
 !  read parameters and output parameter list
 !
-        call rparam !(Read parameters from start.x; may be overwritten by
-                    ! read_runpars)
         call read_runpars(PRINT=.true.)
         call rprint_list(.false.)
 !
@@ -72,6 +82,7 @@
 !
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
+        ztop = z(n2)
 !
 !  read seed field parameters (only if forcing is turned on)
 !

@@ -65,7 +65,7 @@ for ivar = 0,3 do begin
       if (n_elements(ssinit) gt 0) then xr = minmax([xr,ssinit])
     end
     3: begin
-      var = gamma/gamma1*exp(gamma*ss+gamma1*lnrho)
+      var = cs0^2/gamma1*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       title = '!6Temperature !8T!X'
       xr = minmax(var)
       if (n_elements(Tinit) gt 0) then xr = minmax([xr,Tinit])

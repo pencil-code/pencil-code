@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.42 2002-06-15 11:29:35 brandenb Exp $
+! $Id: start.f90,v 1.43 2002-06-16 20:35:03 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.42 $", &
-             "$Date: 2002-06-15 11:29:35 $")
+             "$Revision: 1.43 $", &
+             "$Date: 2002-06-16 20:35:03 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -43,7 +43,7 @@
 !
 !  ?for convection
 !
-        z1=0; z2=1; ztop=1.32
+        z1=0.; z2=1.; zref=1.
 !
 !  this may need to go into hydro;
 !  (maybe should have a separate density module, so we can run burgers)

@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.6 2002-06-04 08:12:02 brandenb Exp $
+! $Id: nograv.f90,v 1.7 2002-06-16 20:35:03 dobler Exp $
 
 module Gravity
 
@@ -9,6 +9,8 @@ module Gravity
   use Cparam
 
   implicit none
+
+  real :: z1,z2,ztop,zref,gravz ! used by Entropy and Density
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /grav_init_pars/ dummy
@@ -37,8 +39,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nograv.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-06-04 08:12:02 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-06-16 20:35:03 $")
 !
       lgrav = .false.
       lgravz = .false.

@@ -55,46 +55,6 @@ zero = 0*one
 @tmp/magnetic
 print,'nname=',nname
 ;
-;  Read startup parameters
-;
-pfile=datatopdir+'/'+'param.nml'
-dummy=findfile(pfile, COUNT=cpar)
-if (cpar gt 0) then begin
-  print, 'Reading param.nml..'
-  spawn, '../../../bin/nl2idl tmp/param.nml > tmp/param.pro'
-  @tmp/param.pro
-  x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
-  Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
-  ;
-  lhydro    = par.lhydro
-  lgravz    = par.lgravz
-  lgravr    = par.lgravr
-  ldensity  = par.ldensity
-  lforcing  = par.lforcing
-  lentropy  = par.lentropy
-  lmagnetic = par.lmagnetic
-  ;
-  if (ldensity) then begin
-    cs0=par.cs0 & rho0=par.rho0
-    gamma=par.gamma & gamma1=gamma-1.
-  endif
-  ;
-  if (lgravz) then begin
-    z1=par.z1 & z2=par.z2
-    ztop=par.ztop & z3=ztop
-    gravz=par.gravz
-  endif
-  ;
-  if (lentropy) then begin
-    hcond0=par.hcond0 & hcond1=par.hcond1
-    hcond2=par.hcond2 & whcond=par.whcond
-    mpoly0=par.mpoly0 & mpoly1=par.mpoly1
-    mpoly2=par.mpoly2 & isothtop=par.isothtop
-  endif
-endif else begin
-  print, 'Warning: cannot find file ', pfile
-endelse
-;
 ;  Read grid
 ;
 t=zero
@@ -126,6 +86,51 @@ n1=3 & n2=mz-4
 nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
+;
+;  Read startup parameters
+;
+pfile=datatopdir+'/'+'param.nml'
+dummy=findfile(pfile, COUNT=cpar)
+if (cpar gt 0) then begin
+  print, 'Reading param.nml..'
+  spawn, '../../../bin/nl2idl tmp/param.nml > tmp/param.pro'
+  @tmp/param.pro
+  x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
+  Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
+  ;
+  lhydro    = par.lhydro
+  lgravz    = par.lgravz
+  lgravr    = par.lgravr
+  ldensity  = par.ldensity
+  lforcing  = par.lforcing
+  lentropy  = par.lentropy
+  lmagnetic = par.lmagnetic
+  ;
+  if (ldensity) then begin
+    cs0=par.cs0 & rho0=par.rho0
+    gamma=par.gamma & gamma1=gamma-1.
+    cs20 = cs0^2 & lnrho0 = alog(rho0)
+  endif
+  ;
+  if (lgravz) then begin
+    z1=par.z1 & z2=par.z2
+    zref=par.zref
+    gravz=par.gravz
+    ztop=z[n2] & z3=ztop
+  endif
+  ;
+  if (lentropy) then begin
+    hcond0=par.hcond0 & hcond1=par.hcond1
+    hcond2=par.hcond2 & whcond=par.whcond
+    mpoly0=par.mpoly0 & mpoly1=par.mpoly1
+    mpoly2=par.mpoly2 & isothtop=par.isothtop
+  endif
+endif else begin
+  print, 'Warning: cannot find file ', pfile
+endelse
+
+
+
 ;
 print, '..done'
 ;

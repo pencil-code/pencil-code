@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.1 2002-06-14 06:37:42 brandenb Exp $
+! $Id: nodensity.f90,v 1.2 2002-06-16 20:35:03 dobler Exp $
 
 module Density
 
@@ -7,6 +7,7 @@ module Density
   implicit none
 
   real :: cs0=1., rho0=1., gamma=1., cs20=1., gamma1=0.
+  real :: lnrho0
 
   integer :: dummy           ! We cannot define empty namelists
   namelist /density_init_pars/ dummy
@@ -40,8 +41,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nodensity.f90,v $", &
-           "$Revision: 1.1 $", &
-           "$Date: 2002-06-14 06:37:42 $")
+           "$Revision: 1.2 $", &
+           "$Date: 2002-06-16 20:35:03 $")
 !
     endsubroutine register_density
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.11 2002-06-15 19:29:55 dobler Exp $
+! $Id: density.f90,v 1.12 2002-06-16 20:35:03 dobler Exp $
 
 module Density
 
@@ -9,7 +9,7 @@ module Density
   integer :: initlnrho=0
   real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho=0., &
-          cs20, cs2top, gamma1, zinfty
+          cs20, cs2top, gamma1, zinfty, lnrho0
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-06-15 19:29:55 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-06-16 20:35:03 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -79,17 +79,24 @@ module Density
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,p,pot,prof
       real, dimension (mz) :: stp
       real, dimension (nx,1) :: rmn
-      real :: lnrho0
       real :: beta1,lnrhoint,cs2int
 !
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
 !
       select case(initlnrho)
+
       case(0)
+        !
+        !  rho=0
+        !
         if (lroot) print*,'uniform lnrho'
         f(:,:,:,ilnrho)=0.
+
       case(1)
+        !
+        !  hydrostatic for T=const or polytropic atmosphere
+        !
         if (gamma1==0.) then
           if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal atmosphere)'
           f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
@@ -106,7 +113,11 @@ module Density
           if (lroot) print*,'rho=(1-z/zinfty)^gamma1; zinfty=',zinfty
           f(:,:,n1:n2,ilnrho)=alog(1.-zz(:,:,n1:n2)/zinfty)/gamma1
         endif
+
       case(2)
+        !
+        !  density jump (for shocks?)
+        !
         if (lroot) print*,'density jump; rho_left,right=',rho_left,rho_right
         if (lroot) print*,'density jump; widthlnrho=',widthlnrho
         prof=.5*(1.+tanh(zz/widthlnrho))
@@ -133,7 +144,8 @@ module Density
         endif
         !
         if (lgravr) then
-          if (lroot) print*,'radial density stratification (assumes s=const)'
+          if (lroot) print*, &
+               'radial density stratification (assumes s=const) -- NEEDS TO BE FIXED'
 ! nok     call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
           call potential(x,y(m),z(n),rmn,pot) ! gravity potential
 !          call potential(rr,pot) ! gravity potential
@@ -156,19 +168,19 @@ module Density
         ! top region
         if (isothtop /= 0) then
           beta1 = 0.
-          f(:,:,:,ilnrho) = gamma*gravz/cs20*(zz-ztop)
+          f(:,:,:,ilnrho) = gamma*gravz/cs20*(zz-zref)
           ! unstable region
-          lnrhoint =  gamma*gravz/cs20*(z2-ztop)
+          lnrhoint =  gamma*gravz/cs20*(z2-zref)
         else
           beta1 = gamma*gravz/(mpoly2+1)
-          tmp = 1 + beta1*(zz-ztop)/cs20
+          tmp = 1 + beta1*(zz-zref)/cs20
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
           f(:,:,:,ilnrho) = mpoly2*alog(tmp)
           ! unstable region
-          lnrhoint =  mpoly2*alog(1 + beta1*(z2-ztop)/cs20)
+          lnrhoint =  mpoly2*alog(1 + beta1*(z2-zref)/cs20)
         endif
         ! (lnrho at layer interface z=z2)
-        cs2int = cs20 + beta1*(z2-ztop) ! cs2 at layer interface z=z2
+        cs2int = cs20 + beta1*(z2-zref) ! cs2 at layer interface z=z2
         ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
         beta1 = gamma*gravz/(mpoly0+1)
         tmp = 1 + beta1*(zz-z2)/cs2int
