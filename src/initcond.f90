@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.38 2003-05-08 18:05:39 brandenb Exp $ 
+! $Id: initcond.f90,v 1.39 2003-05-22 17:31:33 brandenb Exp $ 
 
 module Initcond 
  
@@ -51,6 +51,62 @@ module Initcond
       endif
 !
     endsubroutine sinxsinz
+!***********************************************************************
+    subroutine hat(ampl,f,i,width,kx,ky,kz)
+!
+!  hat bump
+!
+!   2-may-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,width,k=1.,width2,k2
+!
+!  prepare
+!
+      width2=width**2
+!
+!  set x-hat
+!
+      if (present(kx)) then
+        k=kx
+        k2=k**2
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in hat; kx=',k
+        else
+          if (lroot) print*,'hat: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-x**2)),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-hat
+!
+      if (present(ky)) then
+        k=ky
+        k2=k**2
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in hat; ky=',k
+        else
+          if (lroot) print*,'hat: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-y**2)),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-hat
+!
+      if (present(kz)) then
+        k=kz
+        k2=k**2
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in hat; kz=',k
+        else
+          if (lroot) print*,'hat: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-z**2)),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine hat
 !***********************************************************************
     subroutine gaussian(ampl,f,i,kx,ky,kz)
 !

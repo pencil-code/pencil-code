@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.3 2003-05-20 16:11:23 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.4 2003-05-22 17:31:33 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -66,7 +66,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.3 2003-05-20 16:11:23 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.4 2003-05-22 17:31:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -102,6 +102,9 @@ module Pscalar
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
+        case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
+        case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
+        case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
         case('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
         case('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
         case('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
