@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.34 2003-07-01 14:50:28 theine Exp $
+! $Id: radiation_exp.f90,v 1.35 2003-07-01 17:14:30 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.34 2003-07-01 14:50:28 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.35 2003-07-01 17:14:30 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -535,6 +535,108 @@ module Radiation
         call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
       endif
     endsubroutine radtransfer_comm_xym
+!***********************************************************************
+    subroutine radtransfer_comm2()
+!
+!  Integration radioation transfer equation along rays
+!
+!  This routine is called after the communication part
+!  The true boundary intensities I0 are now known and
+!    the correction term I0*exp(-tau) is added
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension(mx,my,mz) :: Irad0
+      integer :: lrad,mrad,nrad,rad2
+!
+!  identifier
+!
+      if(lroot.and.headt) print*,'radtransfer_comm2'
+!
+!  loop over rays
+!
+      do nrad=-radz,radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        rad2=lrad**2+mrad**2+nrad**2
+        if (rad2>0 .and. rad2<=rad2max) then 
+          !
+          !  set ghost zones, data from preceeding processor
+          !
+          if (lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
+          if (lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
+          if (mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
+          if (mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
+          if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy(:,:,:,lrad,mrad,nrad)
+          if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy(:,:,:,lrad,mrad,nrad)
+          !
+          !  propagate boundary values
+          !
+          call intensity_comm2(lrad,mrad,nrad,Irad0)
+          !
+          !  set boundary values for following processor
+          !
+          if (lrad<0) Irad0_yz(:,:,:,lrad,mrad,nrad)=Irad0(l1:l1+radx0-1,:,:)
+          if (lrad>0) Irad0_yz(:,:,:,lrad,mrad,nrad)=Irad0(l2-radx0+1:l2,:,:)
+          if (mrad<0) Irad0_zx(:,:,:,lrad,mrad,nrad)=Irad0(:,m1:m1+rady0-1,:)
+          if (mrad>0) Irad0_zx(:,:,:,lrad,mrad,nrad)=Irad0(:,m2-rady0+1:m2,:)
+          if (nrad<0) Irad0_xy(:,:,:,lrad,mrad,nrad)=Irad0(:,:,n1:n1+radz0-1)
+          if (nrad>0) Irad0_xy(:,:,:,lrad,mrad,nrad)=Irad0(:,:,n2-radz0+1:n2)
+        endif
+      enddo
+      enddo
+      enddo
+    endsubroutine radtransfer_comm2
+!***********************************************************************
+    subroutine intensity_comm2(lrad,mrad,nrad,Irad0)
+!
+!  Integration radiation transfer equation along all rays
+!
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+!
+      integer :: lrad,mrad,nrad
+      real, dimension(mx,my,mz) :: Irad0
+      integer :: lstart,lstop,lsgn
+      integer :: mstart,mstop,msgn
+      integer :: nstart,nstop,nsgn
+      integer :: l
+      logical, save :: first=.true.
+!
+!  identifier
+!
+      if(first) then
+        print*,'intensity_comm2'
+        first=.false.
+      endif
+!
+!  calculate start and stop values
+!
+      if(lrad>=0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
+      if(mrad>=0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
+      if(nrad>=0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
+!
+!  make sure the loop is executed at least once, even when
+!  lrad,mrad,nrad=0.
+!
+      if(lrad>=0) then; lsgn=1; else; lsgn=-1; endif
+      if(mrad>=0) then; msgn=1; else; msgn=-1; endif
+      if(nrad>=0) then; nsgn=1; else; nsgn=-1; endif
+!
+!  loop
+!
+      do n=nstart,nstop,nsgn
+      do m=mstart,mstop,msgn
+      do l=lstart,lstop,lsgn
+          Irad0(l,m,n)=Irad0(l-lrad,m-mrad,n-nrad)
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine intensity_comm2
 !***********************************************************************
     subroutine radtransfer2(f)
 !
