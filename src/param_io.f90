@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.43 2002-07-22 18:54:29 dobler Exp $ 
+! $Id: param_io.f90,v 1.44 2002-07-22 22:36:59 brandenb Exp $ 
 
 module Param_IO
 
@@ -30,7 +30,7 @@ module Param_IO
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,tmax,iwig,ialive, &
        bcx,bcy,bcz, &
-       ttrans
+       ttransient
  
   contains
 
