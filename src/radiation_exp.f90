@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.43 2003-07-02 18:13:28 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.44 2003-07-02 23:00:24 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -78,7 +78,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.43 2003-07-02 18:13:28 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.44 2003-07-02 23:00:24 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -410,6 +410,7 @@ module Radiation
       if (nrad/=0) call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
       if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy(:,:,:)
       if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy(:,:,:)
+print*,'A) ipz,nrad,Irad_xy(4,4,:)=',ipz,nrad,Irad0_xy(4,4,:)
 !
 !  propagate boundary values
 !
@@ -420,19 +421,20 @@ module Radiation
 !
       if (lrad<0) Irad0_yz(:,:,:)=Irad0(l1:l1+radx0-1,:,:)
       if (lrad>0) Irad0_yz(:,:,:)=Irad0(l2-radx0+1:l2,:,:)
-      if (lrad/=0) call radcomm_yz_send(lrad,radx0,Irad_yz,tag_yz)
+      if (lrad/=0) call radcomm_yz_send(lrad,radx0,Irad0_yz,tag_yz)
 !
 !  set Irad0_zx, and send to next processor in y
 !
       if (mrad<0) Irad0_zx(:,:,:)=Irad0(:,m1:m1+rady0-1,:)
       if (mrad>0) Irad0_zx(:,:,:)=Irad0(:,m2-rady0+1:m2,:)
-      if (mrad/=0) call radcomm_zx_send(mrad,rady0,Irad_zx,tag_zx)
+      if (mrad/=0) call radcomm_zx_send(mrad,rady0,Irad0_zx,tag_zx)
 !
 !  set Irad0_xy, and send to next processor in z
 !
-      if (nrad<0) Irad0_xy(:,:,:)=Irad0(:,:,n1:n1+radz0-1)
-      if (nrad>0) Irad0_xy(:,:,:)=Irad0(:,:,n2-radz0+1:n2)
-      if (nrad/=0) call radcomm_xy_send(nrad,radz0,Irad_xy,tag_xy)
+print*,'B) ipz,nrad,Irad0_xy(4,4,:)=',ipz,nrad,Irad0_xy(4,4,:),Irad_xy(4,4,:),tau_xy(4,4,:)
+      if (nrad<0) Irad0_xy(:,:,:)=Irad_xy+exp(-tau_xy)*Irad0(:,:,n1:n1+radz0-1)
+      if (nrad>0) Irad0_xy(:,:,:)=Irad_xy+exp(-tau_xy)*Irad0(:,:,n2-radz0+1:n2)
+      if (nrad/=0) call radcomm_xy_send(nrad,radz0,Irad0_xy,tag_xy)
 !
     endsubroutine radtransfer_communicate
 !***********************************************************************

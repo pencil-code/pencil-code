@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.90 2003-07-02 18:43:37 brandenb Exp $
+! $Id: mpicomm.f90,v 1.91 2003-07-02 23:00:24 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -763,7 +763,8 @@ module Mpicomm
       nbuf_xy=mx*my*radz0
 !
 !  determine whether or not we are on a boundary point
-!  lower point, ray in positive direction
+!  lower point, ray in positive direction,
+!  upper point, ray in negative direction
 !
       if( (nrad>0.and.ipz/=nprocz-1) .or. &
           (nrad<0.and.ipz/=0) ) then
@@ -807,21 +808,24 @@ module Mpicomm
 !  determine whether or not we are on a boundary point
 !  lower point, ray in positive direction
 !
-      if(nrad>0 .and. ipz==0) then
-!
 !  should call "lower boundary"
 !
+      if(nrad>0 .and. ipz==0) then
          Ibuf_xy=1. !(for the time being)
-      elseif(nrad<0 .and. ipz==nprocz-1) then
+      endif
 !
 !  should call "upper boundary"
 !
+      if(nrad<0 .and. ipz==nprocz-1) then
          Ibuf_xy=0. !(for the time being)
-      else
+      endif
 !
 !  receive from processor at the beginning of ray
 !
-         idest=ipz-sign(1,nrad)
+      if( (.not.(nrad>0.and.ipz==0)) .and. &
+          (.not.(nrad<0.and.ipz==nprocz-1)) ) then
+!
+           idest=ipz-sign(1,nrad)
 !
 !  initiate receive
 !
