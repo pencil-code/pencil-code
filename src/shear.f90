@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.19 2004-07-08 09:07:49 ajohan Exp $
+! $Id: shear.f90,v 1.20 2004-07-08 09:10:55 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -43,7 +43,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.19 2004-07-08 09:07:49 ajohan Exp $")
+           "$Id: shear.f90,v 1.20 2004-07-08 09:10:55 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -56,7 +56,8 @@ module Shear
 !  is calculated. Otherwise Sshear keeps its value from the input list.
 !
       if (qshear /= 0.) Sshear=-qshear*Omega
-      if (ip <= 12) print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
+      if (lroot .and. ip <= 12) &
+          print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
 
     endsubroutine initialize_shear
 !***********************************************************************
