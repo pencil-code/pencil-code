@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.14 2003-10-29 16:23:48 snod Exp $
+! $Id: cosmicray.f90,v 1.15 2003-10-29 16:51:12 mee Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -21,24 +21,26 @@ module CosmicRay
 
   implicit none
 
-  character (len=labellen) :: initecr='zero', initecr2='zero', negl='none'
+  character (len=labellen) :: initecr='zero', initecr2='zero'
 
   ! input parameters
   real :: gammacr=4./3.,gammacr1
   real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=0.
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
 
+  logical :: lnegl = .false.
+
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
-       gammacr, negl
+       gammacr, lnegl
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
 
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
-       gammacr
+       gammacr, lnegl
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
@@ -74,7 +76,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.14 2003-10-29 16:23:48 snod Exp $")
+           "$Id: cosmicray.f90,v 1.15 2003-10-29 16:51:12 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -200,7 +202,7 @@ module CosmicRay
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
-      if(negl.eq.'none')then
+      if(lnegl)then
         do j=0,2
           df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
         enddo
