@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.212 2004-07-10 20:21:15 brandenb Exp $
+! $Id: magnetic.f90,v 1.213 2004-07-11 14:49:47 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -140,7 +140,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.212 2004-07-10 20:21:15 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.213 2004-07-11 14:49:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -430,24 +430,6 @@ module Magnetic
         if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
       endif
 !
-!  write B-slices for output in wvid in run.f90
-!  Note: ix is the index with respect to array with ghost zones.
-!
-        if(lvid.and.lfirst) then
-          do j=1,3
-            bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
-            if (m.eq.iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
-            if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
-            if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
-          enddo
-          b2_yz(m-m1+1,n-n1+1)=b2(ix-l1+1)
-          if (m.eq.iy)  b2_xz(:,n-n1+1)=b2
-          if (n.eq.iz)  b2_xy(:,m-m1+1)=b2
-          if (n.eq.iz2) b2_xy2(:,m-m1+1)=b2
-          if(bthresh_per_brms/=0) call calc_bthresh
-          call vecout(41,trim(directory)//'/bvec',bb,bthresh,nbvec)
-        endif
-!
 !  calculating the current jj, and simultaneously del2A.
 !
 !  --old--   call del2v_etc(f,iaa,del2A,curlcurl=jj)
@@ -607,6 +589,29 @@ module Magnetic
 !  possibility of relaxation of A in exterior region
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
+!
+!  write B-slices for output in wvid in run.f90
+!  Note: ix is the index with respect to array with ghost zones.
+!
+        if(lvid.and.lfirst) then
+          do j=1,3
+            bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
+            if (m.eq.iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
+            if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
+            if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
+          enddo
+          b2_yz(m-m1+1,n-n1+1)=b2(ix-l1+1)
+          if (m.eq.iy)  b2_xz(:,n-n1+1)=b2
+          if (n.eq.iz)  b2_xy(:,m-m1+1)=b2
+          if (n.eq.iz2) b2_xy2(:,m-m1+1)=b2
+          call dot_mn(jj,bb,jb)
+          jb_yz(m-m1+1,n-n1+1)=jb(ix-l1+1)
+          if (m.eq.iy)  jb_xz(:,n-n1+1)=jb
+          if (n.eq.iz)  jb_xy(:,m-m1+1)=jb
+          if (n.eq.iz2) jb_xy2(:,m-m1+1)=jb
+          if(bthresh_per_brms/=0) call calc_bthresh
+          call vecout(41,trim(directory)//'/bvec',bb,bthresh,nbvec)
+        endif
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.

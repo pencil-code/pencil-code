@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.43 2004-06-07 06:34:02 brandenb Exp $
+! $Id: slices.f90,v 1.44 2004-07-11 14:49:47 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -11,7 +11,7 @@ module Slices
   real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
   real, dimension (nx,ny,3) :: oo_xy,oo_xy2,aa_xy,aa_xy2
   real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
-  real, dimension (nx,ny) :: divu_xy,divu_xy2,o2_xy,o2_xy2,b2_xy,b2_xy2
+  real, dimension (nx,ny) :: divu_xy,divu_xy2,o2_xy,o2_xy2,b2_xy,b2_xy2,jb_xy,jb_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
   real, dimension (nx,ny) :: lnTT_xy,lnTT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
   real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2,shock_xy,shock_xy2
@@ -23,13 +23,13 @@ module Slices
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz,oo_xz,aa_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
-  real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz,o2_xz,b2_xz
+  real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz,o2_xz,b2_xz,jb_xz
   real, dimension (nx,nz) :: Qrad_xz,shock_xz
   real, dimension (nx,nz) :: XX_chiral_xz,YY_chiral_xz,DQ_chiral_xz,QQ_chiral_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz,oo_yz,aa_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
-  real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz,o2_yz,b2_yz
+  real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz,o2_yz,b2_yz,jb_yz
   real, dimension (ny,nz) :: Qrad_yz,shock_yz
   real, dimension (ny,nz) :: XX_chiral_yz,YY_chiral_yz,DQ_chiral_yz,QQ_chiral_yz
   real :: tvid
@@ -321,6 +321,12 @@ module Slices
         call wslice(path//'b2.xz',b2_xz,y(iy),nx,nz)
         call wslice(path//'b2.xy',b2_xy,z(iz),nx,ny)
         call wslice(path//'b2.Xy',b2_xy2,z(iz2),nx,ny)
+!
+      case ('jb')
+        call wslice(path//'jb.yz',jb_yz,x(ix),ny,nz)
+        call wslice(path//'jb.xz',jb_xz,y(iy),nx,nz)
+        call wslice(path//'jb.xy',jb_xy,z(iz),nx,ny)
+        call wslice(path//'jb.Xy',jb_xy2,z(iz2),nx,ny)
 !
       case ('aa')
         aa_yz=f(ix,m1:m2,n1:n2,iax:iaz)

@@ -1,4 +1,4 @@
- ! $Id: global_spheromak.f90,v 1.1 2004-07-10 20:21:15 brandenb Exp $
+ ! $Id: global_spheromak.f90,v 1.2 2004-07-11 14:49:47 brandenb Exp $
 
 module Global
 
@@ -96,7 +96,7 @@ module Global
 !
       call input(trim(directory)//'/ee_ext.dat',eee_ext,3,0)
       call input(trim(directory)//'/bb_ext.dat',bbb_ext,3,0)
-      call input(trim(directory)//'/jj_ext.dat',jjj_ext,3,0)
+!     call input(trim(directory)//'/jj_ext.dat',jjj_ext,3,0)
 !
     endsubroutine rglobal
 !***********************************************************************
