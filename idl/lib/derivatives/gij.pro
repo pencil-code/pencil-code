@@ -1,5 +1,5 @@
 ;
-;  $Id: gij.pro,v 1.1 2004-12-25 14:30:31 ajohan Exp $
+;  $Id: gij.pro,v 1.2 2005-01-27 13:59:48 bingert Exp $
 ;
 ;  Calculate derivative matrix
 ;
@@ -8,7 +8,7 @@ function gij,f
 ;
   s=size(f)
 ;
-  if (sf[0] eq 4) then begin
+  if (s[0] eq 4) then begin
 ;
     w=make_array(n_elements(f[*,0,0,0]),n_elements(f[0,*,0,0]),n_elements(f[0,0,*,0]),3,3,/nozero)
     w[*,*,*,0,0]=xder(f[*,*,*,0])
