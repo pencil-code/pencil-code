@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.66 2003-08-27 09:49:51 mee Exp $
+# $Id: getconf.csh,v 1.67 2003-08-28 15:51:24 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -13,6 +13,9 @@ set debug = 1
 
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
 if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
+
+# Save working directory for other scripts we call
+setenv PENCIL_WORKDIR `pwd`
 
 # Prevent code from running twice (and removing files by accident)
 if (-e "LOCK") then

@@ -61,13 +61,11 @@ rm -f STOP RELOAD fort.20
 # On machines with local scratch directory, initialize automatic
 # background copying of snapshots back to the data directory.
 # Also, if necessary copy executable to $SCRATCH_DIR of master node
-# and start top command on all procs
+# and start top command on all procs.
 if ($local_disc) then
   echo "Use local scratch disk"
   copy-snapshots -v >& copy-snapshots.log &
-  set pid_cp_snaps = $!  # save process number
   remote-top >& remote-top.log &
-  set pid_rem_top = $!  # save process number
 endif
 if ($local_binary) then
   echo "ls src/run.x $SCRATCH_DIR before copying:"
@@ -91,7 +89,9 @@ if ($local_disc) then
   copy-snapshots -v var.dat
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
-  kill  $pid_cp_snaps $pid_rem_top
+  set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
+  echo "Killing processes $pids"
+  kill $pids
 endif
 
 # Shut down lam if we have started it
