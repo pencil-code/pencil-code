@@ -1,4 +1,4 @@
-! $Id: grav_x.f90,v 1.1 2004-06-12 10:25:25 brandenb Exp $
+! $Id: grav_x.f90,v 1.2 2004-09-14 11:36:49 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -26,7 +26,7 @@ module Gravity
 !  parameters used throughout entire module
 !  xinfty is currently prescribed (=0)
 !
-  real, dimension(nx) :: gravx_pofile,potx_profile
+  real, dimension(nx) :: gravx_profile,potx_profile
   real :: gravx=0.,xinfty=0.,xgrav=0.,dgravx=0., pot_ratio=1.
 
 ! parameters needed for compatibility
@@ -34,19 +34,20 @@ module Gravity
   real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
-  real :: g0=0.,r0_pot=0.
-  integer :: n_pot=10   
+  real :: g0=0.,r0_pot=0.,kx_gg=1.,ky_gg=1.,kz_gg=1.
+  integer :: n_pot=10
   character (len=labellen) :: grav_profile='const'
-! logical :: lgravzd = .true.
+  logical :: lgravx_gas=.true.,lgravx_dust=.true.,lnumerical_equilibrium=.false.
 
   namelist /grav_init_pars/ &
-       grav_profile,gravx,xgrav,dgravx,pot_ratio
+       grav_profile,gravx,xgrav,dgravx,pot_ratio,kx_gg,ky_gg,kz_gg
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-       grav_profile,gravx,xgrav,dgravx,pot_ratio
+       grav_profile,gravx,xgrav,dgravx,pot_ratio,kx_gg,ky_gg,kz_gg, &
+       lgravx_gas, lgravx_dust
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -72,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_x.f90,v 1.1 2004-06-12 10:25:25 brandenb Exp $")
+           "$Id: grav_x.f90,v 1.2 2004-09-14 11:36:49 ajohan Exp $")
 !
       lgrav = .true.
       lgravx = .true.
@@ -90,25 +91,35 @@ module Gravity
       use CData
       use Mpicomm, only: stop_it
 !
-      if (grav_profile=='const') then
+!  Different gravity profiles (gas)
+!
+      select case (grav_profile)
+
+      case('const')
         if (lroot) print*,'initialize_gravity: constant gravx=',gravx
-        gravx_pofile=gravx
+        gravx_profile=gravx
         potx_profile=-gravx*(x(l1:l2)-xinfty)
 !
 !  tanh profile
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravx
 !  pot_ratio gives the resulting ratio in the density.
 !
-      elseif (grav_profile=='tanh') then
+      case('tanh')
         if (dgravx==0.) call stop_it("initialize_gravity: dgravx=0 not OK")
         if (lroot) print*,'initialize_gravity: tanh profile, gravx=',gravx
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
         gravx=-alog(pot_ratio)/dgravx
-        gravx_pofile=gravx*.5/cosh((x(l1:l2)-xgrav)/dgravx)**2
+        gravx_profile=gravx*.5/cosh((x(l1:l2)-xgrav)/dgravx)**2
         potx_profile=-gravx*.5*(1.+tanh((x(l1:l2)-xgrav)/dgravx))*dgravx
-      else
+
+      case('sinusoidal')
+        if(headtt) print*,'initialize_gravity: sinusoidal grav, gravx=',gravx
+        gravx_profile = -gravx*sin(kx_gg*x(l1:l2))
+
+      case default
         if (lroot) print*,'initialize_gravity: grav_profile not defined'
-      endif 
+
+      endselect
 !
     endsubroutine initialize_gravity
 !***********************************************************************
@@ -141,14 +152,22 @@ module Gravity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1
+      integer :: k
 !
       intent(in) :: f
 !
 !  gravity profile in the x direction
 !
-      if(lhydro) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+gravx_pofile
+      if(lhydro .and. lgravx_gas) df(l1:l2,m,n,iux) = &
+          df(l1:l2,m,n,iux) + gravx_profile
+      if(ldustvelocity .and. lgravx_dust) then
+        do k=1,ndustspec
+          df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + gravx_profile
+        enddo
+      endif
 !
       if(ip==0) print*,f,uu,rho1 !(keep compiler quiet)
+!        
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)
@@ -187,7 +206,7 @@ module Gravity
       logical, save :: first=.true.
 !
       intent(in) :: xmn,ymn,zmn,rmn
-      intent(out) :: pot,grav
+      intent(out) :: pot
 !
 !  identifier
 !
