@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.29 2004-01-31 14:01:22 dobler Exp $
+! $Id: dustdensity.f90,v 1.30 2004-02-02 14:21:00 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -86,7 +86,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.29 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: dustdensity.f90,v 1.30 2004-02-02 14:21:00 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -221,7 +221,7 @@ module Dustdensity
         print*, 'init_nd: Test case with kernel linear with sum of masses'
         do k=1,ndustspec
           f(:,:,:,ind(k)) = &
-              nd00/mdave0*exp(-md(k)/mdave0)*(mdplus(k)-mdminus(k))
+              nd00*( exp(-mdminus(k)/mdave0)-exp(-mdplus(k)/mdave0) )
         enddo
       case default
 !
