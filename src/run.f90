@@ -66,6 +66,12 @@
           call random_seed(put=seed)
         endif
 !
+!  warn about the damping term
+!
+        if (lroot .and. (dampu /= 0.) .and. (t < tdamp)) then 
+          print*, 'Damping velocities until time ', tdamp
+        endif
+!
 !  advance equations
 !  NOTE: headt=.true. in order to print header titles
 !
@@ -74,7 +80,7 @@
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
           print*,'start time loop'
-          print*,'$Id: run.f90,v 1.5 2002-01-09 23:28:14 dobler Exp $'
+          print*,'$Id: run.f90,v 1.6 2002-01-10 18:04:21 dobler Exp $'
         endif
 !
 !  do loop in time
