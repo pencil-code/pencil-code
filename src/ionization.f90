@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.122 2003-10-21 17:47:10 mee Exp $
+! $Id: ionization.f90,v 1.123 2003-10-21 18:14:03 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -24,7 +24,6 @@ module Ionization
   public :: thermodynamics, ionput, ionget
   public :: perturb_energy, perturb_mass
   public :: get_soundspeed
-  public :: isothermal_entropy
 
   public :: register_ionization
   public :: initialize_ionization
@@ -35,6 +34,12 @@ module Ionization
   public :: ioncalc, ioninit 
 ! For radiation calculations 
   public :: radcalc, scale_height_xy 
+! Boundary conditions
+  public :: bc_ss_flux,bc_ss_temp_old,bc_ss_energy
+  public :: bc_ss_temp_x,bc_ss_temp_y,bc_ss_temp_z
+  public :: bc_ss_stemp_x,bc_ss_stemp_y,bc_ss_stemp_z
+! Initial conditions
+  public :: isothermal_entropy
 
   interface thermodynamics              ! Overload subroutine thermodynamics
     module procedure thermodynamics_pencil
@@ -113,7 +118,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.122 2003-10-21 17:47:10 mee Exp $")
+           "$Id: ionization.f90,v 1.123 2003-10-21 18:14:03 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
