@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.146 2003-01-29 13:55:58 ngrs Exp $
+### $Id: Makefile,v 1.147 2003-02-01 09:46:30 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -115,10 +115,11 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #F77=$(FC) #(Cincinnatus|Owen|Master|Cosmo)
 
 ## SunOS:
+#FC=f90
 #FC=pghpf #(Lomond)
+#FFLAGS=-O4
 #FFLAGS= -Msmp -O4  #(Lomond)
-#FC=f95
-#FFLAGS=-O3 -I/opt/local/mpich/include
+#CFLAGS=-O4 -DFUNDERSC=0
 #LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
 #F77=$(FC)
 
