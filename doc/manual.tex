@@ -167,12 +167,16 @@
 
 % \newcommand{\zerovect}      {\nullvekt}
 
+\newcommand{\uu}{\mbox{\boldmath $u$} {}}
+\newcommand{\oo}{\mbox{\boldmath $\omega$} {}}
+\newcommand{\bra}[1]{\langle #1\rangle}
+
 % ---------------------------------------------------------------------- %
 
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.16 $ $}
+\date{\today,~ $ $Revision: 1.17 $ $}
 
 % ====================================================================== %
 
@@ -201,7 +205,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.16 $ $}
+  \emph{\today,~ $ $Revision: 1.17 $ $}
 
 
 \end{center}
@@ -232,9 +236,9 @@ terms of a permission notice identical to this one.
 
 \section*{Foreword}
 
-This code was first developed at the Turbulence Summer School of the
+This code was originally developed at the Turbulence Summer School of the
 Helmholtz Institute in Potsdam (2001).
-Often people ask us whether our code is publicly available;
+Often people asked us whether our code is publicly available;
 that's why we decided to make it a bit more user friendly (than it was before)
 and to put it on a public cvs repository.
 
@@ -255,9 +259,8 @@ This code is therefore particularly well suited for all kind of
 dynamo problems.
 
 The code is non-conservative. Thus, conserved quantities should only be
-conserved up to the discretization error of the scheme (not the machine accuracy). Fully conservative
-schemes cannot easily deal with large temperature and density contrasts
-and there is no guarantee that a conservative code is more accurate with
+conserved up to the discretization error of the scheme (not the machine accuracy).
+There is no guarantee that a conservative code is more accurate with
 respect to quantities that are not explicitly conserved, such as entropy.
 Magnetic helicity is another important example of a quantity that is to
 our knowledge not guaranteed to be conserved by ordinary flux conserving
@@ -269,7 +272,7 @@ complication. Moreover, turbulence is generically space-filling, so any
 local refinement to smaller scales may not be useful. On the other hand,
 turbulence may well be confined to certain regions in space, so one
 could indeed gain by solving the outer regions with fewer points.
-So we'll keep that in mind.
+So we'll still keep that in mind.
 
 In order to be cache-efficient and to allow the free use of temporary
 variables without using up lots of memory, we solve the equations along
@@ -277,7 +280,7 @@ pencils in the $x$ direction. Ghost zones are used to implement boundary
 conditions on physical and processor boundaries. The domain can be tiled
 evenly in the $y$ and $z$ directions. MPI calls are used to communicate
 between processors. For testing purposes a dummy version can be invoked
-to run on just one processor (e.g.\ on a laptop).
+to run on just one processor (e.g.\ on a laptop or when mpi is not available).
 
 The various physics is invoked by linking the corresponding modules in the
 Makefile. The main reason for this procedure is to have a convenient way
@@ -287,13 +290,18 @@ without using messy switches.
 
 The parameter input file (\var{run.in}) is read whenever there exists the
 file \file{RELOAD} in the run directory. This allows one
-\footnote{OK, some of this should be moved to section 3.}
-to change parameters during the fly. This can be useful if one
-wants to stop the in a graceful way (ie reduce number of timesteps),
+to change parameters on the fly. This can be useful if one
+wants to stop the code in a graceful way at an earlier time,
 if one wants to change the length of the time step,
 the viscosity or other diffusion parameters,
 or (in forced calculations) the sound speed. Obviously, in
-some cases changing certain parameters on the fly could be totally crazy.
+some cases changing certain parameters on the fly could be totally crazy,
+but it's up to the user to decide.
+One can also change, on the fly, the format of some output diagnostics
+and one can invoke new output diagnostics that might have been too time
+consuming to calculate during the early relaxation phase. All this can
+be done during the run, so one does not run the risk of losing ones
+position in the queue.
 
 We will be happy to include user-supplied changes and updates to the code
 in future releases, so please get in touch with us.
@@ -320,11 +328,14 @@ You proceed as follows:
 \begin{enumerate}
 
 \item Get a \name{CVS} client from \url{http://www.cvshome.org/} and
-  install it.
+  install it (on your laptop and any other machine you want to run on).
   Alternatively, just copy the executable from a binary compatible
   machine.
 
 \item Get the password for anonymous \name{CVS} access to the MHD code
+\footnote{Wolfgang, we should make this automatically. Ideally, a new user
+should be able to register on our web site and get a password automatically.
+This needs then to be automatically put into the cvs passwd file.}
 
 \item Set your environment variable \env{CVSROOT} (you probably want to
   put this into your \file{.cshrc} or \file{.profile} setup files):
@@ -364,8 +375,8 @@ You proceed as follows:
 
 \section{Getting Started}
 
-To get yourself started, you should run the convection example which is
-provided as the default configuration of the code.
+To get yourself started, you should run one of the examples which are
+provided in one of the runs/sample subdirectory.
 
 It is absolutely mandatory to monitor exactly what one is doing.
 IDL is a very useful tool to inspect the data in a very flexible fashion.
@@ -376,6 +387,17 @@ IDL is a very useful tool to inspect the data in a very flexible fashion.
 Before explaining details of the code, we want to make sure it runs ok.
 We want to have a simple example (periodic, isothermal, non-forced)
 where the physics is already nontrivial.
+
+\subsubsection{Interlocked flux rings}
+
+\prompt{unix> } cd runs/sample/rings\\
+\prompt{unix> } lnsrc \quad\#(make sure your ../../../bin is in your path!)\\
+\prompt{unix> } cd src\\
+\prompt{unix> } make\\
+\prompt{unix> } cd ..\\
+\prompt{unix> } mkdir tmp \quad\#(or link some data disc to tmp)\\
+\prompt{unix> } start.csh\\
+\prompt{unix> } run.csh\\
 
 EXPLAIN: isotrop1, plan to set-up vortex rings as initial condition,
 without magnetic fields etc.
@@ -518,6 +540,30 @@ polytropic behavior
 \label{Input-params}
 
 Here's how to use the code \ldots
+
+% ---------------------------------------------------------------------- %
+\subsection{I/O diagnostics}
+
+The code allows various output diagnostics to be turned on and off
+(even during the run!) by just changing the contents of the file
+\file{print.in}. A simple example would be\\
+
+\begin{verbatim}
+t(f10.3)
+u2m(1pe13.4)
+oum
+~
+~
+"print.in"
+\end{verbatim}
+\vspace{1em}
+
+\noindent
+which means that the output table will contain time \file{t} in the first
+column (with format \file{'(f10.3)'}), followed by the mean squared velocity,
+$\bra{\uu^2}$, \file{u2m} in the second column (with format \file{'(1pe13.4)'}),
+and the kinetic helicity, $\bra{\oo\cdot\uu}$,  \file{oum} in the last column
+(with the default format \file{'(1pe10.2)'}).
 
 % ---------------------------------------------------------------------- %
 \subsection{Helper scripts}
@@ -908,6 +954,28 @@ to other cases (needed for regular tests of the code and for future
 releases) it is important to supply also a corresponding dummy routine,
 whose name will start with `no'.
 
+\subsection{Adding new output diagnostics}
+
+With the implementation of new physics and the development of new procedures
+in the code it will become necessary to monitor new diagnostic quantities that
+have not yet been implemented in the code. Here is what needs to be done.
+
+The best will be to follow an example, e.g.\ \var{jbm}. Here only the
+module Magnetic is being affected; say \file{grep jbm *.f90}. A corresponding
+integer label with the name \var{i\_jbm} is defined (and initialized to zero).
+Depending on whether this is the mean or a maximum value of the quantity
+\var{jb}, which is calculated in a suitable place in the code, we use the
+label \var{i\_jbm} in connection with the subroutine \code{sum\_mn\_name} or
+\code{max\_mn\_name}. Here we use
+\begin{verbatim}
+        if (i_jbm/=0) call sum_mn_name(jb,i_jbm)
+\end{verbatim}
+In \file{register.f90} we \code{call rprint\_magnetic} where 
+\begin{verbatim}
+        call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
+\end{verbatim}
+has to be added to the list of names that are to be recognized from the
+\file{print.in} file.
 
 % ====================================================================== %
 
@@ -996,7 +1064,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.16 2002-05-23 04:48:28 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.17 2002-05-29 05:36:58 brandenb Exp $ $}
 
 
 \end{document}

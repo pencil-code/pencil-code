@@ -94,10 +94,10 @@ endif else begin
   print, 'Warning: cannot find file ', gfile
 endelse
 ;
-print,'calculating xx,yy,zz (comment this out if there is not enough memory)'
-xx = spread(x, [1,2], [my,mz])
-yy = spread(y, [0,2], [mx,mz])
-zz = spread(z, [0,1], [mx,my])
+;print,'calculating xx,yy,zz (comment this out if there is not enough memory)'
+;xx = spread(x, [1,2], [my,mz])
+;yy = spread(y, [0,2], [mx,mz])
+;zz = spread(z, [0,1], [mx,my])
 ;
 ;  set boundary values for physical (sub)domain
 ;
