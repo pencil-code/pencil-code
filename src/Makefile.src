@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.62 2004-07-20 10:02:56 dobler Exp $
+### $Id: Makefile.src,v 1.63 2004-07-22 10:46:10 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -134,7 +134,9 @@ FCCLEANER=
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -Wl,-rpath,/usr/opt/intel/lib #(ns0)
 #FC=f95 #(karbala)
-#FC=pgf90 #(erland|igor|tycho|linux29|onsager|monolith)
+#FC=pgf90 #(tycho|linux29|monolith)
+#FC=ifort #(erland|bohm|igor|onsager)
+##FC=pgf90 #(erland|bohm|igor|onsager)
 #FC=efc #(user0[1-9])
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
@@ -146,9 +148,10 @@ FCCLEANER=
 #LDMPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam #(lynx)
 #LDMPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
-#FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
+#FFLAGS=-fast -lm #(tycho|linux29)
+#FFLAGS= #(erland|bohm|igor|onsager)
+##FFLAGS= -fast -lm#(erland|bohm|igor|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
-#F90FLAGS= #(erland|igor|tycho|linux29|onsager|monolith)
 ##FFLAGS=-O3 -ipo #(fe[0-3])
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
@@ -176,7 +179,8 @@ FCCLEANER=
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern|renton|lanark)
 #F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
-#F77=$(FC) -lm  #(tycho|erland|igor|onsager|monolith)
+#F77=$(FC) -lm  #(tycho|monolith)
+#F77=$(FC) #(erland|bohm|igor|onsager)
 #F77=$(FC) #(Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw[0-9]*|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
