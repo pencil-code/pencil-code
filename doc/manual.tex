@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.138 2002-11-26 15:01:44 ngrs Exp $
+%%  CVS: $Id: manual.tex,v 1.139 2002-11-26 15:08:18 ngrs Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -333,7 +333,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.138 $ $}
+\date{\today,~ $ $Revision: 1.139 $ $}
 
 % ====================================================================== %
 
@@ -366,7 +366,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.138 $ $}
+  \emph{\today,~ $ $Revision: 1.139 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2617,16 +2617,16 @@ What is the problem?
   and the problem never seems to occur with \file{mpicomm.f90},
   except when \var{ncpus=1}.
   The problem can be avoided by switching off the loop transformation 
-  optisation (part of the -O5 optimisation), via:
+  optimisation (part of the \var{-O5} optimisation), via:
   \begin{Verbatim}
     #OPTFLAGS=-fast -O5 -notransform_loops
   \end{Verbatim}
   This has not been made standard in \file{Makefile}, 
   as it can cause some slowdown: e.g.
-  %a increase of time/timestep/meshpoint from 2.67 to 289 microsec,
-  an increase from 2.67 to 289 ${\mu\rm s}/{\rm pt\;\;step}$,
-  for the \file{runs/forced/hel128f}, 
-  with \var{nxgrid=nygrid=nzgrid=128}, \var{ncpus=16},  \var{nt=100}.
+  an increase from 2.67 to 2.89 ${\mu\rm s}\,/\,{\rm pt}\,/\,{\rm step}$,
+  for \file{runs/forced/hel128f} 
+  with \var{nxgrid=nygrid=nzgrid=128}, \var{ncpus=16},  \var{nt=100},
+  on the Mhd machine.
 }
 
 % ---------------------------------------------------------------------- %
@@ -4537,7 +4537,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.138 2002-11-26 15:01:44 ngrs Exp $ $}
+$ $Id: manual.tex,v 1.139 2002-11-26 15:08:18 ngrs Exp $ $}
 
 
 \end{document}
