@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.160 2004-02-12 09:04:16 mee Exp $ 
+! $Id: param_io.f90,v 1.161 2004-02-21 16:20:43 dobler Exp $ 
 
 module Param_IO
 
@@ -509,9 +509,11 @@ module Param_IO
 !
 !  write slice position to a file (for convenient post-processing)
 !
-      open(1,file=trim(datadir)//'/slice_position.dat')
-      write(1,*) slice_position
-      close(1)
+      if (lroot) then
+        open(1,file=trim(datadir)//'/slice_position.dat')
+        write(1,*) slice_position
+        close(1)
+      endif
 !  
 !  make sure ix,iy,iz,iz2 are not outside the boundaries
 !
