@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.28 2002-12-19 17:17:21 dobler Exp $
+! $Id: cparam.f90,v 1.29 2003-01-17 16:44:52 dobler Exp $
 
 module Cparam
 
@@ -49,8 +49,8 @@ module Cparam
 !
 !  significant length of random number generator state
 !  Different compilers have different lengths:
-!    SGI: 64, Intel: 47, NAG: 1, Compaq: 2
-  integer, parameter :: mseed=100
+!    NAG: 1, Compaq: 2, Intel: 47, SGI: 64, NEC: 256
+  integer, parameter :: mseed=256
 !
 !  a marker value that is highly unlikely (``impossible'') to ever occur
 !  during a meaningful run.
