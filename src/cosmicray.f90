@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.13 2003-10-24 13:17:30 dobler Exp $
+! $Id: cosmicray.f90,v 1.14 2003-10-29 16:23:48 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -21,7 +21,7 @@ module CosmicRay
 
   implicit none
 
-  character (len=labellen) :: initecr='zero', initecr2='zero'
+  character (len=labellen) :: initecr='zero', initecr2='zero', negl='none'
 
   ! input parameters
   real :: gammacr=4./3.,gammacr1
@@ -31,7 +31,7 @@ module CosmicRay
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
-       gammacr
+       gammacr, negl
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
@@ -74,7 +74,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.13 2003-10-24 13:17:30 dobler Exp $")
+           "$Id: cosmicray.f90,v 1.14 2003-10-29 16:23:48 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -200,9 +200,11 @@ module CosmicRay
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
-      do j=0,2
-        df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
-      enddo
+      if(negl.eq.'none')then
+        do j=0,2
+          df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
+        enddo
+      endif
 !
 !  tensor diffusion, or, alternatively scalar diffusion or no diffusion
 !
@@ -296,8 +298,8 @@ module CosmicRay
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: ecr_ij,bij
-      real, dimension (nx,3) :: gecr,bb,bunit,hhh,tmpj
-      real, dimension (nx) :: tmp,b2,b1,del2ecr
+      real, dimension (nx,3) :: gecr,bb,bunit,hhh
+      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj
       real :: Kperp,Kpara
       integer :: i,j,k
 !
@@ -312,11 +314,11 @@ module CosmicRay
       do i=1,3
         hhh(:,i)=0.
         do j=1,3
-          tmpj(:,j)=0.
+          tmpj(:)=0.
           do k=1,3
-            tmpj(:,j)=tmpj(:,j)-2.*bunit(:,k)*bij(:,k,j)
+            tmpj(:)=tmpj(:)-2.*bunit(:,k)*bij(:,k,j)
           enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:,j))
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
         enddo
       enddo
       call multsv_mn(b1,hhh,hhh)
