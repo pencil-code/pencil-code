@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.37 2002-06-06 07:09:35 brandenb Exp $
+! $Id: start.f90,v 1.38 2002-06-10 13:07:14 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,8 +31,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.37 $", &
-             "$Date: 2002-06-06 07:09:35 $")
+             "$Revision: 1.38 $", &
+             "$Date: 2002-06-10 13:07:14 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -59,6 +59,12 @@
         call wparam()
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
+!
+!  check consistency
+!
+        if (.not.lperi(1).and.nxgrid<2) stop 'for nonperiodic: must have nxgrid>1'
+        if (.not.lperi(2).and.nygrid<2) stop 'for nonperiodic: must have nygrid>1'
+        if (.not.lperi(3).and.nzgrid<2) stop 'for nonperiodic: must have nzgrid>1'
 !
 !  generate mesh, |x| < Lx, and similar for y and z.
 !  lperi indicate periodicity of given direction

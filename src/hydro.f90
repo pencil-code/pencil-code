@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.22 2002-06-09 21:14:19 brandenb Exp $
+! $Id: hydro.f90,v 1.23 2002-06-10 13:07:14 brandenb Exp $
 
 module Hydro
 
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.22 $", &
-           "$Date: 2002-06-09 21:14:19 $")
+           "$Revision: 1.23 $", &
+           "$Date: 2002-06-10 13:07:14 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -149,7 +149,8 @@ module Hydro
         !
         if (lgravr) then
           if (lroot) print*,'radial density stratification (assumes s=const)'
-          call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
+! nok     call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
+          call potential(x,y(m),z(n),rmn,pot) ! gravity potential
 !          call potential(rr,pot) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
 

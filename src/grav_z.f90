@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.12 2002-06-10 07:54:55 brandenb Exp $
+! $Id: grav_z.f90,v 1.13 2002-06-10 13:07:14 brandenb Exp $
 
 module Gravity
 
@@ -39,8 +39,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_z.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-06-10 07:54:55 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-06-10 13:07:14 $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -76,6 +76,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
 !
+if (headtt) print*,'duu_dt_grav: gravz=',gravz
       df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
 !
       if(ip==0) print*,f !(keep compiler quiet)
@@ -88,7 +89,13 @@ module Gravity
 !
       use Cdata, only: nx,gravz
 !
-      real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
+!  the following looks stupid, but otherwise it's not ok,
+!  especially in 1-D
+!  But for gravz, potential is never used, right??
+!
+      real, dimension (mx) :: xmn
+      real :: ymn,zmn
+      real, dimension (nx,1,1) :: rmn, pot
 !
       pot = -gravz*zmn
 !

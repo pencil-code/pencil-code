@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.57 2002-06-10 07:34:36 brandenb Exp $
+! $Id: entropy.f90,v 1.58 2002-06-10 13:07:14 brandenb Exp $
 
 module Entropy
 
@@ -57,8 +57,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.57 $", &
-           "$Date: 2002-06-10 07:34:36 $")
+           "$Revision: 1.58 $", &
+           "$Date: 2002-06-10 13:07:14 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -88,11 +88,12 @@ module Entropy
       if (lgravz) then
         !
         !  override hcond1,hcond2 according to polytropic equilibrium solution
+        !  (AB: we may want to move this further down, because it is case specific)
         !
         hcond1 = (mpoly1+1.)/(mpoly0+1.)
         hcond2 = (mpoly2+1.)/(mpoly0+1.)
         if (lroot) &
-             print*, 'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+             print*, 'Note(case specific!): mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
         !
         select case(initss)
 !
@@ -224,10 +225,15 @@ module Entropy
 !
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
       if (headtt) print*,'dss_dt: TT1 ok'
-      if (ivisc==2 .or. ivisc==0) then
+      if (ivisc==2) then
+        if (headtt) print*,'viscous heating: ivisc=',ivisc
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
       elseif (ivisc==1) then
+        if (headtt) print*,'viscous heating: ivisc=',ivisc
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2*rho1
+      elseif (ivisc==0) then
+        if (headtt) print*,'no heating: ivisc=',ivisc
+        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
       endif
 !
 !  Heat conduction / entropy diffusion
