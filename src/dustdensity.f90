@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.90 2004-05-19 12:36:14 ajohan Exp $
+! $Id: dustdensity.f90,v 1.91 2004-05-20 09:28:00 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -113,7 +113,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.90 2004-05-19 12:36:14 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.91 2004-05-20 09:28:00 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -724,7 +724,7 @@ module Dustdensity
 !        
         if (lupw_ndmdmi) then
           call grad(f,ind(k),gnd(:,:,k))
-          call u_dot_gradf(f,ind(k),gnd(:,:,k),uud(:,:,k),udgmd,upwind=.true.)
+          call u_dot_gradf(f,ind(k),gnd(:,:,k),uud(:,:,k),udgnd,upwind=.true.)
         elseif (lupw_ndmi_1st) then          
           call gradf_upw1st(f,uud(:,:,k),ind(k),gnd(:,:,k))
           call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
