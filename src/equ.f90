@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.97 2002-09-30 05:51:49 brandenb Exp $
+! $Id: equ.f90,v 1.98 2002-10-01 16:02:44 brandenb Exp $
 
 module Equ
 
@@ -227,7 +227,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.97 2002-09-30 05:51:49 brandenb Exp $")
+           "$Id: equ.f90,v 1.98 2002-10-01 16:02:44 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -374,7 +374,11 @@ module Equ
 !
     endsubroutine pde
 !***********************************************************************
-    subroutine rmwig_xyaverage(f)
+    subroutine rmwig_xyaverage(f,ivar)
+!
+!  Removes wiggles from the xyaverage of variable ivar.
+!  This routine works currently only on one processor, which
+!  may not be too bad an approximation even several procs.
 !
 !  28-Sep-02/axel: coded
 !
@@ -385,17 +389,29 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
       real :: del_average
+      integer :: ivar
+!
+!  print identifier
+!
+      if (lroot) then
+        if (ivar == ilnrho) then
+          print*,'RMWIG: removing wiggles in xyaverage of lnrho, t=',t
+        else
+          write(*,'(" ",A,I3,A,G12.5)') &
+          'RMWIG: removing wiggles in xyaverage of variable ', ivar, 't=', t
+        endif
+      endif
 !
 !  calculate horizontal average and smooth in the vertical direction
 !
       do n=1,mz
-        xyaver(n)=sum(f(l1:l2,m1:m2,n,ilnrho))/(nx*ny)
+        xyaver(n)=sum(f(l1:l2,m1:m2,n,ivar))/(nx*ny)
       enddo
       call smooth_4th(xyaver,xyaver_smooth,.true.)
 !
       do n=1,mz
         del_average=xyaver(n)-xyaver_smooth(n)
-        f(l1:l2,m1:m2,n,ilnrho)=f(l1:l2,m1:m2,n,ilnrho)-del_average
+        f(l1:l2,m1:m2,n,ivar)=f(l1:l2,m1:m2,n,ivar)-del_average
       enddo
 !
     endsubroutine rmwig_xyaverage

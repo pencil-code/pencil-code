@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.10 2002-09-11 17:38:14 brandenb Exp $
+! $Id: pscalar.f90,v 1.11 2002-10-01 16:02:44 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -29,7 +29,7 @@ module Pscalar
        pscalar_diff,nopscalar,tensor_pscalar_diff
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ccm=0,i_ccmax=0
+  integer :: i_rhoccm=0,i_ccmax=0
 
   contains
 
@@ -62,7 +62,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.10 2002-09-11 17:38:14 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.11 2002-10-01 16:02:44 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -162,7 +162,8 @@ module Pscalar
 !
       if (ldiagnos) then
         cc=exp(f(l1:l2,m,n,ilncc))
-        if (i_ccm/=0) call sum_mn_name(cc,i_ccm)
+        rho=exp(f(l1:l2,m,n,ilnrho))
+        if (i_rhoccm/=0) call sum_mn_name(rho*cc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)
       endif
 !
@@ -183,19 +184,19 @@ module Pscalar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ccm=0; i_ccmax=0
+        i_rhoccm=0; i_ccmax=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'ccm',i_ccm)
+        call parse_name(iname,cname(iname),cform(iname),'rhoccm',i_rhoccm)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',i_ccmax)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ccm=',i_ccm
+      write(3,*) 'i_rhoccm=',i_rhoccm
       write(3,*) 'i_ccmax=',i_ccmax
       write(3,*) 'ilncc=',ilncc
 !
