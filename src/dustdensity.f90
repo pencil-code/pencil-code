@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.23 2004-01-28 13:33:47 ajohan Exp $
+! $Id: dustdensity.f90,v 1.24 2004-01-29 10:55:50 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -60,16 +60,6 @@ module Dustdensity
 !
       ldustdensity = .true.
 !
-!  Allocate dust density index arrays
-!
-      allocate (ind(ndustspec))
-      if (lmdvar) then
-        allocate (irhod(ndustspec))
-      else
-        allocate (irhod(1))
-        irhod = 0
-      endif
-!
       do i=1,ndustspec
         if (i .eq. 1) then
           ind(1) = iuud(1)+3         ! indix to access lam
@@ -95,7 +85,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.23 2004-01-28 13:33:47 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.24 2004-01-29 10:55:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -275,8 +265,8 @@ module Dustdensity
 !      
       if (lmdvar) then
         forall (i=1:ndustspec, md(i) .lt. mdminus(i) .or. md(i) .ge. mdplus(i))
-          forall (k=1:ndustspec, md(k) .ge. mdminus(k) &
-              .and. md(k) .lt. mdplus(k))
+          forall (k=1:ndustspec, md(i) .ge. mdminus(k) &
+              .and. md(i) .lt. mdplus(k))
             f(l1:l2,m,n,ind(k))  = f(l1:l2,m,n,ind(k)) + f(l1:l2,m,n,ind(i))
             f(l1:l2,m,n,irhod(k))= f(l1:l2,m,n,irhod(k)) + f(l1:l2,m,n,irhod(i))
             f(l1:l2,m,n,ind(i))  = 0.

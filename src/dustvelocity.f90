@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.29 2004-01-28 13:33:47 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.30 2004-01-29 10:55:50 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -75,11 +75,6 @@ module Dustvelocity
 !
       ldustvelocity = .true.
 !
-!  Allocate dust velocity index arrays
-!
-      allocate (iuud(ndustspec), iudx(ndustspec), iudy(ndustspec), &
-          iudz(ndustspec))
-!
       do i=1,ndustspec
         if (i .eq. 1) then
           iuud(1) = nvar+1
@@ -106,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.29 2004-01-28 13:33:47 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.30 2004-01-29 10:55:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.14 2004-01-28 13:33:47 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.15 2004-01-29 10:55:50 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -52,18 +52,10 @@ module Dustvelocity
 !
       ldustvelocity = .false.
 !
-!  Allocate dust velocity index arrays and set to zero
-!
-      allocate (iuud(1), iudx(1), iudy(1), iudz(1))
-      iuud = 0
-      iudx = 0
-      iudy = 0
-      iudz = 0
-!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.14 2004-01-28 13:33:47 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.15 2004-01-29 10:55:50 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
