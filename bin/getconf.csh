@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.62 2003-08-14 17:33:51 dobler Exp $
+# $Id: getconf.csh,v 1.63 2003-08-14 17:34:22 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -92,11 +92,6 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
   else
     set mpirun 'printf "%s\n" "Cannot find out which mpirun to use"'
   endif
-  
-set local_disc = 1
-set one_local_disc = 0
-set local_binary = 0
-setenv SCRATCH_DIR /var/tmp/dobler
 
 else if (($hn =~ copson.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   set mpirun = /opt/score/bin/mpirun
