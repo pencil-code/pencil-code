@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.80 2003-10-21 17:47:10 mee Exp $
+! $Id: noionization.f90,v 1.81 2003-10-22 10:10:41 mcmillan Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.80 2003-10-21 17:47:10 mee Exp $")
+           "$Id: noionization.f90,v 1.81 2003-10-22 10:10:41 mcmillan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -296,7 +296,7 @@ module Ionization
       lnrho=f(l1:l2,m,n,ilnrho)
 !
       yH=0.
-      ss=(log(TT)-log(TT0)-gamma1*(lnrho-lnrho0))/gamma
+      ss=(log(TT)-log(TT0)-gamma1*(lnrho-lnrho0))/gamma  
 !
       f(l1:l2,m,n,iss)=ss
 !
@@ -448,6 +448,8 @@ module Ionization
 !
       cs2bot=cs20
       cs2top=cs20
+!
+      if(ip==0) print*,T0,'T0 not used here'  !(keep compiler quiet)
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
