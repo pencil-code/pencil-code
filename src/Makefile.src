@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.27 2004-02-13 16:25:18 ajohan Exp $
+### $Id: Makefile.src,v 1.28 2004-02-24 10:17:17 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -122,7 +122,7 @@ FCCLEANER=
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FC=f95 #(karbala)
-#FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4|monolith)
+#FC=pgf90 #(erland|igor|tycho|linux29|onsager|monolith)
 #FC=efc #(user0[1-9])
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
