@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.15 2002-05-27 12:04:32 dobler Exp $
+! $Id: cparam.f90,v 1.16 2002-05-27 12:18:25 dobler Exp $
 
 module Cparam
 
@@ -8,7 +8,7 @@ module Cparam
 !  The total nmumber of meshpoints is (nx,ny,nz*ncpus).
 !  The number of ghost zones is NOT counted.
 !
-  integer, parameter :: ncpus=4,nprocz=2,nprocy=ncpus/nprocz,nprocx=1
+  integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
   integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
   integer, parameter :: nghost=3,mk=3000,mvar=5
   integer, parameter :: bclen=3
