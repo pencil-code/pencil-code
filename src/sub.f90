@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.160 2004-02-12 09:04:16 mee Exp $ 
+! $Id: sub.f90,v 1.161 2004-02-12 11:34:27 mee Exp $ 
 
 module Sub 
 
@@ -34,11 +34,12 @@ module Sub
     module procedure max_for_dt_1_1_1_nx
   endinterface
 
-  INTERFACE getenv
-    SUBROUTINE GETENV (VAR, VALUE) 
-      CHARACTER(LEN=*) VAR, VALUE 
-    END SUBROUTINE 
-  END INTERFACE
+!ajwm Commented pending a C replacement
+!  INTERFACE getenv
+!    SUBROUTINE GETENV (VAR, VALUE) 
+!      CHARACTER(LEN=*) VAR, VALUE 
+!    END SUBROUTINE 
+!  END INTERFACE
  
   contains
 
@@ -2628,8 +2629,9 @@ nameloop: do
         enddo nameloop
         if ((nameptr-1) .ge. inptr) then
          envname=trim(strin(inptr:nameptr-1))
-         call getenv(trim(envname),envvalue)
-         call safe_character_assign(strout,trim(strout)//trim(envvalue))
+!ajwm  Commented pending a C replacement
+!         call getenv(trim(envname),envvalue)
+!         call safe_character_assign(strout,trim(strout)//trim(envvalue))
         endif
 
         inptr=nameptr
