@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.130 2003-03-18 20:31:05 brandenb Exp $
+! $Id: cdata.f90,v 1.131 2003-03-18 23:27:09 brandenb Exp $
 
 module Cdata
 
@@ -85,7 +85,7 @@ module Cdata
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false., lviscosity=.false.
-  logical :: ldustvelocity=.false.,linterstellar=.false.
+  logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
 
   ! variables to allow modules to share 'precalculated' stuff
   ! when necessary (set in module initialize functions)

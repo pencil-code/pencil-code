@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.11 2003-03-18 20:31:05 brandenb Exp $
+! $Id: slices.f90,v 1.12 2003-03-18 23:27:09 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -9,13 +9,13 @@ module Slices
   implicit none
 
   real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
-  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,ss_xy,ss_xy2
+  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2,ss_xy,ss_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
-  real, dimension (nx,nz) :: lnrho_xz,ss_xz
+  real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
-  real, dimension (ny,nz) :: lnrho_yz,ss_yz
+  real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz
 
   contains
 
@@ -124,6 +124,19 @@ module Slices
         call wslice(path//'lnrho.xz',lnrho_xz,y(iy),nx,nz)
         call wslice(path//'lnrho.xy',lnrho_xy,z(iz),nx,ny)
         call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2),nx,ny)
+      endif
+!
+!  logarithmic dust density
+!
+      if (ldustdensity) then
+        lnrhod_yz=f(ix,m1:m2,n1:n2,ilnrhod)
+        lnrhod_xz=f(l1:l2,iy,n1:n2,ilnrhod)
+        lnrhod_xy=f(l1:l2,m1:m2,iz,ilnrhod)
+        lnrhod_xy2=f(l1:l2,m1:m2,iz2,ilnrhod)
+        call wslice(path//'lnrhod.yz',lnrhod_yz,x(ix),ny,nz)
+        call wslice(path//'lnrhod.xz',lnrhod_xz,y(iy),nx,nz)
+        call wslice(path//'lnrhod.xy',lnrhod_xy,z(iz),nx,ny)
+        call wslice(path//'lnrhod.Xy',lnrhod_xy2,z(iz2),nx,ny)
       endif
 !
 !  Entropy

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.126 2003-03-18 20:31:05 brandenb Exp $
+! $Id: equ.f90,v 1.127 2003-03-18 23:27:09 brandenb Exp $
 
 module Equ
 
@@ -193,14 +193,15 @@ module Equ
       use Radiation
       use Pscalar
       use Dustvelocity
+      use Dustdensity
       use Boundcond
       use IO
       use Shear
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,udij
-      real, dimension (nx,3) :: uu,uud,glnrho
-      real, dimension (nx) :: lnrho,divu,divud,u2,ud2,rho,rho1
+      real, dimension (nx,3) :: uu,uud,glnrho,glnrhod
+      real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
       real :: fac, facheat
 !
 !  print statements when they are first executed
@@ -209,7 +210,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.126 2003-03-18 20:31:05 brandenb Exp $")
+           "$Id: equ.f90,v 1.127 2003-03-18 23:27:09 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -285,7 +286,8 @@ module Equ
 !
 !  dust equations
 !
-        call duud_dt  (f,df,uu,uud,divud,ud2,udij)
+        call duud_dt   (f,df,uu,uud,divud,ud2,udij)
+        call dlnrhod_dt(f,df,uud,glnrhod,divud,lnrhod)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?

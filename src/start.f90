@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.77 2003-03-18 20:31:05 brandenb Exp $
+! $Id: start.f90,v 1.78 2003-03-18 23:27:09 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.77 2003-03-18 20:31:05 brandenb Exp $")
+             "$Id: start.f90,v 1.78 2003-03-18 23:27:09 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !

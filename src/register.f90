@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.64 2003-03-18 20:31:05 brandenb Exp $
+! $Id: register.f90,v 1.65 2003-03-18 23:27:09 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -33,6 +33,7 @@ module Register
       use Radiation
       use Ionization
       use Pscalar
+      use Dustdensity
       use Dustvelocity
       use Interstellar
       use Shear
@@ -59,6 +60,7 @@ module Register
       call register_ionization
       call register_pscalar
       call register_dustvelocity
+      call register_dustdensity
       call register_gravity
       call register_interstellar
       call register_shear
@@ -100,6 +102,7 @@ module Register
       use Radiation
       use Ionization
       use Pscalar
+      use Dustdensity
       use Dustvelocity
       use Interstellar
       use Shear
@@ -167,6 +170,7 @@ module Register
       call initialize_ionization
 !      call initialize_pscalar
 !      call initialize_dustvelocity
+!      call initialize_dustdensity
       call initialize_gravity
       call initialize_interstellar
       call initialize_shear
@@ -199,6 +203,7 @@ module Register
       use Radiation
       use Pscalar
       use Dustvelocity
+      use Dustdensity
 !
       integer :: iname,inamez,inamexy,inamerz
       logical :: lreset,exist
@@ -265,6 +270,7 @@ module Register
       call rprint_radiation(lreset)
       call rprint_pscalar(lreset)
       call rprint_dustvelocity(lreset)
+      call rprint_dustdensity(lreset)
       close(3)
 !
     endsubroutine rprint_list
