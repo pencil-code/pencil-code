@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.225 2003-08-22 14:08:18 ajohan Exp $
+### $Id: Makefile,v 1.226 2003-08-26 14:09:48 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -102,12 +102,12 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
-#FC=mpif77 #(ns0)
+#FC=ifc -i_dynamic -I/home/ajohan/opt/include #(nw46|ns0|nq1)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)  
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=ifc #(nl6|mmtf|nl19|hamlet|nw46)
+#FC=ifc #(nl6|mmtf|nl19|hamlet)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FC=f95 #(karbala)
 #FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4|monolith)
@@ -115,8 +115,9 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= # (fire)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
-#LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(ns0)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
+#LDMPI=-llamf77mpi -lmpi -llam #(nw46|ns0|nq1)
+#LDMPI=-L/opt/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -lnsl -lutil #(cosmo|nw17|nl6|nl11|wormhole)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
@@ -125,7 +126,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS= -O3 -w90 #(cosmo|nw17|nl6|nl11|wormhole|sandin)
+#FFLAGS=-O3 -w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -I/usr/lib/lam/include #(cosmo|nw17|nl6|nl11|wormhole)  
 #FC=ifc #(sandin)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(cosmo|sandin|nl11|wormhole)  
