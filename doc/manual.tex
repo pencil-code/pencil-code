@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.51 2002-07-16 08:29:44 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.52 2002-07-16 15:27:58 brandenb Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -184,7 +184,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.51 $ $}
+\date{\today,~ $ $Revision: 1.52 $ $}
 
 % ====================================================================== %
 
@@ -213,7 +213,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.51 $ $}
+  \emph{\today,~ $ $Revision: 1.52 $ $}
 
 
 \end{center}
@@ -338,8 +338,8 @@ well, you will be able to visualize the results, but other tools such as
 If you want to make creative use of the code, this manual will contain far
 too little information.
 Its major aim is to give you an idea of the way the code is organized, so
-you can more efficinetly \emph{read the source code}.
-For many enhancments you would like to add, you can follow the
+you can more efficiently \emph{read the source code}.
+For many enhancements you would like to add, you can follow the
 lines of other variables, functions, diagnostics, equations etc.~ which we
 have already implemented.
 Remember: \cmd{grep} is one of your best friends when you want to
@@ -1314,8 +1314,9 @@ double precision, $\varepsilon\approx10^{-15}$.
   \multicolumn{2}{c}{Namelist \name{pscalar_init_pars}} \\
 \midrule
   \var{initlncc} [\code{'zero'}]
-               & initialization of passive scalar (concentration $c$).
-                 Currently valid choices are
+               & initialization of passive scalar
+                 (concentration per unit mass, $c$).
+                 Currently valid choices (for $\ln c$) are
                  \code{`zero'} ($\ln c=0.$),
                  \code{`gaussian-noise'} (white noise),
                  \code{`wave-x'} (wave in $x$ direction),
@@ -1425,7 +1426,9 @@ the latest information, you should have a look at the code.
                  simulations). \\
   \var{ialive} [$0$]
                & if $\ne 0$, each processor writes the current time step
-                 to \file{alive.info} every \var{ialive} time steps. \\
+                 to \file{alive.info} every \var{ialive} time steps. 
+                 (This can be used to find out which node has crashed
+                 if there is a problem and the run is hanging.)\\
   \var{bcx} [(\code{'p'}, \code{'p'}, \ldots)], \\
   \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
   \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
@@ -1445,7 +1448,7 @@ the latest information, you should have a look at the code.
                  \item[\code{ivisc=1}] Viscous force for
                    $\mu\equiv\varrho\nu=\const$,
                    $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv)$
-                 \item[\code{ivisc=2}] Mysterious viscous force
+                 \item[\code{ivisc=2}] Viscous force for $\nu=\const$,
                    $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv
                     + 2\mathsf{S}\cdot\grad\ln\varrho)$
                  \end{description}
@@ -1569,14 +1572,18 @@ the latest information, you should have a look at the code.
                  \begin{description}
                  \item[\code{iforce=1}] irrotational forcing
                  \item[\code{iforce=2}] helical forcing
-                 \item[\code{iforce=3}] fountain forcing (???)
-                 \item[\code{iforce=4}] forcing horizontal shear (???)
+                 \item[\code{iforce=3}] forcing of ``fountain flow'' (cf.\
+                                        MNRAS 276, 651 for similar reference)
+                 \item[\code{iforce=4}] forcing localized horizontal
+                                        sinusoidal shear
                  \end{description}
                  \\
   \var{iforce2} [$0$]
                & select form of additional forcing in the equation of motion:
                  \begin{description}
-                 \item[\code{iforce=1}] fountain forcing (???)
+                 \item[\code{iforce=1}]forcing of fountain flow (used in
+                                       combination with helical forcing,
+                                       for example.
                  \end{description}
                  \\
   \var{force} [$0.$]
@@ -1595,9 +1602,9 @@ the latest information, you should have a look at the code.
                & width of vertical and radial profiles for modifying
                  forcing. \\
   \var{kfountain} [$5$]
-               & ???. \\
+               & horizontal wavenumber of the fountain flow. \\
   \var{fountain} [$1.$]
-               & ???. \\
+               & amplitude of the fountain flow. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{grav_run_pars}} \\
@@ -2014,10 +2021,137 @@ replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 
 Currently, only the horizontally $xy$-averaged $x$ and $y$ components
 of the magnetic field can be outputted. This is determined by the existence
-and contents of the file \file{zaver.in}.
-\footnote{May want to rename it to \file{xy\_aver.in}; what do you think?}
+and contents of the file \file{xyaver.in}.
 New such variables can be added by using the existing averaging
 procedures as examples.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Other averages}
+
+There is currently the possibility to output also $xz$ and $yz$
+averages. This is done by averaging first in the z-direction only, so
+the result (which is available on the root processor) depends on $x$
+and $y$. From these planes we calculate then (on the root processor)
+the $xz$ and $yz$ averages. The energies of the so defined mean fields
+are referred to as \var{bmy} and \var{bmx}, respectively.
+
+{\it Disadvantage}: one needs to set the file \file{zaver.in} with
+the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
+rather big file \file{tmp/zaverages.dat}.
+
+% ====================================================================== %
+
+\section{Timings}
+
+In Table~\ref{Ttimescale} we list the results of timings of the code on
+different machines.
+Shown is (among other quantities) the wall clock time per mesh point
+(excluding the ghost zones) and per full 3-stage time step.
+
+As these results were assembled during the development phase of the code
+(that hasn't really finished yet\ldots), you may not get the same numbers,
+but they should give some orientation of what to expect for you specific
+application on your specific hardware.
+Not that the timer currently used will overflow on some machines (after
+about 50 minutes), so you should not blindly trust the timings given by
+the code.
+
+
+% ---------------------------------------------------------------------- %
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+      Wall clock time per mesh point (excluding the ghost zones)
+      and per full 3-stage time step.
+      The Mhd machine has 4 processors per node sharing memory;
+      for easier comparison, we list the memory per CPU (i.\,e.~memory per
+      node, divided by 4).
+    }
+    \label{Ttimescale}
+    \begin{small}
+    \begin{tabular}{rllrlrll}
+    \toprule
+   \mcc{proc(s)}
+     & \mcc{machine}
+             & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
+                    & \mcc{resol.} 
+                              & \mcc{what}
+                                             & \mcc{mem./proc}
+                                                      & \mcc{when}&\mcc{who}\\
+    \midrule
+   1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 Mb & 20-may-02 & AB \\
+   1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 Mb & 20-may-02 & AB \\
+   1 & Nq1   &  10  &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
+   1 & Ukaff & 9.2  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
+   2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
+   4 & Nq[0-3]
+             & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
+   4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
+   4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
+   8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   8 & Kabul & 1.25 & $64^2{\times}128$                                  
+                              & nomagn/entro &        & 11-jul-02 & WD \\
+   8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 Mb & 20-jun-02 & WD \\
+   8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
+  16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
+  16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
+  16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
+  16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
+  16 & Kabul & 0.51 & $256^3$ & magn/noentro &   9 Mb & 20-jun-02 & WD \\
+  32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
+  32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
+  64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
+    \bottomrule
+    \end{tabular}
+    \end{small}
+  \end{center}
+\end{table}
+% ---------------------------------------------------------------------- %
+
+The machines we have used can be characterized as follows:
+\begin{description}
+\item[Nl3:] 500\,MHz Pentium??? single CPU;
+  ??? memory;
+  RedHat Linux 6.2 ???
+\item[Nq0:] 931\,MHz Pentium III single CPU;
+  RedHat Linux 7.3;
+  0.5\,GB memory
+\item[Nq{[1-4]}:] 869\,MHz Pentium III dual-CPU cluster;
+  RedHat Linux 7.3;
+  0.77\,GB memory per (dual) node
+\item[Nq{[5-6]}:] 1.2\,GHz Athlon dual-CPU cluster;
+  RedHat Linux 7.3;
+  1\,GB memory per (dual) node
+\item[Kabul:] 1.9\,GHz Athlon dual-CPU cluster;
+  1\,GB memory per (dual) node;
+  Gigabit ethernet;
+  SuSE Linux 8.0;
+  LAM-MPI
+\item[Ukaff:] SGI Origin 3000;
+  400\,MHz IP35 CPUs;
+  IRIX 6.5;
+  native MPI
+\item[Mhd:] EV6 Compaq cluster with 4 CPUs per node;
+  4\,;GB memory per node (i.\,e.~1\,GB per CPU)
+  OSF1 4.0;
+  native MPI
+\end{description}
+
+%WD: The following should be in table or is outdated (???):
+
+%Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
+%CVS:  run.f90               version 1.18          of 2002/03/05 17:43:13 
+%CVS:  register.f90          version 1.15          of 2002/03/08 15:43:19 
+%CVS:  entropy.f90           version 1.33          of 2002/03/09 20:18:55 
+%CVS:  magnetic.f90          version 1.6           of 2002/01/30 16:56:30 
+%CVS:  grav_z.f90            version 1.5           of 2002/01/23 19:56:13 
+
+%Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
+%7288 with 32x32x64 (single processor, linux)
+%print,38*38*71.*8.*2.*4./1e6
 
 
 
@@ -2185,7 +2319,7 @@ Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 
 In Table~\ref{Ttimescale} we list the results of timings of the code on
 different machines.
-Shown is (amon other quantities) the wall clock time per mesh point
+Shown is (among other quantities) the wall clock time per mesh point
 (excluding the ghost zones) and per full 3-stage time step.
 
 As these results were assembled during the development phase of the code
@@ -2527,7 +2661,7 @@ to approach the Boussinesq case.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.51 2002-07-16 08:29:44 dobler Exp $ $}
+$ $Id: manual.tex,v 1.52 2002-07-16 15:27:58 brandenb Exp $ $}
 
 
 \end{document}
