@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.17 2003-10-08 12:22:04 theine Exp $
+! $Id: ionization_fixed.f90,v 1.18 2003-10-09 00:47:54 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.17 2003-10-08 12:22:04 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.18 2003-10-09 00:47:54 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -490,7 +490,7 @@ module Ionization
         ss_xy=f(:,:,n2+1:n2+radz0,iss)
       endif
 !
-      TT_xy=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
+      TT_xy=exp(lnTTss*ss_xy+lnTTlnrho*lnrho_xy+lnTT0)
       H_xy=(1.+yH0+xHe)*ss_ion*TT_xy/gravz
 !
     endsubroutine scale_height_xy
