@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.118 2004-05-25 13:14:42 dobler Exp $
+# $Id: getconf.csh,v 1.119 2004-07-25 15:56:22 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -22,15 +22,46 @@ if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
 # Save working directory for other scripts we call
 setenv PENCIL_WORKDIR `pwd`
 
+newdir:
 # Prevent code from running twice (and removing files by accident)
 if (-e "LOCK") then
   echo ""
   echo "getconf.csh: found LOCK file"
   echo "This may indicate that the code is currently running in this directory"
-  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
-  echo "rm LOCK"
-  # exit                        # won't work in a sourced file
-  kill -KILL $$			# full-featured suicide
+  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand: rm LOCK"
+  echo ""
+  echo "THERE IS STILL ONE CHANCE; if a NEWDIR file exist we change directory:"
+  if (-e "NEWDIR") then 
+    if (-s "NEWDIR") then
+      set olddir=$cwd
+      cd `cat NEWDIR`
+      # Up here, datadir is not yet defined, so do it locally:
+      # Determine data directory (defaults to `data')
+      if (-r datadir.in) then
+        set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
+      else
+        set datadir = "data"
+      endif
+      # Write some info into log files of current and new directories
+      (echo "redirected run:"; date; echo "redirected run directory:"; echo $cwd; echo "")\
+         >> $olddir/$datadir/directory_change.log
+      (date; echo "redirected FROM original run script in:"; echo $olddir; echo "")\
+         >> $datadir/directory_change.log
+      echo "WELL DONE: redirected to new directory:"
+      echo `pwd`
+      echo "... wait 20 sec, to allow manual escape if we have produced a loop!"
+      echo
+      # In new run directory, need to check for yet another possible LOCK file
+      # Sleep for 20 sec, to allow manual escape if we have produced a loop!
+      sleep 20
+      goto newdir
+    endif
+  else
+    echo "BAD LUCK: there is no NEWDIR file"
+    echo
+    # exit                        # won't work in a sourced file
+    kill -KILL $$			# full-featured suicide
+  endif  
 endif
 
 # Are we running the MPI version?

@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.32 2004-07-22 16:27:56 dobler Exp $
+# CVS: $Id: copy-snapshots,v 1.33 2004-07-25 15:56:22 brandenb Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -20,11 +20,6 @@ if ($#argv > 0) then
   endif
 endif
 
-# if($debug) then
-#   echo "copy-snapshots: pid=$$ starting" >> $targetdir/copy-snaps_was_here.log
-#   echo "copy-snapshots: pid=$$ args=<$*>" >> $targetdir/copy-snaps_was_here.log
-# endif
-
 if ($debug) then
 #  set verbose
 #  set echo
@@ -43,6 +38,12 @@ if ($debug) then
   echo "SCRATCH_DIR = <$SCRATCH_DIR>"
   echo "targetdir   = <$targetdir>"
   echo "nodelist    = <$nodelist>"
+endif
+
+# produce debug output
+if($debug) then
+  echo "copy-snapshots: pid=$$ starting" >> $targetdir/copy-snaps_was_here.log
+  echo "copy-snapshots: pid=$$ args=<$*>" >> $targetdir/copy-snaps_was_here.log
 endif
 
 if ($?varfile) then		# explicit filename given
@@ -176,8 +177,10 @@ endif
 if ($debug) echo "copy-snapshots: done"
 echo "------------------------------------------------------"
 
-# if($debug) then
-#   echo "copy-snapshots: pid=$$ finished" >> $targetdir/copy-snaps_was_here.log
-# endif
+#TEST-BEGIN
+if($debug) then
+  echo "copy-snapshots: pid=$$ finished" >> $targetdir/copy-snaps_was_here.log
+endif
+#TEST-END
 
 # End of file copy-snapshots

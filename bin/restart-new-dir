@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: restart-new-dir,v 1.5 2004-05-24 11:41:40 mee Exp $
+#$Id: restart-new-dir,v 1.6 2004-07-25 15:56:22 brandenb Exp $
 #
 #  Example:
 #     restart-new-dir ../hydro256e
@@ -23,4 +23,6 @@ copy-proc-to-proc grid.dat $1
 copy-proc-to-proc seed.dat $1
 copy-proc-to-proc dim.dat $1
 copy-proc-to-proc var.dat $1
+#copy-proc-to-proc ee_ext.dat $1
+#copy-proc-to-proc bb_ext.dat $1
 mkdir $1/data/averages

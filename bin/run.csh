@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.74 2004-04-29 13:28:43 ajohan Exp $
+# CVS: $Id: run.csh,v 1.75 2004-07-25 15:56:22 brandenb Exp $
 
 #                       run.csh
 #                      ---------
@@ -29,12 +29,16 @@ if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
 endif
 
+# ====================================================================== #
+# Starting points when rerunning in new directory.
+# This needs to come *before* "source getconf.csh", because
+#  (i) it checks for LOCK file, and
+# (ii) it sets $datadir/directory_snap
+newdir:
+
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
-
-# ====================================================================== #
-newdir:
 
 # Prevent code from running twice (and removing files by accident)
 if (! -e "NEVERLOCK") touch LOCK
@@ -124,10 +128,10 @@ endif
 if (-e "RERUN") then 
   rm -f RERUN
   echo
-  echo "=============================================================================="
+  echo "======================================================================="
   echo "Rerunning in the *same* directory; current run status: $run_status"
   echo "We are *still* in: " `pwd`
-  echo "=============================================================================="
+  echo "======================================================================="
   echo
   goto rerun
 endif  
@@ -163,6 +167,7 @@ echo "Done"
 # if NEWDIR contains a directory name, then continue run in that directory
 if (-e "NEWDIR") then 
   if (-s "NEWDIR") then
+    # Remove LOCK file before going to other directory
     if (-e "LOCK") rm -f LOCK
     set olddir=$cwd
     cd `cat NEWDIR`
@@ -172,19 +177,19 @@ if (-e "NEWDIR") then
     (date; echo "original run script is in:"; echo $olddir; echo "")\
        >> $datadir/directory_change.log
     echo
-    echo "=============================================================================="
+    echo "====================================================================="
     echo "Rerunning in new directory; current run status: $run_status"
     echo "We are now in: " `pwd`
-    echo "=============================================================================="
+    echo "====================================================================="
     echo
     goto newdir
   else
     rm -f NEWDIR
     echo
-    echo "=============================================================================="
+    echo "====================================================================="
     echo "Rerunning in the *same* directory; current run status: $run_status"
     echo "We are *still* in: " `pwd`
-    echo "=============================================================================="
+    echo "====================================================================="
     echo
     echo "Rerunning; current run status: $run_status"
     goto newdir
