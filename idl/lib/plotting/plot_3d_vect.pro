@@ -6,7 +6,7 @@
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   18-Aug-2000
 ;;;  Version: 1.37
-;;;  CVS: $Revision: 1.6 $
+;;;  CVS: $Revision: 1.7 $
 ;;;
 ;;;  Description:
 ;;;   Given either a 3d array on a 2d grid (e.g. B(0:64,0:64,15,0:3)),
@@ -218,7 +218,7 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
   ;; 1. Determine parity of permutation.
   ;;    Even permutation (parity=+1) --> right-handed system
   ;;    Odd  permutation (parity=-1) --> left-handed system
-  parity = sgn(perm[1]-perm[0])+sgn(perm[2]-perm[1])+sgn(perm[0]-perm[2])
+  parity = sign(perm[1]-perm[0])+sign(perm[2]-perm[1])+sign(perm[0]-perm[2])
   vec_x = vec_all[*,*,perm[0]]
   vec_y = vec_all[*,*,perm[1]]
   vec_z = vec_all[*,*,perm[2]]*parity
