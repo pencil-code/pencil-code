@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.11 2004-04-16 11:39:57 mee Exp $
+; $Id: pc_read_ts.pro,v 1.12 2004-05-05 17:10:31 mee Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-04-16 11:39:57 $
-;  $Revision: 1.11 $
+;  $Date: 2004-05-05 17:10:31 $
+;  $Revision: 1.12 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -22,6 +22,7 @@
 ;
 ;
 function parse_tsheader, hline
+COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Split header line into the individual variable names.
 ;
@@ -47,6 +48,7 @@ function parse_tsheader, hline
 end
 ; ---------------------------------------------------------------------- ;
 function list_idx, label, list
+COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Return index if label is contained in list, else 0
 ;
@@ -54,6 +56,7 @@ function list_idx, label, list
 end
 ; ---------------------------------------------------------------------- ;
 function in_list, label, list
+COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Return 1 if label is contained in list, else 0
 ;
@@ -67,6 +70,7 @@ pro pc_read_ts, $
                 PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
                 N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
                 EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm
+COMPILE_OPT IDL2,HIDDEN
 
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN

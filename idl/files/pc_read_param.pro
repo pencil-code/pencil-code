@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.3 2004-03-22 14:59:23 mee Exp $
+; $Id: pc_read_param.pro,v 1.4 2004-05-05 17:10:31 mee Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-03-22 14:59:23 $
-;  $Revision: 1.3 $
+;  $Date: 2004-05-05 17:10:31 $
+;  $Revision: 1.4 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -12,6 +12,7 @@
 ;  
 ;  
 function param
+COMPILE_OPT IDL2,HIDDEN
 ; Dummy to keep IDL from complaining. The real param() routine will be
 ; compiled below
 end
@@ -24,6 +25,7 @@ pro pc_read_param,lhydro=lhydro,ldensity=ldensity,lgravz=lgravz,lgravr=lgravr,le
                   mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop, $
                   object=object, $
                   datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN

@@ -1,16 +1,17 @@
-; $Id: pc_read_grid.pro,v 1.5 2004-03-23 12:45:19 ajohan Exp $
+; $Id: pc_read_grid.pro,v 1.6 2004-05-05 17:10:31 mee Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-03-23 12:45:19 $
-;  $Revision: 1.5 $
+;  $Date: 2004-05-05 17:10:31 $
+;  $Revision: 1.6 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
 pro pc_read_grid,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,object=object, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN

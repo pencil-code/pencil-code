@@ -1,4 +1,4 @@
-;$Id: moment.pro,v 1.1 2002-07-06 22:10:18 brandenb Exp $
+;$Id: moment.pro,v 1.2 2004-05-05 17:10:32 mee Exp $
 ;
 ; Copyright (c) 1994-1999, Research Systems, Inc.  All rights reserved.
 ;       Unauthorized reproduction prohibited.
@@ -81,7 +81,7 @@
 ;-
 FUNCTION Moment, X, Double = Double, Mdev = Mdev, Sdev = Sdev, $
                  Maxmoment = Maxmoment, NaN = nan
-
+COMPILE_OPT IDL2,HIDDEN
 ON_ERROR, 2
 
 if keyword_set( nan ) then begin ;If NaN set, remove NaNs and recurse.

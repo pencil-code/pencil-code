@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: pc_read_all_dummy.pro,v 1.2 2004-03-15 12:49:31 brandenb Exp $
+;;;  $Id: pc_read_all_dummy.pro,v 1.3 2004-05-05 17:10:31 mee Exp $
 ;;;
 ;;;  Description:
 ;;;   Dummy routine for reading data from all processors.
@@ -15,6 +15,7 @@
 ;;;   from individual processors (e.g. if you want to run r.pro).
 
 function param2
+COMPILE_OPT IDL2,HIDDEN
 ; Dummy to keep IDL from complaining. The real param2() routine will be
 ; compiled below
 end

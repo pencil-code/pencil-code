@@ -1,4 +1,21 @@
-;  $Id: varcontent.pro,v 1.23 2004-04-16 14:35:29 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.1 2004-05-05 17:10:31 mee Exp $
+FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param
+COMPILE_OPT IDL2,HIDDEN
+
+; 
+;  Read the positions of variables in f
+;  Can't just use `@data/index', as the data directory may have a different name
+;
+if (n_elements(dim) eq 0) then pc_read_dim,obj=dim
+if (n_elements(param) eq 0) then pc_read_param,obj=param
+
+default,datadir,'data'
+cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/index.pro'
+spawn, cmd, result
+res = flatten_strings(result) 
+if (execute(res) ne 1) then $
+    message, 'There was a problem with index.pro', /INFO
+
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -23,7 +40,9 @@
 ;   see idlvarloc
 
 ; How many variables are expected to be stored in the var file?
-if (par.lwrite_aux ne 0) then totalvars=nvar+naux else totalvars=nvar
+
+
+if (param.lwrite_aux ne 0) then totalvars=dim.mvar+dim.maux else totalvars=dim.mvar
 
 ; Make an array of structures in which to store their descriptions
 ; index zero is kept as a dummy entry.
@@ -109,25 +128,25 @@ for idust=0,n_elements(iuud)-1 do begin
 
   sidust = strtrim(string(idust),2)
 
-  varcontent[iuud(idust)].variable = 'Dust velocity ' + sidust + $
+  varcontent[iuud[idust]].variable = 'Dust velocity ' + sidust + $
       ' (uud' + sidust + ')'
-  varcontent[iuud(idust)].idlvar   = 'uud'+sidust
-  varcontent[iuud(idust)].idlinit    = INIT_3VECTOR
-  varcontent[iuud(idust)].idlvarloc= 'uud'+sidust+'_loc'
-  varcontent[iuud(idust)].idlinitloc = INIT_3VECTOR_LOC
-  varcontent[iuud(idust)].skip     = 2
+  varcontent[iuud[idust]].idlvar   = 'uud'+sidust
+  varcontent[iuud[idust]].idlinit    = INIT_3VECTOR
+  varcontent[iuud[idust]].idlvarloc= 'uud'+sidust+'_loc'
+  varcontent[iuud[idust]].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iuud[idust]].skip     = 2
 endfor
 
 for idust=0,n_elements(ind)-1 do begin
   
   sidust = strtrim(string(idust),2)
 
-  varcontent[ind(idust)].variable = 'Dust number density ' + sidust + $
+  varcontent[ind[idust]].variable = 'Dust number density ' + sidust + $
       ' (nd'+sidust+')'
-  varcontent[ind(idust)].idlvar   = 'nd'+sidust
-  varcontent[ind(idust)].idlinit    = INIT_SCALAR
-  varcontent[ind(idust)].idlvarloc= 'nd'+sidust+'_loc'
-  varcontent[ind(idust)].idlinitloc = INIT_SCALAR_LOC
+  varcontent[ind[idust]].idlvar   = 'nd'+sidust
+  varcontent[ind[idust]].idlinit    = INIT_SCALAR
+  varcontent[ind[idust]].idlvarloc= 'nd'+sidust+'_loc'
+  varcontent[ind[idust]].idlinitloc = INIT_SCALAR_LOC
 
 endfor
 
@@ -135,12 +154,12 @@ for idust=0,n_elements(imd)-1 do begin
   
   sidust = strtrim(string(idust),2)
 
-  varcontent[imd(idust)].variable = 'Dust density ' + sidust + $
+  varcontent[imd[idust]].variable = 'Dust density ' + sidust + $
       ' (md'+sidust+')'
-  varcontent[imd(idust)].idlvar   = 'md'+sidust
-  varcontent[imd(idust)].idlinit    = INIT_SCALAR
-  varcontent[imd(idust)].idlvarloc= 'md'+sidust+'_loc'
-  varcontent[imd(idust)].idlinitloc = INIT_SCALAR_LOC
+  varcontent[imd[idust]].idlvar   = 'md'+sidust
+  varcontent[imd[idust]].idlinit    = INIT_SCALAR
+  varcontent[imd[idust]].idlvarloc= 'md'+sidust+'_loc'
+  varcontent[imd[idust]].idlinitloc = INIT_SCALAR_LOC
 
 endfor
 
@@ -148,12 +167,12 @@ for idust=0,n_elements(imi)-1 do begin
   
   sidust = strtrim(string(idust),2)
 
-  varcontent[imi(idust)].variable = 'Ice density ' + sidust + $
+  varcontent[imi[idust]].variable = 'Ice density ' + sidust + $
       ' (mi'+sidust+')'
-  varcontent[imi(idust)].idlvar   = 'mi'+sidust
-  varcontent[imi(idust)].idlinit    = INIT_SCALAR
-  varcontent[imi(idust)].idlvarloc= 'mi'+sidust+'_loc'
-  varcontent[imi(idust)].idlinitloc = INIT_SCALAR_LOC
+  varcontent[imi[idust]].idlvar   = 'mi'+sidust
+  varcontent[imi[idust]].idlinit    = INIT_SCALAR
+  varcontent[imi[idust]].idlvarloc= 'mi'+sidust+'_loc'
+  varcontent[imi[idust]].idlinitloc = INIT_SCALAR_LOC
 
 endfor
 
@@ -167,7 +186,7 @@ varcontent[igg].skip     = 2
 
 
 ; Special condition as can be maux or mvar variable
-if ((ilnTT le nvar) or (par.lwrite_aux ne 0)) then begin
+if ((ilnTT le dim.mvar) or (param.lwrite_aux ne 0)) then begin
     varcontent[ilnTT].variable   = 'Log temperature (lnTT)'
     varcontent[ilnTT].idlvar     = 'lnTT'
     varcontent[ilnTT].idlinit    = INIT_SCALAR
@@ -177,7 +196,7 @@ end
 
 ; THEN DO maux VARIABLES 
 ; ** ONLY IF THEY HAVE BEEN SAVED **
-if (par.lwrite_aux ne 0) then begin
+if (param.lwrite_aux ne 0) then begin
     varcontent[iQrad].variable = 'Radiation (Qrad)'
     varcontent[iQrad].idlvar   = 'Qrad'
     varcontent[iQrad].idlinit    = INIT_SCALAR
@@ -217,3 +236,8 @@ varcontent[0].variable = 'UNKNOWN'
 varcontent[0].idlvar   = 'UNKNOWN'
 varcontent[0].idlinit  = '0.'
 varcontent[0].skip  = 0
+
+
+return,varcontent
+
+END

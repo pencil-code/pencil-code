@@ -1,16 +1,17 @@
-; $Id: pc_read.pro,v 1.2 2002-11-28 02:07:00 mee Exp $
+; $Id: pc_read.pro,v 1.3 2004-05-05 17:10:31 mee Exp $
 ;
 ;  Help on Pencil-Code read routines
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-11-28 02:07:00 $
-;  $Revision: 1.2 $
+;  $Date: 2004-05-05 17:10:31 $
+;  $Revision: 1.3 $
 ;
 ;  27-nov-02/tony: tony
 ;
 ;  
 ;
 pro pc_read
+COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Display list of routines
 ;

@@ -4,7 +4,7 @@
 
 ;;;
 ;;;  Author: nils/ adapted from rall.pro 20-nov-2003    
-;;;  $Id: rallxy.pro,v 1.3 2004-04-10 18:56:36 dobler Exp $
+;;;  $Id: rallxy.pro,v 1.4 2004-05-05 17:10:31 mee Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors in a xy-plane (select plane by 
@@ -80,12 +80,13 @@ xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
 ;
 ;  Read data
 ;
-@varcontent
+varcontent=pc_varcontent()
+totalvars=(size(varcontent))[1]-1L
 
 ; Prepare for read
 readstring=''
 content=''
-for i=1,totalvars do begin
+for i=1L,totalvars do begin
   readstring = readstring + ',' + varcontent[i].idlvarloc
   content    = content + ', ' + varcontent[i].variable
   ; Initialise variable
@@ -166,7 +167,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
       y[i0y:i1y] = yloc[i0yloc:i1yloc]
       z[i0z:i1z] = zloc[i0zloc:i1zloc]
 
-      for iv=1,totalvars do begin
+      for iv=1L,totalvars do begin
           cmd =   varcontent[iv].idlvar $
             + "[i0x:i1x,i0y:i1y,i0z:i1z,*]=" $
             + varcontent[iv].idlvarloc $

@@ -1,4 +1,4 @@
-;$Id: mean.pro,v 1.1 2002-06-15 07:50:21 brandenb Exp $
+;$Id: mean.pro,v 1.2 2004-05-05 17:10:32 mee Exp $
 ;
 ; Copyright (c) 1997-1999, Research Systems, Inc.  All rights reserved.
 ;       Unauthorized reproduction prohibited.
@@ -43,7 +43,7 @@
 ;       Written by:  GSL, RSI, August 1997
 ;-
 FUNCTION MEAN, X, Double = Double, NaN = nan
-
+  COMPILE_OPT IDL2,HIDDEN
   ON_ERROR, 2
 
   RETURN, (moment( X, Double=Double, Maxmoment=1, NaN=nan ))[0]

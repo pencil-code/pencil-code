@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.56 2004-04-10 18:56:36 dobler Exp $
+; $Id: r.pro,v 1.57 2004-05-05 17:10:31 mee Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,9 +6,10 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.56 2004-04-10 18:56:36 dobler Exp $
+;;; $Id: r.pro,v 1.57 2004-05-05 17:10:31 mee Exp $
 
 function param2
+COMPILE_OPT HIDDEN 
 ; Dummy to keep IDL from complaining. The real param2() routine will be
 ; compiled below
 end
@@ -33,12 +34,12 @@ default, varfile, 'var.dat'
 ;
 ;  Read data
 ;
-@varcontent
-
+varcontent=pc_varcontent()
+totalvars=(size(varcontent))[1]-1L
 ; Prepare for read
 res=''
 content=''
-for iv=1,totalvars do begin
+for iv=1L,totalvars do begin
   res     = res + ',' + varcontent[iv].idlvar
   content = content + ', ' + varcontent[iv].variable
   ; Initialise variable

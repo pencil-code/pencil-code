@@ -37,7 +37,7 @@ COMPILE_OPT IDL2,HIDDEN
   if (s[0] eq 0) then begin
     oldimv = 1
   endif else begin
-    oldimv = s(1:s[0])
+    oldimv = s[1:s[0]]
   endelse
   if (dim eq 0) then begin
     newdimf = [1, oldimv]

@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.7 2004-05-05 12:39:36 mee Exp $
+; $Id: pc_read_dim.pro,v 1.8 2004-05-05 17:10:31 mee Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 12:39:36 $
-;  $Revision: 1.7 $
+;  $Date: 2004-05-05 17:10:31 $
+;  $Revision: 1.8 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -19,6 +19,7 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $ 
                  object=object, $ 
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read dim.dat
 ;

@@ -1,4 +1,4 @@
-;  $Id: varcontent_stats.pro,v 1.7 2004-03-04 10:48:59 mee Exp $
+;  $Id: varcontent_stats.pro,v 1.8 2004-05-05 17:10:31 mee Exp $
 ;
 ;  Summarize data
 ;  omit ghost zones in the analysis
@@ -9,24 +9,24 @@ if (quiet le 2) then begin
   print, '  var             minval         maxval          mean           rms'
   ;
   ;
-  for iv=1,totalvars do begin
+  for iv=1L,totalvars do begin
     if (varcontent[iv].variable eq 'UNKNOWN') then continue
     varname = varcontent[iv].idlvar
     if (varcontent[iv].skip eq 2) then begin
       for j=0,2 do begin
         cmd = "print, FORMAT=fmt,strmid('"+varname+"_'+xyz["+str(j) $
             + "]+'        ',0,8),'=', " $
-            + "minmax("+varname+"(l1:l2,m1:m2,n1:n2,"+str(j)+")), " $
-            + "mean("+varname+"(l1:l2,m1:m2,n1:n2,"+str(j)+"),/DOUBLE), " $
-            + "rms("+varname+"(l1:l2,m1:m2,n1:n2,"+str(j)+"),/DOUBLE)"
+            + "minmax("+varname+"[l1:l2,m1:m2,n1:n2,"+str(j)+"]), " $
+            + "mean("+varname+"[l1:l2,m1:m2,n1:n2,"+str(j)+"],/DOUBLE), " $
+            + "rms("+varname+"[l1:l2,m1:m2,n1:n2,"+str(j)+"],/DOUBLE)"
         if (execute(cmd,1) ne 1) then $
             message, 'Error printing stats for ' + varcontent[iv].variable
       endfor
     endif else begin
       cmd = "print, FORMAT=fmt,strmid('"+varname+"        ',0,8),'=', " $
-        + "minmax("+varname+"(l1:l2,m1:m2,n1:n2)), " $
-        + "mean("+varname+"(l1:l2,m1:m2,n1:n2),/DOUBLE), " $
-        + "rms("+varname+"(l1:l2,m1:m2,n1:n2),/DOUBLE)"
+        + "minmax("+varname+"[l1:l2,m1:m2,n1:n2]), " $
+        + "mean("+varname+"[l1:l2,m1:m2,n1:n2],/DOUBLE), " $
+        + "rms("+varname+"[l1:l2,m1:m2,n1:n2],/DOUBLE)"
       if (execute(cmd,1) ne 1) then $
           message, 'Error printing stats for ' + varcontent[iv].variable
     endelse

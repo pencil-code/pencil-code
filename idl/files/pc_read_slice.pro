@@ -1,10 +1,10 @@
-; $Id: pc_read_slice.pro,v 1.2 2003-08-02 20:05:32 brandenb Exp $
+; $Id: pc_read_slice.pro,v 1.3 2004-05-05 17:10:31 mee Exp $
 ;
 ;   Read slice files
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2003-08-02 20:05:32 $
-;  $Revision: 1.2 $
+;  $Date: 2004-05-05 17:10:31 $
+;  $Revision: 1.3 $
 ;
 ;  28-nov-02/tony: coded 
 ;
@@ -12,6 +12,7 @@
 pro pc_read_slice,field=field,plane=plane,slice=slice,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz, $
                  object=object, dim1=dim1, dim2=dim2 $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
