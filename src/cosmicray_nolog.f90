@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.4 2004-02-24 02:15:28 snod Exp $
+! $Id: cosmicray_nolog.f90,v 1.5 2004-03-17 14:26:49 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -37,7 +37,7 @@ module CosmicRay
        gammacr, lnegl, lvariable_tensor_diff
 
   ! run parameters
-  real :: cosmicray_diff=0., Kperp=0., Kpara=0.
+  real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
 
@@ -83,7 +83,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.4 2004-02-24 02:15:28 snod Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.5 2004-03-17 14:26:49 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -215,6 +215,10 @@ module CosmicRay
           df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
         enddo
       endif
+!
+!  source term added at every time step; constant for now.
+!
+      if (ampl_Qcr/=0.) df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+ampl_Qcr
 !
 !  tensor diffusion, or, alternatively scalar diffusion or no diffusion
 !
