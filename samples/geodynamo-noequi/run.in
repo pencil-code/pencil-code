@@ -1,0 +1,38 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2005-04-05 14:34:50 ngrs Exp $',
+  ip=13,
+  nt=20, it1=4, isave=500, itorder=3, ialive=1
+  cdt=0.4, cdtv=0.3, dtmin=1e-6,
+  dsnap=10., dvid=.2, d2davg=10.
+  ttransient=0.,
+  tavg = 10.,                   ! time constant for time averaging
+  random_gen='nr_f90',
+  slice_position='e'
+/
+&hydro_run_pars
+  nu=1e-4
+  dampu=0., tdamp=0.,
+  dampuext=100, dampuint=100, wdamp=0.01,
+  Omega=1., theta=0. ! amount and direction of angular velocity
+  othresh_per_orms=3.
+/
+! end geodynamo
+&density_run_pars
+/
+&grav_run_pars
+  ipotential='geo-kws', g0=3.0, r0_pot=.5
+/
+&entropy_run_pars
+  hcond0=2e-4,
+  cooltype='shell', cool_ext=100, cool_int=100, wcool=0.01, 
+/
+&magnetic_run_pars
+  iresistivity='shell',
+  eta=1.4e-4, eta_int=1.4e-4, eta_ext=1.4e-3, wresistivity=0.01
+  eta=6e-5, eta_int=6e-5, eta_ext=7e-4, wresistivity=0.01
+  bthresh_per_brms=3.
+/

@@ -1,0 +1,43 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2005-04-05 14:34:50 ngrs Exp $',
+  ip=14,                        ! debugging parameter
+  xyz0  = -3.0,-3.0,-3.0,       ! first corner of box
+  xyz1  =  3.0, 3.0, 3.0,       ! second corner of box
+  lequidist= F, F, F,
+  grid_func='step-linear','step-linear','step-linear',
+  xyz_step = -1.1,-1.1,-1.1, 1.1, 1.1, 1.1,
+  xi_step_frac = 0.166667,0.166667,0.166667,0.833333,0.833333,0.833333,
+  xi_step_width= 1.5,1.5,1.5,1.5,1.5,1.5
+  lperi =  F  , F  , F,         ! periodic direction?
+  lshift_origin =  F,  F,  F,
+  bcx = 'a','s','s','a2','a2','s','s','a'
+  bcy = 's','a','s','a2','a2','s','s','a'
+  bcz = 's','s','a','s:a2','s:a2','s','s','s:a'
+  random_gen='nr_f90',
+  r_int=0.5,                    ! radius of interior spherical boundary
+  r_ext=1.0,                    ! radius of exterior spherical boundary
+/
+&hydro_init_pars
+  inituu='zero'
+  urand=0.05,
+/
+&density_init_pars
+  initlnrho='geo-kws',
+  cs0=1.29099444873581,
+  cp=2.5,
+  rho0=1.,
+  mpoly=1.
+/
+&grav_init_pars
+  ipotential='geo-kws', g0=3.0, r0_pot=.5
+/
+&entropy_init_pars
+  initss='geo-kws',T0=1.0
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-6
+/
