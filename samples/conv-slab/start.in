@@ -4,15 +4,19 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2002-07-18 15:07:32 dobler Exp $',
+  cvsid='$Id: start.in,v 1.2 2002-07-19 10:23:57 dobler Exp $',
   ip=14,                        ! debugging parameter
-  xyz0  = 0., 0., -0.68,        ! first corner of box
-  Lxyz  = 1., 1.,  2.,          ! box size
-  lperi = T , T ,  F,           ! periodic direction?
+  xyz0  = -0.5, -0.5, -0.68,        ! first corner of box
+  Lxyz  =  1.,   1.,   2.,          ! box size
+  lperi =  T ,   T ,   F,           ! periodic direction?
 /
 &hydro_init_pars
-  inituu='zero',
-  urand=0.1,
+  inituu='up-down',
+  ampluu=1.e-1
+  kx_uu= 6.283185 ! 2*\pi
+  ky_uu=12.566371 ! 4*\pi
+  widthuu=0.1
+  urand=0.,
 /
 &density_init_pars
   initlnrho='piecew-poly',

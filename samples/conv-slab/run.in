@@ -4,9 +4,9 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2002-07-18 15:07:32 dobler Exp $',
+  cvsid='$Id: run.in,v 1.2 2002-07-19 10:23:57 dobler Exp $',
   ip=14,
-  nt=1000, it1=50, isave=500, itorder=3,
+  nt=1000, it1=50, isave=200, itorder=3,
   cdt=0.4, cdtv=0.2, dtmin=1e-6, tmax=100.
   dsnap=20., dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
@@ -15,7 +15,8 @@
 /
 &hydro_run_pars
   nu=4e-3, ivisc=0
-  theta=0. ! direction of angular velocity vector (vertical)
+  Omega=0.1 ! angular velocity
+  theta=0.  ! direction of angular velocity vector (0 : vertical)
 /
 &density_run_pars
   cdiffrho=0.
