@@ -1,17 +1,17 @@
-; $Id: pc_read_var.pro,v 1.2 2002-11-28 22:55:00 tarek Exp $
+; $Id: pc_read_var.pro,v 1.3 2002-12-02 21:28:55 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-11-28 22:55:00 $
-;  $Revision: 1.2 $
+;  $Date: 2002-12-02 21:28:55 $
+;  $Revision: 1.3 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
-pro pc_read_var,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,deltay=deltay, $
+pro pc_read_var,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,deltay=deltay, all=all, $
                 uu=uu, lnrho=lnrho, ss=ss, aa=aa, lncc=lncc, ee=ee, ff=ff, $
-                object=object, varfile=varfile, $
+                object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
@@ -53,7 +53,7 @@ pro pc_read_var,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,deltay=deltay, $
     print, "    /HELP: display this usage information, and exit                                         "
     return
   ENDIF
-
+IF keyword_set(HELP) THEN PRINT, "USING EXPERIMENTALN OPTION ASSOC!!"
 ; Default data directory
 
 default, datadir, 'data'
@@ -61,7 +61,7 @@ default,proc,0
 default,varfile,'var.dat'
 
 ; Get necessary dimensions, inheriting QUIET
-pc_read_dim,mx=mx,my=my,mz=mz,precision=precision,datadir=datadir,proc=proc,QUIET=QUIET 
+pc_read_dim,mx=mx,my=my,mz=mz,mvar=mvar,precision=precision,datadir=datadir,proc=proc,QUIET=QUIET 
 ; and check pc_precision is set!                                                    
 pc_set_precision,precision=precision
 pc_read_param,object=params,datadir=datadir,QUIET=QUIET 
@@ -77,12 +77,20 @@ dx=zero &  dy=zero &  dz=zero & deltay=zero
 ;lnrho=lnrho
 ;ss=ss,aa=aa,lncc=lncc,ee=ee,ff=ff
 
-iuu=1
-ilnrho=4    
-ient=5  
+iuu=0    
+ilnrho=0    
+ient=0  
 iaa=0
 ie=0
 ilncc=0 
+if (params.lhydro)     then iuu=1
+if (params.ldensity)   then ilnrho=1    
+if (params.lentropy)   then ient=1  
+if (params.lmagnetic)  then iaa=1
+if (params.lradiation) then ie=1 
+if (params.lpscalar)   then ilncc=1 
+
+
 if (params.lhydro)     then uu    = fltarr(mx,my,mz,3)*one
 if (params.ldensity)   then lnrho = fltarr(mx,my,mz  )*one
 if (params.lentropy)   then ss    = fltarr(mx,my,mz  )*one
@@ -108,37 +116,40 @@ if (cgrid gt 0) then begin
                      ;
   if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'MHD with entropy'
-      readu,file,uu,lnrho,ss,aa
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,aa
   end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro without entropy, but with magnetic field'
-      readu,file,uu,lnrho,aa
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,aa
   end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and ie ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, density and radiation'
-      readu,file,uu,lnrho,ss,ee,ff
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,ee,ff
   end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, but no magnetic field'
-      readu,file,uu,lnrho,ss
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss
+      if keyword_set(ASSOCIATE) then begin
+          all=assoc(file,fltarr(mx,my,mz,mvar)*one,4)
+      endif
   end else if iuu ne 0 and ilnrho ne 0 and ilncc ne 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, but no magnetic field'
-      readu,file,uu,lnrho,lncc
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,lncc
   end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with no entropy and no magnetic field'
-      readu,file,uu,lnrho
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho
   end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just velocity (Burgers)'
-      readu,file,uu
+      if not keyword_set(ASSOCIATE) then readu,file,uu
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just magnetic fparams.ield (kinematic)'
-      readu,file,aa
+      if not keyword_set(ASSOCIATE) then readu,file,aa
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ilncc ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just passive scalar (no field nor hydro)'
-      readu,file,lncc
+      if not keyword_set(ASSOCIATE) then readu,file,lncc
   end else if iuu eq 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just density (probably just good for tests)'
-      readu,file,lnrho
+      if not keyword_set(ASSOCIATE) then readu,file,lnrho
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ie ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just radiation'
-      readu,file,ee,ff
+      if not keyword_set(ASSOCIATE) then readu,file,ee,ff
   end else begin
       if ( not keyword_set(QUIET) ) then print,'not prepared...'
   end
@@ -148,7 +159,8 @@ if (cgrid gt 0) then begin
   end else begin
       readu,file, t, x, y, z, dx, dy, dz
   end
-  close,file
+
+  if not keyword_set(ASSOCIATE) then close,file
 
  end else begin
   message, 'ERROR: cannot find file '+ filename
