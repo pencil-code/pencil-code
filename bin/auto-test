@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.44 2004-02-23 15:08:54 brandenb Exp $
+# CVS: $Id: auto-test,v 1.45 2004-05-03 12:38:33 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -80,6 +80,7 @@ Options:
   -C,  --clean          \tClean up (make cleann) before compiling
   -c,  --compile-only   \tTest compilation only
   -n,  --norun          \tTest compilation and starting only
+  -l,  --list           \tList test directories (don't run any tests)
   -t,  --time           \tPrint CPU time used
   -s,  --short          \tPrint short directory names only
   -p,  --postproc=PP    \tApply postprocessor PP to output from make";
@@ -94,6 +95,7 @@ GetOptions(\%opts,
 	       -C   --clean
                -c   --compile-only
 	       -n   --norun
+	       -l   --list
 	       -t   --time
 	       -s   --short
 	       -p=s --postproc=s
@@ -102,15 +104,16 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.44 2004-02-23 15:08:54 brandenb Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.45 2004-05-03 12:38:33 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
-my $debug    = (              $opts{'debug'}    || 0 );
-my $short    = ($opts{'s'} || $opts{'short'}    || 0 );
-my $time     = ($opts{'t'} || $opts{'time'}     || 0 );
-my $clean    = ($opts{'C'} || $opts{'clean'}    || 0 );
-my $postproc = ($opts{'p'} || $opts{'postproc'} || '');
+my $debug     = (              $opts{'debug'}    || 0 );
+my $short     = ($opts{'s'} || $opts{'short'}    || 0 );
+my $list_only = ($opts{'l'} || $opts{'list'}     || 0 );
+my $time      = ($opts{'t'} || $opts{'time'}     || 0 );
+my $clean     = ($opts{'C'} || $opts{'clean'}    || 0 );
+my $postproc  = ($opts{'p'} || $opts{'postproc'} || '');
 
 ## Debugging output:
 if ($debug) {
@@ -145,7 +148,9 @@ $| = 1;
 
 @ARGV = grep { /./ } @ARGV;	# Eliminate empty @ARGV list (needed under
 				# OSF1, no clue why)
-
+if ($list_only) {
+    print "Test directories:\n"
+}
 if (@ARGV) {			# Process dirs given in cmd line
     @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
     for my $d (@ARGV) {
@@ -157,12 +162,14 @@ if (@ARGV) {			# Process dirs given in cmd line
 	test_rundir("$topdir/samples/$d");
     }
     # Process dirs in runs/ directory
-    if (-d "$topdir/runs") {
-	for my $d (@runsdir) {
-	    test_rundir("$topdir/runs/$d");
+    if (@runsdir) {
+	if (-d "$topdir/runs") {
+	    for my $d (@runsdir) {
+		test_rundir("$topdir/runs/$d");
+	    }
+	} else {
+	    print "Not checking in $topdir/runs : no such directory\n";
 	}
-    } else {
-	print "Not checking in $topdir/runs : no such directory\n";
     }
 }
 
@@ -368,6 +375,10 @@ sub test_rundir {
     chdir $dir;
     my $cwd = cwd();
     if ($short) { $cwd =~ s{.*pencil[^/]*/}{}i };
+    if ($list_only) {
+	print "$cwd\n";
+	return;
+    }
     print "\n", $cwd, ":\n";
     $ntests++;
 
@@ -465,7 +476,7 @@ sub postprocess {
 
 
 END {
-    if ( ! ($help || $nosummary)) {
+    if ( ! ($help || $nosummary || $list_only)) {
 	print "\n" . "-" x 70 . "\n";
 	if (%failed) {
 	    print "Failed ", scalar(keys %failed),
