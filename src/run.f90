@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.182 2004-06-09 10:18:38 ajohan Exp $
+! $Id: run.f90,v 1.183 2004-06-11 08:07:36 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.182 2004-06-09 10:18:38 ajohan Exp $")
+             "$Id: run.f90,v 1.183 2004-06-11 08:07:36 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -102,15 +102,11 @@
 !  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
         if (ip<=6.and.lroot) print*,'reading var files'
+!          
+!  no need to read maux variables as they will be calculated
+!  at the first time step -- even if lwrite_aux is set
 !
-!  if lwrite_aux set, read in auxiliary variables as well
-!  (this is needed for fixed modules such as hydro_fixed)
-!
-        if (lwrite_aux) then
-          call input(trim(directory_snap)//'/var.dat',f,mvar+maux,1) 
-        else
-          call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
-        endif
+        call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
         call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if any)
 !

@@ -1,4 +1,4 @@
-! $Id: hydro_fixed.f90,v 1.4 2004-06-09 13:02:34 ajohan Exp $
+! $Id: hydro_fixed.f90,v 1.5 2004-06-11 08:07:35 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -116,7 +116,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_fixed.f90,v 1.4 2004-06-09 13:02:34 ajohan Exp $")
+           "$Id: hydro_fixed.f90,v 1.5 2004-06-11 08:07:35 ajohan Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -132,32 +132,41 @@ module Hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine initialize_hydro()
+    subroutine initialize_hydro(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  24-nov-02/tony: coded 
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
+!  11-jun-04/anders: call init_uu again for hydro_fixed with not lstarting
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
 !  
 !  r_int and r_ext override rdampint and rdampext if both are set
 ! 
-   if (dampuint /= 0.0) then 
-     if (r_int > epsi) then
-       rdampint = r_int
-     elseif (rdampint <= epsi) then
-       write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
-     endif 
-   endif    
+      if (dampuint /= 0.0) then 
+        if (r_int > epsi) then
+          rdampint = r_int
+        elseif (rdampint <= epsi) then
+          write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
+        endif 
+      endif    
 
-   if (dampuext /= 0.0) then      
-     if (r_ext < impossible) then         
-       rdampext = r_ext
-     elseif (rdampext == impossible) then
-       write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
-     endif
-   endif
-
+      if (dampuext /= 0.0) then      
+        if (r_ext < impossible) then         
+          rdampext = r_ext
+        elseif (rdampext == impossible) then
+          write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
+        endif
+      endif
+!  
+!  Rewrite initial condition into f for fixed hydro
+!        
+      if (.not. lstarting) call init_uu(f,spread(spread(x,2,my),3,mz), &
+          spread(spread(y,1,mx),3,mz),spread(spread(z,1,mx),2,my))
+!
     endsubroutine initialize_hydro
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)

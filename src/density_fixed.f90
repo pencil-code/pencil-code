@@ -1,4 +1,4 @@
-! $Id: density_fixed.f90,v 1.1 2004-06-09 10:25:20 ajohan Exp $
+! $Id: density_fixed.f90,v 1.2 2004-06-11 08:07:35 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density_fixed.f90,v 1.1 2004-06-09 10:25:20 ajohan Exp $")
+           "$Id: density_fixed.f90,v 1.2 2004-06-11 08:07:35 ajohan Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -106,7 +106,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density()
+    subroutine initialize_density(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -116,16 +116,20 @@ module Density
 !
 !  24-nov-02/tony: coded 
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
+!  11-jun-04/anders: call init_lnrho again for density_fixed with not lstarting
 !
-    if(diffrho==0.) then
-      diffrho=cdiffrho*dxmin*cs0
-    endif
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
+!
+      if(diffrho==0.) then
+        diffrho=cdiffrho*dxmin*cs0
+      endif
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
-    select case(initlnrho(1))
-      case('geo-kws')
-        if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
+      select case(initlnrho(1))
+        case('geo-kws')
+          if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
 !ajwm Shouldn't be done here they should be set as input parameters in
 !ajwm start.in.  There may be a problem at present with run since these
 !ajwm vales will not get set consistantly.
@@ -138,7 +142,12 @@ module Density
 !ajwm have changed so we'd better recalculate everything consistently
 !ajwm but that won't work either since 
 !        call initialize_ionization()
-    endselect
+      endselect
+!  
+!  Rewrite initial condition into f for fixed density
+!        
+      if (.not. lstarting) call init_lnrho(f,spread(spread(x,2,my),3,mz), &
+          spread(spread(y,1,mx),3,mz),spread(spread(z,1,mx),2,my))
 !
     endsubroutine initialize_density
 !***********************************************************************

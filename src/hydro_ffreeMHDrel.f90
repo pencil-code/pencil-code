@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.15 2004-02-17 11:57:39 brandenb Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.16 2004-06-11 08:07:35 ajohan Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -101,7 +101,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.15 2004-02-17 11:57:39 brandenb Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.16 2004-06-11 08:07:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -122,15 +122,18 @@ module Hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine initialize_hydro()
+    subroutine initialize_hydro(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  24-nov-02/tony: coded 
 !
-!  do nothing
-!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
+!      
+      if (ip == 0) print*,f,lstarting
+!     
     endsubroutine initialize_hydro
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)

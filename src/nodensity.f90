@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.24 2004-05-28 16:44:39 dobler Exp $
+! $Id: nodensity.f90,v 1.25 2004-06-11 08:07:35 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -50,22 +50,25 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.24 2004-05-28 16:44:39 dobler Exp $")
+           "$Id: nodensity.f90,v 1.25 2004-06-11 08:07:35 ajohan Exp $")
 !
 !ajwm Necessary? added incase
       gamma=1.
       gamma1=0.
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density()
+    subroutine initialize_density(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  24-nov-02/tony: coded 
 !
-!  dummy
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
 !
+      if (ip == 0) print*,f,lstarting ! keep compiler quiet
+!      
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f,xx,yy,zz)

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.163 2004-06-07 19:50:13 theine Exp $
+! $Id: density.f90,v 1.164 2004-06-11 08:07:35 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.163 2004-06-07 19:50:13 theine Exp $")
+           "$Id: density.f90,v 1.164 2004-06-11 08:07:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -111,7 +111,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine initialize_density()
+    subroutine initialize_density(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -122,15 +122,18 @@ module Density
 !  24-nov-02/tony: coded 
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
-    if(diffrho==0.) then
-      diffrho=cdiffrho*dxmin*cs0
-    endif
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
+!
+      if(diffrho==0.) then
+        diffrho=cdiffrho*dxmin*cs0
+      endif
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
-    select case(initlnrho(1))
-      case('geo-kws')
-        if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
+      select case(initlnrho(1))
+        case('geo-kws')
+          if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
 !ajwm Shouldn't be done here they should be set as input parameters in
 !ajwm start.in.  There may be a problem at present with run since these
 !ajwm vales will not get set consistantly.
@@ -143,7 +146,7 @@ module Density
 !ajwm have changed so we'd better recalculate everything consistently
 !ajwm but that won't work either since 
 !        call initialize_ionization()
-    endselect
+      endselect
 !
     endsubroutine initialize_density
 !***********************************************************************

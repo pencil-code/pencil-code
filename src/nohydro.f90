@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.28 2004-05-25 18:32:18 mee Exp $
+! $Id: nohydro.f90,v 1.29 2004-06-11 08:07:35 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,18 +65,21 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.28 2004-05-25 18:32:18 mee Exp $")
+           "$Id: nohydro.f90,v 1.29 2004-06-11 08:07:35 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine initialize_hydro()
+    subroutine initialize_hydro(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  24-nov-02/tony: coded 
 !
-!  dummy
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
+!      
+      if (ip == 0) print*,f,lstarting  !(keep compiler quiet)
 !
     endsubroutine initialize_hydro
 !***********************************************************************

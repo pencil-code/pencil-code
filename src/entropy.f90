@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.314 2004-06-08 18:22:19 ajohan Exp $
+! $Id: entropy.f90,v 1.315 2004-06-11 08:07:35 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.314 2004-06-08 18:22:19 ajohan Exp $")
+           "$Id: entropy.f90,v 1.315 2004-06-11 08:07:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -138,7 +138,7 @@ module Entropy
 !
     endsubroutine register_entropy
 !***********************************************************************
-    subroutine initialize_entropy()
+    subroutine initialize_entropy(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -148,8 +148,10 @@ module Entropy
       use Gravity, only: gravz,g0
       use Density, only: mpoly
       use Ionization, only: lnTT0,get_soundspeed
-
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: beta1
+      logical :: lstarting
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
@@ -263,28 +265,28 @@ module Entropy
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
-    select case(initss(1))
-      case('geo-kws')
-        if (lroot) then
-          print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
-          if (abs(exp(lnTT0)-T0) > epsi) then
-            print*,'initialize_entropy: T0 is not consistent with cs20; using cs20'
-            T0=exp(lnTT0)
+      select case(initss(1))
+        case('geo-kws')
+          if (lroot) then
+            print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
+            if (abs(exp(lnTT0)-T0) > epsi) then
+              print*,'initialize_entropy: T0 is not consistent with cs20; using cs20'
+              T0=exp(lnTT0)
+            endif
           endif
-        endif
 !
-!       temperatures at shell boundaries
-        beta1=g0/(mpoly+1)
-        TT_ext=T0
-        TT_int=1+beta1*(1/r_int-1)
-!       TT_ext=gamma/gamma1*T0
-!       TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
-!       set up cooling parameters for spherical shell in terms of
-!       sound speeds
-       call get_soundspeed(log(TT_ext),cs2_ext)
-       call get_soundspeed(log(TT_int),cs2_int)
+!         temperatures at shell boundaries
+          beta1=g0/(mpoly+1)
+          TT_ext=T0
+          TT_int=1+beta1*(1/r_int-1)
+!         TT_ext=gamma/gamma1*T0
+!         TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
+!         set up cooling parameters for spherical shell in terms of
+!         sound speeds
+          call get_soundspeed(log(TT_ext),cs2_ext)
+          call get_soundspeed(log(TT_int),cs2_int)
 !
-    endselect
+      endselect
 !
     endsubroutine initialize_entropy
 !***********************************************************************

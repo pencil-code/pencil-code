@@ -1,4 +1,4 @@
-! $Id: entropy_fixed.f90,v 1.2 2004-06-09 10:25:20 ajohan Exp $
+! $Id: entropy_fixed.f90,v 1.3 2004-06-11 08:07:35 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_fixed.f90,v 1.2 2004-06-09 10:25:20 ajohan Exp $")
+           "$Id: entropy_fixed.f90,v 1.3 2004-06-11 08:07:35 ajohan Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -133,18 +133,21 @@ module Entropy
 !
     endsubroutine register_entropy
 !***********************************************************************
-    subroutine initialize_entropy()
+    subroutine initialize_entropy(f,lstarting)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !  21-jul-2002/wolf: coded
+!  11-jun-04/anders: call init_ss again for entropy_fixed with not lstarting
 !
       use Cdata
       use Gravity, only: gravz,g0
       use Density, only: mpoly
       use Ionization, only: lnTT0,get_soundspeed
-
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: beta1
+      logical :: lstarting
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
@@ -258,28 +261,33 @@ module Entropy
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
-    select case(initss(1))
-      case('geo-kws')
-        if (lroot) then
-          print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
-          if (abs(exp(lnTT0)-T0) > epsi) then
-            print*,'initialize_entropy: T0 is not consistent with cs20; using cs20'
-            T0=exp(lnTT0)
+      select case(initss(1))
+        case('geo-kws')
+          if (lroot) then
+            print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
+            if (abs(exp(lnTT0)-T0) > epsi) then
+              print*,'initialize_entropy: T0 is not consistent with cs20; using cs20'
+              T0=exp(lnTT0)
+            endif
           endif
-        endif
 !
-!       temperatures at shell boundaries
-        beta1=g0/(mpoly+1)
-        TT_ext=T0
-        TT_int=1+beta1*(1/r_int-1)
-!       TT_ext=gamma/gamma1*T0
-!       TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
-!       set up cooling parameters for spherical shell in terms of
-!       sound speeds
-       call get_soundspeed(log(TT_ext),cs2_ext)
-       call get_soundspeed(log(TT_int),cs2_int)
+!         temperatures at shell boundaries
+          beta1=g0/(mpoly+1)
+          TT_ext=T0
+          TT_int=1+beta1*(1/r_int-1)
+!         TT_ext=gamma/gamma1*T0
+!         TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
+!         set up cooling parameters for spherical shell in terms of
+!         sound speeds
+          call get_soundspeed(log(TT_ext),cs2_ext)
+          call get_soundspeed(log(TT_int),cs2_int)
 !
-    endselect
+      endselect
+!  
+!  Rewrite initial condition into f for fixed entropy
+!        
+      if (.not. lstarting) call init_ss(f,spread(spread(x,2,my),3,mz), &
+                  spread(spread(y,1,mx),3,mz),spread(spread(z,1,mx),2,my))
 !
     endsubroutine initialize_entropy
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.59 2004-05-18 09:59:18 ajohan Exp $
+! $Id: noentropy.f90,v 1.60 2004-06-11 08:07:35 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,18 +57,21 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.59 2004-05-18 09:59:18 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.60 2004-06-11 08:07:35 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
-    subroutine initialize_entropy()
+    subroutine initialize_entropy(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  24-nov-02/tony: coded 
 !
-!  do nothing
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
+!
+      if (ip == 0) print*,f,lstarting ! keep compiler quiet
 !
     endsubroutine initialize_entropy
 !***********************************************************************
