@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.42 2003-05-29 07:48:14 brandenb Exp $ 
+! $Id: initcond.f90,v 1.43 2003-05-30 20:39:20 brandenb Exp $ 
 
 module Initcond 
  
@@ -495,10 +495,11 @@ module Initcond
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
 !   6-jul-02/axel: coded
-!  22-feb032/axel: fixed 3-D background solution for enthalpy
+!  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi
+      real, dimension (mx,my) :: delS
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width
       real :: gamma1,zinfty2,cs20,hh0
@@ -525,33 +526,49 @@ module Initcond
         delta=sqrt(delta2)
       endif
 !
-!  calculate zinfty**2 (similar to poluytropic_simple)
+!  calculate zinfty**2 (similar to polytropic_simple)
 !
       gamma1=gamma-1.
-      zinfty2=cs20/(.5*gamma1*Omega**2)
-      print*,'planet: zinfty2=',zinfty2
+      if(gamma1/=0.) then
+        zinfty2=cs20/(.5*gamma1*Omega**2)
+      else
+        zinfty2=impossible
+      endif
+      print*,'planet: gamma,zinfty2=',gamma,zinfty2
 !
 !  calculate hh
 !  add continuous vertical stratification to horizontal planet solution
+!  xi=1 inside vortex, and 0 outside
 !
       rr2=xx**2+eps2*yy**2+zz**2/delta2
       hh=+.5*delta2*Omega**2*(radius2-rr2)
       xi=.5+.5*tanh(hh/width)
 !
-    if(nz==1) then
+    if(.not.lentropy) then
 !
 !  Solution as in the old disc code
 !
-      print*,'special 2-D solution'
+      print*,'use h -> h+h0 and constant entropy'
       hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
       if(lentropy) f(:,:,:,ient)=0.
     else
 !
 !  add a constant to hh such that hh is "ampl" times in the vortex
 !
-      hh0=.5*Omega**2*(zinfty2-delta2*radius2)/ampl
-      hh=(hh+hh0)*xi+.5*Omega**2*(zinfty2-zz**2)*(1.-xi)
-      if(lentropy) f(:,:,:,ient)=-alog(ampl)*xi
+!     print*,"with entropy: hot corona"
+!     hh0=.5*Omega**2*(zinfty2-delta2*radius2)/ampl
+!     hh=(hh+hh0)*xi+.5*Omega**2*(zinfty2-zz**2)*(1.-xi)
+!     if(lentropy) f(:,:,:,ient)=-alog(ampl)*xi
+!
+!  add a constant to hh such that hh is "ampl" times in the vortex
+!
+      print*,"with entropy: integrate hot corona"
+      hh(:,:,n2)=1.  !(initial condition)
+      f(:,:,:,ient)=-alog(ampl)*xi
+      do n=n2-1,n1,-1
+        delS=f(:,:,n+1,ient)-f(:,:,n,ient)
+        hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
+      enddo
     endif
 !
 !  calculate mask function xi, which is 0 outside and 1 inside the vortex
@@ -564,7 +581,7 @@ module Initcond
 !
       print*,'planet: hmin=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
-!'
+!
 !  have to use explicit indices here, because ghostzones are not set
 !
       if(lentropy) then

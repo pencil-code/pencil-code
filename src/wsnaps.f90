@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.24 2003-05-29 07:48:14 brandenb Exp $
+! $Id: wsnaps.f90,v 1.25 2003-05-30 20:39:20 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -73,11 +73,14 @@ contains
       endif
 !
 !  before closing, add possible extra (hard-to-get) output
+!  do this only if something was written according to the above logics 
 !
-      call output_auxiliary(lun_output,mvar,maux,a)
-      call output_radiation(lun_output)
-      call output_ionization(lun_output)
-      close(lun_output)
+!     if(lsnap.or..not.llabel) then
+        call output_auxiliary(lun_output,mvar,maux,a)
+        call output_radiation(lun_output)
+        call output_ionization(lun_output)
+        close(lun_output)
+!     endif
 !
     endsubroutine wsnap
 !***********************************************************************
