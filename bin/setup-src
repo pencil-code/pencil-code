@@ -4,7 +4,7 @@
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: setup-src,v 1.18 2003-11-04 14:20:34 mee Exp $
+# CVS $Id: setup-src,v 1.19 2003-11-26 14:59:22 dobler Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -40,9 +40,8 @@ end
 ln -s $srcdir/Makefile.parent Makefile
 
 ## src subdirectory
-if (-d $src) then
-  echo "$src existing src directory will be used"
-else
+if (! -d $src) then
+  echo "WARNING: No src directory found -- creating new one"
   mkdir $src
 endif
 #
@@ -90,6 +89,9 @@ if ($n > 1) echo "$n files already exist in $src"
 #
 #  Generate Makefile
 #
+set echo
+set verbose
+
 rm -f Makefile			# for old run directories
-adapt-mkfile Makefile.src Makefile
+$bindir/adapt-mkfile Makefile.src Makefile
 rm -f makefile			# for old run directories
