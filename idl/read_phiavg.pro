@@ -12,7 +12,7 @@
 ;;     3. nr_phiavg, nz_phiavg, nvars, nprocz
 ;;;    2. t, r_phiavg, z_phiavg, dr, dz
 ;;;    1. data
-;;;    4. labels
+;;;    4. len(labels),labels
 ;;;  Slots of returned structure:
 ;;;       t        FLOAT              ; time
 ;;;       rcyl     FLOAT Array[nr]    ; coordinate
@@ -79,7 +79,7 @@ function read_phiavg, file, $
     print,'z in '   , minmax(z)
   endif
 
-  vars = fltarr(nr,nz*nprocz,nvars)
+  vars = fltarr(nr,nz,nvars)
   readu, 1, vars
   if (debug) then print, 'vars in ', minmax(vars)
 

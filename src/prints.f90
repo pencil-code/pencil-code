@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.55 2003-11-24 13:20:33 dobler Exp $
+! $Id: prints.f90,v 1.56 2003-11-24 20:30:38 dobler Exp $
 
 module Print
 
@@ -267,7 +267,7 @@ module Print
 !    1. nr_phiavg, nz_phiavg, nvars, nprocz
 !    2. t, r_phiavg, z_phiavg, dr, dz
 !    3. data
-!    4. labels
+!    4. len(labels),labels
 !
 !   2-jan-03/wolf: adapted from write_zaverages
 !
@@ -279,14 +279,15 @@ module Print
       character (len=1024) :: labels
 !
 !  write result; normalization is already done in phiaverages_rz
-!  Note: the z-array is only written for root processor (not so important!)
 !
       if(lroot.and.nnamerz>0) then
         call safe_character_assign(fname, &
                                    trim(datadir)//'/averages/PHIAVG'//trim(ch))
         open(1,FILE=fname,FORM='unformatted')
-        write(1) nrcyl,n2-n1+1,nnamerz,nprocz
-        write(1) t2davgfirst,rcyl,z(n1:n2),drcyl,dz
+        write(1) nrcyl,nzgrid,nnamerz,nprocz
+        write(1) t2davgfirst,rcyl, &
+                 z(n1)+(/(i*dz, i=0,nzgrid-1)/), &
+                 drcyl,dz
         write(1) fnamerz(:,1:nz,:,1:nnamerz)
 !
 !  write labels at the end of file
