@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.56 2003-08-02 19:43:04 mee Exp $
+# $Id: getconf.csh,v 1.57 2003-08-06 17:58:32 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -37,6 +37,13 @@ if ($mpi) then
 
   else if ($hn =~ *.kis.uni-freiburg.de) then
     set mpirun = /opt/local/mpich/bin/mpirun
+
+  else if ($hn =~ sleipner) then
+    set mpirun = /usr/bin/poe
+    set local_disc = 1
+    setenv SCRATCH_DIR $SCRDIR
+    set start_x = $SCRATCH_DIR/start.x
+    set run_x = $SCRATCH_DIR/run.x
 
   else if (($hn =~ cincinnatus*) || ($hn =~ owen*) || ($hn =~ master) || ($hn =~ node*)) then
     set mpirun = /usr/lib/lam/bin/mpirun
@@ -145,6 +152,8 @@ if ($mpi) then
     set npops = "-n $ncpus"
   else if ($mpirun =~ *scout*) then
     set npops = "-nodes $ncpus"
+  else if ($mpirun =~ *poe*) then
+    set npops = "-procs $ncpus"
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
   endif
