@@ -7,27 +7,18 @@
 ;;;  Date:   07-Apr-2004
 ;;;
 ;;;  Description:
-;;;   Plot all known phi averages
+;;;    Plot all known phi averages
 ;;;  Usage:
-;;;   pphiavg                            ; read data from default location
-;;;   pphiavg, avg                       ; use data from struct AVG 
-;;;   pphiavg, 'data/averages/PHIAVG5'   ; read data/averages/PHIAVG5
-;;;   pphiavg, 'PHIAVG5'                 ; read data/averages/PHIAVG5
-;;;   pphiavg, PMULTI=[0,3,4], CHARSIZE=1.4
+;;;    pphiavg                            ; read data from default location
+;;;    pphiavg, avg                       ; use data from struct AVG 
+;;;    pphiavg, 'data/averages/PHIAVG5'   ; read data/averages/PHIAVG5
+;;;    pphiavg, 'PHIAVG5'                 ; read data/averages/PHIAVG5
+;;;    pphiavg, PMULTI=[0,3,4], CHARSIZE=1.4
 
 pro pphiavg, arg, QUIET=quiet, PMULTI=pmulti, CHARSIZE=charsize, $
              HELP=help
 
-  if (keyword_set(help)) then begin
-    print, "PPHIAVG:  Plot all known phi averages"
-    print, "Usage:"
-    print, "  pphiavg                      ; read data from default location"
-    print, "  pphiavg, avg                 ; use data from struct AVG "
-    print, "  pphiavg, 'data/averages/PHIAVG5' ; read data/averages/PHIAVG5"
-    print, "  pphiavg, 'PHIAVG5'           ; read data/averages/PHIAVG5"
-    print, "  pphiavg, PMULTI=[0,3,4], CHARSIZE=1.4"
-    return
-  endif
+  if (keyword_set(help)) then extract_help, 'pphiavg'
 
   datatopdir ='data'
   avgdir = datatopdir+'/averages'

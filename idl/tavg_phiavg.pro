@@ -7,14 +7,14 @@
 ;;;  Date:   16-Apr-2004
 ;;;
 ;;;  Description:
-;;;   Time-average azimuthal averages in a given range.
+;;;    Time-average azimuthal averages in a given range.
 ;;;  Usage:
-;;;   avg = tavg_phiavg()                ; average all PHIAVG files in
-;;;                                      ; directory data/averages
-;;;   avg = tavg_phiavg(DIR='data/avg2') ; average all PHIAVG files in
-;;;                                      ; directorydata/avg2
-;;;   avg = tavg_phiavg([2,10])          ; average PHIAVG2 to PHIAVG10
-;;;   avg = tavg_phiavg([10.,35.])       ; average from time 10. to 35.
+;;;    avg = tavg_phiavg()                ; average all PHIAVG files in
+;;;                                       ; directory data/averages
+;;;    avg = tavg_phiavg(DIR='data/avg2') ; average all PHIAVG files in
+;;;                                       ; directory data/avg2
+;;;    avg = tavg_phiavg([2,10])          ; average PHIAVG2 to PHIAVG10
+;;;    avg = tavg_phiavg([10.,35.])       ; average from time 10. to 35.
 
 ; ---------------------------------------------------------------------- ;
 
@@ -47,7 +47,10 @@ end
 
 ; ---------------------------------------------------------------------- ;
 
-function tavg_phiavg, range, DIR=avgdir, QUIET=quiet
+function tavg_phiavg, range, DIR=avgdir, QUIET=quiet, $
+                      HELP=help
+
+  if (keyword_set(help)) then extract_help, 'tavg_phiavg'
 
   datatopdir = 'data'
   default, avgdir, datatopdir+'/averages'

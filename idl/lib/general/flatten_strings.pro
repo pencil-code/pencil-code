@@ -7,17 +7,44 @@
 ;;;  Date:   05-Oct-2002
 ;;;
 ;;;  Description:
-;;;   Collapse contents of string array into a flat string
+;;;    Collapse contents of string array into a flat string
+;;;  Arguments:
+;;;    STRARR  -- string array
+;;;  Return value:
+;;;    flattened string
+;;;  Key words:
+;;;    NEWLINE  -- if true, join array elements by newlines
+;;;    FINAL_NL -- if true, append a final newline with /NEWLINES
 
-function flatten_strings, strarr
-COMPILE_OPT IDL2,HIDDEN
+function flatten_strings, strarr, $
+                          NEWLINES=nl, FINAL_NL=final_nl, $
+                          HELP=help
+
+  compile_opt idl2, hidden
+
+  default, help,     0
+  default, nl,       0
+  default, final_nl, 0
+
+  if (help) then begin
+    print, extract_help('flatten_strings')
+    retall
+  endif
+
+  if (nl) then begin
+    glue = string(10B)
+  endif else begin
+    glue = ''
+  endelse
 
   strarr1 = strarr              ; copy to avoid overwriting of original
   res = strarr1[0]
   while ((size(strarr1))[1] gt 1) do begin
     strarr1 = strarr1[1:*]
-    res = res + strarr1[0]
+    res = res + glue + strarr1[0]
   endwhile
+
+  if (final_nl) then res = res + glue
 
   return, res
 

@@ -22,10 +22,12 @@
 ;;;    NEGATE        -- if set, negate fields
 ;;;    PLOT_UPHI     -- colour-code u_phi, not omega
 ;;;    PLOT_LZ       -- colour-code l_z = r*u_phi, not omega
-;;;    RADII         -- radii for overplotting circles
+;;;    RADII         -- radii for overplotting circles;
+;;;                     for statistics, assume [R_sphere] (whole sphere),
+;;;                     or [R_in, R_out] (spherical shell)
 ;;;    MARGIN        -- margin in x and y (see ASPECT_POS)
 ;;;    STAT          -- print some statistics
-;;;    OMEGA         -- angular velocity for getting statistics right
+;;;    OMEGA0        -- angular velocity Omega0 for getting statistics right
 ;;;    MAXVEC        -- maximum number of vectors to plot (see WD_VELOVECT)
 ;;;    NLINES        -- if >0, plot NLINES field lines for the poloidal
 ;;;                     component instead of arrows
@@ -39,7 +41,7 @@
 ;;;    pvv_phiavg, 'PHIAVG3'         ; plot uu data from PHIAVG3,
 ;;;    pvv_phiavg, 'PHIAVG3', /BB    ; plot bb data from PHIAVG3,
 ;;;    pvv_phiavg, avg               ; use data from struct AVG
-;;;    pvv_phiavg, avg, /STAT, OMEGA=.5 ; print some rms values
+;;;    pvv_phiavg, avg, /STAT, OMEGA0=.5 ; print some rms values
 ;;;  Advanced example:
 ;;;    avg=tavg_phiavg([800.,1e10])
 ;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT, NLINES=20
@@ -47,12 +49,15 @@
 ;;;                /ABSZERO, BOTTOMCOLFRAC=0.3
 
 pro pvv_phiavg, arg, BB=bb, UU=uu, $
-                NEGATE=negate, MARGIN=margin, RADII=radii, OMEGA=omega, $
+                NEGATE=negate, MARGIN=margin, RADII=radii, OMEGA0=omega, $
                 CHARSIZE=charsize, MAXVEC=maxvec, $
                 STAT=stat, NLINES=nlines, $
                 PLOT_UPHI=plot_uphi, PLOT_LZ=plot_lz, $
                 ABSZERO=abszero, BOTTOMCOLFRAC=bottomcolfrac, $
-                QUIET=quiet
+                QUIET=quiet, $
+                HELP=help
+
+  if (keyword_set(help)) then extract_help, 'pvv_phiavg'
 
   datatopdir ='data'
   avgdir = datatopdir+'/averages'
@@ -217,9 +222,11 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
       if (n_elements(radii) eq 1) then begin ; just one radius -> outer
         rout = radii[0]
         weight2 = weight*(r_spher lt rout)
+        spher = 'sphere  '
       endif else begin          ; at least two radii -> [inner, outer]
         rout = radii[1]
         weight2 = weight*((r_spher gt radii[0]) and (r_spher lt rout))
+        spher = 'shell   '
       endelse
       ; weight2 = weight2/rms(weight2)
       weight2 = weight2/mean(weight2)
@@ -227,6 +234,7 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
       rout = 1.e37
       r_spher = 0.*var1
       weight2 = 0.
+      spher = '<ignore>'
     endelse
     ; vrm=rms(weight*var1) & vrm2=rms(weight2*var1)
     ; vzm=rms(weight*var2) & vzm2=rms(weight2*var2)
@@ -234,15 +242,24 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     vrm=sqrt(mean(weight*var1^2)) & vrm2=sqrt(mean(weight2*var1^2))
     vzm=sqrt(mean(weight*var2^2)) & vzm2=sqrt(mean(weight2*var2^2))
     vpm=sqrt(mean(weight*var3^2)) & vpm2=sqrt(mean(weight2*var3^2))
-
-    sph = where(r_spher<rout)
-    vrmin=min(abs(var1[sph])) & vrmax=max(abs(var1))
-    vzmin=min(abs(var2[sph])) & vzmax=max(abs(var2))
-    vpmin=min(abs(var3[sph])) & vpmax=max(abs(var3))
     vv = sqrt(var1^2+var2^2+var3^2)
-    vvmin=min(vv[sph])        & vvmax=max(vv)
 
-    print, 'component:    min         overall rms   rms over sphere   max'
+    sph = where(r_spher le rout)
+    if (sph[0] ge 0) then begin
+      vrmin=min(abs(var1[sph])) & vrmax=max(abs(var1))
+      vzmin=min(abs(var2[sph])) & vzmax=max(abs(var2))
+      vpmin=min(abs(var3[sph])) & vpmax=max(abs(var3))
+      vvmin=min(vv[sph])        & vvmax=max(vv)
+    endif else begin
+      message, /INFO, 'No points satisfying r_spher < rout'
+      NaN = !values.f_nan
+      vrmin = (vrmax = NaN)
+      vzmin = (vzmax = NaN)
+      vpmin = (vpmax = NaN)
+      vvmin = (vvmax = NaN)
+    endelse
+
+    print, 'component:    min         rms_global    rms_'+spher+'   max'
     print, '------------------------------------------------------------------'
     print, 'v_rcyl   :', vrmin, vrm, vrm2, vrmax
     print, 'v_phi    :', vpmin, vpm, vpm2, vpmax
@@ -257,11 +274,11 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     E_tor = mean(weight2*0.5*rho*var3^2)
     E_rot = mean(weight2*0.5*rho*r_cyl^2*Omega^2)
     print
-    print, '<E_kin>_sphere = '
+    print, '<E_kin>_'+spher+' = '
     print, '  pol ( /Erot):               ', E_pol, E_pol/E_rot
     print, '  tor ( /Erot):               ', E_tor, E_tor/E_rot
     print, 'E_rot ='
-    print, '  <1/2*rho r_cyl^2.>_sphere = ', E_rot
+    print, '  <1/2*rho r_cyl^2.>_'+spher+' = ', E_rot
 
     if (noomega) then print, 'WARNING: Assuming Omega=1.'
 
