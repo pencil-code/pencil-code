@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.54 2004-04-06 11:51:52 ajohan Exp $
+! $Id: dustdensity.f90,v 1.55 2004-04-07 12:04:54 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.54 2004-04-06 11:51:52 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.55 2004-04-07 12:04:54 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -241,9 +241,6 @@ module Dustdensity
               f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodtot*unit_md)
         enddo
         
-        !f(:,:,n1:n1+5,ind(:)) = 0.
-        !f(:,:,n2-5:n2,irhod(:)) = 0.
-        
       case('const_nd'); f(:,:,:,ind) = nd_const
       case('frac_of_gas_loc')
         if (eps_dtog < 0.) &
@@ -294,9 +291,17 @@ module Dustdensity
 !
 !  sanity check
 !
-      if ( notanumber(f(:,:,:,ind)) ) then
-        STOP "init_nd: Imaginary dustdensity values"
-      endif
+      do k=1,ndustspec
+        if ( notanumber(f(:,:,:,ind(k))) ) then
+          STOP "init_nd: Imaginary dust number density values"
+        endif
+        if (lmdvar .and. notanumber(f(:,:,:,irhod(k))) ) then
+          STOP "init_nd: Imaginary dust density values"
+        endif
+        if (lrhoice .and. notanumber(f(:,:,:,irhoi(k))) ) then
+          STOP "init_nd: Imaginary ice density values"
+        endif
+      enddo
 !
       if(ip==0) print*,xx,yy,zz ! keep compiler quiet
 !
