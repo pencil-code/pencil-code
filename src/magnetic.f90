@@ -1,3 +1,5 @@
+! $Id: magnetic.f90,v 1.14 2002-05-02 20:02:27 brandenb Exp $
+
 module Magnetic
 
   use Cparam
@@ -43,8 +45,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-05-02 19:40:05 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-05-02 20:02:27 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

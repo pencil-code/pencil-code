@@ -1,3 +1,5 @@
+! $Id: start.f90,v 1.24 2002-05-02 20:02:27 brandenb Exp $
+!
 !***********************************************************************
       program start
 !
@@ -30,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.23 $", &
-             "$Date: 2002-05-02 19:40:05 $")
+             "$Revision: 1.24 $", &
+             "$Date: 2002-05-02 20:02:27 $")
 !
         call initialize         ! register modules, etc.
 !
