@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.117 2004-05-13 06:41:03 theine Exp $
+# $Id: getconf.csh,v 1.118 2004-05-25 13:14:42 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -190,11 +190,12 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
   if ($mpi) then
     # Choose appropriate mpirun version (LAM vs. MPICH)
     if (`fgrep -c lam_mpi src/start.x` > 0) then # lam
-      set mpirun = /usr/lib/lam/bin/mpirun
+      if (-x /usr/lib/lam/bin/mpirun) set mpirun=/usr/lib/lam/bin/mpirun
+      if (-x /opt/lam/bin/mpirun)     set mpirun=/opt/lam/bin/mpirun
       set mpirunops = "-c2c -O"
     else if (`egrep -c 'MPICHX|MPICH_DEBUG_ERRS' src/start.x` > 0) then # mpich
       if (-x /usr/lib/mpich/bin/mpirun) set mpirun=/usr/lib/mpich/bin/mpirun
-      if (-x /opt/mpich/bin/mpirun) set mpirun=/opt/mpich/bin/mpirun
+      if (-x /opt/mpich/bin/mpirun)     set mpirun=/opt/mpich/bin/mpirun
       if ($?SGE_O_WORKDIR) then	# sge job
 	set mpirunops = "-nolocal -machinefile $SGE_O_WORKDIR/machines-$JOB_NAME-$JOB_ID"
       else			# interactive run
