@@ -57,6 +57,12 @@ foreach my $dir (@ARGV) {
     ## Make sure data/ exists as a link
     if (! -d $data) { debug("Can't find data directory <$data>\n"); next };
     if (! -l $data) { warn "data directory <$data> not a link\n"; next };
+    my $data_resolved = readlink($data) or warn "Cannot readling $data", next;
+    if ($data_resolved =~ /pencil-tmp-/) {
+	warn "$data -> $data_resolved looks like auto-test tmp directory:"
+	  . " not moving anything\n";
+	next;
+    }
 
     ## Copy and link run.log
     my $target = "$data";
