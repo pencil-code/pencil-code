@@ -5,7 +5,7 @@
 ! The data are read in again by .dx routines on regular rectangular
 ! mesh. The dx_slices.f90 should be copied to the 
 ! directory of the run. Compile dx_slices.f90 and run it. 
-! .net files should be linked to run directory (from pencil_modular/dx).
+! .net files should be linked to run directory (from pencil-code/dx).
 ! Then, Data Explorer is ready to be started from run directory.
 ! This slices routine is better to be integrated into the main code - to
 ! do in the future.

@@ -3,7 +3,7 @@
 ! The data are read in again by .dx routines on regular rectangular
 ! mesh. The todx.f should be linked in the 
 ! directory of the run. Compile f77 todx.f -o todx.x and run todx.x
-! .net files should be linked to the run directory (from pencil_modular/dx).
+! .net files should be linked to the run directory (from pencil-code/dx).
 ! Then, Data Explorer is ready to be started from run directory.
       parameter(mx=27,my=27,mz=47,mvar=5)
       parameter(nghost=3)

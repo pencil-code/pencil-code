@@ -4,7 +4,7 @@
 ! The data are read in again by .dx routines on regular rectangular
 ! mesh. The todx_magn.f90 should be copied to the 
 ! directory of the run. Compile todx_magn.f90 and run it. 
-! .net files should be linked to run directory (from pencil_modular/dx).
+! .net files should be linked to run directory (from pencil-code/dx).
 ! Then, Data Explorer is ready to be started from run directory.
 
 ! Include grid sizes
