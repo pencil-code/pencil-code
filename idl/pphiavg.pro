@@ -15,7 +15,19 @@
 ;;;   pphiavg, 'PHIAVG5'                 ; read data/averages/PHIAVG5
 ;;;   pphiavg, PMULTI=[0,3,4], CHARSIZE=1.4
 
-pro pphiavg, arg, QUIET=quiet, PMULTI=pmulti, CHARSIZE=charsize
+pro pphiavg, arg, QUIET=quiet, PMULTI=pmulti, CHARSIZE=charsize, $
+             HELP=help
+
+  if (keyword_set(help)) then begin
+    print, "PPHIAVG:  Plot all known phi averages"
+    print, "Usage:"
+    print, "  pphiavg                      ; read data from default location"
+    print, "  pphiavg, avg                 ; use data from struct AVG "
+    print, "  pphiavg, 'data/averages/PHIAVG5' ; read data/averages/PHIAVG5"
+    print, "  pphiavg, 'PHIAVG5'           ; read data/averages/PHIAVG5"
+    print, "  pphiavg, PMULTI=[0,3,4], CHARSIZE=1.4"
+    return
+  endif
 
   datatopdir ='data'
   avgdir = datatopdir+'/averages'
@@ -49,6 +61,14 @@ pro pphiavg, arg, QUIET=quiet, PMULTI=pmulti, CHARSIZE=charsize
     if (not quiet) then print, 'Reading '+file
 
     avg = read_phiavg(file)
+
+    ;
+    ; increase !p.multi if necessary
+    ;
+    if (avg.nvars gt pmulti[1]*pmulti[2]) then begin
+      npy = sqrt(avg.nvars/1.6)
+      pmulti = floor([0,1.6*npy+1,npy+1])
+    endif
 
   endif else begin
     message, 'ARG must be a struct or a string'
