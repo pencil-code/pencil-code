@@ -177,7 +177,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.27 $ $}
+\date{\today,~ $ $Revision: 1.28 $ $}
 
 % ====================================================================== %
 
@@ -197,7 +197,7 @@
 
   \vspace{0.5cm}
 
-  {\sffamily Installation, Usage, and Tests}
+  {\sffamily Documentation and Results of Test Problems}
 
   \vspace{1.5cm}
 
@@ -206,7 +206,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.27 $ $}
+  \emph{\today,~ $ $Revision: 1.28 $ $}
 
 
 \end{center}
@@ -239,8 +239,11 @@ terms of a permission notice identical to this one.
 
 This code was originally developed at the Turbulence Summer School of the
 Helmholtz Institute in Potsdam (2001).
-Often people asked us whether our code is publicly available;
-that's why we decided to make it a bit more user friendly (than it was before)
+Often people asked us whether our code is publicly available.
+Although in many fields of research codes are publicly available
+(e.g.\ some SPH and PPM codes), this does not generally seem to be
+the case for higher order meshpoint or spectral codes.
+That's why we decided to make it a bit more user friendly (than it was before)
 and to put it on a public cvs repository.
 
 The code is primarily designed to deal with weakly compressible turbulent
@@ -281,7 +284,8 @@ pencils in the $x$ direction. Ghost zones are used to implement boundary
 conditions on physical and processor boundaries. The domain can be tiled
 evenly in the $y$ and $z$ directions. MPI calls are used to communicate
 between processors. For testing purposes a dummy version can be invoked
-to run on just one processor (e.g.\ on a laptop or when mpi is not available).
+to run on just one processor (e.g.\ on a laptop or when \var{mpi}
+is not available).
 
 The various physics is invoked by linking the corresponding modules in the
 Makefile. The main reason for this procedure is to have a convenient way
@@ -341,10 +345,9 @@ This needs then to be automatically put into the cvs passwd file.}
 \item Set your environment variable \env{CVSROOT} (you probably want to
   put this into your \file{.cshrc} or \file{.profile} setup files):
   \begin{alltt}
-  \prompt{csh> } setenv CVSROOT \bs
-        :pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS \
+  \prompt{csh> } setenv CVSROOT :pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS \
   \end{alltt}
-  (all in one line, without the backslash) or
+  or (if you are running bash)
   \begin{alltt}
   \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS
   \prompt{sh> } export CVSROOT \
@@ -355,7 +358,8 @@ This needs then to be automatically put into the cvs passwd file.}
   \prompt{unix> } cvs login
   cvs password: ........ \
 \end{alltt}
-(you only need to do this once).
+(you only need to do this once; your cvs password is being saved in
+a \file{.cvspass} file in your home directory).
 
 \item Go to wherever you want the code:
   \begin{alltt}
@@ -376,7 +380,7 @@ This needs then to be automatically put into the cvs passwd file.}
 
 \section{Getting Started}
 
-To get yourself started, you should run one of the examples which are
+To get yourself started, you should run one of several examples which are
 provided in one of the runs/sample subdirectory.
 
 It is absolutely mandatory to monitor exactly what one is doing.
@@ -417,8 +421,47 @@ without magnetic fields etc.
 
 \subsection{Directory tree}
 
+Under \file{f90/pencil\_modular}, there are currently the following
+files and directories:
+\begin{verbatim}
+brandenb@nl3:/home/brandenb/f90/pencil_modular> ls -csF
+total 48
+   4 doc/     4 dx/       4 idl/     4 TODO     4 source_me     4 README
+   4 CVS/     4 bugs/     4 src/     4 bin/     4 runs/         4 dependencies.dot
+\end{verbatim}
 
-% ---------------------------------------------------------------------- %
+The code is contained in \file{src/}, but in order to keep things tidy we compile
+it separately for each run underneath the corresponding run directories, which
+are all included in \file{runs/}.
+
+General purpose auxiliary routines for \var{idl} (which is commercial) or
+\var{dx} (data explorer with is freeware) are in the \file{idl} and \file{dx}
+directives, respectively.
+
+For each run, we tend to save the \file{*.in} and \file{src/*.local}
+files under \var{cvs}. This allows everybody to reproduce a particular
+run. When the files are changed with time, the history is also saved
+under \var{cvs}. In order to keep the run directory tidy, we put
+in \file{runs} different problem {\it classes}, e.g.\
+\begin{verbatim}
+brandenb@nl3:/home/brandenb/f90/pencil_modular> ls -csF
+total 40
+   4 gravz/         4 forced/     4 OLD/           4 README        4 old/
+   4 buoy_tube/     4 CVS/        4 kinematic/     4 1d-tests/     4 rings/
+\end{verbatim}
+
+The directory \file{forced/} contains some forced turbulence runs (both magnetic
+and nonmagnetic). \file{gravz/} contains runs with vertical gravity, \file{rings/}
+contains decaying mhd problems (interlocked flux rings as initial condition, for
+example), and \file{kinematic/} contains kinematic dynamo problems where the
+hydrodynamics is turned off entirely.
+
+In all these cases the input files are usually kept at a minimum, so most of the
+quantities are already initialized by default values. If you want to run a particular
+problem, the best will be to start by modifying a particular example which is closest
+to yours.
+
+% ----------------------------------------------------------------------------- %
 
 \subsection{Basic concepts}
 
@@ -429,6 +472,14 @@ without magnetic fields etc.
 \subsubsection{Modules}
 \index{modules}
 
+Each run directory has a \file{src/Makefile.local} file which tells you
+whether or not entropy, magnetic fields, hydrodynamics, density, forcing,
+or gravity are invoked. Many possible combinations have already been tested
+and examples are all checked in, but you may come up with interesting
+combinations which were never tested and may not yet work. We hope that
+the necessary modifications don't affect the other routines too much and
+that we can document them in future releases. Please let us know!
+
 \subsubsection{Localization (adapt-mkfile)}
 
 
@@ -438,9 +489,9 @@ without magnetic fields etc.
 \section{The Equations}
 
 The equations solved by the MHD code are basically the standard
-compressible MHD equations. However, the modular structure allows to
-implement different versions of the MHD equations, as well as to switch
-some of the equations off.
+compressible MHD equations. However, the modular structure allows
+some variations of the MHD equations, as well as to switch
+some of the equations off (nomagnetic, noentropy).
 
 % ---------------------------------------------------------------------- %
 
@@ -466,7 +517,7 @@ derivative.
       + \frac{\jv\times\Bv}{\varrho}
       + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv \right) \; .
 \end{equation}
-Here, $\cs^2 = \gamma p/\varrho$ is the (squared) sound speed,
+Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
 $\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
 $\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
 the magnetic flux density, and $\nu$ is kinematic viscosity.
@@ -502,7 +553,8 @@ and $s$.
 The reason for this choice of variables is that entropy is the natural
 physical variable for (at least) convection processes: the sign of the
 entropy gradient determines convective (in)stability, the
-\emph{Rayleigh number} is proportional to the entropy gradient, etc.
+\emph{Rayleigh number} is proportional to the entropy gradient
+of the associated hystrostatic reference solution, etc.
 
 \begin{equation}
   \varrho T\frac{Ds}{Dt}
@@ -563,10 +615,10 @@ oum
 
 \noindent
 which means that the output table will contain time \file{t} in the first
-column (with format \file{'(f10.3)'}), followed by the mean squared velocity,
-$\bra{\uu^2}$, \file{u2m} in the second column (with format \file{'(1pe13.4)'}),
+column with format \var{'(f10.3)'}, followed by the mean squared velocity,
+$\bra{\uu^2}$, \file{u2m} in the second column with format \var{'(1pe13.4)'},
 and the kinetic helicity, $\bra{\oo\cdot\uu}$,  \file{oum} in the last column
-(with the default format \file{'(1pe10.2)'}).
+with the default format \var{'(1pe10.2)'}.
 
 In the \file{zaver.in}, $z$-dependent (horizontal) averages are listed.
 They are written in the file \file{tmp/zaverages.dat}. At the moment we
@@ -581,7 +633,8 @@ quantities \code{bxmz} and \code{bymz} are set.
 % ---------------------------------------------------------------------- %
 \subsection{RELOAD and STOP files}
 
-The code periodically checks for the existence of two files, \file{RELOAD}
+The code periodically checks (exactly every \var{it} time steps)
+for the existence of two files, \file{RELOAD}
 and \file{STOP}, which can be used to trigger certain behavior.
 
 \paragraph{Reloading run parameters}
@@ -631,6 +684,8 @@ reassemble everything into one file, you say
   \prompt{IDL> }  .r rall
 \end{alltt}
 Here, \file{.r} is a shorthand for \file{.run} which \file{idl} understands.
+The procedure \file{rall} reads (and assembles) the data from all processors.
+If one wants to look at just one processor, use the routine \file{r} instead.
 
 If you need the magnetic field or the current density, you can calculate
 it in idl by saying
@@ -642,7 +697,7 @@ it in idl by saying
 By default the one is reading always the latest time corresponding to the file
 \file{var.dat}. If you want to read any earlier snapshots, you say (for example)
 \begin{alltt}
-  \prompt{IDL> }  file='VAR2
+  \prompt{IDL> }  file='VAR2  ;(by the way, the second quote is not needed!)
   \prompt{IDL> }  .r rall
   \prompt{IDL> }  print,t
 \end{alltt}
@@ -876,13 +931,22 @@ Not all parameters are used for a given scenario.
 \subsection{Output files}
 
 \begin{itemize}
-\item \file{fort.20}, file{check}
+\item \file{tmp/n.dat}, file{output diagnostics, depends on what is put in print.in}
 \item \file{tsnap.dat}, \file{tvid.dat}
 \item \file{tmp/dim.dat}
 \item \file{tmp/param.dat} \file{tmp/param2.dat}
 \item \file{tmp/proc\emph{X}/var.dat} --- detailed format
-\item \file{tmp/proc\emph{X}/VAR\emph{N}} ---
-  same format as \file{tmp/proc\emph{X}/var.dat}
+\item \file{tmp/proc\emph{X}/VAR\emph{N}} --- same format as
+      \file{tmp/proc\emph{X}/var.dat}
+\item \file{tmp/proc\emph{X}/seed.dat} --- seed field for forcing
+      procedure: must be the same for all processors, because globally
+      coherent waves of given wavenumber are used
+\item \file{tmp/density.pro}, \file{tmp/hydro.pro}, \file{tmp/entropy.pro},
+      \file{tmp/magnetic.pro} --- can be used as include file in \var{idl}
+      and contains the column in which certain variables appear in the
+      diagnostics file (\file{n.dat}). It also contains the positions of
+      variables in the \file{VAR} files. These positions depend on whether
+      \var{entropy} or \var{noentropy}, etc, are invoked.
 \end{itemize}
 
 
@@ -890,8 +954,24 @@ Not all parameters are used for a given scenario.
 
 \section{Some specific initial conditions}
 
+\subsection{Random magnetic fields: \var{initaa=0}}
+
+The $\Av$-vector is set to a random variable with gaussian statistics
+at all meshpoints and for all three components. The power spectrum of
+$\Av$ increases then quadratically with wavenumber $k$ (without cutoff)
+and the powerspectrum of $\Bv$ increases like $k^4$.
+
+\subsection{Beltrami fields: \var{initaa=1}}
+
+\begin{equation}
+%\Av=\pmatrix{\cos z\cr\sin z\cr0}
+\Av=(\cos z,\;\sin z,\;0)
+\label{Betrami}
+\end{equation}
+
 % ---------------------------------------------------------------------- %
 \subsection{Magnetic flux rings}
+
 This initial condition sets up two interlocked thin magnetic tori
 (i.\,e.~thin, torus-shaped magnetic flux tubes).
 One torus of radius $R$ lying in the plane $z=0$ can be described in
@@ -954,7 +1034,8 @@ takes the form
 
 \section{How to put new things into the code}
 
-The best is to write a new module that takes care of everything.
+In some cases, the best will be
+to write a new module that takes care of everything.
 In many cases it will not be enough to just replace (in the Makefile)
 an already existing module. Instead, it will often be necessary to
 add new things into several other routines. In order to come back
@@ -984,6 +1065,19 @@ In \file{register.f90} we \code{call rprint\_magnetic} where
 \end{verbatim}
 has to be added to the list of names that are to be recognized from the
 \file{print.in} file.
+
+\subsection{Outputting new horizontal averages}
+
+Currently, only the horizontally $xy$-averaged $x$ and $y$ components
+of the magnetic field can be outputted. This is determined by the existence
+and contents of the file \file{zaver.in}.
+\footnote{May want to rename it to \file{xy\_aver.in}; what do you think?}
+New such variables can be added by using the existing averaging
+procedures as examples.
+
+\subsection{Adding new evolution equations}
+
+Example: passive scalar.
 
 % ====================================================================== %
 
@@ -1083,7 +1177,7 @@ make[1]: *** [.f90.o] Error 1
 \bs{}option:  \option{-l}, \option{--long-listing}
 
 \bs{}dfn:     A \dfn{definition} is a specification sufficiently obfuscated
-           to be misunderstood 
+          to be misunderstood 
 
 \bs{}cite:    See \cite{Abramowitz & Stegun}
 
@@ -1102,7 +1196,7 @@ make[1]: *** [.f90.o] Error 1
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.27 2002-06-10 18:07:07 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.28 2002-06-13 07:24:06 brandenb Exp $ $}
 
 
 \end{document}
