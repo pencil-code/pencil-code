@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.3 2003-08-20 23:25:14 mee Exp $
+; $Id: pc_read_ts.pro,v 1.4 2003-08-22 14:07:55 nilshau Exp $
 ;
 ;  Read time_series.dat
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2003-08-20 23:25:14 $
-;  $Revision: 1.3 $
+;  $Date: 2003-08-22 14:07:55 $
+;  $Revision: 1.4 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -159,7 +159,11 @@ while (fileposition ne -1) do begin
     ;If it's the first time just chunk the data into place
     full_labels=labels
     full_data=data
-  end else begin
+    if ((size(full_data))[0] eq 1) then $
+        full_data=reform(full_data,n_elements(full_data),1)
+    if ((size(full_data))[0] eq 0) then $
+        full_data=reform([full_data],1,1)
+    end else begin
     col_index=intarr(ncols)
     for i=0,ncols-1 do begin
       if (not in_list(labels[i],full_labels)) then begin
@@ -177,6 +181,7 @@ while (fileposition ne -1) do begin
     endfor
          
     old_ncols=(size(full_data))[1]
+    
     old_nrows=(size(full_data))[2]
 
     new_ncols=(size(full_labels))[1]
@@ -191,7 +196,7 @@ while (fileposition ne -1) do begin
       full_data[*,*] = !VALUES.F_NAN
     endelse
     
-    full_data[0:old_ncols-1,0:old_nrows-1] = old_full_data[*,*]
+    full_data[0:old_ncols-1,0:old_nrows-1] = old_full_data[0:old_ncols-1,0:old_nrows-1]
     old_full_data=0.  ; Clear the allocated memory 
     
     for i=0,ncols-1 do begin
