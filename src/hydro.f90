@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.157 2004-04-10 18:54:54 dobler Exp $
+! $Id: hydro.f90,v 1.158 2004-04-11 05:33:59 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -109,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.157 2004-04-10 18:54:54 dobler Exp $")
+           "$Id: hydro.f90,v 1.158 2004-04-11 05:33:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -438,7 +438,6 @@ module Hydro
       if (.not. lupw_uu) then
         if (ldebug) print*,'duu_dt: call multmv_mn(uij,uu,ugu)'
         call multmv_mn(uij,uu,ugu)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
       else ! upwinding of velocity -- experimental and inefficent
         if (headtt) print*,'duu_dt: upwinding advection term; use at own risk!'
         !

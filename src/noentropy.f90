@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.56 2004-04-10 04:24:02 brandenb Exp $
+! $Id: noentropy.f90,v 1.57 2004-04-11 05:33:59 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -27,7 +27,7 @@ module Entropy
 
   ! run parameters
   real :: hcond0=0.,hcond1=impossible,chi=impossible
-  real :: Fbot=impossible,FbotKbot=impossible
+  real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.56 2004-04-10 04:24:02 brandenb Exp $")
+           "$Id: noentropy.f90,v 1.57 2004-04-11 05:33:59 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
