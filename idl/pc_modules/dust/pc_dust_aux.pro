@@ -1,12 +1,11 @@
-;  $Id: pc_dust_aux.pro,v 1.7 2004-06-08 13:12:08 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.8 2004-07-01 12:10:38 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
 ;  Author: Anders Johansen
 ;
-function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
-    ppmon=ppmon,ppsat=ppsat,smon=smon,epsd=epsd,lnrho=lnrho,ss=ss,lncc=lncc,$
-    unit_md=unit_md,param=param,datadir=datadir
+function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
+    param=param,datadir=datadir
 
   default, datadir, 'data'
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
@@ -23,7 +22,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
     unit_md = mmon
   endif
 
-  if (keyword_set(ad)) then begin
+  if (var eq 'ad') then begin
 
     if (param.dust_geometry eq 'sphere') then begin
       result = (3*md*unit_md/(4.*!pi*param.rhods))^(1/3.)
@@ -31,7 +30,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
       print, 'pc_dust_aux: No valid dust geometry found in param'
     endelse
 
-  endif else if (keyword_set(cmd)) then begin
+  endif else if (var eq 'md') then begin
  
     sized=size(nd)
     ndustspec=sized(sized[0])
@@ -47,7 +46,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
     endfor
     result=md
 
-  endif else if (keyword_set(cfd)) then begin
+  endif else if (var eq 'fd') then begin
 
     sized=size(nd)
     ndustspec=sized(sized[0])
@@ -68,7 +67,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
     
     result=nd/delta
 
-  endif else if (keyword_set(rhod)) then begin
+  endif else if (var eq 'rhod') then begin
 
     sized=size(nd)
     sizemd=size(md)
@@ -78,25 +77,25 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
       result=total(nd*md,sized[0])
     endelse
 
-  endif else if (keyword_set(ppmon)) then begin
+  endif else if (var eq 'ppmon') then begin
 
     pp = pc_eoscalc(lnrho,ss,datadir=datadir,/pp)
     mu = (1.+3.97153*param.xHe)/(1-param.xH2+param.xHe)
     result = pp*exp(lncc)*mu/mumon
 
-  endif else if (keyword_set(ppsat)) then begin
+  endif else if (var eq 'ppsat') then begin
 
     TT = pc_eoscalc(lnrho,ss,datadir=datadir,/tt)
     result = 6.035e12*exp(-5938./TT)
 
-  endif else if (keyword_set(smon)) then begin
+  endif else if (var eq 'smon') then begin
 
     pp = pc_eoscalc(lnrho,ss,datadir=datadir,/pp)
     TT = pc_eoscalc(lnrho,ss,datadir=datadir,/tt)
     mu = (1.+3.97153*param.xHe)/(1-param.xH2+param.xHe)
     result = pp*lncc*mu/mumon/(6.035e12*exp(-5938./TT))
 
-  endif else if (keyword_set(epsd)) then begin
+  endif else if (var eq 'epsd') then begin
 
     sized=size(nd)
     sizemd=size(md)
@@ -106,9 +105,19 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
       result=total(nd*md,sized[0])*unit_md/exp(lnrho)
     endelse
 
-  endif else if (keyword_set(unit_md)) then begin
+  endif else if (var eq 'unit_md') then begin
 
     result=unit_md
+
+  endif else if (var eq 'mdave') then begin
+
+    sized=size(nd)
+    sizemd=size(md)
+    if (sized[0] ne sizemd[0]) then begin
+      result=total(nd*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])*unit_md/total(nd,sized[0])
+    endif else begin
+      result=total(nd*md,sized[0])*unit_md/total(nd,sized[0])
+    endelse
 
   endif else begin
     ; Make sure and missing cases say so...

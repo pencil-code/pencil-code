@@ -43,24 +43,27 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       endelse
       tags[iv]='pp'
     endif else if variables[iv] eq 'rhod' then begin
-      variables[iv]='pc_dust_aux(nd=nd,md=md,param=param,/rhod)'
+      variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='rhod')"
       tags[iv]='rhod'
     endif else if variables[iv] eq 'fd' then begin
-      variables[iv]='pc_dust_aux(nd=nd,param=param,/cfd)'
+      variables[iv]="pc_dust_aux(nd=nd,param=param,var='fd')"
       tags[iv]='fd'
     endif else if variables[iv] eq 'ad' then begin
-      variables[iv]='pc_dust_aux(md=md,param=param,/ad)'
+      variables[iv]="pc_dust_aux(md=md,param=param,var='ad')"
       tags[iv]='ad'
     endif else if variables[iv] eq 'epsd' then begin
-      variables[iv]='pc_dust_aux(lnrho=lnrho,nd=nd,md=md,param=param,/epsd)'
+      variables[iv]="pc_dust_aux(lnrho=lnrho,nd=nd,md=md,par=param,var='epsd')"
       tags[iv]='epsd'
     endif else if variables[iv] eq 'smon' then begin
-      variables[iv]='pc_dust_aux(lnrho=lnrho,ss=ss,nd=nd,md=md,' + $
-          'param=param,datadir=datadir,/smon)'
+      variables[iv]="pc_dust_aux(lnrho=lnrho,ss=ss,nd=nd,md=md," + $
+          "param=param,datadir=datadir,var='smon')"
       tags[iv]='smon'
     endif else if variables[iv] eq 'unit_md' then begin
-      variables[iv]='pc_dust_aux(param=param,/unit_md)'
+      variables[iv]="pc_dust_aux(param=param,var='unit_md')"
       tags[iv]='unit_md'
+    endif else if variables[iv] eq 'mdave' then begin
+      variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='mdave')"
+      tags[iv]='mdave'
     endif
   endfor
 
