@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.86 2003-09-05 12:40:40 theine Exp $
+# $Id: getconf.csh,v 1.87 2003-09-09 11:18:39 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -205,10 +205,14 @@ else if ($hn =~ copson*) then
   set run_x=src/run.x
 
   setenv SCRATCH_DIR /scratch
-  if ($?JOB_ID && -e $HOME/.score/ndfile.$JOB_ID) then
-    set local_disc=1
+  if ($?JOB_ID) then
+    if (-e $HOME/.score/ndfile.$JOB_ID) then
+      set local_disc=1
+    else
+      echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
+      set local_disc=0
+    endif
   else
-    echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
     set local_disc=0
   endif
 
