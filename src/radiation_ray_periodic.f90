@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.6 2004-10-07 20:25:09 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.7 2004-10-08 09:23:55 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -116,7 +116,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.6 2004-10-07 20:25:09 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.7 2004-10-08 09:23:55 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -269,6 +269,11 @@ module Radiation
 !  10-nov-03/tobi: coded
 !
       use Cdata, only: ldebug,headt
+
+      integer, dimension(my,mz) :: raysteps_yz
+      integer, dimension(mx,mz) :: raysteps_zx
+      integer, dimension(mx,my) :: raysteps_xy
+      integer :: l,m,n
 !
 !  Identifier
 !
@@ -307,6 +312,57 @@ module Radiation
 !
       if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
       if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
+!
+!  Determine distance (ray steps) from the incoming to the outgoing
+!  boundary for the given direction.
+!
+!  yz-plane
+!
+      if (lrad/=0) then
+
+        raysteps_yz=(llstop+lrad-llstart)/lrad
+
+        forall (m=mmstart-mrad:mmstop:msign,mrad/=0)
+          raysteps_yz(m,:)=min(raysteps_yz(m,:),(m+mrad-mmstart)/mrad)
+        endforall
+
+        forall (n=nnstart-nrad:nnstop:nsign,nrad/=0)
+          raysteps_yz(:,n)=min(raysteps_yz(:,n),(n+nrad-nnstart)/nrad)
+        endforall
+
+      endif
+!
+!  zx-plane
+!
+      if (mrad/=0) then
+
+        raysteps_zx=(mmstop+mrad-mmstart)/mrad
+
+        forall (n=nnstart-nrad:nnstop:nsign,nrad/=0)
+          raysteps_zx(:,n)=min(raysteps_zx(:,n),(n+nrad-nnstart)/nrad)
+        endforall
+
+        forall (l=llstart-lrad:llstop:lsign,lrad/=0)
+          raysteps_zx(l,:)=min(raysteps_zx(l,:),(l+lrad-llstart)/lrad)
+        endforall
+
+      endif
+!
+!  xy-plane
+!
+      if (nrad/=0) then
+
+        raysteps_xy=(nnstop+nrad-nnstart)/nrad
+
+        forall (l=llstart-lrad:llstop:lsign,lrad/=0)
+          raysteps_xy(l,:)=min(raysteps_xy(l,:),(l+lrad-llstart)/lrad)
+        endforall
+
+        forall (m=mmstart-mrad:mmstop:msign,mrad/=0)
+          raysteps_xy(:,m)=min(raysteps_xy(:,m),(m+mrad-mmstart)/mrad)
+        endforall
+
+      endif
 !
 !  Label for debug output
 !
@@ -427,11 +483,9 @@ module Radiation
         call radboundary_xy_recv(nrad,idir,Qrad0_xy)
       endif
 
-      do l=llstart-lrad,llstop,lsign
-      do m=mmstart-mrad,mmstop,msign
+      forall (l=llstart-lrad:llstop:lsign,m=mmstart-mrad:mmstop:msign)
         Qrad0(l,m,nnstart-nrad)=Qrad0_xy(l,m)
-      enddo
-      enddo
+      endforall
 !
 !  Periodic x-boundary
 !
@@ -454,11 +508,9 @@ module Radiation
 !  TH: This should be done in the loop above. Right now it's in a seperate
 !      loop for the sake of analogy to the mrad/=0 case.
 !
-        do m=mmstart-mrad,mmstop,msign
-        do n=nnstart-nrad,nnstop,nsign
+        forall (m=mmstart-mrad:mmstop:msign,n=nnstart-nrad:nnstop:nsign)
           Qrad0(llstart-lrad,m,n)=Qrad0_yz(m,n)
-        enddo
-        enddo
+        endforall
 
       endif
 !
@@ -488,11 +540,9 @@ module Radiation
 !
 !  Add boundary contribution
 !
-        do n=nnstart-nrad,nnstop,nsign
-        do l=llstart-lrad,llstop,lsign
+        forall (n=nnstart-nrad:nnstop:nsign,l=llstart-lrad:llstop:lsign)
           Qrad0(l,mmstart-mrad,n)=Qrad0_zx(l,n)
-        enddo
-        enddo
+        endforall
 
       endif
 !
@@ -533,14 +583,12 @@ module Radiation
 !
       if (lrad/=0) then
 
-        do m=mmstart,mmstop
-        do n=nnstart,nnstop
+        forall (m=mmstart:mmstop:msign,n=nnstart:nnstop:nsign)
 
           Qrad0_yz(m,n)=Qrad(llstop,m,n)/(1-emtau(llstop,m,m))
           Qrad0(llstart-lrad,m,n)=Qrad0_yz(m,n)
 
-        enddo
-        enddo
+        endforall
 
       endif
 !
@@ -548,20 +596,16 @@ module Radiation
 !
       if (mrad/=0) then
 
-        do n=nnstart,nnstop,nsign
-        do l=llstart,llstop,lsign
+        forall (n=nnstart:nnstop:nsign,l=llstart:llstop:lsign)
           Qrad_zx(l,n)=Qrad(l,mmstop,n)
           emtau_zx(l,n)=emtau(l,mmstop,n)
-        enddo
-        enddo
+        endforall
 
         call radboundary_zx_periodic_ray(mrad,Qrad_zx,emtau_zx,Qrad0_zx)
 
-        do n=nnstart,nnstop,nsign
-        do l=llstart,llstop,lsign
+        forall (n=nnstart:nnstop:nsign,l=llstart:llstop:lsign)
           Qrad0(l,mmstart-mrad,n)=Qrad0_zx(l,n)
-        enddo
-        enddo
+        endforall
 
       endif
 
