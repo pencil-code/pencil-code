@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $
+! $Id: grav_z.f90,v 1.36 2003-06-16 16:38:27 dobler Exp $
 
 module Gravity
 
@@ -80,7 +80,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.36 2003-06-16 16:38:27 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -225,7 +225,7 @@ module Gravity
       select case(grav_profile)
         case('const')
           pot=-gravz*(zmn-zinfty)
-          if (present(pot0)) pot0 = gravz*zinfty !(potential at z=0)
+         if (present(pot0)) pot0 = gravz*zinfty !(potential at z=0)
           if (present(grav)) then
             grav(:,1:2)=0.
             grav(:,3)=gravz

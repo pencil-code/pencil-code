@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.29 2003-06-16 04:41:11 brandenb Exp $
+! $Id: wsnaps.f90,v 1.30 2003-06-16 16:38:27 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -84,9 +84,10 @@ contains
 !       if (msnap>mvar) call output_auxiliary(lun_output,mvar,maux,a)
 !       !call output_radiation(lun_output)
 !       !call output_ionization(lun_output)
-!       close(lun_output)
 !     endif
 !
+!
+       close(lun_output)        ! Need to close this in any case
     endsubroutine wsnap
 !***********************************************************************
    subroutine powersnap(a,lwrite_only)
