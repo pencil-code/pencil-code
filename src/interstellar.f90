@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.32 2003-06-18 00:26:57 mee Exp $
+! $Id: interstellar.f90,v 1.33 2003-06-18 18:20:23 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -57,6 +57,9 @@ module Interstellar
 
 
   ! input parameters
+  real :: TT_SN_min=1.e7
+  logical :: lnever_move_mass
+ ! real, parameter :: TT_SN_min=1.e8    ! vary for debug, tests
  
   integer :: dummy 
   namelist /interstellar_init_pars/ dummy
@@ -65,7 +68,7 @@ module Interstellar
   logical:: uniform_zdist_SNI = .false.
   namelist /interstellar_run_pars/ &
       t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
-      uniform_zdist_SNI, ltestSN
+      uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass
 
   contains
 
@@ -92,7 +95,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.32 2003-06-18 00:26:57 mee Exp $")
+           "$Id: interstellar.f90,v 1.33 2003-06-18 18:20:23 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -631,9 +634,6 @@ find_SN: do n=n1,n2
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
       real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,TT_SN_new,dv
-
-      real, parameter :: TT_limit=1.e7
-     ! real, parameter :: TT_limit=1.e8    ! vary for debug, tests
       
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! vary for debug, tests
@@ -671,17 +671,17 @@ find_SN: do n=n1,n2
       !  need to call thermodynamics
       TT_SN_new=TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
       if(lroot) print*, &
-         'explode_SN: TT_SN, TT_SN_new, TT_limit :',TT_SN,TT_SN_new,TT_limit
+         'explode_SN: TT_SN, TT_SN_new, TT_SN_min :',TT_SN,TT_SN_new,TT_SN_min
 
-      if (TT_SN_new < TT_limit) then
-         lmove_mass=.true.
+      if (TT_SN_new < TT_SN_min) then
+         lmove_mass=.not.lnever_move_mass
          ! lmove_mass=.false.  ! use to switch off for debug...
 
          ! The bit that BREAKS the pencil formulation...
          ! must know the total moved mass BEFORE attempting mass relocation 
 
-         TT_SN_new=TT_limit
-         rho_SN_new=c_SN/TT_limit*TTunits
+         TT_SN_new=TT_SN_min
+         rho_SN_new=c_SN/TT_SN_min*TTunits
          call calcmassprofileintegral_SN(f,width_SN,profile_integral)
          fmpi1_tmp=(/ profile_integral /)
          call mpireduce_sum(fmpi1_tmp,fmpi1,1) 
