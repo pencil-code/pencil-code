@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.56 2002-10-25 07:49:43 brandenb Exp $
+! $Id: mpicomm.f90,v 1.57 2002-10-25 15:48:46 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -648,6 +648,7 @@ module Mpicomm
       real, dimension(ny) :: tmp_y
       integer :: i,j,sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ytag=101,ztag=102,partner,ierr
+      integer :: isend_rq_y,irecv_rq_y,isend_rq_z,irecv_rq_z
       character :: var
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -665,9 +666,11 @@ if (var=='y') then
       do px=0,nprocy-1
         if(px/=ipy) then
           partner=px+ipz*nprocy
+print*,iproc, 'MPICOMM: iproc, px, partner=', iproc, px, partner
           send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
-          call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+          call MPI_ISEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,isend_rq_y,ierr)
+          call MPI_IRECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,irecv_rq_y,ierr)
+          call MPI_WAIT(irecv_rq_y,stat,ierr)
           a(px*ny+1:(px+1)*ny,:,:)=recv_buf_y
         endif
       enddo
@@ -694,8 +697,9 @@ elseif (var=='z') then
         if(px/=ipz) then
           partner=ipy+px*nprocy
           send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
-          call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-          call MPI_RECV(recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+          call MPI_ISEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,isend_rq_z,ierr)
+          call MPI_IRECV(recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,irecv_rq_z,ierr)
+          call MPI_WAIT(irecv_rq_z,stat,ierr)
           a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
         endif
       enddo
