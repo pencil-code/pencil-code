@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.6 2002-11-26 15:18:15 mee Exp $
+! $Id: visc_shock.f90,v 1.7 2002-11-26 19:59:19 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -49,7 +49,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.6 2002-11-26 15:18:15 mee Exp $")
+           "$Id: visc_shock.f90,v 1.7 2002-11-26 19:59:19 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -309,7 +309,7 @@ module Viscosity
     endsubroutine shock_divu
 
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,rho1,TT1)
+    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,TT1)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -321,38 +321,23 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: rho1,TT1
-      real, dimension (nx) :: sij2
-!      real, dimension (nx,3) :: gshock_characteristic, sgshock_characteristic
+      real, dimension (nx) :: sij2, divu
+      real, dimension (nx,3) :: glnrho
 
       if ( icalculated<it ) call calc_viscosity(f)
- !          call grad(spread(shock_characteristic,4,1),1,gshock_characteristic)
- !           call multmv_mn(sij,glnrho,sglnrho)
- !           call multmv_mn(sij,gshock_characteristic,sgshock_characteristic)
-
-!            fvisc=2*sglnrho+nu*(del2u+1./3.*graddivu)
-!            fvisc=fvisc + 2*nu_shock*sgshock_characteristic
 !
 !  traceless strainmatrix squared
 !
       call multm2_mn(sij,sij2)
-!
-!      select case(ivisc)
-!       case ('simplified', '0')
-!         if (headtt) print*,'no heating: ivisc=',ivisc
-!       case('rho_nu-const', '1')
-!         if (headtt) print*,'viscous heating: ivisc=',ivisc
-!         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2*rho1
-!       case('nu-const', '2')
-         if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*(nu+nu_shock*shock_characteristic(l1:l2,m,n))*sij2
-!       case default
-!         if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
-!         call stop_it("")
-!      endselect
+!      if (headtt) print*,'viscous heating: ',ivisc
+
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1 * &
+           (2.*nu*sij2 & 
+           + nu_shock * shock_characteristic(l1:l2,m,n) * divu**2)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,rho1)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho1)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -363,9 +348,9 @@ module Viscosity
       use Sub
 
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho 
-      real, dimension (nx,3) :: gshock_characteristic, sgshock_characteristic
-      real, dimension (nx) :: rho1
+      real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho,tmp
+      real, dimension (nx,3) :: gshock_characteristic
+      real, dimension (nx) :: rho1, divu
       integer :: i
 
       intent (in) :: f, glnrho, rho1
@@ -382,22 +367,22 @@ module Viscosity
          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
          !  -- the correct expression for nu=const
          !
-         if (headtt) print*,'viscous force: (nu_total) *(del2u+graddivu/3+2S.glnrho) + 2S.gnu_total)'
+!         if (headtt) print*,'viscous force: (nu_total) *(del2u+graddivu/3+2S.glnrho) + 2S.gnu_total)'
          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
          if(ldensity) then
-            call grad(spread(shock_characteristic,4,1),1,gshock_characteristic)
-            call multmv_mn(sij,spread((nu_shock*shock_characteristic(l1:l2,m,n) + nu),2,3) * glnrho,sglnrho)
-            call multmv_mn(sij,gshock_characteristic,sgshock_characteristic)
-
-            fvisc=2*spread((nu_shock*shock_characteristic(l1:l2,m,n) + nu),2,3)*(sglnrho+((del2u+1./3.*graddivu)/2.))
-            fvisc=fvisc + 2*nu_shock*sgshock_characteristic
-!ajwm what's this???
+            call grad(shock_characteristic,gshock_characteristic)
+            call multmv_mn(sij,glnrho,sglnrho)
+            call multsv_mn(glnrho,divu,fvisc)
+            tmp=fvisc +graddivu
+            call multsv_mn(tmp,nu_shock*shock_characteristic(:,m,n),fvisc)
+            call multsv_add_mn(fvisc,nu_shock * divu, gshock_characteristic,tmp)
+            fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             maxdiffus=amax1(maxdiffus,nu)
          else
             if(lfirstpoint) &
-                 print*,"ldensity better be .true. for shock viscosity"
+                 print*,"ldensity better be .true. for ivisc='nu-const'"
          endif
-         
+            
          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
       else ! (nu_shock=0)
          if (nu /= 0.) then

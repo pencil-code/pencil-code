@@ -1,13 +1,18 @@
-! $Id: deriv.f90,v 1.5 2002-10-29 10:26:02 mee Exp $
+! $Id: deriv.f90,v 1.6 2002-11-26 19:59:19 mee Exp $
 
 module Deriv
 
   implicit none
 
+  interface der                 ! Overload the der function
+    module procedure der_main   ! derivative of an 'mvar' variable
+    module procedure der_other  ! derivative of another field
+  endinterface
+
   contains
 
 !***********************************************************************
-    subroutine der(f,k,df,j)
+    subroutine der_main(f,k,df,j)
 !
 !  calculate derivative of a scalar, get scalar
 !  accurate to 6th order, explicit, periodic
@@ -55,7 +60,57 @@ module Deriv
         endif
       endif
 !
-    endsubroutine der
+    endsubroutine der_main
+!***********************************************************************
+    subroutine der_other(f,df,j)
+!
+!  Along one pencil in NON f variable
+!  calculate derivative of a scalar, get scalar
+!  accurate to 6th order, explicit, periodic
+!  replace cshifts by explicit construction -> x6.5 faster!
+!   26-nov-02/tony: coded - duplicate der_main but without k subscript
+!                           then overload the der interface.
+
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (nx) :: df
+      real :: fac
+      integer :: j
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          fac=1./(60.*dx)
+          df=fac*(45.*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
+                  -9.*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
+                     +(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
+        else
+          df=0.
+          if (ip.le.10) print*, 'Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          fac=1./(60.*dy)
+          df=fac*(45.*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
+                  -9.*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
+                     +(f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
+        else
+          df=0.
+          if (ip.le.10) print*, 'Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          fac=1./(60.*dz)
+          df=fac*(45.*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
+                  -9.*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
+                     +(f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
+        else
+          df=0.
+          if (ip.le.10) print*, 'Degenerate case in z-direction'
+        endif
+      endif
+!
+    endsubroutine der_other
 !***********************************************************************
     subroutine der2(f,k,df,j)
 !

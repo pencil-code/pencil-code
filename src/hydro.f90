@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.82 2002-11-24 13:14:59 mee Exp $
+! $Id: hydro.f90,v 1.83 2002-11-26 19:59:19 mee Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -81,7 +81,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.82 2002-11-24 13:14:59 mee Exp $")
+           "$Id: hydro.f90,v 1.83 2002-11-26 19:59:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -356,7 +356,7 @@ module Hydro
 !
 ! calculate viscous force
 !
-      if (lviscosity) call calc_viscous_force(f,df,glnrho,rho1)
+      if (lviscosity) call calc_viscous_force(f,df,glnrho,divu,rho1)
 
 !
 !  maximum squared avection speed

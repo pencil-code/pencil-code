@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.142 2002-11-24 13:14:59 mee Exp $
+! $Id: entropy.f90,v 1.143 2002-11-26 19:59:19 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -75,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.142 2002-11-24 13:14:59 mee Exp $")
+           "$Id: entropy.f90,v 1.143 2002-11-26 19:59:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -338,7 +338,7 @@ module Entropy
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -356,7 +356,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,uglnrho
+      real, dimension (nx) :: ugss,uglnrho, divu
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
       integer :: j,ju
 !
@@ -403,7 +403,7 @@ module Entropy
       if (headtt) print*,'dss_dt: TT1(1)=',TT1(1)
 
 !ajwm - lviscosity always true and there is not a noviscosity module
-      if (lviscosity) call calc_viscous_heat(f,df,rho1,TT1)
+      if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,TT1)
 
 !
 !  thermal conduction

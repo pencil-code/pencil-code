@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.102 2002-11-15 14:31:23 ngrs Exp $ 
+! $Id: sub.f90,v 1.103 2002-11-26 19:59:19 mee Exp $ 
 
 module Sub 
 
@@ -7,6 +7,11 @@ module Sub
   interface poly                ! Overload the `poly' function
     module procedure poly_1
     module procedure poly_3
+  endinterface
+
+  interface grad                 ! Overload the `grad' function
+    module procedure grad_main   ! grad of an 'mvar' variable  
+    module procedure grad_other  ! grad of another field (mx,my,mz)
   endinterface
 
   interface notanumber          ! Overload the `notanumber' function
@@ -559,6 +564,7 @@ module Sub
 !  vector multiplied with scalar, gives vector
 !   22-nov-01/nils erland: coded
 !
+!ajwm - Called sv but parameters are vs!!
       use Cdata
 !
       intent(in) :: a,b
@@ -593,6 +599,26 @@ module Sub
       enddo
 !
     endsubroutine multsv_add
+!***********************************************************************
+    subroutine multsv_add_mn(a,b,c,d)
+!
+!  multiply scalar with a vector and subtract from another vector
+!  29-oct-97/axel: coded
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: a,c,d
+      real, dimension (nx) :: b
+      integer :: j
+!
+      intent(in) :: a,b,c
+      intent(out) :: d
+!
+      do j=1,3
+        d(:,j)=a(:,j)+b*c(:,j)
+      enddo
+!
+    endsubroutine multsv_add_mn
 !***********************************************************************
     subroutine multsv_sub(a,b,c,d)
 !
@@ -692,7 +718,7 @@ module Sub
 !
     endsubroutine gij
 !***********************************************************************
-    subroutine grad(f,k,g)
+    subroutine grad_main(f,k,g)
 !
 !  calculate gradient of a scalar, get vector
 !  29-sep-97/axel: coded
@@ -712,7 +738,28 @@ module Sub
       call der(f,k,tmp,2); g(:,2)=tmp
       call der(f,k,tmp,3); g(:,3)=tmp
 !
-    endsubroutine grad
+    endsubroutine grad_main
+!***********************************************************************
+    subroutine grad_other(f,g)
+!  FOR NON 'mvar' variable
+!  calculate gradient of a scalar, get vector
+!  26-nov-02/tony: coded
+!
+      use Cdata
+      use Deriv
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (nx,3) :: g
+      real, dimension (nx) :: tmp
+!
+      intent(in) :: f
+      intent(out) :: g
+! Uses overloaded der routine
+      call der(f,tmp,1); g(:,1)=tmp
+      call der(f,tmp,2); g(:,2)=tmp
+      call der(f,tmp,3); g(:,3)=tmp
+!
+    endsubroutine grad_other
 !***********************************************************************
     subroutine curl(f,k,g)
 !
