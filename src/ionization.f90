@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.101 2003-09-29 16:59:03 theine Exp $
+! $Id: ionization.f90,v 1.102 2003-10-01 12:42:38 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -35,6 +35,7 @@ module Ionization
   !  secondary parameters calculated in initialize
   real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,xHe_term
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  integer :: l
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
@@ -81,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.101 2003-09-29 16:59:03 theine Exp $")
+           "$Id: ionization.f90,v 1.102 2003-10-01 12:42:38 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -203,7 +204,7 @@ module Ionization
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: lnrho,ss,yH,lnTT_
       real :: avgiter=0
-      integer :: l,iter
+      integer :: iter
       integer :: maxiter=0
       logical,save :: first=.true.
 
@@ -266,7 +267,6 @@ module Ionization
       
       real, dimension(nx) ,intent(in) :: lnrho,ee
       real, dimension(nx) ,intent(out) :: ss,TT,yH
-      integer :: l
 
       yH=0.5*min(ee(1)/ee_ion,1.0)
       call rtsafe_ee(lnrho(1),ee(1),yH(1))
@@ -311,7 +311,6 @@ module Ionization
       
       real, dimension(nx) ,intent(in) :: lnrho,pp
       real, dimension(nx) ,intent(out) :: ss,TT,yH
-      integer :: l
 
       yH(1)=0.5
       call rtsafe_pp(lnrho(1),pp(1),yH(1))
@@ -511,6 +510,8 @@ module Ionization
 !   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
 !
+      use Cdata
+!
       real, intent (in)    :: lnrho,ss
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
@@ -546,7 +547,7 @@ module Ionization
           yHmin=yH
         endif
       enddo
-      print *,'rtsafe: exceeded maximum iterations. maxit,f,yH=',maxit,f,yH
+      print ('(A,5I4)'),'rtsafe: exceeded maximum iterations.  it,itsub,l,m,n=',it,itsub,l,m,n
 !
     endsubroutine rtsafe
 !***********************************************************************
@@ -574,6 +575,8 @@ module Ionization
 !
 !   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
+!
+      use Cdata
 !
       real, intent (in)    :: lnrho,ee
       real, intent (inout) :: yH
@@ -611,7 +614,7 @@ module Ionization
           yHmin=yH
         endif
       enddo
-      print *,'rtsafe: exceeded maximum iterations. maxit,f,yH=',maxit,f,yH
+      print ('(A,5I4)'),'rtsafe: exceeded maximum iterations.  it,itsub,l,m,n=',it,itsub,l,m,n
 !
     endsubroutine rtsafe_ee
 !***********************************************************************
@@ -636,6 +639,8 @@ module Ionization
 !
 !   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
+!
+      use Cdata
 !
       real, intent (in)    :: lnrho,pp
       real, intent (inout) :: yH
@@ -672,7 +677,7 @@ module Ionization
           yHmin=yH
         endif
       enddo
-      print *,'rtsafe: exceeded maximum iterations. maxit,f,yH=',maxit,f,yH
+      print ('(A,5I4)'),'rtsafe: exceeded maximum iterations.  it,itsub,l,m,n=',it,itsub,l,m,n
 !
     endsubroutine rtsafe_pp
 !***********************************************************************
