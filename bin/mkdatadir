@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.33 2004-05-29 17:34:26 brandenb Exp $
+#  $Id: mkdatadir,v 1.34 2004-06-01 13:02:58 nilshau Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -48,6 +48,10 @@ else if ($hn =~ embla) then
   set str='s/home\/u./work/g'
 else if ($hn =~ giga*) then
   set str='s/home/work/g'
+else if (($hn =~ gridur) && ($USER =~ nilshau))then
+  echo "special entry for Nils Erland" 
+  echo $cwd/data >! .tmp
+  set str='s/home\/u./mnt\/mldwork2\/work2/g'
 else if ($hn =~ gridur) then
   set str='s/home\/u./work/g'
 else if ($hn =~ nw17) then
