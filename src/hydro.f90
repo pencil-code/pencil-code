@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.84 2002-12-12 11:16:16 brandenb Exp $
+! $Id: hydro.f90,v 1.85 2003-02-02 16:54:02 dobler Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -81,7 +81,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.84 2002-12-12 11:16:16 brandenb Exp $")
+           "$Id: hydro.f90,v 1.85 2003-02-02 16:54:02 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -398,12 +398,12 @@ module Hydro
         if (i_uxmz/=0.or.i_uxmxy/=0) ux=uu(:,1)
         if (i_uymz/=0.or.i_uymxy/=0) uy=uu(:,2)
         if (i_uzmz/=0.or.i_uzmxy/=0) uz=uu(:,3)
-        if (i_uxmz/=0) call zsum_mn_name(ux,i_uxmz)
-        if (i_uymz/=0) call zsum_mn_name(uy,i_uymz)
-        if (i_uzmz/=0) call zsum_mn_name(uz,i_uzmz)
-        if (i_uxmxy/=0) call xysum_mn_name(ux,i_uxmxy)
-        if (i_uymxy/=0) call xysum_mn_name(uy,i_uymxy)
-        if (i_uzmxy/=0) call xysum_mn_name(uz,i_uzmxy)
+        if (i_uxmz/=0) call xysum_mn_name_z(ux,i_uxmz)
+        if (i_uymz/=0) call xysum_mn_name_z(uy,i_uymz)
+        if (i_uzmz/=0) call xysum_mn_name_z(uz,i_uzmz)
+        if (i_uxmxy/=0) call zsum_mn_name_xy(ux,i_uxmxy)
+        if (i_uymxy/=0) call zsum_mn_name_xy(uy,i_uymxy)
+        if (i_uzmxy/=0) call zsum_mn_name_xy(uz,i_uzmxy)
         !
         !  mean momenta
         !

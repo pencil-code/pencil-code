@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.107 2003-01-27 21:56:08 dobler Exp $ 
+! $Id: sub.f90,v 1.108 2003-02-02 16:54:02 dobler Exp $ 
 
 module Sub 
 
@@ -49,8 +49,8 @@ module Sub
 !***********************************************************************
     subroutine max_mn_name(a,iname,lsqrt)
 !
-!  successively calculate maximum of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  successively calculate maximum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
@@ -80,8 +80,8 @@ module Sub
 !***********************************************************************
     subroutine sum_mn_name(a,iname,lsqrt)
 !
-!  successively calculate sum of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  successively calculate sum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
@@ -109,10 +109,62 @@ module Sub
 !
     endsubroutine sum_mn_name
 !***********************************************************************
-    subroutine zsum_mn_name(a,iname)
+    subroutine xysum_mn_name_z(a,iname)
 !
-!  successively calculate sum of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  Successively calculate sum over x,y of a, which is supplied at each call.
+!  The result fnamez is z-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!   5-jun-02/axel: adapted from sum_mn_name
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname,n_nghost
+!
+!  Initialize to zero, including other parts of the z-array
+!  which later be merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamez(:,:,iname)=0.
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!
+      n_nghost=n-nghost
+      fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
+!
+    endsubroutine xysum_mn_name_z
+!***********************************************************************
+    subroutine zsum_mn_name_xy(a,iname)
+!
+!  successively calculate sum over z of a, which is supplied at each call.
+!  The result fnamexy is xy-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!  19-jun-02/axel: adapted from xysum_mn_name
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname,m_nghost
+!
+!  always initialize to zero, including other parts of the z-array
+!  which later be merged with an mpi reduce command.
+!  Thus, it must be zero if is not set otherwise.
+!
+      if (lfirstpoint) fnamexy(:,:,:,iname)=0.
+!
+!  m starts with nghost+1=4, so the correct index is m-nghost
+!  keep full x-dependence
+!
+      m_nghost=m-nghost
+      fnamexy(:,m_nghost,ipy+1,iname)=fnamexy(:,m_nghost,ipy+1,iname)+a
+!
+    endsubroutine zsum_mn_name_xy
+!***********************************************************************
+    subroutine phisum_mn_name(a,iname)
+!
+!  successively calculate sum over phi of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
 !
 !   5-jun-02/axel: adapted from sum_mn_name
 !
@@ -132,38 +184,12 @@ module Sub
       n_nghost=n-nghost
       fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
 !
-    endsubroutine zsum_mn_name
-!***********************************************************************
-    subroutine xysum_mn_name(a,iname)
-!
-!  successively calculate sum of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
-!
-!  19-jun-02/axel: adapted from zsum_mn_name
-!
-      use Cdata
-!
-      real, dimension (nx) :: a
-      integer :: iname,m_nghost
-!
-!  always initialize to zero, including other parts of the z-array
-!  which later be merged with an mpi reduce command.
-!  Thus, it must be zero if is not set otherwise.
-!
-      if (lfirstpoint) fnamexy(:,:,:,iname)=0.
-!
-!  m starts with nghost+1=4, so the correct index is m-nghost
-!  keep full x-dependence
-!
-      m_nghost=m-nghost
-      fnamexy(:,m_nghost,ipy+1,iname)=fnamexy(:,m_nghost,ipy+1,iname)+a
-!
-    endsubroutine xysum_mn_name
+    endsubroutine phisum_mn_name
 !***********************************************************************
     subroutine max_mn(a,res)
 !
-!  successively calculate maximum of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  successively calculate maximum of a, which is supplied at each call.
+!  Start from scratch if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
 !
@@ -182,8 +208,8 @@ module Sub
 !***********************************************************************
     subroutine mean_mn(a,res)
 !
-!  successively calculate mean of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  successively calculate mean of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
 !
 !   17-dec-01/wolf: coded
 !
@@ -202,8 +228,8 @@ module Sub
 !***********************************************************************
     subroutine rms_mn(a,res)
 !
-!  successively calculate rms of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  successively calculate rms of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
 !
@@ -222,8 +248,9 @@ module Sub
 !***********************************************************************
     subroutine rms2_mn(a2,res)
 !
-!  successively calculate rms of a, where a2=a^2 is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  successively calculate rms of a, with a2=a^2 being supplied at each
+!  call.
+!  Start from zero if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
 !
@@ -242,8 +269,9 @@ module Sub
 !***********************************************************************
     subroutine sum_mn(a,res)
 !
-!  successively calculate the sum over all points of a, where a is supplied
-!  at each call. This routine initializes counter when lfirstpoint=.true.
+!  successively calculate the sum over all points of a, which is supplied
+!  at each call.
+!  Start from zero if lfirstpoint=.true.
 !
 !   1-apr-01/axel+wolf: coded
 !

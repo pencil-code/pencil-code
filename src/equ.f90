@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.117 2003-02-02 15:12:52 brandenb Exp $
+! $Id: equ.f90,v 1.118 2003-02-02 16:54:02 dobler Exp $
 
 module Equ
 
@@ -95,20 +95,18 @@ module Equ
 !
     endsubroutine diagnostic
 !***********************************************************************
-    subroutine xyaverages
+    subroutine xyaverages_z()
 !
-!  calculate xy-averages (as functions of z)
+!  Calculate xy-averages (still depending on z)
 !  NOTE: these averages depend on z, so after summation in x and y they
 !  are still distributed over nprocz CPUs; hence the dimensions of fsumz
 !  (and fnamez).
 !  In other words: the whole xy-average is present in one and the same fsumz,
 !  but the result is not complete on any of the processors before
-!  mpireduce_sum has been called. This procedure is simplest; in
-!  principle one could do this without nprocz in fsumz, but then one
-!  needs complicated communication procedures to collect results first
-!  in processors with the same ipz and different ipy, and then assemble
-!  result from the subset of ipz processors which have ipy=0 back on
-!  the root processor.
+!  mpireduce_sum has been called. This is impler than collecting results
+!  first in processors with the same ipz and different ipy, and then
+!  assemble result from the subset of ipz processors which have ipy=0
+!  back on the root processor.
 !
 !   6-jun-02/axel: coded
 !
@@ -126,11 +124,11 @@ module Equ
         if(lroot) fnamez=fsumz/(nx*ny*nprocy)
       endif
 !
-    endsubroutine xyaverages
+    endsubroutine xyaverages_z
 !***********************************************************************
-    subroutine zaverages
+    subroutine zaverages_xy()
 !
-!  calculate z-averages (as functions of x and y)
+!  Calculate z-averages (still depending on x and y)
 !  NOTE: these averages depend on x and y, so after summation in z they
 !  are still distributed over nprocy CPUs; hence the dimensions of fsumxy
 !  (and fnamexy).
@@ -151,9 +149,9 @@ module Equ
         if(lroot) fnamexy=fsumxy/(nz*nprocz)
       endif
 !
-    endsubroutine zaverages
+    endsubroutine zaverages_xy
 ! !***********************************************************************
-!     subroutine phiaverages
+!     subroutine phiaverages_rz()
 ! !
 ! !  calculate azimuthal averages (as functions of r_cyl,z)
 ! !  NOTE: these averages depend on (r and) z, so after summation they
@@ -176,7 +174,7 @@ module Equ
 ! !        if(lroot) fnamerz=fsumrz/(nx*ny*nprocy)
 !       endif
 ! !
-!     endsubroutine phiaverages
+!     endsubroutine phiaverages_rz
 !***********************************************************************
     subroutine pde(f,df)
 !
@@ -211,7 +209,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.117 2003-02-02 15:12:52 brandenb Exp $")
+           "$Id: equ.f90,v 1.118 2003-02-02 16:54:02 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -350,8 +348,8 @@ module Equ
       if (lfirst.and.ldt) call collect_UUmax
       if (ldiagnos) then
         call diagnostic
-        call xyaverages
-        call zaverages
+        call xyaverages_z
+        call zaverages_xy
       endif
 !
     endsubroutine pde

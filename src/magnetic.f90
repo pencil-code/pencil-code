@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.102 2002-12-12 11:16:16 brandenb Exp $
+! $Id: magnetic.f90,v 1.103 2003-02-02 16:54:02 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -84,7 +84,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.102 2002-12-12 11:16:16 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.103 2003-02-02 16:54:02 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -244,12 +244,12 @@ module Magnetic
         if (i_bxmz/=0.or.i_bxmxy/=0) bx=bb(:,1)
         if (i_bymz/=0.or.i_bymxy/=0) by=bb(:,2)
         if (i_bzmz/=0.or.i_bzmxy/=0) bz=bb(:,3)
-        if (i_bxmz/=0) call zsum_mn_name(bx,i_bxmz)
-        if (i_bymz/=0) call zsum_mn_name(by,i_bymz)
-        if (i_bzmz/=0) call zsum_mn_name(bz,i_bzmz)
-        if (i_bxmxy/=0) call xysum_mn_name(bx,i_bxmxy)
-        if (i_bymxy/=0) call xysum_mn_name(by,i_bymxy)
-        if (i_bzmxy/=0) call xysum_mn_name(bz,i_bzmxy)
+        if (i_bxmz/=0) call xysum_mn_name_z(bx,i_bxmz)
+        if (i_bymz/=0) call xysum_mn_name_z(by,i_bymz)
+        if (i_bzmz/=0) call xysum_mn_name_z(bz,i_bzmz)
+        if (i_bxmxy/=0) call zsum_mn_name_xy(bx,i_bxmxy)
+        if (i_bymxy/=0) call zsum_mn_name_xy(by,i_bymxy)
+        if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
       endif
 !
 !  write B-slices for output in wvid in run.f90
