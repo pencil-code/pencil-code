@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.57 2002-06-14 04:38:16 brandenb Exp $ 
+! $Id: sub.f90,v 1.58 2002-06-14 20:08:00 vpariev Exp $ 
 
 module Sub 
 
@@ -1404,7 +1404,7 @@ module Sub
 !
       use Cdata
 !
-      integer :: i
+      integer :: i,i1,i2
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
@@ -1419,7 +1419,8 @@ module Sub
         print*,'implement y-dependent flux tube in xz-plane; i=',i
         print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
         modulate=1.+epsilon_nonaxi*sin(ky*yy)
-        tmp=.5*ampl/modulate*exp(-(xx**2+zz**2)/(radius*modulate)**2)
+! completely quenched "gaussian"
+        tmp=.5*ampl/modulate*exp(-(xx**2+zz**2)/(max((radius*modulate)**2-xx**2-zz**2,1e-6)))
         if ((ip<=8).and.lroot) print*,'horizontal flux tube: i=',i
         f(:,:,:,i  )=+zz*tmp
         f(:,:,:,i+1)=0.
