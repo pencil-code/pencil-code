@@ -1,11 +1,11 @@
-;  $Id: extra.pro,v 1.20 2003-06-26 11:01:31 theine Exp $
+;  $Id: extra.pro,v 1.21 2003-07-21 04:27:26 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
 gamma=5./3.
 gamma1=gamma-1.
 ;
-@pencilconstants.pro
+@pencilconstant.pro
 ;
 ;print,'calculate xx,yy,zz (comment out if there isnt enough memory!)'
 xx = spread(x, [1,2], [my,mz])
@@ -50,7 +50,8 @@ if (iuu ne 0) then print
 ;  calculate magnetic energy of mean field in the 3 directions
 ;
 if (iaa ne 0) then begin
-  for j=0,2 do bbb(*,*,*,j)=bbb(*,*,*,j)+par2.b_ext(j)
+  default,b_ext,[0.,0.,0.]
+  for j=0,2 do bbb(*,*,*,j)=bbb(*,*,*,j)+b_ext(j)
   bmx=sqrt(mean(dot2_1d(means(means(bbb,3),2))))
   bmy=sqrt(mean(dot2_1d(means(means(bbb,3),1))))
   bmz=sqrt(mean(dot2_1d(means(means(bbb,2),1))))

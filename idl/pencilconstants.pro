@@ -45,7 +45,7 @@
   lnmpme=alog(m_p/m_e)
   lnmHeme=alog(m_He/m_e)
   lnmHmp=alog(m_H/m_p)
-  xHe=par.xHe
+  if (lionization) then xHe=par.xHe else xHe=0.
   lnxHe=alog(xHe)
   mu=1.+3.97153*xHe
   chiH=13.6*eV
