@@ -2,7 +2,9 @@ pro boxbotex_scl,inxy,imxy,imxz,imyz,$
          xmax,ymax,xval=xval,yval=yval,zval=zval,zof=zof,$
          zoom=zoom,lmax=lmax,xrot=xrot,zrot=zrot,dev=dev,npx=npx,npy=npy,$
          amax=amax,amin=amin,thick=thick,zpos=zpos,scale=scale,title=title,$
-         length=length,xpos=xpos,ip=ip,box=box
+         length=length,xpos=xpos,ip=ip,box=box,$
+         centred=centred,shell=shell,r_int=r_int,r_ext=r_ext,$
+         zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr
 ;
 ; n=15
 ; inxy=reform(uuu(*,*,n,0))
@@ -104,6 +106,11 @@ if n_elements(zof) eq 0 then zof=1.40
 if n_elements(scale) eq 0 then scale=1.0
 if n_elements(length) eq 0 then length=1.0
 if n_elements(ip) eq 0 then ip=0
+if keyword_set(shell) then begin            
+  if n_elements(zrr1) eq 0 or n_elements(zrr2) eq 0 or $
+     n_elements(xrr) eq 0 or n_elements(yrr) eq 0 then $
+     print,'must pass in arrays of rr in the 4 slices, to use shell in boxbotex_scl'
+endif
 ;
 ncols=245
 mincol=1
@@ -163,6 +170,23 @@ if xrot gt 0 then begin
   zimgbot = rebinbox(reform(zimbot,nxi*npx,nyi*npy),zoom)
   yimg = rebinbox(reform(yim,nxi*npx,nzi),zoom,/zdir)
   ximg = rebinbox(reform(xim,nyi*npy,nzi),zoom,/zdir)
+  ;
+  ; set up masking for transparency, if using shell
+  ;
+  if keyword_set(shell) then begin
+    zrrg = rebinbox(reform(zrr1,nxi*npx,nyi*npy),zoom)
+    zrr2g = rebinbox(reform(zrr2,nxi*npx,nyi*npy),zoom)
+    yrrg = rebinbox(reform(yrr,nxi*npx,nzi),zoom,/zdir)
+    xrrg = rebinbox(reform(xrr,nyi*npy,nzi),zoom,/zdir)
+    indz=where(zrrg lt r_int or zrrg gt r_ext,nindz)
+    indz2=where(zrr2g lt r_int or zrr2g gt r_ext,nindz2)
+    indx=where(xrrg lt r_int or xrrg gt r_ext,nindx)
+    indy=where(yrrg lt r_int or yrrg gt r_ext,nindy)
+    if nindz ne 0 then zimg(indz)=mincol-1
+    if nindz2 ne 0 then zimgbot(indz2)=mincol-1
+    if nindx ne 0 then ximg(indx)=mincol-1
+    if nindy ne 0 then yimg(indy)=mincol-1
+  endif
   ;
   ;  horizontal velocity in the two xy-planes
   ;
@@ -234,23 +258,53 @@ z0=zpos+(sf-1)/(2*sf)*maxscale & z1=z0+zval
 x0=xpos+(sf-1)/(2*sf)*maxscale & x1=x0+xmax*npx+xval
 ;x0=xval+(sf-1)/(2*sf)*maxscale & x1=x0+xmax*npx
 y0=yval+(sf-1)/(2*sf)*maxscale & y1=y0+ymax*npy
-verts=[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],$
-       [x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],$
-       [x0,y0,z0-zof],[x1,y0,z0-zof],[x1,y1,z0-zof],[x0,y1,z0-zof]]
+;
+; set up verts for planes on edges of box, or through centre
+;
+if not keyword_set(centred) then begin
+  ; traditional edge-planes of box
+  verts=[[x0,y0,z0],[x1,y0,z0],[x1,y1,z0],[x0,y1,z0],$
+         [x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],$
+         [x0,y0,z0-zof],[x1,y0,z0-zof],[x1,y1,z0-zof],[x0,y1,z0-zof]]
 
-polyfill,verts(*,[3,0,4,7]),/t3d,pattern=ximg, $
-      image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
-polyfill,verts(*,[0,1,5,4]),/t3d,pattern=yimg, $
-      image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
-if xrot gt 0 then begin
-  polyfill,verts(*,[4,5,6,7]),/t3d,pattern=zimg, $
-      image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
-  polyfill,verts(*,[8,9,10,11]),/t3d,pattern=zimgbot, $
-      image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+  polyfill,verts(*,[3,0,4,7]),/t3d,pattern=ximg, $
+        image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
+  polyfill,verts(*,[0,1,5,4]),/t3d,pattern=yimg, $
+        image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
+  if xrot gt 0 then begin
+    polyfill,verts(*,[4,5,6,7]),/t3d,pattern=zimg, $
+        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+    polyfill,verts(*,[8,9,10,11]),/t3d,pattern=zimgbot, $
+        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+  endif else begin
+    polyfill,verts(*,[0,1,2,3]),/t3d,pattern=zimg, $
+        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]]
+  endelse
 endif else begin
-  polyfill,verts(*,[0,1,2,3]),/t3d,pattern=zimg, $
-      image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]]
+  ; centre-slices through box; with transparency if shell options set
+  ; nb: currently uses zimgbot for both horizontal slices!!!
+  xm=x0+0.5*xmax*npx+xval & ym=y0+0.5*ymax*npy & zm=z0+0.5*zval
+  verts=[[xm,y0,z0],[x1,ym,z0],[xm,y1,z0],[x0,ym,z0],$
+         [x0,y0,zm],[x1,y0,zm],[x1,y1,zm],[x0,y1,zm],$
+         [xm,y0,z1],[x1,ym,z1],[xm,y1,z1],[x0,ym,z1],$
+         [x0,y0,z0-zof],[x1,y0,z0-zof],[x1,y1,z0-zof],[x0,y1,z0-zof]]
+  
+  polyfill,verts(*,[2,0,8,10]),/t3d,pattern=ximg, transparent=mincol, $
+        image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
+  polyfill,verts(*,[3,1,9,11]),/t3d,pattern=yimg, transparent=mincol, $
+        image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
+  if xrot gt 0 then begin
+    polyfill,verts(*,[4,5,6,7]),/t3d,pattern=zimgbot, transparent=mincol, $
+        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+    polyfill,verts(*,[12,13,14,15]),/t3d,pattern=zimgbot, transparent=mincol, $
+        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+  endif else begin
+    polyfill,verts(*,[0,1,2,3]),/t3d,pattern=zimgbot, $
+        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]]
+  endelse
+
 endelse
+
 a=tvrd()
 ;
 ;  make background white
@@ -288,7 +342,7 @@ bad=where(a eq 0) & a(bad)=255
 ;;       restore,'~dpb/p3d/col.tab3'
 ;;       tvlct,r,g,b
 ;;       loadct,file='/local/d/pcm/idl/colors1.tbl'
-;;	mloadct
+;;       mloadct
 ;;       help,/dev
 ;       tv,a
 ;     endif
