@@ -43,7 +43,7 @@ ophline,mean(mem),LINE=2
 
 ;; Plot histograms
 !x.title = '!6%!X'
-!y.title = '!6Relative frequency!X'
+!y.title = '!6Absolute frequency!X'
 !y.range = 0
 ;
 histo = histogram(load,MIN=0.,MAX=100.,NBIN=25)
