@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.18 2002-05-04 15:08:29 dobler Exp $
+! $Id: magnetic.f90,v 1.19 2002-05-04 15:49:26 brandenb Exp $
 
 module Magnetic
 
@@ -46,8 +46,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2002-05-04 15:08:29 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2002-05-04 15:49:26 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -193,6 +193,15 @@ module Magnetic
 !  Need to check whether entropy equation has been registered
 !
       if (ient>0) df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
+!
+!  calculate max and rms current density
+!  at the moment (and in future?) calculate max(b^2) and mean(b^2).
+!
+      if (ldiagnos) then
+        call dot2_mn(jj,j2)
+        if (i_jrms/=0) call sum_mn_name(j2,i_jrms)
+        if (i_jmax/=0) call max_mn_name(j2,i_jmax)
+      endif
 !
 !  debug output
 !

@@ -1401,10 +1401,10 @@ module Sub
 !  set format; use default if not given
 !
       if (iform1>0) then
-        cform=cname(iform1:iform2)
+        cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='(1pe10.2)'
+        cform='1pe10.2'
         length=iform0-1
       endif
 !

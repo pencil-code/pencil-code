@@ -324,6 +324,7 @@ module Equ
       use Slices
       use Sub
       use Global
+      use Hydro
       use Gravity
       use Entropy
       use Magnetic
@@ -344,8 +345,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.36 $", &
-           "$Date: 2002-05-04 15:13:11 $")
+           "$Revision: 1.37 $", &
+           "$Date: 2002-05-04 15:49:26 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -501,8 +502,10 @@ module Equ
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
 !
-        if (lfirst.and.lout) then
+        if (ldiagnos) then
           t_diag = t            ! diagnostic quantities are for this time
+          if (i_urms/=0) call sum_mn_name(u2,i_urms)
+          if (i_umax/=0) call max_mn_name(u2,i_umax)
 !         oo(:,1)=uij(:,3,2)-uij(:,2,3)
 !         oo(:,2)=uij(:,1,3)-uij(:,3,1)
 !         oo(:,3)=uij(:,2,1)-uij(:,1,2)
