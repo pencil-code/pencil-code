@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.179 2003-08-01 22:01:38 brandenb Exp $
+! $Id: entropy.f90,v 1.180 2003-08-02 15:42:45 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -86,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.179 2003-08-01 22:01:38 brandenb Exp $")
+           "$Id: entropy.f90,v 1.180 2003-08-02 15:42:45 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1322,6 +1322,7 @@ endif
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n1-nghost:n1,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
                 -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
+print*,"Bottom CONSTANT TEMPERATURE"
         else
           if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
           if (cs2bot<=0. .and. lroot) &
