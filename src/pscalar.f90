@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.12 2002-10-02 03:44:56 vpariev Exp $
+! $Id: pscalar.f90,v 1.13 2002-10-04 06:22:04 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -62,7 +62,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.12 2002-10-02 03:44:56 vpariev Exp $")
+           "$Id: pscalar.f90,v 1.13 2002-10-04 06:22:04 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -96,7 +96,6 @@ module Pscalar
            print*,'init_lncc: widthlncc=',widthlncc
         prof=.5*(1.+tanh(zz/widthlncc))
         f(:,:,:,ilncc)=-1.+2.*prof
-        case('hor-fluxtube'); call htube(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
         case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect

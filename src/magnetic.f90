@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.87 2002-10-03 07:59:21 dobler Exp $
+! $Id: magnetic.f90,v 1.88 2002-10-04 06:22:03 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.87 2002-10-03 07:59:21 dobler Exp $")
+           "$Id: magnetic.f90,v 1.88 2002-10-04 06:22:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -119,7 +119,6 @@ module Magnetic
       case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=kx_aa)
       case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)
       case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=kz_aa)
-      case('hor-fluxtube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
       case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
       case('hor-fluxlayer'); call hlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
@@ -131,7 +130,6 @@ module Magnetic
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
-      case('Alfven-test'); call alfven_test(amplaa,f,iuu,iaa,zz,kz_aa)
       case('Alfven-circ-x')
         !
         !  circularly polarised Alfven wave in x direction
@@ -602,24 +600,6 @@ module Magnetic
       f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
 !
     endsubroutine alfvenz_rot
-!***********************************************************************
-    subroutine alfven_test(ampl,f,iuu,iaa,zz,kz)
-!
-!  Alfven wave propagating in the z-direction
-!
-!  19-aug-02/nils: adapted from alfven_z
-!
-      real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: zz
-      real :: ampl,kz
-      integer :: iuu,iaa
-!
-!  ux and Ay
-!
-      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
-      f(:,:,:,iaa)=+ampl*sin(kz*zz)
-!
-    endsubroutine alfven_test
 !***********************************************************************
     subroutine fluxrings(f,ivar,xx,yy,zz,profile)
 !
