@@ -69,6 +69,11 @@ px = total(exp(llnrho)*uuu[*,*,*,0])*dx
 print, 'momentum p_x = ', px, '; theor.:', (p_left-p_right)*t
 print,'nu/(dx*cs)=',nu/(dx*sqrt(gamma))
 
+print, 'RMS Error - Density  = ', RMS(exp(llnrho)-rho)
+print, 'RMS Error - Entropy  = ', RMS(sss-s)
+print, 'RMS Error - Velocity = ', RMS(uuu-u)
+print, 'RMS Error - Pressure = ', RMS(ppp-p)
+
 print,'import sod_10.gif'
 print,'import sod_100.gif'
 print,'import sod_1000.gif'
