@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.112 2004-04-16 07:36:56 ajohan Exp $
+! $Id: noionization.f90,v 1.113 2004-05-11 11:17:42 dobler Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.112 2004-04-16 07:36:56 ajohan Exp $')
+           '$Id: noionization.f90,v 1.113 2004-05-11 11:17:42 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -603,7 +603,8 @@ module Ionization
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (ip==0) print*,unit,present(iostat)
+      if (present(iostat)) iostat = 0
+      if (ip==0) print*,unit
 
     endsubroutine read_ionization_init_pars
 !***********************************************************************
@@ -619,7 +620,8 @@ module Ionization
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
 
-      if (ip==0) print*,unit,present(iostat)
+      if (present(iostat)) iostat = 0
+      if (ip==0) print*,unit
 
     endsubroutine read_ionization_run_pars
 !***********************************************************************
