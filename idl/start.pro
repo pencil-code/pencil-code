@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.54 2003-06-23 19:11:27 dobler Exp $
+;;; $Id: start.pro,v 1.55 2003-07-01 08:38:49 dobler Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -70,9 +70,15 @@ endif else begin
 endelse
 zero = 0*one
 ;
-;  the following files contain the positions of variables in f
+;  Read the positions of variables in f
+;  Can't just use `@data/index', as the data directory may have a different name
 ;
-@data/index
+cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datatopdir+'/index.pro'
+spawn, cmd, result
+res = flatten_strings(result)
+if (execute(res) ne 1) then $
+    message, 'There was a problem with param.nml', /INFO
+;
 if (quiet le 2) then print,'nname=',nname
 ;
 ;  Read grid
