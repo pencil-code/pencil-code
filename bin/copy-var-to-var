@@ -1,9 +1,9 @@
 #!/bin/csh
-#$Id: copy-var-to-var,v 1.1 2002-11-14 16:31:42 brandenb Exp $
+#$Id: copy-var-to-var,v 1.2 2003-05-09 06:04:36 brandenb Exp $
 #
 #  Example:
 #     copy-var-to-var ../hydro256e
-#  will copy all var.dat files fron current directory to var.dat in
+#  Copies all var.dat files from current directory to var.dat in
 #  another run directory.
 #  Used for restarting in a different directory.
 
