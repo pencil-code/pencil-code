@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.229 2003-08-28 15:06:05 mee Exp $
+### $Id: Makefile,v 1.230 2003-08-28 15:24:58 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -6,7 +6,6 @@
 
 LIBSIG=
 LDMPI=-lmpi
-POSTCOMP=
 
 MPICOMM      = nompicomm
 GLOBAL       = noglobal
@@ -114,7 +113,6 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4|monolith)
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
-#POSTCOMP=2>&1 | cleanf95 --intel #(ns0)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
@@ -160,7 +158,6 @@ CFLAGS=-O3 -DFUNDERSC=1
 #F77=$(FC)
 #FFLAGS=-lowercase -I/usr/mpi/include -O4 -pvec -parallel=0
 #FFLAGS=-lowercase -Os -noparallel -O4
-#POSTCOMP=2>&1 | cleanf95 --hitachi
 #CFLAGS=-O4 -DFUNDERSC=0
 #LDMPI=-L/usr/mpi/lib/lib32 -lfmpi -lmpi
 
@@ -193,11 +190,11 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 .SUFFIXES: .f90 .mod
 
 .f.o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f $(POSTCOMP)
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 $(POSTCOMP)
-.mod.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 $(POSTCOMP)
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
+#.mod.o:
+#	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 
