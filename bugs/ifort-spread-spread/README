@@ -2,7 +2,7 @@
                            ifort-spread-spread
                           ---------------------
 
-$Id: README,v 1.6 2004-04-28 16:58:18 dobler Exp $
+$Id: README,v 1.7 2004-08-24 16:28:01 dobler Exp $
 
 
 1. Symptoms:
@@ -128,11 +128,16 @@ or
 4. Other compilers tested (OPK means problem could not be reproduced):
    - Intel ifc 6.0 (Linux)  OK
    - Intel ifc 7.1 (Linux)  OK
+   - Intel ifort 8.0 Build 20040616Z Package ID: l_fc_pc_8.0.046_pe049.1
+                   (Linux)  OK
 
 5. Workaround:
    Replace stacked spread(spread()) call by two consecutive calls using an
    explicit temporary (as demonstrated by spread-tmp.f90)
 
-6. Original date:
+6. Solution:
+   Update version of ifort
+
+7. Original date:
 
   Wed Apr 28 11:47:52 CEST 2004
