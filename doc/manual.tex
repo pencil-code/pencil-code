@@ -163,7 +163,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.6 $ $}
+\date{\today,~ $ $Revision: 1.7 $ $}
 
 % ====================================================================== %
 
@@ -192,7 +192,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.6 $ $}
+  \emph{\today,~ $ $Revision: 1.7 $ $}
 
 
 \end{center}
@@ -223,7 +223,7 @@ terms of a permission notice identical to this one.
 
 \section*{Foreword}
 
-This code was first developed at the Turbulence Summer school of the
+This code was first developed at the Turbulence Summer School of the
 Helmholtz Institute in Potsdam (2001).
 Often people ask us whether our code is publicly available;
 that's why we decided to make it a bit more user friendly (than it was before)
@@ -232,10 +232,10 @@ and to put it on a public cvs repository.
 The code is primarily designed to deal with weakly compressible turbulent
 flows: that's why we use high-order first and second derivatives.
 In order for the code to be easily parallelizable we use explicit
-(as opposed to compact) derivatives.
-Typical targets include driven MHD turbulence in a periodic box,
+(as opposed to compact) finite differences.
+Typical scientific targets include driven MHD turbulence in a periodic box,
 convection in a slab with non-periodic upper and lower boundaries,
-a convective star embedded in a box, accretion disc turbulence in
+a convective star embedded in a fully nonperiodic box, accretion disc turbulence in
 the sheering sheet approximation, etc.
 
 We use the magnetic vector potential to ensure that the field
@@ -245,13 +245,13 @@ one wants to monitor the magnetic helicity, for example.
 This code is therefore particularly well suited for all kind of
 dynamo problems.
 
-The code is non-conservative. Instead, conserved quantities should be
-conserved up to the discretization error of the scheme. Fully conservative
+The code is non-conservative. Thus, conserved quantities should only be
+conserved up to the discretization error of the scheme (not the machine acuracy). Fully conservative
 schemes cannot easily deal with large temperature and density contrasts
 and there is no guarantee that a conservative code is more accurate with
 respect to quantities that are not explicitly conserved, such as entropy.
 Magnetic helicity is another important example of a quantity that is to
-our knowledge not guaranteed to be conserved by ordinary conservative
+our knowledge not guaranteed to be conserved by ordinary flux conserving
 schemes.
 
 We don't have any immediate plans to implement adaptive mesh refinement
@@ -274,13 +274,25 @@ The various physics is invoked by linking the corresponding modules in the
 Makefile. The main reason for this procedure is to have a convenient way
 of stripping off extra ballast from the code, so it compiles faster and
 uses less memory. It is also a convenient way of changing the physics
-without using switches.
+without using messy switches.
 
-The parameter input file (run.in) is read in regular time intervals
-to one can change parameters during the fly. This can be useful if one
-wants to stop the in a graceful way, if one wants to change the time step,
-the viscosity, or (in forced calculations) the sound speed. Obviously, in
+The parameter input file (\var{run.in}) is read whenever there exists the file
+\var{RELOAD} in the run directory. This allows one
+\footnote{OK, some of this should be moved to section 3.}
+to change parameters during the fly. This can be useful if one
+wants to stop the in a graceful way (ie reduce number of timesteps),
+if one wants to change the length of the time step,
+the viscosity or other diffusion parameters,
+or (in forced calculations) the sound speed. Obviously, in
 some cases changing certain parameters on the fly could be totally crazy.
+
+We will be happy to include user-supplied changes and updates to the code
+in future releases, so please get in touch with us.
+
+\vspace{5mm}
+%\noindent
+\var{Wolfgang.Dobler@kis.uni-freiburg.de}\\
+\var{Axel.Brandenburg@nordita.dk}
 
 \tableofcontents
 \clearpage
@@ -746,7 +758,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \printindex
 
 \vfill\bigskip\noindent{\tiny\it
-$ $Id: manual.tex,v 1.6 2002-03-21 17:09:59 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.7 2002-03-21 17:38:14 brandenb Exp $ $}
 
 
 \end{document}
