@@ -30,23 +30,16 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FC=f95
 #FFLAGS=-O3 -u
 #LDMPI=
+#FC=mpif90 # (Samos)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen)
 #FC=pgf90 #(Nq[0-9]+)
 #FC=ifc	#(Nq[0-9]+)
-#FC=/home/dobler/bin/f95 #(Nq[0-9]+)
-#FFLAGS=-O2 -Minfo 	#(Norhpc)
-#FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
-#FFLAGS=-O3 -I/usr/lib/lam/include #(Nq[0-9]+)
-#FFLAGS=-O4 -u -Wc,-malign-double	#(Nl3|Mephisto)
-#LDMPI=-lmpich #(Nq[0-9]+)
-#LDMPI=-lmpi #(Nq[0-9]+)
-#LDMPI=-L/usr/local/mpich-1.2.1/lib/libmpichf90.a #(Nq[0-9]+)
-#LDMPI=-L/usr/local/mpich-1.2.1/lib/libfmpich.a #(Nq[0-9]+)
-#LDMPI=-L/usr/pgi/linux86/lib/libmpichf90.a #(Nq[0-9]+)
-#LDMPI=-L/usr/lib/liblamf77mpi.a #(Nq[0-9]+)
-#LDMPI=-L/usr/lib/lam/lib -llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(Nq[0-9]+)
-#FC=mpif90 # (Samos)
+#FC=/home/brandenb/bin/f95 #(Nq[0-9]+)
 #FFLAGS=-O # (Samos)
+#FFLAGS= -fast -DPGF90 #(Nq[0-9]+) ##(old)
+#FFLAGS=-O3 -I/usr/lib/lam/include -static #(Nq[0-9]+)
+#FFLAGS=-O4 -u -Wc,-malign-double	#(Nl3|Mephisto)
+#LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(Nq[0-9]+)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.20 2002-06-10 07:54:55 brandenb Exp $
+! $Id: noentropy.f90,v 1.21 2002-06-12 11:32:39 brandenb Exp $
 
 module Entropy
 
@@ -45,8 +45,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.20 $", &
-           "$Date: 2002-06-10 07:54:55 $")
+           "$Revision: 1.21 $", &
+           "$Date: 2002-06-12 11:32:39 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -161,6 +161,18 @@ module Entropy
       if(ip==1) print*,x,y,z,glhc  !(to remove compiler warnings)
 !
     endsubroutine gradloghcond
+!***********************************************************************
+    subroutine bc_ss(f,errmesg)
+!
+!  dummy routine for entropy boundary condition
+!
+!  12-jun-2002/axel: coded
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      character (len=*) :: errmesg
+!
+      if (ip==0) print*,f,errmesg
+    endsubroutine bc_ss
 !***********************************************************************
 
 endmodule Entropy

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.60 2002-06-12 09:02:24 brandenb Exp $
+! $Id: entropy.f90,v 1.61 2002-06-12 11:32:39 brandenb Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.60 $", &
-           "$Date: 2002-06-12 09:02:24 $")
+           "$Revision: 1.61 $", &
+           "$Date: 2002-06-12 11:32:39 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -483,13 +483,13 @@ module Entropy
 !  boundary condition for entropy
 !
 !  23-jan-2002/wolf: coded
+!  11-jun-2002/axel: moved into the entropy module
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
-!
       character (len=*) :: errmesg
 !
       errmesg=""
