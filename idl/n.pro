@@ -7,8 +7,8 @@
 @tmp/magnetic
 print,'nname=',nname
 ;
-file='tmp/n.dat'
-a=rtable(file,nname)
+filen='tmp/n.dat'
+a=rtable(filen,nname)
 if i_t ne 0 then t=reform(a(i_t-1,*))
 if i_it ne 0 then it=reform(a(i_it-1,*))
 if i_dt ne 0 then dt=reform(a(i_dt-1,*))
@@ -18,10 +18,13 @@ if i_b2m ne 0 then b2m=reform(a(i_b2m-1,*))
 if i_bm2 ne 0 then bm2=reform(a(i_bm2-1,*))
 if i_abm ne 0 then abm=reform(a(i_abm-1,*))
 if i_jbm ne 0 then jbm=reform(a(i_jbm-1,*))
+if i_eth ne 0 then eth=reform(a(i_eth-1,*))
+if i_ekin ne 0 then ekin=reform(a(i_ekin-1,*))
+if i_rhom ne 0 then rhom=reform(a(i_rhom-1,*))
 ;
 ;!p.multi=[0,1,2]
 plot,t,u2m,yst=0
-oplot,t,b2m,col=122
+if i_bm2 ne 0 then oplot,t,b2m,col=122
 !p.multi=0
 ;save,file='hydro.sav',t,jmax2,j2m,bmax2,b2m
 ;save,file='magnetic.sav',t,jmax2,j2m,bmax2,b2m

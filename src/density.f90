@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.5 2002-06-08 08:01:16 brandenb Exp $
+! $Id: density.f90,v 1.6 2002-06-08 11:17:15 brandenb Exp $
 
 module Density
 
@@ -19,7 +19,7 @@ module Density
        cs0,rho0,gamma,cdiffrho
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_rhom
+  integer :: i_eth=0,i_ekin=0,i_rhom=0
 
   contains
 
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.5 $", &
-           "$Date: 2002-06-08 08:01:16 $")
+           "$Revision: 1.6 $", &
+           "$Date: 2002-06-08 11:17:15 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -135,7 +135,7 @@ module Density
       real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho,sglnrho,del2u,graddivu,fvisc
       real, dimension (nx) :: lnrho,divu,uglnrho,glnrho2
-      real, dimension (nx) :: murho1,rho1,del2lnrho,rho
+      real, dimension (nx) :: murho1,rho1,del2lnrho
       real :: diffrho
       integer :: i
 !
@@ -188,13 +188,6 @@ module Density
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
       endif
 !
-!  calculate density diagnostics: mean density
-!
-      if (ldiagnos) then
-        rho=exp(f(l1:l2,m,n,ilnrho))
-        if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
-      endif
-
     endsubroutine dlnrho_dt
 !***********************************************************************
     subroutine rprint_density(lreset)
@@ -214,19 +207,23 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_rhom=0
+        i_eth=0;i_ekin=0;i_rhom=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
+        call parse_name(iname,cname(iname),cform(iname),'ekin',i_ekin)
         call parse_name(iname,cname(iname),cform(iname),'rhom',i_rhom)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       open(3,file='tmp/density.pro')
+      write(3,*) 'i_eth=',i_eth
+      write(3,*) 'i_ekin=',i_ekin
       write(3,*) 'i_rhom=',i_rhom
       write(3,*) 'nname=',nname
       close(3)

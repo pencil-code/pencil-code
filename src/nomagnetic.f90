@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.13 2002-06-06 12:55:11 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.14 2002-06-08 11:17:15 brandenb Exp $
 
 module Magnetic
 
@@ -41,8 +41,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-06-06 12:55:11 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-06-08 11:17:15 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -89,6 +89,20 @@ module Magnetic
 !  idl needs this even if everything is zero
 !
       open(3,file='tmp/magnetic.pro')
+      write(3,*) 'i_abm=',i_abm
+      write(3,*) 'i_jbm=',i_jbm
+      write(3,*) 'i_b2m=',i_b2m
+      write(3,*) 'i_bm2=',i_bm2
+      write(3,*) 'i_j2m=',i_j2m
+      write(3,*) 'i_jm2=',i_jm2
+      write(3,*) 'nname=',nname
+      write(3,*) 'iaa=',iaa
+      write(3,*) 'iax=',iax
+      write(3,*) 'iay=',iay
+      write(3,*) 'iaz=',iaz
+      write(3,*) 'nnamez=',nnamez
+      write(3,*) 'i_bxmz=',i_bxmz
+      write(3,*) 'i_bymz=',i_bymz
       close(3)
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)

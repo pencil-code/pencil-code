@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.19 2002-06-08 08:01:16 brandenb Exp $
+! $Id: hydro.f90,v 1.20 2002-06-08 11:17:15 brandenb Exp $
 
 module Hydro
 
@@ -22,7 +22,7 @@ module Hydro
        tinit,tdamp,dampu,dampuext,rdamp,wdamp
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0,i_u2m=0,i_um2=0,i_oum,i_o2m
+  integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0,i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
 
   contains
 
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.19 $", &
-           "$Date: 2002-06-08 08:01:16 $")
+           "$Revision: 1.20 $", &
+           "$Date: 2002-06-08 11:17:15 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -284,6 +284,7 @@ module Hydro
         maxadvec2=amax1(maxadvec2,u2)
 !
 !  Wolfgang, could you please reinstate this if you still need it?
+!  Your old material is now in the damping routine below.
 !
 !???    if (...) call udamping(f,df)
 !
@@ -344,7 +345,7 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_t=0; i_it=0; i_dt=0; i_dtc=0; i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
+        i_t=0;i_it=0;i_dt=0;i_dtc=0;i_u2m=0;i_um2=0;i_oum=0;i_o2m=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
