@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.55 2003-11-14 16:14:22 dobler Exp $
+! $Id: forcing.f90,v 1.56 2003-11-24 22:11:55 brandenb Exp $
 
 module Forcing
 
@@ -53,7 +53,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.55 2003-11-14 16:14:22 dobler Exp $")
+           "$Id: forcing.f90,v 1.56 2003-11-24 22:11:55 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -936,7 +936,7 @@ module Forcing
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,nz) :: fx,fz,tmp
-      real :: force_ampl,ffnorm,ffnorm2,kx,kz
+      real :: force_ampl,ffnorm,ffnorm2
 !
 !  identifier
 !

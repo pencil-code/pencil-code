@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.18 2003-11-24 16:01:48 mee Exp $
+! $Id: visc_const.f90,v 1.19 2003-11-24 22:11:55 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -55,7 +55,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.18 2003-11-24 16:01:48 mee Exp $")
+           "$Id: visc_const.f90,v 1.19 2003-11-24 22:11:55 brandenb Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -91,7 +91,7 @@ module Viscosity
 ! 
       logical :: lreset
       logical, optional :: lwrite
-      integer :: iname
+!     integer :: iname
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

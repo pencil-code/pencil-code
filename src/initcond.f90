@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.96 2003-11-19 15:53:03 ajohan Exp $ 
+! $Id: initcond.f90,v 1.97 2003-11-24 22:11:55 brandenb Exp $ 
 
 module Initcond 
  
@@ -989,7 +989,6 @@ module Initcond
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
-      integer :: i,j,k,izmid,hires_q_z,mz_hr,izmid_hr
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,sz,I_int
       real :: gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20
@@ -1019,6 +1018,7 @@ module Initcond
       f(:,:,:,iuy) = cs20/(2*Omega) * exp( gamma*f(:,:,:,iss) + &
           (gamma-1)*f(:,:,:,ilnrho) ) * dlnrhobdx/gamma
 !
+      if (ip==0) print*,xx,yy,rho0  !(keep compiler quiet)
     endsubroutine baroclinic
 !***********************************************************************
     subroutine crazy(ampl,f,i)

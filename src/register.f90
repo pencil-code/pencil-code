@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.116 2003-11-24 16:01:48 mee Exp $
+! $Id: register.f90,v 1.117 2003-11-24 22:11:55 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -265,7 +265,6 @@ module Register
       integer :: iname,inamev,inamez,inamexy,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat
       integer :: isubstract
-      character(len=30) :: cnamev_
       logical :: lreset,exist
 !
 !  read in the list of variables to be printed

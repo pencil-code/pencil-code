@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.94 2003-11-21 09:01:07 theine Exp $
+! $Id: noionization.f90,v 1.95 2003-11-24 22:11:55 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -80,7 +80,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.94 2003-11-21 09:01:07 theine Exp $")
+           "$Id: noionization.f90,v 1.95 2003-11-24 22:11:55 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -303,6 +303,7 @@ module Ionization
       if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
       glnTT=gamma1*glnrho+gamma*gss
 !
+      if (ip==0) print*,f !(keep compiler quiet)
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine eoscalc_pencil(f,yH,lnTT,ee,pp)
@@ -353,7 +354,7 @@ module Ionization
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
-      real :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_
+      real :: lnrho_,ss_,lnTT_,ee_,pp_
 !
       if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
 !
