@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; $Date: 2004-04-10 17:18:53 $
-;;; $Revision: 1.8 $
+;;; $Date: 2004-06-21 16:28:29 $
+;;; $Revision: 1.9 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -80,8 +80,14 @@ function input_table, filename, $
   if (!version.release ge 5.6) then begin
     N_lines = file_lines(filename) 
   endif else begin
-    spawn, 'wc -l ' + filename, ans
-    N_lines = long(ans(0))
+    spawn, 'wc -l ' + filename, ans, /SH
+    ans_lines = n_elements(ans)
+    if (ans_lines gt 1) then begin
+      message, "`wc -l' returned more than 1 line",/INFO
+      message, "Is your shell clean? `bash -c /bin/true' and `csh -c /bin/true' should produce no output", /INFO 
+      print, 'Trying to proceed anyway..'
+    endif
+    N_lines = long(ans_lines-1)
   endelse
 
   ;; Open the file
