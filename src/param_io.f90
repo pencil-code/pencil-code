@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.55 2002-09-26 16:21:25 brandenb Exp $ 
+! $Id: param_io.f90,v 1.56 2002-09-26 21:12:15 brandenb Exp $ 
 
 module Param_IO
 
@@ -24,6 +24,7 @@ module Param_IO
   ! run parameters
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0
+  character (len=labellen) :: random_gen_tmp='system'
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite,random_gen
@@ -31,7 +32,7 @@ module Param_IO
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspect,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec, &
-       directory_snap,random_gen, &
+       directory_snap,random_gen_tmp, &
        bcx,bcy,bcz, &
        ttransient
  
@@ -193,6 +194,7 @@ module Param_IO
 !
       ldebug=lroot.and.(ip<7)
       if (lroot) print*,'ldebug,ip=',ldebug,ip
+      random_gen=random_gen_tmp
 !
 !  Give online feedback if called with the PRINT optional argument
 !  Note: Some compiler's [like Compaq's] code crashes with the more
