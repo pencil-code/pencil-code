@@ -163,7 +163,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.7 $ $}
+\date{\today,~ $ $Revision: 1.8 $ $}
 
 % ====================================================================== %
 
@@ -192,7 +192,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.7 $ $}
+  \emph{\today,~ $ $Revision: 1.8 $ $}
 
 
 \end{center}
@@ -465,7 +465,7 @@ $\lambda$ is the thermal conductivity, and
   {\sf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
                  -\frac{1}{3} \delta_{ik}\Div\uv
 \end{equation}
-is the shear tensor.
+is the traceless rate of strain tensor.
 
     
 % ====================================================================== %
@@ -479,6 +479,54 @@ is the shear tensor.
 \label{Input-params}
 
 Here's how to use the code \ldots
+
+% ---------------------------------------------------------------------- %
+\subsection{RELOAD and STOP files}
+
+The code periodically checks for the existence of two files, \feil{RELOAD}
+and \file{STOP}, which can be used to trigger certain behavior.
+
+In the run directory from where you started the code, create the file
+\file{STOP} with
+\begin{alltt}
+  \prompt{unix> } touch STOP \
+\end{alltt}
+to stop the code in a controlled manner (it will write the latest
+snapshot).
+
+In the run directory from where you started the code, create the file
+\file{STOP} with
+\begin{alltt}
+  \prompt{unix> } touch STOP \
+\end{alltt}
+to stop the code in a controlled manner (it will write the latest
+snapshot).
+
+
+% ---------------------------------------------------------------------- %
+\subsection{IDL routines}
+Basic sequence:
+\begin{alltt}
+  \prompt{unix> } idl \
+  \prompt{IDL> }  .run start \
+  \prompt{IDL> }  .run r \
+  \prompt{IDL> }  {\sf[specific commands]} \
+\end{alltt}
+You call \file{start.pro} once to initialise the fields and read in the
+startup parameters from the code.
+Each time you want to read in a new snapshot, you run \file{r.pro},
+possibly after adjusting the variable \var{file} to a specific snapshot
+file; by default, the file \file{var.dat} in the data directory will be
+read, which is overwritten with new data in regular intervals.
+
+To discuss:
+\begin{itemize}
+\item availability of IDL (demo version; Pvwave; Ana)?
+\item setup (include \file{../idl} and \file{../../idl} (?) in \var{!path})
+\item how to get our IDL routines
+\end{itemize}
+
+
 
 % ---------------------------------------------------------------------- %
 \subsection{Start parameters}
@@ -758,7 +806,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \printindex
 
 \vfill\bigskip\noindent{\tiny\it
-$ $Id: manual.tex,v 1.7 2002-03-21 17:38:14 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.8 2002-03-21 18:04:43 dobler Exp $ $}
 
 
 \end{document}
