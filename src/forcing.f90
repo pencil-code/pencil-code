@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.62 2004-03-10 22:21:51 dobler Exp $
+! $Id: forcing.f90,v 1.63 2004-03-11 09:51:40 dobler Exp $
 
 module Forcing
 
@@ -58,7 +58,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.62 2004-03-10 22:21:51 dobler Exp $")
+           "$Id: forcing.f90,v 1.63 2004-03-11 09:51:40 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -276,8 +276,8 @@ module Forcing
       integer :: ik,j,jf
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
-      real, dimension(3) :: e1,e2,ee
-      real :: phi
+      real, dimension(3) :: ek,e1,e2,ee,kk
+      real :: norm,phi
 !
       if (ifirst==0) then
         if (lroot) print*,'forcing_hel: opening k.dat'
@@ -341,19 +341,23 @@ module Forcing
       kde=kx*ex+ky*ey+kz*ez
       if (.not. old_forcing_evector) then
         !
-        !  Isotropize ee in the plane perp. to kk by rotating by random
-        !  angle phi.
+        !  Isotropize ee in the plane perp. to kk by
+        !  (1) constructing two basis vectors for the plane perpendicular
+        !      to kk, and
+        !  (2) choosing a random direction in that plane (angle phi)
         !  Need to do this in order for the forcing to be isotropic.
         !
-        e1 = (/ex,ey,ez/)       ! rename ee to e1
-        e2 = (/ ky*ez-kz*ey, &
-                kz*ex-kx*ez, &
-                kx*ey-ky*ex  /) / k ! e2 is unit vect perp. to kk, e1
-        call random_number_wrapper(phi)
-        phi = phi*2*pi
+        kk = (/kx, ky, kz/)
+        ee = (/ex, ey, ez/)
+        call cross(kk,ee,e1)
+        call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+        call cross(kk,e1,e2)
+        call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+        call random_number_wrapper(phi); phi = phi*2*pi
         ee = cos(phi)*e1 + sin(phi)*e2
         ex=ee(1); ey=ee(2); ez=ee(3)
-        kde = kx*ex+ky*ey+kz*ez
+        ! kde = kx*ex+ky*ey+kz*ez
+        call dot(kk,ee,kde)
       endif
 !
 !  k.e
