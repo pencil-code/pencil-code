@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.32 $", &
-           "$Date: 2002-03-09 14:13:57 $")
+           "$Revision: 1.33 $", &
+           "$Date: 2002-03-09 20:18:55 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -223,14 +223,7 @@ use IO
       call dot_mn(glnT,glnTlambda,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
 
-if (headt) then
-  call del2v(f,iuu,glhc)
-  call output_stenc(trim(directory)//'/d2u1.dat',glhc,3)
-  call del2v_etc(f,iuu,glhc,GRADDIV=gss)
-  call output_stenc(trim(directory)//'/d2u2.dat',glhc,3)
-endif
-
-      if (headt) then
+      if (headt .and. lfirst) then
         call output_stenc(trim(directory)//'/chi.dat',chi,1)
         call output_stenc(trim(directory)//'/lambda.dat',lambda,1)
         call output_stenc(trim(directory)//'/glhc.dat',glhc,3)

@@ -265,7 +265,7 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
-      real, dimension(nx) :: rho,rho1,nurho1,cs2,chi,diff,del2lam
+      real, dimension(nx) :: rho,rho1,nurho1,nu_var,cs2,chi,diff,del2lam
       real, dimension(nx) :: r,pdamp
       real :: diffrho
       integer :: i,j
@@ -275,8 +275,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.22 $", &
-           "$Date: 2002-03-09 14:13:57 $")
+           "$Revision: 1.23 $", &
+           "$Date: 2002-03-09 20:18:55 $")
 !
 !  initiate communication
 !
@@ -309,10 +309,11 @@ module Equ
 !
         if (ivisc==1) then
           if (headtt) print*,'full viscous force'
-          nurho1=nu*rho1
-          call del2v_etc(f,iuu,del2u,graddiv=graddivu)
+!          nurho1=nu*rho1
+          nu_var=nu*rho0*rho1   ! spatially varying nu
+          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           do i=1,3
-            fvisc(:,i)=nurho1*(del2u(:,i)+1./3*graddivu(:,i))
+            fvisc(:,i)=nu_var*(del2u(:,i)+1./3*graddivu(:,i))
           enddo
         else
           if (headtt) print*,'reduced viscous force'
@@ -336,12 +337,6 @@ module Equ
 !  entropy equation
 !
         if (lentropy) call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
-!if (headt) then
-!  call del2v(f,iuu,del2u)
-!  call output_stenc(trim(directory)//'/d2u1.dat',del2u,3)
-!  call del2v_etc(f,iuu,del2u,graddiv=graddivu)
-!  call output_stenc(trim(directory)//'/d2u2.dat',del2u,3)
-!endif
 !
 !  momentum equation (forcing is now done in timestep)
 !

@@ -464,13 +464,13 @@ module Sub
       intent(out) :: del2f
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (nx) :: del2f,dfdx,dfdy,dfdz
+      real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz
       integer :: k
 !
-      call der2(f,k,dfdx,1)
-      call der2(f,k,dfdy,2)
-      call der2(f,k,dfdz,3)
-      del2f=dfdx+dfdy+dfdz
+      call der2(f,k,d2fdx,1)
+      call der2(f,k,d2fdy,2)
+      call der2(f,k,d2fdz,3)
+      del2f=d2fdx+d2fdy+d2fdz
 !
     endsubroutine del2
 !***********************************************************************
@@ -502,7 +502,10 @@ module Sub
     subroutine del2v_etc(f,k,del2,graddiv,curlcurl)
 !
 !  calculates a number of second derivative expressions of a vector
-!  outputs a number of different vector fields
+!  outputs a number of different vector fields.
+!  Surprisingly, calling derij only if graddiv or curlcurl are present
+!  does not spped up the code on Mephisto @ 32x32x64).
+!
 !  12-sep-01/axel: coded
 !
       use Cdata
@@ -523,14 +526,8 @@ module Sub
       do i=1,3
       do j=1,3
         call der2 (f,k1+i,tmp,  j); fijj(:,i,j)=tmp  ! f_{i,jj}
-        call derij(f,k1+j,tmp,j,i); fjji(:,i,j)=tmp  ! f_{j,ji}
+        call derij(f,k1+j,tmp,i,j); fjji(:,i,j)=tmp  ! f_{j,ji}
       enddo
-      enddo
-!
-!  the diagonal terms have not been set in derij; do this now
-!
-      do j=1,3
-        fjji(:,j,j)=fijj(:,j,j)
       enddo
 !
       if (present(del2)) then
@@ -538,6 +535,12 @@ module Sub
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
         enddo
       endif
+!
+!  the diagonal terms have not been set in derij; do this now
+!
+      do j=1,3
+        fjji(:,j,j)=fijj(:,j,j)
+      enddo
 !
       if (present(graddiv)) then
         do i=1,3
@@ -743,11 +746,6 @@ module Sub
       if(present(myout)) then; myout1=myout; else; myout1=my; endif
       if(present(mzout)) then; mzout1=mzout; else; mzout1=mz; endif
 !
-write(0,*) "File = ", file
-if (present(mxout)) write(0,*) "  mxout = ", mxout
-if (present(myout)) write(0,*) "  myout = ", myout
-if (present(mzout)) write(0,*) "  mzout = ", mzout
-write(0,*) "    m[x-z]out1 = ", mxout1,myout1,mzout1
       open(1,file=file)
       write(1,'(4i7)') mxout1,myout1,mzout1,mvar
 !
