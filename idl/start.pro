@@ -8,12 +8,12 @@
 
 common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
 ;
-@xder_6th_bc
-@yder_6th_bc
-@zder_6th_bc
-@xder2_6th_bc
-@yder2_6th_bc
-@zder2_6th_bc
+@xder_6th_ghost
+@yder_6th_ghost
+@zder_6th_ghost
+@xder2_6th_ghost
+@yder2_6th_ghost
+@zder2_6th_ghost
 ;
 default, datatopdir, 'tmp'
 default, datadir, datatopdir+'/proc0'
