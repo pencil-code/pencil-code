@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.160 2003-11-28 09:56:28 theine Exp $
+! $Id: magnetic.f90,v 1.161 2003-11-28 17:00:00 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.160 2003-11-28 09:56:28 theine Exp $")
+           "$Id: magnetic.f90,v 1.161 2003-11-28 17:00:00 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -482,7 +482,7 @@ module Magnetic
           maxdiffus=amax1(maxdiffus,etamax)
           !  diagnose
           if (ldiagnos.and.i_dteta/=0) then
-            call max_mn_name(spread(etamax,1,nx)/dxmin**2,i_dteta,l_dt=.true.)
+            call max_mn_name(spread(etamax,1,nx)/dxmin**2/cdtvDim,i_dteta,l_dt=.true.)
           endif
         endif
 
@@ -505,7 +505,7 @@ module Magnetic
         !
         if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
         if (i_vAmax/=0) call max_mn_name(va2,i_vAmax,lsqrt=.true.)
-        if (i_dtb/=0) call max_mn_name(sqrt(va2)/dxmin,i_dtb,l_dt=.true.)
+        if (i_dtb/=0) call max_mn_name(sqrt(va2)/dxmin/cdt,i_dtb,l_dt=.true.)
         !
         ! <J.B>
         !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.255 2003-11-28 05:15:52 brandenb Exp $
+! $Id: entropy.f90,v 1.256 2003-11-28 16:59:59 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.255 2003-11-28 05:15:52 brandenb Exp $")
+           "$Id: entropy.f90,v 1.256 2003-11-28 16:59:59 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -861,7 +861,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if(ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(cs2,i_dtc,l_dt=.true.)
+        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
         rho=exp(lnrho)
         if(i_eth/=0) then
           call sum_mn_name(rho*ee,i_eth)
@@ -993,7 +993,7 @@ module Entropy
         maxdiffus=amax1(maxdiffus,chitotal_max)
         ! diagnose
         if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(spread(chitotal_max,1,nx)/dxmin**2,i_dtchi,l_dt=.true.)
+          call max_mn_name(spread(chitotal_max,1,nx)/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
         endif
       endif
 !
@@ -1051,7 +1051,7 @@ module Entropy
         maxdiffus=amax1(maxdiffus,maxval(chitotal))
         ! diagnose
         if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(chitotal/dxmin**2,i_dtchi,l_dt=.true.)
+          call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
         endif
       endif
 !
@@ -1182,7 +1182,7 @@ endif
         maxdiffus=amax1(maxdiffus,maxval(chitotal))
         ! diagnose
         if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(chitotal/dxmin**2,i_dtchi,l_dt=.true.)
+          call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
         endif
       endif
 !

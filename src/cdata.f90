@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.191 2003-11-28 09:56:28 theine Exp $
+! $Id: cdata.f90,v 1.192 2003-11-28 16:59:59 theine Exp $
 
 module Cdata
 
@@ -21,6 +21,7 @@ module Cdata
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.
   real :: cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0
+  real :: cdtvDim
 
 !ajwm - start of array based time constraints.
 !  real, dimension (mdtmax)  :: dtmax,cdtmax

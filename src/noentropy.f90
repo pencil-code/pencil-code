@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.50 2003-11-25 15:29:29 brandenb Exp $
+! $Id: noentropy.f90,v 1.51 2003-11-28 17:00:00 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.50 2003-11-25 15:29:29 brandenb Exp $")
+           "$Id: noentropy.f90,v 1.51 2003-11-28 17:00:00 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -126,7 +126,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin,i_dtc,l_dt=.true.)
+        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
         if (i_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
           call sum_mn_name(cs2*uglnrho,i_ugradpm)

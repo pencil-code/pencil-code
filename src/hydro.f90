@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.141 2003-11-27 10:13:48 brandenb Exp $
+! $Id: hydro.f90,v 1.142 2003-11-28 17:00:00 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -106,7 +106,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.141 2003-11-27 10:13:48 brandenb Exp $")
+           "$Id: hydro.f90,v 1.142 2003-11-28 17:00:00 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -533,7 +533,7 @@ module Hydro
 !
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
-        if (i_dtu/=0) call max_mn_name(sqrt(u2)/dxmin,i_dtu,l_dt=.true.)
+        if (i_dtu/=0) call max_mn_name(sqrt(u2)/dxmin/cdt,i_dtu,l_dt=.true.)
         if (i_urms/=0) call sum_mn_name(u2,i_urms,lsqrt=.true.)
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_rumax/=0) call max_mn_name(u2/rho1**2,i_rumax,lsqrt=.true.)

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.166 2003-11-23 21:59:37 brandenb Exp $
+! $Id: run.f90,v 1.167 2003-11-28 17:00:00 theine Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.166 2003-11-23 21:59:37 brandenb Exp $")
+             "$Id: run.f90,v 1.167 2003-11-28 17:00:00 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -80,6 +80,15 @@
         dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
         if (lroot) write(*,'(a,i1,a)') 'This is a ',dimensionality,'-D run'
         if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
+!
+!  check if we want to devide cdtv by dimensionality
+!  (old_cdtv defaults to .true.)
+!
+        if (old_cdtv) then
+          cdtvDim=cdtv
+        else
+          cdtvDim=cdtv/dimensionality
+        endif
 !
 !  set up directory names `directory' and `directory_snap'
 !

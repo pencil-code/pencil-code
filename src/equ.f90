@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.179 2003-11-28 09:56:28 theine Exp $
+! $Id: equ.f90,v 1.180 2003-11-28 17:00:00 theine Exp $
 
 module Equ
 
@@ -233,7 +233,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.179 2003-11-28 09:56:28 theine Exp $")
+           "$Id: equ.f90,v 1.180 2003-11-28 17:00:00 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -384,22 +384,14 @@ module Equ
 !
         if (lfirst.and.ldt) then
           !
-          !  timestep limited by diffusion
-          !
-          if (old_cdtv) then
-            facdiffus=cdt/(cdtv*dxmin)
-          else
-            facdiffus=cdt/(cdtv*dxmin)*dimensionality
-          endif
-          !
           !  sum or maximum of the advection terms?
           !  (lmaxadvec_sum=.false. by default)
           !
           if (lmaxadvec_sum) then
-            UUtemp=amax1(sqrt(u2)+sqrt(cs2+va2),facdiffus*maxdiffus)
+            UUtemp=amax1(sqrt(u2)+sqrt(cs2+va2),cdt*maxdiffus/(cdtvDim*dxmin))
             call max_mn(UUtemp,UUmax)
           else
-            call max_mn(sqrt(maxadvec2)+(facdiffus*maxdiffus),UUmax)
+            call max_mn(sqrt(maxadvec2)+(cdt*maxdiffus)/(cdtvDim*dxmin),UUmax)
           endif
         endif
 !
