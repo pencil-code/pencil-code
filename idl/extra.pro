@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.45 2004-04-26 08:43:34 ajohan Exp $
+;  $Id: extra.pro,v 1.46 2004-04-27 08:23:55 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -90,7 +90,6 @@ ndustspec = n_elements(ind)
 if (ind(0) ne 0) then begin
   deltamd = par.deltamd
   rhods = par.rhods
-  md00 = 4/3.*!pi*(par.ad0)^3*rhods/unit_md
   dust_chemistry = par.dust_chemistry
 
   unit_md = 1.
@@ -99,6 +98,8 @@ if (ind(0) ne 0) then begin
     mmon  = mumon*1.6733e-24
     unit_md = mmon
   endif
+
+  md00 = 4/3.*!pi*(par.ad0)^3*rhods/unit_md
   
   if (imd(0) ne 0) then begin
     lmdvar=1
