@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.61 2002-11-18 13:57:57 ngrs Exp $
+! $Id: density.f90,v 1.62 2002-11-19 20:27:55 ngrs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.61 2002-11-18 13:57:57 ngrs Exp $")
+           "$Id: density.f90,v 1.62 2002-11-19 20:27:55 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -593,15 +593,15 @@ module Density
       absz=abs(z(n))
       do m=m1,m2
 !  cold gas profile n_c (eq 6)
-        n_c=0.340*(0.859*exp(-amin1((z(n)/0.127)**2,70.)) +         &
-                   0.047*exp(-amin1((z(n)/0.318)**2,70.)) +         &
-                   0.094*exp(-amin1(absz/0.403,70.)))     
+        n_c=0.340*(0.859*exp(-min((z(n)/0.127)**2,70.)) +         &
+                   0.047*exp(-min((z(n)/0.318)**2,70.)) +         &
+                   0.094*exp(-min(absz/0.403,70.)))     
 !  warm gas profile n_w (eq 7)
-        n_w=0.226*(0.456*exp(-amin1((z(n)/0.127)**2,70.)) +         &
-                   0.403*exp(-amin1((z(n)/0.318)**2,70.)) +         &
-                   0.141*exp(-amin1(absz/0.403,70.)))
+        n_w=0.226*(0.456*exp(-min((z(n)/0.127)**2,70.)) +         &
+                   0.403*exp(-min((z(n)/0.318)**2,70.)) +         &
+                   0.141*exp(-min(absz/0.403,70.)))
 !  ionized gas profile n_i (eq 9)
-        n_i=0.0237*exp(-absz) + 0.0013* exp(-amin1(absz/0.150,70.))
+        n_i=0.0237*exp(-absz) + 0.0013* exp(-min(absz/0.150,70.))
 !  hot gas profile n_h (eq 13)
         n_h=0.00048*exp(-absz/1.5)         
 !  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
