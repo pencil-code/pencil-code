@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.78 2003-08-04 02:16:35 theine Exp $
+! $Id: radiation_exp.f90,v 1.79 2003-08-04 14:54:01 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -85,7 +85,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.78 2003-08-04 02:16:35 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.79 2003-08-04 14:54:01 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -769,7 +769,7 @@ module Radiation
         case ('e'); kaprho_top=kaprho(:,:,n2+1:n2+radz0)
                     Srad_top=Srad(:,:,n2+1:n2+radz0)
                     TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
-                    H_top=(1.+yHmin+xHe)*ss_ion*TT_top/gravz
+                    H_top=-(1.+yHmin+xHe)*ss_ion*TT_top/gravz
                     tau_top=kaprho_top*H_top
                     Irad0_xy=Srad_top*(1.-exp(-tau_top))
         ! periodic boundary consition (currently only implemented for
