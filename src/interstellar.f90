@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.54 2003-09-09 12:22:19 mee Exp $
+! $Id: interstellar.f90,v 1.55 2003-09-12 11:37:32 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -113,7 +113,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.54 2003-09-09 12:22:19 mee Exp $")
+           "$Id: interstellar.f90,v 1.55 2003-09-12 11:37:32 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -157,10 +157,10 @@ module Interstellar
          if (lroot) then
             inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
             if (exist) then 
-               if (ip<=14) print*, 'initialize_interstellar: read interstellar.dat'
+               if (lroot.and.ip<14) print*, 'initialize_interstellar: read interstellar.dat'
                 call inpup(trim(datadir)//'/interstellar.dat',  &
                     interstellarsave,ninterstellarsave)
-               if (ip<=14) print*, 'initialize_interstellar: t_next_SNI', &
+               if (lroot.and.ip<14) print*, 'initialize_interstellar: t_next_SNI', &
                     interstellarsave(1)
             else
                interstellarsave(1)=t_next_SNI
@@ -188,7 +188,7 @@ module Interstellar
                        mu**2 * m_H**2 * 1D-2
 !tony Constant factor 1D-2 IS NOT CORRECT... NEED TO RECALCULATE
       endif
-      print*,'initialize_interstellar: unit_Lambda',unit_Lambda
+      if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
       coolH = coolH_cgs / unit_Lambda * coolingfunction_scalefactor
       coolT = coolT_cgs / unit_temperature
 
