@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.69 2003-08-29 17:28:21 dobler Exp $
+# $Id: getconf.csh,v 1.70 2003-08-29 20:09:57 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -99,12 +99,6 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
     endif
   endif
 
-else if (($hn =~ copson.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
-  set mpirun = /opt/score/bin/mpirun
-  set mpirunops = ""
-#  set mpirun = /opt/score/bin/scout 
-#  set mpirunops = "-wait"
-
 else if ($hn =~ nq* || $hn =~ ns*) then
   echo "Nordita cluster"
   if ($?PBS_NODEFILE) then
@@ -166,6 +160,26 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     set mpirun = ''
   endif
 
+else if ($hn =~ copson*) then
+    echo "Copson Cluster - St. Andrews"
+    set mpirun = /opt/score/bin/scout 
+    if ($?JOB_ID) then
+      set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
+    endif
+#scout -wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID \
+# -nodes=$((NSLOTS-1))x2 src/start.x
+#scout -wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID \
+# -nodes=$((NSLOTS-1))x2 src/run.x     
+#    set mpirun = /opt/score/bin/mpirun
+#    set mpirunops = "-machinefile $PBS_NODEFILE"
+    set start_x=src/start.x
+    set run_x=src/run.x
+
+    setenv SCRATCH_DIR /scratch
+    set local_disc=1
+#    setenv SSH rsh
+#    setenv SCP rcp
+
 else if ($hn == rasmussen) then
   echo "Rasmussen"
   limit stacksize unlimited
@@ -226,7 +240,9 @@ if ($mpi) then
   else if ($mpirun =~ *mpiexec*) then
     set npops = "-n $ncpus"
   else if ($mpirun =~ *scout*) then
-    set npops = "-nodes $ncpus"
+    set nnode = `expr $NSLOTS - 1`
+    set nprocpernode = `expr $ncpus / $nnode` 
+    set npops = "-nodes=${nnode}x${nprocpernode}"
   else if ($mpirun =~ *poe*) then
     set npops = "-procs $ncpus"
   else
@@ -253,6 +269,25 @@ else
 endif
 echo "datadir = $datadir"
 
+# Unpack NODELIST to csh array
+set nodelist = `echo "$NODELIST" | sed 's/:/ /g'`
+if ($?PBS_NODEFILE) then
+  set nodelist = `cat $PBS_NODEFILE`
+  set nodelist = (`echo $NODELIST | sed 's/:/ /'`) # unpack NODELIST
+else 
+  if ($?JOB_ID) then
+    if (-e $HOME/.score/ndfile.$JOB_ID) then
+      set nodelist = `cat $HOME/.score/ndfile.$JOB_ID`
+    else
+      echo "WARNING: Cannot find node list, continuing without local disk access"
+      set local_disc=0
+    endif
+  else
+    echo "WARNING: Cannot find node list, continuing without local disk access"
+    set local_disc=0
+  endif
+endif
+
 # If local disc is used, write name into $datadir/directory_snap.
 # This will be read by the code, if the file exists.
 # Remove file, if not needed, to avoid confusion.
@@ -267,8 +302,6 @@ if ($local_binary) then
   set run_x   = $SCRATCH_DIR/run.x
 endif
 
-# Unpack NODELIST to csh array
-set nodelist = `echo "$NODELIST" | sed 's/:/ /g'`
 
 # Created subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)

@@ -24,7 +24,16 @@ if ($#argv > 0) then
 endif
 
 set targetdir = $PWD/data
-set nodelist = (`echo $NODELIST | sed 's/:/ /'`) # unpack NODELIST
+
+if ($?PBS_NODEFILE) then
+  set nodelist = `cat $PBS_NODEFILE`
+  set nodelist = (`echo $NODELIST | sed 's/:/ /'`) # unpack NODELIST
+else if (-e $HOME/.score/ndfile.$JOB_ID) then
+  set nodelist = `cat $HOME/.score/ndfile.$JOB_ID`
+else
+  echo "WARNING: Cannot find node list, continuing without local disk access"
+  set local_disc=0
+endif
 
 if ($debug) then
   echo "SCRATCH_DIR = $SCRATCH_DIR"
