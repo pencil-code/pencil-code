@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.232 2003-10-30 14:46:34 ajohan Exp $
+! $Id: entropy.f90,v 1.233 2003-10-30 17:21:59 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.232 2003-10-30 14:46:34 ajohan Exp $")
+           "$Id: entropy.f90,v 1.233 2003-10-30 17:21:59 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -803,6 +803,7 @@ module Entropy
       if ((luminosity /= 0) .or. &
           (cool /= 0) .or. &
           (tauheat_coronal /= 0) .or. &
+          (tau_coronal /= 0) .or. &
           (tauheat_buffer /= 0) .or. &
           (heat_uniform /= 0) .or. &
           (cool_ext /= 0 .AND. cool_int /= 0) .or. &
@@ -1138,8 +1139,8 @@ endif
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,cs2,ss,TT,TT1
-      real, dimension (nx) :: heat,prof,TT_ref
-      real :: ssref,zbot,ztop,TTref,profile_buffer
+      real, dimension (nx) :: heat,prof,TTdiff
+      real :: ssref,zbot,ztop,TTref,profile_buffer,xi,prof
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
@@ -1232,11 +1233,10 @@ endif
 !
 !  alternate coronal heating (and cooling)
 !
-      if(tau_coronal/=0.) then
-        if (z(n)>=z_coronal) then
-          TT_ref=(z(n)-z_coronal)/(ztop-z_coronal)*(TT_coronal-TT)
-        endif
-        heat=heat+ss*TT_ref/(rho1*tau_coronal)
+      if(tau_coronal>0.and.z(n)>=z_coronal) then
+        xi=1-2*(ztop-z(n))/(ztop-z_coronal_u)
+        prof=0.5+0.25*xi*(3-xi**2)
+        heat=heat+ss*prof*(TT_coronal-TT)/(rho1*tau_coronal)
       endif
 !
 !  add heating and cooling to a reference temperature in a buffer

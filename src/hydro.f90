@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.128 2003-10-29 20:37:37 theine Exp $
+! $Id: hydro.f90,v 1.129 2003-10-30 17:21:59 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -42,6 +42,7 @@ module Hydro
   real :: tdamp=0.,dampu=0.,wdamp=0.2
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
+  real :: tau_coronal_u=0.,z_coronal_u=0.
   real :: ampl_diffrot=0.
   logical :: ldamp_fade=.false.
 !
@@ -51,7 +52,7 @@ module Hydro
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
-       ldamp_fade
+       ldamp_fade,tau_coronal_u,z_coronal_u
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
@@ -100,7 +101,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.128 2003-10-29 20:37:37 theine Exp $")
+           "$Id: hydro.f90,v 1.129 2003-10-30 17:21:59 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -459,7 +460,8 @@ module Hydro
 !
 ! geodynamo
 ! addition of dampuint evaluation
-      if ((tdamp /= 0) .or. (dampuext /= 0) .or. (dampuint /= 0)) call udamping(f,df)
+      if ((tdamp /= 0) .or. (dampuext /= 0) .or. &
+          (dampuint /= 0) .or. (tau_coronal_u > 0)) call udamping(f,df)
 ! end geodynamo
 !
 !  adding differential rotation via a frictional term
@@ -668,6 +670,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: pdamp
+      real :: zbot,ztop,xi,prof
       integer :: i
 !  
 !  warn about the damping term
@@ -675,6 +678,11 @@ module Hydro
         if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
           print*, 'udamping: Damping velocities until time ', tdamp
         endif
+!
+!  define bottom and top height
+!
+      zbot=xyz0(3)
+      ztop=xyz0(3)+Lxyz(3)
 !
 !  1. damp motion during time interval 0<t<tdamp.
 !  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
@@ -695,6 +703,15 @@ module Hydro
                                       + dampu/dt*f(l1:l2,m,n,iux:iuz)
             endif
           endif
+        endif
+!
+!  Velocity damping in the coronal heating zone
+!
+        if (tau_coronal_u>0.and.z(n)>=z_coronal_u) then
+          xi=1-2*(ztop-z(n))/(ztop-z_coronal_u)
+          prof=0.5+0.25*xi*(3-xi**2)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) &
+                                -prof*f(l1:l2,m,n,iux:iuz)/tau_coronal_u
         endif
 !
 !  2. damp motions for r_mn > rdampext or r_ext AND r_mn < rdampint or r_int
