@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.29 2003-10-21 17:49:25 mee Exp $
+! $Id: ionization_fixed.f90,v 1.30 2003-10-21 21:50:42 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -46,9 +46,6 @@ module Ionization
 
   ! Constants use in calculation of thermodynamic quantities
   real :: lnTTss,lnTTlnrho,lnTT0
-  real :: cs2TT
-  real :: eeTT,ee0
-  real :: cp1tilde_
 
   ! secondary parameters calculated in initialize
   real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,Srad0
@@ -95,7 +92,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.29 2003-10-21 17:49:25 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.30 2003-10-21 21:50:42 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -188,11 +185,6 @@ module Ionization
 !
       lnTT0=log(TT_ion)+(2./3.)*((yH_term+one_yH_term+xHe_term)/(1+yH0+xHe)-2.5)
 !
-      cs2TT=(5./3.)*(1.+yH0+xHe)*ss_ion
-      ee0=yH0*ss_ion*TT_ion
-      cp1tilde_=(2./5.)/(1.+yH0+xHe)
-      eeTT=1.5*(1.+yH0+xHe)*ss_ion
-!
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
         print*,'initialize_ionization: TT_ion,ss_ion,kappa0=', &
@@ -259,33 +251,20 @@ module Ionization
     subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
       real,intent(in) :: lnrho,ee
       real, intent(out) :: ss,TT,yH
-!      real :: yH,K
 !
-        yH = yH0
-        TT= (ee-ee0) / eeTT
+        yH=yH0
+        TT=(2./3.)*TT_ion*(ee/ee_ion-yH0)/(1.+yH0+xHe)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
-!        TT= (EE/exp(lnrho)-yH0*ss_ion*TT_ion*2. ) / &
-!              (3. * (1.+yH0+xHe) * ss_ion )
-!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-!        yH=2./(1.+sqrt(1.+4./K))
-!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
 !      
     end subroutine perturb_energy_point
 !***********************************************************************
     subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
       real, dimension(nx), intent(in) :: lnrho,ee
       real, dimension(nx), intent(out) :: ss,TT,yH
-!      real, dimension(nx) :: yH,K
 !
-        yH = yH0
-        TT= (ee-ee0) / eeTT
+        yH=yH0
+        TT=(2./3.)*TT_ion*(ee/ee_ion-yH0)/(1.+yH0+xHe)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
-
-!        TT= 1.5 * (EE/exp(lnrho)-yH0*ss_ion*TT_ion ) / &
-!              ((1.+yH0+xHe) * ss_ion)
-!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-!        yH=2./(1.+sqrt(1.+4./K))
-!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
 !
     end subroutine perturb_energy_pencil
 !***********************************************************************
@@ -402,9 +381,9 @@ module Ionization
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
       real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
 !
-      if (present(cs2))      cs2=cs2TT*TT
-      if (present(cp1tilde)) cp1tilde=cp1tilde_
-      if (present(ee))       ee=eeTT*TT+ee0
+      if (present(cs2))      cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TT
+      if (present(cp1tilde)) cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
+      if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
       if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_pencil
@@ -423,9 +402,9 @@ module Ionization
       real, intent(in) :: lnrho,ss,yH,TT
       real, optional :: cs2,cp1tilde,ee,pp
 !
-      if (present(cs2))      cs2=cs2TT*TT
-      if (present(cp1tilde)) cp1tilde=cp1tilde_
-      if (present(ee))       ee=eeTT*TT+ee0
+      if (present(cs2))      cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TT
+      if (present(cp1tilde)) cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
+      if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
       if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
