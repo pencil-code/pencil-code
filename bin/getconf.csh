@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.44 2003-01-19 10:47:16 brandenb Exp $
+# $Id: getconf.csh,v 1.45 2003-01-30 21:34:59 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -99,6 +99,15 @@ if ($mpi) then
     set npops = ''
     set ncpus = 1
 
+  else if ($hn == hwwsr8k) then
+    echo "Hitachi in Stuttgart"
+    set mpirun = mpiexec
+    set mpirunops = '-p multi -N 1' # change this for large runs..
+
+  else if ($hn == hwwsx5) then
+    echo "NEC-SX5 in Stuttgart"
+    set mpirun = mpiexec
+    
   else
     echo "Use mpirun as the default option"
     set mpirun = mpirun
@@ -115,7 +124,14 @@ if ($mpi) then
   #  set ncpus = `grep "^[       ]*$hn" .hostfile | awk '{print 2+$2}'`
   #endif
   echo $ncpus CPUs
-  set npops = "-np $ncpus"
+  if ($mpirun =~ *mpirun*) then
+    set npops = "-np $ncpus"
+  else if ($mpirun =~ *mpiexec*) then
+    set npops = "-n $ncpus"
+  else
+    echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
+  endif
+  
 else # no MPI
   echo "Non-MPI version"
   set mpirun = ''
