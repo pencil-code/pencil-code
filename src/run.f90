@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.88 2002-09-30 05:51:49 brandenb Exp $
+! $Id: run.f90,v 1.89 2002-10-01 15:57:17 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.88 2002-09-30 05:51:49 brandenb Exp $")
+             "$Id: run.f90,v 1.89 2002-10-01 15:57:17 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -81,7 +81,7 @@
 !  This directory must exist, but may be linked to another disk.
 !
         if (ip<=6.and.lroot) print*,'reading var files'
-        call input(trim(directory)//'/var.dat',f,mvar,1)
+        call input(trim(directory_snap)//'/var.dat',f,mvar,1)
         call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if there are)
 !
@@ -192,7 +192,7 @@
           !
           if (isave /= 0) then
             if (mod(it,isave)==0) &
-                 call wsnap(trim(directory)//'/var.dat',f,.false.)
+                 call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
           endif
           !
           !  save spectrum snapshot
@@ -216,7 +216,7 @@
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
 !
-        call wsnap(trim(directory)//'/var.dat',f,.false.)
+        call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
         call wtime(trim(directory)//'/time.dat',t)
         if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,.false.)
 !

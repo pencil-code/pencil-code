@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.35 2002-09-27 14:14:19 dobler Exp $
+! $Id: io_dist.f90,v 1.36 2002-10-01 15:57:17 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,8 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.35 2002-09-27 14:14:19 dobler Exp $")
-
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.36 2002-10-01 15:57:17 brandenb Exp $")
 !
 !  set directory name for the output (one subdirectory for each processor)
 !  set directory_snap to directory if not already initialized.

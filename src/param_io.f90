@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.58 2002-09-30 05:51:49 brandenb Exp $ 
+! $Id: param_io.f90,v 1.59 2002-10-01 15:57:17 brandenb Exp $ 
 
 module Param_IO
 
@@ -32,7 +32,8 @@ module Param_IO
   character (len=labellen) :: mips_is_buggy='system'
 
   namelist /init_pars/ &
-       cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite,random_gen
+       cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
+       directory_snap,random_gen
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspect,tmax,iwig,awig,ialive, &
