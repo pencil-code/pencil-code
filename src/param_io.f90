@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.50 2002-09-07 20:12:47 brandenb Exp $ 
+! $Id: param_io.f90,v 1.51 2002-09-22 18:19:17 brandenb Exp $ 
 
 module Param_IO
 
@@ -21,14 +21,14 @@ module Param_IO
   implicit none 
 
   ! run parameters
-  real :: tmax=1e33
+  real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite,random_gen
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
-       dsnap,dvid,dtmin,tmax,iwig,ialive, &
+       dsnap,dvid,dtmin,tmax,iwig,awig,ialive, &
        bcx,bcy,bcz, &
        ttransient
  

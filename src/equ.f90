@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.95 2002-08-30 14:19:51 dobler Exp $
+! $Id: equ.f90,v 1.96 2002-09-22 18:19:17 brandenb Exp $
 
 module Equ
 
@@ -227,7 +227,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.95 2002-08-30 14:19:51 dobler Exp $")
+           "$Id: equ.f90,v 1.96 2002-09-22 18:19:17 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -374,7 +374,7 @@ module Equ
 !
     endsubroutine pde
 !***********************************************************************
-    subroutine rmwig(f,df,ivar,explog)
+    subroutine rmwig(f,df,ivar,awig,explog)
 !
 !  Remove small scale oscillations (`wiggles') from a component of f,
 !  normally from lnrho. Sometimes necessary since Nyquist oscillations in
@@ -399,6 +399,7 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f,df
       logical, optional :: explog
       integer :: ivar
+      real :: awig
 !
       if (lroot) then
         if (ivar == ilnrho) then
@@ -426,11 +427,11 @@ module Equ
 !  to do so.
 !
       call boundconds_x(f)
-      call rmwig_1d(f,df,ivar,1) ! x direction
+      call rmwig_1d(f,df,ivar,awig,1) ! x direction
       call boundconds_y(f)
-      call rmwig_1d(f,df,ivar,2) ! y direction
+      call rmwig_1d(f,df,ivar,awig,2) ! y direction
       call boundconds_z(f)
-      call rmwig_1d(f,df,ivar,3) ! z direction
+      call rmwig_1d(f,df,ivar,awig,3) ! z direction
 !
 !  Revert back to f if we have been working on exp(f)
 !
@@ -441,7 +442,7 @@ module Equ
 !
     endsubroutine rmwig
 !***********************************************************************
-    subroutine rmwig_1d(f,df,ivar,idir)
+    subroutine rmwig_1d(f,df,ivar,awig,idir)
 !
 !  Remove small scale oscillations (`wiggles') in the x direction from
 !  the ivar component of f (normally lnrho).
@@ -452,14 +453,18 @@ module Equ
       use Mpicomm
       use Sub
       use Deriv
+!-- use Wsnaps
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: tmp
+      real :: awig
       integer :: ivar,idir
 !
 !  Initiate communication of ghost zones
-!AB: We don't need to communicate all variables though; just lnrho
-!WD: I wouldn't care, since this should be applied quite infrequently
+!  At the moment we communicate all variables, even though we only
+!  need to worry about one. The extra overhead is insignificant, because
+!  this routine is used only sporadically.
+!
       call initiate_isendrcv_bdry(f)
 !
 !  do loop over y and z
@@ -480,7 +485,12 @@ module Equ
 !  timestep, since this routine will be applied only infrequently.
 !
       f(l1:l2,m1:m2,n1:n2,ivar) = &
-           f(l1:l2,m1:m2,n1:n2,ivar) + df(l1:l2,m1:m2,n1:n2,ivar)
+           f(l1:l2,m1:m2,n1:n2,ivar) + awig*df(l1:l2,m1:m2,n1:n2,ivar)
+!
+!-- print*,'WRITE df (from der6) for testing; idir=',idir
+!-- if (idir==1) call wsnap(trim(directory)//'/XX',df,.false.)
+!-- if (idir==2) call wsnap(trim(directory)//'/YY',df,.false.)
+!-- if (idir==3) call wsnap(trim(directory)//'/ZZ',df,.false.)
 !
     endsubroutine rmwig_1d
 !***********************************************************************

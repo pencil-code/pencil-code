@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.49 2002-09-21 14:05:52 dobler Exp $
+! $Id: density.f90,v 1.50 2002-09-22 18:19:17 brandenb Exp $
 
 module Density
 
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.49 2002-09-21 14:05:52 dobler Exp $")
+           "$Id: density.f90,v 1.50 2002-09-22 18:19:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -177,7 +177,7 @@ module Density
 
       case ('piecew-poly', '4')
         !
-        !  piecewise polytropic for solar convection stuff
+        !  piecewise polytropic for stellar convection models
         !
         if (lroot) print*,'piecewise polytropic vertical stratification (lnrho)'
         ! top region

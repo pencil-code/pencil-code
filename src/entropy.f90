@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.122 2002-09-21 18:15:26 dobler Exp $
+! $Id: entropy.f90,v 1.123 2002-09-22 18:19:17 brandenb Exp $
 
 module Entropy
 
@@ -67,7 +67,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.122 2002-09-21 18:15:26 dobler Exp $")
+           "$Id: entropy.f90,v 1.123 2002-09-22 18:19:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -627,6 +627,7 @@ endif
 !
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
+!
 !  Vertical case:
 !  Heat at bottom, cool top layers
 !
