@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.73 2003-08-13 15:30:07 mee Exp $ 
+! $Id: initcond.f90,v 1.74 2003-08-21 12:53:00 ajohan Exp $ 
 
 module Initcond 
  
@@ -552,7 +552,7 @@ module Initcond
       if(ip==0) print*,ampl,xx,yy,zz !(to keep compiler quiet)
     endsubroutine stratification
 !***********************************************************************
-    subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width,rbound)
+    subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,rho0,width)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -561,20 +561,21 @@ module Initcond
 !  26-Jul-03/anders: Revived from June 1 version
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi
+      real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi
       real, dimension (mx,my) :: delS
-      real :: ampl,sigma2,sigma,delta2,delta,eps,radius
-      real :: gamma,eps2,radius2,width,rbound
-      real :: gamma1,cs20
+      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
+      real :: gamma,cs20,gamma1,eps2,radius2,width,lnrhosum_box,rho0
+      integer :: i,j,k
 !
 !  calculate sigma
 !
-      print*,'planet_hc: qshear,eps=',qshear,eps
+      if (lroot) print*,'planet_hc: qshear,eps=',qshear,eps
       eps2=eps**2
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
       if (sigma2<0.) then
-        print*,'planet_hc: sigma2<0 not allowed; choose another value of eps_planet'
+        if (lroot) print*, &
+          'planet_hc: sigma2<0 not allowed; choose another value of eps_planet'
       else
         sigma=sqrt(sigma2)
       endif
@@ -582,9 +583,9 @@ module Initcond
 !  calculate delta
 !
       delta2=(2.-sigma)*sigma
-      print*,'planet_hc: sigma,delta2,radius=',sigma,delta2,radius
+      if (lroot) print*,'planet_hc: sigma,delta2,radius=',sigma,delta2,radius
       if (delta2<=0.) then
-        print*,'planet_hc: delta2<=0 not allowed'
+        if (lroot) print*,'planet_hc: delta2<=0 not allowed'
       else
         delta=sqrt(delta2)
       endif
@@ -592,18 +593,26 @@ module Initcond
 !  calculate gamma1
 !
       gamma1=gamma-1.
-      print*,'planet_hc: gamma=',gamma
+      if (lroot) print*,'planet_hc: gamma=',gamma
 !
 !  calculate hh
-!  add continuous vertical stratification to horizontal planet solution
 !  xi=1 inside vortex, and 0 outside
+!
+      hh=+.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)-.5*Omega**2*zz**2
+      xi=.5+.5*tanh(hh/width)
+!
+!  ellipse parameters
+!
+      b_ell = radius
+      a_ell = radius/eps
+      c_ell = radius*delta
+      if(lroot) print*,'planet_hc: Ellipse axes (b_ell,a_ell,c_ell)=', &
+          b_ell,a_ell,c_ell
+!
+!  add continuous vertical stratification to horizontal planet solution
 !  NOTE: if width is too small, the vertical integration below may fail.
 !
-      rr2=xx**2+eps2*yy**2+zz**2/delta2
-      hh=+.5*delta2*Omega**2*(radius2-rr2)
-      xi=.5+.5*tanh(hh/width)
- 
-      print*,"planet_hc: integrate hot corona"
+      if (lroot) print*,"planet_hc: integrate hot corona"
       hh(:,:,n2)=1.  !(initial condition)
       f(:,:,:,iss)=-alog(ampl)*xi
       do n=n2-1,n1,-1
@@ -617,32 +626,46 @@ module Initcond
       f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
       f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
 !
-      print*,'planet_hc: hmin=',minval(hh(l1:l2,m1:m2,n1:n2))
+      if (lroot) print*,'planet_hc: hmin=',minval(hh(l1:l2,m1:m2,n1:n2))
 
-      if(gamma1<0.) print*,'planet_hc: must have gamma>1 for planet solution'
+      if(gamma1<0. .and. lroot) &
+          print*,'planet_hc: must have gamma>1 for planet solution'
 !
 !  calculate density, depending on what gamma is
 !
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho)= &
-             (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+             (alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
              -gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
-        print*,'planet_hc: planet solution with entropy jump for gamma=',gamma
+        if (lroot) &
+          print*,'planet_hc: planet solution with entropy for gamma=',gamma
       else
         if(gamma==1.) then
           f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
-          print*,'planet_hc: planet solution for gamma=1'
+          if (lroot) print*,'planet_hc: planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho)=&
-               alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
-          print*,'planet_hc: planet solution for gamma=',gamma
+               alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+          if (lroot) print*,'planet_hc: planet solution for gamma=',gamma
         endif
       endif
 !
-      print*,rbound !(to keep compiler quiet)
+!  Use average density of box as unit density
+!
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            lnrhosum_box = lnrhosum_box + f(i,j,k,ilnrho)
+          enddo
+        enddo
+      enddo
+      rho0 = exp(-lnrhosum_box/(mx*my*mz))
+      if(lroot) print*,'planet_hc: rho0=',rho0
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
+!
     endsubroutine planet_hc
 !***********************************************************************
-    subroutine planet(rbound,f,xx,yy,zz,eps,radius,gamma,cs20,width,hh0)
+    subroutine planet(rbound,f,xx,yy,zz,eps,radius,gamma,cs20,rho0,width,hh0)
 !
 !  Cylindrical planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -654,7 +677,7 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
-      real :: gamma1,ztop,cs20,hh0,lnrhosum_box,lnrhoave_box
+      real :: gamma1,ztop,cs20,hh0,lnrhosum_box,rho0
       integer :: i,j,k
 !
 !  calculate sigma
@@ -733,16 +756,16 @@ module Initcond
 !
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-            (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+            (alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
             - gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
-        if (lroot) print*,'planet: planet solution with entropy jump for gamma=',gamma
+        if (lroot) print*,'planet: planet solution for gamma=',gamma
       else
       if(gamma==1.) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
           if (lroot) print*,'planet: planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-               alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+               alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
           if (lroot) print*,'planet: planet solution for gamma=',gamma
         endif
       endif
@@ -756,8 +779,9 @@ module Initcond
           enddo
         enddo
       enddo
-      lnrhoave_box = lnrhosum_box/(mx*my*mz)
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) - lnrhoave_box
+      rho0 = exp(-lnrhosum_box/(mx*my*mz))
+      if (lroot) print*,'planet_hc: rho0=',rho0
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !      
     endsubroutine planet
 !***********************************************************************
