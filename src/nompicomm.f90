@@ -43,6 +43,7 @@ module Mpicomm
 !
       lmpicomm = .false.
       iproc=root
+      lroot = .true.
 !
 !  produce index-array for the sequence of points to be worked through.
 !  Trivial here, since no communication.
