@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.24 2003-10-18 10:57:50 theine Exp $
+! $Id: ionization_fixed.f90,v 1.25 2003-10-18 19:47:10 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.24 2003-10-18 10:57:50 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.25 2003-10-18 19:47:10 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -520,6 +520,41 @@ module Ionization
       double precision :: tmp1,tmp2,varA
 !
     end subroutine yH_get
+!***********************************************************************
+    subroutine isothermal_entropy(f,T0)
+!
+!  Isothermal stratification (for lnrho and ss)
+!  This routine should be independent of the gravity module used.
+!  When entropy is present, this module also initializes entropy.
+!
+!  Sound speed (and hence Temperature), is
+!  initialised to the reference value:
+!           sound speed: cs^2_0            from start.in  
+!           density: rho0 = exp(lnrho0)
+!
+!  11-jun-03/tony: extracted from isothermal routine in Density module
+!                  to allow isothermal condition for arbitrary density
+!  17-oct-03/nils: works also with lionization=T
+!  18-oct-03/tobi: distributed across ionization modules
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, intent(in) :: T0
+      real, dimension(nx) :: lnrho,ss
+!
+      do n=n1,n2
+      do m=m1,m2
+!
+        lnrho=f(l1:l2,m,n,ilnrho)
+        ss=ss_ion*((1+yH0+xHe)*(1.5*log(T0/TT_ion)-lnrho+2.5) & 
+                   -yH_term-one_yH_term-xHe_term)
+        f(l1:l2,m,n,iss)=ss
+!
+      enddo
+      enddo
+!
+    endsubroutine isothermal_entropy
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
                 lmultilayer,lcalc_heatcond_constchi)
@@ -1020,7 +1055,7 @@ module Ionization
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
-      call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN IONIZATION")
+      call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN IONIZATION_FIXED")
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.118 2003-10-18 10:57:50 theine Exp $
+! $Id: ionization.f90,v 1.119 2003-10-18 19:47:10 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -97,7 +97,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.118 2003-10-18 10:57:50 theine Exp $")
+           "$Id: ionization.f90,v 1.119 2003-10-18 19:47:10 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -748,6 +748,59 @@ module Ionization
 !
     end subroutine yH_get
 !***********************************************************************
+    subroutine isothermal_entropy(f,T0)
+!
+!  Isothermal stratification (for lnrho and ss)
+!  This routine should be independent of the gravity module used.
+!  When entropy is present, this module also initializes entropy.
+!
+!  Sound speed (and hence Temperature), is
+!  initialised to the reference value:
+!           sound speed: cs^2_0            from start.in  
+!           density: rho0 = exp(lnrho0)
+!
+!  11-jun-03/tony: extracted from isothermal routine in Density module
+!                  to allow isothermal condition for arbitrary density
+!  17-oct-03/nils: works also with lionization=T
+!  18-oct-03/tobi: distributed across ionization modules
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, intent(in) :: T0
+      real, dimension(nx) :: lnrho,ss,yH,K,sqrtK,yH_term,one_yH_term
+!
+      do n=n1,n2
+      do m=m1,m2
+!
+        lnrho=f(l1:l2,m,n,ilnrho)
+!
+        K=exp(lnrho_e-lnrho-TT_ion/T0)*(T0/TT_ion)**1.5
+        sqrtK=sqrt(K)
+        yH=2*sqrtK/(sqrtK+sqrt(4+K))
+!
+        where (yH>0)
+          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+        elsewhere
+          yH_term=0
+        endwhere
+!
+        where (yH<1)
+          one_yH_term=(1-yH)*(log(1-yH)-lnrho_H)
+        elsewhere
+          one_yH_term=0
+        endwhere
+!
+        ss=ss_ion*((1+yH+xHe)*(1.5*log(T0/TT_ion)-lnrho+2.5) &
+                   -yH_term-one_yH_term-xHe_term)
+!
+        f(l1:l2,m,n,iss)=ss
+!
+      enddo
+      enddo
+!
+    endsubroutine isothermal_entropy
+!***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)
 !
@@ -1234,7 +1287,7 @@ module Ionization
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,nghost) :: K,yH_term,one_yH_term
+      real, dimension (mx,my,nghost) :: lnrho,ss,yH,TT,K,sqrtK,yH_term,one_yH_term
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
@@ -1253,32 +1306,31 @@ module Ionization
         do i=1,nghost
           f(:,:,n1-i,iTT) = f(:,:,n1+i,iTT) 
         enddo
-        !
-        ! NB: The 8*tiny(f) stuff was introduced to avoid division by zero
-        !   if K=0. It would be cleaner to leave K as it is and rewrite the
-        !   second line below as
-        !     f(:,:,1:n1-1,iyH)=2*sqrt(K)/(sqrt(K)+sqrt(K+4)) ,
-        !   desirably using a temporary variable for sqrt(K).
-        !        
-        K=exp(lnrho_e-f(:,:,1:n1-1,ilnrho))*(f(:,:,1:n1-1,iTT)/TT_ion)**1.5 &
-                 *exp(-TT_ion/f(:,:,1:n1-1,iTT)) + 8*tiny(f)
-        f(:,:,1:n1-1,iyH)=2./(1.+sqrt(1.+4./K ))
-
-        yH_term=0.
-        where (f(:,:,1:n1-1,iyH)>0.) &
-          yH_term=f(:,:,1:n1-1,iyH) &
-                       *(2.*log(f(:,:,1:n1-1,iyH))-lnrho_e-lnrho_p)
-
-        one_yH_term=0.
-        where (f(:,:,1:n1-1,iyH)<1.) &
-          one_yH_term=(1.-f(:,:,1:n1-1,iyH)) &
-                       *(log(1.-f(:,:,1:n1-1,iyH))-lnrho_H)
-      
-        f(:,:,1:n1-1,iss)=((1.+f(:,:,1:n1-1,iyH)+xHe) &
-                       *(1.5*log(f(:,:,1:n1-1,iTT)/TT_ion)-f(:,:,1:n1-1,ilnrho)+2.5) &
-                       - yH_term - one_yH_term - xHe_term)*ss_ion
-         
-         
+!
+        lnrho=f(:,:,1:n1-1,ilnrho)
+        TT=f(:,:,1:n1-1,iTT)
+!
+        K=exp(lnrho_e-lnrho-TT_ion/TT)*(TT/TT_ion)**1.5
+        sqrtK=sqrt(K)
+        yH=2*sqrtK/(sqrtK+sqrt(4+K))
+!
+        where (yH>0)
+          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+        elsewhere
+          yH_term=0
+        endwhere
+!
+        where (yH<1)
+          one_yH_term=(1-yH)*(log(1-yH)-lnrho_H)
+        elsewhere
+          one_yH_term=0
+        endwhere
+!
+        ss=ss_ion*((1+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
+                    -yH_term-one_yH_term-xHe_term)
+!
+        f(:,:,1:n1-1,iyH)=yH
+        f(:,:,1:n1-1,iss)=ss
 !
 !  top boundary
 !
@@ -1286,30 +1338,32 @@ module Ionization
         do i=1,nghost
           f(:,:,n2+i,iTT) = f(:,:,n2-i,iTT) 
         enddo
-        !
-        ! NB: The 8*tiny(f) stuff was introduced to avoid division by zero
-        !   if K=0. It would be cleaner to leave K as it is and rewrite the
-        !   second line below as
-        !     f(:,:,n2+1:mz,iyH)=2*sqrt(K)/(sqrt(K)+sqrt(K+4)) ,
-        !   desirably using a temporary variable for sqrt(K).
-        !
-        K=exp(lnrho_e-f(:,:,n2+1:mz,ilnrho))*(f(:,:,n2+1:mz,iTT)/TT_ion)**1.5 &
-                 *exp(-TT_ion/f(:,:,n2+1:mz,iTT)) + 8*tiny(f)
-        f(:,:,n2+1:mz,iyH)=2./(1.+sqrt(1.+4./K ))
-
-        yH_term=0.
-        where (f(:,:,n2+1:mz,iyH)>0.) &
-          yH_term=f(:,:,n2+1:mz,iyH) &
-                       *(2.*log(f(:,:,n2+1:mz,iyH))-lnrho_e-lnrho_p)
-
-        one_yH_term=0.
-        where (f(:,:,n2+1:mz,iyH)<1.) &
-          one_yH_term=(1.-f(:,:,n2+1:mz,iyH)) &
-                       *(log(1.-f(:,:,n2+1:mz,iyH))-lnrho_H)
-      
-        f(:,:,n2+1:mz,iss)=((1.+f(:,:,n2+1:mz,iyH)+xHe) &
-                       *(1.5*log(f(:,:,n2+1:mz,iTT)/TT_ion)-f(:,:,n2+1:mz,ilnrho)+2.5) &
-                       - yH_term - one_yH_term - xHe_term)*ss_ion
+!
+        lnrho=f(:,:,n2+1:mz,ilnrho)
+        TT=f(:,:,n2+1:mz,iTT)
+!
+        K=exp(lnrho_e-lnrho-TT_ion/TT)*(TT/TT_ion)**1.5
+        sqrtK=sqrt(K)
+        yH=2*sqrtK/(sqrtK+sqrt(4+K))
+!
+        where (yH>0)
+          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+        elsewhere
+          yH_term=0
+        endwhere
+!
+        where (yH<1)
+          one_yH_term=(1-yH)*(log(1-yH)-lnrho_H)
+        elsewhere
+          one_yH_term=0
+        endwhere
+!
+        ss=ss_ion*((1+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
+                    -yH_term-one_yH_term-xHe_term)
+!
+        f(:,:,n2+1:mz,iyH)=yH
+        f(:,:,n2+1:mz,iss)=ss
+!
       case default
         print*,"bc_ss_stemp_z: invalid argument"
         call stop_it("")

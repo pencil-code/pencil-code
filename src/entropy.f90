@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.211 2003-10-17 13:07:18 nilshau Exp $
+! $Id: entropy.f90,v 1.212 2003-10-18 19:47:10 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -101,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.211 2003-10-17 13:07:18 nilshau Exp $")
+           "$Id: entropy.f90,v 1.212 2003-10-18 19:47:10 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -228,6 +228,7 @@ module Entropy
       use Sub
       use Gravity
       use Initcond
+      use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz
@@ -241,7 +242,7 @@ module Entropy
         case('zero', '0'); f(:,:,:,iss) = 0.
         case('const_ss'); f(:,:,:,iss) = ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
-        case('isothermal'); call isothermal_entropy(f)
+        case('isothermal'); call isothermal_entropy(f,T0)
         case('Ferriere'); call ferriere(f) 
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
         case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -421,72 +422,6 @@ module Entropy
       if(ip==0) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
-!***********************************************************************
-    subroutine isothermal_entropy(f)
-!
-!  Isothermal stratification (for lnrho and ss)
-!  This routine should be independent of the gravity module used.
-!  When entropy is present, this module also initializes entropy.
-!
-!  Sound speed (and hence Temperature), is
-!  initialised to the reference value:
-!           sound speed: cs^2_0            from start.in  
-!           density: rho0 = exp(lnrho0)
-!
-!  11-jun-03/tony: extracted from isothermal routine in Density module
-!                  to allow isothermal condition for arbitrary density
-!  17-oct-03/nils: works also with lionization=T
-!
-!
-      use Mpicomm, only: stop_it
-      use Gravity
-      use Ionization
-
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: lnrho,ion_frac,tmp1,tmp2,ss,lnTT
-      integer :: li
-!
-!
-      if (lionization.or.lionization_fixed) then
-        lnTT=log(T0)-log(TT_ion)
-        do n=n1,n2
-          do m=m1,m2
-            do li=l1,l2
-              lnrho=f(li,m,n,ilnrho)
-              call yH_get(lnrho,T0,ion_frac)
-              if (ion_frac .eq. 1.) then
-                tmp1=0
-              else
-                tmp1=(1.-ion_frac)*(log(1-ion_frac)-lnrho_H)
-              endif
-              if (ion_frac .eq. 0.) then
-                tmp2=0
-              else
-                tmp2=ion_frac*(2*log(ion_frac)-lnrho_e-lnrho_p)
-              endif
-              ss=ss_ion*((lnTT*1.5+2.5-lnrho)*(1.+ion_frac+xHe)-tmp1-tmp2-xHe_term)
-              f(li,m,n,iss)=ss
-            enddo
-          enddo
-        enddo
-      else
-        do n=n1,n2
-          do m=m1,m2
-            f(l1:l2,m,n,iss)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
-            ! + other terms for sound speed not equal to cs_0
-          enddo
-        enddo
-      endif
-
-!
-!  cs2 values at top and bottom may be needed to boundary conditions.
-!  The values calculated here may be revised in the entropy module.
-!
-      cs2bot=cs20
-      cs2top=cs20
-     
-!
-    endsubroutine isothermal_entropy
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.75 2003-10-18 10:57:50 theine Exp $
+! $Id: noionization.f90,v 1.76 2003-10-18 19:47:10 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.75 2003-10-18 10:57:50 theine Exp $")
+           "$Id: noionization.f90,v 1.76 2003-10-18 19:47:10 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -365,6 +365,46 @@ module Ionization
       double precision :: tmp1,tmp2,varA
 !
     end subroutine yH_get
+!***********************************************************************
+    subroutine isothermal_entropy(f,T0)
+!
+!  Isothermal stratification (for lnrho and ss)
+!  This routine should be independent of the gravity module used.
+!  When entropy is present, this module also initializes entropy.
+!
+!  Sound speed (and hence Temperature), is
+!  initialised to the reference value:
+!           sound speed: cs^2_0            from start.in  
+!           density: rho0 = exp(lnrho0)
+!
+!  11-jun-03/tony: extracted from isothermal routine in Density module
+!                  to allow isothermal condition for arbitrary density
+!  17-oct-03/nils: works also with lionization=T
+!  18-oct-03/tobi: distributed across ionization modules
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, intent(in) :: T0
+      real, dimension(nx) :: lnrho,ss
+!
+      do n=n1,n2
+      do m=m1,m2
+        lnrho=f(l1:l2,m,n,ilnrho)
+        ss=-gamma1*(lnrho-lnrho0)/gamma
+          !+ other terms for sound speed not equal to cs_0
+        f(l1:l2,m,n,iss)=ss
+      enddo
+      enddo
+
+!
+!  cs2 values at top and bottom may be needed to boundary conditions.
+!  The values calculated here may be revised in the entropy module.
+!
+      cs2bot=cs20
+      cs2top=cs20
+!
+    endsubroutine isothermal_entropy
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)
