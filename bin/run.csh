@@ -29,16 +29,20 @@ rm -f STOP RELOAD fort.20
 
 # On Horseshoe cluster, initialize automatic copying
 # of snapshots back to the data directory
+# Also, copy executable to /scratch of master node
+# and start top command on all procs
 if ($hn =~ s[0-9]*p[0-9]*) then
   echo "Use options for the Horseshoe cluster"
   copy-snapshots -v >& copy-snapshots.log &
+  cp src/run.x /scratch/run.x
+  remote-top >& remote-top.log &
 endif
 
 # Run run.x
 date
-echo "$mpirun $mpirunops $npops src/run.x"
-echo $mpirun $mpirunops $npops src/run.x >>run_command.log
-time $mpirun $mpirunops $npops src/run.x
+echo "$mpirun $mpirunops $npops $run_x"
+echo $mpirun $mpirunops $npops $run_x >>run_command.log
+time $mpirun $mpirunops $npops $run_x
 date
 
 # On Horseshoe cluster, copy var.dat back to the data directory
