@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.116 2003-07-17 23:00:05 brandenb Exp $ 
+! $Id: param_io.f90,v 1.117 2003-07-20 06:47:25 brandenb Exp $ 
 
 module Param_IO
 
@@ -228,7 +228,7 @@ module Param_IO
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
-      call check_consistency_of_lperi('called from read_startpars')
+      call check_consistency_of_lperi('read_startpars')
 !
 !  in case of i/o error: print sample input list
 !
@@ -430,7 +430,7 @@ module Param_IO
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
-      call check_consistency_of_lperi('called from read_runpars')
+      call check_consistency_of_lperi('read_runpars')
 !
 !  in case of i/o error: print sample input list
 !
@@ -516,7 +516,7 @@ module Param_IO
         if (present(file)) then
           close(unit)
         endif
-
+!
       endif
 !
     endsubroutine print_runpars
@@ -533,7 +533,13 @@ module Param_IO
       logical :: lwarning=.true.
       integer :: j
 !
-      print*,'check_consistency_of_lperi: label=',label
+!  identifier
+!
+      if(lroot.and.ip<5) print*,'check_consistency_of_lperi: called from ',label
+!
+!  make the warnings less dramatic looking, if we are only in start
+!
+      if(label=='read_startpars') lwarning=.false.
 !
 !  check x direction
 !
@@ -557,8 +563,11 @@ module Param_IO
            call warning_lperi(lwarning,bcz,lperi,j)
 !
 !  print final warning
+!  make the warnings less dramatic looking, if we are only in start
 !
-      if(.not.lwarning) then
+      if(.not.lwarning.and.label=='read_startpars') then
+        print*,'check_consistency_of_lperi: dont worry, make sure run.in is ok!'
+      elseif(.not.lwarning.and.label/='read_startpars') then
         print*,'check_consistency_of_lperi: you better stop and check!'
         print*,'------------------------------------------------------'
         print*
