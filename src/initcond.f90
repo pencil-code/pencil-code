@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.111 2004-06-12 06:07:37 brandenb Exp $ 
+! $Id: initcond.f90,v 1.112 2004-06-13 13:24:06 ajohan Exp $ 
 
 module Initcond 
  
@@ -1085,7 +1085,7 @@ module Initcond
 !
 !  calculate sigma
 !
-      eps_ell=0.5
+      eps_ell=0.4
       if (lroot) print*,'vortex_2d: qshear,eps_ell=',qshear,eps_ell
       sigma=sqrt(2*qshear/(1.-eps_ell**2))
 !
