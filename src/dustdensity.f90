@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.79 2004-05-10 18:14:42 mee Exp $
+! $Id: dustdensity.f90,v 1.80 2004-05-11 08:00:58 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.79 2004-05-10 18:14:42 mee Exp $")
+           "$Id: dustdensity.f90,v 1.80 2004-05-11 08:00:58 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -366,9 +366,10 @@ module Dustdensity
       nd  = f(l1:l2,m,n,ind)
       rho = exp(f(l1:l2,m,n,ilnrho))
 !
-!  Dust growth due to condensation on grains
+!  Continuity equations for nd, md and mi.
 !
-      if (ldustgrowth) call dust_condensation(f,df,rho,rho1,TT1,nd,mfluxcond)
+     if (ldustcontinuity) &
+         call dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1,mfluxcond)
 !
 !  Calculate kernel of coagulation equation
 !
@@ -378,10 +379,9 @@ module Dustdensity
 !
       if (ldustcoagulation) call dust_coagulation(f,df,nd)
 !
-!  Continuity equations for nd, md and mi.
+!  Dust growth due to condensation on grains
 !
-     if (ldustcontinuity) &
-         call dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1,mfluxcond)
+      if (ldustgrowth) call dust_condensation(f,df,rho,rho1,TT1,nd,mfluxcond)
 !
 !  Loop over dust layers
 !
@@ -537,17 +537,13 @@ module Dustdensity
         do k=1,ndustspec
           dmdfac = surfd(k)*mfluxcond(l)/unit_md
           if (lmice) then
-            if (dmdfac < 0.) then
-              f(3+l,m,n,imd(k)) = f(3+l,m,n,imd(k)) - f(3+l,m,n,imi(k))
-              f(3+l,m,n,imi(k)) = 0.
-              f(3+l,m,n,ilncc)  = f(3+l,m,n,ilncc) - &
-                  rho1(l)*f(3+l,m,n,imi(k))*nd(l,k)*unit_md
-            elseif (nd(l,k) > 0.) then
-              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
-              df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
-              df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc) - &
-                   rho1(l)*dmdfac*nd(l,k)*unit_md
+            if (dmdfac < 0. .and. dt*(dmdfac + df(l,m,n,imi(k))) < -mi(k)) then
+              dmdfac = -mi(k)/dt-df(l,m,n,imi(k))
             endif
+            df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
+            df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
+            df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc) - &
+                 rho1(l)*dmdfac*nd(l,k)*unit_md
           else
             if (dmdfac < 0. .and. f(3+l,m,n,ilncc) >= 0.99*eps_ctog &
                 .and. lkeepinitnd) then
@@ -832,8 +828,7 @@ module Dustdensity
           if (lmice) then
             call gradf_upw1st(f,uud(:,:,k),imi(k),gmi(:,:,k))
             call dot_mn(uud(:,:,k),gmi(:,:,k),udgmi)
-            df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - &
-                rho1(:)*udgmi*nd(:,k)*unit_md
+            df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - udgmi
           endif
         endif
 
