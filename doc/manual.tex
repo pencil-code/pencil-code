@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -301,7 +301,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.108 $ $}
+\date{\today,~ $ $Revision: 1.109 $ $}
 
 % ====================================================================== %
 
@@ -333,7 +333,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.108 $ $}
+  \emph{\today,~ $ $Revision: 1.109 $ $}
 
   \vspace{\stretch{3}}
 
@@ -498,6 +498,7 @@ Use of the PPARC supported supercomputers in St Andrews (mhd) and
 Leicester (ukaff) is acknowledged. We also acknowledge use of the
 512 processor Beowulf cluster in Odense (Horseshoe).
 
+\clearpage
 \tableofcontents
 \clearpage
 \pagestyle{fancy}
@@ -1082,9 +1083,9 @@ classes (like \file[spher/]{spher} for spherical calculations, or
 \file[kinematic/]{kinematic} for kinematic dynamo simulations.
 The current list of classes in our own \file{pencil-runs} repository is
 \begin{verbatim}
-   4 1d-tests/    4 OLD/          4 convstar/    4 forced/       4 radiation/
-   4 2d-tests/    4 README        4 disc/        4 kinematic/    4 rings/
-   4 CVS/         4 buoy_tube/    4 discont/     4 pass_only/    4 slab_conv/
+   1d-tests/    OLD/          convstar/    forced/       radiation/
+   2d-tests/    README        disc/        kinematic/    rings/
+   CVS/         buoy_tube/    discont/     pass_only/    slab_conv/
 \end{verbatim}
 The directory \file{forced/} contains some forced turbulence runs (both
 magnetic and nonmagnetic);
@@ -1423,13 +1424,26 @@ quantities \code{bxmz} and \code{bymz} are set.
 \index{Scripts}
 
 \begin{description}
-  \item[adapt-mkfile]
-  \item[setup-src]
-  \item[new]
-  \item[nl2idl]
-  \item[timestr]
-  \item[x]
-  \item[tsnap]
+\item[adapt-mkfile]
+\item[auto-test]
+\item[copy-snapshots]
+\item[cvs-add-rundir]
+\item[cvsci_run]
+\item[getconf.csh]
+\item[gpgrowth]
+\item[local]
+\item[mkcparam]
+\item[mkdotin]
+\item[mkinpars]
+\item[new]
+\item[nl2idl]
+\item[own-risk]
+\item[run.csh]
+\item[setup-src]
+\item[start.csh]
+\item[timestr]
+\item[tst.csh]
+\item[x]
 \end{description}
 
 \vspace{5cm}
@@ -1508,7 +1522,7 @@ As an example, we give here the start parameters for
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $',
+  cvsid='$Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $',
   random_gen='nr_f90'
 /
 &hydro_init_pars
@@ -1535,7 +1549,7 @@ As an example, we give here the run parameters for
 \file{samples/helical-MHDturb}
 \begin{verbatim}
 &run_pars
-  cvsid='$Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $',
+  cvsid='$Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $',
   nt=10, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen_tmp='nr_f90'
@@ -3653,7 +3667,7 @@ the latest set of parameters, you need to look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $ $}
 
 
 \end{document}
