@@ -1,4 +1,4 @@
-$Id: README,v 1.5 2003-07-29 09:20:42 brandenb Exp $
+$Id: README,v 1.6 2003-11-15 19:03:25 brandenb Exp $
 
 In manual.tex we try to keep a reasonably up-to-date description of the code.
 For latex installations that don't have some of the less frequent style files,
@@ -8,4 +8,16 @@ you TeX path.
 
 Note that you need to make sure a sufficiently recent version of
 index.sty is first in your TEXINPUTS. The Makefile takes care of this.
+
+-------------------------------------------------------------------------------
+make faq
+can lead to problems. As root, edit the file texmf.cnf as follows:
+< main_memory = 263000 % words of inimemory available; also applies to inimf&mp
+> main_memory = 383999 % words of inimemory available; also applies to inimf&mp
+
+< hash_extra = 0
+> hash_extra = 15000
+
+< max_strings = 15000
+> max_strings = 30000
 
