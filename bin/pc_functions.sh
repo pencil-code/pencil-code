@@ -214,8 +214,11 @@ queue_submit()
   echo "                                              "  
   echo "  You may use and variables like \$ncpus defined by running the    "
   echo "  pc_config.sh script. \$1 will contain the name of the executable "  
-  echo "  script suggested for submission. $2, ..., etc. will contain any  "
-  echo "  other parameters passed on the pc_qsub command line.             "
+  echo "  script suggested for submission. \$2 will contain the suggested  "
+  echo "  for the job. \$3, ..., etc. will contain any other parameters    "
+  echo "  passed on the pc_qsub command line.                              "
+  echo "    NB. one may use 'shift 2' to get rid of \$1, \$2 then \$@ to   "
+  echo "        refer to the rest of the parameters.                       "
   echo "-------------------------------------------------------------------"  
 }
 
