@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.12 2002-05-01 10:13:44 brandenb Exp $
+! $Id: mpicomm.f90,v 1.13 2002-05-01 17:15:52 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -102,7 +102,7 @@ module Mpicomm
 !  position on the processor grid
 !  x is fastest direction, z slowest
 !
-      ipx = 1
+      ipx = 0
       ipy = modulo(iproc, nprocy)
       ipz = iproc/(nprocy)
 !
