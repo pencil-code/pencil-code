@@ -1,0 +1,278 @@
+//
+// time: Fri Aug 30 14:12:11 1996
+//
+// version: 3.0.0 (format), 3.1.2 (DX)
+//
+//
+// Begin MDF
+// MODULE Antialias
+// CATEGORY Rendering
+// DESCRIPTION Renders an object at 2x res and then reduces it
+// INPUT object; object; (none);  
+// INPUT camera; object; (no default);  
+// INPUT factor; value list or field; 2;  
+// OUTPUT object; field or group;  
+// End MDF
+//
+// comment: Antialias Macro
+// comment: ------------
+// comment: 
+// comment: Category: Rendering
+// comment: 
+// comment: (C) Duncan Galloway, 1996
+// comment: duncang@ibm590.aims.gov.au
+// comment: 
+// comment: This macro accepts an object to be rendered, a camera, and an "oversampling factor".
+// comment: 
+// comment: The macro renders the object at a size equal to the resolution specified in the camera multiplied by the oversampling factor.  It then reduces the size of the image by two using the Reduce module.
+// workspace: width = 837, height = 737
+// layout: snap = 0, width = 50, height = 50, align = UL
+//
+macro Antialias(
+ object
+,camera
+,factor = 2
+) -> (
+ object
+) {
+    // 
+    // node Input[46]: x = 52, y = 26, inputs = 0, label = Input
+    // parameter: position = 1, name = 'object', value = ' ', descriptive = 0, description = ' ', required = 1, visible = 1
+    //
+Antialias_Input_46_out_1 = object;
+    // 
+    // node Input[47]: x = 232, y = 30, inputs = 0, label = Input
+    // parameter: position = 2, name = 'camera', value = '(no default)', descriptive = 1, description = ' ', required = 0, visible = 1
+    //
+Antialias_Input_47_out_1 = camera;
+    // 
+    // node Inquire[12]: x = 252, y = 275, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "camera to"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_12_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera to",
+    NULL
+    ) [instance: 12, cache: 1];
+    // 
+    // node Inquire[13]: x = 292, y = 213, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "camera from"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_13_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera from",
+    NULL
+    ) [instance: 13, cache: 1];
+    // 
+    // node Inquire[16]: x = 148, y = 127, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "is camera perspective"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_16_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "is camera perspective",
+    NULL
+    ) [instance: 16, cache: 1];
+    // 
+    // node Transmitter[113]: x = 132, y = 203, inputs = 1, label = perspective
+    //
+perspective = Antialias_Inquire_16_out_1;
+    // 
+    // node Receiver[191]: x = 345, y = 125, inputs = 1, label = perspective
+    //
+Antialias_Receiver_191_out_1 = perspective;
+    // 
+    // node Compute[101]: x = 353, y = 196, inputs = 2, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "1-$0"
+    // expression: value = 1-a
+    // name[2]: value = a
+    //
+Antialias_Compute_101_out_1 = 
+    Compute(
+    "1-$0",
+    Antialias_Receiver_191_out_1
+    ) [instance: 101, cache: 1];
+    // 
+    // node Inquire[14]: x = 422, y = 198, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "camera width"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_14_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera width",
+    NULL
+    ) [instance: 14, cache: 1];
+    // 
+    // node Switch[25]: x = 416, y = 276, inputs = 2, label = Switch
+    //
+Antialias_Switch_25_out_1 = 
+    Switch(
+    Antialias_Compute_101_out_1,
+    Antialias_Inquire_14_out_1
+    ) [instance: 25, cache: 1];
+    // 
+    // node Inquire[15]: x = 486, y = 200, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "camera resolution"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_15_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera resolution",
+    NULL
+    ) [instance: 15, cache: 1];
+    // 
+    // node Input[48]: x = 549, y = 12, inputs = 0, label = Input
+    // parameter: position = 3, name = 'factor', value = '2', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+Antialias_Input_48_out_1 = factor;
+    // 
+    // node Compute[100]: x = 476, y = 277, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0*$1"
+    // expression: value = a*b
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+Antialias_Compute_100_out_1 = 
+    Compute(
+    "$0*$1",
+    Antialias_Inquire_15_out_1,
+    Antialias_Input_48_out_1
+    ) [instance: 100, cache: 1];
+    // 
+    // node Inquire[20]: x = 614, y = 215, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "camera aspect"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_20_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera aspect",
+    NULL
+    ) [instance: 20, cache: 1];
+    // 
+    // node Inquire[18]: x = 551, y = 208, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "camera up"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_18_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera up",
+    NULL
+    ) [instance: 18, cache: 1];
+    // 
+    // node Receiver[192]: x = 610, y = 117, inputs = 1, label = perspective
+    //
+Antialias_Receiver_192_out_1 = perspective;
+    // 
+    // node Inquire[17]: x = 700, y = 124, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "camera fieldofview"
+    // input[3]: visible = 0
+    //
+Antialias_Inquire_17_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera fieldofview",
+    NULL
+    ) [instance: 17, cache: 1];
+    // 
+    // node Compute[103]: x = 675, y = 224, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0*180/3.14159265"
+    // expression: value = a*180/3.14159265
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+Antialias_Compute_103_out_1 = 
+    Compute(
+    "$0*180/3.14159265",
+    Antialias_Inquire_17_out_1,
+    NULL
+    ) [instance: 103, cache: 1];
+    // 
+    // node Switch[26]: x = 624, y = 308, inputs = 2, label = Switch
+    //
+Antialias_Switch_26_out_1 = 
+    Switch(
+    Antialias_Receiver_192_out_1,
+    Antialias_Compute_103_out_1
+    ) [instance: 26, cache: 1];
+    // 
+    // node Inquire[19]: x = 764, y = 226, inputs = 3, label = Inquire
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "camera background"
+    //
+Antialias_Inquire_19_out_1 = 
+    Inquire(
+    Antialias_Input_47_out_1,
+    "camera background",
+    NULL
+    ) [instance: 19, cache: 1];
+    // 
+    // node Camera[1]: x = 403, y = 391, inputs = 9, label = Camera
+    //
+Antialias_Camera_1_out_1 = 
+    Camera(
+    Antialias_Inquire_12_out_1,
+    Antialias_Inquire_13_out_1,
+    Antialias_Switch_25_out_1,
+    Antialias_Compute_100_out_1,
+    Antialias_Inquire_20_out_1,
+    Antialias_Inquire_18_out_1,
+    Antialias_Receiver_192_out_1,
+    Antialias_Switch_26_out_1,
+    Antialias_Inquire_19_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node Render[1]: x = 183, y = 460, inputs = 3, label = Render
+    //
+Antialias_Render_1_out_1 = 
+    Render(
+    Antialias_Input_46_out_1,
+    Antialias_Camera_1_out_1,
+    NULL
+    ) [instance: 1, cache: 1];
+    // 
+    // node Reduce[1]: x = 198, y = 568, inputs = 2, label = Reduce
+    // input[2]: defaulting = 0, visible = 1, type = 16777221, value = NULL
+    //
+Antialias_Reduce_1_out_1 = 
+    Reduce(
+    Antialias_Render_1_out_1,
+    NULL
+    ) [instance: 1, cache: 1];
+    // 
+    // node Output[9]: x = 205, y = 674, inputs = 1, label = Output
+    // parameter: position = 1, name = 'object', value = ' ', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+object = Antialias_Reduce_1_out_1;
+// network: end of macro body
+}
+Antialias_Input_46_out_1 = NULL;
+Antialias_Input_47_out_1 = NULL;
+Antialias_Inquire_12_out_1 = NULL;
+Antialias_Inquire_13_out_1 = NULL;
+Antialias_Inquire_16_out_1 = NULL;
+Antialias_Transmitter_113_out_1 = NULL;
+Antialias_Receiver_191_out_1 = NULL;
+Antialias_Compute_101_out_1 = NULL;
+Antialias_Inquire_14_out_1 = NULL;
+Antialias_Switch_25_out_1 = NULL;
+Antialias_Inquire_15_out_1 = NULL;
+Antialias_Input_48_out_1 = NULL;
+Antialias_Compute_100_out_1 = NULL;
+Antialias_Inquire_20_out_1 = NULL;
+Antialias_Inquire_18_out_1 = NULL;
+Antialias_Receiver_192_out_1 = NULL;
+Antialias_Inquire_17_out_1 = NULL;
+Antialias_Compute_103_out_1 = NULL;
+Antialias_Switch_26_out_1 = NULL;
+Antialias_Inquire_19_out_1 = NULL;
+Antialias_Camera_1_out_1 = NULL;
+Antialias_Render_1_out_1 = NULL;
+Antialias_Reduce_1_out_1 = NULL;

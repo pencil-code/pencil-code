@@ -1,0 +1,146 @@
+//
+// time: Wed Apr  3 14:08:27 2002
+//
+// version: 3.1.2 (format), 4.1.3 (DX)
+//
+//
+// Begin MDF
+// MODULE StreamlineBi
+// CATEGORY Pencil Code
+// DESCRIPTION Bidirectional Streamline
+// INPUT data; field; (none); vector field
+// INPUT start; vector list or geometry field; (no default); starting point(s)
+// INPUT time; scalar list; (no default); starting time(s)
+// INPUT head; scalar; (no default); ending time
+// INPUT curl; vector field; (no default); curl to use for twist
+// INPUT flag; flag; (no default); whether to use curl to generate twist
+// INPUT stepscale; value; (no default); step length as fraction of element size
+// OUTPUT line; group; the resulting streamline(s)
+// End MDF
+// workspace: width = 602, height = 502
+// layout: snap = 0, width = 40, height = 40, align = NN
+//
+// comment: Bi-directional streamline module
+// comment: --------------------------------
+// comment: 
+// comment: (C) Wolfgang Dobler, 2005
+// comment: WDobler@ucalgary.ca
+// comment: 
+// comment:  This file is free software; you can redistribute it and/or
+// comment:  modify it under the terms of the GNU General Public License
+// comment:  as published by the Free Software Foundation; either version 2,
+// comment:  or (at your option) any later version.
+//
+macro StreamlineBi(
+ data
+,start
+,time
+,head
+,curl
+,flag
+,stepscale
+) -> (
+ line
+) {
+    // 
+    // node Input[3]: x = 80, y = 40, inputs = 0, label = Input
+    // parameter: position = 1, name = 'data', value = '(none)', descriptive = 1, description = 'vector field', required = 1, visible = 1
+    //
+StreamlineBi_Input_3_out_1 = data;
+    // 
+    // node Compute[2]: x = 80, y = 120, inputs = 2, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "-$0"
+    // expression: value = -ff
+    // name[2]: value = ff
+    //
+StreamlineBi_Compute_2_out_1 = 
+    Compute(
+    "-$0",
+    StreamlineBi_Input_3_out_1
+    ) [instance: 2, cache: 1];
+    // 
+    // node Input[4]: x = 159, y = 41, inputs = 0, label = Input
+    // parameter: position = 2, name = 'start', value = '(no default)', descriptive = 1, description = 'starting point(s)', required = 0, visible = 1
+    //
+StreamlineBi_Input_4_out_1 = start;
+    // 
+    // node Input[5]: x = 240, y = 40, inputs = 0, label = Input
+    // parameter: position = 3, name = 'time', value = '(no default)', descriptive = 1, description = 'starting time(s)', required = 0, visible = 1
+    //
+StreamlineBi_Input_5_out_1 = time;
+    // 
+    // node Input[6]: x = 320, y = 40, inputs = 0, label = Input
+    // parameter: position = 4, name = 'head', value = '(no default)', descriptive = 1, description = 'ending time', required = 0, visible = 1
+    //
+StreamlineBi_Input_6_out_1 = head;
+    // 
+    // node Input[7]: x = 400, y = 40, inputs = 0, label = Input
+    // parameter: position = 5, name = 'curl', value = '(no default)', descriptive = 1, description = 'curl to use for twist', required = 0, visible = 1
+    //
+StreamlineBi_Input_7_out_1 = curl;
+    // 
+    // node Input[8]: x = 480, y = 40, inputs = 0, label = Input
+    // parameter: position = 6, name = 'flag', value = '(no default)', descriptive = 1, description = 'whether to use curl to generate twist', required = 0, visible = 1
+    //
+StreamlineBi_Input_8_out_1 = flag;
+    // 
+    // node Input[9]: x = 560, y = 40, inputs = 0, label = Input
+    // parameter: position = 7, name = 'stepscale', value = '(no default)', descriptive = 1, description = 'step length as fraction of element size', required = 0, visible = 1
+    //
+StreamlineBi_Input_9_out_1 = stepscale;
+    // 
+    // node Streamline[2]: x = 80, y = 240, inputs = 7, label = Streamline
+    // input[3]: defaulting = 1, visible = 1, type = 16777221, value = { 0.0 }
+    // input[4]: defaulting = 1, visible = 1, type = 5, value = NULL
+    //
+StreamlineBi_Streamline_2_out_1 = 
+    Streamline(
+    StreamlineBi_Compute_2_out_1,
+    StreamlineBi_Input_4_out_1,
+    StreamlineBi_Input_5_out_1,
+    StreamlineBi_Input_6_out_1,
+    StreamlineBi_Input_7_out_1,
+    StreamlineBi_Input_8_out_1,
+    StreamlineBi_Input_9_out_1
+    ) [instance: 2, cache: 1];
+    // 
+    // node Streamline[1]: x = 360, y = 240, inputs = 7, label = Streamline
+    // input[3]: defaulting = 1, visible = 1, type = 16777221, value = { 0.0 }
+    // input[4]: defaulting = 1, visible = 1, type = 5, value = NULL
+    //
+StreamlineBi_Streamline_1_out_1 = 
+    Streamline(
+    StreamlineBi_Input_3_out_1,
+    StreamlineBi_Input_4_out_1,
+    StreamlineBi_Input_5_out_1,
+    StreamlineBi_Input_6_out_1,
+    StreamlineBi_Input_7_out_1,
+    StreamlineBi_Input_8_out_1,
+    StreamlineBi_Input_9_out_1
+    ) [instance: 1, cache: 1];
+    // 
+    // node Collect[3]: x = 280, y = 360, inputs = 2, label = Collect
+    //
+StreamlineBi_Collect_3_out_1 = 
+    Collect(
+    StreamlineBi_Streamline_2_out_1,
+    StreamlineBi_Streamline_1_out_1
+    ) [instance: 3, cache: 1];
+    // 
+    // node Output[2]: x = 280, y = 440, inputs = 1, label = Output
+    // parameter: position = 1, name = 'line', value = ' ', descriptive = 0, description = 'the resulting streamline(s)', required = 0, visible = 1
+    //
+line = StreamlineBi_Collect_3_out_1;
+// network: end of macro body
+}
+StreamlineBi_Input_3_out_1 = NULL;
+StreamlineBi_Compute_2_out_1 = NULL;
+StreamlineBi_Input_4_out_1 = NULL;
+StreamlineBi_Input_5_out_1 = NULL;
+StreamlineBi_Input_6_out_1 = NULL;
+StreamlineBi_Input_7_out_1 = NULL;
+StreamlineBi_Input_8_out_1 = NULL;
+StreamlineBi_Input_9_out_1 = NULL;
+StreamlineBi_Streamline_2_out_1 = NULL;
+StreamlineBi_Streamline_1_out_1 = NULL;
+StreamlineBi_Collect_3_out_1 = NULL;
