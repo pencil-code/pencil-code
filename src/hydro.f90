@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.156 2004-04-08 15:57:25 dobler Exp $
+! $Id: hydro.f90,v 1.157 2004-04-10 18:54:54 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -46,7 +46,7 @@ module Hydro
   real :: ampl_diffrot=0.,Omega_int=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   integer :: novec,novecmax=nx*ny*nz/4
-  logical :: ldamp_fade=.false.,lOmega_int=.false.
+  logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -55,7 +55,7 @@ module Hydro
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
        lOmega_int,Omega_int, &
-       ldamp_fade, &
+       ldamp_fade, lupw_uu, &
        othresh,othresh_per_orms
 ! end geodynamo
 
@@ -109,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.156 2004-04-08 15:57:25 dobler Exp $")
+           "$Id: hydro.f90,v 1.157 2004-04-10 18:54:54 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -382,8 +382,8 @@ module Hydro
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock
-      real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock
+      real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock,gui
+      real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock,ugui
       real, dimension (nx) :: u2u13
       real :: c2,s2
       integer :: i,j
@@ -435,8 +435,25 @@ module Hydro
 !
 !  advection term
 !
-      if (ldebug) print*,'duu_dt: call multmv_mn(uij,uu,ugu)'
-      call multmv_mn(uij,uu,ugu)
+      if (.not. lupw_uu) then
+        if (ldebug) print*,'duu_dt: call multmv_mn(uij,uu,ugu)'
+        call multmv_mn(uij,uu,ugu)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
+      else ! upwinding of velocity -- experimental and inefficent
+        if (headtt) print*,'duu_dt: upwinding advection term; use at own risk!'
+        !
+        call grad(f,iux,gui)    ! gu=grad ux
+        call u_dot_gradf(f,iux,gui,uu,ugui,UPWIND=lupw_uu)
+        ugu(:,1) = ugui
+        !
+        call grad(f,iuy,gui)    ! gu=grad ux
+        call u_dot_gradf(f,iuy,gui,uu,ugui,UPWIND=lupw_uu)
+        ugu(:,2) = ugui
+        !
+        call grad(f,iuz,gui)    ! gu=grad ux
+        call u_dot_gradf(f,iuz,gui,uu,ugui,UPWIND=lupw_uu)
+        ugu(:,3) = ugui
+      endif
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
 !
 !  Coriolis force, -2*Omega x u
