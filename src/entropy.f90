@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.206 2003-10-07 14:20:10 mee Exp $
+! $Id: entropy.f90,v 1.207 2003-10-10 01:26:43 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -92,7 +92,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.206 2003-10-07 14:20:10 mee Exp $")
+           "$Id: entropy.f90,v 1.207 2003-10-10 01:26:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -841,15 +841,6 @@ module Entropy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
       if (headtt) print*,'calc_heatcond_constchi: added thdiff'
 !
-!  shock entropy diffusivity
-!
-      if(chi_shock/=0.) then
-        if(lroot.and.ip<16) print*, &
-                      'calc_heatcond_constchi: use shock diffusion'
-        call dot_mn(glnP,gss,g2)
-        thdiff = thdiff + chi_t*(del2ss+g2)
-      endif
-!
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
@@ -911,7 +902,7 @@ module Entropy
 !  gamma*chi*del2ss
 !
 !  NEED TO FIX THIS
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi_shock*maxval(f(l1:l2,m,n,ishock)))
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_shock

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.115 2003-10-07 14:20:10 mee Exp $
+! $Id: density.f90,v 1.116 2003-10-10 01:26:43 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -14,7 +14,8 @@ module Density
   real :: cs20, lnrho0
   logical :: lcalc_cp = .false.
   real :: ampllnrho=0., gamma=5./3., widthlnrho=.1
-  real :: rho_left=1., rho_right=1., cdiffrho=0., diffrho=0., lnrho_const=0.
+  real :: rho_left=1., rho_right=1., cdiffrho=0., diffrho=0., diffrho_shock=0.
+  real :: lnrho_const=0.
   real :: cs2bot=1., cs2top=1., gamma1,amplrho=0
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
@@ -36,7 +37,7 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho
 
   namelist /density_run_pars/ &
-       cs0,rho0,gamma,cdiffrho,diffrho,gradlnrho0, &
+       cs0,rho0,gamma,cdiffrho,diffrho,diffrho_shock,gradlnrho0, &
        cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho, &
        lupw_lnrho
   ! diagnostic variables (needs to be consistent with reset list below)
@@ -73,7 +74,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.115 2003-10-07 14:20:10 mee Exp $")
+           "$Id: density.f90,v 1.116 2003-10-10 01:26:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -389,7 +390,7 @@ module Density
         !
         if (lroot) print*, &
               'init_lnrho: No such value for initlnrho: ', trim(initlnrho)
-        call stop_it("")
+        call stop_it('')
 
       endselect
 !
@@ -557,14 +558,24 @@ module Density
 !
       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
 !
-!  mass diffusion, in absolute units (similar to nu, chi, and eta)
+!  mass diffusion and shock diffusion, in absolute units (similar to nu, chi, and eta)
 !
-      if (diffrho/=0.) then
-        if(headtt) print*,'dlnrho_dt: diffrho=',diffrho
+      if ((diffrho/=0.) .or. (diffrho_shock/=0.)) then
+      
         call del2(f,ilnrho,del2lnrho)
         call dot2_mn(glnrho,glnrho2)
-        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
-        maxdiffus=amax1(maxdiffus,diffrho)
+     
+        if (diffrho/=0.) then
+          if(headtt) print*,'dlnrho_dt: diffrho=',diffrho
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
+          maxdiffus=amax1(maxdiffus,diffrho)
+        endif
+!
+        if (diffrho_shock/=0.) then
+          if(headtt) print*,'dlnrho_dt: diffrho_shock=',diffrho_shock
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho_shock*f(l1:l2,m,n,ishock)*(del2lnrho+glnrho2)
+          maxdiffus=amax1(maxdiffus,diffrho_shock*maxval(f(l1:l2,m,n,ishock)))
+        endif
       endif
 !
 !  add advection of imposed constant gradient of lnrho (called gradlnrho0)
