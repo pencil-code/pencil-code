@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.19 2004-01-04 14:12:54 ajohan Exp $
+;  $Id: varcontent.pro,v 1.20 2004-03-04 10:48:59 mee Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -199,6 +199,6 @@ end
 ; will have been filled in where i?????? has not been
 ; set above.
 varcontent[0].variable = 'UNKNOWN'
-varcontent[0].idlvar   = 'dummy'
+varcontent[0].idlvar   = 'UNKNOWN'
 varcontent[0].idlinit  = '0.'
 varcontent[0].skip  = 0

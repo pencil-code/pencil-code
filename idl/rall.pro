@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.38 2004-02-23 13:02:11 dobler Exp $
+;;;  $Id: rall.pro,v 1.39 2004-03-04 10:48:58 mee Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -165,6 +165,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   z[i0z:i1z] = zloc[i0zloc:i1zloc]
 
   for iv=1,totalvars do begin
+    if (varcontent[iv].variable eq 'UNKNOWN') then continue
     cmd =   varcontent[iv].idlvar $
           + "[i0x:i1x,i0y:i1y,i0z:i1z,*]=" $
           + varcontent[iv].idlvarloc $

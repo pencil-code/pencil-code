@@ -1,4 +1,4 @@
-;  $Id: varcontent_stats.pro,v 1.6 2004-02-03 10:10:59 ajohan Exp $
+;  $Id: varcontent_stats.pro,v 1.7 2004-03-04 10:48:59 mee Exp $
 ;
 ;  Summarize data
 ;  omit ghost zones in the analysis
@@ -10,6 +10,7 @@ if (quiet le 2) then begin
   ;
   ;
   for iv=1,totalvars do begin
+    if (varcontent[iv].variable eq 'UNKNOWN') then continue
     varname = varcontent[iv].idlvar
     if (varcontent[iv].skip eq 2) then begin
       for j=0,2 do begin
