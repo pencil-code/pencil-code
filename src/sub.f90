@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.119 2003-06-17 22:52:39 dobler Exp $ 
+! $Id: sub.f90,v 1.120 2003-06-18 13:14:15 dobler Exp $ 
 
 module Sub 
 
@@ -1189,6 +1189,10 @@ module Sub
 !  upwind correction (currently just for z-direction)
 !
       if (upwnd) then
+        call der6(f,k,del6f,1,UPWIND=.true.)
+        ugradf = ugradf - abs(uu(:,1))*del6f
+        call der6(f,k,del6f,2,UPWIND=.true.)
+        ugradf = ugradf - abs(uu(:,2))*del6f
         call der6(f,k,del6f,3,UPWIND=.true.)
         ugradf = ugradf - abs(uu(:,3))*del6f
       endif

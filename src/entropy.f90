@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.170 2003-06-17 22:52:39 dobler Exp $
+! $Id: entropy.f90,v 1.171 2003-06-18 13:14:15 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -29,6 +29,7 @@ module Entropy
   real :: heat_uniform=0.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
+  logical :: lupw_ss=.false.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
 
   ! input parameters
@@ -46,7 +47,7 @@ module Entropy
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
-       yH0,fHe,heat_uniform
+       yH0,fHe,heat_uniform,lupw_ss
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -83,7 +84,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.170 2003-06-17 22:52:39 dobler Exp $")
+           "$Id: entropy.f90,v 1.171 2003-06-18 13:14:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -486,8 +487,7 @@ module Entropy
 !
 !  advection term
 !
-      ! call u_dot_gradf(f,ient,gss,uu,ugss,UPWIND=.true.)
-      call u_dot_gradf(f,ient,gss,uu,ugss)
+      call u_dot_gradf(f,ient,gss,uu,ugss,UPWIND=lupw_ss)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
 !
 !  1/T is now calculated in thermodynamics

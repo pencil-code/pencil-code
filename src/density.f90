@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.96 2003-06-17 22:52:39 dobler Exp $
+! $Id: density.f90,v 1.97 2003-06-18 13:14:15 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -22,6 +22,7 @@ module Density
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
   real :: frec_lnrho=1,ampl_osc_lnrho=1e-3
   integer:: isothtop=0
+  logical :: lupw_lnrho=.false.
   character (len=labellen) :: initlnrho='zero', initlnrho2='zero'
 
   namelist /density_init_pars/ &
@@ -33,8 +34,8 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho
 
   namelist /density_run_pars/ &
-       cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho
-
+       cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho, &
+       lupw_lnrho
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ekin=0,i_rhom=0,i_ekintot=0
 
@@ -69,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.96 2003-06-17 22:52:39 dobler Exp $")
+           "$Id: density.f90,v 1.97 2003-06-18 13:14:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -433,8 +434,7 @@ module Density
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       call grad(f,ilnrho,glnrho)
-      ! call u_dot_gradf(f,ilnrho,glnrho,uu,uglnrho,UPWIND=.true.)
-      call u_dot_gradf(f,ilnrho,glnrho,uu,uglnrho)
+      call u_dot_gradf(f,ilnrho,glnrho,uu,uglnrho,UPWIND=lupw_lnrho)
 !
 !  continuity equation
 !
