@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.135 2002-11-15 14:28:03 ngrs Exp $
+! $Id: entropy.f90,v 1.136 2002-11-17 14:24:42 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -21,6 +21,7 @@ module Entropy
   real :: FbotKbot=impossible,Kbot=impossible
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
+  logical :: linterstellar=.false.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
 
   ! input parameters
@@ -34,7 +35,8 @@ module Entropy
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
-       chi,lcalc_heatcond_constchi,lmultilayer,Kbot
+       chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
+       linterstellar 
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0,i_ugradpm=0
@@ -71,7 +73,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.135 2002-11-15 14:28:03 ngrs Exp $")
+           "$Id: entropy.f90,v 1.136 2002-11-17 14:24:42 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -380,6 +382,9 @@ module Entropy
 !
       if ((luminosity /= 0) .or. (cool /= 0)) &
            call calc_heat_cool(f,df,rho1,cs2,TT1)
+!
+      if (linterstellar) &
+           call calc_heat_cool_interstellar(f,df,rho1,cs2,TT1)
 !
 !  possibility of entropy relaxation in exterior region
 !
