@@ -44,11 +44,13 @@
                          % unnecessarily) resets this and make table of
                          % contents disappear
 
+\usepackage{expdlist}
 \usepackage{booktabs}
 \usepackage{longtable}
 
 \usepackage{fancyvrb}
 \usepackage{alltt}
+\usepackage{underscore}
 
 \usepackage{graphicx}
 \usepackage{parskip,a4,vmargin}
@@ -177,7 +179,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.34 $ $}
+\date{\today,~ $ $Revision: 1.35 $ $}
 
 % ====================================================================== %
 
@@ -206,7 +208,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.34 $ $}
+  \emph{\today,~ $ $Revision: 1.35 $ $}
 
 
 \end{center}
@@ -239,12 +241,16 @@ terms of a permission notice identical to this one.
 
 This code was originally developed at the Turbulence Summer School of the
 Helmholtz Institute in Potsdam (2001).
-Often people asked us whether our code is publicly available.
-Although in many fields of research codes are publicly available
-(e.g.\ some SPH and PPM codes), this does not generally seem to be
+While some SPH and PPM codes for hydrodynamics and magnetohydrodynamics
+are publicly available, this does not generally seem to be
 the case for higher order finite-difference or spectral codes.
-That's why we decided to make it a bit more user friendly (than it was before)
-and to put it on a public cvs repository.
+Having been approached by people interested in using our code, we have
+decided to make it as flexible as possible and as user-friendly as seems
+reasonable, and to put it onto a public \name{CVS} repository.
+The code can certainly not be treated as a black box (no code can), and in
+order to solve a new problem in an optimal way, you will need to find your
+own set of parameters, in particular you may need to add or increase
+artificial viscosity and diffusivities.
 
 The code is primarily designed to deal with weakly compressible turbulent
 flows, which is why we use high-order first and second derivatives.
@@ -291,26 +297,38 @@ without MPI libraries (e.g.~a notebook computer).
 Ghost zones are used to implement boundary conditions on physical and
 processor boundaries.
 
-The various physics is invoked by linking the corresponding modules in the
-Makefile. The main reason for this procedure is to have a convenient way
-of stripping off extra ballast from the code, so it compiles faster and
-uses less memory. It is also a convenient way of changing the physics
-without using messy switches.
+The code achieves a high level of flexibility by encapsulating individual
+physical processes and variables in individual \name{modules}, which can
+be swithced on or off in the file \file{Makefile.local} in the local
+\file{src} directory.
+In order to avoid excessive use of preprocessor directives, we were lead
+to create one dummy module for each physics module.
+For nonmagnetic hydrodynamics, e.g., one will use the module
+\file{nomagnetic.f90}:
+\begin{Verbatim}
+  MAGNETIC=nomagnetic
+\end{Verbatim}
+while for MHD simulations, \file{magnetic.f90} will be used:
+\begin{Verbatim}
+  MAGNETIC=magnetic
+\end{Verbatim}
+Note that the term \name{module} as used here is not identical to Fortran
+modules: both \file{magnetic.f90} and \file{nomagnetic.f90} define an F90
+module named \emph{Magnetic} --- this is the basis of the switching
+mechanism we are using.
 
-The parameter input file (\var{run.in}) is read whenever there exists the
-file \file{RELOAD} in the run directory. This allows one
-to change parameters on the fly. This can be useful if one
-wants to stop the code in a graceful way at an earlier time,
-if one wants to change the length of the time step,
-the viscosity or other diffusion parameters,
-or (in forced calculations) the sound speed. Obviously, in
-some cases changing certain parameters on the fly could be totally crazy,
-but it's up to the user to decide.
-One can also change, on the fly, the format of some output diagnostics
-and one can invoke new output diagnostics that might have been too time
-consuming to calculate during the early relaxation phase. All this can
-be done during the run, so one does not run the risk of losing ones
-position in the queue.
+Input parameters (in the files \file{start.in}, \file{run.in}) can be
+changed without recompilation.
+What is more, one can change the list of variables for monitoring
+(diagnostic) output on the fly, and there are mechanisms for making the
+code reload new parameters or exit gracefully.
+
+The requirements for using the Pencil-MPI code are modest: you can use it
+on any Unix system with a F90/F95 compiler. If you have \name{IDL} as
+well, you will be able to visualise the results, but other tools such as
+\name{DX} (OpenDX, data explorer) can also be used.
+
+\bigskip
 
 We will be happy to include user-supplied changes and updates to the code
 in future releases and welcome any feedback.
@@ -328,16 +346,78 @@ in future releases and welcome any feedback.
 
 % ====================================================================== %
 
+\section{System Requirements}
+
+To use the code, you will need the following:
+
+\begin{enumerate}
+
+  \item Absolutely needed:
+    \begin{itemize}
+    \item F90 or F95 compiler
+    \end{itemize}
+
+\item Used heavily (if you don't have one of these, you will need to
+  adjust many things manually):
+  \begin{itemize}
+  \item a \name{Unix}-type system with \name{make} and \name{csh}
+  \item \name{Perl} (remember: if it doesn't run Perl, it's not a
+    computer)
+  \end{itemize}
+
+\item The follwing are dispensible, but enhance functionality in one ore
+  the other way:
+  \begin{itemize}
+  \item an \name{MPI} implementation (for parallelisation on
+    multiprocessor systems)
+  \item a \name{C} compiler (for some debugging functionality)
+  \item \name{DX} alias \name{OpenDX} or \name{data explorer} (for
+    visualisation of results)
+  \item \name{IDL} (for visualisation of results; the 7-minute demo
+    license will do for many applications)
+  \end{itemize}
+
+\end{enumerate}
+
+If you like the exotic and get the code running in a \name{Cygwin}
+environment, please let us know.
+
+
+% ====================================================================== %
+
 \section{Obtaining the Code}
 
-To obtain the MHD code, you should use \name{CVS} (concurrent version
-system, see \url{http://www.cvshome.org/}).
-You proceed as follows:
+There are two ways to obtain and install the code: If you want to use a
+stable release, you can download it as a tarball and unpack it.
+If you prefer to use the latest version we are experimenting with,
+this is provided for by anonymous CVS access.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Obtaining and unpacking the tarball}
+
+\begin{enumerate}
+\item Download the tarball from
+  \path{http://www.nordita.dk/~brandenb/MHD-code/download/pencil_modular.tgz}
+\item Put it into a convenient directory and unpack it:
+  \begin{alltt}
+  \prompt{unix> } mv pencil_modular.tgz somwhere/; cd somewhere
+  \prompt{unix> } gunzip pencil_modular.tgz
+  \prompt{unix> } tar xf pencil_modular.tar \
+  \end{alltt}
+\item {}[Optional:] Rename the directory \file{pencil_modular} to \file{mhd}
+  if you want to be consistent with the notation used throughout this
+  manual.
+\end{enumerate}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Obtaining the code via anonymous CVS}
 
 \begin{enumerate}
 
 \item Get a \name{CVS} client from \url{http://www.cvshome.org/} and
-  install it (on your laptop and any other machine you want to run on).
+  install it (on any machine where you want to run the code).
   Alternatively, just copy the executable from a binary compatible
   machine.
 
@@ -349,9 +429,10 @@ This needs then to be automatically put into the cvs passwd file.}
 \item Set your environment variable \env{CVSROOT} (you probably want to
   put this into your \file{.cshrc} or \file{.profile} setup files):
   \begin{alltt}
-  \prompt{csh> } setenv CVSROOT :pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS \
+  \prompt{csh> } setenv CVSROOT \bs
+          :pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS \
   \end{alltt}
-  or (if you are running bash)
+  (all in one line) or (if you are running Bourne shell or bash)
   \begin{alltt}
   \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS
   \prompt{sh> } export CVSROOT \
@@ -362,21 +443,48 @@ This needs then to be automatically put into the cvs passwd file.}
   \prompt{unix> } cvs login
   cvs password: ........ \
 \end{alltt}
-(you only need to do this once; your cvs password is being saved in
-a \file{.cvspass} file in your home directory).
+(you only need to do this once; your cvs password is saved in the file
+\file{.cvspass} in your home directory)
 
 \item Go to wherever you want the code:
   \begin{alltt}
   \prompt{unix> } cd \file{somewhere} \
   \end{alltt}
-
-\item Check the code out:
+  and check the code out:
   \begin{alltt}
   \prompt{unix> } cvs checkout -d mhd f90/pencil_modular \
   \end{alltt} 
-  This creates a subdirectory \file{mhd} of your current directory
-  \file{somewhere} and populates it with the MHD code's subdirectories.
+  This creates a subdirectory \file{somewhere/mhd} and populates it with
+  the MHD code's subdirectories.
 
+\end{enumerate}
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Updating via CVS}
+
+Independent from how you installed the code in the first place (tarball or
+CVS), you can update your version via CVS.
+If you have done nontrivial alterations to your version of the code, you
+ought to be careful about upgrading: although CVS is the optimal tool for
+distributed programming, conflicts are quite likely, since we are going to
+touch many parts of the code while we develop it further.
+Thus, despite the fact that we use CVS, you should probably back up your
+changes before upgrading.
+
+Here is the upgrading procedure:
+\begin{enumerate}
+\item Go to the top directory of the code:
+  \begin{alltt}
+  \prompt{unix> } cd \file{somewhere/mhd} \
+  \end{alltt}
+\item Run \cmd{cvs update}:
+  \begin{alltt}
+  \prompt{unix> } cvs -q update -dP \
+  \end{alltt}
+\item Fix any conflicts you encounter and make sure the examples are still
+  working.
 \end{enumerate}
 
 
@@ -385,37 +493,59 @@ a \file{.cvspass} file in your home directory).
 \section{Getting Started}
 
 To get yourself started, you should run one of several examples which are
-provided in one of the runs/sample subdirectory.
+provided in one of the runs/sample subdirectories.
 
-It is absolutely mandatory to monitor exactly what one is doing.
-IDL is a very useful tool to inspect the data in a very flexible fashion.
-(For details about the use of idl, see Sect.~\ref{S_IDLroutines}.)
+You will only be able to fully assess the numerical solutions if you
+visualise them with \name{IDL}, \name{DX} or other tools (see
+Sect.~\ref{S-IDLroutines}).
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Setup}
+
+\begin{itemize}
+\item sourceme.x
+\item lnsrc (alias setup)
+\item edit the Makefile (full description here or elsewhere?)
+\end{itemize}
+\vspace{7cm}
+
+% ---------------------------------------------------------------------- %
 
 \subsection{A first test}
 
-Before explaining details of the code, we want to make sure it runs ok.
-We want to have a simple example (periodic, isothermal, non-forced)
-where the physics is already nontrivial.
+Now we are ready to compile and run a simple example (periodic,
+isothermal, non-forced MHD) where the physics is already nontrivial.
+
 
 \subsubsection{Interlocked flux rings}
 
-\prompt{unix> } cd f90/pencil\_modular\\
-\prompt{unix> } source source\_me \quad\#(to put f90/pencil\_modular/bin into your path)\\
-\prompt{unix> } cd runs/sample/rings\\
-\prompt{unix> } lnsrc \quad\#(make sure your ../../../bin is in your path!)\\
-\prompt{unix> } cd src\\
-\prompt{unix> } make\\
-\prompt{unix> } cd ..\\
-\prompt{unix> } mkdir tmp \quad\#(or link some data disc to tmp)\\
-\prompt{unix> } start.csh\\
-\prompt{unix> } run.csh\\
+\begin{alltt}
+  \prompt{unix> } cd somewhere/mhd
+  \prompt{unix> } source sourceme.csh \quad\#(to put f90/pencil_modular/bin into your path)
+  \prompt{unix> } cd runs/sample/rings
+  \prompt{unix> } lnsrc \quad\#(from \file{../../../bin}, which by now should be in your path)
+  \prompt{unix> } cd src
+  \prompt{unix> } make
+  \prompt{unix> } cd ..
+  \prompt{unix> } mkdir tmp \quad\#(or link some data disc to tmp)
+  \prompt{unix> } start.csh
+  \prompt{unix> } run.csh
+\end{alltt}
+
+You should obtain \ldots
+
+\vspace{5cm}
 
 EXPLAIN: isotrop1, plan to set-up vortex rings as initial condition,
 without magnetic fields etc.
 
+% ---------------------------------------------------------------------- %
+
 \subsection{Other test problems}
 
 1-D sound waves and shock tube tests, interlocked pair of flux rings, stably stratified atmosphere.
+
 
 % ====================================================================== %
 
@@ -425,22 +555,34 @@ without magnetic fields etc.
 
 \subsection{Directory tree}
 
-Under \file{f90/pencil\_modular}, there are currently the following
+% ---------------------------------------------------------------------- %
+\begin{figure}
+  \centering
+  \includegraphics%
+    [width=0.9\textwidth,height=0.65\textheight,keepaspectratio]%
+    {struct}
+  \caption{The basic structure of the code}
+  \label{Fig-Structure}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+The overall directory structure of the code is shown in
+Fig.~\ref{Fig-Structure}.
+Under \file{f90/pencil_modular}, there are currently the following
 files and directories:
 \begin{verbatim}
-brandenb@nl3:/home/brandenb/f90/pencil_modular> ls -csF
-total 48
-   4 doc/     4 dx/       4 idl/     4 TODO     4 source_me     4 README
-   4 CVS/     4 bugs/     4 src/     4 bin/     4 runs/         4 dependencies.dot
+  CVS/    bin/  bugs/         doc/
+  dx/     idl/  runs/         src/
+  README  TODO  sourceme.csh  sourceme.sh
 \end{verbatim}
 
-The code is contained in \file{src/}, but in order to keep things tidy we compile
-it separately for each run underneath the corresponding run directories, which
+Almost all of the source code is contained in the directory \file{src/},
+but in order to encapsulate individual applications, the code is compiled
+separately for each run underneath the corresponding run directories, which
 are all included in \file{runs/}.
 
-General purpose auxiliary routines for \var{idl} (which is commercial) or
-\var{dx} (data explorer with is freeware) are in the \file{idl} and \file{dx}
-directives, respectively.
+General purpose auxiliary routines for \var{IDL} or \var{DX} are in the
+\file{idl} and \file{dx} directories, respectively.
 
 For each run, we tend to save the \file{*.in} and \file{src/*.local}
 files under \var{cvs}. This allows everybody to reproduce a particular
@@ -454,16 +596,17 @@ total 40
    4 buoy_tube/     4 CVS/        4 kinematic/     4 1d-tests/     4 rings/
 \end{verbatim}
 
-The directory \file{forced/} contains some forced turbulence runs (both magnetic
-and nonmagnetic). \file{gravz/} contains runs with vertical gravity, \file{rings/}
+The directory \file{forced/} contains some forced turbulence runs (both
+magnetic and nonmagnetic). 
+\file{gravz/} contains runs with vertical gravity, \file{rings/}
 contains decaying mhd problems (interlocked flux rings as initial condition, for
 example), and \file{kinematic/} contains kinematic dynamo problems where the
 hydrodynamics is turned off entirely.
 
-In all these cases the input files are usually kept at a minimum, so most of the
-quantities are already initialized by default values. If you want to run a particular
-problem, the best will be to start by modifying a particular example which is closest
-to yours.
+In all these cases the input files are usually kept at a minimum, so most
+of the quantities are already initialized by default values.
+If you want to run a particular problem, the best will be to start by
+modifying a particular example which is closest to yours.
 
 % ----------------------------------------------------------------------------- %
 
@@ -601,6 +744,7 @@ polytropic behavior
 Here's how to use the code \ldots
 
 % ---------------------------------------------------------------------- %
+
 \subsection{I/O diagnostics}
 
 The code allows various output diagnostics to be turned on and off
@@ -631,10 +775,12 @@ of the horizontal field, but this requires that in \file{zaver.in} the
 quantities \code{bxmz} and \code{bymz} are set.
 
 % ---------------------------------------------------------------------- %
+
 \subsection{Helper scripts}
 \index{Perl}
 
 % ---------------------------------------------------------------------- %
+
 \subsection{RELOAD and STOP files}
 
 The code periodically checks (exactly every \var{it} time steps)
@@ -665,8 +811,9 @@ output.
 
 
 % ---------------------------------------------------------------------- %
+
 \subsection{IDL routines}
-\label{S_IDLroutines}
+\label{S-IDLroutines}
 
 Basic sequence:
 \begin{alltt}
@@ -716,6 +863,7 @@ To discuss:
 
 
 % ---------------------------------------------------------------------- %
+
 \subsection{Start parameters}
 
 Since the text below was written we have changed to namelists.
@@ -804,6 +952,7 @@ Not all parameters are used for a given scenario.
 
 
 % ---------------------------------------------------------------------- %
+
 \subsection{Run parameters}
 \label{Run-params}
 
@@ -946,6 +1095,7 @@ Not all parameters are used for a given scenario.
 
 
 % ---------------------------------------------------------------------- %
+
 \subsection{Output files}
 
 \begin{itemize}
@@ -979,6 +1129,8 @@ at all meshpoints and for all three components. The power spectrum of
 $\Av$ increases then quadratically with wavenumber $k$ (without cutoff)
 and the powerspectrum of $\Bv$ increases like $k^4$.
 
+% ---------------------------------------------------------------------- %
+
 \subsection{Beltrami fields: \var{initaa=1}}
 
 \begin{equation}
@@ -988,6 +1140,7 @@ and the powerspectrum of $\Bv$ increases like $k^4$.
 \end{equation}
 
 % ---------------------------------------------------------------------- %
+
 \subsection{Magnetic flux rings}
 
 This initial condition sets up two interlocked thin magnetic tori
@@ -1061,6 +1214,8 @@ to other cases (needed for regular tests of the code and for future
 releases) it is important to supply also a corresponding dummy routine,
 whose name will start with `no'.
 
+% ---------------------------------------------------------------------- %
+
 \subsection{Adding new output diagnostics}
 
 With the implementation of new physics and the development of new procedures
@@ -1084,6 +1239,8 @@ In \file{register.f90} we \code{call rprint\_magnetic} where
 has to be added to the list of names that are to be recognized from the
 \file{print.in} file.
 
+% ---------------------------------------------------------------------- %
+
 \subsection{Outputting new horizontal averages}
 
 Currently, only the horizontally $xy$-averaged $x$ and $y$ components
@@ -1092,6 +1249,8 @@ and contents of the file \file{zaver.in}.
 \footnote{May want to rename it to \file{xy\_aver.in}; what do you think?}
 New such variables can be added by using the existing averaging
 procedures as examples.
+
+% ---------------------------------------------------------------------- %
 
 \subsection{Adding new evolution equations}
 
@@ -1255,9 +1414,15 @@ Reading param.nml..
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.34 2002-06-24 21:14:12 dobler Exp $ $}
+$ $Id: manual.tex,v 1.35 2002-06-25 17:30:17 dobler Exp $ $}
 
 
 \end{document}
 
-% End of file manual.tex
+%%% Please leave this for Emacs [wd]:
+
+%% Local Variables:
+%% ispell-check-comments: t
+%% Local IspellDict: american
+%% End:
+% LocalWords:  SPH CVS
