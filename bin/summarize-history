@@ -22,13 +22,16 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #    Evaluate `params.log' and print a history of changes.
 
 use strict;
-use File::Temp qw/tempfile/;
+# my $has_filetmp = ! eval("require File::Tempp qw/tempfile/ && import File::Tempp");
+my $has_filetmp = eval("require File::Temp") || 0;
+if ($has_filetmp) { import File::Temp qw/tempfile/ };
 
 my $parfile = "data/params.log"; # Default parameter file
 #my $diff = "diff";		 # Shell `diff' function to use
 my $diff = "sdiff";		# Shell `diff' function to use
 my @diff_opts = qw/-s -w78 -W/;	# Options for $diff
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
+my ($tmp1,$tmpname1,$tmp2,$tmpname2);
 
 
 my $log;
@@ -73,8 +76,15 @@ if (@entries < 2) {
 }
 
 ## Open temporary files (will be automaticalle removed at exit)
-my ($tmp1,$tmpname1) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
-my ($tmp2,$tmpname2) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
+if ($has_filetmp) {		# use File::Temp if available
+    ($tmp1,$tmpname1) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
+    ($tmp2,$tmpname2) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
+} else {			# manually set and open temporary files
+    $tmpname1 = "/tmp/summarize_history_${$}_a";
+    $tmpname2 = "/tmp/summarize_history_${$}_b";
+    open($tmp1,"> $tmpname1");
+    open($tmp2,"> $tmpname2");
+}
 ## Markers to make header lines different, so they are always printed by
 ## diff:
 my ($mark1,$mark2) = (".",":");
@@ -97,6 +107,22 @@ while (@entries) {
     # Do the diff
     system("$diff", @diff_opts, "$tmpname2", "$tmpname1");
     print "$sepline\n";
+}
+
+print "1.\n";
+system("ls", "-trl", "/tmp/");
+
+END {
+    if (!$has_filetmp) {
+	close($tmp1);
+	close($tmp2);
+	unlink($tmpname1);
+	unlink($tmpname2);
+    }
+
+print "2.\n";
+system("ls", "-trl", "/tmp/");
+
 }
 
 # ---------------------------------------------------------------------- #
