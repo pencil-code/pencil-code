@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.24 2003-05-30 20:47:44 ngrs Exp $
+! $Id: interstellar.f90,v 1.25 2003-06-04 14:31:30 ngrs Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -20,9 +20,17 @@ module Interstellar
   real, dimension(ninterstellarsave) :: interstellarsave
   real, parameter :: rho_crit=1.,TT_crit=4000.
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
-  real, parameter :: cnorm_SN = 3.71213666 !  3.128289613 
-                         ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
-                         ! for gaussian of width a
+  real, parameter :: rho_min=1.e-6
+
+  ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
+  real, parameter, dimension(3) :: &
+                        cnorm_SN = (/ 1.85544 , 2.80538 , 3.71213666 /) 
+  ! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
+  !   2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
+  !   3d: 4 pi int_0^infty exp(-(r/a)^6) r^2 dr) / a^3 )
+  ! ( cf. 3.128289613 -- from where ?!? )
+  ! NB: 1d and 2d results just from numerical integration -- calculate
+  !      exact integrals at some point...
 
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -32,6 +40,7 @@ module Interstellar
 !    [rho]     =       = 1.00 10^-24 g/cm^3
 !  Lambdaunits converts coolH into interstellar code units.
 !   (this should really just be incorporated into coolH coefficients)
+!  NB: will start using thermodynamics, and unit_length, etc., imminently...
 
   real, parameter :: cp1=27.8   !=R * gamma / (mu * (gamma-1))  27.8 
   real, parameter :: TTunits=46.6,tosolarMkpc3=1.483e7
@@ -77,7 +86,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.24 2003-05-30 20:47:44 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.25 2003-06-04 14:31:30 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -176,18 +185,6 @@ module Interstellar
         where (coolT(i) <= TT(:) .and. TT(:) < coolT(i+1))                 &
            cool(:)=cool(:) + Lambdaunits/rho1(:)*coolH(i)*TT(:)**coolB(i)
       enddo
-!! the following may be easier to optimise? (or use do independent?)
-!!      where (coolT(1) <= TT(:) .and. TT(:) < coolT(2)) 
-!!        cool(:)=cool(:) + Lambdaunits/rho1(:)*coolH(1)*TT(:)**coolB(1)
-!!      elsewhere (coolT(2) <= TT(:) .and. TT(:) < coolT(3)) 
-!!        cool(:)=cool(:) + Lambdaunits/rho1(:)*coolH(2)*TT(:)**coolB(2)
-!!      elsewhere (coolT(3) <= TT(:) .and. TT(:) < coolT(4)) 
-!!        cool(:)=cool(:) + Lambdaunits/rho1(:)*coolH(3)*TT(:)**coolB(3)
-!!      elsewhere (coolT(4) <= TT(:) .and. TT(:) < coolT(5)) 
-!!        cool(:)=cool(:) + Lambdaunits/rho1(:)*coolH(4)*TT(:)**coolB(4)
-!!      elsewhere (coolT(5) <= TT(:)) 
-!!        cool(:)=cool(:) + Lambdaunits/rho1(:)*coolH(5)*TT(:)**coolB(5)
-!!      endwhere
 !
 !  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.e4 K)
@@ -581,20 +578,23 @@ find_SN: do n=n1,n2
       integer, intent(in) :: itype_SN
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
-      real :: mass_check=0., mass_shell=0., profile_integral
+      real :: profile_integral, mass_shell, mass_gain
       real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,TT_SN_new,dv
 
       real, parameter :: TT_limit=1.e7
-     ! real, parameter :: TT_limit=1.e4    ! make weaker, for debug
+     ! real, parameter :: TT_limit=1.e8    ! vary for debug, tests
       
       integer, parameter :: point_width=4
-     ! integer :: point_width=8            ! make larger, for debug
-      real, dimension(nx) :: deltarho, deltaEE, e_old, rho_old
-      real, dimension(3) :: fmpi3, fmpi3_tmp
-      real, dimension(nx) ::  lnrho_old, ss_old,TT1, cs2, cp1tilde ! not really wanted but sideeffect of
-                                                                   ! using the (No)Ionisation module
-                                                                   ! thermodynamics function
-      integer:: move_mass=0      
+     ! integer :: point_width=8            ! vary for debug, tests
+      real, dimension(nx) :: deltarho, deltaEE, ee_old, rho_old, TT_old, rho_new
+      real, dimension(1) :: fmpi1, fmpi1_tmp
+      real, dimension(2) :: fmpi2, fmpi2_tmp
+     ! the following not really wanted, but are required if we want
+     ! to use the thermodynamics function in the [No]Ionisation module
+      real, dimension(nx) ::  lnrho_old, ss_old, TT1, cs2, cp1tilde 
+
+      logical :: lmove_mass=.false.
+      integer :: idim
           
       !
       !  identifier
@@ -602,38 +602,57 @@ find_SN: do n=n1,n2
       if(lroot.and.ip<14) print*,'explode_SN, itype_SN:',itype_SN
       !
       width_SN=point_width*dxmin      
-      c_SN=ampl_SN/(cnorm_SN*(width_SN**3))      !normalision for SN profile
+      idim=0                         !allow for 1-d, 2-d and 3-d profiles...
+      if (nxgrid /=1) idim=idim+1
+      if (nygrid /=1) idim=idim+1
+      if (nzgrid /=1) idim=idim+1
+      c_SN=ampl_SN/cnorm_SN(idim)/width_SN**idim
+      dv=1.
+      if (nxgrid/=1) dv=dv*dx
+      if (nygrid/=1) dv=dv*dy
+      if (nzgrid/=1) dv=dv*dz
+
       if (lroot.and.ip<14) print*,'width_SN,c_SN', width_SN,c_SN
         
       !
       !  Now deal with (if nec.) mass relocation
       !
-      TT_SN_new=TT_SN+(c_SN*rho_SN*gamma*cp1)
-      if(lroot) print*,'explode_SN - TT_SN, TT_SN_new :',TT_SN,TT_SN_new
+      TT_SN_new=TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
+      if(lroot) print*, &
+         'explode_SN: TT_SN, TT_SN_new, TT_limit :',TT_SN,TT_SN_new,TT_limit
 
       if (TT_SN_new < TT_limit) then
-         move_mass=1  
-         !move_mass=0  !use to switch off for debug...
+         lmove_mass=.true.
+         ! lmove_mass=.false.  ! use to switch off for debug...
 
          ! The bit that BREAKS the pencil formulation...
          ! must know the total moved mass BEFORE attempting mass relocation 
-         call calcmassprofileintegral_SN(profile_integral,width_SN)      
-         if (lroot.and.ip<14) print*, 'moving mass...'
-      endif
 
+         TT_SN_new=TT_limit
+         rho_SN_new=c_SN/TT_limit*TTunits
+         call calcmassprofileintegral_SN(f,width_SN,profile_integral)
+         fmpi1_tmp=(/ profile_integral /)
+         call mpireduce_sum(fmpi1_tmp,fmpi1,1) 
+         call mpibcast_real(fmpi1,1)
+         profile_integral=fmpi1(1)*dv
+         mass_shell=-(rho_SN_new-rho_SN)*profile_integral
+         if (lroot.and.ip<14) &
+           print*, 'explode_SN: mass_shell:',mass_shell
+         mass_gain=0.
+      endif
       
 
+      EE_SN=0. !; EE_SN2=0.
       do n=n1,n2
          do m=m1,m2
             call proximity_SN()
-            if (move_mass.eq.1) then
-               rho_SN_new=c_SN/TT_limit*TTunits
-               mass_shell=(rho_SN_new-rho_SN)*profile_integral
+            deltarho(:)=0.
+            if (lmove_mass) then
                call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
-                                                    mass_shell,mass_check)
+                      mass_shell,cnorm_SN(idim),idim,mass_gain)
             endif
 
-            call injectenergy_SN(deltaEE,width_SN,ampl_SN,EE_SN)
+            call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
             ! Apply perturbations
             ! (\delta s)/cp = (1/gamma)*ln(1+(\delta e / e)) 
             !                 - (gamma1/gamma)*ln(1+(\delta rho / rho))
@@ -642,43 +661,42 @@ find_SN: do n=n1,n2
             rho_old=exp(lnrho_old)
             ss_old=f(l1:l2,m,n,ient)
 
+            !compare old and new conversions for consistency...
             call thermodynamics(lnrho_old,ss_old,cs2,TT1,cp1tilde, &
-                                      InternalEnergy=e_old)
+                                     InternalEnergy=ee_old)
+            ! TT_old=cs20*exp(gamma1*(lnrho_old-lnrho0)+gamma*ss_old)/gamma1*cp1
+            ! ee_old=TT_old/TTunits
+            ! TT1=1./TT_old
 
-
-            if (move_mass.eq.1) f(l1:l2,m,n,ilnrho)=alog(rho_old+deltarho)
+            ! use amax1 with rho_min to ensure rho doesn't go negative
+            rho_new(:)=amax1(rho_old(:)+deltarho(:),rho_min)
+            if (lmove_mass) f(l1:l2,m,n,ilnrho)=alog(rho_new)
             f(l1:l2,m,n,ient)=ss_old + &
                  ( alog(1.+ (deltaEE  &            ! / 12.56637061
-                            / (rho_old+deltarho) / e_old)) ) / gamma  
-            if (move_mass.eq.1) f(l1:l2,m,n,ient) = f(l1:l2,m,n,ient) &
-                              - (gamma1*alog(1 + deltarho / rho_old) )/ gamma
-
+                            / rho_new / ee_old)) ) / gamma  
+            if (lmove_mass) f(l1:l2,m,n,ient) = f(l1:l2,m,n,ient) &
+                             - (gamma1*alog(rho_new / rho_old) )/ gamma
+ 
 ! EXTRA debug stuff
 !            call thermodynamics(f(l1:l2,m,n,ilnrho), & 
 !                  f(l1:l2,m,n,ient),cs2,TT1,cp1tilde,InternalEnergy=e_new)
-!            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(e_old*rho_old))
+!            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(ee_old*rho_old))
 
        enddo
       enddo
       
 
       ! Sum and share diagnostics etc. amongst processors
-      dv=1.
-      if (nxgrid/=1) dv=dv*dx
-      if (nygrid/=1) dv=dv*dy
-      if (nzgrid/=1) dv=dv*dz
-
-      fmpi3_tmp=(/ mass_check, EE_SN, mass_shell /)
-      call mpireduce_sum(fmpi3_tmp,fmpi3,3) 
-      call mpibcast_real(fmpi3,3)
-      mass_check=fmpi3(1)*dv
-      EE_SN=fmpi3(2)*dv; 
-! Extra debug - no longer broadcast
-!      EE2_SN=fmpi3(4)*dv; 
-      mass_shell=fmpi3(3)*dv; 
+      fmpi2_tmp=(/ mass_gain, EE_SN /)
+      call mpireduce_sum(fmpi2_tmp,fmpi2,4) 
+      call mpibcast_real(fmpi2,4)
+      mass_gain=fmpi2(1)*dv
+      EE_SN=fmpi2(2)*dv
+! Extra debug - no longer calculated 
+!      EE2_SN=fmpi3(3)*dv; 
 
       if (lroot.and.ip<14) print*, &
-           'explode_SN, masses:',mass_shell,mass_check
+           'explode_SN: mass_gain:',mass_gain
      
       if (lroot) then
          open(1,file=trim(datadir)//'/time_series.dat',position='append')
@@ -694,27 +712,27 @@ find_SN: do n=n1,n2
     endsubroutine explode_SN
 
 !***********************************************************************
-    subroutine calcmassprofileintegral_SN(profile_integral,width_SN)
+    subroutine calcmassprofileintegral_SN(f,width_SN,profile_integral)
 !
 !  Calculate integral of mass cavity profile  
 !
 !  22-may-03/ajwm: coded
 !
-!
       use CData
 
+      real, intent(in), dimension(mx,my,mz,mvar) :: f
       real, intent(in) :: width_SN
+      real, intent(out) :: profile_integral
       real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
       real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
       real :: dz_SN,yshift
-      real, intent(out) :: profile_integral
       integer :: l,mshift,il,im,in
      
       !
       !  Obtain distance to SN
       !
-      profile_integral=0.
 
+      profile_integral=0.
       do n=n1,n2
          in=n-nghost
          dz_SN=abs(z(n)-z_SN)
@@ -763,9 +781,10 @@ find_SN: do n=n1,n2
                     dx_SN_out_x1**2 + dy_SN_out_x1b**2 )   &
                     + dz_SN**2
             enddo
-            profile_integral = profile_integral + sum(exp(-min((dr2_SN(:)/width_SN**2)**3, 75.)))
+            profile_integral = profile_integral + sum(exp(-(dr2_SN(:)/width_SN**2)**3))
          enddo
       enddo
+
     endsubroutine calcmassprofileintegral_SN
 !***********************************************************************
     subroutine proximity_SN()
@@ -835,74 +854,60 @@ find_SN: do n=n1,n2
        
     endsubroutine proximity_SN
 !***********************************************************************
-    subroutine makecavity_SN(deltarho,width_SN,depth,mass_shell,mass_check)
+    subroutine makecavity_SN(deltarho,width_SN,depth,mass_shell, &
+                             cnorm_dim,idim,mass_gain)   
       use CData
-      !  (Can't do all of this within a single pencil-sweep, as I need a global
-      !   sum of the relocated mass, for the current scheme.)
-      !  (Would be much simpler if mass relocation was abandoned -- could do
-      !   the following on pencils, and wouldn't need to communicate rho_SN, TT_SN)
-      real, intent(in) :: width_SN, depth, mass_shell
-      real, intent(inout) :: mass_check
       !
-      real, dimension(nx) :: profile_shell_outer,profile_shell_inner, profile_cavity
+      real, intent(in) :: width_SN, depth, mass_shell, cnorm_dim
+      real, intent(inout) :: mass_gain
+      real, intent(out), dimension(nx) :: deltarho
+      integer, intent(in) :: idim
+      !
+      real, dimension(nx) :: profile_shell_outer,profile_shell_inner
       real, dimension(1) :: fsum1,fsum1_tmp
       real :: width_shell_outer, width_shell_inner, c_shell
       ! real, dimension(1) :: fsum1,fsum1_tmp
-      real :: cnorm_SN=3.128289613    ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
-                                      ! for gaussian of width a
-
-      real, intent(out), dimension(nx) :: deltarho
 
       width_shell_outer=2.0*width_SN
       width_shell_inner=1.5*width_SN
 
-      deltarho(:) =  depth*exp(-min((dr2_SN(:)/width_SN**2)**3, 75.))
+      deltarho(:) =  depth*exp(-(dr2_SN(:)/width_SN**2)**3)
       
       c_shell=mass_shell /                                  &
-           (cnorm_SN*((width_shell_outer**3)-(width_shell_inner**3)))
+           (cnorm_dim*((width_shell_outer**idim)-(width_shell_inner**idim)))
 
 !      if (lroot) print*, &
 !           'explode_SN, c_shell:',c_shell
       !  add missing mass back into shell
       
       profile_shell_outer(:)=                              &
-           exp(-min((dr2_SN(:)/width_shell_outer**2)**3, 75.))
+           exp(-(dr2_SN(:)/width_shell_outer**2)**3)
       profile_shell_inner(:)=                              &
-           exp(-min((dr2_SN(:)/width_shell_inner**2)**3, 75.))
+           exp(-(dr2_SN(:)/width_shell_inner**2)**3)
       
       deltarho(:)=deltarho(:) + c_shell *      &
            (profile_shell_outer(:) - profile_shell_inner(:))
-      
-      mass_check=mass_check + c_shell *                    &
-           sum(profile_shell_outer(:) - profile_shell_inner(:))
+      mass_gain=mass_gain + sum(deltarho(:))  
       
     endsubroutine makecavity_SN
 
 !***********************************************************************
-    subroutine injectenergy_SN(deltaEE,width_SN,energy_SN,EE_SN)
+    subroutine injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
       use CData
-      !  (Can't do all of this within a single pencil-sweep, as I need a global
-      !   sum of the relocated mass, for the current scheme.)
-      !  (Would be much simpler if mass relocation was abandoned -- could do
-      !   the following on pencils, and wouldn't need to communicate rho_SN, TT_SN)
-      real, intent(in) :: width_SN, energy_SN
       !
-      real, dimension(nx) :: profile_SN
+      real, intent(in) :: width_SN,c_SN
       real, intent(inout) :: EE_SN
       real, intent(out), dimension(nx) :: deltaEE
-
-      real :: c_SN
       !
+      real, dimension(nx) :: profile_SN
+      
       ! Whether mass moved or not, inject energy.
       !
 
-      c_SN=energy_SN/(cnorm_SN*(width_SN**3))      !normalision for SN profile
-!      if (lroot) print*,'width_SN,c_SN', width_SN,c_SN
-
-      profile_SN=exp(-min((dr2_SN(:)/width_SN**2)**3, 75.))
+      profile_SN=exp(-(dr2_SN(:)/width_SN**2)**3)
 
       deltaEE(:)=c_SN*profile_SN(:) ! spatial energy density 
-      EE_SN=EE_SN+sum(c_SN*profile_SN(:))   ! EE in (code) erg, not erg/g!
+      EE_SN=EE_SN+sum(deltaEE(:))   
 
     endsubroutine injectenergy_SN
 
