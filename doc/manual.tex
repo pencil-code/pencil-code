@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.97 2002-09-12 05:34:13 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.98 2002-09-19 07:04:47 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -291,7 +291,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.97 $ $}
+\date{\today,~ $ $Revision: 1.98 $ $}
 
 % ====================================================================== %
 
@@ -323,7 +323,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.97 $ $}
+  \emph{\today,~ $ $Revision: 1.98 $ $}
 
   \vspace{\stretch{3}}
 
@@ -545,7 +545,7 @@ you can access it via anonymous CVS access.
 
 \begin{enumerate}
 \item Download the tarball from
-  \path{http://www.nordita.dk/~brandenb/pencil-code/download/pencil-code.tgz}
+  \path{http://www.nordita.dk/data/brandenb/pencil-code/download/pencil-code.tgz}
 \item Put it into a convenient directory and unpack it:
   \begin{alltt}
   \prompt{unix> } mv pencil-code.tgz somewhere/; cd somewhere
@@ -1649,7 +1649,9 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \\
   \var{gamma} [$5./3$]
                & adiabatic index $\gamma=c_p/c_v$. \\
-  \var{cs0} [$1.$], \\
+  \var{cs0} [$1.$]
+               & can be used to set the dimension of velocity;
+                 larger values can be used to decrease stratification \\
   \var{rho0} [$1.$]
                & \label{cs0-rho0-init}%
                  reference values of sound speed and density,
@@ -2561,12 +2563,12 @@ module.
 
 \begin{equation}
   \frac{D\ln c}{Dt}
-  = - {\cal D} \left[ \Laplace\ln c + \grad\ln(\varrho c)\cdot\grad\ln c
+  = {\cal D} \left[ \Laplace\ln c + (\grad\ln\varrho+\grad\ln c)\cdot\grad\ln c
                \right] \; .
 \end{equation}
 
 Here $c$ denotes the concentration (per unit mass) of the passive scalar and
-${\cal D}$ its diffusion constant.
+${\cal D}$ its diffusion constant (assumed constant).
 Using $\ln c$ instead of $c$ has the advantage to enforce $c>0$ for all
 times.
 
@@ -3179,7 +3181,7 @@ $g_z=-\dd\Phi/\dd z$.
 Use \var{grav_profile}='const' (which is already the default)
 together with \var{gravz}$=-1$ to get
 \begin{equation} \label{constgrav-gravz-init}
-  \Phi=(z-z_\infty)(-g_z),\quad (-g_z)<0.
+  \Phi=(z-z_\infty)(-g_z),\quad (-g_z)>0.
 \end{equation}
 Use \var{grav_profile}='linear' to get
 \begin{equation} \label{disc-gravz-init}
@@ -3276,13 +3278,12 @@ Thus, when using \code{initlnrho='polytropic\_simple'} we calculate
 and so the stratification is given by
 \begin{equation}
   \ln\frac{\varrho}{\varrho_0}
-  = m \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; ,\quad
+  = m\,\ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; ,\quad
   %
   \frac{s}{c_{\rm p}}
   = \left(\frac{\Gamma}{\gamma}-1\right)
-    m\ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; .
+    m\,\ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; .
 \end{equation}
-
 
 \subsubsection{Changing the stratification}
 
@@ -3305,6 +3306,19 @@ Gravitational box units: measure speed in units of $\sqrt{g_z d}$.
 The limit of vanishing stratification corresponds to
 $c_{\rm s0}\rightarrow\infty$. This seems optimal if we want
 to approach the Boussinesq case.
+
+\subsubsection{Entropy boundary condition}
+
+Bottom b.c.\ $F_{\rm bot}=-K\dd T/\dd z$,
+\begin{equation}\label{Fbot}
+F_{\rm bot}=-K{c_{\rm s}^2\over\gamma-1}\left(
+(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s\over\dd z}\right)
+\end{equation}
+or
+\begin{equation}\label{Fbot2}
+{\dd s\over\dd z}=-{\gamma-1\over\gamma}\left(
+{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right)
+\end{equation}
 
 % ---------------------------------------------------------------------- %
 
@@ -3456,7 +3470,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.97 2002-09-12 05:34:13 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.98 2002-09-19 07:04:47 brandenb Exp $ $}
 
 
 \end{document}
