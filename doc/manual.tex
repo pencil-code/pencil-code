@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.215 2003-11-20 16:46:39 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.216 2003-11-21 18:31:45 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-20 16:46:39 $ $,~ $ $Revision: 1.215 $ $}
+%\date{$ $Date: 2003-11-21 18:31:45 $ $,~ $ $Revision: 1.216 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-20 16:46:39 $ $,~ $ $Revision: 1.215 $ $}\\
+  \emph{$ $Date: 2003-11-21 18:31:45 $ $,~ $ $Revision: 1.216 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1620,9 +1620,24 @@ file:
 \end{alltt}
 
 
-% \subsubsection{Averages}
-% 
-% [To be written]
+\subsubsection{Averages}
+
+\paragraph{Horizontal averages}
+See Secs.~\ref{diagnostic-IO}, \ref{S-new-hor-averages} and
+\ref{S-other-averages} for how to use horizontal averages [we should
+reorganize this material].
+
+
+\paragraph{Azimuthal averages}
+Azimuthal averages are controlled by the file \file{phiaver.in} as
+follows.
+
+
+
+\paragraph{Time averages}
+Time averages are controlled by the averaging time $\tau_{\rm avg}$ (set
+by the parameter \var{tavg}), and by the settings in the file
+\file[ctimeavg.local]{src/ctimeavg.local}
 
 
 % ---------------------------------------------------------------------- %
@@ -3018,6 +3033,7 @@ replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 % ---------------------------------------------------------------------- %
 
 \subsection{Outputting new horizontal averages}
+\label{S-new-hor-averages}
 
 Currently, only the horizontally $xy$-averaged $x$ and $y$ components
 of the magnetic and velocity fields can be written.
@@ -3031,6 +3047,7 @@ procedures as examples.
 % ---------------------------------------------------------------------- %
 
 \subsection{Other averages}
+\label{S-other-averages}
 
 There is the possibility to output also $xz$ and $yz$
 averages. This is done by averaging first in the $z$-direction only, so
@@ -3400,7 +3417,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-20 16:46:39 $ $,~ $ $Revision: 1.215 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-21 18:31:45 $ $,~ $ $Revision: 1.216 $ $}
 
 \section{Timings}
 
@@ -6021,7 +6038,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.215 2003-11-20 16:46:39 dobler Exp $ $}
+$ $Id: manual.tex,v 1.216 2003-11-21 18:31:45 dobler Exp $ $}
 
 
 \end{document}
