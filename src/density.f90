@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.109 2003-08-21 12:53:22 ajohan Exp $
+! $Id: density.f90,v 1.110 2003-08-28 14:35:11 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.109 2003-08-21 12:53:22 ajohan Exp $")
+           "$Id: density.f90,v 1.110 2003-08-28 14:35:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -138,7 +138,10 @@ module Density
       lnrho_right = alog(rho_right)
       select case(initlnrho)
 
-      case('zero', '0'); if(lroot) print*,'init_lnrho: zero lnrho'
+      case('nothing'); if(lroot) print*,'init_lnrho: nothing'
+      case('zero', '0'); 
+                          if(lroot) print*,'init_lnrho: zero lnrho'
+                          f(:,:,:,ilnrho)=0.
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
       case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
       case('isothermal'); call isothermal_density(f)
