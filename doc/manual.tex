@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.168 2003-06-13 17:30:08 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.169 2003-06-14 14:35:01 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -187,7 +187,7 @@
 \newcommand{\Note}[1]{\emph{[#1]}}
 
 
-%% Symbols for dependancy tables
+%% Symbols for dependency tables
 %% required
 \newcommand{\req}{$\bullet$}  
 %% optional
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-13 17:30:08 $ $,~ $ $Revision: 1.168 $ $}
+\date{$ $Date: 2003-06-14 14:35:01 $ $,~ $ $Revision: 1.169 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-13 17:30:08 $ $,~ $ $Revision: 1.168 $ $}
+  \emph{$ $Date: 2003-06-14 14:35:01 $ $,~ $ $Revision: 1.169 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3954,10 +3954,11 @@ Using a generalization of the trapezoidal rule,
 \begin{eqnarray}
   \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')} f(\tau')\,d\tau'
   &\approx& \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')}
-              \left[ f(\tau_0) + \frac{f(\tau){-}f(\tau_0)}{\tau}\,\tau'
+              \left[ f(\tau_0) + \frac{f(\tau){-}f(\tau_0)}{\tau-\tau_0}\,\tau'
               \right] \; d\tau'\\
   &=&       \left[1{-}e^{-(\tau-\tau_0)}\right] f(\tau)
-          - \frac{1 - e^{-(\tau-\tau_0)}(1{+}\tau)}{\tau}[f(\tau)-f(\tau_0)]
+          - \frac{1 - e^{-(\tau-\tau_0)}(1+\tau{-}\tau_0)}{\tau-\tau_0}
+            [f(\tau)-f(\tau_0)]
   \; ,
 \end{eqnarray}
 which is exact for linear functions $S(\tau)$, we discretize this as
@@ -4147,7 +4148,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                  and, in particular, when the \file{var.dat} files will be
                  overwritten by \file{remesh.csh}.\\
   \var{lwrite_aux} [\code{F}]
-               & if set \code{T}, auxilliary variables (those calculated at
+               & if set \code{T}, auxiliary variables (those calculated at
                  each step, but not evolved mathematically) to 
                  \file{var.dat} after the evolved quantities. \\
   \var{random_gen} [\code{system}]
@@ -4552,7 +4553,7 @@ the latest set of parameters, you need to look at the code.
   \var{random_gen} [start]
                & see start parameters, p.~\pageref{random-gen-init} \\
   \var{lwrite_aux} [start]
-               & if set \code{T}, auxilliary variables (those calculated at
+               & if set \code{T}, auxiliary variables (those calculated at
                  each step, but not evolved mathematically) to 
                  \file{var.dat} and \file{VAR} files after the evolved 
                  quantities. \\
@@ -5125,7 +5126,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.168 2003-06-13 17:30:08 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.169 2003-06-14 14:35:01 brandenb Exp $ $}
 
 
 \end{document}
