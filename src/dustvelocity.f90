@@ -1,4 +1,4 @@
-  ! $Id: dustvelocity.f90,v 1.73 2004-08-23 13:38:02 ajohan Exp $
+  ! $Id: dustvelocity.f90,v 1.74 2004-08-26 10:02:31 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.73 2004-08-23 13:38:02 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.74 2004-08-26 10:02:31 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,7 +142,7 @@ module Dustvelocity
       use Pscalar, only: unit_rhocc
 !
       integer :: k,l
-      real :: gsurften,Eyoung,nu_Poisson,Eyoungred
+      real :: gsurften=0.,Eyoung=1.,nu_Poisson=0.,Eyoungred=1.
 !
 !  Output grain mass discretization type
 !
