@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.37 2004-03-20 17:25:05 brandenb Exp $
+;  $Id: extra.pro,v 1.38 2004-04-01 14:32:16 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -92,6 +92,15 @@ if (ind(0) ne 0) then begin
   deltamd = par.deltamd
   md0 = par.md0
   rhods = par.rhods
+  dust_chemistry = par.dust_chemistry
+
+  unit_md = 1.
+  if (dust_chemistry eq 'ice') then begin
+    mumon = 18.
+    mmon  = mumon*1.6733e-24
+    unit_md = mmon
+  endif
+  
   if (irhod(0) ne 0) then begin
     lmdvar=1
   endif else begin
@@ -119,7 +128,7 @@ if (ind(0) ne 0) then begin
     mdminus(i) = md0*deltamd^i
     mdplus(i)  = md0*deltamd^(i+1)
     md(i)      = 0.5*(mdplus(i)+mdminus(i))
-    ad(i)      = (3*md(i)/(4*!pi*rhods))^(1/3.)
+    ad(i)      = (3*md(i)*unit_md/(4*!pi*rhods))^(1/3.)
     fd(*,*,*,i) = nd(*,*,*,i)/(mdplus(i)-mdminus(i))
   endfor
 
