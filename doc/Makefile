@@ -5,6 +5,7 @@
 #  make manaul.ps
 #  make body.ps      (excludes appendix and indexes)
 #  make appendix.ps  (appendix and indexes only)
+#  make faq          (html version of Frequently Asked Questions)
 
 .SUFFIXES: .tex .dvi .ps .pdf
 
@@ -43,6 +44,18 @@ appendix.ps: manual.dvi
 	first=`perl -000 -ne 'print $$1+1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
 	echo "first = <$$first>"; \
 	dvips -p "$$first" manual.dvi -o appendix.ps
+
+faq: www/faq.html
+
+www/faq.html: www/faq.tex
+	(cd www; htlatex faq)
+
+www/faq.tex: manual.tex
+	if [ ! -d www ]; then mkdir www; fi
+	perl -ne 'print if (1 .. /^\s*\\begin{document}/); \
+	          print if (/^\s*\\section{Frequently Asked Questions}/ ... \
+	                    /^\s*\\section/)' manual.tex \
+	| tac | perl -0777 -pe's/^\s*\\section.*/\\end{document}\n/' | tac > www/faq.tex
 
 # Clean up
 clean:
