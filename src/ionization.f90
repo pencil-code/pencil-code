@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.94 2003-09-24 10:10:00 dobler Exp $
+! $Id: ionization.f90,v 1.95 2003-09-24 13:01:17 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.94 2003-09-24 10:10:00 dobler Exp $")
+           "$Id: ionization.f90,v 1.95 2003-09-24 13:01:17 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -554,27 +554,27 @@ module Ionization
       dyHold=dyH
       call saha(yH,lnrho,ss,f,df)
       do i=1,maxit
-         iter=i
-         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f)>0. &
-              .or.abs(2*f)>abs(dyHold*df)) then
-            dyHold=dyH
-            dyH=0.5*(yHmin-yHmax)
-            yH=yHmax+dyH
-            if (yHmax==yH) return
-         else
-            dyHold=dyH
-            dyH=f/df
-            temp=yH
-            yH=yH-dyH
-            if (temp==yH) return
-         endif
-         if (abs(dyH)<yHacc*yH) return
-         call saha(yH,lnrho,ss,f,df)
-         if (f<0) then
-            yHmax=yH
-         else
-            yHmin=yH
-         endif
+        if (present(iter)) iter=i ! checking with present() avoids segfault
+        if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f)>0. &
+             .or.abs(2*f)>abs(dyHold*df)) then
+          dyHold=dyH
+          dyH=0.5*(yHmin-yHmax)
+          yH=yHmax+dyH
+          if (yHmax==yH) return
+        else
+          dyHold=dyH
+          dyH=f/df
+          temp=yH
+          yH=yH-dyH
+          if (temp==yH) return
+        endif
+        if (abs(dyH)<yHacc*yH) return
+        call saha(yH,lnrho,ss,f,df)
+        if (f<0) then
+          yHmax=yH
+        else
+          yHmin=yH
+        endif
       enddo
       print *,'rtsafe: exceeded maximum iterations. maxit,f,yH=',maxit,f,yH
 !
