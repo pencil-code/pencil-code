@@ -32,7 +32,7 @@ if ($mpi) then
   # Some mpiruns need special options
   if (`domainname` == "aegaeis") then
     set mpirunops = '-machinefile ~/mpiconf/mpihosts-martins'
-  else
+  endif
   # Determine number of CPUS
   set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
   echo $ncpus CPUs
