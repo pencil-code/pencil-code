@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.39 2003-09-19 11:31:15 dorch Exp $
+! $Id: grav_r.f90,v 1.40 2003-10-06 14:28:53 mcmillan Exp $
 
 module Gravity
 
@@ -55,7 +55,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.39 2003-09-19 11:31:15 dorch Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.40 2003-10-06 14:28:53 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -122,6 +122,12 @@ module Gravity
         case ('simple-2')       ! another simple potential for tests
           if (lroot) print*, 'initialize_gravity: simple gravity potential'
           cpot =  (/ 1., 1., 0., 1., 1. /)
+
+! geodynamo
+        case ('kws-approx')     ! approximates 1/r potential between r=.5 and r=1
+          if (lroot) print*, 'initialize_gravity: approximate 1/r potential'
+          cpot = (/ 0., 2.2679, 0., 0., 1.1697 /)
+! end geodynamo
 
         case default
         !
