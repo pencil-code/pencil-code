@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.73 2002-07-06 20:29:17 brandenb Exp $
+### $Id: Makefile,v 1.74 2002-07-06 21:26:34 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -113,11 +113,13 @@ LDFLAGS=$(FFLAGS)
 
 #####
 
-default: makefile code
+default: makefile cparam.inc code
 
 
 makefile: Makefile
 	adapt-mkfile Makefile makefile
+cparam.inc: Makefile Makefile.local
+	mkcparam Makefile Makefile.local > cparam.inc
 code:
 	make start.x run.x
 
@@ -140,7 +142,7 @@ run.x: $(run) Makefile.local
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 #
-cparam.o:    cparam.f90 cparam.local
+cparam.o:    cparam.f90 cparam.local cparam.inc
 general.o:   general.f90
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
@@ -180,4 +182,4 @@ clean:
 
 # Clean up all
 cleann: clean
-	rm -f makefile TAGS
+	rm -f makefile TAGS cparam.inc

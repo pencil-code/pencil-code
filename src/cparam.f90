@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.19 2002-06-25 12:25:52 dobler Exp $
+! $Id: cparam.f90,v 1.20 2002-07-06 21:26:34 dobler Exp $
 
 module Cparam
 
@@ -15,6 +15,7 @@ module Cparam
 !  This part is now isolated in a separate cparam.local file.
 !
   include 'cparam.local'
+  include 'cparam.inc'
 !
 !  derived and fixed parameters
 !
