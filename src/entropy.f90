@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.320 2004-07-03 02:13:13 theine Exp $
+! $Id: entropy.f90,v 1.321 2004-08-22 19:14:31 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.320 2004-07-03 02:13:13 theine Exp $")
+           "$Id: entropy.f90,v 1.321 2004-08-22 19:14:31 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -337,7 +337,7 @@ module Entropy
           call isothermal_lnrho_ss(f,T0,rho0)
         case('hydrostatic-isentropic')
           call hydrostatic_isentropic(f,lnrho_bot,ss_const)
-        case('wave'); f(:,:,:,iss) = ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
+        case('wave'); f(:,:,:,iss)=ss_const+ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
         case('Ferriere'); call ferriere(f) 
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
         case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')

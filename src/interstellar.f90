@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.96 2004-08-22 10:57:35 mkorpi Exp $
+! $Id: interstellar.f90,v 1.97 2004-08-22 19:14:31 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -107,7 +107,8 @@ module Interstellar
   character (len=2) :: cooling_select='RB'
   character (len=3) :: heating_select='off'
   real :: heating_rate = 0.015
-  namelist /interstellar_init_pars/ cooling_select, heating_select, heating_rate
+  namelist /interstellar_init_pars/ &
+      cooling_select, heating_select, heating_rate
 
   ! run parameters
   logical:: uniform_zdist_SNI = .false.
@@ -118,7 +119,8 @@ module Interstellar
       width_SN, inner_shell_proportion, outer_shell_proportion, &
       center_SN_x, center_SN_y, center_SN_z, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, &
-      h_SNI, h_SNII, SNI_area_rate, rho_SN_min, TT_SN_max
+      h_SNI, h_SNII, SNI_area_rate, rho_SN_min, TT_SN_max, &
+      cooling_select, heating_select, heating_rate
 
   contains
 
@@ -145,7 +147,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.96 2004-08-22 10:57:35 mkorpi Exp $")
+           "$Id: interstellar.f90,v 1.97 2004-08-22 19:14:31 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
