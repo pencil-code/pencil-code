@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.21 2002-10-02 20:11:14 dobler Exp $
+;;;  $Id: rall.pro,v 1.22 2002-10-04 07:59:19 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -42,7 +42,7 @@ if (cpar gt 0) then begin
   endif
   if (lentropy) then begin
     hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
-    Luminosity=par2.Luminosity & wheat=par2.wheat
+    luminosity=par2.luminosity & wheat=par2.wheat
     cool=par2.cool & wcool=par2.wcool
     Fbot=par2.Fbot
   endif
@@ -238,11 +238,16 @@ print,'t = ',t
 ; reset datadir to more reasonable default
 datadir=datatopdir+'/proc0'
 ;
-;  reset boundary values for (full) physical domain (not sub-domain)
+;  reset boundary values and nx,ny,nz for (full) physical domain (not
+;  sub-domain)
 ;
 l1=3 & l2=mx-4
 m1=3 & m2=my-4
 n1=3 & n2=mz-4
+;
+nx=mx-2*nghostx
+ny=my-2*nghosty
+nz=mz-2*nghostz
 ;
 ;  fix z3=ztop which was local top in start.pro
 ;
