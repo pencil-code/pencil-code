@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.53 2002-07-09 12:57:55 dobler Exp $
+! $Id: start.f90,v 1.54 2002-07-10 08:04:59 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,7 +32,13 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.53 2002-07-09 12:57:55 dobler Exp $")
+             "$Id: start.f90,v 1.54 2002-07-10 08:04:59 dobler Exp $")
+!
+!  initialise random number generator
+!
+        call get_nseed(nseed)   ! get state length of random number generator
+        seed(1) = 1000+iproc    ! different random numbers on different CPUs
+        call random_seed(put=seed(1:nseed))
 !
 !  set default values: box of size (2pi)^3
 !
@@ -129,11 +135,9 @@
 !  seed for random number generator, have to have the same on each
 !  processor as forcing is applied in (global) Beltrami modes
 !
-        seed(1)=1000
-        call get_nseed(nseed)   ! get state length of random number generator
-        call outpui(trim(directory)//'/seed.dat',seed,nseed)
+        if (lroot) call outpui(trim(directory)//'/seed.dat',seed,nseed)
 !
         call mpifinalize
-        if (lroot) print* !(finish with an empty line)
+        if (lroot) print* ! (finish with an empty line)
 !
       endprogram
