@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.60 2004-06-11 08:07:35 ajohan Exp $
+! $Id: noentropy.f90,v 1.61 2004-06-24 00:44:34 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.60 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.61 2004-06-24 00:44:34 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -109,13 +109,11 @@ module Entropy
       intent(out) :: cs2,TT1  !(df is dummy)
 !
 !  sound speed squared and inverse temperature
+!  note: this is also correct for gamma=1
 !
-      TT1=0.
-      if (gamma==1.) then
-        cs2=cs20
-      else
-        cs2=cs20*exp(gamma1*lnrho)
-      endif
+      cs2=cs20*exp(gamma1*(lnrho-lnrho0))
+      TT1=gamma1/cs2
+
       if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
 !
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
