@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.118 2002-12-04 12:05:01 dobler Exp $
+! $Id: run.f90,v 1.119 2002-12-05 09:15:00 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.118 2002-12-04 12:05:01 dobler Exp $")
+             "$Id: run.f90,v 1.119 2002-12-05 09:15:00 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -66,7 +66,7 @@
 !
 !  read parameters and output parameter list
 !
-        call read_runpars(FILE=.true.,ANNOTATION='Running')
+        call read_runpars()
         call rprint_list(.false.)
 !
 !
@@ -92,6 +92,12 @@
 !
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
+!
+!  Write parameters to log file (done after reading var.dat, since we
+!  want to output time t
+!
+        call print_runpars(FILE=trim(datadir)//'/params.log', &
+                           ANNOTATION='Running')
 !
 !  get state length of random number generator
 !
