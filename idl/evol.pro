@@ -23,11 +23,12 @@ tt = data[1,*]
 urms = data[2,*]
 umax = data[3,*]
 ;
-divurms = data[10,*]
-divumax = data[11,*]
+divurms = data[11,*]
+divumax = data[12,*]
 ;
-rrms = data[8,*]
-rmax = data[9,*]
+rmean = data[8,*]
+rrms  = data[9,*]
+rmax  = data[10,*]
 
 save_state
 
@@ -54,11 +55,12 @@ plot, tt, divurms, $
 oplot, tt, divumax, LINE=2
 
 ;; ln rho
-yr = minmax([rmax,rrms])
+yr = minmax([rmean,rmax,rrms])
 plot, tt, rrms, $
     YRANGE=yr, YSTYLE=3, $
     TITLE='!6log-density!X', $
     XTITLE='!8t!X', YTITLE='!6ln !7r!X'
+oplot, tt, rmean, LINE=1
 oplot, tt, rmax, LINE=2
 
 restore_state
