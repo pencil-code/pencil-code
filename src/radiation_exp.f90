@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.9 2003-06-15 09:28:10 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.10 2003-06-15 09:47:35 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -66,7 +66,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.9 2003-06-15 09:28:10 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.10 2003-06-15 09:47:35 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -97,7 +97,6 @@ module Radiation
 !
 !  test
 !
-print*,'radcalc: test_radiation=',test_radiation
       if(test_radiation) then
         if(lroot) print*,'radcalc: put Srad=kaprho=1 (as a test)'
         Srad=1.
