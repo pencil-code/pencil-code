@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.33 2003-10-08 11:02:15 theine Exp $
+! $Id: radiation_ray.f90,v 1.34 2003-10-08 12:22:04 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -92,7 +92,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.33 2003-10-08 11:02:15 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.34 2003-10-08 12:22:04 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -895,12 +895,10 @@ module Radiation
       use Cdata
       use Mpicomm
       use Ionization
-      use Gravity
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,radz0) :: Qrad0_xy
+      real, dimension(mx,my,radz0) :: Qrad0_xy,H_xy
       real, dimension(nx,ny,radz0) :: tau_xy,emtau1_xy
-      real, dimension(mx,my,radz0) :: kaprho_xy,Srad_xy,TT_xy,yH_xy,H_xy
 !
 !--------------------
 !  lower z-boundary
@@ -917,11 +915,8 @@ module Radiation
 !  integrated from infinity using a characteristic scale height
 !
         if (bc_rad1(3)=='e') then
-          Srad_xy=Srad(:,:,n1-radz0:n1-1)
-          kaprho_xy=kaprho(:,:,n1-radz0:n1-1)
-          call ionget_xy(f,yH_xy,TT_xy,'lower',radz0)
-          H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
-          Qrad0_xy=-Srad_xy*exp(kaprho_xy*H_xy)
+          call scale_height_xy(radz0,nrad,f,H_xy)
+          Qrad0_xy=-Srad(:,:,n1-radz0:n1-1)*exp(kaprho(:,:,n1-radz0:n1-1)*H_xy)
         endif
 !
 !  periodic boundary consition
@@ -967,11 +962,8 @@ module Radiation
 ! integrated from infinity using a characteristic scale height
 !
         if (bc_rad2(3)=='e') then
-          Srad_xy=Srad(:,:,n2+1:n2+radz0)
-          kaprho_xy=kaprho(:,:,n2+1:n2+radz0)
-          call ionget_xy(f,yH_xy,TT_xy,'upper',radz0)
-          H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
-          Qrad0_xy=-Srad_xy*exp(kaprho_xy*H_xy)
+          call scale_height_xy(radz0,nrad,f,H_xy)
+          Qrad0_xy=-Srad(:,:,n2+1:n2+radz0)*exp(kaprho(:,:,n2+1:n2+radz0)*H_xy)
         endif
 !
 ! periodic boundary consition (currently only implemented for

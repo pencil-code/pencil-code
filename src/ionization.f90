@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.112 2003-10-07 15:09:49 mee Exp $
+! $Id: ionization.f90,v 1.113 2003-10-08 12:22:04 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.112 2003-10-07 15:09:49 mee Exp $")
+           "$Id: ionization.f90,v 1.113 2003-10-08 12:22:04 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -802,6 +802,32 @@ module Ionization
       enddo
 !
     endsubroutine radcalc
+!***********************************************************************
+    subroutine scale_height_xy(radz0,nrad,f,H_xy)
+!
+!  calculate characteristic scale height for exponential boundary
+!  condition in the radiation module
+!
+      use Gravity
+!
+      integer, intent(in) :: radz0,nrad
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,radz0), intent(out) :: H_xy
+      real, dimension(mx,my,radz0) :: yH_xy,TT_xy
+!
+      if (nrad>0) then
+        yH_xy=f(:,:,n1-radz0:n1-1,iyH)
+        TT_xy=f(:,:,n1-radz0:n1-1,iTT)
+      endif
+!
+      if (nrad<0) then
+        yH_xy=f(:,:,n2+1:n2+radz0,iyH)
+        TT_xy=f(:,:,n2+1:n2+radz0,iTT)
+      endif
+!
+      H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
+!
+    endsubroutine scale_height_xy
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)

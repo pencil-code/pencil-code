@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.16 2003-10-02 17:01:06 theine Exp $
+! $Id: ionization_fixed.f90,v 1.17 2003-10-08 12:22:04 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.16 2003-10-02 17:01:06 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.17 2003-10-08 12:22:04 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -467,6 +467,33 @@ module Ionization
       enddo
 !
     endsubroutine radcalc
+!***********************************************************************
+    subroutine scale_height_xy(radz0,nrad,f,H_xy)
+!
+!  calculate characteristic scale height for exponential boundary
+!  condition in the radiation module
+!
+      use Gravity
+!
+      integer, intent(in) :: radz0,nrad
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,radz0), intent(out) :: H_xy
+      real, dimension(mx,my,radz0) :: lnrho_xy,ss_xy,TT_xy
+!
+      if (nrad>0) then
+        lnrho_xy=f(:,:,n1-radz0:n1-1,ilnrho)
+        ss_xy=f(:,:,n1-radz0:n1-1,iss)
+      endif
+!
+      if (nrad<0) then
+        lnrho_xy=f(:,:,n2+1:n2+radz0,ilnrho)
+        ss_xy=f(:,:,n2+1:n2+radz0,iss)
+      endif
+!
+      TT_xy=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
+      H_xy=(1.+yH0+xHe)*ss_ion*TT_xy/gravz
+!
+    endsubroutine scale_height_xy
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
                 lmultilayer,lcalc_heatcond_constchi)
