@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.50 2003-06-16 13:11:06 theine Exp $
+;;; $Id: start.pro,v 1.51 2003-06-18 15:22:04 dobler Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -98,10 +98,12 @@ endelse
 ;zz = spread(z, [0,1], [mx,my])
 ;
 ;  set boundary values for physical (sub)domain
+;  l12 etc are useful as array indices, e.g.
+;    plot_3d_vect, bb[l12,m12,nz/2,*],x[l12],y[m12]
 ;
-l1=3 & l2=mx-4
-m1=3 & m2=my-4
-n1=3 & n2=mz-4
+l1=3 & l2=mx-4 & l12=l1+indgen(nx)
+m1=3 & m2=my-4 & m12=m1+indgen(ny)
+n1=3 & n2=mz-4 & n12=n1+indgen(nz)
 ;
 nx=mx-2*nghostx
 ny=my-2*nghosty
