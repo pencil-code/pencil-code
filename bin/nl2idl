@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.18 2004-05-11 14:12:11 mee Exp $
+# $Id: nl2idl,v 1.19 2004-05-25 13:13:41 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -104,7 +104,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.18 2004-05-11 14:12:11 mee Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.19 2004-05-25 13:13:41 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -237,6 +237,7 @@ sub parse_nl {
 	    print "  Remaining line: <",substr($line,0,50),"..>\n";
 	}
 	while (1) {
+	    my $linelen = length($line);
 	    $line =~ s/^\s*,?\s*//;	# remove leading white space and commas
 	    last if ($line =~ m{^($id\s*=|/|$)}); # done with this variable?
 	    my $ch = substr($line,0,1);	# leading character
@@ -254,14 +255,22 @@ sub parse_nl {
 		}
 		push @{$nl{$var}}, substr($line,0,$quote+1);
 		$line = substr($line,$quote+1);
-	    } elsif ($ch eq 'T') {
+	    } elsif ($ch eq 'T') { # logical T
 		if ($debug) { print "\$nl{$var} <- -1 (T)\n" };
 	        push @{$nl{$var}}, "-1L";
 		$line = substr($line,1);
-	    } elsif ($ch eq 'F') {
+	    } elsif ($line =~ /^\.true\./i) { # logical .true.
+		if ($debug) { print "\$nl{$var} <- -1 (T)\n" };
+	        push @{$nl{$var}}, "-1L";
+		$line = substr($line,6);
+	    } elsif ($ch eq 'F') { # logical F
 		if ($debug) { print "\$nl{$var} <- 0 (F)\n" };
 	        push @{$nl{$var}}, "0L";
 		$line = substr($line,1);
+	    } elsif ($line =~ /^\.false\./i) { # logical .false.
+		if ($debug) { print "\$nl{$var} <- 0 (F)\n" };
+	        push @{$nl{$var}}, "0L";
+		$line = substr($line,7);
 	    } elsif ($ch =~ /[-+0-9\.]/) { # number
 		$line =~ s/^($numeric)[ ,]*(.*)$/$2/;
 		my $val = $1;
@@ -285,10 +294,17 @@ sub parse_nl {
 		if ($debug) { print "\$line = <$line>\n"};
 		# die "Illegal value \"$ch\[..]\" for $var\n";
 		err_msg("incomprehensible syntax, starting with <"
-			. substr($line,0,20)
+			. substr($line,0,40)
 			. " ...>");
 	    }
 	    if ($debug) { print "\$line = <$line>\n"};
+
+	    ## Did we make any progress at all?
+	    unless (length($line) < $linelen) {
+		err_msg("no match for line, starting with <"
+			. substr($line,0,40)
+			. " ...>");
+	    }
 	}
     }
     # Sort all entries from %nl into $($_[1]):
@@ -350,7 +366,7 @@ sub expand_line {
 			( $line =~ /^([^*]*?)([0-9]+)\*([^ ,]+)\s*,?(.*)/ );
 		} else {
 		    err_msg("asterisk syntax, starting with <"
-			    . substr($line,0,20)
+			    . substr($line,0,40)
 			    . " ...>");
 		}
 	    }
@@ -443,7 +459,7 @@ sub err_msg {
     } else {
 	$message .= ".\n";
     }
-    $message .= "If it is, please send it to $email,\n";
+    $message .= "If it is a valid file, please send it to $email,\n";
     $message .= "together with the version number of $cmdname:\n";
     $message .= "  $cmdname --version\n";
 
