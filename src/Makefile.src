@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.31 2004-02-27 15:27:33 dobler Exp $
+### $Id: Makefile.src,v 1.32 2004-03-04 09:40:57 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -111,8 +111,7 @@ FCCLEANER=
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 ##FC=ifc_6.0 -i_dynamic #(nw46|nq1)
-#FC=ifort #(nw46|hamlet)
-#FC=ifc -i_dynamic #(ns0)
+#FC=ifort #(nw46|hamlet|ns0)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)
@@ -120,7 +119,8 @@ FCCLEANER=
 #FC=ifc #(nl6|mmtf|nl19)
 #FC=/opt/intel/compiler60/ia32/bin/ifc #(taspd209a)
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
-#FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
+pFFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
+#FFLAGS=-fast -Wl,-rpath,/usr/opt/intel/lib #(ns0)
 #FC=f95 #(karbala)
 #FC=pgf90 #(erland|igor|tycho|linux29|onsager|monolith)
 #FC=efc #(user0[1-9])
@@ -138,7 +138,7 @@ FCCLEANER=
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS=-O3 #(nw46|ns0|nl6|nl11|wormhole|sandin)
+#FFLAGS=-O3 #(nw46|nl6|nl11|wormhole|sandin)
 #FFLAGS=-fast -xNW -tpp7 -vec_report0 #(cosmo)
 #FFLAGS=-O3 #(barilko)
 #FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole)
