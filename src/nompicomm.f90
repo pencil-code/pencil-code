@@ -252,7 +252,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc)
 !
-      integer :: nbcast_array,dummy
+      integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
       integer, optional :: proc
 !    
