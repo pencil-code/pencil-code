@@ -77,11 +77,13 @@ function texsyms, DEVICE=device
               psi_c       : '!7Y!X' , $
               omega_c     : '!7W!X' , $
     ; other symbols
-              Im          : '!7Á!X' ,  $
-              Re          : '!7Â!X' ,  $
-              sqrt        : '!7Ö!X'   $
+              cdot        : '!6·!X' , $
+              Im          : '!7Á!X' , $
+              Re          : '!7Â!X' , $
+              sqrt        : '!7Ö!X' , $
+              times       : '!7´!X'   $
   }
-  endif else begin
+  endif else begin ; Hershey fonts
     ; lowercase lsymbols
     sym = { $
               alpha      : '!7a!X' , $
@@ -139,9 +141,12 @@ function texsyms, DEVICE=device
               psi_c       : '!7W!X' , $
               omega_c     : '!7X!X' , $
     ; other symbols
+              cdot        : '!6·!X',   $
               Im          : '!15I!X',  $
               Re          : '!15R!X',  $
-              sqrt        : '!9r!X'   $
+              sqrt        : '!9r!X',   $
+              times       : '!9X!X',   $
+              odot        : '!9n!X'    $
   }
   endelse
 
