@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.4 2004-01-27 12:54:00 brandenb Exp $
+! $Id: visc_hyper.f90,v 1.5 2004-01-28 18:51:07 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.4 2004-01-27 12:54:00 brandenb Exp $")
+           "$Id: visc_hyper.f90,v 1.5 2004-01-28 18:51:07 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -156,7 +156,6 @@ module Viscosity
         f(:,:,:,ihyper:ihyper+2)=tmp
         call del2v_2nd(f,tmp,ihyper)
         f(:,:,:,ihyper:ihyper+2)=tmp
-        del2graddivu=tmp
         call del2v_2nd(f,tmp,ihyper)
         f(:,:,:,ihyper:ihyper+2)=tmp
       elseif (ivisc .eq. 'hyper2') then
@@ -198,6 +197,7 @@ module Viscosity
 !
 !  add diagonal terms
 !
+          tmp(:,:,:,1)=0
           call shock_divu(f,tmp(:,:,:,1))                     ! divu
           call del2_2nd_nof(tmp(:,:,:,1),tmp(:,:,:,3))        ! del2(divu)
           do i=1,3
