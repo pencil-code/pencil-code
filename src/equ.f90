@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.103 2002-11-03 07:57:26 brandenb Exp $
+! $Id: equ.f90,v 1.104 2002-11-13 09:44:21 brandenb Exp $
 
 module Equ
 
@@ -150,63 +150,6 @@ module Equ
 !
     endsubroutine zaverages
 !***********************************************************************
-    subroutine wvid(chdir)
-!
-!  write into video file
-!  20-oct-97/axel: coded
-!  08-oct-02/tony: increased size of file to handle  datadir//'/tvid.dat'
-!
-      use Cdata
-      use Slices
-      use Sub
-!
-      real, save :: tvid
-      integer, save :: ifirst,nvid
-!
-      character (len=4) :: ch
-      character (len=130) :: file
-      character (len=*) :: chdir
-      logical lvid
-!
-!  Output vid-data in 'tvid' time intervals
-!
-      file = trim(datadir)//'/tvid.dat'
-      if (ifirst==0) then
-        open(41,file=chdir//'/divu.xy',form='unformatted')
-        open(42,file=chdir//'/ux.xy',form='unformatted')
-        open(43,file=chdir//'/uz.xy',form='unformatted')
-        open(44,file=chdir//'/ux.xz',form='unformatted')
-        open(45,file=chdir//'/uz.xz',form='unformatted')
-        open(46,file=chdir//'/lnrho.xz',form='unformatted')
-        open(47,file=chdir//'/ss.xz',form='unformatted')
-        open(51,file=chdir//'/bx.xy',form='unformatted')
-        open(52,file=chdir//'/by.xy',form='unformatted')
-        open(53,file=chdir//'/bz.xy',form='unformatted')
-        open(54,file=chdir//'/bx.xz',form='unformatted')
-        open(55,file=chdir//'/by.xz',form='unformatted')
-        open(56,file=chdir//'/bz.xz',form='unformatted')
-        call out1 (trim(file),tvid,nvid,dvid,t)
-        ifirst=1
-      else
-        call out2 (trim(file),tvid,nvid,dvid,t,lvid,ch,.false.)
-        if (lvid) then
-          write(41) divu_xy(:,:),t
-          write(42) uu_xy(:,:,1),t
-          write(43) uu_xy(:,:,3),t
-          write(44) uu_xz(:,:,1),t
-          write(45) uu_xz(:,:,3),t
-          write(46) lnrho_xz(:,:),t
-          write(47) ss_xz(:,:),t
-          write(51) bb_xy(:,:,1),t
-          write(52) bb_xy(:,:,2),t
-          write(53) bb_xy(:,:,3),t
-          write(54) bb_xz(:,:,1),t
-          write(55) bb_xz(:,:,2),t
-          write(56) bb_xz(:,:,3),t
-        endif
-      endif
-    endsubroutine wvid
-!***********************************************************************
     subroutine pde(f,df)
 !
 !  call the different evolution equations (now all in their own modules)
@@ -233,7 +176,6 @@ module Equ
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
       real :: fac
-      integer :: j
 !
 !  print statements when they are first executed
 !
@@ -241,7 +183,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.103 2002-11-03 07:57:26 brandenb Exp $")
+           "$Id: equ.f90,v 1.104 2002-11-13 09:44:21 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -321,27 +263,6 @@ module Equ
 !  Add shear if precent
 !
         if (lshear) call shearing(f,df)
-!
-!  write slices for animation
-!  this needs to be put somewhere else for compactness
-!
-        if (lhydro) then
-        if (n.eq.iz) then
-          divu_xy(:,m-m1+1)=divu
-          if (ldensity) lnrho_xy(:,m-m1+1)=f(l1:l2,m,n,ilnrho)
-          do j=1,3
-            uu_xy(:,m-m1+1,j)=f(l1:l2,m,n,iuu+j-1)
-          enddo
-        endif
-!
-        if (m.eq.iy) then
-          if (ldensity) lnrho_xz(:,n-n1+1)=f(l1:l2,m,n,ilnrho)
-          if (lentropy) ss_xz(:,n-n1+1)=f(l1:l2,m,n,ient)
-          do j=1,3
-            uu_xz(:,n-n1+1,j)=f(l1:l2,m,n,iuu+j-1)
-          enddo
-        endif
-        endif  !(end from lhydro)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.100 2002-11-12 07:33:40 brandenb Exp $ 
+! $Id: sub.f90,v 1.101 2002-11-13 09:44:21 brandenb Exp $ 
 
 module Sub 
 
@@ -1251,11 +1251,10 @@ module Sub
         lun=1
         open(lun,file=file)
         write(lun,*) tout,nout
-        write(lun,*) 'NOTE: this file is written automatically by out2 in sub.f90;'
-        write(lun,*) 'first number is time of *next* snapshot to be written,'
-        write(lun,*) 'second number is number of the *previous* snapshot.'
-        write(lun,*) 'For example, if you want to force that next snapshot is'
-        write(lun,*) 'VAR20 at t=4.0 you write here the numbers "4.0, 19" (in free format).'
+        write(lun,*) 'NOTE: this file is written automatically (out2, sub.f90).'
+        write(lun,*) 'The value above give time and number of *next* snapshot.'
+        write(lun,*) 'Currently, these values are only read in the beginning.'
+        write(lun,*) 'You can change these numbers by hand.'
         close(lun)
       else
         lout=.false.

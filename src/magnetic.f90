@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.96 2002-11-12 16:07:58 dobler Exp $
+! $Id: magnetic.f90,v 1.97 2002-11-13 09:44:21 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.96 2002-11-12 16:07:58 dobler Exp $")
+           "$Id: magnetic.f90,v 1.97 2002-11-13 09:44:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -229,17 +229,15 @@ module Magnetic
         if (i_bzmxy/=0) call xysum_mn_name(bz,i_bzmxy)
       endif
 !
-!  possibility of writing B-slices
+!  write B-slices for output in wvid in run.f90
+!  Note: ix is the index with respect to array with ghost zones.
 !
-        if (n.eq.iz) then
+        if(lvid.and.lfirst) then
           do j=1,3
-            bb_xy(:,m-m1+1,j)=bb(:,j)
-          enddo
-        endif
-!
-        if (m.eq.iy) then
-          do j=1,3
-            bb_xz(:,n-n1+1,j)=bb(:,j)
+            bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
+            if (m.eq.iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
+            if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
+            if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
         endif
 !

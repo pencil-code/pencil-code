@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.112 2002-11-09 08:31:56 brandenb Exp $
+! $Id: run.f90,v 1.113 2002-11-13 09:44:21 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -50,12 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.112 2002-11-09 08:31:56 brandenb Exp $")
-!
-!  ix,iy,iz are indices for checking variables at some selected point
-!  set default values (should work also for 1-D and 2-D runs)
-!
-        ix=1+(mx-1)/2; iy=1+(my-1)/2; iz=1+(mz-1)/2
+             "$Id: run.f90,v 1.113 2002-11-13 09:44:21 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -96,7 +91,9 @@
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
 !
-        call get_nseed(nseed)   ! get state length of random number generator
+!  get state length of random number generator
+!
+        call get_nseed(nseed)
 !
 !  run initialization of individual modules
 !
@@ -166,7 +163,8 @@
           endif
           !
           !  Remove wiggles in lnrho in sporadic time intervals.
-          !  Necessary for large Reynolds numbers on moderate-sized grids.
+          !  Necessary on moderate-sized grids. When this happens,
+          !  this is often an indication of bad boundary conditions!
           !  iwig=500 is a typical value. For iwig=0 no action is taken.
           !  (The two queries below must come separately on compaq machines.)
           !
@@ -177,6 +175,11 @@
               if (lrmwig_rho) call rmwig(f,df,ilnrho,awig,explog=.true.)
             endif
           endif
+          !
+          !  If we want to write out video data, wvid sets lvid=.true.
+          !  This allows pde to prepare some of the data
+          !
+          call wvid_prepare()
           !
           !  time advance
           !
@@ -198,14 +201,22 @@
           if(lout) call write_xyaverages()
           if(lout.and.lwrite_zaverages) call write_zaverages()
           if(lout) call prints()
-          if (ialive /= 0) then ! set ialive=0 to fully switch this off
+          !
+          !  Setting ialive=1 can be useful on flaky machines!
+          !  Earch processor writes it's processor number (if it is alive!)
+          !  Set ialive=0 to fully switch this off
+          !
+          if (ialive /= 0) then
             if (mod(it,ialive)==0) &
                  call outpui(trim(directory)//'/alive.info', &
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
           call wsnap(trim(directory_snap)//'/VAR',f,.true.)
           call wsnap_timeavgs(trim(directory_snap)//'/TAVG',.true.)
-          call wvid(trim(directory))
+          !
+          !  Write slices (for animation purposes)
+          !
+          if(lvid) call wvid(f,trim(directory)//'/slice_')
           !
           !  save snapshot every isnap steps in case the run gets interrupted
           !  the time needs also to be written

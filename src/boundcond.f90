@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.36 2002-11-12 16:07:58 dobler Exp $
+! $Id: boundcond.f90,v 1.37 2002-11-13 09:44:21 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -51,7 +51,7 @@ module Boundcond
       use Radiation
 !
       real, dimension (mx,my,mz,mvar) :: f
-      integer :: i,j,k,ip_ok
+      integer :: j,k,ip_ok
       character (len=bclen), dimension(mvar) :: bc12
       character (len=3) :: topbot
 !
@@ -133,7 +133,7 @@ module Boundcond
       use Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
-      integer :: i,j,k,ip_ok
+      integer :: j,k,ip_ok
       character (len=bclen), dimension(mvar) :: bc12
       character (len=3) :: topbot
 !
@@ -199,7 +199,7 @@ module Boundcond
       use Density
 !
       real, dimension (mx,my,mz,mvar) :: f
-      integer :: i,j,k,ip_ok
+      integer :: j,k,ip_ok
       character (len=bclen), dimension(mvar) :: bc12
       character (len=3) :: topbot
 !

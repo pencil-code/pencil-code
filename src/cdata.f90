@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.109 2002-11-11 21:19:09 brandenb Exp $
+! $Id: cdata.f90,v 1.110 2002-11-13 09:44:21 brandenb Exp $
 
 module Cdata
 
@@ -33,7 +33,7 @@ module Cdata
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ie,iff,ifx,ify,ifz,idd
   integer :: nt=0,it1=10
-  integer :: it,ix=(mx+1)/2,iy=(my+1)/2,iz=(mz+1)/2
+  integer :: it,ix=l1,iy=m1,iz=n1,iz2=n2
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
@@ -58,7 +58,7 @@ module Cdata
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
-  logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos
+  logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
   logical :: lwrite_ic=.false.,lnowrite=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
