@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.187 2003-06-17 15:43:44 dobler Exp $
+### $Id: Makefile,v 1.188 2003-06-18 13:56:30 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -109,7 +109,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)  
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=ifc #(nl6|mmtf|nl19)
+#FC=ifc #(nl6|mmtf|nl19|hamlet)
 #FC=f95 #(karbala)
 #FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4)
 #FFLAGS=-O # (Samos)
