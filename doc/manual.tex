@@ -4,6 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+%%  CVS: $Id: manual.tex,v 1.39 2002-07-01 20:24:03 brandenb Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -178,7 +179,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.38 $ $}
+\date{\today,~ $ $Revision: 1.39 $ $}
 
 % ====================================================================== %
 
@@ -207,7 +208,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.38 $ $}
+  \emph{\today,~ $ $Revision: 1.39 $ $}
 
 
 \end{center}
@@ -400,7 +401,7 @@ this is provided for by anonymous CVS access.
   \path{http://www.nordita.dk/~brandenb/MHD-code/download/pencil_modular.tgz}
 \item Put it into a convenient directory and unpack it:
   \begin{alltt}
-  \prompt{unix> } mv pencil_modular.tgz somwhere/; cd somewhere
+  \prompt{unix> } mv pencil_modular.tgz somewhere/; cd somewhere
   \prompt{unix> } gunzip pencil_modular.tgz
   \prompt{unix> } tar xf pencil_modular.tar \
   \end{alltt}
@@ -928,7 +929,7 @@ This allows arbitrary order of the parameters (\emph{within} the given
 namelist; the namelists need to appear in the correct order), as well as
 inserted Fortran comments and whitespace for readability.
 One namelist (\name{init_pars}) contains general parameters for
-initialisation and is always read in.
+initialization and is always read in.
 All other namelists are specific to individual modules and will only
 be read if the corresponding module is used.
 
@@ -956,7 +957,7 @@ Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
 Not all parameters are used for a given scenario.
 This lit can in many cases only give an idea of the corresponding initial
-state; to get more insight, you should have alook at the code.
+state; to get more insight, you should have a look at the code.
 
 
 % ---------------------------------------------------------------------- %
@@ -978,7 +979,7 @@ state; to get more insight, you should have alook at the code.
                  of the form ($x$-comp., $y$-comp., $z$-comp.); \var{xyz0}
                  describes the left (lower) corner of the box, \var{Lxyz}
                  the box size.
-                 \var{lperi} specifies whether a direction is conidered
+                 \var{lperi} specifies whether a direction is considered
                  periodic (in which case the last point is omitted) or not.
                  In all cases, three ghost zones will be added. \\
   \var{lwrite_ic}
@@ -1468,6 +1469,21 @@ takes the form
   \end{pmatrix} \; .
 \end{equation}
 
+\subsection{Vertical stratification for local accretion discs simulation}
+
+Use \var{initlnrho='isothermal'}, \var{grav_profile='linear'},
+\var{initss='isothermal'}, which means
+\begin{equation} \label{disc-lnrho-init}
+\ln\rho-\ln\rho_0=-{\textstyle{1\over2}}\gamma\Omega^2z^2
+\end{equation}
+\begin{equation} \label{disc-ss-init}
+s/c_{\rm p}=-\left(1-{1\over\gamma}\right)(\ln\rho-\ln\rho_0)
+\end{equation}
+\begin{equation} \label{disc-ss-init}
+g_z=-\Omega^2z
+\end{equation}
+where (currently) the parameter \var{gravz} is used in place of
+$-\Omega^2$.
 
 % ====================================================================== %
 
@@ -1682,7 +1698,7 @@ Reading param.nml..
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.38 2002-07-01 08:26:10 dobler Exp $ $}
+$ $Id: manual.tex,v 1.39 2002-07-01 20:24:03 brandenb Exp $ $}
 
 
 \end{document}
@@ -1695,7 +1711,7 @@ $ $Id: manual.tex,v 1.38 2002-07-01 08:26:10 dobler Exp $ $}
 %% End:
 % LocalWords:  SPH CVS tex wd MHD makeindex pdflatex MPI Dobler nonperiodic src
 % LocalWords:  nonmagnetic nomagnetic IDL DX OpenDX csh Perl Perl Cygwin tgz mv
-% LocalWords:  tarball unix somwhere cd gunzip xf mhd passwd CVSROOT cshrc sh
+% LocalWords:  tarball unix somewhere cd gunzip xf mhd passwd CVSROOT cshrc sh
 % LocalWords:  setenv cvs cvspass code's dP sourceme lnsrc mkdir tmp tmp struct
 % LocalWords:  isotrop keepaspectratio spher gravz README cparam idl dx nograv
 % LocalWords:  nohydro nodensity noentropy rhs noforcing rr noglobal fft FFT io
