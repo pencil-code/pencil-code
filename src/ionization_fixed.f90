@@ -1,10 +1,12 @@
-! $Id: ionization_fixed.f90,v 1.14 2003-09-10 12:20:12 theine Exp $
+! $Id: ionization_fixed.f90,v 1.15 2003-10-02 15:43:17 brandenb Exp $
 
 !  Dummy routine for noionization
 
 module Ionization
 
   use Cparam
+  use Cdata
+  use Density
 
   implicit none
 
@@ -79,7 +81,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.14 2003-09-10 12:20:12 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.15 2003-10-02 15:43:17 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
