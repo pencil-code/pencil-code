@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.26 2002-07-08 23:34:25 brandenb Exp $
+! $Id: noentropy.f90,v 1.27 2002-07-11 08:17:24 dobler Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.26 2002-07-08 23:34:25 brandenb Exp $")
+           "$Id: noentropy.f90,v 1.27 2002-07-11 08:17:24 dobler Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -185,6 +185,16 @@ module Entropy
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_temp
+!***********************************************************************
+    subroutine bc_ss_energy(f,topbot)
+!
+!  dummy routine for entropy boundary condition
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+    endsubroutine bc_ss_energy
 !***********************************************************************
 
 endmodule Entropy
