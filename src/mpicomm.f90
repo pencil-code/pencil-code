@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.97 2003-07-07 14:06:07 theine Exp $
+! $Id: mpicomm.f90,v 1.98 2003-07-09 14:32:12 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -574,7 +574,7 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
-    subroutine radcomm_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
+    subroutine radboundary_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !  receive intensities from x direction
 !  (At the moment we have only one processor in x, so this doesn't do anything)
@@ -588,7 +588,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radcomm_yz_recv: ipx,idest=',ipx,idest
+      if(lroot.and.ip<5) print*,'radboundary_yz_recv: ipx,idest=',ipx,idest
 !
 !  buffer sizes
 !
@@ -609,9 +609,9 @@ module Mpicomm
 !
       call MPI_WAIT(irecv_yz,irecv_yz_stat,ierr)
 !
-    endsubroutine radcomm_yz_recv
+    endsubroutine radboundary_yz_recv
 !***********************************************************************
-    subroutine radcomm_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !  send intensities
 !
@@ -624,7 +624,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radcomm_zx_recv: ipy,idest=',ipy,idest
+      if(lroot.and.ip<5) print*,'radboundary_zx_recv: ipy,idest=',ipy,idest
 !
 !  buffer sizes
 !
@@ -645,9 +645,9 @@ module Mpicomm
 !
       call MPI_WAIT(irecv_zx,irecv_zx_stat,ierr)
 !
-    endsubroutine radcomm_zx_recv
+    endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radcomm_xy_recv(radz0,idest,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_recv(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !  receive intensities
 !
@@ -660,7 +660,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radcomm_xy_recv: ipz,idest=',ipz,idest
+      if(lroot.and.ip<5) print*,'radboundary_xy_recv: ipz,idest=',ipz,idest
 !
 !  buffer sizes
 !
@@ -681,9 +681,9 @@ module Mpicomm
 !
       call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
 !
-    endsubroutine radcomm_xy_recv
+    endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radcomm_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
+    subroutine radboundary_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !  send intensities in x direction
 !  (At the moment we have only one processor in x, so this doesn't do anything)
@@ -697,7 +697,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radcomm_yz_send: ipx,idest=',ipx,idest
+      if(lroot.and.ip<5) print*,'radboundary_yz_send: ipx,idest=',ipx,idest
 !
 !  buffer size
 !
@@ -718,9 +718,9 @@ module Mpicomm
 !
       call MPI_WAIT(isend_yz,isend_yz_stat,ierr)
 !
-    endsubroutine radcomm_yz_send
+    endsubroutine radboundary_yz_send
 !***********************************************************************
-    subroutine radcomm_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !  send intensities
 !
@@ -733,7 +733,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radcomm_zx_send: ipy,idest=',ipy,idest
+      if(lroot.and.ip<5) print*,'radboundary_zx_send: ipy,idest=',ipy,idest
 !
 !  buffer size
 !
@@ -754,9 +754,9 @@ module Mpicomm
 !
       call MPI_WAIT(isend_zx,isend_zx_stat,ierr)
 !
-    endsubroutine radcomm_zx_send
+    endsubroutine radboundary_zx_send
 !***********************************************************************
-    subroutine radcomm_xy_send(radz0,idest,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_send(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !  send intensities
 !
@@ -769,7 +769,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radcomm_xy_send: ipz,idest=',ipz,idest
+      if(lroot.and.ip<5) print*,'radboundary_xy_send: ipz,idest=',ipz,idest
 !
 !  buffer size
 !
@@ -790,7 +790,7 @@ module Mpicomm
 !
       call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
 !
-    endsubroutine radcomm_xy_send
+    endsubroutine radboundary_xy_send
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !

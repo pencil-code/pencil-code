@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.60 2003-07-09 12:09:48 theine Exp $
+! $Id: radiation_exp.f90,v 1.61 2003-07-09 14:32:12 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -19,9 +19,6 @@ module Radiation
   integer, parameter :: radx0=1,rady0=1,radz0=1
   real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Irad,Irad0
   real, dimension(mx,my,mz,3) :: pos
-  real, dimension(radx0,my,mz) :: Irad0_yz,emtau0_yz
-  real, dimension(mx,rady0,mz) :: Irad0_zx,emtau0_zx
-  real, dimension(mx,my,radz0) :: Irad0_xy,emtau0_xy
   integer :: lrad,mrad,nrad,rad2
   integer :: directions
   real :: frac
@@ -86,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.60 2003-07-09 12:09:48 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.61 2003-07-09 14:32:12 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -174,10 +171,10 @@ module Radiation
       if(test_radiation) then
         if(lroot.and.ip<12) print*,'radcalc: put Srad=kaprho=1 (as a test)'
         k=2*pi/Lx
-        Srad=1.+.02*spread(spread(sin(k*x),2,my),3,mz)
-        kaprho=spread(spread(cos(2*k*x),2,my),3,mz)
-        !Srad=1.+.02*spread(spread(sin(k*y),1,mx),3,mz)
-        !kaprho=spread(spread(cos(2*k*y),1,mx),3,mz)
+        !Srad=1.+.02*spread(spread(sin(k*x),2,my),3,mz)
+        !kaprho=spread(spread(cos(2*k*x),2,my),3,mz)
+        Srad=1.+.02*spread(spread(sin(k*y),1,mx),3,mz)
+        kaprho=spread(spread(cos(2*k*y),1,mx),3,mz)
         return
       endif
 !
@@ -247,15 +244,9 @@ module Radiation
            if (nrad>=0) then; nnstart=n1; nnstop=n2; ndir=+1
                         else; nnstart=n2; nnstop=n1; ndir=-1; endif
 !
-           if (mrad==0.and.nrad==0) lhori(1)=.true.
-           if (nrad==0.and.lrad==0) lhori(2)=.true.
-           if (lrad==0.and.mrad==0) lhori(3)=.true.
-!
            call intensity_intrinsic(f)
            call intensity_communicate()
            call intensity_revision(f)
-!
-           lhori=.false.
 !
         endif
       enddo
@@ -324,7 +315,6 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata
-      use Mpicomm
 !
 !  identifier
 !
@@ -332,9 +322,7 @@ module Radiation
 !
 !  receive boundary values
 !
-      if (lrad/=0) call yz_boundary_recv()
-      if (mrad/=0) call zx_boundary_recv()
-      if (nrad/=0) call xy_boundary_recv()
+      call receive_intensity()
 !
 !  propagate boundary values
 !
@@ -342,18 +330,63 @@ module Radiation
 !
 !  send boundary values
 !
-      if (lrad/=0) call yz_boundary_send()
-      if (mrad/=0) call zx_boundary_send()
-      if (nrad/=0) call xy_boundary_send()
-!
-!  only necessary for rays parallel to a coordinate axis
-!  with periodic boundary conditions
-!
-      if(lhori(1).and.lperi(1)) call yz_boundary_recv()
-      if(lhori(2).and.lperi(2)) call zx_boundary_recv()
-      if(lhori(3).and.lperi(3)) call xy_boundary_recv()
+      call send_intensity()
 !
     endsubroutine intensity_communicate
+!***********************************************************************
+    subroutine receive_intensity()
+!
+      use Cdata
+      use Mpicomm
+!
+      real, dimension(radx0,my,mz) :: Irad0_yz
+      real, dimension(mx,rady0,mz) :: Irad0_zx
+      real, dimension(mx,my,radz0) :: Irad0_xy
+!
+!  identifier
+!
+      if(lroot.and.headt) print*,'receive_intensity'
+!
+!  ... in the x-direction
+!
+      if (lrad>0) then
+        if (ipx==0) call radboundary_yz_set(Irad0_yz)
+        if (ipx/=0) call radboundary_yz_recv(radx0,ipx-1,Irad0_yz)
+        Irad0(l1-radx0:l1-1,:,:)=Irad0_yz
+      endif
+      if (lrad<0) then
+        if (ipx==nprocx-1) call radboundary_yz_set(Irad0_yz)
+        if (ipx/=nprocx-1) call radboundary_yz_recv(radx0,ipx+1,Irad0_yz)
+        Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
+      endif
+!
+!  ... in the y-direction
+!
+      if (mrad>0) then
+        if (ipy==0) call radboundary_zx_set(Irad0_zx)
+        if (ipy/=0) call radboundary_zx_recv(rady0,ipy-1,Irad0_zx)
+        Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
+      endif
+      if (mrad<0) then
+        if (ipy==nprocy-1) call radboundary_zx_set(Irad0_zx)
+        if (ipy/=nprocy-1) call radboundary_zx_recv(rady0,ipy+1,Irad0_zx)
+        Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
+      endif
+!
+!  ... in the z-direction
+!
+      if (nrad>0) then
+        if (ipz==0) call radboundary_xy_set(Irad0_xy)
+        if (ipz/=0) call radboundary_xy_recv(radz0,ipz-1,Irad0_xy)
+        Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
+      endif
+      if (nrad<0) then
+        if (ipz==nprocz-1) call radboundary_xy_set(Irad0_xy)
+        if (ipz/=nprocz-1) call radboundary_xy_recv(radz0,ipz+1,Irad0_xy)
+        Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
+      endif
+!
+    end subroutine receive_intensity
 !***********************************************************************
     subroutine propagate_intensity()
 !
@@ -406,411 +439,165 @@ module Radiation
 !
     endsubroutine propagate_intensity
 !***********************************************************************
-    subroutine yz_boundary_recv()
-!
-!  receive from processor in x,
-!  set boundary condition (if on the corresponding processor)
-!
-!  no communication in x currently, but keep it for generality
+    subroutine send_intensity()
 !
       use Cdata
       use Mpicomm
 !
-      logical, save :: first=.true.
+      real, dimension(radx0,my,mz) :: Irad0_yz
+      real, dimension(mx,rady0,mz) :: Irad0_zx
+      real, dimension(mx,my,radz0) :: Irad0_xy
 !
-! ray points in positive x-direction
+!  identifier
 !
-      if (lrad>0) then
-        if (lhori(1).and.lperi(1)) then
-          if (first) then
-            if (ipx==0) then; Irad0_yz=0; emtau0_yz=1; endif
-            if (ipx/=0) call radcomm_yz_recv(radx0,ipx-1,Irad0_yz,emtau0_yz)
-            first=.false.
-          else
-            if (ipx/=nprocx-1) call radcomm_yz_recv(radx0,nprocx-1,Irad0_yz)
-            first=.true.
-          endif
-        else
-          if (ipx==0) call radboundary_yz(1)
-          if (ipx/=0) call radcomm_yz_recv(radx0,ipx-1,Irad0_yz)
-        endif
-        Irad0(l1-radx0:l1-1,:,:)=Irad0_yz
-      endif
+      if(lroot.and.headt) print*,'send_intensity'
 !
-! ray points in negative y-direction
+!  ... in the x-direction
 !
-      if (lrad<0) then
-        if (lhori(1).and.lperi(1)) then
-          if (first) then
-            if (ipx==nprocx-1) then; Irad0_yz=0; emtau0_yz=1; endif
-            if (ipx/=nprocx-1) call radcomm_yz_recv(radx0,ipx+1,Irad0_yz,emtau0_yz)
-            first=.false.
-          else
-            if (ipx/=0) call radcomm_yz_recv(radx0,0,Irad0_yz)
-            first=.true.
-          endif
-        else
-          if (ipx==nprocx-1) call radboundary_yz(2)
-          if (ipx/=nprocx-1) call radcomm_yz_recv(radx0,ipx+1,Irad0_yz)
-        endif
-        Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
-      endif
-!
-    endsubroutine yz_boundary_recv
-!***********************************************************************
-    subroutine zx_boundary_recv()
-!
-!  receive from processor in y,
-!  set boundary condition (if on the corresponding processor)
-!
-      use Cdata
-      use Mpicomm
-!
-      logical, save :: first=.true.
-!
-! ray points in positive y-direction
-!
-      if (mrad>0) then
-        if (lhori(2).and.lperi(2)) then
-          if (first) then
-            if (ipy==0) then; Irad0_zx=0; emtau0_zx=1; endif
-            if (ipy/=0) call radcomm_zx_recv(rady0,ipy-1,Irad0_zx,emtau0_zx)
-            first=.false.
-          else
-            if (ipy/=nprocy-1) call radcomm_zx_recv(rady0,nprocy-1,Irad0_zx)
-            first=.true.
-          endif
-        else
-          if (ipy==0) call radboundary_zx(1)
-          if (ipy/=0) call radcomm_zx_recv(rady0,ipy-1,Irad0_zx)
-        endif
-        Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
-      endif
-!
-! ray points in negative y-direction
-!
-      if (mrad<0) then
-        if (lhori(2).and.lperi(2)) then
-          if (first) then
-            if (ipy==nprocy-1) then; Irad0_zx=0; emtau0_zx=1; endif
-            if (ipy/=nprocy-1) call radcomm_zx_recv(rady0,ipy+1,Irad0_zx,emtau0_zx)
-            first=.false.
-          else
-            if (ipy/=0) call radcomm_zx_recv(rady0,0,Irad0_zx)
-            first=.true.
-          endif
-        else
-          if (ipy==nprocy-1) call radboundary_zx(2)
-          if (ipy/=nprocy-1) call radcomm_zx_recv(rady0,ipy+1,Irad0_zx)
-        endif
-        Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
-      endif
-!
-    endsubroutine zx_boundary_recv
-!***********************************************************************
-    subroutine xy_boundary_recv()
-!
-!  receive from processor in z,
-!  set boundary condition (if on the corresponding processor)
-!
-      use Cdata
-      use Mpicomm
-!
-      logical, save :: first=.true.
-!
-! ray points in positive z-direction
-!
-      if (nrad>0) then
-        if (lhori(3).and.lperi(3)) then
-          if (first) then
-            if (ipz==0) then; Irad0_xy=0; emtau0_xy=1; endif
-            if (ipz/=0) call radcomm_xy_recv(radz0,ipz-1,Irad0_xy,emtau0_xy)
-            first=.false.
-          else
-            if (ipz/=nprocz-1) call radcomm_xy_recv(radz0,nprocz-1,Irad0_xy)
-            first=.true.
-          endif
-        else
-          if (ipz==0) call radboundary_xy(1)
-          if (ipz/=0) call radcomm_xy_recv(radz0,ipz-1,Irad0_xy)
-        endif
-        Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
-      endif
-!
-! ray points in negative z-direction
-!
-      if (nrad<0) then
-        if (lhori(2).and.lperi(2)) then
-          if (first) then
-            if (ipz==nprocz-1) then; Irad0_xy=0; emtau0_xy=1; endif
-            if (ipz/=nprocz-1) call radcomm_xy_recv(radz0,ipz+1,Irad0_xy,emtau0_xy)
-            first=.false.
-          else
-            if (ipz/=0) call radcomm_xy_recv(radz0,0,Irad0_xy)
-            first=.true.
-          endif
-        else
-          if (ipz==nprocz-1) call radboundary_xy(2)
-          if (ipz/=nprocz-1) call radcomm_xy_recv(radz0,ipz+1,Irad0_xy)
-        endif
-        Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
-      endif
-!
-    endsubroutine xy_boundary_recv
-!***********************************************************************
-    subroutine yz_boundary_send()
-!
-!  set Irad0_yz, and send to next processor in x
-!
-!  no communication in x currently, but keep it for generality
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: idest
-!
-! ray points in positive x-direction
-!
-      if (lrad>0) then
+      if (lrad>0.and.ipx/=nprocx-1) then
         Irad0_yz=Irad0(l2-radx0+1:l2,:,:) &
                 *emtau(l2-radx0+1:l2,:,:) &
                  +Irad(l2-radx0+1:l2,:,:)
-        if (lhori(1).and.lperi(1)) then
-          emtau0_yz=emtau0_yz*emtau(l2-radx0+1:l2,:,:)
-          if (ipx/=nprocx-1) call radcomm_yz_send(radx0,ipx+1,Irad0_yz,emtau0_yz)
-          if (ipx==nprocx-1) then
-            Irad0_yz=Irad0_yz/(1-emtau0_yz)
-            Irad0(l1-radx0:l1-1,:,:)=Irad0_yz
-            do idest=0,nprocx-2
-              call radcomm_yz_send(radx0,idest,Irad0_yz)
-            end do
-          endif
-        else
-          if (ipx/=nprocx-1) call radcomm_yz_send(radx0,ipx+1,Irad0_yz)
-        endif
+        call radboundary_yz_send(radx0,ipx+1,Irad0_yz)
       endif
-!
-! ray points in negative x-direction
-!
-      if (lrad<0) then
+      if (lrad<0.and.ipx/=0) then
         Irad0_yz=Irad0(l1:l1+radx0-1,:,:) &
                 *emtau(l1:l1+radx0-1,:,:) &
                  +Irad(l1:l1+radx0-1,:,:)
-        if (lhori(1).and.lperi(1)) then
-          emtau0_yz=emtau0_yz*emtau(l1:l1+radx0-1,:,:)
-          if (ipx/=0) call radcomm_yz_send(radx0,ipx-1,Irad0_yz,emtau0_yz)
-          if (ipx==0) then
-            Irad0_yz=Irad0_yz/(1-emtau0_yz)
-            Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
-            do idest=1,nprocx-1
-              call radcomm_yz_send(radx0,idest,Irad0_yz)
-            end do
-          endif
-        else
-          if (ipx/=0) call radcomm_yz_send(radx0,ipx-1,Irad0_yz)
-        endif
+        call radboundary_yz_send(radx0,ipx-1,Irad0_yz)
       endif
 !
-    endsubroutine yz_boundary_send
-!***********************************************************************
-    subroutine zx_boundary_send()
+!  ... in the y-direction
 !
-!  set Irad0_zx, and send to next processor in y
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: idest
-!
-! ray points in positive y-direction
-!
-      if (mrad>0) then
+      if (mrad>0.and.ipy/=nprocy-1) then
         Irad0_zx=Irad0(:,m2-rady0+1:m2,:) &
                 *emtau(:,m2-rady0+1:m2,:) &
                  +Irad(:,m2-rady0+1:m2,:)
-        if (lhori(2).and.lperi(2)) then
-          emtau0_zx=emtau0_zx*emtau(:,m2-rady0+1:m2,:)
-          if (ipy/=nprocy-1) call radcomm_zx_send(rady0,ipy+1,Irad0_zx,emtau0_zx)
-          if (ipy==nprocy-1) then
-            Irad0_zx=Irad0_zx/(1-emtau0_zx)
-            Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
-            do idest=0,nprocy-2
-              call radcomm_zx_send(rady0,idest,Irad0_zx)
-            end do
-          endif
-        else
-          if (ipy/=nprocy-1) call radcomm_zx_send(rady0,ipy+1,Irad0_zx)
-        endif
+        call radboundary_zx_send(rady0,ipy+1,Irad0_zx)
       endif
-!
-! ray points in negative y-direction
-!
-      if (mrad<0) then
+      if (mrad<0.and.ipy/=0) then
         Irad0_zx=Irad0(:,m1:m1+rady0-1,:) &
                 *emtau(:,m1:m1+rady0-1,:) &
                  +Irad(:,m1:m1+rady0-1,:)
-        if (lhori(2).and.lperi(2)) then
-          emtau0_zx=emtau0_zx*emtau(:,m1:m1+rady0-1,:)
-          if (ipy/=0) call radcomm_zx_send(rady0,ipy-1,Irad0_zx,emtau0_zx)
-          if (ipy==0) then
-            Irad0_zx=Irad0_zx/(1-emtau0_zx)
-            Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
-            do idest=1,nprocy-1
-              call radcomm_zx_send(rady0,idest,Irad0_zx)
-            end do
-          endif
-        else
-          if (ipy/=0) call radcomm_zx_send(rady0,ipy-1,Irad0_zx)
-        endif
+        call radboundary_zx_send(rady0,ipy-1,Irad0_zx)
       endif
 !
-    endsubroutine zx_boundary_send
-!***********************************************************************
-    subroutine xy_boundary_send()
+!  ... in the z-direction
 !
-!  set Irad0_xy, and send to next processor in z
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: idest
-!
-! ray points in positive z-direction
-!
-      if (nrad>0) then
+      if (nrad>0.and.ipz/=nprocz-1) then
         Irad0_xy=Irad0(:,:,n2-radz0+1:n2) &
                 *emtau(:,:,n2-radz0+1:n2) &
                  +Irad(:,:,n2-radz0+1:n2)
-        if (lhori(2).and.lperi(2)) then
-          emtau0_xy=emtau0_xy*emtau(:,:,n2-radz0+1:n2)
-          if (ipz/=nprocz-1) call radcomm_xy_send(radz0,ipz+1,Irad0_xy,emtau0_xy)
-          if (ipz==nprocz-1) then
-            Irad0_xy=Irad0_xy/(1-emtau0_xy)
-            Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
-            do idest=0,nprocz-2
-              call radcomm_xy_send(radz0,idest,Irad0_xy)
-            end do
-          endif
-        else
-          if (ipz/=nprocz-1) call radcomm_xy_send(radz0,ipz+1,Irad0_xy)
-        endif
+        call radboundary_xy_send(radz0,ipz+1,Irad0_xy)
       endif
-!
-! ray points in negative z-direction
-!
-      if (nrad<0) then
+      if (nrad<0.and.ipz/=0) then
         Irad0_xy=Irad0(:,:,n1:n1+radz0-1) &
                 *emtau(:,:,n1:n1+radz0-1) &
                  +Irad(:,:,n1:n1+radz0-1)
-        if (lhori(2).and.lperi(2)) then
-          emtau0_xy=emtau0_xy*emtau(:,:,n1:n1+radz0-1)
-          if (ipz/=0) call radcomm_xy_send(radz0,ipz-1,Irad0_xy,emtau0_xy)
-          if (ipz==0) then
-            Irad0_xy=Irad0_xy/(1-emtau0_xy)
-            Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
-            do idest=1,nprocz-1
-              call radcomm_xy_send(radz0,idest,Irad0_xy)
-            end do
-          endif
-        else
-          if (ipz/=0) call radcomm_xy_send(radz0,ipz-1,Irad0_xy)
-        endif
+        call radboundary_xy_send(radz0,ipz-1,Irad0_xy)
       endif
 !
-    endsubroutine xy_boundary_send
+    end subroutine send_intensity
 !***********************************************************************
-    subroutine radboundary_yz(ibound)
+    subroutine radboundary_yz_set(Irad0_yz)
 !
 !  sets the physical boundary condition on xy plane
 !
 !   6-jul-03/axel: coded
 !
-    integer :: ibound
+      use Cdata
+      use Mpicomm
+!
+      real, dimension(radx0,my,mz) :: Irad0_yz
 !
 !  lower x-boundary
 !
-    if(ibound==1) then
+    if (lrad>0) then
       select case(bc_rad1(1))
       case ('0'); Irad0_yz=0.
-print*,'null lower radboundary_yz'
-      case ('p'); Irad0_yz=Irad(l2-radx0+1:l2,:,:) &
-                     /(1.-emtau(l2-radx0+1:l2,:,:))
-print*,'periodic lower radboundary_yz'
+      case ('P'); call radboundary_yz_recv(radx0,nprocx-1,Irad0_yz)
       case ('S'); Irad0_yz=Srad(l1-radx0:l1-1,:,:)
-print*,'S lower radboundary_yz'
-      endselect
-!
-!  upper x-boundary
-!
-    else if(ibound==2) then
-      select case(bc_rad2(1))
-      case ('0'); Irad0_yz=0.
-print*,'null upper radboundary_yz'
-      case ('p'); Irad0_yz=Irad(l1:l1+radx0-1,:,:) &
-                     /(1.-emtau(l1:l1+radx0-1,:,:))
-print*,'periodic upper radboundary_yz'
-      case ('S'); Irad0_yz=Srad(l1-radx0:l1-1,:,:)
-print*,'S upper radboundary_yz'
       endselect
     endif
 !
-    endsubroutine radboundary_yz
+!  upper x-boundary
+!
+    if (lrad<0) then
+      select case(bc_rad2(1))
+      case ('0'); Irad0_yz=0.
+      case ('P'); call radboundary_yz_recv(radx0,0,Irad0_yz)
+      case ('S'); Irad0_yz=Srad(l2+1:l2+radx0,:,:)
+      endselect
+    endif
+!
+    endsubroutine radboundary_yz_set
 !***********************************************************************
-    subroutine radboundary_zx(ibound)
+    subroutine radboundary_zx_set(Irad0_zx)
 !
 !  sets the physical boundary condition on xy plane
 !
 !   6-jul-03/axel: coded
 !
     use Cdata
+    use Mpicomm
 !
-    integer :: ibound
+    real, dimension(mx,rady0,mz) :: Irad0_zx
+!
 !
 !  lower y-boundary
 !
-    if(ibound==1) then
+    if (mrad>0) then
       select case(bc_rad1(2))
       case ('0'); Irad0_zx=0.
+      case ('P'); call radboundary_zx_recv(rady0,nprocy-1,Irad0_zx)
       case ('S'); Irad0_zx=Srad(:,m1-rady0:m1-1,:)
       endselect
+    endif
 !
 !  upper y-boundary
 !
-    else if(ibound==2) then
+    if (mrad<0) then
       select case(bc_rad2(2))
       case ('0'); Irad0_zx=0.
+      case ('P'); call radboundary_zx_recv(rady0,0,Irad0_zx)
       case ('S'); Irad0_zx=Srad(:,m2+1:m2+rady0,:)
       endselect
     endif
 !
-    endsubroutine radboundary_zx
+    endsubroutine radboundary_zx_set
 !***********************************************************************
-    subroutine radboundary_xy(ibound)
+    subroutine radboundary_xy_set(Irad0_xy)
 !
 !  sets the physical boundary condition on xy plane
 !
 !   6-jul-03/axel: coded
 !
-    integer :: ibound
+    use Cdata
+    use Mpicomm
+!
+    real, dimension(mx,my,radz0) :: Irad0_xy
 !
 !  lower z-boundary
 !
-    if(ibound==1) then
+    if (nrad>0) then
       select case(bc_rad1(3))
       case ('0'); Irad0_xy=0.
+      case ('P'); call radboundary_yz_recv(radz0,nprocz-1,Irad0_xy)
       case ('S'); Irad0_xy=Srad(:,:,n1-radz0:n1-1)
       endselect
+    endif
 !
 !  upper z-boundary
 !
-    else if(ibound==2) then
+    if (nrad<0) then
       select case(bc_rad2(3))
       case ('0'); Irad0_xy=0.
+      case ('P'); call radboundary_yz_recv(radz0,0,Irad0_xy)
       case ('S'); Irad0_xy=Srad(:,:,n2+1:n2+radz0)
       endselect
     endif
 !
-    endsubroutine radboundary_xy
+    endsubroutine radboundary_xy_set
 !***********************************************************************
     subroutine intensity_revision(f)
 !
