@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.239 2004-03-27 09:33:41 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.240 2004-03-30 22:25:54 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -369,7 +369,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-27 09:33:41 $ $,~ $ $Revision: 1.239 $ $}
+%\date{$ $Date: 2004-03-30 22:25:54 $ $,~ $ $Revision: 1.240 $ $}
 
 % ====================================================================== %
 
@@ -404,7 +404,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-27 09:33:41 $ $,~ $ $Revision: 1.239 $ $}\\
+  \emph{$ $Date: 2004-03-30 22:25:54 $ $,~ $ $Revision: 1.240 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3150,6 +3150,48 @@ and
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Equation of state}
+\index{Equation of state}
+\label{Sionization}
+
+In its present configuration only hydrogen ionization is explicitly included.
+Other constituents (currently He and H$_2$) can have fixed values.
+The pressure is always proportional to the total number of particles, i.e.\
+\begin{equation}
+p=(n_{\rm HI}+n_{\rm HII}+n_{\rm H_2}+n_{\rm e}+n_{\rm He}+...)k_{\rm B}T.
+\end{equation}
+It is convenient to normalize to the total number of H both in atomic
+and in molecular hydrogen, $n_{\rm Htot}\equiv n_{\rm H}+2n_{\rm H_2}$,
+where $n_{\rm HI}+n_{\rm HII}=n_{\rm H}$, and define
+$x_{\rm e}\equiv n_{\rm e}/n_{\rm Htot}$,
+$x_{\rm He}\equiv n_{\rm He}/n_{\rm Htot}$, and
+$x_{\rm H_2}\equiv n_{\rm H_2}/n_{\rm Htot}$.
+Substituting $n_{\rm H}=n_{\rm Htot}-2n_{\rm H_2}$, we have
+\begin{equation}
+p=(1-x_{\rm H_2}+x_{\rm e}+x_{\rm He}+...)n_{\rm Htot}k_{\rm B}T.
+\end{equation}
+The mean molecular weight is not directly involved anywhere, but it
+would be (except for some gram/mole stuff)
+\begin{equation}
+\mu={n_{\rm H}+2n_{\rm H_2}+n_{\rm e}+4n_{\rm He}\over
+n_{\rm H}+n_{\rm H_2}+n_{\rm He}}
+={1+4x_{\rm He}\over1-x_{\rm H_2}+x_{\rm e}+x_{\rm He}},
+\end{equation}
+where the factor 4 is really to be substituted for 3.97153.
+
+The number ratio, $x_{\rm He}$, is more commonly expressed as the mass
+ratio, $Y=m_{\rm He}n_{\rm He}/(m_{\rm H}n_{\rm Htot}+m_{\rm He}n_{\rm e}n_{\rm He})$,
+or $Y=4x_{\rm He}/(1+4x_{\rm He})$, or $4x_{\rm He}=(1/Y-1)^{-1}$.
+For example, $Y=0.27$ corresponds to $x_{\rm He}=0.9$.
+Note also that for 100\% H$_2$ abundance, $x_{\rm H_2}=1/2$.
+
+In the following, the ionization fraction is given as $y=n_{\rm e}/n_{\rm H}$,
+which can be different from $x_{\rm e}$ if there is H$_2$.
+Substituting for $n_{\rm H}$ in terms of $n_{\rm Htot}$ yields
+$y=x_{\rm e}/(1-2x_{\rm H_2})$.
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Ionization}
 \index{Ionization}
 \label{Sionization}
@@ -3998,7 +4040,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-27 09:33:41 $ $,~ $ $Revision: 1.239 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-30 22:25:54 $ $,~ $ $Revision: 1.240 $ $}
 
 \section{Timings}
 
@@ -6906,7 +6948,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.239 2004-03-27 09:33:41 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.240 2004-03-30 22:25:54 brandenb Exp $ $}
 
 
 \end{document}
