@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.63 2003-11-14 16:14:22 dobler Exp $
+! $Id: interstellar.f90,v 1.64 2003-11-16 13:57:21 theine Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -11,14 +11,14 @@ module Interstellar
 
   implicit none
 
-  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,lnTT_SN,ss_SN,ee_SN,ampl_SN=1.0
+  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,lnTT_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
   integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
   real :: t_next_SNI=0.0, t_interval_SNI=3.64e-3,h_SNI=0.325,h_SNII=0.09
   real :: tau_cloud=2e-2, r_SNI=3.e+4, r_SNII=4.e+3
   integer, parameter :: ninterstellarsave=1
   real, dimension(ninterstellarsave) :: interstellarsave
-  real, parameter :: rho_crit=1.,TT_crit=4000,lnTT_crit=8.29404964010203
+  real, parameter :: rho_crit=1,TT_crit=4000
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
   real, parameter :: rho_min=1.e-6
   
@@ -69,7 +69,7 @@ module Interstellar
   ! input parameters
   real :: outer_shell_proportion = 2.
   real :: inner_shell_proportion = 1.5
-  real :: TT_SN_min=1.e7,lnTT_SN_min
+  real :: TT_SN_min=1.e7
   real :: coolingfunction_scalefactor=1.
   logical :: lnever_move_mass
 !tony: disable SNII for debugging 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.63 2003-11-14 16:14:22 dobler Exp $")
+           "$Id: interstellar.f90,v 1.64 2003-11-16 13:57:21 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -206,8 +206,6 @@ module Interstellar
           &-----l_SN--m_SN--n_SN-----'
          close(1)
       endif
-!
-      lnTT_SN_min=log(TT_SN_min)
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
@@ -363,7 +361,7 @@ module Interstellar
     use Ionization
 ! 
     real, dimension(mx,my,mz,mvar+maux) :: f
-    real, dimension(nx) :: lnrho,rho,rho_cloud,ss,lnTT,yH
+    real, dimension(nx) :: lnrho,rho,lnTT,TT,rho_cloud,ss,yH
 !    real :: lnrho,rho,rho_cloud,ss,TT
     real :: mass_cloud,mass_cloud_dim,freq_SNII,prob_SNII,rate_SNII,dv
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
@@ -387,14 +385,12 @@ module Interstellar
        do n=n1,n2
            do m=m1,m2
              lnrho=f(l1:l2,m,n,ilnrho)
-             rho=exp(lnrho(:))
-             ss=f(l1:l2,m,n,iss)
-
-             call ionget(f,yH,lnTT)
-             call thermodynamics(lnrho,yH,lnTT)
+             call thermodynamics(f,yH=yH,lnTT=lnTT)
+             rho=exp(lnrho)
+             TT=exp(TT)
 
              rho_cloud=0.0
-             where (rho >= rho_crit .and. lnTT <= lnTT_crit)   &
+             where (rho >= rho_crit .and. TT <= TT_crit)   &
                   rho_cloud=rho
              mass_cloud=mass_cloud+sum(rho_cloud)
           enddo
@@ -550,7 +546,7 @@ module Interstellar
     use Cdata
     use General
     use Mpicomm
-    use Ionization, only: ionget, thermodynamics
+    use Ionization, only: thermodynamics
 !
     real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
     real, intent(in) , dimension(ncpus) :: mass_cloud_byproc
@@ -558,7 +554,7 @@ module Interstellar
     real, dimension(0:ncpus) :: cum_prob_byproc
     real, dimension(1) :: franSN
     real :: mass_cloud,cum_mass,cum_prob_onproc
-    real :: lnrho,rho,ss,lnTT,yH
+    real :: lnrho,rho,lnTT,TT,ss,yH
     integer :: icpu,l
 !
 !
@@ -609,11 +605,10 @@ find_SN: do n=n1,n2
         do m=m1,m2
           do l=l1,l2
             lnrho=f(l,m,n,ilnrho)
+            call thermodynamics(lnrho,ss,yH=yH,lnTT=lnTT)
             rho=exp(lnrho)
-            ss=f(l,m,n,iss)
-            call ionget(lnrho,ss,yH,lnTT)
-            call thermodynamics(lnrho,yH,lnTT)
-            if (rho >= rho_crit .and. lnTT <= lnTT_crit) then
+            TT=exp(lnTT)
+            if (rho >= rho_crit .and. TT <= TT_crit) then
               cum_mass=cum_mass+rho
               cum_prob_onproc=cum_mass/mass_cloud
               if (franSN(1) <= cum_prob_onproc) then
@@ -705,7 +700,8 @@ find_SN: do n=n1,n2
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
-      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,lnTT_SN_new,dv
+      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new
+      real :: ss_SN_new,yH_SN_new,lnTT_SN_new,TT_SN_new,dv
       
       real, dimension(nx) :: deltarho, deltaEE
       real, dimension(1) :: fmpi1, fmpi1_tmp
@@ -736,17 +732,17 @@ find_SN: do n=n1,n2
       !
       !  Now deal with (if nec.) mass relocation
       !
-      call ionget(lnrho_SN,ss_SN,yH_SN,lnTT_SN)
-      call thermodynamics(lnrho_SN,yH_SN,lnTT_SN,ee=ee_SN)
-
+      call thermodynamics(lnrho_SN,ss_SN,yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
       call perturb_energy(lnrho_SN,ee_SN+c_SN/rho_SN,ss_SN_new, &
                 lnTT_SN_new,yH_SN_new)
+      TT_SN_new=exp(lnTT_SN_new)
+      TT_SN=exp(lnTT_SN)
 
       if(lroot.and.ip<=14) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_SN_min, ee_SN =', &
-                                exp(lnTT_SN),exp(lnTT_SN_new),exp(lnTT_SN_min), ee_SN
+                                TT_SN,TT_SN_new,TT_SN_min,ee_SN
 
-      if (lnTT_SN_new < lnTT_SN_min) then
+      if (TT_SN_new < TT_SN_min) then
          lmove_mass=.not.lnever_move_mass
          ! lmove_mass=.false.  ! use to switch off for debug...
 
@@ -754,16 +750,17 @@ find_SN: do n=n1,n2
          ! must know the total moved mass BEFORE attempting mass relocation 
 
          ! ASSUME: SN will fully ionize the gas at its centre
-         call getdensity((ee_SN*rho_SN)+c_SN,lnTT_SN_min,1.,rho_SN_new)
+         call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
          lnrho_SN_new=alog(rho_SN_new)
 
-         call thermodynamics(lnrho_SN_new,yH_SN_new,lnTT_SN_new,ee=ee_SN)
+         call thermodynamics(lnrho_SN_new,ss_SN_new,ee=ee_SN)
          call perturb_energy(lnrho_SN_new, &
                  (ee_SN*rho_SN+c_SN)/rho_SN_new,ss_SN_new,lnTT_SN_new,yH_SN_new)
+         TT_SN_new=exp(lnTT_SN_new)
 
          if(lroot.and.ip<=14) print*, &
             'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
-                                                     exp(lnTT_SN_new),rho_SN_new
+                                                     TT_SN_new,rho_SN_new
 
          call calcmassprofileintegral_SN(f,width_SN,profile_integral)
          fmpi1_tmp=(/ profile_integral /)
@@ -788,9 +785,7 @@ find_SN: do n=n1,n2
             ! Get the old energy
             lnrho=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho) 
-            ss=f(l1:l2,m,n,iss)
-            call ionget(f,yH,lnTT)
-            call thermodynamics(lnrho,yH,lnTT,ee=ee_old)
+            call thermodynamics(f,yH=yH,lnTT=lnTT,ee=ee_old)
 
             ! Apply perturbations
             call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
@@ -798,7 +793,7 @@ find_SN: do n=n1,n2
               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
                       mass_shell,cnorm_SN(idim),idim,mass_gain)
 
-              lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
+              lnrho=alog(amax1(rho_old+deltarho,rho_min))
             endif
   
             call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,lnTT,yH)

@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.38 2003-11-11 12:38:09 mee Exp $
+! $Id: ionization_fixed.f90,v 1.39 2003-11-16 13:57:21 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -26,14 +26,9 @@ module Ionization
     module procedure thermodynamics_point    ! explocit lnrho, ss
   end interface
 
-  interface ionget
-    module procedure ionget_pencil
-    module procedure ionget_point
-  end interface
-
-  interface ionput                      ! Overload subroutine ionput
-    module procedure ionput_pencil      ! (dummy routines here --
-    module procedure ionput_point       !  used in noionization.)
+  interface getentropy                      ! Overload subroutine ionput
+    module procedure getentropy_pencil      ! (dummy routines here --
+    module procedure getentropy_point       !  used in noionization.)
   end interface
 
   interface perturb_energy              ! Overload subroutine perturb_energy
@@ -98,7 +93,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.38 2003-11-11 12:38:09 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.39 2003-11-16 13:57:21 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -360,71 +355,38 @@ module Ionization
 
     end subroutine getdensity
 !***********************************************************************
-    subroutine ionget_pencil(f,yH,lnTT,glnTT)
-!
-!  'extract' ionization fraction and temperature from f array pencilwise
-!
-      use Cdata
-      use Sub, only: grad
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out) :: yH,lnTT
-      real, dimension(nx,3), intent(out), optional :: glnTT
-      real, dimension(nx) :: lnrho,ss
-      real, dimension(nx,3) :: glnrho,gss
-!
-      lnrho=f(l1:l2,m,n,ilnrho)
-      ss=f(l1:l2,m,n,iss)
-!
-      yH=yH0
-      lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-      if (present(glnTT)) then
-        call grad(f,iss,gss)
-        call grad(f,ilnrho,glnrho)
-        glnTT=lnTTss*gss+lnTTlnrho*glnrho
-      endif  
-!
-    endsubroutine ionget_pencil
-!***********************************************************************
-    subroutine ionget_point(lnrho,ss,yH,lnTT)
-!
-!  'extract' ionization fraction and temperature from f array
-!  for an arbitrary point
-!
-      real, intent(in) :: lnrho,ss
-      real, intent(out) :: yH,lnTT
-!
-      yH=yH0
-      lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-!
-    endsubroutine ionget_point
-!***********************************************************************
-    subroutine ionput_pencil(f,yH,lnTT)
+    subroutine getentropy_pencil(lnrho,lnTT,ss)
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(out) :: yH,lnTT
-      real, dimension(nx) :: lnrho,ss
+      real, dimension(nx), intent(in) :: lnrho,lnTT
+      real, dimension(nx), intent(out) :: ss
 !
       call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION_FIXED")
+      if (ip==0) print*,lnrho
+      if (ip==0) print*,lnTT
+      if (ip==0) print*,ss
 !
-    endsubroutine ionput_pencil
+    endsubroutine getentropy_pencil
 !***********************************************************************
-    subroutine ionput_point(lnrho,ss,yH,lnTT)
+    subroutine getentropy_point(lnrho,lnTT,ss)
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, intent(in) :: lnrho,ss
-      real, intent(out) :: yH,lnTT
+      real, intent(in) :: lnrho,lnTT
+      real, intent(out) :: ss
 !
       call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION_FIXED")
+      if (ip==0) print*,lnrho
+      if (ip==0) print*,lnTT
+      if (ip==0) print*,ss
 !
-    endsubroutine ionput_point
+    endsubroutine getentropy_point
 !***********************************************************************
-    subroutine thermodynamics_pencil(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_pencil &
+               (f,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -436,17 +398,39 @@ module Ionization
 !  15-jun-03/axel: made compatible with current ionization routine
 !
       use Sub
+      use Mpicomm
 !
-      real, dimension(nx), intent(in) :: lnrho,yH,lnTT
-      real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
-      real, dimension(nx) :: TT
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx,3), intent(in), optional :: glnrho,gss
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: cs2,cp1tilde
+      real, dimension(nx,3), intent(out), optional :: glnTT,glnPP
+      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension(nx) :: lnrho,ss,logTT,TT
 !
-      TT=exp(lnTT)
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,iss)
+      logTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+      TT=exp(logTT)
 !
-      if (present(cs2))      cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TT
-      if (present(cp1tilde)) cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
-      if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
-      if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
+      if (present(cs2))      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*TT
+      if (present(cp1tilde)) cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
+      if (present(yH))       yH=yH0
+      if (present(lnTT))     lnTT=logTT
+      if (present(glnTT).or.present(glnPP)) then
+        if (.not.(present(glnrho).or.present(gss))) then
+          call stop_it ("thermodynamics: You need to supply glnrho and gss")
+        else
+          if (present(glnTT)) then
+            glnTT=(2.0/3.0)*(glnrho+gss/((1+yH0+xHe)*ss_ion))
+          endif
+          if (present(glnPP)) then
+            glnPP=(1+2.0/3.0)*glnrho+(2.0/3.0)*gss/((1+yH0+xHe)*ss_ion)
+          endif
+        endif
+      endif
+      if (present(ee))       ee=1.5*(1+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
+      if (present(pp))       pp=(1+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
       if (ldiagnos) then
         if (i_yHmax/=0) call max_mn_name(yH,i_yHmax)
@@ -457,7 +441,8 @@ module Ionization
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
-    subroutine thermodynamics_point(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_point &
+               (lnrho,ss,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -468,16 +453,37 @@ module Ionization
 !   2-feb-03/axel: simple example coded
 !  15-jun-03/axel: made compatible with current ionization routine
 !
-      real, intent(in) :: lnrho,yH,lnTT
-      real, optional :: cs2,cp1tilde,ee,pp
-      real :: TT
+      use Mpicomm
 !
-      TT=exp(lnTT)
+      real, intent(in) :: lnrho,ss
+      real, dimension(3), intent(in), optional :: glnrho,gss
+      real, intent(out), optional :: yH,lnTT
+      real, intent(out), optional :: cs2,cp1tilde
+      real, dimension(3), intent(out), optional :: glnTT,glnPP
+      real, intent(out), optional :: ee,pp
+      real :: logTT,TT
 !
-      if (present(cs2))      cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TT
-      if (present(cp1tilde)) cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
-      if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
-      if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
+      logTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+      TT=exp(logTT)
+!
+      if (present(cs2))      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*TT
+      if (present(cp1tilde)) cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
+      if (present(yH))       yH=yH0
+      if (present(lnTT))     lnTT=logTT
+      if (present(glnTT).or.present(glnPP)) then
+        if (.not.(present(glnrho).or.present(gss))) then
+          call stop_it ("thermodynamics: You need to supply glnrho and gss")
+        else
+          if (present(glnTT)) then
+            glnTT=(2.0/3.0)*(glnrho+gss/((1+yH0+xHe)*ss_ion))
+          endif
+          if (present(glnPP)) then
+            glnPP=(1+2.0/3.0)*glnrho+(2.0/3.0)*gss/((1+yH0+xHe)*ss_ion)
+          endif
+        endif
+      endif
+      if (present(ee))       ee=1.5*(1+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
+      if (present(pp))       pp=(1+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.241 2003-11-11 12:38:09 mee Exp $
+! $Id: entropy.f90,v 1.242 2003-11-16 13:57:21 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.241 2003-11-11 12:38:09 mee Exp $")
+           "$Id: entropy.f90,v 1.242 2003-11-16 13:57:21 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -574,30 +574,32 @@ module Entropy
       use Gravity, only: g0
       use Density, only: mpoly
 
-      use Ionization, only: ionput
+      use Ionization, only: getentropy
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension (nx) :: Temp,yH,lnTemp
+      real, dimension (nx) :: lnrho,lnTT,TT,ss
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
       if (initss=='geo-kws') then
-        do imn=1,ny*nz
-          n=nn(imn)
-          m=mm(imn)
-
-! set x_mn, y_mn, z_mn and r_mn
+        do m=m1,m2
+        do n=n1,n2
 
           x_mn = x(l1:l2)
           y_mn = spread(y(m),1,nx)
           z_mn = spread(z(n),1,nx)
           r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
 
-          where (r_mn >= r_ext) Temp = TT_ext
-          where (r_mn < r_ext .AND. r_mn > r_int) Temp = 1+beta1*(1/r_mn-1)
-          where (r_mn <= r_int) Temp = TT_int
-          lnTemp = log(Temp)
-          call ionput(f,yH,lnTemp)
+          where (r_mn >= r_ext) TT = TT_ext
+          where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)
+          where (r_mn <= r_int) TT = TT_int
+
+          lnrho=f(l1:l2,m,n,ilnrho)
+          lnTT=log(TT)
+          call getentropy(lnrho,lnTT,ss)
+          f(l1:l2,m,n,iss)=ss
+
+        enddo 
         enddo 
       endif
       
@@ -724,7 +726,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gss,gshock,glnTT
       real, dimension (nx) :: ugss,uglnrho,divu
-      real, dimension (nx) :: lnrho,ss,yH,lnTT,rho1,cs2,TT1,cp1tilde
+      real, dimension (nx) :: lnrho,ss,rho1,cs2,yH,lnTT,TT1,cp1tilde
       real, dimension (nx) :: rho,ee,shock
       real :: zbot,ztop,xi,profile_cor
       integer :: j,ju
@@ -750,13 +752,14 @@ module Entropy
 !  yH and TT have already been calculated in the beginning of pencil loop
 !
       ss=f(l1:l2,m,n,iss)
-      call ionget(f,yH,lnTT,glnTT=glnTT)
-      call thermodynamics(lnrho,yH,lnTT,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
+      call thermodynamics(f,glnrho=glnrho,gss=gss,yH=yH,lnTT=lnTT,cs2=cs2, &
+                            cp1tilde=cp1tilde,glnTT=glnTT,ee=ee)
+      TT1=exp(-lnTT)
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
 !
-      if (headtt) print*,'dss_dt: cs2,lnTT,cp1tilde=',cs2(1),lnTT(1),cp1tilde(1)
+      if (headtt) print*,'dss_dt: lnTT,cs2,cp1tilde=',lnTT(1),cs2(1),cp1tilde(1)
 !
 !  use sound speed in Courant condition
 !
@@ -792,11 +795,6 @@ module Entropy
 !
       call u_dot_gradf(f,iss,gss,uu,ugss,UPWIND=lupw_ss)
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - ugss
-!
-!  T is now calculated in thermodynamics, calculate 1/T (==TT1)
-!  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
-!  
-      TT1=exp(-lnTT)
 !
 !ajwm - lviscosity always true and there is not a noviscosity module
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.89 2003-11-11 12:38:09 mee Exp $
+! $Id: noionization.f90,v 1.90 2003-11-16 13:57:21 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -24,14 +24,9 @@ module Ionization
     module procedure thermodynamics_point    ! explicit lnrho, ss
   end interface
 
-  interface ionget
-    module procedure ionget_pencil
-    module procedure ionget_point
-  end interface
-
-  interface ionput                      ! does opposite of ionget...
-    module procedure ionput_pencil      ! (i.e. calculates ss from TT (+ rho)
-    module procedure ionput_point       !   cf. TT from ss (+ rho) )
+  interface getentropy
+    module procedure getentropy_pencil
+    module procedure getentropy_point
   end interface
 
   interface perturb_energy              ! Overload subroutine perturb_energy
@@ -91,7 +86,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.89 2003-11-11 12:38:09 mee Exp $")
+           "$Id: noionization.f90,v 1.90 2003-11-16 13:57:21 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -272,73 +267,30 @@ module Ionization
 !
     end subroutine isothermal_density_ion
 !***********************************************************************
-    subroutine ionget_pencil(f,yH,lnTT,glnTT)
-!
-      use Cdata
-      use Sub, only: grad 
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx), intent(inout) :: yH,lnTT
-      real, dimension(nx,3), intent(out), optional :: glnTT
-      real, dimension(nx) :: lnrho,ss
-      real, dimension(nx,3) :: glnrho,gss
-!
-      lnrho=f(l1:l2,m,n,ilnrho)
-      ss=f(l1:l2,m,n,iss)
-!
-      yH=0.
-      lnTT=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
-      if (present(glnTT)) then
-        call grad(f,iss,gss)
-        call grad(f,ilnrho,glnrho)
-        glnTT=gamma*gss+gamma1*glnrho
-      endif  
-!
-    endsubroutine ionget_pencil
-!***********************************************************************
-    subroutine ionget_point(lnrho,ss,yH,lnTT)
-!
-      use Cdata
-      use Sub, only: grad
-!
-      real, intent(in) :: lnrho,ss
-      real, intent(out) :: yH,lnTT
-!
-      yH=0.
-      lnTT=lnTT0*gamma*ss+gamma1*(lnrho-lnrho0)
-!
-    endsubroutine ionget_point
-!***********************************************************************
-    subroutine ionput_pencil(f,yH,lnTT)
+    subroutine getentropy_pencil(lnrho,lnTT,ss)
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension(nx), intent(inout) :: yH,lnTT
-      real, dimension(nx) :: lnrho,ss
+      real, dimension(nx), intent(in) :: lnrho,lnTT
+      real, dimension(nx), intent(out) :: ss
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
-!
-      yH=0.
       ss=(lnTT-lnTT0-gamma1*(lnrho-lnrho0))/gamma  
 !
-      f(l1:l2,m,n,iss)=ss
-!
-    endsubroutine ionput_pencil
+    endsubroutine getentropy_pencil
 !***********************************************************************
-    subroutine ionput_point(lnrho,ss,yH,lnTT)
+    subroutine getentropy_point(lnrho,lnTT,ss)
 !
       use Cdata
 !
       real, intent(in) :: lnrho,lnTT
-      real, intent(out) :: yH,ss
+      real, intent(out) :: ss
 !
-      yH=0.
       ss=(lnTT-lnTT0-gamma1*(lnrho-lnrho0))/gamma
 !
-    endsubroutine ionput_point
+    endsubroutine getentropy_point
 !***********************************************************************
-    subroutine thermodynamics_pencil(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_pencil &
+               (f,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -354,21 +306,38 @@ module Ionization
       use Sub
       use Mpicomm, only: stop_it
 !
-      real, dimension(nx), intent(in) :: lnrho,yH,lnTT
-      real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
-      real, dimension(nx) :: TT_
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx,3), intent(in), optional :: glnrho,gss
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: cs2,cp1tilde
+      real, dimension(nx,3), intent(out), optional :: glnTT,glnPP
+      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension(nx) :: lnrho,ss,logTT,TT_
 !
-      TT_=exp(lnTT-lnTT0)
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,iss)
+      logTT=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+      TT_=exp(logTT-lnTT0)
       if (gamma1==0.) call stop_it("thermodynamics: gamma=1 not allowed w/entropy")
       if (present(cs2)) cs2=cs20*TT_
-      if (present(cp1tilde)) cp1tilde=1.
+      if (present(cp1tilde)) cp1tilde=1
+      if (present(yH)) yH=0
+      if (present(lnTT)) lnTT=logTT
+      if (present(glnTT).or.present(glnPP)) then
+        if (.not.(present(glnrho).or.present(gss))) then
+          call stop_it ("thermodynamics: You need to supply glnrho and gss")
+        else
+          if (present(glnTT)) glnTT=gamma1*glnrho+gamma*gss
+          if (present(glnPP)) glnPP=glnrho+gamma*gss
+        endif
+      endif
       if (present(ee)) ee=cs20*TT_/gamma1/gamma
       if (present(pp)) pp=cs20*TT_*exp(lnrho)/gamma
 !
-      if (ip==0) print*,yH
     endsubroutine thermodynamics_pencil
 !***********************************************************************
-    subroutine thermodynamics_point(lnrho,yH,lnTT,cs2,cp1tilde,ee,pp)
+    subroutine thermodynamics_point &
+               (lnrho,ss,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -384,18 +353,32 @@ module Ionization
       use Sub
       use Mpicomm, only: stop_it
 !
-      real, intent(in) :: lnrho,yH,lnTT
-      real, optional :: cs2,cp1tilde,ee,pp
-      real :: TT_
+      real, intent(in) :: lnrho,ss
+      real, dimension(3), intent(in), optional :: glnrho,gss
+      real, intent(out), optional :: yH,lnTT
+      real, intent(out), optional :: cs2,cp1tilde
+      real, dimension(3), intent(out), optional :: glnTT,glnPP
+      real, intent(out), optional :: ee,pp
+      real :: logTT,TT_
 !
-      TT_=exp(lnTT-lnTT0)
+      logTT=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+      TT_=exp(logTT-lnTT0)
       if (gamma1==0.) call stop_it("thermodynamics: gamma=1 not allowed w/entropy")
       if (present(cs2)) cs2=cs20*TT_
       if (present(cp1tilde)) cp1tilde=1.
+      if (present(yH)) yH=0
+      if (present(lnTT)) lnTT=logTT
       if (present(ee)) ee=cs20*TT_/gamma1/gamma
       if (present(pp)) pp=cs20*TT_*exp(lnrho)/gamma
+      if (present(glnTT).or.present(glnPP)) then
+        if (.not.(present(glnrho).or.present(gss))) then
+          call stop_it ("thermodynamics: You need to supply glnrho and gss")
+        else
+          if (present(glnTT)) glnTT=gamma1*glnrho+gamma*gss
+          if (present(glnPP)) glnPP=glnrho+gamma*gss
+        endif
+      endif
 !
-      if (ip==0) print*,yH
     endsubroutine thermodynamics_point
 !***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
