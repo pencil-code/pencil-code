@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.120 2004-05-31 15:43:02 brandenb Exp $
+! $Id: mpicomm.f90,v 1.121 2004-06-01 10:27:44 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1269,6 +1269,68 @@ subroutine transform_fftpack(a_re,a_im,dummy)
   if(ip==0) print*,dummy  !(keep compiler quiet)
 !
 endsubroutine transform_fftpack
+!***********************************************************************
+subroutine transform_fftpack_2d(a_re,a_im,dummy)
+!
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data.
+!  This version works currently only when nxgrid=nygrid=nzgrid!
+!  The length of the work arrays for ffts is therefore always nx.
+!
+!  27-oct-02/axel: adapted from transform_fftpack
+!
+  real,dimension(nx,ny,nz) :: a_re,a_im
+  complex,dimension(nx) :: ax
+  real,dimension(4*nx+15) :: wsavex
+  integer :: m,n
+  integer,optional :: dummy
+
+!
+!  check whether nxgrid=nygrid=nzgrid
+!
+  if(nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
+    print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
+    call stop_it("must have nxgrid=nygrid=nzgrid!")
+  endif
+!
+!  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
+!
+  call cffti(nx,wsavex)
+!
+  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in x'
+  do n=1,nz
+  do m=1,ny
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call cfftf(nx,ax,wsavex)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+  call transp(a_re,'z')
+  call transp(a_im,'z')
+  !
+  !  The length of the array in the z-direction is also nx
+  !
+  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+  do n=1,nz
+    do m=1,ny
+      ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+      call cfftf(nx,ax,wsavex)
+      a_re(:,m,n)=real(ax)
+      a_im(:,m,n)=aimag(ax)
+    enddo
+  enddo
+endif
+!
+!  Normalize
+!
+  a_re=a_re/nwgrid
+  a_im=a_im/nwgrid
+  if(lroot .AND. ip<10) print*,'transform_fftpack: fft has finished'
+!
+  if(ip==0) print*,dummy  !(keep compiler quiet)
+!
+endsubroutine transform_fftpack_2d
 !***********************************************************************
 subroutine transform_nr(a_re,a_im)
 !

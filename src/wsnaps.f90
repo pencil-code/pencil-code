@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.49 2004-04-03 17:00:57 mee Exp $
+! $Id: wsnaps.f90,v 1.50 2004-06-01 10:27:44 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -158,6 +158,11 @@ contains
             if (vel_spec) call power_1d(a,'u',3)
             if (mag_spec) call power_1d(a,'b',3)
             if (vec_spec) call power_1d(a,'a',3)
+         endif
+         if (twod) then
+            if (vel_spec) call power_2d(a,'u')
+            if (mag_spec) call power_2d(a,'b')
+            if (vec_spec) call power_2d(a,'a')
          endif
          !
          !  Doing structure functions
