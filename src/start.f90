@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.78 2003-03-18 23:27:09 brandenb Exp $
+! $Id: start.f90,v 1.79 2003-04-09 11:04:19 theine Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.78 2003-03-18 23:27:09 brandenb Exp $")
+             "$Id: start.f90,v 1.79 2003-04-09 11:04:19 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -129,6 +129,10 @@
 !  check whether we want self-gravity
 !
         if(lself_gravity) call self_gravity(f)
+!
+!  check whether we want ionization
+!
+        if(lionization) call ionfrac(f)
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file
