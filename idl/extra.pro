@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.28 2003-10-20 14:22:05 theine Exp $
+;  $Id: extra.pro,v 1.29 2003-10-23 19:21:48 theine Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -66,7 +66,7 @@ end
 ;  calculate vertical averages
 ;
 if (iss ne 0) then begin
-  if (nz gt 1 and (nx gt 1 or ny gt 1)) then begin
+  if (nz gt 1 and nx gt 1 and ny gt 1) then begin
     cs2m=haver(cs2) & csm=sqrt(cs2m)
     rhom=haver(rho)
   end
