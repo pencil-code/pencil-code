@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.11 2002-06-04 08:12:02 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.12 2002-06-04 08:19:54 brandenb Exp $
 
 module Magnetic
 
@@ -40,8 +40,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-06-04 08:12:02 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-06-04 08:19:54 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -56,7 +56,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if(ip==0) print*,xx,yy,zz !(keep compiler quiet)
+      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_aa
 !***********************************************************************
     subroutine daa_dt(f,df,uu,rho1,TT1)
@@ -69,7 +69,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu
-      real, dimension (nx) :: rho1,TT1,cs2
+      real, dimension (nx) :: rho1,TT1
 !
       if(ip==0) print*,f,df,uu,rho1,TT1 !(keep compiler quiet)
     endsubroutine daa_dt
@@ -88,19 +88,9 @@ module Magnetic
 !  idl needs this even if everything is zero
 !
       open(3,file='tmp/magnetic.pro')
-      write(3,*) 'i_abm=',i_abm
-      write(3,*) 'i_jbm=',i_jbm
-      write(3,*) 'i_b2m=',i_b2m
-      write(3,*) 'i_bm2=',i_bm2
-      write(3,*) 'i_j2m=',i_j2m
-      write(3,*) 'i_jm2=',i_jm2
-      write(3,*) 'nname=',nname
-      write(3,*) 'iaa=',iaa
-      write(3,*) 'iax=',iax
-      write(3,*) 'iay=',iay
-      write(3,*) 'iaz=',iaz
       close(3)
 !
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_magnetic
 !***********************************************************************
 
