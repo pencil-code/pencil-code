@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.16 2004-06-22 10:16:17 bingert Exp $
+! $Id: deriv.f90,v 1.17 2004-06-30 07:38:44 bingert Exp $
 
 module Deriv
   
@@ -166,11 +166,11 @@ module Deriv
       if (.not. lequidist(j)) then
          call der_equidist(f,k,df,j)
          if (j==1) then
-            df2 = df2*(dx*xiprim(l1:l2))**2- df*xiprim2(l1:l2)*dx
+            df2 = df2*(dx*xiprim(l1:l2))**2+ df*xiprim2(l1:l2)*dx
          elseif (j==2) then
-            df2 = df2*(dy*psiprim(m))**2   - df*psiprim2(m)*dy
+            df2 = df2*(dy*psiprim(m))**2   + df*psiprim2(m)*dy
          elseif (j==3) then
-            df2 = df2*(dy*zetaprim(n))**2  - df*zetaprim2(n)*dz
+            df2 = df2*(dy*zetaprim(n))**2  + df*zetaprim2(n)*dz
          endif
       endif
 

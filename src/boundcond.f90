@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.65 2004-06-22 10:21:18 bingert Exp $
+! $Id: boundcond.f90,v 1.66 2004-06-30 07:38:43 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1241,11 +1241,10 @@ module Boundcond
        endif
        
 ! Fill the ghost cells and the bottom layer with vel. field
-       f(l1:l2,m1:m2,n1:n2,iuz) = 0.
-       do jpp=1,l1 
+       f(l1:l2,m1:m2,n1,iuz) = 0.
+       do jpp=1,n1
           f(l1:l2,m1:m2,jpp,iux) = uxd(:,:)/1.e5
           f(l1:l2,m1:m2,jpp,iuy) = uyd(:,:)/1.e5
-         
        enddo
        if (notanumber(uxd))    print*,'uxd'
        if (notanumber(uyd))    print*,'uyd'
