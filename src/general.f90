@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.33 2003-12-18 04:01:15 brandenb Exp $
+! $Id: general.f90,v 1.34 2004-03-10 22:21:51 dobler Exp $
 
 module General
 
@@ -11,6 +11,7 @@ module General
   implicit none
 
   interface random_number_wrapper   ! Overload this function
+    module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
     module procedure random_number_wrapper_3
   endinterface
@@ -112,10 +113,25 @@ module General
 !
     endsubroutine setup_mm_nn
 !***********************************************************************
+    subroutine random_number_wrapper_0(a)
+!
+!  Fills a with a random number calculated with one of the generators
+!  available with random_gen
+!
+      real :: a
+      real, dimension(1) :: b
+!
+!     b = a                     ! not needed unless numbers are non-Markovian
+!
+      call random_number_wrapper(b)
+      a = b(1)
+!
+    endsubroutine random_number_wrapper_0
+!***********************************************************************
     subroutine random_number_wrapper_1(a)
 !
-!  Produces a matrix filled with random numbers calculated
-!  with the 'Minimal Standard' random number generator
+!  Fills a with an array of random numbers calculated with one of the
+!  generators available with random_gen
 !
       use Cdata, only: lroot
 !
@@ -143,8 +159,8 @@ module General
 !***********************************************************************
     subroutine random_number_wrapper_3(a)
 !
-!  Produces a matrix filled with random numbers calculated
-!  with the 'Minimal Standard' random number generator
+!  Fills a with a matrix of random numbers calculated with one of the
+!  generators available with random_gen
 !
       use Cdata, only: lroot
 !

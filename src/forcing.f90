@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.61 2004-03-10 09:49:45 nilshau Exp $
+! $Id: forcing.f90,v 1.62 2004-03-10 22:21:51 dobler Exp $
 
 module Forcing
 
@@ -58,7 +58,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.61 2004-03-10 09:49:45 nilshau Exp $")
+           "$Id: forcing.f90,v 1.62 2004-03-10 22:21:51 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -276,6 +276,8 @@ module Forcing
       integer :: ik,j,jf
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+      real, dimension(3) :: e1,e2,ee
+      real :: phi
 !
       if (ifirst==0) then
         if (lroot) print*,'forcing_hel: opening k.dat'
@@ -327,37 +329,32 @@ module Forcing
 !
 ! Find e-vector
 !
-if (old_forcing_evector) then
-  !
-  ! Keeping old method (not isotropic) for now.
-  ! Pick e1 if kk not parallel to ee1. ee2 else.
-  !
-  if((ky.eq.0).and.(kz.eq.0)) then
-    ex=0; ey=1; ez=0
-  else
-    ex=1; ey=0; ez=0
-  endif
-  kde=kx*ex+ky*ey+kz*ez
-else
-  !
-  !  Choose (randomly) which component of e to be non-zero.
-  !  Need to do this in order for the forcing to be isotropic.
-  !
-  same=.true.
-  do while (same)
-    call random_number_wrapper(frane)
-    if (frane(1) .le.0.333) then
-      ex=1; ey=0; ez=0 
-    elseif (frane(1).le.0.667) then
-      ex=0; ey=1; ez=0 
-    else
-      ex=0; ey=0; ez=1
-    endif
-    kde=kx*ex+ky*ey+kz*ez
-    same=.false.
-    if (kde**2 .eq. k2) same=.true.
-  enddo
-endif
+      !
+      ! Start with old method (not isotropic) for now.
+      ! Pick e1 if kk not parallel to ee1. ee2 else.
+      !
+      if((ky.eq.0).and.(kz.eq.0)) then
+        ex=0; ey=1; ez=0
+      else
+        ex=1; ey=0; ez=0
+      endif
+      kde=kx*ex+ky*ey+kz*ez
+      if (.not. old_forcing_evector) then
+        !
+        !  Isotropize ee in the plane perp. to kk by rotating by random
+        !  angle phi.
+        !  Need to do this in order for the forcing to be isotropic.
+        !
+        e1 = (/ex,ey,ez/)       ! rename ee to e1
+        e2 = (/ ky*ez-kz*ey, &
+                kz*ex-kx*ez, &
+                kx*ey-ky*ex  /) / k ! e2 is unit vect perp. to kk, e1
+        call random_number_wrapper(phi)
+        phi = phi*2*pi
+        ee = cos(phi)*e1 + sin(phi)*e2
+        ex=ee(1); ey=ee(2); ez=ee(3)
+        kde = kx*ex+ky*ey+kz*ez
+      endif
 !
 !  k.e
 !
