@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.178 2004-06-03 17:26:37 brandenb Exp $ 
+! $Id: param_io.f90,v 1.179 2004-06-09 10:20:47 ajohan Exp $ 
 
 module Param_IO
 
@@ -164,17 +164,19 @@ module Param_IO
                       read(1,NML=init_pars                 ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
       label='hydro_init_pars'
-      if (lhydro    ) read(1,NML=hydro_init_pars           ,ERR=99, IOSTAT=ierr)
+      if (lhydro .or. lhydro_fixed) &
+          read(1,NML=hydro_init_pars           ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
       label='density_init_pars'
-      if (ldensity     ) read(1,NML=density_init_pars      ,ERR=99, IOSTAT=ierr)
+      if (ldensity .or. ldensity_fixed) read(1,NML=density_init_pars      ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
       ! no input parameters for forcing
       label='grav_init_pars'
       if (lgrav        ) read(1,NML=grav_init_pars         ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
       label='entropy_init_pars'
-      if (lentropy     ) read(1,NML=entropy_init_pars      ,ERR=99, IOSTAT=ierr)
+      if (lentropy .or. lentropy_fixed) &
+          read(1,NML=entropy_init_pars      ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
       label='magnetic_init_pars'
       if (lmagnetic    ) read(1,NML=magnetic_init_pars     ,ERR=99, IOSTAT=ierr)
@@ -278,11 +280,11 @@ module Param_IO
         print*
         print*,'-----BEGIN sample namelist ------'
                            print*,'&init_pars                /'
-        if (lhydro       ) print*,'&hydro_init_pars          /'
-        if (ldensity     ) print*,'&density_init_pars        /'
+        if (lhydro .or. lhydro_fixed) print*,'&hydro_init_pars          /'
+        if (ldensity .or. ldensity_fixed) print*,'&density_init_pars        /'
         ! no input parameters for forcing
         if (lgrav        ) print*,'&grav_init_pars           /'
-        if (lentropy     ) print*,'&entropy_init_pars        /'
+        if (lentropy .or. lentropy_fixed) print*,'&entropy_init_pars        /'
         if (lmagnetic    ) print*,'&magnetic_init_pars       /'
         if (lradiation   ) print*,'&radiation_init_pars      /'
         if (lionization  ) print*,'&ionization_init_pars     /'
@@ -329,11 +331,11 @@ module Param_IO
         endif
 !
                         write(unit,NML=init_pars          )
-        if (lhydro       ) write(unit,NML=hydro_init_pars       )
-        if (ldensity     ) write(unit,NML=density_init_pars     )
+        if (lhydro .or. lhydro_fixed) write(unit,NML=hydro_init_pars       )
+        if (ldensity .or. ldensity_fixed) write(unit,NML=density_init_pars     )
         ! no input parameters for forcing
         if (lgrav        ) write(unit,NML=grav_init_pars        )
-        if (lentropy     ) write(unit,NML=entropy_init_pars     )
+        if (lentropy .or. lentropy_fixed) write(unit,NML=entropy_init_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_init_pars    )
         if (lradiation   ) write(unit,NML=radiation_init_pars   )
 
@@ -401,10 +403,12 @@ module Param_IO
                          read(1,NML=run_pars              ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'run.in')
       label='hydro_run_pars'
-      if (lhydro       ) read(1,NML=hydro_run_pars        ,ERR=99, IOSTAT=ierr)
+      if (lhydro .or. lhydro_fixed) &
+          read(1,NML=hydro_run_pars        ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'run.in')
       label='density_run_pars'
-      if (ldensity     ) read(1,NML=density_run_pars      ,ERR=99, IOSTAT=ierr)
+      if (ldensity .or. ldensity_fixed) &
+          read(1,NML=density_run_pars      ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'run.in')
       label='forcing_run_pars'
       if (lforcing     ) read(1,NML=forcing_run_pars      ,ERR=99, IOSTAT=ierr)
@@ -413,7 +417,8 @@ module Param_IO
       if (lgrav        ) read(1,NML=grav_run_pars         ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'run.in')
       label='entropy_run_pars'
-      if (lentropy     ) read(1,NML=entropy_run_pars      ,ERR=99, IOSTAT=ierr)
+      if (lentropy .or. lentropy_fixed) &
+          read(1,NML=entropy_run_pars      ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'run.in')
       label='magnetic_run_pars'
       if (lmagnetic    ) read(1,NML=magnetic_run_pars     ,ERR=99, IOSTAT=ierr)
@@ -587,11 +592,11 @@ module Param_IO
         print*
         print*,'-----BEGIN sample namelist ------'
                         print*,'&run_pars                /'
-        if (lhydro       ) print*,'&hydro_run_pars          /'
-        if (ldensity     ) print*,'&density_run_pars        /'
+        if (lhydro .or. lhydro_fixed) print*,'&hydro_run_pars          /'
+        if (ldensity .or. ldensity_fixed) print*,'&density_run_pars        /'
         if (lforcing     ) print*,'&forcing_run_pars        /'
         if (lgrav        ) print*,'&grav_run_pars           /'
-        if (lentropy     ) print*,'&entropy_run_pars        /'
+        if (lentropy .or. lentropy_fixed) print*,'&entropy_run_pars        /'
         if (lmagnetic    ) print*,'&magnetic_run_pars       /'
         if (lradiation   ) print*,'&radiation_run_pars      /'
         if (lionization  ) print*,'&ionization_run_pars     /'
@@ -662,10 +667,10 @@ module Param_IO
         endif
 !
                            write(unit,NML=run_pars             )
-        if (lhydro       ) write(unit,NML=hydro_run_pars       )
+        if (lhydro .or. lhydro_fixed) write(unit,NML=hydro_run_pars       )
         if (lforcing     ) write(unit,NML=forcing_run_pars     )
         if (lgrav        ) write(unit,NML=grav_run_pars        )
-        if (lentropy     ) write(unit,NML=entropy_run_pars     )
+        if (lentropy .or. lentropy_fixed) write(unit,NML=entropy_run_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_run_pars    )
         if (lradiation   ) write(unit,NML=radiation_run_pars   )
 
@@ -784,7 +789,8 @@ module Param_IO
            lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            ldustvelocity,ldustdensity,lvisc_shock,lradiation_fld,  &
-           lionization,lionization_fixed,lvisc_hyper,lchiral
+           lionization,lionization_fixed,lvisc_hyper,lchiral, &
+           lhydro_fixed,ldensity_fixed,lentropy_fixed
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories
@@ -795,11 +801,11 @@ module Param_IO
 !      if (lroot) then
         open(1,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe' )
                            write(1,NML=init_pars             )
-        if (lhydro       ) write(1,NML=hydro_init_pars       )
-        if (ldensity     ) write(1,NML=density_init_pars     )
+        if (lhydro .or. lhydro_fixed) write(1,NML=hydro_init_pars       )
+        if (ldensity .or. ldensity_fixed) write(1,NML=density_init_pars     )
         ! no input parameters for forcing
         if (lgrav        ) write(1,NML=grav_init_pars        )
-        if (lentropy     ) write(1,NML=entropy_init_pars     )
+        if (lentropy .or. lentropy_fixed) write(1,NML=entropy_init_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_init_pars    )
         if (lradiation   ) write(1,NML=radiation_init_pars   )
 
@@ -831,11 +837,11 @@ module Param_IO
 !
         open(1,FILE=trim(datadir)//'/param.nml')
                            read(1,NML=init_pars             )
-        if (lhydro       ) read(1,NML=hydro_init_pars       )
-        if (ldensity     ) read(1,NML=density_init_pars     )
+        if (lhydro .or. lhydro_fixed) read(1,NML=hydro_init_pars       )
+        if (ldensity .or. ldensity_fixed) read(1,NML=density_init_pars     )
         ! no input parameters for forcing
         if (lgrav        ) read(1,NML=grav_init_pars        )
-        if (lentropy     ) read(1,NML=entropy_init_pars     )
+        if (lentropy .or. lentropy_fixed) read(1,NML=entropy_init_pars     )
         if (lmagnetic    ) read(1,NML=magnetic_init_pars    )
         if (lradiation   ) read(1,NML=radiation_init_pars   )
 
@@ -868,11 +874,11 @@ module Param_IO
       if (lroot) then
         open(1,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
                            write(1,NML=run_pars             )
-        if (lhydro       ) write(1,NML=hydro_run_pars       )
-        if (ldensity     ) write(1,NML=density_run_pars     )
+        if (lhydro .or. lhydro_fixed) write(1,NML=hydro_run_pars       )
+        if (ldensity .or. ldensity_fixed) write(1,NML=density_run_pars     )
         if (lforcing     ) write(1,NML=forcing_run_pars     )
         if (lgrav        ) write(1,NML=grav_run_pars        )
-        if (lentropy     ) write(1,NML=entropy_run_pars     )
+        if (lentropy .or. lentropy_fixed) write(1,NML=entropy_run_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_run_pars    )
         if (lradiation   ) write(1,NML=radiation_run_pars   )
 

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.234 2004-06-03 17:26:37 brandenb Exp $
+! $Id: cdata.f90,v 1.235 2004-06-09 10:20:47 ajohan Exp $
 
 module Cdata
 
@@ -117,7 +117,9 @@ module Cdata
   !  be reset also via appropriate namelist entries.
 
   logical :: lstart=.false., lrun=.false.
-  logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
+  logical :: lhydro=.false., lhydro_fixed=.false., ldensity=.false.
+  logical :: ldensity_fixed=.false., lentropy=.false., lentropy_fixed=.false.
+  logical :: lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.true.
   logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.

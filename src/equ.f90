@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.213 2004-05-29 06:30:38 brandenb Exp $
+! $Id: equ.f90,v 1.214 2004-06-09 10:20:47 ajohan Exp $
 
 module Equ
 
@@ -260,7 +260,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.213 2004-05-29 06:30:38 brandenb Exp $")
+           "$Id: equ.f90,v 1.214 2004-06-09 10:20:47 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -465,7 +465,7 @@ module Equ
 !  Note that p/rho = gamma1*e = cs2/gamma, so e = cs2/(gamma1*gamma).
 !
         if (ldiagnos) then
-          if (ldensity) then
+          if (ldensity .or. ldensity_fixed) then
             ! Nothing seems to depend on lhydro here:
             ! if(lhydro) then
             rho=exp(f(l1:l2,m,n,ilnrho))
