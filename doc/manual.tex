@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.152 2003-03-18 23:36:17 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.153 2003-03-19 17:03:36 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -187,6 +187,12 @@
 \newcommand{\Note}[1]{\emph{[#1]}}
 
 
+%% Symbols for dependancy tables
+%% required
+\newcommand{\req}{$\bullet$}  
+%% optional
+\newcommand{\opt}{$\diamond$}  
+
 %% keys, names, paths, files, etc.
 %% Examples: \name{Greeks} \name[Trojans]{Greeks}
 \newcommand{\code}[1]{\texttt{#1}}
@@ -334,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-03-18 23:36:17 $ $,~ $ $Revision: 1.152 $ $}
+\date{$ $Date: 2003-03-19 17:03:36 $ $,~ $ $Revision: 1.153 $ $}
 
 % ====================================================================== %
 
@@ -367,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-03-18 23:36:17 $ $,~ $ $Revision: 1.152 $ $}
+  \emph{$ $Date: 2003-03-19 17:03:36 $ $,~ $ $Revision: 1.153 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3880,6 +3886,11 @@ modules.
                      \emph{Still experimental and not working correctly}. \\
     noradiation.f90& No radiative transfer. \\
     \midrule
+    visc_const.f90 & Constant fluid viscosity. \\
+    visc_shock.f90 & Constant fluid viscosity and variable shock viscosity (conserves energy) based upon 
+                     local strength of a shock. The shock profile is calculated from the velocity field.
+                     \emph{Still experimental and not fully tested. }. \\
+    \midrule
     \midrule
     forcing.f90    & Add a forcing function to rhs of equation of motion
                     (typically helical forcing) for forced turbulence
@@ -4014,7 +4025,9 @@ double precision, $\varepsilon\approx10^{-15}$.
                & initialization of velocity. Currently valid choices are
                  \begin{description}
                  \item[\code{`zero'}] ($\uv=0$ ),
-                 \item[\code{`random-normal'}] (random,
+                 \item[\code{`gaussian-noise'}] (random,
+                   normally-distributed $u_x$,$u_z$),
+                 \item[\code{`gaussian-noise-x'}] (random,
                    normally-distributed $u_x$),
                  \item[\code{`sound-wave'}] (sound wave in $x$ direction),
                  \item[\code{`shock-tube'}] (polytropic standing shock),
@@ -4690,6 +4703,101 @@ possible inputs to the \file{print.in} file.
 \bottomrule
 \end{longtable}
 % ---------------------------------------------------------------------- %
+\subsection{Initial Condition Parameter Dependence}
+\label{S-all-init-depend}
+
+The following tables list which parameters from each Namelist are required 
+(\req), optional (\opt) or irrelevant (blank). The distinction is 
+made between required and optional where by a parameter requires a setting if
+the default value would give an invalid or degenerate case for the initial
+condition.
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lcccccccccccc}
+
+\toprule
+  inituu & 
+       \rotatebox{90}{ampluu}   & 
+       \rotatebox{90}{widthuu}  & 
+       \rotatebox{90}{urand}    & 
+       \rotatebox{90}{uu_left}  & 
+       \rotatebox{90}{uu_right} & 
+       \rotatebox{90}{uu_upper} & 
+       \rotatebox{90}{uu_lower} & 
+       \rotatebox{90}{uy_left}  & 
+       \rotatebox{90}{uy_right} & 
+       \rotatebox{90}{kx_uu}    & 
+       \rotatebox{90}{ky_uu}    & 
+       \rotatebox{90}{kz_uu}    \\ 
+\midrule
+  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   gaussian-noise   & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   gaussian-noise-x & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   xjump            & {}   & \opt & {}   & \req & \req & {}   & {}   
+                    & \req & \req & {}   & {}   & {}   \\
+\midrule
+   Beltrami-x       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Beltrami-y       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Beltrami-z       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-y      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-z      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   cos-cos-sin-uz   & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   tor_pert         & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   trilinear-x      & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   sound-wave       & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & \req & {}   & {}   \\
+\midrule
+   shock-tube       & {}   & \opt & {}   & \req & \req & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   bullets          & \req & \opt & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Alfven-circ-x    & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & \opt & {}   & {}   \\
+\midrule
+   const-ux         & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   const-uy         & \req & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   tang-discont-z   & \opt & \req & {}   & {}   & {}   & \req & \req 
+                    & {}   & {}   & {}   & {}   & {}   \\
+\midrule
+   Fourier-trunc    & \req & \opt & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & \req & \req & {}   \\
+\midrule
+   up-down          & \req & \opt & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   \\
+%
+\bottomrule
+\end{longtable}
 
 
 
@@ -4753,7 +4861,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.152 2003-03-18 23:36:17 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.153 2003-03-19 17:03:36 mee Exp $ $}
 
 
 \end{document}
