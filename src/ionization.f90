@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.90 2003-09-09 15:37:09 dobler Exp $
+! $Id: ionization.f90,v 1.91 2003-09-10 12:20:12 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -35,18 +35,16 @@ module Ionization
   !  secondary parameters calculated in initialize
   real :: TT_ion,TT_ion_,ss_ion,kappa0,xHe_term
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
-  real :: yHmin,yHmax
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
-  logical :: lionization=.true.,lionization_fixed=.false.
-  real :: yHacc=1e-7,xHe=0.1
+  real :: xHe=0.1
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe,yHacc
+  namelist /ionization_init_pars/ xHe
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,yHacc
+  namelist /ionization_run_pars/ xHe
 
   contains
 
@@ -65,6 +63,9 @@ module Ionization
       if (.not. first) call stop_it('register_ionization: called twice')
       first = .false.
 !
+      lionization=.true.
+      lionization_fixed=.false.
+!
 !  set indices for auxiliary variables
 !
       iyH = mvar + naux +1; naux = naux + 1 
@@ -79,7 +80,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.90 2003-09-09 15:37:09 dobler Exp $")
+           "$Id: ionization.f90,v 1.91 2003-09-10 12:20:12 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -535,7 +536,8 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
       real, intent (in)    :: lnrho,ss
       real, intent (inout) :: yH
-      real                 :: yHmax,dyHold,dyH,fl,fh,f,df,temp
+      real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
+      real, parameter      :: yHacc=2*epsilon(1.)
       integer              :: i
       integer, parameter   :: maxit=100
 !
@@ -597,13 +599,14 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
       real, intent (in)    :: lnrho,ee
       real, intent (inout) :: yH
-      real                 :: yHmax,dyHold,dyH,fl,fh,f,df,temp
+      real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
+      real, parameter      :: yHacc=2*epsilon(1.)
       integer              :: i
       integer, parameter   :: maxit=100
 
-      yHmax=1.-yHacc
-      yHmin=yHacc
-      dyHold=1.-2.*yHacc
+      yHmax=1-2*epsilon(1.)
+      yHmin=2*tiny(1.)
+      dyHold=yHmax-yHmin
       dyH=dyHold
 !
 !  return if y is too close to 0 or 1
@@ -673,13 +676,14 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
       real, intent (in)    :: lnrho,pp
       real, intent (inout) :: yH
-      real                 :: yHmax,dyHold,dyH,fl,fh,f,df,temp
+      real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
+      real, parameter      :: yHacc=2*epsilon(1.)
       integer              :: i
       integer, parameter   :: maxit=100
 
-      yHmax=1.-yHacc
-      yHmin=yHacc
-      dyHold=1.-2.*yHacc
+      yHmax=1-2*epsilon(1.)
+      yHmin=2*tiny(1.)
+      dyHold=yHmax-yHmin
       dyH=dyHold
 !
 !  return if y is too close to 0 or 1

@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.13 2003-09-08 13:23:20 theine Exp $
+! $Id: ionization_fixed.f90,v 1.14 2003-09-10 12:20:12 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -38,17 +38,14 @@ module Ionization
   ! secondary parameters calculated in initialize
   real :: TT_ion,TT_ion_,ss_ion,kappa0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
-  real :: yHmin,yHmax
   real :: xHe_term,yH_term,one_yH_term
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
-  logical :: lionization=.true.,lionization_fixed=.true.
   real :: yH0=.0,xHe=0.1
 
   ! input parameters
-  integer :: dummy_ni 
   namelist /ionization_init_pars/ yH0,xHe
 
   ! run parameters
@@ -70,9 +67,11 @@ module Ionization
       if (.not. first) call stop_it('register_ionization: called twice')
       first = .false.
 !
+      lionization_fixed=.true.
+!
       iyH = 0
       iTT = 0
-
+!
       if ((ip<=8) .and. lroot) then
         print*, 'register_ionization: ionization nvar = ', nvar
       endif
@@ -80,7 +79,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.13 2003-09-08 13:23:20 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.14 2003-09-10 12:20:12 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -159,9 +158,6 @@ module Ionization
       ee0=yH0*ss_ion*TT_ion
       cp1tilde_=(2./5.)/(1.+yH0+xHe)
       eeTT=1.5*(1.+yH0+xHe)*ss_ion
-!
-      yHmin=0.
-      yHmax=1.
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'

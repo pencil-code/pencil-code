@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.19 2003-09-10 11:13:24 brandenb Exp $
+! $Id: slices.f90,v 1.20 2003-09-10 12:20:12 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -69,7 +69,6 @@ module Slices
 !  13-nov-02/axel: added more fields, use wslice.
 !
       use Sub
-      use Ionization  !!(we should move lionization to cdata)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character (len=*) :: path
