@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.63 2002-11-20 19:57:06 mee Exp $
+! $Id: density.f90,v 1.64 2002-11-24 13:14:59 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.63 2002-11-20 19:57:06 mee Exp $")
+           "$Id: density.f90,v 1.64 2002-11-24 13:14:59 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,6 +75,17 @@ module Density
       endif
 !
     endsubroutine register_density
+!***********************************************************************
+    subroutine initialize_density()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  24-nov-02/tony: coded 
+!
+!  do nothing
+!
+    endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f,xx,yy,zz)
 !
@@ -165,7 +176,9 @@ module Density
         if (lgravr) then
           if (lroot) print*, &
                'radial density stratification (assumes s=const)'
-          call setup_grav()     ! get coefficients cpot(1:5)
+!ajwm - here's the init call that needs sorting!
+          call initialize_gravity()     ! get coefficients cpot(1:5)
+
           call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
           !

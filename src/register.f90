@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.55 2002-11-20 19:57:06 mee Exp $
+! $Id: register.f90,v 1.56 2002-11-24 13:14:59 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -12,9 +12,9 @@ module Register
   contains
 
 !***********************************************************************
-    subroutine initialize()
+    subroutine register_modules()
 !
-!  Call all initialisation hooks, i.e. initialise MPI and register
+!  Call all registration hooks, i.e. initialise MPI and register
 !  physics modules.
 !
 !  6-nov-01/wolf: coded
@@ -49,11 +49,11 @@ module Register
       call register_density
       call register_viscosity
       call register_forcing
-      call register_ent
-      call register_aa
-      call register_rad
-      call register_lncc
-      call register_grav
+      call register_entropy
+      call register_magnetic
+      call register_radiation
+      call register_pscalar
+      call register_gravity
       call register_interstellar
       call register_shear
 !
@@ -71,7 +71,85 @@ module Register
       call get_datadir(datadir)
       call get_snapdir(directory_snap)
 !
-    endsubroutine initialize
+    endsubroutine register_modules
+!***********************************************************************
+    subroutine initialize_modules(f)
+!
+!ajwm - not sure whether original renaming of initialize to register
+!ajwm - and this and its children to initialize and initialize_XXX
+!ajwm - might be better???
+!
+!  Call all initialisation hooks, i.e. initialize
+!  physics modules so parameters derived from paramaters may be calculated.
+!
+!  6-nov-01/wolf: coded
+!
+      use Cdata
+!      use Mpicomm
+!      use Sub
+!      use IO
+!      use Param_io
+      use Gravity
+      use Hydro
+      use Forcing
+      use Entropy
+      use Magnetic
+      use Radiation
+      use Pscalar
+      use Interstellar
+      use Shear
+      use Viscosity
+      use Timeavg
+
+! Allow initializations it 'inspect' f
+      real, dimension(mx,my,mz,mvar) :: f
+!
+! Reset defaults for some variables to allow logical
+! .or. to be performed serially
+      lneed_sij = .false.
+      lneed_glnrho = .false.
+
+!
+!  set gamma1, cs20, and lnrho0
+!  general parameter checks (and possible adjustments)
+!
+      gamma1=gamma-1.
+      cs20=cs0**2
+      lnrho0=alog(rho0)
+
+!
+!  run initialization of individual modules
+!
+!ajwm need initialize_io ????
+!      call initialize_io
+!
+      call initialize_hydro
+      call initialize_density
+      call initialize_forcing  ! get random seed from file, ..
+      call initialize_entropy  ! calculate radiative conductivity, etc.
+      call initialize_magnetic
+      call initialize_radiation
+      call initialize_pscalar
+      call initialize_gravity
+      call initialize_interstellar
+      call initialize_shear
+      call initialize_viscosity
+!ajwm timeavg needs tidying to be similar structure to other modules
+      call initialize_timeavg(f) ! initialize time averages
+!
+!  timestep: if dt=0 (ie not initialized), ldt=.true.
+!
+!ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
+      ldt = (dt==0.)            ! need to calculate dt dynamically?
+      if (lroot .and. ip<14) then
+        if (ldt) then
+          print*,'timestep based on CFL cond; cdt=',cdt
+        else
+          print*, 'absolute timestep dt=', dt
+        endif
+      endif
+!
+    endsubroutine initialize_modules
 !***********************************************************************
     subroutine rprint_list(lreset)
 !

@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.1 2002-07-06 21:00:14 brandenb Exp $
+! $Id: nopscalar.f90,v 1.2 2002-11-24 13:14:59 mee Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -21,7 +21,7 @@ module Pscalar
   contains
 
 !***********************************************************************
-    subroutine register_lncc()
+    subroutine register_pscalar()
 !
 !  Initialise variables which should know that we solve for passive
 !  scalar: ilncc; increase nvar accordingly
@@ -42,9 +42,19 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.1 2002-07-06 21:00:14 brandenb Exp $")
+           "$Id: nopscalar.f90,v 1.2 2002-11-24 13:14:59 mee Exp $")
 !
-    endsubroutine register_lncc
+    endsubroutine register_pscalar
+!***********************************************************************
+    subroutine initialize_pscalar()
+!
+!  Perform any necessary post-parameter read initialization
+! 
+!
+!  24-nov-02/tony: coded
+!
+      ! dummy
+    endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc(f,xx,yy,zz)
 !

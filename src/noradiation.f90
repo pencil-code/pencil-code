@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.6 2002-10-04 12:22:39 dobler Exp $
+! $Id: noradiation.f90,v 1.7 2002-11-24 13:14:59 mee Exp $
 
 
 module Radiation
@@ -19,7 +19,7 @@ module Radiation
   contains
 
 !***********************************************************************
-    subroutine register_rad()
+    subroutine register_radiation()
 !
 !  15-jul-2002/nils: dummy routine
 !
@@ -37,9 +37,20 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.6 2002-10-04 12:22:39 dobler Exp $")
+           "$Id: noradiation.f90,v 1.7 2002-11-24 13:14:59 mee Exp $")
 !
-    endsubroutine register_rad
+    endsubroutine register_radiation
+!***********************************************************************
+    subroutine initialize_radiation()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  24-nov-02/tony: coded 
+!
+!  do nothing
+!
+    endsubroutine initialize_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !

@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.16 2002-11-14 12:46:56 dobler Exp $
+! $Id: radiation.f90,v 1.17 2002-11-24 13:14:59 mee Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -45,7 +45,7 @@ module Radiation
   contains
 
 !***********************************************************************
-    subroutine register_rad()
+    subroutine register_radiation()
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
@@ -80,14 +80,25 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.16 2002-11-14 12:46:56 dobler Exp $")
+           "$Id: radiation.f90,v 1.17 2002-11-24 13:14:59 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_rad: nvar > mvar')
       endif
 !
-    endsubroutine register_rad
+    endsubroutine register_radiation
+!***********************************************************************
+    subroutine initialize_radiation()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  24-nov-02/tony: coded 
+!
+!  do nothing
+!
+    endsubroutine initialize_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !

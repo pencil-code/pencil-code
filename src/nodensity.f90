@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.7 2002-08-14 15:22:45 nilshau Exp $
+! $Id: nodensity.f90,v 1.8 2002-11-24 13:14:59 mee Exp $
 
 module Density
 
@@ -40,9 +40,20 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.7 2002-08-14 15:22:45 nilshau Exp $")
+           "$Id: nodensity.f90,v 1.8 2002-11-24 13:14:59 mee Exp $")
 !
     endsubroutine register_density
+!***********************************************************************
+    subroutine initialize_density()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  24-nov-02/tony: coded 
+!
+!  dummy
+!
+    endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f,xx,yy,zz)
 !

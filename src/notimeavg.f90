@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.3 2002-10-16 14:42:19 brandenb Exp $ 
+! $Id: notimeavg.f90,v 1.4 2002-11-24 13:14:59 mee Exp $ 
 
 module Timeavg
 
@@ -21,13 +21,15 @@ module Timeavg
   contains
 
 !***********************************************************************
-    subroutine timeavg_run_hook(a)
+    subroutine initialize_timeavg(a)
 !
       real, dimension(mx,my,mz,mvar) :: a
+      
+      intent (in) :: a
 !
       if (ip < 0) print*, a(1,1,1,1)
 !
-    endsubroutine timeavg_run_hook
+    endsubroutine initialize_timeavg
 !***********************************************************************
     subroutine update_timeavgs(a,dt,init)
 !
@@ -35,6 +37,8 @@ module Timeavg
       real, dimension(mx,my,mz,mvar) :: a
       real :: dt
       logical, optional :: init
+
+      intent (in) :: a
 !
       if (ip < 0) print*, a(1,1,1,1),dt,present(init)
 !

@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.29 2002-10-02 20:11:14 dobler Exp $
+! $Id: grav_r.f90,v 1.30 2002-11-24 13:14:59 mee Exp $
 
 module Gravity
 
@@ -34,7 +34,7 @@ module Gravity
   contains
 
 !***********************************************************************
-    subroutine register_grav()
+    subroutine register_gravity()
 !
 !  initialise gravity flags
 !
@@ -51,37 +51,24 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.29 2002-10-02 20:11:14 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.30 2002-11-24 13:14:59 mee Exp $")
 !
       lgrav = .true.
       lgravz = .false.
       lgravr = .true.
 !
-    endsubroutine register_grav
+    endsubroutine register_gravity
 !***********************************************************************
-    subroutine init_grav(f,xx,yy,zz)
-!
-!  initialise gravity; called from start.f90
-!  10-jan-02/wolf: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
-!
-! Not doing anything (this might change if we decide to save gg to a file)
-!
-      if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
-    endsubroutine init_grav
-!***********************************************************************
-    subroutine setup_grav()
+    subroutine initialize_gravity()
 !
 !  Set up cpot according to the value of ipotential, and initialize the
 !  global variable gg (gravity field).
 !  Needed by both start.f90 and run.f90
 !
 !  16-jul-02/wolf: coded
+!  22-nov-02/tony: renamed
 !
+!ajwm - need to figure out how to call this from start.f90
       use Cdata
       use Sub, only: poly
       use Mpicomm
@@ -89,6 +76,11 @@ module Gravity
 !
       real, dimension (nx,3) :: evr,gg_mn
       real, dimension (nx) :: g_r
+
+      logical, save :: first=.true.
+!
+!ajwm - should this be done on RELOAD too??
+   if (first) then
 !
 !  set coefficients for potential (coefficients a0, a2, a3, b2, b3)
 !  for the rational approximation
@@ -160,7 +152,24 @@ module Gravity
         call set_global(gg_mn,m,n,'gg')
       enddo
 !
-    endsubroutine setup_grav
+      endif
+    endsubroutine initialize_gravity
+!***********************************************************************
+    subroutine init_gg(f,xx,yy,zz)
+!
+!  initialise gravity; called from start.f90
+!  10-jan-02/wolf: coded
+!  24-nov-02/tony: renamed from init_grav for consistancy (i.e. init_[variable name])
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+!
+! Not doing anything (this might change if we decide to save gg to a file)
+!
+      if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
+    endsubroutine init_gg
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
 !

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.34 2002-11-14 14:29:29 dobler Exp $
+! $Id: noentropy.f90,v 1.35 2002-11-24 13:14:59 mee Exp $
 
 module Entropy
 
@@ -25,7 +25,7 @@ module Entropy
   contains
 
 !***********************************************************************
-    subroutine register_ent()
+    subroutine register_entropy()
 !
 !  no energy equation is being solved; use isothermal equation of state
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
@@ -44,14 +44,26 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.34 2002-11-14 14:29:29 dobler Exp $")
+           "$Id: noentropy.f90,v 1.35 2002-11-24 13:14:59 mee Exp $")
 !
-    endsubroutine register_ent
+    endsubroutine register_entropy
 !***********************************************************************
-    subroutine init_ent(f,xx,yy,zz)
+    subroutine initialize_entropy()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  24-nov-02/tony: coded 
+!
+!  do nothing
+!
+    endsubroutine initialize_entropy
+!***********************************************************************
+    subroutine init_ss(f,xx,yy,zz)
 !
 !  initialise entropy; called from start.f90
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
+!  24-nov-02/tony: renamed for consistancy (i.e. init_[varaible name])
 !
       use Cdata
 !
@@ -59,7 +71,7 @@ module Entropy
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
-    endsubroutine init_ent
+    endsubroutine init_ss
 !***********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
 !
@@ -109,12 +121,12 @@ module Entropy
       if(ip==1) print*,f,df,uu,rho1  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine ss_run_hook()
+    subroutine run_hook_ent()
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
 !
-    endsubroutine ss_run_hook
+    endsubroutine run_hook_ent
 !***********************************************************************
     subroutine rprint_entropy(lreset)
 !

@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.4 2002-10-09 14:09:17 dobler Exp $ 
+! $Id: timeavg.f90,v 1.5 2002-11-24 13:14:59 mee Exp $ 
 
 module Timeavg
 
@@ -21,7 +21,7 @@ module Timeavg
   contains
 
 !***********************************************************************
-    subroutine timeavg_run_hook(a)
+    subroutine initialize_timeavg(a)
 !
 !  Initialize time averages to the corresponding values
 !
@@ -29,6 +29,8 @@ module Timeavg
 !
       real, dimension(mx,my,mz,mvar) :: a
       integer :: i
+
+      intent (in) :: a
 !
 !  initialize values
 !
@@ -47,7 +49,7 @@ module Timeavg
         endif
       enddo
 !
-    endsubroutine timeavg_run_hook
+    endsubroutine initialize_timeavg
 !***********************************************************************
     subroutine update_timeavgs(a,dt,init)
 !
@@ -62,6 +64,8 @@ module Timeavg
       integer :: i,idx
       logical, optional :: init
       logical :: init1=.false.
+
+      intent (in) :: a
 !
       init1=.false.             ! somehow the initialization above doen
                                 ! not seem to work on Cincinnatus

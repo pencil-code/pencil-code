@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.71 2002-11-05 11:08:25 dobler Exp $
+! $Id: start.f90,v 1.72 2002-11-24 13:14:59 mee Exp $
 !
 !***********************************************************************
       program start
@@ -28,12 +28,12 @@
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
 !
-        call initialize         ! register modules, etc.
+        call register_modules()         ! register modules, etc.
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.71 2002-11-05 11:08:25 dobler Exp $")
+             "$Id: start.f90,v 1.72 2002-11-24 13:14:59 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -54,6 +54,7 @@
 !  postprocess input parameters
 !
         gamma1 = gamma-1.
+!ajwm - Call run_hooks here???
 !
 !  I don't think there was a good reason to write param.nml twice (but
 !  leave this around for some time [wd; rev. 1.71, 5-nov-2002]
@@ -117,10 +118,10 @@
 !
         f = 0.
         if (lroot) print* !(empty line)
-        call init_grav (f,xx,yy,zz)
-        call init_hydro(f,xx,yy,zz)
+        call init_gg   (f,xx,yy,zz)
+        call init_uu   (f,xx,yy,zz)
         call init_lnrho(f,xx,yy,zz)
-        call init_ent  (f,xx,yy,zz)
+        call init_ss   (f,xx,yy,zz)
         call init_aa   (f,xx,yy,zz)
         call init_rad  (f,xx,yy,zz)
         call init_lncc (f,xx,yy,zz)

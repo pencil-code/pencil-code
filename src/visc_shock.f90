@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.1 2002-11-20 19:57:06 mee Exp $
+! $Id: visc_shock.f90,v 1.2 2002-11-24 13:14:59 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -46,7 +46,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.1 2002-11-20 19:57:06 mee Exp $")
+           "$Id: visc_shock.f90,v 1.2 2002-11-24 13:14:59 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -57,7 +57,17 @@ module Viscosity
 !      endif
 !
     endsubroutine register_viscosity
+!***********************************************************************
+    subroutine initialize_viscosity()
+!
+!  20-nov-02/tony: coded
 
+      if (nu /= 0. .and. (ivisc=='nu-const')) then
+         lneed_sij=.true.
+         lneed_glnrho=.true.
+      endif
+
+    endsubroutine initialize_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,rho1,TT1)
 !

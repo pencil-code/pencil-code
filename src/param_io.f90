@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.84 2002-11-20 19:57:06 mee Exp $ 
+! $Id: param_io.f90,v 1.85 2002-11-24 13:14:59 mee Exp $ 
 
 module Param_IO
 
@@ -365,32 +365,6 @@ module Param_IO
         print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
-      endif
-!
-!  set gamma1, cs20, and lnrho0
-!  general parameter checks (and possible adjustments)
-!
-      gamma1=gamma-1.
-      cs20=cs0**2
-      lnrho0=alog(rho0)
-      if(lforcing) call param_check_forcing
-!
-!  calculate shear flow velocity; if Sshear is not given
-!  then Sshear=-qshear*Omega is calculated.
-!
-      if (lshear) then
-        if (Sshear==impossible) Sshear=-qshear*Omega
-      endif
-!
-!  timestep: if dt=0 (ie not initialized), ldt=.true.
-!
-      ldt = (dt==0.)            ! need to calculate dt dynamically?
-      if (lroot .and. ip<14) then
-        if (ldt) then
-          print*,'timestep based on CFL cond; cdt=',cdt
-        else
-          print*, 'absolute timestep dt=', dt
-        endif
       endif
 !
 !  in case of i/o error: print sample input list

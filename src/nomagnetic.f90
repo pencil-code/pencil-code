@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.27 2002-11-14 14:29:29 dobler Exp $
+! $Id: nomagnetic.f90,v 1.28 2002-11-24 13:14:59 mee Exp $
 
 module Magnetic
 
@@ -25,7 +25,7 @@ module Magnetic
   contains
 
 !***********************************************************************
-    subroutine register_aa()
+    subroutine register_magnetic()
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
@@ -45,9 +45,18 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.27 2002-11-14 14:29:29 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.28 2002-11-24 13:14:59 mee Exp $")
 !
-    endsubroutine register_aa
+    endsubroutine register_magnetic
+!***********************************************************************
+    subroutine initialize_magnetic()
+!
+!  Perform any post-parameter-read initialization
+!
+!  24-nov-2002/tony: dummy routine
+
+    endsubroutine initialize_magnetic
+
 !***********************************************************************
     subroutine init_aa(f,xx,yy,zz)
 !

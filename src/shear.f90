@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.8 2002-11-14 12:33:13 dobler Exp $
+! $Id: shear.f90,v 1.9 2002-11-24 13:14:59 mee Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,9 +41,21 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.8 2002-11-14 12:33:13 dobler Exp $")
+           "$Id: shear.f90,v 1.9 2002-11-24 13:14:59 mee Exp $")
 !
     endsubroutine register_shear
+!***********************************************************************
+    subroutine initialize_shear()
+!
+!  21-nov-02/tony: coded
+
+!  calculate shear flow velocity; if Sshear is not given
+!  then Sshear=-qshear*Omega is calculated.
+!
+!ajwm - How do we make this work for RELOAD?? Need some memory of previous method. 
+      if (Sshear==impossible) Sshear=-qshear*Omega
+
+    endsubroutine initialize_shear
 !***********************************************************************
     subroutine shearing(f,df)
 !

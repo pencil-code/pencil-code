@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.141 2002-11-20 19:57:06 mee Exp $
+! $Id: entropy.f90,v 1.142 2002-11-24 13:14:59 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -46,7 +46,7 @@ module Entropy
   contains
 
 !***********************************************************************
-    subroutine register_ent()
+    subroutine register_entropy()
 !
 !  initialise variables which should know that we solve an entropy
 !  equation: ient, etc; increase nvar accordingly
@@ -75,19 +75,64 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.141 2002-11-20 19:57:06 mee Exp $")
+           "$Id: entropy.f90,v 1.142 2002-11-24 13:14:59 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_ent: nvar > mvar')
       endif
 !
-    endsubroutine register_ent
+    endsubroutine register_entropy
 !***********************************************************************
-    subroutine init_ent(f,xx,yy,zz)
+    subroutine initialize_entropy()
+!
+!  called by run.f90 after reading parameters, but before the time loop
+!
+!  21-jul-2002/wolf: coded
+!
+      use Cdata
+      use Gravity, only: gravz
+!
+      lneed_sij = .true.   !let Hydro module know to precalculate some things
+      lneed_glnrho = .true.
+
+      if (lgravz) then
+        if (lmultilayer) then
+          !
+          !  calculate hcond1,hcond2 if they have not been set in run.in
+          !
+          if (hcond1==impossible) hcond1 = (mpoly1+1.)/(mpoly0+1.)
+          if (hcond2==impossible) hcond2 = (mpoly2+1.)/(mpoly0+1.)
+          !
+          !  calculate Fbot if it has not been set in run.in
+          !
+          if (Fbot==impossible) then
+            if (bcz1(ient)=='c1') then
+              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+              if (lroot) print*, 'Calculated Fbot = ', Fbot
+            else
+              Fbot=0.
+            endif
+          endif
+          FbotKbot=Fbot/(hcond0*hcond1)
+        else
+          !
+          !  Wolfgang, in future we should define chiz=chi(z) or Kz=K(z) here.
+          !  calculate hcond and FbotKbot=Fbot/K, where K=hcond is radiative conductivity
+          !
+          Kbot=gamma1/gamma*(mpoly+1.)*Fbot
+          FbotKbot=gamma/gamma1/(mpoly+1.)
+          if(lroot) print*,'ss_run_hook: Fbot,Kbot=',Fbot,Kbot
+        endif
+      endif
+!
+    endsubroutine initialize_entropy
+!***********************************************************************
+    subroutine init_ss(f,xx,yy,zz)
 !
 !  initialise entropy; called from start.f90
-!  7-nov-2001/wolf: coded
+!  07-nov-2001/wolf: coded
+!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name]) 
 !
       use Cdata
       use Mpicomm
@@ -240,7 +285,7 @@ module Entropy
 !
       if(ip==0) print*,xx,yy  !(to keep compiler quiet)
 !
-    endsubroutine init_ent
+    endsubroutine init_ss
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
@@ -395,47 +440,6 @@ module Entropy
       endif
 !
     endsubroutine dss_dt
-!***********************************************************************
-    subroutine ss_run_hook()
-!
-!  called by run.f90 after reading parameters, but before the time loop
-!
-!  21-jul-2002/wolf: coded
-!
-      use Cdata
-      use Gravity, only: gravz
-!
-      if (lgravz) then
-        if (lmultilayer) then
-          !
-          !  calculate hcond1,hcond2 if they have not been set in run.in
-          !
-          if (hcond1==impossible) hcond1 = (mpoly1+1.)/(mpoly0+1.)
-          if (hcond2==impossible) hcond2 = (mpoly2+1.)/(mpoly0+1.)
-          !
-          !  calculate Fbot if it has not been set in run.in
-          !
-          if (Fbot==impossible) then
-            if (bcz1(ient)=='c1') then
-              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
-              if (lroot) print*, 'Calculated Fbot = ', Fbot
-            else
-              Fbot=0.
-            endif
-          endif
-          FbotKbot=Fbot/(hcond0*hcond1)
-        else
-          !
-          !  Wolfgang, in future we should define chiz=chi(z) or Kz=K(z) here.
-          !  calculate hcond and FbotKbot=Fbot/K, where K=hcond is radiative conductivity
-          !
-          Kbot=gamma1/gamma*(mpoly+1.)*Fbot
-          FbotKbot=gamma/gamma1/(mpoly+1.)
-          if(lroot) print*,'ss_run_hook: Fbot,Kbot=',Fbot,Kbot
-        endif
-      endif
-!
-    endsubroutine ss_run_hook
 !***********************************************************************
     subroutine calc_heatcond_constchi(f,df,rho1,glnrho,gss)
 !

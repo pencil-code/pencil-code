@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.2 2002-08-19 06:48:46 brandenb Exp $
+! $Id: noshear.f90,v 1.3 2002-11-24 13:14:59 mee Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -40,9 +40,17 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.2 2002-08-19 06:48:46 brandenb Exp $")
+           "$Id: noshear.f90,v 1.3 2002-11-24 13:14:59 mee Exp $")
 !
     endsubroutine register_shear
+!***********************************************************************
+    subroutine initialize_shear()
+!
+!  21-nov-02/tony: coded
+
+! dummy
+
+  endsubroutine initialize_shear
 !***********************************************************************
     subroutine shearing(f,df)
 !

@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.18 2002-07-31 23:38:41 brandenb Exp $
+! $Id: nograv.f90,v 1.19 2002-11-24 13:14:59 mee Exp $
 
 module Gravity
 
@@ -25,7 +25,7 @@ module Gravity
   contains
 
 !***********************************************************************
-    subroutine register_grav()
+    subroutine register_gravity()
 !
 !  initialise gravity flags
 !
@@ -44,15 +44,23 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.18 2002-07-31 23:38:41 brandenb Exp $")
+           "$Id: nograv.f90,v 1.19 2002-11-24 13:14:59 mee Exp $")
 !
       lgrav = .false.
       lgravz = .false.
       lgravr = .false.
 !
-    endsubroutine register_grav
+    endsubroutine register_gravity
 !***********************************************************************
-    subroutine init_grav(f,xx,yy,zz)
+    subroutine initialize_gravity()
+!
+!  Set up some variables for gravity; do nothing in nograv
+!  16-jul-02/wolf: coded
+!  22-nov-02/tony: renamed from setup_grav
+!
+    endsubroutine initialize_gravity
+!***********************************************************************
+    subroutine init_gg(f,xx,yy,zz)
 !
 !  initialise gravity; called from start.f90
 !   9-jan-02/wolf: coded
@@ -65,14 +73,7 @@ module Gravity
 ! Not doing anything (this might change if we decide to store gg)
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
-    endsubroutine init_grav
-!***********************************************************************
-    subroutine setup_grav()
-!
-!  Set up some variables for gravity; do nothing in nograv
-!  16-jul-02/wolf: coded
-!
-    endsubroutine setup_grav
+    endsubroutine init_gg
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
 !

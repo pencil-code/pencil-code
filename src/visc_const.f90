@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.2 2002-11-23 21:02:59 brandenb Exp $
+! $Id: visc_const.f90,v 1.3 2002-11-24 13:14:59 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -46,7 +46,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.2 2002-11-23 21:02:59 brandenb Exp $")
+           "$Id: visc_const.f90,v 1.3 2002-11-24 13:14:59 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -57,6 +57,19 @@ module Viscosity
 !      endif
 !
     endsubroutine register_viscosity
+!***********************************************************************
+    subroutine initialize_viscosity()
+!
+!  20-nov-02/tony: coded
+
+      use Cdata
+
+      if (nu /= 0. .and. (ivisc=='nu-const')) then
+         lneed_sij=.true.
+         lneed_glnrho=.true.
+      endif
+
+    endsubroutine initialize_viscosity
 
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,rho1,TT1)

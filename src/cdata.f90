@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.113 2002-11-20 19:57:06 mee Exp $
+! $Id: cdata.f90,v 1.114 2002-11-24 13:14:59 mee Exp $
 
 module Cdata
 
@@ -71,6 +71,11 @@ module Cdata
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false., lviscosity=.false.
   logical :: linterstellar=.false.
+
+  ! variables to allow modules to share 'precalculated' stuff
+  ! when necessary (set in module initialize functions)
+  logical :: lneed_sij=.false., lneed_glnrho=.false.
+
   logical :: lfirstpoint
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
   logical :: ab_spec=.false.,ou_spec=.false.

@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.11 2002-10-25 05:24:57 brandenb Exp $
+! $Id: io_mpio.f90,v 1.12 2002-11-24 13:14:59 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -96,7 +96,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.11 2002-10-25 05:24:57 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.12 2002-11-24 13:14:59 mee Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -130,6 +130,9 @@ contains
       directory_snap = ''
 !
     endsubroutine register_io
+!
+!ajwm need and initialize_io ???
+!
 !***********************************************************************
     subroutine directory_names()
 !

@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.9 2002-09-26 20:18:59 dobler Exp $
+! $Id: noforcing.f90,v 1.10 2002-11-24 13:14:59 mee Exp $
 
 module Forcing
 
@@ -35,29 +35,28 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.9 2002-09-26 20:18:59 dobler Exp $")
+           "$Id: noforcing.f90,v 1.10 2002-11-24 13:14:59 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine forcing_run_hook()
+    subroutine initialize_forcing()
 !
 !  initialize random number generator in processor-dependent fashion
 !  see comments in start.f90 for details
 !
       use Cdata
 !
-      if (lroot.and.ip<14) print*, 'initializing seed'
-      call random_seed_wrapper(get=seed(1:nseed))
-      seed(1) = -(10+iproc)    ! different random numbers on different CPUs
-      call random_seed_wrapper(put=seed(1:nseed))
+      logical, save :: first=.true.
 !
-    endsubroutine forcing_run_hook
-!***********************************************************************
-    subroutine param_check_forcing
+!ajwm - should this only be called first time?
+      if (first) then
+         if (lroot.and.ip<14) print*, 'initializing seed'
+         call random_seed_wrapper(get=seed(1:nseed))
+         seed(1) = -(10+iproc)    ! different random numbers on different CPUs
+         call random_seed_wrapper(put=seed(1:nseed))
+      endif
 !
-!  dummy routine
-!
-    endsubroutine param_check_forcing
+    endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(df)
 !

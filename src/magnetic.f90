@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.100 2002-11-14 14:29:29 dobler Exp $
+! $Id: magnetic.f90,v 1.101 2002-11-24 13:14:59 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -53,7 +53,7 @@ module Magnetic
   contains
 
 !***********************************************************************
-    subroutine register_aa()
+    subroutine register_magnetic()
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
@@ -84,14 +84,22 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.100 2002-11-14 14:29:29 dobler Exp $")
+           "$Id: magnetic.f90,v 1.101 2002-11-24 13:14:59 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_aa: nvar > mvar')
       endif
 !
-    endsubroutine register_aa
+    endsubroutine register_magnetic
+!***********************************************************************
+    subroutine initialize_magnetic()
+!
+!  Perform any post-parameter-read initialization
+!
+!  24-nov-2002/tony: dummy routine - nothing to do at present
+
+    endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f,xx,yy,zz)
 !

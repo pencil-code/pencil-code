@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.36 2002-11-16 09:41:13 brandenb Exp $
+! $Id: forcing.f90,v 1.37 2002-11-24 13:14:59 mee Exp $
 
 module Forcing
 
@@ -47,29 +47,33 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.36 2002-11-16 09:41:13 brandenb Exp $")
+           "$Id: forcing.f90,v 1.37 2002-11-24 13:14:59 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine forcing_run_hook()
+    subroutine initialize_forcing()
 !
 !  read seed field parameters
 !
       use Cdata
       use Sub, only: inpui
 !
-      if (lroot.and.ip<14) print*, 'reading seed file'
-      call inpui(trim(directory)//'/seed.dat',seed,nseed)
-      call random_seed_wrapper(put=seed(1:nseed))
+      logical, save :: first=.true.
 !
-    endsubroutine forcing_run_hook
-!***********************************************************************
-    subroutine param_check_forcing
+!ajwm check this really should only be done once before
+!ajwm timestepping really starts, i.e. before time loop
+!ajwm and not after RELOAD
+!
+      if (first) then
+         if (lroot.and.ip<14) print*, 'reading seed file'
+         call inpui(trim(directory)//'/seed.dat',seed,nseed)
+         call random_seed_wrapper(put=seed(1:nseed))
+      endif
+
+!ajwm - following was in sub param_check_forcing
 !
 !  check whether we want constant forcing at each timestep,
 !  in which case lwork_ff is set to true.
-!
-      use Cdata
 !
       if(work_ff/=0.) then
         force=1.
@@ -77,7 +81,7 @@ module Forcing
         if(lroot) print*,'reset force=1., because work_ff is set'
       endif
 !
-    endsubroutine param_check_forcing
+    endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
 !

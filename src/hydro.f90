@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.81 2002-11-23 21:02:59 brandenb Exp $
+! $Id: hydro.f90,v 1.82 2002-11-24 13:14:59 mee Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -81,7 +81,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.81 2002-11-23 21:02:59 brandenb Exp $")
+           "$Id: hydro.f90,v 1.82 2002-11-24 13:14:59 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -90,12 +90,24 @@ module Hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine init_hydro(f,xx,yy,zz)
+    subroutine initialize_hydro()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  24-nov-02/tony: coded 
+!
+!  do nothing
+!
+    endsubroutine initialize_hydro
+!***********************************************************************
+    subroutine init_uu(f,xx,yy,zz)
 !
 !  initialise uu and lnrho; called from start.f90
 !  Should be located in the Hydro module, if there was one.
 !
-!  7-nov-2001/wolf: coded
+!  07-nov-01/wolf: coded
+!  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -252,7 +264,7 @@ module Hydro
 !
       if (ip==1) print*,'Ignore these:', &
            minval(yy),maxval(zz) !(keep compiler from complaining)
-    endsubroutine init_hydro
+    endsubroutine init_uu
 !***********************************************************************
     subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij)
 !
@@ -301,9 +313,7 @@ module Hydro
 !
 !  calculate rate of strain tensor
 !
-!ajwm -  lviscosity will always be true unless we define noviscosity module
-!ajwm - condition was ivisc='nu-const'
-      if (lentropy .or. lviscosity) then
+      if (lneed_sij) then
         do j=1,3
           do i=1,3
             sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
@@ -341,12 +351,12 @@ module Hydro
 !
 !  calculate grad(lnrho) here: needed for ivisc='nu-const' and continuity
 !
-! ajwm - as above old cond was (ivisc=='nu-const')
-      if(ldensity .or. lviscosity) call grad(f,ilnrho,glnrho)
+      if(lneed_glnrho) call grad(f,ilnrho,glnrho)
 
-! ajwm - moved viscous force to viscosity module
-
-   if (lviscosity) call calc_viscous_force(f,df,glnrho,rho1)
+!
+! calculate viscous force
+!
+      if (lviscosity) call calc_viscous_force(f,df,glnrho,rho1)
 
 !
 !  maximum squared avection speed

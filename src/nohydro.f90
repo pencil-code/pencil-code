@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.9 2002-07-31 20:16:53 brandenb Exp $
+! $Id: nohydro.f90,v 1.10 2002-11-24 13:14:59 mee Exp $
 
 module Hydro
 
@@ -42,11 +42,22 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.9 2002-07-31 20:16:53 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.10 2002-11-24 13:14:59 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine init_hydro(f,xx,yy,zz)
+    subroutine initialize_hydro()
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  24-nov-02/tony: coded 
+!
+!  dummy
+!
+    endsubroutine initialize_hydro
+!***********************************************************************
+    subroutine init_uu(f,xx,yy,zz)
 !
 !  initialise uu and lnrho; called from start.f90
 !  Should be located in the Hydro module, if there was one.
@@ -60,7 +71,7 @@ module Hydro
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
-    endsubroutine init_hydro
+    endsubroutine init_uu
 !***********************************************************************
     subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij)
 !
