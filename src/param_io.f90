@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.138 2003-10-12 05:45:16 brandenb Exp $ 
+! $Id: param_io.f90,v 1.139 2003-10-21 17:47:10 mee Exp $ 
 
 module Param_IO
 
@@ -131,6 +131,7 @@ module Param_IO
 !  read input parameters (done by each processor)
 !
 !   6-jul-02/axel: in case of error, print sample namelist
+!  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !
       use Mpicomm, only: stop_it
 !
@@ -175,9 +176,11 @@ module Param_IO
       call sgi_fix(lsgifix,1,'start.in')
       label='radiation_init_pars'
       if (lradiation   ) read(1,NML=radiation_init_pars    ,ERR=99, IOSTAT=ierr)
+
       call sgi_fix(lsgifix,1,'start.in')
-      label='ionization_init_pars'
-      if (lionization  ) read(1,NML=ionization_init_pars   ,ERR=99, IOSTAT=ierr)
+      call read_ionization_init_pars(1,IOSTAT=ierr)
+      if (ierr.lt.0) call sample_startpars('ionization_run_pars',ierr)
+
       call sgi_fix(lsgifix,1,'start.in')
       label='pscalar_init_pars'
       if (lpscalar     ) read(1,NML=pscalar_init_pars      ,ERR=99, IOSTAT=ierr)
@@ -252,7 +255,16 @@ module Param_IO
 !  in case of i/o error: print sample input list
 !
       return
-99    if (lroot) then
+99  call sample_startpars(label,ierr)
+    endsubroutine read_startpars
+!***********************************************************************
+    subroutine sample_startpars(label,iostat)
+      use Mpicomm, only: stop_it
+      
+      character (len=*), optional :: label
+      integer, optional :: iostat
+
+      if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
                            print*,'&init_pars                /'
@@ -271,17 +283,16 @@ module Param_IO
         if (linterstellar) print*,'&interstellar_init_pars   /'
         if (lshear       ) print*,'&shear_init_pars          /'
         ! no input parameters for viscosity
-       print*,'------END sample namelist -------'
+        print*,'------END sample namelist -------'
         print*
-      endif
-      if (lroot) then
-        print*, 'Found error in input namelist "' // trim(label)
-        print*, 'iostat = ', ierr
-        print*,  '-- use sample above.'
+        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(iostat)) print*, 'iostat = ', iostat
+        if (present(iostat).or.present(label)) &
+                           print*,  '-- use sample above.'
       endif
       call stop_it('')
 !
-    endsubroutine read_startpars
+    endsubroutine sample_startpars
 !***********************************************************************
     subroutine print_startpars(file)
 !
@@ -314,7 +325,9 @@ module Param_IO
         if (lentropy     ) write(unit,NML=entropy_init_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_init_pars    )
         if (lradiation   ) write(unit,NML=radiation_init_pars   )
-        if (lionization  ) write(unit,NML=ionization_init_pars  )
+
+        call write_ionization_init_pars(unit)
+
         if (lpscalar     ) write(unit,NML=pscalar_init_pars     )
         if (ldustvelocity) write(unit,NML=dustvelocity_init_pars)
         if (ldustdensity ) write(unit,NML=dustdensity_init_pars )
@@ -337,9 +350,9 @@ module Param_IO
 !  14-sep-01/axel: inserted from run.f90
 !  31-may-02/wolf: renamed from cread to read_runpars
 !   6-jul-02/axel: in case of error, print sample namelist
+!  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !
       use Sub, only: parse_bc
-      use Mpicomm, only: stop_it
 !
       integer :: ierr
       logical, optional :: print,file
@@ -384,9 +397,11 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       label='radiation_run_pars'
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
+
       call sgi_fix(lsgifix,1,'run.in')
-      label='ionization_run_pars'
-      if (lionization  ) read(1,NML=ionization_run_pars   ,ERR=99, IOSTAT=ierr)
+      call read_ionization_run_pars(1,IOSTAT=ierr)
+      if (ierr.lt.0) call sample_runpars('ionization_run_pars',ierr)
+
       call sgi_fix(lsgifix,1,'run.in')
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
@@ -467,7 +482,16 @@ module Param_IO
 !  in case of i/o error: print sample input list
 !
       return
-99    if (lroot) then
+99    call sample_runpars(label,ierr)
+    endsubroutine read_runpars
+!***********************************************************************
+    subroutine sample_runpars(label,iostat)
+      use Mpicomm, only: stop_it
+      
+      character (len=*), optional :: label
+      integer, optional :: iostat
+
+      if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
                         print*,'&run_pars                /'
@@ -488,15 +512,14 @@ module Param_IO
         if (lviscosity   ) print*,'&viscosity_run_pars      /'
         print*,'------END sample namelist -------'
         print*
-      endif
-      if (lroot) then
-        print*, 'Found error in input namelist "' // trim(label)
-        print*, 'iostat = ', ierr
-        print*,  '-- use sample above.'
+        if (present(label))  print*, 'Found error in input namelist "' // trim(label)
+        if (present(iostat)) print*, 'iostat = ', iostat
+        if (present(iostat).or.present(label)) &
+                           print*,  '-- use sample above.'
       endif
       call stop_it('')
 !
-    endsubroutine read_runpars
+    endsubroutine sample_runpars
 !***********************************************************************
     subroutine sgi_fix(lfix,lun,file)
 !
@@ -552,7 +575,9 @@ module Param_IO
         if (lentropy     ) write(unit,NML=entropy_run_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_run_pars    )
         if (lradiation   ) write(unit,NML=radiation_run_pars   )
-        if (lionization  ) write(unit,NML=ionization_run_pars  )
+
+        call write_ionization_run_pars(1)
+
         if (lpscalar     ) write(unit,NML=pscalar_run_pars     )
         if (ldustvelocity) write(unit,NML=dustvelocity_run_pars)
         if (ldustdensity ) write(unit,NML=dustdensity_run_pars )
@@ -683,7 +708,9 @@ module Param_IO
         if (lentropy     ) write(1,NML=entropy_init_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_init_pars    )
         if (lradiation   ) write(1,NML=radiation_init_pars   )
-        if (lionization  ) write(1,NML=ionization_init_pars  )
+
+        call write_ionization_init_pars(1)
+
         if (lpscalar     ) write(1,NML=pscalar_init_pars     )
         if (ldustvelocity) write(1,NML=dustvelocity_init_pars)
         if (ldustdensity ) write(1,NML=dustdensity_init_pars )
@@ -716,7 +743,9 @@ module Param_IO
         if (lentropy     ) read(1,NML=entropy_init_pars     )
         if (lmagnetic    ) read(1,NML=magnetic_init_pars    )
         if (lradiation   ) read(1,NML=radiation_init_pars   )
-        if (lionization  ) read(1,NML=ionization_init_pars  )
+
+        call read_ionization_init_pars(1)
+
         if (lpscalar     ) read(1,NML=pscalar_init_pars     )
         if (ldustvelocity) read(1,NML=dustvelocity_init_pars)
         if (ldustdensity ) read(1,NML=dustdensity_init_pars )
@@ -750,7 +779,9 @@ module Param_IO
         if (lentropy     ) write(1,NML=entropy_run_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_run_pars    )
         if (lradiation   ) write(1,NML=radiation_run_pars   )
-        if (lionization  ) write(1,NML=ionization_run_pars  )
+
+        call write_ionization_run_pars(1)
+
         if (lpscalar     ) write(1,NML=pscalar_run_pars     )
         if (ldustvelocity) write(1,NML=dustvelocity_run_pars)
         if (ldustdensity ) write(1,NML=dustdensity_run_pars )

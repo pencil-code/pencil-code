@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.27 2003-10-20 17:21:46 theine Exp $
+! $Id: ionization_fixed.f90,v 1.28 2003-10-21 17:47:10 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.27 2003-10-20 17:21:46 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.28 2003-10-21 17:47:10 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -429,6 +429,44 @@ module Ionization
       if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
+!***********************************************************************
+    subroutine read_ionization_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout) :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=ionization_init_pars,ERR=99, IOSTAT=iostat)
+      else 
+        read(unit,NML=ionization_init_pars,ERR=99) 
+      endif
+
+99    return
+    endsubroutine read_ionization_init_pars
+!***********************************************************************
+    subroutine write_ionization_init_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=ionization_init_pars)
+    endsubroutine write_ionization_init_pars
+!***********************************************************************
+    subroutine read_ionization_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=ionization_run_pars,ERR=99, IOSTAT=iostat)
+      else 
+        read(unit,NML=ionization_run_pars,ERR=99) 
+      endif
+
+99    return
+    endsubroutine read_ionization_run_pars
+!***********************************************************************
+    subroutine write_ionization_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=ionization_run_pars)
+    endsubroutine write_ionization_run_pars
 !***********************************************************************
     subroutine radcalc(f,kaprho,Srad)
 !

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.121 2003-10-20 17:21:46 theine Exp $
+! $Id: ionization.f90,v 1.122 2003-10-21 17:47:10 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -19,6 +19,22 @@ module Ionization
   use Density
 
   implicit none
+  private  
+
+  public :: thermodynamics, ionput, ionget
+  public :: perturb_energy, perturb_mass
+  public :: get_soundspeed
+  public :: isothermal_entropy
+
+  public :: register_ionization
+  public :: initialize_ionization
+  public :: rprint_ionization
+  public :: read_ionization_init_pars, write_ionization_init_pars
+  public :: read_ionization_run_pars,  write_ionization_run_pars
+  
+  public :: ioncalc, ioninit 
+! For radiation calculations 
+  public :: radcalc, scale_height_xy 
 
   interface thermodynamics              ! Overload subroutine thermodynamics
     module procedure thermodynamics_pencil
@@ -97,7 +113,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.121 2003-10-20 17:21:46 theine Exp $")
+           "$Id: ionization.f90,v 1.122 2003-10-21 17:47:10 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -539,6 +555,44 @@ module Ionization
       if (present(pp)) pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
+!***********************************************************************
+    subroutine read_ionization_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=ionization_init_pars,ERR=99, IOSTAT=iostat) 
+      else 
+        read(unit,NML=ionization_init_pars,ERR=99) 
+      endif
+
+99    return
+    endsubroutine read_ionization_init_pars
+!***********************************************************************
+    subroutine write_ionization_init_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=ionization_init_pars)
+    endsubroutine write_ionization_init_pars
+!***********************************************************************
+    subroutine read_ionization_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=ionization_run_pars,ERR=99, IOSTAT=iostat) 
+      else 
+        read(unit,NML=ionization_run_pars,ERR=99) 
+      endif
+
+99    return
+    endsubroutine read_ionization_run_pars
+!***********************************************************************
+    subroutine write_ionization_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=ionization_run_pars)
+    endsubroutine write_ionization_run_pars
 !***********************************************************************
     subroutine rtsafe(variables,variable1,variable2,yHlb,yHub,yH,rterror,rtdebug)
 !

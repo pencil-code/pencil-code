@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.79 2003-10-21 11:58:01 brandenb Exp $
+! $Id: noionization.f90,v 1.80 2003-10-21 17:47:10 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.79 2003-10-21 11:58:01 brandenb Exp $")
+           "$Id: noionization.f90,v 1.80 2003-10-21 17:47:10 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -382,6 +382,34 @@ module Ionization
       cs2=gamma1*cp*TT
 !
     end subroutine get_soundspeed
+!***********************************************************************
+    subroutine read_ionization_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (ip==0) print*,unit,present(iostat)
+    endsubroutine read_ionization_init_pars
+!***********************************************************************
+    subroutine write_ionization_init_pars(unit)
+      integer, intent(in) :: unit
+
+!      write(unit,NML=ionization_init_pars)
+      if (ip==0) print*,unit
+    endsubroutine write_ionization_init_pars
+!***********************************************************************
+    subroutine read_ionization_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (ip==0) print*,unit,present(iostat)
+    endsubroutine read_ionization_run_pars
+!***********************************************************************
+    subroutine write_ionization_run_pars(unit)
+      integer, intent(in) :: unit
+
+!      write(unit,NML=ionization_run_pars)
+      if (ip==0) print*,unit
+    endsubroutine write_ionization_run_pars
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.216 2003-10-21 11:16:50 mcmillan Exp $
+! $Id: entropy.f90,v 1.217 2003-10-21 17:47:10 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -20,7 +20,6 @@ module Entropy
   use Interstellar
   use Viscosity
   use Density, only: lcalc_cp
-  use Ionization, only: lionization_fixed,xHe
 
   implicit none
 
@@ -102,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.216 2003-10-21 11:16:50 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.217 2003-10-21 17:47:10 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
