@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.63 2003-09-06 18:55:30 theine Exp $
+! $Id: noionization.f90,v 1.64 2003-09-08 13:23:20 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -18,6 +18,7 @@ module Ionization
   interface ionget
     module procedure ionget_pencil
     module procedure ionget_point
+    module procedure ionget_xy
   end interface
 
   interface perturb_energy              ! Overload subroutine perturb_energy
@@ -75,7 +76,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.63 2003-09-06 18:55:30 theine Exp $")
+           "$Id: noionization.f90,v 1.64 2003-09-08 13:23:20 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -221,6 +222,7 @@ module Ionization
       if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
       if (size(ss)==mx) ss=f(:,m,n,iss)
 !
+      yH=0.
       TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
 !
     endsubroutine ionget_pencil
@@ -232,10 +234,35 @@ module Ionization
       real, intent(in) :: lnrho,ss
       real, intent(out) :: yH,TT
 !
-      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
       yH=0.
+      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
 !
     endsubroutine ionget_point
+!***********************************************************************
+    subroutine ionget_xy(f,yH,TT,boundary,radz0)
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      character(len=5), intent(in) :: boundary
+      integer, intent(in) :: radz0
+      real, dimension(mx,my,radz0) :: lnrho,ss
+      real, dimension(mx,my,radz0), intent(out) :: yH,TT
+!
+      if (boundary=='lower') then
+        lnrho=f(:,:,n1-radz0:n1-1,ilnrho)
+        ss=f(:,:,n1-radz0:n1-1,iss)
+      endif
+!
+      if (boundary=='upper') then
+        lnrho=f(:,:,n2+1:n2+radz0,ilnrho)
+        ss=f(:,:,n2+1:n2+radz0,iss)
+      endif
+!
+      yH=0.
+      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
+!
+    endsubroutine ionget_xy
 !***********************************************************************
     subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !

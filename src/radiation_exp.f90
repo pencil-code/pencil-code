@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.93 2003-09-04 11:39:15 theine Exp $
+! $Id: radiation_exp.f90,v 1.94 2003-09-08 13:23:20 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -84,7 +84,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.93 2003-09-04 11:39:15 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.94 2003-09-08 13:23:20 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -242,7 +242,7 @@ module Radiation
       do idir=1,ndir
         call intensity_intrinsic(f)
         call intensity_periodic()
-        call intensity_communicate()
+        call intensity_communicate(f)
         call intensity_revision(f)
       enddo
 !
@@ -424,7 +424,7 @@ module Radiation
 !
     endsubroutine intensity_periodic
 !***********************************************************************
-    subroutine intensity_communicate()
+    subroutine intensity_communicate(f)
 !
 !  Integration radioation transfer equation along rays
 !
@@ -435,13 +435,15 @@ module Radiation
 !
       use Cdata
 !
+      real, dimension(mx,my,mz,mvar+maux) :: f
+!
 !  identifier
 !
       if(ldebug.and.headt) print*,'intensity_communicate'
 !
 !  receive boundary values
 !
-      call receive_intensity()
+      call receive_intensity(f)
 !
 !  propagate boundary values
 !
@@ -453,7 +455,7 @@ module Radiation
 !
     endsubroutine intensity_communicate
 !***********************************************************************
-    subroutine receive_intensity()
+    subroutine receive_intensity(f)
 !
 !  set boundary intensities or receive from neighboring processors
 !
@@ -462,6 +464,7 @@ module Radiation
       use Cdata
       use Mpicomm
 !
+      real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(radx0,my,mz) :: Irad0_yz
       real, dimension(mx,rady0,mz) :: Irad0_zx
       real, dimension(mx,my,radz0) :: Irad0_xy
@@ -497,12 +500,12 @@ module Radiation
 !  xy boundary plane
 !
       if (nrad>0) then
-        if (ipz==0) call radboundary_xy_set(Irad0_xy)
+        if (ipz==0) call radboundary_xy_set(f,Irad0_xy)
         if (ipz/=0) call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
         Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
       endif
       if (nrad<0) then
-        if (ipz==nprocz-1) call radboundary_xy_set(Irad0_xy)
+        if (ipz==nprocz-1) call radboundary_xy_set(f,Irad0_xy)
         if (ipz/=nprocz-1) call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
         Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
       endif
@@ -792,7 +795,7 @@ module Radiation
 !
     endsubroutine radboundary_zx_set
 !***********************************************************************
-    subroutine radboundary_xy_set(Irad0_xy)
+    subroutine radboundary_xy_set(f,Irad0_xy)
 !
 !  sets the physical boundary condition on xy plane
 !
@@ -803,8 +806,9 @@ module Radiation
       use Ionization
       use Gravity
 !
+      real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,radz0) :: Irad0_xy
-      real, dimension(mx,my,radz0) :: kaprho_top,Srad_top,TT_top,H_top,tau_top
+      real, dimension(mx,my,radz0) :: kaprho_xy,Srad_xy,TT_xy,yH_xy,H_xy
 !
 !--------------------
 !  lower z-boundary
@@ -821,12 +825,11 @@ module Radiation
 !  integrated from infinity using a characteristic scale height
 !
         if (bc_rad1(3)=='e') then
-          kaprho_top=kaprho(:,:,n1-1:n1-radz0)
-          Srad_top=Srad(:,:,n1-1:n1-radz0)
-          TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
-          H_top=(1.+yHmin+xHe)*ss_ion*TT_top/gravz
-          tau_top=kaprho_top*H_top
-          Irad0_xy=Srad_top*(1.-exp(-tau_top))
+          kaprho_xy=kaprho(:,:,n1-radz0:n1-1)
+          Srad_xy=Srad(:,:,n1-radz0:n1-1)
+          call ionget_xy(f,yH_xy,TT_xy,'lower',radz0)
+          H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
+          Irad0_xy=Srad_xy*(1.-exp(-kaprho_xy*H_xy))
         endif
 !
 !  periodic boundary consition
@@ -867,12 +870,11 @@ module Radiation
 ! integrated from infinity using a characteristic scale height
 !
         if (bc_rad2(3)=='e') then
-          kaprho_top=kaprho(:,:,n2+1:n2+radz0)
-          Srad_top=Srad(:,:,n2+1:n2+radz0)
-          TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
-          H_top=-(1.+yHmin+xHe)*ss_ion*TT_top/gravz
-          tau_top=kaprho_top*H_top
-          Irad0_xy=Srad_top*(1.-exp(-tau_top))
+          kaprho_xy=kaprho(:,:,n2+1:n2+radz0)
+          Srad_xy=Srad(:,:,n2+1:n2+radz0)
+          call ionget_xy(f,yH_xy,TT_xy,'upper',radz0)
+          H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
+          Irad0_xy=Srad_xy*(1.-exp(-kaprho_xy*H_xy))
         endif
 !
 ! periodic boundary consition (currently only implemented for

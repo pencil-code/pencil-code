@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.86 2003-09-07 18:12:21 theine Exp $
+! $Id: ionization.f90,v 1.87 2003-09-08 13:23:20 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -19,6 +19,7 @@ module Ionization
   interface ionget                      ! Overload subroutine ionget
     module procedure ionget_pencil
     module procedure ionget_point
+    module procedure ionget_xy
   end interface
   
   interface perturb_energy              ! Overload subroutine perturb_energy
@@ -78,7 +79,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.86 2003-09-07 18:12:21 theine Exp $")
+           "$Id: ionization.f90,v 1.87 2003-09-08 13:23:20 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -401,6 +402,27 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       TT=exp(lnTT_)*TT_ion
 !
     endsubroutine ionget_point
+!***********************************************************************
+    subroutine ionget_xy(f,yH,TT,boundary,radz0)
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      character(len=5), intent(in) :: boundary
+      integer, intent(in) :: radz0
+      real, dimension(mx,my,radz0), intent(out) :: yH,TT
+!
+      if (boundary=='lower') then
+        yH=f(:,:,n1-radz0:n1-1,iyH)
+        TT=f(:,:,n1-radz0:n1-1,iTT)
+      endif
+!
+      if (boundary=='upper') then
+        yH=f(:,:,n2+1:n2+radz0,iyH)
+        TT=f(:,:,n2+1:n2+radz0,iTT)
+      endif
+!
+    endsubroutine ionget_xy
 !***********************************************************************
     subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
