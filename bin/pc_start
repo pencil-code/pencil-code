@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: pc_start,v 1.2 2004-04-06 16:06:37 mee Exp $
+# CVS: $Id: pc_start,v 1.3 2004-04-06 17:35:10 mee Exp $
 #                       pc_start
 #                      ----------
 #   Run src/start.x (initialising f for src/run.x).
@@ -32,14 +32,18 @@ fi
 debug=yes
 source pc_config.sh 
 
+# Prevent code from running twice (and removing files by accident)
+check_not_locked
+# If local disc is used, write name into $datadir/directory_snap.
+# This will be read by the code, if the file exists.
+# Remove file, if not needed, to avoid confusion.
+prepare_scratch_disk
 #  If we don't have a data subdirectory: stop here (it is too easy to
 #  continue with an NFS directory until you fill everything up).
 check_datadir
-
 # If the file NOERASE exists, the old directories are not erased
 #   (start.x also knows then that var.dat is not created)
 prepare_datadir
-
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
 distribute_binary src/start.x
 

@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.4 2004-04-06 16:20:43 mee Exp $
+# $Id: pc_config.sh,v 1.5 2004-04-06 17:35:10 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -20,13 +20,10 @@ source $PENCIL_HOME/bin/pc_functions.sh
 [ -n "$PENCIL_HOME" ] && export PATH=${PATH}:${PENCIL_HOME}/bin
 # Save working directory for other scripts we call
 export PENCIL_WORKDIR=`pwd`
-# Prevent code from running twice (and removing files by accident)
-check_not_locked
 # Are we running the MPI version?
 determine_mpi
 # Determine number of CPUS
 determine_ncpus
-
 
 ##--------------------------- DEFAULT SETTINGS ----------------------------
 ##---------------- can be overwritten per machine below -------------------
@@ -362,10 +359,6 @@ determine_mpi_processor_options
 # plus a list of subdirs and procdirs 
 determine_datadir
 
-# If local disc is used, write name into $datadir/directory_snap.
-# This will be read by the code, if the file exists.
-# Remove file, if not needed, to avoid confusion.
-prepare_scratch_disk
 
 # Apply the SGI namelist read fix if running IRIX
 check_sgi_fix
@@ -390,8 +383,5 @@ if match "$0" "pc_config" ; then
   echo "                                                                       "
   echo " You will find a list of the variables that have been set above this   "
   echo " message.                                                              "
-  echo "                                                                       "
-  echo " Directories MAY have been created in the scratch directory:           "
-  echo "   \$SCRATCH_DIR =  $SCRATCH_DIR                                       " 
   echo "---------------------------------------------------------------------- "
 fi

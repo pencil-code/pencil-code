@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: pc_start_run,v 1.2 2004-04-06 16:06:37 mee Exp $
+# CVS: $Id: pc_start_run,v 1.3 2004-04-06 17:35:10 mee Exp $
 #                       pc_run
 #                      ---------
 #   Run src/run.x (timestepping for src/run.x).
@@ -28,10 +28,15 @@
 debug=yes
 source pc_config.sh
 
+# Prevent code from running twice (and removing files by accident)
+check_not_locked
+# If local disc is used, write name into $datadir/directory_snap.
+# This will be read by the code, if the file exists.
+# Remove file, if not needed, to avoid confusion.
+prepare_scratch_disk
 #  If we don't have a data subdirectory: stop here (it is too easy to
 #  continue with an NFS directory until you fill everything up).
 check_datadir
-
 # If the file NOERASE exists, the old directories are not erased
 #   (start.x also knows then that var.dat is not created)
 prepare_datadir
@@ -41,6 +46,12 @@ distribute_binary src/start.x
 
 # Run start.x timestamping and timing appropriately
 pencil_code_start
+if [ $start_status -ne 0 ]; then
+  echo "Starting failed.  Exiting..."
+  final_copy_snapshots
+  tidy_scratch_disk
+  exit $start_status
+fi
 
 # Prevent code from running twice (and removing files by accident)
 create_lock
@@ -80,25 +91,14 @@ do
   # Kill all backgrounded copy-snapshots
   unbackground_copy_snapshots
 
-  tidy_scratch_disk
   check_reference_data
   check_NEWDIR
 done
 
 remove_lock
+tidy_scratch_disk
 
 # Shut down lam if we have started it
 [ "$booted_lam" == "yes" ] && lamhalt
 exit $run_status		# propagate status of mpirun
 
-# cut & paste for job submission on the mhd machine
-# bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
-# bsub -n  8 -q 8cpu12h mpijob dmpirun src/run.x
-# bsub -n 16 -q 16cpu8h mpijob dmpirun src/run.x
-# bsub -n  8 -q 8cpu12h -o run.log -w 'exit(123456)' mpijob dmpirun src/run.x
-
-# qsub -l ncpus=64,mem=32gb,walltime=500:00:00 -W group_list=UK07001 -q UK07001 run.csh
-# qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long run.csh
-# qsub -l ncpus=16,mem=1gb,cput=400:00:00 -q parallel run.csh
-# qsub -l nodes=128,walltime=10:00:00 -q workq run.csh
-# eval `env-setup lam`; qsub -v PATH -pe lam 8 -j y -o run.log run.csh
