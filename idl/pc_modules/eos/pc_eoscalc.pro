@@ -72,7 +72,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
       if keyword_set(pp) then begin
         result=exp(lnrho)*cs2/gamma
       endif else if keyword_set(ee) then begin
-        result=cs2/(gamma-1.)
+        result=cs2/(gamma*(gamma-1.))
       endif else if keyword_set(tt) then begin
         result=cs20/(cp*(gamma-1.))*exp(gamma*ss+(gamma-1.)*(lnrho-lnrho0))
       endif else if keyword_set(cs2) then begin
