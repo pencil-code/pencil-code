@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.7 2002-08-05 14:12:01 nilshau Exp $
+! $Id: radiation.f90,v 1.8 2002-08-06 07:57:46 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -26,7 +26,7 @@ module Radiation
   character (len=labellen) :: initrad='equil',pertee='none'
 
   ! run parameters
-  character (len=labellen) :: flim='tanhr'
+  character (len=labellen) :: flim='LP'
 
   ! input parameters
   namelist /radiation_init_pars/ &
@@ -74,7 +74,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.7 2002-08-05 14:12:01 nilshau Exp $")
+           "$Id: radiation.f90,v 1.8 2002-08-06 07:57:46 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -108,7 +108,7 @@ module Radiation
       case('gaussian-noise','1'); call gaunoise(amplee,f,iE)
       case('equil','2'); call init_equil(f)
       case ('cos', '3')
-         f(:,:,:,ie) = -amplee*cos(sqrt(3.)*0.5*xx)*(xx-Lx/2)*(xx+Lx/2)
+         f(:,:,:,ie) = -amplee*(cos(sqrt(3.)*0.5*xx)*(xx-Lx/2)*(xx+Lx/2)-1)
       case ('step', '4')
          l12=(l1+l2)/2
          f(1    :l12,:,:,ie) = 1.
@@ -221,7 +221,7 @@ module Radiation
 !
 !  optical depth in x-dir.
 !
-      if ((headtt.or.ldebug) .and. (m==4 .and. n==4)) then
+      if (headtt.or.ldebug) then
          taux=0
          do i=1,nx
             taux=taux+dx*kappa(i)/rho1(i)
