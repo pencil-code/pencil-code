@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.52 2004-04-05 13:23:11 ajohan Exp $
+! $Id: dustdensity.f90,v 1.53 2004-04-05 14:38:42 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Dustdensity
       ldustdensity = .true.
 !
       do i=1,ndustspec
-        if (i .eq. 1) then
+        if (i == 1) then
           ind(1) = iuud(1)+3         ! indix to access lam
           if (lmdvar) irhod(1) = ind(1) + 1
         else
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.52 2004-04-05 13:23:11 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.53 2004-04-05 14:38:42 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -102,7 +102,7 @@ module Dustdensity
 !
       do i=1,ndustspec
         call chn(i,sdust)
-        if (ndustspec .eq. 1) sdust = ''
+        if (ndustspec == 1) sdust = ''
         if (lroot) then
           if (maux == 0) then
             if (nvar < mvar) then
@@ -170,7 +170,7 @@ module Dustdensity
         if (lroot .and. ip<6) &
             print*, 'initialize_dustdensity: cdiffnd_all=',cdiffnd_all
         do i=1,ndustspec
-          if (cdiffnd(i) .eq. 0.) cdiffnd(i) = cdiffnd_all
+          if (cdiffnd(i) == 0.) cdiffnd(i) = cdiffnd_all
         enddo
       endif
 !
@@ -412,11 +412,10 @@ module Dustdensity
         do k=1,ndustspec
           if (lmdvar) then
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
-            if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= eps_ctog &
+            if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= 0.99*eps_ctog &
                 .and. lkeepinitnd) then
               ! Do nothing when mass is set to decrease below initial
             elseif (nd(1,k) >= 0.) then
-              !print*, k, rho, TT1, mfluxcond(:), nd(:,k)
               df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
               df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
             endif
@@ -560,7 +559,7 @@ module Dustdensity
 
       case ('ice')
         epsmon = f(l1:l2,m,n,ilncc)
-        if (it .eq. 1) call getmu(mu)
+        if (it == 1) call getmu(mu)
         call eoscalc_pencil &
             (ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
         ppmon = pp*epsmon*mu/mumon
@@ -601,7 +600,7 @@ module Dustdensity
         epsmon = f(l1:l2,m,n,ilncc)
         !call eoscalc(f,nx,lnTT=lnTT,pp=pp)
         TT = exp(lnTT)
-        if (it .eq. 1) call getmu(mu)
+        if (it == 1) call getmu(mu)
         ppmon = pp*epsmon*mu/mumon
         ppsat = 6.035e12*exp(-5938/TT)
         vth = (3*k_B*TT/mmon)**0.5
@@ -670,7 +669,7 @@ module Dustdensity
 !
       do k=1,ndustspec
         call chn(k-1,sdust)
-        if (ndustspec .eq. 1) sdust=''
+        if (ndustspec == 1) sdust=''
 !
 !  iname runs through all possible names that may be listed in print.in
 !
