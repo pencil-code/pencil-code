@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.162 2004-02-21 16:48:38 dobler Exp $ 
+! $Id: param_io.f90,v 1.163 2004-02-27 16:01:39 ajohan Exp $ 
 
 module Param_IO
 
@@ -354,6 +354,7 @@ module Param_IO
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !
       use Sub, only: parse_bc
+      use Dustvelocity, only: copy_bcs_dust
 !
       integer :: ierr
       logical, optional :: print,file
@@ -426,6 +427,10 @@ module Param_IO
       if (lviscosity   ) read(1,NML=viscosity_run_pars    ,ERR=99, IOSTAT=ierr)
       label='[none]'
       close(1)
+!
+!  Copy boundary conditions on first dust species to all others
+!
+      call copy_bcs_dust 
 !
 !  print cvs id from first line
 !
