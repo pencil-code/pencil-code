@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.182 2004-05-27 15:40:01 ajohan Exp $ 
+! $Id: sub.f90,v 1.183 2004-05-27 20:07:30 mee Exp $ 
 
 module Sub 
 
@@ -137,7 +137,7 @@ module Sub
 !
    endsubroutine save_name
 !***********************************************************************
-    subroutine max_mn_name(a,iname,lsqrt,l_dt)
+    subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
 !
 !  successively calculate maximum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
@@ -150,7 +150,7 @@ module Sub
 !
       real, dimension (nx) :: a
       integer :: iname
-      logical, optional :: lsqrt,l_dt
+      logical, optional :: lsqrt,l_dt,lneg,lreciprocal
 !
       if (lfirstpoint) then
         fname(iname)=maxval(a)
@@ -164,6 +164,10 @@ module Sub
         itype_name(iname)=ilabel_max_sqrt
       elseif (present(l_dt)) then
         itype_name(iname)=ilabel_max_dt
+       elseif (present(lneg)) then
+         itype_name(iname)=ilabel_max_neg
+       elseif (present(lreciprocal)) then
+         itype_name(iname)=ilabel_max_reciprocal
       else
         itype_name(iname)=ilabel_max
       endif

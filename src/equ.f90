@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.210 2004-05-27 15:41:29 ajohan Exp $
+! $Id: equ.f90,v 1.211 2004-05-27 20:07:30 mee Exp $
 
 module Equ
 
@@ -85,26 +85,43 @@ module Equ
          do iname=1,nname
            if(itype_name(iname)<0) then
              imax_count=imax_count+1
-             if(itype_name(iname)==-1) fname(iname)=fmax(imax_count)
-             if(itype_name(iname)==-2) fname(iname)=sqrt(fmax(imax_count))
-             if(itype_name(iname)==-3) fname(iname)=fmax(imax_count)
+
+             if(itype_name(iname)==ilabel_max)            &
+                 fname(iname)=fmax(imax_count)
+
+             if(itype_name(iname)==ilabel_max_sqrt)       &
+                 fname(iname)=sqrt(fmax(imax_count))
+
+             if(itype_name(iname)==ilabel_max_dt)         &
+                 fname(iname)=fmax(imax_count)
+
+             if(itype_name(iname)==ilabel_max_neg)        &
+                 fname(iname)=-fmax(imax_count)
+
+             if(itype_name(iname)==ilabel_max_reciprocal) &
+                 fname(iname)=1./fmax(imax_count)
+
            elseif(itype_name(iname)>0) then
              isum_count=isum_count+1
-             if(itype_name(iname)==+1) fname(iname)=fsum(isum_count)/(nw*ncpus)
-             if(itype_name(iname)==+2) fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
-             if(itype_name(iname)==+3) then
+
+             if(itype_name(iname)==ilabel_sum)            &
+                 fname(iname)=fsum(isum_count)/(nw*ncpus)
+
+             if(itype_name(iname)==ilabel_sum_sqrt)       &
+                 fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
+
+             if(itype_name(iname)==ilabel_integrate) then
                dv=1.
                if (nxgrid/=1) dv=dv*dx
                if (nygrid/=1) dv=dv*dy
                if (nzgrid/=1) dv=dv*dz
                fname(iname)=fsum(isum_count)*dv
               endif
-              if(itype_name(iname)==+4) fname(iname)=fsum(isum_count)
+
+              if(itype_name(iname)==ilabel_surf)          &
+                  fname(iname)=fsum(isum_count)
            endif
-!
-! Change sign of 'minimum' variables (now contains maximum of negative)
-!
-           if (index(cname(iname),'min')) fname(iname) = -fname(iname)
+
          enddo
          !nmax_count=imax_count
          !nsum_count=isum_count
@@ -242,7 +259,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.210 2004-05-27 15:41:29 ajohan Exp $")
+           "$Id: equ.f90,v 1.211 2004-05-27 20:07:30 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
