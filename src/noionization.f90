@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.23 2003-06-15 06:16:47 brandenb Exp $
+! $Id: noionization.f90,v 1.24 2003-06-15 21:13:25 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -13,7 +13,10 @@ module Ionization
   ! global ionization parameter for yH (here a scalar set to 0)
   real :: yyH=0.
 
-  !  secondary parameters calculated in initialize
+  ! global parameter for perfect gas EOS for either yH=0 or yH=1
+  real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
+
+  ! secondary parameters calculated in initialize
   double precision :: m_H,m_He,mu
   double precision :: TT_ion,lnrho_ion,ss_ion,chiH
   double precision :: TT_ion_,lnrho_ion_,kappa0,chiH_
@@ -22,7 +25,7 @@ module Ionization
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   logical :: lionization=.false.,lfixed_ionization=.false.
-  real :: yH0=impossible,fHe=0.
+  real :: yH0=impossible,fHe=0.1
 
   ! input parameters
   integer :: dummy_ni 
@@ -58,7 +61,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.23 2003-06-15 06:16:47 brandenb Exp $")
+           "$Id: noionization.f90,v 1.24 2003-06-15 21:13:25 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -79,6 +82,8 @@ module Ionization
       use Cdata
       use General
 !
+      real :: yH
+!
 !  ionization parameters
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
@@ -96,11 +101,20 @@ module Ionization
       kappa0=sigmaH_/m_H/mu
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion',TT_ion
-        print*,'lnrho_ion,exp(lnrho_ion)=',lnrho_ion,exp(lnrho_ion)
-        print*,'ss_ion=',ss_ion
+        print*,'TT_ion,lnrho_ion,ss_ion=',TT_ion,lnrho_ion,ss_ion
       endif
-
+!
+      yH=amin1(amax1(yH0,1e-5),1.-1e-5)
+      lnTT0=log(TT_ion)+(2./3.)*((-1.5*(1.-yH)*log(m_H/m_e) &
+                        -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
+                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
+                        /(1.+yH+fHe)-lnrho_ion-2.5)
+      dlnPdlnrho=5./3.
+      dlnPdss=(2./3.)/(1.+yH0+fHe)
+!
+      coef_lr=dlnPdlnrho-1.
+      coef_ss=dlnPdss/ss_ion
+!
     endsubroutine initialize_ionization
 !*******************************************************************
     subroutine rprint_ionization(lreset)
@@ -123,17 +137,38 @@ module Ionization
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_ionization
 !***********************************************************************
-    subroutine ionfrac(f)
-      real, dimension (mx,my,mz,mvar), intent(in) :: f
-      if(ip==0) print*,f(1,1,1,1)  !(keep compiler quiet)
-    endsubroutine ionfrac
+    subroutine ionset(f,ss,lnrho,yH,TT)
+!
+!   set degree of ionization and temperature
+!   This routine is called from entropy.f90 and operates on a pencil.
+!
+!   15-jun-03/axel: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx), intent(in) :: ss,lnrho
+      real, dimension (nx), intent(out) :: yH,TT
+!
+!  calculate data on pencil only
+!
+      if(lfixed_ionization) then
+        if(headtt) print*,'ionset: assume cp is not 1, yH0=',yH0
+        TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
+        yH=yH0
+      else
+        if(headtt) print*,'ionset: assume cp=1'
+        TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+      endif
+!
+    endsubroutine ionset
 !***********************************************************************
     subroutine output_ionization(lun)
       integer, intent(in) :: lun
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT,ee)
+    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee,yH,TT)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -142,6 +177,7 @@ module Ionization
 !  in general: cp1tilde=dlnPdS/dlnPdlnrho
 !
 !   2-feb-03/axel: simple example coded
+!  15-jun-03/axel: made compatible with current ionization routine
 !
       use Cdata
       use General
@@ -149,20 +185,24 @@ module Ionization
       use Density, only:cs20,lnrho0,gamma
 !
       real, dimension (nx), intent(in) :: lnrho,ss
-      real, dimension (nx), intent(out) :: cs2,TT1,cp1tilde
-      real, dimension (nx), intent(out), optional :: ee
+      real, dimension (nx), intent(out) :: cs2,TT1,cp1tilde,ee
       real, dimension (nx), intent(in), optional :: yH,TT
       logical :: ldummy
 !
       if (.not. present(yH)) ldummy=.true.
       if (.not. present(TT)) ldummy=.true.
 !
-      cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
-      TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-      cp1tilde=1.
-!
-      if (ldiagnos) then
-        if(present(ee)) ee=cs2/(gamma1*gamma)
+      TT1=1./TT
+      if(lfixed_ionization) then
+        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
+        cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
+        cp1tilde=dlnPdss/dlnPdlnrho
+        if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      else
+        if(headtt) print*,'thermodynamics: assume cp=1'
+        cs2=gamma1*TT
+        cp1tilde=1.
+        if (ldiagnos) ee=cs2/(gamma1*gamma)
       endif
 !
     endsubroutine thermodynamics

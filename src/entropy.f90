@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.165 2003-06-15 05:39:21 brandenb Exp $
+! $Id: entropy.f90,v 1.166 2003-06-15 21:13:25 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.165 2003-06-15 05:39:21 brandenb Exp $")
+           "$Id: entropy.f90,v 1.166 2003-06-15 21:13:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -416,9 +416,10 @@ module Entropy
       use Slices
       use IO
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,uglnrho, divu
+      real, dimension (nx) :: ugss,uglnrho,divu
       real, dimension (nx) :: lnrho,ss,yH,rho1,cs2,TT1,cp1tilde
       real, dimension (nx) :: rho,ee,TT
       integer :: j,ju
@@ -435,17 +436,15 @@ module Entropy
 !
       call grad(f,ient,gss)
 !
-!  sound speed squared
-!  include in maximum advection speed (for timestep)
+!  calculate the necessary thermodynamics
+!  yH and TT have already been calculated in the beginning of pencil loop
 !
       ss=f(l1:l2,m,n,ient)
-      if (lionization) then
-        yH=f(l1:l2,m,n,iyH)
-        TT=f(l1:l2,m,n,iTT)
-        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH=yH,TT=TT,ee=ee)
-      else
-        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee=ee)
-      endif
+      call ionset(f,ss,lnrho,yH,TT)
+      call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee,yH=yH,TT=TT)
+!?? does this option make sense?
+!       call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee)
+!     endif
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.44 2003-06-15 19:04:20 theine Exp $
+! $Id: ionization.f90,v 1.45 2003-06-15 21:13:25 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -13,7 +13,7 @@ module Ionization
 
   !  secondary parameters calculated in initialize
   real :: m_H,m_He,mu
-  real :: TT_ion,lnrho_ion,ss_ion,chiH
+  real :: TT_ion ,lnrho_ion ,chiH ,ss_ion
   real :: TT_ion_,lnrho_ion_,chiH_,kappa0
   real :: lnmHme,lnmpme,lnmHeme,lnmHmp,lnfHe
 
@@ -21,7 +21,7 @@ module Ionization
   !  it can be reset to .false. in namelist
   logical :: lionization=.true.,lfixed_ionization=.false.,output_yH=.false.
   character (len=labellen) :: cionization='hydrogen'
-  real :: yH0=impossible,fHe=0.
+  real :: yH0=impossible,fHe=0.1
 
   ! input parameters
   namelist /ionization_init_pars/ cionization,output_yH
@@ -60,7 +60,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.44 2003-06-15 19:04:20 theine Exp $")
+           "$Id: ionization.f90,v 1.45 2003-06-15 21:13:25 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -88,7 +88,6 @@ module Ionization
 !
       m_H=m_p+m_e
       m_He=3.97153*m_H
-      fHe=.1
       lnmHme=log(m_H/m_e)
       lnmpme=log(m_p/m_e)
       lnmHeme=log(m_He/m_e)
@@ -105,9 +104,7 @@ module Ionization
       kappa0=sigmaH_/m_H/mu
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion',TT_ion
-        print*,'lnrho_ion,exp(lnrho_ion)=',lnrho_ion,exp(lnrho_ion)
-        print*,'ss_ion=',ss_ion
+        print*,'TT_ion,lnrho_ion,ss_ion=',TT_ion,lnrho_ion,ss_ion
       endif
     endsubroutine initialize_ionization
 
@@ -136,6 +133,7 @@ module Ionization
     subroutine ioncalc(f)
 !
 !   calculate degree of ionization and temperature
+!   This routine is called from equ.f90 and operates on the full 3-D array.
 !
 !   13-jun-03/tobi: coded
 !
@@ -144,6 +142,9 @@ module Ionization
       real, dimension (mx,my,mz,mvar) :: f
       real :: lnrho,ss,yH,lnTT_
       integer :: l
+!
+!AB: Tobi, this may be slow. Maybe we should handle at least the
+!AB: full pencil in rtsave and the expression for lnTT_.
 !
       do n=n1,n2
       do m=m1,m2
@@ -165,6 +166,28 @@ module Ionization
     endsubroutine ioncalc
 
 !***********************************************************************
+    subroutine ionset(f,ss,lnrho,yH,TT)
+!
+!   set degree of ionization and temperature
+!   This routine is called from entropy.f90 and operates on a pencil.
+!
+!   15-jun-03/axel: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx), intent(in) :: ss,lnrho
+      real, dimension (nx), intent(out) :: yH,TT
+!
+!  set data on pencil only
+!
+      yH=f(l1:l2,m,n,iyH)
+      TT=f(l1:l2,m,n,iTT)
+!
+      if(ip==0) print*,ss,lnrho  !(keep compiler quiet)
+    endsubroutine ionset
+
+!***********************************************************************
     subroutine output_ionization(lun)
 !
 !  Optional output of derived quantities along with VAR-file
@@ -184,7 +207,7 @@ module Ionization
     endsubroutine output_ionization
 
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT,ee)
+    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee,yH,TT)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -193,16 +216,15 @@ module Ionization
 !
 !   2-feb-03/axel: simple example coded
 !   13-jun-03/tobi: the ionization fraction as part of the f-array
-!                   now needs to be given as an argument
+!                   now needs to be given as an argument as input
 !
       use Cdata
       use General
       use Sub
 !
       real, dimension (nx), intent(in) :: lnrho,ss
-      real, dimension (nx), intent(out) :: cs2,cp1tilde,TT1
-      real, dimension (nx), optional, intent(in) :: yH,TT
-      real, dimension (nx), optional, intent(out) :: ee
+      real, dimension (nx), intent(out) :: cs2,TT1,cp1tilde,ee
+      real, dimension (nx), intent(in), optional :: yH,TT
       real, dimension (nx) :: f,dlnTT_dy,dfdy,dlnTT_dlnrho
       real, dimension (nx) :: dfdlnrho,dydlnrho,dlnPdlnrho
       real, dimension (nx) :: dlnTT_dss,dfdss,dydss,dlnPdss
@@ -228,13 +250,16 @@ module Ionization
       dydss=-dfdss/dfdy
       dlnPdss=dydss/(1.+yH+fHe)+dlnTT_dy*dydss+dlnTT_dss
 !
+!  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
+!  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
+!
       TT1=1./TT
       cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
       cp1tilde=dlnPdss/dlnPdlnrho
 !
-      if (ldiagnos) then
-        if(present(ee)) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
-      endif
+!  calculate internal energy for calculating thermal energy
+!
+      if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics
 !***********************************************************************
