@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.43 2002-06-13 15:55:49 brandenb Exp $
+! $Id: magnetic.f90,v 1.44 2002-06-14 04:38:16 brandenb Exp $
 
 module Magnetic
 
@@ -73,8 +73,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.43 $", &
-           "$Date: 2002-06-13 15:55:49 $")
+           "$Revision: 1.44 $", &
+           "$Date: 2002-06-14 04:38:16 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,6 +120,11 @@ module Magnetic
 !
       elseif (initaa==2) then
         call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
+!
+!  Vertical field, Bz=coskx
+!
+      elseif (initaa==3) then
+        call vfield(amplaa,f,iaa,xx)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -324,7 +329,7 @@ module Magnetic
 !
 !  debug output
 !
-      if (headt .and. lfirst .and. ip<=4) then
+      if (headtt .and. lfirst .and. ip<=4) then
         call output_pencil(trim(directory)//'/aa.dat',aa,3)
         call output_pencil(trim(directory)//'/bb.dat',bb,3)
         call output_pencil(trim(directory)//'/jj.dat',jj,3)
@@ -429,6 +434,156 @@ module Magnetic
       vv(:,:,:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine bc_aa(f,errmesg)
+!
+!  Potential field boundary condition for magnetic vector potential
+!
+!  14-jun-2002/axel: adapted from similar 
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx,ny) :: f1,f2,f3
+      integer :: i,j
+      character (len=*) :: errmesg
+!
+      errmesg=""
+!
+!  pontential field condition at the bottom
+!
+        if (bcz1(iaa) == "c1") then
+          if (headtt) print*,'potential field boundary condition at the bottom'
+          f2=f(l1:l2,m1:m2,n1+1,iax); f3=f(l1:l2,m1:m2,n1+2,iax); call potential(f1,f2,f3); f(l1:l2,m1:m2,n1,iax)=f1
+          f2=f(l1:l2,m1:m2,n1+1,iay); f3=f(l1:l2,m1:m2,n1+2,iay); call potential(f1,f2,f3); f(l1:l2,m1:m2,n1,iay)=f1
+          f1=f(l1:l2,m1:m2,n1  ,iax); f2=f(l1:l2,m1:m2,n1  ,iay); call potentdiv(f1,f2,f3); f(l1:l2,m1:m2,n1,iaz)=-f1
+          do j=iax,iaz
+          do i=1,nghost
+            f(:,:,n1+i,j) = 2*f(:,:,n1,j) - f(:,:,n1-i,j)
+          enddo
+          enddo
+        endif
+!
+!  pontential field condition at the bottom top
+!
+        if (bcz2(iaa) == "c1") then
+          if (headtt) print*,'potential field boundary condition at the top'
+          f2=f(l1:l2,m1:m2,n2-1,iax); f3=f(l1:l2,m1:m2,n2-2,iax); call potential(f1,f2,f3); f(l1:l2,m1:m2,n2,iax)=f1
+          f2=f(l1:l2,m1:m2,n2-1,iay); f3=f(l1:l2,m1:m2,n2-2,iay); call potential(f1,f2,f3); f(l1:l2,m1:m2,n2,iay)=f1
+          f1=f(l1:l2,m1:m2,n2,iax)  ; f2=f(l1:l2,m1:m2,n2,iay)  ; call potentdiv(f1,f2,f3); f(l1:l2,m1:m2,n2,iaz)=-f1
+          do j=iax,iaz
+          do i=1,nghost
+            f(:,:,n2+i,j) = 2*f(:,:,n2,j) - f(:,:,n2-i,j)
+          enddo
+          enddo
+        endif
+!
+    endsubroutine bc_aa
+!***********************************************************************
+      subroutine potential(f1,f2,f3)
+!
+!  solves the potential field boundary condition;
+!  f1 is the boundary layer, and f2 and f3 are the next layers inwards.
+!  The condition is the same on the two sides.
+!
+!  20-jan-00/axel+wolf: coded
+!  22-mar-00/axel: corrected sign (it is the same on both sides)
+!
+     use Cdata
+!
+      real, dimension (nx,ny) :: fac,kk,f1,f1r,f1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx) :: kx
+      real, dimension (ny) :: ky
+      integer :: i
+!
+      f2r=f2; f2i=0
+      f3r=f3; f3i=0
+!
+!  Transform
+!
+      call fft(f2r, f2i, nx*ny, nx,    nx,-1) ! x-direction
+      call fft(f2r, f2i, nx*ny, ny, nx*ny,-1) ! y-direction
+!
+      call fft(f3r, f3i, nx*ny, nx,    nx,-1) ! x-direction
+      call fft(f3r, f3i, nx*ny, ny, nx*ny,-1) ! y-direction
+!
+!  define wave vector
+!
+      kx=cshift((/(i-(nx-1)/2,i=0,nx-1)/),+(nx-1)/2)*2*pi/Lx
+      ky=cshift((/(i-(ny-1)/2,i=0,ny-1)/),+(ny-1)/2)*2*pi/Ly
+!
+!  calculate 1/k^2, zero mean
+!
+      kk=sqrt(spread(kx**2,2,ny)+spread(ky**2,1,nx))
+!
+!  one-sided derivative
+!
+      fac=1./(3.+2.*dx*kk)
+      f1r=fac*(4.*f2r-f3r)
+      f1i=fac*(4.*f2i-f3i)
+!
+!  Transform back
+!
+      call fft(f1r, f1i, nx*ny, nx,    nx,+1) ! x-direction
+      call fft(f1r, f1i, nx*ny, ny, nx*ny,+1) ! y-direction
+!
+      f1 = f1r/(nx*ny)  ! Renormalize
+!
+    endsubroutine potential
+!***********************************************************************
+      subroutine potentdiv(f1,f2,f3)
+!
+!  solves the divA=0 for potential field boundary condition;
+!  f2 and f3 correspond to Ax and Ay (input) and f1 corresponds to Ax (out)
+!
+!  22-mar-02/axel: coded
+!
+     use Cdata
+!
+      real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1,f1r,f1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx) :: kx
+      real, dimension (ny) :: ky
+      integer :: i
+!
+      f2r=f2; f2i=0
+      f3r=f3; f3i=0
+!
+!  Transform
+!
+      call fft(f2r, f2i, nx*ny, nx,    nx,-1) ! x-direction
+      call fft(f2r, f2i, nx*ny, ny, nx*ny,-1) ! y-direction
+!
+      call fft(f3r, f3i, nx*ny, nx,    nx,-1) ! x-direction
+      call fft(f3r, f3i, nx*ny, ny, nx*ny,-1) ! y-direction
+!
+!  define wave vector
+!
+      kx=cshift((/(i-nx/2,i=0,nx-1)/),+nx/2)
+      ky=cshift((/(i-ny/2,i=0,ny-1)/),+ny/2)
+!
+!  calculate 1/k^2, zero mean
+!
+      kk=sqrt(spread(kx**2,2,ny)+spread(ky**2,1,nx))
+      kkkx=spread(kx,2,ny)
+      kkky=spread(ky,1,nx)
+!
+!  calculate 1/kk
+!
+      kk(1,1)=1.
+      fac=1./kk
+      fac(1,1)=0.
+!
+      f1r=fac*(-kkkx*f2i-kkky*f3i)
+      f1i=fac*(+kkkx*f2r+kkky*f3r)
+!
+!  Transform back
+!
+      call fft(f1r, f1i, nx*ny, nx,    nx,+1) ! x-direction
+      call fft(f1r, f1i, nx*ny, ny, nx*ny,+1) ! y-direction
+!
+      f1 = f1r/(nx*ny)  ! Renormalize
+!
+    endsubroutine potentdiv
 !***********************************************************************
 
 endmodule Magnetic

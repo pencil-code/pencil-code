@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.63 2002-06-13 15:55:49 brandenb Exp $
+! $Id: entropy.f90,v 1.64 2002-06-14 04:38:16 brandenb Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.63 $", &
-           "$Date: 2002-06-13 15:55:49 $")
+           "$Revision: 1.64 $", &
+           "$Date: 2002-06-14 04:38:16 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -253,10 +253,10 @@ module Entropy
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
       endif
 !
-!  "turbulent" (microscopic) entropy diffusion
+!  "turbulent" entropy diffusion
 !
       if (chi_t/=0.) then
-        if (headtt) print*,'"turbulent" (microscopic) entropy diffusion: chi_t=',chi_t
+        if (headtt) print*,'"turbulent" entropy diffusion: chi_t=',chi_t
         call del2(f,ient,del2ss)
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient)+chi_t*del2ss
       endif

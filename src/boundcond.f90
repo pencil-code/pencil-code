@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.6 2002-06-12 09:02:24 brandenb Exp $
+! $Id: boundcond.f90,v 1.7 2002-06-14 04:38:16 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -25,6 +25,7 @@ module Boundcond
 !
       use Cdata
       use Entropy
+      use Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
       integer :: i,j
@@ -193,7 +194,8 @@ module Boundcond
         endif
       enddo
 !
-      if (lentropy) call bc_ss(f,errmesg)
+      if (lentropy)  call bc_ss(f,errmesg)
+      if (lmagnetic) call bc_aa(f,errmesg)
 !
     endsubroutine boundconds
 !***********************************************************************

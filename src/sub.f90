@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.56 2002-06-13 15:55:49 brandenb Exp $ 
+! $Id: sub.f90,v 1.57 2002-06-14 04:38:16 brandenb Exp $ 
 
 module Sub 
 
@@ -1427,6 +1427,35 @@ module Sub
       endif
 !
     endsubroutine htube
+!***********************************************************************
+    subroutine vfield(ampl,f,i,xx)
+!
+!  Vertical field, for potential field test
+!
+!  14-jun-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: xx
+      real :: ampl,kx
+!
+!  set horizontal flux tubes
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        kx=2*pi/Lx
+        print*,'implement x-dependent vertical field'
+        if ((ip<=8).and.lroot) print*,'x-dependent vertical field'
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=ampl*sin(kx*xx)
+        f(:,:,:,i+2)=0.
+      endif
+!
+    endsubroutine vfield
 !***********************************************************************
     subroutine gaunoise_vect(ampl,f,i1,i2)
 !
