@@ -1,4 +1,4 @@
-! $Id: io_mpidist.f90,v 1.3 2003-07-30 10:07:21 dobler Exp $
+! $Id: io_mpidist.f90,v 1.4 2003-08-08 11:05:00 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpidist.f90   !!!
@@ -98,7 +98,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.3 2003-07-30 10:07:21 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.4 2003-08-08 11:05:00 dobler Exp $")
 !
       io_initialized=.true.
 !
@@ -390,7 +390,7 @@ contains
       real, dimension (mx,my,mz,nn1+nn2) :: a
       logical :: lauxiliary
 !
-      if (lroot) print*,'ERROR: OUTPUT AUXILLIARY NOT IMPLEMENTED FOR IO_MPIDIST.F90'
+      if (lroot) print*,'ERROR: OUTPUT AUXILIARY NOT IMPLEMENTED FOR IO_MPIDIST.F90'
 !
 !  determine whether we want to write auxiliary output
 !  (currently we always do this provided maux>0)

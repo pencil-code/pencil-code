@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.185 2003-08-05 03:53:29 brandenb Exp $
+! $Id: entropy.f90,v 1.186 2003-08-08 11:05:00 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -88,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.185 2003-08-05 03:53:29 brandenb Exp $")
+           "$Id: entropy.f90,v 1.186 2003-08-08 11:05:00 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1520,7 +1520,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('bot')
        if (lionization.or.lfixed_ionization) then
-        call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+        call stop_it("bc_ss_temp_z NOT IMPLEMENTED FOR IONISATION CASE")
        else
         if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
@@ -1536,7 +1536,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('top')
        if (lionization.or.lfixed_ionization) then
-        call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+        call stop_it("bc_ss_temp_z NOT IMPLEMENTED FOR IONISATION CASE")
        else
         if (ldebug) print*,'set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
@@ -1681,7 +1681,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('bot')
         if (lionization.or.lfixed_ionization) then
-          call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+          call stop_it("bc_ss_stemp_z NOT IMPLEMENTED FOR IONISATION CASE")
         else
           if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
           do i=1,nghost
@@ -1694,7 +1694,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('top')
        if (lionization.or.lfixed_ionization) then
-        call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+        call stop_it("bc_ss_stemp_z NOT IMPLEMENTED FOR IONISATION CASE")
        else
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
          do i=1,nghost
