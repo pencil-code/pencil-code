@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.228 2003-08-28 08:57:11 mee Exp $
+### $Id: Makefile,v 1.229 2003-08-28 15:06:05 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -296,8 +296,9 @@ clean:
 cleann: clean
 	rm -f makefile TAGS mpicomm_.f90
 
-# ---------------------------------------------------------------------- #
+## ---------------------------------------------------------------------- #
 ## Code targets
+## ---------------------------------------------------------------------- #
 
 read_videofiles.x: $(read_videofiles)
 	$(LD) $(LDFLAGS) $(read_videofiles) -o read_videofiles.x 
@@ -305,6 +306,9 @@ read_videofiles.x: $(read_videofiles)
 read_vectorfiles.x: $(read_vectorfiles)
 	$(LD) $(LDFLAGS) $(read_vectorfiles) -o read_vectorfiles.x 
 
+## ---------------------------------------------------------------------- #
+## Dependancies
+## ---------------------------------------------------------------------- #
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
@@ -339,7 +343,7 @@ $(SHEAR).o:	   $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
 $(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
 $(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(INTERSTELLAR).o $(IONIZATION).o
-$(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o
+$(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o
 $(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(IONIZATION).o
 $(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o 
 $(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o 
@@ -357,3 +361,4 @@ $(POWER).o:        $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
 $(STRUCT_FUNC).o:  $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
 #axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
 
+# DO NOT DELETE
