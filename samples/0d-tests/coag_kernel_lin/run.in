@@ -2,10 +2,9 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2004-04-01 09:02:58 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.5 2004-04-01 09:03:54 ajohan Exp $',
   nt=12000, it1=100, cdt=0.4, cdtv=0.8, isave=100, itorder=1,
   dsnap=.2, dvid=.2, dtmin=1e-9, ip=20
-  bcz = 'p','p','p','p','p','p','p','p','p'
   dt=0.001,tmax=12.0
 /
 &hydro_run_pars
