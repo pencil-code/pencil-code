@@ -72,6 +72,7 @@ if (lmagnetic) then begin
 endif
 ;
 for i=0,ncpus-1 do begin        ; read data from individual files
+  tag='reading proc '+str(i)+': '
   datadir=datatopdir+'/proc'+strtrim(i,2)
   ; read processor position
   dummy=''
@@ -87,25 +88,25 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   openr,1, datadir+'/'+file, /F77
     ;
     if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
-      print,'MHD with entropy'
+      print,tag,'MHD with entropy'
       readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
-      print,'hydro without entropy, but with magnetic field'
+      print,tag,'hydro without entropy, but with magnetic field'
       readu,1,uu_loc,lnrho_loc,aa_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
-      print,'hydro with entropy, but no magnetic field'
+      print,tag,'hydro with entropy, but no magnetic field'
       readu,1,uu_loc,lnrho_loc,ss_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
-      print,'hydro with no entropy and no magnetic field'
+      print,tag,'hydro with no entropy and no magnetic field'
       readu,1,uu_loc,lnrho_loc
     end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
-      print,'just velocity (Burgers)'
+      print,tag,'just velocity (Burgers)'
       readu,1,uu_loc
     end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
-      print,'just magnetic ffield (kinematic)'
+      print,tag,'just magnetic ffield (kinematic)'
       readu,1,aa_loc
     end else begin
-      print,'not prepared...'
+      print,tag,'not prepared...'
     end
     ;
   readu,1, t, xloc, yloc, zloc
