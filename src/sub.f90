@@ -1406,9 +1406,9 @@ module Sub
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length
 !
-      intent(in)  :: iname,cname,ctest
+      intent(in)  :: iname,ctest
       intent(out) :: cform
-      intent(inout) :: itest
+      intent(inout) :: cname,itest
 !
 !  check whether format is given
 !
@@ -1422,11 +1422,12 @@ module Sub
         cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='1p,e10.2'  !!(the nag-f95 compiler requires a comma after 1p)
+        cform='1p,e10.2,0p'  !!(the nag-f95 compiler requires a comma after 1p)
         length=iform0-1
       endif
 !
-      if (cname(1:length)==ctest .and. itest==0) itest=iname
+      cname = cname(1:length)   ! don't need format any more
+      if (cname==ctest .and. itest==0) itest=iname
 !
       endsubroutine parse_name
 !***********************************************************************

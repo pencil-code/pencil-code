@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.23 2002-05-26 16:42:58 brandenb Exp $
+! $Id: nompicomm.f90,v 1.24 2002-05-27 12:04:32 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -10,7 +10,7 @@
 module Mpicomm
 
   use Cparam
-  use Cdata, only: lroot
+  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot
 
   implicit none
 
@@ -21,9 +21,7 @@ module Mpicomm
 
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
-  integer :: iproc,root=0
-  integer :: ipx=0,ipy=0,ipz=0
-  logical, dimension (nx*ny) :: necessary=.false.
+  logical, dimension (ny*nz) :: necessary=.false.
 
   contains
 
@@ -32,27 +30,67 @@ module Mpicomm
 !
       use General
       use Cdata, only: lmpicomm,directory
-      use Boundcond
 !
 !  sets iproc in order that we write in the correct directory
 !
       character (len=4) :: chproc
       integer :: m,n
 !
-!  for single cpu machine, set processor to root value
+!  for single cpu machine, set processor to zero
 !
       lmpicomm = .false.
-      iproc=root
+      iproc = 0
       lroot = .true.
+      ipx = 0
+      ipy = 0
+      ipz = 0
 !
-!  produce index-array for the sequence of points to be worked through.
-!  Trivial here, since no communication.
-!  Need to do the boundary conditions right in the beginning
+!  produce index-array for the sequence of points to be worked through:
+!  first inner box, then boundary zones.
+!  Could be somehow simplified here (no communication), but we need to
+!  update the ghost zones before using them, so it is best to stick to
+!  the same scheme as in Mpicomm.
 !
       imn=1
+      do n=n1i+1,n2i-1
+        do m=m1i+1,m2i-1
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+      enddo
+      if (ip < 10) print*,'NOMPICOMM: setting necessary(',imn,') = .true.' 
       necessary(imn)=.true.
+!
+!  do the lower stripe in the n-direction
+!
+      do n=n2i,n2
+        do m=m1i+1,m2i-1
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+      enddo
+!
+!  upper stripe in the n-direction
+!
+      do n=n1,n1i
+        do m=m1i+1,m2i-1
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+      enddo
+!
+!  left and right hand boxes
+!
       do n=n1,n2
-        do m=m1,m2
+        do m=m1,m1i
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+        do m=m2i,m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1
@@ -90,7 +128,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar) :: f
       character (len=160) :: errmesg
 !
-!  Boundary conditions in x
+!  Boundary conditions
 !
       call boundconds(f,errmesg)
       if (errmesg /= "") call stop_it(trim(errmesg))

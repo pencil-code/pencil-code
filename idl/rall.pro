@@ -129,13 +129,24 @@ endfor
 xx = spread(x, [1,2], [my,mz])
 yy = spread(x, [0,2], [mx,mz])
 zz = spread(x, [0,1], [mx,my])
-
-print, ' var        minval       maxval'
-for j=0,2 do print, 'uu_', strtrim(j,2), ' =', minmax(uu(*,*,*,j))
-print, 'lnrho  =', minmax(lnrho)
-if (lentropy) then print, 'ss  =', minmax(ss)
+;
+;  Summarise data
+;
+xyz = ['x', 'y', 'z']
+fmt = '(A,4G15.6)'
+print, ' var        minval         maxval            mean           rms'
+for j=0,2 do $
+    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
+    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
+print, FORMAT=fmt, 'lnrho  =', $
+    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
+if (lentropy) then $
+    print, FORMAT=fmt, 'ss  =', $
+      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
 if (lmagnetic) then $
-    for j=0,2 do print, 'aa_', strtrim(j,2), ' =', minmax(aa(*,*,*,j))
+    for j=0,2 do $
+      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
+      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
 ;
 print,'t = ',t
 

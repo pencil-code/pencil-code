@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.19 2002-05-21 09:59:45 brandenb Exp $
+! $Id: mpicomm.f90,v 1.20 2002-05-27 12:04:32 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -6,16 +6,13 @@
 
 !!! Module with MPI stuff
 
-! NB: This was previously called mpicommyz.f90 and distributes in two
-! directions.
-
-! NNB: The boundary conditions ibc(j) are not yet implemented (as opposed
-! to nompicomm)
+! NB: This was previously called mpicommyz.f90 and distributes in the y-
+! and z-direction
 
 module Mpicomm
 
   use Cparam
-  use Cdata, only: lroot
+  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot
 
   implicit none
 
@@ -36,14 +33,13 @@ module Mpicomm
   real, dimension (nx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
-  integer :: nprocs,iproc,root=0
-  integer :: ipx,ipy,ipz
+  integer :: nprocs
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
-  integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !!(corners)
-  integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !!(corners)
+  integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
+  integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !(corners)
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul,isend_stat_Tuu,isend_stat_Tlu
@@ -83,7 +79,8 @@ module Mpicomm
 !
 !  consistency checks
 !
-      if (nprocx /= 1) call stop_all('Inconsistency: nprocx > 1 not implemented')
+      if (nprocx /= 1) &
+           call stop_all('Inconsistency: nprocx > 1 not implemented')
       if (nprocs /= nprocy*nprocz) then
         if(lroot) then
           print*, 'Compiled with NCPUS = ', ncpus, &
@@ -126,18 +123,25 @@ module Mpicomm
       lucorn=modulo(ipy-1,nprocy)+modulo(ipz+1,nprocz)*nprocy
 !
 !  this value is not yet the one read in, but the one initialized in cparam.f90
-!  The neighbors are listed in counterclockwise order (including the corners)
 !
-!   3   0   1   2   3   0     Example with 4x4 processors
-!  15  12  13  14  15  12
-!  11   8   9  10  11   8
-!   7   4   5   6   7   4
-!   3   9   1   2   3   0
-!  15  12  13  14  15  12
+!  Print neighbors in counterclockwise order (including the corners),
+!  starting with left neighbor.
+!  Example with 4x4 processors
+!   3 |  0   1   2   3 |  0
+!  ---+----------------+---
+!  15 | 12  13  14  15 | 12
+!  11 |  8   9  10  11 |  8
+!   7 |  4   5   6   7 |  4
+!   3 |  0   1   2   3 |  0
+!  ---+----------------+---
+!  15 | 12  13  14  15 | 12
+!  should print (3,15,12,13,1,5,5,7) for iproc=0
 !
-      if (ip<15) then
-        print*,iproc,': ',ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
-      endif
+      if (ip<15) &
+           write(*,'(A,I4,"(",2I4,"): ",8I4)') &
+           'MPICOMM neighbors ', &
+           iproc,ipy,ipz, &
+           ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
 !  produce index-array for the sequence of points to be worked through:
 !  first inner box (while communication of ghost values takes place),
@@ -248,10 +252,10 @@ module Mpicomm
         call MPI_IRECV(ulbufi,nbufyz,MPI_REAL,ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,ierr)
       endif
 !
-!  example
+!  communication sample
 !
-      if (ip<7.and.ipy==0.and.ipz==3)&
-        print*,'send lu: ',iproc,lubufo(36,:,1,2),' to ',lucorn
+      if (ip<7.and.ipy==0.and.ipz==3) &
+        print*,'MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
@@ -312,10 +316,10 @@ module Mpicomm
         call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,ierr)
       endif
 !
-!  example
+!  communication sample
 !
-      if (ip<7.and.ipy==3.and.ipz==0)&
-        print*,'receive ul: ',iproc,ulbufi(36,:,1,2),' from ',ulcorn
+      if (ip<7.and.ipy==3.and.ipz==0) &
+        print*,'MPICOMM recv ul: ',iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
 !
 !  Now do the boundary conditions
 !  Periodic boundary conds. are what we get by default (communication has

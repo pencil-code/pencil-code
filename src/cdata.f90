@@ -14,24 +14,32 @@ module Cdata
   real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dforce,dtmin
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
-  real :: cs0,rho0,cs20,gamma,gamma1,force,relhel,cs2top
+  real :: cs0,rho0,cs20,gamma,gamma1,cs2top
   real :: DD,nu,cmu,cnu2,cdiffrho
-  real :: hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2
   real :: t_diag,dtu,dtv
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
   real :: UUmax,cdt,cdtv,x0,y0,z0,Lx,Ly,Lz
   real :: z1,z2,ztop
   real :: gravz,ss0,grads0      ! (1/c_p)ds/dz
-  real :: urand,cheat,wheat,cool,wcool,Fheat
+  real :: urand
+
+! These are parameters of Entropy, but appear in Boundcond and (worse) in
+! wparam (Sub) as well, so they need to be declared here
+  real :: hcond0,hcond1,hcond2,whcond
+  real :: mpoly0,mpoly1,mpoly2
+  real :: cheat,wheat,cool,wcool,Fheat
+  integer:: isothtop
 
   integer, dimension (2) :: seed
-  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
+!  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
+  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz,iforce
   integer :: iperx,ipery,iperz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
-  integer :: ivisc,iforce=0,isothtop
+  integer :: ivisc,iforce=0
   integer :: m,n
+  integer :: iproc,ipx,ipy,ipz,root=0
 !
 !  in this section are all the things related to printing
 !

@@ -9,7 +9,6 @@ module Entropy
   implicit none
 
   real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
-  integer :: ient
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /entropy_init_pars/ dummy
@@ -38,8 +37,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-05-19 18:07:00 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-05-27 12:04:32 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -81,8 +80,10 @@ module Entropy
       if (first) then
         cs2 = cs20
         TT1 = 0.
-        if (gamma /= 1) print*, 'Noentropy, thus resetting gamma to 1'
-        gamma = 1
+        if (gamma /= 1) then
+          if (lroot) print*, 'Noentropy, thus resetting gamma to 1'
+          gamma = 1
+        endif
         first=.false.
       endif
       gpprho=cs20*glnrho

@@ -35,8 +35,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-05-01 18:16:12 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-05-27 12:04:32 $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -99,8 +99,8 @@ if (headt .and. lfirst) call output_pencil('tmp/proc0/gg.dat',gg,3)
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
-!    subroutine potential(xmn,ymn,zmn,rmn, pot)
-    subroutine potential(rr, pot)
+    subroutine potential(xmn,ymn,zmn,rmn, pot)
+!    subroutine potential(rr, pot)
 !
 !  gravity potential
 !  21-jan-02/wolf: coded
@@ -108,11 +108,15 @@ if (headt .and. lfirst) call output_pencil('tmp/proc0/gg.dat',gg,3)
       use Cdata, only: nx,ny,nz,gravz
       use Sub, only: poly
 !
-!      real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
-      real, dimension (mx,my,mz) :: rr,pot
+      real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
+!      real, dimension (mx,my,mz) :: rr,pot
 !
-      pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
-            / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
+!       pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
+!             / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
+!
+      
+       pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rmn) &
+             / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rmn)
 !
     endsubroutine potential
 !***********************************************************************

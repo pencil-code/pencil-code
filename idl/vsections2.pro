@@ -11,7 +11,7 @@
 ;;;   sections. Same as vsections, but cuts x=const are shown
 
 ; ---------------------------------------------------------------------- ;
-pro _opstuff, z, r, LGRAVz=lgravz, lgravr=lgravr
+pro _opstuff, z, r, LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 ;  Overplot some lines or circles (needed repeatedly). Plot white on
 ;  black, so lines can be distinguished on any background
@@ -23,8 +23,8 @@ pro _opstuff, z, r, LGRAVz=lgravz, lgravr=lgravr
   default, lgravz, 0L
   default, lgravr, 0L
   if (lgravz)  then begin
-    ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
-    ophline,[z0,z1,z2,z3], LINE=hline,          COLOR=hcol2
+    ophline,z, LINE=hline, THICK=3, COLOR=hcol1
+    ophline,z, LINE=hline,          COLOR=hcol2
   endif
   if (lgravr) then begin
     opcircle, r, LINE=hline, THICK=3, COLOR=hcol1
@@ -42,11 +42,11 @@ default, show_ghosts, 0
 
 nrholevs = 15                   ; No of isolines
 nuulevs = 60                    ; No of colours
-nentlevs = 60                   ; No of colours
+nsslevs = 60                   ; No of colours
 
-nx1 = 0.25*nx > 4
-nx2 = 0.5*nx
-nx3 = 0.75*nx < (nx-5)
+nx1 = 0.25*mx > 4
+nx2 = 0.5*mx
+nx3 = 0.75*mx < (mx-5)
 
 sx1 = '!8x!6='+strtrim(x[nx1],2)
 sx2 = '!8x!6='+strtrim(x[nx2],2)
@@ -65,11 +65,11 @@ tit = '!17u!6 at '
 !x.style = 1
 !y.style = 1
 if (show_ghosts) then begin
-  !x.range = [y[0], y[ny-1]]    ; No ghost zones
-  !y.range = [z[0], z[nz-1]]
+  !x.range = [y[0], y[my-1]]    ; No ghost zones
+  !y.range = [z[0], z[mz-1]]
 endif else begin
-  !x.range = [y[3], y[ny-4]]    ; No ghost zones
-  !y.range = [z[3], z[nz-4]]
+  !x.range = [y[3], y[my-4]]    ; No ghost zones
+  !y.range = [z[3], z[mz-4]]
 endelse
 
 if (absolute) then begin
@@ -94,24 +94,24 @@ tit = '!8s!6 and '+s.varrho+'!6 at '
 
 ;
 if (absolute) then begin
-  levent = linspace(minmax(ent),nentlevs)
+  levss = linspace(minmax(ss),nsslevs)
 endif else begin
-  undefine, levent                 ; LEVELS=<undef> is like no LEVELS kw at all
+  undefine, levss                 ; LEVELS=<undef> is like no LEVELS kw at all
 endelse
 
-contourfill, ent[nx1,*,*],y,z, TITLE=tit+sx1+'!X', LEVELS=levent
+contourfill, ss[nx1,*,*],y,z, TITLE=tit+sx1+'!X', LEVELS=levss
 var = reform(lnrho[nx1,*,*])
-contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
+contour, var,y,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 _opstuff, [z0,z1,z2,z3], sqrt(1-x[nx1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-contourfill, ent[nx2,*,*],y,z, TITLE=tit+sx2+'!X', LEVELS=levent
+contourfill, ss[nx2,*,*],y,z, TITLE=tit+sx2+'!X', LEVELS=levss
 var = reform(lnrho[nx2,*,*])
-contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
+contour, var,y,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 _opstuff, [z0,z1,z2,z3], sqrt(1-x[nx2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-contourfill, ent[nx3,*,*],y,z, TITLE=tit+sx3+'!X', LEVELS=levent
+contourfill, ss[nx3,*,*],y,z, TITLE=tit+sx3+'!X', LEVELS=levss
 var = reform(lnrho[nx3,*,*])
-contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
+contour, var,y,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 _opstuff, [z0,z1,z2,z3], sqrt(1-x[nx3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
 wget

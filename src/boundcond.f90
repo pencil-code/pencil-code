@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.3 2002-05-26 16:42:58 brandenb Exp $
+! $Id: boundcond.f90,v 1.4 2002-05-27 12:04:32 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -40,45 +40,51 @@ module Boundcond
         !
         ! `lower' bdry
         !
-        select case(bcx1(j))
-        case ('p')              ! periodic
-          if (nprocx==1) then
-            f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
-          endif
-        case ('s')              ! symmetry
-          do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j); enddo
-        case ('a')              ! antisymmetry
-          f(l1,:,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost; f(l1-i,:,:,j) = -f(l1+i,:,:,j); enddo
-        case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost; f(l1-i,:,:,j) = 2*f(l1,:,:,j)-f(l1+i,:,:,j); enddo
-        case default
-          if (lroot) &
-               print*, "No such boundary condition bcx1 = ", &
-                       bcx1(j), " for j=", j
-          STOP
-        endselect
+        if (ipx == 0) then
+          select case(bcx1(j))
+          case ('p')              ! periodic
+            if (nprocx==1) then
+              f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
+              ! so far edges are copied twice, corners three times...
+            endif
+          case ('s')              ! symmetry
+            do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j); enddo
+          case ('a')              ! antisymmetry
+            f(l1,:,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            do i=1,nghost; f(l1-i,:,:,j) = -f(l1+i,:,:,j); enddo
+          case ('a2')             ! antisymmetry relative to boundary value
+            do i=1,nghost; f(l1-i,:,:,j) = 2*f(l1,:,:,j)-f(l1+i,:,:,j); enddo
+          case default
+            if (lroot) &
+                 print*, "No such boundary condition bcx1 = ", &
+                         bcx1(j), " for j=", j
+            STOP
+          endselect
+        endif
         !
         ! `upper' bdry
         !
-        select case(bcx2(j))
-        case ('p')              ! periodic
-          if (nprocx==1) then
-            f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
-          endif
-        case ('s')              ! symmetry
-          do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j); enddo
-        case ('a')              ! antisymmetry
-          f(l2,:,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost; f(l2+i,:,:,j) = -f(l2-i,:,:,j); enddo
-        case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost; f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j); enddo
-        case default
-          if (lroot) &
-               print*, "No such boundary condition bcx2 = ", &
-                       bcx2(j), " for j=", j
-          STOP
-        endselect
+        if (ipx == nprocx-1) then
+          select case(bcx2(j))
+          case ('p')              ! periodic
+            if (nprocx==1) then
+              f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
+              ! so far edges are copied twice, corners three times...
+            endif
+          case ('s')              ! symmetry
+            do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j); enddo
+          case ('a')              ! antisymmetry
+            f(l2,:,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            do i=1,nghost; f(l2+i,:,:,j) = -f(l2-i,:,:,j); enddo
+          case ('a2')             ! antisymmetry relative to boundary value
+            do i=1,nghost; f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j); enddo
+          case default
+            if (lroot) &
+                 print*, "No such boundary condition bcx2 = ", &
+                         bcx2(j), " for j=", j
+            STOP
+          endselect
+        endif
       enddo
 !
 !  Boundary conditions in y
@@ -87,45 +93,50 @@ module Boundcond
         !
         ! `lower' bdry
         !
-        select case(bcy1(j))
-        case ('p')              ! periodic
-          if (nprocy==1) then
-            f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
-          endif
-        case ('s')              ! symmetry
-          do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j); enddo
-        case ('a')              ! antisymmetry
-          f(:,m1,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost; f(:,m1-i,:,j) = -f(:,m1+i,:,j); enddo
-        case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost; f(:,m1-i,:,j) = 2*f(:,m1,:,j)-f(:,m1+i,:,j); enddo
-        case default
-          if (lroot) &
-               print*, "No such boundary condition bcy1 = ", &
-                       bcy1(j), " for j=", j
-          STOP
-        endselect
+        if (ipy == 0) then
+          select case(bcy1(j))
+          case ('p')              ! periodic
+            if (nprocy==1) then
+              f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
+              ! so far edges are copied twice, corners three times...
+            endif
+          case ('s')              ! symmetry
+            do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j); enddo
+          case ('a')              ! antisymmetry
+            f(:,m1,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            do i=1,nghost; f(:,m1-i,:,j) = -f(:,m1+i,:,j); enddo
+          case ('a2')             ! antisymmetry relative to boundary value
+            do i=1,nghost; f(:,m1-i,:,j) = 2*f(:,m1,:,j)-f(:,m1+i,:,j); enddo
+          case default
+            if (lroot) &
+                 print*, "No such boundary condition bcy1 = ", &
+                         bcy1(j), " for j=", j
+            STOP
+          endselect
+        endif
         !
         ! `upper' bdry
         !
-        select case(bcy2(j))
-        case ('p')              ! periodic
-          if (nprocy==1) then
-            f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
-          endif
-        case ('s')              ! symmetry
-          do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j); enddo
-        case ('a')              ! antisymmetry
-          f(:,m2,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost; f(:,m2+i,:,j) = -f(:,m2-i,:,j); enddo
-        case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost; f(:,m2+i,:,j) = 2*f(:,m2,:,j)-f(:,m2-i,:,j); enddo
-        case default
-          if (lroot) &
-               print*, "No such boundary condition bcy2 = ", &
-                       bcy2(j), " for j=", j
-          STOP
-        endselect
+        if (ipy == nprocy-1) then
+          select case(bcy2(j))
+          case ('p')              ! periodic
+            if (nprocy==1) then
+              f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
+            endif
+          case ('s')              ! symmetry
+            do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j); enddo
+          case ('a')              ! antisymmetry
+            f(:,m2,:,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            do i=1,nghost; f(:,m2+i,:,j) = -f(:,m2-i,:,j); enddo
+          case ('a2')             ! antisymmetry relative to boundary value
+            do i=1,nghost; f(:,m2+i,:,j) = 2*f(:,m2,:,j)-f(:,m2-i,:,j); enddo
+          case default
+            if (lroot) &
+                 print*, "No such boundary condition bcy2 = ", &
+                         bcy2(j), " for j=", j
+            STOP
+          endselect
+        endif
       enddo
 !
 !  Boundary conditions in z
@@ -134,50 +145,54 @@ module Boundcond
         !
         ! `lower' bdry
         !
-        select case(bcz1(j))
-        case ('p')              ! periodic
-          if (nprocz==1) then
-            f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
-          endif
-        case ('s')              ! symmetry
-          do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j); enddo
-        case ('a')              ! antisymmetry
-          f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost; f(:,:,n1-i,j) = -f(:,:,n1+i,j); enddo
-        case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
-        case ('c1')             ! complex (processed in its own routine)
-          ! handled below
-        case default
-          if (lroot) &
-               print*, "No such boundary condition bcz1 = ", &
-                       bcz1(j), " for j=", j
-          STOP
-        endselect
+        if (ipz == 0) then
+          select case(bcz1(j))
+          case ('p')              ! periodic
+            if (nprocz==1) then
+              f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
+            endif
+          case ('s')              ! symmetry
+            do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j); enddo
+          case ('a')              ! antisymmetry
+            f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            do i=1,nghost; f(:,:,n1-i,j) = -f(:,:,n1+i,j); enddo
+          case ('a2')             ! antisymmetry relative to boundary value
+            do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
+          case ('c1')             ! complex (processed in its own routine)
+            ! handled below
+          case default
+            if (lroot) &
+                 print*, "No such boundary condition bcz1 = ", &
+                         bcz1(j), " for j=", j
+            STOP
+          endselect
+        endif
         !
         ! `upper' bdry
         !
-        select case(bcz2(j))
-        case ('p')              ! periodic
-          if (nprocz==1) then
-            f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
-          endif
-        case ('s')              ! symmetry
-          do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j); enddo
-        case ('a')              ! antisymmetry
-          f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost; f(:,:,n2+i,j) = -f(:,:,n2-i,j); enddo
-        case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost; f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
-        case ('c1')             ! complex (processed in its own routine)
-        case ('c2')             ! complex (processed in its own routine)
-          ! handled below
-        case default
-          if (lroot) &
-               print*, "No such boundary condition bcz2 = ", &
-                       bcz2(j), " for j=", j
-          STOP
-        endselect
+        if (ipz == nprocz-1) then
+          select case(bcz2(j))
+          case ('p')              ! periodic
+            if (nprocz==1) then
+              f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
+            endif
+          case ('s')              ! symmetry
+            do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j); enddo
+          case ('a')              ! antisymmetry
+            f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
+            do i=1,nghost; f(:,:,n2+i,j) = -f(:,:,n2-i,j); enddo
+          case ('a2')             ! antisymmetry relative to boundary value
+            do i=1,nghost; f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
+          case ('c1')             ! complex (processed in its own routine)
+          case ('c2')             ! complex (processed in its own routine)
+            ! handled below
+          case default
+            if (lroot) &
+                 print*, "No such boundary condition bcz2 = ", &
+                         bcz2(j), " for j=", j
+            STOP
+          endselect
+        endif
       enddo
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.

@@ -60,6 +60,8 @@ yy = spread(y, [0,2], [mx,mz])
 zz = spread(z, [0,1], [mx,my])
 rr = sqrt(xx^2+yy^2+zz^2)
 ;
+;  Summarise data
+;
 xyz = ['x', 'y', 'z']
 fmt = '(A,4G15.6)'
 print, ' var        minval         maxval            mean           rms'

@@ -38,11 +38,11 @@ default, show_ghosts, 0
 
 nrholevs = 15                   ; No of isolines
 nuulevs = 60                    ; No of colours
-nentlevs = 60                   ; No of colours
+nsslevs = 60                   ; No of colours
 
-nz1 = 0.25*nz > 4
-nz2 = 0.5*nz
-nz3 = 0.75*nz < (nz-5)
+nz1 = 0.25*mz > 4
+nz2 = 0.5 *mz
+nz3 = 0.75*mz < (mz-5)
 
 sz1 = '!8z!6='+strtrim(z[nz1],2)
 sz2 = '!8z!6='+strtrim(z[nz2],2)
@@ -61,11 +61,11 @@ tit = '!17u!6 at '
 !x.style = 1
 !y.style = 1
 if (show_ghosts) then begin
-  !x.range = [x[0], x[nx-1]]    ; No ghost zones
-  !y.range = [y[0], y[ny-1]]
+  !x.range = [x[0], x[mx-1]]    ; No ghost zones
+  !y.range = [y[0], y[my-1]]
 endif else begin
-  !x.range = [x[3], x[nx-4]]    ; No ghost zones
-  !y.range = [y[3], y[ny-4]]
+  !x.range = [x[3], x[mx-4]]    ; No ghost zones
+  !y.range = [y[3], y[my-4]]
 endelse
 
 if (absolute) then begin
@@ -85,22 +85,22 @@ tit = '!8s!6 and '+s.varrho+'!6 at '
 
 ;
 if (absolute) then begin
-  levent = linspace(minmax(ent),nentlevs)
+  levss = linspace(minmax(ss),nsslevs)
 endif else begin
-  undefine, levent                 ; LEVELS=<undef> is like no LEVELS kw at all
+  undefine, levss                 ; LEVELS=<undef> is like no LEVELS kw at all
 endelse
 
-contourfill, ent[*,*,nz1],x,y, TITLE=tit+sz1+'!X', LEVELS=levent
+contourfill, ss[*,*,nz1],x,y, TITLE=tit+sz1+'!X', LEVELS=levss
 var = reform(lnrho[*,*,nz1])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
 _opstuff, sqrt(1-z[nz1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-contourfill, ent[*,*,nz2],x,y, TITLE=tit+sz2+'!X', LEVELS=levent
+contourfill, ss[*,*,nz2],x,y, TITLE=tit+sz2+'!X', LEVELS=levss
 var = reform(lnrho[*,*,nz2])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
 _opstuff, sqrt(1-z[nz2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-contourfill, ent[*,*,nz3],x,y, TITLE=tit+sz3+'!X', LEVELS=levent
+contourfill, ss[*,*,nz3],x,y, TITLE=tit+sz3+'!X', LEVELS=levss
 var = reform(lnrho[*,*,nz3])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
 _opstuff, sqrt(1-z[nz3]^2), LGRAVZ=lgravz, LGRAVR=lgravr

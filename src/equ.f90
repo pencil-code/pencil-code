@@ -129,7 +129,7 @@ module Equ
       call mpireduce_max(fmax_tmp,fmax,1)
       if(lroot) UUmax=sqrt(fmax(1))
 !
-      ENDsubroutine calc_UUmax
+      endsubroutine calc_UUmax
 !***********************************************************************
     subroutine diagnostic
 !
@@ -264,8 +264,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.43 $", &
-           "$Date: 2002-05-26 16:42:58 $")
+           "$Revision: 1.44 $", &
+           "$Date: 2002-05-27 12:04:32 $")
 !
 !  initialize counter for calculating and communicating print results
 !

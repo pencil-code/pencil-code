@@ -1,22 +1,19 @@
 module Entropy
 
   use Cparam
+  use Cdata
 
   implicit none
 
   real, dimension (nx) :: cs2,TT1
-  integer :: ient
 
 
   ! input parameters
-  real :: hcond0,hcond1,hcond2,whcond
-  real :: mpoly0,mpoly1,mpoly2,isothtop
   
   namelist /entropy_init_pars/ &
        hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2,isothtop
 
   ! run parameters
-  real :: cheat,wheat,cool,wcool,Fheat
 
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
@@ -54,8 +51,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.42 $", &
-           "$Date: 2002-05-19 07:55:25 $")
+           "$Revision: 1.43 $", &
+           "$Date: 2002-05-27 12:04:32 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -228,6 +225,7 @@ use IO
 ! this one was wrong:
 !      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
 ! hopefully correct:
+call output_pencil(trim(directory)//'/dssdt2.dat',df(l1:l2,m,n,ient),1)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
 !
 !  Heat conduction / entropy diffusion
@@ -252,19 +250,27 @@ use IO
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
 
       if (headt) then
-        if (notanumber(glhc)) print*,'NaNs in glhc'
-        if (notanumber(rho1)) print*,'NaNs in rho1'
+        if (notanumber(glhc))   print*,'NaNs in glhc'
+        if (notanumber(rho1))   print*,'NaNs in rho1'
         if (notanumber(lambda)) print*,'NaNs in lambda'
-        if (notanumber(chi)) print*,'NaNs in chi'
+        if (notanumber(chi))    print*,'NaNs in chi'
+        if (notanumber(del2ss)) print*,'NaNs in del2ss'
+        if (notanumber(del2lnrho)) print*,'NaNs in del2lnrho'
+        if (notanumber(glhc))   print*,'NaNs in glhc'
+        if (notanumber(1/lambda))   print*,'NaNs in 1/lambda'
+        if (notanumber(glnT))   print*,'NaNs in glnT'
+        if (notanumber(glnTlambda))     print*,'NaNs in glnTlambda'
+        if (notanumber(g2))     print*,'NaNs in g2'
         if (notanumber(thdiff)) print*,'NaNs in thdiff'
         if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
       endif
 
-      if (headt .and. lfirst .and. ip<=4) then
+      if (headt .and. lfirst .and. ip<=9) then
         call output_pencil(trim(directory)//'/chi.dat',chi,1)
         call output_pencil(trim(directory)//'/lambda.dat',lambda,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
+call output_pencil(trim(directory)//'/dssdt3.dat',df(l1:l2,m,n,ient),1)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
 
 !
@@ -303,7 +309,9 @@ use IO
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
 
+call output_pencil(trim(directory)//'/dssdt4.dat',df(l1:l2,m,n,ient),1)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
+call output_pencil(trim(directory)//'/dssdt5.dat',df(l1:l2,m,n,ient),1)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine heatcond(x,y,z,hcond)

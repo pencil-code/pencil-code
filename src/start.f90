@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.28 2002-05-25 13:38:30 brandenb Exp $
+! $Id: start.f90,v 1.29 2002-05-27 12:04:32 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -34,8 +34,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.28 $", &
-             "$Date: 2002-05-25 13:38:30 $")
+             "$Revision: 1.29 $", &
+             "$Date: 2002-05-27 12:04:32 $")
 !
 !  set default input
 !
@@ -106,7 +106,7 @@
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
 !
-        rr=sqrt(xx**2+yy**2+zz**2)
+!        rr=sqrt(xx**2+yy**2+zz**2)
 !        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
 !
         cs20=cs0**2 ! (goes into cdata module)

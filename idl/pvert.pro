@@ -19,11 +19,11 @@ nign = 3                        ; Number of close-to-bdry points to ignore
 ;
 ; construct vector of vertical pencils to plot
 ;
-Nxmax = nx-2*nign
-Nymax = ny-2*nign
+Nxmax = mx-2*nign
+Nymax = my-2*nign
 Nmax = Nxmax*Nymax
 if ((nprofs le 0) or (nprofs gt Nmax)) then nprofs = Nmax
-ixp=[[nx/2]] & iyp=[[ny/2]]     ; case nprofs=1
+ixp=[[mx/2]] & iyp=[[my/2]]     ; case nprofs=1
 if (nprofs gt 1) then begin
   Nxp = sqrt(nprofs+1e-5)*Nxmax/Nymax
   Nyp = sqrt(nprofs+1e-5)*Nymax/Nxmax
@@ -48,10 +48,10 @@ for ivar = 0,3 do begin
 
   case ivar of
     0: begin
-      var = lam
+      var = lnrho
       title = '!6ln '+s.varrho
       xr = minmax(var)
-      if (n_elements(laminit) gt 0) then xr = minmax([xr,laminit])
+      if (n_elements(lnrhoinit) gt 0) then xr = minmax([xr,lnrhoinit])
     end
     1: begin
       var = uu[*,*,*,2]
@@ -59,13 +59,13 @@ for ivar = 0,3 do begin
       xr = minmax(var)
     end
     2: begin
-      var = ent
+      var = ss
       title = '!6Entropy !8s!X'
       xr = minmax(var)
-      if (n_elements(entinit) gt 0) then xr = minmax([xr,entinit])
+      if (n_elements(ssinit) gt 0) then xr = minmax([xr,ssinit])
     end
     3: begin
-      var = gamma/gamma1*exp(gamma*ent+gamma1*lam)
+      var = gamma/gamma1*exp(gamma*ss+gamma1*lnrho)
       title = '!6Temperature !8T!X'
       xr = minmax(var)
       if (n_elements(Tinit) gt 0) then xr = minmax([xr,Tinit])
@@ -90,9 +90,9 @@ for ivar = 0,3 do begin
         message, 'No Tinit -- you should run thermo.pro', /INFO
   endif else begin
     case ivar of
-      0: oplot, laminit, z, LINE=2, COLOR=130, THICK=2
+      0: oplot, lnrhoinit, z, LINE=2, COLOR=130, THICK=2
       1: ;nothing to overplot
-      2: oplot, entinit, z, LINE=2, COLOR=130, THICK=2
+      2: oplot, ssinit, z, LINE=2, COLOR=130, THICK=2
       3: oplot, Tinit, z, LINE=2, COLOR=130, THICK=2
     endcase
   endelse

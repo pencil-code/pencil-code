@@ -38,7 +38,7 @@ module Register
 !
       if (nvar /= mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Initialize: nvar /= mvar')
+        call stop_it('Initialize: nvar /= mvar. Fix mvar in cparam.f90')
       endif
 !
     endsubroutine initialize
