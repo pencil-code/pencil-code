@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.36 2004-02-27 15:45:36 ajohan Exp $
+;  $Id: extra.pro,v 1.37 2004-03-20 17:25:05 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -79,6 +79,12 @@ end
 if (ilncc ne 0) then begin
   llncc=reform(lncc(l1:l2,m1:m2,n1:n2))
   ccc=exp(llncc)
+end
+;
+;  cosmic rays
+;
+if (iecr ne 0) then begin
+  eecr=reform(ecr(l1:l2,m1:m2,n1:n2))
 end
 
 ndustspec = n_elements(ind)
