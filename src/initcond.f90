@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.17 2002-10-27 19:38:11 brandenb Exp $ 
+! $Id: initcond.f90,v 1.18 2002-11-05 16:42:39 dobler Exp $ 
 
 module Initcond 
  
@@ -573,5 +573,48 @@ module Initcond
       print*,'set gaussian noise: variable i=',i
 !
     endsubroutine gaunoise_scal
+!***********************************************************************
+    subroutine trilinear(ampl,f,ivar,xx,yy,zz)
+!
+!  Produce a profile that is linear in any non-periodic direction, but
+!  periodic in periodic ones (for testing purposes).
+!
+!  5-nov-02/wolf: coded
+!
+      integer :: ivar
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real :: ampl
+!
+      if (lroot) print*, 'uu: trilinear in ', ivar
+!
+!  x direction
+!
+      if (lperi(1)) then
+        tmp = xx
+      else
+        tmp = sin(2*pi/Lx*(xx-xyz0(1)-0.25*Lxyz(1)))
+      endif
+!
+!  y direction
+!
+      if (lperi(1)) then
+        tmp = tmp + 10*yy
+      else
+        tmp = tmp + 10*sin(2*pi/Ly*(yy-xyz0(2)-0.25*Lxyz(2)))
+      endif
+!
+!  z direction
+!
+      if (lperi(1)) then
+        tmp = tmp + 100*zz
+      else
+        tmp = tmp + 100*sin(2*pi/Lz*(zz-xyz0(3)-0.25*Lxyz(3)))
+      endif
+!
+      f(:,:,:,ivar) = tmp
+!
+    endsubroutine trilinear
+!***********************************************************************
 
 endmodule Initcond

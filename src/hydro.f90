@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.74 2002-10-25 16:30:09 brandenb Exp $
+! $Id: hydro.f90,v 1.75 2002-11-05 16:42:38 dobler Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -77,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.74 2002-10-25 16:30:09 brandenb Exp $")
+           "$Id: hydro.f90,v 1.75 2002-11-05 16:42:38 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -117,6 +117,10 @@ module Hydro
       case('Beltrami-x'); call beltrami(ampluu,f,iuu,KX=1.)
       case('Beltrami-y'); call beltrami(ampluu,f,iuu,KY=1.)
       case('Beltrami-z'); call beltrami(ampluu,f,iuu,KZ=1.)
+      case('trilinear-x'); call trilinear(ampluu,f,iux,xx,yy,zz)
+      case('trilinear-y'); call trilinear(ampluu,f,iuy,xx,yy,zz)
+      case('trilinear-z'); call trilinear(ampluu,f,iuz,xx,yy,zz)
+
 
       case('sound-wave', '11')
         !
@@ -212,7 +216,7 @@ module Hydro
         f(:,:,:,iuz) = prof*exp(-0.5*(tmp**2)/widthuu**2)
         tmp = sqrt((xx-(x0+0.5*Lx))**2+(yy-(y0+0.8*Ly))**2) ! dist. from spot 1
         f(:,:,:,iuz) = f(:,:,:,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
-
+  
       case default
         !
         !  Catch unknown values
