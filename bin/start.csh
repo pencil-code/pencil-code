@@ -81,7 +81,10 @@ if ($local_disc) then
 endif
 
 # Link DX General Importer shell script to data directory
-ln -s $PENCIL_HOME/bin/var.general.dxsh $datadir
+# if it doesn't already exist! - tony
+if (! -e $datadir/var.general.dxsh) then
+    ln -s $PENCIL_HOME/bin/var.general.dxsh $datadir/var.general.dxsh
+endif
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
