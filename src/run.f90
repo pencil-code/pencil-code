@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.151 2003-08-08 11:55:03 dobler Exp $
+! $Id: run.f90,v 1.152 2003-08-10 10:02:50 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.151 2003-08-08 11:55:03 dobler Exp $")
+             "$Id: run.f90,v 1.152 2003-08-10 10:02:50 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -228,7 +228,9 @@
           !
           !  check for SNe, and update f if necessary (see interstellar.f90)
           !
-          if (linterstellar) call check_SN(f)
+!AB: I don't know how to turn off SNe. I think when certain input parameters
+!AB: are zero, it should simply not do anyting.
+!AB:      if (linterstellar) call check_SN(f)
           !
           !  in regular intervals, calculate certain averages
           !  and do other output

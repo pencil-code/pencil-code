@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.37 2003-06-17 07:08:19 dobler Exp $
+! $Id: grav_z.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $
 
 module Gravity
 
@@ -80,7 +80,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.37 2003-06-17 07:08:19 dobler Exp $")
+           "$Id: grav_z.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -166,6 +166,8 @@ module Gravity
 !
       elseif (grav_profile=='Ferriere') then
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
+!AB: These numbers should be inserted in the appropriate unuts.
+!AB: As it is now, it can never make much sense.
         if(lhydro)        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
              -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
         if(ldustvelocity) df(l1:l2,m,n,iudz) = df(l1:l2,m,n,iudz) & 

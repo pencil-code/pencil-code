@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.37 2003-08-04 17:56:02 mee Exp $
+! $Id: interstellar.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -95,7 +95,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.37 2003-08-04 17:56:02 mee Exp $")
+           "$Id: interstellar.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,6 +132,8 @@ module Interstellar
             call random_seed_wrapper(put=seed(1:nseed))
          endif
 !
+!AB: comment please why interstellar should be read in and what it does
+!
          if (lroot) then
             inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
             if (exist) then 
@@ -160,30 +162,35 @@ module Interstellar
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
-    subroutine calc_heat_cool_interstellar(df,rho1,TT1)
+    subroutine calc_heat_cool_interstellar(df,rho1,TT,TT1)
 !
-!  adapted from calc_heat_cool
+!  This routine calculates and applies the optically thin cooling function
+!  together with UV heating.
+!
+!  We may want to move it to the entropy module for good, because its use
+!  is not restricted to interstellar runs (could be used for solar corona).
+!  Also, it doesn't pose an extra load on memory usage or compile time.
+!  (We should allow that UV heating can be turned off; so rhoUV should
+!  be made an input parameter.)
+!
+!  19-nov-02/graeme: adapted from calc_heat_cool
+!  10-aug-03/axel: TT is used as input
 !
       use Cdata
       use Mpicomm
       use Density, only : rho0
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rho1,TT1
-      real, dimension (nx) :: TT,heat,cool 
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension (nx), intent(in) :: rho1,TT,TT1
+      real, dimension (nx) :: heat,cool 
       integer :: i
-!
-      intent(in) :: rho1,TT1
-      intent(inout) :: df
 !
 !  identifier
 !
       if(headtt) print*,'calc_heat_cool_interstellar'
 !
 !  define T in K, for calculation of both UV heating and radiative cooling
-!
-      TT=cp1/TT1      ! leave for now (used several times)
 !
 !  add T-dept radiative cooling, from Rosen et al., ApJ, 413, 137, 1993
 !  cooling is Lambda*rho^2, with (eq 7)

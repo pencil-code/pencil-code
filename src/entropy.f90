@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.187 2003-08-08 17:21:59 theine Exp $
+! $Id: entropy.f90,v 1.188 2003-08-10 10:02:50 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -88,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.187 2003-08-08 17:21:59 theine Exp $")
+           "$Id: entropy.f90,v 1.188 2003-08-10 10:02:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -645,7 +645,7 @@ module Entropy
 !
 !ngrs: switch off for debug
 !      if (linterstellar) &
-!        call calc_heat_cool_interstellar(df,rho1,TT1)
+         call calc_heat_cool_interstellar(df,rho1,TT,TT1)
 !
 !  possibility of entropy relaxation in exterior region
 !
@@ -1326,6 +1326,8 @@ endif
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
           call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
         if (lionization.or.lionization_fixed) then
+!AB: currently, lionization=.true. regardless of lionization_fixed,
+!AB: so ".or.lionization_fixed" is obsolete
            f(:,:,n1-nghost:n1,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n1-nghost:n1,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &

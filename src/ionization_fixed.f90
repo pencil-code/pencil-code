@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.4 2003-08-10 04:24:40 brandenb Exp $
+! $Id: ionization_fixed.f90,v 1.5 2003-08-10 10:02:50 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -39,7 +39,7 @@ module Ionization
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   logical :: lionization=.true.,lionization_fixed=.true.
-  real :: yH0=0.5,yHacc=1e-5,xHe=0.1
+  real :: yH0=.0,yHacc=1e-5,xHe=0.1
 
   ! input parameters
   integer :: dummy_ni 
@@ -74,7 +74,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.4 2003-08-10 04:24:40 brandenb Exp $")
+          "$Id: ionization_fixed.f90,v 1.5 2003-08-10 10:02:50 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

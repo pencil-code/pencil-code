@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.126 2003-08-08 12:34:19 dobler Exp $ 
+! $Id: param_io.f90,v 1.127 2003-08-10 10:02:50 brandenb Exp $ 
 
 module Param_IO
 
@@ -746,7 +746,7 @@ module Param_IO
         ! no input parameters for viscosity
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
-                       write(1,NML=lphysics         ) 
+                           write(1,NML=lphysics              ) 
 !      endif
 !
     endsubroutine wparam
