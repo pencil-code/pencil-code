@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.12 2002-10-25 05:24:57 brandenb Exp $
+! $Id: general.f90,v 1.13 2003-04-01 16:11:47 theine Exp $
 
 module General
 
@@ -304,5 +304,118 @@ module General
 !
     endsubroutine safe_character_append
 !***********************************************************************
+    function spline_derivative(z,f)
+!
+!  01-apr-03/tobi: originally coded by Aake Nordlund
+!
+      implicit none
+      real, dimension(:) :: z
+      real, dimension(:,:,:), intent(in) :: f
+      real, dimension(size(z)) :: w1,w2,w3
+      real, dimension(size(f,1),size(f,2),size(f,3)) :: d,spline_derivative
+      real :: c
+      integer :: mx,my,mz,j,k
 
+      mx=size(f,1)
+      my=size(f,2)
+      mz=size(f,3)
+
+      w1(1)=1./(z(2)-z(1))**2
+      w3(1)=-1./(z(3)-z(2))**2
+      w2(1)=w1(1)+w3(1)
+      d(:,:,1)=2.*((f(:,:,2)-f(:,:,1))/(z(2)-z(1))**3 &
+                  -(f(:,:,3)-f(:,:,2))/(z(3)-z(2))**3)
+!
+! interior points
+!
+      w1(2:mz-1)=1./(z(2:mz-1)-z(1:mz-2))
+      w3(2:mz-1)=1./(z(3:mz)-z(2:mz-1))
+      w2(2:mz-1)=2.*(w1(2:mz-1)+w3(2:mz-1))
+
+      do j=1,mx
+      do k=1,my
+         d(j,k,2:mz-1)=3.*(w3(2:mz-1)**2*(f(j,k,3:mz)-f(j,k,2:mz-1)) &
+                          +w1(2:mz-1)**2*(f(j,k,2:mz-1)-f(j,k,1:mz-2)))
+      end do
+      end do
+!
+! last point
+!
+      w1(mz)=1./(z(mz-1)-z(mz-2))**2
+      w3(mz)=-1./(z(mz)-z(mz-1))**2
+      w2(mz)=w1(mz)+w3(mz)
+      d(:,:,mz)=2.*((f(:,:,mz-1)-f(:,:,mz-2))/(z(mz-1)-z(mz-2))**3 &
+                     -(f(:,:,mz)-f(:,:,mz-1))/(z(mz)-z(mz-1))**3)
+!
+! eliminate at first point
+!
+      c=-w3(1)/w3(2)
+      w1(1)=w1(1)+c*w1(2)
+      w2(1)=w2(1)+c*w2(2)
+      d(:,:,1)=d(:,:,1)+c*d(:,:,2)
+      w3(1)=w2(1)
+      w2(1)=w1(1)
+!
+! eliminate at last point
+!
+      c=-w1(mz)/w1(mz-1)
+      w2(mz)=w2(mz)+c*w2(mz-1)
+      w3(mz)=w3(mz)+c*w3(mz-1)
+      d(:,:,mz)=d(:,:,mz)+c*d(:,:,mz-1)
+      w1(mz)=w2(mz)
+      w2(mz)=w3(mz)
+!
+! eliminate subdiagonal
+!
+      do k=2,mz
+         c=-w1(k)/w2(k-1)
+         w2(k)=w2(k)+c*w3(k-1)
+         d(:,:,k)=d(:,:,k)+c*d(:,:,k-1)
+      end do
+!
+! backsubstitute
+!
+      d(:,:,mz)=d(:,:,mz)/w2(mz)
+      do k=mz-1,1,-1
+         d(:,:,k)=(d(:,:,k)-w3(k)*d(:,:,k+1))/w2(k)
+      end do
+
+      spline_derivative=d
+    end function spline_derivative
+!***********************************************************************
+    function spline_integral(z,f,q0)
+!
+!  01-apr-03/tobi: originally coded by Aake Nordlund
+!
+      implicit none
+      real, dimension(:) :: z
+      real, dimension(:,:,:) :: f
+      real, dimension(size(f,1),size(f,2),size(f,3)) :: df,q,spline_integral
+      real, dimension(size(z)) :: dz
+      real, optional :: q0
+      integer :: mx,my,mz,j,k
+
+      mx=size(f,1)
+      my=size(f,2)
+      mz=size(f,3)
+
+      q(:,:,1)=0.
+      if (present(q0)) q(:,:,1)=q0
+      df=spline_derivative(z,f)
+      dz(2:mz)=z(2:mz)-z(1:mz-1)
+
+      do j=1,mx
+      do k=1,my
+         q(j,k,2:mz)=.5*dz(2:mz)*(f(j,k,1:mz-1)+f(j,k,2:mz)) &
+             +(1./12.)*dz(2:mz)**2*(df(j,k,1:mz-1)-df(j,k,2:mz))
+      end do
+      end do
+
+      do j=2,mz
+         q(:,:,j)=q(:,:,j)+q(:,:,j-1)
+      end do
+
+      spline_integral=q
+    end function spline_integral
+!***********************************************************************
 end module General
