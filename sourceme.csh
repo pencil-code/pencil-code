@@ -20,7 +20,6 @@ if (! $?_sourceme) then
   alias gt 'set gt=$cwd; cd \!^ ; set gb=$cwd ; echo $gt "->" $gb'
   alias d ls -sCF
   alias .. 'set pwd = $cwd ; cd ..'
-  alias cd 'cd \!* ; set prompt=`whoami`"@"`hostname`:"$cwd> "; setenv CWD $cwd'
   alias local 'cp -p \!:1 tmp.$$; \rm \!:1; mv tmp.$$ \!:1; chmod u+w \!:1'
 endif
 set _sourceme = "set"
