@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.13 2004-12-25 14:41:26 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.14 2005-03-17 08:21:10 mee Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-12-25 14:41:26 $
-;  $Revision: 1.13 $
+;  $Date: 2005-03-17 08:21:10 $
+;  $Revision: 1.14 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -43,6 +43,7 @@
 ;      
 ;  Current mappings: 
 ;
+;    rho     -> Gas density 
 ;    bb      -> Magnetic field vector
 ;    divu    -> Divergence of velocity
 ;    u2      -> Modulus of velocity
@@ -89,6 +90,11 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if variables[iv] eq 'divu' then begin
       tags[iv]=variables[iv]
       variables[iv]='div(uu)'
+
+    ; Gas Density 
+    endif else if variables[iv] eq 'rho' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='exp(lnrho)'
 
     ; Advection
     endif else if variables[iv] eq 'adv' then begin
