@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.168 2003-04-29 14:35:11 amjed Exp $
+### $Id: Makefile,v 1.169 2003-04-30 07:45:03 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -12,7 +12,7 @@ GLOBAL       = noglobal
 IO           =   io_dist
 FFT          = nofft
 FFTPACK      =   fftpack
-POWER        =   power_spectrum
+POWER        = nopower_spectrum
 DEBUG        =   debug_c
 
 HYDRO        =   hydro
@@ -100,7 +100,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FC=mpif77 #(ns0)
 #FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=pgf90 #(erland|igor|tycho|linux29)
+#FC=pgf90 #(erland|igor|tycho|linux29|onsager)
 #FC=f95 #(mmtf)
 #FC=ifc #(cosmo|nl6|mmtf)
 #FFLAGS=-O # (Samos)
@@ -108,8 +108,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 #FFLAGS=-O3 -ipo #PACX #(fe[0-9])
-#FFLAGS=-fast -lm #(erland|igor|tycho|linux29)
-#F90FLAGS= #(erland|igor|tycho|linux29)
+#FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
+#F90FLAGS= #(erland|igor|tycho|linux29|onsager)
 #FFLAGS=-O3 -ipo #(fe[0-9])
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
@@ -118,7 +118,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|mmtf)
-#F77=$(FC) -lm  #(tycho|erland)
+#F77=$(FC) -lm  #(tycho|erland|igor|onsager)
 #F77=$(FC) #(Cincinnatus|Owen|Master|Cosmo)
 
 

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.138 2003-04-27 10:49:15 brandenb Exp $
+! $Id: cdata.f90,v 1.139 2003-04-30 07:45:03 nilshau Exp $
 
 module Cdata
 
@@ -51,7 +51,7 @@ module Cdata
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
-  character (len=labellen) ::fft_switch='Singleton'
+  character (len=labellen) ::fft_switch='fftpack'
 
 !
 !  in this section are all the things related to printing
