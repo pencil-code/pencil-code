@@ -4,8 +4,9 @@ module Magnetic
 
   implicit none
 
-  real :: grav=1.
   integer :: iaa
+  real :: fring1,Rring1,wr1,nr1x,nr1y,nr1z,r1x,r1y,r1z
+  real :: fring2,Rring2,wr2,nr2x,nr2y,nr2z,r2x,r2y,r2z
 
   contains
 
@@ -15,7 +16,7 @@ module Magnetic
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
 !
-!  6-nov-01/wolf: coded
+!  1-may-02/wolf: coded
 !
       use Cdata
       use Mpicomm
@@ -42,8 +43,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-01-30 16:56:30 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-05-01 18:16:12 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -61,83 +62,152 @@ module Magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
-      real :: ampl
-      integer :: init
+      real, dimension (mx,my,mz,3)    :: tmpv
+      real, dimension (mx,my,mz)      :: tmp,xx,yy,zz,xx1,yy1,zz1
+      real, dimension(3) :: axis,shift
+      real    :: phi,theta,ct,st,cp,sp
+      real    :: ampl,fring,R0,width
+      integer :: init,i
 !
       f(:,:,:,iax:iaz) = 0.
 !
+!  Magnetic flux rings. Constructed from a canonical ring which is the
+!  rotated and translated:
+!    AA(xxx) = D*AA0(D^(-1)*xxx - xxx_shift) ,
+!  where AA0(xxx) is the canonical ring and D the rotation matrix
+!  corresponding to a rotation by phi around z, followed by a rotation by
+!  theta around y.
+!
+      if ((fring1 /= 0) .or. (fring2 /= 0)) then ! fringX is the magnetic flux
+        print*, 'Initialising magnetic flux rings'
+        print*, '--TODO: make this depend on init or introduce init_magnet'
+        do i=1,2
+          if (i==1) then
+            fring = fring1
+            R0    = Rring1
+            width = wr1
+            axis  = (/nr1x,nr1y,nr1z/)
+            shift = (/r1x,r1y,r1z/)
+          else
+            fring = fring2
+            R0    = Rring2
+            width = wr2
+            axis  = (/nr2x,nr2y,nr2z/)
+            shift = (/r2x,r2y,r2z/)
+          endif
+          phi   = atan2(axis(2),axis(1))
+          theta = atan2(sqrt(axis(1)**2+axis(2)**2),axis(3))
+          if (ip <= 6) print*, 'Init_aa: phi,theta = ', phi,theta
+          ct = cos(theta); st = sin(theta)
+          cp = cos(phi)  ; sp = sin(phi)
+          ! Calculate D^(-1)*xxx - shift
+          xx1 =  ct*cp*xx + ct*sp*yy - st*zz  - shift(1)
+          yy1 = -   sp*xx +    cp*yy          - shift(2)
+          zz1 =  st*cp*xx + st*sp*yy + ct*zz  - shift(3)
+          call norm_ring(xx1,yy1,zz1,R0,width,tmpv)
+          tmpv = tmpv*fring
+          ! calculate D*tmpv
+          f(:,:,:,iax) = f(:,:,:,iax) &
+               + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3)
+          f(:,:,:,iay) = f(:,:,:,iay) &
+               + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3)
+          f(:,:,:,iaz) = f(:,:,:,iaz) &
+               - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3)
+        enddo
+      endif
+!
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
+    subroutine daa_dt(f,df,uu,rho1)
 !
-!  calculate right hand side of entropy equation
+!  magnetic field evolution
 !
-!  7-nov-01/wolf: [to be] coded
+!  1-may-02/wolf: adapted from nils' version
 !
-!  WARNING: this is just a verbatim copy of dssdt; needs to be adapted to
-! aa
 !
-!      use Mpicomm
+!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J
+!  add JxB/rho to momentum equation
+!  add eta mu_0 J2/rho to entropy equation
+!
+!  22-nov-01/nils erland
+!
       use Cdata
-      use Slices
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,gss,glnrho,gpprho
-      real, dimension (nx) :: ugss,thdiff,del2ss,divu,sij2,cs2,ss,lnrho,TT1
-      integer :: i,j
+      real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
+      real, dimension (nx,3) :: del2A,dAdy,shearA
+      real, dimension (nx) :: var1, rho1, J2, TT1, cs2,uy0
+      real :: gamma1
 !
-      call grad(f,ient,gss)
-      call del2(f,ient,del2ss)
+    !  aa=f(l1:l2,m,n,iax:iaz)
+      call curl(f,iaa,bb)
+      if (Bx_ext/=0.) bb(:,1)=bb(:,1)+Bx_ext
+      if (By_ext/=0.) bb(:,2)=bb(:,2)+By_ext
+      if (Bz_ext/=0.) bb(:,3)=bb(:,3)+Bz_ext
 !
-!  sound speed squared
+!  calculating the current jj
 !
-      ss=f(l1:l2,m,n,ient)
-      lnrho=f(l1:l2,m,n,ilnrho)
-      cs2=cs20*exp(gamma1*lnrho+gamma*ss)
+      call del2v_etc(f,iaa,del2A,curlcurl=jj)
 !
-!  pressure gradient term
+!  calculating JxB/rho, uxB, J^2 and var1
 !
-      !gpprho=cs20*glnrho  !(in isothermal case)
-      do j=1,3
-        gpprho(:,j)=cs2*(glnrho(:,j)+gss(:,j))
-      enddo
+      call cross_mn(jj,bb,JxB)
+      call multsv_mn(JxB,rho1,JxBr)
+      call cross_mn(uu,bb,uxB)
+      call dot2_mn(jj,J2)
+    !  var1=qshear*Omega*aa(:,2)
 !
-!  advection term
+!  shear term
 !
-      ugss=uu(:,1)*gss(:,1)+uu(:,2)*gss(:,2)+uu(:,3)*gss(:,3)
+    !  call multvs_mn(dAdy,uy0,shearA)
 !
-!  calculate rate of strain tensor
+!  calculate dA/dt
 !
-      do j=1,3
-        do i=1,3
-          sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
-        enddo
-        sij(:,j,j)=sij(:,j,j)-.333333*divu
-      enddo
+    !  df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
+    !  df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
+      df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)+uxB+eta*del2A
 !
-      sij2=0.
-      do j=1,3
-      do i=1,3
-        sij2=sij2+sij(:,i,j)**2
-      enddo
-      enddo
+!  add JxB/rho to momentum equation
 !
-!  this is a term for numerical purposes only
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
 !
-      thdiff=nu*del2ss
+!  add eta mu_0 J2/rho to entropy equation
 !
-      TT1=gamma1/cs2
-      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
+      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
 !
-!  add gravity
+!  debug output
 !
-      !if (headt) print*,'add gravity'
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-grav
-!
+      if (ip<=4) then
+        call output_pencil(trim(directory)//'/aa.dat',aa,3)
+        call output_pencil(trim(directory)//'/bb.dat',bb,3)
+        call output_pencil(trim(directory)//'/jj.dat',jj,3)
+        call output_pencil(trim(directory)//'/del2A.dat',del2A,3)
+        call output_pencil(trim(directory)//'/JxBr.dat',JxBr,3)
+        call output_pencil(trim(directory)//'/JxB.dat',JxB,3)
+        call output_pencil(trim(directory)//'/df.dat',df(l1:l2,m,n,:),mvar)
+      endif
+!     
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine norm_ring(xx,yy,zz,R0,width,vv)
+!
+!  Generate vector potential for a flux ring of radius R0 and thickness
+!  WIDTH in normal orientation (lying in the x-y plane, centred at (0,0,0)).
+!
+!  1-may-02/wolf: coded
+!
+      use Cdata, only: mx,my,mz,mvar
+!
+      real, dimension (mx,my,mz,3) :: vv
+      real, dimension (mx,my,mz)   :: xx,yy,zz,tmp
+      real :: R0,width
+!
+      tmp = sqrt(xx**2+yy**2)-R0
+      vv = 0.
+      vv(:,:,:,3) = -0.5*(1+tanh(tmp/width)) * 0.5/width/cosh(zz/width)**2
+!
+    endsubroutine norm_ring
 !***********************************************************************
 
 endmodule Magnetic

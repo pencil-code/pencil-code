@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.13 2002-05-01 17:15:52 brandenb Exp $
+! $Id: mpicomm.f90,v 1.14 2002-05-01 18:16:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -43,7 +43,6 @@ module Mpicomm
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   logical, dimension (ny*nz) :: necessary=.false.
-  character (LEN=12) :: directory
 
   contains
 
@@ -59,7 +58,7 @@ module Mpicomm
 !  15-sep-01/axel: adapted from Wolfgang's version
 !
       use General
-      use Cdata, only: lmpicomm
+      use Cdata, only: lmpicomm,directory
 !
       integer :: i,m,n
       character (LEN=4) :: chproc

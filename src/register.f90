@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.19 $", &
-           "$Date: 2002-04-29 19:58:04 $")
+           "$Revision: 1.20 $", &
+           "$Date: 2002-05-01 18:16:12 $")
 !
 !
       if (nvar > mvar) then
@@ -97,7 +97,6 @@ module Register
       use Sub
       use Global
       use Gravity
-      use Mpicomm, only: directory
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot

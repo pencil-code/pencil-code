@@ -297,6 +297,26 @@ module Sub
 !
     endsubroutine multsv
 !***********************************************************************
+    subroutine multsv_mn(a,b,c)
+!
+!  vector multiplied with scalar, gives vector
+!   22-nov-01/nils erland: coded
+!
+      use Cdata
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      real, dimension (nx,3) :: a, c
+      real, dimension (nx) :: b
+      integer :: i
+!
+      do i=1,3
+        c(:,i)=a(:,i)*b(:)
+      enddo
+!
+    endsubroutine multsv_mn
+!***********************************************************************
     subroutine multsv_add(a,b,c,d)
 !
 !  multiply scalar with a vector and subtract from another vector
@@ -354,9 +374,10 @@ module Sub
 !
     endsubroutine cross
 !***********************************************************************
-    subroutine crossp(a,b,c)
+    subroutine cross_mn(a,b,c)
 !
-!  cross product, c = a x b
+!  cross product, c = a x b, for stencil variables.
+!  Previously called crossp.
 !
       use Cdata
 !
@@ -369,7 +390,7 @@ module Sub
       c(:,2)=a(:,3)*b(:,1)-a(:,1)*b(:,3)
       c(:,3)=a(:,1)*b(:,2)-a(:,2)*b(:,1)
 !
-    endsubroutine crossp
+    endsubroutine cross_mn
 !***********************************************************************
     subroutine gij(f,k,g)
 !

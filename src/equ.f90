@@ -23,6 +23,7 @@ module Equ
       read(1,*) ip,ix,iy,iz
       read(1,*) cs0,nu,ivisc,cdtv
       read(1,*) hcond0,hcond1,hcond2,whcond
+      read(1,*) eta,Bx_ext,By_ext,Bz_ext
       read(1,*) cdiffrho
       read(1,*) gravz
       read(1,*) cheat,wheat,cool,wcool
@@ -90,6 +91,7 @@ module Equ
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
         print*, 'cs0,nu,ivisc,cdtv=', cs0,nu,ivisc,cdtv
         print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
+        print*, 'eta,Bx_ext,By_ext,Bz_ext=', eta,Bx_ext,By_ext,Bz_ext
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
         print*, 'cheat,wheat,cool,wcool=', cheat,wheat,cool,wcool
@@ -259,6 +261,7 @@ module Equ
       use Global
       use Gravity
       use Entropy
+      use Magnetic
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
@@ -275,8 +278,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.26 $", &
-           "$Date: 2002-04-10 16:26:31 $")
+           "$Revision: 1.27 $", &
+           "$Date: 2002-05-01 18:16:12 $")
 !
 !  initiate communication
 !
@@ -341,15 +344,24 @@ module Equ
           ugu(:,i)=uu(:,1)*uij(:,i,1)+uu(:,2)*uij(:,i,2)+uu(:,3)*uij(:,i,3)
         enddo
 !
+!  pure hydro part of eq. of motion (forcing is now done in timestep)
+!
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - ugu + fvisc
+!
 !  entropy equation
 !
         if (lentropy) call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
 !
-!  momentum equation (forcing is now done in timestep)
+!  thermal part of eq. of motion (pressure force)
 !
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - ugu - gpprho + fvisc
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
 !
-!  damping terms:
+!  magnetic part
+!
+        if (lmagnetic) call daa_dt(f,df,uu,rho1)
+
+!
+!  damping terms (artificial, but sometimes useful):
 !
 !  1. damp motion during time interval 0<t<tdamp.
 !  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)

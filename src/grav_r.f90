@@ -35,8 +35,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-04-29 19:59:21 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-05-01 18:16:12 $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -93,7 +93,7 @@ module Gravity
       gg = evr*spread(g_r,2,3)
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg
 !
-if (headt .and. lfirst) call output_stenc('tmp/proc0/gg.dat',gg,3)
+if (headt .and. lfirst) call output_pencil('tmp/proc0/gg.dat',gg,3)
 !
 
 !

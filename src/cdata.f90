@@ -13,6 +13,7 @@ module Cdata
   real :: dsnap,dvid,dforce,dtmin
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
   real :: cs0,rho0,cs20,gamma,gamma1,force,relhel,cs2top
+  real :: eta,Bx_ext,By_ext,Bz_ext
   real :: DD,nu,cmu,cnu2,cdiffrho
   real :: hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2
   real :: t_diag,dtu,dtv
@@ -41,5 +42,6 @@ module Cdata
   character (LEN=80) :: form1
   character (LEN=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (LEN=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
+  character (LEN=12) :: directory
 
 endmodule Cdata

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.17 2002-05-01 11:56:42 dobler Exp $
+! $Id: nompicomm.f90,v 1.18 2002-05-01 18:16:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -26,15 +26,13 @@ module Mpicomm
   logical, dimension (nx*ny) :: necessary=.false.
 !  logical :: lroot=.true.       ! is this the root process?
 
-  character (LEN=12) :: directory
-
   contains
 
 !***********************************************************************
     subroutine mpicomm_init()
 !
       use General
-      use Cdata, only: lmpicomm
+      use Cdata, only: lmpicomm,directory
 !
 !  sets iproc in order that we write in the correct directory
 !
