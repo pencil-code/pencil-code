@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.55 2003-06-24 10:17:52 ajohan Exp $ 
+! $Id: initcond.f90,v 1.56 2003-06-25 12:13:10 ajohan Exp $ 
 
 module Initcond 
  
@@ -608,11 +608,13 @@ module Initcond
 !
 !   jun-03/anders: coded (adapted from old 'planet', now 'planet_hc')
 !
+     use Sub
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell
-      real :: gamma1,zinfty2,ztop,cs20,hh0,hhmin
+      real :: gamma1,ztop,cs20,hh0,dS
       integer :: i,j,k
 !
 !  calculate sigma
@@ -626,6 +628,8 @@ module Initcond
       else
         sigma=sqrt(sigma2)
       endif
+
+      gamma1=gamma-1.
 !
 !  calculate delta
 !
@@ -636,61 +640,40 @@ module Initcond
       else
         delta=sqrt(delta2)
       endif
-!
-!  calculate zinfty**2 (similar to polytropic_simple)
-!
-      gamma1=gamma-1.
-      if(gamma1/=0.) then
-        zinfty2=cs20/(.5*gamma1*Omega**2)
-      else
-        zinfty2=impossible
-      endif
-      print*,'planet: gamma,zinfty2=',gamma,zinfty2
 
       ztop=z(n2)
       if(lroot) print*,'planet: ztop=', ztop
 !
 !  Cylinder vortex 3-D solution (b_ell along x, a_ell along y)
 !
-        b_ell = radius
-        a_ell = radius/eps
-        r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
-        if (lroot) print*,'planet: Ellipse axes (b_ell,a_ell)=',b_ell,a_ell
+      b_ell = radius
+      a_ell = radius/eps
+      r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
+      if (lroot) print*,'planet: Ellipse axes (b_ell,a_ell)=',b_ell,a_ell
 !
 !  xi is 1 inside vortex and 0 outside
 !
-        xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
-        if(lroot) print*,'planet: width,rbound', width,rbound
+      xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
+      if(lroot) print*,'planet: width,rbound', width,rbound
 !
 !  Calculate enthalpy inside vortex
 !
-        hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
-             -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
+      hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
+           -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
 !
 !  Calculate enthalpy outside vortex
 !
-        do i=1,mx
-          do j=1,my
-            do k=1,mz
-              if(r_ell(i,j,k) .gt. 1) then
-                if(lentropy) then
-                  hh(i,j,k)=hh0
-                  f(i,j,k,ient)=(1./hh0)*0.5*Omega**2*zz(i,j,k)**2
-                else
-                  hh(i,j,k) = &
-                      -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
-                endif
-              endif
-            enddo
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            if(r_ell(i,j,k) .gt. 1) then
+              hh(i,j,k) = &
+                   -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
+              if(lentropy) f(i,j,k,ient)=2.*(1-xi(i,j,k))
+            endif
           enddo
         enddo
-!
-!  Avoid negative enthalpy if gamma != 1
-!
-        if (gamma .ne. 1) then
-          hhmin = minval(hh(l1:l2,m1:m2,n1:n2))
-          hh = hh - hhmin + hh0
-        endif
+      enddo
 !
 !  Calculate velocities (Kepler speed subtracted)
 !
@@ -699,14 +682,17 @@ module Initcond
 !
 !  calculate density, depending on what gamma is
 !
-      print*,'planet: hh0,hmin,zinfty2=',&
-           hh0,minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
+      print*,'planet: hh0,hmin',&
+           hh0,minval(hh(l1:l2,m1:m2,n1:n2))
+      if (lentropy .and. lroot) print*,'planet: smin,smax', &
+           minval(f(:,:,:,ient)), maxval(f(:,:,:,ient))
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
 !
       if(lentropy) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho) = (alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+        f(l1:l2,m1:m2,n1:n2,ilnrho) = &
+             (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
              - gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
         print*,'planet solution with entropy jump for gamma=',gamma
       else
@@ -715,7 +701,7 @@ module Initcond
           print*,'planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-               alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+               alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
           print*,'planet solution for gamma=',gamma
         endif
       endif
