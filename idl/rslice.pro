@@ -1,4 +1,4 @@
-; $Id: rslice.pro,v 1.6 2002-10-02 20:11:14 dobler Exp $
+; $Id: rslice.pro,v 1.7 2002-11-19 10:55:51 mee Exp $
 ;
 ;  reads xz slices
 ;  this routine is not very general yet and needs to be adjusted
@@ -11,11 +11,12 @@ file_slice=datatopdir+'/proc0/lnrho.xz'
 ;
 t=0.
 xz_slice=fltarr(nx,nz)
+slice_ypos=0.
 ;
 close,1
 openr,1,file_slice,/f77
 while not eof(1) do begin
-  readu,1,xz_slice,t
+  readu,1,xz_slice,t,slice_ypos
   print,t
   ;plot,xz_slice(11,*),yr=[-1,1]*1e-3
   tvscl,xz_slice

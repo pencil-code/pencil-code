@@ -1,6 +1,6 @@
-pro rslice_xy_all,file,plane,mpeg=mpeg,itmax=itmax,fmax=fmax,fmin=fmin,nrepeat=nrepeat
+pro rslice_xy_all,file,plane,mpeg=mpeg,itmax=itmax,fmax=fmax,fmin=fmin,nrepeat=nrepeat,OLDFILE=OLDFILE
 ;
-; $Id: rslice_xy_all.pro,v 1.4 2002-10-22 13:00:19 brandenb Exp $
+; $Id: rslice_xy_all.pro,v 1.5 2002-11-19 10:55:51 mee Exp $
 ;
 ; This program reads video snapshots from all the processors
 ; in the xy or xz plane, depending on whether plane='xy' or plane='xz'.
@@ -8,6 +8,11 @@ pro rslice_xy_all,file,plane,mpeg=mpeg,itmax=itmax,fmax=fmax,fmin=fmin,nrepeat=n
 ; if the keyword /mpeg is given, the file movie.mpg is written.
 ; itmax is the maximum number of time slices
 ; nrepeat is the number of repeated images (to slow down movie)
+;
+; if /OLDFILE is given, uses slice files wich donot contain the
+; position variable
+;
+;
 ;
 default,itmax,10
 default,nrepeat,0
@@ -54,6 +59,7 @@ endelse
 t=0.
 loc_slice=fltarr(nx,grid)
 slice_glob=fltarr(nx,grid*nprocgrid)
+slice_pos=0.
 ;
 for i=1,nprocgrid do begin
   j=fix((i-1)*deltaproc)
@@ -78,7 +84,11 @@ while not eof(1) and it le itmax do begin
     ;
     start=(i-1)*grid
     stop =i*grid-1
+if keyword_set(OLDFILE) then begin
     readu,i,loc_slice,t
+end else begin
+    readu,i,loc_slice,t,slice_pos
+end
       slice_glob(*,start:stop)=loc_slice
   end
   ffmin=min(slice_glob)
