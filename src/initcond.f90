@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.5 2002-08-14 12:40:25 brandenb Exp $ 
+! $Id: initcond.f90,v 1.6 2002-08-14 15:20:13 nilshau Exp $ 
 
 module Initcond 
  
@@ -176,7 +176,8 @@ module Initcond
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,psi,hh,h0
       real :: ampl,sigma2,sigma,delta2,delta,eps,Rx,Ry,Rz,hmax,hmin
-      real :: gamma,eps2
+      real :: gamma,eps2,rad
+      integer :: i,j
 !
 !  calculate sigma
 !
@@ -201,13 +202,13 @@ module Initcond
 !
 !  calculate temporary parameters
 !
-      !Ry=Rx/eps
+      Ry=Rx/eps
       !Rz=Rx*delta
 !
 !  calculate psi, hh, and h0
 !
       h0=ampl**(gamma-1.)-zz**2/delta2
-      rr2=xx**2/Rx**2+yy**2/Ry**2+zz**2/Rz**2
+      rr2=xx**2/Rx**2+yy**2/Ry**2!+zz**2/Rz**2
       psi=-.5*Omega*sigma*amax1(1.-rr2,0.)
       hh=+.5*(delta*Omega)**2*amax1(1.-rr2,h0)
 !
@@ -218,9 +219,22 @@ module Initcond
       hh=amax1(hh,hmin)
 !
       if (gamma<=1.) print*,'must have gamma>1 for planet solution'
-      f(:,:,:,iux)=   eps2*sigma *Omega*yy
-      f(:,:,:,iuy)=(qshear-sigma)*Omega*xx
+!!$      f(:,:,:,iux)=   eps2*sigma *Omega*yy
+!!$      f(:,:,:,iuy)=(qshear-sigma)*Omega*xx
+!!$      f(:,:,:,ilnrho)=alog(hh)/(gamma-1.)
+
+      do i=l1,l2
+         do j=m1,m2
+            rad=x(i)**2/Rx**2+y(j)**2*eps**2/Rx**2
+            if (rad<1) then
+               f(i,j,:,iux)=   eps2*sigma *Omega*yy(i,j,:)
+               f(i,j,:,iuy)=(qshear-sigma)*Omega*xx(i,j,:)
+            endif
+         enddo
+      enddo
       f(:,:,:,ilnrho)=alog(hh)/(gamma-1.)
+
+
 !
     endsubroutine planet
 !***********************************************************************
