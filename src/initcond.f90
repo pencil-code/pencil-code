@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.14 2002-09-26 16:21:25 brandenb Exp $ 
+! $Id: initcond.f90,v 1.15 2002-10-09 17:37:32 brandenb Exp $ 
 
 module Initcond 
  
@@ -127,6 +127,37 @@ module Initcond
       endselect
 !
     endsubroutine jump
+!***********************************************************************
+    subroutine bjump(f,i,fleft,fright,width,dir)
+!
+!  jump in B-field (in terms of magnetic vector potential)
+!
+!   9-oct-02/wolf+axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx) :: prof
+      real :: fleft,fright,width
+      character(len=*) :: dir
+!
+!  jump; check direction
+!
+      select case(dir)
+!
+!  use correct signs when calling this routine
+!  Ay=+int Bz dx
+!  Az=-int By dx
+!
+      case('x')
+        prof=.5*(fright+fleft)*x &
+            +.5*(fright-fleft)*width*alog(cosh(x/width))
+        f(:,:,:,i)=f(:,:,:,i)-spread(spread(prof,2,my),3,mz)
+      case default
+        print*,'jump: no default value'
+!
+      endselect
+!
+    endsubroutine bjump
 !***********************************************************************
     subroutine beltrami(ampl,f,i,kx,ky,kz)
 !

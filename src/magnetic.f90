@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.90 2002-10-08 18:19:46 dobler Exp $
+! $Id: magnetic.f90,v 1.91 2002-10-09 17:37:32 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -18,7 +18,8 @@ module Magnetic
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5,z0aa=0.
+  real :: amplaa=0.,radius=.1,epsilonaa=1e-2,widthaa=.5,z0aa=0.
+  real :: by_left=0.,by_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa=1.,ky_aa=1.,kz_aa=1.
   logical :: lpress_equil=.false.
@@ -27,7 +28,7 @@ module Magnetic
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
-       radius,epsilonaa,z0aa,widthaa, &
+       radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
        lpress_equil
 
@@ -82,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.90 2002-10-08 18:19:46 dobler Exp $")
+           "$Id: magnetic.f90,v 1.91 2002-10-09 17:37:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -123,6 +124,7 @@ module Magnetic
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
+      case('xjump'); call bjump(f,iaz,by_left,by_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)

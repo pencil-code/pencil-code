@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.71 2002-10-07 17:56:15 brandenb Exp $
+! $Id: hydro.f90,v 1.72 2002-10-09 17:37:32 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -15,11 +15,13 @@ module Hydro
   ! init parameters
   real :: ampluu=0., widthuu=.1, urand=0., kx_uu=0., ky_uu=0., kz_uu=0.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
+  real :: uy_left=0.,uy_right=0.
   character (len=labellen) :: inituu='zero'
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
        uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu, &
+       uy_left,uy_right, &
        Omega
 
   ! run parameters
@@ -74,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.71 2002-10-07 17:56:15 brandenb Exp $")
+           "$Id: hydro.f90,v 1.72 2002-10-09 17:37:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -110,6 +112,7 @@ module Hydro
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
+                     call jump(f,iuy,uy_left,uy_right,widthuu,'x')
       case('Beltrami-x'); call beltrami(ampluu,f,iuu,KX=1.)
       case('Beltrami-y'); call beltrami(ampluu,f,iuu,KY=1.)
       case('Beltrami-z'); call beltrami(ampluu,f,iuu,KZ=1.)
