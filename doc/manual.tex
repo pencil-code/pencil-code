@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.120 2002-10-02 20:12:08 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.121 2002-10-03 19:30:03 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -288,6 +288,8 @@
 
 \newcommand{\jv}            {\vekt{j}}
 
+\newcommand{\kv}            {\vekt{k}}
+
 \newcommand{\omv}           {\boldsymbol{\omega}}
 
 \newcommand{\Ra}            {\mathrm{Ra}}
@@ -315,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.120 $ $}
+\date{\today,~ $ $Revision: 1.121 $ $}
 
 % ====================================================================== %
 
@@ -348,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.120 $ $}
+  \emph{\today,~ $ $Revision: 1.121 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1281,7 +1283,7 @@ and documenting the changes for others.
 
 \subsubsection{\file{start.in}, \file{run.in}, \file{print.in}}
 These files specify the startup and runtime parameters (see
-Sec.~\ref{S-start-params} and \ref{S-run-params}), and the list of
+Sec.~\ref{S-start-params} and \ref{S-all-run-params}), and the list of
 diagnostic variables to print (see \ref{diagnostic-IO}).
 They specify the setup of a given simulation and are kept under CVS in
 the individual \file[samples/]{samples} directories.
@@ -1457,7 +1459,8 @@ The \file{Makefile} you need will have the following section:
 \label{diagnostic-IO}
 
 Every \var{it1} time steps (\var{it1} is a runtime parameter, see
-Sect.~\ref{S-run-params}), the code writes monitoring output to \name{stdout}
+Sect.~\ref{S-all-run-params}), the code writes monitoring output to
+\name{stdout}
 and, parallel to this, to the file \file[n.dat]{data/n.dat}.
 The variables that appear in this listing and the output format are
 defined in the file \file{print.in} and can be changed without touching
@@ -2060,12 +2063,6 @@ the magnetic flux density, $\nu$ is kinematic viscosity, and
 \end{equation}
 is the traceless rate-of-strain tensor.
 
-If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
-viscous term is used, which is not physically consistent (momentum
-conservation is violated for compressible media), but in some cases
-this option could be a useful approximation during an initial relaxation phase;
-it does run somewhat faster).
-
 If \code{ivisc='nu-const'}, it is assumed that 
 $\nu = \const$ everywhere.
 
@@ -2076,6 +2073,18 @@ $\mu/\varrho_0$ (\var{rho0} is another input parameter).
 The term involving the
 rate-of-strain tensor does not appear in the equation,
 and $\nu$ is then replaced by $\mu/\varrho$, which is no longer constant.
+
+If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
+viscous term is used.
+This visocus operator is not physically consistent (linear and angular
+momentum conservation is violated for compressible media), but for weakly
+compressible flows (Mach numbers less than 10\%), there is little
+difference to the full one.
+In practice, one may decide to use the simplified viscous operator
+during the initial relaxation phase of a long run, provided this
+is not already part of a production run.
+
+
 
 For isothermal hydrodynamics, see \S\ref{entropy} below.
 
@@ -2180,42 +2189,6 @@ times.
 
 % ====================================================================== %
 
-%\section{Tuning the code for optimal performance}
-\section{Performance issues}
-
-\subsection{Processor layout when using MPI}
-
-It often pays (and is easy) to adapt to the particular hardware.
-In \S\ref{Bandwidth} we mentioned to extreme sensitivity to
-the precise layout of processors. If you have control over
-the design of the machine, you may want to chose a torus-like
-arrangement that matches best with your mesh. In general you
-won't be alone on the machine, so you have to find a good
-compromise. A two-layered switch arrangement is probably a
-reasonable compromise, in which case it is important to minimize
-the contact surface between the nodes on one switch and the
-outside nodes; see \S\ref{Bandwidth}.
-
-\subsection{Using a simplified viscosity operator}
-
-For weakly compressible flows (Mach numbers less than 10\%),
-there is little difference between the
-simplified viscous operator (\code{ivisc='simplified'}; see
-\S\ref{S-Eqn-of-motion}) and the full operator
-(\code{ivisc='nu-const'}), while the latter is numerically
-more expensive.
-
-The equation of motion with the simplified
-viscous operator does not conserve linear or angular momentum.
-It depends on your application whether this is a crucial shortcoming or
-totally irrelevant.
-In practice, one may decide to use the simplified viscous operator
-during the initial relaxation phase of a long run, provided this
-is not already part of a production run.
-
-
-% ====================================================================== %
-
 \section{Adapting the code}
 
 \subsection{Adding new output diagnostics}
@@ -2264,11 +2237,11 @@ in the code, and we were only now adding it, we would need to do the following
     endif
   endif
   \end{alltt}
-\item in the subroutine \code{rprint_magnetic} in both \file{magnetic.f90}
-  and \file{nomagnetic.f90}, add the following:
+\item in the subroutine \code{rprint_magnetic} in both
+  \file{magnetic.f90}, add the following:
   \begin{alltt}
   !
-  !  reset everything in case of reset
+  !  reset everything in case of RELOAD
   !  (this needs to be consistent with what is defined above!)
   !
   if (lreset) then  {\sl! need to reset list of diagnostic variables?}
@@ -2286,7 +2259,7 @@ in the code, and we were only now adding it, we would need to do the following
   enddo
   {\sl[\ldots]}
   !
-  !  write column where which magnetic variable is stored
+  !  write column, i_XYZ, where our variable XYZ is stored
   !
   {\sl[\ldots]}
   write(3,*) 'i_jbm=',i_jbm
@@ -2296,7 +2269,7 @@ in the code, and we were only now adding it, we would need to do the following
   the following (newer version of the code may not require this any more):
   \begin{alltt}
   !
-  !  write column where which magnetic variable is stored
+  !  write column, i_jbm, where our variable jbm is stored
   !  idl needs this even if everything is zero
   !
   {\sl[\ldots]}
@@ -2320,7 +2293,9 @@ replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 Currently, only the horizontally $xy$-averaged $x$ and $y$ components
 of the magnetic field can be written.
 This is determined by the existence
-and contents of the file \file{xyaver.in}.
+and contents of the file \file{xyaver.in}; a new line of averages is
+written every time \file{var.dat} is updated (i.\,e.~every \var{it1} time
+steps).
 New such variables can be added by using the existing averaging
 procedures as examples.
 
@@ -2482,38 +2457,6 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 }
 
 
-% ====================================================================== %
-
-\begin{thebibliography}{9}
-
-\bibitem{2Nstorage} Williamson, J. H.,
-  \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
-\bibitem{NS90} Nordlund, \AA., Stein, R. F.,
-  \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
-\bibitem{BNST95} Brandenburg, A., et al.,
-  \emph{Astrophys. J.} \textbf{446}, 741 (1995)
-\bibitem{Ref-3} Brandenburg, A., et al.,
-  \emph{J. Fluid Mech.} \textbf{306}, 325 (1996)
-%\bibitem{NR} Press, W., Flannery, B., Teukolsky, S. \& Vetterling, W. 1988
-%Numerical Recipes, Cambridge University Press.
-\bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
-  \emph{Numerical Recipes in Fortran 90}, Cambridge (1988)
-\bibitem{Ref-1} Brandenburg, A., in \emph{Advances in non-linear dynamos},
-  ed. A. Ferriz-Mas \& M. N\'u\~nez Jim\'enez (2002);
-  \url{http://arXiv.org/abs/astro-ph/0109497}
-\bibitem{Ref-4} Brandenburg, A., Dobler, W.,
-  \emph{Astron. Astrophys.} \textbf{369}, 329 (2001)
-\bibitem{SH88} Stanescu, D., Habashi, W. G.,
-  \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
-\bibitem{KR80} Krause, F., R\"adler, K.-H.,
-  \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
-  Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
-\bibitem{Ref-2} Brandenburg, A.,
-  \emph{Astrophys. J.} \textbf{550}, 824 (2001)
-
-\end{thebibliography}
-
-
 
 % ====================================================================== %
 \appendix
@@ -2652,9 +2595,9 @@ The machines we have used can be characterized as follows:
   4\,GB memory per node (i.\,e.~1\,GB per CPU)
   OSF1 4.0;
   native MPI
-\item[Sander:]
-\item[Rasm.:]
-\item[Gridur:]
+\item[Sander:] Origin 3000
+\item[Rasmussen:] Origin 3000
+\item[Gridur:] Origin 3000
 \end{description}
 
 Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
@@ -3035,6 +2978,9 @@ $\xi_0$ & $c_{\rm s,bot}^2$ \\
 % ---------------------------------------------------------------------- %
 
 \subsection{Planet solution in the shearing box}
+\label{S-planet}
+This setup is about the perturbation of an accretions disc (in the local
+shearing-box approximation) due to a passing planet.
 
 Assume $s=0$ (isentropy), so the equations in 2-D are
 \begin{equation}\label{ux-eqn}
@@ -3103,7 +3049,7 @@ samples of the code.
 \begin{table}[htb]
   \begin{center}
     \caption{
-	Values on the different sides of the shock.
+        Values on the different sides of the shock.
     }
     \label{Tshock1}
     \begin{tabular}{lll}
@@ -3472,7 +3418,17 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`random-normal'}] (random,
                    normally-distributed $u_x$),
                  \item[\code{`sound-wave'}] (sound wave in $x$ direction),
-                 \item[\code{`shock-tube'}] (polytropic standing shock).
+                 \item[\code{`shock-tube'}] (polytropic standing shock),
+                 \item[\code{`bullets'}] (blob-like velocity perturbations),
+                 \item[\code{`Alfven-circ-x'}] (circularly polarised
+                   Alfven wave in x direction),
+                 \item[\code{`const-ux'}] (constant x-velocity),
+                 \item[\code{`const-uy'}] (constant y-velocity),
+                 \item[\code{`tang-discont-z'}] (tangential discontinuity:
+                   velocity is directed along $x$, jump is at $z=0$),
+                 \item[\code{`Fourier-trunc'}] (truncated Fourier series),
+                 \item[\code{`up-down'}] (flow upwards in one spot,
+                   downwards in another; not soneloidal).
                  \end{description}
                  \\
   \var{ampluu} [$0.$]
@@ -3502,14 +3458,27 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`polytropic\_simple'}] (polytropic stratification),
                  \item[\code{`hydrostatic-z-2'}] (hydrostatic vertical
                    stratification for isentropic atmosphere),
-                 \item[\code{`rho-jump'}] (density jump of width
+                 \item[\code{`xjump'}] (density jump in $x$ of width
+                   \var{widthlnrho}),
+                 \item[\code{`rho-jump-z'}] (density jump in $z$ of width
                    \var{widthlnrho}),
                  \item[\code{`piecew-poly'}] (piecewise polytropic vertical
                    stratification for solar convection),
                  \item[\code{`polytropic'}] (polytropic vertical
                    stratification),
                  \item[\code{`sound-wave'}] (sound wave),
-                 \item[\code{`shock-tube'}] (polytropic standing shock).
+                 \item[\code{`shock-tube'}] (polytropic standing shock),
+                 \item[\code{`gaussian-noise'}] (Gaussian-distributed,
+                   uncorrelated noise),
+                 \item[\code{`gaussian-noise'}] (Gaussian-distributed,
+                   uncorrelated noise in $x$, but uniform in $y$ and $z$),
+                 \item[\code{`hydrostatic-r'}] (hydrostatic radial density
+                   stratification for isentropic or isothermal sphere),
+                 \item[\code{`sin-xy'}] (sine profile in $x$ and $y$),
+                 \item[\code{`sin-xy-rho'}] (sine profile in $x$ and $y$, but
+                   in $\varrho$, not $\ln\varrho$),
+                 \item[\code{`linear'}] (linear profile in $\kv\cdot\xv$),
+                 \item[\code{`planet'}] (planet solution; see \S\ref{S-planet}).
                  \end{description}
                  \\
   \var{gamma} [$5./3$]
@@ -3575,7 +3544,11 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`piecew-poly'}] (piecewise polytropic
                    stratification for convection),
                  \item[\code{`polytropic'}] (polytropic stratification,
-                   polytropic exponent is \var{mpoly0}).
+                   polytropic exponent is \var{mpoly0}),
+                 \item[\code{`blob'}] (???),
+                 \item[\code{`xjump'}] (jump in $x$ direction),
+                 \item[\code{`hor-fluxtube'}] (???),
+                 \item[\code{`hor-tube'}] (???).
                  \end{description}
                  \\
   \var{pertss} [\code{'zero'}]
@@ -3625,14 +3598,24 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
                  \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave),
                  \item[\code{`hor-fluxtube'}] (horizontal flux tube),
+                 \item[\code{`hor-tube'}] (???),
                  \item[\code{`hor-fluxlayer'}] (horizontal flux layer),
                  \item[\code{`uniform-Bx'}] (uniform field in $x$ direction),
+                 \item[\code{`uniform-By'}] (uniform field in $y$ direction),
                  \item[\code{`Bz(x)'}] ($B_z\propto\cos(k x)$),
                  \item[\code{`fluxrings'}] (two interlocked magnetic fluxrings;
-                   see Sect.~\ref{fluxrings}),
-                 \item[\code{`crazy'}] (for testing purposes),
+                   see \S~\ref{fluxrings}),
+                 \item[\code{`fluxrings-kb'}] (malfunctioning),
                  \item[\code{`Alfven-circ-x'}] (circularly polarized
                    Alfvén wave).
+                 \item[\code{`sinxsinz'}] ($\sin x \sin z$),
+                 \item[\code{`Alfven-z'}] (???),
+                 \item[\code{`Alfvenz-rot'}] (???),
+                 \item[\code{`Alfven-test'}] (???),
+                 \item[\code{`Alfven-circ-x'}] (circularly polarised
+                   Alfven wave in x direction),
+                 \item[\code{`'}] (),
+                 \item[\code{`crazy'}] (for testing purposes).
                  \end{description}
                  \\
   \var{initaa2} [\code{'zero'}]
@@ -3683,7 +3666,10 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`gaussian-noise'}] (white noise),
                  \item[\code{`wave-x'}] (wave in $x$ direction),
                  \item[\code{`wave-y'}] (wave in $y$ direction),
-                 \item[\code{`wave-z'}] (wave in $z$ direction).
+                 \item[\code{`wave-z'}] (wave in $z$ direction),
+                 \item[\code{`tang-discont-z'}] (???),
+                 \item[\code{`hor-fluxtube'}] (???),
+                 \item[\code{`hor-tube'}] (???).
                  \end{description}
                  \\
   \var{initlncc2} [\code{'zero'}]
@@ -4080,6 +4066,39 @@ possible inputs to the \file{print.in} file.
 % ---------------------------------------------------------------------- %
 
 
+
+% ====================================================================== %
+
+\begin{thebibliography}{9}
+
+\bibitem{2Nstorage} Williamson, J. H.,
+  \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
+\bibitem{NS90} Nordlund, \AA., Stein, R. F.,
+  \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
+\bibitem{BNST95} Brandenburg, A., et al.,
+  \emph{Astrophys. J.} \textbf{446}, 741 (1995)
+\bibitem{Ref-3} Brandenburg, A., et al.,
+  \emph{J. Fluid Mech.} \textbf{306}, 325 (1996)
+%\bibitem{NR} Press, W., Flannery, B., Teukolsky, S. \& Vetterling, W. 1988
+%Numerical Recipes, Cambridge University Press.
+\bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
+  \emph{Numerical Recipes in Fortran 90}, Cambridge (1988)
+\bibitem{Ref-1} Brandenburg, A., in \emph{Advances in non-linear dynamos},
+  ed. A. Ferriz-Mas \& M. N\'u\~nez Jim\'enez (2002);
+  \url{http://arXiv.org/abs/astro-ph/0109497}
+\bibitem{Ref-4} Brandenburg, A., Dobler, W.,
+  \emph{Astron. Astrophys.} \textbf{369}, 329 (2001)
+\bibitem{SH88} Stanescu, D., Habashi, W. G.,
+  \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
+\bibitem{KR80} Krause, F., R\"adler, K.-H.,
+  \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
+  Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
+\bibitem{Ref-2} Brandenburg, A.,
+  \emph{Astrophys. J.} \textbf{550}, 824 (2001)
+
+\end{thebibliography}
+
+
 % ====================================================================== %
 
 
@@ -4090,7 +4109,7 @@ possible inputs to the \file{print.in} file.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.120 2002-10-02 20:12:08 dobler Exp $ $}
+$ $Id: manual.tex,v 1.121 2002-10-03 19:30:03 dobler Exp $ $}
 
 
 \end{document}
