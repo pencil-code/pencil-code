@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.62 2002-07-10 08:04:59 dobler Exp $
+! $Id: run.f90,v 1.63 2002-07-10 08:35:29 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.62 2002-07-10 08:04:59 dobler Exp $")
+             "$Id: run.f90,v 1.63 2002-07-10 08:35:29 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -87,13 +87,20 @@
 !
 !  read seed field parameters (only if forcing is turned on)
 !
+        call get_nseed(nseed)   ! get state length of random number generator
         if (lforcing) then
           if (lroot.and.ip<14) print*,'reading seed file'
           call get_nseed(nseed)   ! get state length of random number generator
           call inpui(trim(directory)//'/seed.dat',seed,nseed)
           call random_seed(put=seed(1:nseed))
         else
-          seed(1)=1000+iproc ! different random numbers on different CPUs
+          !
+          !  initialise random number generator in processor-dependent fashion
+          !  see comments in start.f90 for details
+          !
+          call random_seed(get=seed(1:nseed))
+          seed(1) = 1000+iproc    ! different random numbers on different CPUs
+          call random_seed(put=seed(1:nseed))
         endif
 !
 !  advance equations

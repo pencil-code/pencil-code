@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.54 2002-07-10 08:04:59 dobler Exp $
+! $Id: start.f90,v 1.55 2002-07-10 08:35:29 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,11 +32,15 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.54 2002-07-10 08:04:59 dobler Exp $")
+             "$Id: start.f90,v 1.55 2002-07-10 08:35:29 dobler Exp $")
 !
-!  initialise random number generator
+!  Initialise random number generator in processor-dependent fashion.
+!  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
+!  would produce very short-period random numbers with the Intel compiler;
+!  so we need to retain most of the initial entropy of the generator. 
 !
         call get_nseed(nseed)   ! get state length of random number generator
+        call random_seed(get=seed(1:nseed))
         seed(1) = 1000+iproc    ! different random numbers on different CPUs
         call random_seed(put=seed(1:nseed))
 !
@@ -135,7 +139,8 @@
 !  seed for random number generator, have to have the same on each
 !  processor as forcing is applied in (global) Beltrami modes
 !
-        if (lroot) call outpui(trim(directory)//'/seed.dat',seed,nseed)
+        seed(1) = 1812
+        call outpui(trim(directory)//'/seed.dat',seed,nseed)
 !
         call mpifinalize
         if (lroot) print* ! (finish with an empty line)
