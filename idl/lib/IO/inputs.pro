@@ -25,5 +25,5 @@ FUNCTION inputs, file, DOUBLE=double, ONE=one,_EXTRA=extra
   endelse
   ;
   return, field
-4
+
 END
