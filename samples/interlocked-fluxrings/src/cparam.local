@@ -6,4 +6,4 @@
 !  This part is now isolated in a separate cparam.local file.
 !
 integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
-integer, parameter :: nxgrid=128,nygrid=nxgrid,nzgrid=nxgrid
+integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=nxgrid
