@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.247 2004-07-24 07:47:14 brandenb Exp $
+! $Id: cdata.f90,v 1.248 2004-07-24 14:33:08 ajohan Exp $
 
 module Cdata
 
@@ -145,7 +145,8 @@ module Cdata
   logical :: lchiral=.false.
   logical :: lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
-  logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
+  logical :: ldustdensity=.false.,ldustdensity_log=.false.
+  logical :: ldustvelocity=.false.,linterstellar=.false.
   logical :: lvisc_shock=.false.,lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky
   logical :: lcosmicray=.false.

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.71 2004-07-22 14:20:02 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.72 2004-07-24 14:33:08 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.71 2004-07-22 14:20:02 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.72 2004-07-24 14:33:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -447,7 +447,19 @@ module Dustvelocity
       rho = 1/rho1
       do k=1,ndustspec
         uud(:,:,k) = f(l1:l2,m,n,iudx(k):iudz(k))
-        rhod =f(l1:l2,m,n,ind(k))*md(k)
+        if (ldustdensity_log) then
+          if (lmdvar) then
+            rhod = exp(f(l1:l2,m,n,ind(k)))*f(l1:l2,m,n,imd(k))
+          else
+            rhod = exp(f(l1:l2,m,n,ind(k)))*md(k)
+          endif
+        else
+          if (lmdvar) then
+            rhod = f(l1:l2,m,n,ind(k))*f(l1:l2,m,n,imd(k))
+          else
+            rhod = f(l1:l2,m,n,ind(k))*md(k)
+          endif
+        endif
         call dot2_mn(uud(:,:,k),ud2(:,k))
 !
 !  calculate velocity gradient matrix
