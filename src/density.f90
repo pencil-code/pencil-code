@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.127 2003-10-21 11:30:46 mcmillan Exp $
+! $Id: density.f90,v 1.128 2003-10-22 13:41:46 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.127 2003-10-21 11:30:46 mcmillan Exp $")
+           "$Id: density.f90,v 1.128 2003-10-22 13:41:46 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -111,9 +111,9 @@ module Density
 !  24-nov-02/tony: coded 
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
-      if(diffrho==0.) then
-        diffrho=cdiffrho*dxmin*cs0
-      endif
+    if(diffrho==0.) then
+      diffrho=cdiffrho*dxmin*cs0
+    endif
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -137,8 +137,6 @@ module Density
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
       real :: zbot,ztop
-      real :: lnrho_int,lnrho_ext,beta1  ! for spherical shell problems
-                                         ! not to be confused with lnrhoint
 !
 !  define bottom and top height
 !
@@ -400,24 +398,7 @@ module Density
       ! radial hydrostatic profile for KWS spherical shell problem
       !
         if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell'
-        beta1 = g0/(mpoly+1)
-        lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
-        lnrho_ext = lnrho0
-        do imn=1,ny*nz
-          n=nn(imn)
-          m=mm(imn)
-!
-!  set x_mn, y_mn, z_mn and r_mn
-!
-          x_mn = x(l1:l2)
-          y_mn = spread(y(m),1,nx)
-          z_mn = spread(z(n),1,nx)
-          r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
-
-          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = lnrho_ext
-          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
-          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = lnrho_int
-        enddo 
+        call shell_lnrho(f)
 
       case default
         !
@@ -560,6 +541,43 @@ module Density
       f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho) + (1-p)*tmp
 !
     endsubroutine polytropic_lnrho_disc
+!***********************************************************************
+    subroutine shell_lnrho(f)
+!
+!  Initialize density based on specified radial profile in
+!  a spherical shell
+!
+!  22-oct-03/dave -- coded
+!
+      use Gravity, only: g0
+
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real :: beta1,lnrho_int,lnrho_ext
+!
+      beta1 = g0/(mpoly+1)
+
+      if (initlnrho=='geo-kws') then
+!       densities at shell boundaries
+        lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
+        lnrho_ext = lnrho0
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+
+! set x_mn, y_mn, z_mn and r_mn
+
+          x_mn = x(l1:l2)
+          y_mn = spread(y(m),1,nx)
+          z_mn = spread(z(n),1,nx)
+          r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
+
+          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = lnrho_ext
+          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
+          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = lnrho_int
+        enddo 
+      endif
+      
+   end subroutine shell_lnrho
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
 !
