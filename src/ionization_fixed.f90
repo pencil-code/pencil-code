@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.35 2003-10-28 11:40:25 theine Exp $
+! $Id: ionization_fixed.f90,v 1.36 2003-10-28 21:16:57 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -97,7 +97,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.35 2003-10-28 11:40:25 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.36 2003-10-28 21:16:57 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -261,6 +261,8 @@ module Ionization
           write(3,*) 'i_TTmax=',i_TTmax
           write(3,*) 'i_TTm=',i_TTm
           write(3,*) 'nname=',nname
+          write(3,*) 'iyH=',iyH
+          write(3,*) 'iTT=',iTT
         endif
       endif
 !

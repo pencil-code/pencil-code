@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.132 2003-10-28 11:40:25 theine Exp $
+! $Id: ionization.f90,v 1.133 2003-10-28 21:16:57 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -122,7 +122,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.132 2003-10-28 11:40:25 theine Exp $")
+           "$Id: ionization.f90,v 1.133 2003-10-28 21:16:57 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -275,6 +275,8 @@ module Ionization
           write(3,*) 'i_TTmax=',i_TTmax
           write(3,*) 'i_TTm=',i_TTm
           write(3,*) 'nname=',nname
+          write(3,*) 'iyH=',iyH
+          write(3,*) 'iTT=',iTT
         endif
       endif
 !   
