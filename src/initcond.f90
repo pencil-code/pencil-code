@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.71 2003-08-12 08:21:11 ajohan Exp $ 
+! $Id: initcond.f90,v 1.72 2003-08-13 14:17:05 ajohan Exp $ 
 
 module Initcond 
  
@@ -654,7 +654,7 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
-      real :: gamma1,ztop,cs20,hh0,lnrho_max
+      real :: gamma1,ztop,cs20,hh0,lnrhosum_box,lnrhoave_box
       integer :: i,j,k
 !
 !  calculate sigma
@@ -747,8 +747,17 @@ module Initcond
         endif
       endif
 !
-      lnrho_max = maxval(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) - lnrho_max
+!  Use average density of box as unit density
+!
+      do i=1,mx
+        do j=1,my
+          do k=1,mz
+            lnrhosum_box = lnrhosum_box + f(i,j,k,ilnrho)
+          enddo
+        enddo
+      enddo
+      lnrhoave_box = lnrhosum_box/(mx*my*mz)
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) - lnrhoave_box
 !      
     endsubroutine planet
 !***********************************************************************
