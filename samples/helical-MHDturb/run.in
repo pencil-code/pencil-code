@@ -1,26 +1,14 @@
-5,1,-.4,10,3,		nt,it1,dt,isave,iorder
-20.,.2,0e-2,1e-6,	dsnap,dvid,dforce,dtmin
-0.,0.,0.,		tinit,tdamp,dampu
-0.,1.2,0.2,		dampuext,rdamp,wdamp
-14,,,,			ip,ix,iy,iz
-,1e-2,0,0.08,		cs,nu,ivisc,cdtv
-0.,			cdiffrho,
--0.1,			gravz
-p,p,p,p,p,p,p,p,	bcx
-p,p,p,p,p,p,p,p,	bcy
-p,p,p,p,p,p,p,p,	bcz
-'(i8,f11.5,1p,50(e10.3," "))',	form1
+&run_pars
+  ip=14,
+  nt=4000, it1=10, dt=-0.4, cdtv=0.08, isave=50, itorder=3,
+  dsnap=200., dvid=0.2,
+/
+&hydro_run_pars
+  nu=1e-2, ivisc=0, cdiffrho=0.
+/
 &forcing_run_pars
   iforce=2, force=0.07, relhel=1.,
 /
 &magnetic_run_pars
   eta=1e-2, B_ext=0.,0.,0.,
 /
-
-# Nomenclature for boundary conditions:
-#   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
-#   p      : periodic
-#   s/a/a2 : symmetric/antisymmetric/antisymmetric w.r.t. boundary value
-#   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
-
-# tinit    -- initial time for smoothly switching on heating, etc

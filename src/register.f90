@@ -1,3 +1,4 @@
+! $Id: register.f90,v 1.29 2002-06-01 02:56:21 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:

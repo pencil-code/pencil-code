@@ -1,3 +1,5 @@
+! $Id: grav_r.f90,v 1.15 2002-06-01 02:56:21 brandenb Exp $
+
 module Gravity
 
 !
@@ -35,8 +37,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-06-01 02:56:21 $")
 !
       lgrav = .true.
       lgravz = .false.

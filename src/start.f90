@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.32 2002-05-31 20:43:45 dobler Exp $
+! $Id: start.f90,v 1.33 2002-06-01 02:56:21 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,13 +31,13 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.32 $", &
-             "$Date: 2002-05-31 20:43:45 $")
+             "$Revision: 1.33 $", &
+             "$Date: 2002-06-01 02:56:21 $")
 !
 !  set default values
 !
-        xyz0 = (/   -pi,   -pi,   -pi /) ! first corner
-        Lxyz = (/ -2*pi, -2*pi, -2*pi /) ! box lengths
+        xyz0 = (/  -pi,  -pi,  -pi /) ! first corner
+        Lxyz = (/ 2*pi, 2*pi, 2*pi /) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! periodicity
         z1=0; z2=1; ztop=1.32
         cs0=1; gamma=5./3.; rho0=1.

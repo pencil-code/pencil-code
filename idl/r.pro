@@ -1,3 +1,5 @@
+; $Id: r.pro,v 1.14 2002-06-01 02:56:20 brandenb Exp $
+
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
 ;;;;;;;;;;;;;;;
@@ -30,12 +32,13 @@ if (cpar gt 0) then begin
   print, 'Reading param2.nml..'
   spawn, '../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
   @tmp/param2.pro
-  cs0=par.cs0 & nu=par.nu
-  hcond0=par.hcond0 & hcond1=par.hcond1
-  hcond2=par.hcond2 & whcond=par.whcond
-  cheat=par.cheat & wheat=par.wheat
-  cool=par.cool & wcool=par.wcool
-  Fheat=par.Fheat
+; cs0=par.cs0 & nu=par.nu
+  cs0=1. & nu=0.
+; hcond0=par.hcond0 & hcond1=par.hcond1
+; hcond2=par.hcond2 & whcond=par.whcond
+; cheat=par.cheat & wheat=par.wheat
+; cool=par.cool & wcool=par.wcool
+; Fheat=par.Fheat
 endif else begin
   print, 'Warning: cannot find file ', pfile
 endelse

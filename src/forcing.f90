@@ -1,3 +1,5 @@
+! $Id: forcing.f90,v 1.10 2002-06-01 02:56:21 brandenb Exp $
+
 module Forcing
 
 !! Module for forcing in the Navier-Stokes equation.
@@ -6,8 +8,11 @@ module Forcing
 
   implicit none
 
-  integer :: iforce=1,iforce2=1,kfountain=5
+  integer :: iforce=2,iforce2=0,kfountain=5
   real :: force=0.,relhel=1.,height=pi,fountain=1.
+
+  integer :: dummy              ! We cannot define empty namelists
+  namelist /forcing_init_pars/ dummy
 
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height, &
@@ -36,8 +41,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-05-30 17:01:55 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-06-01 02:56:21 $")
 !
     endsubroutine register_forcing
 !***********************************************************************

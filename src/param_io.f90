@@ -1,5 +1,4 @@
-! $Id: param_io.f90,v 1.1 2002-05-31 20:43:45 dobler Exp $
-
+! $Id: param_io.f90,v 1.2 2002-06-01 02:56:21 brandenb Exp $ 
 module Param_IO
 
 !
@@ -63,6 +62,15 @@ module Param_IO
       use Sub, only: parse_bc
 !
       logical, optional :: print
+      integer :: i
+!
+!  set default values
+!
+      do i=1,mvar; bcx(i)='p'; enddo
+      do i=1,mvar; bcy(i)='p'; enddo
+      do i=1,mvar; bcz(i)='p'; enddo
+!
+!  open run.in and read
 !
       open(1,file='run.in',form='formatted')
                      read(1,NML=run_pars         )
@@ -138,7 +146,6 @@ module Param_IO
 !  21-jan-02/wolf: coded
 !
       use Cdata
-      use Mpicomm
 !
       namelist /lphysics/ &
            lhydro,lgravz,lgravr,lentropy,lmagnetic,lforcing
@@ -166,13 +173,11 @@ module Param_IO
 !  ?How about register.f90, for example?
 !
       use Cdata
-!     use Mpicomm
-! ?AB Mpicomm is no longer used, because lroot is now in cdata
 !
         open(1,FILE='tmp/param.nml')
                        read(1,NML=init_pars         )
         if (lhydro   ) read(1,NML=hydro_init_pars   )
-        if (lforcing ) read(1,NML=forcing_init_pars )
+!??     if (lforcing ) read(1,NML=forcing_init_pars )
         if (lgravz   ) read(1,NML=grav_z_init_pars  )
         if (lentropy ) read(1,NML=entropy_init_pars )
         if (lmagnetic) read(1,NML=magnetic_init_pars)
@@ -194,7 +199,6 @@ module Param_IO
 !  21-jan-02/wolf: coded
 !
       use Cdata
-      use Mpicomm
 !
       if (lroot) then
         open(1,FILE='tmp/param2.nml',DELIM='apostrophe')

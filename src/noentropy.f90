@@ -1,3 +1,5 @@
+! $Id: noentropy.f90,v 1.14 2002-06-01 02:56:21 brandenb Exp $
+
 module Entropy
 
   !
@@ -5,6 +7,7 @@ module Entropy
   !
 
   use Cparam
+  use Cdata
 
   implicit none
 
@@ -41,8 +44,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-05-31 20:43:45 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-06-01 02:56:21 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -83,7 +86,7 @@ module Entropy
         chi = 0.
         cs2 = cs20
         if (gamma /= 1) then
-          if (lroot) print*, 'Noentropy, thus resetting gamma to 1'
+          if (lroot) print*, 'noentropy, thus resetting gamma to 1'
           gamma = 1
         endif
         first=.false.

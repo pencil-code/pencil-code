@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.32 2002-05-31 20:43:45 dobler Exp $
+! $Id: run.f90,v 1.33 2002-06-01 02:56:21 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.32 $", &
-             "$Date: 2002-05-31 20:43:45 $")
+             "$Revision: 1.33 $", &
+             "$Date: 2002-06-01 02:56:21 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -99,6 +99,7 @@
 !
 !  do loop in time
 !
+print*,'bef time loop: dx=',dx
         Time_loop: do it=1,nt
           lout=mod(it-1,it1).eq.0
           if (lout) then

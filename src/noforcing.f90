@@ -1,3 +1,5 @@
+! $Id: noforcing.f90,v 1.3 2002-06-01 02:56:21 brandenb Exp $
+
 module Forcing
 
 !! Dummy module for hydro/mhd without forcing
@@ -33,8 +35,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noforcing.f90,v $", &
-           "$Revision: 1.2 $", &
-           "$Date: 2002-05-11 12:18:48 $")
+           "$Revision: 1.3 $", &
+           "$Date: 2002-06-01 02:56:21 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -47,18 +49,6 @@ module Forcing
       real, dimension (mx,my,mz,mvar) :: df
 !
     endsubroutine addforce
-!***********************************************************************
-    subroutine forcing1
-!
-!  forcing function, using a set of precomputed wavevectors
-!
-    endsubroutine forcing1
-!***********************************************************************
-    subroutine forcing2
-!
-!  helical forcing function, using a set of precomputed wavevectors
-!
-    endsubroutine forcing2
 !***********************************************************************
 
 endmodule Forcing

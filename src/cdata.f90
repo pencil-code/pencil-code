@@ -1,3 +1,5 @@
+! $Id: cdata.f90,v 1.36 2002-06-01 02:56:21 brandenb Exp $
+
 module Cdata
 
 !!! Global variables
@@ -14,8 +16,8 @@ module Cdata
   real, dimension(3) :: xyz0,Lxyz
   real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dforce,dtmin
-  real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
-  real :: cs0,rho0,cs20,gamma,gamma1,cs2top
+  real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
+  real :: cs0=1.,rho0=1.,cs20,gamma=5./3.,gamma1,cs2top
   real :: DD,nu,cmu,cnu2,cdiffrho
   real :: tdiagnos,dtu,dtv
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max

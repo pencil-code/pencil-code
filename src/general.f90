@@ -1,3 +1,5 @@
+! $Id: general.f90,v 1.6 2002-06-01 02:56:21 brandenb Exp $
+
 module General
 
 !!! Module with utility subroutines which are used by procedures in Sub

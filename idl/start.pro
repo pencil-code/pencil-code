@@ -52,12 +52,14 @@ pfile=datatopdir+'/'+'param.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading param.nml..'
-  spawn, '../../bin/nl2idl tmp/param.nml > tmp/param.pro'
+  spawn, '../../../bin/nl2idl tmp/param.nml > tmp/param.pro'
   @tmp/param.pro
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
   Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
-  cs0=par.cs0 & rho0=par.rho0
-  gamma=par.gamma & gamma1=gamma-1.
+;;cs0=par.cs0 & rho0=par.rho0
+  cs0=1. & rho0=1.
+;;  gamma=par.gamma & gamma1=gamma-1.
+  gamma=1. & gamma1=gamma-1.
   lgravz=par.lgravz & lgravr = par.lgravr
   lforcing=par.lforcing
   lentropy=par.lentropy

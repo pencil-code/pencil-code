@@ -1,3 +1,5 @@
+! $Id: timestep.f90,v 1.10 2002-06-01 02:56:21 brandenb Exp $
+
 module Timestep
 
   implicit none
@@ -14,7 +16,6 @@ module Timestep
 !  14-sep-01/axel: moved itorder to cdata
 !
       use Mpicomm
-      use Forcing
       use Cdata
       use Equ
 !

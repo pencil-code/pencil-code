@@ -1,19 +1,11 @@
-14,				ip
-,,,				x0,y0,z0
-,,,				Lx,Ly,Lz
-,,,				iperx,ipery,iperz
-,,,				z1,z2,ztop
-,1.,,0.,0.,			cs0,gamma,rho0,gravz,grads0
+!                                  -*-f90-*-
+! Initialisation parameters
+!
+&init_pars
+/
 &hydro_init_pars
-  ampl=1e-3, init=-1
+  init=-1,ampl=1e-3,
 /
 &magnetic_init_pars
-initaa=0,amplaa=1e-3
+  initaa=0,amplaa=1e-3
 /
-
-# Meaning of init:
-# 0: random ux (normal distribution)
-# 1: density stratification; hydrostatic; isentropic
-# 2: oblique sound wave
-# 3: strange harmonic uu profiles
-# 4: piecewise polytropic equilibrium (for solar convection)

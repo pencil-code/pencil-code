@@ -1,3 +1,5 @@
+! $Id: global_pot.f90,v 1.3 2002-06-01 02:56:21 brandenb Exp $
+
 module Global
 
 !

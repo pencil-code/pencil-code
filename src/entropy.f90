@@ -1,3 +1,5 @@
+! $Id: entropy.f90,v 1.47 2002-06-01 02:56:21 brandenb Exp $
+
 module Entropy
 
   use Cparam
@@ -7,7 +9,6 @@ module Entropy
 
   integer :: initss
   real, dimension (nx) :: cs2,TT1
-
 
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -52,8 +53,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.46 $", &
-           "$Date: 2002-05-31 20:43:45 $")
+           "$Revision: 1.47 $", &
+           "$Date: 2002-06-01 02:56:21 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,3 +1,5 @@
+! $Id: equ.f90,v 1.49 2002-06-01 02:56:21 brandenb Exp $
+
 module Equ
 
   use Cdata
@@ -163,8 +165,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.48 $", &
-           "$Date: 2002-05-31 20:43:45 $")
+           "$Revision: 1.49 $", &
+           "$Date: 2002-06-01 02:56:21 $")
 !
 !  initialize counter for calculating and communicating print results
 !

@@ -1,3 +1,5 @@
+! $Id: nomagnetic.f90,v 1.9 2002-06-01 02:56:21 brandenb Exp $
+
 module Magnetic
 
   use Cparam
@@ -40,8 +42,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-05-31 20:43:45 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-06-01 02:56:21 $")
 !
     endsubroutine register_aa
 !***********************************************************************
