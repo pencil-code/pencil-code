@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.10 2003-02-23 10:15:30 theine Exp $
+! $Id: ionization.f90,v 1.11 2003-02-23 18:11:52 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -12,14 +12,14 @@ module Ionization
   implicit none
 
   !  secondary parameters calculated in initialize
-  real :: chiH,lnTT_ion,lnrho_ion,ss_ion,twothirds,m_H
+  real :: TT_ion,lnrho_ion,ss_ion,chiH,m_H
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   logical :: lionization=.true.
 
   ! input parameters
-  integer :: dummy
+  integer :: dummy 
   namelist /ionization_init_pars/ lionization
 
   ! run parameters
@@ -48,7 +48,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.10 2003-02-23 10:15:30 theine Exp $")
+           "$Id: ionization.f90,v 1.11 2003-02-23 18:11:52 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -72,15 +72,21 @@ module Ionization
       logical :: exist
 !
 !  ionization parameters
+!  since m_e and chiH, as well as hbar are all very small
+!  it is better to divide m_e and chiH separately by hbar.
 !
       chiH=13.6*eV
-      lnTT_ion=log(chiH/k_B)
+      TT_ion=chiH/k_B
       m_H=m_p+m_e
       lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/(2*pi))+log(m_H)
-      !ss_ion=k_B/m_H
-      ss_ion=1.
-      twothirds=0.6666666667
-!
+      ss_ion=k_B/m_H
+      if(lroot) then
+        print*,'initialize_ionization: reference values for ionization'
+        print*,'TT_ion',TT_ion
+        print*,'lnrho_ion,exp(lnrho_ion)=',lnrho_ion,exp(lnrho_ion)
+        print*,'ss_ion=',ss_ion
+      endif
+
     endsubroutine initialize_ionization
 
 !***********************************************************************
@@ -96,30 +102,33 @@ module Ionization
 !
       use Cdata
       use General
+      use Sub
 !
-      real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
-      real, dimension (nx) :: yH,dlnPdlnrho,dlnPdS,lnTT,TT
-      real                 :: ss0=-5.5542
+      real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
+      real, dimension (nx) :: dlnPdlnrho,dlnPdS,yH,TT,rho,ee,lnTT
+      real :: ss0=-5.5542
 !
 !  calculate cs2, 1/T, and cp1tilde
 !
       if(lionization) then
         if(headtt) print*,'thermodynamics: assume cp is not 1'
-        call pressure_gradient(lnrho,ss,yH,dlnPdlnrho,dlnPdS,lnTT)
-        TT=exp(lnTT); TT1=1./TT
+        call pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdS,yH,TT)
+        TT1=1./TT
+!AB: Tobi plans to measure entropy in physical units, and not in kB/mp
+!AB: until this is the case, we cannot use T1=1/T, but have to use
+!AB: TT1=1/(ss_ion*TT)
+
+!Tobi: entropy is still passed to the ionization routines in units 
+!Tobi: of kB/mp, which i think is reasonable.
+        TT1=TT1/ss_ion
         cs2=(1.+yH)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdS/dlnPdlnrho
+        if (ldiagnos.and.i_eth/=0) then
+          rho=exp(lnrho)
+          ee=1.5*(1.+yH)*ss_ion*TT+yH*ss_ion*TT_ion
+          call sum_mn_name(rho*ee,i_eth)
+        endif
       else
-!
-!  if ionization turned off, continue assuming cp=1
-!
-!       if(headtt) print*,'thermodynamics: assume cp=1'
-!
-!  old case: cp=1
-!  
-!       cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
-!       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-!       cp1tilde=1.
 !
 !  new case: cp-cv=1, ie cp=2.5
 !
@@ -130,109 +139,113 @@ module Ionization
         TT=exp(lnTT); TT1=1./TT
         cs2=ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdS/dlnPdlnrho
+        if (ldiagnos.and.i_eth/=0) then
+          rho=exp(lnrho)
+          ee=cs2/(gamma*gamma1) !(not correct with ionization)
+          call sum_mn_name(rho*ee,i_eth)
+        endif
       endif
 !
     endsubroutine thermodynamics
 
 !***********************************************************************
-    subroutine pressure_gradient(lnrho,ss,yH,dlnPdlnrho,dlnPdS,lnTT)
+    subroutine pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdS,yH,TT)
 !
-!   23-feb-03/tobi: coded
+!   23-feb-03/tobi: rewritten
 !
-      use Cdata
-
       real, dimension(nx),intent(in)   :: lnrho,ss
-      real, dimension(nx), intent(out) :: yH,dlnPdlnrho,dlnPdS,lnTT
-      real, dimension(nx)              :: lnTT0,dlnTT0dy,f
-      real, dimension(nx)              :: dfdy,dfdlnrho,dfds
+      real, dimension(nx), intent(out) :: dlnPdlnrho,dlnPdS,yH,TT
+      real, dimension(nx)              :: lnTT_,dlnTT_dy
+                                                       ! lnTT_=log(TT/TT_ion)
+      real, dimension(nx)              :: f,dfdy,dfdlnrho,dfds
       real, dimension(nx)              :: dydlnrho,dyds
       integer                          :: i
+
 
       do i=1,nx
          yH(i)=rtsafe(lnrho(i),ss(i))
       enddo
 
-      lnTT0=twothirds*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
+      lnTT_=gamma1*((ss-1.5*(1.-yH)*log(m_H/m_e) &
                         -1.5*yH*log(m_p/m_e)+(1.-yH)*log(1.-yH) &
-                        +2.*yH*log(yH))/(1.+yH) &
-                       +lnrho-lnrho0-2.5)
-      f=lnrho_ion-lnrho+1.5*lnTT0-exp(-lnTT0)+log(1.-yH)-2.*log(yH)
-      dlnTT0dy=(log(m_H/m_p)-twothirds*(f+exp(-lnTT0))-1.)/(1.+yH)
+                        +2.*yH*log(yH))/(1.+yH)+lnrho-lnrho0-2.5)
+      f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+      dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
 
-      dfdy=dlnTT0dy*(1.5+exp(-lnTT0))-1./(1.-yH)-2./yH
-      dfdlnrho=twothirds*exp(-lnTT0)
-      dfds=(1.+dfdlnrho)/((1.+yH)*ss_ion)
+      dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+      dfdlnrho=gamma1*exp(-lnTT_)
+      dfds=(1.+dfdlnrho)/(1.+yH)
 
       dydlnrho=-dfdlnrho/dfdy
       dyds=-dfds/dfdy
 
-      dlnPdlnrho=1.+dydlnrho/(1.+yH)+dlnTT0dy*dydlnrho+twothirds
-      dlnPds=dyds/(1.+yH)+dlnTT0dy*dyds+twothirds/((1.+yH)*ss_ion)
-      lnTT=lnTT0+lnTT_ion
+      dlnPdlnrho=1.+dydlnrho/(1.+yH)+dlnTT_dy*dydlnrho+gamma1
+      dlnPds=dyds/(1.+yH)+dlnTT_dy*dyds+gamma1/(1.+yH)
+      TT=exp(lnTT_)*TT_ion
     endsubroutine pressure_gradient
 
 !***********************************************************************
     function rtsafe(lnrho,ss)
 !
-!   3-feb-03/tobi: coded
+!   23-feb-03/tobi: minor changes
 !
       real, intent (in)  :: lnrho,ss
-      real               :: yH_h,yH_l,dyH_old,dyH,fl,fh,f,df,temp,rtsafe
-      real, parameter    :: yH_acc=1.e-5
-      real, save         :: yH_last=.5
+      real               :: yH0,yH1,dyHold,dyH,fl,fh,f,df,temp,rtsafe
+      real, parameter    :: yHacc=1.e-5
+      real, save         :: yHlast=.5
       integer            :: i
       integer, parameter :: maxit=100
-!
-      yH_l=yH_acc
-      yH_h=1.-yH_acc
-      dyH_old=1.
-      dyH=dyH_old
-!
-      call saha(yH_l,lnrho,ss,fl,df)
-      if (fl.le.0.) then
-         rtsafe=yH_l
-         yH_last=rtsafe
+
+      yH1=1.-yHacc
+      yH0=yHacc
+      dyHold=1.
+      dyH=dyHold
+
+      rtsafe=yH0
+      call saha(rtsafe,lnrho,ss,fh,df)
+      if (fh.le.0.) then
+         yHlast=rtsafe
          return
       endif
-      call saha(yH_h,lnrho,ss,fh,df)
-      if (fh.ge.0.) then
-         rtsafe=yH_h
-         yH_last=rtsafe
+      rtsafe=yH1
+      call saha(rtsafe,lnrho,ss,fl,df)
+      if (fl.ge.0.) then
+         yHlast=rtsafe
          return
       endif
-!
-      rtsafe=yH_last
+    
+      rtsafe=yHlast
       call saha(rtsafe,lnrho,ss,f,df)
-!
+
       do i=1,maxit
-         if (((rtsafe-yH_l)*df-f)*((rtsafe-yH_h)*df-f).gt.0. &
-              .or.abs(2.*f).gt.abs(dyH_old*df)) then
-            dyH_old=dyH
-            dyH=.5*(yH_h-yH_l)
-            rtsafe=yH_h-dyH
-            if (yH_h.eq.rtsafe) then
-               yH_last=rtsafe
+         if (((rtsafe-yH0)*df-f)*((rtsafe-yH1)*df-f).gt.0. &
+              .or.abs(2.*f).gt.abs(dyHold*df)) then
+            dyHold=dyH
+            dyH=.5*(yH0-yH1)
+            rtsafe=yH1+dyH
+            if (yH1.eq.rtsafe) then
+               yHlast=rtsafe
                return
             endif
          else
-            dyH_old=dyH
+            dyHold=dyH
             dyH=f/df
             temp=rtsafe
             rtsafe=rtsafe-dyH
             if (temp.eq.rtsafe) then
-               yH_last=rtsafe
+               yHlast=rtsafe
                return
             endif
          endif
-         if (abs(dyH).lt.yH_acc) then
-            yH_last=rtsafe
+         if (abs(dyH).lt.yHacc) then
+            yHlast=rtsafe
             return
          endif
          call saha(rtsafe,lnrho,ss,f,df)
          if (f.lt.0.) then
-            yH_h=rtsafe
+            yH1=rtsafe
          else
-            yH_l=rtsafe
+            yH0=rtsafe
          endif
       enddo
       print *,'rtsafe exceeded maximum iterations',f
@@ -241,21 +254,18 @@ module Ionization
 !***********************************************************************
     subroutine saha(yH,lnrho,ss,f,df)
 !
-!   23-feb-03/tobi: coded
+!   23-feb-03/tobi: rewritten
 !
-      use Cdata
-
       real, intent(in)  :: yH,lnrho,ss
       real, intent(out) :: f,df
-      real              :: lnTT0,dlnTT0
-!
-      lnTT0=twothirds*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
-                         -1.5*yH*log(m_p/m_e)+(1.-yH)*log(1.-yH) &
-                         +2.*yH*log(yH))/(1.+yH) &
-                        +lnrho-lnrho0-2.5)
-      f=lnrho_ion-lnrho+1.5*lnTT0-exp(-lnTT0)+log(1.-yH)-2.*log(yH)
-      dlnTT0=(log(m_H/m_p)-twothirds*(f+exp(-lnTT0))-1.)/(1.+yH)
-      df=dlnTT0*(1.5+exp(-lnTT0))-1./(1.-yH)-2./yH
+      real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
+
+      lnTT_=gamma1*((ss-1.5*(1.-yH)*log(m_H/m_e) &
+                        -1.5*yH*log(m_p/m_e)+(1.-yH)*log(1.-yH) &
+                        +2.*yH*log(yH))/(1.+yH)+lnrho-lnrho0-2.5)
+      f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+      dlnTT_=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
+      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
     endsubroutine saha
 
 endmodule ionization
