@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.8 2003-06-17 22:52:39 dobler Exp $
+! $Id: deriv.f90,v 1.9 2003-07-24 19:18:04 dobler Exp $
 
 module Deriv
 
@@ -14,7 +14,7 @@ module Deriv
 !***********************************************************************
     subroutine der_main(f,k,df,j)
 !
-!  calculate derivative of a scalar, get scalar
+!  calculate derivative df_k/dx_j
 !  accurate to 6th order, explicit, periodic
 !  replace cshifts by explicit construction -> x6.5 faster!
 !   1-oct-97/axel: coded
@@ -114,7 +114,7 @@ module Deriv
 !***********************************************************************
     subroutine der2(f,k,df,j)
 !
-!  calculate 2nd derivative of a scalar, get scalar
+!  calculate 2nd derivative d^2f_k/dx_j^2
 !  accurate to 6th order, explicit, periodic
 !  replace cshifts by explicit construction -> x6.5 faster!
 !   1-oct-97/axel: coded
