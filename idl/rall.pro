@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.33 2003-06-30 14:08:59 brandenb Exp $
+;;;  $Id: rall.pro,v 1.34 2003-07-02 12:05:08 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -203,6 +203,14 @@ nz=mz-2*nghostz
 if (lgravz) then begin
   ztop=z[n2] & z3=ztop
 endif
+;
+;  free memory
+;
+undefine, uu_loc
+undefine, lnrho_loc
+undefine, ss_loc
+undefine, aa_loc
+undefine, lncc_loc
 ;
 read_all = 1                    ; marker for r.pro
 
