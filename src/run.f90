@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.178 2004-04-10 19:12:20 dobler Exp $
+! $Id: run.f90,v 1.179 2004-04-16 17:20:58 mee Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.178 2004-04-10 19:12:20 dobler Exp $")
+             "$Id: run.f90,v 1.179 2004-04-16 17:20:58 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -357,7 +357,7 @@
 !
 !  write interstellar parameters (that must be saved between runs)
 !
-        if (lroot .and. linterstellar) then
+        if (linterstellar) then
           call outpup(trim(directory)//'/interstellar.dat',  &
                                    interstellarsave,ninterstellarsave)
         endif
