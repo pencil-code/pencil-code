@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.126 2004-08-23 20:26:34 dobler Exp $
+# $Id: getconf.csh,v 1.127 2004-08-24 08:43:29 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -224,7 +224,7 @@ else if ($hn =~ psi*) then
   setenv SSH rsh
   setenv SCP rcp
   setenv LANG en_US
-  setenv SCRATCH_DIR /ptmp/$USER/$JOB_ID
+  setenv SCRATCH_DIR /ptmp/$USER
 
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
   echo "fire in Bergen"
