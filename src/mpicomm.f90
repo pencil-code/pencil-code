@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.96 2003-07-07 13:42:32 theine Exp $
+! $Id: mpicomm.f90,v 1.97 2003-07-07 14:06:07 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -88,7 +88,8 @@ module Mpicomm
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
   logical, dimension (ny*nz) :: necessary=.false.
-  integer, parameter :: tag_yz=301,tag_zx=302,tag_xy=303
+  integer, parameter :: Itag_yz=301,Itag_zx=302,Itag_xy=303
+  integer, parameter :: tautag_yz=401,tautag_zx=402,tautag_xy=403
 
   contains
 
@@ -573,7 +574,7 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
-    subroutine radcomm_yz_recv(radx0,idest,Ibuf_yz)
+    subroutine radcomm_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !  receive intensities from x direction
 !  (At the moment we have only one processor in x, so this doesn't do anything)
@@ -582,6 +583,7 @@ module Mpicomm
 !
       integer :: radx0,idest
       real, dimension(radx0,my,mz) :: Ibuf_yz
+      real, dimension(radx0,my,mz), optional :: taubuf_yz
       integer :: nbuf_yz
 !
 !  Identifier
@@ -592,9 +594,15 @@ module Mpicomm
 !
       nbuf_yz=radx0*my*mz
 !
-!  initiate receive
+!  initiate receive for the intensity
 !
-      call MPI_IRECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
+      call MPI_IRECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
+                     MPI_COMM_WORLD,irecv_yz,ierr)
+!
+!  ...and optionally for the optical depth
+!
+      if (present(taubuf_yz)) &
+      call MPI_IRECV(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
                      MPI_COMM_WORLD,irecv_yz,ierr)
 !
 !  finalize straight away
@@ -603,7 +611,7 @@ module Mpicomm
 !
     endsubroutine radcomm_yz_recv
 !***********************************************************************
-    subroutine radcomm_zx_recv(rady0,idest,Ibuf_zx)
+    subroutine radcomm_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !  send intensities
 !
@@ -611,6 +619,7 @@ module Mpicomm
 !
       integer :: rady0,idest
       real, dimension(mx,rady0,mz) :: Ibuf_zx
+      real, dimension(mx,rady0,mz), optional :: taubuf_zx
       integer :: nbuf_zx
 !
 !  Identifier
@@ -621,9 +630,15 @@ module Mpicomm
 !
       nbuf_zx=mx*rady0*mz
 !
-!  initiate receive
+!  initiate receive for the intensity
 !
-      call MPI_IRECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
+      call MPI_IRECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
+                     MPI_COMM_WORLD,irecv_zx,ierr)
+!
+!  ...and optionally for the optical depth
+!
+      if (present(taubuf_zx)) &
+      call MPI_IRECV(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
 !
 !  finalize straight away
@@ -632,7 +647,7 @@ module Mpicomm
 !
     endsubroutine radcomm_zx_recv
 !***********************************************************************
-    subroutine radcomm_xy_recv(radz0,idest,Ibuf_xy)
+    subroutine radcomm_xy_recv(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !  receive intensities
 !
@@ -640,6 +655,7 @@ module Mpicomm
 !
       integer :: radz0,idest
       real, dimension(mx,my,radz0) :: Ibuf_xy
+      real, dimension(mx,my,radz0), optional :: taubuf_xy
       integer :: nbuf_xy
 !
 !  Identifier
@@ -650,9 +666,15 @@ module Mpicomm
 !
       nbuf_xy=mx*my*radz0
 !
-!  initiate receive
+!  initiate receive for the intensity
 !
-      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
+      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
+                     MPI_COMM_WORLD,irecv_xy,ierr)
+!
+!  ...and optionally for the optical depth
+!
+      if (present(taubuf_xy)) &
+      call MPI_IRECV(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
 !  finalize straight away
@@ -661,7 +683,7 @@ module Mpicomm
 !
     endsubroutine radcomm_xy_recv
 !***********************************************************************
-    subroutine radcomm_yz_send(radx0,idest,Ibuf_yz)
+    subroutine radcomm_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !  send intensities in x direction
 !  (At the moment we have only one processor in x, so this doesn't do anything)
@@ -670,6 +692,7 @@ module Mpicomm
 !
       integer :: radx0,idest
       real, dimension(radx0,my,mz) :: Ibuf_yz
+      real, dimension(radx0,my,mz), optional :: taubuf_yz
       integer :: nbuf_yz
 !
 !  Identifier
@@ -680,9 +703,15 @@ module Mpicomm
 !
       nbuf_yz=radx0*my*mz
 !
-!  initiate send
+!  initiate send for the intensity
 !
-      call MPI_ISEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
+      call MPI_ISEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
+                     MPI_COMM_WORLD,isend_yz,ierr)
+!
+!  ...and optionally for the optical depth
+!
+      if (present(taubuf_yz)) &
+      call MPI_ISEND(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
                      MPI_COMM_WORLD,isend_yz,ierr)
 !
 !  finalize straight away
@@ -691,7 +720,7 @@ module Mpicomm
 !
     endsubroutine radcomm_yz_send
 !***********************************************************************
-    subroutine radcomm_zx_send(rady0,idest,Ibuf_zx)
+    subroutine radcomm_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !  send intensities
 !
@@ -699,6 +728,7 @@ module Mpicomm
 !
       integer :: rady0,idest
       real, dimension(mx,rady0,mz) :: Ibuf_zx
+      real, dimension(mx,rady0,mz), optional :: taubuf_zx
       integer :: nbuf_zx
 !
 !  Identifier
@@ -709,9 +739,15 @@ module Mpicomm
 !
       nbuf_zx=mx*rady0*mz
 !
-!  initiate send
+!  initiate send for the intensity
 !
-      call MPI_ISEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
+      call MPI_ISEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
+                     MPI_COMM_WORLD,isend_zx,ierr)
+!
+!  ...and optionally for the optical depth
+!
+      if (present(taubuf_zx)) &
+      call MPI_ISEND(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
                      MPI_COMM_WORLD,isend_zx,ierr)
 !
 !  finalize straight away
@@ -720,7 +756,7 @@ module Mpicomm
 !
     endsubroutine radcomm_zx_send
 !***********************************************************************
-    subroutine radcomm_xy_send(radz0,idest,Ibuf_xy)
+    subroutine radcomm_xy_send(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !  send intensities
 !
@@ -728,6 +764,7 @@ module Mpicomm
 !
       integer :: radz0,idest
       real, dimension(mx,my,radz0) :: Ibuf_xy
+      real, dimension(mx,my,radz0), optional :: taubuf_xy
       integer :: nbuf_xy
 !
 !  Identifier
@@ -738,9 +775,15 @@ module Mpicomm
 !
       nbuf_xy=mx*my*radz0
 !
-!  initiate send
+!  initiate send for the intensity
 !
-      call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
+      call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
+                     MPI_COMM_WORLD,isend_xy,ierr)
+!
+!  ...and optionally for the optical depth
+!
+      if (present(taubuf_xy)) &
+      call MPI_ISEND(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
                      MPI_COMM_WORLD,isend_xy,ierr)
 !
 !  finalize straight away

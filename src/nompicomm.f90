@@ -200,69 +200,93 @@ module Mpicomm
       end if
     end subroutine finalise_shearing
 !***********************************************************************
-    subroutine radcomm_yz_recv(radx0,idest,Ibuf_yz)
+    subroutine radcomm_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: radx0,idest
       real, dimension(radx0,my,mz) :: Ibuf_yz
+      real, dimension(radx0,my,mz), optional :: taubuf_yz
 !
-      if (ip==0) print*,radx0,idest,Ibuf_yz
+      if (ip==0) then
+         print*,radx0,idest,Ibuf_yz
+         if (present(taubuf_yz)) print*,taubuf_yz
+      endif
 !
     endsubroutine radcomm_yz_recv
 !***********************************************************************
-    subroutine radcomm_zx_recv(rady0,idest,Ibuf_zx)
+    subroutine radcomm_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: rady0,idest
       real, dimension(mx,rady0,mz) :: Ibuf_zx
+      real, dimension(mx,rady0,mz), optional :: taubuf_zx
 !
-      if (ip==0) print*,rady0,idest,Ibuf_zx
+      if (ip==0) then
+         print*,rady0,idest,Ibuf_zx
+         if (present(taubuf_zx)) print*,taubuf_zx
+      endif
 !
     endsubroutine radcomm_zx_recv
 !***********************************************************************
-    subroutine radcomm_xy_recv(radz0,idest,Ibuf_xy)
+    subroutine radcomm_xy_recv(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: radz0,idest
       real, dimension(mx,my,radz0) :: Ibuf_xy
+      real, dimension(mx,my,radz0), optional :: taubuf_xy
 !
-      if (ip==0) print*,radz0,idest,Ibuf_xy
+      if (ip==0) then
+         print*,radz0,idest,Ibuf_xy
+         if (present(taubuf_xy)) print*,taubuf_xy
+      endif
 !
     endsubroutine radcomm_xy_recv
 !***********************************************************************
-    subroutine radcomm_yz_send(radx0,idest,Ibuf_yz)
+    subroutine radcomm_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: radx0,idest
       real, dimension(radx0,my,mz) :: Ibuf_yz
+      real, dimension(radx0,my,mz), optional :: taubuf_yz
 !
-      if (ip==0) print*,radx0,idest,Ibuf_yz
+      if (ip==0) then
+         print*,radx0,idest,Ibuf_yz
+         if (present(taubuf_yz)) print*,taubuf_yz
+      endif
 !
     endsubroutine radcomm_yz_send
 !***********************************************************************
-    subroutine radcomm_zx_send(rady0,idest,Ibuf_zx)
+    subroutine radcomm_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: rady0,idest
       real, dimension(mx,rady0,mz) :: Ibuf_zx
+      real, dimension(mx,rady0,mz), optional :: taubuf_zx
 !
-      if (ip==0) print*,rady0,idest,Ibuf_zx
+      if (ip==0) then
+         print*,rady0,idest,Ibuf_zx
+         if (present(taubuf_zx)) print*,taubuf_zx
+      endif
 !
     endsubroutine radcomm_zx_send
 !***********************************************************************
-    subroutine radcomm_xy_send(radz0,idest,Ibuf_xy)
+    subroutine radcomm_xy_send(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: radz0,idest
       real, dimension(mx,my,radz0) :: Ibuf_xy
+      real, dimension(mx,my,radz0), optional :: taubuf_xy
 !
-      if (ip==0) print*,radz0,idest,Ibuf_xy
+      if (ip==0) then
+         print*,radz0,idest,Ibuf_xy
+         if (present(taubuf_xy)) print*,taubuf_xy
+      endif
 !
     endsubroutine radcomm_xy_send
 !***********************************************************************
