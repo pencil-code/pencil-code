@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.85 2003-06-16 09:19:22 nilshau Exp $
+! $Id: register.f90,v 1.86 2003-06-16 09:46:16 nilshau Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -76,7 +76,7 @@ module Register
 !  Writing files for use with IDL
 !
       do aux_count=1,maux
-         write(4,'a10') aux_var(aux_count)
+         write(4,'(a10)') aux_var(aux_count)
       enddo
       close(4)
       close(5)
