@@ -68,9 +68,9 @@ contains
 !
         dxmax=max(dx,dy,dz)
         dxmin=min(dx,dy,dz)
-        Lx=dx*mx
-        Ly=dy*my
-        Lz=dz*mz
+        Lx=dx*nx*nprocx
+        Ly=dy*ny*nprocy
+        Lz=dz*nz*nprocz
 !
         if (ip<=4) print*
         if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
