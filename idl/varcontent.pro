@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.6 2003-08-08 07:49:16 brandenb Exp $
+;  $Id: varcontent.pro,v 1.7 2003-10-10 20:26:28 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -98,6 +98,12 @@ varcontent[ilncc].idlvar   = 'lncc'
 varcontent[ilncc].idlinit    = INIT_SCALAR
 varcontent[ilncc].idlvarloc= 'lncc_loc'
 varcontent[ilncc].idlinitloc = INIT_SCALAR_LOC
+
+varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
+varcontent[iecr].idlvar   = 'ecr'
+varcontent[iecr].idlinit    = INIT_SCALAR
+varcontent[iecr].idlvarloc= 'ecr_loc'
+varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
 
 varcontent[iuud].variable = 'Dust velocity (uud)'
 varcontent[iuud].idlvar   = 'uud'
