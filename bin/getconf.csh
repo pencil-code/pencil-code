@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.94 2003-11-06 16:12:59 mee Exp $
+# $Id: getconf.csh,v 1.95 2003-11-19 14:01:28 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -144,10 +144,19 @@ else if ($hn =~ nq* || $hn =~ ns*) then
     echo "Non-PBS, running on `hostname`"
     echo `hostname` > lamhosts
   endif
-  echo "lamnodes:"
-  lamboot lamhosts >& /dev/null # discard output, or auto-test
-                                # mysteriously hangs on Nq0
+  # lamboot with logging to file 
+  echo "lambooting.."
+  echo 'pidof lamd | xargs ps -lfwww :' > lamboot.log
+  pidof lamd | xargs ps -lfwww >> lamboot.log
+  echo '------------------------------------------------' >> lamboot.log
+  lamboot -v lamhosts >>& lamboot.log # discard output, or auto-test
+                                      # mysteriously hangs on Nq0
+  echo '------------------------------------------------' >> lamboot.log
+  echo 'pidof lamd | xargs ps -lfwww :' >> lamboot.log
+  pidof lamd | xargs ps -lfwww >> lamboot.log
+  #
   set booted_lam = 1
+  echo "lamnodes:"
   lamnodes
   set mpirun = /opt/lam/bin/mpirun
   set mpirun = /usr/bin/mpirun
