@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.89 2002-10-04 18:02:27 dobler Exp $ 
+! $Id: sub.f90,v 1.90 2002-10-04 18:20:09 dobler Exp $ 
 
 module Sub 
 
@@ -1841,7 +1841,7 @@ module Sub
       write(1,'(A,A)') 'structure = ', '3-vector'
       write(1,'(A,A)') 'type = ', 'float'
       write(1,'(A,A)') 'dependency = ', 'positions'
-      write(1,'(A,A,6(", ",G))') 'positions = ', &
+      write(1,'(A,A,6(", ",1PG12.4))') 'positions = ', &
            'regular, regular, regular', &
            x0, dx, y0, dy, z0, dz 
       write(1,'(A)') ''
