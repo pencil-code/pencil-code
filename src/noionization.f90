@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.34 2003-07-02 18:06:18 mee Exp $
+! $Id: noionization.f90,v 1.35 2003-07-09 18:09:14 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -26,12 +26,12 @@ module Ionization
 
   ! global parameter for perfect gas EOS for either yH=0 or yH=1
   real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
-  integer :: l0,l3,m0,m3,n0,n3
 
   ! secondary parameters calculated in initialize
-  double precision :: m_H,m_He,mu,twothirds
-  double precision :: TT_ion,TT_ion_,chiH,chiH_,ss_ion,kappa0
-  double precision :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  real :: mu,twothirds
+  real :: TT_ion,TT_ion_,ss_ion,kappa0
+  real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  integer :: l0,l3,m0,m3,n0,n3
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
@@ -72,7 +72,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.34 2003-07-02 18:06:18 mee Exp $")
+           "$Id: noionization.f90,v 1.35 2003-07-09 18:09:14 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
