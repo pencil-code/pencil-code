@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.72 2004-04-10 17:16:43 mee Exp $
+# CVS: $Id: run.csh,v 1.73 2004-04-19 07:40:33 theine Exp $
 
 #                       run.csh
 #                      ---------
@@ -33,11 +33,11 @@ endif
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
-# Prevent code from running twice (and removing files by accident)
-if (! -e "NEVERLOCK") touch LOCK
-
 # ====================================================================== #
 newdir:
+
+# Prevent code from running twice (and removing files by accident)
+if (! -e "NEVERLOCK") touch LOCK
 
 #
 #  If necessary, distribute var.dat from the server to the various nodes
