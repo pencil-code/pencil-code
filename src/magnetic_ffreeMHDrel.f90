@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.20 2004-02-06 15:13:49 bingert Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.21 2004-02-17 11:57:39 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -100,7 +100,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.20 2004-02-06 15:13:49 bingert Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.21 2004-02-17 11:57:39 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -150,7 +150,7 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2
       real, dimension (3) :: A0xB0,kxA0,A0xkxA0
-      real :: omega,kx_aa,ky_aa,kz_aa
+      real :: omega_aa,kx_aa,ky_aa,kz_aa
       integer :: j
 !
       kx_aa=k_aa(1)
@@ -169,8 +169,8 @@ module Magnetic
         !
         !  calculate frequency, sin(phi), cos(phi)
         !
-        !omega=sqrt(kx_aa**2+ky_aa**2+kz_aa**2)
-        omega=kx_aa**2+ky_aa**2+kz_aa**2
+        !omega_aa=sqrt(kx_aa**2+ky_aa**2+kz_aa**2)
+        omega_aa=kx_aa**2+ky_aa**2+kz_aa**2
         sinphi=amplaa*sin(kx_aa*xx+ky_aa*yy+kz_aa*zz)
         cosphi=amplaa*cos(kx_aa*xx+ky_aa*yy+kz_aa*zz)
         !
@@ -187,7 +187,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         !
         do j=1,3
           f(:,:,:,iaa-1+j)=A0(j)*sinphi
-          f(:,:,:,iuu-1+j)=(A0xB0(j)+A0xkxA0(j)*cosphi)*omega*cosphi*omega
+          f(:,:,:,iuu-1+j)=(A0xB0(j)+A0xkxA0(j)*cosphi)*omega_aa*cosphi*omega_aa
         enddo
         !
       case('current')
@@ -493,18 +493,28 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 !
 !  06-feb-04/bing: coded
 !
+      use Cdata
+      use Sub
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3) :: bb
+
+      intent(in)  :: f
+      intent(out) :: bb
+
       call curl(f,iaa,bb)
-      bbb=bb !(keep copy of original B)
-      if(headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
-      do j=1,3
-         if(B_ext(j)/=0.) bb(:,j)=bb(:,j)+B_ext(j)
-      enddo
-      
+!
+!  possibility to add external field
+!  Note; for diagnostics purposes keep copy of original field
+!
+       if (ldiagnos) bbb=bb
+       if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
+       if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
+       if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
+       if (headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
+
     endsubroutine calculate_vars_magnetic
 !***********************************************************************
-
-
-
     subroutine rprint_magnetic(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields

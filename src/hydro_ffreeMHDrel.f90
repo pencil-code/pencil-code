@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.14 2004-01-31 14:01:22 dobler Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.15 2004-02-17 11:57:39 brandenb Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -38,7 +38,8 @@ module Hydro
   ! run parameters
 !ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
-  real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
+  real :: tdamp=0.,dampu=0.,wdamp=0.2
+  real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.
 ! geodynamo
 !       original line replaced and split in two
@@ -100,7 +101,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.14 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.15 2004-02-17 11:57:39 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -278,10 +279,6 @@ module Hydro
         tmp = sqrt((xx-(x0+0.5*Lx))**2+(yy-(y0+0.8*Ly))**2) ! dist. from spot 1
         f(:,:,:,iuz) = f(:,:,:,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
 
-      case('powern') 
-        ! initial spectrum k^power
-        call powern(ampluu,initpower,f,iux,iuz)
-  
       case default
         !
         !  Catch unknown values
