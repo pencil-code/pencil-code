@@ -45,12 +45,15 @@ end
     set mpirun = /usr/bin/mpirun
 #    set mpirun = /usr/local/mpich-1.2.1/bin/mpirun
 #    set mpirunops = "-machinefile machines"
-  else if ($hn =~ s09p*) then
+  else if ($hn =~ s*p*) then
     #  is that the right place??
     set nodelist = `cat $PBS_NODEFILE`
     cat $PBS_NODEFILE > lamhosts
     lamboot -v lamhosts
+    echo "lamndodes:"
+    lamnodes
     set mpirun = mpirun
+    set mpirunops = "-O -s n0 N"
   else
     set mpirun = mpirun
   endif
