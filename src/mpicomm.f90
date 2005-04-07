@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.130 2005-04-02 13:14:17 theine Exp $
+! $Id: mpicomm.f90,v 1.131 2005-04-07 12:18:43 ngrs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -713,9 +713,11 @@ module Mpicomm
 
       where (tau_tot_zx>dtau_thresh1)
         emtau1_tot_zx=1.0
-      elsewhere (tau_tot_zx<dtau_thresh2)
+      endwhere
+      where (tau_tot_zx<=dtau_thresh1 .and. tau_tot_zx<dtau_thresh2)
         emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-0.33333333*tau_tot_zx))
-      elsewhere
+      endwhere
+      where (tau_tot_zx<=dtau_thresh1 .and. tau_tot_zx>=dtau_thresh2)
         emtau1_tot_zx=1-exp(-tau_tot_zx)
       endwhere
 
