@@ -1,0 +1,41 @@
+
+                         ifort-minval-mask
+                        -------------------
+
+$Id: README,v 1.1 2005-04-11 05:25:16 dobler Exp $
+
+
+1. Symptoms:
+
+  The attached file minmask.f90
+
+    dxmin = minval( (/dx,dy,dz,huge(dx)/), &
+      MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
+
+  seems to cause compilation problems with ifort 8.0
+
+2. Command sequence:
+
+  unix>  make FC=ifort test
+or
+  fe4>  make FC=ifort80 NLSPATH=/usr/local/lib/intel/intel_fc_80/lib/ifcore_msg.cat test
+(or similar)
+
+3. Platforms:
+   32-bit:
+
+   Gentoo, Kernel 2.4.24, Intel Xeon, 2.4GHz
+       ifort 8.0, Build 20031016Z
+
+#4. Other compilers tested (OK means problem could not be reproduced):
+#   - Intel ifc 6.0 (Linux)  OK
+#   - Intel ifc 7.1 (Linux)  OK
+#   - Intel ifort 8.0 Build 20040616Z Package ID: l_fc_pc_8.0.046_pe049.1
+
+5. Solution:
+   Update your version of ifort
+
+6. Original date:
+
+   Wed 10 Apr 2005
+
