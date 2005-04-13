@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; $Date: 2004-06-21 16:39:38 $
-;;; $Revision: 1.10 $
+;;; $Date: 2005-04-13 19:34:37 $
+;;; $Revision: 1.11 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -24,31 +24,42 @@
 ;;;   from FILE.
 ;;;   Similar to read_table, but reformulated as a function.
 ;;;
-;;; - COMMENT_CHAR=cchar specifies the character (or string) initiating
-;;;   comments (`#' by default). For efficiency reasons, this
-;;;   string must not be preceeded by white space in the data file,
-;;;   i.e. the line must begin directly with it.
-;;; - /DOUBLE tells INPUT_TABLE to read double precision values; the
-;;;   default are FLOATs
-;;; - /VERBOSE tells INPUT_TABLE to waffle a lot.
-;;; - STOP_AT may be set on entry to a regular expression to test against
-;;;   each line of input.  When a line matches, INPUT_TABLE stops
-;;;   reading data, returning the current file position in
-;;;   FILEPOSITION and the content of the matching line in STOP_AT
-;;; - FILEPOSITION contains the position in the file from which to start
-;;;   processing the data and upon exit contains the file position at
-;;;   which processing was terminated using STOP_AT or -1 if the end of
-;;;   the file was reached.
+;;; Keywords:
+
+;;;   COMMENT_CHAR -- specify the character (or string) initiating
+;;;                   comments (`#' by default). For efficiency
+;;;                   reasons, this string must not be preceeded by
+;;;                   white space in the data file, i.e. the line must
+;;;                   begin directly with it.
+;;;   DOUBLE       -- if set, read double precision values; the
+;;;                   default are FLOATs
+;;;   NOFILE_OK    -- return one NaN if file does not exist
+;;;   VERBOSE      -- waffle a lot
+;;;   STOP_AT      -- regular expression to test against each line of
+;;;                   input. When a line matches, INPUT_TABLE stops
+;;;                   reading data, returning the current file
+;;;                   position in FILEPOSITION and the content of the
+;;;                   matching line in STOP_AT
+;;;   FILEPOSITION -- start reading data at this position. Upon exit
+;;;                   contains the position where reading was
+;;;                   terminated due to STOP_AT, or -1 if the end of
+;;;                   the file was reached.
 ;;;
-;;;   The routine relies on a quadrangular layout of the data,
-;;;   i.e. there must be the same number of columns in all lines
-;;;   (except the comment lines).
+;;; Note:
+;;;   INPUT_TABLE relies on a quadrangular layout of the data, i.e.
+;;;   there must be the same number of columns in all lines (except
+;;;   the comment lines).
 ;;;
 
 function input_table, filename, $
-                STOP_AT=stop_AT,FILEPOSITION=fileposition, $
-                COMMENT_CHAR=cchar, DOUBLE=double, VERBOSE=verb
+                      STOP_AT=stop_AT, FILEPOSITION=fileposition, $
+                      COMMENT_CHAR=cchar, DOUBLE=double, $
+                      NOFILE_OK=nofile_ok, VERBOSE=verb, $
+                      HELP=help
   ;on_error,2
+
+  if (keyword_set(help)) then extract_help, 'input_table'
+
   if (n_params() ne 1) then begin
     message, 'input_table: wrong number of arguments'
   endif
@@ -56,26 +67,17 @@ function input_table, filename, $
   if (n_elements(double) eq 0) then double = 0
   if (n_elements(verb)   eq 0) then verb   = 0
 
-  plural = ['s', '']            ; English plural suffix
+  if (keyword_set(nofile_ok)) then begin
+    if (findfile(filename) eq '') then begin
+      message, /INFO, 'No such file: ' + filename
+      if (double) then return, !values.d_nan else return, !values.f_nan
+    endif
+  endif
 
-  ;;; Obtain number of columns and an optimistic guess to number of
-  ;;; lines. This information is needed to pre-allocate the array --
-  ;;; extending arrays is inefficient.
-  ;;
-  ;; Call wc to get the number of fields in a line.
-  ;; Assumes there are < 100 comment lines..
-  ;spawn, 'head -100 ' + filename + '| grep -v "^' + cchar + '"' $
-  ;    + ' | head -1 | wc -w', ans
-  ;N_cols = long(ans(0))
-  ;
-  ; Initialisation now done on first loop
-  N_cols = 0
+  plural = ['s', '']            ; English plural suffix
+  N_cols = 0                    ; Initial value
 
   ;; Determine the number of lines (either with wc or with egrep)
-  ;;spawn, 'wc -l ' + filename, ans
-  ;;spawn, 'grep -v "^' + cchar + '" ' + filename + '| wc -l ', ans
-  ;;spawn,'egrep -c ^ ' + filename, ans
-
   ;; Favour the new IDL intrinsic if available
   if (!version.release ge 5.6) then begin
     N_lines = file_lines(filename) 
@@ -83,8 +85,10 @@ function input_table, filename, $
     spawn, 'wc -l ' + filename, ans, /SH
     ans_lines = n_elements(ans)
     if (ans_lines gt 1) then begin
-      message, "`wc -l' returned more than 1 line",/INFO
-      message, "Is your shell clean? `bash -c /bin/true' and `csh -c /bin/true' should produce no output", /INFO 
+      message, /INFO, "`wc -l' returned more than 1 line"
+      message, /INFO, "Is your shell clean?"
+      message, /INFO, $
+          "`bash -c /bin/true' and `csh -c /bin/true' should produce no output"
       print, 'Trying to proceed anyway..'
     endif
     N_lines = long(ans(ans_lines-1))
