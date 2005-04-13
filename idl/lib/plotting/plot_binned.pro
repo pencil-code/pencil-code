@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
-;;;  $Date: 2005-04-04 20:38:13 $
-;;;  $Revision: 1.6 $
+;;;  $Date: 2005-04-13 04:40:53 $
+;;;  $Revision: 1.7 $
 ;;;  Description:
 ;;;    Scatter-plot data, but bin them first in order to reduce the
 ;;;    size of thusly created PostScript files. For 60^3 data points,
@@ -68,6 +68,7 @@ pro plot_binned, xvar, yvar, $
                  OVERPLOT=overplot, $
                  PSYM=psym, SYMSIZE=symsize, $
                  COLOR=color, $
+                 XRANGE=xrange, YRANGE=yrange, $
                  XSTYLE=xstyle, YSTYLE=ystyle, $
                  EQUX=equx, EQUY=equy, $
                  ENHANCE=enhance, $
@@ -91,6 +92,8 @@ if (n_elements(equx)       eq 0) then equx       = 0
 if (n_elements(equy)       eq 0) then equy       = 0
 if (n_elements(enhance)    eq 0) then enhance    = -1
 if (n_elements(asinhscale) eq 0) then asinhscale = 0
+if (n_elements(xrange)     eq 0) then xrange     = [0,0]
+if (n_elements(yrange)     eq 0) then yrange     = [0,0]
 if (n_elements(xstyle)     eq 0) then xstyle     = !x.style
 if (n_elements(ystyle)     eq 0) then ystyle     = !y.style
 
@@ -110,7 +113,7 @@ if (n_elements(overplot) eq 0) then begin
     ystyle1 = (ystyle or 4)
   endif else begin
     xstyle1 = xstyle
-    ystyle1 = xstyle
+    ystyle1 = ystyle
   endelse
   plot, xvar, yvar, /NODATA, $
       XSTYLE=xstyle1, YSTYLE=ystyle1, $
@@ -176,7 +179,7 @@ endif
 if (enhance[0] ge 0) then begin
   s = size(enhance)
   if ((s[0] ne 2) or (s[1] ne NMx) or (s[2] ne NMy)) then $
-      message, 'NHANCE must be of size '+strtrim(NMx,2)+'x'+strtrim(NMy,2)
+      message, 'ENHANCE must be of size '+strtrim(NMx,2)+'x'+strtrim(NMy,2)
   map = map*enhance
 endif
 
@@ -216,12 +219,18 @@ endif else begin
         _EXTRA=extra
     ;; Replot the frame as CONTOUR will have erased most of it
     if (n_elements(overplot) eq 0) then begin
-      plot, xvar, yvar, /NODATA, COLOR=color, /NOERASE, _EXTRA=extra
+      plot, xvar, yvar, /NODATA, COLOR=color, /NOERASE, $
+          XRANGE=xr, YRANGE=yr, $
+          XSTYLE=((xstyle or 1) and 13), $ ; set 1, unset 2
+          YSTYLE=((ystyle or 1) and 13), $
+          _EXTRA=extra
       !p.multi = pmulti2
     endif
   endif else begin              ; plotimage
     plotimage, fact*map, RANGE=minmax(fact*map), $
         IMGXRANGE=imgxrange, IMGYRANGE=imgyrange, $
+          XSTYLE=((xstyle or 1) and 13), $ ; set 1, unset 2
+          YSTYLE=((ystyle or 1) and 13), $
         _EXTRA=extra
   endelse
 endelse
