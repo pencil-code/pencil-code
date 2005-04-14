@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
-;;;  $Date: 2005-04-13 04:40:53 $
-;;;  $Revision: 1.7 $
+;;;  $Date: 2005-04-14 23:55:11 $
+;;;  $Revision: 1.8 $
 ;;;  Description:
 ;;;    Scatter-plot data, but bin them first in order to reduce the
 ;;;    size of thusly created PostScript files. For 60^3 data points,
@@ -116,6 +116,7 @@ if (n_elements(overplot) eq 0) then begin
     ystyle1 = ystyle
   endelse
   plot, xvar, yvar, /NODATA, $
+      XRANGE=xrange, YRANGE=yrange, $
       XSTYLE=xstyle1, YSTYLE=ystyle1, $
       COLOR=color, _EXTRA=extra
   pmulti2 = !p.multi       ; save so we can exit with correct !p.multi
