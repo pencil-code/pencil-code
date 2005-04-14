@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.330 2005-03-02 06:10:04 dobler Exp $
+! $Id: entropy.f90,v 1.331 2005-04-14 13:35:23 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.330 2005-03-02 06:10:04 dobler Exp $")
+           "$Id: entropy.f90,v 1.331 2005-04-14 13:35:23 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1141,8 +1141,6 @@ module Entropy
       elseif (lcalc_heatcond) then
         if (headtt) print*,"OBSOLETE: use iheatcond='K-const' instead of lcalc_heatcond=T"
         iheatcond='K-const'
-      else
-        if (headtt) print*,'dss_dt: no calc_heatcond, may need chi_shock'
       endif
 !
 !  the new scheme using iheatcond
@@ -1168,18 +1166,14 @@ module Entropy
       case ('magnetic')
          call calc_heatcond_mpara(f,df,rho1,glnrho,gss,bb,cs2)
          call calc_heatcond_mperp(f,df,rho1,glnrho,gss,bb,cs2)
+      case ('shock')
+         call calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
       case default
          if (lroot) then
             print*,'dss_dt: No such value iheatcond = ', trim(iheatcond)
-            print*,'[Cryptic old comment: dss_dt: no calc_heatcond, may need chi_shock]'
             call stop_it("")
          endif
       endselect
-!
-!  shock entropy diffusion
-!  Can now also take care of constant contribution, chi_t.
-!
-      if (chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
 !
 !  heating/cooling
 !
@@ -1472,7 +1466,7 @@ module Entropy
 !
 !  check that chi is ok
 !
-      if(headtt) print*,'calc_heatcond_shock: chi_shock==',chi_shock
+      if(headtt) print*,'calc_heatcond_shock: chi_t,chi_shock=',chi_t,chi_shock
 !
 !  calculate terms for shock diffusion
 !  Ds/Dt = ... + chi_shock*[del2ss + (glnchi_shock+glnpp).gss]
