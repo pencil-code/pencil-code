@@ -18,7 +18,7 @@ PSCALAR   = nopscalar
 
 GRAVITY   =   grav_z
 FORCING   = noforcing
-VISCOSITY = visc_shock
+VISCOSITY = visc_const
 IO        = io_dist
 SHEAR     =   shear
 
