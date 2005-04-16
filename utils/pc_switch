@@ -1,0 +1,57 @@
+#!/bin/sh
+#
+# Name:   pc_switch
+#
+# Author: Antony Mee (A.J.Mee@ncl.ac.uk)
+# Date:   12-Nov-2004
+#
+# CVS: $Id: pc_switch,v 1.1 2005-04-16 19:06:30 mee Exp $
+#
+# Description:
+#   A script to help with switching between multiple branches 
+#   or other working directories (eg. pristine copy for 
+#   auto-testing) on a single machine.
+#
+#   Run with $PENCIL_TREE unset to get some usage info.
+#
+
+if [ -z "$PENCIL_TREE" ]; then
+echo
+echo "Failure: \$PENCIL_TREE not set!"
+echo
+echo "pc_switch requires you to have a top level directory underwhich"
+echo "you will place your pencil-code working copies and actual"
+echo "directory $PENCIL_HOME.  This path should be set in a variable "
+echo "\$PENCIL_TREE.  Example, I have:  "
+echo "       \$PENCIL_TREE/pencil-code   (just symbolic link - created by this script)"
+echo "       \$PENCIL_TREE/branches      (a directory to contain the branches)"
+echo "       \$PENCIL_TREE/branches/trunk  (complete working copy of trunk)"
+echo "       \$PENCIL_TREE/branches/eos    (complete working copy of eos branch)"
+echo "You will also need \$PENCIL_HOME set to \$PENCIL_TREE/pencil-code"
+echo
+echo "and \$PENCIL_HOME/bin in your path (NOT \$PENCIL_TREE/branches/XXX/bin!!)"
+echo
+echo "Also, to save space I check out peoples run directories under \$PENCIL_TREE/people"
+echo " eg. cvs co -d \$PENCIL_TREE/people/anders pencil-anders"
+echo "and symbolically link them under each of the branches."
+echo
+exit
+fi
+
+echo Here: $PENCIL_TREE
+cd $PENCIL_TREE
+if [ "$1" ] && [ -d branches/$1 ]; 
+then
+  rm -f pencil-code
+  ln -sf branches/$1 pencil-code
+
+  if [ `pwd` == $PENCIL_HOME  ]; then
+    cd ..
+    cd pencil-code
+  fi
+else
+  echo -n "      Current setting:    "
+  readlink pencil-code
+  echo -n "Available choices are:    "
+  ls branches
+fi
