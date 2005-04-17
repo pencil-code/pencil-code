@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.14 2005-03-17 08:21:10 mee Exp $
+; $Id: pc_magic_var.pro,v 1.15 2005-04-17 21:28:29 mee Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-03-17 08:21:10 $
-;  $Revision: 1.14 $
+;  $Date: 2005-04-17 21:28:29 $
+;  $Revision: 1.15 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -43,6 +43,10 @@
 ;      
 ;  Current mappings: 
 ;
+;    xx      -> X-Coordinate at every point 
+;    yy      -> Y-Coordinate at every point 
+;    zz      -> Z-Coordinate at every point 
+;    rr      -> R-Coordinate at every point 
 ;    rho     -> Gas density 
 ;    bb      -> Magnetic field vector
 ;    divu    -> Divergence of velocity
@@ -75,6 +79,26 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     if variables[iv] eq 'bb' then begin
       tags[iv]=variables[iv]
       variables[iv]='curl(aa)'
+
+    ; X Coordinate
+    endif else if variables[iv] eq 'xx' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='spread(spread(x,1,n_elements(y)),2,n_elements(z))'
+
+    ; Y Coordinate
+    endif else if variables[iv] eq 'yy' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='spread(spread(y,0,n_elements(x)),2,n_elements(z))'
+
+    ; Z Coordinate
+    endif else if variables[iv] eq 'zz' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='spread(spread(z,0,n_elements(x)),1,n_elements(y))'
+
+    ; R Coordinate
+    endif else if variables[iv] eq 'rr' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='sqrt(spread(spread(x^2,1,n_elements(y)),2,n_elements(z))+spread(spread(y^2,0,n_elements(x)),2,n_elements(z))+spread(spread(z^2,0,n_elements(x)),1,n_elements(y)))'
 
     ; Current density 
     endif else if variables[iv] eq 'jj' then begin
