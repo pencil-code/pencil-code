@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.36 2004-09-17 19:33:57 dobler Exp $
+! $Id: general.f90,v 1.37 2005-04-17 10:25:51 ajohan Exp $
 
 module General
 
@@ -273,7 +273,12 @@ module General
       integer, optional, intent(in) :: init
       integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
       integer :: k,init1=1812   ! default value
+      logical, save :: first_call=.true.
 !
+      if (first_call) then
+        am=nearest(1.0,-1.0)/im
+        first_call=.false.
+      endif
       if (present(init) .or. rstate(1)==0 .or. rstate(2)<=0) then
         !
         ! initialize
