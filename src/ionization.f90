@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.169 2005-03-02 06:10:05 dobler Exp $
+! $Id: ionization.f90,v 1.170 2005-04-17 14:23:31 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -135,7 +135,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.169 2005-03-02 06:10:05 dobler Exp $")
+           "$Id: ionization.f90,v 1.170 2005-04-17 14:23:31 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -788,7 +788,7 @@ module Ionization
 
       case (ilnrho_ss)
         lnrho_=var1
-        ss_=var1
+        ss_=var2
         yH_=0.5*yHmax
         call rtsafe(ilnrho_ss,lnrho_,ss_,yHmin,yHmax,yH_)
         fractions=(1+yH_+xHe)

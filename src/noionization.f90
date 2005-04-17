@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.120 2005-03-02 06:10:05 dobler Exp $
+! $Id: noionization.f90,v 1.121 2005-04-17 14:23:31 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.120 2005-03-02 06:10:05 dobler Exp $')
+           '$Id: noionization.f90,v 1.121 2005-04-17 14:23:31 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -555,7 +555,7 @@ module Ionization
 
       case (ilnrho_ss)
         lnrho_=var1
-        ss_=var1
+        ss_=var2
         lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cs20*exp(gamma*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
         pp_=cs20*exp(gamma*(ss_+lnrho_)-gamma1*lnrho0)/gamma
