@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.331 2005-04-14 13:35:23 theine Exp $
+! $Id: entropy.f90,v 1.332 2005-04-17 19:24:45 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.331 2005-04-14 13:35:23 theine Exp $")
+           "$Id: entropy.f90,v 1.332 2005-04-17 19:24:45 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1171,8 +1171,8 @@ module Entropy
       case default
          if (lroot) then
             print*,'dss_dt: No such value iheatcond = ', trim(iheatcond)
-            call stop_it("")
          endif
+         call stop_it("")
       endselect
 !
 !  heating/cooling
