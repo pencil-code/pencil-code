@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.197 2004-09-12 09:49:34 brandenb Exp $
+! $Id: run.f90,v 1.198 2005-04-19 03:58:56 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -56,7 +56,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.197 2004-09-12 09:49:34 brandenb Exp $")
+             "$Id: run.f90,v 1.198 2005-04-19 03:58:56 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -67,7 +67,8 @@
 !  [might better be put into another routine, possibly even in rparam or
 !  read_runpars]
 !
-!  [Currently none]
+        x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
+        Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
 !  read parameters and output parameter list
 !
@@ -94,7 +95,7 @@
         if (old_cdtv) then
           cdtvDim=cdtv
         else
-          cdtvDim=cdtv/dimensionality
+          cdtvDim=cdtv/max(dimensionality,1)
         endif
 !
 !  set up directory names `directory' and `directory_snap'

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.67 2004-05-28 16:44:39 dobler Exp $
+! $Id: prints.f90,v 1.68 2005-04-19 03:58:56 dobler Exp $
 
 module Print
 
@@ -271,7 +271,7 @@ module Print
       if(lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') t
-        write(1,'(1p,8e10.3)') fnamez(:,:,1:nnamez)
+        write(1,'(1p,8e12.4)') fnamez(:,:,1:nnamez)
         close(1)
       endif
 !
@@ -289,7 +289,7 @@ module Print
       if(lroot.and.nnamexy>0) then
         open(1,file=trim(datadir)//'/zaverages.dat',position='append')
         write(1,'(1pe12.5)') t
-        write(1,'(1p,8e10.3)') fnamexy(:,:,:,1:nnamexy)
+        write(1,'(1p,8e12.4)') fnamexy(:,:,:,1:nnamexy)
         close(1)
       endif
 !

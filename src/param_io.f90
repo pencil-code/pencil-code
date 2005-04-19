@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.196 2005-04-05 11:15:10 ngrs Exp $ 
+! $Id: param_io.f90,v 1.197 2005-04-19 03:58:56 dobler Exp $ 
 
 module Param_IO
 
@@ -212,7 +212,7 @@ module Param_IO
       if (ldustdensity ) read(1,NML=dustdensity_init_pars  ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
       label='cosmicray_init_pars'
-      if (lcosmicray   ) read(1,NML=cosmicray_init_pars ,ERR=99, IOSTAT=ierr)
+      if (lcosmicray   ) read(1,NML=cosmicray_init_pars    ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
       label='interstellar_init_pars'
       if (linterstellar) read(1,NML=interstellar_init_pars ,ERR=99, IOSTAT=ierr)

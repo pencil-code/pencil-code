@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.204 2005-03-02 06:10:05 dobler Exp $ 
+! $Id: sub.f90,v 1.205 2005-04-19 03:58:56 dobler Exp $ 
 
 module Sub 
 
@@ -1928,7 +1928,7 @@ module Sub
         !  check for double precision
         !
         real_prec = precision(1.)
-        if (real_prec == 6) then
+        if (real_prec==6 .or. real_prec==7) then
           write(1,'(a)') 'S'
         elseif (real_prec == 15) then
           write(1,'(a)') 'D'
@@ -2571,10 +2571,10 @@ module Sub
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: step
       real :: x0,width
-
-        step = 0.5*(1+tanh((x-x0)/(width+epsi)))
+        
+      step = 0.5*(1+tanh((x-x0)/(width+epsi)))
 !
-      endfunction step
+    endfunction step
 !***********************************************************************
     function der_step(x,x0,width)
 !

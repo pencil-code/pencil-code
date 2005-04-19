@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.170 2005-04-17 14:23:31 mee Exp $
+! $Id: ionization.f90,v 1.171 2005-04-19 03:58:55 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -135,7 +135,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.170 2005-04-17 14:23:31 mee Exp $")
+           "$Id: ionization.f90,v 1.171 2005-04-19 03:58:55 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -929,6 +929,10 @@ module Ionization
             yH=yH-dyH
           endwhere
         endwhere
+        ! Apply floor to yH (necessary to avoid negative yH in samples
+        ! /0d-tests/heating_ionize)
+        yH = max(yH,yHmin)
+        yH = min(yH,yHmax)    ! plausibly needed as well
         where (abs(dyH)>yHacc*yH.and.yHcheck/=yH)
           fractions1=1/(1+yH+xHe)
           lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &

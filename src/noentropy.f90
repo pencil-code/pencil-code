@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.63 2004-10-27 14:21:47 ajohan Exp $
+! $Id: noentropy.f90,v 1.64 2005-04-19 03:58:56 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.63 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.64 2005-04-19 03:58:56 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -111,8 +111,13 @@ module Entropy
 !  sound speed squared and inverse temperature
 !  note: this is also correct for gamma=1
 !
-      cs2=cs20*exp(gamma1*(lnrho-lnrho0))
-      TT1=gamma1/cs2
+      if (ldensity) then
+        cs2=cs20*exp(gamma1*(lnrho-lnrho0))
+        TT1=gamma1/cs2
+      else
+        cs2=0.   ! since cs20=0 for nodensity anyway
+        TT1=0.   ! will this work?
+      endif
 !
 !  ``cs2/dx^2'' for timestep
 !
