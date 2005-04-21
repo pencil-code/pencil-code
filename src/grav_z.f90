@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.67 2005-03-02 06:10:05 dobler Exp $
+! $Id: grav_z.f90,v 1.68 2005-04-21 16:53:54 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -104,7 +104,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.67 2005-03-02 06:10:05 dobler Exp $")
+           "$Id: grav_z.f90,v 1.68 2005-04-21 16:53:54 theine Exp $")
 !
       lgrav =.true.
       lgravz=.true.
@@ -163,7 +163,6 @@ module Gravity
 !
       use Cdata
       use Sub
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
