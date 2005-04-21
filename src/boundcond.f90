@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.72 2004-09-18 07:54:29 brandenb Exp $
+! $Id: boundcond.f90,v 1.73 2005-04-21 16:53:31 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1029,13 +1029,12 @@ module Boundcond
 !***********************************************************************
     subroutine bc_force_kepler(f,idz,j)
 
-      use Cdata, only: x,y,iux,iuy,iuz,iax,iay,iaz,Lx,Ly,pi,directory,t
+      use Cdata, only: x,y,iux,iuy,iuz,pi
       use Mpicomm, only: stop_it
       use Global, only: get_global
       use Hydro, only: kep_cutoff_pos_ext,kep_cutoff_width_ext
       use Hydro, only: kep_cutoff_pos_int,kep_cutoff_width_int
       use Hydro, only: u_out_kep
-      use Sub, only: cubic_step
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       integer, intent(in) :: idz,j

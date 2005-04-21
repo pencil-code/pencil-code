@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.171 2005-04-19 03:58:55 dobler Exp $
+! $Id: ionization.f90,v 1.172 2005-04-21 16:53:31 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -135,7 +135,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.171 2005-04-19 03:58:55 dobler Exp $")
+           "$Id: ionization.f90,v 1.172 2005-04-21 16:53:31 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -477,9 +477,9 @@ module Ionization
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,yH,lnTT
-      real, dimension(nx) :: R,dlnTTdy,dRdy,dlnTTdlnrho,temp
-      real, dimension(nx) :: dRdlnrho,dydlnrho,dlnPPdlnrho,fractions,fractions1
-      real, dimension(nx) :: dlnTTdss,dRdss,dydss,dlnPPdss,TT1
+      real, dimension(nx) :: R,dlnTTdy,dRdy,temp
+      real, dimension(nx) :: dlnPPdlnrho,fractions,fractions1
+      real, dimension(nx) :: dlnPPdss,TT1
 !
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
@@ -511,9 +511,9 @@ module Ionization
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
       real :: yH,lnTT
-      real :: R,dlnTTdy,dRdy,dlnTTdlnrho,temp
-      real :: dRdlnrho,dydlnrho,dlnPPdlnrho,fractions,fractions1
-      real :: dlnTTdss,dRdss,dydss,dlnPPdss,TT1
+      real :: R,dlnTTdy,dRdy,temp
+      real :: dlnPPdlnrho,fractions,fractions1
+      real :: dlnPPdss,TT1
 !
       yH=0.5
       call rtsafe(ilnrho_ss,lnrho,ss,yHmin,yHmax,yH)

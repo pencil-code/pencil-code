@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.179 2005-03-02 06:10:04 dobler Exp $
+! $Id: density.f90,v 1.180 2005-04-21 16:53:31 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -92,7 +92,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.179 2005-03-02 06:10:04 dobler Exp $")
+           "$Id: density.f90,v 1.180 2005-04-21 16:53:31 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -784,7 +784,6 @@ module Density
 !    (1/rho) grad(P) = cs20 (rho/rho0)^(gamma-2) grad(rho)
 !
       use Sub, only: grad
-      use Ionization, only: pressure_gradient,temperature_gradient
       use Global, only: set_global
       use IO
 
