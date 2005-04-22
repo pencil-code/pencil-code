@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.9 2004-08-09 09:27:12 mee Exp $
+; $Id: wdvelovect.pro,v 1.10 2005-04-22 01:51:12 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -32,7 +32,7 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
 ;	2D Graphics
 ;
 ; CALLING SEQUENCE:
-;	MSVELOVECT, U, V [, X, Y]
+;	WDVELOVECT, U, V [, X, Y]
 ;
 ; INPUTS:
 ;	U:	The X component of the two-dimensional field.  
