@@ -3,8 +3,8 @@
 ;;;;;;;;;;;;;;;;;
 
 ;;; Author:  wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;; $Date: 2005-03-30 19:27:01 $
-;;; $Revision: 1.4 $
+;;; $Date: 2005-04-22 01:50:53 $
+;;; $Revision: 1.5 $
 
 ;;;   Switch output device to PostScript
 ;;;   Usage:
@@ -28,6 +28,7 @@ pro psa, $
          LANDSCAPE=landscape, $
          FULLPAGE=fullpage, $
          THICKNESS=thick, $
+         BITS_PER_PIXEL=bitdepth, $
 ;         COLOR=color, $
          _EXTRA=extra
 ;; Key word NOPSFONTS or NO_PS_FONTS activates vector fonts
@@ -49,19 +50,23 @@ pro psa, $
   _oldsysvars = { p: !p, d: !d, x: !x, y: !y, z: !z }
   SET_PLOT,'ps'
 
-  ;; If /COLOR keyword is given, set BITS_PER_PIXEL=8 or we will get
-  ;; only 64 colours (i.e. light yellow instead of white)
-  ;; NB: We don't want to absorb the /COLOR keyword here since
-  ;; otherwise later calls to psa would reset color, i.e.
-  ;;   psa, /color & .. & psa
-  ;; would make the second plot black an white (which might be a good
-  ;; thing, but is not currently so). Hence, we peek into the _EXTRA
-  ;; structure to check for /COLOR.
-  if (n_elements(extra) gt 0) then begin
-    if (any(tag_names(extra) eq 'COLOR')) then begin
-      if (extra.color) then device, BITS_PER_PIXEL=8
-    endif
-  endif
+  IF (N_ELEMENTS(bitdepth) EQ 0) THEN bitdepth=8
+  ;; We now unconditionally set bits_per_pixel to 8
+  device, BITS_PER_PIXEL=8
+
+  ; ;; If /COLOR keyword is given, set BITS_PER_PIXEL=8 or we will get
+  ; ;; only 64 colours (i.e. light yellow instead of white)
+  ; ;; NB: We don't want to absorb the /COLOR keyword here since
+  ; ;; otherwise later calls to psa would reset color, i.e.
+  ; ;;   psa, /color & .. & psa
+  ; ;; would make the second plot black an white (which might be a good
+  ; ;; thing, but is not currently so). Hence, we peek into the _EXTRA
+  ; ;; structure to check for /COLOR.
+  ; if (n_elements(extra) gt 0) then begin
+  ;   if (any(tag_names(extra) eq 'COLOR')) then begin
+  ;     if (extra.color) then device, BITS_PER_PIXEL=8
+  ;   endif
+  ; endif
 
   IF (N_ELEMENTS(filename) EQ 0) THEN filename='idl.ps'
   IF (N_ELEMENTS(landscape) EQ 0) THEN BEGIN ; portrait
