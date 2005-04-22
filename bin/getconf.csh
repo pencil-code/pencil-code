@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.140 2004-11-15 19:27:06 dobler Exp $
+# $Id: getconf.csh,v 1.141 2005-04-22 11:23:11 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -388,12 +388,13 @@ else if ($hn =~ giga*) then
 else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   echo "Copson Cluster - St. Andrews"
   if ($?PE) then                            # Are we running under SGE?   
-    if ($PE =~ gm) then                    # Using Myrinet?
+    if ($PE =~ gm-test) then                    # Using Myrinet?
       setenv SSH /usr/bin/rsh
       setenv SCP /usr/bin/rcp
       cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
       set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
-      set mpirunops = "-local -machinefile hostfile"
+      echo "Setting mpirun... $mpirun"
+      set mpirunops = "-local -machinefile $TMPDIR/machines"
       setenv SCRATCH_DIR `cat $TMPDIR/scratch`
       set local_disc=1     
       set one_local_disc=0
@@ -405,6 +406,24 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
       echo '--------------- MPI_HOSTFILE ----------------'
       cat hostfile 
       echo '----------- MPI_HOSTFILE - END --------------'
+    else if ($PE =~ gm) then                    # Using Myrinet?
+      setenv SSH rsh
+      setenv SCP rcp
+#      setenv MPIHOME /usr/local/mpich-gm-1.2.6..14/pgi-intel-7.1/bin
+#      setenv PATH ${SGE_O_PATH}:${PATH} 
+      set mpirun = /usr/local/mpi_wrappers/mpirun
+#${MPIHOME}/mpirun
+      set mpirunops = "-local -machinefile $TMPDIR/machines"
+
+      setenv SCRATCH_DIR `cat $TMPDIR/scratch`
+      set local_disc=1     
+      set one_local_disc=0
+      set nprocpernode=2
+      echo '--------------- MPI_HOSTFILE ----------------'
+      cat $TMPDIR/machines
+      cat $TMPDIR/machines >! hostfile
+      echo '----------- MPI_HOSTFILE - END --------------'
+#      env | sort >! env.run
     else if ($PE =~ score) then             # Using SCore?
       #set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
       #echo '--------------- PE_HOSTFILE ----------------'
@@ -412,6 +431,7 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
       #echo '----------- PE_HOSTFILE - END --------------'
       set mpirunops = "-wait -F $PE_HOSTFILE -e $TMPDIR/scrun.$JOB_ID"
       set mpirun = /opt/score/bin/scout 
+      echo "Setting mpirun... $mpirun"
       #setenv SCRATCH_DIR /scratch/$JOB_ID
       setenv SCRATCH_DIR $TMPDIR
       set local_disc=1
@@ -420,6 +440,7 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   else
       echo $hn >! hostfile
       set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
+      echo "Setting mpirun... $mpirun"
       set mpirunops = "-local -machinefile hostfile"
      set local_disc=0
   endif
