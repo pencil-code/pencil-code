@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: tsnap,v 1.3 2004-03-22 12:55:34 brandenb Exp $
+# CVS: $Id: tsnap,v 1.4 2005-05-05 23:56:43 dobler Exp $
 # -*-perl-*-
 #
 # Name:   tsnap
@@ -62,6 +62,10 @@ foreach $file (@ARGV) {
         print STDERR "Can't open input file $file\n";
         next;
     }
+
+    # Avoid problems with Perl 5.8.0 on RedHat 8/9
+    eval { binmode(INPUT,":raw") };
+
     # The first four bytes contain the size nx*ny*nz*nw*4 of f (first
     # record size) 
     read INPUT, $nn, 4;
