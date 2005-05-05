@@ -2,6 +2,9 @@
 #
 #  Change MPICOMM = mpicomm to MPICOMM = mpicomm_ in input files
 #
+#  Example:
+#    ~/pencil-code/samples> pc_append_underscore */src/Makefile.local
+#
 set file=''
 
 foreach file ($argv)
