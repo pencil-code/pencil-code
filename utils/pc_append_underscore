@@ -1,0 +1,14 @@
+#!/usr/bin/csh
+#
+#  Change MPICOMM = mpicomm to MPICOMM = mpicomm_ in input files
+#
+set file=''
+
+foreach file ($argv)
+  grep MPICOMM ${file} | grep -v nompicomm | grep -v mpicomm_ > /dev/null
+  if ( ! $status ) then
+    sed -e 's/mpicomm/mpicomm_/g' ${file} > ${file}_
+    \mv ${file}_ ${file}
+    echo Appended underscore to mpicomm in $file
+  endif
+end
