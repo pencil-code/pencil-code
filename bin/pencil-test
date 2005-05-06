@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2004-02-23 11:01:40 $
-# $Revision: 1.17 $
+# $Date: 2005-05-06 07:48:57 $
+# $Revision: 1.18 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -57,7 +57,8 @@ GetOptions(\%opts,
 	       -u   --update
 	       -U   --up-d-samples
 	       -c   --clean
-               -m=s --mail=s
+           -m=s --mail=s
+           -M=s --Mailer=s
 	       -p=s --postproc=s
                     --debug
 	                   ));
@@ -69,6 +70,7 @@ my $update    = ($opts{'u'} || $opts{'update'}     || 0);
 my $UPDATE    = ($opts{'U'} || $opts{'UPDATE'}     || 0);
 if ($UPDATE) { $update=1 };
 my $emails    = ($opts{'m'} || $opts{'mail'}       || '');
+my $mailer    = ($opts{'M'} || $opts{'Mailer'}     || '');
 my $postproc  = ($opts{'p'} || $opts{'postproc'}   || '');
 
 ## Print header
@@ -193,7 +195,7 @@ sub notify_on_error{
 		}
 	    }
 	    foreach my $address (keys %sendmailto) {
-		send_mail($address,$nerrors,$host,$summary,$main);
+		send_mail($address,$nerrors,$host,$summary,$main,$mailer);
 	    }
 	} else {
 	    warn "Can't split result string --- strange";
@@ -248,12 +250,14 @@ sub send_mail {
     my $host    = shift;
     my $text1   = shift;
     my $text2   = shift;
-    my $mailer;
-
-    if (in_PATH("mailx")) {
-	$mailer = "mailx";
-    } else {
-	$mailer = "mail";
+    my $mailer  = shift;
+ 
+    if (!$mailer) {
+      if (in_PATH("mailx")) {
+      $mailer = "mailx";
+      } else {
+      $mailer = "mail";
+      }
     }
 
     my $plurals = ($nerrors<=1 ? '' : 's');
