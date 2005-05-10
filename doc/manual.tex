@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.288 2005-03-31 19:47:43 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.289 2005-05-10 02:07:48 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -55,12 +55,12 @@
 %     \acronym: An acronym (hardly ever used here):
 %                   should we call the code \acronym{PROMPT}?
 
-\ifx\pdfoutput\undefined        % not running pdflatex
-  \documentclass[12pt,twoside,notitlepage,a4paper]{article}
-\else                           % running pdflatex
+\RequirePackage{ifpdf}
+\ifpdf
   \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
+\else                           % running pdflatex
+  \documentclass[12pt,twoside,notitlepage,a4paper]{article}
 \fi
-%\usepackage[dvipdfm]{hyperref}
 
 %\usepackage{url} %(do we not need this; but it's not working anyway)
 %\usepackage{german,a4}
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-03-31 19:47:43 $ $,~ $ $Revision: 1.288 $ $}
+%\date{$ $Date: 2005-05-10 02:07:48 $ $,~ $ $Revision: 1.289 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-03-31 19:47:43 $ $,~ $ $Revision: 1.288 $ $}\\
+  \emph{$ $Date: 2005-05-10 02:07:48 $ $,~ $ $Revision: 1.289 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4697,7 +4697,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-03-31 19:47:43 $ $,~ $ $Revision: 1.288 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-05-10 02:07:48 $ $,~ $ $Revision: 1.289 $ $}
 
 \section{Timings}
 
@@ -7772,14 +7772,14 @@ initial condition.
 \cleardoublepage
 % ====================================================================== %
 
-\part{Index}
+\part{Indexes}
 \printindex[file]
 \printindex[var]
 \printindex[default][This index contains options, names, definitions and
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.288 2005-03-31 19:47:43 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.289 2005-05-10 02:07:48 dobler Exp $ $}
 
 
 \end{document}

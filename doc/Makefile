@@ -26,7 +26,17 @@ pdffigs:
 	cd figs; make pdf
 
 manual.dvi: manual.tex
-	if [ -z $TEXINPUTS ]; then TEXINPUTS="./texinputs:"; else TEXINPUTS="./texinputs:$(TEXINPUTS)"; fi; export TEXINPUTS; latex manual && makeindex -s dotted.idxsty manual && makeindex -s dotted.idxsty manual.vidx -o manual.vind && makeindex -s dotted.idxsty manual.fidx -o manual.find && latex manual
+	if [ -z $TEXINPUTS ]; then \
+	    TEXINPUTS="./texinputs:"; \
+	else \
+	    TEXINPUTS="./texinputs:$(TEXINPUTS)"; \
+	fi; \
+	export TEXINPUTS; \
+	latex manual \
+	    && makeindex -s dotted.idxsty manual \
+	    && makeindex -s dotted.idxsty manual.vidx -o manual.vind \
+	    && makeindex -s dotted.idxsty manual.fidx -o manual.find \
+	    && latex manual
 
 # manual.pdf: manual.tex pdffigs
 # 	if [ -z $TEXINPUTS ]; then TEXINPUTS=":./texinputs"; else TEXINPUTS="$(TEXINPUTS):./texinputs"; fi; export TEXINPUTS; pdflatex manual; makeindex manual; pdflatex manual
