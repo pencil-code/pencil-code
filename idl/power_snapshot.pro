@@ -1,7 +1,9 @@
 ;
 ;  Calculate power spectrum of variable gg along x, y and z directions.
 ;
-pro power_snapshot, gg, g_x=g_x, g_y=g_y, g_z=g_z, plot=plot
+pro power_snapshot, gg=gg, g_x=g_x, g_y=g_y, g_z=g_z, plot=plot
+
+default, plot, 1
 
 nx=n_elements(gg[*,0,0])
 ny=n_elements(reform(gg[0,*,0]))
