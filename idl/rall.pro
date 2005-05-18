@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.42 2004-05-29 06:20:07 brandenb Exp $
+;;;  $Id: rall.pro,v 1.43 2005-05-18 01:06:35 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -73,7 +73,7 @@ xloc=fltarr(mxloc)*ONE & yloc=fltarr(myloc)*ONE & zloc=fltarr(mzloc)*ONE
 ;
 ;  Read data
 ;
-varcontent=pc_varcontent()
+varcontent=pc_varcontent(QUIET=quiet)
 totalvars=(size(varcontent))[1]-1L
 
 ; Prepare for read

@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.58 2004-05-29 06:20:07 brandenb Exp $
+; $Id: r.pro,v 1.59 2005-05-18 01:06:35 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.58 2004-05-29 06:20:07 brandenb Exp $
+;;; $Id: r.pro,v 1.59 2005-05-18 01:06:35 dobler Exp $
 
 function param2
 COMPILE_OPT HIDDEN 
@@ -34,7 +34,7 @@ default, varfile, 'var.dat'
 ;
 ;  Read data
 ;
-varcontent=pc_varcontent()
+varcontent=pc_varcontent(QUIET=quiet)
 totalvars=(size(varcontent))[1]-1L
 ; Prepare for read
 res=''
