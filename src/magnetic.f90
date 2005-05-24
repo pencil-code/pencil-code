@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.234 2004-10-29 13:40:40 ajohan Exp $
+! $Id: magnetic.f90,v 1.235 2005-05-24 19:39:47 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -31,7 +31,7 @@ module Magnetic
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: radius=.1,epsilonaa=1e-2,widthaa=.5,x0aa=0.,z0aa=0.
-  real :: by_left=0.,by_right=0.
+  real :: by_left=0.,by_right=0.,bz_left=0.,bz_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
@@ -66,7 +66,8 @@ module Magnetic
        B_ext, &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
-       radius,epsilonaa,x0aa,z0aa,widthaa,by_left,by_right, &
+       radius,epsilonaa,x0aa,z0aa,widthaa, &
+       by_left,by_right,bz_left,bz_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
        kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
@@ -146,7 +147,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.234 2004-10-29 13:40:40 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.235 2005-05-24 19:39:47 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -241,7 +242,7 @@ module Magnetic
       case('uniform-Bz'); call uniform_z(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
       case('vfield2'); call vfield2(amplaa,f,iaa,xx)
-      case('xjump'); call bjump(f,iaz,by_left,by_right,widthaa,'x')
+      case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
       case('cosxcosy'); call cosx_cosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)

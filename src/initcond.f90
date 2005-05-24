@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.117 2005-03-02 06:10:05 dobler Exp $ 
+! $Id: initcond.f90,v 1.118 2005-05-24 19:39:47 brandenb Exp $ 
 
 module Initcond 
  
@@ -533,16 +533,17 @@ module Initcond
 !
     endsubroutine jump
 !***********************************************************************
-    subroutine bjump(f,i,fleft,fright,width,dir)
+    subroutine bjump(f,i,fyleft,fyright,fzleft,fzright,width,dir)
 !
 !  jump in B-field (in terms of magnetic vector potential)
 !
 !   9-oct-02/wolf+axel: coded
+!  21-apr-05/axel: added possibility of Bz component
 !
       integer :: i
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx) :: prof,alog_cosh_xwidth
-      real :: fleft,fright,width
+      real, dimension (mx) :: profy,profz,alog_cosh_xwidth
+      real :: fyleft,fyright,fzleft,fzright,width
       character(len=*) :: dir
 !
 !  jump; check direction
@@ -553,13 +554,16 @@ module Initcond
 !  Ay=+int Bz dx
 !  Az=-int By dx
 !
-!  log(cosh(x/width)) = 
+!  alog(cosh(x/width)) =
 !
       case('x')
-        alog_cosh_xwidth=abs(x/width)+log(.5*(1.+exp(-2*abs(x/width))))
-        prof=.5*(fright+fleft)*x &
-            +.5*(fright-fleft)*width*alog_cosh_xwidth
-        f(:,:,:,i)=f(:,:,:,i)-spread(spread(prof,2,my),3,mz)
+        alog_cosh_xwidth=abs(x/width)+alog(.5*(1.+exp(-2*abs(x/width))))
+        profz=.5*(fyright+fyleft)*x &
+             +.5*(fyright-fyleft)*width*alog_cosh_xwidth
+        profy=.5*(fzright+fzleft)*x &
+             +.5*(fzright-fzleft)*width*alog_cosh_xwidth
+        f(:,:,:,i+1)=f(:,:,:,i+1)+spread(spread(profy,2,my),3,mz)
+        f(:,:,:,i+2)=f(:,:,:,i+2)-spread(spread(profz,2,my),3,mz)
       case default
         print*,'bjump: no default value'
 !
