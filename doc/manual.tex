@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.290 2005-05-10 06:05:32 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.291 2005-05-24 23:03:29 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-05-10 06:05:32 $ $,~ $ $Revision: 1.290 $ $}
+%\date{$ $Date: 2005-05-24 23:03:29 $ $,~ $ $Revision: 1.291 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-05-10 06:05:32 $ $,~ $ $Revision: 1.290 $ $}\\
+  \emph{$ $Date: 2005-05-24 23:03:29 $ $,~ $ $Revision: 1.291 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4130,18 +4130,6 @@ make: *** [code] Error 2
   with \name{CVS} who it was\ldots
 }
 
-%% [wd: I understand this is extremely annoying, but this has no place
-%% in a user manual]
-%% {\em
-%%   Somebody ought to fix this, and fast! This can be most annoying\footnote{
-%% Once at a meeting I had the ethernet cable for only 5 min, checked in my own
-%% things (which worked fine) and somebody else has checked in his new things
-%% (which had already an error). This meant that I couldn't even go back to the
-%% old version so easily, so I missed the chance to submit my job before catching
-%% my train\ldots}. For the time being you can just say in the \file{src} directory
-%% \code{cvs up -D yesterday} or something.
-%% }
-
 %%%
 \subsubsection{Internal compiler error with Compaq/Dec F90}
 The Dec Fortran optimizer has occasional problems with
@@ -4278,7 +4266,7 @@ Under IRIX, I get
 >  > backwards incompatible.
 >
 > That means that we can never get rid of a parameter in start.in once we
-> have introduced it, right? Pretty irritating..
+> have introduced it, right?
 \end{Verbatim}
 
 \medskip
@@ -4286,65 +4274,69 @@ Under IRIX, I get
 {\em
 
   In the current implementation, without a corresponding cleaning procedure,
-  yes! My experience of some 5 days ago was quite enormous. It started
-  with noticing that remesh.f90 doesn't work correctly. I thought:- ok,
-  there must be a problem with remesh.f90, because nobody remembered having
-  tested this for nonuniform mesh-aspect ratios. (So I told Nils that his
-  remesh routine needs reworking.)
+  unfortunately yes.
 
-  Later that day I noticed that several of my old jobs started crashing,
-  so, of course, I thought there must be yet another mistake somewhere.
-  Most incredible was that I lost places in 64 and 128 proc queues,
-  even though I have a fairly save backup procedure in place that if a job
-  crashes, it goes on another job. Because the job transfer times can be
-  on the order of 2h, because of slow writing, and because we had detected
-  some days earlier yet another timeout problem with job transfers of 64
-  and 128 proc jobs, we thought the problem was connected with that.
+  Of course, this does not affect users' private changes outside the
+  central CVS tree.
 
-  Only later that day I noticed that what the real problem was.
+%   My experience of some 5 days ago was quite enormous. It started
+%   with noticing that remesh.f90 doesn't work correctly. I thought:- ok,
+%   there must be a problem with remesh.f90, because nobody remembered having
+%   tested this for nonuniform mesh-aspect ratios. (So I told Nils that his
+%   remesh routine needs reworking.)
 
-  It was rather bad that this was not predicted by any of the auto-tests,
-  so I wrote the backwards-compatible, which detects those kind of errors.
+%   Later that day I noticed that several of my old jobs started crashing,
+%   so, of course, I thought there must be yet another mistake somewhere.
+%   Most incredible was that I lost places in 64 and 128 proc queues,
+%   even though I have a fairly save backup procedure in place that if a job
+%   crashes, it goes on another job. Because the job transfer times can be
+%   on the order of 2h, because of slow writing, and because we had detected
+%   some days earlier yet another timeout problem with job transfers of 64
+%   and 128 proc jobs, we thought the problem was connected with that.
 
-  This was of course another wild experience. When I came back from
-  swimming, "nothing" was working, and since I had done some minor changes,
-  I thought I was to blame. Then I found the problem with init conditions,
-  but this solved only one out of 3 problems. Then I found the mu\_r problem,
-  but this solved only the 2nd problem. Finally, I found and solved the
-  third problem.
+%   Only later that day I noticed that what the real problem was.
 
-  So, those people who checked in changes where already working with buggy
-  codes and checked on even further bugs. As I said, I was worried that
-  it was all my fault, but buggy codes are potentially bad for others too.
+%   It was rather bad that this was not predicted by any of the auto-tests,
+%   so I wrote the backwards-compatible, which detects those kind of errors.
+
+%   This was of course another wild experience. When I came back from
+%   swimming, "nothing" was working, and since I had done some minor changes,
+%   I thought I was to blame. Then I found the problem with init conditions,
+%   but this solved only one out of 3 problems. Then I found the mu\_r problem,
+%   but this solved only the 2nd problem. Finally, I found and solved the
+%   third problem.
+
+%   So, those people who checked in changes where already working with buggy
+%   codes and checked on even further bugs. As I said, I was worried that
+%   it was all my fault, but buggy codes are potentially bad for others too.
 }
 
 \subsubsection{auto-test gone mad...?}
 
-{\bf Q}:
+{\bf Q}: Have you ever seen this before:
 \begin{Verbatim}
-Ever seen this before:
+  giga01:/home/pg/n7026413/cvs-src/pencil-code/samples/conv-slab> auto-test
+  .
 
-giga01:/home/pg/n7026413/cvs-src/pencil-code/samples/conv-slab> auto-test
-.
-
-/home/pg/n7026413/cvs-src/pencil-code/samples/conv-slab:
-    Compiling..           ok
-        No data directory; generating data -> /var/tmp/pencil-tmp-25318
-    Starting..            ok
-    Running..             ok
-    Validating results..Malformed UTF-8 character (unexpected continuation
-byte 0x80, with no preceding start byte) in split at
-/home/pg/n7026413/cvs-src/pencil-code/bin/auto-test line 263.
-Malformed UTF-8 character (unexpected continuation byte 0x80, with no
-preceding start byte) in split at
-/home/pg/n7026413/cvs-src/pencil-code/bin/auto-test line 263.
+  /home/pg/n7026413/cvs-src/pencil-code/samples/conv-slab:
+      Compiling..           ok
+          No data directory; generating data -> /var/tmp/pencil-tmp-25318
+      Starting..            ok
+      Running..             ok
+      Validating results..Malformed UTF-8 character (unexpected continuation
+  byte 0x80, with no preceding start byte) in split at
+  /home/pg/n7026413/cvs-src/pencil-code/bin/auto-test line 263.
+  Malformed UTF-8 character (unexpected continuation byte 0x80, with no
+  preceding start byte) in split at
+  /home/pg/n7026413/cvs-src/pencil-code/bin/auto-test line 263.
 \end{Verbatim}
 
 {\bf A}:
 {\em
-The sys admins must have changed something
-I guess because LANG=en_US.UTF-8 now for some reason.
-Put \cmd{LANG=POSIX}.
+  You are running on a RedHat 8 or 9 system, right?
+
+  Set \cmd{LANG=POSIX} in your shell's startup script and life will be
+  much better.
 }
 
 % ---------------------------------------------------------------------- %
@@ -4383,16 +4375,16 @@ this time is was IECR, IGG, and ILNTT that I had to circumvent\ldots
 \index{NOERASE file}
 
 {\em
-The simplest solution is to invoke \file{NOERASE}, i.e.\ say
-\begin{Verbatim}
+  The simplest solution is to invoke \file{NOERASE}, i.e.\ say
+  \begin{Verbatim}
   touch NOERASE
   start.csh
-\end{Verbatim}
-or, alternatively, \code{start_run.csh}.
-What it does is that it reruns \code{src/start.x} with a new version of
-the code; this then produces all the necessary auxiliary files, but it
-doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
-\file{slice} files.
+  \end{Verbatim}
+  or, alternatively, \code{start_run.csh}.
+  What it does is that it reruns \code{src/start.x} with a new version of
+  the code; this then produces all the necessary auxiliary files, but it
+  doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
+  \file{slice} files.
 }
 
 %%%
@@ -4412,10 +4404,51 @@ Reading param.nml..
 
 {\bf A}:
 {\em
-Go into \file{data/param.nml}
-and add \code{, LEQUIDIST=T} anywhere in the file, but before the
-last slash, of course.
+  Go into \file{data/param.nml}
+  and add \code{, LEQUIDIST=T} anywhere in the file, but before the
+  last slash, of course.
 }
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{General questions}
+
+%%%
+\subsubsection{``Installation'' procedure}
+Why don't you use GNU \name{autoconf/automake} for installation of the
+Pencil Code?
+
+\medskip
+
+{\em
+  What do you mean by ``installation''?
+  Unlike the applications that normally use \name{autoconf}, the
+  \name{Pencil Code} is neither a binary executable, nor a library that
+  you compile once and then dump somewhere in the system tree.
+  \name[autoconf]{Autoconf} is the right tool for these applications, but
+  not for numerical codes, where the typical compilation and usage pattern
+  is very different:
+
+  You have different directories with different \file{Makefile.local}
+  settings, recompile after introducing that shiny new term in your
+  equations, etc.
+  Moreover, you want to sometimes switch to a different compiler (but just
+  for that run directory) or another \name{MPI} implementation.
+  Our \cmd{adapt-mkfile} approach gives you this flexibility in a
+  reasonably convenient way, while doing the same thing with
+  \name{autoconf} would be using that system against most of its design
+  principles.
+
+  Besides, it would really get on my (WD's) nerves if I had to wait two
+  minutes for \name{autoconf} to finish before I can start compiling
+  (or maybe 5--10 minutes if I worked on a NEC machine\ldots).
+
+  Finally, if you have ever tried to figure out what a \file{configure}
+  script does, you will appreciate a comprehensible configuration system.
+
+}
+
 
 \cleardoublepage
 % ====================================================================== %
@@ -4699,7 +4732,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-05-10 06:05:32 $ $,~ $ $Revision: 1.290 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-05-24 23:03:29 $ $,~ $ $Revision: 1.291 $ $}
 
 \section{Timings}
 
@@ -7781,7 +7814,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.290 2005-05-10 06:05:32 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.291 2005-05-24 23:03:29 dobler Exp $ $}
 
 
 \end{document}
@@ -7850,4 +7883,5 @@ $ $Id: manual.tex,v 1.290 2005-05-10 06:05:32 brandenb Exp $ $}
 % LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff NEWDIR copson ks
 % LocalWords:  hyperviscous geodynamo DM coords substeps dec noionization pc ll
 % LocalWords:  Kramers Myr Spitzer Kippenhahn Weigert Remeshing remeshing coef
-% LocalWords:  phiaver pE pF datafiles PNG MPEG mpeg Secs mphi chiral
+% LocalWords:  phiaver pE pF datafiles PNG MPEG mpeg Secs mphi chiral autoconf
+% LocalWords:  automake wd's NEC

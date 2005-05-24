@@ -111,6 +111,7 @@ clean:
 	*.idx *.ind *.ilg *.out *.vidx *.vind *.fidx *.find manual.image.*
 # same, but including image directory
 cleann: clean
+	rm -f *.pdf
 	cd figs; make clean
 
 # End of file
