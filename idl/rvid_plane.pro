@@ -1,12 +1,12 @@
 pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
-               proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,$
+               proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
                contourplot=contourplot
 ;
-; $Id: rvid_plane.pro,v 1.15 2005-03-30 19:16:39 mee Exp $
+; $Id: rvid_plane.pro,v 1.16 2005-05-27 14:41:54 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -37,13 +37,13 @@ default,r_ext,1.0
 default,zoom,1.0
 default,dimfile,'dim.dat'
 default,varfile,'var.dat'
+default,imgdir,'.'
 ;
 if n_elements(proc) ne 0 then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
 endelse
-print,!d.y_size
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
@@ -165,11 +165,12 @@ endif
 ;
 t=0.*unit & islice=0
 ;
-if extension eq 'xy' then plane=fltarr(nx,ny)*unit
-if extension eq 'Xy' then plane=fltarr(nx,ny)*unit
-if extension eq 'xz' then plane=fltarr(nx,nz)*unit
-if extension eq 'yz' then plane=fltarr(ny,nz)*unit
-help,plane
+if (extension eq 'xy') then plane=fltarr(nx,ny)*unit
+if (extension eq 'Xy') then plane=fltarr(nx,ny)*unit
+if (extension eq 'xz') then plane=fltarr(nx,nz)*unit
+if (extension eq 'yz') then plane=fltarr(ny,nz)*unit
+size_plane=size(plane)
+print, 'Array size: ', size_plane[0:size_plane[0]]
 ;
 slice_xpos=0.*unit
 slice_ypos=0.*unit
@@ -180,10 +181,11 @@ slice_z2pos=0.*unit
 ;
 dev='x' ;(default)
 if keyword_set(png) then begin
-  Nwx=zoom*nx & Nwy=zoom*ny
-  ;resolution=[!d.x_size,!d.y_size] ; set window size
+  Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
+;  resolution=[!d.x_size,!d.y_size] ; set window size
   resolution=[Nwx,Nwy] ; set window size
-  print,'z-buffer resolution (in pixels)=',resolution
+  print, 'z-buffer resolution in pixels '+ $
+      '(set with zoom=', strtrim(zoom,2), ') =', strtrim(resolution,2)
   set_plot, 'z'                   ; switch to Z buffer
   device, SET_RESOLUTION=resolution ; set window size
   itpng=0 ;(image counter)
@@ -191,7 +193,7 @@ if keyword_set(png) then begin
 end else if keyword_set(mpeg) then begin
   ;Nwx=400 & Nwy=320
   ;Nwx=!d.x_size & Nwy=!d.y_size
-  Nwx=zoom*nx & Nwy=zoom*ny
+  Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
   resolution=[Nwx,Nwy] ; set window size
   print,'z-buffer resolution (in pixels)=',resolution
   set_plot, 'z'                   ; switch to Z buffer
@@ -243,119 +245,123 @@ if keyword_set(global_scaling) then begin
 endif
 ;
 close,1 & openr,1,file_slice,/f77
+ifirst=1
 while not eof(1) do begin
-if keyword_set(OLDFILE) then begin ; For files without position
-  readu,1,plane,t
-end else begin
-  readu,1,plane,t,slice_z2pos
-end
+  if keyword_set(OLDFILE) then begin ; For files without position
+    readu,1,plane,t
+  end else begin
+    readu,1,plane,t,slice_z2pos
+  end
 ;
 ; rescale data with optional parameter zoom
 ;
-if keyword_set(exponential) then begin
-  plane2=rebinbox(exp(plane),zoom)
-endif else begin
-  plane2=rebinbox(plane,zoom)
-endelse
+  if keyword_set(exponential) then begin
+    plane2=rebinbox(exp(plane),zoom)
+  endif else begin
+    plane2=rebinbox(plane,zoom)
+  endelse
 ;
 ; do masking, if shell set
 ;
-if keyword_set(shell) then begin
-  white=255
-  if extension eq 'xy' then begin
-    zrr = rebinbox(reform(rrxy,nx,ny),zoom)
-    indxy=where(zrr lt r_int or zrr gt r_ext)
-    plane2(indxy)=white
+  if keyword_set(shell) then begin
+    white=255
+    if extension eq 'xy' then begin
+      zrr = rebinbox(reform(rrxy,nx,ny),zoom)
+      indxy=where(zrr lt r_int or zrr gt r_ext)
+      plane2(indxy)=white
+    endif
+    if extension eq 'Xy' then begin
+      zrr2 = rebinbox(reform(rrxy2,nx,ny),zoom)
+      indxy2=where(zrr2 lt r_int or zrr2 gt r_ext)
+      plane2(indxy2)=white
+    endif
+    if extension eq 'xz' then begin
+      yrr = rebinbox(reform(rrxz,nx,nz),zoom,/zdir)
+      indxz=where(yrr lt r_int or yrr gt r_ext)
+      plane2(indxz)=white
+    endif
+    if extension eq 'yz' then begin
+      xrr = rebinbox(reform(rryz,ny,nz),zoom,/zdir)
+      indyz=where(xrr lt r_int or xrr gt r_ext)
+      plane2(indyz)=white
+    endif
   endif
-  if extension eq 'Xy' then begin
-    zrr2 = rebinbox(reform(rrxy2,nx,ny),zoom)
-    indxy2=where(zrr2 lt r_int or zrr2 gt r_ext)
-    plane2(indxy2)=white
-  endif
-  if extension eq 'xz' then begin
-    yrr = rebinbox(reform(rrxz,nx,nz),zoom,/zdir)
-    indxz=where(yrr lt r_int or yrr gt r_ext)
-    plane2(indxz)=white
-  endif
-  if extension eq 'yz' then begin
-    xrr = rebinbox(reform(rryz,ny,nz),zoom,/zdir)
-    indyz=where(xrr lt r_int or xrr gt r_ext)
-    plane2(indyz)=white
-  endif
-endif
 ;
-if keyword_set(test) then begin
-  print,t,min([plane2,xy,xz,yz]),max([plane2,xy,xz,yz])
-end else begin
-  if t ge tmin and t le tmax then begin
-    if ijump eq njump then begin
-      ;if iy ne -1 then plot,plane2(*,iy),yr=[amin,amax],ps=ps
-      ;if ix ne -1 then plot,plane2(ix,*),yr=[amin,amax],ps=ps
-      ;
-      ;  show image scaled between amin and amax and filling whole screen
-      ;
-      if keyword_set(contourplot) then begin
-        contourfill,plane2,lev=grange(amin,amax,60)
-      endif else begin
-        tv,bytscl(plane2,min=amin,max=amax),iplane
-      endelse
-      ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
-      ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
-      if keyword_set(png) then begin
-        istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
-        image = tvrd()
-        ;
-        ;  make background white, and write png file
-        ;
-        ;bad=where(image eq 0) & image(bad)=255
-        tvlct, red, green, blue, /GET
-        imgname = 'img_'+istr2+'.png'
-        write_png, imgname, image, red, green, blue
-        itpng=itpng+1 ;(counter)
-        ;
-      end else if keyword_set(mpeg) then begin
-        ;
-        ;  write directly mpeg file
-        ;  for idl_5.5 and later this requires the mpeg license
-        ;
-        image = tvrd(true=1)
-	if keyword_set(colmpeg) then begin
-	  ;ngrs seem to need to work explictly with 24-bit color to get 
-	  ;     color mpegs to come out on my local machines...
-          image24 = bytarr(3,Nwx,Nwy)
+  if keyword_set(test) then begin
+    print,t,min([plane2,xy,xz,yz]),max([plane2,xy,xz,yz])
+  end else begin
+    if t ge tmin and t le tmax then begin
+      if ijump eq njump then begin
+        ;if iy ne -1 then plot,plane2(*,iy),yr=[amin,amax],ps=ps
+        ;if ix ne -1 then plot,plane2(ix,*),yr=[amin,amax],ps=ps
+;
+;  show image scaled between amin and amax and filling whole screen
+;
+        if keyword_set(contourplot) then begin
+          contourfill,plane2,lev=grange(amin,amax,60)
+        endif else begin
+          tv,bytscl(plane2,min=amin,max=amax),iplane
+        endelse
+        ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
+        ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
+        if keyword_set(png) then begin
+          istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
+          image = tvrd()
+;
+;  make background white, and write png file
+;
+          ;bad=where(image eq 0) & image(bad)=255
           tvlct, red, green, blue, /GET
-        endif
-        for irepeat=0,nrepeat do begin
-	  if keyword_set(colmpeg) then begin
-            image24[0,*,*]=red(image[0,*,*])
-            image24[1,*,*]=green(image[0,*,*])
-            image24[2,*,*]=blue(image[0,*,*])
-            mpeg_put, mpegID, image=image24, FRAME=itmpeg, /ORDER
-          endif else begin
-            mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
-          endelse
-          itmpeg=itmpeg+1 ;(counter)
+          imgname = imgdir+'/img_'+istr2+'.png'
+          write_png, imgname, image, red, green, blue
+          itpng=itpng+1 ;(counter)
+          ;
+        end else if keyword_set(mpeg) then begin
+;
+;  write directly mpeg file
+;  for idl_5.5 and later this requires the mpeg license
+;
+          image = tvrd(true=1)
+          if keyword_set(colmpeg) then begin
+; ngrs seem to need to work explictly with 24-bit color to get 
+; color mpegs to come out on my local machines...
+            image24 = bytarr(3,Nwx,Nwy)
+            tvlct, red, green, blue, /GET
+          endif
+          for irepeat=0,nrepeat do begin
+            if keyword_set(colmpeg) then begin
+              image24[0,*,*]=red(image[0,*,*])
+              image24[1,*,*]=green(image[0,*,*])
+              image24[2,*,*]=blue(image[0,*,*])
+              mpeg_put, mpegID, image=image24, FRAME=itmpeg, /ORDER
+            endif else begin
+              mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
+            endelse
+            itmpeg=itmpeg+1 ;(counter)
+          end
+          print,islice,itmpeg,t,min([plane2]),max([plane2])
+        end else begin
+;
+; default: output on the screen
+;
+          if (ifirst) then $
+              print, '----islice--------t----------min------------max--------'
+          print,islice,t,min([plane2]),max([plane2])
         end
-        print,islice,itmpeg,t,min([plane2]),max([plane2])
+        ijump=0
+        wait,wait
+;
+; check whether file has been written
+;
+        if keyword_set(png) then spawn,'ls -l '+imgname
+;
       end else begin
-        ;
-        ; default: output on the screen
-        ;
-        print,islice,t,min([plane2]),max([plane2])
+        ijump=ijump+1
       end
-      ijump=0
-      wait,wait
-      ;
-      ; check whether file has been written
-      ;
-      if keyword_set(png) then spawn,'ls -l '+imgname
-      ;
-    end else begin
-      ijump=ijump+1
     end
+    islice=islice+1
   end
-  islice=islice+1
-end
+  ifirst=0
 end
 close,1
 ;
