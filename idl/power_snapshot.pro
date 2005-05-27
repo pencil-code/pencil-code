@@ -5,13 +5,20 @@ pro power_snapshot, gg=gg, g_x=g_x, g_y=g_y, g_z=g_z, plot=plot
 
 default, plot, 1
 
-nx=n_elements(gg[*,0,0])
-ny=n_elements(reform(gg[0,*,0]))
-nz=n_elements(reform(gg[0,0,*]))
+sizegg=size(gg)
 
+nx=1 & ny=1 & nz=1 & g_x=1.0 & g_y=1.0 & g_z=1.0
+
+nx=sizegg[1]
 g_x=fltarr(nx/2)
-g_y=fltarr(ny/2)
-g_z=fltarr(nz/2)
+if (sizegg[0] ge 2) then begin
+  ny=sizegg[2]
+  g_y=fltarr(ny/2)
+  if (sizegg[0] ge 3) then begin
+    nz=sizegg[3]
+    g_z=fltarr(nz/2)
+  endif
+endif
 
 for m=0,ny-1 do begin
   for n=0,nz-1 do begin
@@ -45,8 +52,16 @@ g_y=g_y/(nx*nz)
 g_z=g_z/(nx*ny)
 
 if (plot) then begin
-  pmin=min([g_x[1:nx/2-1],g_y[1:ny/2-1],g_z[1:nz/2-1]])
-  pmax=max([g_x[1:nx/2-1],g_y[1:ny/2-1],g_z[1:nz/2-1]])
+  pmin=min(g_x[1:nx/2-1])
+  pmax=max(g_x[1:nx/2-1])
+  if (ny gt 1) then begin
+    pmin=min([pmin,g_y[1:ny/2-1]])
+    pmax=max([pmax,g_y[1:ny/2-1]])
+  endif
+  if (nz gt 1) then begin
+    pmin=min([pmin,g_z[1:ny/2-1]])
+    pmax=max([pmax,g_z[1:ny/2-1]])
+  endif
 
   linestyles=[0,1,2]
   
@@ -55,8 +70,8 @@ if (plot) then begin
       yrange=[10.0^floor(alog10(pmin)),10.0^ceil(alog10(pmax))], $
       /xlog, /ylog, $
       linestyle=linestyles[0]
-  oplot, g_y, linestyle=linestyles[1]
-  oplot, g_z, linestyle=linestyles[2]
+  if (ny gt 1) then oplot, g_y, linestyle=linestyles[1]
+  if (nz gt 1) then oplot, g_z, linestyle=linestyles[2]
   legend, ['k!Dx!N','k!Dy!N','k!Dz!N'], linestyle=linestyles, /bottom
 endif
 
