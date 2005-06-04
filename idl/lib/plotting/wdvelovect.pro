@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.10 2005-04-22 01:51:12 dobler Exp $
+; $Id: wdvelovect.pro,v 1.11 2005-06-04 21:09:17 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -271,8 +271,8 @@ bady:            message, 'Y array has incorrect size.'
                 'Regridding from ' + strtrim(s[1],2) + 'x' + strtrim(s[2],2) $
                 + ' to ' + strtrim(nx,2) + 'x' + strtrim(ny,2)
           endif
-          x = linspace(minmax(x),nx)
-          y = linspace(minmax(y),ny)
+          x = linspace(minmax(x),nx,GHOST=0.5)
+          y = linspace(minmax(y),ny,GHOST=0.5)
           u = congrid(u, nx, ny, /CUBIC)
           v = congrid(v, nx, ny, /CUBIC)
           ; Recalculate these:
