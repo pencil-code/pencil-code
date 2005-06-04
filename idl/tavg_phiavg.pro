@@ -8,6 +8,12 @@
 ;;;
 ;;;  Description:
 ;;;    Time-average azimuthal averages in a given range.
+;;;  Arguments:
+;;;    RANGE -- time interval (if real) or index interval enumerating
+;;;             PHIAVG<N> files (if integer) for data to include
+;;;  KEYWORDS:
+;;;    DIR   -- data directory
+;;;    QUIET -- be quiet
 ;;;  Usage:
 ;;;    avg = tavg_phiavg()                ; average all PHIAVG files in
 ;;;                                       ; directory data/averages
@@ -128,6 +134,7 @@ function tavg_phiavg, range, DIR=avgdir, QUIET=quiet, $
     struct_mul, avg, 1./count, avg.labels ; normalize
   endif else begin
     message, /INFO, 'No data read -- all averages set to zero'
+    avg = [0.]
   endelse
 
   return, avg

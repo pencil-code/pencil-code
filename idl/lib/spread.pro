@@ -8,12 +8,16 @@
 ;;;  Version: 0.3
 ;;;
 ;;;  Description:
-;;;   Mimic the Fortran function `spread'.
-;;;   Usage:
-;;;     res = spread([arr], dim, size)
-;;;     res = spread([arr], [dims],[sizes])
-;;;   Inserts a new DIMth dimension of size SIZE or does so
-;;;   consecutively with DIMS and SIZES.
+;;;    Mimic the Fortran function `spread'.
+;;;  Usage:
+;;;      res = spread([arr], dim, size)
+;;;      res = spread([arr], [dims],[sizes])
+;;;    Inserts a new DIMth dimension of size SIZE or does so
+;;;    consecutively with DIMS and SIZES.
+;;;  Examples:
+;;;    xx = spread(x, [1,2], [ny,nz])
+;;;    yy = spread(y, [0,2], [nx,nz])
+;;;    zz = spread(z, [0,1], [nx,ny])
 
 function spread, arr, dim, size 
 COMPILE_OPT IDL2,HIDDEN
