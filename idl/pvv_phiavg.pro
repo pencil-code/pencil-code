@@ -26,6 +26,7 @@
 ;;;                     for statistics, assume [R_sphere] (whole sphere),
 ;;;                     or [R_in, R_out] (spherical shell)
 ;;;    MARGIN        -- margin in x and y (see ASPECT_POS)
+;;;    AXIS          -- include the z axis in the plot
 ;;;    STAT          -- print some statistics
 ;;;    OMEGA0        -- angular velocity Omega0 for getting statistics right
 ;;;    MAXVEC        -- maximum number of vectors to plot (see WD_VELOVECT)
@@ -46,16 +47,38 @@
 ;;;    avg=tavg_phiavg([800.,1e10])
 ;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT, NLINES=20
 ;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT, NLINES=20, $
-;;;                /ABSZERO, BOTTOMCOLFRAC=0.3
+;;;                /ABSZERO, BOTTOMCOLFRAC=0.3, /AXIS
 
-pro pvv_phiavg, arg, BB=bb, UU=uu, $
-                NEGATE=negate, MARGIN=margin, RADII=radii, OMEGA0=omega, $
-                CHARSIZE=charsize, MAXVEC=maxvec, $
-                STAT=stat, NLINES=nlines, $
+; pro _new_ct, ct
+; ;; Build custom colour table, based on colour table 5
+;   common _ct_data, orig_ct
+
+;   loadct, 5
+  
+; end
+
+; pro _restore_ct, ct
+; ;; Restore previous colour table
+;   common _ct_data, orig_ct
+
+;   loadct, 
+  
+; end
+
+; ---------------------------------------------------------------------- ;
+pro pvv_phiavg, arg, $
+                BB=bb, UU=uu, $
+                NEGATE=negate, $
                 PLOT_UPHI=plot_uphi, PLOT_LZ=plot_lz, $
+                RADII=radii, MARGIN=margin, AXIS=axis, $
+                STAT=stat, OMEGA0=omega, $
+                MAXVEC=maxvec, $
+                NLINES=nlines, $
                 ABSZERO=abszero, BOTTOMCOLFRAC=bottomcolfrac, $
-                QUIET=quiet, $
-                HELP=help
+                QUIET=quiet, HELP=help, $
+                CHARSIZE=charsize, $
+                XRANGE=xrange, YRANGE=yrange, $
+                _EXTRA=extra
 
   if (keyword_set(help)) then extract_help, 'pvv_phiavg'
 
@@ -67,23 +90,23 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
   default, uu, 1
   default, bb, 0
   default, negate, 0
-  default, margin, 0.05
-  default, charsize, !p.charsize
-  default, maxvec, [20,40]
-  default, stat, 0
-  default, quiet, 0
-  default, nlines, 0
   default, plot_uphi, 0
   default, plot_lz, 0
+  default, margin, 0.05
+  default, axis, 0
+  default, stat, 0
+  default, maxvec, [20,40]
+  default, nlines, 0
   default, abszero, 0
   default, bottomcolfrac, 0
+  default, quiet, 0
   if (n_elements(omega) eq 0) then begin
     omega = 1.
     noomega = 1
   endif else begin
     noomega = 0
   endelse
-
+  default, charsize, !p.charsize
 
   s = size(arg)
   if (s[s[0]+1] eq 8) then begin
@@ -117,6 +140,10 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     message, 'ARG must be a struct or a string'
 
   endelse
+
+  default, xrange, minmax(avg.rcyl)
+  default, yrange, minmax(avg.z)
+  if (axis) then xrange[0] = 0.
 
   nr = n_elements(avg.rcyl)
   nz = n_elements(avg.z)
@@ -154,8 +181,23 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     var3_plot = -var3_plot
   endif
 
-  pos = aspect_pos((max(avg.z)-min(avg.z))/(max(avg.rcyl)-min(avg.rcyl)), $
+  ;
+  pos = aspect_pos(minmax(yrange,/RANGE)/minmax(xrange,/RANGE), $
                    MARGIN=margin)
+  ;
+  ; Set colour range:
+  ;
+  data_range = minmax(var3_plot)
+  if (abszero) then data_range = [-1,1]*max(abs(data_range))
+  if (bottomcolfrac ne 0) then begin
+    level_bot = (data_range[0]-bottomcolfrac*data_range[1]) $
+                / (1.-bottomcolfrac)
+    level_top = data_range[1]
+    levels = linspace([level_bot,level_top], 60/(1-bottomcolfrac), GHOST=0.5)
+  endif else begin
+    levels = linspace(data_range, 60, GHOST=0.5)
+  endelse
+
   if (nlines ne 0) then begin
     ;; Plot fieldlines on color
     ;; 1. Construct vector potential
@@ -165,44 +207,35 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
       pot[*,iiz] = integral(avg.rcyl,avg.rcyl*var2[*,iiz],/accumulate)
     endfor
     ;; 2. Plot
-    ; Set colour range:
-    data_range = minmax(var3_plot)
-    if (abszero) then data_range = [-1,1]*max(abs(data_range))
-    if (bottomcolfrac ne 0) then begin
-      level_bot =   (data_range[0]-bottomcolfrac*data_range[1]) $
-                  / (1.-bottomcolfrac)
-      level_top = data_range[1]
-      levels = linspace([level_bot,level_top], 60/(1-bottomcolfrac), GHOST=0.5)
-    endif else begin
-      levels = linspace(data_range, 60, GHOST=0.5)
-    endelse
     contourfill, var3_plot, $
         avg.rcyl, avg.z, $
-        POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
-        YRANGE=minmax(avg.z), YSTYLE=1, $
+        POS=pos, XRANGE=xrange, XSTYLE=1, $
+        YRANGE=yrange, YSTYLE=1, $
         XTITLE='!8r!X', YTITLE='!8z!X', $
         LEVELS=levels, $
-        CHARSIZE=charsize
+        CHARSIZE=charsize, $
+        _EXTRA=extra
     if (nlines gt 0) then begin
       ; linearly spaced
-      levels = linspace(minmax(pot),abs(nlines),GHOST=0.5)
+      levs = linspace(minmax(pot),abs(nlines),GHOST=0.5)
     endif else begin
       ; sqrt-spaced such that uniform field would have equidistant lines
-      levels = fllevels(pot,abs(nlines))
+      levs = fllevels(pot,abs(nlines))
     endelse
     contour, pot, avg.rcyl, avg.z, $
         /OVERPLOT, $
-        LEVELS=levels
+        LEVELS=levs
   endif else begin
     ;; Plot arrows on color
     plot_3d_vect, var1, var2, var3_plot, $
         avg.rcyl, avg.z, $
-        POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
-        YRANGE=minmax(avg.z), YSTYLE=1, $
-        /KEEP, $
+        POS=pos, XRANGE=xrange, XSTYLE=1, $
+        YRANGE=yrange, YSTYLE=1, $
+        /KEEP, LEVELS=levels, $
         XTITLE='!8r!X', YTITLE='!8z!X', $
         MAXVEC=maxvec, CHARSIZE=charsize, $
-        /QUIET
+        /QUIET, $
+        _EXTRA=extra
   endelse
 
   ;; Overplot spheres (well, circles) if that makes sense
