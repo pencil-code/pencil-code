@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.14 2005-06-05 03:51:09 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.15 2005-06-05 13:42:24 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -119,6 +119,7 @@ varcontent[iaa].idlvarloc= 'aa_loc'
 varcontent[iaa].idlinitloc = INIT_3VECTOR_LOC
 varcontent[iaa].skip  = 2
 
+default,iaatest,0
 varcontent[iaatest].variable = 'Testfield vector potential (aatest)'
 varcontent[iaatest].idlvar   = 'aatest'
 varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,3*9)*one'
