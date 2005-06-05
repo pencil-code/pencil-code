@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.229 2004-10-27 14:52:56 ajohan Exp $
+! $Id: equ.f90,v 1.230 2005-06-05 12:44:27 brandenb Exp $
 
 module Equ
 
@@ -231,6 +231,7 @@ module Equ
       use Gravity
       use Entropy
       use Magnetic
+      use Testfield
       use Radiation
       use Ionization
       use Pscalar
@@ -261,7 +262,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.229 2004-10-27 14:52:56 ajohan Exp $")
+           "$Id: equ.f90,v 1.230 2005-06-05 12:44:27 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -392,6 +393,10 @@ module Equ
 !  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,uu,uij,rho1,TT1,bb,bij,aij,jj,JxBr,del2A,graddivA,va2,shock,gshock)
+!
+!  Testfield evolution
+!
+        if (ltestfield) call daatest_dt(f,df,uu)
 !
 !  Passive scalar evolution
 !

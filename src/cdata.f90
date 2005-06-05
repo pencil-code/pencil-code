@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.260 2005-04-05 11:15:10 ngrs Exp $
+! $Id: cdata.f90,v 1.261 2005-06-05 12:44:27 brandenb Exp $
 
 module Cdata
 
@@ -79,6 +79,7 @@ module Cdata
   integer :: nvar,naux,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,iss=0
   integer :: igg=0,igx=0,igy=0,igz=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
+  integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper=0
   integer :: iecr=0,ismagorinsky
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
@@ -138,7 +139,7 @@ module Cdata
   logical :: lhydro=.false., lhydro_fixed=.false., ldensity=.false.
   logical :: ldensity_nolog=.false.
   logical :: ldensity_fixed=.false., lentropy=.false., lentropy_fixed=.false.
-  logical :: lmagnetic=.false.
+  logical :: lmagnetic=.false.,ltestfield=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.

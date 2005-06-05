@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.197 2005-04-19 03:58:56 dobler Exp $ 
+! $Id: param_io.f90,v 1.198 2005-06-05 12:44:27 brandenb Exp $ 
 
 module Param_IO
 
@@ -15,6 +15,7 @@ module Param_IO
   use Entropy
   use Density
   use Magnetic
+  use Testfield
   use Pscalar
   use Chiral
   use CosmicRay
@@ -189,6 +190,9 @@ module Param_IO
       label='magnetic_init_pars'
       if (lmagnetic    ) read(1,NML=magnetic_init_pars     ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
+      label='testfield_init_pars'
+      if (ltestfield   ) read(1,NML=testfield_init_pars    ,ERR=99, IOSTAT=ierr)
+      call sgi_fix(lsgifix,1,'start.in')
       label='radiation_init_pars'
       if (lradiation   ) read(1,NML=radiation_init_pars    ,ERR=99, IOSTAT=ierr)
 
@@ -292,6 +296,7 @@ module Param_IO
         if (lgrav        ) print*,'&grav_init_pars           /'
         if (lentropy .or. lentropy_fixed) print*,'&entropy_init_pars        /'
         if (lmagnetic    ) print*,'&magnetic_init_pars       /'
+        if (ltestfield   ) print*,'&testfield_init_pars      /'
         if (lradiation   ) print*,'&radiation_init_pars      /'
         if (lionization  ) print*,'&ionization_init_pars     /'
         if (lpscalar     ) print*,'&pscalar_init_pars        /'
@@ -343,6 +348,7 @@ module Param_IO
         if (lgrav        ) write(unit,NML=grav_init_pars        )
         if (lentropy .or. lentropy_fixed) write(unit,NML=entropy_init_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_init_pars    )
+        if (ltestfield   ) write(unit,NML=testfield_init_pars   )
         if (lradiation   ) write(unit,NML=radiation_init_pars   )
 
         call write_ionization_init_pars(unit)
@@ -428,6 +434,9 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       label='magnetic_run_pars'
       if (lmagnetic    ) read(1,NML=magnetic_run_pars     ,ERR=99, IOSTAT=ierr)
+      call sgi_fix(lsgifix,1,'run.in')
+      label='testfield_run_pars'
+      if (ltestfield   ) read(1,NML=testfield_run_pars    ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'run.in')
       label='radiation_run_pars'
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
@@ -630,6 +639,7 @@ module Param_IO
         if (lgrav        ) print*,'&grav_run_pars           /'
         if (lentropy .or. lentropy_fixed) print*,'&entropy_run_pars        /'
         if (lmagnetic    ) print*,'&magnetic_run_pars       /'
+        if (ltestfield   ) print*,'&testfield_run_pars       /'
         if (lradiation   ) print*,'&radiation_run_pars      /'
         if (lionization  ) print*,'&ionization_run_pars     /'
         if (lpscalar     ) print*,'&pscalar_run_pars        /'
@@ -700,10 +710,12 @@ module Param_IO
 !
                            write(unit,NML=run_pars             )
         if (lhydro .or. lhydro_fixed) write(unit,NML=hydro_run_pars       )
+        if (ldensity .or. ldensity_fixed) write(unit,NML=density_run_pars )
         if (lforcing     ) write(unit,NML=forcing_run_pars     )
         if (lgrav        ) write(unit,NML=grav_run_pars        )
         if (lentropy .or. lentropy_fixed) write(unit,NML=entropy_run_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_run_pars    )
+        if (ltestfield   ) write(unit,NML=testfield_run_pars   )
         if (lradiation   ) write(unit,NML=radiation_run_pars   )
 
         call write_ionization_run_pars(1)
@@ -818,7 +830,7 @@ module Param_IO
       use Cdata
 !
       namelist /lphysics/ &
-           lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
+           lhydro,ldensity,lentropy,lmagnetic,ltestfield,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            ldustvelocity,ldustdensity,lvisc_shock,lradiation_fld,  &
            lionization,lionization_fixed,lvisc_hyper,lchiral, &
@@ -839,6 +851,7 @@ module Param_IO
         if (lgrav        ) write(1,NML=grav_init_pars        )
         if (lentropy .or. lentropy_fixed) write(1,NML=entropy_init_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_init_pars    )
+        if (ltestfield   ) write(1,NML=testfield_init_pars   )
         if (lradiation   ) write(1,NML=radiation_init_pars   )
 
         call write_ionization_init_pars(1)
@@ -875,6 +888,7 @@ module Param_IO
         if (lgrav        ) read(1,NML=grav_init_pars        )
         if (lentropy .or. lentropy_fixed) read(1,NML=entropy_init_pars     )
         if (lmagnetic    ) read(1,NML=magnetic_init_pars    )
+        if (ltestfield   ) read(1,NML=testfield_init_pars   )
         if (lradiation   ) read(1,NML=radiation_init_pars   )
 
         call read_ionization_init_pars(1)
@@ -912,6 +926,7 @@ module Param_IO
         if (lgrav        ) write(1,NML=grav_run_pars        )
         if (lentropy .or. lentropy_fixed) write(1,NML=entropy_run_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_run_pars    )
+        if (ltestfield   ) write(1,NML=testfield_run_pars   )
         if (lradiation   ) write(1,NML=radiation_run_pars   )
 
         call write_ionization_run_pars(1)

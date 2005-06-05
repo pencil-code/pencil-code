@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.143 2005-03-02 06:10:05 dobler Exp $
+! $Id: register.f90,v 1.144 2005-06-05 12:44:27 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -31,6 +31,7 @@ module Register
       use Forcing,      only: register_forcing
       use Entropy,      only: register_entropy
       use Magnetic,     only: register_magnetic
+      use Testfield,    only: register_testfield
       use Radiation,    only: register_radiation
       use Ionization,   only: register_ionization
       use Pscalar,      only: register_pscalar
@@ -75,6 +76,7 @@ module Register
       call register_forcing
       call register_entropy
       call register_magnetic
+      call register_testfield
       call register_radiation
       call register_pscalar
       call register_chiral
@@ -142,6 +144,7 @@ module Register
       use Forcing,      only: initialize_forcing
       use Entropy,      only: initialize_entropy
       use Magnetic,     only: initialize_magnetic
+      use Testfield,    only: initialize_testfield
       use Radiation,    only: initialize_radiation
       use Ionization,   only: initialize_ionization
       use Pscalar,      only: initialize_pscalar
@@ -238,6 +241,7 @@ module Register
       call initialize_forcing(lstarting)   ! get random seed from file, ..
       call initialize_entropy(f,lstarting) ! calculate radiative conductivity,..
       call initialize_magnetic(f)
+      call initialize_testfield(f)
       call initialize_radiation()
       call initialize_pscalar(f)
       call initialize_chiral(f)
@@ -312,6 +316,7 @@ module Register
       use Hydro,        only: rprint_hydro
       use Entropy,      only: rprint_entropy
       use Magnetic,     only: rprint_magnetic
+      use Testfield,    only: rprint_testfield
       use Radiation,    only: rprint_radiation
       use Ionization,   only: rprint_ionization
       use Pscalar,      only: rprint_pscalar
@@ -421,6 +426,7 @@ module Register
       call rprint_forcing     (lreset,LWRITE=lroot)
       call rprint_entropy     (lreset,LWRITE=lroot)
       call rprint_magnetic    (lreset,LWRITE=lroot)
+      call rprint_testfield   (lreset,LWRITE=lroot)
       call rprint_radiation   (lreset,LWRITE=lroot)
       call rprint_ionization  (lreset,LWRITE=lroot)
       call rprint_pscalar     (lreset,LWRITE=lroot)

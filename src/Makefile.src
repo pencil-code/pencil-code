@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.105 2005-05-25 23:22:56 theine Exp $
+### $Id: Makefile.src,v 1.106 2005-06-05 12:44:27 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -33,6 +33,7 @@ COSMICRAY    = nocosmicray
 IONIZATION   = noionization
 STRUCT_FUNC  = nostruct_func
 INITCOND_SPEC= noinitcond_spec
+TESTFIELD    = notestfield
 
 GRAVITY      = nograv
 FORCING      = noforcing
@@ -195,6 +196,7 @@ FCCLEANER=
 #LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11)
+#LDMPI=-I/home/brandenb/apps/ifort/lib -I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #LDMPI=-L/opt/mpich/lib #(nw43)
 #LDMPI=-L/usr/local/mpich/lib #(pcponty)
 #LDMPI= # (Samos|fire|sandin)
@@ -285,7 +287,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 ## Abbreviations
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
-physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(TESTFIELD).o
 comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
 start_deps_f90=$(comm_deps) $(GRID).o $(DEBUG).o
 start_deps=$(start_deps_f90)
@@ -293,6 +295,8 @@ run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
+var2ascii_deps=cparam.o
+var2ascii=var2ascii.o $(var2ascii_deps)
 read_videofiles_deps=cparam.o cdata.o general.o
 read_videofiles=read_videofiles.o $(read_videofiles_deps)
 read_vectorfiles_deps=cparam.o cdata.o general.o
@@ -403,6 +407,9 @@ read_videofiles.x: $(read_videofiles)
 read_vectorfiles.x: $(read_vectorfiles)
 	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LDMPI) -o read_vectorfiles.x 
 
+var2ascii.x: $(var2ascii)
+	$(LD) $(LDFLAGS) $(var2ascii) $(LDMPI) -o var2ascii.x 
+
 ## ---------------------------------------------------------------------- #
 ## Dependencies
 ## ---------------------------------------------------------------------- #
@@ -410,6 +417,7 @@ start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
+var2ascii.o: var2ascii.f90 $(var2ascii_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
@@ -442,6 +450,7 @@ $(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
 $(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
 $(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(INTERSTELLAR).o $(IONIZATION).o $(SPECIAL).o
 $(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
+$(TESTFIELD).o:     $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o $(IO).o
 $(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(IONIZATION).o
 $(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
 $(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(IONIZATION).o
