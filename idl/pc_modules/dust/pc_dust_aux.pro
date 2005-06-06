@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.10 2004-08-17 11:15:24 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.11 2005-06-06 10:11:13 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
@@ -114,7 +114,9 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
   endif else if (var eq 'epsd') then begin
 
     sized=size(nd_loc)
+    if (not defined(md)) then md=1.0
     sizemd=size(md)
+
     if (sized[0] ne sizemd[0]) then begin
       if (ndustspec eq 1) then begin
         result=md[0]*nd_loc*unit_md/exp(lnrho)
