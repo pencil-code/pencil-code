@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.1 2005-06-05 12:44:27 brandenb Exp $
+! $Id: testfield.f90,v 1.2 2005-06-06 20:25:09 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -48,7 +48,7 @@ module Testfield
     subroutine register_testfield()
 !
 !  Initialise variables which should know that we solve for the vector
-!  potential: iaa, etc; increase nvar accordingly
+!  potential: iaatest, etc; increase nvar accordingly
 !
 !  1-may-02/wolf: coded
 !
@@ -63,14 +63,11 @@ module Testfield
 !
       ltestfield = .true.
       iaatest = nvar+1              ! indices to access aa
-      iaxtest = iaa
-      iaytest = iaa+1
-      iaztest = iaa+2
       nvar = nvar+27            ! added 27 variables
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_testfield: nvar = ', nvar
-        print*, 'register_testfield: iaa,iax,iay,iaz = ', iaa,iax,iay,iaz
+        print*, 'register_testfield: iaatest = ', iaatest
       endif
 !
 !  Put variable names in array
@@ -82,7 +79,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.1 2005-06-05 12:44:27 brandenb Exp $")
+           "$Id: testfield.f90,v 1.2 2005-06-06 20:25:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -117,7 +114,7 @@ module Testfield
 !  (in future, could call something like init_aa_simple)
 !
       if (reinitalize_aatest) then
-        f(:,:,:,iax:iaz)=0.
+        f(:,:,:,iaatest:iaatest+26)=0.
       endif
 !
     endsubroutine initialize_testfield
@@ -143,7 +140,7 @@ module Testfield
 !
       select case(initaatest)
 
-      case('zero', '0'); f(:,:,:,iax:iaz) = 0.
+      case('zero', '0'); f(:,:,:,iaatest:iaatest+26)=0.
 
       case default
         !
