@@ -38,12 +38,13 @@ module Grid
       use Cdata, only: Lx,Ly,Lz
       use Cdata, only: dx_1,dy_1,dz_1
       use Cdata, only: dx_tilde,dy_tilde,dz_tilde
+      use Cdata, only: dxmin, dxmax
       use Cdata, only: x0,y0,z0
       use Cdata, only: nxgrid,nygrid,nzgrid
       use Cdata, only: ipx,ipy,ipz
       use Cdata, only: nghost,coeff_grid,grid_func
-      use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
       use Cdata, only: xyz_step,xi_step_frac,xi_step_width
+      use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
       use Mpicomm, only: stop_it
 
       real, dimension(mx), intent(out) :: x
@@ -54,9 +55,9 @@ module Grid
       real :: xi1lo,xi1up,g1lo,g1up
       real :: xi2lo,xi2up,g2lo,g2up
       real :: xi3lo,xi3up,g3lo,g3up
-      real :: xi1star,xi2star,xi3star
       real, dimension(3,2) :: xi_step
       real, dimension(3,3) :: dxyz_step
+      real :: xi1star,xi2star,xi3star
 
       real, dimension(mx) :: g1,g1der1,g1der2,xi1,xprim,xprim2
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim,yprim2
@@ -102,8 +103,8 @@ module Grid
 !
       xi1lo=0.; xi1up=nxgrid-merge(0.,1.,lperi(1))
       xi2lo=0.; xi2up=nygrid-merge(0.,1.,lperi(2))
-      xi3lo=0.; xi3up=nzgrid-merge(0.,1.,lperi(3))
 
+      xi3lo=0.; xi3up=nzgrid-merge(0.,1.,lperi(3))
 !
 !  Construct nonequidistant grid
 !
@@ -264,6 +265,15 @@ module Grid
         dz_tilde=-zprim2/zprim**2
       endif
 
+!FIXME:
+! This dxmin/max concept is not compatible with the concept of a spacially
+! varying grid.
+!
+      dxmin = minval( (/dx,dy,dz,huge(dx)/), &
+                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
+      dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
+                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
+
     endsubroutine construct_grid
 !***********************************************************************
     subroutine grid_profile_point(xi,grid_func,g,gder1,gder2,err, &
@@ -305,23 +315,26 @@ module Grid
       case ('step-linear')
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
         g=                                                                    &
-         dxyz(1)*0.5*(xi - delta(1)*alog(cosh((xi-xistep(1))/delta(1))))  +   &
-         dxyz(2)*0.5*( delta(1)*alog(cosh((xi-xistep(1))/delta(1))) -         &
-                           delta(2)*alog(cosh((xi-xistep(2))/delta(2))) ) +   &
-         dxyz(3)*0.5*( xi + delta(2)*alog(cosh((xi-xistep(2))/delta(2))) )
+         dxyz(1)*0.5*(xi-delta(1)*log(dble(cosh((xi-xistep(1))/delta(1))))) + &
+         dxyz(2)*0.5*(delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
+                         delta(2)*log(cosh(dble((xi-xistep(2))/delta(2))))) + &
+         dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))))
+
         if (present(gder1)) then
-         gder1=                                                     &
-            dxyz(1)*0.5*( 1.0 - tanh((xi-xistep(1))/delta(1)) )  +  &
-            dxyz(2)*0.5*( tanh((xi-xistep(1))/delta(1))  -          &
-                              tanh((xi-xistep(2))/delta(2) ) )   +  &
-            dxyz(3)*0.5*( 1.0 + tanh((xi-xistep(2))/delta(2)) )
+         gder1=                                                           &
+            dxyz(1)*0.5*( 1.0 - tanh(dble((xi-xistep(1))/delta(1))) )  +  &
+            dxyz(2)*0.5*( tanh(dble((xi-xistep(1))/delta(1)))  -          &
+                              tanh(dble((xi-xistep(2))/delta(2))) )    +  &
+            dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
+
         endif 
         if (present(gder2)) then
-         gder2=                                                               &
-          dxyz(1)*0.5* (-1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2   +   &
-          dxyz(2)*0.5*(( 1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2 -     &
-                       (-1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2)  +   &
-          dxyz(3)*0.5* ( 1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2
+         gder2=                                                                &
+          dxyz(1)*0.5*(-1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 + &
+          dxyz(2)*0.5*((1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 - &
+                      (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+ &
+          dxyz(3)*0.5*( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
+
         endif 
        endif 
 
@@ -366,24 +379,27 @@ module Grid
 
       case ('step-linear')
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
-        g=                                                                    &
-         dxyz(1)*0.5*(xi - delta(1)*alog(cosh((xi-xistep(1))/delta(1))))  +   &
-         dxyz(2)*0.5*( delta(1)*alog(cosh((xi-xistep(1))/delta(1))) -         &
-                           delta(2)*alog(cosh((xi-xistep(2))/delta(2))) ) +   &
-         dxyz(3)*0.5*( xi + delta(2)*alog(cosh((xi-xistep(2))/delta(2))) )
+        g=                                                                     &
+         dxyz(1)*0.5*(xi - delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) +&
+         dxyz(2)*0.5*( delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
+                           delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )+&
+         dxyz(3)*0.5*( xi + delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))) )
+
         if (present(gder1)) then
-         gder1=                                                        &
-            dxyz(1)*0.5*( 1.0 - tanh((xi-xistep(1))/delta(1)) )  +  &
-            dxyz(2)*0.5*( tanh((xi-xistep(1))/delta(1))  -          &
-                              tanh((xi-xistep(2))/delta(2) ) )   +  &
-            dxyz(3)*0.5*( 1.0 + tanh((xi-xistep(2))/delta(2)) )
+         gder1=                                                           &
+            dxyz(1)*0.5*( 1.0 - tanh(dble((xi-xistep(1))/delta(1))) )  +  &
+            dxyz(2)*0.5*( tanh(dble((xi-xistep(1))/delta(1)))  -          &
+                              tanh(dble((xi-xistep(2))/delta(2))) )    +  &
+            dxyz(3)*0.5*( 1.0 + tanh(dble((xi-xistep(2))/delta(2))) )
+
         endif 
         if (present(gder2)) then
          gder2=                                                               &
-          dxyz(1)*0.5* (-1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2   +   &
-          dxyz(2)*0.5*(( 1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2 -     &
-                       (-1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2)  +   &
-          dxyz(3)*0.5* ( 1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2
+          dxyz(1)*0.5* (-1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 +&
+          dxyz(2)*0.5*(( 1.0)/delta(1)/cosh(dble((xi-xistep(1))/delta(1)))**2 -&
+                       (-1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2)+&
+          dxyz(3)*0.5* ( 1.0)/delta(2)/cosh(dble((xi-xistep(2))/delta(2)))**2
+
         endif 
        endif
 
