@@ -4,7 +4,8 @@ pro boxbotex_scl,inxy,imxy,imxz,imyz,$
          amax=amax,amin=amin,thick=thick,zpos=zpos,scale=scale,title=title,$
          length=length,xpos=xpos,ip=ip,box=box,$
          centred=centred,shell=shell,r_int=r_int,r_ext=r_ext,$
-         zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr,magnify=magnify,nobottom=nobottom
+         zrr1=zrr1,zrr2=zrr2,yrr=yrr,xrr=xrr,magnify=magnify,$
+         nobottom=nobottom,norm=norm
 ;
 ; n=15
 ; inxy=reform(uuu(*,*,n,0))
@@ -105,6 +106,7 @@ if n_elements(zpos) eq 0 then zpos=1.1
 if n_elements(zof) eq 0 then zof=1.40
 if n_elements(scale) eq 0 then scale=1.0
 if n_elements(length) eq 0 then length=1.0
+if n_elements(norm) eq 0 then norm=1.0
 if n_elements(magnify) eq 0 then magnify=1.0
 if n_elements(ip) eq 0 then ip=0
 if keyword_set(shell) then begin            
@@ -146,13 +148,13 @@ if xrot gt 0 then begin
   ;  xz-plane
   ;
   for i = 0,npx-1 do $
-    yim(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imxz(nx-nxi:nx-1,0:nzi-1) $
+    yim(i*nxi:(i+1)*nxi-1,*) = bytscl(rev*imxz(nx-nxi:nx-1,0:nzi-1)/norm $
                                ,max=amax,min=amin,top=ncols-2-mincol)+mincol
   ;
   ;  yz-plane
   ;
   for j = 0,npy-1 do $
-    xim(j*nyi:(j+1)*nyi-1,*) = bytscl(rev*imyz(ny-nyi:ny-1,0:nzi-1) $
+    xim(j*nyi:(j+1)*nyi-1,*) = bytscl(rev*imyz(ny-nyi:ny-1,0:nzi-1)/norm $
                                ,max=amax,min=amin,top=ncols-2-mincol)+mincol
   ;
   ;  top and bottom xy-planes
@@ -160,10 +162,10 @@ if xrot gt 0 then begin
   for i = 0,npy-1 do begin
     for j = 0,npx-1 do begin
       zim(j*nxi:(j+1)*nxi-1,i*nyi:(i+1)*nyi-1) = bytscl(rev* $
-                                inxy(nx-nxi:nx-1,ny-nyi:ny-1) $
+                                inxy(nx-nxi:nx-1,ny-nyi:ny-1)/norm $
                               ,max=amax,min=amin,top=ncols-2-mincol)+mincol
       zimbot(j*nxi:(j+1)*nxi-1,i*nyi:(i+1)*nyi-1) = bytscl(rev* $
-                                imxy(nx-nxi:nx-1,ny-nyi:ny-1) $
+                                imxy(nx-nxi:nx-1,ny-nyi:ny-1)/norm $
                               ,max=amax,min=amin,top=ncols-2-mincol)+mincol
     endfor
   endfor
