@@ -315,7 +315,7 @@ module Grid
       case ('step-linear')
        if (present(dxyz) .and. present(xistep) .and. present(delta)) then
         g=                                                                    &
-         dxyz(1)*0.5*(xi-delta(1)*log(dble(cosh((xi-xistep(1))/delta(1))))) + &
+         dxyz(1)*0.5*(xi-delta(1)*log(cosh(dble((xi-xistep(1))/delta(1))))) + &
          dxyz(2)*0.5*(delta(1)*log(cosh(dble((xi-xistep(1))/delta(1)))) -     &
                          delta(2)*log(cosh(dble((xi-xistep(2))/delta(2))))) + &
          dxyz(3)*0.5*(xi+delta(2)*log(cosh(dble((xi-xistep(2))/delta(2)))))
