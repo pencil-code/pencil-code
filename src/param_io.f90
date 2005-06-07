@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.198 2005-06-05 12:44:27 brandenb Exp $ 
+! $Id: param_io.f90,v 1.199 2005-06-07 21:21:28 brandenb Exp $ 
 
 module Param_IO
 
@@ -76,7 +76,7 @@ module Param_IO
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
-       lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
+       lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &

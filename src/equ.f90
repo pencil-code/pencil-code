@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.230 2005-06-05 12:44:27 brandenb Exp $
+! $Id: equ.f90,v 1.231 2005-06-07 21:21:28 brandenb Exp $
 
 module Equ
 
@@ -161,6 +161,31 @@ module Equ
 !
     endsubroutine xyaverages_z
 !***********************************************************************
+    subroutine yaverages_xz()
+!
+!  Calculate y-averages (still depending on x and z)
+!  NOTE: these averages depend on x and z, so after summation in y they
+!  are still distributed over nprocy CPUs; hence the dimensions of fsumxz
+!  (and fnamexz).
+!
+!   7-jun-05/axel: adapted from zaverages_xy
+!
+      use Mpicomm
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,nz,nprocz,mnamexz) :: fsumxz
+!
+!  communicate over all processors
+!  the result is only present on the root processor
+!
+      if (nnamexy>0) then
+        call mpireduce_sum(fnamexz,fsumxz,nnamexz*nx*nz*nprocz)
+        if(lroot) fnamexz=fsumxz/(ny*nprocy)
+      endif
+!
+    endsubroutine yaverages_xz
+!***********************************************************************
     subroutine zaverages_xy()
 !
 !  Calculate z-averages (still depending on x and y)
@@ -262,7 +287,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.230 2005-06-05 12:44:27 brandenb Exp $")
+           "$Id: equ.f90,v 1.231 2005-06-07 21:21:28 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -532,6 +557,7 @@ module Equ
 !  2-D averages
 !
       if (l2davgfirst) then
+        if (lwrite_yaverages) call yaverages_xz
         if (lwrite_zaverages) call zaverages_xy
         if (lwrite_phiaverages) call phiaverages_rz
       endif
@@ -539,6 +565,7 @@ module Equ
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
 !
       if (.not.l2davgfirst.and.(i_bmx+i_bmy)>0) then
+        if (lwrite_yaverages) call yaverages_xz
         if (lwrite_zaverages) call zaverages_xy
       endif
 !

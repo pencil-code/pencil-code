@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.68 2005-04-19 03:58:56 dobler Exp $
+! $Id: prints.f90,v 1.69 2005-06-07 21:21:28 brandenb Exp $
 
 module Print
 
@@ -253,6 +253,7 @@ module Print
       use Param_IO
 !
       if (l2davg.and.lroot) then
+        if (lwrite_yaverages)   call write_yaverages(ch2davg)
         if (lwrite_zaverages)   call write_zaverages(ch2davg)
         if (lwrite_phiaverages) call write_phiaverages(ch2davg)
         !
@@ -276,6 +277,26 @@ module Print
       endif
 !
     endsubroutine write_xyaverages
+!***********************************************************************
+    subroutine write_yaverages(ch)
+!
+!  Write y-averages (which are 2d data) that have been requested via
+!  `yaver.in'
+!
+!   7-jun-05/axel: adapted from write_zaverages
+!
+      character (len=4) :: ch
+!
+      if(lroot.and.nnamexz>0) then
+        open(1,file=trim(datadir)//'/yaverages.dat',position='append')
+        write(1,'(1pe12.5)') t
+        write(1,'(1p,8e12.4)') fnamexz(:,:,:,1:nnamexz)
+        close(1)
+      endif
+!
+      if(ip==0) print*,ch       ! (keep compiler quiet)
+!
+    endsubroutine write_yaverages
 !***********************************************************************
     subroutine write_zaverages(ch)
 !

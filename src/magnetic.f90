@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.235 2005-05-24 19:39:47 brandenb Exp $
+! $Id: magnetic.f90,v 1.236 2005-06-07 21:21:28 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -100,6 +100,7 @@ module Magnetic
   integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0,i_djuidjbim
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
+  integer :: i_bxmxz=0,i_bymxz=0,i_bzmxz=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
   integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
   integer :: i_b2b13m=0
@@ -147,7 +148,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.235 2005-05-24 19:39:47 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.236 2005-06-07 21:21:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -458,15 +459,18 @@ module Magnetic
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (i_bxmz/=0.or.i_bxmxy/=0) bx=bb(:,1)
-        if (i_bymz/=0.or.i_bymxy/=0) by=bb(:,2)
-        if (i_bzmz/=0.or.i_bzmxy/=0) bz=bb(:,3)
+        if (i_bxmz/=0.or.i_bxmxy/=0.or.i_bxmxz) bx=bb(:,1)
+        if (i_bymz/=0.or.i_bymxy/=0.or.i_bymxz) by=bb(:,2)
+        if (i_bzmz/=0.or.i_bzmxy/=0.or.i_bzmxz) bz=bb(:,3)
         if (i_bxmz/=0) call xysum_mn_name_z(bx,i_bxmz)
         if (i_bymz/=0) call xysum_mn_name_z(by,i_bymz)
         if (i_bzmz/=0) call xysum_mn_name_z(bz,i_bzmz)
         if (i_bxmxy/=0) call zsum_mn_name_xy(bx,i_bxmxy)
         if (i_bymxy/=0) call zsum_mn_name_xy(by,i_bymxy)
         if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
+        if (i_bxmxz/=0) call ysum_mn_name_xz(bx,i_bxmxz)
+        if (i_bymxz/=0) call ysum_mn_name_xz(by,i_bymxz)
+        if (i_bzmxz/=0) call ysum_mn_name_xz(bz,i_bzmxz)
       endif
 !
 !  calculate Alfven speed
@@ -1121,7 +1125,7 @@ module Magnetic
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,ixy,irz
+      integer :: iname,inamez,ixy,ixz,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1141,6 +1145,7 @@ module Magnetic
         i_bxbym=0; i_bxbzm=0; i_bybzm=0; i_djuidjbim=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
+        i_bxmxz=0; i_bymxz=0; i_bzmxz=0
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
         i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
         i_uxjm=0; i_ujxbm=0
@@ -1207,6 +1212,14 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',i_bxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',i_bymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',i_bzmz)
+      enddo
+!
+!  check for those quantities for which we want y-averages
+!
+      do ixz=1,nnamexz
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxmxz',i_bxmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bymxz',i_bymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bzmxz',i_bzmxz)
       enddo
 !
 !  check for those quantities for which we want z-averages
@@ -1289,9 +1302,13 @@ module Magnetic
         write(3,*) 'i_bypt=',i_bypt
         write(3,*) 'i_bzpt=',i_bzpt
         write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamexz=',nnamexz
         write(3,*) 'i_bxmxy=',i_bxmxy
         write(3,*) 'i_bymxy=',i_bymxy
         write(3,*) 'i_bzmxy=',i_bzmxy
+        write(3,*) 'i_bxmxz=',i_bxmxz
+        write(3,*) 'i_bymxz=',i_bymxz
+        write(3,*) 'i_bzmxz=',i_bzmxz
         write(3,*) 'i_brmphi=',i_brmphi
         write(3,*) 'i_bpmphi=',i_bpmphi
         write(3,*) 'i_bzmphi=',i_bzmphi

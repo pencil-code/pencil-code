@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.205 2005-04-19 03:58:56 dobler Exp $ 
+! $Id: sub.f90,v 1.206 2005-06-07 21:21:28 brandenb Exp $ 
 
 module Sub 
 
@@ -295,6 +295,32 @@ module Sub
       fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
 !
     endsubroutine xysum_mn_name_z
+!***********************************************************************
+    subroutine ysum_mn_name_xz(a,iname)
+!
+!  successively calculate sum over y of a, which is supplied at each call.
+!  The result fnamexz is xz-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!   7-jun-05/axel: adapted from zsum_mn_name_xy
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname,n_nghost
+!
+!  Initialize to zero, including other parts of the xz-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamexz(:,:,:,iname)=0.
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!  keep full x-dependence
+!
+      n_nghost=n-nghost
+      fnamexz(:,n_nghost,ipz+1,iname)=fnamexz(:,n_nghost,ipz+1,iname)+a
+!
+    endsubroutine ysum_mn_name_xz
 !***********************************************************************
     subroutine zsum_mn_name_xy(a,iname)
 !

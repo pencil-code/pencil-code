@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.144 2005-06-05 12:44:27 brandenb Exp $
+! $Id: register.f90,v 1.145 2005-06-07 21:21:28 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -329,7 +329,7 @@ module Register
       use Viscosity,    only: rprint_viscosity
       use Shear,        only: rprint_shear
 !
-      integer :: iname,inamev,inamez,inamexy,inamerz
+      integer :: iname,inamev,inamez,inamexy,inamexz,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat
       integer :: isubstract
       logical :: lreset,exist
@@ -380,6 +380,21 @@ module Register
       endif
       if (lroot.and.ip<14) print*,'rprint_list: nnamez=',nnamez
 !
+!  read in the list of variables for y-averages
+!
+      inquire(file='yaver.in',exist=exist)
+      if (exist) then
+        open(1,file='yaver.in')
+        do inamexz=1,mnamexz
+          read(1,*,end=94) cnamexz(inamexz)
+        enddo
+94      nnamexz=inamexz-1
+        close(1)
+      else
+        lwrite_yaverages = .false. ! switch yaverages off
+      endif
+      if (lroot.and.ip<14) print*,'rprint_list: nnamexz=',nnamexz
+!
 !  read in the list of variables for z-averages
 !
       inquire(file='zaver.in',exist=exist)
@@ -413,7 +428,9 @@ module Register
 !
 !  set logical for 2-D averages
 !
-      lwrite_2daverages=lwrite_zaverages.or.lwrite_phiaverages
+      lwrite_2daverages=lwrite_yaverages&
+                    .or.lwrite_zaverages&
+                    .or.lwrite_phiaverages
 !
 !  check which variables are set
 !  For the convenience of idl users, the indices of variables in

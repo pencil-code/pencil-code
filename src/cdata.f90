@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.261 2005-06-05 12:44:27 brandenb Exp $
+! $Id: cdata.f90,v 1.262 2005-06-07 21:21:28 brandenb Exp $
 
 module Cdata
 
@@ -111,19 +111,22 @@ module Cdata
 !
 !  in this section are all the things related to printing
 !
-  integer :: nname=0,nnamev=0,nnamez=0,nnamexy=0,nnamerz=0
+  integer :: nname=0,nnamev=0,nnamez=0,nnamexy=0,nnamexz=0,nnamerz=0
   integer :: nr_directions=1
-  integer, parameter :: mname=100,mnamev=100,mnamez=20,mnamexy=6,mnamerz=20
+  integer, parameter :: mname=100,mnamev=100,mnamez=30,mnamerz=20
+  integer, parameter :: mnamexy=6,mnamexz=30
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
+  real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile
   real, dimension (nx) :: pomx,pomy,phix,phiy
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamev(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
+  character (LEN=30) :: cnamexz(mnamexz),cformxz(mnamexz)
   character (LEN=30) :: cnamez(mnamez),cformz(mnamez)
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
@@ -150,7 +153,8 @@ module Cdata
   logical :: lgravx_dust=.false.,lgravy_dust=.false.,lgravz_dust=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
   logical :: l2davg,l2davgfirst
-  logical :: lwrite_zaverages=.true.,lwrite_phiaverages=.true.
+  logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.
+  logical :: lwrite_phiaverages=.true.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
