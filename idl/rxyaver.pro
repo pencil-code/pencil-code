@@ -1,4 +1,4 @@
-; $Id: rxyaver.pro,v 1.8 2005-06-08 04:30:03 brandenb Exp $
+; $Id: rxyaver.pro,v 1.9 2005-06-08 12:57:20 brandenb Exp $
 ;
 ;  read global sizes
 ;
@@ -29,6 +29,7 @@ t=0.
 bxmz=fltarr(nz*nprocz)
 bymz=fltarr(nz*nprocz)
 alpijz=fltarr(nz*nprocz,3,3)
+etaijkz=fltarr(nz*nprocz,3,3)
 ;
 close,1
 openr,1,datatopdir+'/xyaverages.dat'
@@ -39,18 +40,22 @@ fo='(8e12.4)'
 default,w,.1
 while not eof(1) do begin
   readf,1,t & print,t
+  readf,1,bxmz,bymz,alpijz,etaijkz,fo=fo
+stop
   ;readf,1,bxmz,bymz,alpijz,fo=fo
-  readf,1,bxmz,bymz,fo=fo
+  ;readf,1,bxmz,bymz,fo=fo
   ;
   if it eq 0 then begin
     bxmzt=bxmz
     bymzt=bymz
     alpijzt=alpijz
+    etaijkzt=etaijkz
     tt=t
   endif else begin
     bxmzt=[bxmzt,bxmz]
     bymzt=[bymzt,bymz]
     alpijzt=[alpijzt,alpijz]
+    etaijkzt=[etaijkzt,etaijkz]
     tt=[tt,t]
   endelse
   ;plot,bxmz
@@ -64,4 +69,5 @@ nt=n_elements(tt)
 bxmzt=reform(bxmzt,nz*nprocz,nt)
 bymzt=reform(bymzt,nz*nprocz,nt)
 alpijzt=reform(alpijzt,nz*nprocz,nt,3,3)
+etaijkzt=reform(etaijkzt,nz*nprocz,nt,3,3)
 END
