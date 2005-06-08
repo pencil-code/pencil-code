@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.195 2005-04-06 00:37:29 dobler Exp $
+! $Id: hydro.f90,v 1.196 2005-06-08 13:04:20 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -128,7 +128,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.195 2005-04-06 00:37:29 dobler Exp $")
+           "$Id: hydro.f90,v 1.196 2005-06-08 13:04:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -241,6 +241,7 @@ module Hydro
       case('soundwave-x'); call soundwave(ampluu,f,iux,kx=kx_uu)
       case('soundwave-y'); call soundwave(ampluu,f,iuy,ky=ky_uu)
       case('soundwave-z'); call soundwave(ampluu,f,iuz,kz=kz_uu)
+      case('robertsflow'); call robertsflow(ampluu,f,iuu)
       case('sound-wave', '11')
         !
         !  sound wave (should be consistent with density module)

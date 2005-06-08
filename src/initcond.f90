@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.118 2005-05-24 19:39:47 brandenb Exp $ 
+! $Id: initcond.f90,v 1.119 2005-06-08 13:04:20 brandenb Exp $ 
 
 module Initcond 
  
@@ -637,6 +637,36 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine robertsflow(ampl,f,i)
+!
+!  Roberts Flow (as initial condition)
+!
+!   9-jun-05/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: ampl,k=1.,kf,fac1,fac2
+!
+!  prepare coefficients
+!
+      kf=k*sqrt(2.)
+      fac1=sqrt(2.)*ampl*k/kf
+      fac2=sqrt(2.)*ampl
+!
+!  U=(U/k)*[curl(phi*zz)/kf+curlcurl(phi*zz)/kf^2],
+!  where phi=sqrt(2)*cos(kx)*cos(ky)
+!
+      j=i+0; f(:,:,:,j)=f(:,:,:,j)-fac1*spread(spread(cos(k*x),2,my),3,mz)&
+                                       *spread(spread(sin(k*y),1,mx),3,mz) 
+!
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac1*spread(spread(sin(k*x),2,my),3,mz)&
+                                       *spread(spread(cos(k*y),1,mx),3,mz) 
+!
+      j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac2*spread(spread(cos(k*x),2,my),3,mz)&
+                                       *spread(spread(cos(k*y),1,mx),3,mz) 
+!
+    endsubroutine robertsflow
 !***********************************************************************
     subroutine soundwave(ampl,f,i,kx,ky,kz)
 !
