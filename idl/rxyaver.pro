@@ -1,4 +1,4 @@
-; $Id: rxyaver.pro,v 1.9 2005-06-08 12:57:20 brandenb Exp $
+; $Id: rxyaver.pro,v 1.10 2005-06-08 18:44:03 brandenb Exp $
 ;
 ;  read global sizes
 ;
@@ -41,7 +41,6 @@ default,w,.1
 while not eof(1) do begin
   readf,1,t & print,t
   readf,1,bxmz,bymz,alpijz,etaijkz,fo=fo
-stop
   ;readf,1,bxmz,bymz,alpijz,fo=fo
   ;readf,1,bxmz,bymz,fo=fo
   ;
