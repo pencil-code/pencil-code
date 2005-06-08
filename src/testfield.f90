@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.4 2005-06-07 11:59:45 brandenb Exp $
+! $Id: testfield.f90,v 1.5 2005-06-08 18:00:48 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -86,7 +86,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.4 2005-06-07 11:59:45 brandenb Exp $")
+           "$Id: testfield.f90,v 1.5 2005-06-08 18:00:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -275,7 +275,7 @@ module Testfield
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: xx,zz
+      real, dimension (nx) :: cx,cz
       integer :: jtest
 !
       intent(in)  :: jtest
@@ -283,8 +283,8 @@ module Testfield
 !
 !  xx and zz for calculating diffusive part of emf
 !
-      xx=x(l1:l2)
-      zz=z(n)
+      cx=cos(x(l1:l2))
+      cz=cos(z(n))
 !
 !  set bbtest for each of the 9 cases
 !
@@ -292,12 +292,12 @@ module Testfield
       case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
       case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
-      case(4); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(5); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
-      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
-      case(7); bbtest(:,1)=zz; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(8); bbtest(:,1)=0.; bbtest(:,2)=zz; bbtest(:,3)=0.
-      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=zz
+      case(4); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=cx; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx
+      case(7); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=cz; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
       case default; bbtest(:,:)=0.
       endselect
 !
