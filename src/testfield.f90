@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.5 2005-06-08 18:00:48 brandenb Exp $
+! $Id: testfield.f90,v 1.6 2005-06-09 11:57:35 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -25,7 +25,7 @@ module Testfield
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
   logical :: reinitalize_aatest=.false.
-  logical :: xextent=.true.,zextent=.true.
+  logical :: xextent=.true.,zextent=.true.,lsoca=.true.
 
   namelist /testfield_init_pars/ &
        xextent,zextent,initaatest
@@ -33,7 +33,8 @@ module Testfield
   ! run parameters
   real :: etatest=0.
   namelist /testfield_run_pars/ &
-       xextent,zextent,etatest,reinitalize_aatest
+       reinitalize_aatest,xextent,zextent,lsoca, &
+       etatest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_alp11=0,i_alp21=0,i_alp31=0
@@ -48,6 +49,15 @@ module Testfield
   integer :: i_eta113z=0,i_eta213z=0,i_eta313z=0
   integer :: i_eta123z=0,i_eta223z=0,i_eta323z=0
   integer :: i_eta133z=0,i_eta233z=0,i_eta333z=0
+  integer :: i_alp11xz=0,i_alp21xz=0,i_alp31xz=0
+  integer :: i_alp12xz=0,i_alp22xz=0,i_alp32xz=0
+  integer :: i_alp13xz=0,i_alp23xz=0,i_alp33xz=0
+  integer :: i_eta111xz=0,i_eta211xz=0,i_eta311xz=0
+  integer :: i_eta121xz=0,i_eta221xz=0,i_eta321xz=0
+  integer :: i_eta131xz=0,i_eta231xz=0,i_eta331xz=0
+  integer :: i_eta113xz=0,i_eta213xz=0,i_eta313xz=0
+  integer :: i_eta123xz=0,i_eta223xz=0,i_eta323xz=0
+  integer :: i_eta133xz=0,i_eta233xz=0,i_eta333xz=0
 
   contains
 
@@ -86,7 +96,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.5 2005-06-08 18:00:48 brandenb Exp $")
+           "$Id: testfield.f90,v 1.6 2005-06-09 11:57:35 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -201,17 +211,21 @@ module Testfield
           call del2v(f,iaxtest,del2Atest)
           call set_bbtest(bbtest,jtest)
           call cross_mn(uu,bbtest,uxB)
-          df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-            +uxB+etatest*del2Atest
+          if (lsoca) then
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+              +uxB+etatest*del2Atest
+          else
+            call curl(f,iaxtest,btest)
+            call cross_mn(uu,btest,uxbtest)
+            df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
+              +uxB+etatest*del2Atest+uxbtest
+          endif
 !
-!  calculate uxbtest
-!
-          call curl(f,iaxtest,btest)
-          call cross_mn(uu,btest,uxbtest)
-!
-!  calculate alpha
+!  calculate alpha, begin by calculating uxbtest
 !
           if (ldiagnos) then
+            call curl(f,iaxtest,btest)
+            call cross_mn(uu,btest,uxbtest)
             select case(jtest)
             case(1)
               if (i_alp11/=0) call sum_mn_name(uxbtest(:,1),i_alp11)
@@ -220,6 +234,9 @@ module Testfield
               if (i_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),i_alp11z)
               if (i_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),i_alp21z)
               if (i_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),i_alp31z)
+              if (i_alp11xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp11xz)
+              if (i_alp21xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp21xz)
+              if (i_alp31xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp31xz)
             case(2)
               if (i_alp12/=0) call sum_mn_name(uxbtest(:,1),i_alp12)
               if (i_alp22/=0) call sum_mn_name(uxbtest(:,2),i_alp22)
@@ -227,6 +244,9 @@ module Testfield
               if (i_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),i_alp12z)
               if (i_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),i_alp22z)
               if (i_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),i_alp32z)
+              if (i_alp12xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp12xz)
+              if (i_alp22xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp22xz)
+              if (i_alp32xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp32xz)
             case(3)
               if (i_alp13/=0) call sum_mn_name(uxbtest(:,1),i_alp13)
               if (i_alp23/=0) call sum_mn_name(uxbtest(:,2),i_alp23)
@@ -234,30 +254,51 @@ module Testfield
               if (i_alp13z/=0) call xysum_mn_name_z(uxbtest(:,1),i_alp13z)
               if (i_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),i_alp23z)
               if (i_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),i_alp33z)
+              if (i_alp13xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp13xz)
+              if (i_alp23xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp23xz)
+              if (i_alp33xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp33xz)
             case(4)
               if (i_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta111z)
               if (i_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta211z)
               if (i_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta311z)
+              if (i_eta111xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta111xz)
+              if (i_eta211xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta211xz)
+              if (i_eta311xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta311xz)
             case(5)
               if (i_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta121z)
               if (i_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta221z)
               if (i_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta321z)
+              if (i_eta121xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta121xz)
+              if (i_eta221xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta221xz)
+              if (i_eta321xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta321xz)
             case(6)
               if (i_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta121z)
               if (i_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta221z)
               if (i_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta321z)
+              if (i_eta131xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta121xz)
+              if (i_eta231xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta221xz)
+              if (i_eta331xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta321xz)
             case(7)
               if (i_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta113z)
               if (i_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta213z)
               if (i_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta313z)
+              if (i_eta113xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta113xz)
+              if (i_eta213xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta213xz)
+              if (i_eta313xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta313xz)
             case(8)
               if (i_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta123z)
               if (i_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta223z)
               if (i_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta323z)
+              if (i_eta123xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta123xz)
+              if (i_eta223xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta223xz)
+              if (i_eta323xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta323xz)
             case(9)
               if (i_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta123z)
               if (i_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta223z)
               if (i_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta323z)
+              if (i_eta133xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta123xz)
+              if (i_eta233xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta223xz)
+              if (i_eta333xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta323xz)
             end select
           endif
         endif
@@ -275,7 +316,7 @@ module Testfield
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cx,cz
+      real, dimension (nx) :: cx,cz,sz
       integer :: jtest
 !
       intent(in)  :: jtest
@@ -285,13 +326,17 @@ module Testfield
 !
       cx=cos(x(l1:l2))
       cz=cos(z(n))
+      sz=sin(z(n))
 !
 !  set bbtest for each of the 9 cases
 !
       select case(jtest)
-      case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
-      case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
-      case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
+      case(1); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sz
+!     case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
+!     case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
+!     case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
       case(4); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(5); bbtest(:,1)=0.; bbtest(:,2)=cx; bbtest(:,3)=0.
       case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx
@@ -307,13 +352,12 @@ module Testfield
 !
 !  reads and registers print parameters relevant for testfield fields
 !
-!   3-may-02/axel: coded
-!  27-may-02/axel: added possibility to reset list
+!   3-jun-05/axel: adapted from rprint_magnetic
 !
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,ixy,irz
+      integer :: iname,inamez,inamexz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -336,6 +380,15 @@ module Testfield
         i_eta113z=0; i_eta213z=0; i_eta313z=0
         i_eta123z=0; i_eta223z=0; i_eta323z=0
         i_eta133z=0; i_eta233z=0; i_eta333z=0
+        i_alp11xz=0; i_alp21xz=0; i_alp31xz=0
+        i_alp12xz=0; i_alp22xz=0; i_alp32xz=0
+        i_alp13xz=0; i_alp23xz=0; i_alp33xz=0
+        i_eta111xz=0; i_eta211xz=0; i_eta311xz=0
+        i_eta121xz=0; i_eta221xz=0; i_eta321xz=0
+        i_eta131xz=0; i_eta231xz=0; i_eta331xz=0
+        i_eta113xz=0; i_eta213xz=0; i_eta313xz=0
+        i_eta123xz=0; i_eta223xz=0; i_eta323xz=0
+        i_eta133xz=0; i_eta233xz=0; i_eta333xz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -384,13 +437,37 @@ module Testfield
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta333z',i_eta333z)
       enddo
 !
-!  check for those quantities for which we want z-averages
+!  check for those quantities for which we want y-averages
 !
-!     do ixy=1,nnamexy
-!       call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',i_bxmxy)
-!       call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',i_bymxy)
-!       call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',i_bzmxy)
-!     enddo
+      do inamexz=1,nnamexz
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp11xz',i_alp11xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp21xz',i_alp21xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp31xz',i_alp31xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp12xz',i_alp12xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp22xz',i_alp22xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp32xz',i_alp32xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp13xz',i_alp13xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23xz',i_alp23xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33xz',i_alp33xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta111xz',i_eta111xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta211xz',i_eta211xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta311xz',i_eta311xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta121xz',i_eta121xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta221xz',i_eta221xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta321xz',i_eta321xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta131xz',i_eta131xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta231xz',i_eta231xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta331xz',i_eta331xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta113xz',i_eta113xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta213xz',i_eta213xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta313xz',i_eta313xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta123xz',i_eta123xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta223xz',i_eta223xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta323xz',i_eta323xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta133xz',i_eta133xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta233xz',i_eta233xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta333xz',i_eta333xz)
+      enddo
 !
 !  write column, i_XYZ, where our variable XYZ is stored
 !
@@ -431,9 +508,37 @@ module Testfield
         write(3,*) 'i_eta133z=',i_eta133z
         write(3,*) 'i_eta233z=',i_eta233z
         write(3,*) 'i_eta333z=',i_eta333z
+        write(3,*) 'i_alp11xz=',i_alp11xz
+        write(3,*) 'i_alp21xz=',i_alp21xz
+        write(3,*) 'i_alp31xz=',i_alp31xz
+        write(3,*) 'i_alp12xz=',i_alp12xz
+        write(3,*) 'i_alp22xz=',i_alp22xz
+        write(3,*) 'i_alp32xz=',i_alp32xz
+        write(3,*) 'i_alp13xz=',i_alp13xz
+        write(3,*) 'i_alp23xz=',i_alp23xz
+        write(3,*) 'i_alp33xz=',i_alp33xz
+        write(3,*) 'i_eta111xz=',i_eta111xz
+        write(3,*) 'i_eta211xz=',i_eta211xz
+        write(3,*) 'i_eta311xz=',i_eta311xz
+        write(3,*) 'i_eta121xz=',i_eta121xz
+        write(3,*) 'i_eta221xz=',i_eta221xz
+        write(3,*) 'i_eta321xz=',i_eta321xz
+        write(3,*) 'i_eta131xz=',i_eta131xz
+        write(3,*) 'i_eta231xz=',i_eta231xz
+        write(3,*) 'i_eta331xz=',i_eta331xz
+        write(3,*) 'i_eta113xz=',i_eta113xz
+        write(3,*) 'i_eta213xz=',i_eta213xz
+        write(3,*) 'i_eta313xz=',i_eta313xz
+        write(3,*) 'i_eta123xz=',i_eta123xz
+        write(3,*) 'i_eta223xz=',i_eta223xz
+        write(3,*) 'i_eta323xz=',i_eta323xz
+        write(3,*) 'i_eta133xz=',i_eta133xz
+        write(3,*) 'i_eta233xz=',i_eta233xz
+        write(3,*) 'i_eta333xz=',i_eta333xz
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamexz=',nnamexz
       endif
 !
     endsubroutine rprint_testfield

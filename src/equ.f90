@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.231 2005-06-07 21:21:28 brandenb Exp $
+! $Id: equ.f90,v 1.232 2005-06-09 11:57:35 brandenb Exp $
 
 module Equ
 
@@ -179,7 +179,7 @@ module Equ
 !  communicate over all processors
 !  the result is only present on the root processor
 !
-      if (nnamexy>0) then
+      if (nnamexz>0) then
         call mpireduce_sum(fnamexz,fsumxz,nnamexz*nx*nz*nprocz)
         if(lroot) fnamexz=fsumxz/(ny*nprocy)
       endif
@@ -287,7 +287,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.231 2005-06-07 21:21:28 brandenb Exp $")
+           "$Id: equ.f90,v 1.232 2005-06-09 11:57:35 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -563,9 +563,9 @@ module Equ
       endif
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
+!  (Of course, yaverages_xz does not need to be calculated for that.)
 !
       if (.not.l2davgfirst.and.(i_bmx+i_bmy)>0) then
-        if (lwrite_yaverages) call yaverages_xz
         if (lwrite_zaverages) call zaverages_xy
       endif
 !

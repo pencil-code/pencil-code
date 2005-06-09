@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.69 2005-06-07 21:21:28 brandenb Exp $
+! $Id: prints.f90,v 1.70 2005-06-09 11:57:35 brandenb Exp $
 
 module Print
 
@@ -178,6 +178,13 @@ module Print
         if (iproc==0) orms=fname(i_orms)
         call mpibcast_real(orms,1)
       endif
+!
+!  calculate mean emf (this requires i_... to be set in xyaver.in)
+!
+!     if (i_alp11z/=0) then
+!       if (iproc==0) orms=fname(i_orms)
+!
+!     endif
 !
 !  calculate rhoccm and cc2m (this requires that these are set in print.in)
 !  broadcast result to other processors
