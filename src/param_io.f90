@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.199 2005-06-07 21:21:28 brandenb Exp $ 
+! $Id: param_io.f90,v 1.200 2005-06-09 18:49:49 brandenb Exp $ 
 
 module Param_IO
 
@@ -74,7 +74,7 @@ module Param_IO
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
        ro_spec,ss_spec,cc_spec,cr_spec, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
-       random_gen, &
+       kinflow,random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_yaverages,lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &

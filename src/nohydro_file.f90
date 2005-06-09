@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.18 2004-10-03 20:03:24 nilshau Exp $
+! $Id: nohydro_file.f90,v 1.19 2005-06-09 18:49:49 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -22,9 +22,17 @@ module Hydro
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
-  integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
+  integer :: i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_Marms=0,i_Mamax=0
   integer :: i_u2mphi=0,i_oumphi=0
+  integer :: i_epsK=0
+
+  real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
+  real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
+  real :: u_out_kep=0.0
+  real :: orms=0.
+
+  logical :: lcalc_turbulence_pars
 
   contains
 
@@ -51,20 +59,24 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2004-10-03 20:03:24 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2005-06-09 18:49:49 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine initialize_hydro()
+    subroutine initialize_hydro(f,lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
 !  24-nov-02/tony: coded 
 !
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
+!
 !  do nothing
 !
+      if (ip==0) print*,f,lstarting  !(to keep compiler quiet)
     endsubroutine initialize_hydro
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)
@@ -83,7 +95,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,bij,shock,gshock)
+    subroutine duu_dt(f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -99,9 +111,9 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: uu,glnrho,gshock
-      real, dimension (nx) :: divu,u2,rho1,shock
+      real, dimension (nx) :: u2,divu,rho,rho1,shock
 !
       real, save, dimension (nx,ny,nz,3) :: uuu
       logical, save :: first=.true.
@@ -210,6 +222,19 @@ module Hydro
 !  19-jul-03/axel: adapted from hydro
 !   
     endsubroutine calc_mflow
+!***********************************************************************
+    subroutine calc_turbulence_pars(f)
+!
+!  Dummy routine
+!
+!   9-jun-05/axel: adapted from hydro.f90
+!
+      use Cparam
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+!
+      if(ip==0) print*,f  !(keep compiler quiet)
+    endsubroutine calc_turbulence_pars
 !***********************************************************************
 
 endmodule Hydro

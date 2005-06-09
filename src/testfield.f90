@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.6 2005-06-09 11:57:35 brandenb Exp $
+! $Id: testfield.f90,v 1.7 2005-06-09 18:49:49 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -21,6 +21,7 @@ module Testfield
   implicit none
 
   character (len=labellen) :: initaatest='zero'
+
   ! input parameters
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
@@ -96,7 +97,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.6 2005-06-09 11:57:35 brandenb Exp $")
+           "$Id: testfield.f90,v 1.7 2005-06-09 18:49:49 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

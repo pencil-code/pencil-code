@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.55 2004-10-27 14:21:47 ajohan Exp $
+! $Id: nomagnetic.f90,v 1.56 2005-06-09 18:49:49 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -15,9 +15,8 @@ module Magnetic
 
   implicit none
 
-  character (len=40) :: kinflow=''
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
-  real :: kx_aa=0.,ky_aa=0.,kz_aa=0.
+  real :: kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: brms=0.
 
   integer :: dummy              ! We cannot define empty namelists
@@ -57,7 +56,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.55 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: nomagnetic.f90,v 1.56 2005-06-09 18:49:49 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************

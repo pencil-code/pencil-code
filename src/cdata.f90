@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.262 2005-06-07 21:21:28 brandenb Exp $
+! $Id: cdata.f90,v 1.263 2005-06-09 18:49:49 brandenb Exp $
 
 module Cdata
 
@@ -96,6 +96,7 @@ module Cdata
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) ::fft_switch='fftpack'
   character (len=1) :: slice_position='p'
+  character (len=40) :: kinflow=''
 !
 !  coordinates of the point where some quantities can be printed
 !  for now, these points only apply to the root processor.

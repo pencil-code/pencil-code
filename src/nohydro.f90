@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.35 2005-04-06 00:37:29 dobler Exp $
+! $Id: nohydro.f90,v 1.36 2005-06-09 18:49:49 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.35 2005-04-06 00:37:29 dobler Exp $")
+           "$Id: nohydro.f90,v 1.36 2005-06-09 18:49:49 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -130,6 +130,11 @@ module Hydro
         uu(:,1)=+sin(kx_aa*x(l1:l2))*cos(ky_aa*y(m))
         uu(:,2)=-cos(kx_aa*x(l1:l2))*sin(ky_aa*y(m))
         uu(:,3)=+sin(kx_aa*x(l1:l2))*sin(ky_aa*y(m))*sqrt(2.)
+      elseif (kinflow=='poshel-roberts') then
+        if (headtt) print*,'Pos Helicity Roberts flow; kx_aa,ky_aa=',kx_aa,ky_aa
+        uu(:,1)=-cos(kx_aa*x(l1:l2))*sin(ky_aa*y(m))
+        uu(:,2)=+sin(kx_aa*x(l1:l2))*cos(ky_aa*y(m))
+        uu(:,3)=+cos(kx_aa*x(l1:l2))*cos(ky_aa*y(m))*sqrt(2.)
       else
         if (headtt) print*,'uu=0'
         uu=0.
