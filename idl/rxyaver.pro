@@ -1,4 +1,4 @@
-; $Id: rxyaver.pro,v 1.10 2005-06-08 18:44:03 brandenb Exp $
+; $Id: rxyaver.pro,v 1.11 2005-06-10 08:29:36 brandenb Exp $
 ;
 ;  read global sizes
 ;
@@ -22,14 +22,39 @@ nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
 ;
+;  calculate z array
+;
+dz=2*!pi/nz
+z=-!pi+dz*(.5+findgen(nz))
+;
 ;  reads the xyaver.dat file
 ;
 t=0.
-;nprocz=1
-bxmz=fltarr(nz*nprocz)
-bymz=fltarr(nz*nprocz)
-alpijz=fltarr(nz*nprocz,3,3)
-etaijkz=fltarr(nz*nprocz,3,3)
+bxmz=fltarr(nz)
+bymz=fltarr(nz)
+alpijz=fltarr(nz,3,3)
+etaijkz=fltarr(nz,3,3)
+alpijz1=fltarr(nz,3,3)
+etaijkz1=fltarr(nz,3,3)
+;
+;  prepare matrix for calculating proper alpha and eta tensors
+;
+sz=sin(z)
+cz=cos(z)
+mat=fltarr(nz,2,2)
+mat1=fltarr(nz,2,2)
+mat(*,0,0)=+sz
+mat(*,0,1)=+cz
+mat(*,1,0)=+cz
+mat(*,1,1)=-sz
+;
+;  invert
+;
+for iz=0,nz-1 do begin
+  mat1(iz,*,*)=invert(reform(mat(iz,*,*)))
+endfor
+;
+;  read data
 ;
 close,1
 openr,1,datatopdir+'/xyaverages.dat'
@@ -37,36 +62,46 @@ print,'read from file: ',datatopdir+'/xyaverages.dat'
 ;
 it=0
 fo='(8e12.4)'
-default,w,.1
+default,w,.01
 while not eof(1) do begin
   readf,1,t & print,t
   readf,1,bxmz,bymz,alpijz,etaijkz,fo=fo
-  ;readf,1,bxmz,bymz,alpijz,fo=fo
-  ;readf,1,bxmz,bymz,fo=fo
+  ;
+  ;  remove alpha part from etaijkz
+  ;
+  for j=0,2 do begin
+  for i=0,2 do begin
+    alpijz1(*,i,j)=mat1(*,0,0)*alpijz(*,i,j)+mat1(*,0,1)*etaijkz(*,i,j)
+    etaijkz1(*,i,j)=mat1(*,1,0)*alpijz(*,i,j)+mat1(*,1,1)*etaijkz(*,i,j)
+  endfor
+  endfor
+  ;
+  ;  print mean tensor on console
+  ;
+  alpijz1m=total(alpijz1,1)/nz
+  etaijkz1m=total(etaijkz1,1)/nz
   ;
   if it eq 0 then begin
     bxmzt=bxmz
     bymzt=bymz
-    alpijzt=alpijz
-    etaijkzt=etaijkz
+    alpijz1t=alpijz1
+    etaijkz1t=etaijkz1
     tt=t
   endif else begin
     bxmzt=[bxmzt,bxmz]
     bymzt=[bymzt,bymz]
-    alpijzt=[alpijzt,alpijz]
-    etaijkzt=[etaijkzt,etaijkz]
+    alpijz1t=[alpijz1t,alpijz1]
+    etaijkz1t=[etaijkz1t,etaijkz1]
     tt=[tt,t]
   endelse
-  ;plot,bxmz
-  ;oplot,bymz,li=1
-  ;wait,w
   it=it+1
 end
 close,1
 ;
 nt=n_elements(tt)
-bxmzt=reform(bxmzt,nz*nprocz,nt)
-bymzt=reform(bymzt,nz*nprocz,nt)
-alpijzt=reform(alpijzt,nz*nprocz,nt,3,3)
-etaijkzt=reform(etaijkzt,nz*nprocz,nt,3,3)
+bxmzt=reform(bxmzt,nz,nt)
+bymzt=reform(bymzt,nz,nt)
+alpijz1t=reform(alpijz1t,nz,nt,3,3)
+etaijkz1t=reform(etaijkz1t,nz,nt,3,3)
+;
 END

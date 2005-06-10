@@ -1,4 +1,4 @@
-; $Id: ryaver.pro,v 1.1 2005-06-08 04:30:03 brandenb Exp $
+; $Id: ryaver.pro,v 1.2 2005-06-10 08:29:36 brandenb Exp $
 ;
 ;  reads the yaver.dat file
 ;  need to supply nprocy by hand...
@@ -25,18 +25,17 @@ nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
 ;
-bmxz=fltarr(nx,nz*nprocz,nnamexz)
+fmxz=fltarr(nx,nz,nnamexz)
 ;
 close,1
 openr,1,datatopdir+'/yaverages.dat'
 ;
 fo='(8e12.4)'
-default,w,.1
+default,w,.01
 while not eof(1) do begin
   readf,1,t
-  readf,1,bmxz,fo=fo
-  ;oplot,bymxz,li=1
-  print,t,max(bmxz)
+  readf,1,fmxz,fo=fo
+  print,t,max(fmxz)
   wait,w
 end
 close,1
