@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.237 2005-06-09 18:49:49 brandenb Exp $
+! $Id: magnetic.f90,v 1.238 2005-06-12 19:32:49 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -147,7 +147,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.237 2005-06-09 18:49:49 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.238 2005-06-12 19:32:49 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -458,9 +458,9 @@ module Magnetic
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (i_bxmz/=0.or.i_bxmxy/=0.or.i_bxmxz) bx=bb(:,1)
-        if (i_bymz/=0.or.i_bymxy/=0.or.i_bymxz) by=bb(:,2)
-        if (i_bzmz/=0.or.i_bzmxy/=0.or.i_bzmxz) bz=bb(:,3)
+        if (i_bxmz/=0.or.i_bxmxy/=0.or.i_bxmxz/=0) bx=bb(:,1)
+        if (i_bymz/=0.or.i_bymxy/=0.or.i_bymxz/=0) by=bb(:,2)
+        if (i_bzmz/=0.or.i_bzmxy/=0.or.i_bzmxz/=0) bz=bb(:,3)
         if (i_bxmz/=0) call xysum_mn_name_z(bx,i_bxmz)
         if (i_bymz/=0) call xysum_mn_name_z(by,i_bymz)
         if (i_bzmz/=0) call xysum_mn_name_z(bz,i_bzmz)

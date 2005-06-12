@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.70 2005-06-09 11:57:35 brandenb Exp $
+! $Id: prints.f90,v 1.71 2005-06-12 19:32:49 brandenb Exp $
 
 module Print
 
@@ -279,7 +279,7 @@ module Print
       if(lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') t
-        write(1,'(1p,8e12.4)') fnamez(:,:,1:nnamez)
+        write(1,'(1p,8e12.5)') fnamez(:,:,1:nnamez)
         close(1)
       endif
 !

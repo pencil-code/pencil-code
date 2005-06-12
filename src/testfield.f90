@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.8 2005-06-11 09:20:06 brandenb Exp $
+! $Id: testfield.f90,v 1.9 2005-06-12 19:32:49 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -9,7 +9,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MVAR CONTRIBUTION 27
+! MVAR CONTRIBUTION 36
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -26,7 +26,7 @@ module Testfield
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
   logical :: reinitalize_aatest=.false.
-  logical :: xextent=.true.,zextent=.true.,lsoca=.true.
+  logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
 
   namelist /testfield_init_pars/ &
        xextent,zextent,initaatest
@@ -35,7 +35,7 @@ module Testfield
   real :: etatest=0.
   namelist /testfield_run_pars/ &
        reinitalize_aatest,xextent,zextent,lsoca, &
-       etatest
+       lset_bbtest2,etatest
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_alp11=0,i_alp21=0,i_alp31=0
@@ -59,6 +59,9 @@ module Testfield
   integer :: i_eta113xz=0,i_eta213xz=0,i_eta313xz=0
   integer :: i_eta123xz=0,i_eta223xz=0,i_eta323xz=0
   integer :: i_eta133xz=0,i_eta233xz=0,i_eta333xz=0
+  integer :: i_alp11exz=0,i_alp21exz=0,i_alp31exz=0
+  integer :: i_alp12exz=0,i_alp22exz=0,i_alp32exz=0
+  integer :: i_alp13exz=0,i_alp23exz=0,i_alp33exz=0
 
   contains
 
@@ -81,7 +84,8 @@ module Testfield
 !
       ltestfield = .true.
       iaatest = nvar+1              ! indices to access aa
-      nvar = nvar+27            ! added 27 variables
+!---  nvar = nvar+27            ! added 27 variables
+      nvar = nvar+36            ! added 36 variables
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_testfield: nvar = ', nvar
@@ -97,7 +101,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.8 2005-06-11 09:20:06 brandenb Exp $")
+           "$Id: testfield.f90,v 1.9 2005-06-12 19:32:49 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -203,14 +207,19 @@ module Testfield
 !  do each of the 9 test fields at a time
 !  but exclude redundancies, e.g. if the averaged field lacks x extent.
 !
-      do jtest=1,9
-        if ((jtest>=1.and.jtest<=3)&
-        .or.(jtest>=4.and.jtest<=6.and.xextent)&
-        .or.(jtest>=7.and.jtest<=9.and.zextent)) then
+      do jtest=1,12
+        if ((jtest>= 1.and.jtest<= 3)&
+        .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
+        .or.(jtest>=10.and.jtest<=12.and.xextent)&
+        .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2
           call del2v(f,iaxtest,del2Atest)
-          call set_bbtest(bbtest,jtest)
+          if (lset_bbtest2) then
+            call set_bbtest2(bbtest,jtest)
+          else
+            call set_bbtest(bbtest,jtest)
+          endif
           call cross_mn(uu,bbtest,uxB)
           if (lsoca) then
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
@@ -302,6 +311,18 @@ module Testfield
               if (i_eta133xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta133xz)
               if (i_eta233xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta233xz)
               if (i_eta333xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta333xz)
+            case(10)
+              if (i_alp11exz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp11exz)
+              if (i_alp21exz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp21exz)
+              if (i_alp31exz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp31exz)
+            case(11)
+              if (i_alp12exz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp12exz)
+              if (i_alp22exz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp22exz)
+              if (i_alp32exz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp32exz)
+            case(12)
+              if (i_alp13exz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp13exz)
+              if (i_alp23exz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp23exz)
+              if (i_alp33exz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp33exz)
             end select
           endif
         endif
@@ -319,7 +340,7 @@ module Testfield
       use Sub
 !
       real, dimension (nx,3) :: bbtest
-      real, dimension (nx) :: cx,cz,sz
+      real, dimension (nx) :: cx,sx,cz,sz
       integer :: jtest
 !
       intent(in)  :: jtest
@@ -328,6 +349,7 @@ module Testfield
 !  xx and zz for calculating diffusive part of emf
 !
       cx=cos(x(l1:l2))
+      sx=sin(x(l1:l2))
       cz=cos(z(n))
       sz=sin(z(n))
 !
@@ -337,19 +359,59 @@ module Testfield
       case(1); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(2); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
       case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sz
-!     case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
-!     case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
-!     case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
       case(4); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(5); bbtest(:,1)=0.; bbtest(:,2)=cx; bbtest(:,3)=0.
       case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cx
       case(7); bbtest(:,1)=cz; bbtest(:,2)=0.; bbtest(:,3)=0.
       case(8); bbtest(:,1)=0.; bbtest(:,2)=cz; bbtest(:,3)=0.
       case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
+      case(10); bbtest(:,1)=sx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(11); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
+      case(12); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
       case default; bbtest(:,:)=0.
       endselect
 !
     endsubroutine set_bbtest
+!***********************************************************************
+    subroutine set_bbtest2(bbtest,jtest)
+!
+!  set alternative testfield
+!
+!  10-jun-05/axel: adapted from set_bbtest
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,3) :: bbtest
+      real, dimension (nx) :: cx,sx,cz,sz
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: bbtest
+!
+!  xx and zz for calculating diffusive part of emf
+!
+      cx=cos(x(l1:l2))
+      sx=sin(x(l1:l2))
+      cz=cos(z(n))
+      sz=sin(z(n))
+!
+!  set bbtest for each of the 9 cases
+!
+      select case(jtest)
+      case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
+      case(4); bbtest(:,1)=cx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
+      case(7); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=cz
+      case default; bbtest(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest2
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !
@@ -392,6 +454,9 @@ module Testfield
         i_eta113xz=0; i_eta213xz=0; i_eta313xz=0
         i_eta123xz=0; i_eta223xz=0; i_eta323xz=0
         i_eta133xz=0; i_eta233xz=0; i_eta333xz=0
+        i_alp11exz=0; i_alp21exz=0; i_alp31exz=0
+        i_alp12exz=0; i_alp22exz=0; i_alp32exz=0
+        i_alp13exz=0; i_alp23exz=0; i_alp33exz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -470,6 +535,15 @@ module Testfield
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta133xz',i_eta133xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta233xz',i_eta233xz)
         call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta333xz',i_eta333xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp11exz',i_alp11exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp21exz',i_alp21exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp31exz',i_alp31exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp12exz',i_alp12exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp22exz',i_alp22exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp32exz',i_alp32exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp13exz',i_alp13exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23exz',i_alp23exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33exz',i_alp33exz)
       enddo
 !
 !  write column, i_XYZ, where our variable XYZ is stored
@@ -538,6 +612,15 @@ module Testfield
         write(3,*) 'i_eta133xz=',i_eta133xz
         write(3,*) 'i_eta233xz=',i_eta233xz
         write(3,*) 'i_eta333xz=',i_eta333xz
+        write(3,*) 'i_alp11exz=',i_alp11exz
+        write(3,*) 'i_alp21exz=',i_alp21exz
+        write(3,*) 'i_alp31exz=',i_alp31exz
+        write(3,*) 'i_alp12exz=',i_alp12exz
+        write(3,*) 'i_alp22exz=',i_alp22exz
+        write(3,*) 'i_alp32exz=',i_alp32exz
+        write(3,*) 'i_alp13exz=',i_alp13exz
+        write(3,*) 'i_alp23exz=',i_alp23exz
+        write(3,*) 'i_alp33exz=',i_alp33exz
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
