@@ -1,4 +1,4 @@
-; $Id: calc_yaver.pro,v 1.1 2005-06-12 10:52:24 brandenb Exp $
+; $Id: calc_yaver.pro,v 1.2 2005-06-12 19:22:42 brandenb Exp $
 ;
 ;  read global sizes
 ;
@@ -59,5 +59,25 @@ for n=0,nz-1 do begin
 endfor
 endfor
 endfor
+;
+;  calculate spatial average
+;
+fot='(f5.1)'
+fo3='(3f10.3)'
+alpijxz1m=total(total(alpijxz1,1),1)/(nx*nz)
+etaijkxz1m=total(total(etaijkxz1,1),1)/(nx*nz)
+alpijexz1m=total(total(alpijexz1,1),1)/(nx*nz)
+print
+print,'alpha_ij,  t =',string(t,fo=fot)
+print,alpijxz1m,fo=fo3
+print
+print,'eta_ijx'
+print,etaijkxz1m(*,*,0),fo=fo3
+print
+print,'eta_ijz'
+print,etaijkxz1m(*,*,1),fo=fo3
+print
+print,'alphae_ij'
+print,alpijexz1m,fo=fo3
 ;
 END
