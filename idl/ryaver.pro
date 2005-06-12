@@ -1,7 +1,7 @@
-; $Id: ryaver.pro,v 1.2 2005-06-10 08:29:36 brandenb Exp $
+; $Id: ryaver.pro,v 1.3 2005-06-12 10:52:24 brandenb Exp $
 ;
-;  reads the yaver.dat file
-;  need to supply nprocy by hand...
+;  reads the yaver.dat file, puts the result into fmxz array
+;  this routine keeps only the last time
 ;
 t=0.
 @data/index

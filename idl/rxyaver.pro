@@ -1,4 +1,4 @@
-; $Id: rxyaver.pro,v 1.11 2005-06-10 08:29:36 brandenb Exp $
+; $Id: rxyaver.pro,v 1.12 2005-06-12 10:52:24 brandenb Exp $
 ;
 ;  read global sizes
 ;
@@ -25,7 +25,7 @@ nz=mz-2*nghostz
 ;  calculate z array
 ;
 dz=2*!pi/nz
-z=-!pi+dz*(.5+findgen(nz))
+z=-!pi+dz*(.5+dindgen(nz))
 ;
 ;  reads the xyaver.dat file
 ;
@@ -41,8 +41,8 @@ etaijkz1=fltarr(nz,3,3)
 ;
 sz=sin(z)
 cz=cos(z)
-mat=fltarr(nz,2,2)
-mat1=fltarr(nz,2,2)
+mat=dblarr(nz,2,2)
+mat1=dblarr(nz,2,2)
 mat(*,0,0)=+sz
 mat(*,0,1)=+cz
 mat(*,1,0)=+cz
@@ -61,11 +61,13 @@ openr,1,datatopdir+'/xyaverages.dat'
 print,'read from file: ',datatopdir+'/xyaverages.dat'
 ;
 it=0
-fo='(8e12.4)'
+fo='(8e12.5)'
 default,w,.01
+default,tmax,1e33
 while not eof(1) do begin
   readf,1,t & print,t
   readf,1,bxmz,bymz,alpijz,etaijkz,fo=fo
+  if (t ge tmax) then goto,ending
   ;
   ;  remove alpha part from etaijkz
   ;
@@ -96,6 +98,7 @@ while not eof(1) do begin
   endelse
   it=it+1
 end
+ending:
 close,1
 ;
 nt=n_elements(tt)
