@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.9 2005-06-12 19:32:49 brandenb Exp $
+! $Id: testfield.f90,v 1.10 2005-06-13 19:25:55 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -101,7 +101,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.9 2005-06-12 19:32:49 brandenb Exp $")
+           "$Id: testfield.f90,v 1.10 2005-06-13 19:25:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -383,6 +383,47 @@ module Testfield
       use Sub
 !
       real, dimension (nx,3) :: bbtest
+      real, dimension (nx) :: cx,sx,cz,sz,xz
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: bbtest
+!
+!  xx and zz for calculating diffusive part of emf
+!
+      cx=cos(x(l1:l2))
+      sx=sin(x(l1:l2))
+      cz=cos(z(n))
+      sz=sin(z(n))
+      xz=cx*cz
+!
+!  set bbtest for each of the 9 cases
+!
+      select case(jtest)
+      case(1); bbtest(:,1)=xz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=0.; bbtest(:,2)=xz; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xz
+      case(4); bbtest(:,1)=sx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=sx; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sx
+      case(7); bbtest(:,1)=sz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=sz; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=sz
+      case default; bbtest(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest2
+!***********************************************************************
+    subroutine set_bbtest3(bbtest,jtest)
+!
+!  set alternative testfield
+!
+!  10-jun-05/axel: adapted from set_bbtest
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,3) :: bbtest
       real, dimension (nx) :: cx,sx,cz,sz
       integer :: jtest
 !
@@ -411,7 +452,7 @@ module Testfield
       case default; bbtest(:,:)=0.
       endselect
 !
-    endsubroutine set_bbtest2
+    endsubroutine set_bbtest3
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !
