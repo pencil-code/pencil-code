@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.15 2004-09-27 14:19:40 mee Exp $
+; $Id: pc_read_ts.pro,v 1.16 2005-06-14 09:50:00 ajohan Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-09-27 14:19:40 $
-;  $Revision: 1.15 $
+;  $Date: 2005-06-14 09:50:00 $
+;  $Revision: 1.16 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -66,7 +66,7 @@ end
 pro pc_read_ts, $
                 FILENAME=filename,$
                 DATADIR=datadir, $
-                OBJECT=object, $ 
+                OBJECT=object, DOUBLE=DOUBLE, $ 
                 PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
                 N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
                 EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm, TRIMFIRST=TRIMFIRST,  $
