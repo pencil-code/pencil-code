@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.10 2005-06-13 19:25:55 brandenb Exp $
+! $Id: testfield.f90,v 1.11 2005-06-14 05:50:22 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -101,7 +101,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.10 2005-06-13 19:25:55 brandenb Exp $")
+           "$Id: testfield.f90,v 1.11 2005-06-14 05:50:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -210,7 +210,7 @@ module Testfield
       do jtest=1,12
         if ((jtest>= 1.and.jtest<= 3)&
         .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
-        .or.(jtest>=10.and.jtest<=12.and.xextent)&
+        .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2))&
         .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2

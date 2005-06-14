@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.119 2005-06-08 13:04:20 brandenb Exp $ 
+! $Id: initcond.f90,v 1.120 2005-06-14 05:50:22 brandenb Exp $ 
 
 module Initcond 
  
@@ -820,6 +820,56 @@ module Initcond
       endif
 !
     endsubroutine sinwave
+!***********************************************************************
+    subroutine hawley_etal99a(ampl,f,i,width,Lxyz,xx,yy,zz)
+!
+!  velocity perturbations as used by Hawley et al (1999, ApJ,518,394)
+!
+!  13-jun-05/maurice reyes: sent to axel via email
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real, dimension (mx) :: funx
+      real, dimension (my) :: funy
+      real, dimension (mz) :: funz
+      real, dimension(3) :: Lxyz
+      real :: k1,k2,k3,k4,phi1,phi2,phi3,phi4,ampl,width
+      integer :: i,iux,iuy,iuz,l,m,n
+!
+!  set iux, iuy, iuz, based on the value of i
+!
+      iux=i
+      iuy=i+1
+      iuz=i+2
+!
+!  velocity perturbations as used by Hawley et al (1999, ApJ,518,394)
+!
+      if (lroot) print*,'init_uu: hawley-et-al'
+      !f(:,:,:,iux)=f(:,:,:,iux)+ampl*exp(-(xx**2+yy**2+(zz-1.)**2)/width)
+      !f(:,:,:,iuz)=f(:,:,:,iuz)-ampl*exp(-(xx**2+yy**2+zz**2)/width)
+      k1=2.0*pi/(Lxyz(1))
+      k2=4.0*pi/(Lxyz(1))
+      k3=6.0*pi/(Lxyz(1))
+      k4=8.0*pi/(Lxyz(1))
+      phi1=k1*0.226818
+      phi2=k2*0.597073
+      phi2=k3*0.962855
+      phi4=k4*0.762091
+!
+!  use l,m,n as loop variables; inner loop should be on first index
+!
+      funx=sin(k1*x+phi1)+sin(k2*x+phi2)+sin(k3*x+phi3)+sin(k4*x+phi4)
+      funy=sin(k1*y+phi1)+sin(k2*y+phi2)+sin(k3*y+phi3)+sin(k4*y+phi4)
+      funz=sin(k1*z+phi1)+sin(k2*z+phi2)+sin(k3*z+phi3)+sin(k4*z+phi4)
+      do n=1,mz
+        do m=1,my
+          do l=1,mx
+            f(l,m,n,iuy)=ampl*funx(l)*funy(m)*funz(n)
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine hawley_etal99a
 !***********************************************************************
     subroutine stratification(f,strati_type)
 !
