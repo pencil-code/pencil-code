@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.35 2004-10-27 14:21:47 ajohan Exp $
+! $Id: radiation.f90,v 1.36 2005-06-19 05:15:45 brandenb Exp $
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
@@ -97,7 +97,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.35 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: radiation.f90,v 1.36 2005-06-19 05:15:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -192,7 +192,7 @@ module Radiation
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'No such such value for initrad: ', trim(initrad)
+        if (lroot) print*, 'No such value for initrad: ', trim(initrad)
         call stop_it("")
       endselect
 !
@@ -217,7 +217,7 @@ module Radiation
          !
          !  Catch unknown values
          !
-         if (lroot) print*, 'No such such value for pertee: ', trim(pertee)
+         if (lroot) print*, 'No such value for pertee: ', trim(pertee)
          call stop_it("")
          
       endselect

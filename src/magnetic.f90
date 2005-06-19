@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.238 2005-06-12 19:32:49 brandenb Exp $
+! $Id: magnetic.f90,v 1.239 2005-06-19 05:15:45 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -147,7 +147,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.238 2005-06-12 19:32:49 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.239 2005-06-19 05:15:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -269,7 +269,7 @@ module Magnetic
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'init_aa: No such such value for initaa: ', trim(initaa)
+        if (lroot) print*, 'init_aa: No such value for initaa: ', trim(initaa)
         call stop_it("")
 
       endselect

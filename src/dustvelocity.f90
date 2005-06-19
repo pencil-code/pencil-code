@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.90 2005-03-02 06:10:04 dobler Exp $
+! $Id: dustvelocity.f90,v 1.91 2005-06-19 05:15:45 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -111,7 +111,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.90 2005-03-02 06:10:04 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.91 2005-06-19 05:15:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -429,7 +429,7 @@ module Dustvelocity
 !  Catch unknown values
 !
       case default
-        print*, 'init_uud: No such such value for inituu: ', trim(inituud)
+        print*, 'init_uud: No such value for inituu: ', trim(inituud)
         call stop_it("")
 
       endselect
@@ -678,7 +678,7 @@ module Dustvelocity
 
           case default
 
-            if (lroot) print*, 'No such such value for iviscd: ', trim(iviscd)
+            if (lroot) print*, 'No such value for iviscd: ', trim(iviscd)
             call stop_it('duud_dt')
 
           endselect

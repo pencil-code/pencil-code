@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.4 2004-10-03 20:03:24 nilshau Exp $
+! $Id: visc_smagorinsky.f90,v 1.5 2005-06-19 05:15:45 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -67,7 +67,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.4 2004-10-03 20:03:24 nilshau Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.5 2005-06-19 05:15:45 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -356,7 +356,7 @@ module Viscosity
          !
          !  Catch unknown values
          !
-         if (lroot) print*, 'No such such value for ivisc: ', trim(ivisc)
+         if (lroot) print*, 'No such value for ivisc: ', trim(ivisc)
          call stop_it('calc_viscous_forcing')
          
       endselect

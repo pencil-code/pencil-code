@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.30 2004-10-29 13:40:40 ajohan Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.31 2005-06-19 05:15:45 brandenb Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -102,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.30 2004-10-29 13:40:40 ajohan Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.31 2005-06-19 05:15:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -209,7 +209,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'init_aa: No such such value for initaa: ', trim(initaa)
+        if (lroot) print*, 'init_aa: No such value for initaa: ', trim(initaa)
         call stop_it("")
 
       endselect

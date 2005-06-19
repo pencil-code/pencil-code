@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.197 2005-06-14 05:50:22 brandenb Exp $
+! $Id: hydro.f90,v 1.198 2005-06-19 05:15:45 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -128,7 +128,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.197 2005-06-14 05:50:22 brandenb Exp $")
+           "$Id: hydro.f90,v 1.198 2005-06-19 05:15:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -370,7 +370,7 @@ module Hydro
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'init_uu: No such such value for inituu: ', trim(inituu)
+        if (lroot) print*, 'init_uu: No such value for inituu: ', trim(inituu)
         call stop_it("")
 
       endselect

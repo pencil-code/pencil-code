@@ -1,4 +1,4 @@
-! $Id: hydro_fixed.f90,v 1.9 2005-03-02 06:10:05 dobler Exp $
+! $Id: hydro_fixed.f90,v 1.10 2005-06-19 05:15:45 brandenb Exp $
 
 !  This module takes care of velocities. Treats velocity components as auxiliary
 !  variables that do not undergo dynamical change. Useful for focusing on other
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_fixed.f90,v 1.9 2005-03-02 06:10:05 dobler Exp $")
+           "$Id: hydro_fixed.f90,v 1.10 2005-06-19 05:15:45 brandenb Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -355,7 +355,7 @@ module Hydro
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'init_uu: No such such value for inituu: ', trim(inituu)
+        if (lroot) print*, 'init_uu: No such value for inituu: ', trim(inituu)
         call stop_it("")
 
       endselect
