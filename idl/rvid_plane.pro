@@ -6,7 +6,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
                contourplot=contourplot
 ;
-; $Id: rvid_plane.pro,v 1.16 2005-05-27 14:41:54 ajohan Exp $
+; $Id: rvid_plane.pro,v 1.17 2005-06-20 13:55:41 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -39,12 +39,6 @@ default,dimfile,'dim.dat'
 default,varfile,'var.dat'
 default,imgdir,'.'
 ;
-if n_elements(proc) ne 0 then begin
-  file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
-endif else begin
-  file_slice=datadir+'/slice_'+field+'.'+extension
-endelse
-;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & prec=''
@@ -58,6 +52,18 @@ readf,1,prec
 readf,1,nghostx,nghosty,nghostz
 readf,1,nprocx,nprocy,nprocz
 close,1
+;
+;  Set reasonable extension for 2-D runs.
+;
+if ( (mx ne 7) and (my ne 7) and (mz eq 7) ) then extension='xy'
+if ( (mx ne 7) and (my eq 7) and (mz ne 7) ) then extension='xz'
+if ( (mx eq 7) and (my ne 7) and (mz ne 7) ) then extension='yz'
+;
+if n_elements(proc) ne 0 then begin
+  file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
+endif else begin
+  file_slice=datadir+'/slice_'+field+'.'+extension
+endelse
 ;
 ;  double precision?
 ;
