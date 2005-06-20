@@ -1,10 +1,10 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.1 2005-06-20 12:13:33 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.2 2005-06-20 13:58:27 ajohan Exp $
 ;
-pro pc_plot_par, xx, pos=pos, ps=ps, filename=filename
+pro pc_plot_par, xx, pos=pos, ps=ps, color=color, filename=filename
 
 default, ps, 0
-default, color, 1
+default, color, 0
 default, filename, 'particles.eps'
 default, pos, [0.1,0.1,0.9,0.9]
 
@@ -16,7 +16,7 @@ if (ps) then begin
   !p.charsize=2.0
 endif
 
-loadct, 12
+if (color) then loadct, 12
 frame_color=100
 par_color=200
 
@@ -52,6 +52,11 @@ endif else if ( (dim.nxgrid ne 1) and (dim.nygrid eq 1) and (dim.nzgrid ne 1) ) 
   
   plot, xx[*,0], xrange=[x0,x1], yrange=[z0,z1], /nodata
   plots, xx[*,0], xx[*,2], psym=3
+
+endif else if ( (dim.nxgrid eq 1) and (dim.nygrid ne 1) and (dim.nzgrid ne 1) ) then begin
+  
+  plot, xx[*,0], xrange=[y0,y1], yrange=[z0,z1], /nodata
+  plots, xx[*,1], xx[*,2], psym=3
 
 endif
 
