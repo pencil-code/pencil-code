@@ -1,11 +1,19 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.3 2005-02-17 12:25:25 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.4 2005-06-21 12:13:29 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
 ;  Author: Anders Johansen
 ;
 function pc_particles_to_density, xxp, x, y, z
+
+COMMON pc_precision, zero, one
+
+pc_set_precision
+if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one
+if (n_elements(y) gt 1) then dy=y[1]-y[0] else dy=1.0*one
+if (n_elements(z) gt 1) then dz=z[1]-z[0] else dz=1.0*one
+dx1=1.0/dx & dy1=1.0/dy & dz1=1.0/dz
 
 npar=0L
 
@@ -14,32 +22,20 @@ nx=n_elements(x)
 ny=n_elements(y)
 nz=n_elements(z)
 
-np=fltarr(nx,ny,nz)
-distx=fltarr(nx)
-disty=fltarr(ny)
-distz=fltarr(nz)
+np=fltarr(nx,ny,nz)*one
+distx=fltarr(nx)*one
+disty=fltarr(ny)*one
+distz=fltarr(nz)*one
 
 for k=0L,npar-1 do begin
-
-  for l=0,nx-1 do begin
-    distx[l]=abs(xxp[k,0]-x[l])
-  endfor
-  ix=where( distx eq min(distx) )
-
-  for m=0,ny-1 do begin
-    disty[m]=abs(xxp[k,1]-y[m])
-  endfor
-  iy=where( disty eq min(disty) )
-
-  for n=0,nz-1 do begin
-    distz[n]=abs(xxp[k,2]-z[n])
-  endfor
-  iz=where( distz eq min(distz) )
-
-  np[ix[0],iy[0],iz[0]]=np[ix[0],iy[0],iz[0]]+1.0
+  
+  ix = round((xxp[k,0]-x[0])*dx1)
+  iy = round((xxp[k,1]-y[0])*dy1)
+  iz = round((xxp[k,2]-z[0])*dz1)
+  np[ix,iy,iz]=np[ix,iy,iz]+1.0*one
 
 endfor
 
-return, np
+return, reform(np)
 
 end
