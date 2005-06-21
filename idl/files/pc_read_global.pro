@@ -1,5 +1,5 @@
 ;
-; $Id: pc_read_global.pro,v 1.2 2005-06-21 09:26:08 ajohan Exp $
+; $Id: pc_read_global.pro,v 1.3 2005-06-21 11:22:16 ajohan Exp $
 ;
 ;   Read global variable from file.
 ;  
@@ -194,9 +194,11 @@ endif
 ; If requested print a summary
 ;if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(QUIET))) then begin
 ;  pc_object_stats,object,dim=dim,QUIET=QUIET
-;  print,' t = ', t
+  print,' t = ', t
 ;endif
-gvar=np
+
+res='gvar='+varname
+if (execute(res) ne 1) then print, 'pc_read_global: problem'
 
 
 end
