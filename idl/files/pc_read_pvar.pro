@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.8 2005-02-20 17:54:03 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.9 2005-06-21 11:24:59 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -129,7 +129,7 @@ for i=0,nproc-1 do begin
 ;
 ;  Read local processor data.
 ;
-    array_loc=fltarr(npar_loc,mpvar)
+    array_loc=fltarr(npar_loc,mpvar)*one
     readu, file, array_loc
 ;
 ;  Put local processor data into proper place in global data array
