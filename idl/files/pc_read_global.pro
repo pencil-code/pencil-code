@@ -1,5 +1,5 @@
 ;
-; $Id: pc_read_global.pro,v 1.1 2005-06-21 09:25:43 ajohan Exp $
+; $Id: pc_read_global.pro,v 1.2 2005-06-21 09:26:08 ajohan Exp $
 ;
 ;   Read global variable from file.
 ;  
@@ -66,13 +66,10 @@ endif else if (varfile eq 'uup.dat') then begin
   vartype='v'
 endif
 
-print, vartype
-  
 if (n_elements(proc) eq 1) then begin
 endif else begin
   if (vartype eq 's') then begin
     res=varname+'=fltarr(mx,my,mz)*one'
-    print, res
   endif else if (vartype eq 'v') then begin
     res=varname+'=fltarr(mx,my,mz,3)*one'
   endif else begin
@@ -119,7 +116,6 @@ for i=0,ncpus-1 do begin
     endif else begin
       readu, file, t, xloc, yloc, zloc, dx, dy, dz
     endelse
-    print, t, min(np), max(np)
 ;
 ;  Don't overwrite ghost zones of processor to the left (and
 ;  accordingly in y and z direction makes a difference on the
