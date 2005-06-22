@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.3 2005-06-22 09:04:57 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.4 2005-06-22 13:35:47 ajohan Exp $
 ;
 pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, quiet=quiet
@@ -30,12 +30,12 @@ if (ps) then begin
   device, /encapsulated, color=color, xsize=xsize, ysize=ysize, $
       font_size=11, filename=imgdir+'/'+filename
   !p.font=1
+  ps_fonts
 endif else begin
   thick=1
   !p.charsize=2.0
 endelse
 
-ps_fonts
 !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 
 if (color) then loadct, 12
