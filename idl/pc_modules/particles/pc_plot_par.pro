@@ -1,27 +1,46 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.2 2005-06-20 13:58:27 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.3 2005-06-22 09:04:57 ajohan Exp $
 ;
-pro pc_plot_par, xx, pos=pos, ps=ps, color=color, filename=filename
+pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
+    filename=filename, imgdir=imgdir, quiet=quiet
 
 default, ps, 0
 default, color, 0
 default, filename, 'particles.eps'
 default, pos, [0.1,0.1,0.9,0.9]
+default, quiet, 0
+
+pc_read_param, obj=par, /quiet
+pc_read_dim, obj=dim, /quiet
+
+if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid ne 1) ) then begin
+  thick=1
+  !p.charsize=2.0
+  xsize=14.0
+  ysize=11.0
+endif else begin
+  thick=3
+  !p.charsize=1.0
+  xsize=12.0
+  ysize=12.0
+endelse
 
 if (ps) then begin
   set_plot, 'ps'
-  device, /encapsulated, color=color, xsize=14.0, ysize=11.0, $
-      font_size=11, filename=filename
+  device, /encapsulated, color=color, xsize=xsize, ysize=ysize, $
+      font_size=11, filename=imgdir+'/'+filename
   !p.font=1
+endif else begin
+  thick=1
   !p.charsize=2.0
-endif
+endelse
+
+ps_fonts
+!p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
 
 if (color) then loadct, 12
 frame_color=100
 par_color=200
-
-pc_read_param, obj=par, /quiet
-pc_read_dim, obj=dim, /quiet
 
 x0=par.xyz0[0]
 x1=x0+par.Lxyz[0]
@@ -61,8 +80,8 @@ endif else if ( (dim.nxgrid eq 1) and (dim.nygrid ne 1) and (dim.nzgrid ne 1) ) 
 endif
 
 if (ps) then begin
+  if (not quiet) then print, 'pc_plot_par: writing '+imgdir+'/'+filename
   device, /close
-  print, 'Written file '+filename
   set_plot, 'x'
 endif
 
