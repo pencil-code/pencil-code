@@ -9,6 +9,7 @@ default, random, 0
 default, seed, 1
 
 for i=n0,n1 do begin
+  zeros=''
   if (i lt 100) then begin
     zeros='0'
   endif
