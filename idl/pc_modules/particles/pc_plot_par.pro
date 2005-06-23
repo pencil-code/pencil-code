@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.4 2005-06-22 13:35:47 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.5 2005-06-23 08:32:21 ajohan Exp $
 ;
 pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, quiet=quiet
@@ -32,8 +32,8 @@ if (ps) then begin
   !p.font=1
   ps_fonts
 endif else begin
+  !p.font=0
   thick=1
-  !p.charsize=2.0
 endelse
 
 !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
