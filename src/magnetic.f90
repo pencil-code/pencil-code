@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.239 2005-06-19 05:15:45 brandenb Exp $
+! $Id: magnetic.f90,v 1.240 2005-06-24 21:23:07 bingert Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -147,7 +147,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.239 2005-06-19 05:15:45 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.240 2005-06-24 21:23:07 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1817,12 +1817,23 @@ module Magnetic
           ! debug checks -- look at a pencil near the centre...
           if (ip<=4 .and. imn==(ny+1)*nz/2) then
             print*,'r_int,r_ext',r_int,r_ext
-            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(r_mn), imn, iproc:', iproc, imn, minval(r_mn), maxval(r_mn)
-            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(theta_mn), imn, iproc:', iproc, imn, minval(theta_mn), maxval(theta_mn)
-            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(phi_mn), imn, iproc:', iproc, imn, minval(phi_mn), maxval(phi_mn)
-            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(ar), imn, iproc:', iproc, imn, minval(ar), maxval(ar)
-            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(atheta), imn, iproc:', iproc, imn, minval(atheta), maxval(atheta)
-            print'(a45,2i6,2f15.7)','geo_benchmark_B: minmax(aphi), imn, iproc:', iproc, imn, minval(aphi), maxval(aphi)
+            write(*,'(a45,2i6,2f15.7)') &
+                 'geo_benchmark_B: minmax(r_mn), imn, iproc:', &
+                 iproc, imn, minval(r_mn), maxval(r_mn)
+            write(*,'(a45,2i6,2f15.7)') &'geo_benchmark_B: minmax(theta_mn), imn, iproc:', &
+                 iproc, imn, minval(theta_mn), maxval(theta_mn)
+            write(*,'(a45,2i6,2f15.7)') &
+                 'geo_benchmark_B: minmax(phi_mn), imn, iproc:', &
+                 iproc, imn, minval(phi_mn), maxval(phi_mn)
+            write(*,'(a45,2i6,2f15.7)') &
+                 'geo_benchmark_B: minmax(ar), imn, iproc:', & 
+                 iproc, imn, minval(ar), maxval(ar)
+            write(*,'(a45,2i6,2f15.7)') &
+                 'geo_benchmark_B: minmax(atheta), imn, iproc:', &
+                 iproc, imn, minval(atheta), maxval(atheta)
+            write(*,'(a45,2i6,2f15.7)') &
+                 'geo_benchmark_B: minmax(aphi), imn, iproc:', &
+                 iproc, imn, minval(aphi), maxval(aphi)
           endif
 
             case('geo-benchmark-case2')
