@@ -17,453 +17,157 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# Date:   28-May-2002
-# $Id: nl2idl,v 1.19 2004-05-25 13:13:41 dobler Exp $
+# Date:   06-Feb-2005
 # Description:
-#   Convert Fortran namelists into IDL code that defines the corresponding
-#   variables as slots of a structure.
-#   Works for float, integer, character, logical (T->-1L, F->0L), complex.
-#   Works on Linux (Intel F95, NAG F95), IRIX, Compaq 
+#   Convert F90 namelists into an idl function that returns an anomymous
+#   structure containing all the namelist variables.
+# Usage:
+#   nl2idl [options] <file1.nml> [<file2.nml> [..]] > <file.pro>
+# Options:
+#   -h
+#   --help                Show usage overview
+#   -f <func>
+#   --function=<func>     Name the IDL function <func> (default is `param')
+#   -d
+#   --double              Mark floating-point values as double precision
+#   -m
+#   --minimize            Minimize strings by trimming trailing whitespace
+#   -1
+#   --one-line            Instead of a function file, write a single line
+#                         representing the structure. Useful if you use
+#                         EXECUTE to assign the resulting structure to an IDL
+#                         variable
+#   -M <N>
+#   --maxtags=<N>         Like `-1', but split result in blocks of up to <N>
+#                         tags: { block1} {block 2} ..
+#                         This is because IDL cannot handle structure
+#                         definitions wtih more than ~ 300--600 tags in one
+#                         execute statement
+#   --version             Write version number of nl2idl and exit
 
 use strict;
+use Namelist;
+
 use Getopt::Long;
-# Allow for `-Plp' as equivalent to `-P lp' etc, and honour case for
-# single-letter options:
+# Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
 
-my (%opts);	# Variables written by GetOptions
-my $funcname = "param";		# default name of idl function
-
-my $email = 'Wolfgang.Dobler@kis.uni-freiburg.de';
-my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
-my $nlstart = "^\\s*&($id)";	# regexp for start of a namelist
-my $numeric = '(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[EeDd](?:[+-]?\d+))?'; # float
-my $float = '(?:[-+]?(?:\d+\.\d*|\d*\.\d+))'; # float with decimal point,
-				              # but w/o  exponential part
-my $prefix="  par";
-
-my %nlists;
-my $line;
-
-(my $cmdname = $0) =~ s{.*/}{};
-
-my $debug = 0;
-
-my $usage =
-"Usage:  $cmdname [options] <file1.nml> [<file2.nml> [..]] > <file.pro>\n
-Convert F90 namelists into an idl function that returns an anomymous structure
-containing all the namelist variables.
-Options:
-  -h
-  --help            \tShow usage overview
-  -f <func>
-  --function=<func> \tName the IDL function <func> (default is `$funcname')
-  -d
-  --double          \tMark floating-point values as double precision
-  -m
-  --minimize        \tMinimize strings by trimming trailing whitespace
-  -1
-  --one-line        \tInstead of a function file, write a single line
-                    \trepresenting the structure. Useful if you use
-                    \tEXECUTE to assign the resulting structure to an IDL
-                    \tvariable
-  -M <N>
-  --maxtags=<N>     \tLike `-1', but split result in blocks of up to <N>
-                    \ttags: { block1} {block 2} ..
-                    \tThis is because IDL cannot handle structure
-                    \tdefinitions wtih more than ~ 300--600 tags in one
-                    \texecute statement
-  --version         \tWrite version number of $cmdname and exit
-";
+my (%opts);                     # Variables written by GetOptions
+my $debug=0;                    # Activate with (undocumented) `--debug' option
+my $doll='\$';                  # Need this to trick CVS
 
 ## Process command line
 GetOptions(\%opts,
-	   qw( -h   --help
-	            --debug
+           qw( -h   --help
+                    --debug
                -f=s --function=s
                -d   --double
-	       -m   --minimize
+               -m   --minimize
                -1   --one-line
-	       -M=i --maxtags=i
-	            --version
-                             ));
+               -M=i --maxtags=i
+               -q   --quiet
+               -v   --version ));
 
-if ($opts{'h'} || $opts{'help'}) { die "$usage\n"; }
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+if ($debug) {
+    printopts(\%opts);
+    print "\@ARGV = `@ARGV'\n";
+}
+
+if ($opts{'h'} || $opts{'help'})    { die usage();   }
+if ($opts{'v'} || $opts{'version'}) { die version(); }
+
+my $function = ($opts{'f'} || $opts{'function'} || 'param');
 my $double   = ($opts{'d'} || $opts{'double'}   || 0);
 my $oneline  = ($opts{'1'} || $opts{'one-line'} || 0);
 my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
 my $maxtags  = ($opts{'M'} || $opts{'maxtags'}  || 0);
 $oneline=1 if ($maxtags);
-my $opt;
-if ($debug) {
-    foreach $opt (keys(%opts)) {
-	print "\$opts{$opt} = `$opts{$opt}'\n";
-    }
-    print "\@ARGV = `@ARGV'\n";
+my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
+
+##
+## End of generalities; here comes the real thing
+##
+
+@ARGV = ('-') unless(@ARGV);
+
+my $nl  = Namelist->new();
+foreach my $f (@ARGV) {
+    $nl->parse(file => $f, merge => 1)
+      or die "Couldn't parse file <$f>\n";
 }
-if ($opts{'version'}) {
-    die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.19 2004-05-25 13:13:41 dobler Exp $ ' . "\n";
-}
 
-$funcname = ($opts{'f'} || $opts{'function'} || $funcname);
-
-my $infile = ($ARGV[0] || '-');
-
-
-## Some comments and the function definition header
-my $idl='';
-if ($oneline) {
-    $idl .= "{ ";
-} else {
-    $idl .= <<"HEADER";
+unless ($oneline) {
+    print <<"HERE";
 ;
-;  $funcname.pro
+;  param.pro
 ;
-; Set parameters from Mhd code namelist files (typically param.nml and
+; Set parameters from Pencil code namelist files (typically param.nml and
 ; param2.nml).
-; 
-; This file is generated by $cmdname, so you will probably not want to edit
+;
+; This file is generated by nl2idl, so you will probably not want to edit
 ; it.
 
-function $funcname
+function $function
 ; Returns an anonymous structure with all slots set from the namelist
-; data in $infile.
+; data in @ARGV.
+
   COMPILE_OPT HIDDEN
- 
-HEADER
-#
-    $idl .= "$prefix = { \$\n";
+
+HERE
 }
 
-## Read file contents
-my $prevlist="";
-open(INPUT,"< $infile") || die "Can't open $infile for reading";
-while (<INPUT>) {
-    s/!.*$//;			# remove comments
-    s/[ \t]/ /g;			# normalise whitespace
-    if (/$nlstart\s+(.*)/) {		# $1 now contains the namelist name
-	my $nl = "\L$1";
-	if (defined($nlists{$nl}) || ($nl eq $prevlist)) {
-	    print "Warning: Namelist `$nl' found twice -- merging\n";
-	}
-	if ($prevlist) {
-	    if ($debug) { print "Namelist $prevlist:\n" };
-	    # finish previous namelist
-	    parse_nl($line,$nlists{$prevlist});
-	}
-	chomp($line = $2);		# Start with empty line for new list
-	$prevlist = $nl;
-    } else {
-	chomp($line .= $_);
-    }
-}
-parse_nl($line,$nlists{$prevlist}); # finish last namelist
+print $nl->output(format   => 'idl',
+		  name     => 'par',
+		  trim     => $minimize,
+		  oneline  => $oneline,
+		  maxslots => $maxtags,
+		  double   => $double);
 
-# use Data::Dumper;
-# print Dumper(\%nlists);
-
-merge_nls(\%nlists);
-
-## Print IDL statements to generate the namelists as structures
-my ($br0,$br1);			# opening/closing brackets if needed
-my $nl;
-my $itag=0;
-my $brace_to_topen=0;
-foreach $nl (keys %nlists) {
-    print STDERR "$nl:\n" if $debug;
-    my ($var,$val);
-    while (($var, $val) = each %{$nlists{$nl}}) {
-	$itag++;
-	if (@$val > 1) {	# list of values
-	    ($br0,$br1) = ("[", "]");
-	} else {
-	    ($br0,$br1) = ("", "");
-	}
-	if ($oneline) {
-	    $idl .= "{ " if ($brace_to_topen);
-	    $brace_to_topen = 0;
-	    print STDERR "\$itag,\$maxtags = $itag, $maxtags\n" if ($debug);
-	    $idl .= "$var: $br0" . join(", ", @$val) . "$br1, ";
-	    if ($maxtags && ($itag>=$maxtags)) { # new block after $maxtags tags
-		substr($idl,-2) = "} ";
-		$brace_to_topen=1; # re-open `{' later if there are more tags
-		$itag=0;
-	    }
-	} else {
-	    my $varstr = sprintf("%-10s", $var);
-	    $idl .= "    $varstr : $br0" . join(", ", @$val) . "$br1 , \$\n";
-	}
-    }
-}
-
-if ($oneline) {
-    ## Replace last comma by closing brace and finish
-    substr($idl,-2) = " }";
+unless ($oneline) {
+    print "\n  return, par\n\nend\n";
 } else {
-    ## Replace last ", $" by closing brace and finish
-    substr($idl,-4) = "\$\n";
-    $idl .= "  }\n\n";
-    $idl .= "  return, par\n\n";
-    $idl .= "end";
+    print "\n";
 }
 
-print "$idl\n";
 
 # ---------------------------------------------------------------------- #
-
-sub parse_nl {
-## Parse (multiplier-expanded) namelist from $line
-
-    my $line = $_[0];
-
-    my %nl;
-
-    $line =~ s{\s*/?\s*$}{};	# remove trailing slashes and whitespace
-    expand_line($line);		# expand n*val syntax
-
-    while ($line)
-    {
-	$line =~ s/^\s*//;	# remove leading white space
-	$line =~ s{(.*?)(\s*=\s*)(.*)}{$3};
-	my $var = "\L$1" || '<none>';
-	if (defined($nl{$var})) {
-	    print STDERR
-	      "Warning: variable `$var' is multiply set in namelist\n";
-	}
-	if ($debug) {
-	    print "  \$var = $var\n" ;
-	    print "  Remaining line: <",substr($line,0,50),"..>\n";
-	}
-	while (1) {
-	    my $linelen = length($line);
-	    $line =~ s/^\s*,?\s*//;	# remove leading white space and commas
-	    last if ($line =~ m{^($id\s*=|/|$)}); # done with this variable?
-	    my $ch = substr($line,0,1);	# leading character
-	    if ($ch eq "'") {	# a string enclosed in apostrophes
-		my $apo = index($line,"'",1); # closing apostrophe
-		if ($debug) {
-		    print "\$nl{$var} <- ", substr($line,0,$apo+1),"\n";
-		}
-		push @{$nl{$var}}, substr($line,0,$apo+1);
-		$line = substr($line,$apo+1);
-	    } elsif ($ch eq '"') {	# a string enclosed in quotes
-		my $quote = index($line,'"',1); # closing quote
-		if ($debug) {
-		    print "\$nl{$var} <- ", substr($line,0,$quote+1),"\n";
-		}
-		push @{$nl{$var}}, substr($line,0,$quote+1);
-		$line = substr($line,$quote+1);
-	    } elsif ($ch eq 'T') { # logical T
-		if ($debug) { print "\$nl{$var} <- -1 (T)\n" };
-	        push @{$nl{$var}}, "-1L";
-		$line = substr($line,1);
-	    } elsif ($line =~ /^\.true\./i) { # logical .true.
-		if ($debug) { print "\$nl{$var} <- -1 (T)\n" };
-	        push @{$nl{$var}}, "-1L";
-		$line = substr($line,6);
-	    } elsif ($ch eq 'F') { # logical F
-		if ($debug) { print "\$nl{$var} <- 0 (F)\n" };
-	        push @{$nl{$var}}, "0L";
-		$line = substr($line,1);
-	    } elsif ($line =~ /^\.false\./i) { # logical .false.
-		if ($debug) { print "\$nl{$var} <- 0 (F)\n" };
-	        push @{$nl{$var}}, "0L";
-		$line = substr($line,7);
-	    } elsif ($ch =~ /[-+0-9\.]/) { # number
-		$line =~ s/^($numeric)[ ,]*(.*)$/$2/;
-		my $val = $1;
-		if ($double) {	# append 'D0' to floats w/o exponential part
-		    $val =~ s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g;
-		}
-		if ($debug) { print "\$nl{$var} <- $val\n" };
-	        push @{$nl{$var}}, $val;
-	    } elsif ($ch =~ /\(/) { # complex number (x,y)
-		my $bracket = index($line,')',1); # closing bracket
-		my $val = substr($line,0,$bracket+1);
-		if ($double) {	# append 'D0' to floats w/o exponential part
-		    $val =~ s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g;
-		}
-		if ($debug) {
-		    print "\$nl{$var} <- ", 'complex' . $val, "\n";
-		}
-		push @{$nl{$var}}, 'complex' . $val;
-		$line = substr($line,$bracket+1);
-	    } else {
-		if ($debug) { print "\$line = <$line>\n"};
-		# die "Illegal value \"$ch\[..]\" for $var\n";
-		err_msg("incomprehensible syntax, starting with <"
-			. substr($line,0,40)
-			. " ...>");
-	    }
-	    if ($debug) { print "\$line = <$line>\n"};
-
-	    ## Did we make any progress at all?
-	    unless (length($line) < $linelen) {
-		err_msg("no match for line, starting with <"
-			. substr($line,0,40)
-			. " ...>");
-	    }
-	}
-    }
-    # Sort all entries from %nl into $($_[1]):
-    my ($var, $val);
-    while (($var, $val) = each %nl) {
-	if ($minimize) { trim_strings($val) };
-	${$_[1]}{$var} = $val;
-    }
-#    $_[1] = \%nl;
-}
-
-# ---------------------------------------------------------------------- #
-
-sub expand_line {
-## Expand multipliers as written by some Fortran compilers; e.g. `3*17.2'
-## would be expanded to `17.3, 17.3, 17.3'
-    ($line) = @_;
-
-    my $xline="";		# expanded line
-
-    return if ($line !~ /\*/);	# nothing to do
-
-    while ($line =~ /\*/) {
-
-	if ($debug) { print "expand_line: \$line = <$line>\n"};
-
-	my $star = index($line, "*");
-	my $apo  = index($line, "'"); $apo=length($line) if ($apo<0);
-	my $quo  = index($line, '"'); $quo=length($line) if ($quo<0);
-	my ($str,$str2,$delim);
-	my ($pre,$mul,$val,$post);
-	if ($apo<$quo) {
-	    $str = $apo;
-	    $delim = "'";
-	} else {
-	    $str = $quo;
-	    $delim = '"';
-	}
-	if ($str < $star) {		# string first
-	    $str = index($line, $delim, $str+1);
-	    $xline .= substr($line, 0, $str+1); # this piece is safe
-	    $line  = substr($line, $str+1);	# rest of line
-	    if ($debug) { print "expand_line:   --->  <$xline>\n"};
-	    next;
-	} else {		# star first
-	    if ($apo == $star+1) { # n*'string'
-		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*?)([0-9]+)\*(\'[^\']*\')\s*,?(.*)/ );
-	    } elsif ($quo == $star+1) { # n*"string"
-		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*?)([0-9]+)\*(\"[^\"]*\")\s*,?(.*)/ );
-	    } else {		# n*<number|(complex, number)|T|F>
-		if (substr($line,$star+1,1) eq '(') { # n*(complex, number)
-		    ($pre,$mul,$val,$post) =
-			( $line =~ /^([^*]*?)([0-9]+)\*(\([^\)]+\))\s*,?(.*)/ );
-		} elsif (substr($line,$star+1,1) =~ '[-+.0-9TtFf]') {
-		    # n*<number|T|F>
-		    ($pre,$mul,$val,$post) =
-			( $line =~ /^([^*]*?)([0-9]+)\*([^ ,]+)\s*,?(.*)/ );
-		} else {
-		    err_msg("asterisk syntax, starting with <"
-			    . substr($line,0,40)
-			    . " ...>");
-		}
-	    }
-	    if (checkdef("(\$pre,\$mul,\$val,\$post)=",
-			 ($pre,$mul,$val,$post))) {
-		$xline .= $pre;
-		foreach (1..$mul) {
-		    $xline .= "$val, ";
-		}
-	    }
-	    $line = defined($post) ? $post : "";
-	    if ($debug) {
-		print "\$pre  = <$pre>, \$mul = <$mul>,",
-		      "\$val = <$val>, \$post = <$post>\n";
-	    }
-	}
-	if ($debug) { print "expand_line:   --->  <$xline>\n"};
-    }
-    $xline .= $line;
-    if ($debug) { print "expand_line:   ===>  <$xline>\n\n"};
-
-    $_[0] = $xline;
-}
-
-# ---------------------------------------------------------------------- #
-sub merge_nls {
-## Merge namelists in hash into one hash
-## %nl is a hash of hashes with array slots:
-## { 'init_pars'         => { 'lwrite_ic' => [ '0L', '-1L' ] },
-##   'density_init_pars' => { 'x0' => [ 1 ], 'yz0' => [2, 3] }
-## }
-## To allow easier switching, merge_nls returns a hash of the same
-## structure.
-
-    my %nl = %{$_[0]};
-    my %newl;
-
-
-    # use Data::Dumper;
-    # print Dumper(\%nl);
-    my $nl;
-    foreach $nl (keys %nl) {
-	print "$nl:\n" if $debug;
-        my ($var, $val);
-	while (($var, $val) = each %{$nlists{$nl}}) {
-	    $newl{'merged'}->{$var} = $val;
-	}
-    }
-
-    # print Dumper(\%newl);
-
-    %{$_[0]} = %newl;
-
-}
-# ---------------------------------------------------------------------- #
-sub checkdef {
-## Verify whether every element of a list is defined; otherwise write a
-## warning, together with the values.
-    my $msg=shift;
-    my @list=@_;
-
-    my $nundef = grep { ! defined } @list;
-    if ($nundef) {
-	warn "Undefined elements: $msg <",
-	join("><", map { defined($_) ? "$_" : "undef" } @list),
-	">";
-	0;
-    } else {
-	1;
+sub printopts {
+# Print command line options
+    my $optsref = shift;
+    my %opts = %$optsref;
+    foreach my $opt (keys(%opts)) {
+        print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
     }
 }
 # ---------------------------------------------------------------------- #
-sub trim_strings {
-## Given an array reference, trim trailing spaces from each string element
-## (those delimited by ' or "
-    my ($arref) = @_;
-    map { s/\s*([\'\"])$/$1/ } @$arref;
-    @_ = ($arref);
+
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+        # Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
 }
 # ---------------------------------------------------------------------- #
-sub err_msg {
-## Write generic error message with one specific string:
-    my $msg = (shift || undef);
-    chomp($msg);
-
-    my $message = "This does not look like a valid namelist file";
-    if (defined($msg)) {
-	$message .= ":\n";
-	$message .= "  $msg\n";	
-    } else {
-	$message .= ".\n";
-    }
-    $message .= "If it is a valid file, please send it to $email,\n";
-    $message .= "together with the version number of $cmdname:\n";
-    $message .= "  $cmdname --version\n";
-
-    die $message;
+sub version {
+# Return CVS data and version info.
+    my $doll='\$';              # Need this to trick CVS
+    my $cmdname = (split('/', $0))[-1];
+    my $rev = '$Revision: 1.20 $';
+    my $date = '$Date: 2005-06-24 11:15:01 $';
+    $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${doll}Date:\s*(\S+).*/$1/;
+    "$cmdname version $rev ($date)\n";
 }
 # ---------------------------------------------------------------------- #
 

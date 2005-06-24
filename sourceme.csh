@@ -41,12 +41,14 @@ if (! $?_sourceme_quiet) echo "PENCIL_HOME = <$PENCIL_HOME>"
 
 if (! $?_sourceme) then		# called for the fist time?
   if (-d $PENCIL_HOME/bin) then
+
     #  Set shell path
     if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel}} to PATH"
     set path = ( $path $PENCIL_HOME/bin \
                        $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel )
-    #  Set path for DX macros
+
+		       #  Set path for DX macros
     set _dxpath = "${PENCIL_HOME}/dx/macros:${PENCIL_HOME}/dx/macros/others"
     if ($?DXMACROS) then
       setenv DXMACROS "${_dxpath}:$DXMACROS"
@@ -54,18 +56,31 @@ if (! $?_sourceme) then		# called for the fist time?
       setenv DXMACROS "${_dxpath}"
     endif
     unset _dxpath
+
     #  Set IDL path
     if ($?IDL_PATH) then
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:$IDL_PATH"
     else
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:<IDL_DEFAULT>"
     endif
+
+    #  Set Perl module path
+    set _perl5lib = "${PENCIL_HOME}/perl"
+    if ($?PERL5LIB) then
+      setenv PERL5LIB "${_perl5lib}:$PERL5LIB"
+    else
+      setenv PERL5LIB "${_perl5lib}"
+    endif
+    unset _perl5lib
+
+    # Remember that sourceme has been successfully run
     set _sourceme = 'set'
+
   else
     echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
   endif
   #
-  #  additional aliases (for axel)
+  #  additional aliases (for Axel)
   #
   alias gb '\cd $gt ; set gg=$gb ; set gb=$gt ; set gt=$gg ; echo $gt "->" $gb'
   alias gt 'set gt=$cwd; \cd \!^ ; set gb=$cwd ; echo $gt "->" $gb'

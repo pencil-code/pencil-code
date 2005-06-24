@@ -49,14 +49,21 @@ if [ -z $_sourceme_quiet ]; then echo "PENCIL_HOME = <$PENCIL_HOME>"; fi
 if [ -z $_sourceme ]; then	# called for the first time?
   # CDPATH="./:../:../../:../../../:$HOME"
   if [ -d $PENCIL_HOME/bin ]; then
+
     #  Set shell path
     if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/{bin,utils{,/axel}} to PATH"; fi
     PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils:$PENCIL_HOME/utils/axel
+
     #  Set path for DX macros
     DXMACROS="${PENCIL_HOME}/dx/macros${DXMACROS:+:$DXMACROS}"
+
     #  Set IDL path
     IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
 
+    #  Set Perl module path
+    PERL5LIB="${PENCIL_HOME}/perl${PERL5LIB:+:$PERL5LIB}"
+
+    # Remember that sourceme has been successfully run
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
