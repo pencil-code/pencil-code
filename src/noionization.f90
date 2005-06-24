@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.121 2005-04-17 14:23:31 mee Exp $
+! $Id: noionization.f90,v 1.122 2005-06-24 20:49:45 bingert Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.121 2005-04-17 14:23:31 mee Exp $')
+           '$Id: noionization.f90,v 1.122 2005-06-24 20:49:45 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -301,12 +301,14 @@ module Ionization
 !
       use Cdata
       use Mpicomm, only: stop_it
+      use Sub
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss
 !
       ss=f(l1:l2,m,n,iss)
+      lnrho=f(l1:l2,m,n,ilnrho)
 !
       if (gamma1==0.) call stop_it('pressure_gradient_farray: gamma=1 not allowed w/entropy')
 !
