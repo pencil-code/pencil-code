@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.107 2005-06-25 12:31:10 brandenb Exp $
+### $Id: Makefile.src,v 1.108 2005-06-25 19:32:14 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -314,6 +314,10 @@ pacx-makefile: Makefile.src
 	cp pacx-Makefile Makefile
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
+depend.dot: Makefile.src Makefile.local ${PENCIL_HOME}/bin/mkdot
+	${PENCIL_HOME}/bin/mkdot $(run:.o=.f90) > run.dot
+	${PENCIL_HOME}/bin/mkdot $(start:.o=.f90) > start.dot
+	${PENCIL_HOME}/bin/mkdot $(run:.o=.f90) $(start:.o=.f90)> depend.dot
 cparam.inc: Makefile.src Makefile.local
 	${PENCIL_HOME}/bin/mkcparam $(physics:.o=.f90) cparam.local -o cparam.inc
 mpicomm_double.f90: mpicomm.f90
