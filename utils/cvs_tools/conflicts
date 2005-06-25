@@ -1,0 +1,2 @@
+#!/bin/sh
+vi `cvs -q up $@ | grep -e '^C ' | sed -e 's/C \(.*\)/\1/'`
