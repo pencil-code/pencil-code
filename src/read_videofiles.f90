@@ -1,9 +1,9 @@
-! $Id: read_videofiles.f90,v 1.18 2005-02-01 21:45:01 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.19 2005-06-25 08:00:37 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
 !
-!  read and combine slices from individual processor directories daata
+!  read and combine slices from individual processor directories data
 !  /procN, write them to data/, where the can be used by used by
 !  rvid_box.pro
 !
@@ -26,6 +26,7 @@
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4
       integer :: itdebug=2
       logical :: eof=.false.,slice_position_ok=.false.
+      logical :: err=.false.,err_timestep=.false.
       real :: t
       real :: slice_xpos=0., slice_ypos=0., slice_zpos=0., slice_z2pos=0.
 !
@@ -95,8 +96,10 @@
       print*,'ipz_top,ipz_bottom,ipy_front=',ipz_top,ipz_bottom,ipy_front
 !
 !  loop through all times
+!  reset error to false at each time step
 !
       do it=1,nt
+        err_timestep=.false.
         lun=10
 !
 !  Top Xy-plane:
@@ -110,14 +113,19 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.Xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
-        call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof)
+        call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof,err)
         min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
         max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
         if(eof) goto 999
         xy2(:,1+ipy*ny:ny+ipy*ny)=xy2_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1)
+      err_timestep=err
+      if(.not.err_timestep) then
+        call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1)
+      else
+        print*,'skip writing because of error; t=',t
+      endif
 !
 !  Bottom xy-plane:
 !  need data where ipz=0
@@ -130,14 +138,19 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
-        call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof)
+        call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof,err)
         min_xy_loc=min(min_xy_loc,minval(xy_loc))
         max_xy_loc=max(max_xy_loc,maxval(xy_loc))
         if(eof) goto 999
         xy(:,1+ipy*ny:ny+ipy*ny)=xy_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2)
+      err_timestep=err_timestep.or.err
+      if(.not.err_timestep) then
+        call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2)
+      else
+        print*,'skip writing because of error; t=',t
+      endif
 !
 !  Front xz-plane:
 !  need data where ipy=0
@@ -150,14 +163,19 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
-        call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof)
+        call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof,err)
         min_xz_loc=min(min_xz_loc,minval(xz_loc))
         max_xz_loc=max(max_xz_loc,maxval(xz_loc))
         if(eof) goto 999
         xz(:,1+ipz*nz:nz+ipz*nz)=xz_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3)
+      err_timestep=err_timestep.or.err
+      if(.not.err_timestep) then
+        call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3)
+      else
+        print*,'skip writing because of error; t=',t
+      endif
 !
 !  Left side yz-plane:
 !  need data where ipx=0 (doesn't matter: we have always nprocx=1)
@@ -170,7 +188,7 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
-        call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof)
+        call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof,err)
         min_yz_loc=min(min_yz_loc,minval(yz_loc))
         max_yz_loc=max(max_yz_loc,maxval(yz_loc))
         if(eof) goto 999
@@ -178,7 +196,12 @@
       enddo
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
+      err_timestep=err_timestep.or.err
+      if(.not.err_timestep) then
+        call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
+      else
+        print*,'skip writing because of error; t=',t
+      endif
 !
       print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
       enddo
@@ -194,7 +217,7 @@
       print*,'finished OK'
       end
 !***********************************************************************
-    subroutine rslice(file,a,pos,ndim1,ndim2,t,it,lun,eof)
+    subroutine rslice(file,a,pos,ndim1,ndim2,t,it,lun,eof,err)
 !
 !  appending to an existing slice file
 !
@@ -204,7 +227,7 @@
       character (len=*) :: file
       real, dimension (ndim1,ndim2) :: a
       integer :: it,lun
-      logical :: eof
+      logical :: eof,err
       real :: t,pos
 !
       if(it==1) open(lun,file=file,status='old',form='unformatted')
@@ -216,8 +239,13 @@
 !
 !  error: suspect wrong record length
 !
-998   read(lun,end=999) a,t
+998   read(lun,end=999,err=997) a,t
       lun=lun+1
+      goto 900
+!
+!  still an error, avoid this time
+!
+997   err=.true.
       goto 900
 !
 !  when end of file

@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.11 2005-06-14 05:50:22 brandenb Exp $
+! $Id: testfield.f90,v 1.12 2005-06-25 08:00:37 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -27,6 +27,7 @@ module Testfield
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
   logical :: reinitalize_aatest=.false.
   logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
+  integer :: itestfield=1,ktestfield=1
 
   namelist /testfield_init_pars/ &
        xextent,zextent,initaatest
@@ -35,7 +36,7 @@ module Testfield
   real :: etatest=0.
   namelist /testfield_run_pars/ &
        reinitalize_aatest,xextent,zextent,lsoca, &
-       lset_bbtest2,etatest
+       lset_bbtest2,etatest,itestfield,ktestfield
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_alp11=0,i_alp21=0,i_alp31=0
@@ -101,7 +102,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.11 2005-06-14 05:50:22 brandenb Exp $")
+           "$Id: testfield.f90,v 1.12 2005-06-25 08:00:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -137,6 +138,18 @@ module Testfield
 !
       if (reinitalize_aatest) then
         f(:,:,:,iaatest:iaatest+26)=0.
+      endif
+!
+!  write testfield information to a file (for convenient post-processing)
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/testfield_info.dat',STATUS='unknown')
+        write(1,'(a,i1)') 'xextent=',xextent
+        write(1,'(a,i1)') 'zextent=',zextent
+        write(1,'(a,i1)') 'lsoca=',lsoca
+        write(1,'(a,i2)') 'itestfield=',itestfield
+        write(1,'(a,i2)') 'ktestfield=',ktestfield
+        close(1)
       endif
 !
     endsubroutine initialize_testfield
@@ -188,9 +201,10 @@ module Testfield
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: bb,aa,uxB,uu,bbtest,btest,uxbtest
+      real, dimension (nx,3) :: bb,aa,uxB,uu,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3) :: del2Atest
-      integer :: jtest
+      real :: fnamez_mean
+      integer :: jtest,jfnamez,j
 !
       intent(in)     :: f,uu
       intent(inout)  :: df     
@@ -215,11 +229,12 @@ module Testfield
           iaxtest=iaatest+3*(jtest-1)
           iaztest=iaxtest+2
           call del2v(f,iaxtest,del2Atest)
-          if (lset_bbtest2) then
-            call set_bbtest2(bbtest,jtest)
-          else
-            call set_bbtest(bbtest,jtest)
-          endif
+          select case(itestfield)
+            case(1); call set_bbtest(bbtest,jtest,ktestfield)
+            case(2); call set_bbtest2(bbtest,jtest)
+            case(3); call set_bbtest3(bbtest,jtest)
+            case(4); call set_bbtest4(bbtest,jtest)
+          endselect
           call cross_mn(uu,bbtest,uxB)
           if (lsoca) then
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
@@ -227,8 +242,18 @@ module Testfield
           else
             call curl(f,iaxtest,btest)
             call cross_mn(uu,btest,uxbtest)
+!
+!  subtract average emf
+!
+            do j=1,3
+              jfnamez=i_alp11z+3*(jtest-1)+(j-1)
+!TEST         duxbtest(:,j)=uxbtest(:,j)-fnamez_copy(n-nghost,ipz+1,jfnamez)
+            enddo
+!
+!  advance test field equation
+!
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
-              +uxB+etatest*del2Atest+uxbtest
+              +uxB+etatest*del2Atest+duxbtest
           endif
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)
@@ -330,7 +355,7 @@ module Testfield
 !
     endsubroutine daatest_dt
 !***********************************************************************
-    subroutine set_bbtest(bbtest,jtest)
+    subroutine set_bbtest(bbtest,jtest,ktestfield)
 !
 !  set testfield
 !
@@ -341,17 +366,17 @@ module Testfield
 !
       real, dimension (nx,3) :: bbtest
       real, dimension (nx) :: cx,sx,cz,sz
-      integer :: jtest
+      integer :: jtest,ktestfield
 !
-      intent(in)  :: jtest
+      intent(in)  :: jtest,ktestfield
       intent(out) :: bbtest
 !
 !  xx and zz for calculating diffusive part of emf
 !
-      cx=cos(x(l1:l2))
-      sx=sin(x(l1:l2))
-      cz=cos(z(n))
-      sz=sin(z(n))
+      cx=cos(ktestfield*x(l1:l2))
+      sx=sin(ktestfield*x(l1:l2))
+      cz=cos(ktestfield*z(n))
+      sz=sin(ktestfield*z(n))
 !
 !  set bbtest for each of the 9 cases
 !
@@ -413,6 +438,44 @@ module Testfield
       endselect
 !
     endsubroutine set_bbtest2
+!***********************************************************************
+    subroutine set_bbtest4(bbtest,jtest)
+!
+!  set testfield using constant and linear functions
+!
+!  15-jun-05/axel: adapted from set_bbtest3
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,3) :: bbtest
+      real, dimension (nx) :: xx,zz
+      integer :: jtest
+!
+      intent(in)  :: jtest
+      intent(out) :: bbtest
+!
+!  xx and zz for calculating diffusive part of emf
+!
+      xx=x(l1:l2)
+      zz=z(n)
+!
+!  set bbtest for each of the 9 cases
+!
+      select case(jtest)
+      case(1); bbtest(:,1)=1.; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(2); bbtest(:,1)=0.; bbtest(:,2)=1.; bbtest(:,3)=0.
+      case(3); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=1.
+      case(4); bbtest(:,1)=xx; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(5); bbtest(:,1)=0.; bbtest(:,2)=xx; bbtest(:,3)=0.
+      case(6); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=xx
+      case(7); bbtest(:,1)=zz; bbtest(:,2)=0.; bbtest(:,3)=0.
+      case(8); bbtest(:,1)=0.; bbtest(:,2)=zz; bbtest(:,3)=0.
+      case(9); bbtest(:,1)=0.; bbtest(:,2)=0.; bbtest(:,3)=zz
+      case default; bbtest(:,:)=0.
+      endselect
+!
+    endsubroutine set_bbtest4
 !***********************************************************************
     subroutine set_bbtest3(bbtest,jtest)
 !
