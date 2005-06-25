@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.240 2005-06-24 21:23:07 bingert Exp $
+! $Id: magnetic.f90,v 1.241 2005-06-25 09:35:17 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -147,7 +147,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.240 2005-06-24 21:23:07 bingert Exp $")
+           "$Id: magnetic.f90,v 1.241 2005-06-25 09:35:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1820,7 +1820,8 @@ module Magnetic
             write(*,'(a45,2i6,2f15.7)') &
                  'geo_benchmark_B: minmax(r_mn), imn, iproc:', &
                  iproc, imn, minval(r_mn), maxval(r_mn)
-            write(*,'(a45,2i6,2f15.7)') &'geo_benchmark_B: minmax(theta_mn), imn, iproc:', &
+            write(*,'(a45,2i6,2f15.7)') &
+                 'geo_benchmark_B: minmax(theta_mn), imn, iproc:', &
                  iproc, imn, minval(theta_mn), maxval(theta_mn)
             write(*,'(a45,2i6,2f15.7)') &
                  'geo_benchmark_B: minmax(phi_mn), imn, iproc:', &
