@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.13 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: testfield.f90,v 1.14 2005-06-26 21:35:30 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -28,6 +28,7 @@ module Testfield
   logical :: reinitalize_aatest=.false.
   logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
   integer :: itestfield=1,ktestfield=1
+  integer, parameter :: ntestfield=36
 
   namelist /testfield_init_pars/ &
        xextent,zextent,initaatest
@@ -79,14 +80,14 @@ module Testfield
       use Sub
 !
       logical, save :: first=.true.
+      integer :: j
 !
       if (.not. first) call stop_it('register_aa called twice')
       first = .false.
 !
       ltestfield = .true.
-      iaatest = nvar+1              ! indices to access aa
-!---  nvar = nvar+27            ! added 27 variables
-      nvar = nvar+36            ! added 36 variables
+      iaatest = nvar+1          ! indices to access aa
+      nvar = nvar+ntestfield    ! added ntestfield variables
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_testfield: nvar = ', nvar
@@ -95,14 +96,14 @@ module Testfield
 !
 !  Put variable names in array
 !
-      varname(iax) = 'ax'
-      varname(iay) = 'ay'
-      varname(iaz) = 'az'
+      do j=1,ntestfield
+        varname(j) = 'aatest'
+      enddo
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.13 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: testfield.f90,v 1.14 2005-06-26 21:35:30 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -137,7 +138,7 @@ module Testfield
 !  (in future, could call something like init_aa_simple)
 !
       if (reinitalize_aatest) then
-        f(:,:,:,iaatest:iaatest+26)=0.
+        f(:,:,:,iaatest:iaatest+ntestfield-1)=0.
       endif
 !
 !  write testfield information to a file (for convenient post-processing)
@@ -187,6 +188,30 @@ module Testfield
       endselect
 !
     endsubroutine init_aatest
+!***********************************************************************
+    subroutine pencil_criteria_testfield()
+!
+!   All pencils that the Testfield module depends on are specified here.
+!
+!  26-jun-05/anders: adapted from magnetic
+!
+      use Cdata
+!
+      lpenc_requested(i_uu)=.true.
+!
+    endsubroutine pencil_criteria_testfield
+!***********************************************************************
+    subroutine pencil_interdep_testfield(lpencil_in)
+!
+!  Interdependency among pencils from the Testfield module is specified here.
+!
+!  26-jun-05/anders: adapted from magnetic
+!
+      use Cdata
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+    endsubroutine pencil_interdep_testfield
 !***********************************************************************
     subroutine daatest_dt(f,df,p)
 !

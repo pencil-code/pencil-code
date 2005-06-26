@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.146 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: register.f90,v 1.147 2005-06-26 21:35:30 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -393,6 +393,7 @@ module Register
       use Dustvelocity, only: pencil_criteria_dustvelocity
       use Dustdensity, only: pencil_criteria_dustdensity
       use Magnetic, only: pencil_criteria_magnetic
+      use Testfield, only: pencil_criteria_testfield
       use Cosmicray, only: pencil_criteria_cosmicray
       use Cosmicrayflux, only: pencil_criteria_cosmicrayflux
       use Chiral, only: pencil_criteria_chiral
@@ -410,6 +411,7 @@ module Register
       call pencil_criteria_dustvelocity()
       call pencil_criteria_dustdensity()
       call pencil_criteria_magnetic()
+      call pencil_criteria_testfield()
       call pencil_criteria_cosmicray()
       call pencil_criteria_cosmicrayflux()
       call pencil_criteria_chiral()
@@ -434,6 +436,7 @@ module Register
       use Entropy, only: pencil_interdep_entropy
       use Gravity, only: pencil_interdep_gravity
       use Magnetic, only: pencil_interdep_magnetic
+      use Testfield, only: pencil_interdep_testfield
       use Pscalar, only: pencil_interdep_pscalar
       use Dustvelocity, only: pencil_interdep_dustvelocity
       use Dustdensity, only: pencil_interdep_dustdensity
@@ -454,6 +457,7 @@ module Register
       call pencil_interdep_dustdensity(lpencil_in)
       call pencil_interdep_pscalar(lpencil_in)
       call pencil_interdep_magnetic(lpencil_in)
+      call pencil_interdep_testfield(lpencil_in)
       call pencil_interdep_cosmicray(lpencil_in)
       call pencil_interdep_cosmicrayflux(lpencil_in)
       call pencil_interdep_chiral(lpencil_in)
@@ -604,6 +608,7 @@ module Register
       call rprint_forcing      (lreset,LWRITE=lroot)
       call rprint_entropy      (lreset,LWRITE=lroot)
       call rprint_magnetic     (lreset,LWRITE=lroot)
+      call rprint_testfield    (lreset,LWRITE=lroot)
       call rprint_radiation    (lreset,LWRITE=lroot)
       call rprint_eos          (lreset,LWRITE=lroot)
       call rprint_pscalar      (lreset,LWRITE=lroot)
