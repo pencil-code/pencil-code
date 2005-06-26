@@ -1,4 +1,4 @@
-! $Id: notestfield.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: notestfield.f90,v 1.3 2005-06-26 22:41:24 mee Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -19,6 +19,8 @@ module Testfield
   use Cparam
 
   implicit none
+
+  include 'testfield.h'
 
   real :: dummy=0.
   namelist /testfield_init_pars/ &
@@ -57,6 +59,29 @@ module Testfield
 !
       if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
     endsubroutine init_aatest
+!***********************************************************************
+    subroutine pencil_criteria_testfield()
+!
+!   All pencils that the Testfield module depends on are specified here.
+!
+!  26-jun-05/anders: adapted from magnetic
+!
+      use Cdata
+!
+!
+    endsubroutine pencil_criteria_testfield
+!***********************************************************************
+    subroutine pencil_interdep_testfield(lpencil_in)
+!
+!  Interdependency among pencils from the Testfield module is specified here.
+!
+!  26-jun-05/anders: adapted from magnetic
+!
+      use Cdata
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+    endsubroutine pencil_interdep_testfield
 !***********************************************************************
     subroutine daatest_dt(f,df,p)
 !
