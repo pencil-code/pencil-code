@@ -67,7 +67,7 @@ if [ -z $_sourceme ]; then	# called for the first time?
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
-    export PATH DXMACROS IDL_PATH _sourceme
+    export PATH DXMACROS IDL_PATH PERL5LIB _sourceme 
     
   else
     echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
