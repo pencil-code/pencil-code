@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.265 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: cdata.f90,v 1.266 2005-06-26 23:49:58 mee Exp $
 
 module Cdata
 
@@ -276,5 +276,6 @@ module Cdata
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: dtau_thresh1,dtau_thresh2
+  real :: b_ell=1., rbound=1.
 
 endmodule Cdata

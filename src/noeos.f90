@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: noeos.f90,v 1.3 2005-06-26 23:49:58 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -52,6 +52,10 @@ module EquationOfState
   logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma1
   real :: cs2bot=1., cs2top=1. 
+  real :: cs2cool=0.
+  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
+  integer :: isothtop=1
+  real :: beta_dlnrhodr=0.0,beta_dlnrhodr_scaled=0.0
 
   contains
 
@@ -77,7 +81,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $')
+           '$Id: noeos.f90,v 1.3 2005-06-26 23:49:58 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.31 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nodensity.f90,v 1.32 2005-06-26 23:49:58 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -22,23 +22,15 @@ module Density
 
   include 'density.inc'
 
-  real :: cs2cool=0.
-  character (len=labellen), dimension(ninit) :: initlnrho='nothing'
-  logical :: lglobal_pressuregradient_gas=.false.
-  logical :: lglobal_pressuregradient_dust=.false.
 
   !namelist /density_init_pars/ dummy
   !namelist /density_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_ekin=0,idiag_rhom=0,idiag_ekintot=0
+  integer :: idiag_rhom=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
 
-  !ajwm shouldn't be here :-(
-  real :: mpoly, mpoly0, mpoly1, mpoly2
   real :: beta_dlnrhodr=0.0, beta_dlnrhodr_scaled=0.0
-  real :: b_ell=1., rbound=1.
-  integer :: isothtop
 
   contains
 
@@ -64,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.31 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: nodensity.f90,v 1.32 2005-06-26 23:49:58 mee Exp $")
 !
 !ajwm Necessary? added incase
 !      gamma=1.
@@ -224,15 +216,13 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_ekin=0; idiag_rhom=0; idiag_ekintot=0
+        idiag_rhom=0
         idiag_rhomin=0; idiag_rhomax=0
       endif
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_ekintot=',idiag_ekintot
-        write(3,*) 'i_ekin=',idiag_ekin
         write(3,*) 'i_rhom=',idiag_rhom
         write(3,*) 'i_rhomin=',idiag_rhomin
         write(3,*) 'i_rhomax=',idiag_rhomax

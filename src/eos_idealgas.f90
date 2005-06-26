@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: eos_idealgas.f90,v 1.3 2005-06-26 23:49:58 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -51,9 +51,14 @@ module EquationOfState
   logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma1
   real :: cs2bot=1., cs2top=1. 
+  real :: cs2cool=0.
+  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
+  real :: beta_dlnrhodr=0.,beta_dlnrhodr_scaled=0.
+  integer :: isothtop=0
 
   ! input parameters
   namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, lcalc_cp, gamma
+
 
   ! run parameters
   namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, lcalc_cp, gamma
@@ -87,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $')
+           '$Id: eos_idealgas.f90,v 1.3 2005-06-26 23:49:58 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !

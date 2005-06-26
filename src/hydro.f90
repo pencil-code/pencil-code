@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.199 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: hydro.f90,v 1.200 2005-06-26 23:49:58 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -96,6 +96,7 @@ module Hydro
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
   integer :: idiag_fintm=0,idiag_fextm=0
   integer :: idiag_duxdzma=0,idiag_duydzma=0
+  integer :: idiag_ekintot=0, idiag_ekin=0
 
 ! Turbulence parameters
   real :: Hp,cs_ave,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
@@ -141,7 +142,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.199 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: hydro.f90,v 1.200 2005-06-26 23:49:58 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -249,8 +250,7 @@ module Hydro
 !  24-nov-02/tony: renamed for consistance (i.e. init_[variable name])
 !
       use Cdata
-      use Density, only: beta_dlnrhodr_scaled, rbound, b_ell
-      use EquationOfState, only: cs20, gamma
+      use EquationOfState, only: cs20, gamma, beta_dlnrhodr_scaled
       use General
       use Global
       use Gravity, only: grav_const,z1,g0,r0_pot,n_pot
@@ -567,6 +567,10 @@ module Hydro
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
+      if (idiag_ekin/=0 .or. idiag_ekintot/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_u2)=.true.
+      endif
 !
     endsubroutine pencil_criteria_hydro
 !***********************************************************************
@@ -870,6 +874,10 @@ module Hydro
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
+!
+        if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
+        if (idiag_ekintot/=0) & 
+            call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
 !
 !
 !  kinetic field components at one point (=pt)
@@ -1271,12 +1279,15 @@ module Hydro
         idiag_u2u13m=0; idiag_oumphi=0; idiag_fintm=0; idiag_fextm=0
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_duxdzma=0; idiag_duydzma=0
+        idiag_ekin=0; idiag_ekintot=0; 
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
+        call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
@@ -1354,6 +1365,8 @@ module Hydro
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_ekin=',idiag_ekin
+        write(3,*) 'i_ekintot=',idiag_ekintot
         write(3,*) 'i_u2m=',idiag_u2m
         write(3,*) 'i_um2=',idiag_um2
         write(3,*) 'i_o2m=',idiag_o2m

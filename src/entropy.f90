@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.334 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: entropy.f90,v 1.335 2005-06-26 23:49:58 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -22,8 +22,8 @@ module Entropy
   use Cdata
   use Interstellar
   use Viscosity
-  use EquationOfState, only: gamma, gamma1, cs20, cs2top, cs2bot
-  use Density, only: isothtop, mpoly0, mpoly1, mpoly2, cs2cool
+  use EquationOfState, only: gamma, gamma1, cs20, cs2top, cs2bot, &
+                         isothtop, mpoly0, mpoly1, mpoly2, cs2cool
 
   implicit none
 
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.334 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: entropy.f90,v 1.335 2005-06-26 23:49:58 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -175,8 +175,8 @@ module Entropy
       use Mpicomm, only: stop_it
       use General, only: warning
       use Gravity, only: gravz,g0
-      use Density, only: mpoly, beta_dlnrhodr
-      use EquationOfState, only: cs0,lnTT0,get_soundspeed
+      use EquationOfState, only: cs0,lnTT0,get_soundspeed,beta_dlnrhodr, &
+                                 mpoly, mpoly0, mpoly1, mpoly2 
 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -466,8 +466,10 @@ module Entropy
       use Gravity
       use General, only: chn
       use Initcond
-      use EquationOfState
-      use Density, only: mpoly, beta_dlnrhodr, isothtop, mpoly0, mpoly1, mpoly2, cs2cool
+      use EquationOfState,  only: mpoly, beta_dlnrhodr, isothtop, &
+                                mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
+                                rho0, lnrho0, isothermal_entropy, &
+                                isothermal_lnrho_ss
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
@@ -934,9 +936,8 @@ module Entropy
 !  20-oct-03/dave -- coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly
       use Sub, only: calc_unitvects_sphere
-      use Density, only: mpoly
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
@@ -1186,7 +1187,7 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
-      use Density, only: beta_dlnrhodr
+      use EquationOfState, only: beta_dlnrhodr
 !
       lpenc_requested(i_cs2)=.true.
       lpenc_requested(i_glnrho)=.true.
@@ -1398,12 +1399,11 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Cdata
-      use EquationOfState
+      use EquationOfState, only: beta_dlnrhodr_scaled
       use Mpicomm
       use Sub
       use Global
       use Special, only: special_calc_entropy
-      use Density, only: beta_dlnrhodr_scaled
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df

@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: eos_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -68,6 +68,10 @@ module EquationOfState
   real :: cs2bot=impossible, cs2top=impossible
 !ajwm  Not sure this should exist either...
   real :: lnTT0
+  real :: cs2cool=0.
+  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
+  integer :: isothtop=0
+  real :: beta_dlnrhodr=0.0,beta_dlnrhodr_scaled=0.0
 
   contains
 
@@ -108,7 +112,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: eos_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

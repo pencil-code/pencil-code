@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.181 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: density.f90,v 1.182 2005-06-26 23:49:58 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -23,7 +23,7 @@ module Density
   use Cparam
   use Cdata
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
-                             gamma,gamma1,cs2top,cs2bot
+                             gamma,gamma1,cs2top,cs2bot, beta_dlnrhodr
 
   implicit none
 
@@ -36,8 +36,6 @@ module Density
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: q_ell=5., hh0=0.
-  real :: beta_dlnrhodr=0.0,beta_dlnrhodr_scaled=0.0
-  real :: b_ell=1., rbound=1.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: mpoly=1.5
   real :: cs2cool=0.
@@ -69,9 +67,9 @@ module Density
        cs2bot,cs2top,lupw_lnrho,idiff,beta_dlnrhodr, &
        lmass_source,lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,wdamp
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: idiag_ekin=0,idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m
+  integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m
   integer :: idiag_rhomin=0,idiag_rhomax=0
-  integer :: idiag_ekintot=0,idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
+  integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
 
   contains
 
@@ -108,7 +106,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.181 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: density.f90,v 1.182 2005-06-26 23:49:58 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,6 +140,7 @@ module Density
 !
       use General, only: warning
       use Mpicomm, only: stop_it
+      use EquationOfState, only: beta_dlnrhodr, beta_dlnrhodr_scaled
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -304,6 +303,7 @@ module Density
       use IO
       use Mpicomm
       use Sub
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
@@ -942,9 +942,8 @@ module Density
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
-      if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_rhom/=0 .or. &
-          idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. idiag_rhomax/=0) &
-          lpenc_diagnos(i_rho)=.true.
+      if (idiag_rhom/=0 .or. idiag_rho2m/=0  &
+           .or. idiag_rhomin/=0 .or. idiag_rhomax/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
 !
     endsubroutine pencil_criteria_density
@@ -1124,6 +1123,7 @@ module Density
       use Mpicomm, only: stop_it
       use Special, only: special_calc_density
       use Sub
+      use EquationOfState, only: beta_dlnrhodr, beta_dlnrhodr_scaled
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1237,9 +1237,6 @@ module Density
         if (idiag_rhomax/=0) call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_rho2m/=0) call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_lnrho2m/=0) call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
-        if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
-        if (idiag_ekintot/=0) & 
-            call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
@@ -1266,9 +1263,9 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_ekin=0; idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
+        idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
-        idiag_ekintot=0; idiag_lnrhomphi=0; idiag_rhomphi=0
+        idiag_lnrhomphi=0; idiag_rhomphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1280,8 +1277,6 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomin',idiag_rhomin)
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
-        call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
-        call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
       enddo
 !
@@ -1296,8 +1291,6 @@ module Density
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_ekintot=',idiag_ekintot
-        write(3,*) 'i_ekin=',idiag_ekin
         write(3,*) 'i_rhom=',idiag_rhom
         write(3,*) 'i_rho2m=',idiag_rho2m
         write(3,*) 'i_rhomin=',idiag_rhomin

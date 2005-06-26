@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.65 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: noentropy.f90,v 1.66 2005-06-26 23:49:58 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.65 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: noentropy.f90,v 1.66 2005-06-26 23:49:58 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -100,7 +100,7 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
-      use Density, only: beta_dlnrhodr
+      use EquationOfState, only: beta_dlnrhodr
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lhydro) then
@@ -171,7 +171,7 @@ module Entropy
 !
 !  Isothermal/polytropic equation of state
 !
-      use Density, only: beta_dlnrhodr_scaled
+      use EquationOfState, only: beta_dlnrhodr_scaled
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f

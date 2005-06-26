@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: eos_fixed_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -53,6 +53,7 @@ module EquationOfState
   ! input parameters
   namelist /eos_init_pars/ yH0,xHe,xH2,opacity_type,kappa_cst
 
+
   ! run parameters
   namelist /eos_run_pars/ yH0,xHe,xH2,opacity_type,kappa_cst
 
@@ -66,6 +67,10 @@ module EquationOfState
   real :: cp1=impossible
 !ajwm  can't use impossible else it breaks reading param.nml 
   real :: cs2bot=1., cs2top=1. 
+  real :: cs2cool=0.
+  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
+  real :: beta_dlnrhodr=0.,beta_dlnrhodr_scaled=0.
+  integer :: isothtop=0
 
   contains
 
@@ -96,7 +101,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

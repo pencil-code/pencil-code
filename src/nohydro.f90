@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.37 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nohydro.f90,v 1.38 2005-06-26 23:49:58 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -49,6 +49,7 @@ module Hydro
   integer :: idiag_umy=0,idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divu2m=0,idiag_epsK=0
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
+  integer :: idiag_ekintot=0, idiag_ekin=0
 
   contains
 
@@ -74,7 +75,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.37 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: nohydro.f90,v 1.38 2005-06-26 23:49:58 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -237,6 +238,10 @@ module Hydro
       endif
 ! u2
       if (lpencil(i_u2)) call dot2_mn(p%uu,p%u2)
+      if (idiag_ekin/=0 .or. idiag_ekintot/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_u2)=.true.
+      endif
 !     
       if(NO_WARN) print*,f(1,1,1,1)   !(keep compiler quiet)
 !
@@ -275,6 +280,10 @@ module Hydro
             call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
         if (idiag_u2m/=0)   call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
+!
+        if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
+        if (idiag_ekintot/=0) & 
+            call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
       endif
 !
       if(NO_WARN) print*, f, df     !(keep compiler quiet)
@@ -444,12 +453,15 @@ module Hydro
         idiag_umx=0; idiag_umy=0; idiag_umz=0
         idiag_Marms=0; idiag_Mamax=0; idiag_divu2m=0; idiag_epsK=0
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
+        idiag_ekin=0; idiag_ekintot=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'ekin',idiag_ekin)
+        call parse_name(iname,cname(iname),cform(iname),'ekintot',idiag_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
@@ -487,6 +499,8 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_ekin=',idiag_ekin
+        write(3,*) 'i_ekintot=',idiag_ekintot
         write(3,*) 'i_u2m=',idiag_u2m
         write(3,*) 'i_um2=',idiag_um2
         write(3,*) 'i_o2m=',idiag_o2m
