@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.15 2005-06-26 20:24:20 mee Exp $
+! $Id: nointerstellar.f90,v 1.16 2005-06-26 20:42:25 brandenb Exp $
 !
 !  Dummy module
 !
@@ -6,7 +6,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: linterstellar = .true.
+! CPARAM logical, parameter :: linterstellar = .false.
 !
 !***************************************************************
 
@@ -41,7 +41,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.15 2005-06-26 20:24:20 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.16 2005-06-26 20:42:25 brandenb Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
