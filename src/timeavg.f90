@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.14 2004-04-08 12:47:08 dobler Exp $ 
+! $Id: timeavg.f90,v 1.15 2005-06-26 17:34:13 eos_merger_tony Exp $ 
 
 module Timeavg
 
@@ -9,6 +9,8 @@ module Timeavg
   use Cdata
 
   implicit none
+
+  include 'timeavg.inc' 
 !
   include 'ctimeavg.local'
 !

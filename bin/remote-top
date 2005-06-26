@@ -3,7 +3,7 @@
 # Name:   remote-top
 # Author: wd+ab
 # Date:    7-Oct-2002
-# $Id: remote-top,v 1.7 2004-09-28 22:09:35 dobler Exp $
+# $Id: remote-top,v 1.8 2005-06-26 17:34:17 eos_merger_tony Exp $
 # Description:
 #     does top -bn1 on all procs of nodelist, write to datadir
 

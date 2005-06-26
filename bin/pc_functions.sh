@@ -52,6 +52,7 @@ show_config()
   echo '$PARENT_PID   	= ' "<$PARENT_PID>"
 }
 
+
 #------------------------------------------------------------------------------
 #-- Scratch Directory Routines                        
 #------------------------------------------------------------------------------
@@ -232,10 +233,10 @@ check_RERUN()
   if [ -e RERUN ]; then 
     rm -f RERUN
     echo
-    echo "=============================================================================="
+    echo "------------------------------------------------------------------------------"
     echo "Rerunning in the *same* directory; current run status: $run_status"
     echo "We are *still* in: " `pwd`
-    echo "=============================================================================="
+    echo "------------------------------------------------------------------------------"
     echo
   else
     run_finished=yes
@@ -257,18 +258,18 @@ check_NEWDIR()
       (date; echo "original run script is in:"; echo $olddir; echo "")\
          2>&1 >> $datadir/directory_change.log
       echo
-      echo "=============================================================================="
+      echo "------------------------------------------------------------------------------"
       echo "Rerunning in new directory; current run status: $run_status"
       echo "We are now in: " `pwd`
-      echo "=============================================================================="
+      echo "------------------------------------------------------------------------------"
       echo
     else
       rm -f NEWDIR
       echo
-      echo "=============================================================================="
+      echo "------------------------------------------------------------------------------"
       echo "Rerunning in the *same* directory; current run status: $run_status"
         echo "We are *still* in: " `pwd`
-    echo "=============================================================================="
+    echo "------------------------------------------------------------------------------"
       echo
       echo "Rerunning; current run status: $run_status"
     fi
@@ -353,7 +354,7 @@ copy_snapshots ()
   
   local pwd=`pwd`
   local targetdir=$pwd/data
-#  local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
+  local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
   
   if [ "$debug" == "yes" ]; then
     echo "SCRATCH_DIR = <$SCRATCH_DIR>"
@@ -368,9 +369,9 @@ copy_snapshots ()
       if [ "$debug" == "yes" ]; then
         echo "node=$node"
         printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile :\n"
-        $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile" 2>/dev/null
+        $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile"
         printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/ :\n"
-        $SSH $node "ls -ltd $targetdir/proc*/ $targetdir/allprocs/" 2>/dev/null
+        $SSH $node "ls -ltd $targetdir/proc*/ $targetdir/allprocs/"
         echo
       fi
       # Copy all files you find (not efficient on dual-CPU systems, unless
@@ -378,7 +379,7 @@ copy_snapshots ()
       # Extremely awkward due to quoting rules:
       cmd1="cd $SCRATCH_DIR; "
       cmd2='for f in `'
-      cmd3="ls proc*/$varfile allprocs/$varfile 2>/dev/null"
+      cmd3="ls proc*/$varfile allprocs/$varfile"
       cmd4='`; do cp '
       cmd5="$SCRATCH_DIR/"
       cmd6='$f '
@@ -388,7 +389,7 @@ copy_snapshots ()
       [ $debug == "yes" ]  && echo "Now running <$SSH $node sh -c $remcmd>"
       $SSH $node sh -c "'$remcmd'"
       printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
-      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile" 2>/dev/null
+      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
       echo "--------------------------------------------------------"
     done 
   else				# no explicit file given -- copy VARN, TAVGN
@@ -400,7 +401,7 @@ copy_snapshots ()
     touch COPY_IN_PROGRESS
     while [ -e COPY_IN_PROGRESS ];   # loop until killed
     do
-      sleep 60 &                    # only check every minute
+      sleep 60 &			# only check every minute
       local save_sleep_pid=$!
       trap "kill $save_sleep_pid; rm -f COPY_IN_PROGRESS" SIGQUIT
       wait $save_sleep_pid
@@ -412,7 +413,7 @@ copy_snapshots ()
       if ( (ls $SCRATCH_DIR/proc0/VAR[0-9]*     || \
               ls $SCRATCH_DIR/proc0/TIMEAVG[0-9]* || \
               ls $SCRATCH_DIR/allprocs/VAR[0-9]*  || \
-              ls $SCRATCH_DIR/allprocs/TIMEAVG[0-9]* ) &> /dev/null ) ; then
+              ls $SCRATCH_DIR/allprocs/TIMEAVG[0-9]* ) >& /dev/null ) ; then
         ## Decide whether to check for file size (old scheme; won't work with
         ## TAVGN unless they have the same size as var.dat), or to use list of
         ## snapshot files (new scheme, will not work with old binaries).
@@ -426,7 +427,7 @@ copy_snapshots ()
           do
             echo "---------------------- $node ---------------------------"
             echo '$targetdir' $targetdir
-            for d in `cd $SCRATCH_DIR; ls -d allprocs proc* 2>/dev/null`
+            for d in `cd $SCRATCH_DIR; ls -d allprocs proc*`
             do
               fdir="$SCRATCH_DIR/$d"
               echo "cd $SCRATCH_DIR; ls allprocs proc* -->"
@@ -450,7 +451,6 @@ copy_snapshots ()
         fi
   
         if [ `ps -p $PARENT_PID | fgrep -c $PARENT_PID` -le 0 ]; then
-          rm -f COPY_IN_PROGRESS
           echo "No parent process (pid $PARENT_PID) -- exiting"
           exit 1
         fi
@@ -458,10 +458,138 @@ copy_snapshots ()
     done
   fi
 
-  rm -f COPY_IN_PROGRESS
-
   [ "$debug" == "yes" ] && echo "copy_snapshots: done"
 }  
+
+#copy_snapshots ()
+#{
+#  # Copy snapshots VAR# and TAVG# from /scratch to $PBS_O_WORKDIR (from
+#  # where the code started).
+#  # Relies on PBS (and on tcsh) and is needed on Horseshoe (the Odense
+#  # cluster).
+#  local debug=no
+#
+#  if [ "$1" == "-v" ] || [ "$1" == "--verbose" ]; then
+#    debug=yes
+#    shift
+#  fi
+#  
+#  #[ "$debug" == "yes" ] && (set verbose;  set echo)
+#  
+#  local varfile=$1
+#  [ "$debug" == "yes" ] && echo "varfile = <$varfile>"
+#  
+#  local pwd=`pwd`
+#  local targetdir=$pwd/data
+##  local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
+#  
+#  if [ "$debug" == "yes" ]; then
+#    echo "SCRATCH_DIR = <$SCRATCH_DIR>"
+#    echo "targetdir   = <$targetdir>"
+#    echo "nodelist    = <$nodelist>"
+#  fi
+#  
+#  if [ -n "$varfile" ]; then		# explicit filename given
+#    for node in $nodelist
+#    do
+#      echo "---------------------- $node ---------------------------"
+#      if [ "$debug" == "yes" ]; then
+#        echo "node=$node"
+#        printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile :\n"
+#        $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile" 2>/dev/null
+#        printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/ :\n"
+#        $SSH $node "ls -ltd $targetdir/proc*/ $targetdir/allprocs/" 2>/dev/null
+#        echo
+#      fi
+#      # Copy all files you find (not efficient on dual-CPU systems, unless
+#      # we would delete files after copying..)
+#      # Extremely awkward due to quoting rules:
+#      cmd1="cd $SCRATCH_DIR; "
+#      cmd2='for f in `'
+#      cmd3="ls proc*/$varfile allprocs/$varfile 2>/dev/null"
+#      cmd4='`; do cp '
+#      cmd5="$SCRATCH_DIR/"
+#      cmd6='$f '
+#      cmd7="$targetdir/"
+#      cmd8='$f; done'
+#      remcmd="$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
+#      [ $debug == "yes" ]  && echo "Now running <$SSH $node sh -c $remcmd>"
+#      $SSH $node sh -c "'$remcmd'"
+#      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+#      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile" 2>/dev/null
+#      echo "--------------------------------------------------------"
+#    done 
+#  else				# no explicit file given -- copy VARN, TAVGN
+#    if [ -e COPY_IN_PROGRESS ]; then    
+#      echo "ERROR: Copy already in progress! Exiting..."
+#      return 1
+#    fi
+#
+#    touch COPY_IN_PROGRESS
+#    while [ -e COPY_IN_PROGRESS ];   # loop until killed
+#    do
+#      sleep 60 &                    # only check every minute
+#      local save_sleep_pid=$!
+#      trap "kill $save_sleep_pid; rm -f COPY_IN_PROGRESS" SIGQUIT
+#      wait $save_sleep_pid
+#      [ -e COPY_IN_PROGRESS ] && date >> COPY_IN_PROGRESS
+#
+#      ## Is there something to copy? (It is sufficient to copy once the
+#      ## files show up for the master process of this job -- might depend on
+#      ## the queuing system etc.)
+#      if ( (ls $SCRATCH_DIR/proc0/VAR[0-9]*     || \
+#              ls $SCRATCH_DIR/proc0/TIMEAVG[0-9]* || \
+#              ls $SCRATCH_DIR/allprocs/VAR[0-9]*  || \
+#              ls $SCRATCH_DIR/allprocs/TIMEAVG[0-9]* ) &> /dev/null ) ; then
+#        ## Decide whether to check for file size (old scheme; won't work with
+#        ## TAVGN unless they have the same size as var.dat), or to use list of
+#        ## snapshot files (new scheme, will not work with old binaries).
+#        if [ -e $SCRATCH_DIR/proc0/varN.list ]     || \
+#           [ -e $SCRATCH_DIR/proc0/tavgN.list ]    || \
+#           [ -e $SCRATCH_DIR/allprocs/tavgN.list ] || \
+#           [ -e $SCRATCH_DIR/allprocs/tavgN.list ];  then
+#          ## New scheme
+#          echo "New scheme for copying (based on varN.list)"
+#          for node in $nodelist
+#          do
+#            echo "---------------------- $node ---------------------------"
+#            echo '$targetdir' $targetdir
+#            for d in `cd $SCRATCH_DIR; ls -d allprocs proc* 2>/dev/null`
+#            do
+#              fdir="$SCRATCH_DIR/$d"
+#              echo "cd $SCRATCH_DIR; ls allprocs proc* -->"
+#              cd $SCRATCH_DIR; ls allprocs proc*
+#              echo "d = <$d>"
+#              echo "fdir = <$fdir>"
+#              for f in `$SSH $node "cat $fdir/*.list"`
+#              do
+#                file="$fdir/$f"
+#                echo "f     = <$f>"
+#                echo "file = <$file>"
+#                [ "$debug" == "yes" ] && echo "$SSH $node 'if (-e $file) mv -f $file $targetdir/$d/'"
+#                $SSH $node "if (-e $file) mv -f $file $targetdir/$d/"
+#              done
+#            done
+#            echo "--------------------------------------------------------"
+#          done
+#        else
+#          ## Old scheme
+#          echo "Old scheme for copying (size-based)-- will be removed at some point"
+#        fi
+#  
+#        if [ `ps -p $PARENT_PID | fgrep -c $PARENT_PID` -le 0 ]; then
+#          rm -f COPY_IN_PROGRESS
+#          echo "No parent process (pid $PARENT_PID) -- exiting"
+#          exit 1
+#        fi
+#      fi
+#    done
+#  fi
+#
+#  rm -f COPY_IN_PROGRESS
+#
+#  [ "$debug" == "yes" ] && echo "copy_snapshots: done"
+#}  
 
 background_copy_snapshots()
 {

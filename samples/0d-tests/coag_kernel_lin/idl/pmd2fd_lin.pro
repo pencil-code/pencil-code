@@ -1,4 +1,4 @@
-; $Id: pmd2fd_lin.pro,v 1.3 2004-04-16 14:33:59 ajohan Exp $
+; $Id: pmd2fd_lin.pro,v 1.4 2005-06-26 17:34:18 eos_merger_tony Exp $
 !p.charsize=1.5
 int=0.
 for k=0,ndustspec-1 do begin

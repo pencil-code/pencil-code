@@ -13,6 +13,7 @@ FORCING  = noforcing
 ENTROPY  =   entropy
 MAGNETIC = nomagnetic
 HYDRO    =   hydro
+EOS      =   eos_idealgas
 DENSITY  =   density
 
 IO      =   io_dist

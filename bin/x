@@ -1,5 +1,5 @@
 #!/bin/csh
-#  $Id: x,v 1.8 2002-10-28 13:04:53 nilshau Exp $
+#  $Id: x,v 1.9 2005-06-26 17:34:17 eos_merger_tony Exp $
 #
 #  The script prints the header (legend) and the
 #  last few lines of the time_series.dat file.

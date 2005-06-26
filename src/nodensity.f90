@@ -1,32 +1,44 @@
-! $Id: nodensity.f90,v 1.30 2005-06-09 18:49:49 brandenb Exp $
+! $Id: nodensity.f90,v 1.31 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: ldensity = .false.
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED rho,lnrho,rho1,glnrho,uglnrho,sglnrho,del2lnrho,hlnrho
 !
 !***************************************************************
 
 module Density
 
   use Cparam
-  use Cdata
-  use Ionization, only: cs0,cs20,lnrho0,rho0,lcalc_cp,gamma,gamma1,cs2top,cs2bot
+  use EquationOfState, only: cs0,cs20,lnrho0,rho0,lcalc_cp, &
+                             gamma,gamma1,cs2top,cs2bot
 
   implicit none
 
-  real :: cs2cool=0.
-  real :: b_ell=1., rbound=1.
-  character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
+  include 'density.inc'
 
-  integer :: dummy           ! We cannot define empty namelists
-  namelist /density_init_pars/ dummy
-  namelist /density_run_pars/  dummy
+  real :: cs2cool=0.
+  character (len=labellen), dimension(ninit) :: initlnrho='nothing'
+  logical :: lglobal_pressuregradient_gas=.false.
+  logical :: lglobal_pressuregradient_dust=.false.
+
+  !namelist /density_init_pars/ dummy
+  !namelist /density_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ekin=0,i_rhom=0,i_ekintot=0,i_rhomin=0,i_rhomax=0
+  integer :: idiag_ekin=0,idiag_rhom=0,idiag_ekintot=0
+  integer :: idiag_rhomin=0,idiag_rhomax=0
+
+  !ajwm shouldn't be here :-(
+  real :: mpoly, mpoly0, mpoly1, mpoly2
+  real :: beta_dlnrhodr=0.0, beta_dlnrhodr_scaled=0.0
+  real :: b_ell=1., rbound=1.
+  integer :: isothtop
 
   contains
 
@@ -47,16 +59,16 @@ module Density
       if (.not. first) call stop_it('register_density called twice')
       first = .false.
 !
-      ldensity = .false.
+!ajwm      ldensity = .false.
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.30 2005-06-09 18:49:49 brandenb Exp $")
+           "$Id: nodensity.f90,v 1.31 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 !ajwm Necessary? added incase
-      gamma=1.
-      gamma1=0.
+!      gamma=1.
+!      gamma1=0.
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f,lstarting)
@@ -94,32 +106,59 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
+      if(NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine calculate_vars_rho(f,lnrho,rho,rho1)
+    subroutine pencil_criteria_density()
+! 
+!  All pencils that the Density module depends on are specified here.
+! 
+!  20-11-04/anders: coded
 !
-!   Calculation of rho1
-!   dummy routine
+    endsubroutine pencil_criteria_density
+!***********************************************************************
+    subroutine pencil_interdep_density(lpencil_in)
 !
-!   09-febr-04/bing: coded
+!  Interdependency among pencils from the Density module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_density
+!***********************************************************************
+    subroutine calc_pencils_density(f,p)
+!
+!  Calculate Density pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-11-04/anders: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f       
-      real, dimension (nx) :: lnrho,rho,rho1
-
+      type (pencil_case) :: p
+!
       intent(in) :: f
-      intent(out) :: lnrho,rho,rho1
-!
-!  set rho1=1 (useful for so-called force-free model)
-!
-      rho1=1.
-      rho=1.
-      lnrho=0.
+      intent(inout) :: p
+! rho
+      if (lpencil(i_rho)) p%rho=rho0
+! lnrho
+      if (lpencil(i_lnrho)) p%lnrho=lnrho0
+! rho1
+      if (lpencil(i_rho1)) p%rho1=1./rho0
+! glnrho
+      if (lpencil(i_glnrho)) p%glnrho=0.
+! uglnrho
+      if (lpencil(i_uglnrho)) p%uglnrho=0.
+! hlnrho
+      if (lpencil(i_hlnrho)) p%hlnrho=0.
 !     
-      if(ip==0) print*,f(1,1,1,1)   !(keep compiler quiet)
-    endsubroutine calculate_vars_rho
+      if(NO_WARN) print*,f(1,1,1,1)   !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_density
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,divu,lnrho,rho,glnrho,shock,gshock)
+    subroutine dlnrho_dt(f,df,p)
 !
 !  continuity equation, dummy routine
 !
@@ -127,16 +166,44 @@ module Density
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho,gshock
-      real, dimension (nx) :: lnrho,rho,divu,shock
+      type (pencil_case) :: p
 !
-!  will be accessed in noentropy
+      intent(in) :: f,df,p
 !
-      glnrho=0.
-!
-      if(ip==0) print*,f,df,uu,divu,lnrho,rho,shock,gshock
+      if(NO_WARN) print*,f,df,p
 !
     endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine read_density_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_density_init_pars
+!***********************************************************************
+    subroutine write_density_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_density_init_pars
+!***********************************************************************
+    subroutine read_density_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_density_run_pars
+!***********************************************************************
+    subroutine write_density_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_density_run_pars
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
 !
@@ -157,17 +224,18 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ekin=0; i_rhom=0; i_ekintot=0; i_rhomin=0; i_rhomax=0
+        idiag_ekin=0; idiag_rhom=0; idiag_ekintot=0
+        idiag_rhomin=0; idiag_rhomax=0
       endif
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_ekintot=',i_ekintot
-        write(3,*) 'i_ekin=',i_ekin
-        write(3,*) 'i_rhom=',i_rhom
-        write(3,*) 'i_rhomin=',i_rhomin
-        write(3,*) 'i_rhomax=',i_rhomax
+        write(3,*) 'i_ekintot=',idiag_ekintot
+        write(3,*) 'i_ekin=',idiag_ekin
+        write(3,*) 'i_rhom=',idiag_rhom
+        write(3,*) 'i_rhomin=',idiag_rhomin
+        write(3,*) 'i_rhomax=',idiag_rhomax
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
       endif
@@ -181,7 +249,7 @@ module Density
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==0) print*,f,topbot
+      if(NO_WARN) print*,f,topbot
     endsubroutine bc_lnrho_temp_z
 !***********************************************************************
     subroutine bc_lnrho_pressure_z(f,topbot)
@@ -191,7 +259,7 @@ module Density
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==0) print*,f,topbot
+      if(NO_WARN) print*,f,topbot
     endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
 

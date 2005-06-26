@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.27 2005-06-19 05:15:45 brandenb Exp $
+! $Id: visc_var.f90,v 1.28 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -6,6 +6,8 @@
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lviscosity = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -20,19 +22,24 @@ module Viscosity
 
   implicit none
 
+  include 'viscosity.inc'
+
 !  real :: nu=0.
   character (len=labellen) :: ivisc='nu-const'
   real :: nu_var, q_DJO=2., t0_DJO=0., nuf_DJO,ti_DJO=1.,tf_DJO
-  integer :: dummy, i_nu_var
-  integer :: i_dtnu=0
+  integer :: dummy, idiag_nu_var
+  integer :: idiag_dtnu=0
   ! dummy logical
   logical :: lvisc_first=.false.
 
   ! input parameters
-  namelist /viscosity_init_pars/ dummy
+  !namelist /viscosity_init_pars/ dummy
 
   ! run parameters
   namelist /viscosity_run_pars/ ivisc,q_DJO,t0_DJO,nu,nuf_DJO,ti_DJO,tf_DJO
+
+  ! Not implemented but needed for bodged implementation in hydro
+  integer :: idiag_epsK=0
 
   contains
 
@@ -50,9 +57,6 @@ module Viscosity
       if (.not. first) call stop_it('register_viscosity called twice')
       first = .false.
 !
-      lviscosity = .true.
-      lvisc_shock=.false.
-!
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: constant viscosity'
       endif
@@ -60,7 +64,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.27 2005-06-19 05:15:45 brandenb Exp $")
+           "$Id: visc_var.f90,v 1.28 2005-06-26 17:34:13 eos_merger_tony Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -72,18 +76,57 @@ module Viscosity
 !
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity()
+    subroutine initialize_viscosity(lstarting)
 !
 !  20-nov-02/tony: coded
 
       use Cdata
 
+      logical, intent(in) :: lstarting
+
       if (nu /= 0. .and. ((ivisc=='nu-const') .or. (ivisc=='nu-DJO'))) then
          lneed_sij=.true.
-         lneed_glnrho=.true.
       endif
 
+      if (NO_WARN) print*,lstarting
     endsubroutine initialize_viscosity
+!***********************************************************************
+    subroutine read_viscosity_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat).and.NO_WARN) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_viscosity_init_pars
+!***********************************************************************
+    subroutine write_viscosity_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_viscosity_init_pars
+!***********************************************************************
+    subroutine read_viscosity_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=viscosity_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=viscosity_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_viscosity_run_pars
+!***********************************************************************
+    subroutine write_viscosity_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=viscosity_run_pars)
+
+    endsubroutine write_viscosity_run_pars
 !*******************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
@@ -102,33 +145,33 @@ module Viscosity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_dtnu=0
+        idiag_dtnu=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'dtnu',i_dtnu)
+        call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
       enddo
 !
 !  write column where which ionization variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_dtnu=',i_dtnu
+          write(3,*) 'i_dtnu=',idiag_dtnu
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'ishock=',ishock
           write(3,*) 'itest=',0
         endif
       endif
 !   
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
 !!***********************************************************************
     subroutine calc_viscosity(f)
       real, dimension (mx,my,mz,mvar+maux) :: f
-      if(ip==0) print*,f  !(to keep compiler quiet)
+      if(NO_WARN) print*,f  !(to keep compiler quiet)
     endsubroutine calc_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
@@ -149,26 +192,30 @@ module Viscosity
 !
 !  traceless strainmatrix squared
 !
-      call multm2_mn(sij,sij2)
+      call multm2(sij,sij2)
 !
       select case(ivisc)
        case ('simplified', '0')
          if (headtt) print*,'no heating: ivisc=',ivisc
+         heat=0.
        case('rho_nu-const', '1')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*2.*nu*sij2*rho1
+         heat=2.*nu*sij2*rho1
        case('nu-const', '2')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*2.*nu*sij2
+         heat=2.*nu*sij2
        case default
          if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
          call stop_it("") !"
       endselect
-      if(ip==0) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
+
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*heat
+      if (lfirst.and.ldt) Hmax=Hmax+heat
+      if(NO_WARN) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho,rho1,shock,gshock,bij)
 !
       use Cdata
       use Mpicomm
@@ -178,11 +225,11 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: glnrho,del2u, graddivu,fvisc,sglnrho,gshock
-      real, dimension (nx) :: murho1,rho1,divu,shock
+      real, dimension (nx) :: murho1,rho1,divu,shock,rho
       real :: b
       integer :: i
 
-      intent (in) :: f, glnrho, rho1
+      intent (in) :: f, glnrho, rho1,rho
       intent (out) :: df,shock,gshock
 !
 !  viscosity operator
@@ -203,7 +250,7 @@ module Viscosity
           if (headtt) print*,'VISC_VAR: viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           if(ldensity) then
-            call multmv_mn(sij,glnrho,sglnrho)
+            call multmv(sij,glnrho,sglnrho)
             fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             diffus_nu=max(diffus_nu,nu*dxyz_2)
           else
@@ -242,7 +289,7 @@ module Viscosity
           if (headtt) print*,'viscous force: nu_var*(del2u+graddivu/3+2S.glnrho)'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           if(ldensity) then
-            call multmv_mn(sij,glnrho,sglnrho)
+            call multmv(sij,glnrho,sglnrho)
             fvisc=2.*nu_var*sglnrho+nu_var*(del2u+1./3.*graddivu)
             diffus_nu=max(diffus_nu,nu_var*dxyz_2)
           else
@@ -282,11 +329,11 @@ module Viscosity
 !
 !  set viscous time step
 !
-      if (ldiagnos.and.i_dtnu/=0) then
-        call max_mn_name(spread(nu,1,nx)/dxmin**2/cdtvDim,i_dtnu,l_dt=.true.)
+      if (ldiagnos.and.idiag_dtnu/=0) then
+        call max_mn_name(spread(nu,1,nx)/dxmin**2/cdtvDim,idiag_dtnu,l_dt=.true.)
       endif
 !
-      if(ip==0) print*,divu  !(keep compiler quiet)
+      if(NO_WARN) print*,divu  !(keep compiler quiet)
     end subroutine calc_viscous_force
 
 !***********************************************************************

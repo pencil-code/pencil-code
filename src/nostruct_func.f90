@@ -1,10 +1,12 @@
-! $Id: nostruct_func.f90,v 1.7 2003-06-16 04:41:11 brandenb Exp $
+! $Id: nostruct_func.f90,v 1.8 2005-06-26 17:34:13 eos_merger_tony Exp $
 !
 module  struct_func
   !
   use Cdata
   !
   implicit none
+
+  include 'struct_func.inc'
   !
   contains
 
@@ -18,8 +20,8 @@ module  struct_func
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
   if(ip<=15) print*,'Use STRUCT_FUNC  = struct_func in Makefile.local'
-  if(ip==0)  print*,f,ivec,b_vec,variabl  !(to keep compiler happy)
+  if(NO_WARN)  print*,f,ivec,b_vec,variabl  !(to keep compiler happy)
 end subroutine structure
 !***********************************************************************
 
-end module struct_func
+endmodule struct_func

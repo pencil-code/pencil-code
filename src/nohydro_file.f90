@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.19 2005-06-09 18:49:49 brandenb Exp $
+! $Id: nohydro_file.f90,v 1.20 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -16,23 +16,29 @@ module Hydro
 
   implicit none
 
-  integer :: dummyuu           ! We cannot define empty namelists
-  namelist /hydro_init_pars/ dummyuu
-  namelist /hydro_run_pars/  dummyuu
+  private
+
+  !namelist /hydro_init_pars/ dummyuu
+  !namelist /hydro_run_pars/  dummyuu
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
-  integer :: i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
-  integer :: i_Marms=0,i_Mamax=0
-  integer :: i_u2mphi=0,i_oumphi=0
-  integer :: i_epsK=0
+  integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
+  integer :: idiag_urms=0,idiag_umax=0,idiag_orms=0,idiag_omax=0
+  integer :: idiag_Marms=0,idiag_Mamax=0
+  integer :: idiag_u2mphi=0,idiag_oumphi=0
+!merge_axel: not sure I forgot something ...
+! integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
+! integer :: i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
+! integer :: i_Marms=0,i_Mamax=0
+! integer :: i_u2mphi=0,i_oumphi=0
+! integer :: i_epsK=0
 
-  real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
-  real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
-  real :: u_out_kep=0.0
-  real :: orms=0.
+! real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
+! real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
+! real :: u_out_kep=0.0
+! real :: orms=0.
 
-  logical :: lcalc_turbulence_pars
+! logical :: lcalc_turbulence_pars
 
   contains
 
@@ -59,8 +65,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.19 $", &
-           "$Date: 2005-06-09 18:49:49 $")
+           "$Revision: 1.20 $", &
+           "$Date: 2005-06-26 17:34:13 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -92,7 +98,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uu
 !***********************************************************************
     subroutine duu_dt(f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
@@ -152,12 +158,43 @@ module Hydro
 !
       if (ldiagnos) then
         call dot2_mn(uu,u2)
-        if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
-        if (i_um2/=0) call max_mn_name(u2,i_um2)
+        if (idiag_u2m/=0) call sum_mn_name(u2,idiag_u2m)
+        if (idiag_um2/=0) call max_mn_name(u2,idiag_um2)
       endif
 !
-      if(ip==0) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
+      if(NO_WARN) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine read_hydro_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_hydro_init_pars
+!***********************************************************************
+    subroutine write_hydro_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_hydro_init_pars
+!***********************************************************************
+    subroutine read_hydro_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_hydro_run_pars
+!***********************************************************************
+    subroutine write_hydro_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
@@ -179,38 +216,38 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_u2m=0;i_um2=0;i_oum=0;i_o2m=0
-        i_u2mphi=0; i_oumphi=0
+        idiag_u2m=0;idiag_um2=0;idiag_oum=0;idiag_o2m=0
+        idiag_u2mphi=0; idiag_oumphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'u2m',i_u2m)
-        call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
-!       call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
-!       call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
+        call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
+        call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
+!       call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
+!       call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_u2m=',i_u2m
-        write(3,*) 'i_um2=',i_um2
-        write(3,*) 'i_o2m=',i_o2m
-        write(3,*) 'i_oum=',i_oum
-        write(3,*) 'i_urms=',i_urms
-        write(3,*) 'i_umax=',i_umax
-        write(3,*) 'i_orms=',i_orms
-        write(3,*) 'i_omax=',i_omax
+        write(3,*) 'i_u2m=',idiag_u2m
+        write(3,*) 'i_um2=',idiag_um2
+        write(3,*) 'i_o2m=',idiag_o2m
+        write(3,*) 'i_oum=',idiag_oum
+        write(3,*) 'i_urms=',idiag_urms
+        write(3,*) 'i_umax=',idiag_umax
+        write(3,*) 'i_orms=',idiag_orms
+        write(3,*) 'i_omax=',idiag_omax
+        write(3,*) 'i_u2mphi=',idiag_u2mphi
+        write(3,*) 'i_oumphi=',idiag_oumphi
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy
         write(3,*) 'iuz=',iuz
-        write(3,*) 'i_u2mphi=',i_u2mphi
-        write(3,*) 'i_oumphi=',i_oumphi
       endif
 !
     endsubroutine rprint_hydro

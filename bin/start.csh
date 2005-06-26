@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.61 2004-11-02 19:27:30 dobler Exp $
+# CVS: $Id: start.csh,v 1.62 2005-06-26 17:34:17 eos_merger_tony Exp $
 
 #                       start.csh
 #                      -----------
@@ -100,6 +100,7 @@ if (! -e NOERASE) then
       mv $datadir/time_series.dat $datadir/time_series.`timestr`
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
         $datadir/averages/* >& /dev/null
+  if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
 endif
 
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
@@ -123,10 +124,12 @@ if ($status) then
   exit $start_status
 endif
 
+
 # If local disk is used, copy var.dat back to the data directory
 if ($local_disc) then
   echo "Copying var.dat back to data directory"
   $copysnapshots -v var.dat     >&! copy-snapshots.log
+  if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots.log
 

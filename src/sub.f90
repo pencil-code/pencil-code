@@ -1,8 +1,65 @@
-! $Id: sub.f90,v 1.207 2005-06-26 06:39:15 bingert Exp $ 
+! $Id: sub.f90,v 1.208 2005-06-26 17:34:13 eos_merger_tony Exp $ 
 
 module Sub 
 
   implicit none
+
+  private
+
+  public :: cvs_id
+  public :: step,calc_unitvects_sphere
+
+  public :: identify_bcs, parse_bc, parse_bc_rad
+
+  public :: poly, notanumber
+  public :: blob, vecout, cubic_step
+  public :: hypergeometric2F1
+  public :: gamma_function
+
+  public :: get_nseed
+
+  public :: grad, div, div_mn, curl, curli, curl_mn
+  public :: gij, g2ij, bij_etc
+  public :: der_step
+  public :: u_dot_gradf
+  public :: del2, del2v, del2v_etc
+  public :: del4v, del2vi_etc
+  public :: del6_nodx, del6v, del6, del6_other
+  public :: gradf_upw1st
+
+  public :: dot, dot2, dot_mn, dot2_mn, dot_add, dot_sub
+  public :: cross, cross_mn
+  public :: sum_mn, max_mn
+  public :: multsv, multsv_add, multsv_mn
+  public :: multvs, multvv_mat
+  public :: multmm_sc
+  public :: multm2, multm2_mn
+  public :: multmv, multmv_mn, multmv_transp
+
+  public :: read_line_from_file, noform
+  public :: remove_file
+  
+  public :: update_snaptime, read_snaptime
+  public :: inpui, outpui, inpup, outpup
+  public :: parse_shell
+  public :: expand_cname
+  public :: parse_name, save_name
+  public :: max_mn_name,sum_mn_name,integrate_mn_name
+  public :: surf_mn_name
+  public :: xysum_mn_name_z
+  public :: ysum_mn_name_xz
+  public :: zsum_mn_name_xy
+  public :: phisum_mn_name_rz
+  public :: date_time_string
+
+  public :: calc_phiavg_general, calc_phiavg_profile
+  public :: calc_phiavg_unitvects
+
+  public :: max_for_dt
+
+  public :: write_dx_general, wdim
+
+  public :: tensor_diffusion_coef
 
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -164,10 +221,10 @@ module Sub
         itype_name(iname)=ilabel_max_sqrt
       elseif (present(l_dt)) then
         itype_name(iname)=ilabel_max_dt
-       elseif (present(lneg)) then
-         itype_name(iname)=ilabel_max_neg
-       elseif (present(lreciprocal)) then
-         itype_name(iname)=ilabel_max_reciprocal
+      elseif (present(lneg)) then
+        itype_name(iname)=ilabel_max_neg
+      elseif (present(lreciprocal)) then
+        itype_name(iname)=ilabel_max_reciprocal
       else
         itype_name(iname)=ilabel_max
       endif
@@ -186,9 +243,9 @@ module Sub
 !
 !  Note [24-may-2004, wd]:
 !    This routine should incorporate a test for iname /= 0, so instead of
-!         if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
+!         if (idiag_b2m/=0)    call sum_mn_name(b2,idiag_b2m)
 !    we can just use
-!         call sum_mn_name(b2,i_b2m)
+!         call sum_mn_name(b2,idiag_b2m)
 !  Same holds for similar routines.
 !  Update [28-Sep-2004 wd]: 
 !    Done here, but not yet in all other routines
@@ -1204,8 +1261,14 @@ module Sub
         do j=1,3
           if (nder == 1) then
             call der(f,k1+i,tmp,j)
+          elseif (nder == 2) then
+            call der2(f,k1+i,tmp,j)
+          elseif (nder == 4) then
+            call der4(f,k1+i,tmp,j)
           elseif (nder == 5) then
             call der5(f,k1+i,tmp,j)
+          elseif (nder == 6) then
+            call der6(f,k1+i,tmp,j)
           endif
           g(:,i,j)=tmp
         enddo
@@ -1387,57 +1450,6 @@ module Sub
 !
     endsubroutine del2v
 !***********************************************************************
-    subroutine del6v(f,k,del6f)
-!
-!  calculate del6 of a vector, get vector
-!  28-oct-97/axel: coded
-!  24-apr-03/nils: adapted from del2v
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx,3) :: del6f
-      real, dimension (nx) :: tmp
-      integer :: i,k,k1
-!
-      intent(in) :: f,k
-      intent(out) :: del6f
-!
-!  do the del2 diffusion operator
-!
-      k1=k-1
-      do i=1,3
-        call del6(f,k1+i,tmp)
-        del6f(:,i)=tmp
-      enddo
-!
-    endsubroutine del6v
-!***********************************************************************
-    subroutine del4v(f,k,del4f)
-!
-!  calculate del4 of a vector, get vector
-!  09-dec-03/nils: adapted from del6v
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx,3) :: del4f
-      real, dimension (nx) :: tmp
-      integer :: i,k,k1
-!
-      intent(in) :: f,k
-      intent(out) :: del4f
-!
-!  do the del2 diffusion operator
-!
-      k1=k-1
-      do i=1,3
-        call del4(f,k1+i,tmp)
-        del4f(:,i)=tmp
-      enddo
-!
-    endsubroutine del4v
-!***********************************************************************
     subroutine del2v_etc(f,k,del2,graddiv,curlcurl,gradcurl)
 !
 !  calculates a number of second derivative expressions of a vector
@@ -1456,23 +1468,26 @@ module Sub
       real, dimension (nx,3,3), optional :: gradcurl
       real, dimension (nx,3), optional :: del2,graddiv,curlcurl
       real, dimension (nx,3) ::  fjik
-      real, dimension (nx) :: tmp
+      real, dimension (nx) :: tmp,tmp2
       integer :: i,j,k,k1
 !
       intent(in) :: f,k
       intent(out) :: del2,graddiv,curlcurl,gradcurl
 !
 !  calculate f_{i,jj} and f_{j,ji}
+!  AJ: graddiv needs diagonal elements from the first tmp (derij only sets
+!      off-diagonal elements)
 !
       k1=k-1
       do i=1,3
       do j=1,3
-         if (present(del2) .or. present(curlcurl) .or. present(gradcurl)) then
-            call der2 (f,k1+i,tmp,  j); fijj(:,i,j)=tmp  ! f_{i,jj}
-         endif
-         if (present(graddiv) .or. present(curlcurl).or. present(gradcurl)) then
-            call derij(f,k1+j,tmp,j,i); fjji(:,i,j)=tmp  ! f_{j,ji}
-         endif
+        if (present(del2) .or. present(curlcurl) .or. present(gradcurl) .or. &
+            present(graddiv)) then
+          call der2 (f,k1+i,tmp,  j); fijj(:,i,j)=tmp  ! f_{i,jj}
+        endif
+        if (present(graddiv) .or. present(curlcurl).or. present(gradcurl)) then
+          call derij(f,k1+j,tmp,j,i); fjji(:,i,j)=tmp  ! f_{j,ji}
+        endif
       enddo
       enddo
 !
@@ -1488,15 +1503,15 @@ module Sub
 !      
 !  calculate f_{i,jk} for i /= j /= k
 ! 
-     if (present(gradcurl)) then
-         call derij(f,k1+1,tmp,2,3)
-         fjik(:,1)=tmp
-         call derij(f,k1+2,tmp,1,3)
-         fjik(:,2)=tmp
-         call derij(f,k1+3,tmp,1,2)
-         fjik(:,3)=tmp
+      if (present(gradcurl)) then
+        call derij(f,k1+1,tmp,2,3)
+        fjik(:,1)=tmp
+        call derij(f,k1+2,tmp,1,3)
+        fjik(:,2)=tmp
+        call derij(f,k1+3,tmp,1,2)
+        fjik(:,3)=tmp
       endif 
-!      
+!
       if (present(del2)) then
         do i=1,3
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
@@ -1528,7 +1543,7 @@ module Sub
          gradcurl(:,3,2) = fijj(:,1,3) - fjji(:,3,1)
          gradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)         
       endif
-
+!
     endsubroutine del2v_etc
 !***********************************************************************
     subroutine del2vi_etc(f,k,ii,del2,graddiv,curlcurl)
@@ -1580,6 +1595,57 @@ module Sub
       endif
 !
     endsubroutine del2vi_etc
+!***********************************************************************
+    subroutine del4v(f,k,del4f)
+!
+!  calculate del4 of a vector, get vector
+!  09-dec-03/nils: adapted from del6v
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3) :: del4f
+      real, dimension (nx) :: tmp
+      integer :: i,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del4f
+!
+!  do the del2 diffusion operator
+!
+      k1=k-1
+      do i=1,3
+        call del4(f,k1+i,tmp)
+        del4f(:,i)=tmp
+      enddo
+!
+    endsubroutine del4v
+!***********************************************************************
+    subroutine del6v(f,k,del6f)
+!
+!  calculate del6 of a vector, get vector
+!  28-oct-97/axel: coded
+!  24-apr-03/nils: adapted from del2v
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3) :: del6f
+      real, dimension (nx) :: tmp
+      integer :: i,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+!  do the del2 diffusion operator
+!
+      k1=k-1
+      do i=1,3
+        call del6(f,k1+i,tmp)
+        del6f(:,i)=tmp
+      enddo
+!
+    endsubroutine del6v
 !***********************************************************************
     subroutine bij_etc(f,iref,Bij,del2,graddiv)
 !
@@ -1701,29 +1767,6 @@ module Sub
 !
 !   endsubroutine del2v_graddiv
 !***********************************************************************
-    subroutine del6(f,k,del6f)
-!
-!  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
-!  than del2^3) of a scalar for hyperdiffusion
-!  8-jul-02/wolf: coded
-!
-      use Cdata
-      use Deriv
-!
-      intent(in) :: f,k
-      intent(out) :: del6f
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
-      integer :: k
-!
-      call der6(f,k,d6fdx,1)
-      call der6(f,k,d6fdy,2)
-      call der6(f,k,d6fdz,3)
-      del6f = d6fdx + d6fdy + d6fdz
-!
-    endsubroutine del6
-!***********************************************************************
     subroutine del4(f,k,del4f)
 !
 !  calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
@@ -1747,6 +1790,53 @@ module Sub
       del4f = d4fdx + d4fdy + d4fdz
 !
     endsubroutine del4
+!***********************************************************************
+    subroutine del6(f,k,del6f)
+!
+!  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+!  than del2^3) of a scalar for hyperdiffusion
+!  8-jul-02/wolf: coded
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
+      integer :: k
+!
+      call der6(f,k,d6fdx,1)
+      call der6(f,k,d6fdy,2)
+      call der6(f,k,d6fdz,3)
+      del6f = d6fdx + d6fdy + d6fdz
+!
+    endsubroutine del6
+!***********************************************************************
+    subroutine del6_other(f,del6f)
+!
+!  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+!  than del2^3) of a scalar for hyperdiffusion
+!
+!  13-jun-05/anders: adapted from del6
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f
+      intent(out) :: del6f
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
+      integer :: k
+!
+      call der6_other(f,d6fdx,1)
+      call der6_other(f,d6fdy,2)
+      call der6_other(f,d6fdz,3)
+      del6f = d6fdx + d6fdy + d6fdz
+!
+    endsubroutine del6_other
 !***********************************************************************
     subroutine del6_nodx(f,k,del6f)
 !
@@ -2079,7 +2169,7 @@ module Sub
 !
       character (len=*) :: file
       character (len=4) :: ch
-      logical lout,enum
+      logical :: lout,enum
       real :: t,tt,tout,dtout
       integer :: lun,nout
 !

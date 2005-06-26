@@ -1,17 +1,22 @@
-!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!                               -*-f90-*-   (for emacs)
 !
 ! Convection in vertically stratified atmosphere/solar convection zone
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2005-04-14 13:35:57 theine Exp $'
+  cvsid='$Id: run.in,v 1.4 2005-06-26 17:34:27 eos_merger_tony Exp $'
   nt=250,it1=50,isave=1000,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
   bcz = 's','s','a','a2','a2'
   lmaxadvec_sum=T
   lwrite_aux=T
   ip=14
+  lpencil_check=T
 /
+&eos_run_pars
+  yMetals=1e-4                          ! fixed electron contribution by metals
+/
+
 &hydro_run_pars
 /
 &density_run_pars
@@ -19,7 +24,7 @@
   lupw_lnrho=T                          ! avoid wiggles
 /
 &grav_run_pars
-  gravz=-2.75                           ! constant gravity in the z-direction
+  gravz_profile='const', gravz=-2.75    ! constant gravity in the z-direction
 /
 &entropy_run_pars
   iheatcond='shock'
@@ -31,9 +36,12 @@
   radx=0,rady=0,radz=1,rad2max=1        ! use only vertical rays
   bc_rad='0:0','0:0','S:0'              ! incoming intensity at boundaries
 /
-&ionization_run_pars
-  yMetals=1e-4                          ! fixed electron contribution by metals
-/
+
 &viscosity_run_pars
+  ivisc='nu-const','nu-shock'
   nu=0.001,nu_shock=2.0                 ! (shock-) viscosity
+/
+&shock_run_pars
+  lshock_first=F
+  lshock_max5=T
 /

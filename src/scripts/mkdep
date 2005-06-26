@@ -1,0 +1,59 @@
+#!/bin/sh
+
+dollar='$'
+script='
+
+    s/\bMpicomm\b/\$(MPICOMM).o/i;
+    s/\bGlobal\b/\$(GLOBAL).o/i;
+    s/\bIo\b/\$(IO).o/i;
+    s/\bPower_Spectrum\b/\$(POWER).o/i;
+
+    s/\bHydro\b/\$(HYDRO).o/i;
+    s/\bViscosity\b/\$(VISCOSITY).o/i;
+    s/\bDensity\b/\$(DENSITY).o/i;
+    s/\bEntropy\b/\$(ENTROPY).o/i;
+    s/\bMagnetic\b/\$(MAGNETIC).o/i;
+    s/\bRadiation\b/\$(RADIATION).o/i;
+    s/\bPScalar\b/\$(PSCALAR).o/i;
+    s/\bDustVelocity\b/\$(DUSTVELOCITY).o/i;
+    s/\bDustDensity\b/\$(DUSTDENSITY).o/i;
+    s/\bInterstellar\b/\$(INTERSTELLAR).o/i;
+    s/\bCosmicRay\b/\$(COSMICRAY).o/i;
+    s/\bEquationOfState\b/\$(EOS).o/i;
+    s/\bStruct_Func\b/\$(STRUCT_FUNC).o/i;
+    s/\bInitcond_Spec\b/\$(INITCOND_SPEC).o/i;
+    s/\bGravity\b/\$(GRAVITY).o/i;
+    s/\bForcing\b/\$(FORCING).o/i;
+    s/\bShear\b/\$(SHEAR).o/i;
+    s/\bTimeavg\b/\$(TIMEAVG).o/i;
+    s/\bSpecial\b/\$(SPECIAL).o/i;
+    s/\bChiral\b/\$(CHIRAL).o/i;
+
+    s/\bCdata\b/cdata.o/i; 
+    s/\bCparam\b/cparam.o/i; 
+    s/\bBoundcond\b/boundcond.o/i;
+    s/\bFilter\b/filter.o/i;
+    s/\bInitcond\b/initcond.o/i;
+    s/\bTimestep\b/timestep.o/i;
+    s/\bWsnaps\b/wsnaps.o/i;
+    s/\bSub\b/sub.o/i;
+    s/\bEqu\b/equ.o/i;
+    s/\bPrint\b/prints.o/i;
+    s/\bRegister\b/register.o/i;
+    s/\bParam_IO\b/param_io.o/i;
+    s/\bDeriv\b/deriv.o/i;
+    s/\bSlices\b/slices.o/i;
+    s/\bGeneral\b/general.o/i;
+'
+
+while [ $1 ]
+do
+  if [ -e $1 ]; then
+    used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $1 | sort | uniq -i `
+    depends=`echo $used | perl -npe "$script"`
+    includes=`perl -ne "print \"${dollar}1 \" if m/^\s*include\s*\\'([\S]*\\.(inc|local))\\'/ ;" $1 `
+
+    echo "${1/f90/o}: $1 $includes $depends" 
+  fi
+  shift
+done

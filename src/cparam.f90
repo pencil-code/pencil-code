@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.40 2004-05-28 16:44:39 dobler Exp $
+! $Id: cparam.f90,v 1.41 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 module Cparam
 
@@ -15,13 +15,17 @@ module Cparam
 !  This part is now isolated in a separate cparam.local file.
 !
   include 'cparam.local'
+
+! Need this kinda urgently!!
+  integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz
+
   include 'cparam.inc'
+  include 'cparam_pencils.inc'
 !
 !  derived and fixed parameters
 !
   integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
   integer, parameter :: nghost=3
-  integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz
   integer(KIND=ikind8), parameter :: nw=nx*ny*nz
   integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
   integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
@@ -77,6 +81,32 @@ module Cparam
   integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4
   integer, parameter :: ilabel_max_reciprocal=-5
   integer, parameter :: ilabel_integrate=3,ilabel_surf=4
+  integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6
+!
+! physical constants, taken from:
+! http://physics.nist.gov/cuu/Constants/index.html
+  double precision, parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
+  double precision, parameter :: R_cgs=8.3144D7            ! [erg/mol/K]
+  double precision, parameter :: k_B_cgs=1.3806503d-16     ! [erg/K]
+  double precision, parameter :: m_p_cgs=1.67262158d-24    ! [g]
+  double precision, parameter :: m_e_cgs=9.10938188d-28    ! [g]
+  double precision, parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]
+  double precision, parameter :: eV_cgs=1.602176462d-12    ! [erg]
+  double precision, parameter :: sigmaSB_cgs=5.670400d-5   ! [erg/cm^2/s/K^4]
+! unclear source (probably just guessing?)
+  double precision, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
+  double precision, parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
+!
+!
+! Variable used in lines like:
+!    if (NO_WARN) print*,uu
+! which are added in dummy routines to prevent the compiler reporting
+! unused arguments.  It is never intended that these print statements
+! will ever actually get called. As a logical parameter however which
+! is false, the compiler should infact optimise all such lines away.
+!
+  logical, parameter :: NO_WARN=.false.
+!
 !
 endmodule Cparam
 

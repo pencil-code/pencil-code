@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.40 2004-10-27 14:21:47 ajohan Exp $
+! $Id: nograv.f90,v 1.41 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -6,6 +6,8 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED gg
 !
 !***************************************************************
 
@@ -18,6 +20,8 @@ module Gravity
   use Cparam
 
   implicit none
+
+  include 'gravity.inc'
 
   interface potential
     module procedure potential_global
@@ -34,12 +38,12 @@ module Gravity
   character (len=labellen) :: grav_profile='const'  !(used by Density)
   logical :: lnumerical_equilibrium=.false.
 
-  integer :: dummy              ! We cannot define empty namelists
-  namelist /grav_init_pars/ dummy
-  namelist /grav_run_pars/  dummy
+  !namelist /grav_init_pars/ dummy
+  !namelist /grav_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
+  integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
+  integer :: idiag_divggmax=0
 
   contains
 
@@ -63,7 +67,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.40 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: nograv.f90,v 1.41 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -79,6 +83,44 @@ module Gravity
 !
     endsubroutine initialize_gravity
 !***********************************************************************
+    subroutine read_gravity_init_pars(unit,iostat)
+!
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat) .and. (NO_WARN)) print*,iostat 
+!
+      if (NO_WARN) print*,unit 
+!
+    endsubroutine read_gravity_init_pars
+!***********************************************************************
+    subroutine write_gravity_init_pars(unit)
+!    
+      integer, intent(in) :: unit
+!
+      if (NO_WARN) print*,unit
+!
+    endsubroutine write_gravity_init_pars
+!***********************************************************************
+    subroutine read_gravity_run_pars(unit,iostat)
+!    
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat) .and. (NO_WARN)) print*,iostat 
+!
+      if (NO_WARN) print*,unit 
+!
+    endsubroutine read_gravity_run_pars
+!***********************************************************************
+    subroutine write_gravity_run_pars(unit)
+!    
+      integer, intent(in) :: unit
+!      
+      if (NO_WARN) print*,unit
+!
+    endsubroutine write_gravity_run_pars
+!***********************************************************************
     subroutine init_gg(f,xx,yy,zz)
 !
 !  initialise gravity; called from start.f90
@@ -91,10 +133,51 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to store gg)
 !
-      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+!        
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho)
+    subroutine pencil_criteria_gravity()
+! 
+!  All pencils that the Gravity module depends on are specified here.
+! 
+!  20-11-04/anders: coded
+!
+!
+    endsubroutine pencil_criteria_gravity
+!***********************************************************************
+    subroutine pencil_interdep_gravity(lpencil_in)
+!
+!  Interdependency among pencils from the Gravity module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_gravity
+!***********************************************************************
+    subroutine calc_pencils_gravity(f,p)
+!
+!  Calculate Gravity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  12-nov-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f
+      intent(inout) :: p
+!
+      if (lpencil(i_gg)) p%gg=0.
+!
+      if (NO_WARN) print*, f !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_gravity
+!***********************************************************************
+    subroutine duu_dt_grav(f,df,p)
 !
 !  add nothing to duu/dt
 !
@@ -102,10 +185,9 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu
-      real, dimension (nx) :: rho
+      type (pencil_case) :: p
 !
-      if(ip==0) print*,f,df,uu,rho  !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p  !(keep compiler quiet)
 !        
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -119,11 +201,12 @@ module Gravity
       real, dimension (mx,my,mz) :: xx,yy,zz,pot
       real, optional :: pot0
 !
-      if (lroot) print*,'potential: should not have been called'
+      if (lroot) print*,'potential: note, GRAV=nograv is not OK'
       pot = 0.
       pot0 = 0.
 !
-      if(ip==0) print*,xx(1,1,1),yy(1,1,1),zz(1,1,1)
+      if (NO_WARN) print*,xx(1,1,1),yy(1,1,1),zz(1,1,1)
+!
     endsubroutine potential_global
 !***********************************************************************
     subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
@@ -138,11 +221,12 @@ module Gravity
       real, optional, dimension (nx) :: xmn,rmn
       real, optional, dimension (nx,3) :: grav
 !
-      if (lroot) print*,'potential: should not have been called'
+      if (lroot) print*,'potential: note, GRAV=nograv is not OK'
       pot = 0.
       pot0 = 0.
 !
-      if(ip==0) print*,xmn,ymn,zmn,rmn,grav
+      if (NO_WARN) print*,xmn,ymn,zmn,rmn,grav
+!
     endsubroutine potential_penc
 !***********************************************************************
     subroutine potential_point(x,y,z,r, pot,pot0, grav)
@@ -159,7 +243,8 @@ module Gravity
 !
       call stop_it("nograv: potential_point not implemented")
 !
-      if(ip==0) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
+      if (NO_WARN) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
+!
     endsubroutine potential_point
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
@@ -177,21 +262,22 @@ module Gravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_curlggrms=',i_curlggrms
-        write(3,*) 'i_curlggmax=',i_curlggmax
-        write(3,*) 'i_divggrms=',i_divggrms
-        write(3,*) 'i_divggmax=',i_divggmax
+        write(3,*) 'i_curlggrms=',idiag_curlggrms
+        write(3,*) 'i_curlggmax=',idiag_curlggmax
+        write(3,*) 'i_divggrms=',idiag_divggrms
+        write(3,*) 'i_divggmax=',idiag_divggmax
         write(3,*) 'igg=',igg
         write(3,*) 'igx=',igx
         write(3,*) 'igy=',igy
         write(3,*) 'igz=',igz
       endif
 !
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+!        
     endsubroutine rprint_gravity
 !***********************************************************************
 

@@ -1,0 +1,20 @@
+#npoints
+2
+#ndimensions
+1
+#nfaces
+2
+#nfacetypes
+1
+#points
+ -3, 0, 0
+  3, 0, 0
+#normals
+ -1, 0, 0 
+  1, 0, 0 
+#faces
+ 1,2
+#face_types
+ 1,1
+#area_elements
+"1./(6.*dA)"

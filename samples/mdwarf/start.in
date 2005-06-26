@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2004-05-29 14:06:15 mee Exp $',
+  cvsid='$Id: start.in,v 1.6 2005-06-26 17:34:39 eos_merger_tony Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -1.5,-1.5,-1.5,       ! first corner of box
   Lxyz  =  3. , 3. , 3.,        ! box size
@@ -11,13 +11,15 @@
   random_gen='nr_f90'
   r_ext = 1.
 /
+&eos_init_pars
+  cs0=1.5, rho0=1.,             ! values at r=0
+/
 &hydro_init_pars
  inituu='gaussian-noise-rprof',
   ampluu=3e-2
 /
 &density_init_pars
   initlnrho='isentropic-star',
-  cs0=1.5, rho0=1.,             ! values at r=0
 /
 &grav_init_pars
   ipotential='M5-dwarf'

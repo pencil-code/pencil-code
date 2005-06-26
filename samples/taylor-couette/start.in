@@ -1,0 +1,25 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.2 2005-06-26 17:34:41 eos_merger_tony Exp $',
+  ip=14,                        ! debugging parameter
+  xyz0  = -2.1,-2.1,-2.0,       ! first corner of box
+  xyz1  =  2.1, 2.1, 2.0,       ! second corner of box
+  lperi =  F  , F  , T,         ! periodic direction?
+  bcx = 'a','s','s','a2'
+  bcy = 's','a','s','a2'
+  r_int=1.0,                    ! radius of interior spherical boundary
+  r_ext=2.0,                    ! radius of exterior spherical boundary
+  lcylindrical=T
+/
+&eos_init_pars
+  gamma=1., cs0=3.
+/
+&hydro_init_pars
+  inituu='zero'
+  urand=0.05,
+/
+&density_init_pars
+/

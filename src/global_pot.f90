@@ -1,4 +1,4 @@
-! $Id: global_pot.f90,v 1.3 2002-06-01 02:56:21 brandenb Exp $
+! $Id: global_pot.f90,v 1.4 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 module Global
 
@@ -13,12 +13,84 @@ module Global
 
   implicit none
 
+  include 'global.inc'
+
   real, dimension (mx,my,mz) :: m_pot
+
+  interface set_global
+    module procedure set_global_vect
+    module procedure set_global_scal
+  endinterface
+
+  interface get_global
+    module procedure get_global_vect
+    module procedure get_global_scal
+  endinterface
 
   contains
 
 !***********************************************************************
-    subroutine write_global()
+    subroutine set_global_vect(var,m,n,label)
+!
+!  18-jul-02/wolf coded
+!
+      real, dimension(nx,3) :: var
+      integer :: m,n
+      character (len=labellen) ::label
+!
+      if (ip == 0) print*, var(1,1),m,n,label ! keep compiler quiet
+!
+    endsubroutine set_global_vect
+!***********************************************************************
+    subroutine set_global_scal(var,m,n,label)
+!
+!  set (m,n)-pencil of the global scalar variable identified by LABEL
+!
+!  18-jul-02/wolf coded
+!
+!      use Cparam
+!
+      real, dimension(nx) :: var
+      integer :: m,n
+      character (len=labellen) ::label
+!
+      if (ip == 0) print*, var(1),m,n,label ! keep compiler quiet
+!
+    endsubroutine set_global_scal
+!***********************************************************************
+    subroutine get_global_vect(var,m,n,label)
+!
+!  set (m,n)-pencil of the global vector variable identified by LABEL
+!
+!  18-jul-02/wolf coded
+!
+!      use Cparam
+!
+      real, dimension(nx,3) :: var
+      integer :: m,n
+      character (len=labellen) ::label
+!
+      if (ip == 0) print*, var(1,1),m,n,label ! keep compiler quiet
+!
+    endsubroutine get_global_vect
+!***********************************************************************
+    subroutine get_global_scal(var,m,n,label)
+!
+!  set (m,n)-pencil of the global scalar variable identified by LABEL
+!
+!  18-jul-02/wolf coded
+!
+!      use Cparam
+!
+      real, dimension(nx) :: var
+      integer :: m,n
+      character (len=labellen) ::label
+!
+      if (ip == 0) print*, var(1),m,n,label ! keep compiler quiet
+!
+    endsubroutine get_global_scal
+!***********************************************************************
+    subroutine wglobal()
 !
 !  write global variables
 !
@@ -30,9 +102,9 @@ module Global
 !
       call output(trim(directory)//'/global.dat',m_pot,1)
 !
-    endsubroutine write_global
+    endsubroutine wglobal
 !***********************************************************************
-    subroutine read_global()
+    subroutine rglobal()
 !
 !  read global variables
 !
@@ -44,7 +116,7 @@ module Global
 !
       call input(trim(directory)//'/global.dat',m_pot,1,0)
 !
-    endsubroutine read_global
+    endsubroutine rglobal
 !***********************************************************************
 
 endmodule Global

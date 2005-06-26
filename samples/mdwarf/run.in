@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.9 2004-07-02 10:08:17 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.10 2005-06-26 17:34:39 eos_merger_tony Exp $',
   ip=13,
   nt=50, it1=20, isave=200, itorder=3,
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
@@ -15,9 +15,11 @@
   tavg = 10.,                   ! time constant for time averaging
 !  idx_tavg = 1,2,3,6,7,8,       ! average velocity and vector potential
   random_gen='nr_f90'
+  lpencil_check=T
+/
+&eos_run_pars
 /
 &hydro_run_pars
-  nu=10.e-4, ivisc='nu-const',
   dampuext=5, rdampext=1.1, wdamp=0.1,
   Omega=0.5, theta=0.           ! amount and direction of angular velocity
 /
@@ -33,4 +35,7 @@
 /
 &magnetic_run_pars
   eta=6.e-4
+/
+&viscosity_run_pars
+  nu=10.e-4, ivisc='nu-const',
 /

@@ -16,6 +16,7 @@ ENTROPY   =   entropy
 MAGNETIC  =   magnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
+EOS       =   eos_idealgas
 
 GRAVITY   =   grav_r
 FORCING   = noforcing

@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.9 2004-06-12 06:07:37 brandenb Exp $ 
+! $Id: notimeavg.f90,v 1.10 2005-06-26 17:34:13 eos_merger_tony Exp $ 
 
 module Timeavg
 
@@ -8,6 +8,8 @@ module Timeavg
   use Cdata
 
   implicit none
+
+  include 'timeavg.inc' 
 !
 !  real, dimension(mx,my,mz,mtavg) :: f_tavg
 !  integer, dimension(mtavg) :: idx_tavg=0
@@ -51,7 +53,7 @@ module Timeavg
       optional :: flist
 !
       if(chsnap=='X') enum=.false. !(to keep compiler quiet)
-      if(ip==0) print*,flist !(to keep compiler quiet)
+      if(NO_WARN) print*,flist !(to keep compiler quiet)
     endsubroutine wsnap_timeavgs
 !***********************************************************************
 

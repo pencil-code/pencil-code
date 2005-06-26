@@ -1,16 +1,17 @@
-! $Id: cdata.f90,v 1.264 2005-06-12 19:32:48 brandenb Exp $
+! $Id: cdata.f90,v 1.265 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 module Cdata
 
 !!! Global variables
 
-  Use Cparam
+  use Cparam
+  public 
 
   integer :: itorder=3
   real, dimension (mx) :: x,dx_1,dx_tilde
   real, dimension (my) :: y,dy_1,dy_tilde
   real, dimension (mz) :: z,dz_1,dz_tilde
-  real, dimension (nx) :: dxyz_2
+  real, dimension (nx) :: dxyz_2, dxyz_6
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector
@@ -26,20 +27,24 @@ module Cdata
   real, dimension (nx) :: advec_cs2,advec_va2,advec_uud
   real, dimension (nx) :: diffus_pscalar
   real, dimension (nx) :: diffus_chiral,diffus_diffrho,diffus_cr,diffus_nud
-  real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi
+  real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi,diffus_diffnd
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
-
-  real, dimension (nx,3,3) :: sij     ! rate-of-strain tensor
 
   real, parameter :: pi=3.14159265358979324D0
   real, parameter :: epsi=5*epsilon(1.0),tini=5*tiny(1.0),huge1=0.2*huge(1.0)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)
+  real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
   real :: t,dt=0.
+  real :: dt1_last=0.
   real, dimension (3) :: alpha=0.0,beta=0.0,dt_beta=1.0
+
   real :: cdt=0.4,cdtv=0.25,cdts=1.0,cdtr=1.0
   real :: cdtvDim
+  real :: ddt=0.
+
+
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
-  real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
+  real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_ref=0.0
   real :: ttransient=0.,C_smag=0.17
@@ -63,10 +68,14 @@ module Cdata
 !ajwm nu moved to viscosity module
 !ajwm replaced nu, causes error in forcing to resolve
   real :: nu=0.,cmu,cnu2
+!ajwm moved here from hydro to remove dependence of entropy on Hydro
+  real :: nu_turb=0.
   real :: tdiagnos,t2davgfirst
+
 !! not used?  real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum,epsK_hyper
-  real :: UUmax,x0,y0,z0,Lx,Ly,Lz
+  real :: UUmax=0.
+  real :: x0,y0,z0,Lx,Ly,Lz
   real :: grads0=0.   ! (1/c_p)ds/dz
   real :: Omega=0.,qshear=0.,Sshear=impossible
   real :: deltay=0. !(for shear; also used in forcing and output)
@@ -75,28 +84,40 @@ module Cdata
   real :: zeta_grid0
 
   integer, dimension(mseed) :: seed=0
+
   integer :: nseed=0
-  integer :: nvar,naux,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,iss=0
+  integer :: nvar,naux,naux_com
+  integer :: iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,iss=0
   integer :: igg=0,igx=0,igy=0,igz=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
+  integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper=0
   integer :: iecr=0,ismagorinsky
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
   integer :: nt=1000000,it1=10
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
-  integer :: ilncc=0
+  integer :: ilncc=0,ialpm=0
   integer :: iXX_chiral=0,iYY_chiral=0
   integer :: iproc,ipx,ipy,ipz,root=0
   integer :: mvar_io=0,dimensionality
   integer :: iinit
-  integer, dimension(ndustspec) :: iuud,iudx,iudy,iudz,ind,imd,imi
+  integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0
+  integer :: ixxp=0,ixp=0,iyp=0,izp=0,ivvp=0,ivpx=0,ivpy=0,ivpz=0
+  character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) ::fft_switch='fftpack'
   character (len=1) :: slice_position='p'
   character (len=40) :: kinflow=''
+!
+! Variables to count the occurance of derivative calls per timestep
+! for optimisation purposes.  To use uncomment the array and
+! set optimise_ders=.true.
+!
+!ajwm  integer, dimension(mvar+maux,8,3,3) :: der_call_count=0 !DERCOUNT
+!ajwm  logical, parameter :: loptimise_ders=.true.             !DERCOUNT
 !
 !  coordinates of the point where some quantities can be printed
 !  for now, these points only apply to the root processor.
@@ -132,51 +153,82 @@ module Cdata
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
   ! other variables (needs to be consistent with reset list in register.90)
-  integer :: i_t=0,i_it=0,i_dt=0,i_walltime=0,i_timeperstep=0
-  integer :: i_rcylmphi=0,i_phimphi=0,i_zmphi=0,i_rmphi=0, i_nu_LES
+  integer :: idiag_t=0,idiag_it=0,idiag_dt=0
+  integer :: idiag_walltime=0,idiag_timeperstep=0
+  integer :: idiag_rcylmphi=0,idiag_phimphi=0,idiag_zmphi=0,idiag_rmphi=0
+  integer :: idiag_nu_LES=0
 
   !  initialization of various switches; actual settings depends on the
   !  modules that are linked in (see Makefile.local) and can, in some cases,
   !  be reset also via appropriate namelist entries.
 
   logical :: lstart=.false., lrun=.false.
-  logical :: lhydro=.false., lhydro_fixed=.false., ldensity=.false.
+!
+!
+!
+  logical :: ltermcap_color=.false.
+!
+! Module flags
+!
   logical :: ldensity_nolog=.false.
-  logical :: ldensity_fixed=.false., lentropy=.false., lentropy_fixed=.false.
-  logical :: lmagnetic=.false.,ltestfield=.false.
+  logical :: ltestfield=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
-  logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.
+  logical :: lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz
-  logical :: lgrav=.false.,lgravx=.false.,lgravy=.false.,lgravz=.false.
+  ! backwards compatible (not needed with gravity_simple.f90):
+  logical :: lgravx=.false.,lgravy=.false.,lgravz=.false.
+  !
+  logical :: lgrav=.false.,lgravx_gas=.true.,lgravy_gas=.true.,lgravz_gas=.true.
+  logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
   logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
-  logical :: lgravx_gas=.false.,lgravy_gas=.false.,lgravz_gas=.false.
-  logical :: lgravx_dust=.false.,lgravy_dust=.false.,lgravz_dust=.false.
-  logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
-  logical :: l2davg,l2davgfirst
-  logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.
-  logical :: lwrite_phiaverages=.true.
+  logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.
+  logical :: ldiagnos=.false.,lvid=.false.
+  logical :: l2davg=.false.,l2davgfirst=.false.
+  logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
+  logical :: lalpm=.false.
   logical :: lchiral=.false.
-  logical :: lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustdensity_log=.false.
-  logical :: ldustvelocity=.false.,linterstellar=.false.
-  logical :: lvisc_shock=.false.,lvisc_hyper=.false.,lvisc_LES=.false.
-  logical :: lvisc_smagorinsky
-  logical :: lcosmicray=.false.
+  logical :: ldustvelocity=.false.
+  logical :: lglobal=.false., lglobal_nolog_density=.false.
+  logical :: lvisc_hyper=.false.,lvisc_LES=.false.
+  logical :: lvisc_smagorinsky=.false.
   logical :: lselfgravity=.false.
   logical :: lmonolithic_io=.false.
-  logical :: lionization=.false.,lionization_fixed=.false.
+  logical :: lrescaling=.false.
+  logical :: leos=.false., leos_idealgas=.false.
+  logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
   logical :: pretend_lnTT=.false.
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
+  logical :: lcylindrical=.false.
+!!
+!! The following have been replaces with CPARAM header definitions making them
+!! parameters (ajwm)
+!!
+!!  logical :: lhydro=.false.,ldensity=.false.,lentropy=.false.
+!!  logical :: lcosmicrayflux=.false.
+!!  logical :: lcosmicray=.false.
+!!  logical :: lmagnetic=.false.
+!!  logical :: linterstellar=.false.
+!!
+!!
 
-  ! variables to allow modules to share 'precalculated' stuff
-  ! when necessary (set in module initialize functions)
-  logical :: lneed_sij=.false., lneed_glnrho=.false.
+! Constant 'parameters' cannot occur in namelists, so inorder to get the now constant module
+! logicals into the lphysics name list... We have some proxies that are used to initialise
+! private local variables called lhydro etc, in the lphysics namelist!
+  logical, parameter :: lhydro_var=lhydro
+  logical, parameter :: ldensity_var=ldensity
+  logical, parameter :: lentropy_var=lentropy
+  logical, parameter :: lshock_var=lshock
+  logical, parameter :: lmagnetic_var=lmagnetic
+  logical, parameter :: linterstellar_var=linterstellar
+  logical, parameter :: lcosmicray_var=lcosmicray
+  logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
 
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
@@ -194,12 +246,13 @@ module Cdata
   logical, dimension(mvar) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
 
   ! possibility to set boundary values
-  real, dimension(mvar) :: fbcx1=0.,fbcx2=0.
+  real, dimension(mvar) :: fbcx1=0.,fbcy1=0.,fbcz1=0.
+  real, dimension(mvar) :: fbcx2=0.,fbcy2=0.,fbcz2=0.
 
   character (len=2*bclen+1), dimension(mvar) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
   character (len=10), dimension(mvar+maux) :: varname
-  character (len=labellen) :: force_lower_bound=''
+  character (len=labellen) :: force_lower_bound='',force_upper_bound=''
   character (len=120) :: datadir='data' ! default; may be overwritten in
                                         ! Register.initialize()
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
@@ -208,7 +261,20 @@ module Cdata
   character (len=10), dimension(maux) :: aux_var
   integer :: aux_count=1
 
-  real :: dtau_thresh1,dtau_thresh2
+  ! run parameters
+  real :: tmax=1e33,awig=1.
+  real :: max_walltime=0.  ! in seconds
+  integer :: isave=100,iwig=0,ialive=0,nfilter=0,isaveglobal=0
+  logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
+  logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false., lread_oldsnap_nopscalar=.false.
+  logical :: lwrite_aux=.false., lsgifix=.false.
 
+  integer :: init_loops=1, ipencil_swap=0
+  logical :: lpencil_requested_swap=.true., lpencil_diagnos_swap=.false.
+  logical :: lreinit=.false.
+  logical :: lpencil_check=.false., lpencil_init=.false.
+  integer :: nreinit=0
+  character (len=5), dimension(10) :: reinit_vars=''
+  real :: dtau_thresh1,dtau_thresh2
 
 endmodule Cdata

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.120 2005-06-14 05:50:22 brandenb Exp $ 
+! $Id: initcond.f90,v 1.121 2005-06-26 17:34:13 eos_merger_tony Exp $ 
 
 module Initcond 
  
@@ -13,6 +13,32 @@ module Initcond
   use Mpicomm
 
   implicit none
+
+  private
+
+  public :: arcade_x
+  public :: soundwave,sinwave,coswave,cos_cos_sin
+  public :: gaunoise, posnoise
+  public :: gaunoise_rprof
+  public :: gaussian, gaussian3d, beltrami, tor_pert
+  public :: jump, bjump, stratification
+  public :: modes, modev, modeb, crazy
+  public :: trilinear, keplerian, baroclinic
+  public :: diffrot, olddiffrot
+  public :: powern, power_randomphase
+  public :: planet, planet_hc
+  public :: random_isotropic_KS
+  public :: htube, htube2, hat, hat3d
+  public :: wave_uu, wave, parabola
+  public :: sinxsinz, cosx_cosy_cosz, cosx_coscosy_cosz
+  public :: sinx_siny_cosz, sin2x_sin2y_cosz
+  public :: halfcos_x, magsupport, vfield
+  public :: uniform_x, uniform_y, uniform_z
+  public :: vfluxlayer, hfluxlayer
+  public :: vortex_2d
+  public :: vfield2
+  public :: hawley_etal99a
+  public :: robertsflow
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -95,6 +121,37 @@ module Initcond
 10    format(1x,a,4f8.2)
     endsubroutine sinx_siny_cosz
 !***********************************************************************
+    subroutine sin2x_sin2y_cosz(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!   2-dec-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sin2(kx*x)*sin2(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'sin2x_sin2y_cosz: ampl=0'
+      else
+        if (lroot) print 10,'sin2x_sin2y_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x)**2,2,my),3,mz)&
+                                   +spread(spread(sin(ky1*y)**2,1,mx),3,mz))&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my)
+      endif
+!
+10    format(1x,a,4f8.2)
+    endsubroutine sin2x_sin2y_cosz
+!***********************************************************************
     subroutine cosx_cosy_cosz(ampl,f,i,kx,ky,kz)
 !
 !  sinusoidal wave, adapted from sinxsinz (that routine was already doing
@@ -149,8 +206,14 @@ module Initcond
         if (lroot) print*,'cosx_cosy_cosz: ampl=0'
       else
         if (lroot) print 10,'cosx_cosy_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz)&
-                                   *spread(spread(cos(ky1*y*cos(y)),1,mx),3,mz)&
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz) &
+                                   *spread(spread(-cos(ky1*y)*(          &  
+                                     ((1./9.)*sin(ky*y)**8)+((8./63.)*   &
+                                     sin(ky*y)**6)+((16./105.)*          &
+                                     sin(ky*y)**4)+((64./315.)*          &
+                                     sin(ky*y)**2)                       &
+                                     + (128./315.)                       &
+                                    ),1,mx),3,mz)                        &
                                    *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
@@ -212,6 +275,38 @@ module Initcond
       endif
 !
     endsubroutine hat
+!***********************************************************************
+    subroutine hat3d(ampl,f,i,width,kx,ky,kz)
+!
+!  Three-dimensional hat bump
+!
+!   9-nov-04/anders: coded
+!
+      integer :: i,l
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: kx,ky,kz,kx2,ky2,kz2
+      real :: ampl,width,width2
+!
+!  set hat
+!
+      if (lroot) print*,'hat3d: kx,ky,kz=',kx,ky,kz
+      if (ampl==0) then
+        if (lroot) print*,'hat3d: ampl=0'
+      else
+        if (lroot) print*,'hat3d: ampl=',ampl
+        width2=width**2
+        kx2=kx**2
+        ky2=ky**2
+        kz2=kz**2
+        do l=l1,l2; do m=m1,m2; do n=n1,n2
+            f(l,m,n,i) = f(l,m,n,i) + ampl*( &
+                (0.5+0.5*tanh(kx2*(width2-x(l)**2))) * &
+                (0.5+0.5*tanh(ky2*(width2-y(m)**2))) * &
+                (0.5+0.5*tanh(kz2*(width2-z(n)**2))) )
+        enddo; enddo; enddo    
+      endif
+!
+    endsubroutine hat3d
 !***********************************************************************
     subroutine gaussian(ampl,f,i,kx,ky,kz)
 !
@@ -879,7 +974,7 @@ module Initcond
 !  23-may-04/anders: made structure for other input variables
 !
       use Mpicomm
-      use Ionization, only: eoscalc,ilnrho_lnTT
+      use EquationOfState, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, parameter :: ntotal=nz*nprocz
@@ -940,7 +1035,7 @@ module Initcond
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !  26-Jul-03/anders: Revived from June 1 version
 !
-      use Mpicomm, only: mpireduce_sum, mpibcast_real_scl
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
       
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi
@@ -1052,7 +1147,7 @@ module Initcond
 !  Calculate <rho> and send to all processors
 !      
       if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
-      call mpibcast_real_scl(rho0,1)
+      call mpibcast_real(rho0,1)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
@@ -1067,7 +1162,7 @@ module Initcond
 !
 !   jun-03/anders: coded (adapted from old 'planet', now 'planet_hc')
 !
-      use Mpicomm, only: mpireduce_sum, mpibcast_real_scl
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
@@ -1179,7 +1274,7 @@ module Initcond
 !  Calculate <rho> and send to all processors
 !      
       if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
-      call mpibcast_real_scl(rho0,1)
+      call mpibcast_real(rho0,1)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
@@ -1200,7 +1295,7 @@ module Initcond
 !
 !  calculate sigma
 !
-      eps_ell=0.4
+      eps_ell=0.5
       if (lroot) print*,'vortex_2d: qshear,eps_ell=',qshear,eps_ell
       sigma=sqrt(2*qshear/(1.-eps_ell**2))
 !
@@ -1220,6 +1315,40 @@ module Initcond
       f(:,:,:,iuy)=(qshear-sigma)  *Omega*xx*xi
 !
     endsubroutine vortex_2d
+!***********************************************************************
+    subroutine keplerian(f,g0,r0_pot,n_pot,Omega,xx,yy,zz,lcor,sx,sy)
+!
+!  Keplerian initial condition
+!
+!   2-may-05/axel: coded
+!   5-may-05/wlad: added possibility of star offset and non-corotational 
+!                  frame of reference. 
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
+      real :: g0,r0_pot,Omega,sx,sy
+      integer :: n_pot
+      logical :: lcor
+!
+!  angular velocity for centrifugally supported disc in given potential
+!  Subtract angular velocity of the reference frame, if lcentrifugal_force is
+!  activated
+!
+      xx = xx - sx
+      yy = yy - sy
+
+      rrp=sqrt(xx**2+yy**2) + epsi
+      OO=sqrt(g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.))
+
+      if (lcor) then 
+         f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO-Omega)
+         f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO-Omega)
+      else
+         f(:,:,:,iux)=f(:,:,:,iux)-yy*OO
+         f(:,:,:,iuy)=f(:,:,:,iuy)+xx*OO
+      endif
+!
+    endsubroutine keplerian
 !***********************************************************************
     subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
 !
@@ -1255,7 +1384,7 @@ module Initcond
       f(:,:,:,iuy) = cs20/(2*Omega) * exp( gamma*f(:,:,:,iss) + &
           (gamma-1)*f(:,:,:,ilnrho) ) * dlnrhobdx/gamma
 !
-      if (ip==0) print*,xx,yy,rho0  !(keep compiler quiet)
+      if (NO_WARN) print*,xx,yy,rho0  !(keep compiler quiet)
     endsubroutine baroclinic
 !***********************************************************************
     subroutine crazy(ampl,f,i)
@@ -1850,7 +1979,7 @@ module Initcond
 !
       !call gaunoise_rprof_vect(ampl,rr,prof,f,i,i)
 !
-    if (ip==0) print*,ampl,rr,prof,f,i !(to keep compiler quiet)
+    if (NO_WARN) print*,ampl,rr,prof,f,i !(to keep compiler quiet)
     endsubroutine gaunoise_rprof_scal
 !***********************************************************************
     subroutine trilinear(ampl,f,ivar,xx,yy,zz)
@@ -1935,7 +2064,7 @@ module Initcond
       kz=2.*pi/Lz
       f(:,:,:,ivar) = ampl*cos(ky*yy)*cos(kz*zz)
 !
-      if (ip==0) print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
+      if (NO_WARN) print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
     endsubroutine tor_pert
 !***********************************************************************
     subroutine diffrot(ampl,f,ivar,xx,yy,zz)
@@ -1953,7 +2082,7 @@ module Initcond
 !
       f(:,:,:,ivar) = ampl*cos(xx)*cos(zz)
 !
-      if (ip==0) print*,'yy(1,1,1)=',yy(1,1,1) !(to keep compiler quiet)
+      if (NO_WARN) print*,'yy(1,1,1)=',yy(1,1,1) !(to keep compiler quiet)
     endsubroutine diffrot
 !***********************************************************************
     subroutine olddiffrot(ampl,f,ivar,xx,yy,zz)
@@ -1973,7 +2102,7 @@ module Initcond
       kz=.5*pi/Lz
       f(:,:,:,ivar) = ampl*sin(kx*xx)*cos(kz*zz)
 !
-      if(ip==0) print*,yy !(to keep compiler quiet)
+      if(NO_WARN) print*,yy !(to keep compiler quiet)
     endsubroutine olddiffrot
 !***********************************************************************
     subroutine powern(ampl,initpower,cutoff,f,i1,i2)
@@ -2233,5 +2362,8 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 
-!***********************************************************************
+!*********************************************************
+
 endmodule Initcond
+
+       

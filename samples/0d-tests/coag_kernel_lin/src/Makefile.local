@@ -18,7 +18,6 @@ PSCALAR  =nopscalar
 
 GRAVITY  =nograv
 FORCING  =noforcing
-VISCOSITY=visc_const
 IO       =io_dist
 SHEAR    =noshear
 

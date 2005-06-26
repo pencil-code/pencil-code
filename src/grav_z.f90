@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.68 2005-04-21 16:53:54 theine Exp $
+! $Id: grav_z.f90,v 1.69 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -20,6 +20,8 @@ module Gravity
 
   implicit none
 
+  include 'gravity.inc'
+
   interface potential
     module procedure potential_global
     module procedure potential_penc
@@ -31,8 +33,9 @@ module Gravity
 !  density module) is the height where rho=cs2=0.
 
   real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
-  real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
-  real :: lnrho_bot,lnrho_top,ss_bot,ss_top
+  real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,nu_epicycle=1.
+  real :: zgrav=impossible,dzgrav=impossible,gravz2=0.
+  real :: lnrho_bot=0.,lnrho_top=0.,ss_bot=0.,ss_top=0.
   real :: grav_const=1.
   real :: g0=0.,r0_pot=0.,kx_gg=1.,ky_gg=1.,kz_gg=1.
   integer :: n_pot=10   
@@ -70,18 +73,21 @@ module Gravity
 !      |
 !
   namelist /grav_init_pars/ &
-       z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav,kx_gg,ky_gg,kz_gg, &
+       z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav,dzgrav,gravz2, &
+       kx_gg,ky_gg,kz_gg, &
        lnrho_bot,lnrho_top,ss_bot,ss_top
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-       zref,gravz,nu_epicycle,grav_profile,zgrav,kx_gg,ky_gg,kz_gg, &
+       zref,gravz,nu_epicycle,grav_profile,zgrav,dzgrav,gravz2, &
+       kx_gg,ky_gg,kz_gg, &
        lnrho_bot,lnrho_top,ss_bot,ss_top,lgravz_dust,lgravz_gas
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
+  integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
+  integer :: idiag_divggmax=0
 
   contains
 
@@ -104,7 +110,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.68 2005-04-21 16:53:54 theine Exp $")
+           "$Id: grav_z.f90,v 1.69 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       lgrav =.true.
       lgravz=.true.
@@ -147,10 +153,47 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to store gg)
 !
-      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+      if(NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho)
+    subroutine pencil_criteria_gravity()
+! 
+!  All pencils that the Gravity module depends on are specified here.
+! 
+!  20-11-04/anders: coded
+!
+    endsubroutine pencil_criteria_gravity
+!***********************************************************************
+    subroutine pencil_interdep_gravity(lpencil_in)
+!
+!  Interdependency among pencils from the Gravity module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_gravity
+!***********************************************************************
+    subroutine calc_pencils_gravity(f,p)
+!
+!  Calculate Gravity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  12-nov-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f
+      intent(inout) :: p
+!
+      if (NO_WARN) print*, f, p !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_gravity
+!***********************************************************************
+    subroutine duu_dt_grav(f,df,p)
 !
 !  add duu/dt according to gravity
 !  (do we need f here?/AB)
@@ -166,12 +209,12 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu
-      real, dimension (nx) :: rho
+      type (pencil_case) :: p
+!      
       real :: nu_epicycle2
       integer :: k
 !
-      intent(in) :: f,uu,rho
+      intent(in) :: f,p
       intent(out) :: df
 !
 !  Gravity on the gas and on the dust
@@ -188,7 +231,7 @@ module Gravity
         case('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
           if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
           if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
-          if (z(n)<=zgrav) gravz_pencil = gravz
+          gravz_pencil=gravz+(gravz2-gravz)*step(z_mn,zgrav,dzgrav)
         case('linear')      !  Linear gravity profile (for accretion discs)
           nu_epicycle2=nu_epicycle**2
           if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
@@ -225,7 +268,7 @@ module Gravity
         enddo
       endif
 !
-      if(ip==0) print*,f,uu,rho !(keep compiler quiet)
+      if(NO_WARN) print*,f,p !(keep compiler quiet)
 !        
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -242,7 +285,7 @@ module Gravity
 !
       call stop_it("potential_global: not implemented for grav_z")
 !
-      if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
+      if(NO_WARN) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
            pot(1,1,1),pot0  !(keep compiler quiet)
 !
     endsubroutine potential_global
@@ -296,7 +339,7 @@ module Gravity
           endif
         else
           pot=-gravz*(zgrav-zinfty)
-          if (present(grav)) grav=0.
+          if (present(grav)) grav=gravz2
         endif
         if (present(pot0)) then !(potential at z=0)
           if(zgrav==impossible.and.lroot) print*,'potential_penc: zgrav is not set!'
@@ -366,8 +409,50 @@ module Gravity
 !
       call stop_it("grav_z: potential_point not implemented")
 !
-      if(ip==0) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
+      if(NO_WARN) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
     endsubroutine potential_point
+!***********************************************************************
+    subroutine read_gravity_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=grav_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=grav_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_gravity_init_pars
+!***********************************************************************
+    subroutine write_gravity_init_pars(unit)
+      integer, intent(in) :: unit
+!
+      write(unit,NML=grav_init_pars)
+!                                                                                                   
+    endsubroutine write_gravity_init_pars
+!***********************************************************************
+    subroutine read_gravity_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=grav_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=grav_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_gravity_run_pars
+!***********************************************************************
+    subroutine write_gravity_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=grav_run_pars)
+                                                                                                   
+    endsubroutine write_gravity_run_pars
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
@@ -384,21 +469,21 @@ module Gravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_curlggrms=',i_curlggrms
-        write(3,*) 'i_curlggmax=',i_curlggmax
-        write(3,*) 'i_divggrms=',i_divggrms
-        write(3,*) 'i_divggmax=',i_divggmax
+        write(3,*) 'i_curlggrms=',idiag_curlggrms
+        write(3,*) 'i_curlggmax=',idiag_curlggmax
+        write(3,*) 'i_divggrms=',idiag_divggrms
+        write(3,*) 'i_divggmax=',idiag_divggmax
         write(3,*) 'igg=',igg
         write(3,*) 'igx=',igx
         write(3,*) 'igy=',igy
         write(3,*) 'igz=',igz
       endif
 !
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_gravity
 !***********************************************************************
 

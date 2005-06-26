@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.108 2005-06-25 19:32:14 mee Exp $
+### $Id: Makefile.src,v 1.109 2005-06-26 17:34:12 eos_merger_tony Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -18,9 +18,9 @@ FFTPACK      = nofftpack
 POWER        = nopower_spectrum
 DEBUG        =   debug_c
 
-HYDRO        =   hydro
-VISCOSITY    =   visc_const
-DENSITY      =   density
+HYDRO        = nohydro
+VISCOSITY    =   viscosity
+DENSITY      = nodensity
 ENTROPY      = noentropy
 MAGNETIC     = nomagnetic
 RADIATION    = noradiation
@@ -30,9 +30,11 @@ DUSTVELOCITY = nodustvelocity
 DUSTDENSITY  = nodustdensity
 INTERSTELLAR = nointerstellar
 COSMICRAY    = nocosmicray
-IONIZATION   = noionization
+COSMICRAYFLUX= nocosmicrayflux
+EOS          =   eos_idealgas
 STRUCT_FUNC  = nostruct_func
 INITCOND_SPEC= noinitcond_spec
+SHOCK        = noshock
 TESTFIELD    = notestfield
 
 GRAVITY      = nograv
@@ -40,6 +42,12 @@ FORCING      = noforcing
 SHEAR        = noshear
 TIMEAVG      = notimeavg
 SPECIAL      = nospecial
+
+PARTICLES    = noparticles
+PARTICLES_SUB= noparticles_sub
+
+SHOCK_PROFILE = shock_profiles/octagon2D
+SHOCK_FINDER  = shock_finder
 
 ## This allows us to switch to double precision in Makefile.local
 # FFLAGS_GENERAL=-r8
@@ -100,9 +108,13 @@ FCCLEANER=
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
 #FFLAGS=$(OPTFLAGS) -warn argument_checking -warn declarations -warn unused
 #F77=$(FC)
-#F77
+#LIBSIG=-lsig
+#LIBSIG= #(gauss)
 
 ## Linux:
+##
+## OS Defaults
+##
 #FC=f95
 #F77=$(FC)
 #FFLAGS=-O3
@@ -110,11 +122,11 @@ FCCLEANER=
 #F90FLAGS=
 #LDMPI=
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
-##LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (copson) 
-##LDMPI=-L/usr/X11R6/lib/ -lfmpich -lampe -lmpe -lpmpich -lX11 # (copson)
-#FC=mpif90 # (Samos|fire|copson)
-#FFLAGS=-gm -fast -tp p7 -fastsse -Mvect=sse -O2 -Minline # (copson)
-#LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (nw43) 
+##
+##
+##
+#FC=mpif90 #(Samos|fire)
+#LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe #(nw43) 
 #FC=/usr/lib/lam/bin/mpif95 #(Owen|Master)
 #FC=g95 #(Cincinnatus|cosmo)
 #F77=$(FC) #(Cincinnatus|cosmo)
@@ -126,40 +138,62 @@ FCCLEANER=
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)
 ##FC=ifc_6.0 -i_dynamic #(ns0|nq[0-9]*|nw[0-9]*)
+#FC=pgf90 #(lfc101)
+#FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
+#LDMPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
+#LDONLYFLAGS=farg.o #(lfc101)
 #FC=ifort #(nw[0-9]*|hamlet|ns0|lynx|brahe|nq[0-9]*|aida[0-9]*)
 #FC=ifc_7.1 -pthread -I/home/ajohan/intel/ifc/compiler70/ia32/lib #(ns0)
 #FFLAGS=-O3 -I/home/ajohan/mpich/include #(hamlet)
 #LDMPI=-L /home/ajohan/mpich/lib -lmpich #(hamlet)
 #FFLAGS=-O3 -I/opt/mpich/include #(aida[0-9]*)
 #LDMPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
+#FFLAGS=-O3 -I/home/ajohan/mpich/include #(hamlet)
+#LDMPI=-L /home/ajohan/mpich/lib -lmpich #(hamlet)
 #FC=mpif90 #(opto[1-4])
 #FFLAGS=-O3 -I/home/johansen/mpich/include #(opto[1-4])
 #LDMPI=-L/usr/local/ib_hpc/mpi/osu/mvapich-1.2.5.2/lib -lmpich #(opto[1-4])
+#FC=~/mvapich095_pgf90/bin/mpif90 #(rio*)
+#FFLAGS=-O3 -I~/mvapich095_pgf90/include #(rio*)
+#LDMPI=-L~/mvapich095_pgf90/lib -lmpich #(rio*)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=/usr/local/bin/ifc -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=/people/disk2/brandenb/bin/ifort -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=~dobler/opt/intel/compiler70/ia32/bin/ifc -I/usr/local/lib/LAM/include #(fe[0-9])
+##FC=ifort -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=f95 -I/usr/lib/lam/include -mismatch #(velma)
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern|renton|lanark)      
 #FC=ifc -I/usr/lib/lam/include #(morvern|renton|lanark)
 #FC=fort -I/usr/lib/lam/include #(mhd)
 #FC=mpif90 #(Nunatak[0-9])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=ifc #(nl6|mmtf|nl19)
+#FC=ifort -I/home/brandenb/apps/ifort/lib #(nl6)
+#FC=ifc #(mmtf|nl19)
+#FC=ifort -I/usr/include/lam -L/usr/lib/lam/lib #(mmtf|nl19)
 #FC=/opt/intel/compiler60/ia32/bin/ifc -I/usr/lib/lam/include #(taspd209a)
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
 #LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
+#FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -Wl,-rpath,/usr/opt/intel/lib #(ns0)
 #FFLAGS=-O3 -xW #(obelix)
 #FC=f95 #(karbala)
 #FC=pgf90 #(tycho|linux29|monolith)
-##FC=ifort #(erland|bohm|igor|onsager)
-#FC=pgf90 #(erland|bohm|igor|onsager)
+#FC=ifort #(erland|bohm|igor|onsager|hades|char)
+##FC=pgf90 #(erland|bohm|igor|onsager)
 #FC=efc #(user0[1-9])
+#FC=efc #(srif-sb12-hpc-prod)
+#FCCLEANER=2>&1 | scripts/cleanf95 #(srif-sb12-hpc-prod)
+#FFLAGS= #(srif-sb12-hpc-prod)
+#FFLAGS=-align -ipo -O2 #(srif-sb12-hpc-prod)
+#LDMPI=-lmpi #(srif-sb12-hpc-prod)
 #FC=lf95 #(pcponty)
 #FFLAGS=-O # (Samos)
 #FFLAGS= -fast -lm # (fire)
 #FFLAGS= -fast -O5 -notransform_loops -tune ev6 -arch ev6 #(mhd)
 ##AB: next line uncommented on Tobi's advice
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
-#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(morvern|renton|lanark)
+#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(morvern|renton|lanark|velma)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
 #LDMPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]*)
 #LDMPI=-pthread -I/home/ajohan/intel/ifc/compiler70/ia32/lib -static-libcxa #(ns0)
@@ -173,14 +207,20 @@ FCCLEANER=
 #FFLAGS= #(fe[0-4])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
+#FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl6|nl11|sandin|lynx)
+#FFLAGS=-O3 #(nl6)
 #FFLAGS=-O3 #(nw[0-9]*|nl6|nl11|wormhole|sandin|lynx)
 #FFLAGS=-O3 -ieee=full #(barilko)
+#FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-1][0-9]|obelix|kolmogorov)
 #FFLAGS= #(davey[12])
+#FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
 #FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
 #FC=ifc -w95 #(sandin)
 #FC=f95 -dusty #(davey[12])  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
+#CC=mpicc #(obelix)
+#CC=gcc -m32 #(kolmogorov)
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(wormhole)
 ##FCCLEANER=2>&1 | cleanf95 #(Kolmogorov)
 ##FC=ifc -e90 #(Kolmogorov)  
@@ -192,6 +232,9 @@ FCCLEANER=
 #LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11)
+#LDMPI=-static -I/usr/lib/lam/include -pthread -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#LDMPI=-static -I/usr/include/lam -pthread -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#LDMPI=-static -I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #LDMPI=-I/home/brandenb/apps/ifort/lib -I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #LDMPI=-L/opt/mpich/lib #(nw43)
 #LDMPI=-L/usr/local/mpich/lib #(pcponty)
@@ -204,6 +247,8 @@ FCCLEANER=
 #F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
 #F77=$(FC) -lm  #(tycho|monolith)
 #F77=$(FC) #(erland|bohm|igor|onsager)
+#F77=$(FC) #(Owen|Master|cosmo|nl6|nw17|nl11)
+#F77FLAGS=-w90 #(nw[0-9]*|ns0|cosmo|nw17|nl6|nl11|sandin)
 #F77=$(FC) #(Owen|Master|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw[0-9]*|ns0|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
@@ -215,6 +260,52 @@ FCCLEANER=
 #LDMPI=-lmpi #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CC=icc #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CFLAGS=-O3 -ipo -DFUNDERSC=1 #(lws.Stanford.EDU|lws2.Stanford.EDU)
+##
+## wormhole Tony's Laptop
+##
+#FFLAGS=-CA -CV -CS -CB -tpp7 -vec_report0 #(wormhole)
+#FFLAGS=-O2 -align -tpp7 -vec_report0 #(wormhole)
+#FFLAGS=-O2 -tpp7 -vec_report0 #(wormhole)
+#FCCLEANER=2>&1 | scripts/cleanf95 #(wormhole)
+#FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)  
+#LDMPI= #(wormhole)
+#LDMPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
+#LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
+#F77=$(FC) #(wormhole)
+#F77FLAGS=-w90 #(wormhole)
+##
+## clx IBM Linux Cluster, Bologna IT
+##
+#LDMPI=    #(node[0-9]*)
+#FC=mpif90 # (node[0-9]*)
+#CC=mpicc  # (node[0-9]*)
+#FFLAGS=-fast -Mvect=sse -Mipa -Minline  # (node[0-9]*)
+#FFLAGS=-fast -tp p7 -fastsse -Mvect=sse -O2 # (node[0-9]*)
+##
+## giga[0-9] Newcastle eScience (tony,dave,greame)
+##
+#FC=mpif90 #(giga[0-9]*)  
+#FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-9]*)
+#FFLAGS=-O0 -CA -CB -CS -CV #(giga[0-9]*)  
+#FFLAGS=-O2 -ipo -tpp7 -vec_report0 #(giga[0-9]*)  
+#FFLAGS=-C -tpp7 -vec_report0  #(giga[0-9]*)  
+#FFLAGS=-O2 -tpp7 -vec_report0  #(giga[0-9]*)  
+#LDMPI= #(giga[0-9]*)
+##
+## St. Andrews Copson Cluster (tony,dave,greame)
+## copson.st-and.ac.uk 
+##
+#FC=mpif90 # (copson)
+#FFLAGS=-gm -fast -Mvect=sse -Mipa -Minline # (copson)
+#FFLAGS=-gm -fast -tp p7 -fastsse -Mvect=sse -O2 -Minline # (copson)
+#FFLAGS=-gm -fast -tp p7 -fastsse -Mvect=sse -O2 # (copson)
+#LDMPI= # (copson)
+##
+##
+##
+#FC=ifc #(gwdu102)
+#FFLAGS=-O3 -I/opt/scali/include #(gwdu102)  
+#LDMPI=-L/opt/scali/lib -lmpi -lfmpi #(gwdu102)
 
 ## Darwin:
 ## Power Macintosh
@@ -261,6 +352,16 @@ FCCLEANER=
 #FFLAGS=-I/usr/lpp/ppe.poe/include -I/usr/lpp/ppe.poe/include/thread -O5 -w
 #F90FLAGS=-qsuffix=f=f90
 #LDMPI=-F:mpxlf90
+#FC=mpxlf90 #(sp[0-1]*)
+#F77=mpxlf #(sp[0-1]*)
+#CC=mpcc #(sp[0-1]*)
+#CFLAGS=-qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
+#FFLAGS=-qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
+#CFLAGS=-O5 -qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
+#FFLAGS=-O5 -qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
+#LDMPI= #(sp[0-1]*)
+### -bmaxdata:0x7000000
+
 
 ### End machine dependent
 
@@ -279,20 +380,25 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -c $*.c
 
+#
 # ---------------------------------------------------------------------- #
 ## Abbreviations
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
-physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(TESTFIELD).o
-comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
-start_deps_f90=$(comm_deps) $(GRID).o $(DEBUG).o
-start_deps=$(start_deps_f90)
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
+physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(PARTICLES).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o  $(TESTFIELD).o
+comm_deps=$(technical) sub.o $(IO).o $(PARTICLES_SUB).o snapshot.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
+start_deps_f90=$(comm_deps) $(GRID).o
+start_deps=$(start_deps_f90) $(DEBUG).o
 run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
+shock_finder_deps=cparam.o
+start_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f $(GRID).f90 start.f90
+run_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).f90 equ.f90 timestep.f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f run.f90
 start=start.o $(start_deps)
 run=run.o $(run_deps)
-var2ascii_deps=cparam.o
-var2ascii=var2ascii.o $(var2ascii_deps)
+shock_finder=$(SHOCK_FINDER).o $(shock_finder_deps)
+#merge_tony var2ascii_deps=cparam.o
+#merge_tony var2ascii=var2ascii.o $(var2ascii_deps)
 read_videofiles_deps=cparam.o cdata.o general.o
 read_videofiles=read_videofiles.o $(read_videofiles_deps)
 read_vectorfiles_deps=cparam.o cdata.o general.o
@@ -307,19 +413,25 @@ default: Makefile cparam.inc code
 pacx: pacx-makefile cparam.inc code
 
 Makefile: Makefile.src
-	check-mkfile Makefile.local Makefile.src
-	adapt-mkfile Makefile.src Makefile
+	scripts/check-mkfile Makefile.local Makefile.src
+	scripts/adapt-mkfile Makefile.src Makefile
 pacx-makefile: Makefile.src
-	pacx-adapt-mkfile Makefile.src pacx-Makefile
+	scripts/acx-adapt-mkfile Makefile.src pacx-Makefile
 	cp pacx-Makefile Makefile
+depend dep: 
+	rm -f Makefile.depend
+	scripts/mkdep start.f90 run.f90 equ.f90 timestep.f90 $(comm_deps:.o=.f90) > Makefile.depend
+
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
-depend.dot: Makefile.src Makefile.local ${PENCIL_HOME}/bin/mkdot
-	${PENCIL_HOME}/bin/mkdot $(run:.o=.f90) > run.dot
-	${PENCIL_HOME}/bin/mkdot $(start:.o=.f90) > start.dot
-	${PENCIL_HOME}/bin/mkdot $(run:.o=.f90) $(start:.o=.f90)> depend.dot
-cparam.inc: Makefile.src Makefile.local
-	${PENCIL_HOME}/bin/mkcparam $(physics:.o=.f90) cparam.local -o cparam.inc
+depend.dot: Makefile.src Makefile.local scripts/mkdot
+	scripts/mkdot $(run:.o=.f90) > run.dot
+	scripts/mkdot $(start:.o=.f90) > start.dot
+	scripts/mkdot $(physics:.o=.f90) > depend.dot
+cparam.inc: Makefile.src Makefile.local scripts/mkcparam
+	scripts/mkcparam $(physics:.o=.f90) cparam.local -o cparam.inc
+shock_profile.inc: Makefile.src Makefile.local shock_finder.x $(SHOCK_PROFILE).desc
+	shock_finder.x < $(SHOCK_PROFILE).desc > shock_profile.inc
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
@@ -337,11 +449,28 @@ code:
 	    $(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x ; \
 	fi
 
+fast:
+	if [ ! -z "$(FCCLEANER)" ]; then \
+	    ($(MAKE) startfast.x runfast.x read_videofiles.x read_vectorfiles.x \
+	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	    $(MAKE) startfast.x runfast.x read_videofiles.x read_vectorfiles.x ; \
+	fi
+
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
 
 run.x: $(run) Makefile.local
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+
+runfast.x: $(run_fast_deps) Makefile.local
+	$(FC) -o runfast.x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LDMPI) $(LIBSIG) 
+
+startfast.x: $(start_fast_deps) Makefile.local
+	$(FC) -o startfast.x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LDMPI) 
+
+shock_finder.x: $(shock_finder) Makefile.local
+	$(LD) $(LDFLAGS) $(shock_finder) $(LDMPI) $(LIBSIG) -o shock_finder.x 
 
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
@@ -364,7 +493,7 @@ rad:
 # Remove all build files, but keep executables
 # (misleading name..)
 run:
-	rm -f *.o *.mod *.d *.inc
+	rm -f *.o *.mod *.d 
 	rm -f work.pc work.pcl
 
 # Alternative to make run. To copy executables to parent directory.
@@ -387,7 +516,7 @@ TAGS: $(TAG_SOURCE)
 
 # Clean up, but leave makefile and TAGS
 clean:
-	rm -f *.x *.o *.mod *.d *.inc *.il mpicomm_.f90
+	rm -f *.x *.o *.mod *.d cparam.inc cparam_pancils.inc *.il mpicomm_.f90
 	rm -f work.pc work.pcl
 
 # Clean up all
@@ -411,64 +540,88 @@ var2ascii.x: $(var2ascii)
 	$(LD) $(LDFLAGS) $(var2ascii) $(LDMPI) -o var2ascii.x 
 
 ## ---------------------------------------------------------------------- #
-## Dependencies
+## Non-F90 / undetectable dependencies
 ## ---------------------------------------------------------------------- #
+#
+fft.o:	     fft.f Makefile.src
+$(FFTPACK).o:   $(FFTPACK).f Makefile.src Makefile.local
+#fft_nr.o:    fft_nr.f90
+$(MPICOMM).o:         $(FFT).o 
+$(MAGNETIC).o:        $(FFT).o
+$(FFT).o:	          cdata.o
+nodebug.o:            nodebug.f90 cdata.o $(MPICOMM).o
+#$(TIMEAVG).o:        ctimeavg.local
+#axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
+
+## ---------------------------------------------------------------------- #
+## Automatically generated dependencies
+## ---------------------------------------------------------------------- #
+#ifeq (Makefile.depend,$(wildcard Makefile.depend))
+#include Makefile.depend
+#else
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
+shock_finder.o: shock_finder.f90 $(shock_finder_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
-var2ascii.o: var2ascii.f90 $(var2ascii_deps)
+#merge_tony var2ascii.o: var2ascii.f90 $(var2ascii_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 $(GRID).o:   $(GRID).f90 cdata.o $(MPICOMM).o
 general.o:   general.f90 cparam.o cdata.o
-slices.o:    slices.f90 cdata.o sub.o $(IONIZATION).o
+slices.o:    slices.f90 cdata.o sub.o $(EOS).o
 deriv.o:     deriv.f90 cdata.o $(MPICOMM).o
 fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 cdata.o $(MPICOMM).o sub.o timestep.o $(TIMEAVG).o $(physics)
-register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o
+register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o equ.o
 prints.o:    prints.f90 cdata.o sub.o param_io.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) boundcond.o \
              $(GLOBAL).o 
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 filter.o:    filter.f90 cdata.o sub.o boundcond.o
-initcond.o:  initcond.f90 cdata.o $(MPICOMM).o general.o sub.o $(IONIZATION).o
+initcond.o:  initcond.f90 cdata.o $(MPICOMM).o general.o sub.o $(EOS).o
 kepvor.o : kepvor.f90 cdata.o general.o
 noinitcond_spec.o: noinitcond_spec.f90 cdata.o general.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
-wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o $(RADIATION).o $(IONIZATION).o
+persist.o:    persist.f90 cdata.o general.o $(INTERSTELLAR).o
+snapshot.o:    snapshot.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o $(RADIATION).o $(EOS).o $(MAGNETIC).o persist.o
 #
-$(MPICOMM).o:      $(MPICOMM).f90 cdata.o general.o $(FFT).o 
-$(GLOBAL).o:       $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
-$(VISCOSITY).o:    $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
-$(SHEAR).o:	   $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
-$(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
-$(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
-$(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(INTERSTELLAR).o $(IONIZATION).o $(SPECIAL).o
-$(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
+$(MPICOMM).o:      mpicomm.inc        $(MPICOMM).f90 cdata.o general.o $(FFT).o 
+$(GLOBAL).o:       global.inc         $(GLOBAL).f90 cdata.o $(MPICOMM).o $(IO).o sub.o
+$(VISCOSITY).o:    viscosity.inc      $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
+shock.o:           shock.inc          shock.f90 shock_profile.inc cdata.o cparam.o $(DENSITY).o sub.o boundcond.o
+noshock.o:         shock.inc          noshock.f90 cdata.o cparam.o sub.o 
+$(SHEAR).o:        shear.inc          $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
+$(GRAVITY).o:      gravity.inc        $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
+$(FORCING).o:      forcing.inc        $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
+$(ENTROPY).o:      entropy.inc        $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o
+$(MAGNETIC).o:     magnetic.inc       $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
+$(RADIATION).o:    radiation.inc      $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(EOS).o
+$(HYDRO).o:        hydro.inc          $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
+$(DENSITY).o:      density.inc        $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(EOS).o
+$(COSMICRAY).o:    cosmicray.inc      $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(COSMICRAYFLUX).o:    cosmicrayflux.inc      $(COSMICRAYFLUX).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(COSMICRAY).o
+$(PSCALAR).o:      pscalar.inc        $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(CHIRAL).o:       chiral.inc         $(CHIRAL).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(DUSTVELOCITY).o: dustvelocity.inc   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
+$(DUSTDENSITY).o:  dustdensity.inc    $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
 $(TESTFIELD).o:     $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o $(IO).o
-$(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(IONIZATION).o
-$(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
-$(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(IONIZATION).o
-$(COSMICRAY).o:    $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
-$(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
-$(CHIRAL).o:       $(CHIRAL).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
-$(DUSTVELOCITY).o: $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
-$(DUSTDENSITY).o:  $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
-$(INTERSTELLAR).o: $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(IONIZATION).o
-$(IONIZATION).o:   $(IONIZATION).f90 cdata.o $(MPICOMM).o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
-$(IO).o:           $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
-#$(TIMEAVG).o:      $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local
-$(TIMEAVG).o:      $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o
-$(FFT).o:	   cdata.o
-nodebug.o:         nodebug.f90 cdata.o $(MPICOMM).o
-$(POWER).o:        $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
-$(STRUCT_FUNC).o:  $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
-$(SPECIAL).o:      $(SPECIAL).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
-#axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
+$(PARTICLES).o:    particles.inc      $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM).o sub.o
+$(PARTICLES_SUB).o:                   $(PARTICLES_SUB).f90 cdata.o $(GLOBAL).o
+$(INTERSTELLAR).o: interstellar.inc $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(EOS).o
+$(EOS).o:          eos.inc            $(EOS).f90 cdata.o $(MPICOMM).o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
+$(IO).o:           io.inc             $(IO).f90 cdata.o sub.o $(MPICOMM).o general.o sub.o
+#$(TIMEAVG).o:         $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local
+$(TIMEAVG).o:      timeavg.inc        $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o
+$(POWER).o:        power_spectrum.inc $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
+$(STRUCT_FUNC).o:  struct_func.inc    $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
+$(SPECIAL).o:      special.inc        $(SPECIAL).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
+$(DEBUG).o:        debug_c.c Makefile.src Makefile.local
+
+#endif
 
 # DO NOT DELETE

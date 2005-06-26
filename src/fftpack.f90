@@ -1,4 +1,4 @@
-!  $Id: fftpack.f90,v 1.2 2002-12-09 12:57:34 brandenb Exp $
+!  $Id: fftpack.f90,v 1.3 2005-06-26 17:34:12 eos_merger_tony Exp $
 !
 !  downloaded from:
 !  http://www.psc.edu/~burkardt/src/fftpack/fftpack.html

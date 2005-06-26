@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.241 2005-06-25 09:35:17 brandenb Exp $
+! $Id: magnetic.f90,v 1.242 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -9,8 +9,16 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lmagnetic = .true.
+!
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED aa,a2,aij,bb,ab,uxb,b2,bij,del2a,graddiva,jj
+! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta
+! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
+! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12 
+! PENCILS PROVIDED mf_EMF, mf_EMFdotB,gradcurla
 !
 !***************************************************************
 
@@ -20,13 +28,14 @@ module Magnetic
 
   implicit none
 
+  include 'magnetic.inc'
+
   character (len=labellen) :: initaa='zero',initaa2='zero'
-  character (len=labellen) :: iresistivity='eta-const'
+  character (len=labellen) :: iresistivity='eta-const',Omega_profile='nothing'
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./),B_ext_tmp
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
-  real, dimension (nx,3) :: bbb
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
@@ -36,28 +45,33 @@ module Magnetic
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
   real :: eta_shock=0.
-  real :: rhomin_JxB=0.,va2max_JxB=0.
-  real :: omega_Bz_ext
+  real :: rhomin_jxb=0.,va2max_jxb=0.
+  real :: omega_Bz_ext=0.
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5
   real :: rescale_aa=1.
-  real :: ampl_B0=0.,D_smag=0.17
-  integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
+  real :: ampl_B0=0.,D_smag=0.17,B_ext21
+  real :: Omega_ampl
+  integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
-  logical :: lresistivity_hyper=.false.,leta_const=.true.
+  logical :: lresistivity_hyper=.false.
+!ajwm - Unused???
+!    logical :: leta_const=.true.
   logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
   logical :: reinitalize_aa=.false.
   logical :: lB_ext_pot=.false.
   logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
   logical :: lforce_free_test=.false.
-  real :: nu_ni,nu_ni1,hall_term,alpha_effect
+  logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
+  real :: nu_ni=0.,nu_ni1,hall_term=0.
+  real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
   real :: displacement_gun=0.
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
   ! dgm: for perturbing magnetic field when reading NON-magnetic snapshot
   real :: pertamplaa=0.
-  real :: initpower_aa=0.,cutoff_aa=0.
+  real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   character (len=labellen) :: pertaa='zero'
   integer :: N_modes_aa=1
 
@@ -78,34 +92,57 @@ module Magnetic
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext,omega_Bz_ext,alpha_effect,nu_ni,hall_term, &
+       eta,B_ext,omega_Bz_ext,nu_ni,hall_term, &
+       lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
+       meanfield_etat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
        iresistivity,lresistivity_hyper, &
        eta_int,eta_ext,eta_shock,wresistivity, &
-       rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce,linduction, &
+       rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
        reinitalize_aa,rescale_aa,lB_ext_pot, &
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
-       pertaa,pertamplaa,D_smag
+       pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
+       lOmega_effect,Omega_profile,Omega_ampl
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
-  integer :: i_bxpt=0,i_bypt=0,i_bzpt=0,i_epsM_LES=0
-  integer :: i_aybym2=0,i_exaym2=0,i_exjm2=0
-  integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0,i_dtb=0
-  integer :: i_beta1m=0,i_beta1max=0
-  integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
-  integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0,i_djuidjbim
-  integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
-  integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
-  integer :: i_bxmxz=0,i_bymxz=0,i_bzmxz=0
-  integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
-  integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
-  integer :: i_b2b13m=0
-  integer :: i_brmphi=0,i_bpmphi=0,i_bzmphi=0,i_b2mphi=0,i_jbmphi=0
-  integer :: i_uxbrmphi,i_uxbpmphi,i_uxbzmphi
-  integer :: i_dteta=0
+  integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
+  integer :: idiag_abm=0,idiag_jbm=0,idiag_ubm=0,idiag_epsM=0
+  integer :: idiag_bxpt=0,idiag_bypt=0,idiag_bzpt=0,idiag_epsM_LES=0
+  integer :: idiag_aybym2=0,idiag_exaym2=0,idiag_exjm2=0
+  integer :: idiag_brms=0,idiag_bmax=0,idiag_jrms=0,idiag_jmax=0
+  integer :: idiag_vArms=0,idiag_vAmax=0,idiag_dtb=0
+  integer :: idiag_arms=0,idiag_amax=0,idiag_beta1m=0,idiag_beta1max=0
+  integer :: idiag_bx2m=0,idiag_by2m=0,idiag_bz2m=0
+  integer :: idiag_bxbym=0,idiag_bxbzm=0,idiag_bybzm=0,idiag_djuidjbim=0
+  integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0
+  integer :: idiag_bmy=0,idiag_bmz=0
+  integer :: idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
+  integer :: idiag_bxmxz=0,idiag_bymxz=0,idiag_bzmxz=0
+  integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_gpxbm=0
+  integer :: idiag_uxDxuxbm=0,idiag_b2b13m=0,idiag_jbmphi=0,idiag_dteta=0
+  integer :: idiag_uxbmx=0,idiag_uxbmy=0,idiag_uxbmz=0,idiag_uxjm=0
+  integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
+  integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
+  integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
+!merge_axel: not sure whether I missed any of the following from trunk...
+! integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
+! integer :: i_bxpt=0,i_bypt=0,i_bzpt=0,i_epsM_LES=0
+! integer :: i_aybym2=0,i_exaym2=0,i_exjm2=0
+! integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0,i_dtb=0
+! integer :: i_beta1m=0,i_beta1max=0
+! integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
+! integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0,i_djuidjbim
+! integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
+! integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
+! integer :: i_bxmxz=0,i_bymxz=0,i_bzmxz=0
+! integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
+! integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
+! integer :: i_b2b13m=0
+! integer :: i_brmphi=0,i_bpmphi=0,i_bzmphi=0,i_b2mphi=0,i_jbmphi=0
+! integer :: i_uxbrmphi,i_uxbpmphi,i_uxbzmphi
+! integer :: i_dteta=0
 
   contains
 
@@ -126,7 +163,6 @@ module Magnetic
       if (.not. first) call stop_it('register_aa called twice')
       first = .false.
 !
-      lmagnetic = .true.
       iaa = nvar+1              ! indices to access aa
       iax = iaa
       iay = iaa+1
@@ -147,7 +183,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.241 2005-06-25 09:35:17 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.242 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -179,6 +215,23 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
+!  Precalculate 1/mu (moved here from register.f90)
+!
+      mu01=1./mu0
+!
+!  Precalculate 1/nu_ni
+!
+      nu_ni1=1./nu_ni
+!
+!  calculate B_ext21
+!
+      B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+      if (B_ext21/=0.) then
+        B_ext21=1./B_ext21
+      else
+        B_ext21=1.
+      endif
+!
 !  set to zero and then rescale the magnetic field
 !  (in future, could call something like init_aa_simple)
 !
@@ -199,7 +252,7 @@ module Magnetic
 !
       use Cdata
       use Mpicomm
-      use Density
+      use EquationOfState
       use Gravity, only: gravz
       use Sub
       use Initcond
@@ -245,6 +298,7 @@ module Magnetic
       case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
+      case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('cosxcosy'); call cosx_cosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('sinxsiny'); call sinx_siny_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
@@ -253,6 +307,16 @@ module Magnetic
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
       case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
+      case('tony-nohel')
+        f(:,:,:,iay) = amplaa/kz_aa*cos(kz_aa*2.*pi/Lz*zz)
+      case('tony-nohel-yz')
+        f(:,:,:,iay) = amplaa/kx_aa*sin(kx_aa*2.*pi/Lx*xx)
+      case('tony-hel-xy')
+        f(:,:,:,iax) = amplaa/kz_aa*sin(kz_aa*2.*pi/Lz*zz)
+        f(:,:,:,iay) = amplaa/kz_aa*cos(kz_aa*2.*pi/Lz*zz)
+      case('tony-hel-yz')
+        f(:,:,:,iay) = amplaa/kx_aa*sin(kx_aa*2.*pi/Lx*xx)
+        f(:,:,:,iaz) = amplaa/kx_aa*cos(kx_aa*2.*pi/Lx*xx)
       case('force-free-jet')
         lB_ext_pot=.true.
         call force_free_jet(mu_ext_pot,xx,yy,zz)
@@ -296,7 +360,7 @@ module Magnetic
 !  The beq2 expression for 2*mu0*p is not general yet.
 !
       if (lpress_equil.or.lpress_equil_via_ss) then
-        if(lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
+        if (lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
         do n=n1,n2
         do m=m1,m2
           call curl(f,iaa,bb)
@@ -338,13 +402,396 @@ module Magnetic
 !
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,uij,rho1,TT1,bb,bij,aij,jj,JxBr,del2A,graddivA,va2,shock,gshock)
+    subroutine pencil_criteria_magnetic()
+!
+!   All pencils that the Magnetic module depends on are specified here.
+!
+!  19-11-04/anders: coded
+!
+      use Cdata
+!      
+      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_uxb)=.true.
+!
+      if (dvid/=0.0) lpenc_video(i_b2)=.true.
+!      
+      if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4) &
+          lpenc_requested(i_jj)=.true.
+      if (dvid/=0.) lpenc_video(i_jb)=.true.
+      if (iresistivity=='eta-const' .or. iresistivity=='shell' .or. &
+          iresistivity=='shock' .or. iresistivity=='Smagorinsky' .or. &
+          iresistivity=='Smagorinsky_cross') lpenc_requested(i_del2a)=.true.
+      if (iresistivity=='shock') then
+        lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_shock)=.true.
+      endif
+      if (iresistivity=='shock' .or. iresistivity=='shell') &
+          lpenc_requested(i_diva)=.true.
+      if (iresistivity=='Smagorinsky_cross') lpenc_requested(i_jo)=.true.
+      if (iresistivity=='hyper2') lpenc_requested(i_del4a)=.true.
+      if (iresistivity=='hyper3') lpenc_requested(i_del6a)=.true.
+      if (lspherical) lpenc_requested(i_graddiva)=.true.
+      if (lentropy .or. iresistivity=='Smagorinsky') &
+          lpenc_requested(i_j2)=.true.
+      if (lentropy .or. ldt) lpenc_requested(i_rho1)=.true.
+      if (lentropy) lpenc_requested(i_TT1)=.true.
+      if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
+      if (hall_term/=0.) lpenc_requested(i_jxb)=.true.
+      if ((lhydro .and. llorentzforce) .or. nu_ni/=0.) &
+          lpenc_requested(i_jxbr)=.true.
+      if (iresistivity=='Smagorinsky_cross' .or. delta_effect/=0.) &
+          lpenc_requested(i_oo)=.true.
+      if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
+      if (lmeanfield_theory) then
+        if (alpha_effect/=0. .or. delta_effect/=0.) lpenc_requested(i_mf_EMF)=.true.
+        if (delta_effect/=0.) lpenc_requested(i_oxj)=.true.
+      endif
+      if (nu_ni/=0.) lpenc_diagnos(i_jxbrxb)=.true.
+!
+      if (idiag_aybym2/=0 .or. idiag_exaym2/=0) lpenc_diagnos(i_aa)=.true.
+      if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
+      if (idiag_abm/=0) lpenc_diagnos(i_ab)=.true.
+      if (idiag_djuidjbim/=0 .or. idiag_b2b13m/=0) &
+          lpenc_diagnos(i_bij)=.true.
+      if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
+          idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0) &
+          lpenc_diagnos(i_j2)=.true.
+      if (idiag_jbm/=0) lpenc_diagnos(i_jb)=.true.
+      if (idiag_jbmphi/=0) lpenc_diagnos2d(i_jb)=.true.
+      if (idiag_vArms/=0 .or. idiag_vAmax/=0) lpenc_diagnos(i_va2)=.true.
+      if (idiag_ubm/=0) lpenc_diagnos(i_ub)=.true.
+      if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
+      if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
+      if (idiag_vArms/=0 .or. idiag_vAmax/=0) lpenc_diagnos(i_va2)=.true.
+      if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
+      if (idiag_beta1m/=0 .or. idiag_beta1max/=0) lpenc_diagnos(i_beta)=.true.
+      if (idiag_djuidjbim/=0) lpenc_diagnos(i_djuidjbi)=.true.
+      if (idiag_ujxbm/=0) lpenc_diagnos(i_ujxb)=.true.
+      if (idiag_gpxbm/=0) lpenc_diagnos(i_glnrhoxb)=.true.
+      if (idiag_jxbxbm/=0) lpenc_diagnos(i_jxbxb)=.true.
+      if (idiag_oxuxbm/=0) lpenc_diagnos(i_oxuxb)=.true.
+      if (idiag_exaym2/=0 .or. idiag_exjm2/=0) lpenc_diagnos(i_jj)=.true.
+      if (idiag_b2m/=0 .or. idiag_bm2/=0 .or. idiag_brms/=0 .or. &
+          idiag_bmax/=0) lpenc_diagnos(i_b2)=.true.
+!
+    endsubroutine pencil_criteria_magnetic
+!***********************************************************************
+    subroutine pencil_interdep_magnetic(lpencil_in)
+!
+!  Interdependency among pencils from the Magnetic module is specified here.
+!
+!  19-11-04/anders: coded
+!
+      use Cdata
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_a2)) lpencil_in(i_aa)=.true.
+      if (lpencil_in(i_ab)) then
+        lpencil_in(i_aa)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_va2)) then
+        lpencil_in(i_b2)=.true.
+        lpencil_in(i_rho1)=.true.
+      endif
+      if (lpencil_in(i_j2)) lpencil_in(i_jj)=.true.
+      if (lpencil_in(i_uxj)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_jj)=.true.
+      endif
+      if (lpencil_in(i_jb)) then
+        lpencil_in(i_bb)=.true.
+        lpencil_in(i_jj)=.true.
+      endif
+      if (lpencil_in(i_jxbr) .and. va2max_jxb>0) lpencil_in(i_va2)=.true.
+      if (lpencil_in(i_jxbr)) then
+        lpencil_in(i_jxb)=.true.
+        lpencil_in(i_rho1)=.true.
+      endif
+      if (lpencil_in(i_jxb)) then
+        lpencil_in(i_jj)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_uxb2)) lpencil_in(i_uxb)=.true.
+      if (lpencil_in(i_uxb)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_ub)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_beta)) then
+        lpencil_in(i_b2)=.true.
+        lpencil_in(i_pp)=.true.
+      endif
+      if (lpencil_in(i_b2)) lpencil_in(i_bb)=.true.
+      if (lpencil_in(i_jj)) lpencil_in(i_bij)=.true.
+      if (lpencil_in(i_bb)) then
+        if (lspherical) lpencil_in(i_aa)=.true.
+        lpencil_in(i_aij)=.true.
+      endif
+      if (lpencil_in(i_djuidjbi)) then
+        lpencil_in(i_uij)=.true.
+        lpencil_in(i_bij)=.true.
+      endif
+      if (lpencil_in(i_jo)) then
+        lpencil_in(i_oo)=.true.
+        lpencil_in(i_jj)=.true.
+      endif
+      if (lpencil_in(i_ujxb)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_jxb)=.true.
+      endif
+      if (lpencil_in(i_oxu)) then
+        lpencil_in(i_oo)=.true.
+        lpencil_in(i_uu)=.true.
+      endif
+      if (lpencil_in(i_oxuxb)) then
+        lpencil_in(i_oxu)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_jxbxb)) then
+        lpencil_in(i_jxb)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_jxbrxb)) then
+        lpencil_in(i_jxbr)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_glnrhoxb)) then
+        lpencil_in(i_glnrho)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_oxj)) then
+        lpencil_in(i_oo)=.true.
+        lpencil_in(i_jj)=.true.
+      endif
+      if (lpencil_in(i_jij)) lpencil_in(i_bij)=.true.
+      if (lpencil_in(i_sj)) then
+        lpencil_in(i_sij)=.true.
+        lpencil_in(i_jij)=.true.
+      endif
+      if (lpencil_in(i_ss12)) lpencil_in(i_sij)=.true.
+      if (lpencil_in(i_mf_EMFdotB)) then
+        lpencil_in(i_mf_EMF)=.true.
+        lpencil_in(i_bb)=.true.
+      endif
+      if (lpencil_in(i_mf_EMF)) then
+        lpencil_in(i_b2)=.true.
+        lpencil_in(i_bb)=.true.
+        if (delta_effect/=0.) lpencil_in(i_oxJ)=.true.
+        if (meanfield_etat/=0.) lpencil_in(i_jj)=.true.
+      endif
+      if (lpencil_in(i_del2A)) then
+        if (lspherical) then
+          lpencil_in(i_jj)=.true.
+          lpencil_in(i_graddivA)=.true.
+        endif
+      endif
+!
+    endsubroutine pencil_interdep_magnetic
+!***********************************************************************
+    subroutine calc_pencils_magnetic(f,p)
+!
+!  Calculate Magnetic pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  19-nov-04/anders: coded
+!
+      use Cdata
+      use Sub
+      use Deriv
+      use Global, only: get_global
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f       
+      type (pencil_case) :: p
+!      
+      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
+      real, dimension (nx) :: rho1_jxb,quenching_factor,alpha_total
+      real :: B2_ext,c,s
+      integer :: i,j
+!
+      intent(in)  :: f
+      intent(inout) :: p
+! aa
+      if (lpencil(i_aa)) p%aa=f(l1:l2,m,n,iax:iaz)
+! a2
+      if (lpencil(i_a2)) call dot2_mn(p%aa,p%a2)
+! aij
+      if (lpencil(i_aij)) call gij(f,iaa,p%aij,1)
+! diva
+      if (lpencil(i_diva)) call div(f,iaa,p%diva)
+! bb
+      if (lpencil(i_bb)) then
+        call curl_mn(p%aij,p%bb,p%aa)
+        B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+!
+!  allow external field to precess about z-axis
+!  with frequency omega_Bz_ext
+!
+        if (B2_ext/=0.) then
+          if (omega_Bz_ext==0.) then
+            B_ext_tmp=B_ext
+          elseif (omega_Bz_ext/=0.) then
+            c=cos(omega_Bz_ext*t)
+            s=sin(omega_Bz_ext*t)
+            B_ext_tmp(1)=B_ext(1)*c-B_ext(2)*s
+            B_ext_tmp(2)=B_ext(1)*s+B_ext(2)*c
+            B_ext_tmp(3)=B_ext(3)
+          endif
+!  add the external field
+          if (B_ext(1)/=0.) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
+          if (B_ext(2)/=0.) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
+          if (B_ext(3)/=0.) p%bb(:,3)=p%bb(:,3)+B_ext_tmp(3)
+          if (headtt) print*,'calc_pencils_magnetic: B_ext=',B_ext
+          if (headtt) print*,'calc_pencils_magnetic: B_ext_tmp=',B_ext_tmp
+        endif
+!  add the external potential field
+        if (lB_ext_pot) then
+          call get_global(bb_ext_pot,m,n,'B_ext_pot')
+          p%bb=p%bb+bb_ext_pot
+        endif
+!  add external B-field (currently for spheromak experiments)
+        if (lbb_ext) then
+          call get_global(bb_ext,m,n,'bb_ext')
+          p%bb=p%bb+bb_ext
+        endif
+      endif
+! ab
+      if (lpencil(i_ab)) call dot_mn(p%aa,p%bb,p%ab)
+! uxb
+      if (lpencil(i_uxb)) then
+        call cross_mn(p%uu,p%bb,p%uxb)
+        if (lee_ext) then
+          call get_global(ee_ext,m,n,'ee_ext')
+          p%uxB=p%uxb+ee_ext
+        endif
+      endif
+! b2
+      if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
+!ajwm should prob combine these next two
+! gradcurla
+      if (lpencil(i_gradcurla)) &
+          call del2v_etc(f,iaa,gradcurl=p%gradcurla)
+! bij, del2a, graddiva
+      if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva)) &
+          call bij_etc(f,iaa,p%bij,p%del2a,p%graddiva)
+! jj
+      if (lpencil(i_jj)) then
+        call curl_mn(p%bij,p%jj,p%bb)
+        p%jj=mu01*p%jj
+        if (ljj_ext) then
+!  external current (currently for spheromak experiments)
+          call get_global(ee_ext,m,n,'ee_ext')
+          !call get_global(jj_ext,m,n,'jj_ext')
+          !jj=jj+jj_ext
+          p%jj=p%jj-ee_ext*displacement_gun
+        endif
+      endif
+!  in spherical geometry, del2a is best written as graddiva-jj.
+      if (lpencil(i_del2a)) then
+        if (lspherical) p%del2a=p%graddiva-p%jj
+      endif
+! j2
+      if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)
+! jb
+      if (lpencil(i_jb)) call dot_mn(p%jj,p%bb,p%jb)
+! va2
+      if (lpencil(i_va2)) p%va2=p%b2*mu01*p%rho1
+! jxb
+      if (lpencil(i_jxb)) call cross_mn(p%jj,p%bb,p%jxb)
+! jxbr
+      if (lpencil(i_jxbr)) then
+        rho1_jxb=p%rho1
+!  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
+!  set va2max_jxb>0 in order to limit the jxb term at very high alven speeds.
+!  set va2power_jxb to an integer value in order to specify the power
+!  of the limiting term,
+        if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+        if (va2max_jxb>0) rho1_jxb=rho1_jxb/(1+(p%va2/va2max_jxb)**va2power_jxb)
+        call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
+      endif
+! ub
+      if (lpencil(i_ub)) call dot_mn(p%uu,p%bb,p%ub)
+! uxb2
+      if (lpencil(i_uxb2)) call dot2_mn(p%uxb,p%uxb2)
+! uxj
+      if (lpencil(i_uxj)) call cross_mn(p%uu,p%jj,p%uxj)
+! beta
+      if (lpencil(i_beta)) p%beta=0.5*p%b2/p%pp
+! djuidjbi
+      if (lpencil(i_djuidjbi)) call multmm_sc(p%uij,p%bij,p%djuidjbi)
+! jo
+      if (lpencil(i_jo)) call dot(p%jj,p%oo,p%jo)
+! ujxb
+      if (lpencil(i_ujxb)) call dot_mn(p%uu,p%jxb,p%ujxb)
+! oxu
+      if (lpencil(i_oxu)) call cross_mn(p%oo,p%uu,p%oxu)
+! oxuxb
+      if (lpencil(i_oxuxb)) call cross_mn(p%oxu,p%bb,p%oxuxb)
+! jxbxb
+      if (lpencil(i_jxbxb)) call cross_mn(p%jxb,p%bb,p%jxbxb)
+! jxbrxb
+      if (lpencil(i_jxbrxb)) call cross_mn(p%jxbr,p%bb,p%jxbrxb)
+! glnrhoxb
+      if (lpencil(i_glnrhoxb)) call cross_mn(p%glnrho,p%bb,p%glnrhoxb)
+! del4a
+      if (lpencil(i_del4a)) call del4v(f,iaa,p%del4a)
+! del6a
+      if (lpencil(i_del6a)) call del6v(f,iaa,p%del6a)
+! oxj        
+      if (lpencil(i_oxj)) call cross_mn(p%oo,p%jj,p%oxJ)
+! jij
+      if (lpencil(i_jij)) then
+        do j=1,3
+          do i=1,3
+            p%jij(:,i,j)=.5*(p%bij(:,i,j)+p%bij(:,j,i))
+          enddo
+        enddo
+      endif
+! sj
+      if (lpencil(i_sj)) call multmm_sc(p%sij,p%jij,p%sj)
+! ss12
+      if (lpencil(i_ss12)) p%ss12=sqrt(abs(p%sj))
+!
+! mf_EMF
+! needed if a mean field (mf) model is calculated
+!
+      if (lpencil(i_mf_EMF)) then
+!
+!  possibility of dynamical alpha
+!
+        if (lalpm) then
+          alpha_total=alpha_effect+f(l1:l2,m,n,ialpm)
+        else
+          alpha_total=alpha_effect
+        endif
+!
+!  possibility of conventional alpha quenching (rescales alpha_total)
+!  initialize EMF with alpha_total*bb
+!
+        if (alpha_quenching/=0.) alpha_total=alpha_total/(1.+alpha_quenching*p%b2)
+        call multsv_mn(alpha_total,p%bb,p%mf_EMF)
+!
+!  add possible delta x J effect and turbulent diffusion to EMF
+!
+        if (delta_effect/=0.) p%mf_EMF=p%mf_EMF+delta_effect*p%oxJ
+        if (meanfield_etat/=0.) p%mf_EMF=p%mf_EMF-meanfield_etat*p%jj
+      endif
+      if (lpencil(i_mf_EMFdotB)) call dot_mn(p%mf_EMF,p%bb,p%mf_EMFdotB)
+!
+    endsubroutine calc_pencils_magnetic
+!***********************************************************************
+    subroutine daa_dt(f,df,p)
 !
 !  magnetic field evolution
 !
-!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J +alpha*bb
-!  add JxB/rho to momentum equation
-!  add eta mu_0 J2/rho to entropy equation
+!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J
+!  for mean field calculations one can also add dA/dt=...+alpha*bb+delta*WXJ
+!  add jxb/rho to momentum equation
+!  add eta mu_0 j2/rho to entropy equation
 !
 !  22-nov-01/nils: coded
 !   1-may-02/wolf: adapted for pencil_modular
@@ -361,30 +808,22 @@ module Magnetic
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
       use Mpicomm, only: stop_it
-      use Ionization, only: eoscalc,gamma1
+      use EquationOfState, only: eoscalc,gamma1
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,bij,aij
-      real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb,JxBrxB
-      real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock,geta
-      real, dimension (nx,3) :: del2A,graddivA,oo,oxu,uxDxuxb,del6A,fres,del4A
-      real, dimension (nx,3) :: ee_ext
-      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
+      type (pencil_case) :: p
+!      
+      real, dimension (nx,3) :: geta,uxDxuxb,fres,meanfield_EMF
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,rho1_JxB
-      real, dimension (nx) :: hall_ueff2
-      real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
-      real, dimension (nx) :: bxby, bxbz, bybz
-      real, dimension (nx) :: b2b13,jo,sign_jo
-      real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
-      real, dimension (nx) :: etatotal,pp,djuidjbi
-      real :: tmp,eta_out1,B_ext21=1.
-      integer :: j,i
-      real, dimension (nx) :: eta_smag
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,hall_ueff2
+      real, dimension (nx) :: b2b13,sign_jo
+      real, dimension (nx) :: eta_mn,eta_tot
+      real, dimension (nx) :: eta_smag,etatotal,fres2
+      real :: tmp,eta_out1
+      integer :: i,j
 !
-      intent(in)     :: f,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,shock,gshock
-      intent(out)    :: va2
+      intent(in)     :: f
       intent(inout)  :: df     
 !
 !  identify module and boundary conditions
@@ -396,121 +835,16 @@ module Magnetic
         call identify_bcs('Az',iaz)
       endif
 !
-!  Note that the B field is now calculated in calculate_vars_magnetic
-!
-      call dot2_mn(bb,b2)
-!
-!  Calculate some diagnostic quantities
-!
-      if (ldiagnos) then
-
-        if (gamma1/=0.) then
-          call eoscalc(f,nx,pp=pp)
-          if (i_beta1m/=0) call sum_mn_name(0.5*b2/pp,i_beta1m)
-          if (i_beta1max/=0) call max_mn_name(0.5*b2/pp,i_beta1max)
-        endif
-
-        aa=f(l1:l2,m,n,iax:iaz)
-
-        if (i_b2m/=0) call sum_mn_name(b2,i_b2m)
-        if (i_bm2/=0) call max_mn_name(b2,i_bm2)
-        if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
-        if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
-        if (i_aybym2/=0) call sum_mn_name(2*aa(:,2)*bb(:,2),i_aybym2)
-        if (i_abm/=0) then
-           call dot_mn(aa,bb,ab)
-           call sum_mn_name(ab,i_abm)
-        endif
-        if (i_ubm/=0) then
-           call dot_mn(uu,bb,ub)
-           call sum_mn_name(ub,i_ubm)
-        endif
-        if (i_bx2m/=0) then
-           bx2 = bb(:,1)*bb(:,1)
-           call sum_mn_name(bx2,i_bx2m)
-        endif
-        if (i_by2m/=0) then
-           by2 = bb(:,2)*bb(:,2)
-           call sum_mn_name(by2,i_by2m)
-        endif
-        if (i_bz2m/=0) then
-           bz2 = bb(:,3)*bb(:,3)
-           call sum_mn_name(bz2,i_bz2m)
-        endif
-        if (i_bxbym/=0) then
-           bxby = bb(:,1)*bb(:,2)
-           call sum_mn_name(bxby,i_bxbym)
-        endif
-        if (i_bxbzm/=0) then
-           bxbz = bb(:,1)*bb(:,3)
-           call sum_mn_name(bxbz,i_bxbzm)
-        endif
-        if (i_bybzm/=0) then
-           bybz = bb(:,2)*bb(:,3)
-           call sum_mn_name(bybz,i_bybzm)
-        endif
-
-        if (i_djuidjbim/=0) then
-           call multmm_sc(uij,bij,djuidjbi)
-           call sum_mn_name(djuidjbi,i_djuidjbim)
-        endif 
-
-!
-!  this doesn't need to be as frequent (check later)
-!
-        if (i_bxmz/=0.or.i_bxmxy/=0.or.i_bxmxz/=0) bx=bb(:,1)
-        if (i_bymz/=0.or.i_bymxy/=0.or.i_bymxz/=0) by=bb(:,2)
-        if (i_bzmz/=0.or.i_bzmxy/=0.or.i_bzmxz/=0) bz=bb(:,3)
-        if (i_bxmz/=0) call xysum_mn_name_z(bx,i_bxmz)
-        if (i_bymz/=0) call xysum_mn_name_z(by,i_bymz)
-        if (i_bzmz/=0) call xysum_mn_name_z(bz,i_bzmz)
-        if (i_bxmxy/=0) call zsum_mn_name_xy(bx,i_bxmxy)
-        if (i_bymxy/=0) call zsum_mn_name_xy(by,i_bymxy)
-        if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
-        if (i_bxmxz/=0) call ysum_mn_name_xz(bx,i_bxmxz)
-        if (i_bymxz/=0) call ysum_mn_name_xz(by,i_bymxz)
-        if (i_bzmxz/=0) call ysum_mn_name_xz(bz,i_bzmxz)
-      endif
-!
-!  calculate Alfven speed
-!  This must include the imposed field (if there is any)
-!  The b2 calculated above for only updated when diagnos=.true.
-!
-      call dot2_mn(bb,b2tot)
-      va2=b2tot*mu01*rho1
-!
-!  calculate JxB/rho (when hydro is on) and J^2 (when entropy is on)
-!  add JxB/rho to momentum equation, and eta mu_0 J2/rho to entropy equation
-!  set rhomin_JxB>0 in order to limit the JxB term at very low densities.
-!  set va2max_JxB>0 in order to limit the JxB term at very high alven speeds.
-!  set va2power_JxB to an integer value in order to specify the power
-!  of the limiting term,
+!  add jxb/rho to momentum equation
 !
       if (lhydro) then
-        call cross_mn(jj,bb,JxB)
-        rho1_JxB=rho1
-        if (rhomin_JxB>0) rho1_JxB=min(rho1_JxB,1/rhomin_JxB)
-        if (va2max_JxB>0) rho1_JxB=rho1_JxB/(1+(va2/va2max_JxB)**va2power_JxB)
-        call multsv_mn(rho1_JxB,JxB,JxBr)
-        if(llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
-        if(lentropy) then
-          call dot2_mn(jj,J2)
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta*mu0)*J2*rho1*TT1
-        endif
+        if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
       endif
 !
-!  calculate uxB+eta*del2A and add to dA/dt
-!  (Note: the linear shear term is added later)
-!  Read external electric field (currently for spheromak experiments)
+!  add eta mu_0 j2/rho to entropy equation
 !
-      if (linduction) then
-        call cross_mn(uu,bb,uxB)
-        if (lee_ext) then
-          call get_global(ee_ext,m,n,'ee_ext')
-          uxB=uxB+ee_ext
-        endif
-      else
-        uxB=0.
+      if (lentropy) then
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta*mu0)*p%j2*p%rho1*p%TT1
       endif
 !
 !  calculate restive term
@@ -518,48 +852,39 @@ module Magnetic
       select case (iresistivity)
 
       case ('eta-const')
-        fres=eta*del2A
+        fres=eta*p%del2a
         etatotal=eta
       case ('hyper3')
-        call del6v(f,iaa,del6A)
-        fres=eta*del6A
+        fres=eta*p%del6a
         etatotal=eta
       case ('hyper2')
-        call del4v(f,iaa,del4A)
-        fres=eta*del4A
+        fres=eta*p%del4a
         etatotal=eta  
       case ('shell')
         call eta_shell(eta_mn,geta)
-        call div(f,iaa,divA)
-        do j=1,3; fres(:,j)=eta_mn*del2A(:,j)+geta(:,j)*divA; enddo
+        do j=1,3; fres(:,j)=eta_mn*p%del2a(:,j)+geta(:,j)*p%diva; enddo
         etatotal=eta_mn
       case ('shock')
         if (eta_shock/=0) then
-          call div(f,iaa,divA)
-          eta_tot=eta+eta_shock*shock
-          geta=eta_shock*gshock
-          do j=1,3; fres(:,j)=eta_tot*del2A(:,j)+geta(:,j)*divA; enddo
-          etatotal=eta+eta_shock*shock
+          eta_tot=eta+eta_shock*p%shock
+          geta=eta_shock*p%gshock
+          do j=1,3; fres(:,j)=eta_tot*p%del2a(:,j)+geta(:,j)*p%diva; enddo
+          etatotal=eta+eta_shock*p%shock
         else
-          fres=eta*del2A
+          fres=eta*p%del2a
           etatotal=eta
         endif
       case ('Smagorinsky')
-        call dot2_mn(jj,J2)
-        eta_smag=(D_smag*dxmax)**2.*sqrt(J2)
-        call multsv(eta_smag+eta,del2A,fres)
+        eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
+        call multsv(eta_smag+eta,p%del2a,fres)
         etatotal=eta_smag+eta
       case ('Smagorinsky_cross')        
-        oo(:,1)=uij(:,3,2)-uij(:,2,3)
-        oo(:,2)=uij(:,1,3)-uij(:,3,1)
-        oo(:,3)=uij(:,2,1)-uij(:,1,2)
-        call dot(jj,oo,jo)
         sign_jo=1.
         do i=1,nx 
-          if (jo(i) .lt. 0) sign_jo(i)=-1.
+          if (p%jo(i) .lt. 0) sign_jo(i)=-1.
         enddo
-        eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(jo*sign_jo)
-        call multsv(eta_smag+eta,del2A,fres)
+        eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
+        call multsv(eta_smag+eta,p%del2a,fres)
         etatotal=eta_smag+eta
       case default
         if (lroot) print*,'daa_dt: no such ires:',iresistivity
@@ -571,391 +896,297 @@ module Magnetic
 !  requested by boundconds
 !
       if (lfrozen_bz_z_bot) then
-        !
-        ! Only need to do this for nonperiodic z direction, on bottommost
-        ! processor and in bottommost pencils
-        !
+!
+!  Only need to do this for nonperiodic z direction, on bottommost
+!  processor and in bottommost pencils
+!
         if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
           fres(:,1) = 0.
           fres(:,2) = 0.
         endif
       endif
 !
-!  Add to dA/dt
+!  Induction equation
 !
-      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+fres
+      df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
       if (nu_ni/=0.) then
-        nu_ni1=1./nu_ni
-        call cross_mn(JxBr,bb,JxBrxB)
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*JxBrxB
-        etatotal=etatotal+nu_ni1*va2
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*p%jxbrxb
+        etatotal=etatotal+nu_ni1*p%va2
       endif
 !
 !  Hall term
 !
       if (hall_term/=0.) then
         if (headtt) print*,'daa_dt: hall_term=',hall_term
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*JxB
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*p%jxb
         if (lfirst.and.ldt) then
-          advec_hall=abs(uu(:,1)-hall_term*jj(:,1))*dx_1(l1:l2)+ &
-                     abs(uu(:,2)-hall_term*jj(:,2))*dy_1(  m  )+ &
-                     abs(uu(:,3)-hall_term*jj(:,3))*dz_1(  n  )
+          advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
+                     abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
+                     abs(p%uu(:,3)-hall_term*p%jj(:,3))*dz_1(  n  )
         endif
         if (headtt.or.ldebug) print*,'duu_dt: max(advec_hall) =',&
                                      maxval(advec_hall)
       endif
 !
-!  add alpha effect if alpha_effect /= 0
-!      
-      if(alpha_effect/=0.) then
-         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+alpha_effect*bb
+!  Alpha effect
+!  additional terms if Mean Field Theory is included
+!
+      if (lmeanfield_theory.and.(alpha_effect/=0..or.delta_effect/=0.)) then
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
+        if (lOmega_effect) call Omega_effect(f,df)
       endif
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry:
 !  Note that eta_out is total eta in halo (not eta_out+eta)
 !
-      if(height_eta/=0.) then
+      if (height_eta/=0.) then
         if (headtt) print*,'daa_dt: height_eta,eta_out=',height_eta,eta_out
         tmp=(z(n)/height_eta)**2
         eta_out1=eta_out*(1.-exp(-tmp**5/max(1.-tmp,1e-5)))-eta
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*jj
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*p%jj
       endif
 !
 !  possibility of relaxation of A in exterior region
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
 !
-!  write B-slices for output in wvid in run.f90
-!  Note: ix is the index with respect to array with ghost zones.
-!
-        if(lvid.and.lfirst) then
-          do j=1,3
-            bb_yz(m-m1+1,n-n1+1,j)=bb(ix-l1+1,j)
-            if (m.eq.iy)  bb_xz(:,n-n1+1,j)=bb(:,j)
-            if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
-            if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
-          enddo
-          b2_yz(m-m1+1,n-n1+1)=b2(ix-l1+1)
-          if (m.eq.iy)  b2_xz(:,n-n1+1)=b2
-          if (n.eq.iz)  b2_xy(:,m-m1+1)=b2
-          if (n.eq.iz2) b2_xy2(:,m-m1+1)=b2
-          call dot_mn(jj,bb,jb)
-          jb_yz(m-m1+1,n-n1+1)=jb(ix-l1+1)
-          if (m.eq.iy)  jb_xz(:,n-n1+1)=jb
-          if (n.eq.iz)  jb_xy(:,m-m1+1)=jb
-          if (n.eq.iz2) jb_xy2(:,m-m1+1)=jb
-          if(bthresh_per_brms/=0) call calc_bthresh
-          call vecout(41,trim(directory)//'/bvec',bb,bthresh,nbvec)
-        endif
-!
-!  phi-averages
-!  Note that this does not necessarily happen with ldiagnos=.true.
-!  This block must be done after jj has been calculated.
-!
-      if (l2davgfirst) then
-        bx=bb(:,1)
-        by=bb(:,2)
-        bz=bb(:,3)
-        call phisum_mn_name_rz(bx*pomx+by*pomy,i_brmphi)
-        call phisum_mn_name_rz(bx*phix+by*phiy,i_bpmphi)
-        call phisum_mn_name_rz(bz,i_bzmphi)
-        call phisum_mn_name_rz(b2,i_b2mphi)
-        if (i_jbmphi/=0) then
-          call dot_mn(jj,bb,jb)
-          call phisum_mn_name_rz(jb,i_jbmphi)
-        endif
-        if (any((/i_uxbrmphi,i_uxbpmphi,i_uxbzmphi/) /= 0)) then
-          call cross_mn(uu,bb,uxb)
-          call phisum_mn_name_rz(uxb(:,1)*pomx+uxb(:,2)*pomy,i_uxbrmphi)
-          call phisum_mn_name_rz(uxb(:,1)*phix+uxb(:,2)*phiy,i_uxbpmphi)
-          call phisum_mn_name_rz(uxb(:,3)                   ,i_uxbzmphi)
-        endif
-      endif
-!
 !  ``va^2/dx^2'' and ``eta/dx^2'' for timestep
+!  in the diffusive timestep, we include possible contribution from
+!  meanfield_etat, which is however only invoked in mean field models
 !
       if (lfirst.and.ldt) then
-        advec_va2=((bb(:,1)*dx_1(l1:l2))**2+ &
-                   (bb(:,2)*dy_1(  m  ))**2+ &
-                   (bb(:,3)*dz_1(  n  ))**2)*mu01*rho1
-        diffus_eta=etatotal*dxyz_2
-        if (ldiagnos.and.i_dteta/=0) then
-          call max_mn_name(diffus_eta/cdtv,i_dteta,l_dt=.true.)
+        advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
+                   (p%bb(:,2)*dy_1(  m  ))**2+ &
+                   (p%bb(:,3)*dz_1(  n  ))**2)*mu01*p%rho1
+        diffus_eta=(etatotal+meanfield_etat)*dxyz_2
+        if (ldiagnos.and.idiag_dteta/=0) then
+          call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
         endif
       endif
       if (headtt.or.ldebug) then
         print*,'duu_dt: max(advec_va2) =',maxval(advec_va2)
         print*,'duu_dt: max(diffus_eta) =',maxval(diffus_eta)
       endif
-
-      if (lspecial) call special_calc_magnetic(f,df,uu,rho1,TT1,uij)
 !
-!  calculate max and rms current density
-!  at the moment (and in future?) calculate max(b^2) and mean(b^2).
+!  Special contributions to this module are called here
+!
+      if (lspecial) call special_calc_magnetic(f,df,p%uu,p%rho1,p%TT1,p%uij)
+!
+!  phi-averages
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!
+      if (l2davgfirst) then
+        call phisum_mn_name_rz(p%bb(:,1)*pomx+p%bb(:,2)*pomy,idiag_brmphi)
+        call phisum_mn_name_rz(p%bb(:,1)*phix+p%bb(:,2)*phiy,idiag_bpmphi)
+        call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
+        call phisum_mn_name_rz(p%b2,idiag_b2mphi)
+        if (idiag_jbmphi/=0) call phisum_mn_name_rz(p%jb,idiag_jbmphi)
+        if (any((/idiag_uxbrmphi,idiag_uxbpmphi,idiag_uxbzmphi/) /= 0)) then
+          call phisum_mn_name_rz(p%uxb(:,1)*pomx+p%uxb(:,2)*pomy,idiag_uxbrmphi)
+          call phisum_mn_name_rz(p%uxb(:,1)*phix+p%uxb(:,2)*phiy,idiag_uxbpmphi)
+          call phisum_mn_name_rz(p%uxb(:,3)                     ,idiag_uxbzmphi)
+        endif
+      endif
+!
+!  Calculate diagnostic quantities
 !
       if (ldiagnos) then
-        !
-        !  magnetic field components at one point (=pt)
-        !
+
+        if (idiag_beta1m/=0) call sum_mn_name(p%beta,idiag_beta1m)
+        if (idiag_beta1max/=0) call max_mn_name(p%beta,idiag_beta1max)
+
+        if (idiag_b2m/=0) call sum_mn_name(p%b2,idiag_b2m)
+        if (idiag_bm2/=0) call max_mn_name(p%b2,idiag_bm2)
+        if (idiag_brms/=0) call sum_mn_name(p%b2,idiag_brms,lsqrt=.true.)
+        if (idiag_bmax/=0) call max_mn_name(p%b2,idiag_bmax,lsqrt=.true.)
+        if (idiag_aybym2/=0) &
+            call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
+        if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
+        if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
+        if (idiag_bx2m/=0) call sum_mn_name(p%bb(:,1)*p%bb(:,1),idiag_bx2m)
+        if (idiag_by2m/=0) call sum_mn_name(p%bb(:,2)*p%bb(:,2),idiag_by2m)
+        if (idiag_bz2m/=0) call sum_mn_name(p%bb(:,3)*p%bb(:,3),idiag_bz2m)
+        if (idiag_bxbym/=0) call sum_mn_name(p%bb(:,1)*p%bb(:,2),idiag_bxbym)
+        if (idiag_bxbzm/=0) call sum_mn_name(p%bb(:,1)*p%bb(:,3),idiag_bxbzm)
+        if (idiag_bybzm/=0) call sum_mn_name(p%bb(:,2)*p%bb(:,3),idiag_bybzm)
+
+        if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
+!
+!  this doesn't need to be as frequent (check later)
+!
+        if (idiag_bxmz/=0) call xysum_mn_name_z(p%bb(:,1),idiag_bxmz)
+        if (idiag_bymz/=0) call xysum_mn_name_z(p%bb(:,2),idiag_bymz)
+        if (idiag_bzmz/=0) call xysum_mn_name_z(p%bb(:,3),idiag_bzmz)
+        if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
+        if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
+        if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
+        if (idiag_bxmxz/=0) call ysum_mn_name_xz(p%bb(:,1),idiag_bxmxz)
+        if (idiag_bymxz/=0) call ysum_mn_name_xz(p%bb(:,2),idiag_bymxz)
+        if (idiag_bzmxz/=0) call ysum_mn_name_xz(p%bb(:,3),idiag_bzmxz)
+!
+!  magnetic field components at one point (=pt)
+!
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (i_bxpt/=0) call save_name(bbb(lpoint-nghost,1),i_bxpt)
-          if (i_bypt/=0) call save_name(bbb(lpoint-nghost,2),i_bypt)
-          if (i_bzpt/=0) call save_name(bbb(lpoint-nghost,3),i_bzpt)
+          if (idiag_bxpt/=0) call save_name(p%bb(lpoint-nghost,1),idiag_bxpt)
+          if (idiag_bypt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_bypt)
+          if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
         endif
-        !
-        !  v_A = |B|/sqrt(rho); in units where "4pi"=1
-        !
-        if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
-        if (i_vAmax/=0) call max_mn_name(va2,i_vAmax,lsqrt=.true.)
-        if (i_dtb/=0) call max_mn_name(sqrt(advec_va2)/cdt,i_dtb,l_dt=.true.)
-        !
-        ! <J.B>
-        !
-        if (i_jbm/=0) then
-          call dot_mn(jj,bb,jb)
-          call sum_mn_name(jb,i_jbm)
-        endif
-        !
-        ! <J^2> and J^2|max
-        !
-        if (i_jrms/=0 .or. i_jmax/=0 .or. i_j2m/=0 .or. i_jm2/=0 &
-            .or. i_epsM/=0 .or. i_epsM_LES/=0) then
-          call dot2_mn(jj,j2)
-          if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
-          if (i_jm2/=0) call max_mn_name(j2,i_jm2)
-          if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
-          if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
-          if (i_epsM/=0 .and. iresistivity /= 'hyper3') &
-              call sum_mn_name(eta*j2,i_epsM)
-          if (i_epsM_LES/=0) call sum_mn_name(eta_smag*j2,i_epsM_LES)
-        endif
-        !
-        ! epsM need del4A in cases with hyperresistivity
-        !
-        if (i_epsM/=0 .and. iresistivity == 'hyper3') then
-          call del4v(f,iaa,del4A)
-          call dot2_mn(del4A,del4A2)
-          if (i_epsM/=0) call sum_mn_name(eta*del4A2,i_epsM)
-        endif
-        !
-        !  calculate surface integral <2ExA>*dS
-        !
-        if (i_exaym2/=0) call helflux(aa,uxb,jj)
-        !
-        !  calculate surface integral <2ExJ>*dS
-        !
-        if (i_exjm2/=0) call curflux(uxb,jj)
-        !
-        !  calculate B_ext21
-        !
-        B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
-        if(B_ext21/=0.) then
-          B_ext21=1./B_ext21
-        else
-          B_ext21=1.
-        endif
-        !
-        !  calculate emf for alpha effect (for imposed field)
-        !
-        if (i_uxbm/=0.or.i_uxbmx/=0.or.i_uxbmy/=0.or.i_uxbmz/=0) then
-          call cross_mn(uu,bbb,uxb)
-          uxb_dotB0=B_ext(1)*uxb(:,1)+B_ext(2)*uxb(:,2)+B_ext(3)*uxb(:,3)
+!
+!  v_A = |B|/sqrt(rho); in units where "4pi"=1
+!
+        if (idiag_vArms/=0) call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
+        if (idiag_vAmax/=0) call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
+        if (idiag_dtb/=0) &
+            call max_mn_name(sqrt(advec_va2)/cdt,idiag_dtb,l_dt=.true.)
+!
+! <J.B>
+!
+        if (idiag_jbm/=0) call sum_mn_name(p%jb,idiag_jbm)
+        if (idiag_j2m/=0) call sum_mn_name(p%j2,idiag_j2m)
+        if (idiag_jm2/=0) call max_mn_name(p%j2,idiag_jm2)
+        if (idiag_jrms/=0) call sum_mn_name(p%j2,idiag_jrms,lsqrt=.true.)
+        if (idiag_jmax/=0) call max_mn_name(p%j2,idiag_jmax,lsqrt=.true.)
+        if (idiag_epsM_LES/=0) call sum_mn_name(eta_smag*p%j2,idiag_epsM_LES)
+!
+!  Not correct for hyperresistivity:
+!
+        if (idiag_epsM/=0) call sum_mn_name(eta*p%j2,idiag_epsM)
+!
+! <A^2> and A^2|max
+!
+        if (idiag_arms/=0) call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
+        if (idiag_amax/=0) call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
+!
+!  calculate surface integral <2ExA>*dS
+!
+        if (idiag_exaym2/=0) call helflux(p%aa,p%uxb,p%jj)
+!
+!  calculate surface integral <2ExJ>*dS
+!
+        if (idiag_exjm2/=0) call curflux(p%uxb,p%jj)
+!
+!  calculate emf for alpha effect (for imposed field)
+!  Note that uxbm means <EMF.B0>/B0^2, so it gives already alpha=EMF/B0.
+!
+        if (idiag_uxbm/=0 .or. idiag_uxbmx/=0 .or. idiag_uxbmy/=0 &
+            .or. idiag_uxbmz/=0) then
+          uxb_dotB0=B_ext(1)*p%uxb(:,1)+B_ext(2)*p%uxb(:,2)+B_ext(3)*p%uxb(:,3)
           uxb_dotB0=uxb_dotB0*B_ext21
-          call sum_mn_name(uxb_dotB0,i_uxbm)
-          if (i_uxbmx/=0) call sum_mn_name(uxb(:,1),i_uxbmx)
-          if (i_uxbmy/=0) call sum_mn_name(uxb(:,2),i_uxbmy)
-          if (i_uxbmz/=0) call sum_mn_name(uxb(:,3),i_uxbmz)
+          if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
+          if (idiag_uxbmx/=0) call sum_mn_name(p%uxb(:,1),idiag_uxbmx)
+          if (idiag_uxbmy/=0) call sum_mn_name(p%uxb(:,2),idiag_uxbmy)
+          if (idiag_uxbmz/=0) call sum_mn_name(p%uxb(:,3),idiag_uxbmz)
         endif
-        !
-        !  calculate <uxj>.B0/B0^2
-        !
-        if (i_uxjm/=0) then
-          call cross_mn(jj,uu,uxj)
-          uxj_dotB0=B_ext(1)*uxj(:,1)+B_ext(2)*uxj(:,2)+B_ext(3)*uxj(:,3)
+!
+!  calculate <uxj>.B0/B0^2
+!
+        if (idiag_uxjm/=0) then
+          uxj_dotB0=B_ext(1)*p%uxj(:,1)+B_ext(2)*p%uxj(:,2)+B_ext(3)*p%uxj(:,3)
           uxj_dotB0=uxj_dotB0*B_ext21
-          call sum_mn_name(uxj_dotB0,i_uxjm)
+          call sum_mn_name(uxj_dotB0,idiag_uxjm)
         endif
-        !
-        !  calculate <u.(jxb)>
-        !
-        if (i_ujxbm/=0) then
-          call cross_mn(jj,bbb,jxb)
-          call dot_mn(uu,jxb,ujxb)
-          call sum_mn_name(ujxb,i_ujxbm)
+!
+!  calculate <u x B>_rms, <resistive terms>_rms, <ratio ~ Rm>_rms
+!
+        if (idiag_uxBrms/=0) call sum_mn_name(p%uxb2,idiag_uxBrms,lsqrt=.true.)
+        if (idiag_Bresrms/=0 .or. idiag_Rmrms/=0) then
+          call dot2_mn(fres,fres2)
+          if (idiag_Bresrms/=0) &
+              call sum_mn_name(fres2,idiag_Bresrms,lsqrt=.true.)
+          if (idiag_Rmrms/=0) &
+              call sum_mn_name(p%uxb2/fres2,idiag_Rmrms,lsqrt=.true.)
         endif
-        !
-        !  magnetic triple correlation term (for imposed field)
-        !
-        if (i_jxbxbm/=0) then
-          call cross_mn(jj,bbb,jxb)
-          call cross_mn(jxb,bbb,jxbxb)
-          jxbxb_dotB0=B_ext(1)*jxbxb(:,1)+B_ext(2)*jxbxb(:,2)+B_ext(3)*jxbxb(:,3)
+!
+!  calculate <u.(jxb)>
+!
+        if (idiag_ujxbm/=0) call sum_mn_name(p%ujxb,idiag_ujxbm)
+!
+!  magnetic triple correlation term (for imposed field)
+!
+        if (idiag_jxbxbm/=0) then
+          jxbxb_dotB0=B_ext(1)*p%jxbxb(:,1)+B_ext(2)*p%jxbxb(:,2)+B_ext(3)*p%jxbxb(:,3)
           jxbxb_dotB0=jxbxb_dotB0*B_ext21
-          call sum_mn_name(jxbxb_dotB0,i_jxbxbm)
+          call sum_mn_name(jxbxb_dotB0,idiag_jxbxbm)
         endif
-        !
-        !  triple correlation from Reynolds tensor (for imposed field)
-        !
-        if (i_oxuxbm/=0) then
-          oo(:,1)=uij(:,3,2)-uij(:,2,3)
-          oo(:,2)=uij(:,1,3)-uij(:,3,1)
-          oo(:,3)=uij(:,2,1)-uij(:,1,2)
-          call cross_mn(oo,uu,oxu)
-          call cross_mn(oxu,bbb,oxuxb)
-          oxuxb_dotB0=B_ext(1)*oxuxb(:,1)+B_ext(2)*oxuxb(:,2)+B_ext(3)*oxuxb(:,3)
+!
+!  triple correlation from Reynolds tensor (for imposed field)
+!
+        if (idiag_oxuxbm/=0) then
+          oxuxb_dotB0=B_ext(1)*p%oxuxb(:,1)+B_ext(2)*p%oxuxb(:,2)+B_ext(3)*p%oxuxb(:,3)
           oxuxb_dotB0=oxuxb_dotB0*B_ext21
-          call sum_mn_name(oxuxb_dotB0,i_oxuxbm)
+          call sum_mn_name(oxuxb_dotB0,idiag_oxuxbm)
         endif
+!
+!  triple correlation from pressure gradient (for imposed field)
+!  (assume cs2=1, and that no entropy evolution is included)
         !
-        !  triple correlation from pressure gradient (for imposed field)
-        !  (assume cs2=1, and that no entropy evolution is included)
-        !
-        if (i_gpxbm/=0) then
-          call grad(f,ilnrho,glnrho)
-          call cross_mn(glnrho,bbb,gpxb)
-          gpxb_dotB0=B_ext(1)*gpxb(:,1)+B_ext(2)*gpxb(:,2)+B_ext(3)*gpxb(:,3)
+        if (idiag_gpxbm/=0) then
+          gpxb_dotB0=B_ext(1)*p%glnrhoxb(:,1)+B_ext(2)*p%glnrhoxb(:,2)+B_ext(3)*p%glnrhoxb(:,3)
           gpxb_dotB0=gpxb_dotB0*B_ext21
-          call sum_mn_name(oxuxb_dotB0,i_gpxbm)
+          call sum_mn_name(oxuxb_dotB0,idiag_gpxbm)
         endif
-        !
-        !  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
-        !   ( < E_1 u2,2 + E1 u3,3 - E2 u2,1 - E3 u3,1 >
-        !     < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
-        !     < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 > )
-        !
-        if (i_uxDxuxbm/=0) then
-          call cross_mn(uu,bbb,uxb)
-          uxDxuxb(:,1)=uxb(:,1)*(uij(:,2,2)+uij(:,3,3))-uxb(:,2)*uij(:,2,1)-uxb(:,3)*uij(:,3,1)
-          uxDxuxb(:,2)=uxb(:,2)*(uij(:,1,1)+uij(:,3,3))-uxb(:,1)*uij(:,1,2)-uxb(:,3)*uij(:,3,2)
-          uxDxuxb(:,3)=uxb(:,3)*(uij(:,1,1)+uij(:,2,2))-uxb(:,1)*uij(:,1,3)-uxb(:,2)*uij(:,2,3)
+!
+!  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
+!   ( < E_1 u2,2 + E1 u3,3 - E2 u2,1 - E3 u3,1 >
+!     < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
+!     < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 > )
+!
+        if (idiag_uxDxuxbm/=0) then
+          uxDxuxb(:,1)=p%uxb(:,1)*(p%uij(:,2,2)+p%uij(:,3,3))-p%uxb(:,2)*p%uij(:,2,1)-p%uxb(:,3)*p%uij(:,3,1)
+          uxDxuxb(:,2)=p%uxb(:,2)*(p%uij(:,1,1)+p%uij(:,3,3))-p%uxb(:,1)*p%uij(:,1,2)-p%uxb(:,3)*p%uij(:,3,2)
+          uxDxuxb(:,3)=p%uxb(:,3)*(p%uij(:,1,1)+p%uij(:,2,2))-p%uxb(:,1)*p%uij(:,1,3)-p%uxb(:,2)*p%uij(:,2,3)
           uxDxuxb_dotB0=B_ext(1)*uxDxuxb(:,1)+B_ext(2)*uxDxuxb(:,2)+B_ext(3)*uxDxuxb(:,3)
           uxDxuxb_dotB0=uxDxuxb_dotB0*B_ext21
-          call sum_mn_name(uxDxuxb_dotB0,i_uxDxuxbm)
+          call sum_mn_name(uxDxuxb_dotB0,idiag_uxDxuxbm)
         endif
-        !
-        !  < b2 b1,3 >
-        !
-        if (i_b2b13m/=0) then
-          b2b13=bb(:,2)*bij(:,1,3)
-          call sum_mn_name(b2b13,i_b2b13m)
+!
+!  < b2 b1,3 >
+!
+        if (idiag_b2b13m/=0) then
+          b2b13=p%bb(:,2)*p%bij(:,1,3)
+          call sum_mn_name(b2b13,idiag_b2b13m)
         endif
-        !
-      endif      
+!
+      endif ! endif (ldiagnos)
 !
 !  debug output
 !
       if (headtt .and. lfirst .and. ip<=4) then
-        call output_pencil(trim(directory)//'/aa.dat',aa,3)
-        call output_pencil(trim(directory)//'/bb.dat',bb,3)
-        call output_pencil(trim(directory)//'/jj.dat',jj,3)
-        call output_pencil(trim(directory)//'/del2A.dat',del2A,3)
-        call output_pencil(trim(directory)//'/JxBr.dat',JxBr,3)
-        call output_pencil(trim(directory)//'/JxB.dat',JxB,3)
+        call output_pencil(trim(directory)//'/aa.dat',p%aa,3)
+        call output_pencil(trim(directory)//'/bb.dat',p%bb,3)
+        call output_pencil(trim(directory)//'/jj.dat',p%jj,3)
+        call output_pencil(trim(directory)//'/del2A.dat',p%del2a,3)
+        call output_pencil(trim(directory)//'/JxBr.dat',p%jxbr,3)
+        call output_pencil(trim(directory)//'/JxB.dat',p%jxb,3)
         call output_pencil(trim(directory)//'/df.dat',df(l1:l2,m,n,:),mvar)
       endif
-!     
+!
+!  write B-slices for output in wvid in run.f90
+!  Note: ix is the index with respect to array with ghost zones.
+!
+      if (lvid.and.lfirst) then
+        do j=1,3
+          bb_yz(m-m1+1,n-n1+1,j)=p%bb(ix-l1+1,j)
+          if (m==iy)  bb_xz(:,n-n1+1,j)=p%bb(:,j)
+          if (n==iz)  bb_xy(:,m-m1+1,j)=p%bb(:,j)
+          if (n==iz2) bb_xy2(:,m-m1+1,j)=p%bb(:,j)
+        enddo
+        b2_yz(m-m1+1,n-n1+1)=p%b2(ix-l1+1)
+        if (m==iy)  b2_xz(:,n-n1+1)=p%b2
+        if (n==iz)  b2_xy(:,m-m1+1)=p%b2
+        if (n==iz2) b2_xy2(:,m-m1+1)=p%b2
+        jb_yz(m-m1+1,n-n1+1)=p%jb(ix-l1+1)
+        if (m==iy)  jb_xz(:,n-n1+1)=p%jb
+        if (n==iz)  jb_xy(:,m-m1+1)=p%jb
+        if (n==iz2) jb_xy2(:,m-m1+1)=p%jb
+        if (bthresh_per_brms/=0) call calc_bthresh
+        call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
+      endif
+!
     endsubroutine daa_dt
-!***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb,jj,bij,aij,del2A,graddivA)
-!
-!  Calculation of bb
-!
-!  06-feb-04/bing: coded
-!  14-mar-04/axel: allow external magnetic field to precess about z-axis
-!  11-sep-04/axel: calculate bb from aij matrix
-!
-      use Cdata
-      use Sub
-      use Deriv
-      use Global, only: get_global
-
-      real, dimension (mx,my,mz,mvar+maux) :: f       
-      real, dimension (nx,3,3) :: aij,bij
-      real, dimension (nx,3) :: aa,bb,jj,del2A,graddivA
-      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
-      real :: B2_ext,c,s
-
-      intent(in)  :: f
-      intent(out) :: bb,jj,bij,aij,del2A,graddivA
-!
-!  The following routines calculates the gradient matrix of
-!  the vector potential (needed to calculate bb) and bij
-!  (needed for cosmic ray evolution and thermal conduction).
-!
-      call gij(f,iaa,aij,1)
-      call bij_etc(f,iaa,bij,del2A,graddivA)
-!
-!  use aij to calculate bb, and
-!  use bij to calculate jj
-!
-      aa=f(l1:l2,m,n,iax:iaz)
-      call curl_mn(aij,bb,aa)
-      call curl_mn(bij,jj,bb)
-!
-!  in spherical geometry, del2A is best written as graddivA-jj.
-!  After that we can rescale jj by mu01.
-!
-      if (lspherical) del2A=graddivA-jj
-      if (mu01/=1.) jj=mu01*jj
-!
-!  Note; for diagnostics purposes keep copy of original field
-!
-      if (ldiagnos) bbb=bb
-!
-!  possibility to add external field
-!
-      B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
-!
-!  allow external field to precess about z-axis
-!  with frequency omega_Bz_ext
-!
-      if (B2_ext/=0.) then
-        if (omega_Bz_ext==0.) then
-          B_ext_tmp=B_ext
-        elseif (omega_Bz_ext/=0.) then
-          c=cos(omega_Bz_ext*t)
-          s=sin(omega_Bz_ext*t)
-          B_ext_tmp(1)=B_ext(1)*c-B_ext(2)*s
-          B_ext_tmp(2)=B_ext(1)*s+B_ext(2)*c
-          B_ext_tmp(3)=B_ext(3)
-        endif
-!
-!  add the external field
-!
-        if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext_tmp(1)
-        if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext_tmp(2)
-        if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext_tmp(3)
-        if (headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
-        if (headtt) print*,'calculate_vars_magnetic: B_ext_tmp=',B_ext_tmp
-      endif
-!
-!  add the external potential field
-!
-      if (lB_ext_pot) then
-        call get_global(bb_ext_pot,m,n,'B_ext_pot')
-        bb=bb+bb_ext_pot
-      endif
-!
-!  add external B-field (currently for spheromak experiments)
-!
-      if (lbb_ext) then
-        call get_global(bb_ext,m,n,'bb_ext')
-        bb=bb+bb_ext
-      endif
-!
-!  external current (currently for spheromak experiments)
-!
-      if (ljj_ext) then
-        call get_global(ee_ext,m,n,'ee_ext')
-        !call get_global(jj_ext,m,n,'jj_ext')
-        !jj=jj+jj_ext
-        jj=jj-ee_ext*displacement_gun
-      endif
-
-    endsubroutine calculate_vars_magnetic
 !***********************************************************************
     subroutine eta_shell(eta_mn,geta)
 !
@@ -1001,8 +1232,8 @@ module Magnetic
 !
 !  give warning if brms is not set in prints.in
 !
-      if(i_brms==0) then
-        if(lroot.and.lfirstpoint) then
+      if (idiag_brms==0) then
+        if (lroot.and.lfirstpoint) then
           print*,'calc_bthresh: need to set brms in print.in to get bthresh'
         endif
       endif
@@ -1011,7 +1242,7 @@ module Magnetic
 !  increase scaling factor on bthresh. These settings will stay in place
 !  until the next restart
 !
-      if(nbvec>nbvecmax.and.lfirstpoint) then
+      if (nbvec>nbvecmax.and.lfirstpoint) then
         print*,'calc_bthresh: processor ',iproc,': bthresh_scl,nbvec,nbvecmax=', &
                                                    bthresh_scl,nbvec,nbvecmax
         bthresh_scl=bthresh_scl*1.2
@@ -1022,6 +1253,37 @@ module Magnetic
       bthresh=bthresh_scl*bthresh_per_brms*brms
 !
     endsubroutine calc_bthresh
+!***********************************************************************
+    subroutine rescaling(f)
+!
+!  This routine could be turned into a wrapper routine later on,
+!  if we want to do dynamic rescaling also on other quantities.
+!
+!  22-feb-05/axel: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: scl
+      integer :: j
+!
+      intent(inout) :: f
+!
+!  do rescaling only if brms is finite.
+!  Note: we rely here on the brms that is update every it1 timesteps.
+!  This may not always be sufficient.
+!
+      if (brms/=0) then
+        scl=1.+rescaling_fraction*(brms_target/brms-1.)
+        if (headtt) print*,'rescaling: scl=',scl
+        do j=iax,iaz
+          do n=n1,n2
+            f(l1:l2,m1:m2,n,j)=scl*f(l1:l2,m1:m2,n,j)
+          enddo
+        enddo
+      endif
+!
+    endsubroutine rescaling
 !***********************************************************************
     subroutine calc_tau_aa_exterior(f,df)
 !
@@ -1042,7 +1304,7 @@ module Magnetic
       intent(out) :: df
 !
       if (headtt) print*,'calc_tau_aa_exterior: tau=',tau_aa_exterior
-      if(z(n)>zgrav) then
+      if (z(n)>zgrav) then
         scl=1./tau_aa_exterior
         do j=iax,iaz
           df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-scl*f(l1:l2,m,n,j)
@@ -1050,6 +1312,39 @@ module Magnetic
       endif
 !
     endsubroutine calc_tau_aa_exterior
+!***********************************************************************
+    subroutine Omega_effect(f,df)
+!
+!  Omega effect coded (normally used in context of mean field theory)
+!  Can do uniform shear (0,Sx,0), and the cosx*cosz profile (solar CZ).
+!
+!  30-apr-05/axel: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      intent(in) :: f
+      intent(inout) :: df
+!
+!  use gauge transformation, uxB = -Ay*grad(Uy) + gradient-term
+!
+      select case(Omega_profile)
+      case('nothing'); print*,'Omega_profile=nothing'
+      case('(0,Sx,0)')
+        if (headtt) print*,'Omega_effect: uniform shear, S=',Omega_ampl
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iay)
+      case('(0,cosx*cosz,0)')
+        if (headtt) print*,'Omega_effect: solar shear, S=',Omega_ampl
+        df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iay) &
+            *sin(x(l1:l2))*cos(z(n))
+        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)+Omega_ampl*f(l1:l2,m,n,iay) &
+            *cos(x(l1:l2))*sin(z(n))
+      case default; print*,'Omega_profile=unknown'
+      endselect
+!
+    endsubroutine Omega_effect
 !***********************************************************************
     subroutine helflux(aa,uxb,jj)
 !
@@ -1076,9 +1371,9 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FH=FHx(nx)-FHx(1)
-      if(ipz==0       .and.n==n1) FH=FH-sum(FHz)
-      if(ipz==nprocz-1.and.n==n2) FH=FH+sum(FHz)
-      call surf_mn_name(FH,i_exaym2)
+      if (ipz==0       .and.n==n1) FH=FH-sum(FHz)
+      if (ipz==nprocz-1.and.n==n2) FH=FH+sum(FHz)
+      call surf_mn_name(FH,idiag_exaym2)
 !
     endsubroutine helflux
 !***********************************************************************
@@ -1108,11 +1403,51 @@ module Magnetic
 !  and then stuff result into surf_mn_name for summing up all processors.
 !
       FC=FCx(nx)-FCx(1)
-      if(ipz==0       .and.n==n1) FC=FC-sum(FCz)
-      if(ipz==nprocz-1.and.n==n2) FC=FC+sum(FCz)
-      call surf_mn_name(FC,i_exjm2)
+      if (ipz==0       .and.n==n1) FC=FC-sum(FCz)
+      if (ipz==nprocz-1.and.n==n2) FC=FC+sum(FCz)
+      call surf_mn_name(FC,idiag_exjm2)
 !
     endsubroutine curflux
+!***********************************************************************
+    subroutine read_magnetic_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=magnetic_init_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_magnetic_init_pars
+!***********************************************************************
+    subroutine write_magnetic_init_pars(unit)
+      integer, intent(in) :: unit
+!
+      write(unit,NML=magnetic_init_pars)
+!
+    endsubroutine write_magnetic_init_pars
+!***********************************************************************
+    subroutine read_magnetic_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat)) then
+        read(unit,NML=magnetic_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=magnetic_run_pars,ERR=99)
+      endif
+!
+99    return
+    endsubroutine read_magnetic_run_pars
+!***********************************************************************
+    subroutine write_magnetic_run_pars(unit)
+      integer, intent(in) :: unit
+!
+      write(unit,NML=magnetic_run_pars)
+!
+    endsubroutine write_magnetic_run_pars
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
@@ -1135,184 +1470,217 @@ module Magnetic
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
-        i_bxpt=0; i_bypt=0; i_bzpt=0; i_epsM_LES=0
-        i_aybym2=0; i_exaym2=0; i_exjm2=0
-        i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0; i_dtb=0
-        i_beta1m=0; i_beta1max=0
-        i_bx2m=0; i_by2m=0; i_bz2m=0
-        i_bxbym=0; i_bxbzm=0; i_bybzm=0; i_djuidjbim=0
-        i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
-        i_bxmxy=0; i_bymxy=0; i_bzmxy=0
-        i_bxmxz=0; i_bymxz=0; i_bzmxz=0
-        i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
-        i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
-        i_uxjm=0; i_ujxbm=0
-        i_b2b13m=0
-        i_brmphi=0; i_bpmphi=0; i_bzmphi=0; i_b2mphi=0; i_jbmphi=0
-        i_uxbrmphi=0; i_uxbpmphi=0; i_uxbzmphi=0;
-        i_dteta=0
+        idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0; idiag_abm=0
+        idiag_jbm=0; idiag_ubm=0; idiag_epsM=0
+        idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0; idiag_epsM_LES=0
+        idiag_aybym2=0; idiag_exaym2=0; idiag_exjm2=0
+        idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
+        idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
+        idiag_beta1m=0; idiag_beta1max=0; idiag_bx2m=0
+        idiag_by2m=0; idiag_bz2m=0
+        idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
+        idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
+        idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
+        idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
+        idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
+        idiag_uxjm=0; idiag_ujxbm=0; idiag_b2b13m=0
+        idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
+        idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0;
+        idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
+!merge_axel
+!       i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
+!       i_bxpt=0; i_bypt=0; i_bzpt=0; i_epsM_LES=0
+!       i_aybym2=0; i_exaym2=0; i_exjm2=0
+!       i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0; i_dtb=0
+!       i_beta1m=0; i_beta1max=0
+!       i_bx2m=0; i_by2m=0; i_bz2m=0
+!       i_bxbym=0; i_bxbzm=0; i_bybzm=0; i_djuidjbim=0
+!       i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
+!       i_bxmxy=0; i_bymxy=0; i_bzmxy=0
+!       i_bxmxz=0; i_bymxz=0; i_bzmxz=0
+!       i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
+!       i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
+!       i_uxjm=0; i_ujxbm=0
+!       i_b2b13m=0
+!       i_brmphi=0; i_bpmphi=0; i_bzmphi=0; i_b2mphi=0; i_jbmphi=0
+!       i_uxbrmphi=0; i_uxbpmphi=0; i_uxbzmphi=0;
+!       i_dteta=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'dteta',i_dteta)
-        call parse_name(iname,cname(iname),cform(iname),'aybym2',i_aybym2)
-        call parse_name(iname,cname(iname),cform(iname),'exaym2',i_exaym2)
-        call parse_name(iname,cname(iname),cform(iname),'exjm2',i_exjm2)
-        call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
-        call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
-        call parse_name(iname,cname(iname),cform(iname),'ubm',i_ubm)
-        call parse_name(iname,cname(iname),cform(iname),'b2m',i_b2m)
-        call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
-        call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
-        call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
-        call parse_name(iname,cname(iname),cform(iname),'epsM',i_epsM)
-        call parse_name(iname,cname(iname),cform(iname),'epsM_LES',i_epsM_LES)
-        call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
-        call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
-        call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
-        call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
-        call parse_name(iname,cname(iname),cform(iname),'vArms',i_vArms)
-        call parse_name(iname,cname(iname),cform(iname),'vAmax',i_vAmax)
-        call parse_name(iname,cname(iname),cform(iname),'beta1m',i_beta1m)
-        call parse_name(iname,cname(iname),cform(iname),'beta1max',i_beta1max)
-        call parse_name(iname,cname(iname),cform(iname),'dtb',i_dtb)
-        call parse_name(iname,cname(iname),cform(iname),'bx2m',i_bx2m)
-        call parse_name(iname,cname(iname),cform(iname),'by2m',i_by2m)
-        call parse_name(iname,cname(iname),cform(iname),'bz2m',i_bz2m)
-        call parse_name(iname,cname(iname),cform(iname),'bxbym',i_bxbym)
-        call parse_name(iname,cname(iname),cform(iname),'bxbzm',i_bxbzm)
-        call parse_name(iname,cname(iname),cform(iname),'bybzm',i_bybzm)
-        call parse_name(iname,cname(iname),cform(iname),'djuidjbim',i_djuidjbim)
-        call parse_name(iname,cname(iname),cform(iname),'uxbm',i_uxbm)
-        call parse_name(iname,cname(iname),cform(iname),'uxbmx',i_uxbmx)
-        call parse_name(iname,cname(iname),cform(iname),'uxbmy',i_uxbmy)
-        call parse_name(iname,cname(iname),cform(iname),'uxbmz',i_uxbmz)
-        call parse_name(iname,cname(iname),cform(iname),'uxjm',i_uxjm)
-        call parse_name(iname,cname(iname),cform(iname),'ujxbm',i_ujxbm)
-        call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
-        call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
-        call parse_name(iname,cname(iname),cform(iname),'gpxbm',i_gpxbm)
-        call parse_name(iname,cname(iname),cform(iname),'uxDxuxbm',i_uxDxuxbm)
-        call parse_name(iname,cname(iname),cform(iname),'b2b13m',i_b2b13m)
-        call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
-        call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
-        call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
-        call parse_name(iname,cname(iname),cform(iname),'bxpt',i_bxpt)
-        call parse_name(iname,cname(iname),cform(iname),'bypt',i_bypt)
-        call parse_name(iname,cname(iname),cform(iname),'bzpt',i_bzpt)
+        call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
+        call parse_name(iname,cname(iname),cform(iname),'aybym2',idiag_aybym2)
+        call parse_name(iname,cname(iname),cform(iname),'exaym2',idiag_exaym2)
+        call parse_name(iname,cname(iname),cform(iname),'exjm2',idiag_exjm2)
+        call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
+        call parse_name(iname,cname(iname),cform(iname),'ubm',idiag_ubm)
+        call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
+        call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
+        call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
+        call parse_name(iname,cname(iname),cform(iname),'jm2',idiag_jm2)
+        call parse_name(iname,cname(iname),cform(iname),'epsM',idiag_epsM)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'epsM_LES',idiag_epsM_LES)
+        call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
+        call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
+        call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
+        call parse_name(iname,cname(iname),cform(iname),'arms',idiag_arms)
+        call parse_name(iname,cname(iname),cform(iname),'amax',idiag_amax)
+        call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
+        call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'beta1m',idiag_beta1m)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'beta1max',idiag_beta1max)
+        call parse_name(iname,cname(iname),cform(iname),'dtb',idiag_dtb)
+        call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
+        call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
+        call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
+        call parse_name(iname,cname(iname),cform(iname),'bxbym',idiag_bxbym)
+        call parse_name(iname,cname(iname),cform(iname),'bxbzm',idiag_bxbzm)
+        call parse_name(iname,cname(iname),cform(iname),'bybzm',idiag_bybzm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'djuidjbim',idiag_djuidjbim)
+        call parse_name(iname,cname(iname),cform(iname),'uxbm',idiag_uxbm)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmx',idiag_uxbmx)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmy',idiag_uxbmy)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmz',idiag_uxbmz)
+        call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
+        call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
+        call parse_name(iname,cname(iname),cform(iname),'oxuxbm',idiag_oxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'gpxbm',idiag_gpxbm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'uxDxuxbm',idiag_uxDxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
+        call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
+        call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
+        call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
+        call parse_name(iname,cname(iname),cform(iname),'bxpt',idiag_bxpt)
+        call parse_name(iname,cname(iname),cform(iname),'bypt',idiag_bypt)
+        call parse_name(iname,cname(iname),cform(iname),'bzpt',idiag_bzpt)
+        call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
+        call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
+        call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
       enddo
 !
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',i_bxmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',i_bymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',i_bzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',idiag_bzmz)
       enddo
 !
 !  check for those quantities for which we want y-averages
 !
       do ixz=1,nnamexz
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxmxz',i_bxmxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bymxz',i_bymxz)
-        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bzmxz',i_bzmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bxmxz',idiag_bxmxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bymxz',idiag_bymxz)
+        call parse_name(ixz,cnamexz(ixz),cformxz(ixz),'bzmxz',idiag_bzmxz)
       enddo
 !
 !  check for those quantities for which we want z-averages
 !
       do ixy=1,nnamexy
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',i_bxmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',i_bymxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',i_bzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',idiag_bxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',idiag_bymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',idiag_bzmxy)
       enddo
 !
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi'  ,i_brmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi'  ,i_bpmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi'  ,i_bzmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi'  ,i_b2mphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'jbmphi'  ,i_jbmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbrmphi',i_uxbrmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbpmphi',i_uxbpmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbzmphi',i_uxbzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi'  ,idiag_brmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi'  ,idiag_bpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi'  ,idiag_bzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi'  ,idiag_b2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jbmphi'  ,idiag_jbmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbrmphi',idiag_uxbrmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbpmphi',idiag_uxbpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbzmphi',idiag_uxbzmphi)
       enddo
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'i_dteta=',i_dteta
-        write(3,*) 'i_aybym2=',i_aybym2
-        write(3,*) 'i_exaym2=',i_exaym2
-        write(3,*) 'i_exjm2=',i_exjm2
-        write(3,*) 'i_abm=',i_abm
-        write(3,*) 'i_jbm=',i_jbm
-        write(3,*) 'i_ubm=',i_ubm
-        write(3,*) 'i_b2m=',i_b2m
-        write(3,*) 'i_bm2=',i_bm2
-        write(3,*) 'i_j2m=',i_j2m
-        write(3,*) 'i_jm2=',i_jm2
-        write(3,*) 'i_epsM=',i_epsM
-        write(3,*) 'i_epsM_LES=',i_epsM_LES
-        write(3,*) 'i_brms=',i_brms
-        write(3,*) 'i_bmax=',i_bmax
-        write(3,*) 'i_jrms=',i_jrms
-        write(3,*) 'i_jmax=',i_jmax
-        write(3,*) 'i_vArms=',i_vArms
-        write(3,*) 'i_vAmax=',i_vAmax
-        write(3,*) 'i_beta1m=',i_beta1m
-        write(3,*) 'i_beta1max=',i_beta1max
-        write(3,*) 'i_dtb=',i_dtb
-        write(3,*) 'i_bx2m=',i_bx2m
-        write(3,*) 'i_by2m=',i_by2m
-        write(3,*) 'i_bz2m=',i_bz2m
-        write(3,*) 'i_bxbym=',i_bxbym
-        write(3,*) 'i_bxbzm=',i_bxbzm
-        write(3,*) 'i_bybzm=',i_bybzm
-        write(3,*) 'i_djuidjbim=',i_djuidjbim
-        write(3,*) 'i_uxbm=',i_uxbm
-        write(3,*) 'i_uxbmx=',i_uxbmx
-        write(3,*) 'i_uxbmy=',i_uxbmy
-        write(3,*) 'i_uxbmz=',i_uxbmz
-        write(3,*) 'i_uxjm=',i_uxjm
-        write(3,*) 'i_ujxbm=',i_ujxbm
-        write(3,*) 'i_oxuxbm=',i_oxuxbm
-        write(3,*) 'i_jxbxbm=',i_jxbxbm
-        write(3,*) 'i_gpxbm=',i_gpxbm
-        write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
-        write(3,*) 'i_b2b13m=',i_b2b13m
+        write(3,*) 'i_dteta=',idiag_dteta
+        write(3,*) 'i_aybym2=',idiag_aybym2
+        write(3,*) 'i_exaym2=',idiag_exaym2
+        write(3,*) 'i_exjm2=',idiag_exjm2
+        write(3,*) 'i_abm=',idiag_abm
+        write(3,*) 'i_jbm=',idiag_jbm
+        write(3,*) 'i_ubm=',idiag_ubm
+        write(3,*) 'i_b2m=',idiag_b2m
+        write(3,*) 'i_bm2=',idiag_bm2
+        write(3,*) 'i_j2m=',idiag_j2m
+        write(3,*) 'i_jm2=',idiag_jm2
+        write(3,*) 'i_epsM=',idiag_epsM
+        write(3,*) 'i_epsM_LES=',idiag_epsM_LES
+        write(3,*) 'i_brms=',idiag_brms
+        write(3,*) 'i_bmax=',idiag_bmax
+        write(3,*) 'i_jrms=',idiag_jrms
+        write(3,*) 'i_jmax=',idiag_jmax
+        write(3,*) 'i_arms=',idiag_arms
+        write(3,*) 'i_amax=',idiag_amax
+        write(3,*) 'i_vArms=',idiag_vArms
+        write(3,*) 'i_vAmax=',idiag_vAmax
+        write(3,*) 'i_beta1m=',idiag_beta1m
+        write(3,*) 'i_beta1max=',idiag_beta1max
+        write(3,*) 'i_dtb=',idiag_dtb
+        write(3,*) 'i_bx2m=',idiag_bx2m
+        write(3,*) 'i_by2m=',idiag_by2m
+        write(3,*) 'i_bz2m=',idiag_bz2m
+        write(3,*) 'i_bxbym=',idiag_bxbym
+        write(3,*) 'i_bxbzm=',idiag_bxbzm
+        write(3,*) 'i_bybzm=',idiag_bybzm
+        write(3,*) 'i_djuidjbim=',idiag_djuidjbim
+        write(3,*) 'i_uxbm=',idiag_uxbm
+        write(3,*) 'i_uxbmx=',idiag_uxbmx
+        write(3,*) 'i_uxbmy=',idiag_uxbmy
+        write(3,*) 'i_uxbmz=',idiag_uxbmz
+        write(3,*) 'i_uxjm=',idiag_uxjm
+        write(3,*) 'i_ujxbm=',idiag_ujxbm
+        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
+        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
+        write(3,*) 'i_gpxbm=',idiag_gpxbm
+        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
+        write(3,*) 'i_b2b13m=',idiag_b2b13m
+        write(3,*) 'i_bxmz=',idiag_bxmz
+        write(3,*) 'i_bymz=',idiag_bymz
+        write(3,*) 'i_bzmz=',idiag_bzmz
+        write(3,*) 'i_bmx=',idiag_bmx
+        write(3,*) 'i_bmy=',idiag_bmy
+        write(3,*) 'i_bmz=',idiag_bmz
+        write(3,*) 'i_bxpt=',idiag_bxpt
+        write(3,*) 'i_bypt=',idiag_bypt
+        write(3,*) 'i_bzpt=',idiag_bzpt
+        write(3,*) 'i_bxmxy=',idiag_bxmxy
+        write(3,*) 'i_bymxy=',idiag_bymxy
+        write(3,*) 'i_bzmxy=',idiag_bzmxy
+        write(3,*) 'i_bxmxz=',idiag_bxmxz
+        write(3,*) 'i_bymxz=',idiag_bymxz
+        write(3,*) 'i_bzmxz=',idiag_bzmxz
+        write(3,*) 'i_brmphi=',idiag_brmphi
+        write(3,*) 'i_bpmphi=',idiag_bpmphi
+        write(3,*) 'i_bzmphi=',idiag_bzmphi
+        write(3,*) 'i_b2mphi=',idiag_b2mphi
+        write(3,*) 'i_jbmphi=',idiag_jbmphi
+        write(3,*) 'i_uxBrms=',idiag_uxBrms
+        write(3,*) 'i_Bresrms=',idiag_Bresrms
+        write(3,*) 'i_Rmrms=',idiag_Rmrms
         write(3,*) 'nname=',nname
+        write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamexz=',nnamexz
+        write(3,*) 'nnamez=',nnamez
         write(3,*) 'iaa=',iaa
         write(3,*) 'iax=',iax
         write(3,*) 'iay=',iay
         write(3,*) 'iaz=',iaz
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'i_bxmz=',i_bxmz
-        write(3,*) 'i_bymz=',i_bymz
-        write(3,*) 'i_bzmz=',i_bzmz
-        write(3,*) 'i_bmx=',i_bmx
-        write(3,*) 'i_bmy=',i_bmy
-        write(3,*) 'i_bmz=',i_bmz
-        write(3,*) 'i_bxpt=',i_bxpt
-        write(3,*) 'i_bypt=',i_bypt
-        write(3,*) 'i_bzpt=',i_bzpt
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-        write(3,*) 'i_bxmxy=',i_bxmxy
-        write(3,*) 'i_bymxy=',i_bymxy
-        write(3,*) 'i_bzmxy=',i_bzmxy
-        write(3,*) 'i_bxmxz=',i_bxmxz
-        write(3,*) 'i_bymxz=',i_bymxz
-        write(3,*) 'i_bzmxz=',i_bzmxz
-        write(3,*) 'i_brmphi=',i_brmphi
-        write(3,*) 'i_bpmphi=',i_bpmphi
-        write(3,*) 'i_bzmphi=',i_bzmphi
-        write(3,*) 'i_b2mphi=',i_b2mphi
-        write(3,*) 'i_jbmphi=',i_jbmphi
       endif
 !
     endsubroutine rprint_magnetic
@@ -1337,64 +1705,64 @@ module Magnetic
 !  The bymxy and bzmxy must have been calculated,
 !  so they are present on the root processor.
 !
-        if (i_bmx/=0) then
-          if(i_bymxy==0.or.i_bzmxy==0) then
-            if(first) print*,"calc_mfield:                  WARNING"
-            if(first) print*, &
+        if (idiag_bmx/=0) then
+          if (idiag_bymxy==0.or.idiag_bzmxy==0) then
+            if (first) print*,"calc_mfield:                  WARNING"
+            if (first) print*, &
                     "calc_mfield: NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
-            if(first) print*, &
+            if (first) print*, &
                     "calc_mfield:       We proceed, but you'll get bmx=0"
             bmx=0.
           else
             do l=1,nx
-              bymx(l)=sum(fnamexy(l,:,:,i_bymxy))/(ny*nprocy)
-              bzmx(l)=sum(fnamexy(l,:,:,i_bzmxy))/(ny*nprocy)
+              bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
+              bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
             enddo
             bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
           endif
-          call save_name(bmx,i_bmx)
+          call save_name(bmx,idiag_bmx)
         endif
 !
 !  similarly for bmy
 !
-        if (i_bmy/=0) then
-          if(i_bxmxy==0.or.i_bzmxy==0) then
-            if(first) print*,"calc_mfield:                  WARNING"
-            if(first) print*, &
+        if (idiag_bmy/=0) then
+          if (idiag_bxmxy==0.or.idiag_bzmxy==0) then
+            if (first) print*,"calc_mfield:                  WARNING"
+            if (first) print*, &
                     "calc_mfield: NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
-            if(first) print*, &
+            if (first) print*, &
                     "calc_mfield:       We proceed, but you'll get bmy=0"
             bmy=0.
           else
             do j=1,nprocy
             do m=1,ny
-              bxmy(m,j)=sum(fnamexy(:,m,j,i_bxmxy))/nx
-              bzmy(m,j)=sum(fnamexy(:,m,j,i_bzmxy))/nx
+              bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
+              bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
             enddo
             enddo
             bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
           endif
-          call save_name(bmy,i_bmy)
+          call save_name(bmy,idiag_bmy)
         endif
 !
 !  Magnetic energy in horizontally averaged field
 !  The bxmz and bymz must have been calculated,
 !  so they are present on the root processor.
 !
-        if (i_bmz/=0) then
-          if(i_bxmz==0.or.i_bymz==0) then
-            if(first) print*,"calc_mfield:                  WARNING"
-            if(first) print*, &
+        if (idiag_bmz/=0) then
+          if (idiag_bxmz==0.or.idiag_bymz==0) then
+            if (first) print*,"calc_mfield:                  WARNING"
+            if (first) print*, &
                     "calc_mfield: NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
-            if(first) print*, &
+            if (first) print*, &
                     "calc_mfield:       This may be because we renamed zaver.in into xyaver.in"
-            if(first) print*, &
+            if (first) print*, &
                     "calc_mfield:       We proceed, but you'll get bmz=0"
             bmz=0.
           else
-            bmz=sqrt(sum(fnamez(:,:,i_bxmz)**2+fnamez(:,:,i_bymz)**2)/(nz*nprocz))
+            bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2+fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
           endif
-          call save_name(bmz,i_bmz)
+          call save_name(bmz,idiag_bmz)
         endif
 !
       first = .false.
@@ -1670,16 +2038,15 @@ module Magnetic
       use Sub, only: hypergeometric2F1,gamma_function
       use Global, only: set_global
       use Deriv, only: der
-      use Io, only: output
+      use IO, only: output
 
       real, intent(in) :: mu
       real, dimension(mx,my,mz), intent(in) :: xx,yy,zz
       real :: xi2,A_phi
-      real :: a,b,c,r2
+      real :: r2
       real :: B1r_,B1z_,B1
       real, parameter :: tol=10*epsilon(1.0)
-      integer :: l,ierr
-      integer, dimension(1) :: ll,mm,nn
+      integer :: l
       real, dimension(mx,my,mz) :: Ax_ext,Ay_ext
       real, dimension(nx,3) :: bb_ext_pot
       real, dimension(nx) :: bb_x,bb_y,bb_z
@@ -1742,7 +2109,7 @@ module Magnetic
         bb_ext_pot(:,3)= bb_z
         call der(Ax_ext,bb_z,2)
         bb_ext_pot(:,3)=bb_ext_pot(:,3)-bb_z
-        call set_global(bb_ext_pot,m,n,'B_ext_pot')
+        call set_global(bb_ext_pot,m,n,'B_ext_pot',nx)
       enddo
       enddo
 
@@ -1938,7 +2305,7 @@ module Magnetic
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
       case default
-        if(lroot) print*,"bc_aa_pot: invalid argument"
+        if (lroot) print*,"bc_aa_pot: invalid argument"
       endselect
 !
       endsubroutine bc_aa_pot
@@ -2002,8 +2369,8 @@ module Magnetic
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
-        if(irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if(irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
       enddo
 !
     endsubroutine potential_field
@@ -2072,8 +2439,8 @@ module Magnetic
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
-        if(irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if(irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
       enddo
 !
     endsubroutine potentdiv

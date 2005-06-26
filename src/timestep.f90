@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.28 2004-09-20 12:27:30 ajohan Exp $
+! $Id: timestep.f90,v 1.29 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 module Timestep
 
@@ -7,6 +7,9 @@ module Timestep
 
   implicit none
 
+  private
+
+  public :: rk_2n, border_profiles, timestep_autopsy
 !
 !  border_prof_[x-z] could be of size n[x-z], but having the same
 !  length as f() (in the given dimension) gives somehow more natural code.
@@ -18,7 +21,7 @@ module Timestep
   contains
 
 !***********************************************************************
-    subroutine rk_2n(f,df)
+    subroutine rk_2n(f,df,p)
 !
 !  Runge Kutta advance, accurate to order itorder
 !  At the moment, itorder can be 1, 2, or 3.
@@ -29,9 +32,11 @@ module Timestep
       use Mpicomm
       use Cdata
       use Equ
+      use Particles
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
       real :: ds
       real, dimension(1) :: dt1, dt1_local
       integer :: j
@@ -59,6 +64,8 @@ module Timestep
 !
       if (.not. ldt) dt_beta=dt*beta
 !
+!  Set up df and ds for each time sub
+!
       do itsub=1,itorder
         if (itsub==1) then
           lfirst=.true.
@@ -69,8 +76,15 @@ module Timestep
           df=alpha(itsub)*df  !(could be subsumed into pde, but could be dangerous!)
           ds=alpha(itsub)*ds
         endif
-
-        call pde(f,df)
+!
+!  Set up particle derivative array.
+!
+        if (lparticles) call particles_timestep_first()
+!
+!  Change df according to the chosen physics modules
+!
+        call pde(f,df,p)
+!
         ds=ds+1.
 !
 !  If we are in the first time substep we need to calculate timestep dt.
@@ -78,29 +92,139 @@ module Timestep
 !  Only do it on the root processor, then broadcast dt to all others.
 !
         if (lfirst.and.ldt) then 
-           dt1_local=maxval(dt1_max)
-           call mpireduce_max(dt1_local,dt1,1)
-           dt=1.0/dt1(1)       ! could be just if (lroot) - but hey, make'em work!
-           call mpibcast_real(dt,1)
+          dt1_local=maxval(dt1_max(1:nx))
+
+          !Timestep growth limiter
+          if (ddt/=0.) dt1_local=max(dt1_local(1),dt1_last)
+
+          call mpireduce_max(dt1_local,dt1,1)
+          dt=1.0/dt1(1)      ! could be just if (lroot) - but hey, make'em work!
+
+          !Timestep growth limiter
+          if (ddt/=0.) dt1_last=dt1_local(1)/ddt
+          call mpibcast_real(dt,1)
         endif
 
         if (ldt) dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
-!  do this loop in pencils, for cache efficiency
+!  Time evolution of grid variables
+!  (do this loop in pencils, for cache efficiency)
 !
-        do j=1,mvar
-        do n=n1,n2
-        do m=m1,m2
+        do j=1,mvar; do n=n1,n2; do m=m1,m2
           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta(itsub)*df(l1:l2,m,n,j) &
                         *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
-        enddo
-        enddo
-        enddo
+        enddo; enddo; enddo
+!
+!  Time evolution of particle variables
+!
+        if (lparticles) call particles_timestep_second()
+!
+!  Increase time
+!
         t=t+dt_beta(itsub)*ds
+!
       enddo
 !
     endsubroutine rk_2n
+!***********************************************************************
+    subroutine timestep_autopsy
+!
+!  After the event, determine where the timestep too short occured 
+!  Kinda like playing Cluedo... Just without the dice. 
+!
+!  25-aug-04/tony: coded
+! 
+      use Cdata
+      use Cparam
+      use Mpicomm, only: mpibcast_int
+
+      real :: dt_local, dt1_max_local, dt1_max_global
+      integer :: l
+      integer, dimension(1) :: turn
+ 
+      dt1_max_global=1./dt  !Could more accurately calculate this and mpireduce
+      dt1_max_local=maxval(dt1_max)
+      dt_local=1.0/dt1_max_local
+
+      if (lroot) then
+        print*,"-------- General Description of Time Step Failure -----------"
+        print*,"  it=",it
+        print*,"  t=",t
+      endif
+!Note: ALL processors will do this.
+! Identify the murderer
+  
+      turn=0
+! Procs testify in serial
+      do 
+        if (turn(1)==iproc .and. dt >= dt_local) then
+          print*,"------------------ START OF CONFESSION ----------------------"
+          print*,"  Ok, you got me... I (processor - ", iproc,") did it."
+          print*,"  I handle the calculation for: "
+          if (nxgrid/=1) print*,"   ",x(l1)," < x < ",x(l2)
+          if (nygrid/=1) print*,"   ",y(m1)," < y < ",y(m2)
+          if (nzgrid/=1) print*,"   ",z(n1)," < z < ",z(n2)
+
+! In the kitchen?
+          print*,"Can't be more specific about a location(s) than the x grid index (including ghost zone) and coordinate:"
+          do l=1,nx
+            if (dt1_max(l) >= dt1_max_global) then
+               print*,"    f(",l+nghost-1,",?,?,?)"," -> x =",x(l)
+            endif
+          enddo 
+
+! With the lead pipe?
+          if (maxval(sqrt(dt1_advec**2+dt1_diffus**2)) < dt1_max_local) then  
+            print *,"  It appears it is not a CFL advection/difussion limit."
+            print*,"  Perhaps another limiter eg. the cooling time" 
+          else
+            if (maxval(dt1_advec)>maxval(dt1_diffus)) then
+              print*,"  It appears the dagger was in the form of an advection term."
+              print*,"   Here's the line up, the big guy is the offender:"
+              if (lhydro) &
+                print*,"     Fluid velocity: maxval(advec_uu)        = ", maxval(advec_uu)
+              if (lshear) &
+                print*,"     Shear velocity: maxval(advec_shear)     = ", maxval(advec_shear)
+              if (lmagnetic) &
+                print*,"     Hall effect:    maxval(advec_hall)      = ", maxval(advec_hall)
+              if (leos) &
+                print*,"     Sound speed:    maxval(sqrt(advec_cs2)) = ", sqrt(maxval(advec_cs2))
+              if (lmagnetic) &
+                print*,"     Alfen speed:    maxval(sqrt(advec_va2)) = ", sqrt(maxval(advec_va2))
+            else
+              print*,"  It appears the dagger was in the form of an diffusion term."
+              print*,"   Here's the line up, the big guy is the offender:"
+              if (lhydro) &
+                print*,"     Fluid viscosity: maxval(diffus_nu)               = ", maxval(diffus_nu)
+              if (lentropy) &
+                print*,"     Thermal diffusion: maxval(diffus_chi)            = ", maxval(diffus_chi)
+              if (lmagnetic) &
+                print*,"     Magnetic diffusion: maxval(diffus_eta)           = ", maxval(diffus_eta)
+              if (ldensity) &
+                print*,"     Mass diffusion: maxval(diffus_diffrho)           = ", maxval(diffus_diffrho)
+              if (lcosmicray) &
+                print*,"     Passive scalar diffusion: maxval(diffus_pscalar) = ", maxval(diffus_pscalar)
+              if (lcosmicray) &
+                print*,"     Cosmic ray diffusion: maxval(diffus_cr)          = ", maxval(diffus_cr)
+              if (ldustvelocity) &
+                print*,"     Dust viscosity: maxval(diffus_nud)               = ", maxval(diffus_nud)
+              if (lchiral) &
+                print*,"     Chirality diffusion: maxval(diffus_chiral)       = ", maxval(diffus_chiral)
+            endif
+  
+            print*,"  Also, cdt (advection), cdtv (diffusion) = ",cdt,cdtv
+            print*,"------------------- END OF CONFESSION -----------------------"
+  
+          endif
+        endif
+! Root says who can testify next 
+        if (lroot) turn=turn+1
+        call mpibcast_int(turn,1)
+        if (turn(1) >= ncpus) exit
+      enddo     
+ 
+    endsubroutine timestep_autopsy
 !***********************************************************************
     subroutine border_profiles()
 !

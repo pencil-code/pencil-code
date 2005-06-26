@@ -3,7 +3,7 @@
 !
 &run_pars
   ip=14
-  cvsid='$Id: run.in,v 1.5 2004-07-14 18:30:02 dobler Exp $'
+  cvsid='$Id: run.in,v 1.6 2005-06-26 17:34:34 eos_merger_tony Exp $'
   nt=100, it1=10, isave=100
   cdt=0.4, cdtv=0.80, itorder=3,
   dsnap=1., dvid=0.5,
@@ -12,6 +12,7 @@
 ! bcz = 'g:s' ,'g:s' ,'g:a','a2','fB:s','fB:s','s:a'
   bcz = 'g:s' ,'g:s' ,'g:a','a2','a2:s','a2:s','s:a'
   force_lower_bound='uxy_sin-cos'
+  lpencil_check=T
   /
 &hydro_run_pars
   nu=1.5e-2,

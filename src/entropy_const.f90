@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.6 2004-10-27 14:21:47 ajohan Exp $
+! $Id: entropy_const.f90,v 1.7 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -52,9 +52,8 @@ module Entropy
       dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_dtc=0,i_eth=0,i_ethdivum=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
-  integer :: i_dtchi=0
-  integer :: i_ssmphi=0
+  integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
+  integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
 
   contains
 
@@ -80,7 +79,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.6 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: entropy_const.f90,v 1.7 2005-06-26 17:34:12 eos_merger_tony Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -146,7 +145,7 @@ module Entropy
         endselect
       enddo
 
-      if(ip==0) print*,f,xx,yy  !(to keep compiler quiet)
+      if(NO_WARN) print*,f,xx,yy  !(to keep compiler quiet)
     endsubroutine init_ss
 !***********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
@@ -193,11 +192,11 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
-        if (i_ugradpm/=0) then
-          rho=1./rho1
+        if (idiag_dtc/=0) &
+            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
-          call sum_mn_name(rho*cs2*uglnrho,i_ugradpm)
+          call sum_mn_name(rho*cs2*uglnrho,idiag_ugradpm)
         endif
       endif
 !
@@ -224,42 +223,42 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_dtc=0; i_eth=0; i_ethdivum=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
-        i_dtchi=0
-        i_ssmphi=0
+        idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
+        idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
-        call parse_name(iname,cname(iname),cform(iname),'dtchi',i_dtchi)
-        call parse_name(iname,cname(iname),cform(iname),'ethtot',i_ethtot)
-        call parse_name(iname,cname(iname),cform(iname),'ethdivum',i_ethdivum)
-        call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
-        call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
-        call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
+        call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
+        call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
+        call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'ethdivum',idiag_ethdivum)
+        call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
+        call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
       enddo
 !
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',i_ssmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',idiag_ssmphi)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',i_dtc
-        write(3,*) 'i_dtchi=',i_dtchi
-        write(3,*) 'i_ethtot=',i_ethtot
-        write(3,*) 'i_ethdivum=',i_ethdivum
-        write(3,*) 'i_eth=',i_eth
-        write(3,*) 'i_ssm=',i_ssm
-        write(3,*) 'i_ugradpm=',i_ugradpm
+        write(3,*) 'i_dtc=',idiag_dtc
+        write(3,*) 'i_dtchi=',idiag_dtchi
+        write(3,*) 'i_ethtot=',idiag_ethtot
+        write(3,*) 'i_ethdivum=',idiag_ethdivum
+        write(3,*) 'i_eth=',idiag_eth
+        write(3,*) 'i_ssm=',idiag_ssm
+        write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
-        write(3,*) 'i_ssmphi=',i_ssmphi
+        write(3,*) 'i_ssmphi=',idiag_ssmphi
       endif
 !
     endsubroutine rprint_entropy

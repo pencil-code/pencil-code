@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $
+! $Id: nodustdensity.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -19,14 +19,16 @@ module Dustdensity
 
   implicit none
 
-  integer :: dummy              ! We cannot define empty namelists
+  include 'dustdensity.inc'
+
+  !integer :: dummy              ! We cannot define empty namelists
   logical :: ldustnulling=.false.
 
-  namelist /dustdensity_init_pars/ dummy
-  namelist /dustdensity_run_pars/  dummy
+  !namelist /dustdensity_init_pars/ dummy
+  !namelist /dustdensity_run_pars/  dummy
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_rhodm=0
+  integer :: idiag_rhodm=0
 
   contains
 
@@ -51,7 +53,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: nodustdensity.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -74,10 +76,48 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==0) print*,f ! keep compiler quiet
+      if(NO_WARN) print*,f ! keep compiler quiet
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dndmd_dt(f,df,rho,rho1,TT1,cs2,cc,cc1,uud,divud,gnd)
+    subroutine pencil_criteria_dustdensity()
+! 
+!  All pencils that the Dustdensity module depends on are specified here.
+! 
+!  20-11-04/anders: coded
+!
+    endsubroutine pencil_criteria_dustdensity
+!***********************************************************************
+    subroutine pencil_interdep_dustdensity(lpencil_in)
+!
+!  Interdependency among pencils provided by the Dustdensity module
+!  is specified here.
+!         
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_dustdensity
+!***********************************************************************
+    subroutine calc_pencils_dustdensity(f,p)
+!
+!  Calculate Dustdensity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  13-nov-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+      integer :: k
+!      
+      intent(in) :: f, p
+!
+      if (NO_WARN) print*, f, p
+!
+    endsubroutine calc_pencils_dustdensity
+!***********************************************************************
+    subroutine dndmd_dt(f,df,p)
 !
 !  continuity equation
 !  calculate dlnrhod/dt = - u.gradlnrhod - divud
@@ -86,13 +126,42 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uud,gnd
-      real, dimension (nx) :: rho,rho1,TT1,cs2,divud,cc,cc1
+      type (pencil_case) :: p
 !
-      if(ip==0) print*,f,df,rho,rho1,TT1,cs2,uud,divud,cc,cc1,gnd
-        !(keep compiler quiet)
+      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine dndmd_dt
+!***********************************************************************
+    subroutine read_dustdensity_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_dustdensity_init_pars
+!***********************************************************************
+    subroutine write_dustdensity_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_dustdensity_init_pars
+!***********************************************************************
+    subroutine read_dustdensity_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_dustdensity_run_pars
+!***********************************************************************
+    subroutine write_dustdensity_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_dustdensity_run_pars
 !***********************************************************************
     subroutine redist_mdbins(f)
 !
@@ -102,7 +171,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==0) print*,f(1,1,1,1)
+      if(NO_WARN) print*,f(1,1,1,1)
     endsubroutine redist_mdbins
 !***********************************************************************
     subroutine null_dust_vars(f)
@@ -111,8 +180,16 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==0) print*,f(1,1,1,1)
+      if(NO_WARN) print*,f(1,1,1,1)
     endsubroutine null_dust_vars
+!***********************************************************************
+    subroutine reinit_criteria_dust
+!
+!  Force reiniting of dust variables if certain criteria are fulfilled
+!
+!  Dummy subroutine
+!
+    endsubroutine reinit_criteria_dust
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
@@ -131,12 +208,12 @@ module Dustdensity
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rhodm=',i_rhodm
+        write(3,*) 'i_rhodm=',idiag_rhodm
         write(3,*) 'nname=',nname
         write(3,*) 'ind=',ind
       endif
 !
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_dustdensity
 !***********************************************************************
 

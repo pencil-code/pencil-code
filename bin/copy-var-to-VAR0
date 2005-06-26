@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: copy-var-to-VAR0,v 1.1 2003-01-19 16:12:14 brandenb Exp $
+#$Id: copy-var-to-VAR0,v 1.2 2005-06-26 17:34:16 eos_merger_tony Exp $
 #
 #  Examples:
 #     nohup copy-VAR-to-var 10 .

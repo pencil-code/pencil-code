@@ -3,11 +3,14 @@
 !  run parameters for kinematic dynamo run with Glen Roberts flow
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2005-06-09 18:46:48 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.4 2005-06-26 17:34:38 eos_merger_tony Exp $',
   nt=50, it1=10, cdt=99, cdtv=.4, old_cdtv=F, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen='nr_f90'
+  lpencil_check=T
   kinflow='roberts'
+/
+&eos_run_pars
 /
 &magnetic_run_pars
   eta=0.1

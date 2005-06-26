@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.5 2004-07-03 02:13:13 theine Exp $
+! $Id: chiral.f90,v 1.6 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -19,6 +19,8 @@ module Chiral
   use Cdata
 
   implicit none
+
+  include 'chiral.inc'
 
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
 
@@ -45,9 +47,9 @@ module Chiral
        chiral_diff,chiral_crossinhibition,chiral_fidelity
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_XX_chiralmax=0, i_XX_chiralm=0
-  integer :: i_YY_chiralmax=0, i_YY_chiralm=0
-  integer :: i_QQm_chiral=0, i_QQ21m_chiral=0, i_QQ21QQm_chiral=0
+  integer :: idiag_XX_chiralmax=0, idiag_XX_chiralm=0
+  integer :: idiag_YY_chiralmax=0, idiag_YY_chiralm=0
+  integer :: idiag_QQm_chiral=0, idiag_QQ21m_chiral=0, idiag_QQ21QQm_chiral=0
 
   contains
 
@@ -86,7 +88,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.5 2004-07-03 02:13:13 theine Exp $")
+           "$Id: chiral.f90,v 1.6 2005-06-26 17:34:12 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -107,7 +109,7 @@ module Chiral
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !   
-      if(ip==0) print*,'f=',f
+      if(NO_WARN) print*,'f=',f
     endsubroutine initialize_chiral
 !***********************************************************************
     subroutine init_chiral(f,xx,yy,zz)
@@ -165,10 +167,52 @@ module Chiral
         case default; call stop_it('init_chiral: bad init_chiral='//trim(initYY_chiral))
       endselect
 !
-      if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
+      if(NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_chiral
 !***********************************************************************
-    subroutine dXY_chiral_dt(f,df,uu)
+    subroutine pencil_criteria_chiral()
+! 
+!  All pencils that the Chiral module depends on are specified here.
+! 
+!  21-11-04/anders: coded
+!
+      use Cdata
+!
+      lpenc_requested(i_uu)=.true.
+!
+    endsubroutine pencil_criteria_chiral
+!***********************************************************************
+    subroutine pencil_interdep_chiral(lpencil_in)
+!       
+!  Interdependency among pencils provided by the Chiral module
+!  is specified here.
+!
+!  21-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_chiral
+!***********************************************************************
+    subroutine calc_pencils_chiral(f,p)
+!       
+!  Calculate Chiral pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  21-11-04/anders: coded
+!
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f, p  !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_chiral
+!***********************************************************************
+    subroutine dXY_chiral_dt(f,df,p)
 !
 !  passive scalar evolution
 !  calculate chirality equations in reduced form; see q-bio/0401036
@@ -179,7 +223,9 @@ module Chiral
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,gXX_chiral,gYY_chiral
+      type (pencil_case) :: p
+
+      real, dimension (nx,3) :: gXX_chiral,gYY_chiral
       real, dimension (nx) :: XX_chiral,ugXX_chiral,del2XX_chiral,dXX_chiral
       real, dimension (nx) :: YY_chiral,ugYY_chiral,del2YY_chiral,dYY_chiral
       real, dimension (nx) :: RRXX_chiral,XX2_chiral
@@ -189,7 +235,7 @@ module Chiral
       real :: pp,qq,lamchiral
       integer :: j
 !
-      intent(in)  :: f,uu
+      intent(in)  :: f,p
       intent(out) :: df
 !
 !  identify module and boundary conditions
@@ -202,8 +248,8 @@ module Chiral
 !
       call grad(f,iXX_chiral,gXX_chiral)
       call grad(f,iYY_chiral,gYY_chiral)
-      call dot_mn(uu,gXX_chiral,ugXX_chiral)
-      call dot_mn(uu,gYY_chiral,ugYY_chiral)
+      call dot_mn(p%uu,gXX_chiral,ugXX_chiral)
+      call dot_mn(p%uu,gYY_chiral,ugYY_chiral)
 !
 !  advection term
 !
@@ -260,10 +306,12 @@ module Chiral
 !  <u_k u_j d_j c> = <u_k c uu.gradXX_chiral>
 !
       if (ldiagnos) then
-        if (i_XX_chiralmax/=0) call max_mn_name(XX_chiral,i_XX_chiralmax)
-        if (i_YY_chiralmax/=0) call max_mn_name(YY_chiral,i_YY_chiralmax)
-        if (i_XX_chiralm/=0) call sum_mn_name(XX_chiral,i_XX_chiralm)
-        if (i_YY_chiralm/=0) call sum_mn_name(YY_chiral,i_YY_chiralm)
+        if (idiag_XX_chiralmax/=0) &
+            call max_mn_name(XX_chiral,idiag_XX_chiralmax)
+        if (idiag_YY_chiralmax/=0) &
+            call max_mn_name(YY_chiral,idiag_YY_chiralmax)
+        if (idiag_XX_chiralm/=0) call sum_mn_name(XX_chiral,idiag_XX_chiralm)
+        if (idiag_YY_chiralm/=0) call sum_mn_name(YY_chiral,idiag_YY_chiralm)
 !
 !  extra diagnostics
 !
@@ -271,12 +319,56 @@ module Chiral
         QQ_chiral=XX_chiral-YY_chiral
         QQ21_chiral=1.-QQ_chiral**2
         QQ21QQ_chiral=(lamchiral-QQ_chiral**2)/(1.+QQ_chiral**2)*QQ_chiral
-        if (i_QQm_chiral/=0) call sum_mn_name(QQ_chiral,i_QQm_chiral)
-        if (i_QQ21m_chiral/=0) call sum_mn_name(QQ21_chiral,i_QQ21m_chiral)
-        if (i_QQ21QQm_chiral/=0) call sum_mn_name(QQ21QQ_chiral,i_QQ21QQm_chiral)
+        if (idiag_QQm_chiral/=0) call sum_mn_name(QQ_chiral,idiag_QQm_chiral)
+        if (idiag_QQ21m_chiral/=0) &
+            call sum_mn_name(QQ21_chiral,idiag_QQ21m_chiral)
+        if (idiag_QQ21QQm_chiral/=0) &
+            call sum_mn_name(QQ21QQ_chiral,idiag_QQ21QQm_chiral)
       endif
 !
     endsubroutine dXY_chiral_dt
+!***********************************************************************
+    subroutine read_chiral_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=chiral_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=chiral_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_chiral_init_pars
+!***********************************************************************
+    subroutine write_chiral_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=chiral_init_pars)
+                                                                                                   
+    endsubroutine write_chiral_init_pars
+!***********************************************************************
+    subroutine read_chiral_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=chiral_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=chiral_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_chiral_run_pars
+!***********************************************************************
+    subroutine write_chiral_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=chiral_run_pars)
+                                                                                                   
+    endsubroutine write_chiral_run_pars
 !***********************************************************************
     subroutine rprint_chiral(lreset,lwrite)
 !
@@ -297,33 +389,40 @@ module Chiral
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_XX_chiralmax=0; i_XX_chiralm=0
-        i_YY_chiralmax=0; i_YY_chiralm=0
-        i_QQm_chiral=0; i_QQ21m_chiral=0; i_QQ21QQm_chiral=0
+        idiag_XX_chiralmax=0; idiag_XX_chiralm=0
+        idiag_YY_chiralmax=0; idiag_YY_chiralm=0
+        idiag_QQm_chiral=0; idiag_QQ21m_chiral=0; idiag_QQ21QQm_chiral=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'XXm',i_XX_chiralm)
-        call parse_name(iname,cname(iname),cform(iname),'YYm',i_YY_chiralm)
-        call parse_name(iname,cname(iname),cform(iname),'XXmax',i_XX_chiralmax)
-        call parse_name(iname,cname(iname),cform(iname),'YYmax',i_YY_chiralmax)
-        call parse_name(iname,cname(iname),cform(iname),'QQm',i_QQm_chiral)
-        call parse_name(iname,cname(iname),cform(iname),'QQ21m',i_QQ21m_chiral)
-        call parse_name(iname,cname(iname),cform(iname),'QQ21QQm',i_QQ21QQm_chiral)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'XXm',idiag_XX_chiralm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'YYm',idiag_YY_chiralm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'XXmax',idiag_XX_chiralmax)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'YYmax',idiag_YY_chiralmax)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'QQm',idiag_QQm_chiral)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'QQ21m',idiag_QQ21m_chiral)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'QQ21QQm',idiag_QQ21QQm_chiral)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_XX_chiralm=',i_XX_chiralm
-        write(3,*) 'i_YY_chiralm=',i_YY_chiralm
-        write(3,*) 'i_XX_chiralmax=',i_XX_chiralmax
-        write(3,*) 'i_YY_chiralmax=',i_YY_chiralmax
-        write(3,*) 'i_QQm_chiral=',i_QQm_chiral
-        write(3,*) 'i_QQ21m_chiral=',i_QQ21m_chiral
-        write(3,*) 'i_QQ21QQm_chiral=',i_QQ21QQm_chiral
+        write(3,*) 'i_XX_chiralm=',idiag_XX_chiralm
+        write(3,*) 'i_YY_chiralm=',idiag_YY_chiralm
+        write(3,*) 'i_XX_chiralmax=',idiag_XX_chiralmax
+        write(3,*) 'i_YY_chiralmax=',idiag_YY_chiralmax
+        write(3,*) 'i_QQm_chiral=',idiag_QQm_chiral
+        write(3,*) 'i_QQ21m_chiral=',idiag_QQ21m_chiral
+        write(3,*) 'i_QQ21QQm_chiral=',idiag_QQ21QQm_chiral
         write(3,*) 'iXX_chiral=',iXX_chiral
         write(3,*) 'iYY_chiral=',iYY_chiral
       endif

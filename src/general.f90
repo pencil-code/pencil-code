@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.37 2005-04-17 10:25:51 ajohan Exp $
+! $Id: general.f90,v 1.38 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 module General
 
@@ -10,6 +10,18 @@ module General
 
   implicit none
 
+  private
+
+  public :: safe_character_assign,safe_character_append, chn
+  public :: random_seed_wrapper 
+  public :: random_number_wrapper, random_gen
+  public :: parse_filename
+
+  public :: setup_mm_nn
+  public :: input_persistent_general, output_persistent_general
+
+  include 'record_types.inc'
+
   interface random_number_wrapper   ! Overload this function
     module procedure random_number_wrapper_0
     module procedure random_number_wrapper_1
@@ -20,6 +32,31 @@ module General
     module procedure safe_character_append_2
     module procedure safe_character_append_3 ! add more if you like..
   endinterface
+!
+  public :: terminal_highlight_warning, terminal_defaultcolor
+  public :: terminal_setfgbrightcolor, terminal_setfgcolor
+  public :: warning
+!
+!
+  integer, public, parameter :: iterm_DEFAULT   = 0
+  integer, public, parameter :: iterm_BRIGHT    = 1
+  integer, public, parameter :: iterm_UNDERLINE = 4 
+  integer, public, parameter :: iterm_FLASH     = 5
+  integer, public, parameter :: iterm_FG_BLACK  = 30
+  integer, public, parameter :: iterm_FG_RED    = 31
+  integer, public, parameter :: iterm_FG_GREEN  = 32
+  integer, public, parameter :: iterm_FG_YELLOW = 33
+  integer, public, parameter :: iterm_FG_BLUE   = 34
+  integer, public, parameter :: iterm_FG_MAGENTA= 35
+  integer, public, parameter :: iterm_FG_CYAN   = 36
+  integer, public, parameter :: iterm_FG_WHITE  = 37
+  integer, public, parameter :: iterm_BG_BLACK  = 40
+  integer, public, parameter :: iterm_BG_RED    = 41
+  integer, public, parameter :: iterm_BG_GREEN  = 42
+  integer, public, parameter :: iterm_BG_YELLOW = 43
+  integer, public, parameter :: iterm_BG_BLUE   = 44
+  integer, public, parameter :: iterm_BG_MAGENTA= 45
+  integer, public, parameter :: iterm_BG_CYAN   = 46
 !
 !  state and default generator of random numbers
 !
@@ -112,6 +149,42 @@ module General
       endif
 !
     endsubroutine setup_mm_nn
+!***********************************************************************
+    subroutine input_persistent_general(id,lun,done)
+!
+!  Fills a with a random number calculated with one of the generators
+!  available with random_gen
+!
+      use Cparam
+      use Cdata, only: seed,nseed
+!
+      integer :: id,lun
+      logical :: done
+!
+      call random_seed_wrapper(get=seed(1:nseed))
+      if (id==id_record_RANDOM_SEEDS) then
+        read (lun) seed(1:nseed)
+        call random_seed_wrapper(put=seed(1:nseed))
+        done=.true.
+      endif
+!
+    endsubroutine input_persistent_general
+!***********************************************************************
+    subroutine output_persistent_general(lun)
+!
+!  Fills a with a random number calculated with one of the generators
+!  available with random_gen
+!
+      use Cparam
+      use Cdata, only: seed,nseed
+!
+      integer :: lun
+!
+      call random_seed_wrapper(get=seed(1:nseed))
+      write (lun) id_record_RANDOM_SEEDS
+      write (lun) seed(1:nseed)
+!
+    endsubroutine output_persistent_general
 !***********************************************************************
     subroutine random_number_wrapper_0(a)
 !
@@ -269,12 +342,13 @@ module General
       implicit none
 !
       real :: mars_ran
-      real, save :: am             ! will be constant on a given platform
+      real, save :: am=impossible    ! will be constant on a given platform
       integer, optional, intent(in) :: init
       integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
       integer :: k,init1=1812   ! default value
       logical, save :: first_call=.true.
 !
+!ajwm This doesn't appear to always get set!
       if (first_call) then
         am=nearest(1.0,-1.0)/im
         first_call=.false.
@@ -731,7 +805,7 @@ module General
       do j=n-1,1,-1
          u(j)=u(j)-gam(j+1)*u(j+1)
       end do
-    end subroutine tridag
+    endsubroutine tridag
 !***********************************************************************
     subroutine tridag_double(a,b,c,r,u,err)
 !
@@ -771,6 +845,87 @@ module General
       do j=n-1,1,-1
          u(j)=u(j)-gam(j+1)*u(j+1)
       end do
-    end subroutine tridag_double
+    endsubroutine tridag_double
 !***********************************************************************
-end module General
+    subroutine terminal_setfgcolor(col)
+!    
+!  Set foreground color of terminal text
+!
+!  08-jun-05/tony: programmed
+!
+      use Cdata, only: ltermcap_color
+!
+      integer :: col
+!      
+      if (ltermcap_color) then
+        write(*,fmt='(A1,A1,I2,A1)',ADVANCE='no') CHAR(27), '[', col, 'm' 
+      endif
+!
+    endsubroutine terminal_setfgcolor
+!***********************************************************************
+    subroutine terminal_setfgbrightcolor(col)
+!    
+!  Set bright terminal colors
+!
+!  08-jun-05/tony: programmed
+!
+      use Cdata, only: ltermcap_color
+!
+      integer :: col
+!      
+      if (ltermcap_color) then
+        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
+            CHAR(27), '[', iterm_BRIGHT, ';', col, 'm' 
+!
+      endif
+!
+    endsubroutine terminal_setfgbrightcolor
+!***********************************************************************
+    subroutine terminal_defaultcolor
+!    
+!  Set terminal color to default value
+!
+!  08-jun-05/tony: programmed
+!
+      use Cdata, only: ltermcap_color
+!      
+      if (ltermcap_color) then
+        write(*,fmt='(A1,A1,I1,A1)',ADVANCE='no') &
+            CHAR(27), '[', iterm_DEFAULT, 'm' 
+      endif
+!
+    endsubroutine terminal_defaultcolor
+!***********************************************************************
+    subroutine terminal_highlight_warning
+!    
+!  Change to warning color
+!
+!  08-jun-05/tony: programmed
+!
+      use Cdata, only: ltermcap_color
+!
+      if (ltermcap_color) then
+        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
+            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm' 
+      endif
+!
+    endsubroutine terminal_highlight_warning
+!***********************************************************************
+    subroutine warning(msg)
+!    
+!  Print out colored warning.
+!
+!  08-jun-05/anders: programmed
+!
+      use Cdata, only: ltermcap_color
+!
+      character (len=*) :: msg
+!
+      call terminal_highlight_warning()
+      write (*,'(A9)',ADVANCE='NO') "WARNING:"
+      call terminal_defaultcolor()
+      write (*,*) msg
+!
+    endsubroutine warning
+!***********************************************************************
+endmodule General

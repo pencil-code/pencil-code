@@ -1,11 +1,23 @@
-! $Id: equ.f90,v 1.232 2005-06-09 11:57:35 brandenb Exp $
+! $Id: equ.f90,v 1.233 2005-06-26 17:34:12 eos_merger_tony Exp $
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+!
+!***************************************************************
 
 module Equ
-
+!
   use Cdata
-
+!
   implicit none
-
+!
+  private
+!
+  public :: pde, debug_imn_arrays
+  public :: pencil_consistency_check
+!
   contains
 
 !***********************************************************************
@@ -109,6 +121,9 @@ module Equ
 
              if(itype_name(iname)==ilabel_sum_sqrt)       &
                  fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
+
+             if(itype_name(iname)==ilabel_sum_par)        &
+                 fname(iname)=fsum(isum_count)/npar
 
              if(itype_name(iname)==ilabel_integrate) then
                dv=1.
@@ -232,7 +247,7 @@ module Equ
 !  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1)
 !
       if(nnamerz>0) then
-        call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrcyl*(nz+1)*nprocz)
+        call mpireduce_sum(fnamerz,fsumrz,mnamerz*nrcyl*(nz+1)*nprocz)
         if(lroot) then
           do i=1,nnamerz
             fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)
@@ -242,7 +257,7 @@ module Equ
 !
     endsubroutine phiaverages_rz
 !***********************************************************************
-    subroutine pde(f,df)
+    subroutine pde(f,df,p)
 !
 !  call the different evolution equations (now all in their own modules)
 !
@@ -258,36 +273,44 @@ module Equ
       use Magnetic
       use Testfield
       use Radiation
-      use Ionization
+      use EquationOfState
       use Pscalar
       use Chiral
       use Dustvelocity
       use Dustdensity
       use CosmicRay
+      use CosmicRayFlux
+      use Special
       use Boundcond
       use Shear
       use Density
-      use Viscosity, only: calc_viscosity,lvisc_first
+      use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
+      use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
+                           lvisc_first, idiag_epsK
+      use Particles
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,udij,bij,aij
-      real, dimension (nx,3) :: uu,glnrho,bb,jj,JxBr,gshock,del2A,graddivA
-      real, dimension (nx,3,ndustspec) :: uud,gnd
-      real, dimension (nx,ndustspec) :: divud,ud2
-      real, dimension (nx) :: lnrho,divu,u2,rho,rho1
-      real, dimension (nx) :: cs2,va2,TT1,cc,cc1,shock
+!Structure replacement for individual pencil variables...
+      type (pencil_case) :: p
+!Formerly:
+!      real, dimension (nx,3,3) :: uij,udij,bij,aij
+!      real, dimension (nx,3) :: uu,glnrho,bb,jj,JxBr,gshock,del2A,graddivA
+!      real, dimension (nx,3,ndustspec) :: uud,gnd
+!      real, dimension (nx,ndustspec) :: divud,ud2
+!      real, dimension (nx) :: lnrho,divu,u2,rho,rho1
+!      real, dimension (nx) :: cs2,va2,TT1,cc,cc1,shock
       real, dimension (nx) :: maxadvec,maxdiffus
-      integer :: iv
+      integer :: iv,ider,j,k
 !
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-
+!
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.232 2005-06-09 11:57:35 brandenb Exp $")
+           "$Id: equ.f90,v 1.233 2005-06-26 17:34:12 eos_merger_tony Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -303,7 +326,7 @@ module Equ
 !  when radiation transfer of global ionization is calculatearsd.
 !  This could in principle be avoided (but it not worth it now)
 !
-      early_finalize=test_nonblocking.or.lionization.or.lradiation_ray
+      early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray
 !
 !  Check for dust grain mass interval overflows
 !  (should consider having possibility for all modules to fiddle with the
@@ -312,23 +335,33 @@ module Equ
       if (ldustdensity .and. ldustnulling) call null_dust_vars(f)
       if (ldustdensity .and. lmdvar .and. itsub == 1) call redist_mdbins(f)
 !
+!
+! Prepare x-ghost zones required before f-array communication AND shock calculation
+!
+      call boundconds_x(f)
+!
+!  Initiate shock profile calculation and use asynchronous to handle
+!  communication along processor/periodic boundaries.
+!
+      if (lshock)          call calc_shock_profile(f)
+!
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
-!  1. x-boundaries (x-ghost zones will be communicated)
+!  1. x-boundaries (x-ghost zones will be communicated) - done above
 !  2. communication
 !  3. y- and z-boundaries
 !
-      call boundconds_x(f)
       if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      if (early_finalize) call finalise_isendrcv_bdry(f)
+      if (early_finalize) call finalize_isendrcv_bdry(f)
 !
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
 !
-      if (lionization)    call ioncalc(f)
-      if (lradiation_ray) call radtransfer(f)
-      if (lvisc_shock.or.lvisc_hyper.or.lvisc_smagorinsky) then
+      if (leos_ionization) call ioncalc(f)
+      if (lradiation_ray)  call radtransfer(f)
+      if (lshock)          call calc_shock_profile_simple(f)
+      if (lvisc_hyper.or.lvisc_smagorinsky) then
         if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
       endif
 !  Turbulence parameters (alpha, scale height, etc.)      
@@ -347,8 +380,10 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+
+!        if (loptimise_ders) der_call_count=0 !DERCOUNT
         if (necessary(imn)) then  ! make sure all ghost points are set
-          if (.not.early_finalize) call finalise_isendrcv_bdry(f)
+          if (.not.early_finalize) call finalize_isendrcv_bdry(f)
           call boundconds_y(f)
           call boundconds_z(f)
         endif
@@ -361,20 +396,24 @@ module Equ
         call calc_unitvects_sphere()
 !
 !  calculate profile for phi-averages if needed
+!  Note that rcyl_mn is also needed for Couette flow experiments,
+!  so let's hope that everybody remembers to do averages as well...
 !
         if (l2davgfirst.and.lwrite_phiaverages) then
           call calc_phiavg_general()
           call calc_phiavg_profile()
           call calc_phiavg_unitvects()
+        elseif (lcylindrical) then
+          call calc_phiavg_general()
         endif
 !
 !  general phiaverage quantities -- useful for debugging
 !
         if (l2davgfirst) then
-          call phisum_mn_name_rz(rcyl_mn,i_rcylmphi)
-          call phisum_mn_name_rz(phi_mn ,i_phimphi)
-          call phisum_mn_name_rz(z_mn   ,i_zmphi)
-          call phisum_mn_name_rz(r_mn   ,i_rmphi)
+          call phisum_mn_name_rz(rcyl_mn,idiag_rcylmphi)
+          call phisum_mn_name_rz(phi_mn,idiag_phimphi)
+          call phisum_mn_name_rz(z_mn,idiag_zmphi)
+          call phisum_mn_name_rz(r_mn,idiag_rmphi)
         endif
 !
 !  For each pencil, accumulate through the different modules
@@ -386,7 +425,8 @@ module Equ
         advec_cs2=0.; advec_va2=0.; advec_uud=0;
         diffus_pscalar=0.
         diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
-        diffus_eta=0.; diffus_nu=0.; diffus_chi=0.; diffus_nud=0.
+        diffus_eta=0.; diffus_nu=0.; diffus_chi=0.
+        diffus_nud=0.; diffus_diffnd=0.
 !
 !  The following is only kept for backwards compatibility.
 !  Will be deleted in the future.
@@ -395,85 +435,105 @@ module Equ
           dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
         else
           dxyz_2 = dx_1(l1:l2)**2+dy_1(m)**2+dz_1(n)**2
+          dxyz_6 = dx_1(l1:l2)**6+dy_1(m)**6+dz_1(n)**6
         endif
 !
-!  Calculate inverse density and magnetic field
-!  WD: Also needed with heat conduction, so we better calculate it in all
-!  cases. Could alternatively have a switch lrho1known and check for it,
-!  or initialise to 1e35.
+!  Calculate pencils for the pencil_case
 !
-        call calculate_some_vars(f,lnrho,rho,rho1,bb,jj,bij,aij,del2A,graddivA)
+        if (lshock)         call calc_pencils_shock(f,p)
+                            call calc_pencils_hydro(f,p)
+                            call calc_pencils_density(f,p)
+        if (lviscosity)     call calc_pencils_viscosity(f,p)
+                            call calc_pencils_entropy(f,p)
+                            call calc_pencils_magnetic(f,p)
+        if (lgrav)          call calc_pencils_gravity(f,p)
+        if (lpscalar)       call calc_pencils_pscalar(f,p)
+        if (ldustvelocity)  call calc_pencils_dustvelocity(f,p)
+        if (ldustdensity)   call calc_pencils_dustdensity(f,p)
+        if (lcosmicray)     call calc_pencils_cosmicray(f,p)
+        if (lcosmicrayflux) call calc_pencils_cosmicrayflux(f,p)
+        if (lchiral)        call calc_pencils_chiral(f,p)
+        if (lradiation)     call calc_pencils_radiation(f,p)
+        if (lspecial)       call calc_pencils_special(f,p)
+!
+!  --------------------------------------------------------
+!  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
+!  --------------------------------------------------------
 !
 !  hydro, density, and entropy evolution
-!  They all are needed for setting some variables even
-!  if their evolution is turned off.
 !
-        call duu_dt   (f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
-        call dlnrho_dt(f,df,uu,divu,lnrho,rho,glnrho,shock,gshock)
-!
-!  Entropy evolution
-!
-        call dss_dt(f,df,uu,divu,lnrho,rho,rho1,glnrho,cs2,TT1,shock,gshock,bb,bij)
+        call duu_dt(f,df,p)
+        call dlnrho_dt(f,df,p)
+        call dss_dt(f,df,p)
 !
 !  Magnetic field evolution
 !
-        if (lmagnetic) call daa_dt(f,df,uu,uij,rho1,TT1,bb,bij,aij,jj,JxBr,del2A,graddivA,va2,shock,gshock)
+        call daa_dt(f,df,p)
 !
 !  Testfield evolution
 !
-        if (ltestfield) call daatest_dt(f,df,uu)
+        if (ltestfield) call daatest_dt(f,df,p)
 !
 !  Passive scalar evolution
 !
-        call dlncc_dt(f,df,uu,rho,glnrho,cc,cc1)
+        call dlncc_dt(f,df,p)
 !
 !  Dust evolution
 !
-        call duud_dt (f,df,uu,rho,rho1,glnrho,cs2,JxBr,uud,ud2,divud,udij)
-        call dndmd_dt(f,df,rho,rho1,TT1,cs2,cc,cc1,uud,divud,gnd)
+        call duud_dt(f,df,p)
+        call dndmd_dt(f,df,p)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?
 !  WD: there is some virtue in calling all of the dXX_dt in equ.f90
 !  AB: but it is not really a new dXX_dt, because XX=uu.
+!  AJ: it should go into the duu_dt and duud_dt subs
 !  duu_dt_grav now also takes care of dust velocity
 !
         if (lgrav) then
-          if (lhydro) call duu_dt_grav(f,df,uu,rho)
+          if (lhydro) call duu_dt_grav(f,df,p)
         endif
 !
 !  cosmic ray energy density
 !
-        if (lcosmicray) call decr_dt(f,df,uu,rho1,divu,bij,bb)
+        if (lcosmicray) call decr_dt(f,df,p)
+!
+!  cosmic ray flux
+!
+        if (lcosmicrayflux) call dfcr_dt(f,df,p)
 !
 !  chirality of left and right handed aminoacids
 !
-        if (lchiral) call dXY_chiral_dt(f,df,uu)
+        if (lchiral) call dXY_chiral_dt(f,df,p)
 !
 !  Evolution of radiative energy
 !
-        if (lradiation_fld) call de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
+        if (lradiation_fld) call de_dt(f,df,p,gamma)
+!
+!  Add and extra 'special' physics 
+!
+        if (lspecial)                    call dspecial_dt(f,df,p)
 !
 !  Add radiative cooling (for ray method)
 !
-        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df,lnrho,TT1)
+        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df,p)
 !
 !  Add shear if present
 !
-        if (lshear)                     call shearing(f,df)
+        if (lshear)                      call shearing(f,df)
 !
-!  =======================================
+!  ---------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT
-!  =======================================
+!  ---------------------------------------
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'
 !
         if (lfrozen_bcs_z) then ! are there any frozen vars at all?
-          !
-          ! Only need to do this for nonperiodic z direction, on bottommost
-          ! processor and in bottommost pencils
-          !
+!
+! Only need to do this for nonperiodic z direction, on bottommost
+! processor and in bottommost pencils
+!
           if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
             do iv=1,nvar
               if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
@@ -494,56 +554,68 @@ module Equ
 !  This has to do with the term on the diagonal, cdtv depends on order of scheme
 !
         if (lfirst.and.ldt) then
-          !
-          !  sum or maximum of the advection terms?
-          !  (lmaxadvec_sum=.false. by default)
-          !
+!
+!  sum or maximum of the advection terms?
+!  (lmaxadvec_sum=.false. by default)
+!
           maxadvec=advec_uu+advec_shear+advec_hall+sqrt(advec_cs2+advec_va2)
           maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
-                        diffus_pscalar,diffus_cr,diffus_nud,diffus_chiral)
+              diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral)
+          if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
+            maxadvec=0.
+            maxdiffus=0.
+          endif
           dt1_advec=maxadvec/cdt
           dt1_diffus=maxdiffus/cdtv
 
           dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
 
-          if (ldiagnos.and.i_dtv/=0) then
-            call max_mn_name(maxadvec/cdt,i_dtv,l_dt=.true.)
-            !call max_mn_name(maxdiffus/cdtv,i_dtv,l_dt=.true.)
+          if (ldiagnos.and.idiag_dtv/=0) then
+            call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
           endif
         endif
 !
-!  calculate density diagnostics: mean density
-!  Note that p/rho = gamma1*e = cs2/gamma, so e = cs2/(gamma1*gamma).
+!  Display derivitive info
 !
-        if (ldiagnos) then
-          if (ldensity .or. ldensity_fixed) then
-            ! Nothing seems to depend on lhydro here:
-            ! if(lhydro) then
-            if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
-            if (i_ekintot/=0) call integrate_mn_name(.5*rho*u2,i_ekintot)
-            if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
-            if (i_rhomin/=0) call max_mn_name(-rho,i_rhomin,lneg=.true.)
-            if (i_rhomax/=0) call max_mn_name(rho,i_rhomax)
-          endif
-          !
-          !  Mach number, rms and max
-          !
-          if (i_Marms/=0) call sum_mn_name(u2/cs2,i_Marms,lsqrt=.true.)
-          if (i_Mamax/=0) call max_mn_name(u2/cs2,i_Mamax,lsqrt=.true.)
-        endif
+!ajwm   if (loptimise_ders.and.lout) then                         !DERCOUNT
+!ajwm     do iv=1,nvar                                            !DERCOUNT
+!ajwm     do ider=1,8                                             !DERCOUNT
+!ajwm     do j=1,3                                                !DERCOUNT
+!ajwm     do k=1,3                                                !DERCOUNT
+!ajwm       if (der_call_count(iv,ider,j,k) .gt. 1) then          !DERCOUNT
+!ajwm         print*,'DERCOUNT: '//varname(iv)//' derivative ', & !DERCOUNT
+!ajwm                                                 ider,j,k, & !DERCOUNT
+!ajwm                                               ' called ', & !DERCOUNT
+!ajwm                              der_call_count(iv,ider,j,k), & !DERCOUNT
+!ajwm                                                  'times!'   !DERCOUNT
+!ajwm       endif                                                 !DERCOUNT
+!ajwm     enddo                                                   !DERCOUNT
+!ajwm     enddo                                                   !DERCOUNT
+!ajwm     enddo                                                   !DERCOUNT
+!ajwm     enddo                                                   !DERCOUNT
+!ajwm     if (maxval(der_call_count).gt.1) call stop_it( &        !DERCOUNT
+!ajwm      'pde: ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
+!ajwm   endif
 !
 !  end of loops over m and n
 !
         headtt=.false.
       enddo
-!
+!        
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
+!       
+!  Change dfp according to the chosen particle modules
+!       
+      if (lparticles) call particles_pde(f,df)
 !
 !  in case of lvisc_hyper=true epsK is calculated for the whole array 
 !  at not just for one pencil, it must therefore be added outside the
 !  m,n loop.
 !      
-      if (lvisc_hyper .and. ldiagnos) fname(i_epsK)=epsK_hyper
+!ajwm idiag_epsK needs close inspection... and requires tidying up
+!ajwm to be consistent in the viscosity.f90 routine.
+!      if (lvisc_hyper .and. ldiagnos) fname(idiag_epsK)=epsK_hyper
+
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step
@@ -565,9 +637,13 @@ module Equ
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
 !  (Of course, yaverages_xz does not need to be calculated for that.)
 !
-      if (.not.l2davgfirst.and.(i_bmx+i_bmy)>0) then
+      if (.not.l2davgfirst.and.(idiag_bmx+idiag_bmy)>0) then
         if (lwrite_zaverages) call zaverages_xy
       endif
+!
+!  Force reiniting of dust variables if certain criteria are fulfilled
+!
+      call reinit_criteria_dust
 !
     endsubroutine pde
 !***********************************************************************
@@ -588,38 +664,153 @@ module Equ
 !
     endsubroutine debug_imn_arrays
 !***********************************************************************
-     subroutine calculate_some_vars(f,lnrho,rho,rho1,bb,jj,bij,aij,del2A,graddivA)
+    subroutine pencil_consistency_check(f,df,p)
 !
-!   Calculation of some variables used by routines later at time
+      use Cdata
+      use Mpicomm, only: stop_it
 !
-!   06-febr-04/bing: coded
+      real, dimension(mx,my,mz,mvar+maux) :: f 
+      real, dimension(mx,my,mz,mvar) :: df 
+      type (pencil_case) :: p
+      real, allocatable, dimension(:,:,:,:) :: df_ref, f_other
+      real, allocatable, dimension(:) :: fname_ref
+      integer :: i,j,k,penc,iv
+      logical :: lconsistent=.true., ldie=.false.
 !
-       use Magnetic
-       use Density
-
-       real, dimension (mx,my,mz,mvar+maux) :: f
-       real, dimension (nx) :: lnrho,rho,rho1
-       real, dimension (nx,3) :: bb,jj,del2A,graddivA
-       real, dimension (nx,3,3) :: bij,aij
-
-       intent(in)  :: f
-       intent(out) :: lnrho,rho,rho1,bb,jj,bij,aij,del2A
-
-       if (ldensity .or. ldensity_fixed) then
-          call calculate_vars_rho(f,lnrho,rho,rho1)
-       else
-          lnrho=0.                ! Default for nodensity.f90
-          rho=1.
-          rho1=1.
-       endif
-
-       if (lmagnetic) then
-          call calculate_vars_magnetic(f,bb,jj,bij,aij,del2A,graddivA)
-       else
-          bb=0.                 ! Default for nomagnetic.f90
-       endif
-
-     endsubroutine calculate_some_vars
+      if (lroot) print*, &
+          'pencil_consistency_check: checking the pencil case'      
+!
+!  Allocate memory for alternative df, fname
+!
+      allocate(df_ref(mx,my,mz,mvar))
+      allocate(fname_ref(mname))
+      allocate(f_other(mx,my,mz,mvar+maux))
+!
+!  Check requested pencils
+!
+      headt=.false.
+      f_other=f
+      df_ref=0.0
+      include 'pencil_init.inc' 
+!
+!  Calculate reference results with all requested pencils on
+!
+      lpencil=lpenc_requested
+      call pde(f_other,df_ref,p)
+!
+      do penc=1,npencils 
+        df=0.0
+        f_other=f
+        include 'pencil_init.inc' 
+!
+!  Calculate results with one pencil swapped
+!
+        lpencil=lpenc_requested
+        lpencil(penc)=(.not. lpencil(penc))
+        call pde(f_other,df,p)
+!
+!  Compare results...
+!
+        lconsistent=.true.
+f_loop: do iv=1,mvar
+          do k=n1,n2; do j=m1,m2; do i=l1,l2
+            lconsistent=(df(i,j,k,iv)==df_ref(i,j,k,iv))
+            if (.not. lconsistent) exit f_loop
+          enddo; enddo; enddo
+        enddo f_loop
+! 
+        if (lconsistent .and. lpenc_requested(penc)) then
+          if (lroot) print'(a,i4,a)', &
+              'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
+              trim(pencil_names(penc))//' (',penc,')', &
+              'is requested, but does not appear to be required!'
+        elseif ( (.not. lconsistent) .and. (.not. lpenc_requested(penc)) ) then
+          if (lroot) print'(a,i4,a)', &
+              'pencil_consistency_check: MISSING PENCIL... pencil '// &
+              trim(pencil_names(penc))//' (',penc,')', &
+              'is not requested, but calculating it changes the results!'
+          ldie=.true.
+        endif
+      enddo
+!
+!  Check diagnostic pencils
+!
+      lout=.true.
+      lfirst=.true.
+      df=0.0
+      f_other=f
+      fname=0.0
+      include 'pencil_init.inc' 
+!
+!  Calculate reference diagnostics with all diagnostic pencils on
+!
+      lpencil=(lpenc_diagnos.or.lpenc_requested)
+      ldiagnos=.true.
+      call pde(f_other,df,p)
+      fname_ref=fname
+!
+      do penc=1,npencils 
+        df=0.0
+        f_other=f
+        fname=0.0
+        include 'pencil_init.inc' 
+!
+!  Calculate diagnostics with one pencil swapped
+!
+        lpencil=(lpenc_diagnos.or.lpenc_requested)
+        lpencil(penc)=(.not. lpencil(penc))
+        call pde(f_other,df,p)
+!
+!  Compare results...
+!
+        lconsistent=.true.
+        do k=1,mname
+          lconsistent=(fname(k)==fname_ref(k))
+          if (.not.lconsistent) exit
+        enddo
+!        
+!  ref = result same as "correct" reference result
+!    d = swapped pencil set as diagnostic
+!    r = swapped pencil set as requested (can take over for diagnostic pencil) 
+!
+!   ref +  d +  r = d not needed but set, r not needed but set; optimize d
+!   ref +  d + !r = d not needed but set, r not needed and not set; optimize d
+!  !ref +  d +  r = d needed and set, r needed and set; d superfluous, but OK
+!  !ref +  d + !r = d needed and set; all OK
+!   ref + !d +  r = d not needed and not set; all OK
+!  !ref + !d +  r = d needed and not set, r needed and set; all OK
+!  !ref + !d + !r = d needed and not set, r needed and not set; missing d
+!
+        if (lconsistent .and. lpenc_diagnos(penc)) then
+          if (lroot) print'(a,i4,a)', &
+              'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
+              trim(pencil_names(penc))//' (',penc,')', &
+              'is requested for diagnostics, '// &
+              'but does not appear to be required!'
+        elseif ( (.not. lconsistent) .and. (.not. lpenc_diagnos(penc)) .and. &
+            (.not. lpenc_requested(penc)) ) then
+          if (lroot) print'(a,i4,a)', &
+              'pencil_consistency_check: MISSING PENCIL... pencil '// &
+              trim(pencil_names(penc))//' (',penc,')', &
+              'is not requested for diagnostics, '// &
+              'but calculating it changes the diagnostics!'
+          ldie=.true.
+        endif
+      enddo
+!
+!  Clean up
+!
+      headt=.true.
+      lout=.false.
+      lfirst=.false.
+      df=0.0      
+      deallocate(df_ref)
+      deallocate(fname_ref)
+      deallocate(f_other)
+!
+      if (ldie) call stop_it('pencil_consistency_check: DYING')
+!        
+    endsubroutine pencil_consistency_check
 !***********************************************************************
-     
+
 endmodule Equ

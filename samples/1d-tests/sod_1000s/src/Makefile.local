@@ -13,5 +13,5 @@ ENTROPY=entropy
 MAGNETIC=nomagnetic
 HYDRO=hydro
 DENSITY=density
-VISCOSITY=visc_shock
+SHOCK=shock
 IO=io_dist

@@ -1,4 +1,4 @@
- ! $Id: global_spheromak.f90,v 1.2 2004-07-11 14:49:47 brandenb Exp $
+ ! $Id: global_spheromak.f90,v 1.3 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 module Global
 
@@ -39,7 +39,7 @@ module Global
       integer :: m,n
       character (len=*) ::label
 !
-      if (ip==0) print*,var,m,n,label
+      if (NO_WARN) print*,var,m,n,label
     endsubroutine set_global_vect
 !***********************************************************************
     subroutine get_global_vect(var,m,n,label)

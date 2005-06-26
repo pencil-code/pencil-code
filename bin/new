@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: new,v 1.13 2003-11-02 03:09:56 brandenb Exp $
+#  $Id: new,v 1.14 2005-06-26 17:34:16 eos_merger_tony Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore

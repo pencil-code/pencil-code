@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $
+! $Id: grav_self.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -6,6 +6,8 @@
 !
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED gg,g2,curlgg,curlcurlgg,divgg,divgg2,ug
 !
 !***************************************************************
 
@@ -17,12 +19,17 @@ module Gravity
 
   implicit none
 
+  private
+
+  include 'gravity.inc'
+
   interface potential
     module procedure potential_global
     module procedure potential_penc
     module procedure potential_point
   endinterface
 
+  real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.,gravdiff=0.
@@ -50,8 +57,8 @@ module Gravity
     grav_const,gravdiff,gg_quench
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
-  integer :: i_epot=0,i_depot=0
+  integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
+  integer :: idiag_divggmax=0,idiag_epot=0,idiag_depot=0
 
   contains
 
@@ -87,7 +94,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: grav_self.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -115,6 +122,49 @@ module Gravity
 !
     endsubroutine initialize_gravity
 !***********************************************************************
+    subroutine read_gravity_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=grav_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=grav_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_gravity_init_pars
+!***********************************************************************
+    subroutine write_gravity_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=grav_init_pars)
+                                                                                                   
+    endsubroutine write_gravity_init_pars
+!***********************************************************************
+    subroutine read_gravity_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=grav_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=grav_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_gravity_run_pars
+!***********************************************************************
+    subroutine write_gravity_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=grav_run_pars)
+                                                                                                   
+    endsubroutine write_gravity_run_pars
+!
+!***********************************************************************
     subroutine init_gg(f,xx,yy,zz)
 !
 !  initialise gravity; called from start.f90
@@ -128,10 +178,72 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to store gg)
 !
-      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+      if(NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho)
+    subroutine pencil_criteria_gravity()
+! 
+!  All pencils that the Gravity module depends on are specified here.
+! 
+!  21-11-04/anders: coded
+!
+      lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_rho)=.true.
+      if (gravdiff/=0.) lpenc_requested(i_curlcurlgg)=.true.
+      if (gg_quench/=0.) lpenc_requested(i_g2)=.true.
+!
+      if (idiag_curlggrms/=0 .or. idiag_curlggmax/=0) &
+          lpenc_requested(i_curlgg2)=.true.
+      if (idiag_divggrms/=0 .or. idiag_divggmax/=0) &
+          lpenc_requested(i_divgg2)=.true.
+      if (idiag_depot/=0) lpenc_requested(i_g2)=.true.
+      if (idiag_depot/=0) lpenc_requested(i_ug)=.true.
+!
+    endsubroutine pencil_criteria_gravity
+!***********************************************************************
+    subroutine pencil_interdep_gravity(lpencil_in)
+!
+!  Interdependency among pencils from the Gravity module is specified here.
+!
+!  21-11-04/anders: coded
+! 
+      logical, dimension(npencils) :: lpencil_in
+! 
+      if (lpencil_in(i_g2)) lpencil_in(i_gg)=.true.
+      if (lpencil_in(i_curlgg2)) lpencil_in(i_curlgg)=.true.
+      if (lpencil_in(i_divgg2)) lpencil_in(i_divgg)=.true.
+      if (lpencil_in(i_ug)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_gg)=.true.
+      endif
+! 
+    endsubroutine pencil_interdep_gravity
+!***********************************************************************
+    subroutine calc_pencils_gravity(f,p)
+!   
+!  Calculate Gravity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+! 
+!  21-11-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f
+      intent(inout) :: p
+! 
+      if (lpencil(i_gg)) p%gg=f(l1:l2,m,n,igx:igz)
+      if (lpencil(i_g2)) call dot2_mn(p%gg,p%g2)
+      if (lpencil(i_curlgg)) call curl(f,igg,p%curlgg)
+      if (lpencil(i_curlcurlgg)) call del2v_etc(f,igg,curlcurl=p%curlcurlgg)
+      if (lpencil(i_curlgg2)) call dot2_mn(p%curlgg,p%curlgg2)
+      if (lpencil(i_divgg)) call div(f,igg,p%divgg)
+      if (lpencil(i_divgg2)) p%divgg2=p%divgg**2
+      if (lpencil(i_ug)) call dot_mn(p%uu,p%gg,p%ug)
+!
+    endsubroutine calc_pencils_gravity
+!***********************************************************************
+    subroutine duu_dt_grav(f,df)
 !
 !  advance pseudo selfgravity and add to duu/dt
 !
@@ -142,11 +254,11 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,gg,curlgg,curlcurlgg,quench
-      real, dimension (nx) :: rho,curlgg2,divgg,divgg2,udotg,g2
+      type (pencil_case) :: p
+!      
       integer :: j
 !
-      intent(in) :: f,uu,rho
+      intent(in) :: f
       intent(out) :: df
 !
 !  different gravity profiles
@@ -157,22 +269,19 @@ module Gravity
 !  Note that 4pi*G = "grav_const"
 !
       do j=0,2
-        df(l1:l2,m,n,igg+j)=df(l1:l2,m,n,igg+j)+grav_const*rho*uu(:,1+j)
+        df(l1:l2,m,n,igg+j)=df(l1:l2,m,n,igg+j)+grav_const*p%rho*p%uu(:,1+j)
       enddo
 !
 !  diffuse non-potential contribution to gravity to zero
 !
       if (gravdiff/=0.) then
-        call del2v_etc(f,igg,curlcurl=curlcurlgg)
-        df(l1:l2,m,n,igx:igz)=df(l1:l2,m,n,igx:igz)-gravdiff*curlcurlgg
+        df(l1:l2,m,n,igx:igz)=df(l1:l2,m,n,igx:igz)-gravdiff*p%curlcurlgg
       endif
 !
 !  quenching factor
 !
       if (gg_quench/=0.) then
-        gg=f(l1:l2,m,n,igx:igz)
-        call dot2_mn(gg,g2)
-        quench(:,1)=1./(1.+g2/gg_quench)
+        quench(:,1)=1./(1.+p%g2/gg_quench)
         quench(:,2)=quench(:,1)
         quench(:,3)=quench(:,1)
       else
@@ -186,39 +295,28 @@ module Gravity
 !  diagnostics
 !
       if (ldiagnos) then
-        gg=f(l1:l2,m,n,igx:igz)
 !
 !  check the degree of non-potential contamination
 !
-        if (i_curlggrms/=0.or.i_curlggmax/=0) then
-          call curl(f,igg,curlgg)
-          call dot2_mn(curlgg,curlgg2)
-          if (i_curlggrms/=0) call sum_mn_name(curlgg2,i_curlggrms,lsqrt=.true.)
-          if (i_curlggmax/=0) call max_mn_name(curlgg2,i_curlggmax,lsqrt=.true.)
-        endif
+        if (idiag_curlggrms/=0) &
+            call sum_mn_name(p%curlgg2,idiag_curlggrms,lsqrt=.true.)
+        if (idiag_curlggmax/=0) &
+            call max_mn_name(p%curlgg2,idiag_curlggmax,lsqrt=.true.)
 !
 !  for comparison, we also need divgg
 !
-        if (i_divggrms/=0.or.i_divggmax/=0) then
-          call div(f,igg,divgg)
-          divgg2=divgg**2
-          if (i_divggrms/=0) call sum_mn_name(divgg2,i_divggrms,lsqrt=.true.)
-          if (i_divggmax/=0) call max_mn_name(divgg2,i_divggmax,lsqrt=.true.)
-        endif
+        if (idiag_divggrms/=0) &
+              call sum_mn_name(p%divgg2,idiag_divggrms,lsqrt=.true.)
+        if (idiag_divggmax/=0) &
+              call max_mn_name(p%divgg2,idiag_divggmax,lsqrt=.true.)
 !
 !  gravitational energy
 !
-        if (i_depot/=0) then
-          call dot2_mn(gg,g2)
-          call sum_mn_name(-.5*g2/grav_const,i_epot)
-        endif
+        if (idiag_depot/=0) call sum_mn_name(-.5*p%g2/grav_const,idiag_epot)
 !
 !  change in gravitational energy
 !
-        if (i_depot/=0) then
-          call dot_mn(uu,gg,udotg)
-          call sum_mn_name(rho*udotg,i_depot)
-        endif
+        if (idiag_depot/=0) call sum_mn_name(p%rho*p%ug,idiag_depot)
 !
       endif
 !
@@ -237,7 +335,7 @@ module Gravity
 !
       call stop_it("potential_globali: not implemented for grav_self")
 !
-      if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
+      if(NO_WARN) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
            pot(1,1,1),pot0  !(keep compiler quiet)
 !
     endsubroutine potential_global
@@ -275,7 +373,7 @@ module Gravity
         !grav=f(l1:l2,m,n,igx:igz)
       endif
 !
-      if(ip==0) print*,xmn,ymn,zmn,rmn !(keep compiler quiet)
+      if(NO_WARN) print*,xmn,ymn,zmn,rmn !(keep compiler quiet)
     endsubroutine potential_penc
 !***********************************************************************
     subroutine potential_point(x,y,z,r, pot,pot0, grav)
@@ -292,7 +390,7 @@ module Gravity
 !
       call stop_it("grav_self: potential_point not implemented")
 !
-      if(ip==0) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
+      if(NO_WARN) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
     endsubroutine potential_point
 !!***********************************************************************
 !    subroutine self_gravity(f)
@@ -363,30 +461,34 @@ module Gravity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_curlggrms=0; i_curlggmax=0; i_divggrms=0; i_divggmax=0
-        i_epot=0; i_depot=0
+        idiag_curlggrms=0; idiag_curlggmax=0; idiag_divggrms=0; idiag_divggmax=0
+        idiag_epot=0; idiag_depot=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'curlggrms',i_curlggrms)
-        call parse_name(iname,cname(iname),cform(iname),'curlggmax',i_curlggmax)
-        call parse_name(iname,cname(iname),cform(iname),'divggrms',i_divggrms)
-        call parse_name(iname,cname(iname),cform(iname),'divggmax',i_divggmax)
-        call parse_name(iname,cname(iname),cform(iname),'depot',i_depot)
-        call parse_name(iname,cname(iname),cform(iname),'epot',i_epot)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'curlggrms',idiag_curlggrms)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'curlggmax',idiag_curlggmax)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'divggrms',idiag_divggrms)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'divggmax',idiag_divggmax)
+        call parse_name(iname,cname(iname),cform(iname),'depot',idiag_depot)
+        call parse_name(iname,cname(iname),cform(iname),'epot',idiag_epot)
       enddo
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'i_curlggrms=',i_curlggrms
-        write(3,*) 'i_curlggmax=',i_curlggmax
-        write(3,*) 'i_divggrms=',i_divggrms
-        write(3,*) 'i_divggmax=',i_divggmax
-        write(3,*) 'i_depot=',i_depot
-        write(3,*) 'i_epot=',i_epot
+        write(3,*) 'i_curlggrms=',idiag_curlggrms
+        write(3,*) 'i_curlggmax=',idiag_curlggmax
+        write(3,*) 'i_divggrms=',idiag_divggrms
+        write(3,*) 'i_divggmax=',idiag_divggmax
+        write(3,*) 'i_depot=',idiag_depot
+        write(3,*) 'i_epot=',idiag_epot
         write(3,*) 'igg=',igg
         write(3,*) 'igx=',igx
         write(3,*) 'igy=',igy

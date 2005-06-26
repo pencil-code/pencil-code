@@ -11,6 +11,7 @@ FORCING=forcing
 ENTROPY=noentropy
 MAGNETIC=magnetic
 HYDRO=hydro
+EOS=eos_idealgas
 DENSITY=density
 PSCALAR=pscalar_nolog
 IO=io_dist

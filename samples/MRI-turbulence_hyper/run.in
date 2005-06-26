@@ -1,0 +1,34 @@
+!
+!  Run parameters for MRI turbulence
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2005-06-26 17:34:29 eos_merger_tony Exp $',
+  nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=100, itorder=3,
+  dsnap=10., dtmin=1e-6
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  diffrho_hyper3=7e-7, idiff='hyper3'
+/
+&grav_run_pars
+  lgravx_dust=T, lgravx_gas=F, gravx=1000.
+/
+&magnetic_run_pars
+  eta=7e-7, iresistivity='hyper3'
+/
+&dustvelocity_run_pars
+  tausd=7e-7, ldustvelocity_shorttausd=T, ldragforce_dust=T, ldragforce_gas=F
+/
+&dustdensity_run_pars
+  diffnd_hyper3=7e-7, idiffd='hyper3'
+/
+&shear_run_pars
+  qshear=1.5
+/
+&viscosity_run_pars
+  nu_hyper3=7e-7, ivisc='hyper3_rho_nu-const'
+/

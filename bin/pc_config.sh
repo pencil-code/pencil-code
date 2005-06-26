@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.6 2004-04-06 22:56:41 mee Exp $
+# $Id: pc_config.sh,v 1.7 2005-06-26 17:34:17 eos_merger_tony Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do

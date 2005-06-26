@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.16 2004-10-27 14:21:47 ajohan Exp $
+! $Id: nopscalar.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -8,6 +8,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+! PENCILS PROVIDED cc,cc1
 !
 !***************************************************************
 
@@ -18,19 +19,15 @@ module Pscalar
 
   implicit none
 
-  real :: rhoccm=0., cc2m=0., gcc2m=0., cc_const=1., unit_rhocc=1.
+  include 'pscalar.inc'
 
-  integer :: dummy           ! We cannot define empty namelists
-  namelist /pscalar_init_pars/ dummy
-  namelist /pscalar_run_pars/  dummy
-
-  ! other variables (needs to be consistent with reset list below)
-  integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
-  integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0,i_Crmsm=0
-  integer :: i_cc1m=0,i_cc2m=0,i_cc3m=0,i_cc4m=0,i_cc5m=0
-  integer :: i_cc6m=0,i_cc7m=0,i_cc8m=0,i_cc9m=0,i_cc10m=0
-  integer :: i_gcc1m=0,i_gcc2m=0,i_gcc3m=0,i_gcc4m=0,i_gcc5m=0
-  integer :: i_gcc6m=0,i_gcc7m=0,i_gcc8m=0,i_gcc9m=0,i_gcc10m=0
+!ajwm needed by dustvelocity.f90 for some reason.
+  real :: unit_rhocc=1.
+!ajwm needed by prints.f90 for some reason.
+  real :: rhoccm=0., cc2m=0., gcc2m=0. 
+  integer :: idiag_gcc2m=0, idiag_cc2m=0, idiag_rhoccm=0
+  !namelist /pscalar_init_pars/ dummy
+  !namelist /pscalar_run_pars/  dummy
 
   contains
 
@@ -56,7 +53,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.16 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: nopscalar.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -72,7 +69,7 @@ module Pscalar
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if(ip==0) print*,'f=',f
+      if (NO_WARN) print*,'f=',f
     endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc(f,xx,yy,zz)
@@ -90,10 +87,53 @@ module Pscalar
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
+      if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
+!        
     endsubroutine init_lncc
 !***********************************************************************
-    subroutine dlncc_dt(f,df,uu,rho,glnrho,cc,cc1)
+    subroutine pencil_criteria_pscalar()
+! 
+!  All pencils that the Pscalar module depends on are specified here.
+! 
+!  20-11-04/anders: coded
+!
+    endsubroutine pencil_criteria_pscalar
+!***********************************************************************
+    subroutine pencil_interdep_pscalar(lpencil_in)
+!
+!  Interdependency among pencils provided by the Pscalar module
+!  is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_pscalar
+!***********************************************************************
+    subroutine calc_pencils_pscalar(f,p)
+!
+!  Calculate Pscalar pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-11-04/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f
+      intent(inout) :: p
+! cc
+      if (lpencil(i_cc)) p%cc=1.
+! cc1
+      if (lpencil(i_cc1)) p%cc1=1.
+!
+    endsubroutine calc_pencils_pscalar
+!***********************************************************************
+    subroutine dlncc_dt(f,df,p)
 !
 !  magnetic field evolution
 !
@@ -103,14 +143,44 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: rho,cc,cc1
+      type (pencil_case) :: p
 !
-      intent(in)  :: f,df,uu,rho,glnrho
+      intent(in)  :: f,df,p
 !
-      if(ip==0) print*,f,df,uu,rho,glnrho,cc,cc1
+      if (NO_WARN) print*,f,df,p
 !        
     endsubroutine dlncc_dt
+!***********************************************************************
+    subroutine read_pscalar_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_pscalar_init_pars
+!***********************************************************************
+    subroutine write_pscalar_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_pscalar_init_pars
+!***********************************************************************
+    subroutine read_pscalar_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_pscalar_run_pars
+!***********************************************************************
+    subroutine write_pscalar_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_pscalar_run_pars
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)
 !
@@ -130,17 +200,16 @@ module Pscalar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
       endif
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rhoccm=',i_rhoccm
-        write(3,*) 'i_ccmax=',i_ccmax
-        write(3,*) 'i_lnccm=',i_lnccm
-        write(3,*) 'i_lnccmz=',i_lnccmz
-        write(3,*) 'ilncc=',ilncc
+        write(3,*) 'i_rhoccm=0'
+        write(3,*) 'i_ccmax=0'
+        write(3,*) 'i_lnccm=0'
+        write(3,*) 'i_lnccmz=0'
+        write(3,*) 'ilncc=0'
       endif
 !
     endsubroutine rprint_pscalar

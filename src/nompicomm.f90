@@ -10,9 +10,11 @@
 module Mpicomm
 
   use Cparam
-  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot
+  use Cdata, only: iproc,ipx,ipy,ipz,lroot
 
   implicit none
+
+  include 'mpicomm.inc'
 
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
@@ -29,12 +31,15 @@ module Mpicomm
     module procedure mpibcast_real_arr
   endinterface
 
+  interface mpibcast_double
+    module procedure mpibcast_double_scl
+    module procedure mpibcast_double_arr
+  endinterface
+
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
   endinterface
-
-  integer :: ierr
 
   contains
 
@@ -52,7 +57,7 @@ module Mpicomm
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
       use General
-      use Cdata, only: lmpicomm
+      use Cdata, only: lmpicomm,iproc,ipx,ipy,ipz,lroot
 !
 !  sets iproc in order that we write in the correct directory
 !
@@ -80,15 +85,15 @@ module Mpicomm
       use Cdata
 !
 !  for one processor, use periodic boundary conditions
-!  but in this dummy routine this is done in finalise_isendrcv_bdry
+!  but in this dummy routine this is done in finalize_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==0) print*,f       !(keep compiler quiet)
+      if (NO_WARN) print*,f       !(keep compiler quiet)
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
-    subroutine finalise_isendrcv_bdry(f)
+    subroutine finalize_isendrcv_bdry(f)
 !
       use Cparam
 !
@@ -96,22 +101,70 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==0) print*,f       !(keep compiler quiet)
-    endsubroutine finalise_isendrcv_bdry
+      if (NO_WARN) print*,f       !(keep compiler quiet)
+    endsubroutine finalize_isendrcv_bdry
+!***********************************************************************
+    subroutine initiate_isendrcv_shock(f)
+!
+      use Cdata
+!
+!  for one processor, use periodic boundary conditions
+!  but in this dummy routine this is done in finalize_isendrcv_bdry
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*,f       !(keep compiler quiet)
+!
+    endsubroutine initiate_isendrcv_shock
+!***********************************************************************
+    subroutine finalize_isendrcv_uu(f)
+!
+      use Cparam
+!
+!  apply boundary conditions
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*,f       !(keep compiler quiet)
+    endsubroutine finalize_isendrcv_uu
+!***********************************************************************
+    subroutine initiate_isendrcv_uu(f)
+!
+      use Cdata
+!
+!  for one processor, use periodic boundary conditions
+!  but in this dummy routine this is done in finalize_isendrcv_bdry
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*,f       !(keep compiler quiet)
+!
+    endsubroutine initiate_isendrcv_uu
+!***********************************************************************
+    subroutine finalize_isendrcv_shock(f)
+!
+      use Cparam
+!
+!  apply boundary conditions
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*,f       !(keep compiler quiet)
+    endsubroutine finalize_isendrcv_shock
 !***********************************************************************
     subroutine initiate_shearing(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !    
-      if (ip==0) print*,f       !(keep compiler quiet)
+      if (NO_WARN) print*,f       !(keep compiler quiet)
     endsubroutine initiate_shearing
 !***********************************************************************
-    subroutine finalise_shearing(f)
+    subroutine finalize_shearing(f)
 !
   use Cdata
 !
 !  for one processor, use periodic boundary conditions
-!  but in this dummy routine this is done in finalise_isendrcv_bdry
+!  but in this dummy routine this is done in finalize_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       double precision    :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
@@ -145,7 +198,7 @@ module Mpicomm
                              +c5*cshift(f(l1:l1i,m1:m2,:,:),displs+2,2) &
                              +c6*cshift(f(l1:l1i,m1:m2,:,:),displs+3,2) 
       end if
-    end subroutine finalise_shearing
+    end subroutine finalize_shearing
 !***********************************************************************
     subroutine radboundary_zx_recv(mrad,idir,Ibuf_zx)
 !
@@ -154,7 +207,7 @@ module Mpicomm
       integer :: mrad,idir
       real, dimension(mx,mz) :: Ibuf_zx
 !
-      if (ip==0) then
+      if (NO_WARN) then
          print*,mrad,idir,Ibuf_zx(1,1)
       endif
 !
@@ -167,7 +220,7 @@ module Mpicomm
       integer :: nrad,idir
       real, dimension(mx,my) :: Ibuf_xy
 !
-      if (ip==0) then
+      if (NO_WARN) then
          print*,nrad,idir,Ibuf_xy(1,1)
       endif
 !
@@ -180,7 +233,7 @@ module Mpicomm
       integer :: mrad,idir
       real, dimension(mx,mz) :: Ibuf_zx
 !
-      if (ip==0) then
+      if (NO_WARN) then
          print*,mrad,idir,Ibuf_zx(1,1)
       endif
 !
@@ -193,7 +246,7 @@ module Mpicomm
       integer :: nrad,idir
       real, dimension(mx,my) :: Ibuf_xy
 !
-      if (ip==0) then
+      if (NO_WARN) then
          print*,nrad,idir,Ibuf_xy(1,1)
       endif
 !
@@ -206,7 +259,7 @@ module Mpicomm
       integer, intent(in) :: mrad
       real, dimension(mx,mz) :: Qrad_zx,tau_zx,Qrad0_zx
 !
-      if (ip==0) then
+      if (NO_WARN) then
          print*,mrad
          print*,Qrad_zx(1,1),tau_zx(1,1),Qrad0_zx(1,1)
       endif
@@ -219,7 +272,7 @@ module Mpicomm
       logical :: lbcast_array
       integer, optional :: proc
 !    
-      if (ip == 0) print*, lbcast_array, nbcast_array, proc
+      if (NO_WARN) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
@@ -229,7 +282,7 @@ module Mpicomm
       logical, dimension(nbcast_array) :: lbcast_array
       integer, optional :: proc
 !    
-      if (ip == 0) print*, lbcast_array, nbcast_array, proc
+      if (NO_WARN) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_arr
 !***********************************************************************
@@ -239,7 +292,7 @@ module Mpicomm
       integer :: ibcast_array
       integer, optional :: proc
 !    
-      if (ip == 0) print*, ibcast_array, nbcast_array, proc
+      if (NO_WARN) print*, ibcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
@@ -249,7 +302,7 @@ module Mpicomm
       integer, dimension(nbcast_array) :: ibcast_array
       integer, optional :: proc
 !    
-      if (ip == 0) print*, ibcast_array, nbcast_array, proc
+      if (NO_WARN) print*, ibcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
@@ -259,7 +312,7 @@ module Mpicomm
       real :: bcast_array
       integer, optional :: proc
 !
-      if (ip == 0) print*, bcast_array, nbcast_array, proc
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
@@ -269,9 +322,29 @@ module Mpicomm
       real, dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
-      if (ip == 0) print*, bcast_array, nbcast_array, proc
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_real_arr
+!***********************************************************************
+    subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
+!
+      integer :: nbcast_array
+      double precision :: bcast_array
+      integer, optional :: proc
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_double_scl
+!***********************************************************************
+    subroutine mpibcast_double_arr(bcast_array,nbcast_array,proc)
+!
+      integer :: nbcast_array
+      double precision, dimension(nbcast_array) :: bcast_array
+      integer, optional :: proc
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_double_arr
 !***********************************************************************
     subroutine mpibcast_char_scl(cbcast_array,nbcast_array,proc)
 !
@@ -279,7 +352,7 @@ module Mpicomm
       character :: cbcast_array
       integer, optional :: proc
 !
-      if (ip == 0) print*, cbcast_array, nbcast_array, proc
+      if (NO_WARN) print*, cbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
@@ -289,7 +362,7 @@ module Mpicomm
       character, dimension(nbcast_array) :: cbcast_array
       integer, optional :: proc
 !
-      if (ip == 0) print*, cbcast_array, nbcast_array, proc
+      if (NO_WARN) print*, cbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
@@ -316,6 +389,25 @@ module Mpicomm
 !
       fsum=fsum_tmp
     endsubroutine mpireduce_sum
+!***********************************************************************
+    subroutine mpireduce_sum_double(dsum_tmp,dsum,nreduce)
+!
+      integer :: nreduce
+      double precision, dimension(nreduce) :: dsum_tmp,dsum
+!
+      dsum=dsum_tmp
+    endsubroutine mpireduce_sum_double
+!***********************************************************************
+    subroutine mpireduce_sum_int(fsum_tmp,fsum,nreduce)
+!
+!  12-jan-05/anders: dummy coded
+!
+      integer :: nreduce
+      integer, dimension(nreduce) :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_int
 !***********************************************************************
     subroutine start_serialize()
     endsubroutine start_serialize

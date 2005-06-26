@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: copy-VARN-to-var,v 1.5 2004-04-29 09:08:21 ajohan Exp $
+#$Id: copy-VARN-to-var,v 1.6 2005-06-26 17:34:16 eos_merger_tony Exp $
 #
 #  Examples:
 #     nohup copy-VAR-to-var 10 .
@@ -27,3 +27,17 @@ foreach proc ($procdirs)
   echo "cp data/$proc/VAR$1 $2/data/$proc/var.dat"
   \cp data/$proc/VAR$1 $2/data/$proc/var.dat
 end
+#
+# Copy particle snapshots if requested.
+#
+if ( $3 == "p" ) then
+  foreach proc ($procdirs)
+    echo "cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat"
+    \cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat
+  end
+endif
+#
+# Some output and a warning.
+#
+echo Finished... Remember that you may now have to change the files
+echo tsnap.dat, move-me.list, moved-files.list and time_series.dat manually!

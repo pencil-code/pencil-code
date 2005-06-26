@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.16 2004-08-03 07:40:46 brandenb Exp $
+! $Id: cosmicray_nolog.f90,v 1.17 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -9,8 +9,12 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lcosmicray = .true.
+!
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED ecr,gecr,ugecr
 !
 !***************************************************************
 
@@ -21,17 +25,20 @@ module CosmicRay
 
   implicit none
 
+  include 'cosmicray.inc'
+
   character (len=labellen) :: initecr='zero', initecr2='zero'
 
   ! input parameters
   real :: gammacr=4./3.,gammacr1
   real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=0.
   real :: x_pos_cr=.0,y_pos_cr=.0,z_pos_cr=.0
-  real :: x_pos_cr2=.0,y_pos_cr2=.0,z_pos_cr2=.0
-  real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
+  real :: x_pos_cr2=.0,y_pos_cr2=.0,z_pos_cr2=.0,ampl_Qcr2=0.
+  real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=1.,epsilon_ecr=0.
 
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
+  
   
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
@@ -48,13 +55,13 @@ module CosmicRay
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
-       luse_diff_constants,ampl_Qcr, &
+       luse_diff_constants,ampl_Qcr,ampl_Qcr2, &
        limiter_cr,blimiter_cr
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ecrm=0,i_ecrmax=0
-  integer :: i_ecrdivum=0
-  integer :: i_kmax=0
+  integer :: idiag_ecrm=0,idiag_ecrmax=0,idiag_ecrpt=0
+  integer :: idiag_ecrdivum=0
+  integer :: idiag_kmax=0
 
   contains
 
@@ -75,7 +82,6 @@ module CosmicRay
       if (.not. first) call stop_it('register_cosmicray called twice')
       first = .false.
 !
-      lcosmicray = .true.
       iecr = nvar+1            ! index to access icr
       nvar = nvar+1            ! added 1 variable
 !
@@ -91,7 +97,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.16 2004-08-03 07:40:46 brandenb Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.17 2005-06-26 17:34:12 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -124,9 +130,9 @@ module CosmicRay
 !  initialize gammacr1
 !
       gammacr1=gammacr-1.
-      if(lroot) print*,'gammacr1=',gammacr1
+      if (lroot) print*,'gammacr1=',gammacr1
 !
-      if(ip==0) print*,'f=',f
+      if (NO_WARN) print*,'f=',f
     endsubroutine initialize_cosmicray
 !***********************************************************************
     subroutine init_ecr(f,xx,yy,zz)
@@ -144,8 +150,13 @@ module CosmicRay
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
+print*,"init_ecr: initecr = ", initecr
+print*,"init_ecr: initecr2 = ", initecr2
+print*,"init_ecr: amplecr = ", amplecr
+
       select case(initecr)
         case('zero'); f(:,:,:,iecr)=0.
+        case('constant'); f(:,:,:,iecr)=ecr_const
         case('const_ecr'); f(:,:,:,iecr)=ecr_const
         case('blob'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr,y_pos_cr,0.)
         case('gaussian-x'); call gaussian(amplecr,f,iecr,kx=kx_ecr)
@@ -173,14 +184,80 @@ module CosmicRay
 !
       select case(initecr2)
         case('wave-x'); call wave(amplecr2,f,iecr,ky=5.)
-        case('const_ecr'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
+        case('constant'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
         case('blob2'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr2,y_pos_cr2,0.)
       endselect
+
 !
-      if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
+      if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine decr_dt(f,df,uu,rho1,divu,bij,bb)
+    subroutine pencil_criteria_cosmicray()
+! 
+!  The current module's criteria for which pencils are needed
+! 
+!  20-11-04/anders: coded
+!
+      use Cdata
+!
+      lpenc_requested(i_ecr)=.true.
+      lpenc_requested(i_ugecr)=.true.
+      lpenc_requested(i_divu)=.true.
+      if (.not.lnegl) lpenc_requested(i_rho1)=.true.
+      if (Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
+        lpenc_requested(i_gecr)=.true.
+        lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_bb)=.true.
+      endif
+      if (cosmicray_diff/=0.) lpenc_requested(i_gecr)=.true.
+!
+      lpenc_diagnos(i_ecr)=.true.
+!
+    endsubroutine pencil_criteria_cosmicray
+!***********************************************************************
+    subroutine pencil_interdep_cosmicray(lpencil_in)
+!       
+!  Set all pencils that input pencil array depends on.
+!  The most basic pencils should come last (since other pencils chosen
+!  here because of dependence may depend on more basic pencils).
+!
+!  20-11-04/anders: coded
+!
+      use EquationOfState, only: gamma1
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_ugecr)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_gecr)=.true.
+      endif
+!
+    endsubroutine pencil_interdep_cosmicray
+!***********************************************************************
+    subroutine calc_pencils_cosmicray(f,p)
+!       
+!  Calculate cosmicray pencils
+!
+!  20-11-04/anders: coded
+!
+      use EquationOfState, only: gamma,gamma1,cs20,lnrho0
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f
+      intent(inout) :: p
+! ecr
+      if (lpencil(i_ecr)) p%ecr=f(l1:l2,m,n,iecr)
+! gecr
+      if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
+! ugecr
+      if (lpencil(i_ugecr)) call dot_mn(p%uu,p%gecr,p%ugecr)
+!
+    endsubroutine calc_pencils_cosmicray
+!***********************************************************************
+    subroutine decr_dt(f,df,p)
 !
 !  cosmic ray evolution
 !  calculate decr/dt + div(u.ecr - flux) = -pcr*divu = -(gammacr-1)*ecr*divu
@@ -188,64 +265,74 @@ module CosmicRay
 !  add du = ... - (1/rho)*grad(pcr) to momentum equation
 !
 !   09-oct-03/tony: coded
-!
+!  
       use Sub
 !
-      real, intent(in), dimension (mx,my,mz,mvar+maux) :: f
-      real, intent(inout), dimension (mx,my,mz,mvar) :: df
-      real, intent(in), dimension (nx,3,3) :: bij
-      real, intent(in), dimension (nx,3) :: uu,bb
-      real, intent(in), dimension (nx) :: divu,rho1
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
-      real, dimension (nx,3) :: gecr
-      real, dimension (nx) :: ecr,del2ecr,ugecr,vKperp,vKpara
+      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr
       integer :: j
+!
+      intent (in) :: f,p
+      intent (out) :: df
 !
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'SOLVE decr_dt'
       if (headtt) call identify_bcs('ecr',iecr)
 !
-!  calculate advection term
-!
-      call grad(f,iecr,gecr)
-      call dot_mn(uu,gecr,ugecr)
-!
 !  Evolution equation of cosmic ray energy density
 !
-      ecr=f(l1:l2,m,n,iecr)
-      df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)-ugecr-gammacr*ecr*divu
+      df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - p%ugecr - gammacr*p%ecr*p%divu
 !
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
-      if(.not.lnegl)then
+      if (.not.lnegl) then
         do j=0,2
-          df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
+          df(l1:l2,m,n,iux+j) = df(l1:l2,m,n,iux+j) - &
+              gammacr1*p%rho1*p%gecr(:,1+j)
         enddo
       endif
 !
-!  source term added at every time step; constant for now.
+!  constant source term added at every time step; constant for now.
 !
-      if (ampl_Qcr/=0.) df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+ampl_Qcr
+      if (ampl_Qcr/=0.) df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) + ampl_Qcr
 !
+!      
+!
+!  another source term added at every time step; blowout runs
+!
+      if (ampl_Qcr2/=0.) df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) + &
+      ampl_Qcr2*exp( - ( x(l1:l2)**2 + y(m)**2 + z(n)**2 )/0.0324 ) + &
+      ampl_Qcr2*exp( - ( x(l1:l2)**2 + (y(m)-1.5708)**2 + z(n)**2 )/0.0324)
+!
+!      
 !  tensor diffusion, or, alternatively scalar diffusion or no diffusion
 !
-      if (Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
-        if(headtt) print*,'decr_dt: Kperp,Kpara=',Kperp,Kpara
-        call tensor_diffusion(f,df,gecr,bij,bb,vKperp,vKpara)
-      elseif (cosmicray_diff/=0.) then
-        if(headtt) print*,'decr_dt: cosmicray_diff=',cosmicray_diff
+      if(lcosmicrayflux)then
+        call div(f,ifcr,divfcr)
         call del2(f,iecr,del2ecr)
-        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+cosmicray_diff*del2ecr
+        df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - divfcr + cosmicray_diff*del2ecr                 
       else
-        if(headtt) print*,'decr_dt: no diffusion'
+        if (Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
+          if (headtt) print*,'decr_dt: Kperp,Kpara=',Kperp,Kpara
+          call tensor_diffusion(f,df,p%gecr,p%bij,p%bb,vKperp,vKpara)
+        elseif (cosmicray_diff/=0.) then
+          if (headtt) print*,'decr_dt: cosmicray_diff=',cosmicray_diff
+          call del2(f,iecr,del2ecr)
+          df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) + cosmicray_diff*del2ecr
+        else
+          if (headtt) print*,'decr_dt: no diffusion'
+        endif
       endif
 !
 !  For the timestep calculation, need maximum diffusion
 !
       if (lfirst.and.ldt) then
-        if(lvariable_tensor_diff)then
+        if (lvariable_tensor_diff)then
            diffus_cr=max(cosmicray_diff,vKperp,vKpara)*dxyz_2
         else
            diffus_cr=max(cosmicray_diff,Kperp,Kpara)*dxyz_2
@@ -259,14 +346,55 @@ module CosmicRay
 !  <u_k u_j d_j c> = <u_k c uu.gradecr>
 !
       if (ldiagnos) then
-        ecr=f(l1:l2,m,n,iecr)
-        if (i_ecrdivum/=0) call sum_mn_name(ecr*divu,i_ecrdivum)
-        if (i_ecrm/=0) call sum_mn_name(ecr,i_ecrm)
-        if (i_ecrmax/=0) call max_mn_name(ecr,i_ecrmax)
-        if (i_kmax/=0) call max_mn_name(vKperp,i_kmax)
+        if (idiag_ecrdivum/=0) call sum_mn_name(p%ecr*p%divu,idiag_ecrdivum)
+        if (idiag_ecrm/=0) call sum_mn_name(p%ecr,idiag_ecrm)
+        if (idiag_ecrmax/=0) call max_mn_name(p%ecr,idiag_ecrmax)
+        if (idiag_ecrpt/=0) call save_name(p%ecr(lpoint-nghost),idiag_ecrpt)
+        if (idiag_kmax/=0) call max_mn_name(vKperp,idiag_kmax)
       endif
 !
     endsubroutine decr_dt
+!***********************************************************************
+    subroutine read_cosmicray_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=cosmicray_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=cosmicray_init_pars,ERR=99)
+      endif
+
+99    return
+    endsubroutine read_cosmicray_init_pars
+!***********************************************************************
+    subroutine write_cosmicray_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=cosmicray_init_pars)
+                                                                                                   
+    endsubroutine write_cosmicray_init_pars
+!***********************************************************************
+    subroutine read_cosmicray_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=cosmicray_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=cosmicray_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_cosmicray_run_pars
+!***********************************************************************
+    subroutine write_cosmicray_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=cosmicray_run_pars)
+                                                                                                   
+    endsubroutine write_cosmicray_run_pars
 !***********************************************************************
     subroutine rprint_cosmicray(lreset,lwrite)
 !
@@ -287,31 +415,35 @@ module CosmicRay
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ecrm=0; i_ecrdivum=0; i_ecrmax=0; i_kmax=0
+        idiag_ecrm=0; idiag_ecrdivum=0; idiag_ecrmax=0; idiag_kmax=0
+        idiag_ecrpt=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'ecrm',i_ecrm)
-        call parse_name(iname,cname(iname),cform(iname),'ecrdivum',i_ecrdivum)
-        call parse_name(iname,cname(iname),cform(iname),'ecrmax',i_ecrmax)
-        call parse_name(iname,cname(iname),cform(iname),'kmax',i_kmax)
+        call parse_name(iname,cname(iname),cform(iname),'ecrm',idiag_ecrm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'ecrdivum',idiag_ecrdivum)
+        call parse_name(iname,cname(iname),cform(iname),'ecrmax',idiag_ecrmax)
+        call parse_name(iname,cname(iname),cform(iname),'ecrpt',idiag_ecrpt)
+        call parse_name(iname,cname(iname),cform(iname),'kmax',idiag_kmax)
       enddo
 !
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-!        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',i_ecrmz)
+!        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ecrmz',idiag_ecrmz)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_ecrm=',i_ecrm
-        write(3,*) 'i_ecrdivum=',i_ecrdivum
-        write(3,*) 'i_ecrmax=',i_ecrmax
-        write(3,*) 'i_kmax=',i_kmax
+        write(3,*) 'i_ecrm=',idiag_ecrm
+        write(3,*) 'i_ecrdivum=',idiag_ecrdivum
+        write(3,*) 'i_ecrmax=',idiag_ecrmax
+        write(3,*) 'i_ecrpt=',idiag_ecrpt
+        write(3,*) 'i_kmax=',idiag_kmax
         write(3,*) 'iecr=',iecr
       endif
 !
@@ -359,15 +491,18 @@ module CosmicRay
 
 !
 !  calculate unit vector of bb
-!
+!,file='../cosmicrays/data/time_series.dat'
       call dot2_mn(bb,b2)
+!ajwm - possible rescale before and after derivative?
+!      b1=1./amax1(tiny(b2),sqrt(b2))
+!      call multsv_mn(b1*(dxmin/2.)**2,bb,bunit)
       b21=1./max(tiny(b2),b2)
       call multsv_mn(sqrt(b21),bb,bunit)
 !
 !  calculate first H_i (unless we use simplified_cosmicray_tensor)
 !  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
 !
-      if(simplified_cosmicray_tensor) then
+      if (simplified_cosmicray_tensor) then
         tmp=0.
       else
 !
@@ -405,6 +540,11 @@ module CosmicRay
 !  by 1/sqrt(1.+dxmin^2*H^2).
 !  and dot H with ecr gradient
 !
+!ajwm - possible rescale before and after derivatives
+!        call dot2_mn(hhh,hhh2)
+!        quenchfactor=1./sqrt(1.+(2./dxmin)**2*hhh2)
+!        call multsv_mn(quenchfactor,hhh,hhh)
+
         if (limiter_cr>0.) then
           call dot2_mn(hhh,hhh2)
           quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)
@@ -450,11 +590,11 @@ module CosmicRay
 !
 !  if variable tensor, add extra terms and add result into decr/dt 
 !
-      if(lvariable_tensor_diff)then
+      if (lvariable_tensor_diff)then
 !
 !  set vKpara, vKperp
 !
-!  if(luse_diff  _coef)
+!  if (luse_diff  _coef)
 !  
         vKpara(:)=Kpara
         vKperp(:)=Kperp

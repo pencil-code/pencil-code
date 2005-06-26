@@ -1,4 +1,4 @@
-! $Id: filter.f90,v 1.3 2005-03-02 06:10:04 dobler Exp $
+! $Id: filter.f90,v 1.4 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 module Filter
 
@@ -6,11 +6,15 @@ module Filter
   use Sub
  
   implicit none
+
+  private
+
+  public :: rmwig, rmwig_xyaverage
   
   contains
 
 !***********************************************************************
-    subroutine rmwig(f,df,ivar1,ivar2,awig,explog)
+    subroutine rmwig(f,df,ivar1,ivar2,awigg,explog)
 !
 !  Remove small scale oscillations (`wiggles') from a component of f,
 !  normally from lnrho. Sometimes necessary since Nyquist oscillations in
@@ -37,7 +41,7 @@ module Filter
       real, dimension (mx,my,mz,mvar) :: df
       logical, optional :: explog
       integer :: ivar1,ivar2
-      real :: awig
+      real :: awigg
 !
 !  print identifier
 !
@@ -65,11 +69,11 @@ module Filter
 !  NB: Need to stick to the order x-y-z, or boundconds will be wrong
 !
       call boundconds_x(f)
-      call rmwig_1d(f,df,ivar1,ivar2,awig,1) ! x direction
+      call rmwig_1d(f,df,ivar1,ivar2,awigg,1) ! x directiong
       call boundconds_y(f)
-      call rmwig_1d(f,df,ivar1,ivar2,awig,2) ! y direction
+      call rmwig_1d(f,df,ivar1,ivar2,awigg,2) ! y direction
       call boundconds_z(f)
-      call rmwig_1d(f,df,ivar1,ivar2,awig,3) ! z direction
+      call rmwig_1d(f,df,ivar1,ivar2,awigg,3) ! z direction
 !
 !  Revert back to f if we have been working on exp(f)
 !
@@ -80,7 +84,7 @@ module Filter
 !
     endsubroutine rmwig
 !***********************************************************************
-    subroutine rmwig_1d(f,df,ivar1,ivar2,awig,idir)
+    subroutine rmwig_1d(f,df,ivar1,ivar2,awigg,idir)
 !
 !  Remove small scale oscillations (`wiggles') in the x direction from
 !  the ivar component of f (normally lnrho).
@@ -97,7 +101,7 @@ module Filter
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tmp
-      real :: awig
+      real :: awigg
       integer :: ivar,ivar1,ivar2,idir
 !
 !  Initiate communication of ghost zones
@@ -115,7 +119,7 @@ module Filter
         n=nn(imn)
         m=mm(imn)
         if (necessary(imn)) then 
-          call finalise_isendrcv_bdry(f)
+          call finalize_isendrcv_bdry(f)
         endif
         do ivar=ivar1,ivar2
           call der6(f,ivar,tmp,idir,IGNOREDX=.true.)
@@ -128,7 +132,7 @@ module Filter
 !
       do ivar=ivar1,ivar2
         f(l1:l2,m1:m2,n1:n2,ivar) = &
-             f(l1:l2,m1:m2,n1:n2,ivar) + awig*df(l1:l2,m1:m2,n1:n2,ivar)
+             f(l1:l2,m1:m2,n1:n2,ivar) + awigg*df(l1:l2,m1:m2,n1:n2,ivar)
       enddo
 !
 !-- print*,'rmwig_1d: WRITE df (from der6) for testing; idir=',idir
@@ -203,7 +207,7 @@ module Filter
         n=nn(imn)
         m=mm(imn)
         if (necessary(imn)) then 
-          call finalise_isendrcv_bdry(f)
+          call finalize_isendrcv_bdry(f)
         endif
         call del6_nodx(f,ivar,tmp)
 ! 1/64 would be fine for 1d runs, but in 3d we have higher wave numbers

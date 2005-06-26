@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.37 2004-09-28 11:33:06 ajohan Exp $
+# CVS: $Id: start_run.csh,v 1.38 2005-06-26 17:34:17 eos_merger_tony Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -82,6 +82,7 @@ if (! -e NOERASE) then
       mv $datadir/time_series.dat $datadir/time_series.`timestr`
   rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
         $datadir/averages/* >& /dev/null
+  rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
 endif
 
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
@@ -110,6 +111,7 @@ if ($local_disc) then
   # the background process copy-snapshots will know how large the snapshots
   # ought to be. Certainly far from elegant..
   $copysnapshots -v var.dat     >&  copy-snapshots.log
+  if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots.log
 
   # On machines with local scratch directory, initialize automatic
@@ -145,6 +147,7 @@ date
 if ($local_disc) then
   echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash.dat back from local scratch disks"
   $copysnapshots -v var.dat     >&! copy-snapshots2.log
+  if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots2.log
   $copysnapshots -v -1          >>& copy-snapshots2.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots2.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots2.log

@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: pc_run,v 1.3 2004-04-06 17:35:10 mee Exp $
+# CVS: $Id: pc_run,v 1.4 2005-06-26 17:34:17 eos_merger_tony Exp $
 #                       pc_run
 #                      ---------
 #   Run src/run.x (timestepping for src/run.x).

@@ -3,17 +3,22 @@
 !  Runtime parameters for shocktube problem
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2004-04-07 10:36:24 theine Exp $'
+  cvsid='$Id: run.in,v 1.6 2005-06-26 17:34:20 eos_merger_tony Exp $'
   nt=20000, it1=50, cdt=0.4, cdtv=0.4, cdts=1e5, isave=50, itorder=3,
   dsnap=20., dvid=.02,tmax=2.4,
   bcx = 'a','s','s','s','s'
+  lpencil_check=T
+/
+&eos_run_pars
 /
 &hydro_run_pars
-  nu=0.02
 /
 &density_run_pars
   cdiffrho=0.,  !(mass diffusion not currently used)
 /
 &entropy_run_pars
-  lcalc_heatcond_constchi=T,chi=5e-4
+  iheatcond='chi-const',chi=5e-4
+/
+&viscosity_run_pars
+  nu=0.02
 /

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.71 2005-06-12 19:32:49 brandenb Exp $
+! $Id: prints.f90,v 1.72 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 module Print
 
@@ -7,6 +7,12 @@ module Print
   use Magnetic
 
   implicit none
+
+  private
+
+  public :: initialize_prints, prints
+  public :: write_1daverages, write_2daverages
+  public :: write_2daverages_prepare
 
   character (len=4) :: ch2davg
 
@@ -84,9 +90,9 @@ module Print
 !  Use 1.*(it-1) to have floating point or double precision.
 !
       if (lroot) then
-        if (i_t/=0)   call save_name(tdiagnos,i_t)
-        if (i_dt/=0)  call save_name(dt,i_dt)
-        if (i_it/=0)  call save_name(1.*(it-1),i_it)
+        if (idiag_t/=0)   call save_name(tdiagnos,idiag_t)
+        if (idiag_dt/=0)  call save_name(dt,idiag_dt)
+        if (idiag_it/=0)  call save_name(1.*(it-1),idiag_it)
         if (lmagnetic) call calc_mfield
         if (lhydro)    call calc_mflow
         if (lpscalar)  call calc_mpscalar
@@ -166,16 +172,16 @@ module Print
 !  calculate brms (this requires that brms is set in print.in)
 !  broadcast result to other processors
 !
-      if (i_brms/=0) then
-        if (iproc==0) brms=fname(i_brms)
+      if (idiag_brms/=0) then
+        if (iproc==0) brms=fname(idiag_brms)
         call mpibcast_real(brms,1)
       endif
 !
 !  calculate orms (this requires that orms is set in print.in)
 !  broadcast result to other processors
 !
-      if (i_orms/=0) then
-        if (iproc==0) orms=fname(i_orms)
+      if (idiag_orms/=0) then
+        if (iproc==0) orms=fname(idiag_orms)
         call mpibcast_real(orms,1)
       endif
 !
@@ -189,18 +195,18 @@ module Print
 !  calculate rhoccm and cc2m (this requires that these are set in print.in)
 !  broadcast result to other processors
 !
-      if (i_rhoccm/=0) then
-        if (iproc==0) rhoccm=fname(i_rhoccm)
+      if (idiag_rhoccm/=0) then
+        if (iproc==0) rhoccm=fname(idiag_rhoccm)
         call mpibcast_real(rhoccm,1)
       endif
 !
-      if (i_cc2m/=0) then
-        if (iproc==0) cc2m=fname(i_cc2m)
+      if (idiag_cc2m/=0) then
+        if (iproc==0) cc2m=fname(idiag_cc2m)
         call mpibcast_real(cc2m,1)
       endif
 !
-      if (i_gcc2m/=0) then
-        if (iproc==0) gcc2m=fname(i_gcc2m)
+      if (idiag_gcc2m/=0) then
+        if (iproc==0) gcc2m=fname(idiag_gcc2m)
         call mpibcast_real(gcc2m,1)
       endif
 !
@@ -229,6 +235,7 @@ module Print
 !  23-nov-03/axel: adapted from write_2daverages and wvid_prepare
 !
       use Param_IO
+      use Sub, only: update_snaptime, read_snaptime
 !
       real, save :: t2davg
       integer, save :: n2davg
@@ -321,7 +328,7 @@ module Print
         close(1)
       endif
 !
-      if(ip==0) print*,ch       ! (keep compiler quiet)
+      if(NO_WARN) print*,ch       ! (keep compiler quiet)
 !
     endsubroutine write_zaverages
 !***********************************************************************

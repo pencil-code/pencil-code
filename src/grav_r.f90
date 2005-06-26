@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.69 2005-03-02 06:10:04 dobler Exp $
+! $Id: grav_r.f90,v 1.70 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -19,6 +19,8 @@ module Gravity
 
   implicit none
 
+  include 'gravity.inc'
+
   interface potential
     module procedure potential_global
     module procedure potential_penc
@@ -26,6 +28,7 @@ module Gravity
   endinterface
 
   ! coefficients for potential
+  real, dimension(nx) :: gravx_pencil=0.,gravy_pencil=0.,gravz_pencil=0.
   real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
@@ -46,7 +49,8 @@ module Gravity
   namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
+  integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
+  integer :: idiag_divggmax=0
 
   contains
 
@@ -68,7 +72,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.69 2005-03-02 06:10:04 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.70 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -130,6 +134,11 @@ module Gravity
           if (lroot) print*, 'A star gravity potential'
           cpot = (/ 4.080, -3.444, 15.2000, 11.2000, -12.1000 /)
 
+        case ('A0-star')       ! A0 star 
+          if (lroot) print*, 'A0 star gravity potential'
+!          cpot = (/ 4.7446,  -1.9456,  0.6884,  4.8007, 1.79877 /)
+          cpot = (/ 4.3641,  -1.5612,  0.4841, 4.0678, 1.2548 /)
+ 
         case ('simple')         ! simple potential for tests
           if (lroot) print*, 'initialize_gravity: very simple gravity potential'
           cpot =  (/ 1., 0., 0., 1., 0. /)
@@ -205,7 +214,7 @@ module Gravity
           gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
           gg_mn(:,2) = y(  m  )/rr_mn*g_r
           gg_mn(:,3) = z(  n  )/rr_mn*g_r
-          call set_global(gg_mn,m,n,'gg')
+          call set_global(gg_mn,m,n,'gg',nx)
 
         enddo
         enddo
@@ -213,8 +222,48 @@ module Gravity
       endif
 
       endif
-
+!
     endsubroutine initialize_gravity
+!***********************************************************************
+    subroutine read_gravity_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=grav_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=grav_init_pars,ERR=99)
+      endif
+                                                                                                                                                                                                
+99    return
+    endsubroutine read_gravity_init_pars
+!***********************************************************************
+    subroutine write_gravity_init_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=grav_init_pars)
+
+    endsubroutine write_gravity_init_pars
+!***********************************************************************
+    subroutine read_gravity_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=grav_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=grav_run_pars,ERR=99)
+      endif
+                                                                                                                                                                                                
+99    return
+    endsubroutine read_gravity_run_pars
+!***********************************************************************
+    subroutine write_gravity_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=grav_run_pars)
+
+    endsubroutine write_gravity_run_pars
 !***********************************************************************
     subroutine init_gg(f,xx,yy,zz)
 !
@@ -229,10 +278,48 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
 !
-      if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz  !(to keep compiler quiet)
+!
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho)
+    subroutine pencil_criteria_gravity()
+! 
+!  All pencils that the Gravity module depends on are specified here.
+! 
+!  20-11-04/anders: coded
+! 
+!
+    endsubroutine pencil_criteria_gravity
+!***********************************************************************
+    subroutine pencil_interdep_gravity(lpencil_in)
+!
+!  Interdependency among pencils from the Gravity module is specified here.
+! 
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_gravity
+!***********************************************************************
+    subroutine calc_pencils_gravity(f,p)
+!
+!  Calculate Gravity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  12-nov-04/anders: coded
+! 
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f, p  !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_gravity
+!***********************************************************************
+    subroutine duu_dt_grav(f,df,p)
 !
 !  add duu/dt according to gravity
 !
@@ -240,14 +327,13 @@ module Gravity
 !
       use Cdata
       use Sub
-      use IO
       use Global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
       real, dimension (nx,3) :: gg_mn
-      real, dimension (nx,3) :: uu
-      real, dimension (nx) :: g_r,rho
+      real, dimension (nx) :: g_r
 !
 !  evr is the radial unit vector
 !
@@ -276,7 +362,7 @@ module Gravity
 !
 ! if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
 !
-      if(ip==0) print*,f,uu,rho  !(to keep compiler quiet)
+      if (NO_WARN) print*,f,p !(to keep compiler quiet)
 !        
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -347,8 +433,8 @@ module Gravity
         if (present(pot0)) pot0=-g0/r0_pot
 
       case default
-        pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rmn) &
-                / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rmn)
+        pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rad) &
+                / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rad)
         if (present(pot0)) pot0=-cpot(1)
 
       endselect
@@ -415,21 +501,22 @@ module Gravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_curlggrms=',i_curlggrms
-        write(3,*) 'i_curlggmax=',i_curlggmax
-        write(3,*) 'i_divggrms=',i_divggrms
-        write(3,*) 'i_divggmax=',i_divggmax
+        write(3,*) 'i_curlggrms=',idiag_curlggrms
+        write(3,*) 'i_curlggmax=',idiag_curlggmax
+        write(3,*) 'i_divggrms=',idiag_divggrms
+        write(3,*) 'i_divggmax=',idiag_divggmax
         write(3,*) 'igg=',igg
         write(3,*) 'igx=',igx
         write(3,*) 'igy=',igy
         write(3,*) 'igz=',igz
       endif
 !
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+!
     endsubroutine rprint_gravity
 !***********************************************************************
 

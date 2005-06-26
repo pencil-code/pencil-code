@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.48 2004-08-19 12:30:05 ajohan Exp $
+! $Id: slices.f90,v 1.49 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This module produces slices for animation purposes
 
@@ -7,63 +7,72 @@ module Slices
   use Cdata
 
   implicit none
+
+  private
+
+  public :: wvid, wslice, wvid_prepare
+
 !  Variables for xy slices start here
 !  Code variables
-  real, dimension (nx,ny,3) :: uu_xy,aa_xy,uud_xy
-  real, dimension (nx,ny) :: lnrho_xy,ss_xy,lncc_xy
-  real, dimension (nx,ny) :: XX_chiral_xy,YY_chiral_xy
-  real, dimension (nx,ny) :: nd_xy
-  real, dimension (nx,ny,ndustspec) :: md_xy
+  real, public, dimension (nx,ny,3) :: uu_xy,aa_xy,uud_xy
+  real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,lncc_xy
+  real, public, dimension (nx,ny) :: XX_chiral_xy,YY_chiral_xy
+  real, public, dimension (nx,ny) :: nd_xy
+  real, public, dimension (nx,ny,ndustspec) :: md_xy
 !  Auxiliary variables  
-  real, dimension (nx,ny) :: yH_xy,shock_xy,Qrad_xy,ecr_xy
+  real, public, dimension (nx,ny) :: yH_xy,shock_xy,Qrad_xy,ecr_xy
 !  Derived variables
-  real, dimension (nx,ny,3) :: oo_xy,bb_xy
-  real, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy,lnTT_xy,b2_xy,jb_xy,Isurf_xy
-  real, dimension (nx,ny) :: DQ_chiral_xy,QQ_chiral_xy
-  real, dimension (nx,ny) :: epsd_xy
+  real, public, dimension (nx,ny,3) :: oo_xy,bb_xy
+  real, public, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy,lnTT_xy,b2_xy,jb_xy,Isurf_xy
+  real, public, dimension (nx,ny) :: DQ_chiral_xy,QQ_chiral_xy
+  real, public, dimension (nx,ny) :: epsd_xy
+  real, public, dimension (nx,ny) :: pp_xy
 !  Variables for xy2 slices start here
 !  Code variables
-  real, dimension (nx,ny,3) :: uu_xy2,aa_xy2,uud_xy2
-  real, dimension (nx,ny) :: lnrho_xy2,ss_xy2,lncc_xy2
-  real, dimension (nx,ny) :: XX_chiral_xy2,YY_chiral_xy2
-  real, dimension (nx,ny) :: nd_xy2
-  real, dimension (nx,ny,ndustspec) :: md_xy2
+  real, public, dimension (nx,ny,3) :: uu_xy2,aa_xy2,uud_xy2
+  real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,lncc_xy2
+  real, public, dimension (nx,ny) :: XX_chiral_xy2,YY_chiral_xy2
+  real, public, dimension (nx,ny) :: nd_xy2
+  real, public, dimension (nx,ny,ndustspec) :: md_xy2
 !  Auxiliary variables  
-  real, dimension (nx,ny) :: yH_xy2,shock_xy2,Qrad_xy2,ecr_xy2
+  real, public, dimension (nx,ny) :: yH_xy2,shock_xy2,Qrad_xy2,ecr_xy2
 !  Derived variables
-  real, dimension (nx,ny,3) :: oo_xy2,bb_xy2
-  real, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,lnTT_xy2,b2_xy2,jb_xy2
-  real, dimension (nx,ny) :: DQ_chiral_xy2,QQ_chiral_xy2
-  real, dimension (nx,ny) :: epsd_xy2
+  real, public, dimension (nx,ny,3) :: oo_xy2,bb_xy2
+  real, public, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,lnTT_xy2,b2_xy2,jb_xy2
+  real, public, dimension (nx,ny) :: DQ_chiral_xy2,QQ_chiral_xy2
+  real, public, dimension (nx,ny) :: epsd_xy2
+  real, public, dimension (nx,ny) :: pp_xy2
 !  Variables for xz slices start here
 !  Code variables
-  real, dimension (nx,nz,3) :: uu_xz,aa_xz,uud_xz
-  real, dimension (nx,nz) :: lnrho_xz,ss_xz,lncc_xz,XX_chiral_xz,YY_chiral_xz
-  real, dimension (nx,nz) :: nd_xz
-  real, dimension (nx,nz,ndustspec) :: md_xz
+  real, public, dimension (nx,nz,3) :: uu_xz,aa_xz,uud_xz
+  real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,lncc_xz,XX_chiral_xz,YY_chiral_xz
+  real, public, dimension (nx,nz) :: nd_xz
+  real, public, dimension (nx,nz,ndustspec) :: md_xz
 !  Auxiliary variables  
-  real, dimension (nx,nz) :: yH_xz,shock_xz,Qrad_xz,ecr_xz
+  real, public, dimension (nx,nz) :: yH_xz,shock_xz,Qrad_xz,ecr_xz
 !  Derived variables
-  real, dimension (nx,nz,3) :: oo_xz,bb_xz
-  real, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,lnTT_xz,b2_xz,jb_xz
-  real, dimension (nx,nz) :: DQ_chiral_xz,QQ_chiral_xz
-  real, dimension (nx,nz) :: epsd_xz
+  real, public, dimension (nx,nz,3) :: oo_xz,bb_xz
+  real, public, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,lnTT_xz,b2_xz,jb_xz
+  real, public, dimension (nx,nz) :: DQ_chiral_xz,QQ_chiral_xz
+  real, public, dimension (nx,nz) :: epsd_xz
+  real, public, dimension (nx,nz) :: pp_xz
 !  Variables for yz slices start here
 !  Code variables
-  real, dimension (ny,nz,3) :: uu_yz,aa_yz,uud_yz
-  real, dimension (ny,nz) :: lnrho_yz,ss_yz,lncc_yz,XX_chiral_yz,YY_chiral_yz
-  real, dimension (ny,nz) :: nd_yz
-  real, dimension (ny,nz,ndustspec) :: md_yz
+  real, public, dimension (ny,nz,3) :: uu_yz,aa_yz,uud_yz
+  real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,lncc_yz,XX_chiral_yz,YY_chiral_yz
+  real, public, dimension (ny,nz) :: nd_yz
+  real, public, dimension (ny,nz,ndustspec) :: md_yz
 !  Auxiliary variables  
-  real, dimension (ny,nz) :: yH_yz,shock_yz,Qrad_yz,ecr_yz
+  real, public, dimension (ny,nz) :: yH_yz,shock_yz,Qrad_yz,ecr_yz
 !  Derived variables
-  real, dimension (ny,nz,3) :: oo_yz,bb_yz
-  real, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,lnTT_yz,b2_yz,jb_yz
-  real, dimension (ny,nz) :: DQ_chiral_yz,QQ_chiral_yz
-  real, dimension (ny,nz) :: epsd_yz
+  real, public, dimension (ny,nz,3) :: oo_yz,bb_yz
+  real, public, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,lnTT_yz,b2_yz,jb_yz
+  real, public, dimension (ny,nz) :: DQ_chiral_yz,QQ_chiral_yz
+  real, public, dimension (ny,nz) :: epsd_yz
+  real, public, dimension (ny,nz) :: pp_yz
 !
-  real :: tvid
-  integer :: nvid
+  real, public :: tvid
+  integer, public :: nvid
 
   contains
 
@@ -113,7 +122,7 @@ module Slices
 !
       use Sub
       use General
-      use Ionization, only: eoscalc, ilnrho_ss
+      use EquationOfState, only: eoscalc, ilnrho_ss
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character(len=*) :: path
@@ -398,6 +407,29 @@ module Slices
           call wslice(path//'lnTT.xz',lnTT_xz,y(iy),nx,nz)
           call wslice(path//'lnTT.xy',lnTT_xy,z(iz),nx,ny)
           call wslice(path//'lnTT.Xy',lnTT_xy2,z(iz2),nx,ny)
+!
+!  Pressure (derived variable)
+!
+        case ('pp')
+          do m=m1,m2; do n=n1,n2
+            call eoscalc(ilnrho_ss,f(ix,m,n,ilnrho),f(ix,m,n,iss),pp=tmpval)
+            pp_yz(m-m1+1,n-n1+1)=tmpval
+          enddo; enddo
+          do l=l1,l2; do n=n1,n2
+            call eoscalc(ilnrho_ss,f(l,iy,n,ilnrho),f(l,iy,n,iss),pp=tmpval)
+            pp_xz(l-l1+1,n-n1+1)=tmpval
+          enddo; enddo
+          do l=l1,l2; do m=m1,m2
+            call eoscalc(ilnrho_ss,f(l,m,iz,ilnrho),f(l,m,iz,iss),pp=tmpval)
+            pp_xy(l-l1+1,m-m1+1)=tmpval
+            call eoscalc(ilnrho_ss,f(l,m,iz2,ilnrho),f(l,m,iz2,iss), &
+                pp=tmpval)
+            pp_xy2(l-l1+1,m-m1+1)=tmpval
+          enddo; enddo
+          call wslice(path//'pp.yz',pp_yz,x(ix),ny,nz)
+          call wslice(path//'pp.xz',pp_xz,y(iy),nx,nz)
+          call wslice(path//'pp.xy',pp_xy,z(iz),nx,ny)
+          call wslice(path//'pp.Xy',pp_xy2,z(iz2),nx,ny)
 !
 !  Magnetic field (derived variable)
 !

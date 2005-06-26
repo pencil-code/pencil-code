@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: restart-new-dir,v 1.6 2004-07-25 15:56:22 brandenb Exp $
+#$Id: restart-new-dir,v 1.7 2005-06-26 17:34:17 eos_merger_tony Exp $
 #
 #  Example:
 #     restart-new-dir ../hydro256e

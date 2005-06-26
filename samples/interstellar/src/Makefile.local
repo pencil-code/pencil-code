@@ -3,21 +3,19 @@
 ### Included by `Makefile'
 ###
 
-LIBSIG=-L$(HOME)/f90/lib
-LDMPI=-lmpi
-MPICOMM      = mpicomm
+MPICOMM      = nompicomm
 IO           =   io_dist
 GLOBAL       = noglobal
 
 HYDRO        =   hydro
-VISCOSITY    =   visc_shock
+SHOCK        =   shock
 DENSITY      =   density
 ENTROPY      =   entropy
 MAGNETIC     = nomagnetic
 RADIATION    = noradiation
 PSCALAR      = nopscalar
 INTERSTELLAR =   interstellar
-IONIZATION   =   ionization
+EOS          =   eos_idealgas
 
 GRAVITY      =   grav_z
 FORCING      = noforcing

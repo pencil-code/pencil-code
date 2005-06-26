@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $
+! $Id: nospecial.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -28,10 +28,12 @@
 !                                                   |
 !   Special equation                                | dspecial_dt
 !     NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE 
-
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lspecial = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -73,18 +75,16 @@ module Special
   use Cdata
 
   implicit none
+
+  include 'special.inc'
   
-  real :: dummy
 !!  character, len(50) :: initcustom
 
 ! input parameters
-  namelist /special_init_pars/ &
-      dummy 
+!  namelist /special_init_pars/ dummy 
 !!!eg.    initcustom
-     
 ! run parameters
-  namelist /special_run_pars/ &
-      dummy
+!  namelist /special_run_pars/ dummy
 
 !!
 !! Declare any index variables necessary for main or 
@@ -120,8 +120,7 @@ module Special
 
 !!
 !! MUST SET lspecial = .true. to enable use of special hooks in the Pencil-Code 
-!!
-      lspecial = .false.
+!!   THIS IS NOW DONE IN THE HEADER ABOVE
 !
 !
 !
@@ -137,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: nospecial.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -159,7 +158,7 @@ module Special
 !
     endsubroutine register_special
 !***********************************************************************
-    subroutine initialize_special()
+    subroutine initialize_special(f)
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -167,11 +166,13 @@ module Special
 !
       use Cdata
 !
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !!
 !!  Initialize any module variables which are parameter dependant  
 !!
 !
 ! DO NOTHING
+      if(NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -204,11 +205,30 @@ module Special
 !!          call stop_it("")
 !!      endselect
 !
-      if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
+      if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
 !***********************************************************************
-    subroutine dspecial_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+    subroutine calc_pencils_special(f,p)
+!
+!  Calculate Hydro pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!   24-nov-04/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f       
+      type (pencil_case) :: p
+!
+      intent(in) :: f
+      intent(inout) :: p
+!     
+      if(NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_special
+!***********************************************************************
+    subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
 !  along the 'current' Pencil, i.e. f(l1:l2,m,n) where
@@ -229,10 +249,10 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df     
-      real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: divu, lnrho,rho1,cs2,TT1
+      type (pencil_case) :: p
+
 !
-      intent(in) :: f,uu,glnrho,rho1,lnrho,cs2,TT1
+      intent(in) :: f,p
       intent(inout) :: df
 !
 !  identify module and boundary conditions
@@ -251,9 +271,40 @@ module Special
 !!      endif
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1
+      if (NO_WARN) print*,f,df,p
 
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine read_special_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_special_init_pars
+!***********************************************************************
+    subroutine read_special_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_special_run_pars
+!***********************************************************************
+    subroutine write_special_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
@@ -320,7 +371,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f,df,uu,glnrho,divu,lnrho
+      if (NO_WARN) print*,f,df,uu,glnrho,divu,lnrho
 
     endsubroutine special_calc_density
 !***********************************************************************
@@ -352,7 +403,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f,df,uu,glnrho,divu,rho1,u2,uij
+      if (NO_WARN) print*,f,df,uu,glnrho,divu,rho1,u2,uij
 
     endsubroutine special_calc_hydro
 !***********************************************************************
@@ -384,7 +435,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f,df,uu,TT1,uij,rho1
+      if (NO_WARN) print*,f,df,uu,TT1,uij,rho1
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
@@ -414,7 +465,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1
+      if (NO_WARN) print*,f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1
 
     endsubroutine special_calc_entropy
 !***********************************************************************

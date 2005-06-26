@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.16 2004-10-25 13:12:10 ajohan Exp $
+! $Id: visc_hyper.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -6,6 +6,8 @@
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lviscosity = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 3
@@ -20,19 +22,23 @@ module Viscosity
 
   implicit none
 
+  include 'viscosity.inc'
+
   character (len=labellen) :: ivisc='hyper3'
   real :: maxeffectivenu,nu_mol
   logical :: lvisc_first=.false.
 
   ! input parameters
-  integer :: dummy
-  namelist /viscosity_init_pars/ dummy
+  !namelist /viscosity_init_pars/ dummy
 
   ! run parameters
   namelist /viscosity_run_pars/ nu, lvisc_first,ivisc
  
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_epsK2=0
+  integer :: idiag_epsK2=0
+
+  ! Not implemented but needed for bodged implementation in hydro
+  integer :: idiag_epsK=0
 
   contains
 
@@ -51,7 +57,6 @@ module Viscosity
       if (.not. first) call stop_it('register_viscosity called twice')
       first = .false.
 !
-      lviscosity = .true.
       lvisc_hyper = .true.
 !
       ihyper = mvar + naux + 1
@@ -65,7 +70,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.16 2004-10-25 13:12:10 ajohan Exp $")
+           "$Id: visc_hyper.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -83,7 +88,7 @@ module Viscosity
 !
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity()
+    subroutine initialize_viscosity(lstarting)
 !
 !  20-nov-02/tony: coded
 !  24-nov-03/nils: adapted from visc_shock
@@ -92,7 +97,50 @@ module Viscosity
 !
       if (headtt.and.lroot) print*,'viscosity: nu=',nu
 !
+       logical, intent(in) :: lstarting
+!
+       lneed_sij=.false.
+!
+        if (headtt.and.lroot.and.(.not.lstarting)) print*,'viscosity: nu=',nu
+
     endsubroutine initialize_viscosity
+!***********************************************************************
+    subroutine read_viscosity_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat).and.NO_WARN) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_viscosity_init_pars
+!***********************************************************************
+    subroutine write_viscosity_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_viscosity_init_pars
+!***********************************************************************
+    subroutine read_viscosity_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=viscosity_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=viscosity_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_viscosity_run_pars
+!***********************************************************************
+    subroutine write_viscosity_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=viscosity_run_pars)
+
+    endsubroutine write_viscosity_run_pars
 !*******************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
@@ -111,14 +159,14 @@ module Viscosity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_epsK2=0
+        idiag_epsK2=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'epsK2',i_epsK2)
+        call parse_name(iname,cname(iname),cform(iname),'epsK2',idiag_epsK2)
       enddo
 !
 !  write column where which ionization variable is stored
@@ -127,11 +175,51 @@ module Viscosity
         if (lwrite) then
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'ishock=',ishock
-          write(3,*) 'i_epsK2=',i_epsK2
+          write(3,*) 'i_epsK2=',idiag_epsK2
         endif
       endif
 !        
     endsubroutine rprint_viscosity
+!***********************************************************************
+    subroutine pencil_criteria_viscosity()
+!    
+!  All pencils that the Viscosity module depends on are specified here.
+!
+!  21-11-04/anders: coded
+!
+    endsubroutine pencil_criteria_viscosity
+!***********************************************************************
+    subroutine pencil_interdep_viscosity(lpencil_in)
+!
+!  Interdependency among pencils from the Viscosity module is specified here.
+!
+!  21-11-04/anders: coded
+!
+      use Cdata
+!
+      logical, dimension (npencils) :: lpencil_in
+!      
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_viscosity
+!***********************************************************************
+    subroutine calc_pencils_viscosity(f,p)
+!     
+!  Calculate Viscosity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  21-11-04/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f, p !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_viscosity
 !***********************************************************************
     subroutine calc_viscosity(f)
 !
@@ -141,12 +229,14 @@ module Viscosity
 !
       use IO
       use Mpicomm
+      use CData, only: lfirst
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,3) :: tmp
       real, dimension (nx,ny,nz) :: sij2,del2divu
       integer :: i,j
 !
+  if ((.not.lvisc_first).or.lfirst) then
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
 !
 !  calculate grad4 grad div u
@@ -214,6 +304,7 @@ module Viscosity
 !  max effective nu is the max of shock viscosity and the ordinary viscosity
 !
       !maxeffectivenu = maxval(f(:,:,:,ihyper))*nu
+  endif
 !
     endsubroutine calc_viscosity
 !***********************************************************************
@@ -276,7 +367,7 @@ module Viscosity
 !      
     endsubroutine shock_divu
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
+    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -288,13 +379,13 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rho1,TT1,cs2
+      real, dimension (nx) :: rho1,TT1,cs2,Hmax
       real, dimension (nx) :: sij2, divu,shock
       real, dimension (nx,3) :: glnrho
 !
 !  traceless strain matrix squared
 !
-      !call multm2_mn(sij,sij2)
+      !call multm2(sij,sij2)
 !      if (headtt) print*,'viscous heating: ',ivisc
 
       !df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1 * &
@@ -303,11 +394,11 @@ module Viscosity
 
       !call max_for_dt(df(l1:l2,m,n,iss),maxheating)
 !
-      !if(ip==0) print*,glnrho,rho1,cs2 !(to keep compiler quiet)
+      !if(NO_WARN) print*,glnrho,rho1,cs2 !(to keep compiler quiet)
 !      
     endsubroutine calc_viscous_heat
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho,rho1,shock,gshock,bij)
 !
 !  calculate viscous force
 !
@@ -322,10 +413,11 @@ module Viscosity
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: hyper
       real, dimension (nx,3) :: glnrho,del6u,fvisc,gshock,del4u
-      real, dimension (nx) :: rho1,divu,shock,ufvisc,rufvisc,murho1
+      real, dimension (nx) :: rho,rho1,divu,shock,ufvisc,rufvisc,murho1
       integer :: i
 !
       intent (out) :: df
+      intent(in) :: rho,rho1,divu,shock
 !
       if (nu /= 0.) then
         if (ivisc == 'hyper3') then
@@ -368,14 +460,23 @@ module Viscosity
 ! Code to dobbel check epsK
 !
       if (ldiagnos) then
-        if (i_epsK2/=0) then
-          call dot_mn(f(l1:l2,m,n,iux:iuz),fvisc,ufvisc)
+        if (idiag_epsK2/=0) then
+          call dot(f(l1:l2,m,n,iux:iuz),fvisc,ufvisc)
           rufvisc=ufvisc/rho1
-          call sum_mn_name(-rufvisc,i_epsK2)
+          call sum_mn_name(-rufvisc,idiag_epsK2)
+        endif
+        !  mean heating term
+        if ((idiag_epsK/=0) .or. (idiag_epsK_LES/=0)) call multm2_mn(sij,sij2)
+        if ((idiag_epsK_LES/=0) .and. (ivisc .eq. 'smagorinsky_simplified')) &
+        !ajwm nu_smag should already be calculated!
+            call sum_mn_name(2*nu_smag* &
+                              exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK_LES)
+        if (idiag_epsK/=0) then
+           call sum_mn_name(2*nu*exp(f(l1:l2,m,n,ilnrho))*sij2,idiag_epsK)
         endif
       endif
 !
-      if(ip==0) print*,divu,shock,gshock !(to keep compiler quiet)
+      if(NO_WARN) print*,divu,shock,gshock !(to keep compiler quiet)
 !        
     end subroutine calc_viscous_force
 !***********************************************************************

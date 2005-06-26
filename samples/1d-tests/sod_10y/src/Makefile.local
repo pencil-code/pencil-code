@@ -13,7 +13,6 @@ ENTROPY=entropy
 MAGNETIC=nomagnetic
 HYDRO=hydro
 DENSITY=density
-VISCOSITY=visc_const
 IO=io_dist
 FFTPACK=nofftpack
 POWER=nopower_spectrum

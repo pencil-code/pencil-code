@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.12 2005-06-25 08:00:37 brandenb Exp $
+! $Id: testfield.f90,v 1.13 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -102,7 +102,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.12 2005-06-25 08:00:37 brandenb Exp $")
+           "$Id: testfield.f90,v 1.13 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -188,7 +188,7 @@ module Testfield
 !
     endsubroutine init_aatest
 !***********************************************************************
-    subroutine daatest_dt(f,df,uu)
+    subroutine daatest_dt(f,df,p)
 !
 !  testfield evolution
 !  calculate da^(q)/dt=uxB^(q)+eta*del2A^(q), where q=1,...,9
@@ -201,12 +201,14 @@ module Testfield
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: bb,aa,uxB,uu,bbtest,btest,uxbtest,duxbtest
+      type (pencil_case) :: p
+
+      real, dimension (nx,3) :: bb,aa,uxB,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3) :: del2Atest
       real :: fnamez_mean
       integer :: jtest,jfnamez,j
 !
-      intent(in)     :: f,uu
+      intent(in)     :: f,p
       intent(inout)  :: df     
 !
 !  identify module and boundary conditions
@@ -235,13 +237,13 @@ module Testfield
             case(3); call set_bbtest3(bbtest,jtest)
             case(4); call set_bbtest4(bbtest,jtest)
           endselect
-          call cross_mn(uu,bbtest,uxB)
+          call cross_mn(p%uu,bbtest,uxB)
           if (lsoca) then
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
               +uxB+etatest*del2Atest
           else
             call curl(f,iaxtest,btest)
-            call cross_mn(uu,btest,uxbtest)
+            call cross_mn(p%uu,btest,uxbtest)
 !
 !  subtract average emf
 !
@@ -261,7 +263,7 @@ module Testfield
           if (ldiagnos) then
             if (lsoca) then
               call curl(f,iaxtest,btest)
-              call cross_mn(uu,btest,uxbtest)
+              call cross_mn(p%uu,btest,uxbtest)
             endif
             select case(jtest)
             case(1)

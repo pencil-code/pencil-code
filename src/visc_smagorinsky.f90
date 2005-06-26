@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.5 2005-06-19 05:15:45 brandenb Exp $
+! $Id: visc_smagorinsky.f90,v 1.6 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -6,6 +6,8 @@
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lviscosity = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
@@ -21,7 +23,7 @@ module Viscosity
   implicit none
 
   character (len=labellen) :: ivisc='smagorinsky'
-  integer :: i_dtnu=0
+  integer :: idiag_dtnu=0
   real :: maxeffectivenu,nu_mol
   logical :: lvisc_first=.false.
 
@@ -33,7 +35,7 @@ module Viscosity
   namelist /viscosity_run_pars/ nu, lvisc_first,ivisc,c_smag
  
   ! other variables (needs to be consistent with reset list below)
-  !integer :: i_nu_LES=0
+  !integer :: idiag_nu_LES=0
 
   contains
 
@@ -52,7 +54,6 @@ module Viscosity
       if (.not. first) call stop_it('register_viscosity called twice')
       first = .false.
 !
-      lviscosity = .true.
       lvisc_LES  = .true.
       lvisc_smagorinsky = .true.
 !
@@ -67,7 +68,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.5 2005-06-19 05:15:45 brandenb Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.6 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -116,27 +117,66 @@ module Viscosity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_nu_LES=0
+        idiag_nu_LES=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'nu_LES',i_nu_LES)
+        call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
       enddo
 !
 !  write column where which viscosity variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'i_nu_LES=',i_nu_LES
+          write(3,*) 'i_nu_LES=',idiag_nu_LES
         endif
       endif
 !   
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_viscosity
-
+!***********************************************************************
+    subroutine pencil_criteria_viscosity()
+!    
+!  All pencils that the Viscosity module depends on are specified here.
+!
+!  21-11-04/anders: coded
+!
+    endsubroutine pencil_criteria_viscosity
+!***********************************************************************
+    subroutine pencil_interdep_viscosity(lpencil_in)
+!
+!  Interdependency among pencils from the Viscosity module is specified here.
+!
+!  21-11-04/anders: coded
+!
+      use Cdata
+!
+      logical, dimension (npencils) :: lpencil_in
+!      
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_viscosity
+!***********************************************************************
+    subroutine calc_pencils_viscosity(f,p)
+!     
+!  Calculate Viscosity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  21-11-04/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f, p !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_viscosity
 !***********************************************************************
     subroutine calc_viscosity(f)
 !
@@ -188,12 +228,12 @@ module Viscosity
 ! Diagnostics
 !
       if (ldiagnos) then
-         if (i_nu_LES /= 0) then
-            itype_name(i_nu_LES)=ilabel_sum
+         if (idiag_nu_LES /= 0) then
+            itype_name(idiag_nu_LES)=ilabel_sum
             do mcount=m1,m2
                do ncount=n1,n2
                   nu_smag=f(l1:l2,mcount,ncount,ismagorinsky)
-                  call sum_mn_name(nu_smag,i_nu_LES)
+                  call sum_mn_name(nu_smag,idiag_nu_LES)
                enddo
             enddo
          endif
@@ -256,7 +296,7 @@ module Viscosity
     end subroutine der_2nd_nof
 
 !!***********************************************************************
-    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
+    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -268,7 +308,7 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx)   :: rho1,TT1,cs2
+      real, dimension (nx)   :: rho1,TT1,cs2,Hmax
       real, dimension (nx)   :: sij2, divu,shock
       real, dimension (nx,3) :: glnrho
 !
@@ -280,11 +320,11 @@ module Viscosity
        case default
          if (headtt) print*,'no heating: ivisc=',ivisc
       endselect
-      if(ip==0) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
+      if(NO_WARN) print*,f,cs2,divu,glnrho,shock,Hmax  !(keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho,rho1,shock,gshock,bij)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -300,10 +340,10 @@ module Viscosity
       real, dimension (nx,3) :: glnrho,del2u,del6u,graddivu,fvisc,sglnrho
       real, dimension (nx,3) :: gshock,sgradnu_smag
       real, dimension (nx,3) :: nusglnrho,tmp1,tmp2,gradnu_smag
-      real, dimension (nx) :: murho1,rho1,divu,shock,SS12,sij2
+      real, dimension (nx) :: murho1,rho,rho1,divu,shock,SS12,sij2
       integer :: i
 
-      intent (in) :: f, glnrho, rho1
+      intent (in) :: f, glnrho, rho1,rho
       intent (out) :: df
 !
 !  viscosity operator
@@ -376,11 +416,11 @@ module Viscosity
 !
 !  set viscous time step
 !
-      if (ldiagnos.and.i_dtnu/=0) then
-        call max_mn_name(diffus_nu/cdtv,i_dtnu,l_dt=.true.)
+      if (ldiagnos.and.idiag_dtnu/=0) then
+        call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
       endif
 !
-      if(ip==0) print*,divu,shock,gshock  !(keep compiler quiet)
+      if(NO_WARN) print*,divu,shock,gshock  !(keep compiler quiet)
     end subroutine calc_viscous_force
 !***********************************************************************
 

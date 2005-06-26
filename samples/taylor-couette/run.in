@@ -1,0 +1,24 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2005-06-26 17:34:41 eos_merger_tony Exp $',
+  ip=13,
+  nt=10000, it1=20, isave=100, itorder=3, ialive=1  !(for long run)
+  nt=10, it1=2, isave=100, itorder=3, ialive=1 !(test run only)
+  cdt=0.4, cdtv=0.3, dtmin=1e-6,
+  dsnap=10., dvid=2., d2davg=10.
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  dampuext=100, dampuint=100, wdamp=0.01,
+  lOmega_int=T, Omega_int=1.
+/
+&density_run_pars
+/
+&viscosity_run_pars
+  nu=1e-2
+/

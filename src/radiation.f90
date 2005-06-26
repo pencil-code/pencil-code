@@ -1,10 +1,9 @@
-! $Id: radiation.f90,v 1.36 2005-06-19 05:15:45 brandenb Exp $
+! $Id: radiation.f90,v 1.37 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
 !  (still experimental) module radiation_ray.f90 for a more
 !  sophisticated approach.
-
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -20,6 +19,8 @@ module Radiation
   use Cparam
 
   implicit none
+
+  include 'radiation.inc'
 
   real :: c_gam=100
   real :: opas=1e-8
@@ -47,8 +48,8 @@ module Radiation
        c_gam,opas,kappa_es_radiation,mbar,k_B_radiation,a_SB,flim,inflow
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
-  integer :: i_Egas_rms=0,i_Egas_max=0
+  integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
+  integer :: idiag_Egas_rms=0,idiag_Egas_max=0
 
   contains
 
@@ -97,7 +98,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.36 2005-06-19 05:15:45 brandenb Exp $")
+           "$Id: radiation.f90,v 1.37 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -117,7 +118,7 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==0) print*,f !(keep compiler quiet)
+      if(NO_WARN) print*,f !(keep compiler quiet)
     endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
@@ -131,7 +132,7 @@ module Radiation
 !
     endsubroutine initialize_radiation
 !***********************************************************************
-    subroutine radiative_cooling(f,df,lnrho,TT1)
+    subroutine radiative_cooling(f,df,p)
 !
 !  dummy routine
 !
@@ -141,9 +142,9 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lnrho,TT1
+      type (pencil_case) :: p
 !
-      if(ip==0) print*,f,df,lnrho,TT1 !(keep compiler quiet)
+      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine radiative_cooling
 !***********************************************************************
@@ -222,10 +223,54 @@ module Radiation
          
       endselect
 !
-      if(ip==0) print*,yy !(keep compiler quiet)
+      if(NO_WARN) print*,yy !(keep compiler quiet)
     endsubroutine init_rad
+!***********************************************************************
+    subroutine pencil_criteria_radiation()
+! 
+!  All pencils that the Radiation module depends on are specified here.
+! 
+!  21-11-04/anders: coded
+!
+      lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_divu)=.true.
+      lpenc_requested(i_uij)=.true.
+      lpenc_requested(i_rho)=.true.
+      lpenc_requested(i_rho1)=.true.
+      if (lentropy) lpenc_requested(i_TT1)=.true.
+!
+    endsubroutine pencil_criteria_radiation
+!***********************************************************************
+    subroutine pencil_interdep_radiation(lpencil_in)
+!
+!  Interdependency among pencils provided by the Radiation module
+!  is specified here.
+!
+!  21-11-04/anders: coded
+! 
+      logical, dimension (npencils) :: lpencil_in
+! 
+      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+! 
+    endsubroutine pencil_interdep_radiation
+!***********************************************************************
+    subroutine calc_pencils_radiation(f,p)
+!   
+!  Calculate Radiation pencils
+!  Most basic pencils should come first, as others may depend on them.
+! 
+!  21-11-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f !(keep compiler quiet)
+! 
+    endsubroutine calc_pencils_radiation
 !********************************************************************
-    subroutine de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
+    subroutine de_dt(f,df,p,gamma)
 !
 !
 !  13-Dec-01/nils: coded
@@ -238,15 +283,17 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gradE,uu
-      real, dimension (nx,3,3) :: uij, P_tens
-      real, dimension (nx) :: E_rad,divu,rho1,source,Edivu,ugradE,divF
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: gradE
+      real, dimension (nx,3,3) :: P_tens
+      real, dimension (nx) :: E_rad,source,Edivu,ugradE,divF
       real, dimension (nx) :: graduP,cooling,c_entr
-      real, dimension (nx) :: kappa_abs,kappa,E_gas,TT1,f2,divF2
+      real, dimension (nx) :: kappa_abs,kappa,E_gas,f2,divF2
       real :: gamma1,gamma,taux
       integer :: i
 !
-      intent(in)  :: f,rho1,divu,uu,uij,TT1,gamma
+      intent(in) :: f,p
+      intent(out) :: df
 !
 !  identify module and boundary conditions
 !
@@ -264,11 +311,11 @@ module Radiation
       gamma1=gamma-1
       E_rad=f(l1:l2,m,n,iE)
       if (lentropy) then
-         E_gas=1.5*k_B_radiation/(rho1*mbar*TT1)
-         kappa_abs=opas*(1./rho1)**(9./2)*E_gas**(-7./2)
-         source=a_SB*TT1**(-4)
+         E_gas=1.5*k_B_radiation/(p%rho1*mbar*p%TT1)
+         kappa_abs=opas*p%rho**(9./2)*E_gas**(-7./2)
+         source=a_SB*p%TT1**(-4)
          kappa=kappa_abs+kappa_es_radiation
-         cooling=(source-E_rad)*c_gam*kappa_abs/rho1
+         cooling=(source-E_rad)*c_gam*kappa_abs*p%rho
       else
          kappa=kappa_es_radiation
          cooling=0
@@ -276,18 +323,18 @@ module Radiation
 !
 !  calculating some values needed for momentum equation
 !
-      Edivu=E_rad*divu
+      Edivu=E_rad*p%divu
       call grad(f,iE,gradE)
-      call dot_mn(uu,gradE,ugradE)
+      call dot_mn(p%uu,gradE,ugradE)
       call div(f,iff,divF)
 !
 !  Flux-limited diffusion app.
 !
-      call flux_limiter(f,df,rho1,kappa,gradE,E_rad,P_tens,divF2)
+      call flux_limiter(f,df,p%rho1,kappa,gradE,E_rad,P_tens,divF2)
 !
 !  calculate graduP
 !
-      call multmm_sc_mn(P_tens,uij,graduP)
+      call multmm_sc_mn(P_tens,p%uij,graduP)
 !
 !  calculate dE/dt
 !
@@ -304,7 +351,7 @@ module Radiation
 !  add cooling to entropy equation
 !
       if (lentropy) then
-      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(source-E_rad)*kappa_abs*c_gam*TT1
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(source-E_rad)*kappa_abs*c_gam*p%TT1
       endif
 !
 !  optical depth in x-dir.
@@ -312,7 +359,7 @@ module Radiation
       if (headtt.or.ldebug) then
          taux=0
          do i=1,nx
-            taux=taux+dx*kappa(i)/rho1(i)
+            taux=taux+dx*kappa(i)*p%rho(i)
          end do
          print*,'Optical depth in x direction is:',taux
       end if
@@ -322,12 +369,12 @@ module Radiation
       if (ldiagnos) then
         f2=f(l1:l2,m,n,ifx)**2+f(l1:l2,m,n,ify)**2+f(l1:l2,m,n,ifz)**2
         if (headtt.or.ldebug) print*,'Calculate maxima and rms values...'
-        if (i_frms/=0) call sum_mn_name(f2,i_frms,lsqrt=.true.)
-        if (i_fmax/=0) call max_mn_name(f2,i_fmax,lsqrt=.true.)
-        if (i_erad_rms/=0) call sum_mn_name(E_rad,i_erad_rms)
-        if (i_erad_max/=0) call max_mn_name(E_rad,i_erad_max)
-        if (i_egas_rms/=0) call sum_mn_name(E_gas,i_egas_rms)
-        if (i_egas_max/=0) call max_mn_name(E_gas,i_egas_max)   
+        if (idiag_frms/=0) call sum_mn_name(f2,idiag_frms,lsqrt=.true.)
+        if (idiag_fmax/=0) call max_mn_name(f2,idiag_fmax,lsqrt=.true.)
+        if (idiag_erad_rms/=0) call sum_mn_name(E_rad,idiag_erad_rms)
+        if (idiag_erad_max/=0) call max_mn_name(E_rad,idiag_erad_max)
+        if (idiag_egas_rms/=0) call sum_mn_name(E_gas,idiag_egas_rms)
+        if (idiag_egas_max/=0) call max_mn_name(E_gas,idiag_egas_max)   
       endif
 !
 !  Calculate UUmax for use in determination of time step 
@@ -342,13 +389,55 @@ module Radiation
          !  radiative entropy equation
          !
          if (lentropy) then
-            c_entr=2*gamma1**4*rho1**(4*gamma1)/(TT1*c_gam*kappa_abs*a_SB*4*gamma)
+            c_entr=2*gamma1**4*p%rho1**(4*gamma1)/(p%TT1*c_gam*kappa_abs*a_SB*4*gamma)
             c_entr=dxmin/c_entr
             UUmax=max(UUmax,maxval(c_entr))
          endif
       endif
 !
     end subroutine de_dt
+!***********************************************************************
+    subroutine read_radiation_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=radiation_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=radiation_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_radiation_init_pars
+!***********************************************************************
+    subroutine write_radiation_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=radiation_init_pars)
+                                                                                                   
+    endsubroutine write_radiation_init_pars
+!***********************************************************************
+    subroutine read_radiation_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=radiation_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=radiation_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_radiation_run_pars
+!***********************************************************************
+    subroutine write_radiation_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=radiation_run_pars)
+                                                                                                   
+    endsubroutine write_radiation_run_pars
 !*******************************************************************
     subroutine rprint_radiation(lreset,lwrite)
 !
@@ -370,31 +459,35 @@ module Radiation
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_frms=0; i_fmax=0; i_Erad_rms=0; i_Erad_max=0
-        i_Egas_rms=0; i_Egas_max=0
+        idiag_frms=0; idiag_fmax=0; idiag_Erad_rms=0; idiag_Erad_max=0
+        idiag_Egas_rms=0; idiag_Egas_max=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'frms',i_frms)
-        call parse_name(iname,cname(iname),cform(iname),'fmax',i_fmax)
-        call parse_name(iname,cname(iname),cform(iname),'Erad_rms',i_Erad_rms)
-        call parse_name(iname,cname(iname),cform(iname),'Erad_max',i_Erad_max)
-        call parse_name(iname,cname(iname),cform(iname),'Egas_rms',i_Egas_rms)
-        call parse_name(iname,cname(iname),cform(iname),'Egas_max',i_Egas_max)
+        call parse_name(iname,cname(iname),cform(iname),'frms',idiag_frms)
+        call parse_name(iname,cname(iname),cform(iname),'fmax',idiag_fmax)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'Erad_rms',idiag_Erad_rms)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'Erad_max',idiag_Erad_max)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'Egas_rms',idiag_Egas_rms)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'Egas_max',idiag_Egas_max)
       enddo
 !
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_frms=',i_frms
-        write(3,*) 'i_fmax=',i_fmax
-        write(3,*) 'i_Erad_rms=',i_Erad_rms
-        write(3,*) 'i_Erad_max=',i_Erad_max
-        write(3,*) 'i_Egas_rms=',i_Egas_rms
-        write(3,*) 'i_Egas_max=',i_Egas_max
+        write(3,*) 'i_frms=',idiag_frms
+        write(3,*) 'i_fmax=',idiag_fmax
+        write(3,*) 'i_Erad_rms=',idiag_Erad_rms
+        write(3,*) 'i_Erad_max=',idiag_Erad_max
+        write(3,*) 'i_Egas_rms=',idiag_Egas_rms
+        write(3,*) 'i_Egas_max=',idiag_Egas_max
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
         write(3,*) 'ifx=',ifx
@@ -584,7 +677,7 @@ module Radiation
 
 
 
-end module Radiation
+endmodule Radiation
 
 
 

@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: cvsci_run,v 1.15 2004-07-26 08:13:08 mee Exp $
+#$Id: cvsci_run,v 1.16 2005-06-26 17:34:16 eos_merger_tony Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material

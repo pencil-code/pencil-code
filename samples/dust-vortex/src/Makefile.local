@@ -16,9 +16,9 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-GRAVITY   =   grav_z
+GRAVITY   =   gravity_simple
 FORCING   = noforcing
-VISCOSITY = visc_const
+VISCOSITY =   viscosity
 IO        = io_dist
 SHEAR     =   shear
 

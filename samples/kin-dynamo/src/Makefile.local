@@ -15,4 +15,6 @@ PSCALAR   = nopscalar
 
 GRAVITY   = nograv
 FORCING   = noforcing
+VISCOSITY = noviscosity
+EOS       = noeos
 SHEAR     = noshear

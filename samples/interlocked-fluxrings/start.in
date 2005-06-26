@@ -3,12 +3,14 @@
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.20 2004-04-07 10:36:33 theine Exp $'
+  cvsid='$Id: start.in,v 1.21 2005-06-26 17:34:37 eos_merger_tony Exp $'
+/
+&eos_init_pars
+  gamma=1. ! isothermal
 /
 &hydro_init_pars
 /
 &density_init_pars
-  gamma=1. ! isothermal
 /
 &magnetic_init_pars
   initaa='fluxrings', amplaa=1e-0

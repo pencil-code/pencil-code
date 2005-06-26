@@ -5,7 +5,7 @@
 
 LDMPI    =-lmpi
 
-MPICOMM  = mpicomm
+MPICOMM  =   mpicomm
 GLOBAL   = noglobal
 IO       =   io_dist
 
@@ -13,6 +13,7 @@ HYDRO    =   hydro
 DENSITY  =   density
 ENTROPY  = noentropy
 MAGNETIC =   magnetic
+EOS      =   eos_idealgas
 
 GRAVITY  = nograv
 FORCING  = noforcing

@@ -12,7 +12,9 @@ ENTROPY   = noentropy
 MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
-COSMICRAY  =  cosmicray_nolog
+COSMICRAY =   cosmicray_nolog
+EOS       =   eos_idealgas
+VISCOSITY =   viscosity
 
 GRAVITY   = nograv
 FORCING   = noforcing

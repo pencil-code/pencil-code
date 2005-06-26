@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.22 2004-09-28 14:17:39 ajohan Exp $
+! $Id: shear.f90,v 1.23 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -14,13 +14,15 @@ module Shear
 
   implicit none
 
+  include 'shear.inc'
+
   namelist /shear_init_pars/ &
        qshear,Sshear
 
   namelist /shear_run_pars/ &
        qshear,Sshear
 
-  integer :: i_dtshear=0
+  integer :: idiag_dtshear=0
 
   contains
 
@@ -43,7 +45,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.22 2004-09-28 14:17:39 ajohan Exp $")
+           "$Id: shear.f90,v 1.23 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -60,6 +62,48 @@ module Shear
           print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
 
     endsubroutine initialize_shear
+!***********************************************************************
+    subroutine read_shear_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=shear_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=shear_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_shear_init_pars
+!***********************************************************************
+    subroutine write_shear_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=shear_init_pars)
+                                                                                                   
+    endsubroutine write_shear_init_pars
+!***********************************************************************
+    subroutine read_shear_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=shear_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=shear_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_shear_run_pars
+!***********************************************************************
+    subroutine write_shear_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=shear_run_pars)
+                                                                                                   
+    endsubroutine write_shear_run_pars
 !***********************************************************************
     subroutine shearing(f,df)
 !
@@ -107,12 +151,12 @@ module Shear
         endif
       endif
 !
-!  Loop over dust layers
+!  Loop over dust species
 !
       if (ldustvelocity) then
         do k=1,ndustspec
 !
-!  Correct Coriolis force term for all dust layers 
+!  Correct Coriolis force term for all dust species
 !
           if (theta==0) then
             df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
@@ -123,7 +167,7 @@ module Shear
                 - Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iudx(k))
           endif
 !
-!  End loop over dust layers
+!  End loop over dust species
 !
         enddo
       endif
@@ -141,7 +185,8 @@ module Shear
 !  Calculate shearing related diagnostics
 !
       if (ldiagnos) then
-        if (i_dtshear/=0) call max_mn_name(advec_shear/cdt,i_dtshear,l_dt=.true.)
+        if (idiag_dtshear/=0) &
+            call max_mn_name(advec_shear/cdt,idiag_dtshear,l_dt=.true.)
       endif
 !
     end subroutine shearing
@@ -195,21 +240,21 @@ module Shear
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_dtshear=0
+        idiag_dtshear=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'dtshear',i_dtshear)
+        call parse_name(iname,cname(iname),cform(iname),'dtshear',idiag_dtshear)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtshear=',i_dtshear
+        write(3,*) 'i_dtshear=',idiag_dtshear
       endif
 !
     endsubroutine rprint_shear
 !***********************************************************************
-  end module Shear
+  endmodule Shear

@@ -9,6 +9,10 @@
 default:
 	cd src; $(MAKE) -f Makefile.src Makefile; $(MAKE)
 
+# Use calculated dependancies instead:
+depend dep:
+	cd src; $(MAKE) -f Makefile.src depend
+
 # Clean up most files:
 clean:
 	cd src; $(MAKE) -f Makefile.src clean

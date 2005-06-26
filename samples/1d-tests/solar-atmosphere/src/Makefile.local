@@ -14,11 +14,11 @@ DENSITY   =   density
 ENTROPY   =   entropy
 MAGNETIC  = nomagnetic
 RADIATION =   radiation_ray
-IONIZATION=   ionization
-VISCOSITY =   visc_shock
+EOS       =   eos_ionization
+SHOCK     =   shock
 PSCALAR   = nopscalar
 
-GRAVITY   =   grav_z
+GRAVITY   =   gravity_simple
 FORCING   = noforcing
 SHEAR     = noshear
 FFTPACK   = nofftpack

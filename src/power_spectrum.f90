@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $
+! $Id: power_spectrum.f90,v 1.46 2005-06-26 17:34:13 eos_merger_tony Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -16,6 +16,8 @@ module  power_spectrum
   use Sub
   !
   implicit none
+
+  include 'power_spectrum.inc'
   !
   contains
 
@@ -41,7 +43,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.46 2005-06-26 17:34:13 eos_merger_tony Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -152,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.46 2005-06-26 17:34:13 eos_merger_tony Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -261,7 +263,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.46 2005-06-26 17:34:13 eos_merger_tony Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -418,7 +420,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.46 2005-06-26 17:34:13 eos_merger_tony Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -528,7 +530,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.46 2005-06-26 17:34:13 eos_merger_tony Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -547,7 +549,7 @@ module  power_spectrum
   elseif (sp=='a') then
      a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
   else
-     print*,'There are no such sp=',sp
+     print*,'There is no such spectra variable: sp=',sp
   endif
   b1=0
   a2=a1
@@ -784,4 +786,4 @@ module  power_spectrum
 endsubroutine pdf
 !***********************************************************************
 
-end module power_spectrum
+endmodule power_spectrum

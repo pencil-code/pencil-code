@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.74 2005-06-26 05:50:37 bingert Exp $
+! $Id: boundcond.f90,v 1.75 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -13,7 +13,13 @@ module Boundcond
   use Mpicomm
  
   implicit none
+
+  private
   
+  public :: boundconds, boundconds_x, boundconds_y, boundconds_z
+  public :: bc_per_x, bc_per_y, bc_per_z
+  public :: update_ghosts
+
   contains
 
 !***********************************************************************
@@ -50,7 +56,7 @@ module Boundcond
       use Entropy
       use Magnetic
       use Radiation
-      use Ionization
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mvar) :: fbcx12
@@ -74,7 +80,7 @@ module Boundcond
           if (ip<12.and.headtt) print*, &
                'boundconds_x: use shearing sheet boundary condition'
           call initiate_shearing(f)
-          if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalise_shearing(f)
+          if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalize_shearing(f)
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then
@@ -138,9 +144,10 @@ module Boundcond
       use Cdata
       use Entropy
       use Magnetic
-      use Ionization
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mvar) :: fbcy12
       integer :: j,k,ip_ok
       character (len=bclen), dimension(mvar) :: bc12
       character (len=3) :: topbot
@@ -157,9 +164,9 @@ module Boundcond
       case default
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
-            topbot='bot'; bc12=bcy1; ip_ok=0
+            topbot='bot'; bc12=bcy1; fbcy12=fbcy1; ip_ok=0
           else
-            topbot='top'; bc12=bcy2; ip_ok=nprocy-1
+            topbot='top'; bc12=bcy2; fbcy12=fbcy2; ip_ok=nprocy-1
           endif
           !
           do j=1,mvar 
@@ -180,6 +187,8 @@ module Boundcond
                 if (j==iss) call bc_ss_stemp_y(f,topbot)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
+              case ('set')      ! set boundary value
+                call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
               case ('')         ! do nothing; assume that everything is set
               case default
                 print*, "boundconds_y: No such boundary condition bcy1/2 = ", &
@@ -206,12 +215,13 @@ module Boundcond
 !
       use Cdata
       use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,Ftop,FtopKtop,chi, &
-                         lmultilayer,lcalc_heatcond_constchi
+                         lmultilayer,lheatc_chiconst
       use Magnetic
       use Density
-      use Ionization
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mvar) :: fbcz12
       real :: Ftopbot,FtopbotK
       integer :: j,k,ip_ok
       character (len=bclen), dimension(mvar) :: bc12
@@ -231,12 +241,14 @@ module Boundcond
           if (k==1) then
             topbot='bot'
             bc12=bcz1
+            fbcz12=fbcz1
             ip_ok=0
             Ftopbot=Fbot
             FtopbotK=FbotKbot
           else
             topbot='top'
             bc12=bcz2
+            fbcz12=fbcz2
             ip_ok=nprocz-1
             Ftopbot=Ftop
             FtopbotK=FtopKtop
@@ -262,11 +274,13 @@ module Boundcond
                 call bc_onesided_z(f,topbot,j)
               case ('c1')       ! complex
                 if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Ftopbot,FtopbotK,chi, &
-                                  lmultilayer,lcalc_heatcond_constchi)
+                                  lmultilayer,lheatc_chiconst)
                 if (j==iaa) call bc_aa_pot(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)   call bc_ss_temp_z(f,topbot)
+              case ('cT2')       ! constant temp. (keep lnrho)
+                if (j==iss)   call bc_ss_temp2_z(f,topbot)
               case ('cp')       ! constant pressure
                 if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
               case ('sT')       ! symmetric temp.
@@ -301,6 +315,8 @@ module Boundcond
                  call bc_force_z(f,+1,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
+              case ('set')      ! set boundary value
+                call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set
               case default
                 print*, "boundconds_z: No such boundary condition bcz1/2 = ", &
@@ -440,7 +456,7 @@ module Boundcond
 !
     endsubroutine bc_sym_x
 !***********************************************************************
-    subroutine bc_sym_y(f,sgn,topbot,j,rel)
+    subroutine bc_sym_y(f,sgn,topbot,j,rel,val)
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -449,11 +465,13 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
+!  10-apr-05/axel: added val argument
 !
       use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mvar), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -463,6 +481,7 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
+        if (present(val)) f(:,m1,:,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
         else
@@ -471,6 +490,7 @@ module Boundcond
         endif
 
       case('top')               ! top boundary
+        if (present(val)) f(:,m2,:,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
         else
@@ -485,7 +505,7 @@ module Boundcond
 !
     endsubroutine bc_sym_y
 !***********************************************************************
-    subroutine bc_sym_z(f,sgn,topbot,j,rel)
+    subroutine bc_sym_z(f,sgn,topbot,j,rel,val)
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -494,11 +514,13 @@ module Boundcond
 !  Don't combine rel=T and sgn=1, that wouldn't make much sense.
 !
 !  11-nov-02/wolf: coded
+!  10-apr-05/axel: added val argument
 !
       use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mvar), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -508,6 +530,7 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
+        if (present(val)) f(:,:,n1,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
         else
@@ -516,6 +539,7 @@ module Boundcond
         endif
 
       case('top')               ! top boundary
+        if (present(val)) f(:,:,n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         else
@@ -979,12 +1003,13 @@ module Boundcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: sgn,i,j
 !
-      if (topbot /= 'bot') &
-          call stop_it("BC_FORCE_Z: only implemented for lower boundary yet")
+!  lower boundary
 !
       select case (force_lower_bound)
       case ('uxy_sin-cos')
         call bc_force_uxy_sin_cos(f,n1,j)
+      case ('axy_sin-cos')
+        call bc_force_axy_sin_cos(f,n1,j)
       case ('uxy_convection')
         call uu_driver(f)
       case ('kepler')
@@ -998,6 +1023,27 @@ module Boundcond
 !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
 !
       do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+!
+!  upper boundary
+!
+      select case (force_upper_bound)
+      case ('uxy_sin-cos')
+        call bc_force_uxy_sin_cos(f,n2,j)
+      case ('axy_sin-cos')
+        call bc_force_axy_sin_cos(f,n2,j)
+      case ('uxy_convection')
+        call uu_driver(f)
+      case ('kepler')
+        call bc_force_kepler(f,n2,j)
+      case default
+        if (lroot) print*, "No such value for force_upper_bound: <", &
+             trim(force_upper_bound),">"
+        call stop_it("")
+      endselect
+!
+!  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
+!
+      do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
 !
     endsubroutine bc_force_z
 !***********************************************************************
@@ -1027,9 +1073,37 @@ module Boundcond
 !
     endsubroutine bc_force_uxy_sin_cos
 !***********************************************************************
+    subroutine bc_force_axy_sin_cos(f,idz,j)
+!
+!  Set (ax, ay) = (cos y, sin x) in vertical layer
+!
+!  26-apr-2004/wolf: coded
+!  10-apr-2005/axel: adapted for A
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: idz,j
+      real :: kx,ky
+!
+      if (iaz == 0) call stop_it("BC_FORCE_AXY_SIN_COS: Bad idea...")
+!
+      if (j==iax) then
+        if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif 
+        f(:,:,idz,j) = spread(cos(ky*y),1,mx)
+      elseif (j==iay) then
+        if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif 
+        f(:,:,idz,j) = spread(sin(kx*x),2,my)
+      elseif (j==iaz) then
+        f(:,:,idz,j) = 0.
+      endif
+!
+    endsubroutine bc_force_axy_sin_cos
+!***********************************************************************
     subroutine bc_force_kepler(f,idz,j)
 
-      use Cdata, only: x,y,iux,iuy,iuz,pi
+      use Cdata, only: x,y,iux,iuy,iuz,pi, &
+                       mx,my,mz,m1,m2,l1,l2,mvar,maux,nx
       use Mpicomm, only: stop_it
       use Global, only: get_global
       use Hydro, only: kep_cutoff_pos_ext,kep_cutoff_width_ext
@@ -1215,7 +1289,7 @@ module Boundcond
 !
       call boundconds_x(a)
       call initiate_isendrcv_bdry(a)
-      call finalise_isendrcv_bdry(a)
+      call finalize_isendrcv_bdry(a)
       call boundconds_y(a)
       call boundconds_z(a)
 !

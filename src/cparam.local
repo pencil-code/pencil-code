@@ -1,4 +1,4 @@
-!                       -*-f90-*-    (for Emacs)
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 !  cparam.local
 !
 !  Local settings concerning grid size and number of CPUs.

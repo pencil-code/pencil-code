@@ -1,6 +1,14 @@
-! $Id: nointerstellar.f90,v 1.13 2004-10-27 14:21:47 ajohan Exp $
-
-!  This modules solves contains ISM and SNe 
+! $Id: nointerstellar.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $
+!
+!  Dummy module
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: linterstellar = .true.
+!
+!***************************************************************
 
 module Interstellar
 
@@ -9,15 +17,13 @@ module Interstellar
 
   implicit none
 
+  include 'interstellar.inc'
+
   integer, parameter :: ninterstellarsave=1
   real, dimension(ninterstellarsave) :: interstellarsave
 
-  ! input parameters
-  integer :: dummy
-  namelist /interstellar_init_pars/ dummy
-
-  ! run parameters
-  namelist /interstellar_run_pars/ dummy
+  !namelist /interstellar_init_pars/ dummy
+  !namelist /interstellar_run_pars/ dummy
  
   contains
 
@@ -35,16 +41,10 @@ module Interstellar
       if (.not. first) call stop_it('register_nointerstellar called twice')
       first = .false.
 !
-      linterstellar = .false.
-!
-!      if ((ip<=8) .and. lroot) then
-!        print*, 'Register_nointerstellar'
-!      endif
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.13 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: nointerstellar.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -63,21 +63,112 @@ module Interstellar
       logical :: lstarting
 !
 ! (to keep compiler quiet)
-      if (ip==0) print*,lstarting
+      if (NO_WARN) print*,lstarting
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
-    subroutine calc_heat_cool_interstellar(df,rho,rho1,TT1,yH)
+    subroutine input_persistent_interstellar(id,lun,done)
+!
+!  Read in the stored time of the next SNI
+!
+      integer :: id,lun
+      logical :: done
+!
+      if (NO_WARN) print*,id,lun,done
+!
+    endsubroutine input_persistent_interstellar
+!***********************************************************************
+    subroutine output_persistent_interstellar(lun)
+!
+!  Writes out the time of the next SNI
+!
+!
+      integer :: lun
+!
+      if (NO_WARN) print*,lun
+!
+    endsubroutine output_persistent_interstellar
+!***********************************************************************
+    subroutine rprint_interstellar(lreset,lwrite)
+!
+!  reads and registers print parameters relevant to entropy
+!
+!   1-jun-02/axel: adapted from magnetic fields
+!
+      use Cdata
+      use Sub
+!
+!      integer :: iname
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  write column where which magnetic variable is stored
+!
+      if (lwr) then
+        write(3,*) 'i_taucmin=0'
+      endif
+!
+      if (NO_WARN) print*,lreset
+!
+    endsubroutine rprint_interstellar
+!!***********************************************************************
+    subroutine read_interstellar_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_interstellar_init_pars
+!***********************************************************************
+    subroutine write_interstellar_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_interstellar_init_pars
+!***********************************************************************
+    subroutine read_interstellar_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_interstellar_run_pars
+!***********************************************************************
+    subroutine write_interstellar_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_interstellar_run_pars
+!***********************************************************************
+    subroutine pencil_criteria_interstellar()
+! 
+!  All pencils that the Interstellar module depends on are specified here.
+! 
+!  26-03-05/tony: coded
+!
+!
+!     DUMMY
+!
+    endsubroutine pencil_criteria_interstellar
+!***********************************************************************
+    subroutine calc_heat_cool_interstellar(df,p,Hmax)
 !
 !  adapted from calc_heat_cool
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (nx), intent(in) :: rho,rho1,TT1,yH
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      type (pencil_case), intent(in) :: p 
+      real, dimension(nx), intent(in) :: Hmax 
 !
 ! (to keep compiler quiet)
-      if (ip==0) print*,'calc_heat_cool_interstellar',df,rho,rho1,TT1,yH
+      if (NO_WARN) print*,'calc_heat_cool_interstellar',df,p,Hmax
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
@@ -90,7 +181,7 @@ module Interstellar
     real, dimension(mx,my,mz,mvar+maux) :: f
 !
 ! (to keep compiler quiet)
-      if (ip==0) print*,'SN check',f
+      if (NO_WARN) print*,'SN check',f
 !
     endsubroutine check_SN
 

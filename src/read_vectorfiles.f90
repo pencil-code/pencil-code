@@ -1,4 +1,4 @@
-! $Id: read_vectorfiles.f90,v 1.4 2003-11-27 10:13:48 brandenb Exp $
+! $Id: read_vectorfiles.f90,v 1.5 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !***********************************************************************
       program read_vectorfiles
@@ -11,6 +11,7 @@
       use General
 !
       implicit none
+
 !
       integer, parameter :: nt=999999,nvecmax=999999
       integer :: iproc,ipx,ipy,ipz,it,ivec,l,m,n,mm,nn
@@ -77,7 +78,7 @@
       enddo
       close(lun2)
 !
-      if(ip==0) print*,ipx  !(keep compiler quiet)
+      if(NO_WARN) print*,ipx  !(keep compiler quiet)
 !
       end
 !***********************************************************************

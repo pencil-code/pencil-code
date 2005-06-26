@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.65 2004-10-27 14:21:47 ajohan Exp $
+! $Id: radiation_ray.f90,v 1.66 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -22,6 +22,8 @@ module Radiation
   use Cparam
 !
   implicit none
+
+  include 'radiation.inc'
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
@@ -57,8 +59,8 @@ module Radiation
 !  definition of dummy variables for FLD routine
 !
   real :: DFF_new=0.  !(dum)
-  integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
-  integer :: i_Egas_rms=0,i_Egas_max=0,i_Qradrms,i_Qradmax
+  integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
+  integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -115,7 +117,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.65 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: radiation_ray.f90,v 1.66 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -147,9 +149,9 @@ module Radiation
 !
 !  check that the number of rays does not exceed maximum
 !
-      if(radx>1) call stop_it("radx currently must not be greater than 1")
-      if(rady>1) call stop_it("rady currently must not be greater than 1")
-      if(radz>1) call stop_it("radz currently must not be greater than 1")
+      if (radx>1) call stop_it("radx currently must not be greater than 1")
+      if (rady>1) call stop_it("rady currently must not be greater than 1")
+      if (radz>1) call stop_it("radz currently must not be greater than 1")
 !
 !  count
 !
@@ -159,7 +161,7 @@ module Radiation
       do mrad=-rady,rady
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
-        if(rad2>0.and.rad2<=rad2max) then 
+        if (rad2>0.and.rad2<=rad2max) then 
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
@@ -209,7 +211,7 @@ module Radiation
 !
       use Cdata, only: m,n,x,y,z
       use Mpicomm, only: stop_it
-      use Ionization, only: eoscalc
+      use EquationOfState, only: eoscalc
 
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(mx) :: lnTT
@@ -249,7 +251,7 @@ module Radiation
 !  03-apr-04/tobi: coded
 !
       use Cdata, only: ilnrho,x,y,z,m,n
-      use Ionization, only: eoscalc
+      use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
 
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
@@ -314,7 +316,7 @@ module Radiation
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'radtransfer'
+      if (ldebug.and.headt) print*,'radtransfer'
 !
 !  calculate source function and opacity
 !
@@ -420,7 +422,7 @@ module Radiation
 !
 !  identifier
 !
-    if(ldebug.and.headt) print*,'raydirection'
+    if (ldebug.and.headt) print*,'raydirection'
 !
 !  get direction components
 !
@@ -489,7 +491,7 @@ module Radiation
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qintrinsic'
+      if (ldebug.and.headt) print*,'Qintrinsic'
 !
 !  line elements
 !
@@ -546,7 +548,8 @@ module Radiation
 !
 !  11-jul-03/tobi: coded
 !
-      use Mpicomm, only: ipy,nprocy,ipz,nprocz
+      use Cparam,  only: nprocy,nprocz
+      use Mpicomm, only: ipy,ipz
       use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
 !
@@ -652,7 +655,7 @@ module Radiation
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qrevision'
+      if (ldebug.and.headt) print*,'Qrevision'
 !
 !  do the ray...
 !
@@ -773,7 +776,7 @@ module Radiation
 !
     endsubroutine radboundary_xy_set
 !***********************************************************************
-    subroutine radiative_cooling(f,df,lnrho,TT1)
+    subroutine radiative_cooling(f,df,p)
 !
 !  calculate source function
 !
@@ -781,27 +784,28 @@ module Radiation
 !
       use Cdata
       use Sub
-      use Ionization
+      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lnrho,Qrad,TT1,Qrad2
+      type (pencil_case) :: p
+      real, dimension (nx) :: Qrad,Qrad2
 !
       Qrad=f(l1:l2,m,n,iQrad)
 !
 !  Add radiative cooling
 !
-      if(lcooling) then
+      if (lcooling) then
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
-            + 4*pi*exp(lnchi(l1:l2,m,n)-lnrho)*TT1*Qrad
+            + 4*pi*exp(lnchi(l1:l2,m,n)-p%lnrho)*p%TT1*Qrad
       endif
 !
 !  diagnostics
 !
-      if(ldiagnos) then
+      if (ldiagnos) then
         Qrad2=f(l1:l2,m,n,iQrad)**2
-        if(i_Qradrms/=0) call sum_mn_name(Qrad2,i_Qradrms,lsqrt=.true.)
-        if(i_Qradmax/=0) call max_mn_name(Qrad2,i_Qradmax,lsqrt=.true.)
+        if (idiag_Qradrms/=0) call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
+        if (idiag_Qradmax/=0) call max_mn_name(Qrad2,idiag_Qradmax,lsqrt=.true.)
       endif
 !
     endsubroutine radiative_cooling
@@ -817,30 +821,108 @@ module Radiation
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+!        
     endsubroutine init_rad
 !***********************************************************************
-   subroutine de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
+    subroutine pencil_criteria_radiation()
+! 
+!  All pencils that the Radiation module depends on are specified here.
+! 
+!  21-11-04/anders: coded
+!
+      lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_lnrho)=.true.
+!
+    endsubroutine pencil_criteria_radiation
+!***********************************************************************
+    subroutine pencil_interdep_radiation(lpencil_in)
+!
+!  Interdependency among pencils provided by the Radiation module
+!  is specified here.
+!
+!  21-11-04/anders: coded
+! 
+      logical, dimension (npencils) :: lpencil_in
+! 
+      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+! 
+    endsubroutine pencil_interdep_radiation
+!***********************************************************************
+    subroutine calc_pencils_radiation(f,p)
+!   
+!  Calculate Radiation pencils.
+!  Most basic pencils should come first, as others may depend on them.
+! 
+!  21-11-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f !(keep compiler quiet)
+! 
+    endsubroutine calc_pencils_radiation
+!***********************************************************************
+   subroutine de_dt(f,df,p,gamma)
 !
 !  Dummy routine for Flux Limited Diffusion routine
 !
 !  15-jul-2002/nils: dummy routine
 !
-      use Cdata
-      use Sub
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu
-      real, dimension (nx) :: rho1,TT1
-      real, dimension (nx,3,3) :: uij
-      real, dimension (nx) :: divu
+      type (pencil_case) :: p
       real :: gamma
 !
-      if(ip==0) print*,f,df,rho1,divu,uu,uij,TT1,gamma !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p,gamma !(keep compiler quiet)
+!        
     endsubroutine de_dt
+!***********************************************************************
+    subroutine read_radiation_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=radiation_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=radiation_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_radiation_init_pars
+!***********************************************************************
+    subroutine write_radiation_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=radiation_init_pars)
+                                                                                                   
+    endsubroutine write_radiation_init_pars
+!***********************************************************************
+    subroutine read_radiation_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=radiation_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=radiation_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_radiation_run_pars
+!***********************************************************************
+    subroutine write_radiation_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=radiation_run_pars)
+                                                                                                   
+    endsubroutine write_radiation_run_pars
 !*******************************************************************
     subroutine rprint_radiation(lreset,lwrite)
 !
@@ -863,27 +945,27 @@ module Radiation
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_Qradrms=0; i_Qradmax=0
+        idiag_Qradrms=0; idiag_Qradmax=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'Qradrms',i_Qradrms)
-        call parse_name(iname,cname(iname),cform(iname),'Qradmax',i_Qradmax)
+        call parse_name(iname,cname(iname),cform(iname),'Qradrms',idiag_Qradrms)
+        call parse_name(iname,cname(iname),cform(iname),'Qradmax',idiag_Qradmax)
       enddo
 !
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_frms=',i_frms
-        write(3,*) 'i_fmax=',i_fmax
-        write(3,*) 'i_Erad_rms=',i_Erad_rms
-        write(3,*) 'i_Erad_max=',i_Erad_max
-        write(3,*) 'i_Egas_rms=',i_Egas_rms
-        write(3,*) 'i_Egas_max=',i_Egas_max
-        write(3,*) 'i_Qradrms=',i_Qradrms
-        write(3,*) 'i_Qradmax=',i_Qradmax
+        write(3,*) 'i_frms=',idiag_frms
+        write(3,*) 'i_fmax=',idiag_fmax
+        write(3,*) 'i_Erad_rms=',idiag_Erad_rms
+        write(3,*) 'i_Erad_max=',idiag_Erad_max
+        write(3,*) 'i_Egas_rms=',idiag_Egas_rms
+        write(3,*) 'i_Egas_max=',idiag_Egas_max
+        write(3,*) 'i_Qradrms=',idiag_Qradrms
+        write(3,*) 'i_Qradmax=',idiag_Qradmax
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
         write(3,*) 'ifx=',ifx
@@ -892,7 +974,8 @@ module Radiation
         write(3,*) 'iQrad=',iQrad
       endif
 !   
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+!        
     endsubroutine rprint_radiation
 !***********************************************************************
     subroutine  bc_ee_inflow_x(f,topbot)

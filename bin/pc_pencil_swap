@@ -1,0 +1,81 @@
+#!/bin/bash
+##
+##  $Id: pc_pencil_swap,v 1.2 2005-06-26 17:34:17 eos_merger_tony Exp $
+##
+
+# Check for existence of src/cparam_pencils.inc
+if [ ! -e src/cparam_pencils.inc ]; then
+  echo " Could not find the file src/cparam_pencils.inc."
+  echo " Please compile the code with 'make' before using pc_pencil_swap."
+  echo ""
+  echo "Exiting."
+  exit
+fi
+
+# Take number of pencils from src/cparam_pencils.inc
+npencils=`grep 'integer, parameter :: npencils=' src/cparam_pencils.inc | sed -e 's/^.*:: npencils=//g'`
+
+# Introduction message
+echo "Welcome to pc_pencil_swap!"
+echo ""
+echo " There are $npencils pencils provided by the modules in this run. The"
+echo " code only needs some of these for this specific run. These pencils"
+echo " have been chosen by the modules based on the input parameters."
+echo ""
+echo " I will now go through each provided pencil and swap the code's"
+echo " requirement so that needed pencils will not be calculated while"
+echo " unneeded pencils will. For each pencil I will run the code and check"
+echo " if the result agrees with the reference data."
+echo ""
+echo " Note that including an unneeded pencil should not change the results"
+echo " If the results are changed, then that pencil is actually needed."
+echo " If the exclusion of a needed pencil does not change the results,"
+echo " then that pencil is not needed after all."
+echo ""
+echo " You may want to consider making a special test version of your run."
+echo " Copy this run to another directory and set it=10 and it1=2. Then"
+echo " produce first some reference data and save it in reference.out. You can"
+echo " see in data/pencils.list which pencils are used and their number in"
+echo " the pencil case. You can see the full numbering of all provided"
+echo " pencils in the file src/cparam_pencils.inc."
+echo ""
+
+# Check if ipencil_swap present in run.in
+if [ ! -n "`grep ipencil_swap run.in`" ]; then
+  echo " Could not find any ipencil_swap in run.in."
+  echo " Please put ipencil_swap=0 in run_pars by hand."
+  echo ""
+  echo "Exiting."
+  exit
+fi
+
+# Check for reference data
+if [ ! -e reference.out ]; then
+  echo " Could not find any reference data file (reference.out)."
+  echo " Please run the code and copy data/time_series.dat to reference.out."
+  echo ""
+  echo "Exiting."
+  exit
+fi
+
+# Remove old log files
+rm -f pc_pencil_swap_diff.log pc_pencil_swap_diff.log
+
+# Loop over pencils
+i=1
+while [ $i -lt `expr $npencils + 1` ]; do
+  echo ""
+  echo " Swapping pencil number $i."
+  echo " --------------------------"
+  echo "" >> pc_pencil_swap_diff.log
+  echo " Swapping pencil number $i." >> pc_pencil_swap_diff.log
+  echo " --------------------------" >> pc_pencil_swap_diff.log
+  sed -e "s/ipencil_swap=[0-9]*/ipencil_swap=$i/g" --in-place run.in
+  rm -rf data/*
+  echo " Running code..."
+  start_run.csh > pc_pencil_swap_run.log
+  echo " Comparing result to reference data."
+  diff data/time_series.dat reference.out
+  diff data/time_series.dat reference.out >> pc_pencil_swap_diff.log
+  i=$((++i))
+done

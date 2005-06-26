@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.7 2004-04-07 10:36:30 theine Exp $',
+  cvsid='$Id: run.in,v 1.8 2005-06-26 17:34:33 eos_merger_tony Exp $',
   nt=20, it1=5, isave=100
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=0.2,
@@ -11,14 +11,16 @@
   bcy = 'p','p','p', 'p',    'p'
   bcz = 's','s','a','a2','c1:c2'
   iwig=300
+  lpencil_check=T
+/
+&eos_run_pars
 /
 &hydro_run_pars
-  nu=1.e-3, ivisc='simplified'
 !  Omega=0.1 ! angular velocity
   theta=0.  ! direction of angular velocity vector (0 : vertical)
 /
 &density_run_pars
-lupw_lnrho=T
+  lupw_lnrho=T
 /
 &grav_run_pars
   gravz=-1.
@@ -26,4 +28,7 @@ lupw_lnrho=T
 &entropy_run_pars
   hcond0=2.e-3
   lupw_ss=T
+/
+&viscosity_run_pars
+  nu=1.e-3, ivisc='simplified'
 /

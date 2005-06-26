@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: scp-proc-to-proc,v 1.5 2004-02-22 09:14:48 brandenb Exp $
+#$Id: scp-proc-to-proc,v 1.6 2005-06-26 17:34:17 eos_merger_tony Exp $
 #
 #  Purpose:
 #      copies directory trees to another machine
@@ -8,6 +8,7 @@
 #     scp-proc-to-proc dim.dat $serv/f90/pencil-code/runs/forced/relax_twist128a
 #     scp-proc-to-proc dim.dat $bar/pencil-code/runs/geodynamo/kws93/128f .
 #     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/MRIexp/128d
+#     scp-proc-to-proc dim.dat . $dcsc/pencil-code/axel/couette/strat128a_mu0.30_g2
 
 #  will copy all var.dat files fron current directory to var.dat in
 #  another run directory.

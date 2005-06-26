@@ -3,14 +3,18 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.6 2004-08-26 19:43:26 mee Exp $'
+  cvsid='$Id: start.in,v 1.7 2005-06-26 17:34:38 eos_merger_tony Exp $'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
   bcz = 's','s','a','a2','sT'
-  xyz0=-0.125,-0.125,-0.125
-  xyz1=+0.125,+0.125,+0.125
+  xyz0=-0.0625,-0.0625,-0.125
+  xyz1=+0.0625,+0.0625,+0.125
   lperi=T,T,F
   lwrite_aux=T
   !lcalc_cp=T
+/
+&eos_init_pars
+  mu=0.62
+  lcalc_cp=T
 /
 &hydro_init_pars
   Omega=25.
@@ -23,10 +27,8 @@
   grav_profile='Ferriere' 
 /
 &entropy_init_pars
+  !initss='isothermal', T0=4000.
   initss='Ferriere'
-  !initss='const_ss', ss_const=0.4  
-/
-&ionization_init_pars
 /
 &interstellar_init_pars
 /

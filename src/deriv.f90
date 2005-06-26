@@ -1,12 +1,25 @@
-! $Id: deriv.f90,v 1.21 2004-10-29 13:38:15 ajohan Exp $
+! $Id: deriv.f90,v 1.22 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 module Deriv
   
-  use Cdata, only: mx,my,mz
-  use Cdata, only: lequidist
   use Mpicomm, only: stop_it
 
   implicit none
+
+  private
+
+  public :: der, der2, der4, der5, der6, derij
+  public :: der6_other
+  public :: der_upwind1st
+
+!ajwm  integer, parameter :: icount_der   = 1         !DERCOUNT
+!ajwm  integer, parameter :: icount_der2  = 2         !DERCOUNT
+!ajwm  integer, parameter :: icount_der4  = 3         !DERCOUNT
+!ajwm  integer, parameter :: icount_der5  = 4         !DERCOUNT
+!ajwm  integer, parameter :: icount_der6  = 5         !DERCOUNT
+!ajwm  integer, parameter :: icount_derij = 6         !DERCOUNT
+!ajwm  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
+!ajwm  integer, parameter :: icount_der_other = 8     !DERCOUNT
 
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
@@ -31,6 +44,9 @@ module Deriv
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
+!
+!ajwm      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
+!ajwm                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -82,6 +98,9 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: j
 !
+!ajwm      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
+!ajwm                          der_call_count(1,icount_der_other,j,1) + 1
+!
       if (j==1) then
         if (nxgrid/=1) then
           fac=(1./60.)*dx_1(l1:l2)
@@ -130,6 +149,9 @@ module Deriv
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
+!
+!ajwm      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
+!ajwm                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -199,6 +221,9 @@ module Deriv
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
+!
+!ajwm      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
+!ajwm                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
 !
       if (present(ignoredx)) then
         igndx = ignoredx
@@ -276,6 +301,9 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
+!ajwm      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
+!ajwm                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
+!
       if (present(ignoredx)) then
         igndx = ignoredx
       else
@@ -342,6 +370,99 @@ module Deriv
 !
     endsubroutine der6
 !***********************************************************************
+    subroutine der6_other(f,df,j,ignoredx,upwind)
+!
+!  Calculate 6th derivative of a scalar, get scalar
+!    Used for hyperdiffusion that affects small wave numbers as little as
+!  possible (useful for density).
+!    The optional flag IGNOREDX is useful for numerical purposes, where
+!  you want to affect the Nyquist scale in each direction, independent of
+!  the ratios dx:dy:dz.
+!    The optional flag UPWIND is a variant thereof, which calculates
+!  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
+!
+!   8-jul-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (nx) :: df,fac
+      integer :: j
+      logical, optional :: ignoredx,upwind
+      logical :: igndx,upwnd
+!
+      intent(in)  :: f,j,ignoredx
+      intent(out) :: df
+!
+!ajwm      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
+!ajwm                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+      if (present(upwind)) then
+        upwnd = upwind
+      else
+        upwnd = .false.
+        if (.not. lequidist(j)) then
+          call stop_it('der6_other: NOT IMPLEMENTED for no equidistant grid')
+        endif
+      endif
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          if (igndx) then
+            fac=1.
+          else if (upwnd) then
+            fac = (1./60.)*dx_1(l1:l2)
+          else
+            fac=1./dx**6
+          endif
+          df=fac*(-20.* f(l1:l2,m,n) &
+                  +15.*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
+                  - 6.*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
+                  +    (f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
+        else
+          df=0.
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          if (igndx) then
+            fac=1.
+          else if (upwnd) then
+            fac = (1./60.)*dy_1(m)
+          else
+            fac=1./dy**6
+          endif
+          df=fac*(-20.* f(l1:l2,m  ,n) &
+                  +15.*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
+                  - 6.*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
+                  +    (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+        else
+          df=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          if (igndx) then
+            fac=1.
+          else if (upwnd) then
+            fac = (1./60.)*dz_1(n)
+          else
+            fac=1./dz**6
+          endif
+          df=fac*(-20.* f(l1:l2,m,n  ) &
+                  +15.*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                  - 6.*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                  +    (f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+        else
+          df=0.
+        endif
+      endif
+!
+    endsubroutine der6_other
+!***********************************************************************
     subroutine der4(f,k,df,j,ignoredx,upwind)
 !
 !  Calculate 4th derivative of a scalar, get scalar
@@ -365,6 +486,9 @@ module Deriv
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
+!
+!ajwm      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
+!ajwm                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) then
         call stop_it('der4: NOT IMPLEMENTED for no equidistant grid')
@@ -441,6 +565,9 @@ module Deriv
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
+!
+!ajwm      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
+!ajwm                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
       if ((i==1.and.j==2).or.(i==2.and.j==1)) then
         if (nxgrid/=1.and.nygrid/=1) then
@@ -539,6 +666,9 @@ module Deriv
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
       integer :: j,k,l
+!
+!ajwm      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
+!ajwm                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) then
         call stop_it('der_upwind1st: NOT IMPLEMENTED for no equidistant grid')

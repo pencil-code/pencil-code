@@ -1,4 +1,4 @@
-! $Id: notestfield.f90,v 1.1 2005-06-05 12:44:27 brandenb Exp $
+! $Id: notestfield.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -58,7 +58,7 @@ module Testfield
       if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
     endsubroutine init_aatest
 !***********************************************************************
-    subroutine daatest_dt(f,df,uu)
+    subroutine daatest_dt(f,df,p)
 !
 !  Dummy routine
 !
@@ -66,12 +66,13 @@ module Testfield
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu
+      type (pencil_case) :: p
 !
-      intent(in)     :: f,uu
+      intent(in)     :: f, p
       intent(inout)  :: df     
 !
-      if(ip==0) print*,f,df,uu  !(to keep compiler quiet)
+      if(ip==0) print*, f, df, p  !(to keep compiler quiet)
+!        
     endsubroutine daatest_dt
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)

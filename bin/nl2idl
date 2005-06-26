@@ -163,8 +163,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.20 $';
-    my $date = '$Date: 2005-06-24 11:15:01 $';
+    my $rev = '$Revision: 1.21 $';
+    my $date = '$Date: 2005-06-26 17:34:16 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";

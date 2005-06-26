@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: tsnap,v 1.4 2005-05-05 23:56:43 dobler Exp $
+# CVS: $Id: tsnap,v 1.5 2005-06-26 17:34:17 eos_merger_tony Exp $
 # -*-perl-*-
 #
 # Name:   tsnap

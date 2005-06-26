@@ -1,0 +1,34 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2005-06-26 17:34:28 eos_merger_tony Exp $',
+  ip=13,
+  nt=61, it1=20, isave=500, itorder=3, ialive=1
+  cdt=0.4, cdtv=0.3, dtmin=1e-6,
+  dsnap=1., dvid=2., d2davg=10.
+  r_int=1.5                    ! radius of interior spherical boundary
+  r_ext=20.                    ! radius of exterior spherical boundary
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  dampu=1e2, !tdamp=0.,
+  dampuext=1e2, 
+  dampuint=1e2, 
+  wdamp=0.7,
+  Omega=.35
+  !lcentrifugal_force=T
+/
+&density_run_pars
+  lupw_lnrho=T! use upwinding for lnrho to avoid wiggles
+  lmass_source=T, damplnrho_int=1e2, damplnrho_ext=1e2, wdamp=0.5
+  lnrho_int=-2.0, lnrho_ext=-2.0
+/
+&grav_run_pars
+  ipotential='geo-kws', g0=890., r0_pot=2.,n_pot=10
+/
+&viscosity_run_pars
+  nu=1e-1
+/

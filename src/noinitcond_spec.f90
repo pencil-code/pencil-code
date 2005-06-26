@@ -1,4 +1,4 @@
-!  $Id: noinitcond_spec.f90,v 1.8 2004-06-10 04:26:41 brandenb Exp $
+!  $Id: noinitcond_spec.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $
 !
 !  Substitute routines for vortex_solve.f90
 !
@@ -15,6 +15,10 @@ module Initcond_spec
 
   implicit none
 
+  private
+
+  public :: kepvor, enthblob
+
   contains
 
 !***********************************************************************
@@ -29,7 +33,7 @@ module Initcond_spec
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: q_ell, b_ell, hh0
       real :: gamma,cs20
-      if(ip==0) print*,f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0 ! compiler quiet
+      if(NO_WARN) print*,f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0 ! compiler quiet
     endsubroutine kepvor
 !***********************************************************************
     subroutine enthblob(f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0)
@@ -43,7 +47,7 @@ module Initcond_spec
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: q_ell, b_ell, hh0
       real :: gamma,cs20
-      if(ip==0) print*,f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0 ! compiler quiet
+      if(NO_WARN) print*,f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0 ! compiler quiet
     endsubroutine enthblob
 
-end module Initcond_spec
+endmodule Initcond_spec

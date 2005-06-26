@@ -1,0 +1,469 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@";     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   mkcparam
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Started:   06-Jul-2002
+# CVS: $Id: mkcparam,v 1.2 2005-06-26 17:34:15 eos_merger_tony Exp $
+# Usage:
+#   mkcparam <file1> [<file2> [..]] [-o outfile]\n
+# Description:
+#   Check the headers (everything before the first non-comment non-empty
+#   line) of input files for lines of the sort
+#     ! MVAR CONTRIBUTION 3
+#     ! MAUX CONTRIBUTION 1
+#     ! COMMUNICATED AUXILIARIES 1
+#     ! NDUSTSPEC CONTRIBUTION 17
+#   and accumulate the numbers mvar, maux, maux_com, ndustspecs, etc from these.
+#
+#   Lines of the form:
+#     ! PENCILS PROVIDED   uu,xx
+#     ! PENCILS REQUIRED   uu,xx
+#     ! PENCILS OPTIONAL   uu,xx
+#     ! PENCILS DIAGNOSTIC uu,xx
+#
+#   And accumulates these lists before building the pencil_case data type
+#   and other necessary control parameters for the code.
+#
+#   Output is written as a Fortran program and supposed to end up in the
+#   local file src/cparam.inc .
+# Example:
+#     mkcparam entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
+
+# History:
+#   30-nov-02/tony: Modified to use makefile lines where the Make variable
+#                   and module name differ by more than just case
+#                     e.g.   VISCOSITY=visc_shock
+#                   Also count maux variables too.
+#
+#   12-oct-03/tony: Modified to use in-code declarations of f-array
+#                   contributuions. 
+#                   Fortran files should contain a block like the
+#                   following at the top to declare any contribution
+#                   they make to the f-array.
+#
+#   07-apr-05/tony: Added the ability to have 'communucated auxiliaries' 
+#                   ie. variables which are not evolved (hence have no 
+#                   part in the df array.  But which are updated at the
+#                   end of a timestep and communicated along with the mvar
+#                   variables in the f-array.
+#
+
+# ---------------------------------------------------------------------- #
+my $mvar_decl  = '^\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $maux_decl  = '^\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $maux_com_decl  = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*([0-9]+)\s*$';
+my $mpvar_decl = '^\s*!\s*MPVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $dust_decl  = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*([0-9]+\*[0-9])\s*$';
+my $pencils_decl = '^\s*!\s*PENCILS\s*(PROVIDED|REQUIRED|OPTIONAL|DIAGNOSTIC)\s*([A-Za-z0-9_\s,]+?)\s*$';
+my $cparam_decl = '^\s*!\s*CPARAM\s*(.*?)\s*$';
+# ---------------------------------------------------------------------- #
+
+use strict;
+use Getopt::Long;
+
+my $line;
+my $dust_string='1*4';
+my $lmdvar='.false.';
+my $lmice ='.false.';
+my ($maux,$maux_com,$mvar,$mpvar,$ndustspec,$mvar_per_dust) = (0) x 6;
+
+my %full_type=   ('aa'           => ', dimension (nx,3)',
+                  'a2'           => ', dimension (nx)',
+                  'ab'           => ', dimension (nx)',
+                  'aij'          => ', dimension (nx,3,3)', 
+                  'b2'           => ', dimension (nx)', 
+                  'bb'           => ', dimension (nx,3)', 
+                  'bbb'          => ', dimension (nx,3)', 
+                  'bij'          => ', dimension (nx,3,3)', 
+                  'beta'         => ', dimension (nx)', 
+                  'cc'           => ', dimension (nx)', 
+                  'cc1'          => ', dimension (nx)', 
+                  'cp1tilde'     => ', dimension (nx)', 
+                  'cs2'          => ', dimension (nx)', 
+                  'curlcurlgg'   => ', dimension (nx,3)', 
+                  'curlgg'       => ', dimension (nx,3)', 
+                  'del2u'        => ', dimension (nx,3)', 
+                  'del6u'        => ', dimension (nx,3)', 
+                  'del2ud'       => ', dimension (nx,3,ndustspec)', 
+                  'del6ud'       => ', dimension (nx,3,ndustspec)', 
+                  'del2lnnd'     => ', dimension (nx,ndustspec)', 
+                  'del6lnnd'     => ', dimension (nx,ndustspec)', 
+                  'del2nd'       => ', dimension (nx,ndustspec)', 
+                  'del6nd'       => ', dimension (nx,ndustspec)', 
+                  'del2md'       => ', dimension (nx,ndustspec)', 
+                  'del2mi'       => ', dimension (nx,ndustspec)', 
+                  'del2lncc'     => ', dimension (nx)', 
+                  'del2cc'       => ', dimension (nx)', 
+                  'del2lnrho'    => ', dimension (nx)', 
+                  'del2rho'      => ', dimension (nx)', 
+                  'del2ss'       => ', dimension (nx)', 
+                  'del6ss'       => ', dimension (nx)', 
+                  'del6lnrho'    => ', dimension (nx)', 
+                  'del6rho'      => ', dimension (nx)', 
+                  'del2a'        => ', dimension (nx,3)', 
+                  'del4a'        => ', dimension (nx,3)', 
+                  'del6a'        => ', dimension (nx,3)', 
+                  'divgg'        => ', dimension (nx)', 
+                  'diva'         => ', dimension (nx)', 
+                  'divg2'        => ', dimension (nx)', 
+                  'divu'         => ', dimension (nx)', 
+                  'divud'        => ', dimension (nx,ndustspec)',
+                  'djuidjbi'     => ', dimension (nx)',
+                  'ecr'          => ', dimension (nx)', 
+                  'ee'           => ', dimension (nx)', 
+                  'gcc'          => ', dimension (nx,3)',
+                  'gcc1'         => ', dimension (nx,3)',
+                  'gcc2'         => ', dimension (nx,3)',
+                  'gg'           => ', dimension (nx,3)',
+                  'g2'           => ', dimension (nx)',
+                  'gecr'         => ', dimension (nx,3)', 
+                  'glncc'        => ', dimension (nx,3)', 
+                  'glnnd'        => ', dimension (nx,3,ndustspec)', 
+                  'glnnd2'       => ', dimension (nx,ndustspec)', 
+                  'glnrho'       => ', dimension (nx,3)', 
+                  'glnrho2'      => ', dimension (nx)', 
+                  'glnrhoxb'     => ', dimension (nx,3)', 
+                  'glnTT'        => ', dimension (nx,3)', 
+                  'gmd'          => ', dimension (nx,3,ndustspec)', 
+                  'gmi'          => ', dimension (nx,3,ndustspec)', 
+                  'gnd'          => ', dimension (nx,3,ndustspec)', 
+                  'gndglnrho'    => ', dimension (nx,ndustspec)', 
+                  'glnndglnrho'  => ', dimension (nx,ndustspec)', 
+                  'gradcurla'    => ', dimension (nx,3,3)', 
+                  'graddiva'     => ', dimension (nx,3)', 
+                  'graddivu'     => ', dimension (nx,3)', 
+                  'graddivud'    => ', dimension (nx,3,ndustspec)', 
+                  'grho'         => ', dimension (nx,3)', 
+                  'gshock'       => ', dimension (nx,3)', 
+                  'gshockglnrho' => ', dimension (nx)', 
+                  'gss'          => ', dimension (nx,3)', 
+                  'hss'          => ', dimension (nx,3,3)', 
+                  'hlnrho'       => ', dimension (nx,3,3)', 
+                  'hlnTT'        => ', dimension (nx,3,3)', 
+                  'hlncc'        => ', dimension (nx,3,3)', 
+                  'hcc'          => ', dimension (nx,3,3)', 
+                  'jb'           => ', dimension (nx)', 
+                  'j2'           => ', dimension (nx)', 
+                  'jij'          => ', dimension (nx,3,3)', 
+                  'jj'           => ', dimension (nx,3)', 
+                  'jo'           => ', dimension (nx)', 
+                  'jxb'          => ', dimension (nx,3)', 
+                  'jxbxb'        => ', dimension (nx,3)', 
+                  'jxbrxb'       => ', dimension (nx,3)', 
+                  'jxbr'         => ', dimension (nx,3)', 
+                  'lnrho'        => ', dimension (nx)',
+                  'lnTT'         => ', dimension (nx)',
+                  'Ma2'          => ', dimension (nx)', 
+                  'md'           => ', dimension (nx,ndustspec)', 
+                  'mf_EMF'       => ', dimension (nx,3)', 
+                  'mf_EMFdotB'   => ', dimension (nx)', 
+                  'mi'           => ', dimension (nx,ndustspec)', 
+                  'nd'           => ', dimension (nx,ndustspec)',
+                  'oo'           => ', dimension (nx,3)', 
+                  'o2'           => ', dimension (nx)', 
+                  'ood'          => ', dimension (nx,3,ndustspec)', 
+                  'od2'          => ', dimension (nx,ndustspec)', 
+                  'ou'           => ', dimension (nx,3)', 
+                  'oud'          => ', dimension (nx,ndustspec)', 
+                  'oxj'          => ', dimension (nx,3)', 
+                  'oxu'          => ', dimension (nx,3)', 
+                  'oxuxb'        => ', dimension (nx,3)', 
+                  'pp'           => ', dimension (nx)', 
+                  'rho'          => ', dimension (nx)', 
+                  'rho1'         => ', dimension (nx)', 
+                  'rhod'         => ', dimension (nx,ndustspec)', 
+                  'sglnrho'      => ', dimension (nx,3)', 
+                  'sdglnnd'      => ', dimension (nx,3,ndustspec)', 
+                  'shock'        => ', dimension (nx)', 
+                  'sdij'         => ', dimension (nx,3,3,ndustspec)', 
+                  'sij'          => ', dimension (nx,3,3)', 
+                  'sij2'         => ', dimension (nx)', 
+                  'sj'           => ', dimension (nx)', 
+                  'ss'           => ', dimension (nx)', 
+                  'ss12'         => ', dimension (nx)', 
+                  'TT'           => ', dimension (nx)', 
+                  'TT1'          => ', dimension (nx)', 
+                  'ub'           => ', dimension (nx)', 
+                  'ug'           => ', dimension (nx)', 
+                  'u2'           => ', dimension (nx)', 
+                  'u2u13'        => ', dimension (nx)', 
+                  'udgud'        => ', dimension (nx,3,ndustspec)', 
+                  'udij'         => ', dimension (nx,3,3,ndustspec)', 
+                  'ud2'          => ', dimension (nx,ndustspec)', 
+                  'ugcc'         => ', dimension (nx)', 
+                  'ugecr'        => ', dimension (nx)', 
+                  'uglncc'       => ', dimension (nx)', 
+                  'uglnrho'      => ', dimension (nx)', 
+                  'ugrho'        => ', dimension (nx)', 
+                  'ugu'          => ', dimension (nx,3)', 
+                  'uij'          => ', dimension (nx,3,3)', 
+                  'uij2'         => ', dimension (nx)', 
+                  'uij5'         => ', dimension (nx,3,3)', 
+                  'ujxb'         => ', dimension (nx)', 
+                  'uu'           => ', dimension (nx,3)', 
+                  'uud'          => ', dimension (nx,3,ndustspec)', 
+                  'udgmd'        => ', dimension (nx,ndustspec)', 
+                  'udgmi'        => ', dimension (nx,ndustspec)', 
+                  'udglnnd'      => ', dimension (nx,ndustspec)', 
+                  'udgnd'        => ', dimension (nx,ndustspec)', 
+                  'ugss'         => ', dimension (nx)', 
+                  'uxb'          => ', dimension (nx,3)', 
+                  'uxb2'         => ', dimension (nx)', 
+                  'uxj'          => ', dimension (nx,3)', 
+                  'va2'          => ', dimension (nx)',
+                  'yH'           => ', dimension (nx)'
+                 );
+
+
+my @pencil_names=();
+my @pencil_names_fill=();
+my %pencil_hash=();
+my @cparam_lines;
+
+(my $cmdname = $0) =~ s{.*/}{};
+
+## Process command line
+my (%opts);	# Variables written by GetOptions
+GetOptions(\%opts,
+	   qw( -h   --help
+	       -o=s --output=s
+                               ));
+
+die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
+
+my $outfile = ($opts{o} || $opts{output} || "-");
+open(OUT, "> $outfile") or die "Can't open $outfile for writing";
+open(OUT_PENCIL, "> cparam_pencils.inc") or die "Can't open cparam_pencils.inc
+ for writing";
+open(OUT_PENC_INIT, "> pencil_init.inc") or die "Can't open pencil_init.inc
+ for writing";
+
+# Cycle through files (later files will overwrite effect of earlier files)
+file: foreach my $infile (@ARGV) {
+# Now extract `?VAR CONTRIBUTION' info from each file
+    unless (open(INPUT,"< $infile")) {
+	warn "Can't open $infile for reading";
+	next file;
+    }
+# Cycle through all lines up to first non-empty non-comment line in file
+    line: while (defined($line=<INPUT>)) {
+	next line if ($line =~ /^\s*$/); # ignore empty lines
+	last line if ($line !~ /^\s*!/); # done if non-comment line
+	extract_decl ($line, $mvar_decl    , \$mvar     );
+	extract_decl ($line, $maux_decl    , \$maux     );
+	extract_decl ($line, $maux_com_decl, \$maux_com );
+	extract_decl ($line, $mpvar_decl   , \$mpvar    );
+# Check for information about number of dust species and discretization type   
+	if ($line=~ /$dust_decl/) {$dust_string=$1;}
+	if ($line=~ /$cparam_decl/) {unshift @cparam_lines, $1;}
+	if ($line=~ /$pencils_decl/) {
+          my $decl_type=$1;
+          my @pencils = split /\s*\,\s*/, $2;
+          foreach my $pencil (@pencils)
+          {
+            if (! exists $pencil_hash{$pencil})
+            {
+              $pencil_hash{$pencil}{'provided'}=0;
+              $pencil_hash{$pencil}{'required'}=0;
+              $pencil_hash{$pencil}{'optional'}=0;
+              $pencil_hash{$pencil}{'diagnostic'}=0;
+              $pencil_hash{$pencil}{'declaration'}="real$full_type{$pencil} :: $pencil";
+            }
+# Count up each pencil line type
+            if ($decl_type =~ 'PROVIDED') {
+              $pencil_hash{$pencil}{'provided'}++; 
+            } 
+            elsif ($decl_type =~ 'REQUIRED') { 
+              $pencil_hash{$pencil}{'required'}++; 
+            } 
+            elsif ($decl_type =~ 'OPTIONAL') { 
+              $pencil_hash{$pencil}{'optional'}++; 
+            }  
+            elsif ($decl_type =~ 'DIAGNOSTIC') { 
+              $pencil_hash{$pencil}{'diagnostic'}++; 
+            }
+          }
+        }
+    }
+}
+# More processing of dust information
+($ndustspec,$mvar_per_dust) = split /\*/, $dust_string;
+if ($ndustspec >= 1) {
+  $mvar = $mvar - 4;
+  $mvar = $mvar + $ndustspec*$mvar_per_dust;
+  }
+if ($mvar_per_dust >= 5) {$lmdvar = '.true.';}
+if ($mvar_per_dust == 6) {$lmice  = '.true.';}
+
+#my $last='zzzzzzzzzzzzzzzzzz';
+#foreach (sort { lc($b) cmp lc($a) } @pencil_requests) {
+#  my $this=$_;
+#  next if ($last =~ /^\s*$this\s*$/i);
+#  unshift @pencils, $_;
+#  $last=$this;
+#} 
+#$,="\n";
+#print @pencils;
+foreach my $pencil ( keys %pencil_hash ) {
+  print "Pencil: $pencil (";
+  print $pencil_hash{$pencil}{'provided'}.",";
+  print $pencil_hash{$pencil}{'required'}.",";
+  print $pencil_hash{$pencil}{'optional'}.",";
+  print $pencil_hash{$pencil}{'diagnostic'}.")\n";
+} 
+
+my $npencils=scalar keys %pencil_hash;
+my @lpenc_required;
+my @lpenc_requested;
+my @lpenc_diagnos;
+
+foreach my $pencil (sort { lc($b) cmp lc($a) } keys %pencil_hash) {
+  if ($pencil_hash{$pencil}{'required'}>=1) {
+    unshift @lpenc_required, ".true.";
+  } else {
+    unshift @lpenc_required, ".false.";
+  }
+  if ($pencil_hash{$pencil}{'diagnostic'}>=1) {
+    unshift @lpenc_diagnos, '.true.';
+  } else {
+    unshift @lpenc_diagnos, '.false.';
+  }
+  unshift @lpenc_requested, '.false.';
+}
+
+## Write output
+print OUT_PENC_INIT <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+EOF
+print OUT_PENCIL <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+EOF
+print OUT <<"EOF";
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
+!  cparam.inc
+!
+! This file was automatically generated by $cmdname, so think twice before
+! you modify it. It is included by cparam.f90 .
+!
+
+integer, parameter :: mvar=$mvar, maux=$maux
+integer, parameter :: maux_com=$maux_com
+integer, parameter :: mpvar=$mpvar
+integer, parameter :: ndustspec=$ndustspec
+logical, parameter :: lmdvar=$lmdvar, lmice=$lmice
+
+EOF
+
+# Set mp (number of particles) to zero if particles are not used
+if ($mpvar == 0) {print OUT "integer, parameter :: npar=1\n\n";}
+
+my @cparam='';
+
+open CPARAM, "cparam.local";
+  @cparam=<CPARAM>;
+close CPARAM;
+
+my $mpar_loc=0;
+foreach my $line (@cparam) {
+  if ($line=~ 'mpar_loc') {$mpar_loc=1;}
+  }
+ 
+if ($mpar_loc eq 0) {print OUT "integer, parameter :: mpar_loc=npar\n";}
+
+# Insert all CPARAM lines
+$,="\n";
+print OUT @cparam_lines;
+
+print OUT_PENCIL "real, parameter :: penc0=1.2347298347E37\n";
+print OUT_PENCIL "integer, parameter :: npencils=$npencils";
+print OUT_PENCIL "\ntype pencil_case\n";
+foreach my $pencil (sort { lc($a) cmp lc($b) } keys %pencil_hash) {
+  print OUT_PENCIL "  ".$pencil_hash{$pencil}{'declaration'}."\n";
+  print OUT_PENC_INIT "  p%".$pencil."=penc0\n";
+#  print OUT_PENCIL "  ".$pencil_hash{$pencil}{'declaration'}."=0\n";
+}
+print OUT_PENCIL "endtype pencil_case\n\n";
+
+
+my $i=1;
+@pencil_names = sort { lc($a) cmp lc($b) } keys %pencil_hash;
+foreach my $pencil (@pencil_names) {
+  print OUT_PENCIL "integer :: i_$pencil=$i\n";
+  $i++;
+}
+
+#$i=0;
+#foreach my $pencil (@pencil_names){
+#  $pencil_names_fill[$i] = "'$pencil". " "x(12-length($pencil)) ."'";
+#  $i++;
+#}
+
+
+
+print OUT_PENCIL "character (len=12), parameter, dimension(npencils) :: pencil_names = &\n  (/ ";
+#$,=", &\n   ";
+#print OUT_PENCIL @pencil_names_fill;
+$i=0;
+foreach my $pencil (@pencil_names){
+  print OUT_PENCIL ", " if ($i != 0);
+  print OUT_PENCIL "'$pencil". " "x(12-length($pencil)) ."'";
+  print OUT_PENCIL "  &\n   " if (($i % 4) == 3);
+  $i++;
+}
+print OUT_PENCIL " /)\n";
+
+print OUT_PENCIL "logical, parameter, dimension(npencils):: lpenc_required  = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_diagnos   = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_diagnos2d = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_video     = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpenc_requested = .false.\n";
+print OUT_PENCIL "logical,            dimension(npencils):: lpencil         = .false. \n\n\n";
+
+
+# ---------------------------------------------------------------------- #
+sub extract_decl{
+## Extract declaration of contribution to mvar and similar
+    my $line = shift;
+    my $regexp = shift;
+    my $counter_ref = shift;
+
+    if ($line =~ /$regexp/) {
+	  $$counter_ref += $1;
+      }
+}
+
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+
+# End of file mkcparam

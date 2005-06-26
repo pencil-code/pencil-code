@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.131 2005-04-07 12:18:43 ngrs Exp $
+! $Id: mpicomm.f90,v 1.132 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -54,6 +54,8 @@ module Mpicomm
 
   implicit none
 
+  include 'mpicomm.inc'
+
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
     module procedure mpibcast_logical_arr
@@ -69,6 +71,11 @@ module Mpicomm
     module procedure mpibcast_real_arr
   endinterface
 
+  interface mpibcast_double
+    module procedure mpibcast_double_scl
+    module procedure mpibcast_double_arr
+  endinterface
+
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
@@ -76,15 +83,41 @@ module Mpicomm
 
   include 'mpif.h'
 
+!
+  integer, parameter :: mcom=mvar+maux_com
+!
   integer, parameter :: nbufx_gh=my*mz*nghost*mvar ! For shear
-  integer, parameter :: nbufy=mx*nz*nghost*mvar
-  integer, parameter :: nbufz=mx*ny*nghost*mvar
-  integer, parameter :: nbufyz=mx*nghost*nghost*mvar
-
-  real, dimension (mx,nghost,nz,mvar) :: lbufyi,ubufyi,lbufyo,ubufyo
-  real, dimension (mx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
-  real, dimension (mx,nghost,nghost,mvar) :: llbufi,lubufi,uubufi,ulbufi
-  real, dimension (mx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
+  integer, parameter :: nbufy=mx*nz*nghost*mcom
+  integer, parameter :: nbufz=mx*ny*nghost*mcom
+  integer, parameter :: nbufyz=mx*nghost*nghost*mcom
+! For shock transmission
+  integer, parameter :: nshkbufy=mx*nz*nghost
+  integer, parameter :: nshkbufz=mx*ny*nghost
+  integer, parameter :: nshkbufyz=mx*nghost*nghost
+! For shock transmission
+  integer, parameter :: nvelbufy=mx*nz*nghost*3
+  integer, parameter :: nvelbufz=mx*ny*nghost*3
+  integer, parameter :: nvelbufyz=mx*nghost*nghost*3
+!
+!
+! For f-array processor boundaries
+  real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
+  real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
+  real, dimension (mx,nghost,nghost,mcom) :: llbufi,lubufi,uubufi,ulbufi
+  real, dimension (mx,nghost,nghost,mcom) :: llbufo,lubufo,uubufo,ulbufo
+!
+! For Shock profile contributions
+  real, dimension (mx,nghost,nz) :: lshkbufyi,ushkbufyi,lshkbufyo,ushkbufyo 
+  real, dimension (mx,ny,nghost) :: lshkbufzi,ushkbufzi,lshkbufzo,ushkbufzo
+  real, dimension (mx,nghost,nghost) :: llshkbufi,lushkbufi,uushkbufi,ulshkbufi
+  real, dimension (mx,nghost,nghost) :: llshkbufo,lushkbufo,uushkbufo,ulshkbufo
+!
+! For premature velocity comms contributions
+  real, dimension (mx,nghost,nz,3) :: lvelbufyi,uvelbufyi,lvelbufyo,uvelbufyo 
+  real, dimension (mx,ny,nghost,3) :: lvelbufzi,uvelbufzi,lvelbufzo,uvelbufzo
+  real, dimension (mx,nghost,nghost,3) :: llvelbufi,luvelbufi,uuvelbufi,ulvelbufi
+  real, dimension (mx,nghost,nghost,3) :: llvelbufo,luvelbufo,uuvelbufo,ulvelbufo
+!
   real, dimension (nghost,my,mz,mvar) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
   integer :: ierr
@@ -95,6 +128,12 @@ module Mpicomm
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
+!  mpi tags for shock profile
+  integer :: shk_tolowy=90,shk_touppy=91,shk_tolowz=92,shk_touppz=93 ! msg. tags
+  integer :: shk_TOll=94,shk_TOul=95,shk_TOuu=96,shk_TOlu=97 ! msg. tags for corners
+!  mpi tags for early velocity comms
+  integer :: vel_tolowy=100,vel_touppy=101,vel_tolowz=102,vel_touppz=103 ! msg. tags
+  integer :: vel_TOll=104,vel_TOul=105,vel_TOuu=106,vel_TOlu=107 ! msg. tags for corners
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
 !  in order to have unique tags for each boundary and each direction
@@ -115,17 +154,45 @@ module Mpicomm
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
              irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
-  integer, dimension(MPI_STATUS_SIZE) :: isend_xy,irecv_xy, &  !(for radiation)
-                                         isend_zx,irecv_zx
+! for shock profile
+  integer :: isend_rq_shktolowy,isend_rq_shktouppy,irecv_rq_shkfromlowy,irecv_rq_shkfromuppy
+  integer :: isend_rq_shktolowz,isend_rq_shktouppz,irecv_rq_shkfromlowz,irecv_rq_shkfromuppz
+  integer :: isend_rq_shkTOll,isend_rq_shkTOul,isend_rq_shkTOuu,isend_rq_shkTOlu  !(corners)
+  integer :: irecv_rq_shkFRuu,irecv_rq_shkFRlu,irecv_rq_shkFRll,irecv_rq_shkFRul  !(corners)
+! for early velocity comms
+  integer :: isend_rq_veltolowy,isend_rq_veltouppy,irecv_rq_velfromlowy,irecv_rq_velfromuppy
+  integer :: isend_rq_veltolowz,isend_rq_veltouppz,irecv_rq_velfromlowz,irecv_rq_velfromuppz
+  integer :: isend_rq_velTOll,isend_rq_velTOul,isend_rq_velTOuu,isend_rq_velTOlu  !(corners)
+  integer :: irecv_rq_velFRuu,irecv_rq_velFRlu,irecv_rq_velFRll,irecv_rq_velFRul  !(corners)
+
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_xy, irecv_zx   !(for radiation)
+!ajwm UNUSED!!!
+!  integer, dimension(MPI_STATUS_SIZE) :: isend_xy, isend_zx  !(for radiation)
+
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
                                          isend_stat_Tuu,isend_stat_Tlu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                          irecv_stat_Fll,irecv_stat_Ful
-  integer, dimension(MPI_STATUS_SIZE) :: isend_xy_stat,irecv_xy_stat, &
-                                         isend_yz_stat,irecv_yz_stat, &
-                                         isend_zx_stat,irecv_zx_stat
+! for shock profile
+  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_shktl,isend_stat_shktu
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_shkfl,irecv_stat_shkfu
+  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_shkTll,isend_stat_shkTul, &
+                                         isend_stat_shkTuu,isend_stat_shkTlu
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_shkFuu,irecv_stat_shkFlu, &
+                                         irecv_stat_shkFll,irecv_stat_shkFul
+! for early velocity comms
+  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_veltl,isend_stat_veltu
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_velfl,irecv_stat_velfu
+  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_velTll,isend_stat_velTul, &
+                                         isend_stat_velTuu,isend_stat_velTlu
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_velFuu,irecv_stat_velFlu, &
+                                         irecv_stat_velFll,irecv_stat_velFul
+!ajwm UNUSED!!!
+!  integer, dimension(MPI_STATUS_SIZE) :: isend_xy_stat,irecv_xy_stat, &
+!                                         isend_yz_stat,irecv_yz_stat, &
+!                                         isend_zx_stat,irecv_zx_stat
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
@@ -248,7 +315,7 @@ module Mpicomm
     subroutine initiate_isendrcv_bdry(f)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
-!  Does not wait for the receives to finish (done in finalise_isendrcv_bdry)
+!  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
 !  leftneigh and rghtneigh are initialized by mpicomm_init
 !
 !  21-may-02/axel: communication of corners added
@@ -262,8 +329,8 @@ module Mpicomm
 !  Periodic boundary conditions in y
 !
       if (nprocy>1) then
-        lbufyo(:,:,:,1:mvar)=f(:,m1:m1i,n1:n2,1:mvar)  !!(lower y-zone)
-        ubufyo(:,:,:,1:mvar)=f(:,m2i:m2,n1:n2,1:mvar)  !!(upper y-zone)
+        lbufyo(:,:,:,1:mcom)=f(:,m1:m1i,n1:n2,1:mcom)  !!(lower y-zone)
+        ubufyo(:,:,:,1:mcom)=f(:,m2i:m2,n1:n2,1:mcom)  !!(upper y-zone)
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
         call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
         call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
@@ -273,8 +340,8 @@ module Mpicomm
 !  Periodic boundary conditions in z
 !
       if (nprocz>1) then
-        lbufzo(:,:,:,1:mvar)=f(:,m1:m2,n1:n1i,1:mvar)  !!(lower z-zone)
-        ubufzo(:,:,:,1:mvar)=f(:,m1:m2,n2i:n2,1:mvar)  !!(upper z-zone)
+        lbufzo(:,:,:,1:mcom)=f(:,m1:m2,n1:n1i,1:mcom)  !!(lower z-zone)
+        ubufzo(:,:,:,1:mcom)=f(:,m1:m2,n2i:n2,1:mcom)  !!(upper z-zone)
         call MPI_IRECV(ubufzi,nbufz,MPI_REAL,zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
         call MPI_IRECV(lbufzi,nbufz,MPI_REAL,zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
         call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
@@ -284,10 +351,10 @@ module Mpicomm
 !  The four corners (in counter-clockwise order)
 !
       if (nprocy>1.and.nprocz>1) then
-        llbufo(:,:,:,1:mvar)=f(:,m1:m1i,n1:n1i,1:mvar)
-        ulbufo(:,:,:,1:mvar)=f(:,m2i:m2,n1:n1i,1:mvar)
-        uubufo(:,:,:,1:mvar)=f(:,m2i:m2,n2i:n2,1:mvar)
-        lubufo(:,:,:,1:mvar)=f(:,m1:m1i,n2i:n2,1:mvar)
+        llbufo(:,:,:,1:mcom)=f(:,m1:m1i,n1:n1i,1:mcom)
+        ulbufo(:,:,:,1:mcom)=f(:,m2i:m2,n1:n1i,1:mcom)
+        uubufo(:,:,:,1:mcom)=f(:,m2i:m2,n2i:n2,1:mcom)
+        lubufo(:,:,:,1:mcom)=f(:,m1:m1i,n2i:n2,1:mcom)
         call MPI_IRECV(uubufi,nbufyz,MPI_REAL,uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,ierr)
         call MPI_IRECV(lubufi,nbufyz,MPI_REAL,lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,ierr)
         call MPI_IRECV(llbufi,nbufyz,MPI_REAL,llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,ierr)
@@ -306,7 +373,7 @@ module Mpicomm
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
-    subroutine finalise_isendrcv_bdry(f)
+    subroutine finalize_isendrcv_bdry(f)
 !
       use Cdata, only: bcy1,bcy2,bcz1,bcz2
 !
@@ -329,7 +396,7 @@ module Mpicomm
       if (nprocy>1) then
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
-        do j=1,mvar
+        do j=1,mcom
            if (ipy /= 0 .OR. bcy1(j)=='p') then
               f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
            endif
@@ -346,7 +413,7 @@ module Mpicomm
       if (nprocz>1) then
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
-        do j=1,mvar
+        do j=1,mcom
            if (ipz /= 0 .OR. bcz1(j)=='p') then 
               f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
            endif
@@ -365,7 +432,7 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,ierr)
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
-        do j=1,mvar
+        do j=1,mcom
            if (ipz /= 0 .OR. bcz1(j)=='p') then 
               if (ipy /= 0 .OR. bcy1(j)=='p') then 
                  f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
@@ -393,14 +460,14 @@ module Mpicomm
 !  (commented out, because compiler does like this for 0-D runs)
 !
 !     if (ip<7.and.ipy==3.and.ipz==0) &
-!       print*,'finalise_isendrcv_bdry: MPICOMM recv ul: ', &
+!       print*,'finalize_isendrcv_bdry: MPICOMM recv ul: ', &
 !                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
 !
 !  make sure the other precessors don't carry on sending new data
 !  which could be mistaken for an earlier time
 !
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-    endsubroutine finalise_isendrcv_bdry
+    endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
    subroutine initiate_shearing(f)
 !
@@ -487,7 +554,7 @@ module Mpicomm
       endif
     endsubroutine initiate_shearing
 !***********************************************************************
-    subroutine finalise_shearing(f)
+    subroutine finalize_shearing(f)
 !
 !  Subroutine for shearing sheet boundary conditions
 !
@@ -562,7 +629,326 @@ module Mpicomm
          if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
          if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
 !
-       endsubroutine finalise_shearing
+       endsubroutine finalize_shearing
+!***********************************************************************
+    subroutine initiate_isendrcv_shock(f)
+!
+!  Isend and Irecv boundary values. Called in the beginning of pde.
+!  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
+!  leftneigh and rghtneigh are initialized by mpicomm_init
+!
+!  21-may-02/axel: communication of corners added
+!
+      use CData
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+!  So far no distribution over x
+!
+      !(We may never do this after having seen all the trouble involved!!)
+!
+!  Periodic boundary conditions in y
+!
+      if (nprocy>1) then
+!
+! y-Boundary contributions...
+!
+        lshkbufyo(:,:,:)=f(:,1:m1-1 ,n1:n2,ishock)  !!(lower y-zone)
+        ushkbufyo(:,:,:)=f(:,m2+1:my,n1:n2,ishock)  !!(upper y-zone)
+        call MPI_IRECV(ushkbufyi,nshkbufy,MPI_REAL,yuneigh,shk_tolowy,MPI_COMM_WORLD,irecv_rq_shkfromuppy,ierr)
+        call MPI_IRECV(lshkbufyi,nshkbufy,MPI_REAL,ylneigh,shk_touppy,MPI_COMM_WORLD,irecv_rq_shkfromlowy,ierr)
+        call MPI_ISEND(lshkbufyo,nshkbufy,MPI_REAL,ylneigh,shk_tolowy,MPI_COMM_WORLD,isend_rq_shktolowy,ierr)
+        call MPI_ISEND(ushkbufyo,nshkbufy,MPI_REAL,yuneigh,shk_touppy,MPI_COMM_WORLD,isend_rq_shktouppy,ierr)
+      endif
+!
+!  Periodic boundary conditions in z
+!
+      if (nprocz>1) then
+!
+! z-Boundary contributions...
+!
+        lshkbufzo(:,:,:)=f(:,m1:m2,1:n1-1 ,ishock)  !!(lower z-zone)
+        ushkbufzo(:,:,:)=f(:,m1:m2,n2+1:mz,ishock)  !!(upper z-zone)
+        call MPI_IRECV(ushkbufzi,nshkbufz,MPI_REAL,zuneigh,shk_tolowz,MPI_COMM_WORLD,irecv_rq_shkfromuppz,ierr)
+        call MPI_IRECV(lshkbufzi,nshkbufz,MPI_REAL,zlneigh,shk_touppz,MPI_COMM_WORLD,irecv_rq_shkfromlowz,ierr)
+        call MPI_ISEND(lshkbufzo,nshkbufz,MPI_REAL,zlneigh,shk_tolowz,MPI_COMM_WORLD,isend_rq_shktolowz,ierr)
+        call MPI_ISEND(ushkbufzo,nshkbufz,MPI_REAL,zuneigh,shk_touppz,MPI_COMM_WORLD,isend_rq_shktouppz,ierr)
+      endif
+!
+!  The four corners (in counter-clockwise order)
+!
+      if (nprocy>1.and.nprocz>1) then
+!
+! Calculate corner contributions...
+!
+        llshkbufo(:,:,:)=f(:, 1:nghost, 1:nghost ,ishock)
+        ulshkbufo(:,:,:)=f(:, m2+1:my , 1:nghost,ishock)
+        uushkbufo(:,:,:)=f(:, m2+1:my , n2+1:mz,ishock)
+        lushkbufo(:,:,:)=f(:, 1:nghost, n2+1:mz,ishock)
+        call MPI_IRECV(uushkbufi,nshkbufyz,MPI_REAL,uucorn,shk_TOll,MPI_COMM_WORLD,irecv_rq_shkFRuu,ierr)
+        call MPI_IRECV(lushkbufi,nshkbufyz,MPI_REAL,lucorn,shk_TOul,MPI_COMM_WORLD,irecv_rq_shkFRlu,ierr)
+        call MPI_IRECV(llshkbufi,nshkbufyz,MPI_REAL,llcorn,shk_TOuu,MPI_COMM_WORLD,irecv_rq_shkFRll,ierr)
+        call MPI_IRECV(ulshkbufi,nshkbufyz,MPI_REAL,ulcorn,shk_TOlu,MPI_COMM_WORLD,irecv_rq_shkFRul,ierr)
+        call MPI_ISEND(llshkbufo,nshkbufyz,MPI_REAL,llcorn,shk_TOll,MPI_COMM_WORLD,isend_rq_shkTOll,ierr)
+        call MPI_ISEND(ulshkbufo,nshkbufyz,MPI_REAL,ulcorn,shk_TOul,MPI_COMM_WORLD,isend_rq_shkTOul,ierr)
+        call MPI_ISEND(uushkbufo,nshkbufyz,MPI_REAL,uucorn,shk_TOuu,MPI_COMM_WORLD,isend_rq_shkTOuu,ierr)
+        call MPI_ISEND(lushkbufo,nshkbufyz,MPI_REAL,lucorn,shk_TOlu,MPI_COMM_WORLD,isend_rq_shkTOlu,ierr)
+      endif
+!
+!  communication sample
+!  (commented out, because compiler does like this for 0-D runs)
+!
+!     if (ip<7.and.ipy==0.and.ipz==3) &
+!       print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
+!
+    endsubroutine initiate_isendrcv_shock
+!***********************************************************************
+    subroutine finalize_isendrcv_shock(f)
+!
+      use Cdata, only: bcy1,bcy2,bcz1,bcz2,lperi,ishock
+!
+!  Make sure the communications initiated with initiate_isendrcv_bdry are
+!  finished and insert the just received boundary values.
+!   Receive requests do not need to (and on OSF1 cannot) be explicitly
+!  freed, since MPI_Wait takes care of this.
+!
+!  21-may-02/axel: communication of corners added
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+!  1. wait until data received
+!  2. set ghost zones
+!  3. wait until send completed, will be overwritten in next time step
+!
+!  Communication in y (includes periodic bc)
+!
+      if (nprocy>1) then
+        call MPI_WAIT(irecv_rq_shkfromuppy,irecv_stat_shkfu,ierr)
+        call MPI_WAIT(irecv_rq_shkfromlowy,irecv_stat_shkfl,ierr)
+        if (ipy /= 0 .OR. lperi(2)) then
+          f(:, m1:m1i,n1:n2,ishock)=f(:,m1:m1i,n1:n2,ishock)+lshkbufyi  !!(set lower buffer)
+        endif
+        if (ipy /= nprocy-1 .OR. lperi(2)) then 
+          f(:,m2i:m2,n1:n2,ishock)=f(:,m2i:m2,n1:n2,ishock)+ushkbufyi  !!(set upper buffer)
+        endif
+        call MPI_WAIT(isend_rq_shktolowy,isend_stat_shktl,ierr)
+        call MPI_WAIT(isend_rq_shktouppy,isend_stat_shktu,ierr)
+      endif
+!
+!  Communication in z (includes periodic bc)
+!
+      if (nprocz>1) then
+        call MPI_WAIT(irecv_rq_shkfromuppz,irecv_stat_shkfu,ierr)
+        call MPI_WAIT(irecv_rq_shkfromlowz,irecv_stat_shkfl,ierr)
+        if (ipz /= 0 .OR. lperi(3)) then 
+           f(:,m1:m2,n1:n1i,ishock)=f(:,m1:m2,n1:n1i,ishock)+lshkbufzi  !!(set lower buffer)
+        endif
+        if (ipz /= nprocz-1 .OR. lperi(3)) then 
+           f(:,m1:m2,n2i:n2,ishock)=f(:,m1:m2,n2i:n2,ishock)+ushkbufzi  !!(set upper buffer)
+        endif
+        call MPI_WAIT(isend_rq_shktolowz,isend_stat_shktl,ierr)
+        call MPI_WAIT(isend_rq_shktouppz,isend_stat_shktu,ierr)
+      endif
+!
+!  The four yz-corners (in counter-clockwise order)
+!
+      if (nprocy>1.and.nprocz>1) then
+        call MPI_WAIT(irecv_rq_shkFRuu,irecv_stat_shkFuu,ierr)
+        call MPI_WAIT(irecv_rq_shkFRlu,irecv_stat_shkFlu,ierr)
+        call MPI_WAIT(irecv_rq_shkFRll,irecv_stat_shkFll,ierr)
+        call MPI_WAIT(irecv_rq_shkFRul,irecv_stat_shkFul,ierr)
+        if (ipz /= 0 .OR. lperi(3)) then 
+           if (ipy /= 0 .OR. lperi(2)) then 
+              f(:, m1:m1i, n1:n1i,ishock)=f(:, m1:m1i, n1:n1i,ishock)+llshkbufi  !!(set ll corner)
+           endif
+           if (ipy /= nprocy-1 .OR. lperi(2)) then
+              f(:, m2i:m2, n1:n1i,ishock)=f(:, m2i:m2, n1:n1i,ishock)+ulshkbufi  !!(set ul corner)
+           endif
+        endif
+        if (ipz /= nprocz-1 .OR. lperi(3)) then 
+           if (ipy /= nprocy-1 .OR. lperi(2)) then 
+              f(:, m2i:m2, n2i:n2,ishock)=f(:, m2i:m2, n2i:n2,ishock)+uushkbufi  !!(set uu corner)
+           endif
+           if (ipy /= 0 .OR. lperi(2)) then
+              f(:, m1:m1i, n2i:n2,ishock)=f(:, m1:m1i, n2i:n2,ishock)+lushkbufi  !!(set lu corner)
+           endif
+        endif
+        call MPI_WAIT(isend_rq_shkTOll,isend_stat_shkTll,ierr)
+        call MPI_WAIT(isend_rq_shkTOul,isend_stat_shkTul,ierr)
+        call MPI_WAIT(isend_rq_shkTOuu,isend_stat_shkTuu,ierr)
+        call MPI_WAIT(isend_rq_shkTOlu,isend_stat_shkTlu,ierr)
+      endif
+!
+!  communication sample
+!  (commented out, because compiler does like this for 0-D runs)
+!
+!     if (ip<7.and.ipy==3.and.ipz==0) &
+!       print*,'finalize_isendrcv_bdry: MPICOMM recv ul: ', &
+!                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
+!
+!  make sure the other precessors don't carry on sending new data
+!  which could be mistaken for an earlier time
+!
+      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+    endsubroutine finalize_isendrcv_shock
+!***********************************************************************
+    subroutine initiate_isendrcv_uu(f)
+!
+!  Isend and Irecv boundary values. Called in the beginning of pde.
+!  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
+!  leftneigh and rghtneigh are initialized by mpicomm_init
+!
+!  21-may-02/axel: communication of corners added
+!
+      use CData
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+!  So far no distribution over x
+!
+      !(We may never do this after having seen all the trouble involved!!)
+!
+!  Periodic boundary conditions in y
+!
+      if (nprocy>1) then
+        lvelbufyo(:,:,:,:)=f(:,m1:m1i,n1:n2,iux:iuz)  !!(lower y-zone)
+        uvelbufyo(:,:,:,:)=f(:,m2i:m2,n1:n2,iux:iuz)  !!(upper y-zone)
+        call MPI_IRECV(uvelbufyi,nvelbufy,MPI_REAL,yuneigh,vel_tolowy,MPI_COMM_WORLD,irecv_rq_velfromuppy,ierr)
+        call MPI_IRECV(lvelbufyi,nvelbufy,MPI_REAL,ylneigh,vel_touppy,MPI_COMM_WORLD,irecv_rq_velfromlowy,ierr)
+        call MPI_ISEND(lvelbufyo,nvelbufy,MPI_REAL,ylneigh,vel_tolowy,MPI_COMM_WORLD,isend_rq_veltolowy,ierr)
+        call MPI_ISEND(uvelbufyo,nvelbufy,MPI_REAL,yuneigh,vel_touppy,MPI_COMM_WORLD,isend_rq_veltouppy,ierr)
+      endif
+!
+!  Periodic boundary conditions in z
+!
+      if (nprocz>1) then
+        lvelbufzo(:,:,:,:)=f(:,m1:m2,n1:n1i,iux:iuz)  !!(lower z-zone)
+        uvelbufzo(:,:,:,:)=f(:,m1:m2,n2i:n2,iux:iuz)  !!(upper z-zone)
+        call MPI_IRECV(uvelbufzi,nvelbufz,MPI_REAL,zuneigh,vel_tolowz,MPI_COMM_WORLD,irecv_rq_velfromuppz,ierr)
+        call MPI_IRECV(lvelbufzi,nvelbufz,MPI_REAL,zlneigh,vel_touppz,MPI_COMM_WORLD,irecv_rq_velfromlowz,ierr)
+        call MPI_ISEND(lvelbufzo,nvelbufz,MPI_REAL,zlneigh,vel_tolowz,MPI_COMM_WORLD,isend_rq_veltolowz,ierr)
+        call MPI_ISEND(uvelbufzo,nvelbufz,MPI_REAL,zuneigh,vel_touppz,MPI_COMM_WORLD,isend_rq_veltouppz,ierr)
+      endif
+!
+!  The four corners (in counter-clockwise order)
+!
+      if (nprocy>1.and.nprocz>1) then
+        llvelbufo(:,:,:,:)=f(:,m1:m1i,n1:n1i,iux:iuz)
+        ulvelbufo(:,:,:,:)=f(:,m2i:m2,n1:n1i,iux:iuz)
+        uuvelbufo(:,:,:,:)=f(:,m2i:m2,n2i:n2,iux:iuz)
+        luvelbufo(:,:,:,:)=f(:,m1:m1i,n2i:n2,iux:iuz)
+        call MPI_IRECV(uuvelbufi,nvelbufyz,MPI_REAL,uucorn,vel_TOll,MPI_COMM_WORLD,irecv_rq_velFRuu,ierr)
+        call MPI_IRECV(luvelbufi,nvelbufyz,MPI_REAL,lucorn,vel_TOul,MPI_COMM_WORLD,irecv_rq_velFRlu,ierr)
+        call MPI_IRECV(llvelbufi,nvelbufyz,MPI_REAL,llcorn,vel_TOuu,MPI_COMM_WORLD,irecv_rq_velFRll,ierr)
+        call MPI_IRECV(ulvelbufi,nvelbufyz,MPI_REAL,ulcorn,vel_TOlu,MPI_COMM_WORLD,irecv_rq_velFRul,ierr)
+        call MPI_ISEND(llvelbufo,nvelbufyz,MPI_REAL,llcorn,vel_TOll,MPI_COMM_WORLD,isend_rq_velTOll,ierr)
+        call MPI_ISEND(ulvelbufo,nvelbufyz,MPI_REAL,ulcorn,vel_TOul,MPI_COMM_WORLD,isend_rq_velTOul,ierr)
+        call MPI_ISEND(uuvelbufo,nvelbufyz,MPI_REAL,uucorn,vel_TOuu,MPI_COMM_WORLD,isend_rq_velTOuu,ierr)
+        call MPI_ISEND(luvelbufo,nvelbufyz,MPI_REAL,lucorn,vel_TOlu,MPI_COMM_WORLD,isend_rq_velTOlu,ierr)
+      endif
+!
+!  communication sample
+!  (commented out, because compiler does like this for 0-D runs)
+!
+!     if (ip<7.and.ipy==0.and.ipz==3) &
+!       print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
+!
+    endsubroutine initiate_isendrcv_uu
+!***********************************************************************
+    subroutine finalize_isendrcv_uu(f)
+!
+      use Cdata
+!
+!  Make sure the communications initiated with initiate_isendrcv_bdry are
+!  finished and insert the just received boundary values.
+!   Receive requests do not need to (and on OSF1 cannot) be explicitly
+!  freed, since MPI_Wait takes care of this.
+!
+!  21-may-02/axel: communication of corners added
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+!
+!  1. wait until data received
+!  2. set ghost zones
+!  3. wait until send completed, will be overwritten in next time step
+!
+!  Communication in y (includes periodic bc)
+!
+      if (nprocy>1) then
+        call MPI_WAIT(irecv_rq_velfromuppy,irecv_stat_velfu,ierr)
+        call MPI_WAIT(irecv_rq_velfromlowy,irecv_stat_velfl,ierr)
+        do j=iux,iuz
+           if (ipy /= 0 .OR. bcy1(j)=='p') then
+              f(:, 1:m1-1,n1:n2,j)=lvelbufyi(:,:,:,j-iux+1)  !!(set lower buffer)
+           endif
+           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+              f(:,m2+1:my,n1:n2,j)=uvelbufyi(:,:,:,j-iux+1)  !!(set upper buffer)
+           endif
+        enddo
+        call MPI_WAIT(isend_rq_veltolowy,isend_stat_veltl,ierr)
+        call MPI_WAIT(isend_rq_veltouppy,isend_stat_veltu,ierr)
+      endif
+!
+!  Communication in z (includes periodic bc)
+!
+      if (nprocz>1) then
+        call MPI_WAIT(irecv_rq_velfromuppz,irecv_stat_velfu,ierr)
+        call MPI_WAIT(irecv_rq_velfromlowz,irecv_stat_velfl,ierr)
+        do j=iux,iuz
+           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+              f(:,m1:m2, 1:n1-1,j)=lvelbufzi(:,:,:,j-iux+1)  !!(set lower buffer)
+           endif
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+              f(:,m1:m2,n2+1:mz,j)=uvelbufzi(:,:,:,j-iux+1)  !!(set upper buffer)
+           endif
+        enddo
+        call MPI_WAIT(isend_rq_veltolowz,isend_stat_veltl,ierr)
+        call MPI_WAIT(isend_rq_veltouppz,isend_stat_veltu,ierr)
+      endif
+!
+!  The four yz-corners (in counter-clockwise order)
+!
+      if (nprocy>1.and.nprocz>1) then
+        call MPI_WAIT(irecv_rq_velFRuu,irecv_stat_velFuu,ierr)
+        call MPI_WAIT(irecv_rq_velFRlu,irecv_stat_velFlu,ierr)
+        call MPI_WAIT(irecv_rq_velFRll,irecv_stat_velFll,ierr)
+        call MPI_WAIT(irecv_rq_velFRul,irecv_stat_velFul,ierr)
+        do j=iux,iuz
+           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+              if (ipy /= 0 .OR. bcy1(j)=='p') then 
+                 f(:, 1:m1-1, 1:n1-1,j)=llvelbufi(:,:,:,j-iux+1)  !!(set ll corner)
+              endif
+              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+                 f(:,m2+1:my, 1:n1-1,j)=ulvelbufi(:,:,:,j-iux+1)  !!(set ul corner)
+              endif
+           endif
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+                 f(:,m2+1:my,n2+1:mz,j)=uuvelbufi(:,:,:,j-iux+1)  !!(set uu corner)
+              endif
+              if (ipy /= 0 .OR. bcy1(j)=='p') then
+                 f(:, 1:m1-1,n2+1:mz,j)=luvelbufi(:,:,:,j-iux+1)  !!(set lu corner)
+              endif
+           endif
+        enddo
+        call MPI_WAIT(isend_rq_velTOll,isend_stat_velTll,ierr)
+        call MPI_WAIT(isend_rq_velTOul,isend_stat_velTul,ierr)
+        call MPI_WAIT(isend_rq_velTOuu,isend_stat_velTuu,ierr)
+        call MPI_WAIT(isend_rq_velTOlu,isend_stat_velTlu,ierr)
+      endif
+!
+!  communication sample
+!  (commented out, because compiler does like this for 0-D runs)
+!
+!     if (ip<7.and.ipy==3.and.ipz==0) &
+!       print*,'finalize_isendrcv_bdry: MPICOMM recv ul: ', &
+!                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
+!
+!  make sure the other precessors don't carry on sending new data
+!  which could be mistaken for an earlier time
+!
+      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+    endsubroutine finalize_isendrcv_uu
 !***********************************************************************
     subroutine radboundary_zx_recv(mrad,idir,Qbuf_zx)
 !
@@ -849,6 +1235,46 @@ module Mpicomm
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
+    subroutine mpibcast_double_scl(bcast_array,nbcast_array,proc)
+!
+!  Communicate real scalar between processors
+!
+      integer :: nbcast_array
+      double precision :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_PRECISION,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!      
+    endsubroutine mpibcast_double_scl
+!***********************************************************************
+    subroutine mpibcast_double_arr(bcast_array,nbcast_array,proc)
+!
+!  Communicate real array between processors
+!
+      integer :: nbcast_array
+      double precision, dimension(nbcast_array) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_PRECISION,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_double_arr
+!***********************************************************************
     subroutine mpibcast_char_scl(cbcast_array,nbcast_array,proc)
 !
 !  Communicate character scalar between processors
@@ -927,6 +1353,42 @@ module Mpicomm
       endif
 !
     endsubroutine mpireduce_sum
+!***********************************************************************
+    subroutine mpireduce_sum_double(dsum_tmp,dsum,nreduce)
+!
+      integer :: nreduce
+      double precision, dimension(nreduce) :: dsum_tmp,dsum
+!
+!  calculate total sum for each array element and return to root
+!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
+!
+      if (nprocs==1) then
+        dsum=dsum_tmp
+      else
+        call MPI_REDUCE(dsum_tmp, dsum, nreduce, MPI_DOUBLE_PRECISION, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_double
+!***********************************************************************
+    subroutine mpireduce_sum_int(fsum_tmp,fsum,nreduce)
+!
+!  12-jan-05/anders: coded
+!
+      integer :: nreduce
+      integer, dimension(nreduce) :: fsum_tmp,fsum
+!
+!  calculate total sum for each array element and return to root
+!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_int
 !***********************************************************************
     subroutine start_serialize()
 !
@@ -1337,7 +1799,7 @@ subroutine transform_fftpack(a_re,a_im,dummy)
   a_im=a_im/nwgrid
   if(lroot .AND. ip<10) print*,'transform_fftpack: fft has finished'
 !
-  if(ip==0) print*,dummy  !(keep compiler quiet)
+  if(NO_WARN) print*,dummy  !(keep compiler quiet)
 !
 endsubroutine transform_fftpack
 !***********************************************************************
@@ -1398,7 +1860,7 @@ subroutine transform_fftpack_2d(a_re,a_im,dummy)
   a_im=a_im/nwgrid
   if(lroot .AND. ip<10) print*,'transform_fftpack: fft has finished'
 !
-  if(ip==0) print*,dummy  !(keep compiler quiet)
+  if(NO_WARN) print*,dummy  !(keep compiler quiet)
 !
 endsubroutine transform_fftpack_2d
 !***********************************************************************

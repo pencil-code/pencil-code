@@ -4,7 +4,9 @@
 !
 &init_pars
 ip=14
-  cvsid='$Id: start.in,v 1.3 2004-04-07 10:36:31 theine Exp $'
+  cvsid='$Id: start.in,v 1.4 2005-06-26 17:34:33 eos_merger_tony Exp $'
+/
+&eos_init_pars
 /
 &hydro_init_pars
   inituu='soundwave-x', ampluu=1., kx_uu=1.

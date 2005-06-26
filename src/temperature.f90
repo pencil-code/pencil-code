@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.16 2005-03-02 06:10:05 dobler Exp $
+! $Id: temperature.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -24,9 +24,11 @@ module Entropy
 
   implicit none
 
+  private
+
   integer :: ilnTT=0
   real, dimension (nx) :: cs2,TT1
-  real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
+  real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
   real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.
   real :: tau_ss_exterior=0.
@@ -53,7 +55,7 @@ module Entropy
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ssm=0,i_ugradpm=0
+  integer :: idiag_ssm=0,idiag_ugradpm=0
 
   contains
 
@@ -88,7 +90,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.16 2005-03-02 06:10:05 dobler Exp $")
+           "$Id: temperature.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -106,8 +108,6 @@ iss=ilnTT  !(need to think how to deal with this...)
       use Cdata
       use Gravity, only: gravz
 !
-      lneed_sij = .true.   !let Hydro module know to precalculate some things
-      lneed_glnrho = .true.
 
       if (lgravz) then
         if (lmultilayer) then
@@ -177,7 +177,7 @@ iss=ilnTT  !(need to think how to deal with this...)
           f(:,:,:,ilnTT) = -0.
       endif
 !
-      if(ip==0) print*,xx,yy,zz  !(to keep compiler quiet)
+      if(NO_WARN) print*,xx,yy,zz  !(to keep compiler quiet)
 !
     endsubroutine init_ss
 !***********************************************************************
@@ -303,14 +303,14 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (i_ssm/=0) then
+        if (idiag_ssm/=0) then
           lnTT0=log(cs20/gamma1)
           ss=( (lnTT-lnTT0) - gamma1*(lnrho-lnrho0) )
-          call sum_mn_name(ss,i_ssm)
+          call sum_mn_name(ss,idiag_ssm)
         endif
-        if (i_ugradpm/=0) then
+        if (idiag_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
-          call sum_mn_name((cs2/gamma)*(uglnrho+uglnTT),i_ugradpm)
+          call sum_mn_name((cs2/gamma)*(uglnrho+uglnTT),idiag_ugradpm)
         endif
       endif
 !
@@ -365,7 +365,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !
       if (lfirst.and.ldt) diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
 !
-      if(ip==0) print*,rho1 !(to keep compiler quiet)
+      if(NO_WARN) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)
@@ -644,6 +644,48 @@ endif
 !
     endsubroutine calc_tau_ss_exterior
 !***********************************************************************
+    subroutine read_entropy_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=entropy_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=entropy_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_entropy_init_pars
+!***********************************************************************
+    subroutine write_entropy_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=entropy_init_pars)
+                                                                                                   
+    endsubroutine write_entropy_init_pars
+!***********************************************************************
+    subroutine read_entropy_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=entropy_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=entropy_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_entropy_run_pars
+!***********************************************************************
+    subroutine write_entropy_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=entropy_run_pars)
+                                                                                                   
+    endsubroutine write_entropy_run_pars
+!***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to entropy
@@ -664,19 +706,19 @@ endif
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ssm=0; i_ugradpm=0
+        idiag_ssm=0; idiag_ugradpm=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
-        call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
+        call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_ssm=',i_ssm
-        write(3,*) 'i_ugradpm=',i_ugradpm
+        write(3,*) 'i_ssm=',idiag_ssm
+        write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'nname=',nname
         write(3,*) 'ilnTT=',ilnTT
       endif

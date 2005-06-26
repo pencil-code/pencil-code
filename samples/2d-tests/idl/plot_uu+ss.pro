@@ -1,4 +1,4 @@
-; $Id: plot_uu+ss.pro,v 1.1 2004-04-07 10:44:08 dobler Exp $
+; $Id: plot_uu+ss.pro,v 1.2 2005-06-26 17:34:29 eos_merger_tony Exp $
 ;
 ; Plot entropy and velocity vectors for 2d convection runs
 ;

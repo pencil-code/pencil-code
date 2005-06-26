@@ -3,11 +3,14 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2004-04-07 10:36:30 theine Exp $',
+  cvsid='$Id: start.in,v 1.5 2005-06-26 17:34:33 eos_merger_tony Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -2., -2.,  0.,        ! first corner of box
   Lxyz  =  4.,  4.,  1.,        ! box size
   lperi =  T ,  T ,  F,         ! periodic direction?
+/
+&eos_init_pars
+  cs0=1., rho0=1.
 /
 &hydro_init_pars
   inituu='up-down',
@@ -18,7 +21,6 @@
 /
 &density_init_pars
   initlnrho='polytropic'
-  cs0=1., rho0=1.,
 /
 &grav_init_pars
   gravz=-1.,zref=0.5

@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: copy-proc-to-proc,v 1.4 2004-05-24 11:41:40 mee Exp $
+#$Id: copy-proc-to-proc,v 1.5 2005-06-26 17:34:16 eos_merger_tony Exp $
 #
 #  Example:
 #     copy-proc-to-proc grid.dat ../hydro256e

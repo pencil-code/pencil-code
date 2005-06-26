@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.30 2004-11-22 21:13:31 dobler Exp $
+! $Id: io_mpio.f90,v 1.31 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -21,6 +21,8 @@ module Io
   use Cdata
 
   implicit none
+
+  include 'io.inc'
  
   interface output              ! Overload the `output' function
     module procedure output_vect
@@ -110,7 +112,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.30 2004-11-22 21:13:31 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.31 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 !  consistency check
 !

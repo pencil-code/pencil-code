@@ -1,10 +1,12 @@
-! $Id: nocosmicray.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $
+! $Id: nocosmicray.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules solves the passive scalar advection equation
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lcosmicray = .false.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -18,13 +20,13 @@ module CosmicRay
 
   implicit none
 
+  include 'cosmicray.inc'
 
-  integer :: dummy           ! We cannot define empty namelists
-  namelist /cosmicray_init_pars/ dummy
-  namelist /cosmicray_run_pars/  dummy
+  !namelist /cosmicray_init_pars/ dummy
+  !namelist /cosmicray_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-!  integer :: i_rhocrm=0,i_crmax=0,i_lncrm=0,i_lncrmz=0
+!  integer :: idiag_rhocrm=0,idiag_crmax=0,idiag_lncrm=0,idiag_lncrmz=0
 
   contains
 
@@ -45,12 +47,10 @@ module CosmicRay
       if (.not. first) call stop_it('register_cosmicray called twice')
       first = .false.
 !
-      lcosmicray = .false.
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: nocosmicray.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -66,8 +66,44 @@ module CosmicRay
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if(ip==0) print*,'f=',f
+      if (NO_WARN) print*,'f=',f
+!
     endsubroutine initialize_cosmicray
+!***************************************:********************************
+    subroutine read_cosmicray_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_cosmicray_init_pars
+!***********************************************************************
+    subroutine write_cosmicray_init_pars(unit)
+!    
+      integer, intent(in) :: unit
+!
+      if (NO_WARN) print*,unit
+!
+    endsubroutine write_cosmicray_init_pars
+!***********************************************************************
+    subroutine read_cosmicray_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+!
+      if (NO_WARN) print*,unit
+!
+    endsubroutine read_cosmicray_run_pars
+!***********************************************************************
+    subroutine write_cosmicray_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      if (NO_WARN) print*,unit
+!
+    endsubroutine write_cosmicray_run_pars
 !***********************************************************************
     subroutine init_ecr(f,xx,yy,zz)
 !
@@ -84,26 +120,62 @@ module CosmicRay
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
+      if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
+!
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine decr_dt(f,df,uu,rho1,divu,bij,bb)
+    subroutine pencil_criteria_cosmicray()
+! 
+!  All pencils that the Cosmicray module depends on are specified here.
+! 
+!  20-11-04/anders: coded
+!
+!
+    endsubroutine pencil_criteria_cosmicray
+!***********************************************************************
+    subroutine pencil_interdep_cosmicray(lpencil_in)
+!       
+!  Interdependency among pencils provided by the Cosmicray module
+!  is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension (npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_cosmicray
+!***********************************************************************
+    subroutine calc_pencils_cosmicray(f,p)
+!       
+!  Calculate Cosmicray pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-11-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f, p !(keep compiler quiet)
+!
+    endsubroutine calc_pencils_cosmicray
+!***********************************************************************
+    subroutine decr_dt(f,df,p)
 !
 !  cosmic ray density evolution
 !
-!  DON'T calculate dcr/dt=????
-!
 !   09-oct-03/tony: coded
 !
-      use Sub
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
 !
-      real, intent(in), dimension (mx,my,mz,mvar+maux) :: f
-      real, intent(inout), dimension (mx,my,mz,mvar) :: df
-      real, intent(in), dimension (nx,3,3) :: bij
-      real, intent(in), dimension (nx,3) :: uu,bb
-      real, intent(in), dimension (nx) :: divu,rho1
+      intent(in) :: f,df,p
 !
-      if(ip==0) print*,f,df,uu,rho1,divu,bij,bb
+      if (NO_WARN) print*,f,df,p
+!        
     endsubroutine decr_dt
 !***********************************************************************
     subroutine rprint_cosmicray(lreset,lwrite)
@@ -124,13 +196,13 @@ module CosmicRay
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-!        i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
+!        idiag_rhoccm=0; idiag_ccmax=0; idiag_lnccm=0; idiag_lnccmz=0
       endif
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-!        write(3,*) 'i_lnccmz=',i_lnccmz
+!        write(3,*) 'i_lnccmz=',idiag_lnccmz
         write(3,*) 'iecr=',iecr
       endif
 !

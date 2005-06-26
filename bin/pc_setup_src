@@ -1,38 +1,45 @@
 #!/bin/sh
-#                       pc_setup_src
-#                      --------------
+#                       setup-src
+#                      -----------
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: pc_setup_src,v 1.2 2004-04-26 17:05:55 mee Exp $
+# CVS $Id: pc_setup_src,v 1.3 2005-06-26 17:34:17 eos_merger_tony Exp $
 # Usage:
 #   setup-src  [src-dir]
 
-if [ -z "$PENCIL_HOME" ]; then
+if [ ! $?PENCIL_HOME ]; then
   echo "You need to set PENCIL_HOME; consider sourcing sourceme.{,c}sh"
-  exit 1
+  exit 0
 fi
 
+src=`pwd`/src
+[ $# -gt 0 ] && src="$1"
+
+#  ## Determine directories to link from
+#  set bindir="No-such-directory"
+#  set srcdir="No-such-directory"
+#  foreach dir ( ../../.. ../..)
+#    # Note: the _last_ matching directory will be used
+#    if (-d $dir/bin) set bindir=$dir/bin
+#    if (-d $dir/src) set srcdir=$dir/src
+#  end
 bindir=$PENCIL_HOME/bin
 srcdir=$PENCIL_HOME/src
 
-source $PENCIL_HOME/bin/pc_functions.sh
-
-src=./src
-[ $# -gt 0 ] && src="$1"
-
-
-## Link sh scripts
-for script in pc_start pc_start_run pc_run pc_config.sh pc_functions.sh
+## Link csh scripts
+for script in start.csh start_run.csh run.csh getconf.csh
 do
   if [ -e $bindir/$script ]; then
-    ln -s $bindir/$script .
+    [ -h ./$script ] && rm -f $script
+    [ ! -e ./$script ] && ln -fs $bindir/$script .
   else
     echo "No such file: $bindir/$script"
-  fi
+  fi 
 done
 
 ## Make a link to a root Makefile to allow make from the run directory
+[ -h Makefile ] && rm -f Makefile
 ln -s $srcdir/Makefile.parent Makefile
 
 ## src subdirectory
@@ -47,49 +54,65 @@ cd $src
 #
 n=0
 for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
-              $srcdir/Makefile.src $srcdir/.cvsignore $srcdir/*.inc $srcdir/scripts
+              $srcdir/.cvsignore $srcdir/*.inc $srcdir/scripts $srcdir/shock_profiles $srcdir/special 
 do
   if [ -e $file ]; then
-    filename=${file/*\//}
-    if [ ! -e $filename ]; then
+    if [ ! -e $file:t ]; then
       ln -s $file .
     else
-      # echo "$file:t already exists"
-      n=$(( $n + 1 ))
-      existf=$filename
+      if [ -h $file:t ]; then
+        rm -f $file:t
+        ln -s $file .
+      else
+        set n=`expr $n + 1`
+        set existf=$file:t
+      fi
     fi
   else
     echo "No such file: $file"
   fi
 done
+file=$srcdir/Makefile.src
+if [ -e ${file}.new ]; then
+  if [ ! -e $file:t ]; then
+echo    ln -s ${file}.new $file:t 
+  else
+    if [ -h $file:t ]; then
+echo      rm -f $file:t
+echo      ln -s ${file}.new $file:t
+    else
+echo      set n=`expr $n + 1`
+echo      set existf=$file:t
+    fi
+  fi
+else
+  echo "No such file: $file.new"
+fi
 #
 #  COPY all *.local files into local src directory
 #
-n=0
+set n=0
 for file in $srcdir/*.local
 do
   if [ -e $file ]; then
-    filename=${file/*\//}
-    if [ ! -e $filename ]; then
+    if [ ! -e $file:t ]; then
       cp $file .
     else
       # echo "$file:t already exists"
-      n=$(( $n + 1 ))
-      existf=$filename
+      set n=`expr $n + 1`
+      set existf=$file:t
     fi
   else
     echo "No such file: $file"
   fi
 done
 #
-[ $n -eq 1 ] && echo "$existf already exists in $src"
+[ $n == 1 ] &&  echo "$existf already exists in $src"
 [ $n -gt 1 ] && echo "$n files already exist in $src"
 #
 #  Generate Makefile
 #
-set echo
-set verbose
 
 rm -f Makefile			# for old run directories
-$bindir/adapt-mkfile Makefile.src Makefile
+$srcdir/scripts/adapt-mkfile Makefile.src Makefile
 rm -f makefile			# for old run directories

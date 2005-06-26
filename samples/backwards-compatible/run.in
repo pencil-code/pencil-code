@@ -3,11 +3,14 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2004-06-03 15:30:25 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.2 2005-06-26 17:34:31 eos_merger_tony Exp $',
   nt=10, it1=2, cdt=0.4, cdtv=0.30, isave=100, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen='nr_f90'
   save_lastsnap=F
+  lpencil_check=T
+/
+&eos_run_pars
 /
 &hydro_run_pars
 /

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.83 2004-11-22 21:13:31 dobler Exp $
+! $Id: io_dist.f90,v 1.84 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -18,6 +18,9 @@
 module Io
 
   implicit none
+
+  include 'io.inc'
+
 
   interface output              ! Overload the `output' function
     module procedure output_vect
@@ -89,7 +92,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.83 2004-11-22 21:13:31 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.84 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_io
 !
@@ -164,28 +167,6 @@ contains
       if (lserial_io) call end_serialize()
 
     endsubroutine input
-!***********************************************************************
-    subroutine output_auxiliary(lun_output,nn1,nn2,a)
-!
-!  write auxiliary information into snapshot file
-!
-!  26-may-03/axel: adapted from output_vect
-!
-      use Cdata
-!
-      integer :: lun_output,nn1,nn2
-      real, dimension (mx,my,mz,nn1+nn2) :: a
-      logical :: lauxiliary
-!
-      if ((ip<=8).and.lroot) print*,'output_auxiliary: nn1,nn2=',nn1,nn2
-!
-!  determine whether we want to write auxiliary output
-!  (currently we always do this provided maux>0)
-!
-      lauxiliary=(nn2>0)
-      if(lauxiliary) write(lun_output) a(:,:,:,nn1+1:nn1+1+nn2)
-!
-    endsubroutine output_auxiliary
 !***********************************************************************
     subroutine output_vect(file,a,nv)
 !
@@ -274,7 +255,6 @@ contains
 !
       use Cdata
       use Mpicomm, only: stop_it
-
 !
       integer :: ndim
       real, dimension (nx) :: a
@@ -435,7 +415,7 @@ contains
 !
       if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
 !
-      if(ip==0) print*,tdummy  !(keep compiler quiet)
+      if(NO_WARN) print*,tdummy  !(keep compiler quiet)
 !
     endsubroutine rgrid
 !***********************************************************************

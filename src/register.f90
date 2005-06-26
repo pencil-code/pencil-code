@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.145 2005-06-07 21:21:28 brandenb Exp $
+! $Id: register.f90,v 1.146 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -7,6 +7,11 @@
 module Register
 
   implicit none 
+
+  private
+  
+  public :: register_modules, initialize_modules, rprint_list
+  public :: choose_pencils
 
   contains
 
@@ -21,28 +26,31 @@ module Register
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Mpicomm,      only: mpicomm_init,stop_it,stop_it_if_any
+      use Mpicomm,         only: mpicomm_init,stop_it,stop_it_if_any
       use Sub 
-      use Param_IO,     only: get_datadir,get_snapdir
-      use IO,           only: register_io
-      use Gravity,      only: register_gravity
-      use Hydro,        only: register_hydro
-      use Density,      only: register_density
-      use Forcing,      only: register_forcing
-      use Entropy,      only: register_entropy
-      use Magnetic,     only: register_magnetic
-      use Testfield,    only: register_testfield
-      use Radiation,    only: register_radiation
-      use Ionization,   only: register_ionization
-      use Pscalar,      only: register_pscalar
-      use Chiral,       only: register_chiral
-      use Dustdensity,  only: register_dustdensity
-      use Dustvelocity, only: register_dustvelocity
-      use CosmicRay,    only: register_cosmicray
-      use Interstellar, only: register_interstellar
-      use Shear,        only: register_shear
-      use Viscosity,    only: register_viscosity
-      use Special,      only: register_special
+      use Param_IO,        only: get_datadir,get_snapdir
+      use IO,              only: register_io
+      use Global,          only: register_global
+      use EquationOfState, only: register_eos
+      use Shock,           only: register_shock
+      use Gravity,         only: register_gravity
+      use Hydro,           only: register_hydro
+      use Density,         only: register_density
+      use Forcing,         only: register_forcing
+      use Entropy,         only: register_entropy
+      use Magnetic,        only: register_magnetic
+      use Testfield,       only: register_testfield
+      use Radiation,       only: register_radiation
+      use Pscalar,         only: register_pscalar
+      use Chiral,          only: register_chiral
+      use Dustdensity,     only: register_dustdensity
+      use Dustvelocity,    only: register_dustvelocity
+      use CosmicRay,       only: register_cosmicray
+      use CosmicrayFlux,   only: register_cosmicrayflux
+      use Interstellar,    only: register_interstellar
+      use Shear,           only: register_shear
+      use Viscosity,       only: register_viscosity
+      use Special,         only: register_special
 !
       logical :: ioerr
 !
@@ -52,8 +60,12 @@ module Register
 !
 !  initialize nvar; is increased by the following routines
 !
-      nvar = 0 
-      naux = 0 
+      nvar     = 0 
+      naux_com = 0          ! Reset counter of communicated auxilliaries
+      naux     = maux_com   ! Start counting aux variables 
+                            ! so as to leave space for and
+                            ! communicated auxilliaries at
+                            ! the front.
 !
 !  Writing files for use with IDL
 !
@@ -68,11 +80,14 @@ module Register
       ioerr = .false.
 !
       call register_io
-!
-      call register_hydro
-      call register_ionization
-      call register_density
+      call register_global
+      call register_eos
+
+      call register_shock
       call register_viscosity
+      call register_hydro
+      call register_gravity
+      call register_density
       call register_forcing
       call register_entropy
       call register_magnetic
@@ -82,8 +97,8 @@ module Register
       call register_chiral
       call register_dustvelocity
       call register_dustdensity
-      call register_gravity
       call register_cosmicray
+      call register_cosmicrayflux
       call register_interstellar
       call register_shear
       call register_special
@@ -139,34 +154,37 @@ module Register
       use Print
 !      use Hydro
 !      use Density
-      use Timeavg,      only: initialize_timeavg
-      use Gravity,      only: initialize_gravity
-      use Forcing,      only: initialize_forcing
-      use Entropy,      only: initialize_entropy
-      use Magnetic,     only: initialize_magnetic
-      use Testfield,    only: initialize_testfield
-      use Radiation,    only: initialize_radiation
-      use Ionization,   only: initialize_ionization
-      use Pscalar,      only: initialize_pscalar
-      use Chiral,       only: initialize_chiral
-      use Dustvelocity, only: initialize_dustvelocity
-      use Dustdensity,  only: initialize_dustdensity
-      use CosmicRay,    only: initialize_cosmicray
-      use Interstellar, only: initialize_interstellar
-      use Shear,        only: initialize_shear
-      use Viscosity,    only: initialize_viscosity
-      use Special,      only: initialize_special
-!     use Timestep,     only: border_profiles
+      use Timeavg,         only: initialize_timeavg
+      use EquationOfState, only: initialize_eos
+      use CosmicrayFlux,   only: initialize_cosmicrayflux
+      use Hydro,           only: initialize_hydro
+      use Density,         only: initialize_density
+      use Shock,           only: initialize_shock
+      use Gravity,         only: initialize_gravity
+      use Forcing,         only: initialize_forcing
+      use Entropy,         only: initialize_entropy
+      use Magnetic,        only: initialize_magnetic
+      use Testfield,       only: initialize_testfield
+      use Radiation,       only: initialize_radiation
+      use Pscalar,         only: initialize_pscalar
+      use Chiral,          only: initialize_chiral
+      use Dustvelocity,    only: initialize_dustvelocity
+      use Dustdensity,     only: initialize_dustdensity
+      use CosmicRay,       only: initialize_cosmicray
+      use Interstellar,    only: initialize_interstellar
+      use Shear,           only: initialize_shear
+      use Viscosity,       only: initialize_viscosity
+      use Special,         only: initialize_special
+!     use Timestep,        only: border_profiles
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !
 !  Defaults for some logicals; will later be set to true if needed
-      lneed_sij = .false.
-      lneed_glnrho = .false.
+      lpenc_requested(:) = .false.
 !
 !  evaluate physical units
-!  used currently only in ionization, but later also in
+!  used currently only in eos, but later also in
 !  the interstellar and radiation modules, for example
 !
       unit_mass=unit_density*unit_length**3
@@ -177,7 +195,7 @@ module Register
 !  convert physical constants
 !
       if (unit_system=='cgs') then
-        if(lroot.and.lionization.and.ip<14) print*,'initialize_modules: ' &
+        if(lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
           //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
         k_B=k_B_cgs/(unit_energy/unit_temperature)
@@ -188,7 +206,7 @@ module Register
         sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
       elseif (unit_system=='SI') then
-        if(lroot.and.lionization) print*,'initialize_modules: unit_velocity, unit_density, etc, are in SI'
+        if(lroot.and.leos_ionization) print*,'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs*1e-3/unit_mass
@@ -209,35 +227,28 @@ module Register
 !  print parameters in code units, but only when used
 !
       if (lroot.and.ip<14) then
-         if (lionization.or.lradiation.or.lradiation_ray.or.linterstellar) then
+         if (leos_ionization.or.lradiation.or.lradiation_ray.or.linterstellar) then
             write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
          endif
       endif
-!
-!  set gamma1, cs20, and lnrho0
+
+!ajwm moved to eos_idealgas and magnetic modules (mu01)
+!ajwm in the eos branch
+!  set gamma1, cs20, and lnrho0 (and mu01)
 !  (used currently for non-dimensional equation of state)
 !
-      gamma1=gamma-1.
-      ! avoid floating overflow if cs0 was not set:
-      if (cs0==impossible) then
-        cs20=impossible
-      else
-        cs20=cs0**2
-      endif
-      lnrho0=log(rho0)
-      mu01=1./mu0
 !
 !  run initialization of individual modules
 !
 !      call initialize_io
-      call initialize_prints
+      call initialize_eos()
+      call initialize_prints()
 !ajwm timeavg needs tidying to be similar structure to other modules
       call initialize_timeavg(f) ! initialize time averages
 !
       call initialize_gravity()
-      call initialize_hydro(f,lstarting)
-      call initialize_ionization()
       call initialize_density(f,lstarting)
+      call initialize_hydro(f,lstarting)
       call initialize_forcing(lstarting)   ! get random seed from file, ..
       call initialize_entropy(f,lstarting) ! calculate radiative conductivity,..
       call initialize_magnetic(f)
@@ -248,10 +259,12 @@ module Register
       call initialize_dustvelocity()
       call initialize_dustdensity()
       call initialize_cosmicray(f)
+      call initialize_cosmicrayflux(f)
       call initialize_interstellar(lstarting)
       call initialize_shear()
-      call initialize_viscosity()
-      call initialize_special()
+      call initialize_shock(lstarting)
+      call initialize_viscosity(lstarting)
+      call initialize_special(f)
 !
 !----------------------------------------------------------------------------
 !  Coordinate-related issues: nonuniform meshes, different corrdinate systems
@@ -277,6 +290,13 @@ module Register
         else
           r1_mn=1./x(l1:l2)
         endif
+      endif
+!
+!  print the value for which output is being produced
+!  (Have so far only bothered about single processor output.)
+!
+      if (lroot) then
+        print*,'x(lpoint),y(mpoint),z(npoint)=',x(lpoint),y(mpoint),z(npoint)
       endif
 !
 !  DOCUMENT ME
@@ -305,6 +325,142 @@ module Register
 !
     endsubroutine initialize_modules
 !***********************************************************************
+    subroutine choose_pencils()
+!
+!  Find out which pencils are needed for all time-steps and also for
+!  diagnostics only. Also takes care of interdependant pencils.
+!
+!  20-11-04/anders: coded
+!
+      use Cdata
+!
+      integer :: i
+!
+      if (lroot) print*, 'choose_pencils: Finding out which pencils '// &
+          'are needed for the pencil_case'
+!
+!  Must set all pencil arrays to false in case of reload or reinit
+!
+      lpenc_requested=.false.
+      lpenc_diagnos=.false.
+      lpenc_diagnos2d=.false.
+!
+!  Find out which pencils are needed for the pencil case.
+!
+      call pencil_criteria()
+!
+!  Set interdependent pencils
+!
+      do i=1,3
+        call pencil_interdep(lpenc_requested)
+        call pencil_interdep(lpenc_diagnos)
+        call pencil_interdep(lpenc_diagnos2d)
+        call pencil_interdep(lpenc_video)
+      enddo
+!
+!  Swap logical content of pencil number ipencil_swap (for testing).
+!
+      if (ipencil_swap/=0) then
+        if (lpencil_requested_swap) then
+          lpenc_requested(ipencil_swap) = (.not. lpenc_requested(ipencil_swap))
+          print*, 'choose_pencils: Swapped requested pencil number ', &
+              ipencil_swap, ' to ', lpenc_requested(ipencil_swap)
+        endif
+        if (lpencil_diagnos_swap) then
+          lpenc_diagnos(ipencil_swap) = (.not. lpenc_diagnos(ipencil_swap))
+          print*, 'choose_pencils: Swapped diagnostic pencil number ', &
+              ipencil_swap, ' to ', lpenc_diagnos(ipencil_swap)
+        endif
+      endif
+!
+    endsubroutine choose_pencils
+!***********************************************************************
+    subroutine pencil_criteria()
+!
+!  Find out which pencils are needed for all the modules. In each call
+!  the called module will inform about the pencils that it needs locally.
+!  Interdependency among pencils is not solved here.
+!
+!  20-11-04/anders: coded
+!
+      use Hydro, only: pencil_criteria_hydro
+      use Density, only: pencil_criteria_density
+      use Shock, only: pencil_criteria_shock
+      use Viscosity, only: pencil_criteria_viscosity
+      use Entropy, only: pencil_criteria_entropy
+      use Gravity, only: pencil_criteria_gravity
+      use Pscalar, only: pencil_criteria_pscalar
+      use Dustvelocity, only: pencil_criteria_dustvelocity
+      use Dustdensity, only: pencil_criteria_dustdensity
+      use Magnetic, only: pencil_criteria_magnetic
+      use Cosmicray, only: pencil_criteria_cosmicray
+      use Cosmicrayflux, only: pencil_criteria_cosmicrayflux
+      use Chiral, only: pencil_criteria_chiral
+      use Radiation, only: pencil_criteria_radiation
+      use Interstellar, only: pencil_criteria_interstellar
+!
+      call pencil_criteria_hydro()
+      call pencil_criteria_density()
+      call pencil_criteria_shock()
+      call pencil_criteria_viscosity()
+      call pencil_criteria_entropy()
+      call pencil_criteria_gravity()
+      call pencil_criteria_pscalar()
+      call pencil_criteria_interstellar()
+      call pencil_criteria_dustvelocity()
+      call pencil_criteria_dustdensity()
+      call pencil_criteria_magnetic()
+      call pencil_criteria_cosmicray()
+      call pencil_criteria_cosmicrayflux()
+      call pencil_criteria_chiral()
+      call pencil_criteria_radiation()
+!    
+    endsubroutine pencil_criteria
+!***********************************************************************
+    subroutine pencil_interdep(lpencil_in)
+!
+!  Find out about interdependant pencils. Each module knows what its own
+!  pencils depend on. The dependency only needs to be specified one level
+!  up, since this subroutine is called several times (currently three).
+!
+!
+!  20-11-04/anders: coded
+!
+      use Cdata
+      use Hydro, only: pencil_interdep_hydro
+      use Density, only: pencil_interdep_density
+      use Shock, only: pencil_interdep_shock
+      use Viscosity, only: pencil_interdep_viscosity
+      use Entropy, only: pencil_interdep_entropy
+      use Gravity, only: pencil_interdep_gravity
+      use Magnetic, only: pencil_interdep_magnetic
+      use Pscalar, only: pencil_interdep_pscalar
+      use Dustvelocity, only: pencil_interdep_dustvelocity
+      use Dustdensity, only: pencil_interdep_dustdensity
+      use Cosmicray, only: pencil_interdep_cosmicray
+      use Cosmicrayflux, only: pencil_interdep_cosmicrayflux
+      use Chiral, only: pencil_interdep_chiral
+      use Radiation, only: pencil_interdep_radiation
+!      
+      logical, dimension (npencils) :: lpencil_in
+!
+      call pencil_interdep_hydro(lpencil_in)
+      call pencil_interdep_density(lpencil_in)
+      call pencil_interdep_shock(lpencil_in)
+      call pencil_interdep_viscosity(lpencil_in)
+      call pencil_interdep_entropy(lpencil_in)
+      call pencil_interdep_gravity(lpencil_in)
+      call pencil_interdep_dustvelocity(lpencil_in)
+      call pencil_interdep_dustdensity(lpencil_in)
+      call pencil_interdep_pscalar(lpencil_in)
+      call pencil_interdep_magnetic(lpencil_in)
+      call pencil_interdep_cosmicray(lpencil_in)
+      call pencil_interdep_cosmicrayflux(lpencil_in)
+      call pencil_interdep_chiral(lpencil_in)
+      call pencil_interdep_radiation(lpencil_in)
+!    
+    endsubroutine pencil_interdep
+!***********************************************************************
     subroutine rprint_list(lreset)
 !
 !  read variables to print and to calculate averages of from control files
@@ -313,21 +469,26 @@ module Register
 !
       use Cdata
       use Param_IO
-      use Hydro,        only: rprint_hydro
-      use Entropy,      only: rprint_entropy
-      use Magnetic,     only: rprint_magnetic
-      use Testfield,    only: rprint_testfield
-      use Radiation,    only: rprint_radiation
-      use Ionization,   only: rprint_ionization
-      use Pscalar,      only: rprint_pscalar
-      use Chiral,       only: rprint_chiral
-      use Dustvelocity, only: rprint_dustvelocity
-      use Dustdensity,  only: rprint_dustdensity
-      use CosmicRay,    only: rprint_cosmicray
-      use Gravity,      only: rprint_gravity
-      use Special,      only: rprint_special
-      use Viscosity,    only: rprint_viscosity
-      use Shear,        only: rprint_shear
+      use Hydro,           only: rprint_hydro
+      use Density,         only: rprint_density
+      use Forcing,         only: rprint_forcing
+      use Entropy,         only: rprint_entropy
+      use Magnetic,        only: rprint_magnetic
+      use Testfield,       only: rprint_testfield
+      use Radiation,       only: rprint_radiation
+      use EquationOfState, only: rprint_eos
+      use Pscalar,         only: rprint_pscalar
+      use Chiral,          only: rprint_chiral
+      use Interstellar,    only: rprint_interstellar
+      use Dustvelocity,    only: rprint_dustvelocity
+      use Dustdensity,     only: rprint_dustdensity
+      use CosmicRay,       only: rprint_cosmicray
+      use CosmicRayFlux,   only: rprint_cosmicrayflux
+      use Gravity,         only: rprint_gravity
+      use Special,         only: rprint_special
+      use Shock,           only: rprint_shock
+      use Viscosity,       only: rprint_viscosity
+      use Shear,           only: rprint_shear
 !
       integer :: iname,inamev,inamez,inamexy,inamexz,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat
@@ -347,7 +508,7 @@ module Register
 !  read in the list of variables for video slices
 !
       inquire(file='video.in',exist=exist)
-      if (exist) then
+      if (exist .and. dvid/=0.0) then
         lwrite_slices=.true.
         isubstract=0
         open(1,file='video.in')
@@ -437,24 +598,26 @@ module Register
 !  the f-array and the time_series.dat files are written to data/index.pro
 !
       if (lroot) open(3,file=trim(datadir)//'/index.pro')
-      call rprint_general     (lreset,LWRITE=lroot)
-      call rprint_hydro       (lreset,LWRITE=lroot)
-      call rprint_density     (lreset,LWRITE=lroot)
-      call rprint_forcing     (lreset,LWRITE=lroot)
-      call rprint_entropy     (lreset,LWRITE=lroot)
-      call rprint_magnetic    (lreset,LWRITE=lroot)
-      call rprint_testfield   (lreset,LWRITE=lroot)
-      call rprint_radiation   (lreset,LWRITE=lroot)
-      call rprint_ionization  (lreset,LWRITE=lroot)
-      call rprint_pscalar     (lreset,LWRITE=lroot)
-      call rprint_chiral      (lreset,LWRITE=lroot)
-      call rprint_dustvelocity(lreset,LWRITE=lroot)
-      call rprint_dustdensity (lreset,LWRITE=lroot)
-      call rprint_cosmicray   (lreset,LWRITE=lroot)
-      call rprint_gravity     (lreset,LWRITE=lroot)
-      call rprint_special     (lreset,LWRITE=lroot)
-      call rprint_viscosity   (lreset,LWRITE=lroot)
-      call rprint_shear       (lreset,LWRITE=lroot)
+      call rprint_general      (lreset,LWRITE=lroot)
+      call rprint_hydro        (lreset,LWRITE=lroot)
+      call rprint_density      (lreset,LWRITE=lroot)
+      call rprint_forcing      (lreset,LWRITE=lroot)
+      call rprint_entropy      (lreset,LWRITE=lroot)
+      call rprint_magnetic     (lreset,LWRITE=lroot)
+      call rprint_radiation    (lreset,LWRITE=lroot)
+      call rprint_eos          (lreset,LWRITE=lroot)
+      call rprint_pscalar      (lreset,LWRITE=lroot)
+      call rprint_chiral       (lreset,LWRITE=lroot)
+      call rprint_interstellar (lreset,LWRITE=lroot)
+      call rprint_dustvelocity (lreset,LWRITE=lroot)
+      call rprint_dustdensity  (lreset,LWRITE=lroot)
+      call rprint_cosmicray    (lreset,LWRITE=lroot)
+      call rprint_cosmicrayflux(lreset,LWRITE=lroot)
+      call rprint_gravity      (lreset,LWRITE=lroot)
+      call rprint_special      (lreset,LWRITE=lroot)
+      call rprint_shock        (lreset,LWRITE=lroot)
+      call rprint_viscosity    (lreset,LWRITE=lroot)
+      call rprint_shear        (lreset,LWRITE=lroot)
 
       if (lroot) close(3)
 !
@@ -480,21 +643,22 @@ module Register
 !  (general variables that are defined in Cdata)
 !
       if (lreset) then
-        i_t=0; i_it=0; i_dt=0; i_walltime=0; i_timeperstep=0 ! general print.in params
-        i_rcylmphi=0; i_phimphi=0; i_zmphi=0; i_rmphi=0 ! general phiaver.in params
-        !AB: the following is no longer consistent: they are reset in read_runpars.
-        !ix=-1; iy=-1; iz=-1; iz2=-1
+        idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
+        idiag_timeperstep=0
+        idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'t',i_t)
-        call parse_name(iname,cname(iname),cform(iname),'it',i_it)
-        call parse_name(iname,cname(iname),cform(iname),'dt',i_dt)
-        call parse_name(iname,cname(iname),cform(iname),'walltime',i_walltime)
-        call parse_name(iname,cname(iname),cform(iname),'timeperstep',i_timeperstep)
+        call parse_name(iname,cname(iname),cform(iname),'t',idiag_t)
+        call parse_name(iname,cname(iname),cform(iname),'it',idiag_it)
+        call parse_name(iname,cname(iname),cform(iname),'dt',idiag_dt)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'walltime',idiag_walltime)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'timeperstep',idiag_timeperstep)
       enddo
 !
 !  phi-averages
@@ -509,26 +673,25 @@ module Register
       !  some generic quantities (mostly coordinates for debugging)
       !
       do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'rcylmphi',i_rcylmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi', i_phimphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',   i_zmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',   i_rmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rcylmphi',idiag_rcylmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi', idiag_phimphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',   idiag_zmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',   idiag_rmphi)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_t=',i_t
-        write(3,*) 'i_it=',i_it
-        write(3,*) 'i_dt=',i_dt
-        write(3,*) 'i_walltime=',i_walltime
-        write(3,*) 'i_timeperstep=',i_timeperstep
+        write(3,*) 'i_t=',idiag_t
+        write(3,*) 'i_it=',idiag_it
+        write(3,*) 'i_dt=',idiag_dt
+        write(3,*) 'i_walltime=',idiag_walltime
+        write(3,*) 'i_timeperstep=',idiag_timeperstep
+        write(3,*) 'i_rcylmphi=',idiag_rcylmphi
+        write(3,*) 'i_phimphi=',idiag_phimphi
+        write(3,*) 'i_zmphi=',idiag_zmphi
+        write(3,*) 'i_rmphi=',idiag_rmphi
         write(3,*) 'nname=',nname
-!
-        write(3,*) 'i_rcylmphi=',i_rcylmphi
-        write(3,*) 'i_phimphi=',i_phimphi
-        write(3,*) 'i_zmphi=',i_zmphi
-        write(3,*) 'i_rmphi=',i_rmphi
       endif
 !
     endsubroutine rprint_general

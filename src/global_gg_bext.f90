@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext.f90,v 1.2 2004-06-09 21:55:00 theine Exp $
+ ! $Id: global_gg_bext.f90,v 1.3 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 module Global
 

@@ -13,6 +13,8 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 CHIRAL    =   chiral
+EOS       = noeos
+VISCOSITY = noviscosity
 
 GRAVITY   = nograv
 FORCING   = noforcing

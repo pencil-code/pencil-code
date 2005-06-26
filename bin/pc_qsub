@@ -4,20 +4,20 @@
 source pc_config.sh
 
 # Run by default
-jobscript=pc_run
+jobscript=run.csh
 
 # Check for parameters to pc_qsub
 found=yes
 while [ "$found" == "yes" ]
 do
   if [ "$1" == "-s" ]; then
-    jobscript=pc_start
+    jobscript=start.csh
     shift
   elif [ "$1" == "-sr" ]; then
-    jobscript=pc_start_run
+    jobscript=start_run.csh
     shift
   elif [ "$1" == "-r" ]; then
-    jobscript=pc_run
+    jobscript=run.csh
     shift
   elif [ "$1" == "-help" ]; then
     echo "Some help you are."

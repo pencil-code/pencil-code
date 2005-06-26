@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.73 2004-10-09 11:17:35 brandenb Exp $
+! $Id: forcing.f90,v 1.74 2005-06-26 17:34:12 eos_merger_tony Exp $
 
 module Forcing
 
@@ -9,6 +9,8 @@ module Forcing
   use General
 
   implicit none
+
+  include 'forcing.inc'
 
   real :: force=0.,force2=0.
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
@@ -37,7 +39,7 @@ module Forcing
        iforce_profile,lscale_kvector_tobox
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_rufm=0
+  integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0
 
   contains
 
@@ -61,7 +63,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.73 2004-10-09 11:17:35 brandenb Exp $")
+           "$Id: forcing.f90,v 1.74 2005-06-26 17:34:12 eos_merger_tony Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -79,11 +81,12 @@ module Forcing
       if (lstarting) then
         if(ip<4) print*,'initialize_forcing: not needed in start'
       else
-        if (first) then
-           if (lroot.and.ip<14) print*, 'initialize_forcing: reading seed file'
-           call inpui(trim(directory)//'/seed.dat',seed,nseed)
-           call random_seed_wrapper(put=seed(1:nseed))
-        endif
+!ajwm  Commented as this is now handled by the Persist module
+!ajwm        if (first) then
+!ajwm           if (lroot.and.ip<14) print*, 'initialize_forcing: reading seed file'
+!ajwm           call inpui(trim(directory)//'/seed.dat',seed,nseed)
+!ajwm           call random_seed_wrapper(put=seed(1:nseed))
+!ajwm        endif
 !
 !  check whether we want ordinary hydro forcing or magnetic forcing
 !
@@ -162,6 +165,7 @@ module Forcing
         case ('irrotational');  call forcing_irro(f)
         case ('helical', '2');  call forcing_hel(f)
         case ('TG');            call forcing_TG(f)
+        case ('nocos');         call forcing_nocos(f)
         case ('fountain', '3'); call forcing_fountain(f)
         case ('horiz-shear');   call forcing_hshear(f)
         case ('twist');         call forcing_twist(f)
@@ -281,15 +285,16 @@ module Forcing
       use Cdata
       use General
       use Sub
+      use EquationOfState, only: cs0
       use Hydro
 !
       real :: phase,ffnorm,irufm
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
+      real, dimension (nx) :: radius,tmpx,rho1,ruf,uf,of,rho
       real, dimension (mz) :: tmpz
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo
       real, dimension (mx,my,mz,mvar+maux) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -298,7 +303,7 @@ module Forcing
       logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
-      integer, save :: ifirst,nk
+      integer, save :: ifirst=0,nk
       integer :: ik,j,jf
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
@@ -331,7 +336,7 @@ module Forcing
 !
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
-      ik=nk*.9999*fran(2)+1
+      ik=nk*(.9999*fran(2))+1
       if(ip<=6) print*,'forcing_hel: ik,phase=',ik,phase
       if(ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
       if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
@@ -509,14 +514,6 @@ module Forcing
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
               endif
             enddo
-            if (lout) then
-              if (i_rufm/=0) then
-                call multsv_mn(rho/dt,forcing_rhs,force_all)
-                call dot_mn(variable_rhs,force_all,ruf)
-                irufm=irufm+sum(ruf)
-                !call sum_mn_name(ruf/(nw*ncpus),i_rufm)
-              endif
-            endif
           enddo
         enddo
       else                      ! with radial profile
@@ -542,19 +539,20 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (i_rufm/=0) then 
-          irufm=irufm/(nwgrid)
-          !
-          !  on different processors, irufm needs to be communicated
-          !  to other processors
-          !
-          fsum_tmp(1)=irufm
-          call mpireduce_sum(fsum_tmp,fsum,1)
-          irufm=fsum(1)
-          call mpibcast_real(irufm,1)
-          !
-          fname(i_rufm)=irufm
-          itype_name(i_rufm)=ilabel_sum
+        if (idiag_rufm/=0) then 
+          uu=f(l1:l2,m,n,iux:iuz)
+          call dot(uu,forcing_rhs,uf)
+          call sum_mn_name(rho*uf,idiag_rufm)
+        endif
+        if (idiag_ufm/=0) then 
+          uu=f(l1:l2,m,n,iux:iuz)
+          call dot(uu,forcing_rhs,uf)
+          call sum_mn_name(uf,idiag_ufm)
+        endif
+        if (idiag_ofm/=0) then 
+          call curl(f,iuu,oo)
+          call dot(oo,forcing_rhs,of)
+          call sum_mn_name(of,idiag_ofm)
         endif
       endif
 !
@@ -632,7 +630,7 @@ module Forcing
             endif
           enddo
           if (lout) then
-            if (i_rufm/=0) then
+            if (idiag_rufm/=0) then
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -644,7 +642,7 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (i_rufm/=0) then 
+        if (idiag_rufm/=0) then 
           irufm=irufm/(nwgrid)
           !
           !  on different processors, irufm needs to be communicated
@@ -655,14 +653,114 @@ module Forcing
           irufm=fsum(1)
           call mpibcast_real(irufm,1)
           !
-          fname(i_rufm)=irufm
-          itype_name(i_rufm)=ilabel_sum
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
         endif
       endif
 !
       if (ip.le.9) print*,'forcing_TG: forcing OK'
 !
     endsubroutine forcing_TG
+!***********************************************************************
+    subroutine forcing_nocos(f)
+!
+!  Add no-cosine forcing function.
+!
+!  27-oct-04/axel: coded
+!
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use Hydro
+!
+      real :: phase,ffnorm,irufm
+      real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
+      real, dimension (2) :: fran
+      real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
+      real, dimension (mz) :: tmpz
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx), save :: sinx
+      real, dimension (my), save :: siny
+      real, dimension (mz), save :: sinz
+      logical, dimension (3), save :: extent
+      integer, save :: ifirst
+      integer :: ik,j,jf
+      real :: force_ampl=1.,fact
+!
+      if (ifirst==0) then
+        if (lroot) print*,'forcing_nocos: calculate sinx,siny,sinz'
+        sinx=sin(k1_ff*x)
+        siny=sin(k1_ff*y)
+        sinz=sin(k1_ff*z)
+        extent(1)=nx.ne.1
+        extent(2)=ny.ne.1
+        extent(3)=nz.ne.1
+      endif
+      ifirst=ifirst+1
+!
+      if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=force*sqrt(dt)
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
+      do n=n1,n2
+        do m=m1,m2
+          variable_rhs=f(l1:l2,m,n,iffx:iffz)
+          forcing_rhs(:,1)=fact*sinz(n)
+          forcing_rhs(:,2)=fact*sinx(l1:l2)
+          forcing_rhs(:,3)=fact*siny(m)
+          do j=1,3
+            if(extent(j)) then
+              jf=j+ifff-1
+              f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+            endif
+          enddo
+          if (lout) then
+            if (idiag_rufm/=0) then
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+        enddo
+      enddo
+      !
+      ! For printouts
+      !
+      if (lout) then
+        if (idiag_rufm/=0) then 
+          irufm=irufm/(nwgrid)
+          !
+          !  on different processors, irufm needs to be communicated
+          !  to other processors
+          !
+          fsum_tmp(1)=irufm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          irufm=fsum(1)
+          call mpibcast_real(irufm,1)
+          !
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
+        endif
+      endif
+!
+      if (ip.le.9) print*,'forcing_nocos: forcing OK'
+!
+    endsubroutine forcing_nocos
 !***********************************************************************
     subroutine calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
 !
@@ -713,7 +811,7 @@ module Forcing
 !  but do this only when rho_uu_ff>0.; never allow it to change sign
 !
 
-!print*,fname(i_urms)
+!print*,fname(idiag_urms)
 
         if(headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
         !      force_ampl=work_ff/(.1+max(0.,rho_uu_ff))
@@ -733,6 +831,7 @@ module Forcing
       use Cdata
       use General
       use Sub
+      use EquationOfState, only: cs0
       use Hydro
 !
       real :: phase,ffnorm
@@ -1316,7 +1415,7 @@ module Forcing
 ! Find energy input
 !      
       if (lout .or. lwork_ff) then
-        if (i_rufm/=0 .or. lwork_ff) then
+        if (idiag_rufm/=0 .or. lwork_ff) then
           irufm=0
           do n=n1,n2
             do m=m1,m2
@@ -1326,7 +1425,7 @@ module Forcing
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
-              !call sum_mn_name(ruf/(nw*ncpus),i_rufm)
+              !call sum_mn_name(ruf/(nw*ncpus),idiag_rufm)
             enddo
           enddo
         endif
@@ -1361,9 +1460,9 @@ module Forcing
 ! Save for printouts
 !
       if (lout) then
-        if (i_rufm/=0) then          
-          fname(i_rufm)=irufm*mulforce_vec
-          itype_name(i_rufm)=ilabel_sum
+        if (idiag_rufm/=0) then          
+          fname(idiag_rufm)=irufm*mulforce_vec
+          itype_name(idiag_rufm)=ilabel_sum
         endif
       endif
 !
@@ -1388,6 +1487,7 @@ module Forcing
       use Cdata
       use General
       use Sub
+      use EquationOfState, only: cs0
       use Hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1570,6 +1670,43 @@ module Forcing
 !
     end subroutine hel_vec
 !***********************************************************************
+    subroutine read_forcing_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat).and.NO_WARN) print*,iostat 
+      if (NO_WARN) print *,unit
+                                                                                                   
+    endsubroutine read_forcing_init_pars
+!***********************************************************************
+    subroutine write_forcing_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print *,unit
+                                                                                                   
+    endsubroutine write_forcing_init_pars
+!***********************************************************************
+    subroutine read_forcing_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=forcing_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=forcing_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_forcing_run_pars
+!***********************************************************************
+    subroutine write_forcing_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=forcing_run_pars)
+                                                                                                   
+    endsubroutine write_forcing_run_pars
+!***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
@@ -1590,20 +1727,24 @@ module Forcing
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_rufm=0
+        idiag_rufm=0; idiag_ufm=0; idiag_ofm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'rufm',i_rufm)
+        call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
+        call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)
+        call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rufm=',i_rufm
+        write(3,*) 'i_rufm=',idiag_rufm
+        write(3,*) 'i_ufm=',idiag_ufm
+        write(3,*) 'i_ofm=',idiag_ofm
       endif
 !
     endsubroutine rprint_forcing

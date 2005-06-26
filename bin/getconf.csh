@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.141 2005-04-22 11:23:11 mee Exp $
+# $Id: getconf.csh,v 1.142 2005-06-26 17:34:16 eos_merger_tony Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -27,10 +27,10 @@ newdir:
 if (-e "LOCK") then
   echo ""
   echo "getconf.csh: found LOCK file"
-  echo "(if it is left over from a crash, remove it by hand: rm LOCK)"
+  echo "This may indicate that the code is currently running in this directory"
+  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand: rm LOCK"
   echo ""
-  echo "Will *not* start in this directory, as code may already be running."
-  echo "Checking for NEWDIR file to tell us to run somewhere else:"
+  echo "THERE IS STILL ONE CHANCE; if a NEWDIR file exist we change directory:"
   if (-e "NEWDIR") then 
     if (-s "NEWDIR") then
       set olddir=$cwd
@@ -47,7 +47,8 @@ if (-e "LOCK") then
          >> $olddir/$datadir/directory_change.log
       (date; echo "redirected FROM original run script in:"; echo $olddir; echo "")\
          >> $datadir/directory_change.log
-      echo "found NEWDIR: changing to new directory `pwd`"
+      echo "WELL DONE: redirected to new directory:"
+      echo `pwd`
       echo "... wait 20 sec, to allow manual escape if we have produced a loop!"
       echo
       # In new run directory, need to check for yet another possible LOCK file
@@ -56,7 +57,7 @@ if (-e "LOCK") then
       goto newdir
     endif
   else
-    echo "No NEWDIR file -- exiting"
+    echo "BAD LUCK: there is no NEWDIR file"
     echo
     # exit                        # won't work in a sourced file
     kill -KILL $$			# full-featured suicide
@@ -76,8 +77,18 @@ set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
 set mpirun = 'mpirun'
 
+
+# Check if experimental copy-snapshots is used
 set copysnapshots="copy-snapshots"
-if { ( grep lcopysnapshots_exp=T start.in >& /dev/null ) } set copysnapshots="copy-snapshots_exp"
+set lcopysnapshots_exp=0
+if { ( grep lcopysnapshots_exp=T start.in >& /dev/null ) } then
+  set copysnapshots="copy-snapshots_exp"
+  set lcopysnapshots_exp=1
+endif
+
+# Check for particles
+set lparticles=0
+if { ( grep particles_init_pars start.in >& /dev/null ) } set lparticles=1
 
 # Settings for machines with local data disks
 # local_disc     = 1 means processes uses their own local scratch disc(s) for
@@ -111,9 +122,6 @@ set masterhost = ''
 if ($?PBS_O_HOST) then
   if ($PBS_O_HOST =~ obelix*) set masterhost = 'obelix'
 endif
-if ($?SGE_O_HOST) then
-  if ($SGE_O_HOST =~ obelix*) set masterhost = 'obelix'
-endif
 if ($?PBS_JOBID) then
   if ($PBS_JOBID =~ *.obelix*) set masterhost = 'obelix'
 endif
@@ -132,7 +140,9 @@ else if ($?JOB_ID) then
     set nodelist = `cat $HOME/.score/ndfile.$JOB_ID | grep -v '^#' | sed 's/:[0-9]*//'`
   else
     # E.g. for wd running SGE on Kabul cluster
-    echo "Apparently not a scout job"
+    echo "Apparently not parallel environment job"
+    if ($debug) echo "Setting nodelist to ($hn)"
+    set nodelist = ("$hn")
   endif
 else
   if ($debug) echo "Setting nodelist to ($hn)"
@@ -147,12 +157,16 @@ echo "$nnodes nodes, $nprocpernode CPU(s) per node"
 ## Choose machine specific settings
 
 if ($hn =~ mhd*.st-and.ac.uk) then
-  echo "St Andrews machine"
+  echo "MHD machine - St Andrews "
   set mpirun = "dmpirun"
 
 else if ($hn =~ *.kis.uni-freiburg.de) then
-  echo "KIS machines"
+  echo "KIS machines - Freiburg"
   set mpirun = /opt/local/mpich/bin/mpirun
+
+else if ($hn =~ hamlet) then
+  echo "hamlet pc, Heidelberg (formerly in Copenhagen)"
+  set mpirun = /home/ajohan/mpich/bin/mpirun
 
 else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   echo "Newcastle e-Science Cluster"
@@ -172,8 +186,15 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
     endif
   else
     echo "Non-SGE, running on `hostname`"
+    if ( -e MANUALMPI ) then
+      set nprocpernode = 2
+      set local_disc = 0
+      set one_local_disc = 0
+      set local_binary = 0
+      setenv JOB_ID MANUALMPI
+    endif
   endif
-  set mpirun = /addon/shared/lam/bin/mpirun
+  set mpirun = mpirun
   set mpirunops = "-O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
   if ($local_disc) then
     #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
@@ -182,16 +203,16 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   endif
 
 else if ($hn =~ giga[0-9][0-9]) then
-  echo "Nordita cluster"
+  echo "Nordita cluster - Copenhagen"
   if ($?PBS_NODEFILE) then
     echo "PBS job"
-    cat $PBS_NODEFILE > lamhosts
+    cat $PBS_NODEFILE >! lamhosts
     set local_disc = 1
     set one_local_disc = 0
     set local_binary = 0
   else
     echo "Non-PBS, running on `hostname`"
-    echo `hostname` > lamhosts
+    echo `hostname` >! lamhosts
   endif
   # lamboot with logging to file 
   echo "lambooting.."
@@ -215,7 +236,7 @@ else if ($hn =~ giga[0-9][0-9]) then
   endif
 
 else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
-  echo "IBM in Aarhus (?)"
+  echo "IBM machine - Aarhus"
   set mpirun = /usr/bin/mpiexec
   set local_disc = 1
   set one_local_disc = 1
@@ -235,8 +256,32 @@ else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin
   setenv SCP rcp
   setenv LANG en_US
 
+else if ($hn =~ sp[0-9]*) then
+  echo "SP4 - CINECA, Bologna (IBM with AIX UNIX)"
+  set mpirun = poe
+  set local_disc = 0
+  set one_local_disc = 1
+  set local_binary = 0
+#  setenv SSH ssh
+#  setenv SCP scp
+  setenv LANG en_US
+  setenv SCRATCH_DIR /scratch/${USER}
+#  set masternode=sp.sp4
+  echo "Setting master node to sp.sp4, the only node that is accesible by rsh"
+
+else if ($hn =~ node[0-9]*) then
+  echo "CLX - CINECA, Bologna (IBM Linux Cluster)"
+  if ( $?PBS_JOBID ) then 
+    echo "Running job: $PBS_JOBID"
+  endif
+  set mpirun = mpiexec
+  set mpirunops =
+  set local_disc = 0
+  set one_local_disc = 1
+  set local_binary = 0
+
 else if ($hn =~ psi*) then
-  echo "RZG in Garching (IBM pSeries Regatta with AIX UNIX)"
+  echo "RZG - Garching (IBM pSeries Regatta with AIX UNIX)"
   set mpirun = mpiexec
   set local_disc = 1
   set one_local_disc = 1
@@ -249,7 +294,7 @@ else if ($hn =~ psi*) then
   echo "Setting master node to psi24, the only node that is accesible by rsh"
 
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
-  echo "Fire in Bergen"
+  echo "Fire - Bergen"
   set mpirunops = ''
   set mpirun = 'mpirunpbs'
   set npops = "-np $ncpus"
@@ -286,7 +331,7 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
   endif
 
 else if ($hn == "frontend") then
-  echo "KIS Bagdad cluster"
+  echo "KIS Bagdad cluster - Freiburg"
   if ($mpi) then
     # Choose appropriate mpirun version (LAM vs. MPICH)
     if (`fgrep -c lam_mpi src/start.x` > 0) then # lam
@@ -299,17 +344,17 @@ else if ($hn == "frontend") then
   endif
 
 else if ($hn =~ nq* || $hn =~ ns*) then
-  echo "Nordita cluster"
+  echo "Nordita cluster - Copenhagen"
   if ($?PBS_NODEFILE) then
     echo "PBS job"
-    cat $PBS_NODEFILE > lamhosts
+    cat $PBS_NODEFILE >! lamhosts
     set local_disc = 1
     set one_local_disc = 0
     set local_binary = 0
     set notserial_procN = 1
   else
     echo "Non-PBS, running on `hostname`"
-    echo `hostname` > lamhosts
+    echo `hostname` >! lamhosts
   endif
   # lamboot with logging to file 
   echo "lambooting.."
@@ -333,7 +378,7 @@ else if ($hn =~ nq* || $hn =~ ns*) then
   endif
 
 else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
-  echo "Horseshoe cluster"
+  echo "Horseshoe cluster - Odense (Denmark)"
   if ($mpi) then
     if ($?RUNNINGMPICH) then
       set mpirunops = "-machinefile $PBS_NODEFILE"
@@ -342,7 +387,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
       set run_x=$PBS_O_WORKDIR/src/run.x
     else
       echo "Using LAM-MPI"
-      cat $PBS_NODEFILE > lamhosts
+      cat $PBS_NODEFILE >! lamhosts
       lamboot -v lamhosts
       set booted_lam = 1
       echo "lamnodes:"
@@ -352,7 +397,12 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
       set mpirunops = "-O -s n0 N -ger" #(with debug options on; is slower)
       set mpirun = mpirun
     endif
-    setenv SCRATCH_DIR /scratch
+    # use unique scratch directory name, just in case it wasn't cleaned up
+    if ($?PBS_JOBID) then
+      setenv SCRATCH_DIR /scratch/$PBS_JOBID
+    else
+      setenv SCRATCH_DIR /scratch
+    endif
     set local_disc     = 1
     set one_local_disc = 0
     set remote_top     = 1
@@ -361,7 +411,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     setenv SCP rcp
   else # (no MPI)
     echo "Batch job: non-MPI single processor run"
-    cat $PBS_NODEFILE > lamhosts
+    cat $PBS_NODEFILE >! lamhosts
     lamboot -v lamhosts 
     set booted_lam = 1
     echo "lamnodes:" 
@@ -371,7 +421,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
   endif
 
 else if ($hn =~ giga*) then
-  echo "Giga Cluster"
+  echo "Giga Cluster - Newcastle"
   setenv SCRATCH_DIR /work
   if ($?JOB_ID) then
 # Need to find out/configure where the SGE is writing the node list
@@ -407,8 +457,10 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
       cat hostfile 
       echo '----------- MPI_HOSTFILE - END --------------'
     else if ($PE =~ gm) then                    # Using Myrinet?
-      setenv SSH rsh
-      setenv SCP rcp
+      #setenv SSH ssh
+      #setenv SCP scp
+      setenv SSH /usr/bin/rsh
+      setenv SCP /usr/bin/rcp
 #      setenv MPIHOME /usr/local/mpich-gm-1.2.6..14/pgi-intel-7.1/bin
 #      setenv PATH ${SGE_O_PATH}:${PATH} 
       set mpirun = /usr/local/mpi_wrappers/mpirun
@@ -459,7 +511,7 @@ else if ($hn =~ obelix || \
   endif
 
 else if ($hn == rasmussen) then
-  echo "Rasmussen"
+  echo "Rasmussen - Copenhagen (SGI machine)"
   limit stacksize unlimited
   set mpirun = 'mpirun'
   set mpirunops = ''
@@ -467,7 +519,7 @@ else if ($hn == rasmussen) then
   set ncpus = 1
 
 else if ($hn == hwwsr8k) then
-  echo "Hitachi in Stuttgart"
+  echo "Hitachi - Stuttgart"
   set nnodes = `echo "precision=0; ($ncpus-1)/8+1" | bc` # Hitachi-specific
   set mpirun = mpiexec
   set mpirunops = "-p multi -N $nnodes"
@@ -485,7 +537,7 @@ else if ($hn == hwwsr8k) then
   setenv SCP rcp
 
 else if ($hn =~ hwwsx5*) then
-  echo "NEC-SX5 in Stuttgart"
+  echo "NEC-SX5 - Stuttgart"
   set mpirun = mpiexec
   set mpirunops = ''
   set local_disc = 1
@@ -501,7 +553,7 @@ else if ($hn =~ hwwsx5*) then
   setenv SCP rcp
 
 else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
-  echo "LAM MPI on Newcastle desktops)" 
+  echo "LAM MPI - Newcastle desktops)" 
   #NB: need set mpi here: egrep on Makefile.local fails if using ~/.adapt-mkfile.inc 
   set mpi = 1
   echo "lamnodes:" 
@@ -516,11 +568,11 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
   endif
 
 else if ($hn =~ cosmo) then
-  echo "Cosmo"
+  echo "Cosmo - Tobi's laptop"
   set mpirunops = '-x NLSPATH'
 
 else if ($hn =~ mhd) then
-  echo "mhd node at Newcastle (alpha linux running LAM MPI)"
+  echo "mhd node - Newcastle (alpha linux running LAM MPI)"
   #echo `hostname` "cpu=4" >! lamhosts
   #lamboot -v lamhosts
   #set booted_lam = 1
@@ -549,11 +601,61 @@ else if ($hn =~ opto[1-4]) then
     if ($hn =~ opto3) set hn2=opto4
     set mpirunops2 = `repeat 4 echo $hn; repeat $ncpus2 echo $hn2`
   endif
-  set local_disc = 1
-  set one_local_disc = 0
   setenv SSH rsh
   setenv SCP rcp
   setenv SCRATCH_DIR /var/tmp/$USER
+
+else if ($hn =~ lfc*) then
+  echo "opteron cluster at MPIK with SGE queue."
+  if ($#nodelist == 1) then
+    echo "Apparently an interactive run."
+    set nodelist = `repeat $ncpus echo $nodelist`
+  endif
+  echo "Writing host list to file hosts.list."
+  echo $nodelist > hosts.list
+  set nprocpernode = 1
+  if ($mpi) then
+    set local_disc = 1
+    set one_local_disc = 0
+  else
+    set local_disc = 0
+    set one_local_disc = 1
+  endif
+  set mpirun = mpirun
+  set mpirunops = '-nolocal'
+  set mpirunops2 = '-machinefile hosts.list'
+  setenv SSH ssh_csh_aj
+  setenv SCP scp
+  setenv SCRATCH_DIR /var/tmp/$USER
+#  setenv SGE_CWD_PATH `pwd`
+#  setenv SGE_O_WORKDIR `pwd`
+#  setenv JOB_SCRIPT `pwd`/start.csh
+
+else if ($hn =~ rio*) then
+  echo "opteron cluster at RZG with SGE queue."
+  if ($#nodelist == 1) then
+    echo "Apparently an interactive run."
+    set nodelist = `repeat $ncpus echo $nodelist`
+  endif
+  set nprocpernode = 1
+  if ($mpi) then
+    set local_disc = 1
+    set one_local_disc = 0
+  else
+    set local_disc = 0
+    set one_local_disc = 1
+  endif
+  set mpirun = ~/mvapich095_pgf90/bin/mpirun
+#  set mpirunops2 = '-hostfile $TMPDIR/machines'
+  set mpirunops2 = '-hostfile hosts.list'
+  set nodelist=`cat hosts.list`
+  echo $nodelist
+  setenv SSH 'ssh -x'
+  setenv SCP scp
+  setenv SCRATCH_DIR /var/tmp/$USER
+  foreach node ($nodelist)
+    $SSH $node 'killall start.x run.x && rm -rf /var/tmp/ajohan'
+  end
 
 else
   echo "Generic setup; hostname is <$hn>"
@@ -574,7 +676,8 @@ if ($mpi) then
     set npops = "-nodes=${nnode}x${nprocpernode}"
   else if ($mpirun =~ *poe*) then
     set nprocpernode = 1
-    set npops = "-procs $ncpus"
+    set x_ops = "-procs $ncpus"
+    set npops = ""
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
   endif
@@ -604,14 +707,12 @@ echo "datadir = $datadir"
 # Propagate current pid to copy-snapshots:
 setenv PARENT_PID $$
 
-# Make SCRATCH_DIR unique if there is only one local disc, so different
+# Make SCRATCH_DIR unique, so different
 # jobs running simultaneously will not interfere with each other. 
-if ($one_local_disc) then
-  if ($?JOB_ID) then
-    setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$JOB_ID
-  else
-    setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$PARENT_PID
-  endif
+if ($?JOB_ID) then
+  setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$JOB_ID
+else
+  setenv SCRATCH_DIR ${SCRATCH_DIR}/pencil-$PARENT_PID
 endif
 
 # If local disc is used, write name into $datadir/directory_snap.
@@ -632,10 +733,10 @@ endif
 if ($one_local_disc) then
   if ($?masternode) then
     set nodelist=$masternode
-    echo "one_local_disc=1 -> setting nodelist to master node $masternode"
+    echo "Setting nodelist to master node $masternode"
   else
     set nodelist=$nodelist[1]
-    echo "one_local_disc=1 -> setting nodelist to node $nodelist"
+    echo "Setting nodelist to node $nodelist"
   endif
 endif
 
@@ -688,6 +789,7 @@ if ($debug) then
   echo '$SCP          	= ' "<$SCP>"
   echo '$PARENT_PID   	= ' "<$PARENT_PID>"
   echo '$copysnapshots  = ' "<$copysnapshots>"
+  echo '$particles      = ' "<$lparticles>"
 endif
 
 exit

@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.31 2005-06-19 05:15:45 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.32 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -11,6 +11,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lmagnetic = .true.
+!
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
@@ -21,6 +23,8 @@ module Magnetic
   use Cparam
 
   implicit none
+
+  include 'magnetic.inc'
 
   character (len=labellen) :: initaa='zero',initaa2='zero'
 
@@ -59,14 +63,15 @@ module Magnetic
        bthresh
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_dive2m=0,i_divee2m=0
-  integer :: i_e2m=0,i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
-  integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
-  integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
-  integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
-  integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
-  integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_uxDxuxbm=0
-  integer :: i_b2mphi=0
+  integer :: idiag_dive2m=0,idiag_divee2m=0
+  integer :: idiag_e2m=0,idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
+  integer :: idiag_abm=0,idiag_jbm=0,idiag_epsM=0
+  integer :: idiag_brms=0,idiag_bmax=0,idiag_jrms=0,idiag_jmax=0
+  integer :: idiag_vArms=0,idiag_vAmax=0,idiag_b2mphi=0
+  integer :: idiag_bx2m=0, idiag_by2m=0, idiag_bz2m=0
+  integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0
+  integer :: idiag_bmy=0,idiag_bmz=0,idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
+  integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_uxDxuxbm=0
 
   contains
 
@@ -87,7 +92,6 @@ module Magnetic
       if (.not. first) call stop_it('register_aa called twice')
       first = .false.
 !
-      lmagnetic = .true.
       iaa = nvar+1              ! indices to access aa
       iax = iaa
       iay = iaa+1
@@ -102,7 +106,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.31 2005-06-19 05:15:45 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.32 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,6 +132,9 @@ module Magnetic
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine - nothing to do at present
+      use Cdata
+
+      mu01=1./mu0      
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -350,39 +357,39 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         call dot_mn(aa,bbb,ab)
         call dot2_mn(bbb,b2) !(squared field w/o imposed field)
         call dot2_mn(divEE,divEE2)
-        if (i_abm/=0)    call sum_mn_name(ab,i_abm)
-        if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
-        if (i_e2m/=0)    call sum_mn_name(e2,i_e2m)
-        if (i_dive2m/=0) call sum_mn_name(dive**2,i_dive2m)
-        if (i_divee2m/=0) call sum_mn_name(divee2,i_divee2m)
-        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
-        if (i_bm2/=0) call max_mn_name(b2,i_bm2)
-        if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
-        if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
-        if (i_bx2m/=0) then
+        if (idiag_abm/=0)    call sum_mn_name(ab,idiag_abm)
+        if (idiag_b2m/=0)    call sum_mn_name(b2,idiag_b2m)
+        if (idiag_e2m/=0)    call sum_mn_name(e2,idiag_e2m)
+        if (idiag_dive2m/=0) call sum_mn_name(dive**2,idiag_dive2m)
+        if (idiag_divee2m/=0) call sum_mn_name(divee2,idiag_divee2m)
+        if (idiag_b2mphi/=0) call phisum_mn_name_rz(b2,idiag_b2mphi)
+        if (idiag_bm2/=0) call max_mn_name(b2,idiag_bm2)
+        if (idiag_brms/=0) call sum_mn_name(b2,idiag_brms,lsqrt=.true.)
+        if (idiag_bmax/=0) call max_mn_name(b2,idiag_bmax,lsqrt=.true.)
+        if (idiag_bx2m/=0) then
            bx2 = bb(:,1)*bb(:,1)
-           call sum_mn_name(bx2,i_bx2m)
+           call sum_mn_name(bx2,idiag_bx2m)
         endif
-        if (i_by2m/=0) then
+        if (idiag_by2m/=0) then
            by2 = bb(:,2)*bb(:,2)
-           call sum_mn_name(by2,i_by2m)
+           call sum_mn_name(by2,idiag_by2m)
         endif
-        if (i_bz2m/=0) then
+        if (idiag_bz2m/=0) then
            bz2 = bb(:,3)*bb(:,3)
-           call sum_mn_name(bz2,i_bz2m)
+           call sum_mn_name(bz2,idiag_bz2m)
         endif
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (i_bxmz/=0.or.i_bxmxy/=0) bx=bb(:,1)
-        if (i_bymz/=0.or.i_bymxy/=0) by=bb(:,2)
-        if (i_bzmz/=0.or.i_bzmxy/=0) bz=bb(:,3)
-        if (i_bxmz/=0) call xysum_mn_name_z(bx,i_bxmz)
-        if (i_bymz/=0) call xysum_mn_name_z(by,i_bymz)
-        if (i_bzmz/=0) call xysum_mn_name_z(bz,i_bzmz)
-        if (i_bxmxy/=0) call zsum_mn_name_xy(bx,i_bxmxy)
-        if (i_bymxy/=0) call zsum_mn_name_xy(by,i_bymxy)
-        if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
+        if (idiag_bxmz/=0.or.idiag_bxmxy/=0) bx=bb(:,1)
+        if (idiag_bymz/=0.or.idiag_bymxy/=0) by=bb(:,2)
+        if (idiag_bzmz/=0.or.idiag_bzmxy/=0) bz=bb(:,3)
+        if (idiag_bxmz/=0) call xysum_mn_name_z(bx,idiag_bxmz)
+        if (idiag_bymz/=0) call xysum_mn_name_z(by,idiag_bymz)
+        if (idiag_bzmz/=0) call xysum_mn_name_z(bz,idiag_bzmz)
+        if (idiag_bxmxy/=0) call zsum_mn_name_xy(bx,idiag_bxmxy)
+        if (idiag_bymxy/=0) call zsum_mn_name_xy(by,idiag_bymxy)
+        if (idiag_bzmxy/=0) call zsum_mn_name_xy(bz,idiag_bzmxy)
       endif
 !
 !  write B-slices for output in wvid in run.f90
@@ -409,43 +416,44 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         !
         !  v_A = |B|/sqrt(rho); in units where "4pi"=1
         !
-        if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
-        if (i_vAmax/=0) call max_mn_name(va2,i_vAmax,lsqrt=.true.)
+        if (idiag_vArms/=0) call sum_mn_name(va2,idiag_vArms,lsqrt=.true.)
+        if (idiag_vAmax/=0) call max_mn_name(va2,idiag_vAmax,lsqrt=.true.)
         !
         ! <J.B>
         !
-        if (i_jbm/=0) then
+        if (idiag_jbm/=0) then
           call dot_mn(jj,bb,jb)
-          call sum_mn_name(jb,i_jbm)
+          call sum_mn_name(jb,idiag_jbm)
         endif
         !
         ! <J^2> and J^2|max
         !
-        if (i_jrms/=0.or.i_jmax/=0.or.i_j2m/=0.or.i_jm2/=0.or.i_epsM/=0) then
+        if (idiag_jrms/=0 .or. idiag_jmax/=0 .or. idiag_j2m/=0 &
+            .or.idiag_jm2/=0.or.idiag_epsM/=0) then
           call dot2_mn(jj,j2)
-          if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
-          if (i_jm2/=0) call max_mn_name(j2,i_jm2)
-          if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
-          if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
-          if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
+          if (idiag_j2m/=0) call sum_mn_name(j2,idiag_j2m)
+          if (idiag_jm2/=0) call max_mn_name(j2,idiag_jm2)
+          if (idiag_jrms/=0) call sum_mn_name(j2,idiag_jrms,lsqrt=.true.)
+          if (idiag_jmax/=0) call max_mn_name(j2,idiag_jmax,lsqrt=.true.)
+          if (idiag_epsM/=0) call sum_mn_name(eta*j2,idiag_epsM)
         endif
         !
-        if (i_uxbm/=0) then
+        if (idiag_uxbm/=0) then
           call cross_mn(uu,bbb,uxb)
           uxb_dotB0=B_ext(1)*uxb(:,1)+B_ext(2)*uxb(:,2)+B_ext(3)*uxb(:,3)
           uxb_dotB0=uxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
-          call sum_mn_name(uxb_dotB0,i_uxbm)
+          call sum_mn_name(uxb_dotB0,idiag_uxbm)
         endif
         !
-        if (i_jxbxbm/=0) then
+        if (idiag_jxbxbm/=0) then
           call cross_mn(jj,bbb,jxb)
           call cross_mn(jxb,bbb,jxbxb)
           jxbxb_dotB0=B_ext(1)*jxbxb(:,1)+B_ext(2)*jxbxb(:,2)+B_ext(3)*jxbxb(:,3)
           jxbxb_dotB0=jxbxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
-          call sum_mn_name(jxbxb_dotB0,i_jxbxbm)
+          call sum_mn_name(jxbxb_dotB0,idiag_jxbxbm)
         endif
         !
-        if (i_oxuxbm/=0) then
+        if (idiag_oxuxbm/=0) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
@@ -453,7 +461,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
           call cross_mn(oxu,bbb,oxuxb)
           oxuxb_dotB0=B_ext(1)*oxuxb(:,1)+B_ext(2)*oxuxb(:,2)+B_ext(3)*oxuxb(:,3)
           oxuxb_dotB0=oxuxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
-          call sum_mn_name(oxuxb_dotB0,i_oxuxbm)
+          call sum_mn_name(oxuxb_dotB0,idiag_oxuxbm)
         endif
         !
         !  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
@@ -461,14 +469,14 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
         !   ( < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
         !   ( < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 >
         !
-        if (i_uxDxuxbm/=0) then
+        if (idiag_uxDxuxbm/=0) then
           call cross_mn(uu,bbb,uxb)
           uxDxuxb(:,1)=uxb(:,1)*(uij(:,2,2)+uij(:,3,3))-uxb(:,2)*uij(:,2,1)-uxb(:,3)*uij(:,3,1)
           uxDxuxb(:,2)=uxb(:,2)*(uij(:,1,1)+uij(:,3,3))-uxb(:,1)*uij(:,1,2)-uxb(:,3)*uij(:,3,2)
           uxDxuxb(:,3)=uxb(:,3)*(uij(:,1,1)+uij(:,2,2))-uxb(:,1)*uij(:,1,3)-uxb(:,2)*uij(:,2,3)
           uxDxuxb_dotB0=B_ext(1)*uxDxuxb(:,1)+B_ext(2)*uxDxuxb(:,2)+B_ext(3)*uxDxuxb(:,3)
           uxDxuxb_dotB0=uxDxuxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
-          call sum_mn_name(uxDxuxb_dotB0,i_uxDxuxbm)
+          call sum_mn_name(uxDxuxb_dotB0,idiag_uxDxuxbm)
         endif
         !
       endif
@@ -489,7 +497,7 @@ if(ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB
 if(ip<3.and.m==4.and.n==4) write(61) BB,B2,BgS,SgB,Bij,CC,EE,B21
 if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !
-if(ip==0) print*,shock,gshock                !(keep compiler quiet)
+if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !     
     endsubroutine daa_dt
 !***********************************************************************
@@ -526,6 +534,48 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 
     endsubroutine calculate_vars_magnetic
 !***********************************************************************
+    subroutine read_magnetic_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=magnetic_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=magnetic_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_magnetic_init_pars
+!***********************************************************************
+    subroutine write_magnetic_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=magnetic_init_pars)
+                                                                                                   
+    endsubroutine write_magnetic_init_pars
+!***********************************************************************
+    subroutine read_magnetic_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=magnetic_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=magnetic_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_magnetic_run_pars
+!***********************************************************************
+    subroutine write_magnetic_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=magnetic_run_pars)
+                                                                                                   
+    endsubroutine write_magnetic_run_pars
+!***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields
@@ -547,112 +597,113 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_dive2m=0; i_divee2m=0
-        i_e2m=0; i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_epsM=0
-        i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
-        i_bx2m=0; i_by2m=0; i_bz2m=0
-        i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
-        i_bxmxy=0; i_bymxy=0; i_bzmxy=0
-        i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_uxDxuxbm=0.
-        i_b2mphi=0
+        idiag_dive2m=0; idiag_divee2m=0
+        idiag_e2m=0; idiag_b2m=0; idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
+        idiag_abm=0; idiag_jbm=0; idiag_epsM=0; idiag_b2mphi=0
+        idiag_brms=0; idiag_bmax=0; idiag_jrms=0; idiag_jmax=0; idiag_vArms=0
+        idiag_vAmax=0; idiag_bx2m=0; idiag_by2m=0; idiag_bz2m=0
+        idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
+        idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
+        idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_uxDxuxbm=0.
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
-        call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
-        call parse_name(iname,cname(iname),cform(iname),'b2m',i_b2m)
-        call parse_name(iname,cname(iname),cform(iname),'e2m',i_e2m)
-        call parse_name(iname,cname(iname),cform(iname),'dive2m',i_dive2m)
-        call parse_name(iname,cname(iname),cform(iname),'divee2m',i_divee2m)
-        call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
-        call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
-        call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
-        call parse_name(iname,cname(iname),cform(iname),'epsM',i_epsM)
-        call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
-        call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
-        call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
-        call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
-        call parse_name(iname,cname(iname),cform(iname),'vArms',i_vArms)
-        call parse_name(iname,cname(iname),cform(iname),'vAmax',i_vAmax)
-        call parse_name(iname,cname(iname),cform(iname),'bx2m',i_bx2m)
-        call parse_name(iname,cname(iname),cform(iname),'by2m',i_by2m)
-        call parse_name(iname,cname(iname),cform(iname),'bz2m',i_bz2m)
-        call parse_name(iname,cname(iname),cform(iname),'uxbm',i_uxbm)
-        call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
-        call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
-        call parse_name(iname,cname(iname),cform(iname),'uxDxuxbm',i_uxDxuxbm)
-        call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
-        call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
-        call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
+        call parse_name(iname,cname(iname),cform(iname),'abm',idiag_abm)
+        call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
+        call parse_name(iname,cname(iname),cform(iname),'b2m',idiag_b2m)
+        call parse_name(iname,cname(iname),cform(iname),'e2m',idiag_e2m)
+        call parse_name(iname,cname(iname),cform(iname),'dive2m',idiag_dive2m)
+        call parse_name(iname,cname(iname),cform(iname),'divee2m',idiag_divee2m)
+        call parse_name(iname,cname(iname),cform(iname),'bm2',idiag_bm2)
+        call parse_name(iname,cname(iname),cform(iname),'j2m',idiag_j2m)
+        call parse_name(iname,cname(iname),cform(iname),'jm2',idiag_jm2)
+        call parse_name(iname,cname(iname),cform(iname),'epsM',idiag_epsM)
+        call parse_name(iname,cname(iname),cform(iname),'brms',idiag_brms)
+        call parse_name(iname,cname(iname),cform(iname),'bmax',idiag_bmax)
+        call parse_name(iname,cname(iname),cform(iname),'jrms',idiag_jrms)
+        call parse_name(iname,cname(iname),cform(iname),'jmax',idiag_jmax)
+        call parse_name(iname,cname(iname),cform(iname),'vArms',idiag_vArms)
+        call parse_name(iname,cname(iname),cform(iname),'vAmax',idiag_vAmax)
+        call parse_name(iname,cname(iname),cform(iname),'bx2m',idiag_bx2m)
+        call parse_name(iname,cname(iname),cform(iname),'by2m',idiag_by2m)
+        call parse_name(iname,cname(iname),cform(iname),'bz2m',idiag_bz2m)
+        call parse_name(iname,cname(iname),cform(iname),'uxbm',idiag_uxbm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
+        call parse_name(iname,cname(iname),cform(iname),'oxuxbm',idiag_oxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),&
+            'uxDxuxbm',idiag_uxDxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
+        call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
+        call parse_name(iname,cname(iname),cform(iname),'bmz',idiag_bmz)
       enddo
 !
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',i_bxmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',i_bymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',i_bzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',idiag_bxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',idiag_bymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',idiag_bzmz)
       enddo
 !
 !  check for those quantities for which we want z-averages
 !
       do ixy=1,nnamexy
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',i_bxmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',i_bymxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',i_bzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',idiag_bxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',idiag_bymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',idiag_bzmxy)
       enddo
 !
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi',i_b2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi',idiag_b2mphi)
       enddo
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'i_abm=',i_abm
-        write(3,*) 'i_jbm=',i_jbm
-        write(3,*) 'i_b2m=',i_b2m
-        write(3,*) 'i_e2m=',i_e2m
-        write(3,*) 'i_dive2m=',i_dive2m
-        write(3,*) 'i_divee2m=',i_divee2m
-        write(3,*) 'i_bm2=',i_bm2
-        write(3,*) 'i_j2m=',i_j2m
-        write(3,*) 'i_jm2=',i_jm2
-        write(3,*) 'i_epsM=',i_epsM
-        write(3,*) 'i_brms=',i_brms
-        write(3,*) 'i_bmax=',i_bmax
-        write(3,*) 'i_jrms=',i_jrms
-        write(3,*) 'i_jmax=',i_jmax
-        write(3,*) 'i_vArms=',i_vArms
-        write(3,*) 'i_vAmax=',i_vAmax
-        write(3,*) 'i_bx2m=',i_bx2m
-        write(3,*) 'i_by2m=',i_by2m
-        write(3,*) 'i_bz2m=',i_bz2m
-        write(3,*) 'i_uxbm=',i_uxbm
-        write(3,*) 'i_oxuxbm=',i_oxuxbm
-        write(3,*) 'i_jxbxbm=',i_jxbxbm
-        write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
+        write(3,*) 'i_abm=',idiag_abm
+        write(3,*) 'i_jbm=',idiag_jbm
+        write(3,*) 'i_b2m=',idiag_b2m
+        write(3,*) 'i_e2m=',idiag_e2m
+        write(3,*) 'i_dive2m=',idiag_dive2m
+        write(3,*) 'i_divee2m=',idiag_divee2m
+        write(3,*) 'i_bm2=',idiag_bm2
+        write(3,*) 'i_j2m=',idiag_j2m
+        write(3,*) 'i_jm2=',idiag_jm2
+        write(3,*) 'i_epsM=',idiag_epsM
+        write(3,*) 'i_brms=',idiag_brms
+        write(3,*) 'i_bmax=',idiag_bmax
+        write(3,*) 'i_jrms=',idiag_jrms
+        write(3,*) 'i_jmax=',idiag_jmax
+        write(3,*) 'i_vArms=',idiag_vArms
+        write(3,*) 'i_vAmax=',idiag_vAmax
+        write(3,*) 'i_bx2m=',idiag_bx2m
+        write(3,*) 'i_by2m=',idiag_by2m
+        write(3,*) 'i_bz2m=',idiag_bz2m
+        write(3,*) 'i_uxbm=',idiag_uxbm
+        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
+        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
+        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
+        write(3,*) 'i_bxmz=',idiag_bxmz
+        write(3,*) 'i_bymz=',idiag_bymz
+        write(3,*) 'i_bzmz=',idiag_bzmz
+        write(3,*) 'i_bmx=',idiag_bmx
+        write(3,*) 'i_bmy=',idiag_bmy
+        write(3,*) 'i_bmz=',idiag_bmz
+        write(3,*) 'i_bxmxy=',idiag_bxmxy
+        write(3,*) 'i_bymxy=',idiag_bymxy
+        write(3,*) 'i_bzmxy=',idiag_bzmxy
+        write(3,*) 'i_b2mphi=',idiag_b2mphi
         write(3,*) 'nname=',nname
+        write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamez=',nnamez
         write(3,*) 'iaa=',iaa
         write(3,*) 'iax=',iax
         write(3,*) 'iay=',iay
         write(3,*) 'iaz=',iaz
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'i_bxmz=',i_bxmz
-        write(3,*) 'i_bymz=',i_bymz
-        write(3,*) 'i_bzmz=',i_bzmz
-        write(3,*) 'i_bmx=',i_bmx
-        write(3,*) 'i_bmy=',i_bmy
-        write(3,*) 'i_bmz=',i_bmz
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'i_bxmxy=',i_bxmxy
-        write(3,*) 'i_bymxy=',i_bymxy
-        write(3,*) 'i_bzmxy=',i_bzmxy
-        write(3,*) 'i_b2mphi=',i_b2mphi
       endif
 !
     endsubroutine rprint_magnetic
@@ -677,8 +728,8 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 !  The bymxy and bzmxy must have been calculated,
 !  so they are present on the root processor. 
 !
-        if (i_bmx/=0) then
-          if(i_bymxy==0.or.i_bzmxy==0) then
+        if (idiag_bmx/=0) then
+          if(idiag_bymxy==0.or.idiag_bzmxy==0) then
             if(first) print*,"calc_mfield:                  WARNING"
             if(first) print*, &
                     "calc_mfield: NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
@@ -687,18 +738,18 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
             bmx=0.
           else
             do l=1,nx
-              bymx(l)=sum(fnamexy(l,:,:,i_bymxy))/(ny*nprocy)
-              bzmx(l)=sum(fnamexy(l,:,:,i_bzmxy))/(ny*nprocy)
+              bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
+              bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
             enddo
             bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
           endif
-          call save_name(bmx,i_bmx)
+          call save_name(bmx,idiag_bmx)
         endif
 !
 !  similarly for bmy
 !
-        if (i_bmy/=0) then
-          if(i_bxmxy==0.or.i_bzmxy==0) then
+        if (idiag_bmy/=0) then
+          if(idiag_bxmxy==0.or.idiag_bzmxy==0) then
             if(first) print*,"calc_mfield:                  WARNING"
             if(first) print*, &
                     "calc_mfield: NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
@@ -708,21 +759,21 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
           else
             do j=1,nprocy
             do m=1,ny
-              bxmy(m,j)=sum(fnamexy(:,m,j,i_bxmxy))/nx
-              bzmy(m,j)=sum(fnamexy(:,m,j,i_bzmxy))/nx
+              bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
+              bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
             enddo
             enddo
             bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
           endif
-          call save_name(bmy,i_bmy)
+          call save_name(bmy,idiag_bmy)
         endif 
 !
 !  Magnetic energy in horizontally averaged field
 !  The bxmz and bymz must have been calculated,
 !  so they are present on the root processor.
 !
-        if (i_bmz/=0) then
-          if(i_bxmz==0.or.i_bymz==0) then
+        if (idiag_bmz/=0) then
+          if(idiag_bxmz==0.or.idiag_bymz==0) then
             if(first) print*,"calc_mfield:                  WARNING"
             if(first) print*, &
                     "calc_mfield: NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
@@ -732,9 +783,9 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
                     "calc_mfield:       We proceed, but you'll get bmz=0"
             bmz=0.
           else
-            bmz=sqrt(sum(fnamez(:,:,i_bxmz)**2+fnamez(:,:,i_bymz)**2)/(nz*nprocz))
+            bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2+fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
           endif
-          call save_name(bmz,i_bmz)
+          call save_name(bmz,idiag_bmz)
         endif
 !
       first = .false.

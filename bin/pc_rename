@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: pc_rename,v 1.1 2004-05-29 17:34:26 brandenb Exp $
+#  $Id: pc_rename,v 1.2 2005-06-26 17:34:17 eos_merger_tony Exp $
 #
 #  renames a run directory including the link to the data directory
 #

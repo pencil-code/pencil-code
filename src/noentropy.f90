@@ -1,11 +1,14 @@
-! $Id: noentropy.f90,v 1.64 2005-04-19 03:58:56 dobler Exp $
+! $Id: noentropy.f90,v 1.65 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lentropy = .false.
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED cs2,pp,TT1
 !
 !***************************************************************
 
@@ -17,23 +20,23 @@ module Entropy
 
   use Cparam
   use Cdata
-  use Hydro
 
   implicit none
 
-  integer :: dummyss          ! We cannot define empty namelists
-  namelist /entropy_init_pars/ dummyss
-  namelist /entropy_run_pars/  dummyss
+  include 'entropy.inc'
+
+  !namelist /entropy_init_pars/ dummyss
+  !namelist /entropy_run_pars/  dummyss
 
   ! run parameters
   real :: hcond0=0.,hcond1=impossible,chi=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible
   logical :: lmultilayer=.true.
-  logical :: lcalc_heatcond_constchi=.false.
+  logical :: lheatc_chiconst=.false.
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_dtc=0,i_ssm=0,i_ugradpm=0
+  integer :: idiag_dtc=0,idiag_ssm=0,idiag_ugradpm=0
 
   contains
 
@@ -52,12 +55,12 @@ module Entropy
       if (.not. first) call stop_it('register_ent called twice')
       first = .false.
 !
-      lentropy = .false.
+!ajwm      lentropy = .false.
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.64 2005-04-19 03:58:56 dobler Exp $")
+           "$Id: noentropy.f90,v 1.65 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -87,41 +90,102 @@ module Entropy
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
+!
     endsubroutine init_ss
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,divu,lnrho,rho,rho1,glnrho,cs2,TT1,shock,gshock,bb, bij)
+    subroutine pencil_criteria_entropy()
+! 
+!  All pencils that the Entropy module depends on are specified here.
+! 
+!  20-11-04/anders: coded
 !
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-02.
-!  19-may-02/axel: added isothermal pressure gradient
-!   9-jun-02/axel: pressure gradient added to du/dt already here
+      use Cdata
+      use Density, only: beta_dlnrhodr
 !
-      use Density
+      if (ldt) lpenc_requested(i_cs2)=.true.
+      if (lhydro) then
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_glnrho)=.true.
+      endif
+      if (beta_dlnrhodr/=0.0) lpenc_requested(i_cs2)=.true.
+!
+      if (idiag_ugradpm/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_uglnrho)=.true.
+      endif
+!
+    endsubroutine pencil_criteria_entropy
+!***********************************************************************
+    subroutine pencil_interdep_entropy(lpencil_in)
+!       
+!  Interdependency among pencils from the Entropy module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      use EquationOfState, only: gamma1
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_TT1) .and. gamma1/=0.) lpencil_in(i_cs2)=.true.
+      if (lpencil_in(i_cs2) .and. gamma1/=0.) lpencil_in(i_lnrho)=.true.
+!
+    endsubroutine pencil_interdep_entropy
+!***********************************************************************
+    subroutine calc_pencils_entropy(f,p)
+!       
+!  Calculate Entropy pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-11-04/anders: coded
+!
+      use Cdata
+      use EquationOfState, only: gamma,gamma1,cs20,lnrho0
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      intent(in) :: f
+      intent(inout) :: p
+! cs2
+      if (lpencil(i_cs2)) then
+        if (gamma==1.) then
+          p%cs2=cs20
+        else
+          p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
+        endif
+      endif
+! pp
+      if (lpencil(i_pp)) p%pp=1/gamma*p%cs2*p%rho
+! TT1
+      if (lpencil(i_TT1)) then
+        if (gamma==1.) then
+          p%TT1=0.
+        else
+          p%TT1=gamma1/p%cs2
+        endif
+      endif
+!
+    endsubroutine calc_pencils_entropy
+!**********************************************************************
+    subroutine dss_dt(f,df,p) 
+!
+!  Isothermal/polytropic equation of state
+!
+      use Density, only: beta_dlnrhodr_scaled
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: bij
-      real, dimension (nx,3) :: uu,glnrho,gshock,bb
-      real, dimension (nx) :: lnrho,rho,rho1,divu,cs2,TT1,uglnrho,shock
+      type (pencil_case) :: p
+!      
       integer :: j,ju
 !
-      intent(in) :: f,uu,glnrho,rho,rho1,shock,gshock
-      intent(out) :: cs2,TT1  !(df is dummy)
-!
-!  sound speed squared and inverse temperature
-!  note: this is also correct for gamma=1
-!
-      if (ldensity) then
-        cs2=cs20*exp(gamma1*(lnrho-lnrho0))
-        TT1=gamma1/cs2
-      else
-        cs2=0.   ! since cs20=0 for nodensity anyway
-        TT1=0.   ! will this work?
-      endif
+      intent(in) :: f,p
+      intent(out) :: df
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=cs2*dxyz_2
+      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
@@ -129,22 +193,58 @@ module Entropy
       if (lhydro) then
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*glnrho(:,j)
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-p%cs2*p%glnrho(:,j)
         enddo
       endif
+!
+!  Subtract global density gradient.
+!      
+      if (beta_dlnrhodr_scaled/=0.0) &
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-p%cs2*beta_dlnrhodr_scaled
 !
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
-        if (i_ugradpm/=0) then
-          call dot_mn(uu,glnrho,uglnrho)
-          call sum_mn_name(rho*cs2*uglnrho,i_ugradpm)
-        endif
+        if (idiag_dtc/=0) &
+            call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_ugradpm/=0) &
+            call sum_mn_name(p%rho*p%cs2*p%uglnrho,idiag_ugradpm)
       endif
 !
-      if(ip==1) print*,f,df,uu,divu,rho1,shock,gshock,bb,bij  !(compiler)
+      if (NO_WARN) print*,f !(keep compiler quiet)
+!
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine read_entropy_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_entropy_init_pars
+!***********************************************************************
+    subroutine write_entropy_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_entropy_init_pars
+!***********************************************************************
+    subroutine read_entropy_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_entropy_run_pars
+!***********************************************************************
+    subroutine write_entropy_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_entropy_run_pars
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)
 !
@@ -166,20 +266,20 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_dtc=0; i_ssm=0; i_ugradpm=0
+        idiag_dtc=0; idiag_ssm=0; idiag_ugradpm=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
-        call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
+        call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
+        call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_dtc=',i_dtc
-        write(3,*) 'i_ssm=',i_ssm
-        write(3,*) 'i_ugradpm=',i_ugradpm
+        write(3,*) 'i_dtc=',idiag_dtc
+        write(3,*) 'i_ssm=',idiag_ssm
+        write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
       endif

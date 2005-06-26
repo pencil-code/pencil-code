@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.38 2005-06-05 03:52:27 brandenb Exp $
+#  $Id: mkdatadir,v 1.39 2005-06-26 17:34:16 eos_merger_tony Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -19,6 +19,7 @@ echo $cwd >! .tmp
 #
 set hn = `hostname`
 echo "we are on" $hn ", the new workspace will be"
+
 if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
 else if (($hn =~ fe*) && ($USER =~ brandenb)) then
@@ -26,6 +27,10 @@ else if (($hn =~ fe*) && ($USER =~ brandenb)) then
   set str='s/people\/disk2/wkspace3/g'
 else if ($hn =~ fe*) then
   set str='s/people\/disk2/wkspace3/g'
+else if ($hn =~ node[0-9]*) then
+  set str='s/clx\/userhpe\/'$USER'/scratch\/'$USER'\/DATA/g'
+else if ($hn =~ sp[0-9]*) then
+  set str='s/sp4\/userhpe/scratch\/DATA/g'
 else if ($hn =~ ns0*) then
   set str='s/home/data/g'
 else if ($hn =~ ns1*) then
@@ -39,15 +44,17 @@ else if ($hn =~ nl0) then
   set str='s/home\/mattias\/pencil-code\/runs/var\/tmp/g'
 else if ($hn =~ nl3) then
   set str='s/home/scr/g'
+else if (($hn =~ nl6)) then
+  set str='s/home/wkspace2/g'
+  #set str='s/brandenb/brandenb\/storage/g'
 else if (($hn =~ nl11) || ($hn =~ wormhole)) then
   set str='s/home/data/g'
-  #set str='s/brandenb/brandenb\/storage/g'
-else if (($hn =~ nl6) ) then
-  set str='s/home/wkspace2/g'
 else if ($hn =~ tac*) then
   set str='s/usr\/tac/scratch/g'
 else if ($hn =~ embla) then
   set str='s/home\/u./work/g'
+else if (($hn =~ giga*) && ($USER =~ n7026413)) then
+  set str='s/home/addon\/space/g'
 else if ($hn =~ giga*) then
   set str='s/home/work/g'
 else if (($hn =~ gridur) && ($USER =~ nilshau))then
@@ -81,14 +88,33 @@ else if ($hn =~ obelix*) then
   set str='s/home/export\/obelix1/g'
 else if ($hn =~ psi24*) then
   set str='s/afs\/ipp-garching\.mpg\.de\/home\/a/u/g'
+else if ($hn =~ rio*) then
+  set str='s/afs\/ipp\/home\/a/nfs\/rzg/g'
+else if ($hn =~ gwdu102) then
+  set str='s/\/usr\/users/\/home\/temp1/g'
+else if ($hn =~ lfc*) then
+  set str='s/\/home/\/nfs\/d12/g'
 else
   set str='s/home/var\/tmp/g'
 endif
-#echo $str
+echo $str
 #
 sed -e $str .tmp >! .scr
-cat .scr
-mkdir -p `cat .scr`
+if ( -d data ) then
+  echo Moving present data directory to: `cat .scr`
+  mkdir -p `cat .scr`
+  rm -rf `cat .scr`
+  mv data `cat .scr`
+else
+  echo Creating: `cat .scr`
+  mkdir -p `cat .scr`
+endif
 ln -s `cat .scr` data
 #Tidy up temporary files
 rm -f .scr .tmp
+
+#For certain people who like it like that... Create a default .cvsignore file in the data directory
+if (($USER =~ mee) || ($USER =~ n7026413) || ($USER =~ hpeukue2)) then
+  ln -s $PENCIL_HOME/src/data.cvsignore data/.cvsignore
+endif
+

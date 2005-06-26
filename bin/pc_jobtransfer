@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: pc_jobtransfer,v 1.1 2004-03-22 19:01:42 brandenb Exp $
+#  $Id: pc_jobtransfer,v 1.2 2005-06-26 17:34:17 eos_merger_tony Exp $
 #
 #  checks that a valid NEWDIR file exists, and that in
 #  the new directory there is another valid NEWDIR file.

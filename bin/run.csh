@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.80 2004-10-13 13:46:22 brandenb Exp $
+# CVS: $Id: run.csh,v 1.81 2005-06-26 17:34:17 eos_merger_tony Exp $
 
 #                       run.csh
 #                      ---------
@@ -8,6 +8,7 @@
 #
 # Run this script with csh:
 #PBS -S /bin/csh
+#PBS -r n
 #$ -S /bin/csh
 #@$-s /bin/csh
 #
@@ -51,6 +52,7 @@ if ($local_disc) then
     foreach node ($nodelist)
       foreach d (`cd $datadir; ls -d proc* allprocs`)
         $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+        if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
         $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end
       if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
@@ -66,6 +68,7 @@ if ($local_disc) then
         set k = `expr $nprocpernode \* $i + $j`
         if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
         $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
+        if ($lparticles) $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
         echo "$SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/"
         $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
         set j=`expr $j + 1`
@@ -105,7 +108,7 @@ endif
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
-  echo $PBS_JOBID "  RUN STARTED on " $PBS_O_QUEUE `date` >> $datadir/jobid.dat
+  echo $PBS_JOBID "  RUN STARTED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
 endif
 
 # Run run.x
@@ -118,7 +121,7 @@ date
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
-  echo $PBS_JOBID " RUN FINISHED  " `date` >> $datadir/jobid.dat
+  echo $PBS_JOBID " RUN FINISHED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
 endif
 
 # look for RERUN file 
@@ -142,6 +145,7 @@ endif
 if ($local_disc) then
   echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash. dat back from local scratch disks"
   $copysnapshots -v var.dat     >&! copy-snapshots2.log
+  if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots2.log
   $copysnapshots -v -1          >>& copy-snapshots2.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots2.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots2.log
@@ -186,6 +190,7 @@ if (-e "NEWDIR") then
     goto newdir
   else
     rm -f NEWDIR
+    if (-e "LOCK") rm -f LOCK
     echo
     echo "====================================================================="
     echo "Rerunning in the *same* directory; current run status: $run_status"

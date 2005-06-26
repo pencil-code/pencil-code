@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-05-06 07:48:57 $
-# $Revision: 1.18 $
+# $Date: 2005-06-26 17:34:17 $
+# $Revision: 1.19 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -57,21 +57,25 @@ GetOptions(\%opts,
 	       -u   --update
 	       -U   --up-d-samples
 	       -c   --clean
+	            --tag-stable=s
+	            --tag-broken=s
            -m=s --mail=s
            -M=s --Mailer=s
 	       -p=s --postproc=s
                     --debug
 	                   ));
 die usage() if ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
-my $debug     = (              $opts{'debug'}      || 0);
-my $html      = ($opts{'H'} || $opts{'html'}       || 0);
-my $clean     = ($opts{'c'} || $opts{'clean'}      || 0);
-my $update    = ($opts{'u'} || $opts{'update'}     || 0);
-my $UPDATE    = ($opts{'U'} || $opts{'UPDATE'}     || 0);
+my $debug      = (              $opts{'debug'}      || 0);
+my $html       = ($opts{'H'} || $opts{'html'}       || 0);
+my $clean      = ($opts{'c'} || $opts{'clean'}      || 0);
+my $update     = ($opts{'u'} || $opts{'update'}     || 0);
+my $UPDATE     = ($opts{'U'} || $opts{'UPDATE'}     || 0);
+my $tag_stable = (              $opts{'tag-stable'} || 0);
+my $tag_broken = (              $opts{'tag-broken'} || 0);
 if ($UPDATE) { $update=1 };
-my $emails    = ($opts{'m'} || $opts{'mail'}       || '');
-my $mailer    = ($opts{'M'} || $opts{'Mailer'}     || '');
-my $postproc  = ($opts{'p'} || $opts{'postproc'}   || '');
+my $emails     = ($opts{'m'} || $opts{'mail'}       || '');
+my $mailer     = ($opts{'M'} || $opts{'Mailer'}     || '');
+my $postproc   = ($opts{'p'} || $opts{'postproc'}   || '');
 
 ## Print header
 my $date = scalar localtime();
@@ -123,6 +127,8 @@ foreach my $host (@ARGV) {
     }
     close(POUT);
     # Send emails if necessary
+    tag_breakage_on_error($result,$host) if ($tag_broken);
+    tag_stable_on_success($result,$host) if ($tag_stable);
     notify_on_error($result,$shost);
 
    $first = 0;
@@ -162,6 +168,38 @@ sub usage {
         last;
     }
     $_;
+}
+# ---------------------------------------------------------------------- #
+sub tag_stable_on_success{
+## Check for errors and send emails
+    my $result = (shift || '');
+    my $host  = (shift || '');
+    my $cvscmd;
+
+    return if ($result =~ /^Failed ([0-9]+) test/m);
+
+    $cvscmd=        "ssh -n $host 'cd \$PENCIL_HOME;";
+    $cvscmd=$cvscmd."cvs -Q tag -d ".$tag_broken." src bin > /dev/null;" if ($tag_broken);
+    $cvscmd=$cvscmd."cvs -Q tag -F ".$tag_stable." src bin > /dev/null";
+    $cvscmd=$cvscmd."'";
+    system($cvscmd);
+}
+# ---------------------------------------------------------------------- #
+sub tag_breakage_on_error{
+## Check for errors and send emails
+    my $result = (shift || '');
+    my $host  = (shift || '');
+    my $cvscmd;
+    if ($result =~ /^Failed ([0-9]+) test/m) {
+      # We only want to mark the first breakage... So check it isn't already tagged.
+      my $hastag="ssh -n $host 'cd \$PENCIL_HOME; cvs log -h Makefile.src'";
+      return if ($hastag =~ /$tag_broken/);
+      # If we haven't already tagged it... Do so now.
+      $cvscmd=        "ssh -n $host 'cd \$PENCIL_HOME;";
+      $cvscmd=$cvscmd."cvs -Q tag -F ".$tag_broken." src bin > /dev/null;";
+      $cvscmd=$cvscmd."'";
+      system($cvscmd);
+    }
 }
 # ---------------------------------------------------------------------- #
 sub notify_on_error{

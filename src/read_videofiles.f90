@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.19 2005-06-25 08:00:37 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.20 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !***********************************************************************
       program rvid_box
@@ -13,6 +13,7 @@
       use General
 !
       implicit none
+
 !
       real, dimension (nxgrid,nygrid) :: xy,xy2
       real, dimension (nxgrid,nzgrid) :: xz

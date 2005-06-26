@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.36 2004-09-22 10:09:44 ajohan Exp $
+# CVS: $Id: copy-snapshots,v 1.37 2005-06-26 17:34:16 eos_merger_tony Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -40,8 +40,8 @@ endif
 ## Produce debug output file in data directory
 ##
 if($debug) then
-  echo "copy-snapshots: pid=$$ starting" >> $targetdir/copy-snaps_was_here.log
-  echo "copy-snapshots: pid=$$ args=<$*>" >> $targetdir/copy-snaps_was_here.log
+  echo "copy-snapshots: pid=$$ starting" >>! $targetdir/copy-snaps_was_here.log
+  echo "copy-snapshots: pid=$$ args=<$*>" >>! $targetdir/copy-snaps_was_here.log
 endif
 ##
 ## If explicit filename is given, copy that file from local scratch discs
@@ -196,7 +196,7 @@ echo "------------------------------------------------------ "
 
 #TEST-BEGIN
 if($debug) then
-  echo "copy-snapshots: pid=$$ finished" >> $targetdir/copy-snaps_was_here.log
+  echo "copy-snapshots: pid=$$ finished" >>! $targetdir/copy-snaps_was_here.log
 endif
 #TEST-END
 

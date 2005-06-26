@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.143 2005-06-05 12:44:27 brandenb Exp $
+! $Id: start.f90,v 1.144 2005-06-26 17:34:13 eos_merger_tony Exp $
 !
 !***********************************************************************
       program start
@@ -12,19 +12,38 @@
         use Cdata
         use Grid
         use General
-        use Initcond
+
         use Mpicomm
         use Sub
         use IO
-        use Radiation
-        use Register
-        use Global
         use Param_IO
-        use Wsnaps
+        use Register
+
+        use Global
+        use Snapshot
         use Filter
-        use Special, only: init_special
+        use Initcond
+
+        use EquationOfState
+
+        use Hydro,        only: init_uu
+        use Density,      only: init_lnrho
+        use Entropy,      only: init_ss
+        use PScalar,      only: init_lncc
+        use Chiral,       only: init_chiral
+        use Magnetic,     only: init_aa
+        use Gravity,      only: init_gg
+        use Cosmicray,    only: init_ecr
+        use Cosmicrayflux,only: init_fcr
+        use Special,      only: init_special
+        use Dustdensity,  only: init_nd
+        use Dustvelocity, only: init_uud
+
+        use Radiation,    only: init_rad, radtransfer
+        use Particles
 !
         implicit none
+
 !
 !  define parameters
 !  The f-array includes auxiliary variables
@@ -44,6 +63,10 @@
 !
         lstart = .true.
 !
+! Set a flag if colored output has been requested.
+!
+        inquire(FILE="COLOR", EXIST=ltermcap_color)
+!
 !  Allocate large arrays. We need to make them allocatable in order to
 !  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit
 !  Linux boxes. Not clear why they crashed (we _did_ increase stacksize
@@ -62,7 +85,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.143 2005-06-05 12:44:27 brandenb Exp $")
+             "$Id: start.f90,v 1.144 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -73,6 +96,10 @@
         lequidist=(/.true.,.true.,.true. /) ! all directions equidistant grid
 ! dgm
         lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
+!
+!  Initialize start time
+!
+        t=0
 !
 !  read parameters from start.in
 !  call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
@@ -129,20 +156,26 @@
           endif
         enddo
         xyz1=xyz0+Lxyz
-        !
-        !  abbreviations
-        !
+!
+!  abbreviations
+!
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
-
+!
 !  check consistency
 !
-        if (.not.lperi(1).and.nxgrid<2) stop 'for nonperiodic: must have nxgrid>1'
-        if (.not.lperi(2).and.nygrid<2) stop 'for nonperiodic: must have nygrid>1'
-        if (.not.lperi(3).and.nzgrid<2) stop 'for nonperiodic: must have nzgrid>1'
-        if (lperi(1).and.lshift_origin(1)) stop 'for periodic: must have lshift_origin=F'
-        if (lperi(2).and.lshift_origin(2)) stop 'for periodic: must have lshift_origin=F'
-        if (lperi(3).and.lshift_origin(3)) stop 'for periodic: must have lshift_origin=F'
+        if (.not.lperi(1).and.nxgrid<2) &
+            call stop_it('for nonperiodic: must have nxgrid>1')
+        if (.not.lperi(2).and.nygrid<2) &
+            call stop_it('for nonperiodic: must have nygrid>1')
+        if (.not.lperi(3).and.nzgrid<2) &
+            call stop_it('for nonperiodic: must have nzgrid>1')
+        if (lperi(1).and.lshift_origin(1)) &
+            call stop_it('for periodic: must have lshift_origin=F')
+        if (lperi(2).and.lshift_origin(2)) &
+            call stop_it('for periodic: must have lshift_origin=F')
+        if (lperi(3).and.lshift_origin(3)) &
+            call stop_it('for periodic: must have lshift_origin=F')
 !
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.
@@ -186,34 +219,7 @@
 !  by the various procedures below.
 !
         if(lread_oldsnap) then
-          print*,'read old snapshot file'
-          call input(trim(directory_snap)//'/var.dat',f,mvar,1)
-!
-!  read non-magnetic snapshot into an MHD run
-!
-        elseif(lread_oldsnap_nomag) then
-          print*,'read old snapshot file (but without magnetic field)'
-          call input(trim(directory_snap)//'/var.dat',f,mvar-3,1)
-          ! shift the rest of the data
-          if (iaz<mvar) then
-            do i=iaz+1,mvar
-              f(:,:,:,i)=f(:,:,:,i-3)
-            enddo
-            f(:,:,:,iax:iaz)=0.
-          endif
-!
-!  read data without passive scalar into new run with passive scalar
-!
-        elseif(lread_oldsnap_nopscalar) then
-          print*,'read old snapshot file (but without passive scalar)'
-          call input(trim(directory_snap)//'/var.dat',f,mvar-1,1)
-          ! shift the rest of the data
-          if (iaz<mvar) then
-            do i=ilncc+1,mvar
-              f(:,:,:,i)=f(:,:,:,i-1)
-            enddo
-            f(:,:,:,ilncc)=0.
-          endif
+          call rsnap(trim(directory_snap)//'/var.dat',f, mvar)
 !
 !  default: everything zero
 !
@@ -225,23 +231,28 @@
 !  wd: also in the case where we have read in an existing snapshot??
 !
         if (lroot) print* !(empty line)
-        call init_gg      (f,xx,yy,zz)
-        call init_uu      (f,xx,yy,zz)
-        call init_lnrho   (f,xx,yy,zz)
-        call init_ss      (f,xx,yy,zz)
-        call init_aa      (f,xx,yy,zz)
-        call init_aatest  (f,xx,yy,zz)
-        call init_rad     (f,xx,yy,zz)
-        call init_lncc    (f,xx,yy,zz)
-        call init_chiral  (f,xx,yy,zz)
-        call init_uud     (f)
-        call init_nd      (f)
-        call init_ecr     (f,xx,yy,zz)
-        call init_special (f,xx,yy,zz)
+        do i=1,init_loops
+          if (lroot .and. init_loops/=1) &
+              print'(A33,i3,A25)', 'start: -- performing loop number', i, &
+              ' of initial conditions --'
+          call init_gg        (f,xx,yy,zz)
+          call init_uu        (f,xx,yy,zz)
+          call init_lnrho     (f,xx,yy,zz)
+          call init_ss        (f,xx,yy,zz)
+          call init_aa        (f,xx,yy,zz)
+          call init_rad       (f,xx,yy,zz)
+          call init_lncc      (f,xx,yy,zz)
+          call init_chiral    (f,xx,yy,zz)
+          call init_uud       (f)
+          call init_nd        (f)
+          call init_ecr       (f,xx,yy,zz)
+          call init_fcr       (f,xx,yy,zz)
+          call init_special   (f,xx,yy,zz)
+        enddo
 !
 !  check whether we want ionization
 !
-        if(lionization) call ioninit(f)
+        if(leos_ionization) call ioninit(f)
         if(lradiation_ray) call radtransfer(f)
 !
 !  filter initial velocity
@@ -256,11 +267,28 @@
           if(lroot) print*,'DONE: filter initial velocity, nfilter=',nfilter
         endif
 !
+!  Prepare particles.
+!
+        if (lparticles) then
+          call particles_register_modules()
+          call particles_rprint_list(.false.)
+          call particles_initialize_modules(lstarting=.true.)
+          call particles_init(f)
+        endif
+!
+!  Set random seed independent of processor
+!
+        seed(1) = 1812
+        call random_seed_wrapper(put=seed(1:nseed))
+!
 !  write to disk
 !
         if (lwrite_ic) then
-          call wsnap(trim(directory_snap)//'/VAR0',f,mvar_io, &
-              ENUM=.false.,FLIST='varN.list')
+          call wsnap(trim(directory_snap)//'/VAR0',f, &
+              mvar_io,ENUM=.false.,FLIST='varN.list')
+          if (lparticles) &
+              call particles_write_snapshot(trim(directory_snap)//'/PVAR0', &
+              mvar_io,ENUM=.false.,FLIST='pvarN.list')
         endif
 !
 !  The option lnowrite writes everything except the actual var.dat file
@@ -271,6 +299,9 @@
         if (.not.lnowrite .and. .not.lnoerase) then
           if (ip<12) print*,'START: writing to ' // trim(directory_snap)//'/var.dat'
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
+          if (lparticles) &
+              call particles_write_snapshot(trim(directory_snap)//'/pvar.dat', &
+              mvar_io,ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif
         call wdim(trim(directory)//'/dim.dat')
@@ -278,8 +309,12 @@
 !
 !  also write full dimensions to data/ :
 !
-        if (lroot) call wdim(trim(datadir)//'/dim.dat', &
-             nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+        if (lroot) then
+          call wdim(trim(datadir)//'/dim.dat', &
+            nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+          if (lparticles) &
+            call particles_write_pdim(trim(datadir)//'/pdim.dat')
+        endif
 !
 !  write global variables:
 !
@@ -290,12 +325,19 @@
 !
         call wparam()
 !
+!  Write information about pencils to disc
+!
+        call write_pencil_info()
+!
 !  Seed for random number generator to be used in forcing.f90. Have to
 !  have the same on each  processor as forcing is applied in (global)
 !  Beltrami modes.
-!
-        seed(1) = 1812
-        call outpui(trim(directory)//'/seed.dat',seed,nseed)
+!ajwm
+!ajwm        seed(1) = 1812
+!ajwm        call outpui(trim(directory)//'/seed.dat',seed,nseed)
+!ajwm Commented as now handled bi Persist module
+
+
 !
         call mpifinalize
         if (lroot) print*

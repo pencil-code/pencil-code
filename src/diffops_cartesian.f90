@@ -1,7 +1,10 @@
-! $Id: diffops_cartesian.f90,v 1.2 2003-06-16 04:41:10 brandenb Exp $ 
+! $Id: diffops_cartesian.f90,v 1.3 2005-06-26 17:34:12 eos_merger_tony Exp $ 
 
 module DiffOps
+
   implicit none
+  
+  private
 
   interface grad                 ! Overload the `grad' function
     module procedure grad_main   ! grad of an 'mvar' variable  
@@ -394,4 +397,4 @@ contains
       del6f = d6fdx + d6fdy + d6fdz
 !
     endsubroutine del6_nodx
-  end module DiffOps
+  endmodule DiffOps

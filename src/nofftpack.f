@@ -1,4 +1,4 @@
-!  $Id: nofftpack.f,v 1.6 2003-10-01 13:11:41 theine Exp $
+!  $Id: nofftpack.f,v 1.7 2005-06-26 17:34:13 eos_merger_tony Exp $
 !
 !  Dummy routine, to avoid never seeing the compiler warnings from fftpack.
 !

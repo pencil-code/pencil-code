@@ -1,5 +1,5 @@
  &INIT_PARS
- CVSID='$Id: param.nml,v 1.1 2004-06-03 15:30:25 brandenb Exp $                   
+ CVSID='$Id: param.nml,v 1.2 2005-06-26 17:34:32 eos_merger_tony Exp $                   
                                                 ',IP= 14
  XYZ0=  -3.141593    ,  -3.141593    ,  -3.141593    
  XYZ1=   3.141593    ,   3.141593    ,   3.141593    
@@ -16,6 +16,9 @@
  BCZ='p      ','p      ','p      ','p      ','p      ','p      ','p      '
  R_INT= 0.0,R_EXT= 3.908500E+37,MU0= 1.000000
  /
+ &EOS_INIT_PARS
+ CS0= 1.000000,RHO0= 1.000000,GAMMA= 1.000000
+ /
  &HYDRO_INIT_PARS
  AMPLUU= 0.0,INITUU='zero                     ',WIDTHUU= 0.1000000,URAND= 0.0
  UU_LEFT= 0.0,UU_RIGHT= 0.0,UU_LOWER= 1.000000,UU_UPPER= 1.000000,KX_UU=
@@ -28,7 +31,7 @@
  NU_TURB1= 0.0
  /
  &DENSITY_INIT_PARS
- CS0= 1.000000,RHO0= 1.000000,AMPLLNRHO= 0.0,GAMMA= 1.000000
+ AMPLLNRHO= 0.0
  INITLNRHO='nothing                  ','nothing                  '
            'nothing                  ','nothing                  '
  INITLNRHO2='nothing                  ',WIDTHLNRHO= 0.1000000,RHO_LEFT=

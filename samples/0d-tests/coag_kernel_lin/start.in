@@ -4,7 +4,7 @@
 !
 &init_pars
   ip=20,lwrite_ic=T
-  cvsid='$Id: start.in,v 1.6 2004-04-16 14:33:13 ajohan Exp $'
+  cvsid='$Id: start.in,v 1.7 2005-06-26 17:34:18 eos_merger_tony Exp $'
   Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
   lperi=T,T,T
 /

@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.13 2004-01-26 14:46:02 brandenb Exp $
+! $Id: noforcing.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 module Forcing
 
@@ -8,13 +8,14 @@ module Forcing
   use General
 
   implicit none
-  integer :: dummy              ! We cannot define empty namelists
- 
-  namelist /forcing_init_pars/ dummy
-  namelist /forcing_run_pars/  dummy
+
+  include 'forcing.inc'
+
+  !namelist /forcing_init_pars/ dummy
+  !namelist /forcing_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_rufm=0
+  integer :: idiag_rufm=0
 
   contains
 
@@ -38,7 +39,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.13 2004-01-26 14:46:02 brandenb Exp $")
+           "$Id: noforcing.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -51,7 +52,7 @@ module Forcing
 !
       logical :: lstarting
 !
-      if(ip==0) print*,'lstarting=',lstarting !(to keep compiler quiet)
+      if(NO_WARN) print*,'lstarting=',lstarting !(to keep compiler quiet)
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(df)
@@ -64,6 +65,37 @@ module Forcing
 !
       if(ip==1) print*,df !(to remove compiler warnings)
     endsubroutine addforce
+!***********************************************************************
+    subroutine read_forcing_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_forcing_init_pars
+!***********************************************************************
+    subroutine write_forcing_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_forcing_init_pars
+!***********************************************************************
+    subroutine read_forcing_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_forcing_run_pars
+!***********************************************************************
+    subroutine write_forcing_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_forcing_run_pars
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !
@@ -85,20 +117,20 @@ module Forcing
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_rufm=0
+        idiag_rufm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'rufm',i_rufm)
+        call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_rufm=',i_rufm
+        write(3,*) 'i_rufm=',idiag_rufm
       endif
 !
     endsubroutine rprint_forcing

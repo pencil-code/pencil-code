@@ -1,11 +1,15 @@
-! $Id: nomagnetic.f90,v 1.58 2005-06-13 19:25:55 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.59 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
+! CPARAM logical, parameter :: lmagnetic = .false.
+!
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED bb,bij,jxbr,ss12,b2,gradcurla
 !
 !***************************************************************
 
@@ -15,24 +19,30 @@ module Magnetic
 
   implicit none
 
+  include 'magnetic.inc'
+
+!merge_axel: I think kinflow is now moved elsewhere; but I keep it for the
+!merge_axel: time being
+  character (len=40) :: kinflow=''
+!merge_axel: I added kx=1.,ky=1.,kz=1. from trunk, and changed 
+!merge_axel: kx_aa=1.,ky_aa=1.,kz_aa=1. from 0 for all.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: brms=0.
+  real, dimension(nx) :: meanfield_EMFdotB
 
-  integer :: dummy              ! We cannot define empty namelists
-  namelist /magnetic_init_pars/ dummy
-  namelist /magnetic_run_pars/  dummy
+  !namelist /magnetic_init_pars/ dummy
+  !namelist /magnetic_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
-  integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
-  integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
-  integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0
-  integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
-  integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
-  integer :: i_bxmxz=0,i_bymxz=0,i_bzmxz=0
-  integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_uxDxuxbm=0
-  integer :: i_b2mphi=0
+  integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0,idiag_abm=0
+  integer :: idiag_jbm=0,idiag_epsM=0,idiag_vArms=0,idiag_vAmax=0
+  integer :: idiag_brms=0,idiag_bmax=0,idiag_jrms=0,idiag_jmax=0
+  integer :: idiag_bx2m=0, idiag_by2m=0, idiag_bz2m=0,idiag_bmz=0
+  integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0,idiag_bmy=0
+  integer :: idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
+  integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_uxDxuxbm=0
+  integer :: idiag_b2mphi=0
 
   contains
 
@@ -52,12 +62,11 @@ module Magnetic
       if (.not. first) call stop_it('register_aa called twice')
       first = .false.
 !
-      lmagnetic = .false.
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.58 2005-06-13 19:25:55 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.59 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -66,10 +75,15 @@ module Magnetic
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine
-
+      use Cdata
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==0) print*,'f=',f
+!  Precalculate 1/mu (moved here from register.f90)
+!
+      mu01=1./mu0
+!
+      if (NO_WARN) print*,'f=',f
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f,xx,yy,zz)
@@ -83,7 +97,8 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+!
     endsubroutine init_aa
 !***********************************************************************
     subroutine pert_aa(f)
@@ -97,10 +112,53 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+!
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,uij,rho1,TT1,bb,bij,aij,jj,JxBr,del2A,graddivA,va2,shock,gshock)
+    subroutine pencil_criteria_magnetic()
+!
+!  All pencils that the Magnetic module depends on are specified here.
+!
+!  20-11-04/anders: coded
+!
+    endsubroutine pencil_criteria_magnetic
+!***********************************************************************
+    subroutine pencil_interdep_magnetic(lpencil_in)
+!
+!  Interdependency among pencils provided by the Magnetic module 
+!  is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_magnetic
+!***********************************************************************
+    subroutine calc_pencils_magnetic(f,p)
+!
+!  Calculate Magnetic pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-11-04/anders: coded
+!      
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      intent(in)  :: f
+      intent(inout) :: p
+!      
+      if (lpencil(i_bb)) p%bb=0.
+      if (lpencil(i_b2)) p%b2=0.
+      if (lpencil(i_gradcurla)) p%gradcurla=0.
+      if (lpencil(i_jxbr)) p%jxbr=0.
+      if (lpencil(i_bij)) p%bij=0.
+!
+    endsubroutine calc_pencils_magnetic
+!***********************************************************************
+    subroutine daa_dt(f,df,p)
 !
 !  magnetic field evolution
 !  3-may-2002/wolf: dummy routine
@@ -110,44 +168,60 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,bij,aij
-      real, dimension (nx,3) :: uu,bb,jj,JxBr,del2A,graddivA,gshock
-      real, dimension (nx) :: rho1,TT1,va2,shock
+      type (pencil_case) :: p
 !
-      intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
-      intent(out)    :: bij,aij,va2
-      intent(inout)  :: df
+      intent(in) :: f, df, p
 !
-!  set Alfven speed to zero for proper time stepping
+      if (NO_WARN) print*,f,df,p ! (keep compiler quiet)
 !
-      va2=0
-!
-      if(ip==0) then; bij=0.; aij=0.; endif              ! (keep compiler quiet)
-      if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb,jj    ! (keep compiler quiet)
-      if(ip==0) print*,del2A,graddivA                    ! (keep compiler quiet)
-      if(ip==0) print*,shock,gshock                      ! (keep compiler quiet)
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb,jj,bij,aij,del2A,graddivA)
+    subroutine rescaling(f)
 !
-!   Calculation of bb
-!   dummy routine
+!  Dummy routine
+!  
+!  22-feb-05/axel: coded
 !
-!   06-febr-04/bing: coded
-!      
+      use Cdata
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx,3,3) :: bij,aij
-      real, dimension (nx,3) :: bb,jj,del2A,graddivA
+      real :: scl
+      integer :: j
 !
-      intent(in)  :: f
-      intent(out) :: bb,jj,bij,aij,del2A,graddivA
+      intent(inout) :: f
 !
-!  dummy settings
-!
-      if (ip==0) print*,f(1,1,1,1) ! (keep compiler quiet)
-      bij=0.; aij=0.; bb=0.; jj=0.; del2A=0.; graddivA=0.
-!
-    endsubroutine calculate_vars_magnetic
+    endsubroutine rescaling
+!***********************************************************************
+    subroutine read_magnetic_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_magnetic_init_pars
+!***********************************************************************
+    subroutine write_magnetic_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_magnetic_init_pars
+!***********************************************************************
+    subroutine read_magnetic_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_magnetic_run_pars
+!***********************************************************************
+    subroutine write_magnetic_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_magnetic_run_pars
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
@@ -164,50 +238,50 @@ module Magnetic
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_abm=',i_abm
-        write(3,*) 'i_jbm=',i_jbm
-        write(3,*) 'i_b2m=',i_b2m
-        write(3,*) 'i_bm2=',i_bm2
-        write(3,*) 'i_j2m=',i_j2m
-        write(3,*) 'i_jm2=',i_jm2
-        write(3,*) 'i_epsM=',i_epsM
-        write(3,*) 'i_brms=',i_brms
-        write(3,*) 'i_bmax=',i_bmax
-        write(3,*) 'i_jrms=',i_jrms
-        write(3,*) 'i_jmax=',i_jmax
-        write(3,*) 'i_vArms=',i_vArms
-        write(3,*) 'i_vAmax=',i_vAmax
-        write(3,*) 'i_bx2m=',i_bx2m
-        write(3,*) 'i_by2m=',i_by2m
-        write(3,*) 'i_bz2m=',i_bz2m
-        write(3,*) 'i_uxbm=',i_uxbm
-        write(3,*) 'i_oxuxbm=',i_oxuxbm
-        write(3,*) 'i_jxbxbm=',i_jxbxbm
-        write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
+        write(3,*) 'i_abm=',idiag_abm
+        write(3,*) 'i_jbm=',idiag_jbm
+        write(3,*) 'i_b2m=',idiag_b2m
+        write(3,*) 'i_bm2=',idiag_bm2
+        write(3,*) 'i_j2m=',idiag_j2m
+        write(3,*) 'i_jm2=',idiag_jm2
+        write(3,*) 'i_epsM=',idiag_epsM
+        write(3,*) 'i_brms=',idiag_brms
+        write(3,*) 'i_bmax=',idiag_bmax
+        write(3,*) 'i_jrms=',idiag_jrms
+        write(3,*) 'i_jmax=',idiag_jmax
+        write(3,*) 'i_vArms=',idiag_vArms
+        write(3,*) 'i_vAmax=',idiag_vAmax
+        write(3,*) 'i_bx2m=',idiag_bx2m
+        write(3,*) 'i_by2m=',idiag_by2m
+        write(3,*) 'i_bz2m=',idiag_bz2m
+        write(3,*) 'i_uxbm=',idiag_uxbm
+        write(3,*) 'i_oxuxbm=',idiag_oxuxbm
+        write(3,*) 'i_jxbxbm=',idiag_jxbxbm
+        write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
+        write(3,*) 'i_bxmz=',idiag_bxmz
+        write(3,*) 'i_bymz=',idiag_bymz
+        write(3,*) 'i_bzmz=',idiag_bzmz
+        write(3,*) 'i_bmx=',idiag_bmx
+        write(3,*) 'i_bmy=',idiag_bmy
+        write(3,*) 'i_bmz=',idiag_bmz
+        write(3,*) 'i_bxmxy=',idiag_bxmxy
+        write(3,*) 'i_bymxy=',idiag_bymxy
+        write(3,*) 'i_bzmxy=',idiag_bzmxy
+        write(3,*) 'i_b2mphi=',idiag_b2mphi
         write(3,*) 'nname=',nname
+        write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamez=',nnamez
         write(3,*) 'iaa=',iaa
         write(3,*) 'iax=',iax
         write(3,*) 'iay=',iay
         write(3,*) 'iaz=',iaz
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'i_bxmz=',i_bxmz
-        write(3,*) 'i_bymz=',i_bymz
-        write(3,*) 'i_bzmz=',i_bzmz
-        write(3,*) 'i_bmx=',i_bmx
-        write(3,*) 'i_bmy=',i_bmy
-        write(3,*) 'i_bmz=',i_bmz
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'i_bxmxy=',i_bxmxy
-        write(3,*) 'i_bymxy=',i_bymxy
-        write(3,*) 'i_bzmxy=',i_bzmxy
-        write(3,*) 'i_b2mphi=',i_b2mphi
       endif
 !
-      if(ip==0) print*,lreset  !(to keep compiler quiet)
+      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_magnetic
 !***********************************************************************
     subroutine calc_mfield

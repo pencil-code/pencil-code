@@ -4,12 +4,13 @@
 !  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2004-04-07 10:36:23 theine Exp $'
+  cvsid='$Id: run.in,v 1.3 2005-06-26 17:34:19 eos_merger_tony Exp $'
   nt=5000, it1=10, cdt=0.4, cdtv=0.20, isave=50, itorder=3,
   dsnap=20., dvid=1., tmax=30.
   bcx = 's','s','s','s','s','s','a2','a2'
   bcx = 's','s','s','s','s','a2','a2','a2'
   lrmwig_full=.true., iwig=200
+  lpencil_check=T
 /
 &hydro_run_pars
   nu=2.0

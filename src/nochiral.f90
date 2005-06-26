@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.2 2004-06-12 06:07:37 brandenb Exp $
+! $Id: nochiral.f90,v 1.3 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -20,12 +20,14 @@ module Chiral
 
   implicit none
 
+  include 'chiral.inc'
+
   integer :: dummy           ! We cannot define empty namelists
   namelist /chiral_init_pars/ dummy
   namelist /chiral_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_XX_chiralmax=0, i_YY_chiralmax=0
+  integer :: idiag_XX_chiralmax=0, idiag_YY_chiralmax=0
 
   contains
 
@@ -50,7 +52,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.2 2004-06-12 06:07:37 brandenb Exp $")
+           "$Id: nochiral.f90,v 1.3 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************
@@ -66,7 +68,7 @@ module Chiral
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !   
-      if(ip==0) print*,'f=',f
+      if(NO_WARN) print*,'f=',f
     endsubroutine initialize_chiral
 !***********************************************************************
     subroutine init_chiral(f,xx,yy,zz)
@@ -78,10 +80,48 @@ module Chiral
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
+      if(NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_chiral
 !***********************************************************************
-    subroutine dXY_chiral_dt(f,df,uu)
+    subroutine pencil_criteria_chiral()
+! 
+!  All pencils that the Chiral module depends on are specified here.
+! 
+!  21-11-04/anders: coded
+!
+    endsubroutine pencil_criteria_chiral
+!***********************************************************************
+    subroutine pencil_interdep_chiral(lpencil_in)
+!       
+!  Interdependency among pencils provided by the Chiral module
+!  is specified here.
+!
+!  21-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+!
+    endsubroutine pencil_interdep_chiral
+!***********************************************************************
+    subroutine calc_pencils_chiral(f,p)
+!       
+!  Calculate Chiral pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!   
+!  21-11-04/anders: coded
+!
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f,p
+!
+      if (NO_WARN) print*, f, p  !(keep compiler quiet)
+!   
+    endsubroutine calc_pencils_chiral
+!***********************************************************************
+    subroutine dXY_chiral_dt(f,df,p)
 !
 !  passive scalar evolution
 !  calculate dc/dt=-uu.gcc + pscaler_diff*[del2cc + glnrho.gcc]
@@ -90,12 +130,43 @@ module Chiral
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu
+      type (pencil_case) :: p
 !
-      intent(in)  :: f,df,uu
+      intent(in)  :: f,df,p
 !
-      if(ip==0) print*,f,df,uu
+      if(NO_WARN) print*,f,df,p
     endsubroutine dXY_chiral_dt
+!***********************************************************************
+    subroutine read_chiral_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_chiral_init_pars
+!***********************************************************************
+    subroutine write_chiral_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine write_chiral_init_pars
+!***********************************************************************
+    subroutine read_chiral_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat) .and. (NO_WARN)) print*,iostat
+      if (NO_WARN) print*,unit
+                                                                                                   
+    endsubroutine read_chiral_run_pars
+!***********************************************************************
+    subroutine write_chiral_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      if (NO_WARN) print*,unit
+    endsubroutine write_chiral_run_pars
 !***********************************************************************
     subroutine rprint_chiral(lreset,lwrite)
 !
@@ -113,15 +184,15 @@ module Chiral
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_XX_chiralmax=0
-        i_YY_chiralmax=0
+        idiag_XX_chiralmax=0
+        idiag_YY_chiralmax=0
       endif
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_XX_chiralmax=',i_XX_chiralmax
-        write(3,*) 'i_YY_chiralmax=',i_YY_chiralmax
+        write(3,*) 'i_XX_chiralmax=',idiag_XX_chiralmax
+        write(3,*) 'i_YY_chiralmax=',idiag_YY_chiralmax
         write(3,*) 'iXX_chiral=',iXX_chiral
         write(3,*) 'iYY_chiral=',iYY_chiral
       endif

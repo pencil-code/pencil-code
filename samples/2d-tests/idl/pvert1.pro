@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   11-Nov-2001
-;;;  $Id: pvert1.pro,v 1.1 2004-04-07 10:44:08 dobler Exp $
+;;;  $Id: pvert1.pro,v 1.2 2005-06-26 17:34:29 eos_merger_tony Exp $
 ;;;
 ;;;  Description:
 ;;;    Plot vertical profiles of uz, lnrho and entropy.

@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.20 2005-06-19 05:15:45 brandenb Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.21 2005-06-26 17:34:13 eos_merger_tony Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -21,6 +21,8 @@ module Hydro
 
   implicit none
 
+  include 'hydro.inc'
+
   ! init parameters
   real :: ampluu=0., widthuu=.1, urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
@@ -36,7 +38,6 @@ module Hydro
        Omega,initpower
 
   ! run parameters
-!ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,wdamp=0.2
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
@@ -44,7 +45,6 @@ module Hydro
 ! geodynamo
 !       original line replaced and split in two
   namelist /hydro_run_pars/ &
-       nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym
@@ -57,14 +57,15 @@ module Hydro
 !       tau_damp_ruxm,tau_damp_ruym
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
-  integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
-  integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
-  integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
-  integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
-  integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
-  integer :: i_Marms=0,i_Mamax=0
-  integer :: i_divu2m=0,i_epsK=0
+  integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
+  integer :: idiag_urms=0,idiag_umax=0,idiag_orms=0,idiag_omax=0
+  integer :: idiag_ux2m=0, idiag_uy2m=0, idiag_uz2m=0
+  integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0
+  integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0,idiag_umy=0
+  integer :: idiag_umz=0
+  integer :: idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
+  integer :: idiag_Marms=0,idiag_Mamax=0
+  integer :: idiag_divu2m=0,idiag_epsK=0
 
   contains
 
@@ -101,7 +102,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.20 2005-06-19 05:15:45 brandenb Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.21 2005-06-26 17:34:13 eos_merger_tony Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -148,6 +149,7 @@ module Hydro
       use Mpicomm, only: stop_it
       use Sub
       use Global
+      use General
       use Gravity
       use Initcond
 !
@@ -311,7 +313,7 @@ module Hydro
         endif
       endif
 !
-!     if (ip==0) print*,yy,zz !(keep compiler from complaining)
+!     if (NO_WARN) print*,yy,zz !(keep compiler from complaining)
     endsubroutine init_uu
 !***********************************************************************
     subroutine duu_dt(f,df,uu,glnrho,divS,rho1,u2,uij,bij,shock,gshock)
@@ -368,66 +370,73 @@ module Hydro
 !
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
-        if (i_urms/=0) call sum_mn_name(u2,i_urms,lsqrt=.true.)
-        if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
-        if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
-        if (i_um2/=0) call max_mn_name(u2,i_um2)
-        if (i_divu2m/=0) call sum_mn_name(divS**2,i_divu2m)
-        if (i_ux2m/=0) then
+        if (idiag_urms/=0) call sum_mn_name(u2,idiag_urms,lsqrt=.true.)
+        if (idiag_umax/=0) call max_mn_name(u2,idiag_umax,lsqrt=.true.)
+        if (idiag_u2m/=0) call sum_mn_name(u2,idiag_u2m)
+        if (idiag_um2/=0) call max_mn_name(u2,idiag_um2)
+        if (idiag_divu2m/=0) call sum_mn_name(divS**2,idiag_divu2m)
+        if (idiag_ux2m/=0) then
            ux2 = uu(:,1)*uu(:,1)
-           call sum_mn_name(ux2,i_ux2m)
+           call sum_mn_name(ux2,idiag_ux2m)
         endif
-        if (i_uy2m/=0) then
+        if (idiag_uy2m/=0) then
            uy2 = uu(:,2)*uu(:,2)
-           call sum_mn_name(uy2,i_uy2m)
+           call sum_mn_name(uy2,idiag_uy2m)
         endif
-        if (i_uz2m/=0) then
+        if (idiag_uz2m/=0) then
            uz2 = uu(:,3)*uu(:,3)
-           call sum_mn_name(uz2,i_uz2m)
+           call sum_mn_name(uz2,idiag_uz2m)
         endif
 !
 !  mean heating term
 !
-        if (i_epsK/=0) then
+        if (idiag_epsK/=0) then
           call multm2_mn(sij,sij2)
-          call sum_mn_name(sij2,i_epsK)
+          call sum_mn_name(sij2,idiag_epsK)
         endif
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (i_uxmz/=0.or.i_uxmxy/=0) ux=uu(:,1)
-        if (i_uymz/=0.or.i_uymxy/=0) uy=uu(:,2)
-        if (i_uzmz/=0.or.i_uzmxy/=0) uz=uu(:,3)
-        if (i_uxmz/=0) call xysum_mn_name_z(ux,i_uxmz)
-        if (i_uymz/=0) call xysum_mn_name_z(uy,i_uymz)
-        if (i_uzmz/=0) call xysum_mn_name_z(uz,i_uzmz)
-        if (i_uxmxy/=0) call zsum_mn_name_xy(ux,i_uxmxy)
-        if (i_uymxy/=0) call zsum_mn_name_xy(uy,i_uymxy)
-        if (i_uzmxy/=0) call zsum_mn_name_xy(uz,i_uzmxy)
+        if (idiag_uxmz/=0.or.idiag_uxmxy/=0) ux=uu(:,1)
+        if (idiag_uymz/=0.or.idiag_uymxy/=0) uy=uu(:,2)
+        if (idiag_uzmz/=0.or.idiag_uzmxy/=0) uz=uu(:,3)
+        if (idiag_uxmz/=0) call xysum_mn_name_z(ux,idiag_uxmz)
+        if (idiag_uymz/=0) call xysum_mn_name_z(uy,idiag_uymz)
+        if (idiag_uzmz/=0) call xysum_mn_name_z(uz,idiag_uzmz)
+        if (idiag_uxmxy/=0) call zsum_mn_name_xy(ux,idiag_uxmxy)
+        if (idiag_uymxy/=0) call zsum_mn_name_xy(uy,idiag_uymxy)
+        if (idiag_uzmxy/=0) call zsum_mn_name_xy(uz,idiag_uzmxy)
         !
         !  mean momenta
         !
-        if (i_ruxm/=0) then; ux=uu(:,1); call sum_mn_name(ux,i_ruxm); endif
-        if (i_ruym/=0) then; uy=uu(:,2); call sum_mn_name(uy,i_ruym); endif
-        if (i_ruzm/=0) then; uz=uu(:,3); call sum_mn_name(uz,i_ruzm); endif
+        if (idiag_ruxm/=0) then
+          ux=uu(:,1); call sum_mn_name(ux,idiag_ruxm)
+        endif
+        if (idiag_ruym/=0) then
+          uy=uu(:,2); call sum_mn_name(uy,idiag_ruym)
+        endif
+        if (idiag_ruzm/=0) then
+          uz=uu(:,3); call sum_mn_name(uz,idiag_ruzm)
+        endif
         !
         !  things related to vorticity
         !
-        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0) then
+        if (idiag_oum/=0 .or. idiag_o2m/=0 .or. idiag_omax/=0 &
+          .or. idiag_orms/=0) then
           oo(:,1)=Sij(:,3,2)-Sij(:,2,3)
           oo(:,2)=Sij(:,1,3)-Sij(:,3,1)
           oo(:,3)=Sij(:,2,1)-Sij(:,1,2)
           !
-          if (i_oum/=0) then
+          if (idiag_oum/=0) then
             call dot_mn(oo,uu,ou)
-            call sum_mn_name(ou,i_oum)
+            call sum_mn_name(ou,idiag_oum)
           endif
           !
-          if (i_orms/=0.or.i_omax/=0.or.i_o2m/=0) then
+          if (idiag_orms/=0.or.idiag_omax/=0.or.idiag_o2m/=0) then
             call dot2_mn(oo,o2)
-            if(i_orms/=0) call sum_mn_name(o2,i_orms,lsqrt=.true.)
-            if(i_omax/=0) call max_mn_name(o2,i_omax,lsqrt=.true.)
-            if(i_o2m/=0)  call sum_mn_name(o2,i_o2m)
+            if(idiag_orms/=0) call sum_mn_name(o2,idiag_orms,lsqrt=.true.)
+            if(idiag_omax/=0) call max_mn_name(o2,idiag_omax,lsqrt=.true.)
+            if(idiag_o2m/=0)  call sum_mn_name(o2,idiag_o2m)
           endif
         endif
       endif
@@ -440,6 +449,48 @@ module Hydro
       gshock=0.
 !
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine read_hydro_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=hydro_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=hydro_init_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_hydro_init_pars
+!***********************************************************************
+    subroutine write_hydro_init_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=hydro_init_pars)
+                                                                                                   
+    endsubroutine write_hydro_init_pars
+!***********************************************************************
+    subroutine read_hydro_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+                                                                                                   
+      if (present(iostat)) then
+        read(unit,NML=hydro_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=hydro_run_pars,ERR=99)
+      endif
+                                                                                                   
+                                                                                                   
+99    return
+    endsubroutine read_hydro_run_pars
+!***********************************************************************
+    subroutine write_hydro_run_pars(unit)
+      integer, intent(in) :: unit
+                                                                                                   
+      write(unit,NML=hydro_run_pars)
+                                                                                                   
+    endsubroutine write_hydro_run_pars
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
@@ -462,93 +513,93 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
-        i_urms=0; i_umax=0; i_orms=0; i_omax=0
-        i_ruxm=0; i_ruym=0; i_ruzm=0
-        i_ux2m=0; i_uy2m=0; i_uz2m=0
-        i_umx=0; i_umy=0; i_umz=0
-        i_Marms=0; i_Mamax=0
-        i_divu2m=0; i_epsK=0
+        idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
+        idiag_urms=0; idiag_umax=0; idiag_orms=0; idiag_omax=0
+        idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0
+        idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
+        idiag_umx=0; idiag_umy=0; idiag_umz=0
+        idiag_Marms=0; idiag_Mamax=0
+        idiag_divu2m=0; idiag_epsK=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'u2m',i_u2m)
-        call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
-        call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
-        call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
-        call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
-        call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
-        call parse_name(iname,cname(iname),cform(iname),'ux2m',i_ux2m)
-        call parse_name(iname,cname(iname),cform(iname),'uy2m',i_uy2m)
-        call parse_name(iname,cname(iname),cform(iname),'uz2m',i_uz2m)
-        call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
-        call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
-        call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
-        call parse_name(iname,cname(iname),cform(iname),'ruym',i_ruym)
-        call parse_name(iname,cname(iname),cform(iname),'ruzm',i_ruzm)
-        call parse_name(iname,cname(iname),cform(iname),'umx',i_umx)
-        call parse_name(iname,cname(iname),cform(iname),'umy',i_umy)
-        call parse_name(iname,cname(iname),cform(iname),'umz',i_umz)
-        call parse_name(iname,cname(iname),cform(iname),'Marms',i_Marms)
-        call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
-        call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
-        call parse_name(iname,cname(iname),cform(iname),'epsK',i_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'u2m',idiag_u2m)
+        call parse_name(iname,cname(iname),cform(iname),'um2',idiag_um2)
+        call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
+        call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
+        call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
+        call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
+        call parse_name(iname,cname(iname),cform(iname),'ux2m',idiag_ux2m)
+        call parse_name(iname,cname(iname),cform(iname),'uy2m',idiag_uy2m)
+        call parse_name(iname,cname(iname),cform(iname),'uz2m',idiag_uz2m)
+        call parse_name(iname,cname(iname),cform(iname),'orms',idiag_orms)
+        call parse_name(iname,cname(iname),cform(iname),'omax',idiag_omax)
+        call parse_name(iname,cname(iname),cform(iname),'ruxm',idiag_ruxm)
+        call parse_name(iname,cname(iname),cform(iname),'ruym',idiag_ruym)
+        call parse_name(iname,cname(iname),cform(iname),'ruzm',idiag_ruzm)
+        call parse_name(iname,cname(iname),cform(iname),'umx',idiag_umx)
+        call parse_name(iname,cname(iname),cform(iname),'umy',idiag_umy)
+        call parse_name(iname,cname(iname),cform(iname),'umz',idiag_umz)
+        call parse_name(iname,cname(iname),cform(iname),'Marms',idiag_Marms)
+        call parse_name(iname,cname(iname),cform(iname),'Mamax',idiag_Mamax)
+        call parse_name(iname,cname(iname),cform(iname),'divu2m',idiag_divu2m)
+        call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
       enddo
 !
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',i_uxmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',i_uymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',i_uzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',idiag_uymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
       enddo
 !
 !  check for those quantities for which we want z-averages
 !
       do ixy=1,nnamexy
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',i_uxmxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',i_uymxy)
-        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',i_uzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
-        write(3,*) 'i_u2m=',i_u2m
-        write(3,*) 'i_um2=',i_um2
-        write(3,*) 'i_o2m=',i_o2m
-        write(3,*) 'i_oum=',i_oum
-        write(3,*) 'i_urms=',i_urms
-        write(3,*) 'i_umax=',i_umax
-        write(3,*) 'i_ux2m=',i_ux2m
-        write(3,*) 'i_uy2m=',i_uy2m
-        write(3,*) 'i_uz2m=',i_uz2m
-        write(3,*) 'i_orms=',i_orms
-        write(3,*) 'i_omax=',i_omax
-        write(3,*) 'i_ruxm=',i_ruxm
-        write(3,*) 'i_ruym=',i_ruym
-        write(3,*) 'i_ruzm=',i_ruzm
-        write(3,*) 'i_umx=',i_umx
-        write(3,*) 'i_umy=',i_umy
-        write(3,*) 'i_umz=',i_umz
-        write(3,*) 'i_Marms=',i_Marms
-        write(3,*) 'i_Mamax=',i_Mamax
-        write(3,*) 'i_divu2m=',i_divu2m
-        write(3,*) 'i_epsK=',i_epsK
+        write(3,*) 'i_u2m=',idiag_u2m
+        write(3,*) 'i_um2=',idiag_um2
+        write(3,*) 'i_o2m=',idiag_o2m
+        write(3,*) 'i_oum=',idiag_oum
+        write(3,*) 'i_urms=',idiag_urms
+        write(3,*) 'i_umax=',idiag_umax
+        write(3,*) 'i_ux2m=',idiag_ux2m
+        write(3,*) 'i_uy2m=',idiag_uy2m
+        write(3,*) 'i_uz2m=',idiag_uz2m
+        write(3,*) 'i_orms=',idiag_orms
+        write(3,*) 'i_omax=',idiag_omax
+        write(3,*) 'i_ruxm=',idiag_ruxm
+        write(3,*) 'i_ruym=',idiag_ruym
+        write(3,*) 'i_ruzm=',idiag_ruzm
+        write(3,*) 'i_umx=',idiag_umx
+        write(3,*) 'i_umy=',idiag_umy
+        write(3,*) 'i_umz=',idiag_umz
+        write(3,*) 'i_Marms=',idiag_Marms
+        write(3,*) 'i_Mamax=',idiag_Mamax
+        write(3,*) 'i_divu2m=',idiag_divu2m
+        write(3,*) 'i_epsK=',idiag_epsK
+        write(3,*) 'i_uxmz=',idiag_uxmz
+        write(3,*) 'i_uymz=',idiag_uymz
+        write(3,*) 'i_uzmz=',idiag_uzmz
+        write(3,*) 'i_uxmxy=',idiag_uxmxy
+        write(3,*) 'i_uymxy=',idiag_uymxy
+        write(3,*) 'i_uzmxy=',idiag_uzmxy
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy
         write(3,*) 'iuz=',iuz
-        write(3,*) 'i_uxmz=',i_uxmz
-        write(3,*) 'i_uymz=',i_uymz
-        write(3,*) 'i_uzmz=',i_uzmz
-        write(3,*) 'i_uxmxy=',i_uxmxy
-        write(3,*) 'i_uymxy=',i_uymxy
-        write(3,*) 'i_uzmxy=',i_uzmxy
       endif
 !
     endsubroutine rprint_hydro
@@ -573,8 +624,8 @@ module Hydro
 !  The uymxy and uzmxy must have been calculated,
 !  so they are present on the root processor.
 !
-        if (i_umx/=0) then
-          if(i_uymxy==0.or.i_uzmxy==0) then
+        if (idiag_umx/=0) then
+          if(idiag_uymxy==0.or.idiag_uzmxy==0) then
             if(first) print*,"calc_mflow:                WARNING"
             if(first) print*, &
                     "calc_mflow: NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
@@ -583,19 +634,19 @@ module Hydro
             umx=0.
           else
             do l=1,nx
-              uxmx(l)=sum(fnamexy(l,:,:,i_uxmxy))/(ny*nprocy)
-              uymx(l)=sum(fnamexy(l,:,:,i_uymxy))/(ny*nprocy)
-              uzmx(l)=sum(fnamexy(l,:,:,i_uzmxy))/(ny*nprocy)
+              uxmx(l)=sum(fnamexy(l,:,:,idiag_uxmxy))/(ny*nprocy)
+              uymx(l)=sum(fnamexy(l,:,:,idiag_uymxy))/(ny*nprocy)
+              uzmx(l)=sum(fnamexy(l,:,:,idiag_uzmxy))/(ny*nprocy)
             enddo
             umx=sqrt(sum(uxmx**2+uymx**2+uzmx**2)/nx)
           endif
-          call save_name(umx,i_umx)
+          call save_name(umx,idiag_umx)
         endif
 !
 !  similarly for umy
 !
-        if (i_umy/=0) then
-          if(i_uxmxy==0.or.i_uzmxy==0) then
+        if (idiag_umy/=0) then
+          if(idiag_uxmxy==0.or.idiag_uzmxy==0) then
             if(first) print*,"calc_mflow:                WARNING"
             if(first) print*, &
                     "calc_mflow: NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
@@ -605,22 +656,22 @@ module Hydro
           else
             do j=1,nprocy
             do m=1,ny
-              uxmy(m,j)=sum(fnamexy(:,m,j,i_uxmxy))/nx
-              uymy(m,j)=sum(fnamexy(:,m,j,i_uymxy))/nx
-              uzmy(m,j)=sum(fnamexy(:,m,j,i_uzmxy))/nx
+              uxmy(m,j)=sum(fnamexy(:,m,j,idiag_uxmxy))/nx
+              uymy(m,j)=sum(fnamexy(:,m,j,idiag_uymxy))/nx
+              uzmy(m,j)=sum(fnamexy(:,m,j,idiag_uzmxy))/nx
             enddo
             enddo
             umy=sqrt(sum(uxmy**2+uymy**2+uzmy**2)/(ny*nprocy))
           endif
-          call save_name(umy,i_umy)
+          call save_name(umy,idiag_umy)
         endif
 !
 !  Magnetic energy in horizontally averaged field
 !  The uxmz and uymz must have been calculated,
 !  so they are present on the root processor.
 !
-        if (i_umz/=0) then
-          if(i_uxmz==0.or.i_uymz==0.or.i_uzmz==0) then
+        if (idiag_umz/=0) then
+          if(idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
             if(first) print*,"calc_mflow:               WARNING"
             if(first) print*, &
                     "calc_mflow: NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
@@ -630,11 +681,11 @@ module Hydro
                     "calc_mflow:       We proceed, but you'll get umz=0"
             umz=0.
           else
-            umz=sqrt(sum(fnamez(:,:,i_uxmz)**2 &
-                        +fnamez(:,:,i_uymz)**2 &
-                        +fnamez(:,:,i_uzmz)**2)/(nz*nprocz))
+            umz=sqrt(sum(fnamez(:,:,idiag_uxmz)**2 &
+                        +fnamez(:,:,idiag_uymz)**2 &
+                        +fnamez(:,:,idiag_uzmz)**2)/(nz*nprocz))
           endif
-          call save_name(umz,i_umz)
+          call save_name(umz,idiag_umz)
         endif
 !
       first = .false.

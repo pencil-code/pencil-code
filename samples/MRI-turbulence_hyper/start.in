@@ -1,0 +1,37 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.2 2005-06-26 17:34:29 eos_merger_tony Exp $',
+  xyz0  =  -3.14,  -3.14,  -3.14
+  Lxyz  =   6.28,   6.28,   6.28
+  lperi =      T,      T,      T
+  ip=14, lwrite_ic=T
+/
+&eos_init_pars
+  gamma=1., rho0=1.
+/
+&hydro_init_pars
+  inituu='gaussian-noise', ampluu=1e-3
+  Omega=0.2
+/
+&density_init_pars
+  ldensity_nolog=T
+/
+&grav_init_pars
+  gravx_profile='sinusoidal', kx_gg=1.0
+/
+&magnetic_init_pars
+  initaa='sinxsinz', amplaa=0.2, kz_aa=1.
+/
+&dustvelocity_init_pars
+  inituud='zero', deltamd=1.
+/
+&dustdensity_init_pars
+  initnd='const_nd', nd_const=1.
+  ldustdensity_log=F
+/
+&shear_init_pars
+  qshear=1.5
+/

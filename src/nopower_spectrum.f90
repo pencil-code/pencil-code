@@ -1,15 +1,17 @@
-! $Id: nopower_spectrum.f90,v 1.9 2004-06-01 10:27:44 nilshau Exp $
+! $Id: nopower_spectrum.f90,v 1.10 2005-06-26 17:34:13 eos_merger_tony Exp $
 !
 module  power_spectrum
   !
   use Cdata
   !
   implicit none
+
+  include 'power_spectrum.inc'
   !
   contains
 
 !***********************************************************************
-    subroutine power(f,sp)
+  subroutine power(f,sp)
 !
   real, dimension (mx,my,mz,mvar+maux) :: f
   character (len=1) :: sp
@@ -65,4 +67,4 @@ module  power_spectrum
   endsubroutine pdf
 !***********************************************************************
 
-end module power_spectrum
+endmodule power_spectrum

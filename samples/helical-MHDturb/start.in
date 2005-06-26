@@ -3,15 +3,17 @@
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.20 2004-07-24 04:52:13 brandenb Exp $',
+  cvsid='$Id: start.in,v 1.21 2005-06-26 17:34:36 eos_merger_tony Exp $',
   random_gen='system'
   random_gen='min_std'
   random_gen='nr_f90'
 /
+&eos_init_pars
+  gamma=1.
+/
 &hydro_init_pars
 /
 &density_init_pars
-  gamma=1.
 /
 &magnetic_init_pars
   initaa='Beltrami-y', amplaa=-0.01  !(+ve amplaa means now positive helicity)
