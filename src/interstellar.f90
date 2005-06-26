@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.102 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: interstellar.f90,v 1.103 2005-06-26 20:24:20 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -35,8 +35,6 @@ module Interstellar
 !
 !  Save space for last SNI time
 !
-  integer, parameter :: ninterstellarsave=1
-  real, dimension(ninterstellarsave) :: interstellarsave
   real :: t_next_SNI=0.0
   real :: t_interval_SNI=impossible
 !
@@ -262,7 +260,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.102 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: interstellar.f90,v 1.103 2005-06-26 20:24:20 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -293,31 +291,6 @@ module Interstellar
       logical :: lstarting
       logical :: exist
       real :: mu
-!
-!ajwm  Commented as this is now handled by the Persist module.
-!ajwm      if (first) then
-!ajwm         if (.not. lstarting) then
-!ajwm            call inpui(trim(directory)//'/seed.dat',seed,nseed)
-!ajwm            if (lroot.and.ip<12) then
-!ajwm               print*, 'initialize_interstellar: reading seed file'
-!ajwm               print*, 'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
-!ajwm            endif
-!ajwm            call random_seed_wrapper(put=seed(1:nseed))
-!ajwm         endif
-!ajwm!
-!ajwm! Read randomly generated time for next SNI used to maintain the 
-!ajwm! average SNI rate between runs.
-!ajwm!
-!ajwm         inquire(file=trim(directory)//'/interstellar.dat',exist=exist)
-!ajwm         if (exist) then 
-!ajwm            if (lroot.and.ip<12) print*, 'initialize_interstellar: read interstellar.dat'
-!ajwm            call inpup(trim(directory)//'/interstellar.dat',  &
-!ajwm                 interstellarsave,ninterstellarsave)
-!ajwm            if (lroot.and.ip<12) print*, 'initialize_interstellar: interstellarsave', &
-!ajwm                 interstellarsave(1)
-!ajwm                 t_next_SNI=interstellarsave(1)
-!ajwm         endif
-!ajwm      endif
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -424,7 +397,6 @@ module Interstellar
       if (ltestSN) then
         t_interval_SNI=1.E10
         t_next_SNI=0.
-        interstellarsave(1)=t_next_SNI
       endif
 !
       if (lroot) print*,"initialize_interstellar: t_next_SNI=",t_next_SNI
@@ -788,7 +760,6 @@ module Interstellar
           call random_number_wrapper(franSN)   
           t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
           if (lroot.and.ip<20) print*,'check_SNI: Next SNI at time = ',t_next_SNI
-          interstellarsave(1)=t_next_SNI
        l_SNI=.true.
       endif
     endif

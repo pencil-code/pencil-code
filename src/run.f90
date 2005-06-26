@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.199 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: run.f90,v 1.200 2005-06-26 20:24:20 mee Exp $
 !
 !***********************************************************************
       program run
@@ -28,7 +28,7 @@
         use Filter
         use Power_spectrum
         use Timeavg
-        use Interstellar
+        use Interstellar, only: check_SN
         use Shear
         use Forcing
         use EquationOfState
@@ -66,7 +66,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.199 2005-06-26 17:34:13 eos_merger_tony Exp $")
+             "$Id: run.f90,v 1.200 2005-06-26 20:24:20 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -500,22 +500,6 @@
 !
         if(save_lastsnap) then
           if(dspec /= impossible) call powersnap(f,.true.)
-        endif
-!
-!  Write seed parameters (only if forcing is turned on)
-!  Disable this if save_lastsnap=F (because this is used mainly for
-!  testing purposes, so we want the run to be reproducible.
-!ajwm Commented as this is now handled by the Persist code
-!ajwm        if ((lforcing .or. linterstellar) .and. save_lastsnap) then
-!ajwm          call random_seed_wrapper(get=seed(1:nseed))
-!ajwm          call outpui(trim(directory)//'/seed.dat',seed,nseed)
-!ajwm        endif
-!
-!  Write interstellar parameters (that must be saved between runs)
-!
-        if (linterstellar) then
-          call outpup(trim(directory)//'/interstellar.dat',  &
-                                   interstellarsave,ninterstellarsave)
         endif
 !
 !  Print wall clock time and time per step and processo  for diagnostic purposes

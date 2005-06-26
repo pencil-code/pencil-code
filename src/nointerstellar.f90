@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nointerstellar.f90,v 1.15 2005-06-26 20:24:20 mee Exp $
 !
 !  Dummy module
 !
@@ -18,9 +18,6 @@ module Interstellar
   implicit none
 
   include 'interstellar.inc'
-
-  integer, parameter :: ninterstellarsave=1
-  real, dimension(ninterstellarsave) :: interstellarsave
 
   !namelist /interstellar_init_pars/ dummy
   !namelist /interstellar_run_pars/ dummy
@@ -44,7 +41,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: nointerstellar.f90,v 1.15 2005-06-26 20:24:20 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

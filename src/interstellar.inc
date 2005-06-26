@@ -10,5 +10,3 @@
   public :: calc_heat_cool_interstellar, check_SN
   public :: input_persistent_interstellar, output_persistent_interstellar
 
-!ajwm SHOULDN'T BE SHARED
-  public :: interstellarsave, ninterstellarsave
