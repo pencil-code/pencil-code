@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.109 2005-06-26 17:34:12 eos_merger_tony Exp $
+### $Id: Makefile.src,v 1.110 2005-06-26 22:59:43 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -609,7 +609,7 @@ $(PSCALAR).o:      pscalar.inc        $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o 
 $(CHIRAL).o:       chiral.inc         $(CHIRAL).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTVELOCITY).o: dustvelocity.inc   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
 $(DUSTDENSITY).o:  dustdensity.inc    $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
-$(TESTFIELD).o:     $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o $(IO).o
+$(TESTFIELD).o:    testfield.h        $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o $(IO).o
 $(PARTICLES).o:    particles.inc      $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM).o sub.o
 $(PARTICLES_SUB).o:                   $(PARTICLES_SUB).f90 cdata.o $(GLOBAL).o
 $(INTERSTELLAR).o: interstellar.inc $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(EOS).o

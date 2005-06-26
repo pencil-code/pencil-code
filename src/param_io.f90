@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.201 2005-06-26 17:34:13 eos_merger_tony Exp $ 
+! $Id: param_io.f90,v 1.202 2005-06-26 22:59:43 mee Exp $ 
 
 module Param_IO
 
@@ -199,9 +199,9 @@ module Param_IO
       call read_magnetic_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('magnetic_init_pars',ierr)
 
-!merge_anders: not in eos format
-      label='testfield_init_pars'
-      if (ltestfield   ) read(1,NML=testfield_init_pars    ,ERR=99, IOSTAT=ierr)
+      call sgi_fix(lsgifix,1,'start.in')
+      call read_testfield_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('testfield_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
       call read_radiation_init_pars(1,IOSTAT=ierr)
@@ -385,7 +385,7 @@ module Param_IO
         call write_gravity_init_pars(unit)
         call write_entropy_init_pars(unit)
         call write_magnetic_init_pars(unit)
-        if (ltestfield   ) write(unit,NML=testfield_init_pars   )
+        call write_testfield_init_pars(unit)
         call write_radiation_init_pars(unit)
         call write_pscalar_init_pars(unit)
         call write_chiral_init_pars(unit)
@@ -481,6 +481,10 @@ module Param_IO
       if (ierr.ne.0) call sample_runpars('magnetic_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
+      call read_testfield_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('testfield_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
       call read_radiation_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('radiation_run_pars',ierr)
 
@@ -491,8 +495,6 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       call read_chiral_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('chiral_run_pars',ierr)
-
-      if (ltestfield   ) read(1,NML=testfield_run_pars    ,ERR=99, IOSTAT=ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
       call read_dustvelocity_run_pars(1,IOSTAT=ierr)
@@ -784,7 +786,7 @@ module Param_IO
         call write_gravity_run_pars(unit)
         call write_entropy_run_pars(unit)
         call write_magnetic_run_pars(unit)
-        if (ltestfield   ) write(unit,NML=testfield_run_pars   )
+        call write_testfield_run_pars(unit)
         call write_radiation_run_pars(unit)
         call write_pscalar_run_pars(unit)
         call write_chiral_run_pars(unit)
@@ -940,7 +942,7 @@ module Param_IO
         call write_gravity_init_pars(1)
         call write_entropy_init_pars(1)
         call write_magnetic_init_pars(1)
-        if (ltestfield   ) write(1,NML=testfield_init_pars   )
+        call write_testfield_init_pars(1)
         call write_radiation_init_pars(1)
         call write_pscalar_init_pars(1)
         call write_chiral_init_pars(1)
@@ -979,7 +981,7 @@ module Param_IO
         call read_gravity_init_pars(1)
         call read_entropy_init_pars(1)
         call read_magnetic_init_pars(1)
-        if (ltestfield   ) read(1,NML=testfield_init_pars   )
+        call read_testfield_init_pars(1)
         call read_radiation_init_pars(1)
         call read_pscalar_init_pars(1)
         call read_chiral_init_pars(1)
@@ -1019,7 +1021,7 @@ module Param_IO
         call write_gravity_run_pars(1)
         call write_entropy_run_pars(1)
         call write_magnetic_run_pars(1)
-        if (ltestfield   ) write(1,NML=testfield_run_pars   )
+        call write_testfield_run_pars(1)
         call write_radiation_run_pars(1)
         call write_pscalar_run_pars(1)
         call write_chiral_run_pars(1)

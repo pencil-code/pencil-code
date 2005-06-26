@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.15 2005-06-26 22:41:24 mee Exp $
+! $Id: testfield.f90,v 1.16 2005-06-26 22:59:43 mee Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -105,7 +105,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.15 2005-06-26 22:41:24 mee Exp $")
+           "$Id: testfield.f90,v 1.16 2005-06-26 22:59:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -214,6 +214,46 @@ module Testfield
       logical, dimension(npencils) :: lpencil_in
 !
     endsubroutine pencil_interdep_testfield
+!***********************************************************************
+    subroutine read_testfield_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=testfield_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=testfield_init_pars,ERR=99)
+      endif
+
+99    return
+    endsubroutine read_testfield_init_pars
+!***********************************************************************
+    subroutine write_testfield_init_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=testfield_init_pars)
+
+    endsubroutine write_testfield_init_pars
+!***********************************************************************
+    subroutine read_testfield_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+
+      if (present(iostat)) then
+        read(unit,NML=testfield_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=testfield_run_pars,ERR=99)
+      endif
+
+99    return
+    endsubroutine read_testfield_run_pars
+!***********************************************************************
+    subroutine write_testfield_run_pars(unit)
+      integer, intent(in) :: unit
+
+      write(unit,NML=eos_run_pars)
+
+    endsubroutine write_testfield_run_pars
 !***********************************************************************
     subroutine daatest_dt(f,df,p)
 !

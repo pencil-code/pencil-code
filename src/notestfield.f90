@@ -1,4 +1,4 @@
-! $Id: notestfield.f90,v 1.3 2005-06-26 22:41:24 mee Exp $
+! $Id: notestfield.f90,v 1.4 2005-06-26 22:59:43 mee Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -82,6 +82,38 @@ module Testfield
       logical, dimension(npencils) :: lpencil_in
 !
     endsubroutine pencil_interdep_testfield
+!***********************************************************************
+    subroutine read_testfield_init_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat).and.NO_WARN) print*,iostat
+      if (NO_WARN) print*,unit !(keep compiler quiet)
+!
+    endsubroutine read_testfield_init_pars
+!***********************************************************************
+    subroutine write_testfield_init_pars(unit)
+      integer, intent(in) :: unit
+!
+      if (NO_WARN) print*,unit !(keep compiler quiet)
+!
+    endsubroutine write_testfield_init_pars
+!***********************************************************************
+    subroutine read_testfield_run_pars(unit,iostat)
+      integer, intent(in) :: unit
+      integer, intent(inout), optional :: iostat
+!
+      if (present(iostat).and.NO_WARN) print*,iostat
+      if (NO_WARN) print*,unit !(keep compiler quiet)
+!
+    endsubroutine read_testfield_run_pars
+!***********************************************************************
+    subroutine write_testfield_run_pars(unit)
+      integer, intent(in) :: unit
+
+      if (NO_WARN) print*,unit !(keep compiler quiet)
+
+    endsubroutine write_testfield_run_pars
 !***********************************************************************
     subroutine daatest_dt(f,df,p)
 !
