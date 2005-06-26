@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.206 2005-06-07 21:21:28 brandenb Exp $ 
+! $Id: sub.f90,v 1.207 2005-06-26 06:39:15 bingert Exp $ 
 
 module Sub 
 
@@ -662,21 +662,40 @@ module Sub
 !
     endsubroutine dot2_global
 !***********************************************************************
-    subroutine dot2_mn(a,b)
+    subroutine dot2_mn(a,b,fast_sqrt,precise_sqrt)
 !
-!  dot product with itself, to calculate max and rms values of a vector
+!  dot product with itself, to calculate max and rms values of a vector.
+!  FAST_SQRT is only correct for ~1e-18 < |a| < 1e18 (for single precision);
+!  PRECISE_SQRT works for full range.
+!
 !  29-sep-97/axel: coded
 !   1-apr-01/axel: adapted for cache-efficient sub-array formulation
+!  25-jun-05/bing: added optional args for calculating |a|
 !
       use Cdata
 !
       real, dimension (nx,3) :: a
-      real, dimension (nx) :: b
+      real, dimension (nx) :: b,a_max
+      logical, optional :: fast_sqrt,precise_sqrt
+      logical :: fast_sqrt1=.false.,precise_sqrt1=.false.
 !
-      intent(in) :: a
+      intent(in) :: a,fast_sqrt,precise_sqrt
       intent(out) :: b
 !
-      b=a(:,1)**2+a(:,2)**2+a(:,3)**2
+!     ifc treats these variables as SAVE so we need to reset
+      fast_sqrt1=.false.
+      precise_sqrt1=.false.
+      if (present(fast_sqrt)) fast_sqrt1=fast_sqrt
+      if (present(precise_sqrt)) precise_sqrt1=precise_sqrt
+!
+      if (precise_sqrt1) then
+         a_max=maxval(abs(a),dim=2)
+         b=(a(:,1)/a_max)**2+(a(:,2)/a_max)**2+(a(:,3)/a_max)**2
+         b=a_max*sqrt(b)
+      else
+         b=a(:,1)**2+a(:,2)**2+a(:,3)**2
+         if (fast_sqrt1) b=sqrt(b)
+      end if
 !
     endsubroutine dot2_mn
 !***********************************************************************
@@ -3492,13 +3511,13 @@ nameloop: do
 
     endfunction gamma_function
 !***********************************************************************
-    subroutine tensor_diffusion_coef(gecr,ecr_ij,bij,bb,Kperp,Kpara,rhs,llog)
+    subroutine tensor_diffusion_coef(gecr,ecr_ij,bij,bb,vKperp,vKpara,rhs,llog,gvKperp,gvKpara)
 !
 !  calculates tensor diffusion with variable tensor (or constant tensor)
 !  calculates parts common to both variable and constant tensor first
 !  note:ecr=lnecr in the below comment
 !  
-!  vKperp*del2ecr + d_i(vKperp)d_i(gecr) + (vKpara-vKperp) d_i ( n_i n_j d_j
+!  vKperp*del2ecr + d_i(vKperp)d_i(ecr) + (vKpara-vKperp) d_i ( n_i n_j d_j
 !  ecr)
 !      + n_i n_j d_i(ecr)d_j(vKpara-vKperp)
 !   
@@ -3516,22 +3535,26 @@ nameloop: do
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
 !  04-dec-03/snod: converted for evolution of lnecr (=ecr)
 !   9-apr-04/axel: adapted for general purpose tensor diffusion
+!  25-jun-05/bing: 
 !
       use Cdata
 !
       real, dimension (nx,3,3) :: ecr_ij,bij
-      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
-      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
+      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp1,gvKpara1
+      real, dimension (nx) :: tmp,abs_b,b1,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
       real, dimension (nx) :: hhh2,quenchfactor,rhs
-      real :: Kperp,Kpara,limiter_tensordiff=3.
+      real :: limiter_tensordiff=3.
       integer :: i,j,k
-!
       logical, optional :: llog
+      real, optional, dimension (nx,3) :: gvKperp,gvKpara
+!
+      intent(in) :: bb
+      intent(out) :: rhs
 !
 !  calculate unit vector of bb
 !
-      call dot2_mn(bb,b2)
-      b1=1./max(tiny(b2),sqrt(b2))
+      call dot2_mn(bb,abs_b,PRECISE_SQRT=.true.)
+      b1=1./max(tini,abs_b)
       call multsv_mn(b1,bb,bunit)
 !
 !  calculate first H_i
@@ -3580,22 +3603,19 @@ nameloop: do
 !
 !  if variable tensor, add extra terms and add result into decr/dt 
 !
-      vKpara(:)=Kpara
-      vKperp(:)=Kperp
-!
 !  set gvKpara, gvKperp
 !
-      gvKperp(:,:)=0.0
-      gvKpara(:,:)=0.0
+     if (present(gvKpara)) then; gvKpara1=gvKpara; else; gvKpara1=0.; endif
+     if (present(gvKperp)) then; gvKperp1=gvKperp; else; gvKperp1=0.; endif
 !
 !  put d_i ecr d_i vKperp into tmpj
 !
-      call dot_mn(gvKperp,gecr,tmpj)
+      call dot_mn(gvKperp1,gecr,tmpj)
 !
 !  nonuniform conductivities, add terms into tmpj
 !
       do i=1,3
-        tmpi(:)=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
+        tmpi(:)=bunit(:,i)*(gvKpara1(:,i)-gvKperp1(:,i))
         do j=1,3
           tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(i)
         enddo
