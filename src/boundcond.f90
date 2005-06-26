@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.73 2005-04-21 16:53:31 theine Exp $
+! $Id: boundcond.f90,v 1.74 2005-06-26 05:50:37 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -980,7 +980,7 @@ module Boundcond
       integer :: sgn,i,j
 !
       if (topbot /= 'bot') &
-           call stop_it("BC_FORCE_Z: only implemented for lower boundary yet")
+          call stop_it("BC_FORCE_Z: only implemented for lower boundary yet")
 !
       select case (force_lower_bound)
       case ('uxy_sin-cos')
@@ -1223,9 +1223,8 @@ module Boundcond
 !***********************************************************************
      subroutine uu_driver(f)
 ! 
-!    Use of velocity field produced by a program of Boris Gudiksen
-!    Units:  [v] = km /s
-!            [t] = s
+!    Simulated velocity field used as photospherec motions
+!    Use of velocity field produced by Boris Gudiksen
 !
 !    27-mai-04/bing:coded
 !
@@ -1233,18 +1232,17 @@ module Boundcond
        Use Cdata
 
        real, dimension (mx,my,mz,mvar+maux) :: f
-       real, dimension (nx,ny) :: uxd,uyd,uxl,uxr,uyl,uyr
-       integer :: lend,iostat=0,i=0,jpp
+!       real, dimension (nx,ny*nprocy) :: uxd,uyd,uxl,uxr,uyl,uyr
+       real, dimension (200,200) :: uxd,uyd,uxl,uxr,uyl,uyr
+       integer :: lend,iostat=0,i=0,j,k,l
        real :: tl=0.,tr=0.,delta_t
-       
+       real :: driver_nx,driver_ny,driver_dx,driver_dy,driver_dt
        intent (inout) :: f
-       
-!       tl=0.
-!       tr=0.
-       
-! Read the time table
-        if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat .ne. -2) then
-          
+!
+!     Read the time table
+!
+       if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat .ne. -2) then
+!         
           inquire(IOLENGTH=lend) tl
           close (10)
           open (10,file='driver/time_k',form='unformatted',status='unknown',recl=lend,access='direct')
@@ -1256,8 +1254,7 @@ module Boundcond
             read (10,rec=i,iostat=iostat) tl          
             read (10,rec=i+1,iostat=iostat) tr
             if (iostat .ne. 0) then
-              print*,'No more snapshots of velocity field available!!!!'
-              i=0
+              i=1
               delta_t = t*unit_time                  ! EOF is reached => read again
               read (10,rec=i,iostat=iostat) tl          
               read (10,rec=i+1,iostat=iostat) tr
@@ -1267,32 +1264,34 @@ module Boundcond
             endif
           enddo
           close (10)
-          print*,'tmin,t,tmax',tl+delta_t,t*unit_time,tr
-          
+!          
 ! Read velocity field
-          open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nx*ny,access='direct')
+!
+          open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nx*ny*nprocy,access='direct')
           read (10,rec=(2*i-1)) uxl
           read (10,rec=2*i)     uyl
-          
+         
           read (10,rec=2*i+1)   uxr 
           read (10,rec=2*i+2)   uyr
           close (10)       
+       endif
 !      
 !   simple linear interploation between timesteps
-          if (tr .ne. tl) then
-             uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
-             uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl       
-          endif
-       endif
-       
-! Fill the ghost cells and the bottom layer with vel. field
+!       
+       if (tr .ne. tl) then
+          uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
+          uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl       
+       endif     
+!    
+!   Fill the ghost cells and the bottom layer with vel. field
+!
        f(l1:l2,m1:m2,1:n1,iuz) = 0.
-       do jpp=1,n1
-          f(l1:l2,m1:m2,jpp,iux) = uxd(:,:)/1.e5
-          f(l1:l2,m1:m2,jpp,iuy) = uyd(:,:)/1.e5
+!       
+       do j=1,n1
+          f(l1:l2,m1:m2,j,iux) = uxd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
+          f(l1:l2,m1:m2,j,iuy) = uyd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
        enddo
-       if (notanumber(uxd))    call stop_it('uu_driver: NaN`s in vel. field')
-       if (notanumber(uyd))    call stop_it('uu_driver: NaN`s in vel. field')
+       
      endsubroutine uu_driver
 !***********************************************************************
 endmodule Boundcond
