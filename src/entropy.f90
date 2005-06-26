@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.332 2005-04-17 19:24:45 dobler Exp $
+! $Id: entropy.f90,v 1.333 2005-06-26 07:00:15 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -30,7 +30,7 @@ module Entropy
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,Kappa0=0.,Kisotr=0.
-  real :: Kgperp=0.,Kgpara=0.
+  real :: Kgperp=0.,Kgpara=0.,tdown=1,allp=2
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.,T0=1.
@@ -45,7 +45,7 @@ module Entropy
   real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
   real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
-  real :: heat_uniform=0.
+  real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.
   logical :: lturbulent_heat=.false.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
@@ -55,6 +55,23 @@ module Entropy
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',iheatcond='K-const'
+  
+  !
+  ! Parameters for subroutine cool_RTV in SI units (from Cook et Al. 1989)
+  ! 
+  double precision, parameter, dimension (10) :: & 
+       intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /) 
+  double precision, parameter, dimension (9) :: &
+       lnH_1 = (/ -190.884,  -141.165, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
+       B_1   = (/     11.7,      6.15,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)  
+  !
+  ! A second set of parameters for cool_RTV (from interstellar.f90)
+  !
+  double precision, parameter, dimension(7) ::  &
+       intlnT_2 = (/ 5.704,7.601 , 8.987 , 11.513 , 17.504 , 20.723, 24.0 /) 
+  double precision, parameter, dimension(6) ::  &
+       lnH_2 = (/-102.811, -99.01, -111.296, -70.804, -90.934, -80.572 /),   &
+       B_2   = (/    2.0,     1.5,   2.867,  -0.65,   0.5, 0.0 /)
 
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -69,13 +86,14 @@ module Entropy
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,chi_shock,chi,Kappa0,Kisotr,iheatcond, &
-       Kgperp,Kgpara, &
+       Kgperp,Kgpara, cool_RTV, &
        lcalc_heatcond_simple,lcalc_heatcond,lcalc_heatcond_constchi,&
        tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
-       lturbulent_heat, deltaT_poleq, lgaspressuregradient
-
+       lturbulent_heat, deltaT_poleq, lgaspressuregradient, &
+       tdown, allp
+  
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtc=0,i_eth=0,i_ethdivum=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
   integer :: i_dtchi=0
@@ -113,7 +131,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.332 2005-04-17 19:24:45 dobler Exp $")
+           "$Id: entropy.f90,v 1.333 2005-06-26 07:00:15 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -797,7 +815,7 @@ module Entropy
 !
       enddo 
 !      
-    end subroutine shell_ss
+    endsubroutine shell_ss
 !***********************************************************************
     subroutine shell_ss_perturb(pert_TT)
 !
@@ -825,7 +843,7 @@ module Entropy
 !
       endselect
 !
-    end subroutine shell_ss_perturb
+    endsubroutine shell_ss_perturb
 !***********************************************************************
     subroutine ferriere(f)
 !
@@ -1033,8 +1051,8 @@ module Entropy
       real, dimension (nx) :: ugss,uglnrho,divu,rhs
       real, dimension (nx) :: lnrho,ss,rho,rho1,cs2,yH,lnTT,TT1,cp1tilde
       real, dimension (nx) :: ee,shock
+      real, dimension (nx) :: vKpara,vKperp
       real :: zbot,ztop,xi,profile_cor
-!     real :: Kperp,Kpara
       integer :: j,ju
 !
       intent(in)  :: f,uu,glnrho,divu,rho,rho1,lnrho,shock,gshock,bb,bij
@@ -1153,19 +1171,24 @@ module Entropy
       case('chi-const')
          call calc_heatcond_constchi(f,df,rho1,glnrho,gss)
       case ('tensor-diffusion')
-         call g2ij(f,iss,hss)
-         if (pretend_lnTT) then
-           glnTT=gss
-           hlnTT=hss
-         else
-           call g2ij(f,ilnrho,hlnrho)
-           call temperature_hessian(f,hlnrho,hss,hlnTT)
-         endif
-         call tensor_diffusion_coef(glnTT,hlnTT,bij,bb,Kgperp,Kgpara,rhs,llog=.true.)
-         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs
-      case ('magnetic')
-         call calc_heatcond_mpara(f,df,rho1,glnrho,gss,bb,cs2)
-         call calc_heatcond_mperp(f,df,rho1,glnrho,gss,bb,cs2)
+        call g2ij(f,iss,hss)        
+        if (pretend_lnTT) then
+          glnTT=gss
+          hlnTT=hss
+        else
+          call g2ij(f,ilnrho,hlnrho)
+          call temperature_hessian(f,hlnrho,hss,hlnTT)
+        endif
+        vKpara(:) = Kgpara
+        vKperp(:) = Kgperp
+        call tensor_diffusion_coef(glnTT,hlnTT,bij,bb,vKperp,vKpara,rhs,llog=.true.)
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*rho1
+      case ('spitzer')
+        call calc_heatcond_spitzer(f,df,rho1,glnrho,gss,bb,bij,cs2)
+      case ('corona')
+        call calc_heatcond_spitzer(f,df,rho1,glnrho,gss,bb,bij,cs2)
+        call newton_cool(f,df,lnTT,lnrho)
+        call calc_heat_cool_RTV(f,df,lnrho,lnTT)     
       case ('shock')
          call calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
       case default
@@ -1284,160 +1307,6 @@ module Entropy
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
-    subroutine calc_heatcond_mpara(f,df,rho1,glnrho,gss,bb,cs2)
-!
-!  Calculates heat conduction parallel to magnetic field lines     
-!
-!  calculation of    gradient( Kappa0 * T^5/2 * b *( b * gradientT))
-!  where b is the unit vector of magnetic field
-!  See: Solar MHD; Priest 1982
-!
-!  10-feb-04/bing: coded
-!
-      use Sub
-
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: gradcurlaa,allrho,allss
-      real, dimension (nx,3) :: glnrho,gss,glnT,bb
-      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff
-
-      real, dimension (nx,3) :: c1,c2,c3,c4,c5
-      real, dimension (nx) :: tmp
-
-      integer :: i
-
-      glnT = gamma*gss + gamma1*glnrho
-      TT = cs2/gamma1   
-!
-!   unit vector of magnetic field: bb/bb2
-! 
-      call dot2_mn(bb,bb2)
-      do i=1,nx
-         if (bb2(i) < tiny(1.)) then
-            bb2(i)=3*1e-34
-            bb(i,:)=1e-17
-         endif
-      enddo
-
-      bb21 = 1. / bb2        
-
-      call dot_mn(bb,glnT,tmp)
-            
-      call multsv_mn(tmp,glnT,c1)
-      c1 = 3.5 * c1
-
-      call del2v_etc(f,iaa,gradcurl=gradcurlaa)
-
-      call multmv_mn_transp(gradcurlaa,bb,c2)
-
-      call multsv_mn(bb21,c2,c2)
-
-      call multsv_mn(tmp,c2,c2)
-
-      c2 = 2 * c2
-!
-!   calculate (b*grad)*(grad T)
-!
-      call g2ij(f,ilnrho,allrho)
-      call g2ij(f,iss,allss)
-
-      call multmv_mn(allss,bb,c3)
-      call multmv_mn(allrho,bb,c4)
-
-      c3 = gamma * c3 
-      c4 = gamma1 * c4 
-!
-      call multmv_mn_transp(gradcurlaa,glnT,c5)
-
-      c1 = c1 - c2 + c3 + c4 + c5
-
-      call dot_mn(c1,bb,thdiff)
-
-      thdiff = Kappa0 * thdiff * bb21 * rho1 * (TT**2.5)
-!
-!   Add heat conduction to entropy
-!
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-!      
-      if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,Kappa0*rho1*(TT**2.5)*dxyz_2)
-        if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
-        endif
-      endif
-!     
-    endsubroutine calc_heatcond_mpara
-!***********************************************************************
-    subroutine calc_heatcond_mperp(f,df,rho1,glnrho,gss,bb,cs2)
-!
-!  Calculates isotropic heat conduction: gradient(Kisotr * n^2 / T^0.5 / B^2 * gradient(T))      
-!  Kappa and Chi are not constant !
-!  See: Solar MHD; Priest 1982
-!
-!
-!  24-feb-04/bing: coded
-!
-      use Sub
-
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: gradcurlaa
-      real, dimension (nx,3) :: glnrho,gss,glnT,bb
-      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,del2ss,del2lnrho
-
-      real, dimension (nx,3) :: c1
-      real, dimension (nx) :: tmp1,tmp2,tmp3,tmp4
-
-      integer :: i
-
-      glnT = gamma*gss + gamma1*glnrho
-      TT = cs2/gamma1   
-!
-!   calculate unit vector of magnetic field: bb/bb2
-!
-      call dot2_mn(bb,bb2)
-      
-      do i=1,nx
-         if (bb2(i) < tiny(1.)) then
-            bb2(i)=3*1e-34
-            bb(i,:)=1e-17
-         endif
-      enddo
-      
-      bb21 = 1. / bb2        
-
-      call del2v_etc(f,iaa,gradcurl=gradcurlaa)
-      call multmv_mn_transp(gradcurlaa,bb,c1)
-
-      call dot_mn(c1,glnT,tmp1)
-      
-      call dot2_mn(glnT,tmp2)
-      
-      call del2(f,iss,del2ss)
-      call del2(f,ilnrho,del2lnrho)
-      
-      call dot_mn(glnT,glnrho,tmp4)
-
-      tmp3 = gamma*del2ss + gamma1*del2lnrho + 0.5*tmp2 - 2*bb21*tmp1 + 2*tmp4
-!
-!    Use rho instead of n: wrong dimension
-!      
-      thdiff = Kisotr * TT**(-0.5) * bb21 * tmp3 / rho1
-!
-!   Add heat conduction to entropy
-!
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-!
-      if (lfirst.and.ldt) then
-         diffus_chi=max(diffus_chi,Kisotr*TT**(-0.5)*bb21/rho1*dxyz_2)
-        if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
-        endif
-     endif
-!     
-    endsubroutine calc_heatcond_mperp
-!***********************************************************************
     subroutine calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
 !
 !  Adds in shock entropy diffusion. There is potential for
@@ -1555,6 +1424,109 @@ module Entropy
       endif
 !
     endsubroutine calc_heatcond_simple
+!***********************************************************************
+    subroutine calc_heatcond_spitzer(f,df,rho1,glnrho,gss,bb,bij,cs2)
+!
+!  Calculates heat conduction parallel and perpendicular (isotropic)
+!  to magnetic field lines     
+!
+!  See: Solar MHD; Priest 1982
+!
+!  10-feb-04/bing: coded
+!
+      use Ionization
+      use Sub
+      use Io
+      use Mpicomm
+!       
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: hlnrho,hss,hlnTT,bij
+      real, dimension (nx,3) :: glnrho,gss,glnT,bb,gvKpara,gvKperp
+      real, dimension (nx,3) :: tmpv1,tmpv2,tmpv3
+      real, dimension (nx) :: rho1,TT,bb2,cs2,thdiff,b1
+      real, dimension (nx) :: tmps,quenchfactor,vKpara,vKperp
+      integer ::i,j
+!
+      intent(in) :: gss,glnrho,f
+      intent(out) :: df
+!
+      glnT = gamma*gss + gamma1*glnrho
+!
+      TT = cs2/gamma1   
+!        
+!      Kgpara/Kgperp are in SI units -> get them in pencil units:
+!      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
+!      Kgpara = Kgpara / (unit_velocity**3 * unit_density * unit_length / unit_temp)
+
+      call g2ij(f,ilnrho,hlnrho)
+      call g2ij(f,iss,hss)
+      call temperature_hessian(f,hlnrho,hss,hlnTT)
+!
+!     Calculate variable diffusion coefficients along pencils
+!
+      call dot2_mn(bb,bb2)
+      b1=1./max(tiny(bb2),bb2)
+!
+      vKpara = Kgpara * TT**2.5 * rho1      != Kgpara* T^3.5              /(rho*T)
+      vKperp = Kgperp * (b1/rho1)/sqrt(TT)  != Kgperp* rho^2 sqrt(T)/B^2  /(rho*T)
+!
+      quenchfactor = vKpara/(vKpara+vKperp)
+      vKperp=vKperp*quenchfactor
+!     do i=1,nx
+!        if  (vKperp(i) .gt. vKpara(i)) vKperp(i) = vKpara(i)
+!     enddo
+      if (notanumber(vKpara)) print*,'vKpara'
+      if (notanumber(vKperp)) print*,'vKperp'
+!
+!     Calculate gradient of diff. coeffs
+!      
+      tmps = 3.5 * vKpara 
+      call multsv_mn(tmps,glnT,gvKpara)
+      tmps(:) = 2.
+      call multsv_mn(tmps,glnrho,tmpv1)
+      tmps(:) = 0.5
+      call multsv_mn(tmps, glnT,tmpv2)
+      do i=1,3
+         do j=1,3
+            tmpv3(:,i)=2*bb(:,j)*bij(:,j,i)
+         end do
+      end do
+!
+      call multsv_mn(b1,tmpv3,tmpv3)
+      tmpv1=tmpv1+tmpv2+tmpv3
+      call multsv_mn(vKperp,tmpv1,gvKperp)
+      gvKperp=gvKperp*spread(quenchfactor,2,3)
+!
+!     Calculate diffusion term
+!
+      call  tensor_diffusion_coef(glnT,hlnTT,bij,bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
+!
+!      if (notanumber(hlnTT)) call stop_it('calc_heatcond_spitzer: hlnTT')
+!     
+!      (thdiff = thdiff*rho1/TT) is included in vKperp and vKpara
+! 
+      if (notanumber(thdiff)) then
+         print*,ipx,ipy,ipz
+         call stop_it('calc_heatcond_spitzer: thdiff')
+      endif
+!
+!      thdiff = thdiff/TT*rho1
+!
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff 
+!
+!   check maximum diffusion from thermal diffusion
+!   With heat conduction, the second-order term for entropy is
+!   gamma*chi*del2ss
+!
+      if (lfirst.and.ldt) then
+         diffus_chi=max(diffus_chi,(gamma*Kgpara*rho1*TT**2.5+chi_t)*dxyz_2)
+         if (ldiagnos.and.i_dtchi/=0) then
+            call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
+         endif
+      endif
+!      
+    endsubroutine calc_heatcond_spitzer
 !***********************************************************************
     subroutine calc_heatcond(f,df,rho1,glnrho,gss)
 !
@@ -1830,6 +1802,81 @@ module Entropy
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
+    subroutine calc_heat_cool_RTV(f,df,lnrho,lnTT)
+!
+!    calculate cool term:  C = ne*ni*Q(T) 
+!    with ne*ni = 1.2*np^2 = 1.2*rho^2/(1.4*mp)^2
+!    Q(T) = H*T^B is piecewice poly
+!
+!  15-dez-04/bing: coded
+!
+      use IO
+!     
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: lnTT,lncool,lnrho,lnneni,rtv_cool,lnTT_SI
+      integer :: i,imax
+      real :: unit_temp,unit_dens,unit_power
+      real :: p0,p1,p2,p3,p4
+!
+      intent(in) :: f,lnrho,lnTT
+      intent(out) :: df
+!
+!     All is in SI units and has to be rescaled to PENCIL units
+!
+      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
+      unit_dens = unit_density
+      unit_power = unit_density * unit_velocity**3 / unit_length
+!
+      lnTT_SI = lnTT + alog(unit_temp) 
+!
+! First set of parameters
+      if (cool_RTV .gt. 0.) then
+         imax = size(intlnT_1,1)       
+         lncool(:)=0.0
+         do i=1,imax-1
+            where (( intlnT_1(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
+               lncool=lncool + lnH_1(i) + B_1(i)*lnTT_SI
+            endwhere
+         enddo
+         where (lnTT_SI >= intlnT_1(imax) )
+            lncool = lncool + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax)
+         endwhere
+      endif
+
+! Second set of parameters      
+      if (cool_RTV .lt. 0) then
+         cool_RTV = cool_RTV*(-1.)
+        imax = size(intlnT_2,1)       
+        lncool(:)=0.0
+        do i=1,imax-1
+          where (( intlnT_2(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_2(i+1) )
+            lncool=lncool + lnH_2(i) + B_2(i)*lnTT_SI
+          endwhere
+        enddo
+        where (lnTT_SI >= intlnT_2(imax) )
+          lncool = lncool + lnH_2(imax-1) + B_2(imax-1)*intlnT_2(imax)
+        endwhere
+     endif
+!
+!     calculate ln(ne*ni) :
+!          mp = 1.673*1e-27
+!          ln(ne*ni) = ln( 1.2*rho^2/(1.4*mp)^2)
+!          lnneni   = 2*lnrho + alog(1.2) - 2*alog(1.4*1.673*1e-27)
+!          lnneni = 2*lnrho + 122.82     
+!      
+!    rtv_cool=exp(lnneni+lncool-lnrho-lnTT)/unit_power
+!    =>
+     rtv_cool=exp(lncool+lnrho-lnTT+122.82)/unit_power
+!     
+     rtv_cool=rtv_cool * cool_RTV  ! just for adjusting by setting cool_RTV in run.in
+!
+!     add to entropy equation
+!
+     df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool 
+!
+    endsubroutine calc_heat_cool_RTV
+!***********************************************************************
     subroutine calc_tau_ss_exterior(f,df)
 !
 !  entropy relaxation to zero on time scale tau_ss_exterior within
@@ -1967,5 +2014,57 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-endmodule Entropy
+    subroutine newton_cool(f,df,lnTT,lnrho)
+!
+!  Keeps the temperature in the lower chromosphere and the upper corona
+!  at a constant level using newton cooling
+!
+!  15-dez-2004/bing: coded
+!
 
+      use Sub
+      use IO
+      use Mpicomm
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: lnTT,lnrho,newton
+      real :: lnTTor,xil,unit_temp
+      real :: p0,p1,p2,p3,p4
+!    
+!     Initial temperature profile is given in ln(T) over z in Mm
+!     It is independent of grid and unit system
+!     Since I do not change initial condition this works fine
+!
+      p0 = 2.47955
+      p1 = 4.45524
+      p2 = 1.51496
+      p3 = 4.44825
+      p4 = 2.89396e-03
+!
+!     Get the heigth in Mm
+!
+      xil =  z(n) * unit_length * 1e-6 
+!
+!     Calculate ln(T) in SI
+!
+      lnTTor = p0*(tanh((xil-p1)/p2) +p3 +p4*xil)
+!
+      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
+!
+      lnTTor = lnTTor - alog(unit_temp) 
+!
+      newton = (exp(lnrho-lnrho0)) ** allp  * tdown / gamma 
+!
+      newton = newton * (lnTT-lnTTor)
+!      
+!     Add cooling term to entropy
+!
+      if (notanumber(newton))  call stop_it('newton cool: NaN`s in newton') 
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - newton
+!
+    endsubroutine newton_cool
+!***********************************************************************    
+endmodule Entropy
+ 
