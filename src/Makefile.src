@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.110 2005-06-26 22:59:43 mee Exp $
+### $Id: Makefile.src,v 1.111 2005-06-27 05:18:52 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -516,7 +516,7 @@ TAGS: $(TAG_SOURCE)
 
 # Clean up, but leave makefile and TAGS
 clean:
-	rm -f *.x *.o *.mod *.d cparam.inc cparam_pancils.inc *.il mpicomm_.f90
+	rm -f *.x *.o *.mod *.d cparam.inc cparam_pencils.inc *.il mpicomm_.f90
 	rm -f work.pc work.pcl
 
 # Clean up all
@@ -590,36 +590,36 @@ timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
 persist.o:    persist.f90 cdata.o general.o $(INTERSTELLAR).o
 snapshot.o:    snapshot.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o $(RADIATION).o $(EOS).o $(MAGNETIC).o persist.o
 #
-$(MPICOMM).o:      mpicomm.inc        $(MPICOMM).f90 cdata.o general.o $(FFT).o 
-$(GLOBAL).o:       global.inc         $(GLOBAL).f90 cdata.o $(MPICOMM).o $(IO).o sub.o
-$(VISCOSITY).o:    viscosity.inc      $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
-shock.o:           shock.inc          shock.f90 shock_profile.inc cdata.o cparam.o $(DENSITY).o sub.o boundcond.o
-noshock.o:         shock.inc          noshock.f90 cdata.o cparam.o sub.o 
-$(SHEAR).o:        shear.inc          $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
-$(GRAVITY).o:      gravity.inc        $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
-$(FORCING).o:      forcing.inc        $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
-$(ENTROPY).o:      entropy.inc        $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o
-$(MAGNETIC).o:     magnetic.inc       $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
-$(RADIATION).o:    radiation.inc      $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(EOS).o
-$(HYDRO).o:        hydro.inc          $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
-$(DENSITY).o:      density.inc        $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(EOS).o
-$(COSMICRAY).o:    cosmicray.inc      $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
-$(COSMICRAYFLUX).o:    cosmicrayflux.inc      $(COSMICRAYFLUX).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(COSMICRAY).o
-$(PSCALAR).o:      pscalar.inc        $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
-$(CHIRAL).o:       chiral.inc         $(CHIRAL).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
-$(DUSTVELOCITY).o: dustvelocity.inc   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
-$(DUSTDENSITY).o:  dustdensity.inc    $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
+$(MPICOMM).o:      mpicomm.h        $(MPICOMM).f90 cdata.o general.o $(FFT).o 
+$(GLOBAL).o:       global.h         $(GLOBAL).f90 cdata.o $(MPICOMM).o $(IO).o sub.o
+$(VISCOSITY).o:    viscosity.h      $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
+shock.o:           shock.h          shock.f90 shock_profile.inc cdata.o cparam.o $(DENSITY).o sub.o boundcond.o
+noshock.o:         shock.h          noshock.f90 cdata.o cparam.o sub.o 
+$(SHEAR).o:        shear.h          $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
+$(GRAVITY).o:      gravity.h        $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
+$(FORCING).o:      forcing.h        $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
+$(ENTROPY).o:      entropy.h        $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o
+$(MAGNETIC).o:     magnetic.h       $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
+$(RADIATION).o:    radiation.h      $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(EOS).o
+$(HYDRO).o:        hydro.h          $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
+$(DENSITY).o:      density.h        $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(EOS).o
+$(COSMICRAY).o:    cosmicray.h      $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(COSMICRAYFLUX).o:    cosmicrayflux.h      $(COSMICRAYFLUX).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(COSMICRAY).o
+$(PSCALAR).o:      pscalar.h        $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(CHIRAL).o:       chiral.h         $(CHIRAL).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(DUSTVELOCITY).o: dustvelocity.h   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
+$(DUSTDENSITY).o:  dustdensity.h    $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
 $(TESTFIELD).o:    testfield.h        $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o $(IO).o
-$(PARTICLES).o:    particles.inc      $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM).o sub.o
+$(PARTICLES).o:    particles.h      $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM).o sub.o
 $(PARTICLES_SUB).o:                   $(PARTICLES_SUB).f90 cdata.o $(GLOBAL).o
-$(INTERSTELLAR).o: interstellar.inc $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(EOS).o
-$(EOS).o:          eos.inc            $(EOS).f90 cdata.o $(MPICOMM).o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
-$(IO).o:           io.inc             $(IO).f90 cdata.o sub.o $(MPICOMM).o general.o sub.o
+$(INTERSTELLAR).o: interstellar.h $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(EOS).o
+$(EOS).o:          eos.h            $(EOS).f90 cdata.o $(MPICOMM).o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
+$(IO).o:           io.h             $(IO).f90 cdata.o sub.o $(MPICOMM).o general.o sub.o
 #$(TIMEAVG).o:         $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local
-$(TIMEAVG).o:      timeavg.inc        $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o
-$(POWER).o:        power_spectrum.inc $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
-$(STRUCT_FUNC).o:  struct_func.inc    $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
-$(SPECIAL).o:      special.inc        $(SPECIAL).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
+$(TIMEAVG).o:      timeavg.h        $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o
+$(POWER).o:        power_spectrum.h $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
+$(STRUCT_FUNC).o:  struct_func.h    $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
+$(SPECIAL).o:      special.h        $(SPECIAL).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
 $(DEBUG).o:        debug_c.c Makefile.src Makefile.local
 
 #endif
