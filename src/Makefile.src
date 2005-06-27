@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.113 2005-06-27 12:05:53 brandenb Exp $
+### $Id: Makefile.src,v 1.114 2005-06-27 22:20:51 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -166,7 +166,6 @@ FCCLEANER=
 #FC=fort -I/usr/lib/lam/include #(mhd)
 #FC=mpif90 #(Nunatak[0-9])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=ifort -I/home/brandenb/apps/ifort/lib #(nl6)
 #FC=ifc #(mmtf|nl19)
 #FC=ifort -I/usr/include/lam -L/usr/lib/lam/lib #(mmtf|nl19)
 #FC=/opt/intel/compiler60/ia32/bin/ifc -I/usr/lib/lam/include #(taspd209a)
@@ -204,15 +203,14 @@ FCCLEANER=
 #FFLAGS= #(fe[0-4])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl6|nl11|sandin|lynx)
-#FFLAGS=-O3 #(nl6)
-#FFLAGS=-O3 #(nw[0-9]*|nl6|nl11|wormhole|sandin|lynx)
+#FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl11|sandin|lynx)
+#FFLAGS=-O3 #(nw[0-9]*|nl11|wormhole|sandin|lynx)
 #FFLAGS=-O3 -ieee=full #(barilko)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-1][0-9]|obelix|kolmogorov)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
 #FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix)
-#FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
+#FC=ifc -I/usr/lib/lam/include #(nw17|nl11|wormhole)  
 #FC=ifc -w95 #(sandin)
 #FC=f95 -dusty #(davey[12])  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
@@ -228,11 +226,7 @@ FCCLEANER=
 ##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov)
 #LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
-#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11)
-#LDMPI=-static -I/usr/lib/lam/include -pthread -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
-#LDMPI=-static -I/usr/include/lam -pthread -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
-#LDMPI=-static -I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
-#LDMPI=-I/home/brandenb/apps/ifort/lib -I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl11)
 #LDMPI=-L/opt/mpich/lib #(nw43)
 #LDMPI=-L/usr/local/mpich/lib #(pcponty)
 #LDMPI= # (Samos|fire|sandin)
@@ -244,10 +238,8 @@ FCCLEANER=
 #F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
 #F77=$(FC) -lm  #(tycho|monolith)
 #F77=$(FC) #(erland|bohm|igor|onsager)
-#F77=$(FC) #(Owen|Master|cosmo|nl6|nw17|nl11)
-#F77FLAGS=-w90 #(nw[0-9]*|ns0|cosmo|nw17|nl6|nl11|sandin)
-#F77=$(FC) #(Owen|Master|nl6|nw17|nl11|wormhole)
-#F77FLAGS=-w90 #(nw[0-9]*|ns0|nw17|nl6|nl11|wormhole|sandin)
+#F77=$(FC) #(Owen|Master|cosmo|nw17|nl11)
+#F77FLAGS=-w90 #(nw[0-9]*|ns0|cosmo|nw17|nl11|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
 #FFLAGS=-O2 -ipo -xW -tpp7 #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
@@ -257,6 +249,13 @@ FCCLEANER=
 #LDMPI=-lmpi #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CC=icc #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CFLAGS=-O3 -ipo -DFUNDERSC=1 #(lws.Stanford.EDU|lws2.Stanford.EDU)
+##
+## Axel's laptop (nl6, 2.0 GHz)
+##
+#FC=ifort #(nl6)
+#FFLAGS=-O3 -I/usr/include/lam #(nl6)
+#LDMPI=-I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#F77FLAGS=-w90 #(nl6)
 ##
 ## wormhole Tony's Laptop
 ##

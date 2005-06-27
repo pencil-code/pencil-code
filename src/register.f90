@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.147 2005-06-26 21:35:30 brandenb Exp $
+! $Id: register.f90,v 1.148 2005-06-27 22:20:51 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -495,17 +495,24 @@ module Register
       use Shear,           only: rprint_shear
 !
       integer :: iname,inamev,inamez,inamexy,inamexz,inamerz
-      integer :: ix_,iy_,iz_,iz2_,io_stat
+      integer :: ix_,iy_,iz_,iz2_,io_stat,iname_tmp
       integer :: isubstract
       logical :: lreset,exist
+      character (LEN=30) :: cname_tmp
 !
 !  read in the list of variables to be printed
+!  recognize "!" and "#" as comments
 !
       open(1,file='print.in')
-      do iname=1,mname
-        read(1,*,end=99) cname(iname)
+      iname=0
+      do iname_tmp=1,mname
+        read(1,*,end=99) cname_tmp
+        if (cname_tmp(1:1)/='!'.and.cname_tmp(1:1)/='#') then
+          iname=iname+1
+          cname(iname)=cname_tmp
+        endif
       enddo
-99    nname=iname-1
+99    nname=iname
       if (lroot.and.ip<14) print*,'rprint_list: nname=',nname
       close(1)
 !

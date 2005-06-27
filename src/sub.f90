@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.209 2005-06-27 16:20:19 theine Exp $ 
+! $Id: sub.f90,v 1.210 2005-06-27 22:20:51 brandenb Exp $ 
 
 module Sub 
 
@@ -3052,6 +3052,9 @@ module Sub
 !  CNAME='bmax' will be parsed to ITEST=INAME, CFORM='(1pe10.2)',
 !  CNAME='bmax(G5.1)' to ITEST=INAME, CFORM='G5.1',
 !  CNAME='brms' to ITEST=<unchanged, normally 0>, CFORM='(1pe10.2)'
+!
+!   4-may-02/axel: coded
+!   6-apr-04/wolf: more liberate format reading
 !
         use General, only: safe_character_assign
 !
