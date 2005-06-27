@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.201 2005-06-27 00:14:18 mee Exp $
+! $Id: hydro.f90,v 1.202 2005-06-27 05:46:14 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -142,7 +142,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.201 2005-06-27 00:14:18 mee Exp $")
+           "$Id: hydro.f90,v 1.202 2005-06-27 05:46:14 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -644,7 +644,7 @@ module Hydro
           do i=1,3
             p%sij(:,i,j)=.5*(p%uij(:,i,j)+p%uij(:,j,i))
           enddo
-          p%sij(:,j,j)=p%sij(:,j,j)-.333333*p%divu
+          p%sij(:,j,j)=p%sij(:,j,j)-(1./3.)*p%divu
         enddo
       endif
 ! sij2
