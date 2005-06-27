@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.14 2005-06-27 00:14:19 mee Exp $
+! $Id: radiation_ray_periodic.f90,v 1.15 2005-06-27 16:34:11 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -24,8 +24,6 @@ module Radiation
   implicit none
 !
   include 'radiation.h'
-!
-  private
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
@@ -119,7 +117,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.14 2005-06-27 00:14:19 mee Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.15 2005-06-27 16:34:11 mee Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
