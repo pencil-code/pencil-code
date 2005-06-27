@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.3 2005-06-27 00:14:18 mee Exp $
+! $Id: gravity_simple.f90,v 1.4 2005-06-27 20:46:39 brandenb Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -94,7 +94,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.3 2005-06-27 00:14:18 mee Exp $")
+           "$Id: gravity_simple.f90,v 1.4 2005-06-27 20:46:39 brandenb Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -405,7 +405,7 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(unit,iostat)
 !
-!  Document me!
+!  Read gravity init parameters
 !
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -421,7 +421,7 @@ module Gravity
 !***********************************************************************
     subroutine write_gravity_init_pars(unit)
 !
-!  Document me!
+!  Write gravity init parameters
 !
       integer, intent(in) :: unit
 !
@@ -431,7 +431,7 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_run_pars(unit,iostat)
 !
-!  Document me!
+!  Read gravity run parameters
 !    
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -447,7 +447,7 @@ module Gravity
 !***********************************************************************
     subroutine write_gravity_run_pars(unit)
 !
-!  Document me!
+!  Write gravity run parameters
 !
       integer, intent(in) :: unit
 !
