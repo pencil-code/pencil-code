@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.234 2005-06-27 05:50:14 dobler Exp $
+! $Id: equ.f90,v 1.235 2005-06-27 08:10:33 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.234 2005-06-27 05:50:14 dobler Exp $")
+           "$Id: equ.f90,v 1.235 2005-06-27 08:10:33 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -666,7 +666,23 @@ module Equ
 !***********************************************************************
     subroutine pencil_consistency_check(f,df,p)
 !
-! [Document Me!!!]
+!  This subroutine checks the run for missing and for superfluous pencils.
+!  First a reference df is calculated with all the requested pencils. Then
+!  the pencil request is flipped one by one (a pencil that is requested
+!  is not calculated, a pencil that is not requested is calculated). A
+!  complete set of pencils should fulfil
+!    - Calculating a not requested pencil should not change df
+!    - Not calculating a requested pencil should change df
+!  The run has a problem when
+!    - Calculating a not requested pencil changes df
+!      (program dies with error message)
+!    - Not calculating a requested pencil does not change df
+!      (program gives a warning)
+!  If there are missing pencils, the programmer should go into the 
+!  pencil_criteria_XXX subs and request the proper pencils (based cleverly
+!  on run parameters).
+!
+!  18-apr-05/tony: coded
 !
       use Cdata
       use Mpicomm, only: stop_it
