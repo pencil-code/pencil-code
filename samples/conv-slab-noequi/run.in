@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2005-06-27 10:01:53 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.5 2005-06-27 11:52:34 ajohan Exp $',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=20., dvid=0.2
   bcx = 'p','p','p', 'p',    'p'
@@ -26,6 +26,7 @@
   gravz=-1.
 /
 &entropy_run_pars
+  iheatcond='K-const'
   Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
   hcond0=8.e-3
   lupw_ss=T ! use upwinding for entropy to avoid wiggles
