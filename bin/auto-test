@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.52 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id: auto-test,v 1.53 2005-06-27 12:07:17 brandenb Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -46,7 +46,7 @@ my @sampdir = qw( conv-slab cosmicray kin-dynamo geodynamo
                   0d-tests/heating_noionize conv-slab-noequi
                   1d-tests/solar-atmosphere 1d-tests/sod_10
                   dust-vortex MRI-turbulence_hyper random_uu_particles
-                  chiral-diffusion backwards-compatible );
+                  chiral-diffusion backwards-compatible testfield );
 # Test the following subdirs of runs/ :
 #my @runsdir = qw( radiation/solar1d4);
 my @runsdir = qw( );
@@ -111,7 +111,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.52 2005-06-26 17:34:16 eos_merger_tony Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.53 2005-06-27 12:07:17 brandenb Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
