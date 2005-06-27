@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.16 2005-06-26 22:59:43 mee Exp $
+! $Id: testfield.f90,v 1.17 2005-06-27 07:10:37 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -42,30 +42,30 @@ module Testfield
        lset_bbtest2,etatest,itestfield,ktestfield
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_alp11=0,i_alp21=0,i_alp31=0
-  integer :: i_alp12=0,i_alp22=0,i_alp32=0
-  integer :: i_alp13=0,i_alp23=0,i_alp33=0
-  integer :: i_alp11z=0,i_alp21z=0,i_alp31z=0
-  integer :: i_alp12z=0,i_alp22z=0,i_alp32z=0
-  integer :: i_alp13z=0,i_alp23z=0,i_alp33z=0
-  integer :: i_eta111z=0,i_eta211z=0,i_eta311z=0
-  integer :: i_eta121z=0,i_eta221z=0,i_eta321z=0
-  integer :: i_eta131z=0,i_eta231z=0,i_eta331z=0
-  integer :: i_eta113z=0,i_eta213z=0,i_eta313z=0
-  integer :: i_eta123z=0,i_eta223z=0,i_eta323z=0
-  integer :: i_eta133z=0,i_eta233z=0,i_eta333z=0
-  integer :: i_alp11xz=0,i_alp21xz=0,i_alp31xz=0
-  integer :: i_alp12xz=0,i_alp22xz=0,i_alp32xz=0
-  integer :: i_alp13xz=0,i_alp23xz=0,i_alp33xz=0
-  integer :: i_eta111xz=0,i_eta211xz=0,i_eta311xz=0
-  integer :: i_eta121xz=0,i_eta221xz=0,i_eta321xz=0
-  integer :: i_eta131xz=0,i_eta231xz=0,i_eta331xz=0
-  integer :: i_eta113xz=0,i_eta213xz=0,i_eta313xz=0
-  integer :: i_eta123xz=0,i_eta223xz=0,i_eta323xz=0
-  integer :: i_eta133xz=0,i_eta233xz=0,i_eta333xz=0
-  integer :: i_alp11exz=0,i_alp21exz=0,i_alp31exz=0
-  integer :: i_alp12exz=0,i_alp22exz=0,i_alp32exz=0
-  integer :: i_alp13exz=0,i_alp23exz=0,i_alp33exz=0
+  integer :: idiag_alp11=0,idiag_alp21=0,idiag_alp31=0
+  integer :: idiag_alp12=0,idiag_alp22=0,idiag_alp32=0
+  integer :: idiag_alp13=0,idiag_alp23=0,idiag_alp33=0
+  integer :: idiag_alp11z=0,idiag_alp21z=0,idiag_alp31z=0
+  integer :: idiag_alp12z=0,idiag_alp22z=0,idiag_alp32z=0
+  integer :: idiag_alp13z=0,idiag_alp23z=0,idiag_alp33z=0
+  integer :: idiag_eta111z=0,idiag_eta211z=0,idiag_eta311z=0
+  integer :: idiag_eta121z=0,idiag_eta221z=0,idiag_eta321z=0
+  integer :: idiag_eta131z=0,idiag_eta231z=0,idiag_eta331z=0
+  integer :: idiag_eta113z=0,idiag_eta213z=0,idiag_eta313z=0
+  integer :: idiag_eta123z=0,idiag_eta223z=0,idiag_eta323z=0
+  integer :: idiag_eta133z=0,idiag_eta233z=0,idiag_eta333z=0
+  integer :: idiag_alp11xz=0,idiag_alp21xz=0,idiag_alp31xz=0
+  integer :: idiag_alp12xz=0,idiag_alp22xz=0,idiag_alp32xz=0
+  integer :: idiag_alp13xz=0,idiag_alp23xz=0,idiag_alp33xz=0
+  integer :: idiag_eta111xz=0,idiag_eta211xz=0,idiag_eta311xz=0
+  integer :: idiag_eta121xz=0,idiag_eta221xz=0,idiag_eta321xz=0
+  integer :: idiag_eta131xz=0,idiag_eta231xz=0,idiag_eta331xz=0
+  integer :: idiag_eta113xz=0,idiag_eta213xz=0,idiag_eta313xz=0
+  integer :: idiag_eta123xz=0,idiag_eta223xz=0,idiag_eta323xz=0
+  integer :: idiag_eta133xz=0,idiag_eta233xz=0,idiag_eta333xz=0
+  integer :: idiag_alp11exz=0,idiag_alp21exz=0,idiag_alp31exz=0
+  integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
+  integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
 
   contains
 
@@ -105,7 +105,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.16 2005-06-26 22:59:43 mee Exp $")
+           "$Id: testfield.f90,v 1.17 2005-06-27 07:10:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -251,7 +251,7 @@ module Testfield
     subroutine write_testfield_run_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=eos_run_pars)
+      write(unit,NML=testfield_run_pars)
 
     endsubroutine write_testfield_run_pars
 !***********************************************************************
@@ -315,7 +315,7 @@ module Testfield
 !  subtract average emf
 !
             do j=1,3
-              jfnamez=i_alp11z+3*(jtest-1)+(j-1)
+              jfnamez=idiag_alp11z+3*(jtest-1)+(j-1)
 !TEST         duxbtest(:,j)=uxbtest(:,j)-fnamez_copy(n-nghost,ipz+1,jfnamez)
             enddo
 !
@@ -334,89 +334,89 @@ module Testfield
             endif
             select case(jtest)
             case(1)
-              if (i_alp11/=0) call sum_mn_name(uxbtest(:,1),i_alp11)
-              if (i_alp21/=0) call sum_mn_name(uxbtest(:,2),i_alp21)
-              if (i_alp31/=0) call sum_mn_name(uxbtest(:,3),i_alp31)
-              if (i_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),i_alp11z)
-              if (i_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),i_alp21z)
-              if (i_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),i_alp31z)
-              if (i_alp11xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp11xz)
-              if (i_alp21xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp21xz)
-              if (i_alp31xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp31xz)
+              if (idiag_alp11/=0) call sum_mn_name(uxbtest(:,1),idiag_alp11)
+              if (idiag_alp21/=0) call sum_mn_name(uxbtest(:,2),idiag_alp21)
+              if (idiag_alp31/=0) call sum_mn_name(uxbtest(:,3),idiag_alp31)
+              if (idiag_alp11z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp11z)
+              if (idiag_alp21z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp21z)
+              if (idiag_alp31z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp31z)
+              if (idiag_alp11xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp11xz)
+              if (idiag_alp21xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp21xz)
+              if (idiag_alp31xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp31xz)
             case(2)
-              if (i_alp12/=0) call sum_mn_name(uxbtest(:,1),i_alp12)
-              if (i_alp22/=0) call sum_mn_name(uxbtest(:,2),i_alp22)
-              if (i_alp32/=0) call sum_mn_name(uxbtest(:,3),i_alp32)
-              if (i_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),i_alp12z)
-              if (i_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),i_alp22z)
-              if (i_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),i_alp32z)
-              if (i_alp12xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp12xz)
-              if (i_alp22xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp22xz)
-              if (i_alp32xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp32xz)
+              if (idiag_alp12/=0) call sum_mn_name(uxbtest(:,1),idiag_alp12)
+              if (idiag_alp22/=0) call sum_mn_name(uxbtest(:,2),idiag_alp22)
+              if (idiag_alp32/=0) call sum_mn_name(uxbtest(:,3),idiag_alp32)
+              if (idiag_alp12z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp12z)
+              if (idiag_alp22z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp22z)
+              if (idiag_alp32z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp32z)
+              if (idiag_alp12xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp12xz)
+              if (idiag_alp22xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp22xz)
+              if (idiag_alp32xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp32xz)
             case(3)
-              if (i_alp13/=0) call sum_mn_name(uxbtest(:,1),i_alp13)
-              if (i_alp23/=0) call sum_mn_name(uxbtest(:,2),i_alp23)
-              if (i_alp33/=0) call sum_mn_name(uxbtest(:,3),i_alp33)
-              if (i_alp13z/=0) call xysum_mn_name_z(uxbtest(:,1),i_alp13z)
-              if (i_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),i_alp23z)
-              if (i_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),i_alp33z)
-              if (i_alp13xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp13xz)
-              if (i_alp23xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp23xz)
-              if (i_alp33xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp33xz)
+              if (idiag_alp13/=0) call sum_mn_name(uxbtest(:,1),idiag_alp13)
+              if (idiag_alp23/=0) call sum_mn_name(uxbtest(:,2),idiag_alp23)
+              if (idiag_alp33/=0) call sum_mn_name(uxbtest(:,3),idiag_alp33)
+              if (idiag_alp13z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_alp13z)
+              if (idiag_alp23z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_alp23z)
+              if (idiag_alp33z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_alp33z)
+              if (idiag_alp13xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp13xz)
+              if (idiag_alp23xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp23xz)
+              if (idiag_alp33xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp33xz)
             case(4)
-              if (i_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta111z)
-              if (i_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta211z)
-              if (i_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta311z)
-              if (i_eta111xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta111xz)
-              if (i_eta211xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta211xz)
-              if (i_eta311xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta311xz)
+              if (idiag_eta111z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta111z)
+              if (idiag_eta211z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta211z)
+              if (idiag_eta311z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta311z)
+              if (idiag_eta111xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta111xz)
+              if (idiag_eta211xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta211xz)
+              if (idiag_eta311xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta311xz)
             case(5)
-              if (i_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta121z)
-              if (i_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta221z)
-              if (i_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta321z)
-              if (i_eta121xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta121xz)
-              if (i_eta221xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta221xz)
-              if (i_eta321xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta321xz)
+              if (idiag_eta121z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta121z)
+              if (idiag_eta221z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta221z)
+              if (idiag_eta321z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta321z)
+              if (idiag_eta121xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta121xz)
+              if (idiag_eta221xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta221xz)
+              if (idiag_eta321xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta321xz)
             case(6)
-              if (i_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta131z)
-              if (i_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta231z)
-              if (i_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta331z)
-              if (i_eta131xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta131xz)
-              if (i_eta231xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta231xz)
-              if (i_eta331xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta331xz)
+              if (idiag_eta131z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta131z)
+              if (idiag_eta231z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta231z)
+              if (idiag_eta331z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta331z)
+              if (idiag_eta131xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta131xz)
+              if (idiag_eta231xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta231xz)
+              if (idiag_eta331xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta331xz)
             case(7)
-              if (i_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta113z)
-              if (i_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta213z)
-              if (i_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta313z)
-              if (i_eta113xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta113xz)
-              if (i_eta213xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta213xz)
-              if (i_eta313xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta313xz)
+              if (idiag_eta113z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta113z)
+              if (idiag_eta213z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta213z)
+              if (idiag_eta313z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta313z)
+              if (idiag_eta113xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta113xz)
+              if (idiag_eta213xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta213xz)
+              if (idiag_eta313xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta313xz)
             case(8)
-              if (i_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta123z)
-              if (i_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta223z)
-              if (i_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta323z)
-              if (i_eta123xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta123xz)
-              if (i_eta223xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta223xz)
-              if (i_eta323xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta323xz)
+              if (idiag_eta123z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta123z)
+              if (idiag_eta223z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta223z)
+              if (idiag_eta323z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta323z)
+              if (idiag_eta123xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta123xz)
+              if (idiag_eta223xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta223xz)
+              if (idiag_eta323xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta323xz)
             case(9)
-              if (i_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),i_eta133z)
-              if (i_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),i_eta233z)
-              if (i_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),i_eta333z)
-              if (i_eta133xz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_eta133xz)
-              if (i_eta233xz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_eta233xz)
-              if (i_eta333xz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_eta333xz)
+              if (idiag_eta133z/=0) call xysum_mn_name_z(uxbtest(:,1),idiag_eta133z)
+              if (idiag_eta233z/=0) call xysum_mn_name_z(uxbtest(:,2),idiag_eta233z)
+              if (idiag_eta333z/=0) call xysum_mn_name_z(uxbtest(:,3),idiag_eta333z)
+              if (idiag_eta133xz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_eta133xz)
+              if (idiag_eta233xz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_eta233xz)
+              if (idiag_eta333xz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_eta333xz)
             case(10)
-              if (i_alp11exz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp11exz)
-              if (i_alp21exz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp21exz)
-              if (i_alp31exz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp31exz)
+              if (idiag_alp11exz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp11exz)
+              if (idiag_alp21exz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp21exz)
+              if (idiag_alp31exz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp31exz)
             case(11)
-              if (i_alp12exz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp12exz)
-              if (i_alp22exz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp22exz)
-              if (i_alp32exz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp32exz)
+              if (idiag_alp12exz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp12exz)
+              if (idiag_alp22exz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp22exz)
+              if (idiag_alp32exz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp32exz)
             case(12)
-              if (i_alp13exz/=0) call ysum_mn_name_xz(uxbtest(:,1),i_alp13exz)
-              if (i_alp23exz/=0) call ysum_mn_name_xz(uxbtest(:,2),i_alp23exz)
-              if (i_alp33exz/=0) call ysum_mn_name_xz(uxbtest(:,3),i_alp33exz)
+              if (idiag_alp13exz/=0) call ysum_mn_name_xz(uxbtest(:,1),idiag_alp13exz)
+              if (idiag_alp23exz/=0) call ysum_mn_name_xz(uxbtest(:,2),idiag_alp23exz)
+              if (idiag_alp33exz/=0) call ysum_mn_name_xz(uxbtest(:,3),idiag_alp33exz)
             end select
           endif
         endif
@@ -606,194 +606,194 @@ module Testfield
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_alp11=0; i_alp21=0; i_alp31=0
-        i_alp12=0; i_alp22=0; i_alp32=0
-        i_alp13=0; i_alp23=0; i_alp33=0
-        i_alp11z=0; i_alp21z=0; i_alp31z=0
-        i_alp12z=0; i_alp22z=0; i_alp32z=0
-        i_alp13z=0; i_alp23z=0; i_alp33z=0
-        i_eta111z=0; i_eta211z=0; i_eta311z=0
-        i_eta121z=0; i_eta221z=0; i_eta321z=0
-        i_eta131z=0; i_eta231z=0; i_eta331z=0
-        i_eta113z=0; i_eta213z=0; i_eta313z=0
-        i_eta123z=0; i_eta223z=0; i_eta323z=0
-        i_eta133z=0; i_eta233z=0; i_eta333z=0
-        i_alp11xz=0; i_alp21xz=0; i_alp31xz=0
-        i_alp12xz=0; i_alp22xz=0; i_alp32xz=0
-        i_alp13xz=0; i_alp23xz=0; i_alp33xz=0
-        i_eta111xz=0; i_eta211xz=0; i_eta311xz=0
-        i_eta121xz=0; i_eta221xz=0; i_eta321xz=0
-        i_eta131xz=0; i_eta231xz=0; i_eta331xz=0
-        i_eta113xz=0; i_eta213xz=0; i_eta313xz=0
-        i_eta123xz=0; i_eta223xz=0; i_eta323xz=0
-        i_eta133xz=0; i_eta233xz=0; i_eta333xz=0
-        i_alp11exz=0; i_alp21exz=0; i_alp31exz=0
-        i_alp12exz=0; i_alp22exz=0; i_alp32exz=0
-        i_alp13exz=0; i_alp23exz=0; i_alp33exz=0
+        idiag_alp11=0; idiag_alp21=0; idiag_alp31=0
+        idiag_alp12=0; idiag_alp22=0; idiag_alp32=0
+        idiag_alp13=0; idiag_alp23=0; idiag_alp33=0
+        idiag_alp11z=0; idiag_alp21z=0; idiag_alp31z=0
+        idiag_alp12z=0; idiag_alp22z=0; idiag_alp32z=0
+        idiag_alp13z=0; idiag_alp23z=0; idiag_alp33z=0
+        idiag_eta111z=0; idiag_eta211z=0; idiag_eta311z=0
+        idiag_eta121z=0; idiag_eta221z=0; idiag_eta321z=0
+        idiag_eta131z=0; idiag_eta231z=0; idiag_eta331z=0
+        idiag_eta113z=0; idiag_eta213z=0; idiag_eta313z=0
+        idiag_eta123z=0; idiag_eta223z=0; idiag_eta323z=0
+        idiag_eta133z=0; idiag_eta233z=0; idiag_eta333z=0
+        idiag_alp11xz=0; idiag_alp21xz=0; idiag_alp31xz=0
+        idiag_alp12xz=0; idiag_alp22xz=0; idiag_alp32xz=0
+        idiag_alp13xz=0; idiag_alp23xz=0; idiag_alp33xz=0
+        idiag_eta111xz=0; idiag_eta211xz=0; idiag_eta311xz=0
+        idiag_eta121xz=0; idiag_eta221xz=0; idiag_eta321xz=0
+        idiag_eta131xz=0; idiag_eta231xz=0; idiag_eta331xz=0
+        idiag_eta113xz=0; idiag_eta213xz=0; idiag_eta313xz=0
+        idiag_eta123xz=0; idiag_eta223xz=0; idiag_eta323xz=0
+        idiag_eta133xz=0; idiag_eta233xz=0; idiag_eta333xz=0
+        idiag_alp11exz=0; idiag_alp21exz=0; idiag_alp31exz=0
+        idiag_alp12exz=0; idiag_alp22exz=0; idiag_alp32exz=0
+        idiag_alp13exz=0; idiag_alp23exz=0; idiag_alp33exz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'alp11',i_alp11)
-        call parse_name(iname,cname(iname),cform(iname),'alp21',i_alp21)
-        call parse_name(iname,cname(iname),cform(iname),'alp31',i_alp31)
-        call parse_name(iname,cname(iname),cform(iname),'alp12',i_alp12)
-        call parse_name(iname,cname(iname),cform(iname),'alp22',i_alp22)
-        call parse_name(iname,cname(iname),cform(iname),'alp32',i_alp32)
-        call parse_name(iname,cname(iname),cform(iname),'alp13',i_alp13)
-        call parse_name(iname,cname(iname),cform(iname),'alp23',i_alp23)
-        call parse_name(iname,cname(iname),cform(iname),'alp33',i_alp33)
+        call parse_name(iname,cname(iname),cform(iname),'alp11',idiag_alp11)
+        call parse_name(iname,cname(iname),cform(iname),'alp21',idiag_alp21)
+        call parse_name(iname,cname(iname),cform(iname),'alp31',idiag_alp31)
+        call parse_name(iname,cname(iname),cform(iname),'alp12',idiag_alp12)
+        call parse_name(iname,cname(iname),cform(iname),'alp22',idiag_alp22)
+        call parse_name(iname,cname(iname),cform(iname),'alp32',idiag_alp32)
+        call parse_name(iname,cname(iname),cform(iname),'alp13',idiag_alp13)
+        call parse_name(iname,cname(iname),cform(iname),'alp23',idiag_alp23)
+        call parse_name(iname,cname(iname),cform(iname),'alp33',idiag_alp33)
       enddo
 !
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp11z',i_alp11z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp21z',i_alp21z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp31z',i_alp31z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp12z',i_alp12z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp22z',i_alp22z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp32z',i_alp32z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp13z',i_alp13z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp23z',i_alp23z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp33z',i_alp33z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta111z',i_eta111z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta211z',i_eta211z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta311z',i_eta311z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta121z',i_eta121z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta221z',i_eta221z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta321z',i_eta321z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta131z',i_eta131z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta231z',i_eta231z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta331z',i_eta331z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta113z',i_eta113z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta213z',i_eta213z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta313z',i_eta313z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta123z',i_eta123z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta223z',i_eta223z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta323z',i_eta323z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta133z',i_eta133z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta233z',i_eta233z)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta333z',i_eta333z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp11z',idiag_alp11z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp21z',idiag_alp21z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp31z',idiag_alp31z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp12z',idiag_alp12z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp22z',idiag_alp22z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp32z',idiag_alp32z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp13z',idiag_alp13z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp23z',idiag_alp23z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'alp33z',idiag_alp33z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta111z',idiag_eta111z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta211z',idiag_eta211z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta311z',idiag_eta311z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta121z',idiag_eta121z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta221z',idiag_eta221z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta321z',idiag_eta321z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta131z',idiag_eta131z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta231z',idiag_eta231z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta331z',idiag_eta331z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta113z',idiag_eta113z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta213z',idiag_eta213z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta313z',idiag_eta313z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta123z',idiag_eta123z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta223z',idiag_eta223z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta323z',idiag_eta323z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta133z',idiag_eta133z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta233z',idiag_eta233z)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'eta333z',idiag_eta333z)
       enddo
 !
 !  check for those quantities for which we want y-averages
 !
       do inamexz=1,nnamexz
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp11xz',i_alp11xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp21xz',i_alp21xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp31xz',i_alp31xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp12xz',i_alp12xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp22xz',i_alp22xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp32xz',i_alp32xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp13xz',i_alp13xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23xz',i_alp23xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33xz',i_alp33xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta111xz',i_eta111xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta211xz',i_eta211xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta311xz',i_eta311xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta121xz',i_eta121xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta221xz',i_eta221xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta321xz',i_eta321xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta131xz',i_eta131xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta231xz',i_eta231xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta331xz',i_eta331xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta113xz',i_eta113xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta213xz',i_eta213xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta313xz',i_eta313xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta123xz',i_eta123xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta223xz',i_eta223xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta323xz',i_eta323xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta133xz',i_eta133xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta233xz',i_eta233xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta333xz',i_eta333xz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp11exz',i_alp11exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp21exz',i_alp21exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp31exz',i_alp31exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp12exz',i_alp12exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp22exz',i_alp22exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp32exz',i_alp32exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp13exz',i_alp13exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23exz',i_alp23exz)
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33exz',i_alp33exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp11xz',idiag_alp11xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp21xz',idiag_alp21xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp31xz',idiag_alp31xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp12xz',idiag_alp12xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp22xz',idiag_alp22xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp32xz',idiag_alp32xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp13xz',idiag_alp13xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23xz',idiag_alp23xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33xz',idiag_alp33xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta111xz',idiag_eta111xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta211xz',idiag_eta211xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta311xz',idiag_eta311xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta121xz',idiag_eta121xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta221xz',idiag_eta221xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta321xz',idiag_eta321xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta131xz',idiag_eta131xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta231xz',idiag_eta231xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta331xz',idiag_eta331xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta113xz',idiag_eta113xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta213xz',idiag_eta213xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta313xz',idiag_eta313xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta123xz',idiag_eta123xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta223xz',idiag_eta223xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta323xz',idiag_eta323xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta133xz',idiag_eta133xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta233xz',idiag_eta233xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'eta333xz',idiag_eta333xz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp11exz',idiag_alp11exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp21exz',idiag_alp21exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp31exz',idiag_alp31exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp12exz',idiag_alp12exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp22exz',idiag_alp22exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp32exz',idiag_alp32exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp13exz',idiag_alp13exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp23exz',idiag_alp23exz)
+        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'alp33exz',idiag_alp33exz)
       enddo
 !
-!  write column, i_XYZ, where our variable XYZ is stored
+!  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'i_alp11=',i_alp11
-        write(3,*) 'i_alp21=',i_alp21
-        write(3,*) 'i_alp31=',i_alp31
-        write(3,*) 'i_alp12=',i_alp12
-        write(3,*) 'i_alp22=',i_alp22
-        write(3,*) 'i_alp32=',i_alp32
-        write(3,*) 'i_alp13=',i_alp13
-        write(3,*) 'i_alp23=',i_alp23
-        write(3,*) 'i_alp33=',i_alp33
-        write(3,*) 'i_alp11z=',i_alp11z
-        write(3,*) 'i_alp21z=',i_alp21z
-        write(3,*) 'i_alp31z=',i_alp31z
-        write(3,*) 'i_alp12z=',i_alp12z
-        write(3,*) 'i_alp22z=',i_alp22z
-        write(3,*) 'i_alp32z=',i_alp32z
-        write(3,*) 'i_alp13z=',i_alp13z
-        write(3,*) 'i_alp23z=',i_alp23z
-        write(3,*) 'i_alp33z=',i_alp33z
-        write(3,*) 'i_eta111z=',i_eta111z
-        write(3,*) 'i_eta211z=',i_eta211z
-        write(3,*) 'i_eta311z=',i_eta311z
-        write(3,*) 'i_eta121z=',i_eta121z
-        write(3,*) 'i_eta221z=',i_eta221z
-        write(3,*) 'i_eta321z=',i_eta321z
-        write(3,*) 'i_eta131z=',i_eta131z
-        write(3,*) 'i_eta231z=',i_eta231z
-        write(3,*) 'i_eta331z=',i_eta331z
-        write(3,*) 'i_eta113z=',i_eta113z
-        write(3,*) 'i_eta213z=',i_eta213z
-        write(3,*) 'i_eta313z=',i_eta313z
-        write(3,*) 'i_eta123z=',i_eta123z
-        write(3,*) 'i_eta223z=',i_eta223z
-        write(3,*) 'i_eta323z=',i_eta323z
-        write(3,*) 'i_eta133z=',i_eta133z
-        write(3,*) 'i_eta233z=',i_eta233z
-        write(3,*) 'i_eta333z=',i_eta333z
-        write(3,*) 'i_alp11xz=',i_alp11xz
-        write(3,*) 'i_alp21xz=',i_alp21xz
-        write(3,*) 'i_alp31xz=',i_alp31xz
-        write(3,*) 'i_alp12xz=',i_alp12xz
-        write(3,*) 'i_alp22xz=',i_alp22xz
-        write(3,*) 'i_alp32xz=',i_alp32xz
-        write(3,*) 'i_alp13xz=',i_alp13xz
-        write(3,*) 'i_alp23xz=',i_alp23xz
-        write(3,*) 'i_alp33xz=',i_alp33xz
-        write(3,*) 'i_eta111xz=',i_eta111xz
-        write(3,*) 'i_eta211xz=',i_eta211xz
-        write(3,*) 'i_eta311xz=',i_eta311xz
-        write(3,*) 'i_eta121xz=',i_eta121xz
-        write(3,*) 'i_eta221xz=',i_eta221xz
-        write(3,*) 'i_eta321xz=',i_eta321xz
-        write(3,*) 'i_eta131xz=',i_eta131xz
-        write(3,*) 'i_eta231xz=',i_eta231xz
-        write(3,*) 'i_eta331xz=',i_eta331xz
-        write(3,*) 'i_eta113xz=',i_eta113xz
-        write(3,*) 'i_eta213xz=',i_eta213xz
-        write(3,*) 'i_eta313xz=',i_eta313xz
-        write(3,*) 'i_eta123xz=',i_eta123xz
-        write(3,*) 'i_eta223xz=',i_eta223xz
-        write(3,*) 'i_eta323xz=',i_eta323xz
-        write(3,*) 'i_eta133xz=',i_eta133xz
-        write(3,*) 'i_eta233xz=',i_eta233xz
-        write(3,*) 'i_eta333xz=',i_eta333xz
-        write(3,*) 'i_alp11exz=',i_alp11exz
-        write(3,*) 'i_alp21exz=',i_alp21exz
-        write(3,*) 'i_alp31exz=',i_alp31exz
-        write(3,*) 'i_alp12exz=',i_alp12exz
-        write(3,*) 'i_alp22exz=',i_alp22exz
-        write(3,*) 'i_alp32exz=',i_alp32exz
-        write(3,*) 'i_alp13exz=',i_alp13exz
-        write(3,*) 'i_alp23exz=',i_alp23exz
-        write(3,*) 'i_alp33exz=',i_alp33exz
+        write(3,*) 'idiag_alp11=',idiag_alp11
+        write(3,*) 'idiag_alp21=',idiag_alp21
+        write(3,*) 'idiag_alp31=',idiag_alp31
+        write(3,*) 'idiag_alp12=',idiag_alp12
+        write(3,*) 'idiag_alp22=',idiag_alp22
+        write(3,*) 'idiag_alp32=',idiag_alp32
+        write(3,*) 'idiag_alp13=',idiag_alp13
+        write(3,*) 'idiag_alp23=',idiag_alp23
+        write(3,*) 'idiag_alp33=',idiag_alp33
+        write(3,*) 'idiag_alp11z=',idiag_alp11z
+        write(3,*) 'idiag_alp21z=',idiag_alp21z
+        write(3,*) 'idiag_alp31z=',idiag_alp31z
+        write(3,*) 'idiag_alp12z=',idiag_alp12z
+        write(3,*) 'idiag_alp22z=',idiag_alp22z
+        write(3,*) 'idiag_alp32z=',idiag_alp32z
+        write(3,*) 'idiag_alp13z=',idiag_alp13z
+        write(3,*) 'idiag_alp23z=',idiag_alp23z
+        write(3,*) 'idiag_alp33z=',idiag_alp33z
+        write(3,*) 'idiag_eta111z=',idiag_eta111z
+        write(3,*) 'idiag_eta211z=',idiag_eta211z
+        write(3,*) 'idiag_eta311z=',idiag_eta311z
+        write(3,*) 'idiag_eta121z=',idiag_eta121z
+        write(3,*) 'idiag_eta221z=',idiag_eta221z
+        write(3,*) 'idiag_eta321z=',idiag_eta321z
+        write(3,*) 'idiag_eta131z=',idiag_eta131z
+        write(3,*) 'idiag_eta231z=',idiag_eta231z
+        write(3,*) 'idiag_eta331z=',idiag_eta331z
+        write(3,*) 'idiag_eta113z=',idiag_eta113z
+        write(3,*) 'idiag_eta213z=',idiag_eta213z
+        write(3,*) 'idiag_eta313z=',idiag_eta313z
+        write(3,*) 'idiag_eta123z=',idiag_eta123z
+        write(3,*) 'idiag_eta223z=',idiag_eta223z
+        write(3,*) 'idiag_eta323z=',idiag_eta323z
+        write(3,*) 'idiag_eta133z=',idiag_eta133z
+        write(3,*) 'idiag_eta233z=',idiag_eta233z
+        write(3,*) 'idiag_eta333z=',idiag_eta333z
+        write(3,*) 'idiag_alp11xz=',idiag_alp11xz
+        write(3,*) 'idiag_alp21xz=',idiag_alp21xz
+        write(3,*) 'idiag_alp31xz=',idiag_alp31xz
+        write(3,*) 'idiag_alp12xz=',idiag_alp12xz
+        write(3,*) 'idiag_alp22xz=',idiag_alp22xz
+        write(3,*) 'idiag_alp32xz=',idiag_alp32xz
+        write(3,*) 'idiag_alp13xz=',idiag_alp13xz
+        write(3,*) 'idiag_alp23xz=',idiag_alp23xz
+        write(3,*) 'idiag_alp33xz=',idiag_alp33xz
+        write(3,*) 'idiag_eta111xz=',idiag_eta111xz
+        write(3,*) 'idiag_eta211xz=',idiag_eta211xz
+        write(3,*) 'idiag_eta311xz=',idiag_eta311xz
+        write(3,*) 'idiag_eta121xz=',idiag_eta121xz
+        write(3,*) 'idiag_eta221xz=',idiag_eta221xz
+        write(3,*) 'idiag_eta321xz=',idiag_eta321xz
+        write(3,*) 'idiag_eta131xz=',idiag_eta131xz
+        write(3,*) 'idiag_eta231xz=',idiag_eta231xz
+        write(3,*) 'idiag_eta331xz=',idiag_eta331xz
+        write(3,*) 'idiag_eta113xz=',idiag_eta113xz
+        write(3,*) 'idiag_eta213xz=',idiag_eta213xz
+        write(3,*) 'idiag_eta313xz=',idiag_eta313xz
+        write(3,*) 'idiag_eta123xz=',idiag_eta123xz
+        write(3,*) 'idiag_eta223xz=',idiag_eta223xz
+        write(3,*) 'idiag_eta323xz=',idiag_eta323xz
+        write(3,*) 'idiag_eta133xz=',idiag_eta133xz
+        write(3,*) 'idiag_eta233xz=',idiag_eta233xz
+        write(3,*) 'idiag_eta333xz=',idiag_eta333xz
+        write(3,*) 'idiag_alp11exz=',idiag_alp11exz
+        write(3,*) 'idiag_alp21exz=',idiag_alp21exz
+        write(3,*) 'idiag_alp31exz=',idiag_alp31exz
+        write(3,*) 'idiag_alp12exz=',idiag_alp12exz
+        write(3,*) 'idiag_alp22exz=',idiag_alp22exz
+        write(3,*) 'idiag_alp32exz=',idiag_alp32exz
+        write(3,*) 'idiag_alp13exz=',idiag_alp13exz
+        write(3,*) 'idiag_alp23exz=',idiag_alp23exz
+        write(3,*) 'idiag_alp33exz=',idiag_alp33exz
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
