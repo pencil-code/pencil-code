@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.244 2005-06-27 10:28:27 brandenb Exp $
+! $Id: magnetic.f90,v 1.245 2005-06-27 17:31:44 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -166,7 +166,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.244 2005-06-27 10:28:27 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.245 2005-06-27 17:31:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -204,7 +204,11 @@ module Magnetic
 !
 !  Precalculate 1/nu_ni
 !
-      nu_ni1=1./nu_ni
+      if (nu_ni /= 0.) then
+        nu_ni1=1./nu_ni
+      else
+        nu_ni1=0.
+      endif
 !
 !  calculate B_ext21
 !
