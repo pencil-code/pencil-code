@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.208 2005-06-26 17:34:13 eos_merger_tony Exp $ 
+! $Id: sub.f90,v 1.209 2005-06-27 16:20:19 theine Exp $ 
 
 module Sub 
 
@@ -1652,56 +1652,45 @@ module Sub
 !  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
 !
 !  21-jul-03/axel: coded
+!  26-jul-05/tobi: do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
+!                  (This wasn't spotted by me but by a guy from SGI...)
 !
       use Cdata
       use Deriv
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3,3,3) :: d2A
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: del2,graddiv
       real, dimension (nx) :: tmp
-      integer :: iref,iref1,i,j,k,l
-      real :: eps
+      integer :: iref,iref1,i,j
 !
       intent(in) :: f,iref
-      intent(out) :: Bij,del2,graddiv
+      intent(out) :: bij,del2,graddiv
 !
 !  reference point of argument
 !
       iref1=iref-1
 !
-!  initialize diagonal terms A_l,ll of A_l,jj
-!  they would not be accessed below because of epsilon(i,k,l)
+!  calculate all mixed and non-mixed second derivatives
+!  of the vector potential (A_k,ij)
 !
-      do l=1,3
-        call der2(f,iref1+l,tmp,l)
-        del2(:,l)=tmp
-        graddiv(:,l)=tmp
-      enddo
-!
-!  calculate B_i,j = eps_ikl A_l,jk
-!  do remaining terms of A_l,jj
-!
-      bij=0.
       do i=1,3
-      do j=1,3
-      do k=1,3
-      do l=1,3
-        eps=levi_civita(i,k,l)
-        if(eps/=0.) then
-          if(j==k) then
-            call der2(f,iref1+l,tmp,j)
-            del2(:,l)=del2(:,l)+tmp
-          else
-            call derij(f,iref1+l,tmp,j,k)
-            if(j==l) graddiv(:,k)=graddiv(:,k)+tmp
-          endif
-          bij(:,i,j)=bij(:,i,j)+eps*tmp
-        endif
+        do j=1,3
+          call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
+        enddo
+        call derij(f,iref1+i,tmp,2,3); d2A(:,2,3,i)=tmp; d2A(:,3,2,i)=tmp
+        call derij(f,iref1+i,tmp,3,1); d2A(:,3,1,i)=tmp; d2A(:,1,3,i)=tmp
+        call derij(f,iref1+i,tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
       enddo
-      enddo
-      enddo
-      enddo
+!
+!  calculate del2_i = A_i,jj, graddiv_i = A_j,ji, and b_i,j = eps_ikl A_l,jk
+!
+      del2(:,:) = d2A(:,1,1,:) + d2A(:,2,2,:) + d2A(:,3,3,:)
+      graddiv(:,:) = d2A(:,:,1,1) + d2A(:,:,2,2) + d2A(:,:,3,3)
+      bij(:,1,:) = d2A(:,:,2,3) - d2A(:,3,:,2)
+      bij(:,2,:) = d2A(:,:,3,1) - d2A(:,1,:,3)
+      bij(:,3,:) = d2A(:,:,1,2) - d2A(:,2,:,1)
 !
     endsubroutine bij_etc
 !***********************************************************************
