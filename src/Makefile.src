@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.111 2005-06-27 05:18:52 dobler Exp $
+### $Id: Makefile.src,v 1.112 2005-06-27 08:26:41 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -137,13 +137,12 @@ FCCLEANER=
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)
-##FC=ifc_6.0 -i_dynamic #(ns0|nq[0-9]*|nw[0-9]*)
+#FC=/home/ajohan/bin/ifc_7.1 #(ns0)
 #FC=pgf90 #(lfc101)
 #FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
 #LDMPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
 #LDONLYFLAGS=farg.o #(lfc101)
-#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx|brahe|nq[0-9]*|aida[0-9]*)
-#FC=ifc_7.1 -pthread -I/home/ajohan/intel/ifc/compiler70/ia32/lib #(ns0)
+#FC=ifort #(nw[0-9]*|hamlet|lynx|brahe|nq[0-9]*|aida[0-9]*)
 #FFLAGS=-O3 -I/home/ajohan/mpich/include #(hamlet)
 #LDMPI=-L /home/ajohan/mpich/lib -lmpich #(hamlet)
 #FFLAGS=-O3 -I/opt/mpich/include #(aida[0-9]*)
@@ -175,7 +174,6 @@ FCCLEANER=
 #LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
-#FFLAGS=-O3 -Wl,-rpath,/usr/opt/intel/lib #(ns0)
 #FFLAGS=-O3 -xW #(obelix)
 #FC=f95 #(karbala)
 #FC=pgf90 #(tycho|linux29|monolith)
@@ -196,7 +194,6 @@ FCCLEANER=
 #LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(morvern|renton|lanark|velma)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
 #LDMPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]*)
-#LDMPI=-pthread -I/home/ajohan/intel/ifc/compiler70/ia32/lib -static-libcxa #(ns0)
 #LDMPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(lynx)
 #LDMPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
