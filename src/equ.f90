@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.233 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: equ.f90,v 1.234 2005-06-27 05:50:14 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.233 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: equ.f90,v 1.234 2005-06-27 05:50:14 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -665,6 +665,8 @@ module Equ
     endsubroutine debug_imn_arrays
 !***********************************************************************
     subroutine pencil_consistency_check(f,df,p)
+!
+! [Document Me!!!]
 !
       use Cdata
       use Mpicomm, only: stop_it
