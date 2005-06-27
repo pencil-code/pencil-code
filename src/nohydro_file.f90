@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.21 2005-06-27 00:14:19 mee Exp $
+! $Id: nohydro_file.f90,v 1.22 2005-06-27 10:28:27 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -28,12 +28,6 @@ module Hydro
   integer :: idiag_urms=0,idiag_umax=0,idiag_orms=0,idiag_omax=0
   integer :: idiag_Marms=0,idiag_Mamax=0
   integer :: idiag_u2mphi=0,idiag_oumphi=0
-!merge_axel: not sure I forgot something ...
-! integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
-! integer :: i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
-! integer :: i_Marms=0,i_Mamax=0
-! integer :: i_u2mphi=0,i_oumphi=0
-! integer :: i_epsK=0
 
 ! real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
 ! real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
@@ -67,8 +61,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.21 $", &
-           "$Date: 2005-06-27 00:14:19 $")
+           "$Revision: 1.22 $", &
+           "$Date: 2005-06-27 10:28:27 $")
 !
     endsubroutine register_hydro
 !***********************************************************************

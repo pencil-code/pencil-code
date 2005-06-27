@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.243 2005-06-27 00:14:19 mee Exp $
+! $Id: magnetic.f90,v 1.244 2005-06-27 10:28:27 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -126,23 +126,6 @@ module Magnetic
   integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
   integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
-!merge_axel: not sure whether I missed any of the following from trunk...
-! integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
-! integer :: i_bxpt=0,i_bypt=0,i_bzpt=0,i_epsM_LES=0
-! integer :: i_aybym2=0,i_exaym2=0,i_exjm2=0
-! integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0,i_dtb=0
-! integer :: i_beta1m=0,i_beta1max=0
-! integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
-! integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0,i_djuidjbim
-! integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
-! integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
-! integer :: i_bxmxz=0,i_bymxz=0,i_bzmxz=0
-! integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
-! integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
-! integer :: i_b2b13m=0
-! integer :: i_brmphi=0,i_bpmphi=0,i_bzmphi=0,i_b2mphi=0,i_jbmphi=0
-! integer :: i_uxbrmphi,i_uxbpmphi,i_uxbzmphi
-! integer :: i_dteta=0
 
   contains
 
@@ -183,7 +166,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.243 2005-06-27 00:14:19 mee Exp $")
+           "$Id: magnetic.f90,v 1.244 2005-06-27 10:28:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1487,24 +1470,6 @@ module Magnetic
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
         idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0;
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
-!merge_axel
-!       i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
-!       i_bxpt=0; i_bypt=0; i_bzpt=0; i_epsM_LES=0
-!       i_aybym2=0; i_exaym2=0; i_exjm2=0
-!       i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0; i_dtb=0
-!       i_beta1m=0; i_beta1max=0
-!       i_bx2m=0; i_by2m=0; i_bz2m=0
-!       i_bxbym=0; i_bxbzm=0; i_bybzm=0; i_djuidjbim=0
-!       i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
-!       i_bxmxy=0; i_bymxy=0; i_bzmxy=0
-!       i_bxmxz=0; i_bymxz=0; i_bzmxz=0
-!       i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
-!       i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
-!       i_uxjm=0; i_ujxbm=0
-!       i_b2b13m=0
-!       i_brmphi=0; i_bpmphi=0; i_bzmphi=0; i_b2mphi=0; i_jbmphi=0
-!       i_uxbrmphi=0; i_uxbpmphi=0; i_uxbzmphi=0;
-!       i_dteta=0
       endif
 !
 !  check for those quantities that we want to evaluate online

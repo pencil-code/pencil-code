@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.60 2005-06-27 00:14:19 mee Exp $
+! $Id: nomagnetic.f90,v 1.61 2005-06-27 10:28:27 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -21,18 +21,10 @@ module Magnetic
 
   include 'magnetic.h'
 
-!merge_axel: I think kinflow is now moved elsewhere; but I keep it for the
-!merge_axel: time being
-  character (len=40) :: kinflow=''
-!merge_axel: I added kx=1.,ky=1.,kz=1. from trunk, and changed 
-!merge_axel: kx_aa=1.,ky_aa=1.,kz_aa=1. from 0 for all.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: brms=0.
   real, dimension(nx) :: meanfield_EMFdotB
-
-  !namelist /magnetic_init_pars/ dummy
-  !namelist /magnetic_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0,idiag_abm=0
@@ -66,7 +58,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.60 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nomagnetic.f90,v 1.61 2005-06-27 10:28:27 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
