@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.235 2005-06-27 08:10:33 ajohan Exp $
+! $Id: equ.f90,v 1.236 2005-06-27 17:27:53 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.235 2005-06-27 08:10:33 ajohan Exp $")
+           "$Id: equ.f90,v 1.236 2005-06-27 17:27:53 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -738,12 +738,12 @@ f_loop: do iv=1,mvar
         enddo f_loop
 ! 
         if (lconsistent .and. lpenc_requested(penc)) then
-          if (lroot) print'(a,i4,a)', &
+          if (lroot) print  '(a,i4,a)', &
               'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is requested, but does not appear to be required!'
         elseif ( (.not. lconsistent) .and. (.not. lpenc_requested(penc)) ) then
-          if (lroot) print'(a,i4,a)', &
+          if (lroot) print '(a,i4,a)', &
               'pencil_consistency_check: MISSING PENCIL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is not requested, but calculating it changes the results!'
@@ -800,14 +800,14 @@ f_loop: do iv=1,mvar
 !  !ref + !d + !r = d needed and not set, r needed and not set; missing d
 !
         if (lconsistent .and. lpenc_diagnos(penc)) then
-          if (lroot) print'(a,i4,a)', &
+          if (lroot) print '(a,i4,a)', &
               'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is requested for diagnostics, '// &
               'but does not appear to be required!'
         elseif ( (.not. lconsistent) .and. (.not. lpenc_diagnos(penc)) .and. &
             (.not. lpenc_requested(penc)) ) then
-          if (lroot) print'(a,i4,a)', &
+          if (lroot) print '(a,i4,a)', &
               'pencil_consistency_check: MISSING PENCIL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is not requested for diagnostics, '// &
