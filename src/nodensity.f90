@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.33 2005-06-27 00:14:19 mee Exp $
+! $Id: nodensity.f90,v 1.34 2005-06-27 19:47:28 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -56,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.33 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nodensity.f90,v 1.34 2005-06-27 19:47:28 dobler Exp $")
 !
 !ajwm Necessary? added incase
 !      gamma=1.
@@ -78,10 +78,10 @@ module Density
 !  in the force-free model, there is no pressure gradient
 !  (but allow for the possibility of pressure gradients from entropy)
 !
-      if (.not.lentropy) then
-        cs0=0.
-        cs20=0.
-      endif
+!      if (.not.lentropy) then
+!        cs0=0.
+!        cs20=0.
+!      endif
 !
       if (ip == 0) print*,f,lstarting ! keep compiler quiet
     endsubroutine initialize_density
