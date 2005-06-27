@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.144 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: start.f90,v 1.145 2005-06-27 17:38:59 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -85,7 +85,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.144 2005-06-26 17:34:13 eos_merger_tony Exp $")
+             "$Id: start.f90,v 1.145 2005-06-27 17:38:59 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -233,7 +233,7 @@
         if (lroot) print* !(empty line)
         do i=1,init_loops
           if (lroot .and. init_loops/=1) &
-              print'(A33,i3,A25)', 'start: -- performing loop number', i, &
+              print '(A33,i3,A25)', 'start: -- performing loop number', i, &
               ' of initial conditions --'
           call init_gg        (f,xx,yy,zz)
           call init_uu        (f,xx,yy,zz)
