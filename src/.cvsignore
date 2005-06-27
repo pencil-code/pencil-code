@@ -2,4 +2,6 @@ work.pc work.pcl
 makefile Makefile
 *.d
 cparam.inc
+cparam_pencils.inc
+pencil_init.inc
 *.il
