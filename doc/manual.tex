@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.291 2005-05-24 23:03:29 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.292 2005-06-27 15:42:50 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-05-24 23:03:29 $ $,~ $ $Revision: 1.291 $ $}
+%\date{$ $Date: 2005-06-27 15:42:50 $ $,~ $ $Revision: 1.292 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-05-24 23:03:29 $ $,~ $ $Revision: 1.291 $ $}\\
+  \emph{$ $Date: 2005-06-27 15:42:50 $ $,~ $ $Revision: 1.292 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4409,6 +4409,28 @@ Reading param.nml..
   last slash, of course.
 }
 
+%%%
+\subsubsection{Something INC in start.pro}
+
+{\bf Q}:
+start doesn't even work:
+\begin{Verbatim}
+% Compiled module: $MAIN$.
+nname=      11
+Reading grid.dat..
+Reading param.nml..
+Can't locate Namelist.pm in @INC (@INC contains: /etc/perl /usr/local/lib/perl/5.8.4 /usr/local/share/perl/5.8.4 /usr/lib/perl5 /usr/share/perl5 /usr/lib/perl/5.8 /usr/share/perl/5.8 /usr/local/lib/site_perl .) at /home/brandenb/pencil-code/bin/nl2idl line 49.
+BEGIN failed--compilation aborted at /home/brandenb/pencil-code/bin/nl2idl line 49.
+\end{Verbatim}
+
+\medskip
+
+{\bf A}:
+{\em
+  Go into \file{\$PENCIL_HOME} and say \cmd{cvs up source.csh}
+  and/or \cmd{cvs up source.sh}. (They were just out of date.)
+}
+
 
 % ---------------------------------------------------------------------- %
 
@@ -4732,7 +4754,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-05-24 23:03:29 $ $,~ $ $Revision: 1.291 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-06-27 15:42:50 $ $,~ $ $Revision: 1.292 $ $}
 
 \section{Timings}
 
@@ -7814,7 +7836,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.291 2005-05-24 23:03:29 dobler Exp $ $}
+$ $Id: manual.tex,v 1.292 2005-06-27 15:42:50 brandenb Exp $ $}
 
 
 \end{document}
