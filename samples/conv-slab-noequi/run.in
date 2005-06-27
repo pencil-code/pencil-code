@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2005-05-25 16:15:58 theine Exp $',
+  cvsid='$Id: run.in,v 1.4 2005-06-27 10:01:53 ajohan Exp $',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=20., dvid=0.2
   bcx = 'p','p','p', 'p',    'p'
@@ -12,8 +12,9 @@
   bcz = 's','s','a','a2','c1:cT'
   cdtv=0.30
 /
+&eos_run_pars
+/
 &hydro_run_pars
-  nu=4e-3, ivisc='nu-const'
   Omega=0.1 ! angular velocity
   theta=0.  ! direction of angular velocity vector (0 : vertical)
 /
@@ -28,6 +29,9 @@
   Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
   hcond0=8.e-3
   lupw_ss=T ! use upwinding for entropy to avoid wiggles
+/
+&viscosity_run_pars
+  nu=4e-3, ivisc='nu-const'
 /
 
 ! Nomenclature for boundary conditions:
