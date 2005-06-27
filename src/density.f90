@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.183 2005-06-27 00:14:18 mee Exp $
+! $Id: density.f90,v 1.184 2005-06-27 09:23:01 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -23,7 +23,8 @@ module Density
   use Cparam
   use Cdata
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
-                             gamma,gamma1,cs2top,cs2bot, beta_dlnrhodr
+                             gamma,gamma1,cs2top,cs2bot, &
+                             mpoly, beta_dlnrhodr
 
   implicit none
 
@@ -37,12 +38,8 @@ module Density
   real :: eps_planet=.5
   real :: q_ell=5., hh0=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
-  real :: mpoly=1.5
-  real :: cs2cool=0.
-  real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.
-  integer :: isothtop=0
   integer, parameter :: ndiff_max=4
   logical :: lupw_lnrho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
@@ -106,7 +103,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.183 2005-06-27 00:14:18 mee Exp $")
+           "$Id: density.f90,v 1.184 2005-06-27 09:23:01 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
