@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.112 2005-06-27 08:26:41 ajohan Exp $
+### $Id: Makefile.src,v 1.113 2005-06-27 12:05:53 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -428,7 +428,7 @@ depend.dot: Makefile.src Makefile.local scripts/mkdot
 cparam.inc: Makefile.src Makefile.local scripts/mkcparam
 	scripts/mkcparam $(physics:.o=.f90) cparam.local -o cparam.inc
 shock_profile.inc: Makefile.src Makefile.local shock_finder.x $(SHOCK_PROFILE).desc
-	shock_finder.x < $(SHOCK_PROFILE).desc > shock_profile.inc
+	./shock_finder.x < $(SHOCK_PROFILE).desc > shock_profile.inc
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
