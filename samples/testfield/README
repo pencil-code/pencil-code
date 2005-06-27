@@ -1,0 +1,7 @@
+$Id: README,v 1.1 2005-06-27 07:09:12 brandenb Exp $
+
+This procedure allows the full alpha and eta tensors to be calculated.
+Different test fields can be used. Note however that the result is
+in general wavenumber dependent. The present examples is for the
+Roberts flow.
+
