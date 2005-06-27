@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.3 2005-06-27 06:09:38 dobler Exp $
+# CVS: $Id: mkcparam,v 1.4 2005-06-27 19:49:16 dobler Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -408,9 +408,13 @@ if ($mpar_loc eq 0) {print OUT "integer, parameter :: mpar_loc=npar\n";}
 $,="\n";
 print OUT @cparam_lines;
 
-print OUT_PENCIL "real, parameter :: penc0=1.23456E12\n";
-print OUT_PENCIL "integer, parameter :: npencils=$npencils";
-print OUT_PENCIL "\ntype pencil_case\n";
+print OUT_PENCIL <<"EOF";
+real, parameter :: penc0=23.45678 ! `impossible' value -- must not be
+                                  ! too large, so expressions like
+                                  ! exp(gamma1*p%lnrho) don't cause overflow
+integer, parameter :: npencils=$npencils
+type pencil_case
+EOF
 foreach my $pencil (sort { lc($a) cmp lc($b) } keys %pencil_hash) {
   print OUT_PENCIL "  ".$pencil_hash{$pencil}{'declaration'}."\n";
   print OUT_PENC_INIT "  p%".$pencil."=penc0\n";
