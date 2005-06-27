@@ -3,7 +3,6 @@
 ### Included by `Makefile'
 ###
 
-LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM   = nompicomm
 IO        =   io_dist
@@ -18,6 +17,7 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-GRAVITY   =   grav_z
+EOS       = eos_idealgas
+GRAVITY   =   gravity_simple
 FORCING   = noforcing
 SHEAR     = noshear
