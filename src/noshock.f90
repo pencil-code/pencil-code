@@ -1,4 +1,4 @@
-! $Id: noshock.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: noshock.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
 
 !  This module calculates a divergence of u based shock finding
 !  profile used by shock viscosities and diffusion terms.
@@ -27,7 +27,7 @@ module Shock
 
   implicit none
 
-  include 'shock.inc'
+  include 'shock.h'
 
   ! input parameters
   !namelist /shock_init_pars/ dummy
@@ -62,7 +62,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshock.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: noshock.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************

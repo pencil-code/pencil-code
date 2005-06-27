@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nodustvelocity.f90,v 1.26 2005-06-27 00:14:19 mee Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -18,7 +18,7 @@ module Dustvelocity
 
   implicit none
 
-  include 'dustvelocity.inc'
+  include 'dustvelocity.h'
 
   !namelist /dustvelocity_init_pars/ dummy
   !namelist /dustvelocity_run_pars/  dummy
@@ -59,7 +59,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: nodustvelocity.f90,v 1.26 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************

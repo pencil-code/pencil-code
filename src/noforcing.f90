@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: noforcing.f90,v 1.15 2005-06-27 00:14:19 mee Exp $
 
 module Forcing
 
@@ -9,7 +9,7 @@ module Forcing
 
   implicit none
 
-  include 'forcing.inc'
+  include 'forcing.h'
 
   !namelist /forcing_init_pars/ dummy
   !namelist /forcing_run_pars/  dummy
@@ -39,7 +39,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.14 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: noforcing.f90,v 1.15 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************

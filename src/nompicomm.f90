@@ -14,7 +14,7 @@ module Mpicomm
 
   implicit none
 
-  include 'mpicomm.inc'
+  include 'mpicomm.h'
 
   interface mpibcast_logical
     module procedure mpibcast_logical_scl

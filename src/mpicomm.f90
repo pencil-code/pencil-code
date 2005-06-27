@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.132 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: mpicomm.f90,v 1.133 2005-06-27 00:14:19 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -54,7 +54,7 @@ module Mpicomm
 
   implicit none
 
-  include 'mpicomm.inc'
+  include 'mpicomm.h'
 
   interface mpibcast_logical
     module procedure mpibcast_logical_scl

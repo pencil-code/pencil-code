@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.10 2005-06-26 17:34:13 eos_merger_tony Exp $ 
+! $Id: notimeavg.f90,v 1.11 2005-06-27 00:14:19 mee Exp $ 
 
 module Timeavg
 
@@ -9,7 +9,7 @@ module Timeavg
 
   implicit none
 
-  include 'timeavg.inc' 
+  include 'timeavg.h' 
 !
 !  real, dimension(mx,my,mz,mtavg) :: f_tavg
 !  integer, dimension(mtavg) :: idx_tavg=0

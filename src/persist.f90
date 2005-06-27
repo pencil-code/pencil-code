@@ -1,4 +1,4 @@
-! $Id: persist.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: persist.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   persist.f90   !!!
@@ -29,7 +29,7 @@ module Persist
 
   public :: input_persistent, output_persistent
 
-  include 'record_types.inc'
+  include 'record_types.h'
 
 contains
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.70 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: grav_r.f90,v 1.71 2005-06-27 00:14:18 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -19,7 +19,7 @@ module Gravity
 
   implicit none
 
-  include 'gravity.inc'
+  include 'gravity.h'
 
   interface potential
     module procedure potential_global
@@ -72,7 +72,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.70 2005-06-26 17:34:13 eos_merger_tony Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.71 2005-06-27 00:14:18 mee Exp $")
 !
       lgrav =.true.
       lgravr=.true.

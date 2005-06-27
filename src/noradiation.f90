@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.26 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: noradiation.f90,v 1.27 2005-06-27 00:14:19 mee Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -16,7 +16,7 @@ module Radiation
 
   implicit none
 
-  include 'radiation.inc'
+  include 'radiation.h'
 
   ! radiation turned off
  
@@ -47,7 +47,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.26 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: noradiation.f90,v 1.27 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************

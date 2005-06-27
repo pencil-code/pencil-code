@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.131 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: dustdensity.f90,v 1.132 2005-06-27 00:14:18 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -25,7 +25,7 @@ module Dustdensity
 
   implicit none
 
-  include 'dustdensity.inc'
+  include 'dustdensity.h'
 
   integer, parameter :: ndiffd_max=4  
   real, dimension(nx,ndustspec,ndustspec) :: dkern
@@ -133,7 +133,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.131 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: dustdensity.f90,v 1.132 2005-06-27 00:14:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

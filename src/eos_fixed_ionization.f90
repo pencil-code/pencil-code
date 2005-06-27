@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $
+! $Id: eos_fixed_ionization.f90,v 1.4 2005-06-27 00:14:18 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -20,7 +20,7 @@ module EquationOfState
 
   implicit none
 
-  include 'eos.inc'
+  include 'eos.h'
 
   interface eoscalc ! Overload subroutine `eoscalc'
     module procedure eoscalc_farray   ! explicit f implicit m,n
@@ -101,7 +101,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.4 2005-06-27 00:14:18 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

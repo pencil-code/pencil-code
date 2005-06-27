@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.6 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: chiral.f90,v 1.7 2005-06-27 00:14:18 mee Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -20,7 +20,7 @@ module Chiral
 
   implicit none
 
-  include 'chiral.inc'
+  include 'chiral.h'
 
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
 
@@ -88,7 +88,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.6 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: chiral.f90,v 1.7 2005-06-27 00:14:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

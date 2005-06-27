@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.20 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nohydro_file.f90,v 1.21 2005-06-27 00:14:19 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -15,6 +15,8 @@ module Hydro
   use Density
 
   implicit none
+
+  include 'hydro.h'
 
   private
 
@@ -65,8 +67,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.20 $", &
-           "$Date: 2005-06-26 17:34:13 $")
+           "$Revision: 1.21 $", &
+           "$Date: 2005-06-27 00:14:19 $")
 !
     endsubroutine register_hydro
 !***********************************************************************

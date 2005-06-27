@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $
+! $Id: eos_ionization.f90,v 1.4 2005-06-27 00:14:18 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -19,7 +19,7 @@ module EquationOfState
 
   implicit none
 
-  include 'eos.inc'
+  include 'eos.h'
 
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
@@ -112,7 +112,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.3 2005-06-26 23:49:58 mee Exp $")
+           "$Id: eos_ionization.f90,v 1.4 2005-06-27 00:14:18 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

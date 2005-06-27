@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.103 2005-06-26 20:24:20 mee Exp $
+! $Id: interstellar.f90,v 1.104 2005-06-27 00:14:19 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -18,8 +18,8 @@ module Interstellar
 !
   implicit none
 !
-  include 'interstellar.inc'
-  include 'record_types.inc'
+  include 'interstellar.h'
+  include 'record_types.h'
 !
 ! 'Current' SN Explosion site parameters
 !
@@ -260,7 +260,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.103 2005-06-26 20:24:20 mee Exp $")
+           "$Id: interstellar.f90,v 1.104 2005-06-27 00:14:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

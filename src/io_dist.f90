@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.84 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: io_dist.f90,v 1.85 2005-06-27 00:14:19 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -19,7 +19,7 @@ module Io
 
   implicit none
 
-  include 'io.inc'
+  include 'io.h'
 
 
   interface output              ! Overload the `output' function
@@ -92,7 +92,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.84 2005-06-26 17:34:13 eos_merger_tony Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.85 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_io
 !

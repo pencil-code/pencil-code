@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.10 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nopower_spectrum.f90,v 1.11 2005-06-27 00:14:19 mee Exp $
 !
 module  power_spectrum
   !
@@ -6,7 +6,7 @@ module  power_spectrum
   !
   implicit none
 
-  include 'power_spectrum.inc'
+  include 'power_spectrum.h'
   !
   contains
 

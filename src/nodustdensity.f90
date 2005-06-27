@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nodustdensity.f90,v 1.26 2005-06-27 00:14:19 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -19,7 +19,7 @@ module Dustdensity
 
   implicit none
 
-  include 'dustdensity.inc'
+  include 'dustdensity.h'
 
   !integer :: dummy              ! We cannot define empty namelists
   logical :: ldustnulling=.false.
@@ -53,7 +53,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.25 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: nodustdensity.f90,v 1.26 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************

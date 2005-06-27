@@ -1,4 +1,4 @@
-! $Id: global_rr.f90,v 1.5 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: global_rr.f90,v 1.6 2005-06-27 00:14:18 mee Exp $
 
 module Global
 
@@ -14,7 +14,7 @@ module Global
 
   implicit none
 
-  include 'global.inc'
+  include 'global.h'
 
   interface set_global
     module procedure set_global_vect

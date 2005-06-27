@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: visc_hyper.f90,v 1.18 2005-06-27 00:14:19 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -22,7 +22,7 @@ module Viscosity
 
   implicit none
 
-  include 'viscosity.inc'
+  include 'viscosity.h'
 
   character (len=labellen) :: ivisc='hyper3'
   real :: maxeffectivenu,nu_mol
@@ -70,7 +70,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: visc_hyper.f90,v 1.18 2005-06-27 00:14:19 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

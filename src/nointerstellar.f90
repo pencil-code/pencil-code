@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.16 2005-06-26 20:42:25 brandenb Exp $
+! $Id: nointerstellar.f90,v 1.17 2005-06-27 00:14:19 mee Exp $
 !
 !  Dummy module
 !
@@ -17,7 +17,7 @@ module Interstellar
 
   implicit none
 
-  include 'interstellar.inc'
+  include 'interstellar.h'
 
   !namelist /interstellar_init_pars/ dummy
   !namelist /interstellar_run_pars/ dummy
@@ -41,7 +41,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.16 2005-06-26 20:42:25 brandenb Exp $")
+           "$Id: nointerstellar.f90,v 1.17 2005-06-27 00:14:19 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: shock.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -25,7 +25,7 @@ module Shock
 
   implicit none
 
-  include 'shock.inc'
+  include 'shock.h'
 
   logical :: lshock_first=.true.,lshock_max5=.false.
   logical :: lwith_extreme_div=.false.
@@ -92,7 +92,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: shock.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

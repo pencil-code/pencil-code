@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nospecial.f90,v 1.10 2005-06-27 00:14:19 mee Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -76,7 +76,7 @@ module Special
 
   implicit none
 
-  include 'special.inc'
+  include 'special.h'
   
 !!  character, len(50) :: initcustom
 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.10 2005-06-27 00:14:19 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.9 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: nospecial.f90,v 1.10 2005-06-27 00:14:19 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 

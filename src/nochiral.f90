@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.3 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: nochiral.f90,v 1.4 2005-06-27 00:14:19 mee Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -20,7 +20,7 @@ module Chiral
 
   implicit none
 
-  include 'chiral.inc'
+  include 'chiral.h'
 
   integer :: dummy           ! We cannot define empty namelists
   namelist /chiral_init_pars/ dummy
@@ -52,7 +52,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.3 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: nochiral.f90,v 1.4 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************

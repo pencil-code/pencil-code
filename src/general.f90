@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.38 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: general.f90,v 1.39 2005-06-27 00:14:18 mee Exp $
 
 module General
 
@@ -20,7 +20,7 @@ module General
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
 
-  include 'record_types.inc'
+  include 'record_types.h'
 
   interface random_number_wrapper   ! Overload this function
     module procedure random_number_wrapper_0

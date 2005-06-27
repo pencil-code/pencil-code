@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: temperature.f90,v 1.18 2005-06-27 00:14:19 mee Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -23,6 +23,8 @@ module Entropy
   use Viscosity
 
   implicit none
+
+  include 'entropy.h'
 
   private
 
@@ -90,7 +92,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.17 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: temperature.f90,v 1.18 2005-06-27 00:14:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

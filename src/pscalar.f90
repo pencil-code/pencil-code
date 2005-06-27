@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.53 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: pscalar.f90,v 1.54 2005-06-27 00:14:19 mee Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -20,7 +20,7 @@ module Pscalar
 
   implicit none
 
-  include 'pscalar.inc'
+  include 'pscalar.h'
 
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
   character (len=40) :: tensor_pscalar_file
@@ -84,7 +84,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.53 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: pscalar.f90,v 1.54 2005-06-27 00:14:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

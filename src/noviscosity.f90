@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: noviscosity.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -22,7 +22,7 @@ module Viscosity
 
   implicit none
 
-  include 'viscosity.inc'
+  include 'viscosity.h'
 
   logical :: lvisc_first=.false.
 
@@ -60,7 +60,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: noviscosity.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************

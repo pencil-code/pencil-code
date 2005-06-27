@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: gravity_simple.f90,v 1.3 2005-06-27 00:14:18 mee Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -26,7 +26,7 @@ module Gravity
 
   implicit none
 
-  include 'gravity.inc'
+  include 'gravity.h'
 
   interface potential
     module procedure potential_global
@@ -94,7 +94,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: gravity_simple.f90,v 1.3 2005-06-27 00:14:18 mee Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !

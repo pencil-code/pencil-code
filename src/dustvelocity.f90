@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.92 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: dustvelocity.f90,v 1.93 2005-06-27 00:14:18 mee Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -23,7 +23,7 @@ module Dustvelocity
 
   implicit none
 
-  include 'dustvelocity.inc'
+  include 'dustvelocity.h'
 !ajwm SHOULDN'T REALLY BE SHARED
 !ajwm but are used consistently with the Dustdensity module
 !ajwm - not good but for reasons of dust density / velocity interaction
@@ -129,7 +129,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.92 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: dustvelocity.f90,v 1.93 2005-06-27 00:14:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

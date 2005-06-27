@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.66 2005-06-26 23:49:58 mee Exp $
+! $Id: noentropy.f90,v 1.67 2005-06-27 00:14:19 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -23,7 +23,7 @@ module Entropy
 
   implicit none
 
-  include 'entropy.inc'
+  include 'entropy.h'
 
   !namelist /entropy_init_pars/ dummyss
   !namelist /entropy_run_pars/  dummyss
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.66 2005-06-26 23:49:58 mee Exp $")
+           "$Id: noentropy.f90,v 1.67 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

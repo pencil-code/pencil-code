@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.7 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: noshear.f90,v 1.8 2005-06-27 00:14:19 mee Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -12,7 +12,7 @@ module Shear
 
   implicit none
 
-  include 'shear.inc'
+  include 'shear.h'
 
   !namelist /shear_init_pars/ dummy
   !namelist /shear_run_pars/ dummy
@@ -38,7 +38,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.7 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: noshear.f90,v 1.8 2005-06-27 00:14:19 mee Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************

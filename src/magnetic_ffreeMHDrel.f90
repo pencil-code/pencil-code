@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.32 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.33 2005-06-27 00:14:19 mee Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -24,7 +24,7 @@ module Magnetic
 
   implicit none
 
-  include 'magnetic.inc'
+  include 'magnetic.h'
 
   character (len=labellen) :: initaa='zero',initaa2='zero'
 
@@ -106,7 +106,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.32 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.33 2005-06-27 00:14:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

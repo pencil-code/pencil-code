@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.335 2005-06-26 23:49:58 mee Exp $
+! $Id: entropy.f90,v 1.336 2005-06-27 00:14:18 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -27,7 +27,7 @@ module Entropy
 
   implicit none
 
-  include 'entropy.inc'
+  include 'entropy.h'
 
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss=0.
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.335 2005-06-26 23:49:58 mee Exp $")
+           "$Id: entropy.f90,v 1.336 2005-06-27 00:14:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

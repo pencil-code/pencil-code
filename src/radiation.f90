@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.37 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: radiation.f90,v 1.38 2005-06-27 00:14:19 mee Exp $
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
@@ -20,7 +20,7 @@ module Radiation
 
   implicit none
 
-  include 'radiation.inc'
+  include 'radiation.h'
 
   real :: c_gam=100
   real :: opas=1e-8
@@ -98,7 +98,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.37 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: radiation.f90,v 1.38 2005-06-27 00:14:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

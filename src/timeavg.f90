@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.15 2005-06-26 17:34:13 eos_merger_tony Exp $ 
+! $Id: timeavg.f90,v 1.16 2005-06-27 00:14:19 mee Exp $ 
 
 module Timeavg
 
@@ -10,7 +10,7 @@ module Timeavg
 
   implicit none
 
-  include 'timeavg.inc' 
+  include 'timeavg.h' 
 !
   include 'ctimeavg.local'
 !

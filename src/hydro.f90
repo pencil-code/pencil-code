@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.200 2005-06-26 23:49:58 mee Exp $
+! $Id: hydro.f90,v 1.201 2005-06-27 00:14:18 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -26,7 +26,7 @@ module Hydro
 
   implicit none
 
-  include 'hydro.inc'
+  include 'hydro.h'
 
   ! init parameters
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
@@ -142,7 +142,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.200 2005-06-26 23:49:58 mee Exp $")
+           "$Id: hydro.f90,v 1.201 2005-06-27 00:14:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

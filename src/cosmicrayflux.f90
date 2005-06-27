@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: cosmicrayflux.f90,v 1.3 2005-06-27 00:14:18 mee Exp $
 
 !  Cosmic Ray Flux
 !  
@@ -22,7 +22,7 @@ module Cosmicrayflux
 
   implicit none
 
-  include 'cosmicrayflux.inc'
+  include 'cosmicrayflux.h'
 
   character (len=labellen) :: initfcr='zero'
   ! input parameters
@@ -78,7 +78,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.2 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: cosmicrayflux.f90,v 1.3 2005-06-27 00:14:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

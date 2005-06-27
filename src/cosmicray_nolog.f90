@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.18 2005-06-26 23:49:58 mee Exp $
+! $Id: cosmicray_nolog.f90,v 1.19 2005-06-27 00:14:18 mee Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -25,7 +25,7 @@ module CosmicRay
 
   implicit none
 
-  include 'cosmicray.inc'
+  include 'cosmicray.h'
 
   character (len=labellen) :: initecr='zero', initecr2='zero'
 
@@ -97,7 +97,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.18 2005-06-26 23:49:58 mee Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.19 2005-06-27 00:14:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

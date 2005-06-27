@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.242 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: magnetic.f90,v 1.243 2005-06-27 00:14:19 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -28,7 +28,7 @@ module Magnetic
 
   implicit none
 
-  include 'magnetic.inc'
+  include 'magnetic.h'
 
   character (len=labellen) :: initaa='zero',initaa2='zero'
   character (len=labellen) :: iresistivity='eta-const',Omega_profile='nothing'
@@ -183,7 +183,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.242 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: magnetic.f90,v 1.243 2005-06-27 00:14:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: particles_tracers.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
 !
 !  This module takes care of everything related to tracer particles.
 !
@@ -19,7 +19,7 @@ module Particles
 
   implicit none
 
-  include 'particles.inc'
+  include 'particles.h'
 
   real, dimension (npar,mpvar) :: fp, dfp
   integer, dimension (npar) :: ipar,ipar0
@@ -193,7 +193,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-          "$Id: particles_tracers.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $")
+          "$Id: particles_tracers.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
 !
 !  Indices for particle position.
 !

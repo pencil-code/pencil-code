@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.3 2005-06-26 23:49:58 mee Exp $
+! $Id: noeos.f90,v 1.4 2005-06-27 00:14:19 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -18,7 +18,7 @@ module EquationOfState
 
   implicit none
 
-  include 'eos.inc'
+  include 'eos.h'
 
   interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
@@ -81,7 +81,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.3 2005-06-26 23:49:58 mee Exp $')
+           '$Id: noeos.f90,v 1.4 2005-06-27 00:14:19 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
