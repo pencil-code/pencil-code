@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.5 2005-06-27 22:20:51 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.6 2005-06-28 09:54:39 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.5 2005-06-27 22:20:51 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.6 2005-06-28 09:54:39 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -410,6 +410,7 @@ module EquationOfState
         if (present(ee)) &
             ee=cs20*exp(gamma*cp1*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
 !AXEL: why is below no rho factor outside??
+!TOBI: There is... The formula below is equivalent to pp=ee*exp(lnrho)/gamma1
         if (present(pp)) pp=cs20*exp(gamma*(cp1*ss+lnrho)-gamma1*lnrho0)/gamma
       endif
 !
@@ -450,6 +451,8 @@ module EquationOfState
         lnTT_=lnTT0+gamma*cp1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cs20*exp(gamma*cp1*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
 !AXEL: why is below no rho factor outside??
+!TOBI: There is... The formula below is equivalent to (and should be replaced by)
+!TOBI: pp=ee*exp(lnrho)/gamma1
         pp_=cs20*exp(gamma*(cp1*ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_ee)
@@ -458,7 +461,9 @@ module EquationOfState
         ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
         lnTT_=log(gamma*cp1*ee_)
 !AXEL: why is below no rho factor outside??
-        pp_=cs20*exp(gamma*(ss_+lnrho_)-gamma1*lnrho0)/gamma
+!TOBI: There is... The formula below is equivalent to (and should be replaced by)
+!TOBI: pp=ee*exp(lnrho)/gamma1
+        pp_=cs20*exp(gamma*(cp1*ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_pp)
         call stop_it('eoscalc_point: NOT IMPLEMENTED IN EOS_IDEALGAS')
@@ -511,6 +516,8 @@ module EquationOfState
         lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cs20*exp(gamma*cp1*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
 !AXEL: why is below no rho factor outside??
+!TOBI: There is... The formula below is equivalent to (and should be replaced by)
+!TOBI: pp=ee*exp(lnrho)/gamma1
         pp_=cs20*exp(gamma*(cp1*ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_ee)
@@ -519,6 +526,8 @@ module EquationOfState
         ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
         lnTT_=log(gamma*cp1*ee_)
 !AXEL: why is below no rho factor outside??
+!TOBI: There is... The formula below is equivalent to (and should be replaced by)
+!TOBI: pp=ee*exp(lnrho)/gamma1
         pp_=cs20*exp(gamma*(cp1*ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_pp)
@@ -533,6 +542,8 @@ module EquationOfState
         ss_=(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))/gamma  
         ee_=cs20*exp(gamma*cp1*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
 !AXEL: why is below no rho factor outside??
+!TOBI: There is... The formula below is equivalent to (and should be replaced by)
+!TOBI: pp=ee*exp(lnrho)/gamma1
         pp_=cs20*exp(gamma*(cp1*ss_+lnrho_)-gamma1*lnrho0)/gamma
       case default 
         call stop_it('eoscalc_pencil: thermodynamic case')
