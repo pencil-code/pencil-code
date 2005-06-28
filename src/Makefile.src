@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.114 2005-06-27 22:20:51 brandenb Exp $
+### $Id: Makefile.src,v 1.115 2005-06-28 18:44:36 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -603,12 +603,12 @@ $(COSMICRAY).o:    cosmicray.h      $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o 
 $(COSMICRAYFLUX).o:    cosmicrayflux.h      $(COSMICRAYFLUX).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(COSMICRAY).o
 $(PSCALAR).o:      pscalar.h        $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(CHIRAL).o:       chiral.h         $(CHIRAL).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
-$(DUSTVELOCITY).o: dustvelocity.h   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
+$(DUSTVELOCITY).o: dustvelocity.h   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o general.o sub.o initcond.o $(INITCOND_SPEC).o $(EOS).o $(HYDRO).o $(PSCALAR).o $(GRAVITY).o
 $(DUSTDENSITY).o:  dustdensity.h    $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
-$(TESTFIELD).o:    testfield.h        $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o $(IO).o
+$(TESTFIELD).o:    testfield.h      $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o $(IO).o
 $(PARTICLES).o:    particles.h      $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM).o sub.o
-$(PARTICLES_SUB).o:                   $(PARTICLES_SUB).f90 cdata.o $(GLOBAL).o
-$(INTERSTELLAR).o: interstellar.h $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(EOS).o
+$(PARTICLES_SUB).o:                 $(PARTICLES_SUB).f90 cdata.o $(GLOBAL).o
+$(INTERSTELLAR).o: interstellar.h   $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(EOS).o
 $(EOS).o:          eos.h            $(EOS).f90 cdata.o $(MPICOMM).o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
 $(IO).o:           io.h             $(IO).f90 cdata.o sub.o $(MPICOMM).o general.o sub.o
 #$(TIMEAVG).o:         $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local
