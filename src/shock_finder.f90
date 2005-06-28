@@ -123,8 +123,10 @@ subroutine make_calc_internalboundary(unitno)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
   write(unitno,"(a)") "      do i=l1i+1,l2i-1"
-  call evaluate_integral(unitno,0,-3,+3,-j,+3,0,0,'integral1','i','m1'//trim(pjstr),'n1')
-  call evaluate_integral(unitno,0,-3,+3,-3,+j,0,0,'integral2','i','m2'//trim(njstr),'n1')
+  call evaluate_integral(unitno,0,-3,+3,-j,+3,0,0, &
+      'integral1','i','m1'//trim(pjstr),'n1')
+  call evaluate_integral(unitno,0,-3,+3,-3,+j,0,0, &
+      'integral2','i','m2'//trim(njstr),'n1')
   write(unitno,"(a)") "        f(i,m1"//trim(pjstr)//",n1,ishock)=integral1"
   write(unitno,"(a)") "        f(i,m2"//trim(njstr)//",n1,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
@@ -135,8 +137,10 @@ subroutine make_calc_internalboundary(unitno)
   if (i/=0) nistr='-'//trim(istr)
   if (i/=0) pistr='+'//trim(istr)
   write(unitno,"(a)") "      do j=m1i+1,m2i-1"
-  call evaluate_integral(unitno,0,-i,+3,-3,+3,0,0,'integral1','l1'//trim(pistr),'j','n1')
-  call evaluate_integral(unitno,0,-3,+i,-3,+3,0,0,'integral2','l2'//trim(nistr),'j','n1')
+  call evaluate_integral(unitno,0,-i,+3,-3,+3,0,0, &
+      'integral1','l1'//trim(pistr),'j','n1')
+  call evaluate_integral(unitno,0,-3,+i,-3,+3,0,0, &
+      'integral2','l2'//trim(nistr),'j','n1')
   write(unitno,"(a)") "        f(l1"//trim(pistr)//",j,n1,ishock)=integral1"
   write(unitno,"(a)") "        f(l2"//trim(nistr)//",j,n1,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
@@ -150,10 +154,18 @@ subroutine make_calc_internalboundary(unitno)
   if (i/=0) pistr='+'//trim(istr)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
-  call evaluate_integral(unitno,0,-i,+3,-j,+3,0,0,'f(l1'//trim(pistr)//',m1'//trim(pjstr)//',n1,ishock)','l1'//trim(pistr),'m1'//trim(pjstr),'n1')
-  call evaluate_integral(unitno,0,-3,+i,-j,+3,0,0,'f(l2'//trim(nistr)//',m1'//trim(pjstr)//',n1,ishock)','l2'//trim(nistr),'m1'//trim(pjstr),'n1')
-  call evaluate_integral(unitno,0,-3,+i,-3,+j,0,0,'f(l2'//trim(nistr)//',m2'//trim(njstr)//',n1,ishock)','l2'//trim(nistr),'m2'//trim(njstr),'n1')
-  call evaluate_integral(unitno,0,-i,+3,-3,+j,0,0,'f(l1'//trim(pistr)//',m2'//trim(njstr)//',n1,ishock)','l1'//trim(pistr),'m2'//trim(njstr),'n1')
+  call evaluate_integral(unitno,0,-i,+3,-j,+3,0,0, &
+      'f(l1'//trim(pistr)//',m1'//trim(pjstr)//',n1,ishock)', &
+      'l1'//trim(pistr),'m1'//trim(pjstr),'n1')
+  call evaluate_integral(unitno,0,-3,+i,-j,+3,0,0, &
+      'f(l2'//trim(nistr)//',m1'//trim(pjstr)//',n1,ishock)', &
+      'l2'//trim(nistr),'m1'//trim(pjstr),'n1')
+  call evaluate_integral(unitno,0,-3,+i,-3,+j,0,0, &
+      'f(l2'//trim(nistr)//',m2'//trim(njstr)//',n1,ishock)', &
+      'l2'//trim(nistr),'m2'//trim(njstr),'n1')
+  call evaluate_integral(unitno,0,-i,+3,-3,+j,0,0, &
+      'f(l1'//trim(pistr)//',m2'//trim(njstr)//',n1,ishock)', &
+      'l1'//trim(pistr),'m2'//trim(njstr),'n1')
   enddo
   enddo
 !
@@ -165,8 +177,10 @@ subroutine make_calc_internalboundary(unitno)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   write(unitno,"(a)") "      do i=l1i+1,l2i-1"
-  call evaluate_integral(unitno,1,-3,+3,0,0,-k,+3,'integral1','i','m1','n1'//trim(pkstr))
-  call evaluate_integral(unitno,1,-3,+3,0,0,-3,+k,'integral2','i','m1','n2'//trim(nkstr))
+  call evaluate_integral(unitno,1,-3,+3,0,0,-k,+3, &
+      'integral1','i','m1','n1'//trim(pkstr))
+  call evaluate_integral(unitno,1,-3,+3,0,0,-3,+k, &
+      'integral2','i','m1','n2'//trim(nkstr))
   write(unitno,"(a)") "        f(i,m1,n1"//trim(pkstr)//",ishock)=integral1"
   write(unitno,"(a)") "        f(i,m1,n2"//trim(nkstr)//",ishock)=integral2"
   write(unitno,"(a)") "      enddo"
@@ -177,8 +191,10 @@ subroutine make_calc_internalboundary(unitno)
   if (i/=0) nistr='-'//trim(istr)
   if (i/=0) pistr='+'//trim(istr)
   write(unitno,"(a)") "      do k=n1i+1,n2i-1"
-  call evaluate_integral(unitno,1,-i,+3,0,0,-3,+3,'integral1','l1'//trim(pistr),'m1','k')
-  call evaluate_integral(unitno,1,-3,+i,0,0,-3,+3,'integral2','l2'//trim(nistr),'m1','k')
+  call evaluate_integral(unitno,1,-i,+3,0,0,-3,+3, &
+      'integral1','l1'//trim(pistr),'m1','k')
+  call evaluate_integral(unitno,1,-3,+i,0,0,-3,+3, &
+      'integral2','l2'//trim(nistr),'m1','k')
   write(unitno,"(a)") "        f(l1"//trim(pistr)//",m1,k,ishock)=integral1"
   write(unitno,"(a)") "        f(l2"//trim(nistr)//",m1,k,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
@@ -192,10 +208,18 @@ subroutine make_calc_internalboundary(unitno)
   if (i/=0) pistr='+'//trim(istr)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
-  call evaluate_integral(unitno,1,-i,+3,0,0,-k,+3,'f(l1'//trim(pistr)//',m1,n1'//trim(pkstr)//',ishock)','l1'//trim(pistr),'m1','n1'//trim(pkstr))
-  call evaluate_integral(unitno,1,-3,+i,0,0,-k,+3,'f(l2'//trim(nistr)//',m1,n1'//trim(pkstr)//',ishock)','l2'//trim(nistr),'m1','n1'//trim(pkstr))
-  call evaluate_integral(unitno,1,-3,+i,0,0,-3,+k,'f(l2'//trim(nistr)//',m1,n2'//trim(nkstr)//',ishock)','l2'//trim(nistr),'m1','n2'//trim(nkstr))
-  call evaluate_integral(unitno,1,-i,+3,0,0,-3,+k,'f(l1'//trim(pistr)//',m1,n2'//trim(nkstr)//',ishock)','l1'//trim(pistr),'m1','n2'//trim(nkstr))
+  call evaluate_integral(unitno,1,-i,+3,0,0,-k,+3, &
+      'f(l1'//trim(pistr)//',m1,n1'//trim(pkstr)//',ishock)', &
+      'l1'//trim(pistr),'m1','n1'//trim(pkstr))
+  call evaluate_integral(unitno,1,-3,+i,0,0,-k,+3, &
+      'f(l2'//trim(nistr)//',m1,n1'//trim(pkstr)//',ishock)', &
+      'l2'//trim(nistr),'m1','n1'//trim(pkstr))
+  call evaluate_integral(unitno,1,-3,+i,0,0,-3,+k, &
+      'f(l2'//trim(nistr)//',m1,n2'//trim(nkstr)//',ishock)', &
+      'l2'//trim(nistr),'m1','n2'//trim(nkstr))
+  call evaluate_integral(unitno,1,-i,+3,0,0,-3,+k, &
+      'f(l1'//trim(pistr)//',m1,n2'//trim(nkstr)//',ishock)', &
+      'l1'//trim(pistr),'m1','n2'//trim(nkstr))
   enddo
   enddo
 !
@@ -207,8 +231,10 @@ subroutine make_calc_internalboundary(unitno)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
   write(unitno,"(a)") "      do k=n1i+1,n2i-1"
-  call evaluate_integral(unitno,2,0,0,-j,+3,-3,+3,'integral1','l1','m1'//trim(pjstr),'k')
-  call evaluate_integral(unitno,2,0,0,-3,+j,-3,+3,'integral2','l1','m2'//trim(njstr),'k')
+  call evaluate_integral(unitno,2,0,0,-j,+3,-3,+3, &
+      'integral1','l1','m1'//trim(pjstr),'k')
+  call evaluate_integral(unitno,2,0,0,-3,+j,-3,+3, &
+      'integral2','l1','m2'//trim(njstr),'k')
   write(unitno,"(a)") "        f(l1,m1"//trim(pjstr)//",k,ishock)=integral1"
   write(unitno,"(a)") "        f(l1,m2"//trim(njstr)//",k,ishock)=integral2"
   write(unitno,"(a)") "      enddo"
@@ -219,8 +245,10 @@ subroutine make_calc_internalboundary(unitno)
   if (k/=0) nkstr='-'//trim(kstr)
   if (k/=0) pkstr='+'//trim(kstr)
   write(unitno,"(a)") "      do j=m1i+1,m2i-1"
-  call evaluate_integral(unitno,2,0,0,-3,+3,-k,+3,'integral1','l1','j','n1'//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+3,-3,+k,'integral2','l1','j','n2'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+3,-k,+3, &
+      'integral1','l1','j','n1'//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+3,-3,+k, &
+      'integral2','l1','j','n2'//trim(nkstr))
   write(unitno,"(a)") "        f(l1,j,n1"//trim(pkstr)//",ishock)=integral1"
   write(unitno,"(a)") "        f(l1,j,n2"//trim(nkstr)//",ishock)=integral2"
   write(unitno,"(a)") "      enddo"
@@ -234,10 +262,18 @@ subroutine make_calc_internalboundary(unitno)
   if (k/=0) pkstr='+'//trim(kstr)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
-  call evaluate_integral(unitno,2,0,0,-j,+3,-k,+3,'f(l1,m1'//trim(pjstr)//',n1'//trim(pkstr)//',ishock)','l1','m1'//trim(pjstr),'n1'//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,-k,+3,'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)','l1','m2'//trim(njstr),'n1'//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,-3,+k,'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)','l1','m2'//trim(njstr),'n2'//trim(nkstr))
-  call evaluate_integral(unitno,2,0,0,-j,+3,-3,+k,'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)','l1','m1'//trim(pjstr),'n2'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,-j,+3,-k,+3, &
+      'f(l1,m1'//trim(pjstr)//',n1'//trim(pkstr)//',ishock)', &
+      'l1','m1'//trim(pjstr),'n1'//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+j,-k,+3, &
+      'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+      'l1','m2'//trim(njstr),'n1'//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+j,-3,+k, &
+      'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1','m2'//trim(njstr),'n2'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,-j,+3,-3,+k, &
+      'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1','m1'//trim(pjstr),'n2'//trim(nkstr))
   enddo
   enddo
 !
@@ -273,8 +309,10 @@ subroutine make_calc_externalboundary(unitno)
       if (j/=0) njstr='-'//trim(jstr)
       if (j/=0) pjstr='+'//trim(jstr)
       write(unitno,"(a)") "      do i=l1i+1,l2i-1"
-      call evaluate_integral(unitno,0,-3,+3,3-j, 3,0,0,'integral1','i','1 '//trim(pjstr),'n1')
-      call evaluate_integral(unitno,0,-3,+3,-3,j-3,0,0,'integral2','i','my'//trim(njstr),'n1')
+      call evaluate_integral(unitno,0,-3,+3,3-j, 3,0,0, &
+          'integral1','i','1 '//trim(pjstr),'n1')
+      call evaluate_integral(unitno,0,-3,+3,-3,j-3,0,0, &
+          'integral2','i','my'//trim(njstr),'n1')
       write(unitno,"(a)") "        f(i,1 "//trim(pjstr)//",n1,ishock)=integral1"
       write(unitno,"(a)") "        f(i,my"//trim(njstr)//",n1,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
@@ -285,8 +323,10 @@ subroutine make_calc_externalboundary(unitno)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       write(unitno,"(a)") "      do j=m1i+1,m2i-1"
-      call evaluate_integral(unitno,0,3-i, 3,-3,+3,0,0,'integral1','1 '//trim(pistr),'j','n1')
-      call evaluate_integral(unitno,0,-3,i-3,-3,+3,0,0,'integral2','mx'//trim(nistr),'j','n1')
+      call evaluate_integral(unitno,0,3-i, 3,-3,+3,0,0, &
+          'integral1','1 '//trim(pistr),'j','n1')
+      call evaluate_integral(unitno,0,-3,i-3,-3,+3,0,0, &
+          'integral2','mx'//trim(nistr),'j','n1')
       write(unitno,"(a)") "        f(1 "//trim(pistr)//",j,n1,ishock)=integral1"
       write(unitno,"(a)") "        f(mx"//trim(nistr)//",j,n1,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
@@ -300,15 +340,31 @@ subroutine make_calc_externalboundary(unitno)
   if (k/=0) pkstr='+'//trim(kstr)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
-  call evaluate_integral(unitno,2,0,0,-j,+3,3-k,+3,'f(l1,m1'//trim(pjstr)//',1 '//trim(pkstr)//',ishock)','l1','m1'//trim(pjstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,3-k,+3,'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)','l1','m2'//trim(njstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,-3,k-3,'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)','l1','m2'//trim(njstr),'mz'//trim(nkstr))
-  call evaluate_integral(unitno,2,0,0,-j,+3,-3,k-3,'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)','l1','m1'//trim(pjstr),'mz'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,-j,+3,3-k,+3, &
+      'f(l1,m1'//trim(pjstr)//',1 '//trim(pkstr)//',ishock)', &
+      'l1','m1'//trim(pjstr),'1 '//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+j,3-k,+3, &
+      'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+      'l1','m2'//trim(njstr),'1 '//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+j,-3,k-3, &
+      'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1','m2'//trim(njstr),'mz'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,-j,+3,-3,k-3, &
+      'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1','m1'//trim(pjstr),'mz'//trim(nkstr))
 
-  call evaluate_integral(unitno,2,0,0,3-j,+3,-k,+3,'f(l1,m1'//trim(pjstr)//',n2'//trim(pkstr)//',ishock)','l1','1 '//trim(pjstr),'n1'//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,j-3,-k,+3,'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)','l1','my'//trim(njstr),'n1'//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,j-3,-3,+k,'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)','l1','my'//trim(njstr),'n2'//trim(nkstr))
-  call evaluate_integral(unitno,2,0,0,3-j,+3,-3,+k,'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)','l1','1 '//trim(pjstr),'n2'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,3-j,+3,-k,+3, &
+      'f(l1,m1'//trim(pjstr)//',n2'//trim(pkstr)//',ishock)', &
+      'l1','1 '//trim(pjstr),'n1'//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,j-3,-k,+3, &
+      'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+      'l1','my'//trim(njstr),'n1'//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,j-3,-3,+k, &
+      'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1','my'//trim(njstr),'n2'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,3-j,+3,-3,+k, &
+      'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1','1 '//trim(pjstr),'n2'//trim(nkstr))
   enddo
   enddo
 ! Corners 
@@ -320,10 +376,18 @@ subroutine make_calc_externalboundary(unitno)
       if (i/=0) pistr='+'//trim(istr)
       if (j/=0) njstr='-'//trim(jstr)
       if (j/=0) pjstr='+'//trim(jstr)
-      call evaluate_integral(unitno,0,3-i, 3,3-j, 3,0,0,'f(1 '//trim(pistr)//',1 '//trim(pjstr)//',n1,ishock)','1 '//trim(pistr),'1 '//trim(pjstr),'n1')
-      call evaluate_integral(unitno,0,-3,i-3,3-j, 3,0,0,'f(mx'//trim(nistr)//',1 '//trim(pjstr)//',n1,ishock)','mx'//trim(nistr),'1 '//trim(pjstr),'n1')
-      call evaluate_integral(unitno,0,-3,i-3,-3,j-3,0,0,'f(mx'//trim(nistr)//',my'//trim(njstr)//',n1,ishock)','mx'//trim(nistr),'my'//trim(njstr),'n1')
-      call evaluate_integral(unitno,0,3-i, 3,-3,j-3,0,0,'f(1 '//trim(pistr)//',my'//trim(njstr)//',n1,ishock)','1 '//trim(pistr),'my'//trim(njstr),'n1')
+      call evaluate_integral(unitno,0,3-i, 3,3-j, 3,0,0, &
+          'f(1 '//trim(pistr)//',1 '//trim(pjstr)//',n1,ishock)', &
+          '1 '//trim(pistr),'1 '//trim(pjstr),'n1')
+      call evaluate_integral(unitno,0,-3,i-3,3-j, 3,0,0, &
+          'f(mx'//trim(nistr)//',1 '//trim(pjstr)//',n1,ishock)', &
+          'mx'//trim(nistr),'1 '//trim(pjstr),'n1')
+      call evaluate_integral(unitno,0,-3,i-3,-3,j-3,0,0, &
+          'f(mx'//trim(nistr)//',my'//trim(njstr)//',n1,ishock)', &
+          'mx'//trim(nistr),'my'//trim(njstr),'n1')
+      call evaluate_integral(unitno,0,3-i, 3,-3,j-3,0,0, &
+          'f(1 '//trim(pistr)//',my'//trim(njstr)//',n1,ishock)', &
+          '1 '//trim(pistr),'my'//trim(njstr),'n1')
     enddo
     enddo
 !
@@ -335,8 +399,10 @@ subroutine make_calc_externalboundary(unitno)
       if (k/=0) nkstr='-'//trim(kstr)
       if (k/=0) pkstr='+'//trim(kstr)
       write(unitno,"(a)") "      do i=l1i+1,l2i-1"
-      call evaluate_integral(unitno,1,-3,+3,0,0,3-k, 3,'integral1','i','m1','1 '//trim(pkstr))
-      call evaluate_integral(unitno,1,-3,+3,0,0,-3,k-3,'integral2','i','m1','mz'//trim(nkstr))
+      call evaluate_integral(unitno,1,-3,+3,0,0,3-k, 3, &
+          'integral1','i','m1','1 '//trim(pkstr))
+      call evaluate_integral(unitno,1,-3,+3,0,0,-3,k-3, &
+          'integral2','i','m1','mz'//trim(nkstr))
       write(unitno,"(a)") "        f(i,m1,1 "//trim(pkstr)//",ishock)=integral1"
       write(unitno,"(a)") "        f(i,m1,mz"//trim(nkstr)//",ishock)=integral2"
       write(unitno,"(a)") "      enddo"
@@ -347,8 +413,10 @@ subroutine make_calc_externalboundary(unitno)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
       write(unitno,"(a)") "      do k=n1i+1,n2i-1"
-      call evaluate_integral(unitno,1,3-i, 3,0,0,-3,+3,'integral1','1 '//trim(pistr),'m1','k')
-      call evaluate_integral(unitno,1,-3,i-3,0,0,-3,+3,'integral2','mx'//trim(nistr),'m1','k')
+      call evaluate_integral(unitno,1,3-i, 3,0,0,-3,+3, &
+          'integral1','1 '//trim(pistr),'m1','k')
+      call evaluate_integral(unitno,1,-3,i-3,0,0,-3,+3, &
+          'integral2','mx'//trim(nistr),'m1','k')
       write(unitno,"(a)") "        f(1 "//trim(pistr)//",m1,k,ishock)=integral1"
       write(unitno,"(a)") "        f(mx"//trim(nistr)//",m1,k,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
@@ -382,10 +450,18 @@ subroutine make_calc_externalboundary(unitno)
       if (i/=0) pistr='+'//trim(istr)
       if (k/=0) nkstr='-'//trim(kstr)
       if (k/=0) pkstr='+'//trim(kstr)
-      call evaluate_integral(unitno,1,3-i, 3,0,0,3-k, 3,'f(1 '//trim(pistr)//',m1,1 '//trim(pkstr)//',ishock)','1 '//trim(pistr),'m1','1 '//trim(pkstr))
-      call evaluate_integral(unitno,1,-3,i-3,0,0,3-k, 3,'f(mx'//trim(nistr)//',m1,1 '//trim(pkstr)//',ishock)','mx'//trim(nistr),'m1','1 '//trim(pkstr))
-      call evaluate_integral(unitno,1,-3,i-3,0,0,-3,k-3,'f(mx'//trim(nistr)//',m1,mz'//trim(nkstr)//',ishock)','mx'//trim(nistr),'m1','mz'//trim(nkstr))
-      call evaluate_integral(unitno,1,3-i, 3,0,0,-3,k-3,'f(1 '//trim(pistr)//',m1,mz'//trim(nkstr)//',ishock)','1 '//trim(pistr),'m1','mz'//trim(nkstr))
+      call evaluate_integral(unitno,1,3-i, 3,0,0,3-k, 3, &
+          'f(1 '//trim(pistr)//',m1,1 '//trim(pkstr)//',ishock)', &
+          '1 '//trim(pistr),'m1','1 '//trim(pkstr))
+      call evaluate_integral(unitno,1,-3,i-3,0,0,3-k, 3, &
+          'f(mx'//trim(nistr)//',m1,1 '//trim(pkstr)//',ishock)', &
+          'mx'//trim(nistr),'m1','1 '//trim(pkstr))
+      call evaluate_integral(unitno,1,-3,i-3,0,0,-3,k-3, &
+          'f(mx'//trim(nistr)//',m1,mz'//trim(nkstr)//',ishock)', &
+          'mx'//trim(nistr),'m1','mz'//trim(nkstr))
+      call evaluate_integral(unitno,1,3-i, 3,0,0,-3,k-3, &
+          'f(1 '//trim(pistr)//',m1,mz'//trim(nkstr)//',ishock)', &
+          '1 '//trim(pistr),'m1','mz'//trim(nkstr))
     enddo
     enddo
 !
@@ -397,8 +473,10 @@ subroutine make_calc_externalboundary(unitno)
       if (k/=0) nkstr='-'//trim(kstr)
       if (k/=0) pkstr='+'//trim(kstr)
       write(unitno,"(a)") "      do j=m1i+1,m2i-1"
-      call evaluate_integral(unitno,2,0,0,-3,+3,3-k,+3,'integral1','l1','j','1 '//trim(pkstr))
-      call evaluate_integral(unitno,2,0,0,-3,+3,-3,k-3,'integral2','l1','j','mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,0,0,-3,+3,3-k,+3, &
+          'integral1','l1','j','1 '//trim(pkstr))
+      call evaluate_integral(unitno,2,0,0,-3,+3,-3,k-3, &
+          'integral2','l1','j','mz'//trim(nkstr))
       write(unitno,"(a)") "        f(l1,j,1 "//trim(pkstr)//",ishock)=integral1"
       write(unitno,"(a)") "        f(l1,j,mz"//trim(nkstr)//",ishock)=integral2"
       write(unitno,"(a)") "      enddo"
@@ -409,8 +487,10 @@ subroutine make_calc_externalboundary(unitno)
       if (j/=0) njstr='-'//trim(jstr)
       if (j/=0) pjstr='+'//trim(jstr)
       write(unitno,"(a)") "      do k=n1i+1,n2i-1"
-      call evaluate_integral(unitno,2,0,0,3-j,+3,-3,+3,'integral1','l1','1 '//trim(pjstr),'k')
-      call evaluate_integral(unitno,2,0,0,-3,j-3,-3,+3,'integral2','l1','my'//trim(njstr),'k')
+      call evaluate_integral(unitno,2,0,0,3-j,+3,-3,+3, &
+          'integral1','l1','1 '//trim(pjstr),'k')
+      call evaluate_integral(unitno,2,0,0,-3,j-3,-3,+3, &
+          'integral2','l1','my'//trim(njstr),'k')
       write(unitno,"(a)") "        f(l1,1 "//trim(pjstr)//",k,ishock)=integral1"
       write(unitno,"(a)") "        f(l1,my"//trim(njstr)//",k,ishock)=integral2"
       write(unitno,"(a)") "      enddo"
@@ -424,10 +504,18 @@ subroutine make_calc_externalboundary(unitno)
   if (k/=0) pkstr='+'//trim(kstr)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
-  call evaluate_integral(unitno,2,0,0,-j,+3,3-k,+3,'f(l1,m1'//trim(pjstr)//',1 '//trim(pkstr)//',ishock)','l1','m1'//trim(pjstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,3-k,+3,'f(l1,m2'//trim(njstr)//',1 '//trim(pkstr)//',ishock)','l1','m2'//trim(njstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,-3,k-3,'f(l1,m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)','l1','m2'//trim(njstr),'mz'//trim(nkstr))
-  call evaluate_integral(unitno,2,0,0,-j,+3,-3,k-3,'f(l1,m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)','l1','m1'//trim(pjstr),'mz'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,-j,+3,3-k,+3, &
+      'f(l1,m1'//trim(pjstr)//',1 '//trim(pkstr)//',ishock)', &
+      'l1','m1'//trim(pjstr),'1 '//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+j,3-k,+3, &
+      'f(l1,m2'//trim(njstr)//',1 '//trim(pkstr)//',ishock)', &
+      'l1','m2'//trim(njstr),'1 '//trim(pkstr))
+  call evaluate_integral(unitno,2,0,0,-3,+j,-3,k-3, &
+      'f(l1,m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+      'l1','m2'//trim(njstr),'mz'//trim(nkstr))
+  call evaluate_integral(unitno,2,0,0,-j,+3,-3,k-3, &
+      'f(l1,m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+      'l1','m1'//trim(pjstr),'mz'//trim(nkstr))
 
 !  call evaluate_integral(unitno,2,0,0,3-j,+3,-k,+3,'f(l1,1 '//trim(pjstr)//',n1'//trim(pkstr)//',ishock)','l1','1 '//trim(pjstr),'n1'//trim(pkstr))
 !  call evaluate_integral(unitno,2,0,0,-3,j-3,-k,+3,'f(l1,my'//trim(njstr)//',n1'//trim(pkstr)//',ishock)','l1','my'//trim(njstr),'n1'//trim(pkstr))
@@ -444,10 +532,18 @@ subroutine make_calc_externalboundary(unitno)
       if (k/=0) pkstr='+'//trim(kstr)
       if (j/=0) njstr='-'//trim(jstr)
       if (j/=0) pjstr='+'//trim(jstr)
-      call evaluate_integral(unitno,2,0,0,3-j,+3,3-k,+3,'f(l1,1 '//trim(pjstr)//',1 '//trim(pkstr)//',ishock)','l1','1 '//trim(pjstr),'1 '//trim(pkstr))
-      call evaluate_integral(unitno,2,0,0,-3,j-3,3-k,+3,'f(l1,my'//trim(njstr)//',1 '//trim(pkstr)//',ishock)','l1','my'//trim(njstr),'1 '//trim(pkstr))
-      call evaluate_integral(unitno,2,0,0,-3,j-3,-3,k-3,'f(l1,my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)','l1','my'//trim(njstr),'mz'//trim(nkstr))
-      call evaluate_integral(unitno,2,0,0,3-j,+3,-3,k-3,'f(l1,1 '//trim(pjstr)//',mz'//trim(nkstr)//',ishock)','l1','1 '//trim(pjstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,0,0,3-j,+3,3-k,+3, &
+          'f(l1,1 '//trim(pjstr)//',1 '//trim(pkstr)//',ishock)', &
+          'l1','1 '//trim(pjstr),'1 '//trim(pkstr))
+      call evaluate_integral(unitno,2,0,0,-3,j-3,3-k,+3, &
+          'f(l1,my'//trim(njstr)//',1 '//trim(pkstr)//',ishock)', &
+          'l1','my'//trim(njstr),'1 '//trim(pkstr))
+      call evaluate_integral(unitno,2,0,0,-3,j-3,-3,k-3, &
+          'f(l1,my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l1','my'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,0,0,3-j,+3,-3,k-3, &
+          'f(l1,1 '//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l1','1 '//trim(pjstr),'mz'//trim(nkstr))
     enddo
     enddo
 !
@@ -488,7 +584,8 @@ subroutine declare_facefactors(unitno)
 !
 endsubroutine declare_facefactors
 !***********************************************************************
-subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax,kmin,kmax,intname,iname,jname,kname)
+subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax, &
+    kmin,kmax,intname,iname,jname,kname)
 !
    use SurfaceData   
 !
@@ -545,17 +642,20 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax,kmin,kmax,intna
              endif
              write (unitno,"(a,a1,a4)",ADVANCE='no') "                    ", sgn, " f( "
              if (points(dir1,pnt)/=0) then
-               write (unitno,"(a,a1,i1,a3)",ADVANCE='no') trim(iname),offset_sgn(dir1),abs(points(dir1,pnt)),", "
+               write (unitno,"(a,a1,i1,a3)",ADVANCE='no') &
+                   trim(iname),offset_sgn(dir1),abs(points(dir1,pnt)),", "
              else
                write (unitno,"(a)",ADVANCE='no') trim(iname)//"   , "
              endif
              if (points(dir2,pnt)/=0) then
-               write (unitno,"(a,a1,i1,a3)",ADVANCE='no') trim(jname),offset_sgn(dir2),abs(points(dir2,pnt)),", "
+               write (unitno,"(a,a1,i1,a3)",ADVANCE='no') &
+                   trim(jname),offset_sgn(dir2),abs(points(dir2,pnt)),", "
              else
                write (unitno,"(a)",ADVANCE='no') trim(jname)//"   , "
              endif
              if (points(dir3,pnt)/=0) then
-               write (unitno,"(a,a1,i1,a3)",ADVANCE='no') trim(kname),offset_sgn(dir3),abs(points(dir3,pnt)),", "
+               write (unitno,"(a,a1,i1,a3)",ADVANCE='no') &
+                   trim(kname),offset_sgn(dir3),abs(points(dir3,pnt)),", "
              else
                write (unitno,"(a)",ADVANCE='no') trim(kname)//"   , "
              endif
@@ -576,9 +676,11 @@ subroutine evaluate_integral(unitno,rotation,imin,imax,jmin,jmax,kmin,kmax,intna
        endif
      else
        if (face_type==nface_types) then
-         write (unitno,"(a,a11,i1)") "                   ) * ", "face_factor",face_type
+         write (unitno,"(a,a11,i1)") &
+             "                   ) * ", "face_factor",face_type
        else
-         write (unitno,"(a,a11,i1,a)") "                   ) * ", "face_factor",face_type," &"
+         write (unitno,"(a,a11,i1,a)") &
+             "                   ) * ", "face_factor",face_type," &"
        endif
      endif
      lfirst=.false.
