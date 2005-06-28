@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.40 2005-06-28 10:52:17 ajohan Exp $
+! $Id: general.f90,v 1.41 2005-06-28 18:54:21 dobler Exp $
 
 module General
 
@@ -12,6 +12,7 @@ module General
 
   private
 
+  public :: xor_function
   public :: safe_character_assign,safe_character_append, chn
   public :: random_seed_wrapper 
   public :: random_number_wrapper, random_gen
@@ -21,6 +22,10 @@ module General
   public :: input_persistent_general, output_persistent_general
 
   include 'record_types.h'
+
+  interface operator(.xor.)
+    module procedure xor_function
+  endinterface
 
   interface random_number_wrapper   ! Overload this function
     module procedure random_number_wrapper_0
@@ -64,7 +69,18 @@ module General
   character (len=labellen) :: random_gen='min_std'
 
   contains
-
+!***********************************************************************
+    logical function xor_function(a,b)
+!
+!  The .xor. operator is not part of the F95 standard, so define it here
+!
+!  28-jun-2005/wolf: coded
+!
+      logical,intent(in) :: a,b
+!
+      xor_function = ((a .and. .not. b) .or. (.not. a .and. b))
+!
+    endfunction xor_function
 !***********************************************************************
     subroutine setup_mm_nn()
 !

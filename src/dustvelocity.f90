@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.94 2005-06-27 09:20:10 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.95 2005-06-28 18:54:21 dobler Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -129,7 +129,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.94 2005-06-27 09:20:10 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.95 2005-06-28 18:54:21 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -773,8 +773,9 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use Cdata
-      use EquationOfState, only: gamma
+      use General
       use Sub
+      use EquationOfState, only: gamma
       use IO
       use Mpicomm, only: stop_it
 !
