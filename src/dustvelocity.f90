@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.95 2005-06-28 18:54:21 dobler Exp $
+! $Id: dustvelocity.f90,v 1.96 2005-06-28 21:56:16 dobler Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -129,7 +129,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.95 2005-06-28 18:54:21 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.96 2005-06-28 21:56:16 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -813,11 +813,11 @@ module Dustvelocity
             do j=1,3; AA_sfta(:,j)=AA_sfta(:,j)+p%cs2(:)*p%glnrho(:,j); enddo
           endif
           if (lgrav) then
-            if (lgravx_gas.xor.lgravx_dust) then
+            if (lgravx_gas .neqv. lgravx_dust) then
               if (lgravx_gas) AA_sfta(:,1)=AA_sfta(:,1)-p%gg(:,1)
               if (lgravx_dust) AA_sfta(:,1)=AA_sfta(:,1)+p%gg(:,1)
             endif
-            if (lgravz_gas.xor.lgravz_dust) then
+            if (lgravz_gas .neqv. lgravz_dust) then
               if (lgravz_gas) AA_sfta(:,3)=AA_sfta(:,3)-p%gg(:,3)
               if (lgravz_dust) AA_sfta(:,3)=AA_sfta(:,3)+p%gg(:,3)
             endif
