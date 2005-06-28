@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.39 2005-06-27 00:14:18 mee Exp $
+! $Id: general.f90,v 1.40 2005-06-28 10:52:17 ajohan Exp $
 
 module General
 
@@ -226,6 +226,7 @@ module General
       case default
         if (lroot) print*, 'No such random number generator: ', random_gen
         STOP
+
      endselect
 !
     endsubroutine random_number_wrapper_1
@@ -245,24 +246,17 @@ module General
       case('system')
         call random_number(a)
       case('min_std')
-        do i=1,size(a,1)
-          do j=1,size(a,2)
-            do k=1,size(a,3)
-              a(i,j,k)=ran0(rstate(1))
-            enddo
-          enddo
-        enddo
+        do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+          a(i,j,k)=ran0(rstate(1))
+        enddo; enddo; enddo
       case('nr_f90')
-        do i=1,size(a,1)
-          do j=1,size(a,2)
-            do k=1,size(a,3)
-              a(i,j,k)=mars_ran()
-            enddo
-          enddo
-        enddo
+        do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+          a(i,j,k)=mars_ran()
+        enddo; enddo; enddo
       case default
         if (lroot) print*, 'No such random number generator: ', random_gen
         STOP
+
       endselect
 !
     endsubroutine random_number_wrapper_3
