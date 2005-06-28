@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.184 2005-06-27 09:23:01 mee Exp $
+! $Id: density.f90,v 1.185 2005-06-28 12:52:46 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -103,7 +103,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.184 2005-06-27 09:23:01 mee Exp $")
+           "$Id: density.f90,v 1.185 2005-06-28 12:52:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -953,7 +953,11 @@ module Density
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_rho1)) lpencil_in(i_rho)=.true.
+      if (ldensity_nolog) then
+        if (lpencil_in(i_rho1)) lpencil_in(i_rho)=.true.
+      else
+        if (lpencil_in(i_rho)) lpencil_in(i_rho1)=.true.
+      endif
       if (lpencil_in(i_uglnrho)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glnrho)=.true.
@@ -1000,19 +1004,15 @@ module Density
           p%lnrho=f(l1:l2,m,n,ilnrho)
         endif
       endif
-! rho        
-      if (lpencil(i_rho)) then
-        if (ldensity_nolog) then
-          p%rho=f(l1:l2,m,n,ilnrho)
-        else
-          p%rho=exp(f(l1:l2,m,n,ilnrho))  
-        endif
+! rho1 and rho
+      if (ldensity_nolog) then
+        if (lpencil(i_rho)) p%rho=f(l1:l2,m,n,ilnrho)
+        if (lpencil(i_rho1)) p%rho1=1.0/p%rho
+      else
+        if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
+        if (lpencil(i_rho)) p%rho=1.0/p%rho1
       endif
-! rho1
-      if (lpencil(i_rho1)) p%rho1=1/p%rho
-
-! glnrho
-! grho
+! glnrho and grho
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         if (ldensity_nolog) then
           call grad(f,ilnrho,p%grho)
