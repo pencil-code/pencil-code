@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.236 2005-06-27 17:27:53 dobler Exp $
+! $Id: equ.f90,v 1.237 2005-06-28 10:53:58 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.236 2005-06-27 17:27:53 dobler Exp $")
+           "$Id: equ.f90,v 1.237 2005-06-28 10:53:58 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -685,6 +685,7 @@ module Equ
 !  18-apr-05/tony: coded
 !
       use Cdata
+      use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux) :: f 
@@ -704,10 +705,12 @@ module Equ
       allocate(fname_ref(mname))
       allocate(f_other(mx,my,mz,mvar+maux))
 !
-!  Check requested pencils
+!  Check requested pencils with a random initial condition
 !
       headt=.false.
-      f_other=f
+      do i=1,mvar
+        call random_number_wrapper(f_other(:,:,:,i))
+      enddo
       df_ref=0.0
       include 'pencil_init.inc' 
 !
@@ -718,7 +721,7 @@ module Equ
 !
       do penc=1,npencils 
         df=0.0
-        f_other=f
+        if (maux>=1) f_other(:,:,:,mvar+1:mvar+maux)=0.0 ! Reset aux vars
         include 'pencil_init.inc' 
 !
 !  Calculate results with one pencil swapped
@@ -738,7 +741,7 @@ f_loop: do iv=1,mvar
         enddo f_loop
 ! 
         if (lconsistent .and. lpenc_requested(penc)) then
-          if (lroot) print  '(a,i4,a)', &
+          if (lroot) print '(a,i4,a)', &
               'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is requested, but does not appear to be required!'
@@ -751,12 +754,14 @@ f_loop: do iv=1,mvar
         endif
       enddo
 !
-!  Check diagnostic pencils
+!  Check diagnostic pencils with a random initial condition
 !
       lout=.true.
       lfirst=.true.
       df=0.0
-      f_other=f
+      do i=1,mvar
+        call random_number_wrapper(f_other(:,:,:,i))
+      enddo
       fname=0.0
       include 'pencil_init.inc' 
 !
@@ -769,7 +774,7 @@ f_loop: do iv=1,mvar
 !
       do penc=1,npencils 
         df=0.0
-        f_other=f
+        if (maux>=1) f_other(:,:,:,mvar+1:mvar+maux)=0.0 ! Reset aux vars
         fname=0.0
         include 'pencil_init.inc' 
 !
