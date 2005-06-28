@@ -1,0 +1,65 @@
+#!/bin/sh
+
+about() {
+echo <<EOF
+           The Pencil Code
+  http://www.nordita.dk/software/pencil-code/
+EOF
+}
+
+contributors() {
+red=''
+normal=''
+  cat $PENCIL_HOME/CONTRIBUTORS | perl -pi -e "s/\(.*\)/$red\$1$normal/"
+}
+
+linesofcode() {
+  echo -n "Total lines of code:  "
+  (cd $PENCIL_HOME/src; cat *.h *.f90 | perl -ne 'next if ! /\S/; next if /^\s*\!/; print;' | wc -l   )
+}
+
+pencil_home() {
+  echo "Your PENCIL_HOME: $PENCIL_HOME"
+  if [ -h $PENCIL_HOME ]; then
+    echo -n "Your PENCIL_HOME is a link pointing to: "
+    readlink -f $PENCIL_HOME
+  fi
+}
+
+cvs_check_status() {
+  echo -n "Checking CVS status of source files... "
+  if (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;'); then
+    echo "STICKY TAGS FOUND!!!"
+    (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;')
+  else
+    echo "ok"
+  fi
+  
+}
+
+cvs_latest_src_change() {
+  echo -n "Latest source code change: "  
+  (cd $PENCIL_HOME; cvs -Q log -r HEAD src | perl -ne 'next if ! /^date:\s*(.*);\s*author:\s*(.*?);/; print "$1 by $2\n";' | sort -k 1,2 | head -n 1)
+}
+
+check_pencil_home() {
+  [ ! "$PENCIL_HOME" ] && error 'You have not set your $PENCIL_HOME variable correctly'
+  [ ! -e $PENCIL_HOME ] && error 'Your $PENCIL_HOME directory doed not exist'
+}
+
+error() {
+  echo $@
+  exit 1
+}
+
+default() {
+  contributors
+  pencil_home
+  cvs_check_status
+  cvs_latest_src_change
+  linesofcode
+}
+
+
+
+default
