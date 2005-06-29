@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.75 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: boundcond.f90,v 1.76 2005-06-29 17:12:07 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1003,47 +1003,54 @@ module Boundcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: sgn,i,j
 !
+      select case(topbot)
+!
 !  lower boundary
 !
-      select case (force_lower_bound)
-      case ('uxy_sin-cos')
-        call bc_force_uxy_sin_cos(f,n1,j)
-      case ('axy_sin-cos')
-        call bc_force_axy_sin_cos(f,n1,j)
-      case ('uxy_convection')
-        call uu_driver(f)
-      case ('kepler')
-        call bc_force_kepler(f,n1,j)
-      case default
-        if (lroot) print*, "No such value for force_lower_bound: <", &
-             trim(force_lower_bound),">"
-        call stop_it("")
-      endselect
-!
-!  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
-!
-      do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+      case('bot')
+         select case (force_lower_bound)
+         case ('uxy_sin-cos')
+            call bc_force_uxy_sin_cos(f,n1,j)
+         case ('axy_sin-cos')
+            call bc_force_axy_sin_cos(f,n1,j)
+         case ('uxy_convection')
+            call uu_driver(f)
+         case ('kepler')
+            call bc_force_kepler(f,n1,j)
+         case default
+            if (lroot) print*, "No such value for force_lower_bound: <", &
+                 trim(force_lower_bound),">"
+            call stop_it("")
+         endselect
+         !
+         !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
+         !
+         do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
 !
 !  upper boundary
 !
-      select case (force_upper_bound)
-      case ('uxy_sin-cos')
-        call bc_force_uxy_sin_cos(f,n2,j)
-      case ('axy_sin-cos')
-        call bc_force_axy_sin_cos(f,n2,j)
-      case ('uxy_convection')
-        call uu_driver(f)
-      case ('kepler')
-        call bc_force_kepler(f,n2,j)
+      case('top')
+         select case (force_upper_bound)
+         case ('uxy_sin-cos')
+            call bc_force_uxy_sin_cos(f,n2,j)
+         case ('axy_sin-cos')
+            call bc_force_axy_sin_cos(f,n2,j)
+         case ('uxy_convection')
+            call uu_driver(f)
+         case ('kepler')
+            call bc_force_kepler(f,n2,j)
+         case default
+            if (lroot) print*, "No such value for force_upper_bound: <", &
+                 trim(force_upper_bound),">"
+            call stop_it("")
+         endselect
+         !
+         !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
+         !
+         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
       case default
-        if (lroot) print*, "No such value for force_upper_bound: <", &
-             trim(force_upper_bound),">"
-        call stop_it("")
+        print*,"bc_force_z: invalid argument topbot=",topbot
       endselect
-!
-!  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
-!
-      do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
 !
     endsubroutine bc_force_z
 !***********************************************************************
@@ -1306,8 +1313,7 @@ module Boundcond
        Use Cdata
 
        real, dimension (mx,my,mz,mvar+maux) :: f
-!       real, dimension (nx,ny*nprocy) :: uxd,uyd,uxl,uxr,uyl,uyr
-       real, dimension (200,200) :: uxd,uyd,uxl,uxr,uyl,uyr
+       real, dimension (nx,ny*nprocy) :: uxd,uyd,uxl,uxr,uyl,uyr
        integer :: lend,iostat=0,i=0,j,k,l
        real :: tl=0.,tr=0.,delta_t
        real :: driver_nx,driver_ny,driver_dx,driver_dy,driver_dt
