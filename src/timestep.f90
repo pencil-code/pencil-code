@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.29 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: timestep.f90,v 1.30 2005-06-29 05:07:38 dobler Exp $
 
 module Timestep
 
@@ -98,7 +98,7 @@ module Timestep
           if (ddt/=0.) dt1_local=max(dt1_local(1),dt1_last)
 
           call mpireduce_max(dt1_local,dt1,1)
-          dt=1.0/dt1(1)      ! could be just if (lroot) - but hey, make'em work!
+          if (lroot) dt=1.0/dt1(1)
 
           !Timestep growth limiter
           if (ddt/=0.) dt1_last=dt1_local(1)/ddt
