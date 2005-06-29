@@ -30,7 +30,7 @@ pencil_home() {
 
 cvs_check_status() {
   echo -n "Checking CVS status of source files... "
-  if (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;' 2>/dev/null); then
+  if (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; exit(1);' 2>/dev/null); then
     echo "STICKY TAGS FOUND!!!"
     (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;' 2>/dev/null)
   else
@@ -61,7 +61,6 @@ cvs_check_root() {
       echo "REPOSITORY MIRROR CORRUPT"
     fi
     echo $repo
-
   fi
 }
 
@@ -90,5 +89,12 @@ default() {
 }
 
 
-
-default
+if [ $# == 0 ]; then
+  default
+else
+  while [ "$1" ]
+  do
+    $1
+    shift
+  done 
+fi
