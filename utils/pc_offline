@@ -6,7 +6,7 @@ localdir=$CVS_MIRROR_DIR/$subdir
 
 #online_cvsroot=`cat $PENCIL_HOME/CVS/Root`
 #remote_repository=`cat $PENCIL_HOME/CVS/Root | sed -e 's/^:[a-z]*://'`
-online_cvsroot=':pserver:${USER}@norserv.nordita.dk:/home/brandenb/CVS'
+online_cvsroot=":pserver:${USER}@norserv.nordita.dk:/home/brandenb/CVS"
 remote_repository='norserv.nordita.dk:/home/brandenb/CVS'
 
 echo <<EOF
