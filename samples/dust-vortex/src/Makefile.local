@@ -25,6 +25,9 @@ SHEAR     =   shear
 DUSTDENSITY =  dustdensity
 DUSTVELOCITY=  dustvelocity
 
+PARTICLES     =   particles_tracers
+PARTICLES_SUB =   particles_sub
+
 FFTPACK   = nofftpack
 FFT       = nofft
 
