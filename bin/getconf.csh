@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.142 2005-06-26 17:34:16 eos_merger_tony Exp $
+# $Id: getconf.csh,v 1.143 2005-06-29 13:46:18 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -594,13 +594,15 @@ else if ($hn =~ opto[1-4]) then
   set nprocpernode = 4
   set mpirun = mpirun_rsh
   if ($ncpus <= 4) then
-    set mpirunops2 = `repeat $ncpus echo $hn`
+    echo `repeat $ncpus echo $hn` > hosts.list
   else
     set ncpus2=`echo $ncpus-4 | bc`
     if ($hn =~ opto4) set hn2=opto3
     if ($hn =~ opto3) set hn2=opto4
-    set mpirunops2 = `repeat 4 echo $hn; repeat $ncpus2 echo $hn2`
+    echo `repeat 4 echo $hn; repeat $ncpus2 echo $hn2` > hosts.list
   endif
+  set mpirun = '~/mpich/bin/mpirun'
+  set mpirunops = '-machinefile hosts.list'
   setenv SSH rsh
   setenv SCP rcp
   setenv SCRATCH_DIR /var/tmp/$USER
