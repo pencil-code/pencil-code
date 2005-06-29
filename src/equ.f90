@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.238 2005-06-28 12:45:48 ajohan Exp $
+! $Id: equ.f90,v 1.239 2005-06-29 12:04:38 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.238 2005-06-28 12:45:48 ajohan Exp $")
+           "$Id: equ.f90,v 1.239 2005-06-29 12:04:38 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -685,6 +685,7 @@ module Equ
 !  18-apr-05/tony: coded
 !
       use Cdata
+      use General, only: random_number_wrapper, random_seed_wrapper
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux) :: f 
@@ -692,7 +693,9 @@ module Equ
       type (pencil_case) :: p
       real, allocatable, dimension(:,:,:,:) :: df_ref, f_other
       real, allocatable, dimension(:) :: fname_ref
+      real :: a
       integer :: i,j,k,penc,iv
+      integer, dimension (mseed) :: iseed_org
       logical :: lconsistent=.true., ldie=.false.
 !
       if (lroot) print*, &
@@ -707,7 +710,11 @@ module Equ
 !  Check requested pencils
 !
       headt=.false.
-      f_other=f
+      call random_seed_wrapper(get=iseed_org)
+      call random_seed_wrapper(put=iseed_org)
+      do i=1,mvar+maux
+        call random_number_wrapper(f_other(:,:,:,i))
+      enddo
       df_ref=0.0
       include 'pencil_init.inc' 
 !
@@ -718,7 +725,10 @@ module Equ
 !
       do penc=1,npencils 
         df=0.0
-        f_other=f
+        call random_seed_wrapper(put=iseed_org)
+        do i=1,mvar+maux
+          call random_number_wrapper(f_other(:,:,:,i))
+        enddo
         include 'pencil_init.inc' 
 !
 !  Calculate results with one pencil swapped
@@ -738,7 +748,7 @@ f_loop: do iv=1,mvar
         enddo f_loop
 ! 
         if (lconsistent .and. lpenc_requested(penc)) then
-          if (lroot) print  '(a,i4,a)', &
+          if (lroot) print '(a,i4,a)', &
               'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &
               trim(pencil_names(penc))//' (',penc,')', &
               'is requested, but does not appear to be required!'
@@ -756,7 +766,10 @@ f_loop: do iv=1,mvar
       lout=.true.
       lfirst=.true.
       df=0.0
-      f_other=f
+      call random_seed_wrapper(1,put=iseed_org)
+      do i=1,mvar
+        call random_number_wrapper(f_other(:,:,:,i))
+      enddo
       fname=0.0
       include 'pencil_init.inc' 
 !
@@ -766,10 +779,10 @@ f_loop: do iv=1,mvar
       ldiagnos=.true.
       call pde(f_other,df,p)
       fname_ref=fname
-!
+
       do penc=1,npencils 
         df=0.0
-        f_other=f
+        if (maux>=1) f_other(:,:,:,mvar+1:mvar+maux)=0.0 ! Reset aux vars
         fname=0.0
         include 'pencil_init.inc' 
 !
@@ -818,6 +831,7 @@ f_loop: do iv=1,mvar
 !
 !  Clean up
 !
+      call random_seed_wrapper(put=iseed_org)
       headt=.true.
       lout=.false.
       lfirst=.false.
