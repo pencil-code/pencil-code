@@ -12,7 +12,7 @@ fi
 online_cvsroot=":pserver:${USER}@norserv.nordita.dk:/home/brandenb/CVS"
 remote_repository='norserv.nordita.dk:/home/brandenb/CVS'
 
-echo <<EOF
+cat <<EOF
 Acquiring a local copy of the CVS repository...
 Warning... You CANNOT commit changes while offline.
            You CAN perform all cvs read operations however,
@@ -34,18 +34,18 @@ echo $online_cvsroot > $localdir/ONLINE_CVSROOT
 date > $localdir/MIRROR_TIMESTAMP
 
 rm -f $localdir/CVSROOT/readers
-chmod 700 $localdir/CVSROOT/writers
 cat <<EOF > $localdir/CVSROOT/writers
 nobody
 EOF
 
+chmod 700 $localdir/CVSROOT/writers
 chmod 700 $localdir/CVSROOT/commitinfo
 cat <<EOF > $localdir/CVSROOT/commitinfo
 ALL false
 EOF
 
 
-/home/mee/cvs-src/branches/stable/utils/pc_cvs_chroot -d $PENCIL_HOME $online_cvsroot $localdir
+pc_cvs_chroot -d $PENCIL_HOME $online_cvsroot $localdir
 echo -n "Offline content size (MB) = "
 expr `du -ks /home/mee/CVS_MIRROR/cvs-pencil-code/ | cut -f1` / 1024
 
