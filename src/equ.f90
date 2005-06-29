@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.239 2005-06-29 12:04:38 ajohan Exp $
+! $Id: equ.f90,v 1.240 2005-06-29 13:43:13 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.239 2005-06-29 12:04:38 ajohan Exp $")
+           "$Id: equ.f90,v 1.240 2005-06-29 13:43:13 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -782,7 +782,10 @@ f_loop: do iv=1,mvar
 
       do penc=1,npencils 
         df=0.0
-        if (maux>=1) f_other(:,:,:,mvar+1:mvar+maux)=0.0 ! Reset aux vars
+        call random_seed_wrapper(1,put=iseed_org)
+        do i=1,mvar
+          call random_number_wrapper(f_other(:,:,:,i))
+        enddo
         fname=0.0
         include 'pencil_init.inc' 
 !
