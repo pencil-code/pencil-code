@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.4 2005-06-21 12:13:29 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.5 2005-06-29 15:10:39 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -23,15 +23,12 @@ ny=n_elements(y)
 nz=n_elements(z)
 
 np=fltarr(nx,ny,nz)*one
-distx=fltarr(nx)*one
-disty=fltarr(ny)*one
-distz=fltarr(nz)*one
 
 for k=0L,npar-1 do begin
   
-  ix = round((xxp[k,0]-x[0])*dx1)
-  iy = round((xxp[k,1]-y[0])*dy1)
-  iz = round((xxp[k,2]-z[0])*dz1)
+  ix = fix((xxp[k,0]-x[0])*dx1+0.5)
+  iy = fix((xxp[k,1]-y[0])*dy1+0.5)
+  iz = fix((xxp[k,2]-z[0])*dz1+0.5)
   np[ix,iy,iz]=np[ix,iy,iz]+1.0*one
 
 endfor
