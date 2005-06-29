@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.4 2005-06-27 19:49:16 dobler Exp $
+# CVS: $Id: mkcparam,v 1.5 2005-06-29 04:49:20 dobler Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -319,13 +319,13 @@ if ($mvar_per_dust == 6) {$lmice  = '.true.';}
 #} 
 #$,="\n";
 #print @pencils;
-foreach my $pencil ( keys %pencil_hash ) {
-  print "Pencil: $pencil (";
-  print $pencil_hash{$pencil}{'provided'}.",";
-  print $pencil_hash{$pencil}{'required'}.",";
-  print $pencil_hash{$pencil}{'optional'}.",";
-  print $pencil_hash{$pencil}{'diagnostic'}.")\n";
-} 
+# foreach my $pencil ( keys %pencil_hash ) {
+#   print "Pencil: $pencil (";
+#   print $pencil_hash{$pencil}{'provided'}.",";
+#   print $pencil_hash{$pencil}{'required'}.",";
+#   print $pencil_hash{$pencil}{'optional'}.",";
+#   print $pencil_hash{$pencil}{'diagnostic'}.")\n";
+# } 
 
 my $npencils=scalar keys %pencil_hash;
 my @lpenc_required;
