@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.7 2005-06-28 10:52:15 mee Exp $
+! $Id: eos_idealgas.f90,v 1.8 2005-06-29 06:37:24 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.7 2005-06-28 10:52:15 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.8 2005-06-29 06:37:24 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -408,13 +408,14 @@ module EquationOfState
             call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) &
-            ee=cs20*exp(gamma*cp1*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
-        if (present(pp)) pp=ee*exp(lnrho)/gamma1
+            ee=cs20/(gamma1*gamma)*exp(gamma*cp1*ss+gamma1*(lnrho-lnrho0))
+        if (present(pp)) &
+            pp=cs20/gamma*exp(gamma*cp1*ss+gamma*lnrho-gamma1*lnrho0)
       endif
 !
       if (present(lnchi)) then
         lnchi=0
-        call stop_it("eoscalc: sorry,no Hminus opacity with noionization")
+        call stop_it("eoscalc: sorry, no Hminus opacity with noionization")
       endif
 !
     endsubroutine eoscalc_farray
