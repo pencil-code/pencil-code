@@ -10,7 +10,9 @@ EOF
 contributors() {
 red=''
 normal=''
-  cat $PENCIL_HOME/CONTRIBUTORS | perl -pi -e "s/\(.*\)/$red\$1$normal/"
+  if [ -e $PENCIL_HOME/CONTRIBUTORS ]; then
+    cat $PENCIL_HOME/CONTRIBUTORS | perl -pi -e "s/\(.*\)/$red\$1$normal/"
+  fi
 }
 
 linesofcode() {
@@ -28,23 +30,49 @@ pencil_home() {
 
 cvs_check_status() {
   echo -n "Checking CVS status of source files... "
-  if (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;'); then
+  if (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;' 2>/dev/null); then
     echo "STICKY TAGS FOUND!!!"
-    (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;')
+    (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;' 2>/dev/null)
   else
     echo "ok"
   fi
   
 }
 
+cvs_check_root() {
+  echo -n "Checking CVS repository location... "
+  if cat $PENCIL_HOME/CVS/Root | egrep ':pserver:.*@norserv.nordita.dk:/home/brandenb/CVS' 2>&1 >/dev/null; then
+    echo "DEVELOPMENT READ/WRITE SERVER"
+  elif cat $PENCIL_HOME/CVS/Root | egrep ':pserver:anonymous@norserv.nordita.dk:/home/cvs/' 2>&1 >/dev/null; then
+    echo "ANONYMOUS READ-ONLY SERVER"
+  else
+    echo "WORKING OFFLINE"
+    echo -n "  - offline repository is a mirror of: "
+    repo=`cat $PENCIL_HOME/CVS/Root | sed -e 's/:local://; s/\/$//'`
+    if [ -e $repo/ONLINE_CVSROOT ]; then
+      cat $repo/ONLINE_CVSROOT
+    else
+      echo "REPOSITORY MIRROR CORRUPT"
+    fi
+    echo -n "  - offline repository mirrored at: "
+    if [ -e $repo/MIRROR_TIMESTAMP ]; then
+      cat $repo/MIRROR_TIMESTAMP
+    else
+      echo "REPOSITORY MIRROR CORRUPT"
+    fi
+    echo $repo
+
+  fi
+}
+
 cvs_latest_src_change() {
   echo -n "Latest source code change: "  
-  (cd $PENCIL_HOME; cvs -Q log -r HEAD src | perl -ne 'next if ! /^date:\s*(.*);\s*author:\s*(.*?);/; print "$1 by $2\n";' | sort -k 1,2 | head -n 1)
+  (cd $PENCIL_HOME; cvs -Q log -r HEAD src | perl -ne 'next if ! /^date:\s*(.*);\s*author:\s*(.*?);/; print "$1 by $2\n";' | sort -k 1,2 | tail -n 1 2>/dev/null)
 }
 
 check_pencil_home() {
   [ ! "$PENCIL_HOME" ] && error 'You have not set your $PENCIL_HOME variable correctly'
-  [ ! -e $PENCIL_HOME ] && error 'Your $PENCIL_HOME directory doed not exist'
+  [ ! -e $PENCIL_HOME ] && error 'Your $PENCIL_HOME directory does not exist'
 }
 
 error() {
@@ -56,6 +84,7 @@ default() {
   contributors
   pencil_home
   cvs_check_status
+  cvs_check_root
   cvs_latest_src_change
   linesofcode
 }
