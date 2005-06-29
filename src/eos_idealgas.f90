@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.9 2005-06-29 07:23:41 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.10 2005-06-29 07:32:52 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.9 2005-06-29 07:23:41 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.10 2005-06-29 07:32:52 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -501,6 +501,13 @@ module EquationOfState
 !
       if (gamma1==0.) call stop_it('eoscalc_pencil: gamma=1 not allowed w/entropy')
 !
+
+!
+! EMERGENCY BRAKE to avoid segfaults in samples/geodynamo
+!
+if (.not. present(lnrho)) &
+    call stop_it("BAD LUCK: eoscalc_pencil inconsistently assumes lnrho to be present!")
+
       select case (ivars)
 
       case (ilnrho_ss)
