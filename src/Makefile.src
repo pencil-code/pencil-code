@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.115 2005-06-28 18:44:36 dobler Exp $
+### $Id: Makefile.src,v 1.116 2005-06-29 12:15:32 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -149,9 +149,9 @@ FCCLEANER=
 #LDMPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
 #FFLAGS=-O3 -I/home/ajohan/mpich/include #(hamlet)
 #LDMPI=-L /home/ajohan/mpich/lib -lmpich #(hamlet)
-#FC=mpif90 #(opto[1-4])
-#FFLAGS=-O3 -I/home/johansen/mpich/include #(opto[1-4])
-#LDMPI=-L/usr/local/ib_hpc/mpi/osu/mvapich-1.2.5.2/lib -lmpich #(opto[1-4])
+#FC=ifort #(opto[1-4])
+#FFLAGS=-O3 -I/home/johansen/mpich/include/ #(opto[1-4])
+#LDMPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
 #FC=~/mvapich095_pgf90/bin/mpif90 #(rio*)
 #FFLAGS=-O3 -I~/mvapich095_pgf90/include #(rio*)
 #LDMPI=-L~/mvapich095_pgf90/lib -lmpich #(rio*)
@@ -231,7 +231,7 @@ FCCLEANER=
 #LDMPI=-L/usr/local/mpich/lib #(pcponty)
 #LDMPI= # (Samos|fire|sandin)
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd)
-#CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx)
+#CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
 #CFLAGS=$(FFLAGS) -DFUNDERSC=1 #(obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern|renton|lanark)
