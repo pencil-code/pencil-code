@@ -1,6 +1,6 @@
-! $Id: particles_tracers.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
+! $Id: particles_tracers.f90,v 1.4 2005-06-29 12:43:48 ajohan Exp $
 !
-!  This module takes care of everything related to tracer particles.
+!  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -21,22 +21,22 @@ module Particles
 
   include 'particles.h'
 
-  real, dimension (npar,mpvar) :: fp, dfp
-  integer, dimension (npar) :: ipar,ipar0
-  integer :: npar_loc,npvar
+  real, dimension (mpar_loc,mpvar) :: fp=0.0, dfp=0.0
+  integer, dimension (mpar_loc) :: ipar
+  integer :: npar_loc, npvar
 
-  real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
-  real :: tausp=1.0
-  character (len=labellen) :: initxxp='origin', initvvp='zero'
+  real :: xp0=0.0, yp0=0.0, zp0=0.0
+  real :: dsnap_par_minor=0.0
+  character (len=labellen) :: initxxp='origin'
 
   namelist /particles_init_pars/ &
-      initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, tausp
+      initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz
 
   namelist /particles_run_pars/ &
-      tausp
+      bcpx, bcpy, bcpz
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
-  integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
+  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
 
   contains
 
@@ -80,7 +80,7 @@ module Particles
 !***********************************************************************
     subroutine particles_init(f)
 !
-!  Set up initial conditios for particle modules.
+!  Set up initial conditions for particle modules.
 !
 !  07-jan-05/anders: coded
 !
@@ -100,7 +100,7 @@ module Particles
 !
       character (len=*) :: filename
 !
-      call input_particles(filename,fp,ipar0)
+      call input_particles(filename,fp,npar_loc,ipar)
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
@@ -118,11 +118,11 @@ module Particles
       logical :: lsnap
 !
       if (present(flist)) then
-        call wsnap_particles_mask(chsnap,fp,msnap,enum,lsnap, &
-            npar_loc,ipar,ipar0,flist)
+        call wsnap_particles(chsnap,fp,msnap,enum,lsnap,dsnap_par_minor, &
+            npar_loc,ipar,flist)
       else
-        call wsnap_particles_mask(chsnap,fp,msnap,enum,lsnap, &
-            npar_loc,ipar,ipar0)
+        call wsnap_particles(chsnap,fp,msnap,enum,lsnap,dsnap_par_minor, &
+            npar_loc,ipar)
       endif
 !
     endsubroutine particles_write_snapshot
@@ -147,33 +147,44 @@ module Particles
 !
 !  07-jan-05/anders: coded
 !
+      integer :: k
+!
       if (itsub==1) then
-        dfp(ipar(1:npar_loc),:)=0.
+        do k=1,npar_loc
+          dfp(k,:)=0.
+        enddo
       else
-        dfp(ipar(1:npar_loc),:)=alpha(itsub)*dfp(ipar(1:npar_loc),:)
+        do k=1,npar_loc
+          dfp(k,:)=alpha(itsub)*dfp(k,:)
+        enddo
       endif
 !
     endsubroutine particles_timestep_first
+!***********************************************************************
     subroutine particles_timestep_second()
 !
 !  Time evolution of particle variables.
 !
 !  07-jan-05/anders: coded
 !
-      fp(ipar(1:npar_loc),:) = &
-          fp(ipar(1:npar_loc),:) + dt_beta(itsub)*dfp(ipar(1:npar_loc),:)
+      integer :: k
+!
+      do k=1,npar_loc
+        fp(k,:) = fp(k,:) + dt_beta(itsub)*dfp(k,:)
+      enddo
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
-    subroutine particles_pde(f)
+    subroutine particles_pde(f,df)
 !
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
 !
       intent (in) :: f
 !
-      call boundconds_particles_mask(fp,npar_loc,ipar,ipar0,dfp=dfp)
+      call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
       call dxxp_dt(f,fp,dfp)
 !
     endsubroutine particles_pde
@@ -193,7 +204,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-          "$Id: particles_tracers.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
+           "$Id: particles_tracers.f90,v 1.4 2005-06-29 12:43:48 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -222,11 +233,16 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
+      use EquationOfState, only: cs0
+!
       logical :: lstarting
+!
+      real :: rhom
+      integer, dimension (0:ncpus-1) :: ipar1, ipar2
 !
 !  Distribute particles evenly among processors to begin with.
 !
-      if (lstarting) call dist_particles_evenly_mask(npar_loc,ipar,ipar0)
+      if (lstarting) call dist_particles_evenly_procs(npar_loc,ipar)
 !
 !  Size of box at local processor is needed for particle boundary conditions.
 !
@@ -236,59 +252,79 @@ module Particles
       xyz0_loc(1)=xyz0(1)
       xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
       xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
-      xyz1_loc(1)=xyz0_loc(1)+Lxyz_loc(1)
-      xyz1_loc(2)=xyz0_loc(2)+Lxyz_loc(2)
-      xyz1_loc(3)=xyz0_loc(3)+Lxyz_loc(3)
+      xyz1_loc(1)=xyz1(1)
+      xyz1_loc(2)=xyz0(2)+(ipy+1)*Lxyz_loc(2)
+      xyz1_loc(3)=xyz0(3)+(ipz+1)*Lxyz_loc(3)
 !
     endsubroutine initialize_particles
 !***********************************************************************
     subroutine init_particles(f)
 !
-!  Initial conditions for tracer particles
+!  Initial positions and velocities of tracer particles.
 !
 !  29-dec-04/anders: coded
 !
-      use Cdata
+      use Boundcond
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
+      use Sub
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
+      real, dimension (3) :: uup
+      real :: r, p
       integer :: k
 !
-      intent(in) :: f
+      intent (in) :: f
 !
 !  Initial particle position.
 !
       select case(initxxp)
 
       case ('origin')
-        print*, 'init_particles: All particles at origin'
-        fp(ipar(1:npar_loc),ixp:izp)=0.
+        if (lroot) print*, 'init_particles: All particles at origin'
+        fp(1:npar_loc,ixp:izp)=0.
 
       case ('constant')
-        print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
-        fp(ipar(1:npar_loc),ixp)=xp0
-        fp(ipar(1:npar_loc),iyp)=yp0
-        fp(ipar(1:npar_loc),izp)=zp0
+        if (lroot) &
+            print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+        fp(1:npar_loc,ixp)=xp0
+        fp(1:npar_loc,iyp)=yp0
+        fp(1:npar_loc,izp)=zp0
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle positions'
         do k=1,npar_loc
-          call random_number_wrapper(fp(ipar(k),ixp))
-          call random_number_wrapper(fp(ipar(k),iyp))
-          call random_number_wrapper(fp(ipar(k),izp))
+          if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+          if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+          if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
         enddo
-        fp(ipar(1:npar_loc),ixp)=xyz0(1)+fp(ipar(1:npar_loc),ixp)*Lxyz(1)
-        fp(ipar(1:npar_loc),iyp)=xyz0(2)+fp(ipar(1:npar_loc),iyp)*Lxyz(2)
-        fp(ipar(1:npar_loc),izp)=xyz0(3)+fp(ipar(1:npar_loc),izp)*Lxyz(3)
+        if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+        if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+        if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+
+      case ('gaussian-z')
+        if (lroot) print*, 'init_particles: Gaussian particle positions'
+        do k=1,npar_loc
+          if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+          if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          fp(k,izp)=zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+        enddo
+        if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+        if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
 
       case default
-        print*, 'init_particles: No such such value for initxxp: ', &
+        if (lroot) print*, 'init_particles: No such such value for initxxp: ', &
             trim(initxxp)
         call stop_it("")
 
       endselect
+!
+!  Redistribute particles among processors (now that positions are determined).
+!
+      call boundconds_particles(fp,npar_loc,ipar)
 !
     endsubroutine init_particles
 !***********************************************************************
@@ -296,27 +332,23 @@ module Particles
 !
 !  Evolution of tracer particle position.
 !
-!  29-dec-04/anders: coded
+!  02-jan-05/anders: coded
 !
-      use Cdata
-      use Mpicomm, only: stop_it
-      use Sub
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(npar,mpvar) :: fp,dfp
-!
-      real, dimension(3) :: uup
+      real, dimension (3) :: uu
       integer :: k
-      logical :: lheader
+      logical :: lheader, lfirstcall=.true.
 !
-      intent(in) :: f,fp
-      intent(out) :: dfp
+      intent (in) :: f, fp
+      intent (out) :: dfp
 !
 !  Print out header information in first time step.
 !
       lheader=(headt .and. lfirst .and. lroot) .or. ldebug
 !
-!  Identify module and boundary conditions
+!  Identify module and boundary conditions.
 !
       if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
       if (lheader) then
@@ -325,31 +357,34 @@ module Particles
         print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
       endif
 !
+      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
+          'position equal to gas velocity.'
+!
 !  Interpolate gas velocity to position of particles. 
 !  Then set particle velocity equal to the local gas velocity.
-!      
+!       
       do k=1,npar_loc
-        call interpolate_3d_1st(f(:,:,:,iux:iuz),fp(ipar(k),ixp:izp),uup)
-        dfp(ipar(k),ixp:iyp) = dfp(ipar(k),ixp:iyp) + uup
+        call interpolate_3d_1st(f,iux,fp(k,ixp:izp),uu)
+        dfp(k,ixp:iyp) = dfp(k,ixp:iyp) + uu
       enddo
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_xpm/=0) &
-            call sum_mn_name_par(fp(ipar(1:npar_loc),ixp),idiag_xpm)
-        if (idiag_ypm/=0) &
-            call sum_mn_name_par(fp(ipar(1:npar_loc),iyp),idiag_ypm)
-        if (idiag_zpm/=0) &
-            call sum_mn_name_par(fp(ipar(1:npar_loc),izp),idiag_zpm)
+        if (idiag_xpm/=0) call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        if (idiag_ypm/=0) call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        if (idiag_zpm/=0) call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
+        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
+        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
       endif
 !
     endsubroutine dxxp_dt
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
         read(unit,NML=particles_init_pars,ERR=99, IOSTAT=iostat)
@@ -363,7 +398,7 @@ module Particles
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
 !    
-      integer, intent(in) :: unit
+      integer, intent (in) :: unit
 !
       write(unit,NML=particles_init_pars)
 !
@@ -371,8 +406,8 @@ module Particles
 !***********************************************************************
     subroutine read_particles_run_pars(unit,iostat)
 !    
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+      integer, intent (in) :: unit
+      integer, intent (inout), optional :: iostat
 !
       if (present(iostat)) then
         read(unit,NML=particles_run_pars,ERR=99, IOSTAT=iostat)
@@ -386,7 +421,7 @@ module Particles
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
 !    
-      integer, intent(in) :: unit
+      integer, intent (in) :: unit
 !
       write(unit,NML=particles_run_pars)
 !
@@ -398,6 +433,7 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
+      use Cdata
       use Sub, only: parse_name
 !
       logical :: lreset
@@ -410,14 +446,17 @@ module Particles
 ! 
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
+      
       if (lwr) then
         write(3,*) 'ixxp=',ixxp
-        write(3,*) 'ivvp=',ivvp
+        write(3,*) 'ivvp=0'
       endif
+!
+!  Reset everything in case of reset
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
+        idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -427,6 +466,9 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
+        call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
+        call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
+        call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
       enddo
 !
     endsubroutine rprint_particles
