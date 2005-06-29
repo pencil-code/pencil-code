@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.53 2005-06-27 12:07:17 brandenb Exp $
+# CVS: $Id: auto-test,v 1.54 2005-06-29 14:27:20 ajohan Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -96,12 +96,13 @@ GetOptions(\%opts,
 	       -v   --version
 	            --debug
 	       -C   --clean
-               -c   --compile-only
+           -c   --compile-only
 	       -n   --norun
 	       -l   --list
 	       -t   --time
 	       -s   --short
-                    --no-summary
+                --no-summary
+                --datadir
 	       -j=n   
 	       -p=s --postproc=s
                     --nodelist=s
@@ -111,7 +112,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.53 2005-06-27 12:07:17 brandenb Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.54 2005-06-29 14:27:20 ajohan Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -126,6 +127,7 @@ my $nodelist  = ($opts{'nodelist'} || 0);
 my $nosummary = ($opts{'no-summary'} || 0);
 my $RSH       = ($opts{'rsh'} || 'ssh');
 my $makeopts  = '';
+my $datadir   = ($opts{'datadir'} || 0);
 
 my @exit_status=('setting up directory','cleaning up','compilation','starting','running','results');
 
@@ -507,17 +509,28 @@ sub test_rundir {
     return unless ($t_start);	# no need for a data directory unless we start
 				# the code
     if (! -d 'data') {
-	if (-l 'data') {
-	    print "        data is file or empty link;\n"
-		. "        removing and generating data -> $tmpdir\n";
-	    system("rm", "data");
-	}
-	else
-	{
-	    print "        No data directory; generating data -> $tmpdir\n";
-	}
-	system("mkdir -p $tmpdir; ln -s $tmpdir data");
-	$created_datadir = 1;
+      if (!$datadir) {
+        if (-l 'data') {
+          print "        data is file or empty link;\n"
+          . "        removing and generating data -> $tmpdir\n";
+          system("rm", "data");
+          }
+       else {
+         print "        No data directory; generating data -> $tmpdir\n";
+         }
+      system("mkdir -p $tmpdir; ln -s $tmpdir data");
+      $created_datadir = 1;
+      }
+      else {
+        if (-l 'data') {
+          print "        data is file or empty link;\n"
+          . "        removing and generating data directory \n";
+          system("rm", "data");
+          }
+        else {
+          print "        No data directory; generating data directory\n";}
+        system("mkdir -p data");
+      }
     }
     test_start($dir);
     goto cleanup if ($test_status);
