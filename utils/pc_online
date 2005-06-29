@@ -1,0 +1,17 @@
+#!/bin/sh
+[ ! "$CVS_MIRROR_DIR" ] && CVS_MIRROR_DIR=${HOME}/CVS_MIRROR
+
+subdir=cvs-pencil-code
+localdir=$CVS_MIRROR_DIR/$subdir
+
+if [ -e $localdir/ONLINE_CVSROOT ]; then
+  online_cvsroot=`cat $localdir/ONLINE_CVSROOT`
+  rm -f $localdir/ONLINE_CVSROOT
+else
+  echo "Already online, or ONLINE_CVSROOT not found in $localdir"
+  exit 1
+fi
+
+
+/home/mee/cvs-src/branches/stable/utils/pc_cvs_chroot -d $PENCIL_HOME $localdir $online_cvsroot
+
