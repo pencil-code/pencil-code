@@ -5,8 +5,8 @@
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-06-25 06:59:52 $
-# $Revision: 1.1 $
+# $Date: 2005-06-29 17:27:33 $
+# $Revision: 1.2 $
 
 # Current test statistics:
 # All tests successful, 1 subtest skipped.
@@ -263,33 +263,35 @@ comment characters in your namelist data, you are out of luck.
 use strict;
 use Carp;
 use vars qw($VERSION);
-use constant {
-    # possible states of parser [used at all?]
-    UNDEF   => -1,
-    START   =>  0,		# initial state of parser
-    VAR     =>  1,		# at beginning of variable name
-    VALUE   =>  2,		# at beginning of value
-    SQUOTE  =>  3,		# in string after opening single quote
-    DQUOTE  =>  4,		# in string after opeing double quote
-    BRACKET =>  5,		# after opening bracket (e.g. complex number)
-    COMMENT =>  6,		# after exclamation mark (F90 comment)
-    NL_END  =>  7,              # after closing `/'
 
-    # F90 data types
-    UNKNOWN   => 0,
-    SQ_STRING => 1,
-    DQ_STRING => 2,
-    LOGICAL   => 3,
-    INTEGER   => 4,
-    FLOAT     => 5,		# a float here can be single or double
-    SINGLE    => 6,
-    DOUBLE    => 7,
-    COMPLEX   => 8,
-    DCOMPLEX  => 9,
-    MULTIPLE  => 20,
-
-    ID        => 100		# variable name (_not_ a data type)
-};
+# Cannot use use Perl5.8's constant { x => 1, y=>2 , ..} because 5.6
+# is very popular still
+#
+# Possible states of parser [used at all?]
+use constant  UNDEF   => -1;
+use constant  START   =>  0;	# initial state of parser
+use constant  VAR     =>  1;	# at beginning of variable name
+use constant  VALUE   =>  2;	# at beginning of value
+use constant  SQUOTE  =>  3;	# in string after opening single quote
+use constant  DQUOTE  =>  4;	# in string after opeing double quote
+use constant  BRACKET =>  5;	# after opening bracket (e.g. complex number)
+use constant  COMMENT =>  6;	# after exclamation mark (F90 comment)
+use constant  NL_END  =>  7;	# after closing `/'
+#
+# F90 data types
+use constant  UNKNOWN   => 0;
+use constant  SQ_STRING => 1;
+use constant  DQ_STRING => 2;
+use constant  LOGICAL   => 3;
+use constant  INTEGER   => 4;
+use constant  FLOAT     => 5;	# a float here can be single or double
+use constant  SINGLE    => 6;
+use constant  DOUBLE    => 7;
+use constant  COMPLEX   => 8;
+use constant  DCOMPLEX  => 9;
+use constant  MULTIPLE  => 20;
+#
+use constant  ID        => 100;	# variable name (_not_ a data type)
 
 
 $VERSION = '0.3';
