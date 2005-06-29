@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.133 2005-06-27 00:14:19 mee Exp $
+! $Id: mpicomm.f90,v 1.134 2005-06-29 08:13:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -234,7 +234,7 @@ module Mpicomm
           print*, 'Compiled with NCPUS = ', ncpus, &
           ', but running on ', nprocs, ' processors'
         endif
-        STOP 'Inconsistency 1'
+        call stop_it('Inconsistency 1')
       endif
 !
       if ((nprocy*ny /= nygrid) .or. &
@@ -1470,7 +1470,7 @@ module Mpicomm
 !
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
-      STOP
+      STOP 1                    ! Return nonzero exit status
     endsubroutine stop_it
 !***********************************************************************
     subroutine stop_it_if_any(stop_flag,msg)
@@ -1879,8 +1879,7 @@ subroutine transform_nr(a_re,a_im)
 !  This Fourier transform would work, but it's very slow!
 !  Even the compilation is very slow, so we better get rid of it!
 !
-  print*,'transform_nr: currently disabled!'
-  call stop_it("")
+  call stop_it("transform_nr: currently disabled!")
 !
   if(lroot .AND. ip<10) print*,'transform_nr: doing FFT_nr in x'
   do n=1,nz

@@ -470,7 +470,7 @@ module Mpicomm
 !      
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
-      STOP
+      STOP 1                    ! Return nonzero exit status
     endsubroutine stop_it
 !***********************************************************************
     subroutine stop_it_if_any(stop_flag,msg)
@@ -812,8 +812,7 @@ subroutine transform_nr(a_re,a_im)
 !  This Fourier transform would work, but it's very slow!
 !  Even the compilation is very slow, so we better get rid of it!  
 !
-  print*,'fft_nr currently disabled!'
-  call stop_it("")
+  call stop_it("fft_nr currently disabled!")
 !
   if(lroot .AND. ip<10) print*,'doing FFT_nr in x'
   do m=1,ny
