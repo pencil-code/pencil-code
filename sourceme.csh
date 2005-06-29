@@ -64,14 +64,14 @@ if (! $?_sourceme) then		# called for the fist time?
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:<IDL_DEFAULT>"
     endif
 
-#    #  Set Perl module path
-#    set _perl5lib = "${PENCIL_HOME}/perl"
-#    if ($?PERL5LIB) then
-#      setenv PERL5LIB "${_perl5lib}:$PERL5LIB"
-#    else
-#      setenv PERL5LIB "${_perl5lib}"
-#    endif
-#    unset _perl5lib
+    #  Set Perl module path
+    set _perl5lib = "${PENCIL_HOME}/perl"
+    if ($?PERL5LIB) then
+      setenv PERL5LIB "${_perl5lib}:$PERL5LIB"
+    else
+      setenv PERL5LIB "${_perl5lib}"
+    endif
+    unset _perl5lib
 
     # Remember that sourceme has been successfully run
     set _sourceme = 'set'
