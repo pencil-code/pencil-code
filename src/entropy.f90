@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.339 2005-06-30 09:07:12 ajohan Exp $
+! $Id: entropy.f90,v 1.340 2005-06-30 11:02:51 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -141,7 +141,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.339 2005-06-30 09:07:12 ajohan Exp $")
+           "$Id: entropy.f90,v 1.340 2005-06-30 11:02:51 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1491,14 +1491,16 @@ module Entropy
 !
 !  Advection of global density and entropy gradient.
 !
-          if (ldensity_nolog) then
-            df(l1:l2,m,n,ilnrho) = &
-                df(l1:l2,m,n,ilnrho) - p%uu(:,j)*p%rho*beta_glnrho_scaled(j)
-          else
-            df(l1:l2,m,n,ilnrho) = &
-                df(l1:l2,m,n,ilnrho) - p%uu(:,j)*beta_glnrho_scaled(j)
+          if (ldensity) then
+            if (ldensity_nolog) then
+              df(l1:l2,m,n,ilnrho) = &
+                  df(l1:l2,m,n,ilnrho) - p%uu(:,j)*p%rho*beta_glnrho_scaled(j)
+            else
+              df(l1:l2,m,n,ilnrho) = &
+                  df(l1:l2,m,n,ilnrho) - p%uu(:,j)*beta_glnrho_scaled(j)
+            endif
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uu(:,j)*beta_gss_scaled(j)
           endif
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uu(:,j)*beta_gss_scaled(j)
         enddo
       endif
 !
