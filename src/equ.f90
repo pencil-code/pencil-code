@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.242 2005-06-30 19:53:16 bingert Exp $
+! $Id: equ.f90,v 1.243 2005-06-30 23:59:22 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.242 2005-06-30 19:53:16 bingert Exp $")
+           "$Id: equ.f90,v 1.243 2005-06-30 23:59:22 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -700,7 +700,7 @@ module Equ
 !
       if (lroot) print*, &
           'pencil_consistency_check: checking the pencil case'      
-      lpencil_in_conscheck=.true.
+      l_doing_pconscheck=.true.
 !
 !  Allocate memory for alternative df, fname
 !
@@ -848,7 +848,7 @@ f_loop: do iv=1,mvar
 !
       if (ldie) call stop_it('pencil_consistency_check: DYING')
 !
-      lpencil_in_conscheck=.false.
+      l_doing_pconscheck=.false.
 !        
     endsubroutine pencil_consistency_check
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.24 2005-06-30 19:53:16 bingert Exp $
+! $Id: deriv.f90,v 1.25 2005-06-30 23:59:22 dobler Exp $
 
 module Deriv
   
@@ -231,7 +231,7 @@ module Deriv
         igndx = .false.
       endif
 
-      if (.not. (lequidist(j) .or. lpencil_in_conscheck)) &
+      if (.not. (lequidist(j) .or. l_doing_pconscheck)) &
           call stop_it('der5: NOT IMPLEMENTED for no equidistant grid')
 !
       if (j==1) then
@@ -313,7 +313,7 @@ module Deriv
         upwnd = upwind
       else
         upwnd = .false.
-      if (.not. (lequidist(j) .or. lpencil_in_conscheck) ) &
+      if (.not. (lequidist(j) .or. l_doing_pconscheck) ) &
            call stop_it('der6: NOT IMPLEMENTED for no equidistant grid')
       endif
 !
@@ -405,7 +405,7 @@ module Deriv
         upwnd = upwind
       else
         upwnd = .false.
-        if (.not. (lequidist(j) .or. lpencil_in_conscheck)) &
+        if (.not. (lequidist(j) .or. l_doing_pconscheck)) &
           call stop_it('der6_other: NOT IMPLEMENTED for no equidistant grid')
       endif
 !
@@ -488,7 +488,7 @@ module Deriv
 !ajwm      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
 !ajwm                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
-      if (.not. (lequidist(j) .or. lpencil_in_conscheck)) &
+      if (.not. (lequidist(j) .or. l_doing_pconscheck)) &
            call stop_it('der4: NOT IMPLEMENTED for no equidistant grid')
 
       if (present(ignoredx)) then
@@ -667,7 +667,7 @@ module Deriv
 !ajwm      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
 !ajwm                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
-      if (.not. (lequidist(j) .or. lpencil_in_conscheck)) &
+      if (.not. (lequidist(j) .or. l_doing_pconscheck)) &
         call stop_it('der_upwind1st: NOT IMPLEMENTED for no equidistant grid')
 !
       if (j == 1) then
