@@ -5,8 +5,8 @@
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-06-29 17:27:33 $
-# $Revision: 1.2 $
+# $Date: 2005-06-30 05:26:20 $
+# $Revision: 1.3 $
 
 # Current test statistics:
 # All tests successful, 1 subtest skipped.
@@ -632,7 +632,7 @@ sub output{
 	if ($trim) {
 	    @vals = map { s/\s*$//; $_ } @vals;
 	}
-	if ($double) {
+	if ($double) { # replace E[0-9]+ by, or append `D0' where necessary
 	    if (($type == FLOAT)   ||
 		($type == SINGLE)  ||
 		($type == DOUBLE)  ||
@@ -1088,7 +1088,7 @@ sub quote_string_f90 {
 # for Fortran and IDL
     my $val = shift;
 
-    $val =~ s/"/""/g;
+    $val =~ s/'/''/g;
     quote_string($val);
 }
 
@@ -1096,7 +1096,7 @@ sub quote_string_f90 {
 
 sub quote_string {
 # Enclose string by quotation marks
-    "\"$_[0]\"";
+    "'$_[0]'";
 }
 
 # ---------------------------------------------------------------------- #
