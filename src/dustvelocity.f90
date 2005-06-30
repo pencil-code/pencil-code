@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.96 2005-06-28 21:56:16 dobler Exp $
+! $Id: dustvelocity.f90,v 1.97 2005-06-30 06:05:14 dobler Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -129,7 +129,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.96 2005-06-28 21:56:16 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.97 2005-06-30 06:05:14 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -281,7 +281,7 @@ module Dustvelocity
         endselect
       endif
 !
-!  Auxilliary variables necessary for different drag laws
+!  Auxiliary variables necessary for different drag laws
 !
       if (ldragforce_dust) then
         select case (draglaw)
@@ -290,9 +290,7 @@ module Dustvelocity
           rhodsad1 = 1./(rhods*ad)
         case ('epstein_cst')
           do k=1,ndustspec
-            do l=1,nx
-              tausd1(l,k) = 1./tausd(k)
-            enddo
+            tausd1(:,k) = 1./(max(tausd(k),tini))
           enddo
 
         endselect
