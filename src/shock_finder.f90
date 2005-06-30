@@ -563,11 +563,11 @@ subroutine evaluate_facefactors(unitno,rotation)
    dir1=mod(3-rotation,3)+1
    dir2=mod(4-rotation,3)+1
    dir3=mod(5-rotation,3)+1
-   print"(a,a)","      dA = ",dmesh(dir1)
-   print"(a,a)","      dB = ",dmesh(dir2)
+   print "(a,a)","      dA = ",dmesh(dir1)
+   print "(a,a)","      dB = ",dmesh(dir2)
 !   print"(a,a)","    dC = ",dmesh(dir3)
    do face_type=1,nface_types
-     print"(a17,i1,a)","      face_factor",face_type," = -"//trim(area_elements(face_type))//"* dxmin**2"
+     print "(a17,i1,a)","      face_factor",face_type," = -"//trim(area_elements(face_type))//"* dxmin**2"
    enddo  !Face_types
 endsubroutine evaluate_facefactors
 !***********************************************************************

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.116 2005-06-29 12:15:32 ajohan Exp $
+### $Id: Makefile.src,v 1.117 2005-06-30 20:05:21 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -131,9 +131,11 @@ FCCLEANER=
 #FC=g95 #(Cincinnatus|cosmo)
 #F77=$(FC) #(Cincinnatus|cosmo)
 #FFLAGS=-O4 -fno-second-underscore -I/usr/lib/mpich/include #(Cincinnatus)
+#FFLAGS=-O4 -I/usr/include/mpi #(cosmo)
 #CFLAGS=-O3 -DFUNDERSC=1 #(Cincinnatus)
 #CFLAGS=-O3 -DFUNDERSC=2 #(cosmo)
 #LDMPI=-L/usr/lib/mpich/lib -lmpich #(Cincinnatus)
+#LDMPI=-lmpi #(cosmo)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)
@@ -238,8 +240,8 @@ FCCLEANER=
 #F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
 #F77=$(FC) -lm  #(tycho|monolith)
 #F77=$(FC) #(erland|bohm|igor|onsager)
-#F77=$(FC) #(Owen|Master|cosmo|nw17|nl11)
-#F77FLAGS=-w90 #(nw[0-9]*|ns0|cosmo|nw17|nl11|sandin)
+#F77=$(FC) #(Owen|Master|nw17|nl11)
+#F77FLAGS=-w90 #(nw[0-9]*|ns0|nw17|nl11|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
 #FFLAGS=-O2 -ipo -xW -tpp7 #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
