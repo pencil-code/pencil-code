@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.6 2005-06-28 06:11:59 brandenb Exp $
+! $Id: noeos.f90,v 1.7 2005-06-30 02:04:01 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -81,7 +81,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.6 2005-06-28 06:11:59 brandenb Exp $')
+           '$Id: noeos.f90,v 1.7 2005-06-30 02:04:01 dobler Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -90,10 +90,8 @@ module EquationOfState
 !  dummy
 !
       gamma1=gamma-1.
-      cs20=1.               ! to avoid problems in pencil_consistency_test
-!AXEL
-      cs20=0.               ! to avoid problems with autotest
-
+      cs20=0.               ! to avoid problems with some autotests
+!
     endsubroutine initialize_eos
 !*******************************************************************
     subroutine getmu(mu)

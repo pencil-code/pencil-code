@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.67 2005-06-27 00:14:19 mee Exp $
+! $Id: noentropy.f90,v 1.68 2005-06-30 02:04:01 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.67 2005-06-27 00:14:19 mee Exp $")
+           "$Id: noentropy.f90,v 1.68 2005-06-30 02:04:01 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -158,7 +158,7 @@ module Entropy
       if (lpencil(i_pp)) p%pp=1/gamma*p%cs2*p%rho
 ! TT1
       if (lpencil(i_TT1)) then
-        if (gamma==1.) then
+        if (gamma==1. .or. cs20==0) then
           p%TT1=0.
         else
           p%TT1=gamma1/p%cs2
