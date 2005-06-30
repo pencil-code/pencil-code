@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.340 2005-06-30 11:02:51 ajohan Exp $
+! $Id: entropy.f90,v 1.341 2005-06-30 20:14:58 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -141,7 +141,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.340 2005-06-30 11:02:51 ajohan Exp $")
+           "$Id: entropy.f90,v 1.341 2005-06-30 20:14:58 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1227,31 +1227,23 @@ module Entropy
           lpenc_requested(i_del2ss)=.true.
         endif
       endif
-!merge_tony NEED TO CHECK
       if (lheatc_spitzer) then 
-        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_rho)=.true.
         lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
-        lpenc_requested(i_del2ss)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true.
         lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_gradcurla)=.true.
-        lpenc_requested(i_hss)=.true.
-        lpenc_requested(i_hlnrho)=.true.
+        lpenc_requested(i_bij)=.true.
       endif
-!merge_tony NEED TO CHECK
-      if (lheatc_corona) then 
-        lpenc_requested(i_rho1)=.true.
+      if (lheatc_corona) then
+        lpenc_requested(i_rho)=.true.
         lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
-        lpenc_requested(i_del2ss)=.true.
-        lpenc_requested(i_bb)=.true.
-        lpenc_requested(i_b2)=.true.
-        lpenc_requested(i_gradcurla)=.true.
-        lpenc_requested(i_hss)=.true.
-        lpenc_requested(i_hlnrho)=.true.
+        lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true. 
+        lpenc_requested(i_bb)=.true.       
+        lpenc_requested(i_bij)=.true.
       endif
       if (lheatc_chiconst) then 
         lpenc_requested(i_rho1)=.true.
@@ -1519,11 +1511,11 @@ module Entropy
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
       endif
-      if (lheatc_spitzer) call calc_heatcond_spitzer(f,df,p%rho1,p%glnrho,p%gss,p%bb,p%bij,p%cs2)
+      if (lheatc_spitzer) call calc_heatcond_spitzer(f,df,p)
       if (lheatc_corona) then
-        call calc_heatcond_spitzer(f,df,p%rho1,p%glnrho,p%gss,p%bb,p%bij,p%cs2)
+        call calc_heatcond_spitzer(f,df,p)
         call newton_cool(f,df,p)
-        call calc_heat_cool_RTV(f,df,p%lnrho,p%lnTT)     
+        call calc_heat_cool_RTV(f,df,p)     
       endif
       if (lheatc_shock) call calc_heatcond_shock(f,df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(f,df,p)
@@ -1804,7 +1796,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
-    subroutine calc_heatcond_spitzer(f,df,rho1,glnrho,gss,bb,bij,cs2)
+    subroutine calc_heatcond_spitzer(f,df,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines     
@@ -1820,55 +1812,42 @@ module Entropy
 !       
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: hlnrho,hss,hlnTT,bij
-      real, dimension (nx,3) :: glnrho,gss,glnT,bb,gvKpara,gvKperp
+      real, dimension (nx,3) :: gvKpara,gvKperp
       real, dimension (nx,3) :: tmpv1,tmpv2,tmpv3
-      real, dimension (nx) :: rho1,TT,bb2,cs2,thdiff,b1
+      real, dimension (nx) :: TT,bb2,thdiff,b1
       real, dimension (nx) :: tmps,quenchfactor,vKpara,vKperp
       integer ::i,j
+      type (pencil_case) :: p
 !
-      intent(in) :: gss,glnrho,f
+      intent(in) :: f,p
       intent(out) :: df
 !
-      glnT = gamma*gss + gamma1*glnrho
-!
-      TT = cs2/gamma1   
+      TT = exp(p%lnTT)
 !        
-!      Kgpara/Kgperp are in SI units -> get them in pencil units:
-!      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
-!      Kgpara = Kgpara / (unit_velocity**3 * unit_density * unit_length / unit_temp)
-
-      call g2ij(f,ilnrho,hlnrho)
-      call g2ij(f,iss,hss)
-      call temperature_hessian(f,hlnrho,hss,hlnTT)
-!
 !     Calculate variable diffusion coefficients along pencils
 !
-      call dot2_mn(bb,bb2)
+      call dot2_mn(p%bb,bb2)
       b1=1./max(tiny(bb2),bb2)
 !
-      vKpara = Kgpara * TT**2.5 * rho1      != Kgpara* T^3.5              /(rho*T)
-      vKperp = Kgperp * (b1/rho1)/sqrt(TT)  != Kgperp* rho^2 sqrt(T)/B^2  /(rho*T)
+      vKpara = Kgpara * TT**2.5 /p%rho       != Kgpara* T^3.5              /(rho*T)
+      vKperp = Kgperp * (b1*p%rho)/sqrt(TT)  != Kgperp* rho^2 sqrt(T)/B^2  /(rho*T)
+!
+!     limit perpendicular diffusion 
 !
       quenchfactor = vKpara/(vKpara+vKperp)
       vKperp=vKperp*quenchfactor
-!     do i=1,nx
-!        if  (vKperp(i) .gt. vKpara(i)) vKperp(i) = vKpara(i)
-!     enddo
-      if (notanumber(vKpara)) print*,'vKpara'
-      if (notanumber(vKperp)) print*,'vKperp'
 !
-!     Calculate gradient of diff. coeffs
+!     Calculate gradient of variable diffusion coefficients
 !      
       tmps = 3.5 * vKpara 
-      call multsv_mn(tmps,glnT,gvKpara)
+      call multsv_mn(tmps,p%glnTT,gvKpara)
       tmps(:) = 2.
-      call multsv_mn(tmps,glnrho,tmpv1)
+      call multsv_mn(tmps,p%glnrho,tmpv1)
       tmps(:) = 0.5
-      call multsv_mn(tmps, glnT,tmpv2)
+      call multsv_mn(tmps, p%glnTT,tmpv2)
       do i=1,3
          do j=1,3
-            tmpv3(:,i)=2*bb(:,j)*bij(:,j,i)
+            tmpv3(:,i)=2*p%bb(:,j)*p%bij(:,j,i)
          end do
       end do
 !
@@ -1879,19 +1858,10 @@ module Entropy
 !
 !     Calculate diffusion term
 !
-      call  tensor_diffusion_coef(glnT,hlnTT,bij,bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
+      call  tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
-!      if (notanumber(hlnTT)) call stop_it('calc_heatcond_spitzer: hlnTT')
-!     
-!      (thdiff = thdiff*rho1/TT) is included in vKperp and vKpara
+!    (thdiff = thdiff/(rho*TT) is included in vKperp and vKpara)
 ! 
-      if (notanumber(thdiff)) then
-         print*,ipx,ipy,ipz
-         call stop_it('calc_heatcond_spitzer: thdiff')
-      endif
-!
-!      thdiff = thdiff/TT*rho1
-!
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff 
 !
 !   check maximum diffusion from thermal diffusion
@@ -1899,7 +1869,7 @@ module Entropy
 !   gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-         diffus_chi=max(diffus_chi,(gamma*Kgpara*rho1*TT**2.5+chi_t)*dxyz_2)
+         diffus_chi=max(diffus_chi,(gamma*Kgpara/p%rho*TT**2.5+chi_t)*dxyz_2)
          if (ldiagnos.and.idiag_dtchi/=0) then
             call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
          endif
@@ -2179,7 +2149,7 @@ module Entropy
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
-    subroutine calc_heat_cool_RTV(f,df,lnrho,lnTT)
+    subroutine calc_heat_cool_RTV(f,df,p)
 !
 !    calculate cool term:  C = ne*ni*Q(T) 
 !    with ne*ni = 1.2*np^2 = 1.2*rho^2/(1.4*mp)^2
@@ -2191,12 +2161,13 @@ module Entropy
 !     
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lnTT,lncool,lnrho,lnneni,rtv_cool,lnTT_SI
+      real, dimension (nx) :: lncool,lnneni,rtv_cool,lnTT_SI
       integer :: i,imax
       real :: unit_temp,unit_dens,unit_power
       real :: p0,p1,p2,p3,p4
+      type (pencil_case) :: p
 !
-      intent(in) :: f,lnrho,lnTT
+      intent(in) :: f,p
       intent(out) :: df
 !
 !     All is in SI units and has to be rescaled to PENCIL units
@@ -2205,7 +2176,7 @@ module Entropy
       unit_dens = unit_density
       unit_power = unit_density * unit_velocity**3 / unit_length
 !
-      lnTT_SI = lnTT + alog(unit_temp) 
+      lnTT_SI = p%lnTT + alog(unit_temp) 
 !
 ! First set of parameters
       if (cool_RTV .gt. 0.) then
@@ -2244,7 +2215,7 @@ module Entropy
 !      
 !    rtv_cool=exp(lnneni+lncool-lnrho-lnTT)/unit_power
 !    =>
-     rtv_cool=exp(lncool+lnrho-lnTT+122.82)/unit_power
+     rtv_cool=exp(lncool+log(p%rho)-p%lnTT+122.82)/unit_power
 !     
      rtv_cool=rtv_cool * cool_RTV  ! just for adjusting by setting cool_RTV in run.in
 !
