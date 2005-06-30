@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.337 2005-06-30 00:36:00 bingert Exp $
+! $Id: entropy.f90,v 1.338 2005-06-30 07:43:25 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.337 2005-06-30 00:36:00 bingert Exp $")
+           "$Id: entropy.f90,v 1.338 2005-06-30 07:43:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1209,18 +1209,21 @@ module Entropy
         lpenc_requested(i_gss)=.true.
         lpenc_requested(i_del2lnrho)=.true.
         lpenc_requested(i_del2ss)=.true.
-      else if (lheatc_Kconst) then 
+      endif
+      if (lheatc_Kconst) then 
         if (hcond0/=0) then
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_glnrho)=.true.
           lpenc_requested(i_gss)=.true.
           lpenc_requested(i_del2lnrho)=.true.
           lpenc_requested(i_del2ss)=.true.
-        else if (chi_t/=0) then
+        endif
+        if (chi_t/=0) then
           lpenc_requested(i_del2ss)=.true.
         endif
+      endif
 !merge_tony NEED TO CHECK
-      else if (lheatc_spitzer) then 
+      if (lheatc_spitzer) then 
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
@@ -1231,8 +1234,9 @@ module Entropy
         lpenc_requested(i_gradcurla)=.true.
         lpenc_requested(i_hss)=.true.
         lpenc_requested(i_hlnrho)=.true.
+      endif
 !merge_tony NEED TO CHECK
-      else if (lheatc_corona) then 
+      if (lheatc_corona) then 
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
@@ -1243,15 +1247,18 @@ module Entropy
         lpenc_requested(i_gradcurla)=.true.
         lpenc_requested(i_hss)=.true.
         lpenc_requested(i_hlnrho)=.true.
-      else if (lheatc_chiconst) then 
+      endif
+      if (lheatc_chiconst) then 
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
         lpenc_requested(i_del2lnrho)=.true.
         lpenc_requested(i_del2ss)=.true.
-      else if (lheatc_tensordiffusion) then 
+      endif
+      if (lheatc_tensordiffusion) then 
         lpenc_requested(i_bij)=.true.
-      else if (lheatc_shock) then 
+      endif
+      if (lheatc_shock) then 
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
         lpenc_requested(i_del2ss)=.true.
@@ -1259,14 +1266,6 @@ module Entropy
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_glnTT)=.true.
       endif
-      if (lshock.and.chi_shock/=0) then
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2ss)=.true.
-        lpenc_requested(i_gshock)=.true.
-        lpenc_requested(i_shock)=.true.
-        lpenc_requested(i_glnTT)=.true.
-      endif 
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_cp1tilde)=.true.
       if (beta_dssdr/=0.0) lpenc_requested(i_uu)=.true.
