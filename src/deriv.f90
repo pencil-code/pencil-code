@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.22 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: deriv.f90,v 1.23 2005-06-30 11:08:42 ajohan Exp $
 
 module Deriv
   
@@ -56,7 +56,7 @@ module Deriv
                      +(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
         else
           df=0.
-          if (ip.le.10) print*, 'der_main: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
@@ -66,7 +66,7 @@ module Deriv
                      +(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
         else
           df=0.
-          if (ip.le.10) print*, 'der_main: Degenerate case in y-direction'
+          if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
@@ -76,7 +76,7 @@ module Deriv
                      +(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
         else
           df=0.
-          if (ip.le.10) print*, 'der_main: Degenerate case in z-direction'
+          if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
         endif
       endif
 !
@@ -109,7 +109,7 @@ module Deriv
                      +(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
         else
           df=0.
-          if (ip.le.10) print*, 'der_other: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
@@ -119,7 +119,7 @@ module Deriv
                      +(f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
         else
           df=0.
-          if (ip.le.10) print*, 'der_other: Degenerate case in y-direction'
+          if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
@@ -129,7 +129,7 @@ module Deriv
                      +(f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
         else
           df=0.
-          if (ip.le.10) print*, 'der_other: Degenerate case in z-direction'
+          if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
         endif
       endif
 !
@@ -594,7 +594,7 @@ module Deriv
                  )
         else
           df=0.
-          if (ip.le.10) print*, 'derij: Degenerate case in x-direction'
+          if (ip<=5) print*, 'derij: Degenerate case in x-direction'
         endif
       elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
         if (nygrid/=1.and.nzgrid/=1) then
@@ -621,7 +621,7 @@ module Deriv
                  )
         else
           df=0.
-          if (ip.le.10) print*, 'derij: Degenerate case in y-direction'
+          if (ip<=5) print*, 'derij: Degenerate case in y-direction'
         endif
       elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
         if (nzgrid/=1.and.nxgrid/=1) then
@@ -648,7 +648,7 @@ module Deriv
                  )
         else
           df=0.
-          if (ip.le.10) print*, 'derij: Degenerate case in z-direction'
+          if (ip<=5) print*, 'derij: Degenerate case in z-direction'
         endif
       endif
 !
@@ -685,7 +685,7 @@ module Deriv
           enddo
         else
           df=0.
-          if (ip.le.10) print*, 'der_upwind1st: Degenerate case in x-direction'
+          if (ip<=5) print*, 'der_upwind1st: Degenerate case in x-direction'
         endif
       elseif (j == 2) then
         if (nygrid /= 1) then
@@ -698,7 +698,7 @@ module Deriv
           enddo
         else
           df=0.
-          if (ip.le.10) print*, 'der_upwind1st: Degenerate case in y-direction'
+          if (ip<=5) print*, 'der_upwind1st: Degenerate case in y-direction'
         endif
       elseif (j == 3) then
         if (nzgrid /= 1) then
@@ -711,7 +711,7 @@ module Deriv
           enddo
         else
           df=0.
-          if (ip.le.10) print*, 'der_upwind1st: Degenerate case in z-direction'
+          if (ip<=5) print*, 'der_upwind1st: Degenerate case in z-direction'
         endif
       endif
 !
