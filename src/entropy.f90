@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.338 2005-06-30 07:43:25 ajohan Exp $
+! $Id: entropy.f90,v 1.339 2005-06-30 09:07:12 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -23,7 +23,8 @@ module Entropy
   use Interstellar
   use Viscosity
   use EquationOfState, only: gamma, gamma1, cs20, cs2top, cs2bot, &
-                         isothtop, mpoly0, mpoly1, mpoly2, cs2cool
+                         isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
+                         beta_glnrho_global
 
   implicit none
 
@@ -51,7 +52,7 @@ module Entropy
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.
-  real :: beta_dssdr=0.0, beta_dssdr_scaled=0.0
+  real, dimension (3) :: beta_gss_global=0.0, beta_gss_scaled=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
@@ -89,7 +90,7 @@ module Entropy
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss
+      T0,ampl_TT,kx_ss,beta_glnrho_global
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -101,7 +102,7 @@ module Entropy
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
-      tdown, allp
+      tdown, allp,beta_glnrho_global
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -140,7 +141,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.338 2005-06-30 07:43:25 ajohan Exp $")
+           "$Id: entropy.f90,v 1.339 2005-06-30 09:07:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -175,7 +176,8 @@ module Entropy
       use Mpicomm, only: stop_it
       use General, only: warning
       use Gravity, only: gravz,g0
-      use EquationOfState, only: cs0,lnTT0,get_soundspeed,beta_dlnrhodr, &
+      use EquationOfState, only: cs0, lnTT0, get_soundspeed, &
+                                 beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2 
 
 !
@@ -327,11 +329,14 @@ module Entropy
 !  For global density gradient, set entropy gradient for isothermal gradient.
 !  Scale with Omega/cs0 for later use.
 !
-      if (beta_dlnrhodr/=0.0) then
-        beta_dssdr=(1/gamma-1.0)*beta_dlnrhodr
-        beta_dssdr_scaled=Omega/cs0*beta_dssdr
+      if (maxval(abs(beta_glnrho_global))/=0.0) then
+        beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
+        if (lroot) print*, 'initialize_entropy: Global density gradient '// &
+            'with beta_glnrho_global=', beta_glnrho_global
+        beta_gss_global=(1/gamma-1.0)*beta_glnrho_global
+        beta_gss_scaled=Omega/cs0*beta_gss_global
         if (lroot) print*, 'initialize_entropy: Set isothermal entropy '// &
-            'gradient to beta_dssdr=', beta_dssdr
+            'gradient to beta_gss_global=', beta_gss_global
       endif
 !
 !  Initialize heat conduction.
@@ -466,7 +471,7 @@ module Entropy
       use Gravity
       use General, only: chn
       use Initcond
-      use EquationOfState,  only: mpoly, beta_dlnrhodr, isothtop, &
+      use EquationOfState,  only: mpoly, beta_glnrho_global, isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss
@@ -1187,7 +1192,7 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
-      use EquationOfState, only: beta_dlnrhodr
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
 !
       lpenc_requested(i_cs2)=.true.
       lpenc_requested(i_glnrho)=.true.
@@ -1268,9 +1273,9 @@ module Entropy
       endif
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_cp1tilde)=.true.
-      if (beta_dssdr/=0.0) lpenc_requested(i_uu)=.true.
+      if (maxval(abs(beta_gss_scaled))/=0.0) lpenc_requested(i_uu)=.true.
 !
-      if (beta_dlnrhodr/=0.0) lpenc_requested(i_cs2)=.true.
+      if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
       lpenc_diagnos2d(i_ss)=.true.
 !
@@ -1398,7 +1403,7 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Cdata
-      use EquationOfState, only: beta_dlnrhodr_scaled
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Mpicomm
       use Sub
       use Global
@@ -1455,11 +1460,6 @@ module Entropy
            enddo
         endif
 !
-!  Add pressure force from global density gradient.
-!  
-        if (beta_dlnrhodr_scaled/=0.0) df(l1:l2,m,n,iux) = &
-            df(l1:l2,m,n,iux)-1/gamma*p%cs2*beta_dlnrhodr_scaled
-!
 !  velocity damping in the coronal heating zone
 !
         if (tau_cor>0) then
@@ -1481,10 +1481,26 @@ module Entropy
 !
       if (pretend_lnTT) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-p%divu*gamma1/gamma
 !
-!  Advection of global entropy gradient.
+!  Add pressure force from global density gradient.
+!  
+      if (maxval(abs(beta_glnrho_global))/=0.0) then
+        if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+        do j=1,3
+          df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
+              - 1/gamma*p%cs2*beta_glnrho_scaled(j)
 !
-      if (beta_dssdr/=0.0) &
-          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uu(:,1)*beta_dssdr_scaled
+!  Advection of global density and entropy gradient.
+!
+          if (ldensity_nolog) then
+            df(l1:l2,m,n,ilnrho) = &
+                df(l1:l2,m,n,ilnrho) - p%uu(:,j)*p%rho*beta_glnrho_scaled(j)
+          else
+            df(l1:l2,m,n,ilnrho) = &
+                df(l1:l2,m,n,ilnrho) - p%uu(:,j)*beta_glnrho_scaled(j)
+          endif
+          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uu(:,j)*beta_gss_scaled(j)
+        enddo
+      endif
 !
 !  Calculate viscous contribution to entropy
 !

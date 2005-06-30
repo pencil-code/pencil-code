@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.185 2005-06-28 12:52:46 ajohan Exp $
+! $Id: density.f90,v 1.186 2005-06-30 09:07:12 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -24,7 +24,7 @@ module Density
   use Cdata
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
                              gamma,gamma1,cs2top,cs2bot, &
-                             mpoly, beta_dlnrhodr
+                             mpoly
 
   implicit none
 
@@ -57,11 +57,11 @@ module Density
        b_ell,q_ell,hh0,rbound,                       &
        mpoly,strati_type,                            &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
-       beta_dlnrhodr,co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog
+       co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock, &
-       cs2bot,cs2top,lupw_lnrho,idiff,beta_dlnrhodr, &
+       cs2bot,cs2top,lupw_lnrho,idiff, &
        lmass_source,lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,wdamp
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m
@@ -103,7 +103,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.185 2005-06-28 12:52:46 ajohan Exp $")
+           "$Id: density.f90,v 1.186 2005-06-30 09:07:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -137,21 +137,12 @@ module Density
 !
       use General, only: warning
       use Mpicomm, only: stop_it
-      use EquationOfState, only: beta_dlnrhodr, beta_dlnrhodr_scaled
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !
       integer :: i
       logical :: lnothing
-!
-!  Scale global density gradient with Omega/cs.
-!
-      if (beta_dlnrhodr/=0.0) then
-        beta_dlnrhodr_scaled=beta_dlnrhodr*Omega/cs0      
-        if (lroot) print*, 'initialize_density: Global density gradient '// &
-            'with beta_dlnrhodr=', beta_dlnrhodr
-      endif
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
@@ -624,27 +615,6 @@ module Density
         !
         call planet_hc(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho, &
             gamma,cs20,rho0,widthlnrho)
-
-      case('kepvor')
-        !
-        !  planet solution of Chavanis (2000)
-        !
-        call kepvor(f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0)
-
-
-      case('enthblob')
-        !
-        !  attempt to produce vortex from enthalpy blob
-        !
-        call enthblob(f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0)
-
-
-      case('baroclinic')
-        !
-        !  Baroclinic initial condition
-        !
-        call baroclinic(f,xx,yy,zz,gamma,rho0,beta_dlnrhodr,co1_ss,co2_ss,cs20)
-
       
       case('Ferriere'); if(lroot) print*,'init_lnrho: Ferriere set in entropy'
 
@@ -1120,7 +1090,6 @@ module Density
       use Mpicomm, only: stop_it
       use Special, only: special_calc_density
       use Sub
-      use EquationOfState, only: beta_dlnrhodr, beta_dlnrhodr_scaled
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1143,18 +1112,6 @@ module Density
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
       else
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
-      endif
-!
-!  Add advection of global pressure gradient.
-!
-      if (beta_dlnrhodr/=0.0) then
-        if (ldensity_nolog) then
-          df(l1:l2,m,n,ilnrho) = &
-              df(l1:l2,m,n,ilnrho) - p%uu(:,1)*p%rho*beta_dlnrhodr_scaled     
-        else
-          df(l1:l2,m,n,ilnrho) = &
-              df(l1:l2,m,n,ilnrho) - p%uu(:,1)*beta_dlnrhodr_scaled     
-        endif
       endif
 !
 !  mass sources and sinks

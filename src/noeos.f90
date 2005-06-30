@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.7 2005-06-30 02:04:01 dobler Exp $
+! $Id: noeos.f90,v 1.8 2005-06-30 09:07:12 ajohan Exp $
 
 !  Dummy routine for ideal gas
 
@@ -55,7 +55,7 @@ module EquationOfState
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=1
-  real :: beta_dlnrhodr=0.0,beta_dlnrhodr_scaled=0.0
+  real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
 
   contains
 
@@ -81,7 +81,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.7 2005-06-30 02:04:01 dobler Exp $')
+           '$Id: noeos.f90,v 1.8 2005-06-30 09:07:12 ajohan Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

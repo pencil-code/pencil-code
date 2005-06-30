@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.11 2005-06-29 16:25:02 mee Exp $
+! $Id: eos_idealgas.f90,v 1.12 2005-06-30 09:07:12 ajohan Exp $
 
 !  Dummy routine for ideal gas
 
@@ -53,7 +53,7 @@ module EquationOfState
   real :: cs2bot=1., cs2top=1. 
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  real :: beta_dlnrhodr=0.,beta_dlnrhodr_scaled=0.
+  real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
   integer :: isothtop=0
 
   ! input parameters
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.11 2005-06-29 16:25:02 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.12 2005-06-30 09:07:12 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !

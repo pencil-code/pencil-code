@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.68 2005-06-30 02:04:01 dobler Exp $
+! $Id: noentropy.f90,v 1.69 2005-06-30 09:07:12 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.68 2005-06-30 02:04:01 dobler Exp $")
+           "$Id: noentropy.f90,v 1.69 2005-06-30 09:07:12 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -100,14 +100,12 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
-      use EquationOfState, only: beta_dlnrhodr
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lhydro) then
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
-      if (beta_dlnrhodr/=0.0) lpenc_requested(i_cs2)=.true.
 !
       if (idiag_ugradpm/=0) then
         lpenc_diagnos(i_rho)=.true.
@@ -171,7 +169,6 @@ module Entropy
 !
 !  Isothermal/polytropic equation of state
 !
-      use EquationOfState, only: beta_dlnrhodr_scaled
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -196,11 +193,6 @@ module Entropy
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-p%cs2*p%glnrho(:,j)
         enddo
       endif
-!
-!  Subtract global density gradient.
-!      
-      if (beta_dlnrhodr_scaled/=0.0) &
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-p%cs2*beta_dlnrhodr_scaled
 !
 !  Calculate entropy related diagnostics
 !

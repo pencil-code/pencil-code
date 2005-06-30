@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.98 2005-06-30 07:54:47 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.99 2005-06-30 09:07:12 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -129,7 +129,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.98 2005-06-30 07:54:47 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.99 2005-06-30 09:07:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -409,7 +409,7 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use Cdata
-      use EquationOfState, only: gamma, beta_dlnrhodr_scaled
+      use EquationOfState, only: gamma, beta_glnrho_scaled
       use Mpicomm, only: stop_it
       use Sub
       use Global
@@ -501,8 +501,8 @@ module Dustvelocity
 !
           if (lroot) then
             print*, 'init_uud: vertical shear due to dust'
-            if (beta_dlnrhodr_scaled/=0.0) then
-              print*, 'init_uud: beta_dlnrhodr_scaled=', beta_dlnrhodr_scaled
+            if (maxval(abs(beta_glnrho_scaled))/=0.0) then
+              print*, 'init_uud: beta_glnrho_scaled=', beta_glnrho_scaled
             elseif (beta_dPdr_dust_scaled/=0.0) then
               print*, 'init_uud: beta_dPdr_dust_scaled=', beta_dPdr_dust_scaled
             endif
@@ -523,19 +523,19 @@ module Dustvelocity
               endif
             endif
 
-            if (beta_dlnrhodr_scaled/=0.0) then
+            if (beta_glnrho_scaled(1)/=0.0) then
               f(l,m,n,iux) = f(l,m,n,iux) - &
-                  1/gamma*cs20*beta_dlnrhodr_scaled*eps*tausd(1)/ &
+                  1/gamma*cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
                   (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
               f(l,m,n,iuy) = f(l,m,n,iuy) + &
-                  1/gamma*cs20*beta_dlnrhodr_scaled* &
+                  1/gamma*cs20*beta_glnrho_scaled(1)* &
                   (1+eps+(Omega*tausd(1))**2)/ &
                   (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
               f(l,m,n,iudx(1)) = f(l,m,n,iudx(1)) + &
-                  1/gamma*cs20*beta_dlnrhodr_scaled*tausd(1)/ &
+                  1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
                   (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
               f(l,m,n,iudy(1)) = f(l,m,n,iudy(1)) + &
-                  1/gamma*cs20*beta_dlnrhodr_scaled*(1+eps)/ &
+                  1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps)/ &
                   (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
             elseif (beta_dPdr_dust_scaled/=0.0) then
               f(l,m,n,iux) = f(l,m,n,iux) - &

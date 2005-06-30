@@ -30,7 +30,7 @@
 !ajwm SHOULDN'T BE PUBLIC
   public :: cs0,cs20,lnrho0,rho0,lcalc_cp,lnTT0
   public :: gamma,gamma1,cs2top,cs2bot,cp !!,cp1
-  public :: beta_dlnrhodr_scaled, beta_dlnrhodr
+  public :: beta_glnrho_global, beta_glnrho_scaled
   public :: cs2cool
   public :: mpoly, mpoly0, mpoly1, mpoly2
   public :: isothtop
