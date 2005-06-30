@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.97 2005-06-30 06:05:14 dobler Exp $
+! $Id: dustvelocity.f90,v 1.98 2005-06-30 07:54:47 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -35,7 +35,7 @@ module Dustvelocity
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0,mdplus,mdminus,ad,surfd,mi,rhodsad1
-  real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
+  real, dimension(ndustspec) :: tausd=1.,betad=0.,nud=0.
   real :: ampluud=0.,kx_uud=1.,ky_uud=1.,kz_uud=1.
   real :: rhods=1.,nd0=1.,md0=1.,rhod0=1.
   real :: ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.0
@@ -129,7 +129,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.97 2005-06-30 06:05:14 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.98 2005-06-30 07:54:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -290,7 +290,7 @@ module Dustvelocity
           rhodsad1 = 1./(rhods*ad)
         case ('epstein_cst')
           do k=1,ndustspec
-            tausd1(:,k) = 1./(max(tausd(k),tini))
+            tausd1(:,k) = 1.0/tausd(k)
           enddo
 
         endselect
