@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.240 2005-06-29 13:43:13 ajohan Exp $
+! $Id: equ.f90,v 1.241 2005-06-30 06:35:02 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.240 2005-06-29 13:43:13 ajohan Exp $")
+           "$Id: equ.f90,v 1.241 2005-06-30 06:35:02 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -710,6 +710,8 @@ module Equ
 !  Check requested pencils
 !
       headt=.false.
+      itsub=1                   ! some modules like dustvelocity.f90
+                                ! reference dt_beta(itsub)
       call random_seed_wrapper(get=iseed_org)
       call random_seed_wrapper(put=iseed_org)
       do i=1,mvar+maux
