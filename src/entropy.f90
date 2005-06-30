@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.336 2005-06-27 00:14:18 mee Exp $
+! $Id: entropy.f90,v 1.337 2005-06-30 00:36:00 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -140,7 +140,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.336 2005-06-27 00:14:18 mee Exp $")
+           "$Id: entropy.f90,v 1.337 2005-06-30 00:36:00 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1505,7 +1505,7 @@ module Entropy
       if (lheatc_spitzer) call calc_heatcond_spitzer(f,df,p%rho1,p%glnrho,p%gss,p%bb,p%bij,p%cs2)
       if (lheatc_corona) then
         call calc_heatcond_spitzer(f,df,p%rho1,p%glnrho,p%gss,p%bb,p%bij,p%cs2)
-        call newton_cool(f,df,p%lnTT,p%lnrho)
+        call newton_cool(f,df,p)
         call calc_heat_cool_RTV(f,df,p%lnrho,p%lnTT)     
       endif
       if (lheatc_shock) call calc_heatcond_shock(f,df,p)
@@ -2386,23 +2386,21 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine newton_cool(f,df,lnTT,lnrho)
+    subroutine newton_cool(f,df,p)
 !
 !  Keeps the temperature in the lower chromosphere and the upper corona
 !  at a constant level using newton cooling
 !
 !  15-dez-2004/bing: coded
 !
-
-      use Sub
-      use IO
-      use Mpicomm
+      use EquationOfState, only: rho0
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnTT,lnrho,newton
       real :: lnTTor,xil,unit_temp
       real :: p0,p1,p2,p3,p4
+      type (pencil_case) :: p
 !    
 !     Initial temperature profile is given in ln(T) over z in Mm
 !     It is independent of grid and unit system
@@ -2426,14 +2424,11 @@ module Entropy
 !
       lnTTor = lnTTor - alog(unit_temp) 
 !
-      call stop_it("newton_cool: Sven.... This one is yours!")
-!!      newton = (exp(lnrho-lnrho0)) ** allp  * tdown / gamma 
+      newton = (p%rho/rho0) ** allp  * tdown / gamma 
 !
-      newton = newton * (lnTT-lnTTor)
+      newton = newton * (p%lnTT-lnTTor)
 !      
 !     Add cooling term to entropy
-!
-      if (notanumber(newton))  call stop_it('newton cool: NaN`s in newton') 
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - newton
 !
