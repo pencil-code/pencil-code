@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.268 2005-07-01 00:52:08 bingert Exp $
+! $Id: cdata.f90,v 1.269 2005-07-01 02:20:59 mee Exp $
 
 module Cdata
 
@@ -272,7 +272,7 @@ module Cdata
   integer :: init_loops=1, ipencil_swap=0
   logical :: lpencil_requested_swap=.true., lpencil_diagnos_swap=.false.
   logical :: lreinit=.false.
-  logical :: lpencil_check=.false., lpencil_init=.false.,l_doing_pconscheck=.false.
+  logical :: lpencil_check=.false., lpencil_init=.false.
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: dtau_thresh1,dtau_thresh2
