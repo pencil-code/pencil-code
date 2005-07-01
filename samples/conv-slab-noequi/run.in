@@ -4,14 +4,14 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2005-06-27 14:54:28 theine Exp $',
+  cvsid='$Id: run.in,v 1.7 2005-07-01 03:24:19 mee Exp $',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=20., dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
   bcy = 'p','p','p', 'p',    'p'
   bcz = 's','s','a','a2','c1:cT'
   cdtv=0.30
-  lpencil_check=F
+  lpencil_check=T
 /
 &eos_run_pars
 /
