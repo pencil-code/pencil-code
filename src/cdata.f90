@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.269 2005-07-01 02:20:59 mee Exp $
+! $Id: cdata.f90,v 1.270 2005-07-01 02:56:08 mee Exp $
 
 module Cdata
 
@@ -165,9 +165,6 @@ module Cdata
   logical :: lstart=.false., lrun=.false.
 !
 !
-!
-  logical :: ltermcap_color=.false.
-!
 ! Module flags
 !
   logical :: ldensity_nolog=.false.
@@ -257,6 +254,9 @@ module Cdata
                                         ! Register.initialize()
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
   character (len=120) :: cvsid='[No CVS Id given]'
+
+! A buffer in which to construct an error message
+  character (len=255) :: errormsg
 
   character (len=10), dimension(maux) :: aux_var
   integer :: aux_count=1

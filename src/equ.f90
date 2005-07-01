@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.244 2005-07-01 02:20:59 mee Exp $
+! $Id: equ.f90,v 1.245 2005-07-01 02:56:08 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -10,6 +10,7 @@
 module Equ
 !
   use Cdata
+  use Messages
 !
   implicit none
 !
@@ -310,7 +311,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.244 2005-07-01 02:20:59 mee Exp $")
+           "$Id: equ.f90,v 1.245 2005-07-01 02:56:08 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -593,8 +594,8 @@ module Equ
 !ajwm     enddo                                                   !DERCOUNT
 !ajwm     enddo                                                   !DERCOUNT
 !ajwm     enddo                                                   !DERCOUNT
-!ajwm     if (maxval(der_call_count).gt.1) call stop_it( &        !DERCOUNT
-!ajwm      'pde: ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
+!ajwm     if (maxval(der_call_count).gt.1) call fatal_error( &        !DERCOUNT
+!ajwm      'pde','ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
 !ajwm   endif
 !
 !  end of loops over m and n
@@ -653,8 +654,6 @@ module Equ
 !
 !  23-nov-02/axel: coded
 !
-      use Mpicomm
-!
       open(1,file=trim(directory)//'/imn_arrays.dat')
       do imn=1,ny*nz
         if(necessary(imn)) write(1,'(a)') '----necessary=.true.----'
@@ -686,7 +685,6 @@ module Equ
 !
       use Cdata
       use General, only: random_number_wrapper, random_seed_wrapper
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux) :: f 
       real, dimension(mx,my,mz,mvar) :: df 
@@ -700,6 +698,10 @@ module Equ
 !
       if (lroot) print*, &
           'pencil_consistency_check: checking the pencil case'      
+!
+! Prevent code from dying due to any errors...
+!
+      call life_support_on
 !
 !  Allocate memory for alternative df, fname
 !
@@ -845,7 +847,11 @@ f_loop: do iv=1,mvar
       deallocate(fname_ref)
       deallocate(f_other)
 !
-      if (ldie) call stop_it('pencil_consistency_check: DYING')
+! Return the code to its former mortal state
+!
+      call life_support_off
+!
+      if (ldie) call fatal_error('pencil_consistency_check','DYING')
 !        
     endsubroutine pencil_consistency_check
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.42 2005-06-28 21:56:16 dobler Exp $
+! $Id: general.f90,v 1.43 2005-07-01 02:56:08 mee Exp $
 
 module General
 
@@ -33,30 +33,6 @@ module General
     module procedure safe_character_append_3 ! add more if you like..
   endinterface
 !
-  public :: terminal_highlight_warning, terminal_defaultcolor
-  public :: terminal_setfgbrightcolor, terminal_setfgcolor
-  public :: warning
-!
-!
-  integer, public, parameter :: iterm_DEFAULT   = 0
-  integer, public, parameter :: iterm_BRIGHT    = 1
-  integer, public, parameter :: iterm_UNDERLINE = 4 
-  integer, public, parameter :: iterm_FLASH     = 5
-  integer, public, parameter :: iterm_FG_BLACK  = 30
-  integer, public, parameter :: iterm_FG_RED    = 31
-  integer, public, parameter :: iterm_FG_GREEN  = 32
-  integer, public, parameter :: iterm_FG_YELLOW = 33
-  integer, public, parameter :: iterm_FG_BLUE   = 34
-  integer, public, parameter :: iterm_FG_MAGENTA= 35
-  integer, public, parameter :: iterm_FG_CYAN   = 36
-  integer, public, parameter :: iterm_FG_WHITE  = 37
-  integer, public, parameter :: iterm_BG_BLACK  = 40
-  integer, public, parameter :: iterm_BG_RED    = 41
-  integer, public, parameter :: iterm_BG_GREEN  = 42
-  integer, public, parameter :: iterm_BG_YELLOW = 43
-  integer, public, parameter :: iterm_BG_BLUE   = 44
-  integer, public, parameter :: iterm_BG_MAGENTA= 45
-  integer, public, parameter :: iterm_BG_CYAN   = 46
 !
 !  state and default generator of random numbers
 !
@@ -839,86 +815,5 @@ module General
          u(j)=u(j)-gam(j+1)*u(j+1)
       end do
     endsubroutine tridag_double
-!***********************************************************************
-    subroutine terminal_setfgcolor(col)
-!    
-!  Set foreground color of terminal text
-!
-!  08-jun-05/tony: programmed
-!
-      use Cdata, only: ltermcap_color
-!
-      integer :: col
-!      
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I2,A1)',ADVANCE='no') CHAR(27), '[', col, 'm' 
-      endif
-!
-    endsubroutine terminal_setfgcolor
-!***********************************************************************
-    subroutine terminal_setfgbrightcolor(col)
-!    
-!  Set bright terminal colors
-!
-!  08-jun-05/tony: programmed
-!
-      use Cdata, only: ltermcap_color
-!
-      integer :: col
-!      
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', col, 'm' 
-!
-      endif
-!
-    endsubroutine terminal_setfgbrightcolor
-!***********************************************************************
-    subroutine terminal_defaultcolor
-!    
-!  Set terminal color to default value
-!
-!  08-jun-05/tony: programmed
-!
-      use Cdata, only: ltermcap_color
-!      
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_DEFAULT, 'm' 
-      endif
-!
-    endsubroutine terminal_defaultcolor
-!***********************************************************************
-    subroutine terminal_highlight_warning
-!    
-!  Change to warning color
-!
-!  08-jun-05/tony: programmed
-!
-      use Cdata, only: ltermcap_color
-!
-      if (ltermcap_color) then
-        write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
-            CHAR(27), '[', iterm_BRIGHT, ';', iterm_FG_RED, 'm' 
-      endif
-!
-    endsubroutine terminal_highlight_warning
-!***********************************************************************
-    subroutine warning(msg)
-!    
-!  Print out colored warning.
-!
-!  08-jun-05/anders: programmed
-!
-      use Cdata, only: ltermcap_color
-!
-      character (len=*) :: msg
-!
-      call terminal_highlight_warning()
-      write (*,'(A9)',ADVANCE='NO') "WARNING:"
-      call terminal_defaultcolor()
-      write (*,*) msg
-!
-    endsubroutine warning
 !***********************************************************************
 endmodule General

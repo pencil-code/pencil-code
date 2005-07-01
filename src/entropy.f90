@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.341 2005-06-30 20:14:58 bingert Exp $
+! $Id: entropy.f90,v 1.342 2005-07-01 02:56:08 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -20,6 +20,7 @@ module Entropy
 
   use Cparam
   use Cdata
+  use Messages
   use Interstellar
   use Viscosity
   use EquationOfState, only: gamma, gamma1, cs20, cs2top, cs2bot, &
@@ -86,7 +87,14 @@ module Entropy
 
   ! input parameters
   namelist /entropy_init_pars/ &
-      initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
+      initss,     &
+!TEST
+      pertss,     &
+      grads0,     &
+      radius_ss,  &
+      ampl_ss,    &
+      widthss,    &
+      epsilon_ss, &
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -120,12 +128,11 @@ module Entropy
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Mpicomm
       use Sub
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_ent called twice')
+      if (.not. first) call fatal_error('register_entropy','module registration called twice')
       first = .false.
 !
 !ajwm      lentropy = .true.
@@ -141,11 +148,11 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.341 2005-06-30 20:14:58 bingert Exp $")
+           "$Id: entropy.f90,v 1.342 2005-07-01 02:56:08 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_entropy: nvar > mvar')
+        call fatal_error('register_entropy','nvar > mvar')
       endif
 !
 !  Put variable name in array
@@ -173,8 +180,6 @@ module Entropy
 !  21-jul-2002/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: stop_it
-      use General, only: warning
       use Gravity, only: gravz,g0
       use EquationOfState, only: cs0, lnTT0, get_soundspeed, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
@@ -191,7 +196,7 @@ module Entropy
 ! Check any module dependencies
 !
       if (.not. leos) then
-        call stop_it('initialize_entropy: EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
+        call fatal_error('initialize_entropy','EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
       endif
 !
 !  radiative diffusion: initialize flux etc
@@ -211,7 +216,7 @@ module Entropy
         if (Kbot == impossible) then
           Kbot = hcond0
         else
-          if (lroot) print*, 'WARNING: You should not set Kbot and hcond0 at the same time'
+          call warning('initialize_entropy','You should not set Kbot and hcond0 at the same time')
         endif
       endif
       !
@@ -382,9 +387,9 @@ module Entropy
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
           if (lroot) then
-            print*, 'initialize_entropy: '// &
+            write(unit=errormsg,fmt=*)  &
                 'No such value iheatcond = ', trim(iheatcond(i))
-            call stop_it('initialize_entropy')
+            call fatal_error('initialize_entropy',errormsg)
           endif
         endselect
         lnothing=.true.
@@ -393,28 +398,22 @@ module Entropy
 !  A word of warning...
 !
       if (lheatc_Kconst .and. hcond0==0.0) then
-        call warning('initialize_entropy')
-        if (lroot) print*, 'initialize_entropy: hcond0 is zero!'
+        call warning('initialize_entropy', 'hcond0 is zero!')
       endif
       if (lheatc_chiconst .and. chi==0.0) then
-        call warning('initialize_entropy')
-        if (lroot) print*, 'initialize_entropy: chi is zero!'
+        call warning('initialize_entropy','chi is zero!')
       endif
       if (lheatc_simple .and. Kbot==0.0) then
-        call warning('initialize_entropy')
-        if (lroot) print*, 'initialize_entropy: Kbot is zero!'
+        call warning('initialize_entropy','Kbot is zero!')
       endif
       if ((lheatc_spitzer.or.lheatc_corona) .and. (Kgpara==0.0 .or. Kgperp==0.0) ) then
-        call warning('initialize_entropy')
-        if (lroot) print*, 'initialize_entropy: Kgperp or Kgpara is zero!'
+        call warning('initialize_entropy','Kgperp or Kgpara is zero!')
       endif
       if (lheatc_hyper3ss .and. chi_hyper3==0.0) then
-        call warning('initialize_entropy')
-        if (lroot) print*, 'initialize_entropy: chi_hyper3 is zero!'
+        call warning('initialize_entropy','chi_hyper3 is zero!')
       endif
       if (lheatc_shock .and. chi_shock==0.0) then
-        call warning('initialize_entropy')
-        if (lroot) print*, 'initialize_entropy: chi_shock is zero!'
+        call warning('initialize_entropy','chi_shock is zero!')
       endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
@@ -466,7 +465,6 @@ module Entropy
 !  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name]) 
 !
       use Cdata
-      use Mpicomm
       use Sub
       use Gravity
       use General, only: chn
@@ -570,7 +568,7 @@ module Entropy
           !  Only makes sense if both initlnrho=initss='isentropic-star'
           !
           if (.not. ldensity) &
-               call stop_it('isentropic-star requires density.f90')
+               call fatal_error('isentropic-star','requires density.f90')
 !ajwm          if (initlnrho(1) /= initss(1)) &
 !ajwm               call stop_it('isentropic star requires initlnrho=initss')
 !ajwm Removed since it destroys the dependency tree
@@ -595,7 +593,7 @@ module Entropy
               ! Make sure init_lnrho (or start.in) has already set cs2cool:
               !
               if (cs2cool == 0) &
-                   call stop_it("Inconsistency: cs2cool can't be 0")
+                   call fatal_error('init_ss',"inconsistency - cs2cool can't be 0")
               ss_ext = 0. + log(cs2cool/cs2_ext)
               ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic f. r<r_ext
               where (pot <= pot_ext) ! isentropic for r<r_ext
@@ -704,9 +702,9 @@ module Entropy
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'init_ss: No such value for initss(' &
+          write(unit=errormsg,fmt=*) 'No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initss(iinit))
-          call stop_it("")
+          call fatal_error('init_ss',errormsg)
 
       endselect
 
@@ -758,8 +756,8 @@ module Entropy
         !
         !  Catch unknown values
         !
-        if (lroot) print*,'init_ss: No such value for pertss:', pertss
-        call stop_it("")
+        write (unit=errormsg,fmt=*) 'No such value for pertss:', pertss
+        call fatal_error('init_ss',errormsg)
 
       endselect
 !
@@ -892,14 +890,13 @@ module Entropy
 !
       use EquationOfState, only: pressure_gradient
       use Gravity, only: gravz
-      use Mpicomm, only: ipz,stop_it
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, intent(in) :: lnrho_bot,ss_const
       real :: cs2,cp1tilde,lnrho,lnrho_m
 
       if (.not. lgravz) then
-        call stop_it("hydrostatic_isentropic: Currently only works for vertical gravity field")
+        call fatal_error("hydrostatic_isentropic","Currently only works for vertical gravity field")
       endif
 
       !
@@ -1012,7 +1009,7 @@ module Entropy
 !   might be preferable. This was implemented in serial (in e.g. r1.59)
 !   but abandoned as overcomplicated to adapt for nprocz /= 0.]
 !
-      use Mpicomm
+      use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_pp, pressure_gradient, getmu
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1396,7 +1393,6 @@ module Entropy
 !
       use Cdata
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
-      use Mpicomm
       use Sub
       use Global
       use Special, only: special_calc_entropy
@@ -1590,7 +1586,6 @@ module Entropy
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !
       use Cdata
-      use Mpicomm
       use Sub
       use Gravity
 !
@@ -1644,7 +1639,6 @@ module Entropy
 !  17-jun-05/anders: coded
 !
       use Cdata
-      use General, only: warning
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1693,7 +1687,6 @@ module Entropy
 !  19-nov-03/axel: added chi_t also here.
 !
       use Cdata
-      use Mpicomm
       use Sub
       use Gravity
 !
@@ -1747,8 +1740,6 @@ module Entropy
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
 !
       use Cdata
-      use General, only: warning
-      use Mpicomm
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1808,7 +1799,6 @@ module Entropy
       use EquationOfState
       use Sub
       use Io
-      use Mpicomm
 !       
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1884,7 +1874,6 @@ module Entropy
 !  17-sep-01/axel: coded
 !
       use Cdata
-      use Mpicomm
       use Sub
       use IO
       use Gravity
@@ -1943,8 +1932,7 @@ module Entropy
         if (headtt) then
           print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
           if (hcond0 /= 0) then
-            print*, "calc_heatcond: WARNING ", &
-                  "- hcond0 and chi_t combined don't seem to make sense"
+            call warning('calc_heatcond',"hcond0 and chi_t combined don't seem to make sense")
           endif
         endif
 !        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)+chi_t*del2ss
@@ -1971,7 +1959,7 @@ module Entropy
         !
         if (notanumber(thdiff)) then
           print*, 'calc_heatcond: m,n,y(m),z(n)=',m,n,y(m),z(n)
-          call stop_it('calc_heatcond: NaNs in thdiff')
+          call fatal_error('calc_heatcond','NaNs in thdiff')
         endif
       endif
 
@@ -2004,7 +1992,6 @@ module Entropy
 !  02-jul-02/wolf: coded
 !
       use Cdata
-      use Mpicomm
       use Sub
       use Gravity
 !
@@ -2103,9 +2090,9 @@ module Entropy
           endif
 !
         case default
-          if (lroot) print*, &
+          write(unit=errormsg,fmt=*) &
                'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
-          call stop_it("")
+          call fatal_error('calc_heat_cool',errormsg)
         endselect
       endif
 !

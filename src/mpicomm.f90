@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.134 2005-06-29 08:13:12 dobler Exp $
+! $Id: mpicomm.f90,v 1.135 2005-07-01 02:56:08 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1457,6 +1457,18 @@ module Mpicomm
 !
       mpiwtick = MPI_WTICK()
     endfunction mpiwtick
+!***********************************************************************
+    subroutine die_gracefully()
+!
+!  Stop having shutdown MPI neatly
+!  With at least some MPI implementations, this only stops if all
+!  processors agree to call stop_it().
+!
+!  29-jun-05/tony: coded
+!
+      call mpifinalize
+      STOP
+    endsubroutine die_gracefully
 !***********************************************************************
     subroutine stop_it(msg)
 !

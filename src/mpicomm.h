@@ -4,6 +4,7 @@
   public :: mpicomm_init, mpifinalize
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
+  public :: die_gracefully
 
   public :: mpireduce_sum, mpireduce_sum_int, mpireduce_max, mpireduce_min
   public :: mpireduce_sum_double

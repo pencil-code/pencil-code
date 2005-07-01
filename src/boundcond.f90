@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.76 2005-06-29 17:12:07 bingert Exp $
+! $Id: boundcond.f90,v 1.77 2005-07-01 02:56:08 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -11,6 +11,7 @@
 module Boundcond
 
   use Mpicomm
+  use Messages
  
   implicit none
 
@@ -117,10 +118,10 @@ module Boundcond
                   call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
                 case ('')         ! do nothing; assume that everything is set
                 case default
-                  print*, &
-                       "boundconds_x: No such boundary condition bcx1/2 = ", &
+                  write(unit=errormsg,fmt='(A,A4,A,I3)') &
+                       "No such boundary condition bcx1/2 = ", &
                        bc12(j), " for j=", j
-                  call stop_it("")
+                  call fatal_error("boundconds_x",errormsg)
                 endselect
               endif
             enddo
@@ -191,9 +192,9 @@ module Boundcond
                 call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
               case ('')         ! do nothing; assume that everything is set
               case default
-                print*, "boundconds_y: No such boundary condition bcy1/2 = ", &
+                write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
                      bc12(j), " for j=", j
-                call stop_it("")
+                call fatal_error("boundconds_y",errormsg)
               endselect
             endif
           enddo
@@ -319,9 +320,9 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set
               case default
-                print*, "boundconds_z: No such boundary condition bcz1/2 = ", &
+                write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
                      bc12(j), " for j=", j
-                call stop_it("")
+                call fatal_error("boundconds_z",errormsg)
               endselect
             endif
           enddo

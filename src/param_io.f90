@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.202 2005-06-26 22:59:43 mee Exp $ 
+! $Id: param_io.f90,v 1.203 2005-07-01 02:56:08 mee Exp $ 
 
 module Param_IO
 
@@ -903,7 +903,7 @@ module Param_IO
            lforcing,lgravz,lgravr,lshear, &
            ldustvelocity,ldustdensity,lradiation_fld,  &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-           leos,lspecial, &
+           leos,lspecial, ltestfield, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
            lcosmicray_var, lcosmicrayflux_var, linterstellar_var, &
            datadir

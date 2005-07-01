@@ -461,6 +461,15 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
+    subroutine die_gracefully()
+!
+!  Stop... perform any necessary shutdown stuff.
+!  29-jun-05/tony: coded
+!
+      call mpifinalize
+      STOP
+    endsubroutine die_gracefully
+!***********************************************************************
     subroutine stop_it(msg)
 !
 !  Print message and stop

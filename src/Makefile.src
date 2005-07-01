@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.117 2005-06-30 20:05:21 theine Exp $
+### $Id: Makefile.src,v 1.118 2005-07-01 02:56:08 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -382,7 +382,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 # ---------------------------------------------------------------------- #
 ## Abbreviations
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
+technical=cparam.o cdata.o messages.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
 physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(PARTICLES).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o  $(TESTFIELD).o
 comm_deps=$(technical) sub.o $(IO).o $(PARTICLES_SUB).o snapshot.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
 start_deps_f90=$(comm_deps) $(GRID).o
@@ -569,7 +569,7 @@ cdata.o:     cdata.f90 cparam.o
 $(GRID).o:   $(GRID).f90 cdata.o $(MPICOMM).o
 general.o:   general.f90 cparam.o cdata.o
 slices.o:    slices.f90 cdata.o sub.o $(EOS).o
-deriv.o:     deriv.f90 cdata.o $(MPICOMM).o
+deriv.o:     deriv.f90 cdata.o messages.o
 fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
@@ -577,9 +577,9 @@ sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 cdata.o $(MPICOMM).o sub.o timestep.o $(TIMEAVG).o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o equ.o
 prints.o:    prints.f90 cdata.o sub.o param_io.o $(physics)
-equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) boundcond.o \
+equ.o:       equ.f90 cdata.o $(MPICOMM).o messages.o sub.o $(physics) boundcond.o \
              $(GLOBAL).o 
-boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
+boundcond.o: boundcond.f90 cdata.o messages.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 filter.o:    filter.f90 cdata.o sub.o boundcond.o
 initcond.o:  initcond.f90 cdata.o $(MPICOMM).o general.o sub.o $(EOS).o
 kepvor.o : kepvor.f90 cdata.o general.o
@@ -587,20 +587,21 @@ noinitcond_spec.o: noinitcond_spec.f90 cdata.o general.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
 persist.o:    persist.f90 cdata.o general.o $(INTERSTELLAR).o
 snapshot.o:    snapshot.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o $(RADIATION).o $(EOS).o $(MAGNETIC).o persist.o
+messages.o:    messages.f90 cdata.o $(MPICOMM).o
 #
 $(MPICOMM).o:      mpicomm.h        $(MPICOMM).f90 cdata.o general.o $(FFT).o 
-$(GLOBAL).o:       global.h         $(GLOBAL).f90 cdata.o $(MPICOMM).o $(IO).o sub.o
+$(GLOBAL).o:       global.h         $(GLOBAL).f90 cdata.o messages.o $(MPICOMM).o $(IO).o sub.o
 $(VISCOSITY).o:    viscosity.h      $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
 shock.o:           shock.h          shock.f90 shock_profile.inc cdata.o cparam.o $(DENSITY).o sub.o boundcond.o
 noshock.o:         shock.h          noshock.f90 cdata.o cparam.o sub.o 
 $(SHEAR).o:        shear.h          $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:      gravity.h        $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
 $(FORCING).o:      forcing.h        $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
-$(ENTROPY).o:      entropy.h        $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o
+$(ENTROPY).o:      entropy.h        $(ENTROPY).f90 cdata.o messages.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o
 $(MAGNETIC).o:     magnetic.h       $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
 $(RADIATION).o:    radiation.h      $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(EOS).o
 $(HYDRO).o:        hydro.h          $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
-$(DENSITY).o:      density.h        $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(EOS).o
+$(DENSITY).o:      density.h        $(DENSITY).f90 cdata.o messages.o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(EOS).o
 $(COSMICRAY).o:    cosmicray.h      $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(COSMICRAYFLUX).o:    cosmicrayflux.h      $(COSMICRAYFLUX).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(COSMICRAY).o
 $(PSCALAR).o:      pscalar.h        $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o

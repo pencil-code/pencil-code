@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.145 2005-06-27 17:38:59 dobler Exp $
+! $Id: start.f90,v 1.146 2005-07-01 02:56:08 mee Exp $
 !
 !***********************************************************************
       program start
@@ -12,6 +12,7 @@
         use Cdata
         use Grid
         use General
+        use Messages
 
         use Mpicomm
         use Sub
@@ -63,9 +64,9 @@
 !
         lstart = .true.
 !
-! Set a flag if colored output has been requested.
+! Initialize the message subsystem, eg. color setting etc.
 !
-        inquire(FILE="COLOR", EXIST=ltermcap_color)
+        call initialize_messages()
 !
 !  Allocate large arrays. We need to make them allocatable in order to
 !  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit
@@ -85,7 +86,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.145 2005-06-27 17:38:59 dobler Exp $")
+             "$Id: start.f90,v 1.146 2005-07-01 02:56:08 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !

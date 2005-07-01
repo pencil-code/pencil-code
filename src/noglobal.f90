@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.7 2005-06-27 00:14:19 mee Exp $
+! $Id: noglobal.f90,v 1.8 2005-07-01 02:56:08 mee Exp $
 
 module Global
 
@@ -6,6 +6,7 @@ module Global
 !  A dummy module for the (lucky) case when we need no global variables.
 !
   use Cparam
+  use Messages
 
   implicit none
 
@@ -150,14 +151,12 @@ module Global
 !  13-jun-05/anders: dummy
 !
       use Cdata, only: lroot
-      use General, only: warning
 !
       real, dimension (nx), optional :: der6
       integer :: m,n
       character (len=*) ::label
 !
-      call warning('global_derivs')
-      if (lroot) print*, 'global_derivs: not implemented'
+      call not_implemented('global_derivs')
 !
       if (NO_WARN) print*, m, n, label
 !

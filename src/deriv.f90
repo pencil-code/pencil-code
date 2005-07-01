@@ -1,8 +1,8 @@
-! $Id: deriv.f90,v 1.26 2005-07-01 02:20:59 mee Exp $
+! $Id: deriv.f90,v 1.27 2005-07-01 02:56:08 mee Exp $
 
 module Deriv
   
-  use Mpicomm, only: stop_it
+  use Messages
 
   implicit none
 
@@ -232,7 +232,7 @@ module Deriv
       endif
 
       if (.not. lequidist(j)) &
-          call stop_it('der5: NOT IMPLEMENTED for no equidistant grid')
+          call fatal_error('der5','NOT IMPLEMENTED for no equidistant grid')
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -314,7 +314,7 @@ module Deriv
       else
         upwnd = .false.
         if (.not. lequidist(j)) then
-          call stop_it('der6: NOT IMPLEMENTED for no equidistant grid')
+          call fatal_error('der6','NOT IMPLEMENTED for no equidistant grid')
         endif
       endif
 !
@@ -407,7 +407,7 @@ module Deriv
       else
         upwnd = .false.
         if (.not. lequidist(j)) then
-          call stop_it('der6_other: NOT IMPLEMENTED for no equidistant grid')
+          call fatal_error('der6_other','NOT IMPLEMENTED for no equidistant grid')
         endif
       endif
 !
@@ -491,7 +491,7 @@ module Deriv
 !ajwm                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) then
-        call stop_it('der4: NOT IMPLEMENTED for no equidistant grid')
+        call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
       endif
 
       if (present(ignoredx)) then
@@ -501,7 +501,7 @@ module Deriv
       endif
       if (present(upwind)) then
         upwnd = upwind
-        print*, 'WARNING: upwinding not implemented for der4'
+        call warning('der4','upwinding not implemented')
       else
         upwnd = .false.
       endif
@@ -671,7 +671,7 @@ module Deriv
 !ajwm                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) then
-        call stop_it('der_upwind1st: NOT IMPLEMENTED for no equidistant grid')
+        call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
       endif
 !
       if (j == 1) then

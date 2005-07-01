@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.200 2005-06-26 20:24:20 mee Exp $
+! $Id: run.f90,v 1.201 2005-07-01 02:56:08 mee Exp $
 !
 !***********************************************************************
       program run
@@ -12,6 +12,7 @@
 !
         use Cdata
         use General
+        use Messages
         use Mpicomm
         use Sub
         use IO
@@ -54,9 +55,7 @@
 !
         lrun = .true.
 !
-! Set a flag if colored output has been requested.
-!
-        inquire(FILE="COLOR", EXIST=ltermcap_color)
+        call initialize_messages()
 !
 !  initialize MPI and register physics modules
 !  (must be done before lroot can be used, for example)
@@ -66,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.200 2005-06-26 20:24:20 mee Exp $")
+             "$Id: run.f90,v 1.201 2005-07-01 02:56:08 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)

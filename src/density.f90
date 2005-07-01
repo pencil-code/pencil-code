@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.186 2005-06-30 09:07:12 ajohan Exp $
+! $Id: density.f90,v 1.187 2005-07-01 02:56:08 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -22,6 +22,7 @@ module Density
 
   use Cparam
   use Cdata
+  use Messages
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
                              gamma,gamma1,cs2top,cs2bot, &
                              mpoly
@@ -78,12 +79,11 @@ module Density
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use Mpicomm, only: stop_it
       use Sub
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_density called twice')
+      if (.not. first) call fatal_error('register_density','module registration called twice')
       first = .false.
 !
 !ajwm      ldensity = .true.
@@ -103,11 +103,11 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.186 2005-06-30 09:07:12 ajohan Exp $")
+           "$Id: density.f90,v 1.187 2005-07-01 02:56:08 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_density: nvar > mvar')
+        call fatal_error('register_density','nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -135,8 +135,6 @@ module Density
 !  24-nov-02/tony: coded 
 !  31-aug-03/axel: normally, diffrho should be given in absolute units
 !
-      use General, only: warning
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -201,32 +199,31 @@ module Density
         case ('')
           if (lroot .and. (.not. lnothing)) print*,'diffusion: nothing'
         case default
-          if (lroot) print*, 'initialize_density: ', &
+          write(unit=errormsg,fmt=*) 'initialize_density: ', &
               'No such value for idiff(',i,'): ', trim(idiff(i))
-          call stop_it('initialize_density')
+          call fatal_error('initialize_density',errormsg)
         endselect
         lnothing=.true.
       enddo
 !
       if (ldiff_normal.and. diffrho==0.0) then
-        call warning('Diffusion coefficient diffrho is zero!')
+        call warning('initialize_density','Diffusion coefficient diffrho is zero!')
         ldiff_normal=.false.
       endif
       if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho) .and. diffrho_hyper3==0.0) then
-        call warning('Diffusion coefficient diffrho_hyper3 is zero!')
+        call warning('initialize_density','Diffusion coefficient diffrho_hyper3 is zero!')
         ldiff_hyper3=.false.
       endif
       if (ldiff_shock .and. diffrho_shock==0.0) then
-        call warning('diffusion coefficient diffrho_shock is zero!')
+        call warning('initialize_density','diffusion coefficient diffrho_shock is zero!')
         ldiff_shock=.false.
       endif
 !
       if (ldiff_hyper3 .and. (.not. ldensity_nolog) .and. &
           (.not. lglobal_nolog_density) ) then
-         if (lroot) print*, 'initialize_density: must have '// &
+         call fatal_error('initialize_density','must have '// &
              'global_nolog_density module for del6rho with '// &
-             'logarithmic density'
-         call stop_it('initialize_density')
+             'logarithmic density')
       endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
@@ -571,7 +568,7 @@ module Density
         !
         !  shock tube test (should be consistent with hydro module)
         !  
-        if (lroot) print*,'init_lnrho: polytopic standing shock'
+        call information('init_lnrho','polytopic standing shock')
         prof=.5*(1.+tanh(xx/widthlnrho))
         f(:,:,:,ilnrho)=log(rho_left)+(log(rho_right)-log(rho_left))*prof
 
@@ -579,7 +576,7 @@ module Density
         !
         !  sin profile in x and y
         !  
-        if (lroot) print*,'init_lnrho: lnrho=sin(x)*sin(y)'
+        call information('init_lnrho','lnrho=sin(x)*sin(y)')
         f(:,:,:,ilnrho) = &
              log(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
 
@@ -587,7 +584,7 @@ module Density
         !
         !  sin profile in x and y, but in rho, not ln(rho)
         !  
-        if (lroot) print*,'init_lnrho: rho=sin(x)*sin(y)'
+        call information('init_lnrho','rho=sin(x)*sin(y)')
         f(:,:,:,ilnrho) = &
              log(rho0*(1+ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)))
 
@@ -595,7 +592,7 @@ module Density
         !
         !  linear profile in kk.xxx
         !  
-        if (lroot) print*,'init_lnrho: linear profile'
+        call information('init_lnrho','linear profile')
         f(:,:,:,ilnrho) = log(rho0) &
              + ampllnrho*(kx_lnrho*xx+ky_lnrho*yy+kz_lnrho*zz) &
                / sqrt(kx_lnrho**2+ky_lnrho**2+kz_lnrho**2)
@@ -616,13 +613,13 @@ module Density
         call planet_hc(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho, &
             gamma,cs20,rho0,widthlnrho)
       
-      case('Ferriere'); if(lroot) print*,'init_lnrho: Ferriere set in entropy'
+      case('Ferriere'); call information('init_lnrho','Ferriere set in entropy')
 
       case('geo-kws')
       !
       ! radial hydrostatic profile in shell region only
       !
-        if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell region'
+        call information('init_lnrho','kws hydrostatic in spherical shell region')
         call shell_lnrho(f)
 
       case('geo-kws-constant-T','geo-benchmark')
@@ -631,16 +628,16 @@ module Density
       ! with constant temperature in exterior regions, and gives continuous
       ! density at shell boundaries 
       !
-        if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell and exterior'
+        call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
 
       case default
         !
         !  Catch unknown values
         !
-        if (lroot) print*,'init_lnrho: No such value for initlnrho(' &
+        write(unit=errormsg,fmt=*) 'No such value for initlnrho(' &
                           //trim(iinit_str)//'): ',trim(initlnrho(iinit))
-        call stop_it('')
+        call fatal_error('init_lnrho',errormsg)
 
       endselect
 
@@ -682,9 +679,9 @@ module Density
 
       case default
 
-        if (lroot) print*,'init_lnrho: No such value for initlnrho2: ', &
+        write(unit=errormsg,fmt=*) 'init_lnrho: No such value for initlnrho2: ', &
                           trim(initlnrho2)
-        call stop_it('')
+        call fatal_error('init_lnrho',errormsg)
 
       endselect
 !
@@ -955,7 +952,6 @@ module Density
 !
 !  19-11-04/anders: coded
 !
-      use General, only: warning
       use Global, only: set_global,global_derivs
       use Sub
 !      
@@ -1018,9 +1014,8 @@ module Density
       if (lpencil(i_del2lnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
-            call warning('calc_pencils_density')
-            print*, 'calc_pencils_density: '// &
-              'del2lnrho not available for non-logarithmic mass density'
+            call fatal_error('calc_pencils_density', &
+                             'del2lnrho not available for non-logarithmic mass density')
           endif
         else
           call del2(f,ilnrho,p%del2lnrho)
@@ -1032,9 +1027,8 @@ module Density
           call del2(f,ilnrho,p%del2rho)
         else
           if (headtt) then
-            call warning('calc_pencils_density')
-            print*, 'calc_pencils_density: '// &
-              'del2rho not available for logarithmic mass density'
+            call fatal_error('calc_pencils_density', &
+                             'del2rho not available for logarithmic mass density')
           endif
         endif
       endif
@@ -1055,9 +1049,8 @@ module Density
       if (lpencil(i_del6lnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
-            call warning('calc_pencils_density')
-            print*, 'calc_pencils_density: '// &
-              'del6lnrho not available for non-logarithmic mass density'
+            call fatal_error('calc_pencils_density', &
+                             'del6lnrho not available for non-logarithmic mass density')
           endif
         else
           call del6(f,ilnrho,p%del6lnrho)
@@ -1067,9 +1060,8 @@ module Density
       if (lpencil(i_hlnrho)) then
         if (ldensity_nolog) then
           if (headtt) then
-            call warning('calc_pencils_density')
-            print*, 'calc_pencils_density: '// &
-              'hlnrho not available for non-logarithmic mass density'
+            call fatal_error('calc_pencils_density', &
+                             'hlnrho not available for non-logarithmic mass density')
           endif
         else
           call g2ij(f,ilnrho,p%hlnrho)
@@ -1087,7 +1079,6 @@ module Density
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
-      use Mpicomm, only: stop_it
       use Special, only: special_calc_density
       use Sub
 !
@@ -1155,7 +1146,7 @@ module Density
 !  Shock diffusion
 !      
       if (ldiff_shock) then
-        if (ldensity_nolog) call stop_it('dlnrho_dt: shock diffusion only '// &
+        if (ldensity_nolog) call fatal_error('dlnrho_dt','shock diffusion only '// &
             'works with logarithmic density!')
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
             diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
@@ -1279,7 +1270,6 @@ module Density
 !                  to allow isothermal condition for arbitrary density
 !
       use Gravity
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: pot,tmp
@@ -1288,8 +1278,7 @@ module Density
 !
       if (lroot) print*,'isothermal_density: isothermal stratification'
       if ( (.not. lentropy) .and. (gamma/=1.0) ) then
-        print*, 'isothermal_density: for gamma/=1.0, you need entropy!'
-        call stop_it('isothermal_density')
+        call fatal_error('isothermal_density','for gamma/=1.0, you need entropy!');
       endif
       do n=n1,n2
         do m=m1,m2
@@ -1325,7 +1314,6 @@ module Density
 !
       use Gravity, only: grav_profile,gravz,zinfty,zref,zgrav,  &
                              potential
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
@@ -1446,7 +1434,6 @@ module Density
 !
 !  27-sep-2002/axel: coded
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -1513,8 +1500,7 @@ module Density
         enddo
 
       case default
-        if(lroot) print*,"bc_lnrho_temp_z: invalid argument"
-        call stop_it(' ')
+        call fatal_error('bc_lnrho_temp_z','invalid argument')
       endselect
 !
     endsubroutine bc_lnrho_temp_z
@@ -1526,7 +1512,6 @@ module Density
 !   4-apr-2003/axel: coded
 !   1-may-2003/axel: added the same for top boundary
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
@@ -1617,8 +1602,7 @@ module Density
         enddo
 !
       case default
-        if(lroot) print*,"bc_lnrho_pressure_z: invalid argument"
-        call stop_it(' ')
+        call fatal_error('bc_lnrho_pressure_z','invalid argument')
       endselect
 !
     endsubroutine bc_lnrho_pressure_z
@@ -1629,7 +1613,6 @@ module Density
 !
 !  28-apr-2005/axel: coded
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Sub, only: step
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
