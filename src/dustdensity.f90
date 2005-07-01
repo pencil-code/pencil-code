@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.133 2005-07-01 03:53:08 mee Exp $
+! $Id: dustdensity.f90,v 1.134 2005-07-01 04:58:26 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -134,7 +134,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.133 2005-07-01 03:53:08 mee Exp $")
+           "$Id: dustdensity.f90,v 1.134 2005-07-01 04:58:26 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -255,7 +255,7 @@ module Dustdensity
         ldiffd_dusttogasratio=.false.
       endif
       if ( (ldiffd_hyper3.or.ldiffd_hyper3lnnd) .and. diffnd_hyper3==0.0) then
-        call warning('initialize_dustdensity',
+        call warning('initialize_dustdensity', &
             'dust diffusion coefficient diffnd_hyper3 is zero!')
         ldiffd_hyper3=.false.
         ldiffd_hyper3lnnd=.false.
@@ -263,10 +263,10 @@ module Dustdensity
 !
       if (ldiffd_hyper3 .and. ldustdensity_log .and. &
           .not. lglobal_nolog_density) then
-         if (lroot) print*, 'initialize_dustdensity: must have '// &
+         call fatal_error('initialize_dustdensity', &
+             'must have '// &
              'global_nolog_density module for del6nd with '// &
-             'logarithmic dust density'
-         call stop_it('initialize_dustdensity')
+             'logarithmic dust density')
       endif
 !      
     endsubroutine initialize_dustdensity

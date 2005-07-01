@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.99 2005-06-30 09:07:12 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.100 2005-07-01 04:58:26 mee Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -19,6 +19,7 @@ module Dustvelocity
 !  Note that Omega is already defined in cdata.
 
   use Cdata
+  use Messages
   use Hydro
 
   implicit none
@@ -91,7 +92,6 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use Cdata
-      use Mpicomm, only: stop_it
       use Sub
       use General, only: chn
 !
@@ -99,7 +99,7 @@ module Dustvelocity
       integer :: k
       character(len=4) :: sdust
 !
-      if (.not. first) call stop_it('register_dustvelocity: called twice')
+      if (.not. first) call fatal_error('register_dustvelocity','module registration called twice')
       first = .false.
 !
       ldustvelocity = .true.
@@ -129,11 +129,11 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.99 2005-06-30 09:07:12 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.100 2005-07-01 04:58:26 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_dustvelocity: nvar > mvar')
+        call fatal_error('register_dustvelocity','nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -162,7 +162,6 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use EquationOfState, only: cs0
-      use Mpicomm, only: stop_it
       use Pscalar, only: unit_rhocc
 !
       integer :: k,l
@@ -238,8 +237,8 @@ module Dustvelocity
               'initialize_dustvelocity: mmon, surfmon = ', mmon, surfmon
 
         case default
-          call stop_it &
-              ("initialize_dustvelocity: No valid dust chemistry specified.")
+          call fatal_error &
+              ('initialize_dustvelocity','No valid dust chemistry specified.')
 
         endselect
 
@@ -275,8 +274,8 @@ module Dustvelocity
           surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
 
         case default
-          call stop_it( &
-              "initialize_dustvelocity: No valid dust geometry specified.")
+          call fatal_error( &
+              'initialize_dustvelocity','No valid dust geometry specified.')
 
         endselect
       endif
@@ -410,7 +409,6 @@ module Dustvelocity
 !
       use Cdata
       use EquationOfState, only: gamma, beta_glnrho_scaled
-      use Mpicomm, only: stop_it
       use Sub
       use Global
       use Gravity
@@ -586,8 +584,8 @@ module Dustvelocity
 !  Catch unknown values
 !
         case default
-          print*, 'init_uud: No such such value for inituu: ', trim(inituud(j))
-          call stop_it("")
+          write (unit=errormsg,fmt=*) 'No such such value for inituu: ', trim(inituud(j))
+          call fatal_error('init_uud',errormsg)
 
         endselect
 !
@@ -693,8 +691,6 @@ module Dustvelocity
 !
 !  13-nov-04/anders: coded
 !
-      use General, only: warning
-      use Mpicomm, only: stop_it
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -747,8 +743,8 @@ module Dustvelocity
             enddo
           case default
             if (headtt) then
-              call warning('calc_pencils_dustvelocity')
-              print*, 'No rate-of-strain tensor matches iviscd=', iviscd
+              write (unit=errormsg,fmt=*) 'No rate-of-strain tensor matches iviscd=', iviscd
+              call warning('calc_pencils_dustvelocity',errormsg)
             endif
           endselect
         endif
@@ -775,7 +771,6 @@ module Dustvelocity
       use Sub
       use EquationOfState, only: gamma
       use IO
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -959,8 +954,8 @@ module Dustvelocity
 
           case default
 
-            if (lroot) print*, 'No such value for iviscd: ', trim(iviscd)
-            call stop_it('duud_dt')
+            write (unit=errormsg,fmt=*) 'No such value for iviscd: ', trim(iviscd)
+            call fatal_error('duud_dt',errormsg)
 
           endselect
 
@@ -1089,7 +1084,6 @@ module Dustvelocity
 !  Calculate stopping time depending on choice of drag law
 !
       use Cdata
-      use Mpicomm, only: stop_it
       use Sub, only: dot2
       
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1107,7 +1101,7 @@ module Dustvelocity
         csrho       = sqrt(cs2+deltaud2)*rho
         tausd1(:,k) = csrho*rhodsad1(k)
       case default
-        call stop_it("get_stoppingtime: No valid drag law specified.")
+        call fatal_error("get_stoppingtime","No valid drag law specified.")
 
       endselect
 !

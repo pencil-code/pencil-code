@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.12 2005-06-30 09:07:12 ajohan Exp $
+! $Id: eos_idealgas.f90,v 1.13 2005-07-01 04:58:27 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.12 2005-06-30 09:07:12 ajohan Exp $')
+           '$Id: eos_idealgas.f90,v 1.13 2005-07-01 04:58:27 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -515,21 +515,22 @@ module EquationOfState
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
-        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
+        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
         lnTT_=log(gamma*cp1*ee_)
         pp_=ee_*exp(lnrho_)*gamma1
 
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-        ss_=log(gamma*pp_/cs20)/gamma + gamma1/gamma*lnrho0 - lnrho_
-        ee_=gamma*gamma1*pp_*exp(lnrho_)
+        ss_=(log(pp_/exp(lnrho)*gamma/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
+        ee_=gamma*gamma1*pp_/exp(lnrho_)
         lnTT_=log(gamma*cp1*ee_)
+
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
-        ss_=(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))/gamma  
-        ee_=cs20*exp(gamma*cp1*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
+        ss_=(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))*cp/gamma  
+        ee_=exp(lnTT_)*cp/gamma 
         pp_=ee_*exp(lnrho_)*gamma1
       case default 
         call stop_it('eoscalc_pencil: thermodynamic case')

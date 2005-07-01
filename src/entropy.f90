@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.342 2005-07-01 02:56:08 mee Exp $
+! $Id: entropy.f90,v 1.343 2005-07-01 04:58:27 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -148,7 +148,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.342 2005-07-01 02:56:08 mee Exp $")
+           "$Id: entropy.f90,v 1.343 2005-07-01 04:58:27 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1076,7 +1076,7 @@ module Entropy
 !  define entropy via pressure, assuming fixed T for each component
         if (lentropy) then
 !  thermal pressure (eq 15)
-          pp=1.*k_B*unit_length**3 / unit_temperature * &
+          pp=k_B*unit_length**3 * &
              (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
 !           
           call eoscalc(ilnrho_pp,lnrho,pp,ss=ss,yH=yH,lnTT=lnTT) 
