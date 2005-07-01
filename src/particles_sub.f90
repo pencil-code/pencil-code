@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: particles_sub.f90,v 1.3 2005-07-01 17:45:29 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -269,17 +269,33 @@ module Particles_sub
 !
 !  01-jan-05/anders: coded
 !
-      use Mpicomm
+      use Messages, only: fatal_error
+!
+      include 'mpif.h'
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc) :: ipar
-      integer :: npar_loc
+      integer :: npar_loc, ipy_rec, ipz_rec
 !
-      integer, dimension (0:ncpus-1) :: nmig
-      integer :: i, j, k, k_move
+      integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
+      integer, dimension (0:ncpus-1) :: k_move, k0_move, k0_move1
+      integer :: ierr=0, status=0
+      integer :: i, j, k, iproc_rec
+      logical, save :: lfirstcall=.true.
 !
       intent (out) :: fp, npar_loc, ipar, dfp
+!
+!  Initialise start index of migrating particles..
+!
+      if (lfirstcall) then
+        do i=0,ncpus-1
+          k0_move(i)=mpar_loc-npar_mig*(i+1)
+        enddo
+        k0_move1=k0_move-1
+        lfirstcall=.false.
+      endif
+      k_move=k0_move1
 !
 !  Find out which particles are not in the local processor's yz-interval.
 !
@@ -287,67 +303,91 @@ module Particles_sub
       do k=npar_loc,1,-1
         if (fp(k,iyp)< xyz0_loc(2) .or. fp(k,iyp)>=xyz1_loc(2) .or. &
             fp(k,izp)< xyz0_loc(3) .or. fp(k,izp)>=xyz1_loc(3)) then
-          if (ip<=8) print '("redist_particles_procs: Particle ",'// &
-              '(i6), " moved out of processor ", i4)', ipar(k), iproc
+!  Calculate processor index of receiving processor.            
+          iproc_rec = int((fp(k,iyp)-xyz0(2))/Lxyz_loc(2)) + &
+              nprocy*int((fp(k,izp)-xyz0(3))/Lxyz_loc(3))
+          if (ip<=8) print '(a,i6,a,i3,a,i3)', &
+              'redist_particles_procs: Particle ', ipar(k), &
+              ' moves out of proc ', iproc, &
+              ' and into proc ', iproc_rec
 !  Copy migrating particle to the end of the fp array.
-          k_move=mpar_loc-nmig(iproc)
-          fp(k_move,:)=fp(k,:)
-          if (present(dfp)) dfp(k_move,:)=dfp(k,:)
+          nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)+1
+          k_move(iproc_rec)=k_move(iproc_rec)+1
+          if (nmig(iproc,iproc_rec)>npar_mig) then
+            print '(a,i3,a,i3,a)', &
+                'redist_particles_procs: too many particles migrating '// &
+                'from proc ', iproc, ' to proc ', iproc_rec
+            print*, 'redist_particles_procs: set npar_mig higher '// &
+                'in cparam.local'
+            call fatal_error('redist_particles_procs','')
+          endif
+          fp(k_move(iproc_rec),:)=fp(k,:)
+          if (present(dfp)) dfp(k_move(iproc_rec),:)=dfp(k,:)
+          ipar(k_move(iproc_rec))=ipar(k)
 !  Move the particle with the highest index number to the empty spot left by
 !  the migrating particle.
-          ipar(k_move)=ipar(k)
           fp(k,:)=fp(npar_loc,:)
           if (present(dfp)) dfp(k,:)=dfp(npar_loc,:)
           ipar(k)=ipar(npar_loc)
-!  Reduce the number of particles by one...
+!  Reduce the number of particles by one.
           npar_loc=npar_loc-1
-!  ... and increase the number of migrating particles by one.
-          nmig(iproc)=nmig(iproc)+1
         endif
       enddo
 !
-!  Print out information about  number of migrating particles.
+!  Print out information about number of migrating particles.
 !
       if (ip<=7) print*, 'redist_particles_procs: iproc, nmigrate = ', &
-          iproc, nmig(iproc)
+          iproc, sum(nmig(iproc,:))
 !
-!  Share migrating particle data between all processors and let the 
-!  processor that contains the particle's (x,y,z)-position receive it.
+!  Share information about number of migrating particles.
 !
       do i=0,ncpus-1
-        call mpibcast_int(nmig(i), 1, i)
-        do j=1,nmig(i)
-          if (i==iproc) then ! Send particles from the end of fp
-            k=mpar_loc-nmig(i)+j
-          else               ! Put received particles just after the others.
-            k=npar_loc+1
-          endif
-!
-          call mpibcast_real(fp(k,:), mpvar, i)
-          call mpibcast_int(ipar(k), 1, i)
-!
-!  Send dfp as well if dfp is present. This is necessary when particles
-!  migrate during a substep of the time evolution, but is e.g. not necessary
-!  when updating particle positions before writing a snapshot.
-!
-          if (present(dfp)) call mpibcast_real(dfp(k,:), mpvar, i)
-          if (fp(k,iyp)>=xyz0_loc(2) .and. fp(k,iyp)< xyz1_loc(2) .and. &
-              fp(k,izp)>=xyz0_loc(3) .and. fp(k,izp)< xyz1_loc(3)) then
-            npar_loc=npar_loc+1
-            if (ip<=8) print '("redist_particles_procs: Particle ",'// &
-                '(i6), " moved in to processor  ", i4)', ipar(k), iproc
-          endif
-        enddo
+        if (iproc/=i) call MPI_RECV(nmig(i,iproc), 1, MPI_INTEGER, i, &
+            111, MPI_COMM_WORLD, status, ierr)
+        if (iproc==i) then
+          do j=0,ncpus-1
+            call MPI_SEND(nmig(iproc,j), 1, MPI_INTEGER, j, &
+                111, MPI_COMM_WORLD, ierr)
+          enddo
+        endif
       enddo
 !
-!  Check if there is enough space in fp.
+!  Set to receive.
+!      
+      do i=0,ncpus-1
+        if (iproc/=i .and. nmig(i,iproc)/=0) then
+          call MPI_RECV(fp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
+              mpvar*nmig(i,iproc), MPI_REAL, i, &
+              222, MPI_COMM_WORLD, status,ierr)
+          call MPI_RECV(ipar(npar_loc+1:npar_loc+nmig(i,iproc)), &
+              nmig(i,iproc), MPI_INTEGER, i, &
+              223, MPI_COMM_WORLD, status, ierr)
+          if (present(dfp)) &
+              call MPI_RECV(dfp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
+              mpvar*nmig(i,iproc), MPI_REAL, i, &
+              333, MPI_COMM_WORLD, status, ierr)
+          npar_loc=npar_loc+nmig(i,iproc)
+        endif
 !
-      if (npar_loc>mpar_loc) then
-        print*, 'redist_particles_procs: npar_loc > mpar_loc at iproc=', iproc
-        print*, 'Not enough space allocated for particles at each processor.'
-        print*, 'Try to increase mpar_loc in cparam.inc.'
-        stop
-      endif
+!  Directed send.
+!        
+        if (iproc==i) then
+          do j=0,ncpus-1
+            if (nmig(iproc,j)/=0) then
+              call MPI_SEND(fp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:), &
+                  mpvar*nmig(iproc,j),  MPI_REAL, j, &
+                  222, MPI_COMM_WORLD, ierr)
+              call MPI_SEND(ipar(k0_move(j):k0_move(j)+nmig(iproc,j)-1), &
+                  nmig(iproc,j),  MPI_INTEGER, j, &
+                  223, MPI_COMM_WORLD, ierr)
+              if (present(dfp)) &
+                call MPI_SEND(dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:), &
+                    mpvar*nmig(iproc,j), MPI_REAL, j, &
+                    333, MPI_COMM_WORLD, ierr)
+            endif
+          enddo
+        endif
+      enddo
 !
     endsubroutine redist_particles_procs
 !***********************************************************************
