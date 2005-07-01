@@ -6,4 +6,4 @@
 !
 integer, parameter :: ncpus=8,nprocy=4,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
-integer, parameter :: npar=1000,mpar_loc=250
+integer, parameter :: npar=1000,mpar_loc=250,npar_mig=10
