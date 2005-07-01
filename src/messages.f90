@@ -1,8 +1,9 @@
-! $Id: messages.f90,v 1.1 2005-07-01 02:56:08 mee Exp $
-
-!  This module takes care of entropy (initial condition
-!  and time advance)
+! $Id: messages.f90,v 1.2 2005-07-01 07:16:28 ajohan Exp $
+!
+!  This module takes care of messages.
+!
 module Messages
+
   use Mpicomm, only: stop_it, die_gracefully
 
   implicit none
@@ -58,13 +59,13 @@ module Messages
 ! Set a flag if colored output has been requested.
 !
         inquire(FILE="COLOR", EXIST=ltermcap_color)
-
+!
     endsubroutine initialize_messages
 !***********************************************************************
     subroutine not_implemented(location)
 !
       character(len=*) :: location
-
+!
       if (.not.llife_support) then
         errors=errors+1
 !
@@ -75,7 +76,9 @@ module Messages
                     "current parameters at "//trim(location)
 !
         if (ldie_onfatalerror) call die_gracefully
+!
       endif
+!
     endsubroutine not_implemented
 !***********************************************************************
     subroutine fatal_error(location,message)
@@ -92,7 +95,9 @@ module Messages
         write (*,*) trim(message)//" occured at "//trim(location)
 !  
         if (ldie_onfatalerror) call die_gracefully
+!
       endif
+!
     endsubroutine fatal_error
 !***********************************************************************
     subroutine error(location,message)
@@ -109,7 +114,9 @@ module Messages
         write (*,*) trim(message)//" occured at "//trim(location)
 !
         if (ldie_onerror) call die_gracefully
+!
       endif
+!
     endsubroutine error
 !***********************************************************************
     subroutine warning(location,message,ip)
@@ -128,7 +135,9 @@ module Messages
         write (*,*) trim(message)//" occured at "//trim(location)
 !
         if (ldie_onwarning) call die_gracefully
+!
       endif
+!
     endsubroutine warning
 !***********************************************************************
     subroutine information(location,message,level)
@@ -196,7 +205,6 @@ module Messages
       if (ltermcap_color) then
         write(*,fmt='(A1,A1,I1,A1,I2,A1)',ADVANCE='no') &
             CHAR(27), '[', iterm_BRIGHT, ';', col, 'm' 
-!
       endif
 !
     endsubroutine terminal_setfgbrightcolor
