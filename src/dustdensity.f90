@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.132 2005-06-27 00:14:18 mee Exp $
+! $Id: dustdensity.f90,v 1.133 2005-07-01 03:53:08 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -21,6 +21,7 @@ module Dustdensity
 
   use Cparam
   use Cdata
+  use Messages
   use Dustvelocity
 
   implicit none
@@ -133,7 +134,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.132 2005-06-27 00:14:18 mee Exp $")
+           "$Id: dustdensity.f90,v 1.133 2005-07-01 03:53:08 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -184,7 +185,6 @@ module Dustdensity
 !  parameters.
 !
 !  24-nov-02/tony: coded 
-      use General, only: warning
       use Mpicomm, only: stop_it
 !
       integer :: i,j,k
@@ -249,16 +249,14 @@ module Dustdensity
       enddo
 !
       if ((ldiffd_simplified .or. ldiffd_dusttogasratio) .and. diffnd==0.0) then
-        call warning('initialize_dustdensity')
-        print*, 'initialize_dustdensity: '// &
-            'dust diffusion coefficient diffnd is zero!'
+        call warning('initialize_dustdensity', &
+            'dust diffusion coefficient diffnd is zero!')
         ldiffd_simplified=.false.
         ldiffd_dusttogasratio=.false.
       endif
       if ( (ldiffd_hyper3.or.ldiffd_hyper3lnnd) .and. diffnd_hyper3==0.0) then
-        call warning('initialize_dustdensity')
-        print*, 'initialize_dustdensity: '// &
-            'dust diffusion coefficient diffnd_hyper3 is zero!'
+        call warning('initialize_dustdensity',
+            'dust diffusion coefficient diffnd_hyper3 is zero!')
         ldiffd_hyper3=.false.
         ldiffd_hyper3lnnd=.false.
       endif
@@ -579,7 +577,6 @@ module Dustdensity
 !
 !  13-nov-04/anders: coded
 !
-      use General, only: warning
       use Global, only: set_global,global_derivs
       use Sub
 !
@@ -700,9 +697,8 @@ module Dustdensity
         if (lpencil(i_del2nd)) then
           if (ldustdensity_log) then
             if (headtt) then
-              call warning('calc_pencils_dustdensity')
-              print*, 'calc_pencils_dustdensity: '// &
-                'del2nd not available for logarithmic dust density'
+              call warning('calc_pencils_dustdensity', &
+                'del2nd not available for logarithmic dust density')
             endif
           else  
             call del2(f,ind(k),p%del2nd(:,k))
@@ -714,9 +710,8 @@ module Dustdensity
             call del2(f,ind(k),p%del2lnnd(:,k))
           else  
             if (headtt) then
-              call warning('calc_pencils_dustdensity')
-              print*, 'calc_pencils_dustdensity: '// &
-                'del2lnnd not available for non-logarithmic dust density'
+              call warning('calc_pencils_dustdensity', &
+                'del2lnnd not available for non-logarithmic dust density')
             endif
           endif
         endif
@@ -739,9 +734,8 @@ module Dustdensity
             call del6(f,ind(k),p%del6lnnd(:,k))
           else
             if (headtt) then
-              call warning('calc_pencils_dustdensity')
-              print*, 'calc_pencils_dustdensity: '// &
-                  'del6lnnd not available for non-logarithmic dust density'
+              call warning('calc_pencils_dustdensity', &
+                  'del6lnnd not available for non-logarithmic dust density')
             endif
           endif
         endif
