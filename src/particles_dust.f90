@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.4 2005-07-02 13:57:08 ajohan Exp $
+! $Id: particles_dust.f90,v 1.5 2005-07-02 14:17:52 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.4 2005-07-02 13:57:08 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.5 2005-07-02 14:17:52 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -589,6 +589,7 @@ module Particles
         if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
             idiag_npmin/=0 .or. idiag_rhopmax/=0) then
           if (.not. ldragforce_gas) then
+            call reset_global('np')
             do k=1,npar_loc
               call map_xxp_grid(fp(k,ixp:izp))
             enddo
