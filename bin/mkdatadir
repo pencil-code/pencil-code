@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.39 2005-06-26 17:34:16 eos_merger_tony Exp $
+#  $Id: mkdatadir,v 1.40 2005-07-02 14:51:35 ajohan Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -89,7 +89,7 @@ else if ($hn =~ obelix*) then
 else if ($hn =~ psi24*) then
   set str='s/afs\/ipp-garching\.mpg\.de\/home\/a/u/g'
 else if ($hn =~ rio*) then
-  set str='s/afs\/ipp\/home\/a/nfs\/rzg/g'
+  set str='s/afs\/ipp\/home\/a/nfs\/mpia/g'
 else if ($hn =~ gwdu102) then
   set str='s/\/usr\/users/\/home\/temp1/g'
 else if ($hn =~ lfc*) then
