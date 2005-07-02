@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.3 2005-07-01 17:45:29 ajohan Exp $
+! $Id: particles_sub.f90,v 1.4 2005-07-02 12:14:01 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -270,8 +270,7 @@ module Particles_sub
 !  01-jan-05/anders: coded
 !
       use Messages, only: fatal_error
-!
-      include 'mpif.h'
+      use Mpicomm, only: mpirecv_real, mpisend_real, mpirecv_int, mpisend_int
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -280,7 +279,6 @@ module Particles_sub
 !
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
       integer, dimension (0:ncpus-1) :: k_move, k0_move, k0_move1
-      integer :: ierr=0, status=0
       integer :: i, j, k, iproc_rec
       logical, save :: lfirstcall=.true.
 !
@@ -342,12 +340,10 @@ module Particles_sub
 !  Share information about number of migrating particles.
 !
       do i=0,ncpus-1
-        if (iproc/=i) call MPI_RECV(nmig(i,iproc), 1, MPI_INTEGER, i, &
-            111, MPI_COMM_WORLD, status, ierr)
+        if (iproc/=i) call mpirecv_int(nmig(i,iproc), 1, i, 111)
         if (iproc==i) then
           do j=0,ncpus-1
-            call MPI_SEND(nmig(iproc,j), 1, MPI_INTEGER, j, &
-                111, MPI_COMM_WORLD, ierr)
+            call mpisend_int(nmig(iproc,j), 1, j, 111)
           enddo
         endif
       enddo
@@ -356,16 +352,13 @@ module Particles_sub
 !      
       do i=0,ncpus-1
         if (iproc/=i .and. nmig(i,iproc)/=0) then
-          call MPI_RECV(fp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
-              mpvar*nmig(i,iproc), MPI_REAL, i, &
-              222, MPI_COMM_WORLD, status,ierr)
-          call MPI_RECV(ipar(npar_loc+1:npar_loc+nmig(i,iproc)), &
-              nmig(i,iproc), MPI_INTEGER, i, &
-              223, MPI_COMM_WORLD, status, ierr)
+          call mpirecv_real(fp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
+              (/nmig(i,iproc),mpvar/), i, 222)
+          call mpirecv_int(ipar(npar_loc+1:npar_loc+nmig(i,iproc)), &
+              nmig(i,iproc), i, 223)
           if (present(dfp)) &
-              call MPI_RECV(dfp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
-              mpvar*nmig(i,iproc), MPI_REAL, i, &
-              333, MPI_COMM_WORLD, status, ierr)
+              call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
+              (/nmig(i,iproc),mpvar/), i, 333)
           npar_loc=npar_loc+nmig(i,iproc)
         endif
 !
@@ -374,16 +367,13 @@ module Particles_sub
         if (iproc==i) then
           do j=0,ncpus-1
             if (nmig(iproc,j)/=0) then
-              call MPI_SEND(fp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:), &
-                  mpvar*nmig(iproc,j),  MPI_REAL, j, &
-                  222, MPI_COMM_WORLD, ierr)
-              call MPI_SEND(ipar(k0_move(j):k0_move(j)+nmig(iproc,j)-1), &
-                  nmig(iproc,j),  MPI_INTEGER, j, &
-                  223, MPI_COMM_WORLD, ierr)
+              call mpisend_real(fp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:), &
+                  (/nmig(iproc,j),mpvar/), j, 222)
+              call mpisend_int(ipar(k0_move(j):k0_move(j)+nmig(iproc,j)-1), &
+                  nmig(iproc,j), j, 223)
               if (present(dfp)) &
-                call MPI_SEND(dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:), &
-                    mpvar*nmig(iproc,j), MPI_REAL, j, &
-                    333, MPI_COMM_WORLD, ierr)
+                call mpisend_real(dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:),&
+                    (/nmig(iproc,j),mpvar/), j, 333)
             endif
           enddo
         endif
