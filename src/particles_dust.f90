@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
+! $Id: particles_dust.f90,v 1.4 2005-07-02 13:57:08 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
+           "$Id: particles_dust.f90,v 1.4 2005-07-02 13:57:08 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -529,7 +529,7 @@ module Particles
           call reset_global('np')
           call reset_global('uupsum')
           do k=1,npar_loc
-            call map_xx_vv_grid(fp(k,ixp:izp),fp(k,ivpx:ivpz))
+            call map_xxp_vvp_grid(fp(k,ixp:izp),fp(k,ivpx:ivpz))
           enddo
           do imn=1,ny*nz
             n=nn(imn); m=mm(imn)
@@ -548,13 +548,6 @@ module Particles
               where (np/=0) df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - &
                   tausg1*(f(l1:l2,m,n,i)-uupsum(:,i)/np(:))
             enddo
-            if (ldiagnos) then
-              if (idiag_npm/=0) call sum_mn_name(np,idiag_npm)
-              if (idiag_np2m/=0) call sum_mn_name(np**2,idiag_np2m)
-              if (idiag_npmax/=0) call max_mn_name(np,idiag_npmax)
-              if (idiag_npmin/=0) call max_mn_name(-np,idiag_npmin,lneg=.true.)
-              if (idiag_rhopmax/=0) call max_mn_name(rhop*np,idiag_rhopmax)
-            endif
           enddo
         endif
       endif
@@ -593,6 +586,25 @@ module Particles
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
+            idiag_npmin/=0 .or. idiag_rhopmax/=0) then
+          if (.not. ldragforce_gas) then
+            do k=1,npar_loc
+              call map_xxp_grid(fp(k,ixp:izp))
+            enddo
+          endif
+          do imn=1,ny*nz
+            n=nn(imn); m=mm(imn)
+            lfirstpoint=(imn==1)
+            llastpoint=(imn==(ny*nz))
+            call get_global(np,m,n,'np')
+            if (idiag_npm/=0) call sum_mn_name(np,idiag_npm)
+            if (idiag_np2m/=0) call sum_mn_name(np**2,idiag_np2m)
+            if (idiag_npmax/=0) call max_mn_name(np,idiag_npmax)
+            if (idiag_npmin/=0) call max_mn_name(-np,idiag_npmin,lneg=.true.)
+            if (idiag_rhopmax/=0) call max_mn_name(rhop*np,idiag_rhopmax)
+          enddo
+        endif
       endif
 !
       if (lfirstcall) lfirstcall=.false.

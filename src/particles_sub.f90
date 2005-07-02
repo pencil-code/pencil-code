@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.4 2005-07-02 12:14:01 ajohan Exp $
+! $Id: particles_sub.f90,v 1.5 2005-07-02 13:57:08 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -14,7 +14,7 @@ module Particles_sub
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
   public :: sum_par_name, find_lowest_cornerpoint, interpolate_3d_1st
-  public :: map_xx_vv_grid
+  public :: map_xxp_vvp_grid, map_xxp_grid
 
   contains
 
@@ -586,7 +586,45 @@ module Particles_sub
 !
     endsubroutine interpolate_3d_1st
 !***********************************************************************
-    subroutine map_xx_vv_grid(xxp,vvp)
+    subroutine map_xxp_grid(xxp)
+!
+!  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
+!  surrounding the point xxp.
+!
+!  02-jul-05/anders: adapted from map_xx_vv_grid
+!
+      use Cdata
+      use Global
+      use Mpicomm, only: stop_it
+!
+      real, dimension(3) :: xxp
+      integer :: ix0, iy0, iz0
+!
+      real, save :: dx1, dy1, dz1
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: xxp
+!
+      ix0=4; iy0=4; iz0=4
+!
+      if (lfirstcall) then
+        if (.not. all(lequidist)) then
+          print*, 'map_xxp_grid: only works for equidistant grid!'
+          call stop_it('map_xxp_grid')
+        endif
+        dx1=1/dx; dy1=1/dy; dz1=1/dz
+        lfirstcall=.false.
+      endif
+!      
+      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
+      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
+      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
+!
+      call set_global_point(1.0,ix0,iy0,iz0,'np')
+!
+    endsubroutine map_xxp_grid
+!***********************************************************************
+    subroutine map_xxp_vvp_grid(xxp,vvp)
 !
 !  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
 !  surrounding the point xxp.
@@ -623,7 +661,7 @@ module Particles_sub
       call set_global_point(1.0,ix0,iy0,iz0,'np')
       call set_global_point(vvp,ix0,iy0,iz0,'uupsum')
 !
-    endsubroutine map_xx_vv_grid
+    endsubroutine map_xxp_vvp_grid
 !***********************************************************************
 
 endmodule Particles_sub
