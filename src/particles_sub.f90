@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.5 2005-07-02 13:57:08 ajohan Exp $
+! $Id: particles_sub.f90,v 1.6 2005-07-02 17:07:31 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -334,7 +334,7 @@ module Particles_sub
 !
 !  Print out information about number of migrating particles.
 !
-      if (ip<=7) print*, 'redist_particles_procs: iproc, nmigrate = ', &
+      if (ip<=6) print*, 'redist_particles_procs: iproc, nmigrate = ', &
           iproc, sum(nmig(iproc,:))
 !
 !  Share information about number of migrating particles.
@@ -359,6 +359,15 @@ module Particles_sub
           if (present(dfp)) &
               call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
               (/nmig(i,iproc),mpvar/), i, 333)
+          if (ip<=7) then
+            print*, 'redist_particles_proc: iproc=', iproc
+            print*, 'redist_particles_proc: received fp=', &
+                fp(npar_loc+1:npar_loc+nmig(i,iproc),:)
+            print*, 'redist_particles_proc: received ipar=', &
+                ipar(npar_loc+1:npar_loc+nmig(i,iproc))
+            if (present(dfp)) print*, 'redist_particles_proc: received dfp=', &
+                dfp(npar_loc+1:npar_loc+nmig(i,iproc),:)
+          endif
           npar_loc=npar_loc+nmig(i,iproc)
         endif
 !
@@ -374,6 +383,15 @@ module Particles_sub
               if (present(dfp)) &
                 call mpisend_real(dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:),&
                     (/nmig(iproc,j),mpvar/), j, 333)
+              if (ip<=7) then
+                print*, 'redist_particles_proc: iproc=', iproc
+                print*, 'redist_particles_proc: sent fp=', &
+                    fp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:)
+                print*, 'redist_particles_proc: sent ipar=', &
+                    ipar(k0_move(j):k0_move(j)+nmig(iproc,j)-1)
+                if (present(dfp)) print*, 'redist_particles_proc: sent dfp=', &
+                    dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:)
+              endif
             endif
           enddo
         endif
