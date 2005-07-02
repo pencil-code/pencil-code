@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.143 2005-06-29 13:46:18 ajohan Exp $
+# $Id: getconf.csh,v 1.144 2005-07-02 15:29:57 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -648,9 +648,10 @@ else if ($hn =~ rio*) then
     set one_local_disc = 1
   endif
   set mpirun = ~/mvapich095_pgf90/bin/mpirun
-#  set mpirunops2 = '-hostfile $TMPDIR/machines'
-  set mpirunops2 = '-hostfile hosts.list'
-  set nodelist=`cat hosts.list`
+  set mpirunops2 = '-hostfile $TMPDIR/machines'
+#  set mpirunops2 = '-hostfile hosts.list'
+#  set nodelist=`cat hosts.list`
+  set nodelist=`echo $nodelist | sed -e 's/\..*$//g'`
   echo $nodelist
   setenv SSH 'ssh -x'
   setenv SCP scp
