@@ -6,6 +6,8 @@
   public :: stop_it, stop_it_if_any
   public :: die_gracefully
 
+  public :: mpirecv_real, mpirecv_int
+  public :: mpisend_real, mpisend_int
   public :: mpireduce_sum, mpireduce_sum_int, mpireduce_max, mpireduce_min
   public :: mpireduce_sum_double
   public :: mpibcast_real,mpibcast_logical

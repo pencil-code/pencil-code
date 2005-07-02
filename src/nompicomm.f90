@@ -16,6 +16,28 @@ module Mpicomm
 
   include 'mpicomm.h'
 
+  interface mpirecv_real
+    module procedure mpirecv_real_scl
+    module procedure mpirecv_real_arr
+    module procedure mpirecv_real_arr2
+  endinterface
+
+  interface mpirecv_int
+    module procedure mpirecv_int_scl
+    module procedure mpirecv_int_arr
+  endinterface
+  
+  interface mpisend_real
+    module procedure mpisend_real_scl
+    module procedure mpisend_real_arr
+    module procedure mpisend_real_arr2
+  endinterface
+  
+  interface mpisend_int
+    module procedure mpisend_int_scl
+    module procedure mpisend_int_arr
+  endinterface
+
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
     module procedure mpibcast_logical_arr
@@ -265,6 +287,146 @@ module Mpicomm
       endif
 !
     endsubroutine radboundary_zx_periodic_ray
+!***********************************************************************
+    subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
+!   
+!  Receive real scalar from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      real :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+!      
+    endsubroutine mpirecv_real_scl
+!***********************************************************************
+    subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id)
+!   
+!  Receive real array from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      real, dimension(nbcast_array) :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+!
+    endsubroutine mpirecv_real_arr
+!***********************************************************************
+    subroutine mpirecv_real_arr2(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive real array(:,:) from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer, dimension(2) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+!
+    endsubroutine mpirecv_real_arr2
+!***********************************************************************
+    subroutine mpirecv_int_scl(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive integer scalar from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      integer :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+!      
+    endsubroutine mpirecv_int_scl
+!***********************************************************************
+    subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive integer array from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      integer, dimension(nbcast_array) :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
+!
+    endsubroutine mpirecv_int_arr
+!***********************************************************************
+    subroutine mpisend_real_scl(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send real scalar to other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      real :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+!      
+    endsubroutine mpisend_real_scl
+!***********************************************************************
+    subroutine mpisend_real_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Receive real array from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      real, dimension(nbcast_array) :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+!
+    endsubroutine mpisend_real_arr
+!***********************************************************************
+    subroutine mpisend_real_arr2(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Receive real array(:,:) from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer, dimension(2) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+!
+    endsubroutine mpisend_real_arr2
+!***********************************************************************
+    subroutine mpisend_int_scl(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send real scalar to other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      integer :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+!      
+    endsubroutine mpisend_int_scl
+!***********************************************************************
+    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Receive real array from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array
+      integer, dimension(nbcast_array) :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id
+!
+    endsubroutine mpisend_int_arr
 !***********************************************************************
     subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !
