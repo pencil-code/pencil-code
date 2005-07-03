@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.138 2005-07-02 14:25:19 ajohan Exp $
+! $Id: mpicomm.f90,v 1.139 2005-07-03 08:32:00 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1177,10 +1177,12 @@ module Mpicomm
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer :: proc_src, tag_id
+      integer :: proc_src, tag_id, nbcast
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      call MPI_RECV(bcast_array, sum(nbcast_array), MPI_REAL, proc_src, &
+     nbcast=nbcast_array(1)*nbcast_array(2)
+!
+      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, stat, ierr)
 !
     endsubroutine mpirecv_real_arr2
@@ -1255,9 +1257,11 @@ module Mpicomm
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer :: proc_rec, tag_id
+      integer :: proc_rec, tag_id, nbcast
 !
-      call MPI_SEND(bcast_array, sum(nbcast_array), MPI_REAL, proc_rec, &
+      nbcast=nbcast_array(1)*nbcast_array(2)
+!
+      call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
           tag_id, MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpisend_real_arr2
