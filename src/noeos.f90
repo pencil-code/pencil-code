@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.9 2005-07-04 12:45:31 mee Exp $
+! $Id: noeos.f90,v 1.10 2005-07-04 14:07:52 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -65,7 +65,6 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_eos
 !
-      use Cdata
       use Sub
 !
       logical, save :: first=.true.
@@ -81,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.9 2005-07-04 12:45:31 mee Exp $')
+           '$Id: noeos.f90,v 1.10 2005-07-04 14:07:52 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -173,7 +172,6 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-      use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
@@ -194,8 +192,6 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-      use Cdata
-!
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
 !
@@ -214,7 +210,6 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-      use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
@@ -234,8 +229,6 @@ module EquationOfState
 !
 !   13-may-04/tony: adapted from idealgas dummy
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3) :: hlnTT
@@ -252,8 +245,6 @@ module EquationOfState
 !   Calculate thermodynamical quantities
 !
 !   02-apr-04/tony: implemented dummy
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       integer, intent(in) :: psize
@@ -275,8 +266,6 @@ module EquationOfState
 !   Calculate thermodynamical quantities
 !
 !   02-apr-04/tony: implemented dummy
-!
-      use Cdata
 !
       integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
@@ -306,8 +295,6 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
-!
-      use Cdata
 !
       integer, intent(in) :: ivars
       real, dimension(nx), intent(in) :: var1,var2
@@ -424,8 +411,6 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      use Cdata
-!
       real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
       real, intent(in) :: T0
       real, dimension(nx) :: lnrho,ss
@@ -476,7 +461,6 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       real, intent(in) :: Fheat, FheatK, hcond0, hcond1, chi
@@ -557,7 +541,7 @@ module EquationOfState
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
         enddo
       case default
-        call fatal_eror('bc_ss_flux','invalid argument')
+        call fatal_error('bc_ss_flux','invalid argument')
       endselect
 !
     endsubroutine bc_ss_flux
@@ -572,7 +556,6 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -639,7 +622,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -701,7 +683,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -761,7 +742,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -819,7 +799,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -875,7 +854,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -925,7 +903,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -976,7 +953,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Cdata
       use Gravity
 !
       character (len=3) :: topbot
@@ -1025,8 +1001,6 @@ module EquationOfState
 !  may-2002/nils: coded
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
-!
-      use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
