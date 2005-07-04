@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.119 2005-07-02 13:57:08 ajohan Exp $
+### $Id: Makefile.src,v 1.120 2005-07-04 14:07:07 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -612,7 +612,7 @@ $(TESTFIELD).o:    testfield.h      $(TESTFIELD).f90 cdata.o $(MPICOMM).o sub.o 
 $(PARTICLES).o:    particles.h      $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
 $(PARTICLES_SUB).o:                 $(PARTICLES_SUB).f90 cdata.o $(GLOBAL).o
 $(INTERSTELLAR).o: interstellar.h   $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(EOS).o
-$(EOS).o:          eos.h            $(EOS).f90 cdata.o $(MPICOMM).o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
+$(EOS).o:          eos.h            $(EOS).f90 cdata.o $(MPICOMM).o messages.o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
 $(IO).o:           io.h             $(IO).f90 cdata.o sub.o $(MPICOMM).o general.o sub.o
 #$(TIMEAVG).o:         $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local
 $(TIMEAVG).o:      timeavg.h        $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o
