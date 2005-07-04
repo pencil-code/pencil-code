@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.13 2005-07-01 04:58:27 mee Exp $
+! $Id: eos_idealgas.f90,v 1.14 2005-07-04 12:45:31 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -15,6 +15,7 @@ module EquationOfState
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -71,12 +72,11 @@ module EquationOfState
 !  14-jun-03/axel: adapted from register_eos
 !
       use Cdata
-      use Mpicomm, only: stop_it
       use Sub
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_eos called twice')
+      if (.not. first) call fatal_error('register_eos','module registration called twice')
       first = .false.
 !
       leos=.true.
@@ -92,13 +92,13 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.13 2005-07-01 04:58:27 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.14 2005-07-04 12:45:31 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('Register_eos: naux > maux')
+        call fatal_error('register_eos','naux > maux')
       endif
 !
     endsubroutine register_eos
@@ -247,7 +247,6 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
@@ -267,6 +266,17 @@ module EquationOfState
       else
         cs2=cs20*exp(gamma*cp1*ss+gamma1*(lnrho-lnrho0))
       endif
+!! Actual pressure gradient calculation:
+!!          do j=1,3
+!!            ju=j+iuu-1
+!!            if (pretend_lnTT) then
+!!              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
+!!                  p%cs2*(p%glnrho(:,j)/gamma + p%cp1tilde*p%gss(:,j))
+!!            else
+!!              df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
+!!                  p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
+!!            endif
+!!           enddo
 !
 !  inverse cp (will be different from 1 when cp is not 1)
 !
@@ -283,7 +293,6 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
@@ -308,13 +317,12 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
-      if (gamma1==0.) call stop_it('temperature_gradient: gamma=1 not allowed w/entropy')
+      if (gamma1==0.) call fatal_error('temperature_gradient','gamma=1 not allowed w/entropy')
 !
 !  pretend_lnTT
 !
@@ -336,13 +344,12 @@ module EquationOfState
 !   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3), intent(out) :: hlnTT
 !
-      if (gamma1==0.) call stop_it('temperature_hessian: gamma=1 not allowed w/entropy')
+      if (gamma1==0.) call fatal_error('temperature_hessian','gamma=1 not allowed w/entropy')
 !
 !  pretend_lnTT
 !
@@ -367,7 +374,6 @@ module EquationOfState
 !
       use Cdata
       use Sub, only: max_mn_name, sum_mn_name
-      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       integer, intent(in) :: psize
@@ -384,11 +390,11 @@ module EquationOfState
         lnrho=f(:,m,n,ilnrho)
         if (lentropy) then; ss=f(  :  ,m,n,iss); else; ss=0; endif
       case default
-        call stop_it("eoscalc: no such pencil size")
+        call fatal_error('eoscalc_farray','no such pencil size')
 
       end select
 
-      if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
+      if (gamma1==0.) call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
       if (present(yH)) yH=impossible
 !
 !  pretend_lnTT
@@ -405,17 +411,17 @@ module EquationOfState
       else
         lnTT_=lnTT0+gamma*cp1*ss+gamma1*(lnrho-lnrho0)
         if (gamma1==0.) &
-            call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
+            call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) &
-            ee=cs20/(gamma1*gamma)*exp(gamma*cp1*ss+gamma1*(lnrho-lnrho0))
+            ee=cp/gamma*exp(lnTT_)
         if (present(pp)) &
-            pp=cs20/gamma*exp(gamma*cp1*ss+gamma*lnrho-gamma1*lnrho0)
+            pp=gamma1*cp/gamma*exp(lnTT_+lnrho)
       endif
 !
       if (present(lnchi)) then
         lnchi=0
-        call stop_it("eoscalc: sorry, no Hminus opacity with noionization")
+        call fatal_error("eoscalc","sorry, no Hminus opacity with noionization")
       endif
 !
     endsubroutine eoscalc_farray
@@ -431,7 +437,6 @@ module EquationOfState
 !                   subroutine pressure_gradient
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
@@ -440,7 +445,7 @@ module EquationOfState
       real, intent(out), optional :: ee,pp
       real :: lnrho_,ss_,lnTT_,ee_,pp_
 !
-      if (gamma1==0.) call stop_it('eoscalc_point: gamma=1 not allowed w/entropy')
+      if (gamma1==0.) call fatal_error('eoscalc_point','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 
@@ -454,20 +459,26 @@ module EquationOfState
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
-        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
+        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
         lnTT_=log(gamma*cp1*ee_)
         pp_=ee_*exp(lnrho_)*gamma1
 
       case (ilnrho_pp)
-        call stop_it('eoscalc_point: NOT IMPLEMENTED IN EOS_IDEALGAS')
         lnrho_=var1
         pp_=var2
-        lnTT_=1
-        ss_=0
-        ee_=0
+        ss_=(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
+        ee_=pp_*exp(-lnrho_)/gamma1
+        lnTT_=log(gamma*cp1*ee_)
+
+      case (ilnrho_lnTT)
+        lnrho_=var1
+        lnTT_=var2
+        ss_=(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))*cp/gamma  
+        ee_=exp(lnTT_)*cp/gamma 
+        pp_=ee_*exp(lnrho_)*gamma1
 
       case default 
-        call stop_it('eoscalc_point: thermodynamic case')
+        call not_implemented('eoscalc_point')
       end select
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -490,7 +501,6 @@ module EquationOfState
 !                   subroutine pressure_gradient
 !
       use Cdata
-      use Mpicomm, only: stop_it
 !
       integer, intent(in) :: ivars
       real, dimension(nx), intent(in) :: var1,var2
@@ -499,16 +509,14 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: ee,pp
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_
 !
-      if (gamma1==0.) call stop_it('eoscalc_pencil: gamma=1 not allowed w/entropy')
-!
-
+      if (gamma1==0.) call fatal_error('eoscalc_pencil','gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 
       case (ilnrho_ss)
         lnrho_=var1
         ss_=var2
-        lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
+        lnTT_=lnTT0+gamma*cp1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cs20*exp(gamma*cp1*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
         pp_=ee_*exp(lnrho_)*gamma1
 
@@ -522,8 +530,8 @@ module EquationOfState
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-        ss_=(log(pp_/exp(lnrho)*gamma/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
-        ee_=gamma*gamma1*pp_/exp(lnrho_)
+        ss_=(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
+        ee_=pp_*exp(-lnrho_)/gamma1
         lnTT_=log(gamma*cp1*ee_)
 
       case (ilnrho_lnTT)
@@ -533,7 +541,7 @@ module EquationOfState
         ee_=exp(lnTT_)*cp/gamma 
         pp_=ee_*exp(lnrho_)*gamma1
       case default 
-        call stop_it('eoscalc_pencil: thermodynamic case')
+        call not_implemented('eoscalc_pencil')
       end select
 !
       if (present(lnrho)) lnrho=lnrho_
@@ -551,12 +559,10 @@ module EquationOfState
 !
 !  31-mar-04/tony: dummy created
 !
-   use Mpicomm, only: stop_it
-
    real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
    real, dimension(mx,my,mz), intent(out) :: lnchi,Srad
 
-   call stop_it('radcalc: NOT IMPLEMENTED')
+   call not_implemented('radcalc')
    lnchi=0.
    Srad=0.
    if (NO_WARN) print*,f
@@ -570,13 +576,12 @@ module EquationOfState
 !
 !  31-mar-04/tony: dummy created
 !
-      use Mpicomm, only: stop_it
 
       integer, intent(in) :: radz0,nrad
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(mx,my,radz0), intent(out) :: H_xy
 !
-      call stop_it('scale_height_xy: NOT IMPLEMENTED')
+      call not_implemented('scale_height_xy')
       H_xy=0.
       if (NO_WARN) print*,f,radz0,nrad
 !
@@ -700,12 +705,10 @@ module EquationOfState
 !
 !  03-apr-2004/tobi: coded
 !
-      use Mpicomm, only: stop_it
-
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(mx,my,mz), intent(out) :: lnchi
 
-      call stop_it("opacity_type='Hminus' may not be used with noionization")
+      call fatal_error('Hminus_opacity',"opacity_type='Hminus' may not be used with noionization")
 
       if (NO_WARN) then
         lnchi=0
@@ -724,7 +727,6 @@ module EquationOfState
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -806,8 +808,7 @@ module EquationOfState
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
         enddo
       case default
-        print*,'bc_ss_flux: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_flux','invalid argument')
       endselect
 !
     endsubroutine bc_ss_flux
@@ -822,7 +823,6 @@ module EquationOfState
 !  23-jun-2003/tony: implemented for leos_fixed_ionization
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -847,7 +847,7 @@ module EquationOfState
 !
       case('bot')
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
-          call stop_it('bc_ss_temp_old: Inconsistent boundary conditions 3.')
+          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) &
@@ -864,13 +864,13 @@ module EquationOfState
 !
       case('top')
         if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
-          call stop_it('bc_ss_temp_old: Inconsistent boundary conditions 3.')
+          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                    'bc_ss_temp_old: set top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_old: cannot have cs2top<=0'
   !     if (bcz1(ilnrho) /= 'a2') &
-  !          call stop_it('BOUNDCONDS: Inconsistent boundary conditions 4.')
+  !          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 4.')
         tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
                  + log(cs2top/cs20)) / gamma
         f(:,:,n2,iss) = tmp_xy
@@ -878,8 +878,7 @@ module EquationOfState
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
         enddo 
       case default
-        print*,'bc_ss_temp_old: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_temp_old','invalid argument')
       endselect
 !
     endsubroutine bc_ss_temp_old
@@ -891,7 +890,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -940,8 +938,7 @@ module EquationOfState
         enddo
 
       case default
-        print*,'bc_ss_temp_x: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_temp_x','invalid argument')
       endselect
 !
     endsubroutine bc_ss_temp_x
@@ -953,7 +950,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -1002,8 +998,7 @@ module EquationOfState
         enddo
 
       case default
-        print*,'bc_ss_temp_y: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_temp_y','invalid argument')
       endselect
 !
     endsubroutine bc_ss_temp_y
@@ -1015,7 +1010,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -1062,8 +1056,7 @@ module EquationOfState
                - gamma1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
         enddo
       case default
-        print*,'bc_ss_temp_z: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_temp_z','invalid argument')
       endselect
 !
     endsubroutine bc_ss_temp_z
@@ -1075,7 +1068,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -1120,8 +1112,7 @@ module EquationOfState
                - gamma1/gamma*(f(:,:,n2+i,ilnrho)-lnrho0)
         enddo
       case default
-        print*,'bc_ss_temp2_z: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_temp2_z','invalid argument')
       endselect
 !
     endsubroutine bc_ss_temp2_z
@@ -1133,7 +1124,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -1172,8 +1162,7 @@ module EquationOfState
         enddo
 
       case default
-        print*,'bc_ss_stemp_x: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_stemp_x','invalid argument')
       endselect
 !
     endsubroutine bc_ss_stemp_x
@@ -1185,7 +1174,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -1224,8 +1212,7 @@ module EquationOfState
         enddo
 
       case default
-        print*,'bc_ss_stemp_y: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_stemp_y','invalid argument')
       endselect
 !
 
@@ -1238,7 +1225,6 @@ module EquationOfState
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
@@ -1276,8 +1262,7 @@ module EquationOfState
                 + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
          enddo
       case default
-        print*,'bc_ss_stemp_z: invalid argument'
-        call stop_it('')
+        call fatal_error('bc_ss_stemp_z','invalid argument')
       endselect
 !
     endsubroutine bc_ss_stemp_z
@@ -1290,7 +1275,6 @@ module EquationOfState
 !  11-jul-2002/nils: moved into the entropy module
 !  26-aug-2003/tony: distributed across ionization modules
 !
-      use Mpicomm, only: stop_it
       use Cdata
 !
       character (len=3) :: topbot
@@ -1330,8 +1314,7 @@ module EquationOfState
               +log(cs2_2d))
       enddo
     case default
-      print*,'bc_ss_energy: invalid argument'
-      call stop_it('')
+      call fatal_error('bc_ss_energy','invalid argument')
     endselect
 
     end subroutine bc_ss_energy
