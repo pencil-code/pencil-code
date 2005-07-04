@@ -1,16 +1,16 @@
-#!/bin/csh
-#  $Id: x,v 1.9 2005-06-26 17:34:17 eos_merger_tony Exp $
+#!/bin/sh
+#  $Id: x,v 1.10 2005-07-04 15:04:07 mee Exp $
 #
 #  The script prints the header (legend) and the
 #  last few lines of the time_series.dat file.
 #
 echo ""
 cat data/legend.dat
-tail data/time_series.dat |grep -v "#"
+tail data/time_series.dat | grep -v "#"
 #
 #  This script also appends the last line of the time_series.dat file at
 #  this moment to the SPEED file. It is called that way because it allows
 #  you, among other things, to assess easily the speed of the simulation.
 #
-if (-f data/proc0/alive.info) cat data/proc0/alive.info >> SPEED
+[ -f data/proc0/alive.info ] && cat data/proc0/alive.info >> SPEED
 (date; tail -1 data/time_series.dat;echo "") >>SPEED
