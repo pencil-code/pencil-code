@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.5 2005-06-29 04:49:20 dobler Exp $
+# CVS: $Id: mkcparam,v 1.6 2005-07-04 15:06:36 mee Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -257,7 +257,7 @@ open(OUT_PENC_INIT, "> pencil_init.inc") or die "Can't open pencil_init.inc
 file: foreach my $infile (@ARGV) {
 # Now extract `?VAR CONTRIBUTION' info from each file
     unless (open(INPUT,"< $infile")) {
-	warn "Can't open $infile for reading";
+	die "Can't open $infile for reading";
 	next file;
     }
 # Cycle through all lines up to first non-empty non-comment line in file
