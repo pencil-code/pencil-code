@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.39 2005-06-27 00:14:19 mee Exp $
+! $Id: nohydro.f90,v 1.40 2005-07-05 13:56:38 weezy Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -75,7 +75,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.39 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nohydro.f90,v 1.40 2005-07-05 13:56:38 weezy Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -94,7 +94,7 @@ module Hydro
       if (kinflow=='KS') then
         call random_isotropic_KS_setup(-5./3.,1.,(nx-1.)/2)
       endif
-!
+! 
       if (ip == 0) print*,f,lstarting  !(keep compiler quiet)
 !
     endsubroutine initialize_hydro
@@ -216,6 +216,7 @@ module Hydro
         p%uu(:,1)=-cos(kx_aa*x(l1:l2))*sin(ky_aa*y(m))
         p%uu(:,2)=+sin(kx_aa*x(l1:l2))*cos(ky_aa*y(m))
         p%uu(:,3)=+cos(kx_aa*x(l1:l2))*cos(ky_aa*y(m))*sqrt(2.)
+!
       elseif (kinflow=='KS') then
         p%uu=0.
         do modeN=1,KS_modes  ! sum over KS_modes modes
@@ -339,9 +340,9 @@ module Hydro
 !
 !  set kmin
 !
-!    kmin=2.*pi/Lxyz(1)
-       kmin=kmin*2.*pi
-       kmax=kmax*2.*pi
+       kmin=2.*pi/Lxyz(1)
+!       kmin=kmin*2.*pi
+       kmax=nx*pi
        a=(kmax/kmin)**(1./(KS_modes-1.))
 
 !       
@@ -354,10 +355,13 @@ module Hydro
 !
 !  calculate dk
 !
+!       print *,kmin,kmax,k
 !       dk=1.0*kmin
        if(modeN==1)dk=kmin*(a-1.)/2
        if(modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2))*kmin*((a**2) -1.)/2.
        if(modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
+
+!      print *,dk  !this has been checked and the dks are exactly right!
 !
 !   pick 4 random angles for each mode
 !         
@@ -376,7 +380,9 @@ module Hydro
        k_unit(2)=sin(theta)*sin(phi)
        k_unit(3)=cos(theta)
 
-       energy=((1. + (k/kmin)**2)**(-11/6))*(k**2)*exp((-0.5*k/kmax)**2)
+!       energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.)*exp(-0.5*(k/kmax)**2.)
+       energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.)*exp(-0.5*(k/kmax)**2.)
+
 !
 !   make a vector KS_k of length k from the unit vector for each mode
 !
@@ -406,7 +412,7 @@ module Hydro
 !   define the power spectrum (ps=sqrt(2.*power_spectrum(k)*delta_k/3.))
 !
 !       ps=(k**(initpower/2.))*sqrt(dk*2./3.)
-       ps=sqrt(2.*energy*dk) !the factor of 2 just after the sqrt may need to be 2./3.
+       ps=sqrt(2.*energy*dk/3.0) !the factor of 2 just after the sqrt may need to be 2./3.
 !
 !   give KS_A and KS_B length ps
 !   
