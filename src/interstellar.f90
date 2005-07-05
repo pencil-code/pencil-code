@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.106 2005-07-05 16:21:42 mee Exp $
+! $Id: interstellar.f90,v 1.107 2005-07-05 16:56:02 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -260,7 +260,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.106 2005-07-05 16:21:42 mee Exp $")
+           "$Id: interstellar.f90,v 1.107 2005-07-05 16:56:02 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -408,6 +408,8 @@ module Interstellar
 !
 !  Read in the stored time of the next SNI
 !
+      use Cdata, only: lroot
+!
       integer :: id,lun
       logical :: done
 !
@@ -415,7 +417,7 @@ module Interstellar
         read (lun) t_next_SNI
         done=.true.
       endif
-      print*,'input_persistent_interstellar: ', t_next_SNI
+      if (lroot) print*,'input_persistent_interstellar: ', t_next_SNI
 !
     endsubroutine input_persistent_interstellar
 !***********************************************************************
@@ -423,10 +425,11 @@ module Interstellar
 !
 !  Writes out the time of the next SNI
 !
+      use Cdata, only: lroot
 !
       integer :: lun
 !
-      print*,'output_persistent_interstellar: ', t_next_SNI
+      if (lroot) print*,'output_persistent_interstellar: ', t_next_SNI
       write (lun) id_record_T_NEXT_SN
       write (lun) t_next_SNI
 !
