@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.4 2005-06-29 12:43:48 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.5 2005-07-05 16:21:43 mee Exp $
 !
 !  This module takes care of everything related to tracer particles
 !
@@ -16,6 +16,7 @@ module Particles
 
   use Cdata
   use Particles_sub
+  use Messages
 
   implicit none
 
@@ -196,7 +197,6 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Mpicomm, only: stop_it
-      use Sub, only: cvs_id
 !
       logical, save :: first=.true.
 !
@@ -204,7 +204,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.4 2005-06-29 12:43:48 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.5 2005-07-05 16:21:43 mee Exp $")
 !
 !  Indices for particle position.
 !

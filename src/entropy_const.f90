@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.7 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: entropy_const.f90,v 1.8 2005-07-05 16:21:42 mee Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -25,6 +25,7 @@ module Entropy
 
   use Cparam
   use Cdata
+  use Messages
   use Hydro
 
   implicit none
@@ -79,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.7 2005-06-26 17:34:12 eos_merger_tony Exp $")
+           "$Id: entropy_const.f90,v 1.8 2005-07-05 16:21:42 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

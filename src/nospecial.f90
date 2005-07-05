@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.10 2005-06-27 00:14:19 mee Exp $
+! $Id: nospecial.f90,v 1.11 2005-07-05 16:21:43 mee Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -73,6 +73,7 @@ module Special
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -109,7 +110,6 @@ module Special
 !
       use Cdata
       use Mpicomm
-      use Sub, only: cvs_id
 !
       logical, save :: first=.true.
 !
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.10 2005-06-27 00:14:19 mee Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.11 2005-07-05 16:21:43 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.10 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nospecial.f90,v 1.11 2005-07-05 16:21:43 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 

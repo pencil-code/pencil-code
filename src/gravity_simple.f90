@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.4 2005-06-27 20:46:39 brandenb Exp $
+! $Id: gravity_simple.f90,v 1.5 2005-07-05 16:21:42 mee Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -23,6 +23,7 @@ module Gravity
 
   use Cdata
   use Cparam
+  use Messages
 
   implicit none
 
@@ -94,7 +95,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.4 2005-06-27 20:46:39 brandenb Exp $")
+           "$Id: gravity_simple.f90,v 1.5 2005-07-05 16:21:42 mee Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !

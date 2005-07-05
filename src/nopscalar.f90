@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.18 2005-06-27 00:14:19 mee Exp $
+! $Id: nopscalar.f90,v 1.19 2005-07-05 16:21:43 mee Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -16,6 +16,7 @@ module Pscalar
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -53,7 +54,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.18 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nopscalar.f90,v 1.19 2005-07-05 16:21:43 mee Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************

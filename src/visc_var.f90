@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.29 2005-06-27 00:14:19 mee Exp $
+! $Id: visc_var.f90,v 1.30 2005-07-05 16:21:43 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -18,6 +18,7 @@ module Viscosity
 
   use Cparam
   use Cdata
+  use Messages
   use Density
 
   implicit none
@@ -64,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.29 2005-06-27 00:14:19 mee Exp $")
+           "$Id: visc_var.f90,v 1.30 2005-07-05 16:21:43 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved

@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.17 2005-06-27 00:14:19 mee Exp $
+! $Id: nointerstellar.f90,v 1.18 2005-07-05 16:21:43 mee Exp $
 !
 !  Dummy module
 !
@@ -14,6 +14,7 @@ module Interstellar
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -41,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.17 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.18 2005-07-05 16:21:43 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

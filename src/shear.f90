@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.24 2005-06-27 00:14:19 mee Exp $
+! $Id: shear.f90,v 1.25 2005-07-05 16:21:43 mee Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -11,6 +11,7 @@ module Shear
 
   use Sub
   use Cdata
+  use Messages
 
   implicit none
 
@@ -45,7 +46,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.24 2005-06-27 00:14:19 mee Exp $")
+           "$Id: shear.f90,v 1.25 2005-07-05 16:21:43 mee Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.105 2005-06-28 06:04:02 dobler Exp $
+! $Id: interstellar.f90,v 1.106 2005-07-05 16:21:42 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -15,6 +15,7 @@ module Interstellar
 !
   use Cparam !, only: nx,labellen,impossible
 !  use Cdata, only: ilnrho,iss,ip,x,y,z
+  use Messages
 !
   implicit none
 !
@@ -246,7 +247,6 @@ module Interstellar
 !
       use Cdata, only: linterstellar,ip,nvar,lroot !,mvar,nvar
       use Mpicomm, only: stop_it
-      use Sub, only: cvs_id
 !
       logical, save :: first=.true.
 !
@@ -260,7 +260,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.105 2005-06-28 06:04:02 dobler Exp $")
+           "$Id: interstellar.f90,v 1.106 2005-07-05 16:21:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.75 2005-06-27 00:14:18 mee Exp $
+! $Id: forcing.f90,v 1.76 2005-07-05 16:21:42 mee Exp $
 
 module Forcing
 
@@ -7,6 +7,7 @@ module Forcing
 
   use Cdata
   use General
+  use Messages
 
   implicit none
 
@@ -63,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.75 2005-06-27 00:14:18 mee Exp $")
+           "$Id: forcing.f90,v 1.76 2005-07-05 16:21:42 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************

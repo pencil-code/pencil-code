@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.18 2005-06-27 00:14:19 mee Exp $
+! $Id: temperature.f90,v 1.19 2005-07-05 16:21:43 mee Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -18,6 +18,7 @@ module Entropy
 
   use Cparam
   use Cdata
+  use Messages
   use Hydro
   use Interstellar
   use Viscosity
@@ -92,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.18 2005-06-27 00:14:19 mee Exp $")
+           "$Id: temperature.f90,v 1.19 2005-07-05 16:21:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

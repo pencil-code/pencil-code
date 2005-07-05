@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.15 2005-06-27 16:34:11 mee Exp $
+! $Id: radiation_ray_periodic.f90,v 1.16 2005-07-05 16:21:43 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -20,6 +20,7 @@ module Radiation
 !  steps of the direction vector in the corresponding direction.
 
   use Cparam
+  use Messages
 !
   implicit none
 !
@@ -87,7 +88,6 @@ module Radiation
 !
       use Cdata, only: iQrad,nvar,naux,aux_var,aux_count,lroot,varname
       use Cdata, only: lradiation,lradiation_ray
-      use Sub, only: cvs_id
       use Mpicomm, only: stop_it
 !
       logical, save :: first=.true.
@@ -117,7 +117,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.15 2005-06-27 16:34:11 mee Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.16 2005-07-05 16:21:43 mee Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !

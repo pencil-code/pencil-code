@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.18 2005-06-29 06:46:14 dobler Exp $
+! $Id: testfield.f90,v 1.19 2005-07-05 16:21:43 mee Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -17,6 +17,7 @@
 module Testfield
 
   use Cparam
+  use Messages
 
   implicit none
 
@@ -105,7 +106,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.18 2005-06-29 06:46:14 dobler Exp $")
+           "$Id: testfield.f90,v 1.19 2005-07-05 16:21:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

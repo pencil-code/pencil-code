@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.32 2005-06-27 00:14:19 mee Exp $
+! $Id: io_mpio.f90,v 1.33 2005-07-05 16:21:42 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -19,6 +19,7 @@
 module Io
 
   use Cdata
+  use Messages
 
   implicit none
 
@@ -112,7 +113,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.32 2005-06-27 00:14:19 mee Exp $")
+           "$Id: io_mpio.f90,v 1.33 2005-07-05 16:21:42 mee Exp $")
 !
 !  consistency check
 !

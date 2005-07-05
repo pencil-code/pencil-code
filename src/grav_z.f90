@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.70 2005-06-27 00:14:18 mee Exp $
+! $Id: grav_z.f90,v 1.71 2005-07-05 16:21:42 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -17,6 +17,7 @@ module Gravity
 
   use Cdata
   use Cparam
+  use Messages
 
   implicit none
 
@@ -110,7 +111,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.70 2005-06-27 00:14:18 mee Exp $")
+           "$Id: grav_z.f90,v 1.71 2005-07-05 16:21:42 mee Exp $")
 !
       lgrav =.true.
       lgravz=.true.

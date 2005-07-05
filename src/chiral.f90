@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.7 2005-06-27 00:14:18 mee Exp $
+! $Id: chiral.f90,v 1.8 2005-07-05 16:21:42 mee Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -17,6 +17,7 @@ module Chiral
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -88,7 +89,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.7 2005-06-27 00:14:18 mee Exp $")
+           "$Id: chiral.f90,v 1.8 2005-07-05 16:21:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
+! $Id: viscosity.f90,v 1.4 2005-07-05 16:21:43 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -18,6 +18,7 @@ module Viscosity
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -75,7 +76,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
+           "$Id: viscosity.f90,v 1.4 2005-07-05 16:21:43 mee Exp $")
 
       ivisc(1)='nu-const'
 

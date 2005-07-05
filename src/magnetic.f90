@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.245 2005-06-27 17:31:44 dobler Exp $
+! $Id: magnetic.f90,v 1.246 2005-07-05 16:21:42 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -25,6 +25,7 @@
 module Magnetic
 
   use Cparam
+  use Messages
 
   implicit none
 
@@ -166,7 +167,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.245 2005-06-27 17:31:44 dobler Exp $")
+           "$Id: magnetic.f90,v 1.246 2005-07-05 16:21:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

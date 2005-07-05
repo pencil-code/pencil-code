@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.5 2005-06-30 09:07:12 ajohan Exp $
+! $Id: eos_fixed_ionization.f90,v 1.6 2005-07-05 16:21:42 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -17,6 +17,7 @@ module EquationOfState
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -101,7 +102,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.5 2005-06-30 09:07:12 ajohan Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.6 2005-07-05 16:21:42 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

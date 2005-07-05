@@ -1,4 +1,4 @@
-! $Id: special_sample.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
+! $Id: special_sample.f90,v 1.4 2005-07-05 16:21:43 mee Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -17,6 +17,7 @@ module Special
 
   use Cparam
   use Cdata
+  use Messages
 
   implicit none
 
@@ -73,7 +74,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
+           "$Id: special_sample.f90,v 1.4 2005-07-05 16:21:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

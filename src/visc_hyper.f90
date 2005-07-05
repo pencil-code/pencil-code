@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.18 2005-06-27 00:14:19 mee Exp $
+! $Id: visc_hyper.f90,v 1.19 2005-07-05 16:21:43 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -18,6 +18,7 @@ module Viscosity
 
   use Cparam
   use Cdata
+  use Messages
   use Density
 
   implicit none
@@ -70,7 +71,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.18 2005-06-27 00:14:19 mee Exp $")
+           "$Id: visc_hyper.f90,v 1.19 2005-07-05 16:21:43 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.3 2005-06-27 00:14:18 mee Exp $
+! $Id: cosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $
 
 !  Cosmic Ray Flux
 !  
@@ -19,6 +19,7 @@
 module Cosmicrayflux
 
   use Cparam
+  use Messages
 
   implicit none
 
@@ -78,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.3 2005-06-27 00:14:18 mee Exp $")
+           "$Id: cosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

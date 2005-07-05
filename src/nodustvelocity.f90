@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.26 2005-06-27 00:14:19 mee Exp $
+! $Id: nodustvelocity.f90,v 1.27 2005-07-05 16:21:42 mee Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -15,6 +15,7 @@
 module Dustvelocity
 
   use Cparam
+  use Messages
 
   implicit none
 
@@ -59,7 +60,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.26 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nodustvelocity.f90,v 1.27 2005-07-05 16:21:42 mee Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************

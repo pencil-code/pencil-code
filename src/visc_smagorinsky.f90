@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.6 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: visc_smagorinsky.f90,v 1.7 2005-07-05 16:21:43 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -18,6 +18,7 @@ module Viscosity
 
   use Cparam
   use Cdata
+  use Messages
   use Density
 
   implicit none
@@ -68,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.6 2005-06-26 17:34:13 eos_merger_tony Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.7 2005-07-05 16:21:43 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

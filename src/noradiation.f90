@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.27 2005-06-27 00:14:19 mee Exp $
+! $Id: noradiation.f90,v 1.28 2005-07-05 16:21:43 mee Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -13,6 +13,7 @@
 module Radiation
 
   use Cparam
+  use Messages
 
   implicit none
 
@@ -47,7 +48,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.27 2005-06-27 00:14:19 mee Exp $")
+           "$Id: noradiation.f90,v 1.28 2005-07-05 16:21:43 mee Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************

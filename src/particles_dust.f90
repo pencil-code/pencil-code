@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.5 2005-07-02 14:17:52 ajohan Exp $
+! $Id: particles_dust.f90,v 1.6 2005-07-05 16:21:43 mee Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -16,6 +16,7 @@ module Particles
 
   use Cdata
   use Particles_sub
+  use Messages
 
   implicit none
 
@@ -207,7 +208,6 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Mpicomm, only: stop_it
-      use Sub, only: cvs_id
 !
       logical, save :: first=.true.
 !
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.5 2005-07-02 14:17:52 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.6 2005-07-05 16:21:43 mee Exp $")
 !
 !  Indices for particle position.
 !

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.210 2005-06-27 22:20:51 brandenb Exp $ 
+! $Id: sub.f90,v 1.211 2005-07-05 16:21:43 mee Exp $ 
 
 module Sub 
 
@@ -6,7 +6,6 @@ module Sub
 
   private
 
-  public :: cvs_id
   public :: step,calc_unitvects_sphere
 
   public :: identify_bcs, parse_bc, parse_bc_rad
@@ -148,10 +147,6 @@ module Sub
     module procedure multmv_mn
   endinterface
 
-  interface cvs_id              ! Overload the cvs_id function
-    module procedure cvs_id_1
-    module procedure cvs_id_3
-  endinterface
 
   interface max_for_dt
     module procedure max_for_dt_nx_nx
@@ -2427,97 +2422,6 @@ module Sub
       write(lun,*) t,fmax
 !
     endsubroutine wmax
-!***********************************************************************
-    subroutine cvs_id_1(cvsid)
-!
-!  print CVS Revision info in a compact, yet structured form
-!  Expects the standard CVS Id: line as argument
-!  25-jun-02/wolf: coded
-!
-      character (len=*) :: cvsid
-      character (len=20) :: rcsfile, revision, author, date
-      character (len=200) :: fmt
-      character (len=20) :: tmp1,tmp2,tmp3,tmp4
-      integer :: ir0,ir1,iv0,iv1,id0,id2,ia0,ia1
-      integer :: rw=18, vw=12, aw=10, dw=19 ! width of individual fields
-
-      !
-      !  rcs file name
-      !
-      ir0 = index(cvsid, ":") + 2
-      ir1 = ir0 + index(cvsid(ir0+1:), ",") - 1
-      rcsfile = cvsid(ir0:ir1)
-      !
-      !  version number
-      !
-      iv0 = ir1 + 4
-      iv1 = iv0 + index(cvsid(iv0+1:), " ") - 1
-      revision = cvsid(iv0:iv1)
-      !
-      !  date
-      !
-      id0 = iv1 + 2             ! first char of date
-      ! id1 = iv1 + 12            ! position of space
-      id2 = iv1 + 20            ! last char of time
-      date = cvsid(id0:id2)
-      !
-      !  author
-      !
-      ia0 = id2 + 2
-      ia1 = ia0 + index(cvsid(ia0+1:), " ") - 1
-      author = cvsid(ia0:ia1)
-      !
-      !  constuct format
-      !
-      write(tmp1,*) rw
-      write(tmp2,*) 6+rw
-      write(tmp3,*) 6+rw+4+vw
-      write(tmp4,*) 6+rw+4+vw+2+aw
-!      fmt = '(A, A' // trim(adjustl(tmp1)) &
-      fmt = '(A, A' &
-           // ', T' // trim(adjustl(tmp2)) &
-           // ', " v. ", A, T' // trim(adjustl(tmp3)) &
-           // ', " (", A, T' // trim(adjustl(tmp4)) &
-           // ', ") ", A)'
-      !
-      !  write string
-      !
-      if (index(cvsid, "$") == 1) then ! starts with `$' --> CVS line
-        write(*,fmt) "CVS: ", &
-             trim(rcsfile), &
-             revision(1:vw), &
-             author(1:aw), &
-             date(1:dw)
-      else                      ! not a CVS line; maybe `[No ID given]'
-        write(*,fmt) "CVS: ", &
-             '???????', &
-             '', &
-             '', &
-             cvsid(1:dw)
-      endif
-      !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
-      !write(*,'(A)') '         1         2         3         4         5'
-!
-    endsubroutine cvs_id_1
-!***********************************************************************
-    subroutine cvs_id_3(rcsfile, revision, date)
-!
-!  print CVS revision info in a compact, yet structured form
-!  Old version: expects filename, version and date as three separate arguments
-!  17-jan-02/wolf: coded
-!
-      character (len=*) :: rcsfile, revision, date
-      integer :: rcsflen, revlen, datelen
-
-      rcsflen=len(rcsfile)
-      revlen =len(revision)
-      datelen=len(date)
-      write(*,'(A,A,T28," version ",A,T50," of ",A)') "CVS: ", &
-           rcsfile(10:rcsflen-4), &
-           revision(12:revlen-1), &
-           date(8:datelen-1)
-!
-    endsubroutine cvs_id_3
 !***********************************************************************
     subroutine identify_bcs(varname_input,idx)
 !

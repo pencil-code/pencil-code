@@ -1,4 +1,4 @@
-! $Id: nocosmicrayflux.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
+! $Id: nocosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -15,6 +15,7 @@
 module Cosmicrayflux
 
   use Cparam
+  use Messages
 
   implicit none
 
@@ -36,7 +37,7 @@ module Cosmicrayflux
       first = .false.
 
       if (lroot) call cvs_id( &
-           "$Id: nocosmicrayflux.f90,v 1.3 2005-06-27 00:14:19 mee Exp $")
+           "$Id: nocosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $")
 
     endsubroutine register_cosmicrayflux
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.85 2005-06-27 00:14:19 mee Exp $
+! $Id: io_dist.f90,v 1.86 2005-07-05 16:21:42 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -17,6 +17,7 @@
 
 module Io
 
+  use Messages
   implicit none
 
   include 'io.h'
@@ -92,7 +93,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.85 2005-06-27 00:14:19 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.86 2005-07-05 16:21:42 mee Exp $")
 !
     endsubroutine register_io
 !

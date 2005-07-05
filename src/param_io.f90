@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.203 2005-07-01 02:56:08 mee Exp $ 
+! $Id: param_io.f90,v 1.204 2005-07-05 16:21:43 mee Exp $ 
 
 module Param_IO
 
@@ -33,6 +33,7 @@ module Param_IO
   use Special
   use Particles
   use Shock
+  use Messages
  
   implicit none 
 
