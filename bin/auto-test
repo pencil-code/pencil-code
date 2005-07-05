@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.54 2005-06-29 14:27:20 ajohan Exp $
+# CVS: $Id: auto-test,v 1.55 2005-07-05 22:48:12 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -82,7 +82,8 @@ Options:
   -n,  --norun          \tTest compilation and starting only
   -l,  --list           \tList test directories (don't run any tests)
   -t,  --time           \tPrint CPU time used
-       --jobs=n         \tPass through -j option to make
+  -j,  --jobs=n         \tPass through -j option to make
+  -d,  --datadir        \tUse mkdir if data/ is needed, don't link to /var/tmp
   -s,  --short          \tPrint short directory names only
   -p,  --postproc=PP    \tApply postprocessor PP to output from make
   --rsh=RSH-PROG        \tUse the specified program as to get a remote shell
@@ -96,42 +97,49 @@ GetOptions(\%opts,
 	       -v   --version
 	            --debug
 	       -C   --clean
-           -c   --compile-only
+	       -c   --compile-only
 	       -n   --norun
 	       -l   --list
 	       -t   --time
+	       -N=s --nice=s
+	       -j=n --jobs=n
+	       -d   --datadir
 	       -s   --short
-                --no-summary
-                --datadir
-	       -j=n   
+	            --no-summary
 	       -p=s --postproc=s
-                    --nodelist=s
                     --rsh=s
-                             ));
+                    --nodelist=s
+	       ));
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.54 2005-06-29 14:27:20 ajohan Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.55 2005-07-05 22:48:12 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
-my $debug     = (              $opts{'debug'}    || 0 );
-my $short     = ($opts{'s'} || $opts{'short'}    || 0 );
-my $list_only = ($opts{'l'} || $opts{'list'}     || 0 );
-my $time      = ($opts{'t'} || $opts{'time'}     || 0 );
-my $clean     = ($opts{'C'} || $opts{'clean'}    || 0 );
-my $postproc  = ($opts{'p'} || $opts{'postproc'} || '');
-my $makejobs  = ($opts{'j'} || 0);
-my $nodelist  = ($opts{'nodelist'} || 0);
-my $nosummary = ($opts{'no-summary'} || 0);
-my $RSH       = ($opts{'rsh'} || 'ssh');
-my $makeopts  = '';
-my $datadir   = ($opts{'datadir'} || 0);
+my $debug     = (              $opts{'debug'}      || 0    );
+my $clean     = ($opts{'C'} || $opts{'clean'}      || 0    );
+my $list_only = ($opts{'l'} || $opts{'list'}       || 0    );
+my $time      = ($opts{'t'} || $opts{'time'}       || 0    );
+my $niceval   = ($opts{'N'} || $opts{'nice'}       || 0    );
+my $makejobs  = ($opts{'j'} || $opts{'jobs'}       || 0    );
+my $datadir   = ($opts{'d'} || $opts{'datadir'}    || 0    );
+my $short     = ($opts{'s'} || $opts{'short'}      || 0    );
+my $nosummary = (              $opts{'no-summary'} || 0    );
+my $postproc  = ($opts{'p'} || $opts{'postproc'}   || ''   );
+my $RSH       = (              $opts{'rsh'}        || 'ssh');
+my $nodelist  = (              $opts{'nodelist'}   || 0    );
 
 my @exit_status=('setting up directory','cleaning up','compilation','starting','running','results');
 
-if ($makejobs) { $makeopts="-j $makejobs"; }
+my $makeopts  = '';
+if ($makejobs) { $makeopts = "-j $makejobs"; }
+
+my $nice="";
+if ($niceval != 0) { $nice = "\\nice -n $niceval" };
+# Note: Csh's builtin `nice' cmd has a different calling syntax, so we
+# need to use ther real nice cmd here.
 
 ## Debugging output:
 if ($debug) {
@@ -148,8 +156,8 @@ if ($debug) {
 # $t_comp .. $t_res form a hierarchy: We can't test running without
 # compiling and starting
 $t_start &&= $t_comp;
-$t_run &&= $t_start;
-$t_res &&= $t_run;
+$t_run   &&= $t_start;
+$t_res   &&= $t_run;
 
 # Prepend current directory if does not start with a `/'
 my $cwd = `pwd`; chomp($cwd);
@@ -342,7 +350,7 @@ sub test_compile {
 	    test_shell_cmd('cd src; make cleann',$dir,"cleaning up",QUIET);
 	    return 'ERROR running make cleann' if ($test_status);
 	}
-	test_shell_cmd("cd src; make $makeopts",$dir,"compilation");
+	test_shell_cmd("cd src;$nice make $makeopts",$dir,"compilation");
     }
 }
 # ---------------------------------------------------------------------- #
@@ -351,7 +359,7 @@ sub test_start {
     if ($t_start) {
 	my $dir = shift;
 	print "    Starting..          ";
-	test_shell_cmd('start.csh',$dir,"starting");
+	test_shell_cmd("$nice start.csh",$dir,"starting");
     }
 }
 # ---------------------------------------------------------------------- #
@@ -360,7 +368,7 @@ sub test_run {
     if ($t_run) {
 	my $dir = shift;
 	print "    Running..           ";
-	$res = test_shell_cmd('run.csh',$dir,"running");
+	$res = test_shell_cmd("$nice run.csh",$dir,"running");
     }
 }
 # ---------------------------------------------------------------------- #
