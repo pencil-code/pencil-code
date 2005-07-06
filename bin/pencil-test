@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-07-05 22:48:12 $
-# $Revision: 1.20 $
+# $Date: 2005-07-06 07:50:23 $
+# $Revision: 1.21 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -135,9 +135,10 @@ foreach my $host (@ARGV) {
 	$result .= $line;
     }
     close(POUT);
-    # Send emails if necessary
+    # Put tag on files if auto-test breaks
     tag_breakage_on_error($result,$host) if ($tag_broken);
     tag_stable_on_success($result,$host) if ($tag_stable);
+    # Send emails if necessary
     notify_on_error($result,$shost);
 
    $first = 0;
@@ -180,7 +181,7 @@ sub usage {
 }
 # ---------------------------------------------------------------------- #
 sub tag_stable_on_success{
-## Check for errors and send emails
+## Put tag on files of auto-test succeeds
     my $result = (shift || '');
     my $host  = (shift || '');
     my $cvscmd;
@@ -195,15 +196,15 @@ sub tag_stable_on_success{
 }
 # ---------------------------------------------------------------------- #
 sub tag_breakage_on_error{
-## Check for errors and send emails
+## Put tag on files if auto-test breaks (only first break)
     my $result = (shift || '');
     my $host  = (shift || '');
     my $cvscmd;
     if ($result =~ /^Failed ([0-9]+) test/m) {
-      # We only want to mark the first breakage... So check it isn't already tagged.
+# We only want to mark the first breakage... So check it isn't already tagged.
       my $hastag="ssh -n $host 'cd \$PENCIL_HOME; cvs log -h Makefile.src'";
       return if ($hastag =~ /$tag_broken/);
-      # If we haven't already tagged it... Do so now.
+# If we haven't already tagged it... Do so now.
       $cvscmd=        "ssh -n $host 'cd \$PENCIL_HOME;";
       $cvscmd=$cvscmd."cvs -Q tag -F ".$tag_broken." src bin > /dev/null;";
       $cvscmd=$cvscmd."'";
