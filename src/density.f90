@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.188 2005-07-06 19:03:50 dobler Exp $
+! $Id: density.f90,v 1.189 2005-07-06 20:35:31 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -103,7 +103,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.188 2005-07-06 19:03:50 dobler Exp $")
+           "$Id: density.f90,v 1.189 2005-07-06 20:35:31 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1181,7 +1181,6 @@ module Density
             call max_mn_name(-p%rho,idiag_rhomin,lneg=.true.)      
         if (idiag_rhomax/=0) call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_rho2m/=0) call sum_mn_name(p%rho**2,idiag_rho2m)
-print*, '>>>>>>>>>>>> ', idiag_lnrho2m, idiag_lnrho2m
         if (idiag_lnrho2m/=0) call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
