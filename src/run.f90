@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.201 2005-07-01 02:56:08 mee Exp $
+! $Id: run.f90,v 1.202 2005-07-06 19:03:50 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.201 2005-07-01 02:56:08 mee Exp $")
+             "$Id: run.f90,v 1.202 2005-07-06 19:03:50 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -205,7 +205,7 @@
 !  NOTE: headt=.true. in order to print header titles
 !
         if(lroot) then
-           time1 = mpiwtime()
+          time1 = mpiwtime()
           count = 0
         endif
 !
