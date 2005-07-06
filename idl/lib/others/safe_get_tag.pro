@@ -1,4 +1,4 @@
-; $Id: safe_get_tag.pro,v 1.1 2004-06-03 17:08:59 mee Exp $
+; $Id: safe_get_tag.pro,v 1.2 2005-07-06 09:05:11 ajohan Exp $
 ;
 ;  Safely attempt to access a particular tag of a structure by ensuring 
 ;  that the tag exists first. 
@@ -9,8 +9,8 @@
 ;  If DEFAULT is set to some value then this value will be returned instead.
 ; 
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 17:08:59 $
-;  $Revision: 1.1 $
+;  $Date: 2005-07-06 09:05:11 $
+;  $Revision: 1.2 $
 ;
 ;  03-jun-02/tony: coded 
 ;
@@ -21,7 +21,7 @@ COMPILE_OPT IDL2,HIDDEN
   result=!VALUES.F_NAN
   found = where(tag_names(object) eq strupcase(tag))
 
-  if found eq -1 then begin
+  if (found[0] eq -1) then begin
     if (n_elements(DEFAULT) ne 0) then return,DEFAULT
     return, result
   endif
