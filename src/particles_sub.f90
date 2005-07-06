@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.7 2005-07-06 07:45:39 ajohan Exp $
+! $Id: particles_sub.f90,v 1.8 2005-07-06 13:20:57 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -300,12 +300,10 @@ module Particles_sub
 !
       nmig=0
       do k=npar_loc,1,-1
-        if (fp(k,iyp)< xyz0_loc(2) .or. fp(k,iyp)>=xyz1_loc(2) .or. &
-            fp(k,izp)< xyz0_loc(3) .or. fp(k,izp)>=xyz1_loc(3)) then
-!  Calculate processor index of receiving processor.            
-          iproc_rec = int((fp(k,iyp)-xyz0(2))/Lxyz_loc(2)) + &
-              nprocy*int((fp(k,izp)-xyz0(3))/Lxyz_loc(3))
-          if (ip<=8) print '(a,i6,a,i3,a,i3)', &
+        iproc_rec = int( (fp(k,iyp)-xyz0(2))/Lxyz_loc(2) ) + &
+             nprocy*int( (fp(k,izp)-xyz0(3))/Lxyz_loc(3) )
+        if (iproc_rec/=iproc) then
+          if (ip<=8) print '(a,i7,a,i3,a,i3)', &
               'redist_particles_procs: Particle ', ipar(k), &
               ' moves out of proc ', iproc, &
               ' and into proc ', iproc_rec
