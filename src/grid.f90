@@ -63,7 +63,7 @@ module Grid
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim,yprim2
       real, dimension(mz) :: g3,g3der1,g3der2,xi3,zprim,zprim2
 
-      real :: a,dummy
+      real :: a,dummy=0.
       integer :: i
       logical :: err
 
@@ -118,6 +118,7 @@ module Grid
         dx_1 = 0.
         dx_tilde = 0.
       else
+        ! Test whether grid function is valid
         call grid_profile(dummy,grid_func(1),dummy,err=err)
         if (err) call &
              stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(1))
@@ -171,6 +172,7 @@ module Grid
         dy_1 = 0.
         dy_tilde = 0.
       else
+        ! Test whether grid function is valid
         call grid_profile(dummy,grid_func(2),dummy,err=err)
         if (err) &
              call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(2))
@@ -223,7 +225,8 @@ module Grid
         dz_1 = 0.
         dz_tilde = 0.
       else
-        call grid_profile(dummy,grid_func(3),dummy,err=err)
+        ! Test whether grid function is valid
+        call grid_profile(dummy,grid_func(3),dummy,ERR=err)
         if (err) &
              call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(3))
 
