@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.5 2005-06-23 08:32:21 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.6 2005-07-08 16:09:16 ajohan Exp $
 ;
 pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, quiet=quiet
@@ -66,6 +66,11 @@ if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid ne 1) ) then begin
   axis, zaxis=1, x0, y0, 0.0, /t3d, ztickformat='noticknames_aj',col=frame_color
   axis, yaxis=1, x0, 0.0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
   axis, xaxis=1, 0.0, y0, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
+ 
+endif else if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid eq 1) ) then begin
+  
+  plot, xx[*,0], xrange=[x0,x1], yrange=[y0,y1], /nodata
+  plots, xx[*,0], xx[*,1], psym=3
  
 endif else if ( (dim.nxgrid ne 1) and (dim.nygrid eq 1) and (dim.nzgrid ne 1) ) then begin
   
