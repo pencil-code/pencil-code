@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.6 2005-07-08 16:09:16 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.7 2005-07-08 16:47:20 ajohan Exp $
 ;
 pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, quiet=quiet
@@ -54,18 +54,18 @@ if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid ne 1) ) then begin
   surface,  [[0.0,0.0,0.0],[0.0,0.0,0.0]], col=frame_color, $
       xrange=[x0,x1], yrange=[y0,y1], zrange=[z0,z1], $
       xstyle=1, ystyle=1, zstyle=1, /save, /nodata, pos=pos
-  axis, xaxis=1, 0.0, y1, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
-  axis, xaxis=1, 0.0, y1, z0, /t3d, xtickformat='noticknames_aj',col=frame_color
-  axis, yaxis=1, x1, 0.0, z0, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, yaxis=1, x1, 0.0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, zaxis=1, x1, y1, 0.0, /t3d, ztickformat='noticknames_aj',col=frame_color
-  axis, zaxis=1, x1, y0, 0.0, /t3d, ztickformat='noticknames_aj',col=frame_color
+  axis, xaxis=1, x0, y1, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
+  axis, xaxis=1, x0, y1, z0, /t3d, xtickformat='noticknames_aj',col=frame_color
+  axis, yaxis=1, x1, y0, z0, /t3d, ytickformat='noticknames_aj',col=frame_color
+  axis, yaxis=1, x1, y0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
+  axis, zaxis=1, x1, y1, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
+  axis, zaxis=1, x1, y0, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
 
   plots, xx[*,0], xx[*,1], xx[*,2], psym=3, col=par_color, /t3d
 
-  axis, zaxis=1, x0, y0, 0.0, /t3d, ztickformat='noticknames_aj',col=frame_color
-  axis, yaxis=1, x0, 0.0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, xaxis=1, 0.0, y0, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
+  axis, zaxis=1, x0, y0, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
+  axis, yaxis=1, x0, y0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
+  axis, xaxis=1, x0, y0, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
  
 endif else if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid eq 1) ) then begin
   
