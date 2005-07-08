@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.10 2005-07-04 14:07:52 mee Exp $
+! $Id: noeos.f90,v 1.11 2005-07-08 08:23:26 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -49,9 +49,9 @@ module EquationOfState
 
 !ajwm  Moved here from Density.f90
   real :: cs0=1., rho0=1.
-  real :: cs20, lnrho0
-  logical :: lcalc_cp = .false.
-  real :: gamma=5./3., gamma1
+  real :: cs20=1., lnrho0=0.
+  logical :: lcalc_cp=.false.
+  real :: gamma=5./3., gamma1=2./3.
   real :: cs2bot=1., cs2top=1. 
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.10 2005-07-04 14:07:52 mee Exp $')
+           '$Id: noeos.f90,v 1.11 2005-07-08 08:23:26 dobler Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

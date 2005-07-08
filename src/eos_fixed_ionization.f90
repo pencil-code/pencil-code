@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.6 2005-07-05 16:21:42 mee Exp $
+! $Id: eos_fixed_ionization.f90,v 1.7 2005-07-08 08:23:26 dobler Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -61,7 +61,7 @@ module EquationOfState
 !ajwm  can't use impossible else it breaks reading param.nml 
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped 
   real :: cs0=1., rho0=1., cp=1.
-  real :: cs20, lnrho0
+  real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma1, nabla_ad
   !real :: cp=impossible, cp1=impossible
@@ -102,7 +102,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.6 2005-07-05 16:21:42 mee Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.7 2005-07-08 08:23:26 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
