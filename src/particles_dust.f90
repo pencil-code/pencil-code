@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.6 2005-07-05 16:21:43 mee Exp $
+! $Id: particles_dust.f90,v 1.7 2005-07-08 19:42:54 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.6 2005-07-05 16:21:43 mee Exp $")
+           "$Id: particles_dust.f90,v 1.7 2005-07-08 19:42:54 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -522,7 +522,7 @@ module Particles
       if (tausp1/=0.) then
         if (lheader) print*,'dvvp_dt: Add drag force; tausp=', tausp
         do k=1,npar_loc
-          call interpolate_3d_1st(f,iux,fp(k,ixp:izp),uup)
+          call interpolate_3d_1st(f,iux,fp(k,ixp:izp),uup,ipar(k))
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tausp1*(fp(k,ivpx:ivpz)-uup)
         enddo
         if (ldragforce_gas) then

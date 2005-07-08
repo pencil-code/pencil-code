@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.8 2005-07-06 13:20:57 ajohan Exp $
+! $Id: particles_sub.f90,v 1.9 2005-07-08 19:42:54 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -281,6 +281,7 @@ module Particles_sub
       integer, dimension (0:ncpus-1), save :: k0_move, k0_move1
       integer, dimension (0:ncpus-1) :: k_move
       integer :: i, j, k, iproc_rec
+      integer, save :: mpar_loc_mig
       logical, save :: lfirstcall=.true.
 !
       intent (out) :: fp, npar_loc, ipar, dfp
@@ -292,6 +293,8 @@ module Particles_sub
           k0_move(i)=mpar_loc-npar_mig*(i+1)
         enddo
         k0_move1=k0_move-1
+!  Calculate how many particles there is room for at the local processor.
+        mpar_loc_mig=mpar_loc-ncpus*npar_mig
         lfirstcall=.false.
       endif
       k_move=k0_move1
@@ -359,7 +362,7 @@ module Particles_sub
               call mpirecv_real(dfp(npar_loc+1:npar_loc+nmig(i,iproc),:), &
               (/nmig(i,iproc),mpvar/), i, 333)
           if (ip<=7) then
-            print*, 'redist_particles_proc: iproc=', iproc
+            print*, 'redist_particles_proc: iproc, iproc_send=', iproc, i
             print*, 'redist_particles_proc: received fp=', &
                 fp(npar_loc+1:npar_loc+nmig(i,iproc),:)
             print*, 'redist_particles_proc: received ipar=', &
@@ -368,6 +371,12 @@ module Particles_sub
                 dfp(npar_loc+1:npar_loc+nmig(i,iproc),:)
           endif
           npar_loc=npar_loc+nmig(i,iproc)
+          if (npar_loc>=mpar_loc_mig) then
+            print*, 'redist_particles_proc: Too many particles at proc', iproc
+            print*, 'redist_particles_proc: npar_loc, mpar_loc_mig=', &
+                npar_loc, mpar_loc_mig
+            call fatal_error('redist_particles_proc','')
+          endif
         endif
 !
 !  Directed send.
@@ -383,7 +392,7 @@ module Particles_sub
                 call mpisend_real(dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:),&
                     (/nmig(iproc,j),mpvar/), j, 333)
               if (ip<=7) then
-                print*, 'redist_particles_proc: iproc=', iproc
+                print*, 'redist_particles_proc: iproc, iproc_rec=', iproc, j
                 print*, 'redist_particles_proc: sent fp=', &
                     fp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:)
                 print*, 'redist_particles_proc: sent ipar=', &
@@ -508,7 +517,7 @@ module Particles_sub
 !
     endsubroutine find_lowest_cornerpoint
 !***********************************************************************
-    subroutine interpolate_3d_1st(f,ii0,xxp,gp)
+    subroutine interpolate_3d_1st(f,ii0,xxp,gp,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using first order formula 
@@ -526,6 +535,7 @@ module Particles_sub
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (3) :: xxp, gp
       integer :: ii0
+      integer, optional :: ipar
 !
       real, dimension (3) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
@@ -552,6 +562,7 @@ module Particles_sub
         print*, 'interpolate_3d_1st: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
+        if (present(ipar)) print*, 'ipar= ', ipar
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
         print*, 'my, y(1), y(my) = ', my, y(1), y(my)
         print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
