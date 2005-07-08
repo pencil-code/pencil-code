@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.134 2005-07-01 04:58:26 mee Exp $
+! $Id: dustdensity.f90,v 1.135 2005-07-08 08:21:53 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -134,7 +134,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.134 2005-07-01 04:58:26 mee Exp $")
+           "$Id: dustdensity.f90,v 1.135 2005-07-08 08:21:53 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -451,12 +451,16 @@ module Dustdensity
 !
 !  sanity check
 !
-      if ( notanumber(f(l1:l2,m1:m2,n1:n2,ind(:))) ) &
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ind(:)))) &
           call stop_it('init_nd: Imaginary dust number density values')
-      if (lmdvar .and. notanumber(f(l1:l2,m1:m2,n1:n2,imd(:))) ) &
-          call stop_it('init_nd: Imaginary dust density values')
-      if (lmice .and. notanumber(f(l1:l2,m1:m2,n1:n2,imi(:))) ) &
-          call stop_it('init_nd: Imaginary ice density values')
+      if (lmdvar) then
+        if (notanumber(f(l1:l2,m1:m2,n1:n2,imd(:)))) &
+            call stop_it('init_nd: Imaginary dust density values')
+      endif
+      if (lmice) then
+        if (notanumber(f(l1:l2,m1:m2,n1:n2,imi(:)))) &
+            call stop_it('init_nd: Imaginary ice density values')
+      endif
 !
     endsubroutine init_nd
 !***********************************************************************
