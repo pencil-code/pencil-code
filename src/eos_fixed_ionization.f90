@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.7 2005-07-08 08:23:26 dobler Exp $
+! $Id: eos_fixed_ionization.f90,v 1.8 2005-07-08 21:46:33 dobler Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -102,7 +102,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.7 2005-07-08 08:23:26 dobler Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.8 2005-07-08 21:46:33 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -162,6 +162,7 @@ module EquationOfState
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       ss_ion=k_B/m_H/mu1yHxHe      
       ee_ion=ss_ion*TT_ion
+      gamma1=gamma-1.
       nabla_ad=gamma1/gamma
       kappa0=sigmaH_/m_H/mu1yHxHe
       lnchi0=log(kappa0)-log(4.0)
