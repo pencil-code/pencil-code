@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.245 2005-07-01 02:56:08 mee Exp $
+! $Id: equ.f90,v 1.246 2005-07-09 17:08:22 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -172,7 +172,8 @@ module Equ
 !
       if(nnamez>0) then
         call mpireduce_sum(fnamez,fsumz,nnamez*nz*nprocz)
-        if(lroot) fnamez=fsumz/(nx*ny*nprocy)
+        if(lroot) &
+            fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocy)
       endif
 !
     endsubroutine xyaverages_z
@@ -197,7 +198,8 @@ module Equ
 !
       if (nnamexz>0) then
         call mpireduce_sum(fnamexz,fsumxz,nnamexz*nx*nz*nprocz)
-        if(lroot) fnamexz=fsumxz/(ny*nprocy)
+        if(lroot) &
+            fnamexz(:,:,:,1:nnamez)=fsumxz(:,:,:,1:nnamez)/(ny*nprocy)
       endif
 !
     endsubroutine yaverages_xz
@@ -222,7 +224,8 @@ module Equ
 !
       if (nnamexy>0) then
         call mpireduce_sum(fnamexy,fsumxy,nnamexy*nx*ny*nprocy)
-        if(lroot) fnamexy=fsumxy/(nz*nprocz)
+        if(lroot) &
+            fnamexy(:,:,:,1:nnamexy)=fsumxy(:,:,:,1:nnamexy)/(nz*nprocz)
       endif
 !
     endsubroutine zaverages_xy
@@ -311,7 +314,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.245 2005-07-01 02:56:08 mee Exp $")
+           "$Id: equ.f90,v 1.246 2005-07-09 17:08:22 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
