@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.293 2005-06-30 07:25:27 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.294 2005-07-10 10:03:02 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -105,7 +105,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage[dvipdfm]{hyperref}
+\usepackage{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-06-30 07:25:27 $ $,~ $ $Revision: 1.293 $ $}
+%\date{$ $Date: 2005-07-10 10:03:02 $ $,~ $ $Revision: 1.294 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-06-30 07:25:27 $ $,~ $ $Revision: 1.293 $ $}\\
+  \emph{$ $Date: 2005-07-10 10:03:02 $ $,~ $ $Revision: 1.294 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -607,8 +607,8 @@ Johansen, A., Andersen, A. C., \& Brandenburg, A.\yana{2004}{417}{361}
 {371}{Simulations of dust-trapping vortices in protoplanetary discs}
 (\astroph{0310059})
 
-Haugen, N. E. L., Brandenburg, A., \& Mee, A. J.\pmn{2004}
-{Mach number dependence of the onset of dynamo action}
+Haugen, N. E. L., Brandenburg, A., \& Mee, A. J.\ymn{2004}{353}{947}
+{952}{Mach number dependence of the onset of dynamo action}
 (\astroph{0405453})
 
 Brandenburg, A., \& Multam\"aki, T.\yjourS{2004}{Int.\ J.\ Astrobiol.}{3}{209}
@@ -622,6 +622,10 @@ Heinemann, T., Dobler, W., Nordlund, \AA., \& Brandenburg, A.\sana{2005}
 Dobler, W., Stix, M., \& Brandenburg, A.\sapj{2005}
 {Convection and magnetic field generation in fully convective stars}
 (\astroph{0410645})
+
+Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
+{Cosmic ray confinement in the diffusion approximation}
+(\astroph{0507176})
 
 \end{list}
 
@@ -3814,10 +3818,12 @@ $e_{\rm c}$ satisfies the evolution equation
 \begin{equation}
 {\partial e_{\rm c}\over\partial t}+\nab\cdot(e_{\rm c}\uv)
 +p_{\rm c}\nab\cdot\uv=\partial_i(K_{ij}\partial_j e_{\rm c})+Q_{\rm c},
+\label{CReqn}
 \end{equation}
 where $Q_{\rm c}$ is a source term and
 \begin{equation}
 K_{ij}=K_\perp\delta_{ij}+(K_\parallel-K_\perp)\Bhat_i\Bhat_j
+\label{Difftensor}
 \end{equation}
 is an anisotropic diffusivity tensor.
 
@@ -3841,23 +3847,19 @@ $\nab\cdot(\BBhat\BBhat)$, and hence $|\Uv_{\rm c}|$,
 to the maximum possible value that can be resolved at a given
 resolution.
 
-If we were to calculate the divergence of the unit vector matrix
-numerically, the resulting value would not exceed a value that
-is of the order to the inverse mesh size, $1/\delta x$, i.e.\
-$|\delta x\,\nab\cdot(\BBhat\BBhat)|\la1$.
-In the present case, for reasons of large accuracy, we calculate the
-gradient of the unit vector of $\Bv$ by differentiating the magnetic
-vector potential.
-Thus, the term $\nab\cdot(\BBhat\BBhat)$ can indeed diverge.
-To prevent this from happening, we multiply
-$\Uv_{\rm c}$ by a quenching factor
+A physically appealing way of limiting the maximum propagation
+speed is to restore an explicit time dependence in the equation for the
+cosmic ray flux, and to replace the diffusion term in \Eq{CReqn} by
+a divergence of a flux that in turn obeys the equation
 \begin{equation}
-q(\BBhat\BBhat)=1\left/
-\sqrt{1+[C_{\rm mesh}\,\delta x\,\nab\cdot(\BBhat\BBhat)]^2}\right.,
-\label{Cmesh}
+{\partial{\cal F}_{{\rm c}i}\over\partial t}=-\tilde{K}_{ij}\nabla_je_{\rm c}
+-{{\cal F}_{{\rm c}i}\over\tau}
+\quad\mbox{(non-Fickian diffusion)},
+\label{nonFickian}
 \end{equation}
-which begins to depart from unity in regions of strong curvature.
-Typical values of $C_{\rm mesh}$ are around 3.
+where $K_{ij}=\tau\tilde{K}_{ij}$ would be the original diffusion tensor
+of \Eq{Difftensor}, if the time derivative were negligible.
+Further details are described in Snodin et al.\ (2005).
 
 % ====================================================================== %
 
@@ -4409,6 +4411,28 @@ Reading param.nml..
   last slash).
 }
 
+%%%
+\subsubsection{Something INC in start.pro}
+
+{\bf Q}:
+start doesn't even work:
+\begin{Verbatim}
+% Compiled module: $MAIN$.
+nname=      11
+Reading grid.dat..
+Reading param.nml..
+Can't locate Namelist.pm in INC (INC contains: /etc/perl /usr/local/lib/perl/5.8.4 /usr/local/share/perl/5.8.4 /usr/lib/perl5 /usr/share/perl5 /usr/lib/perl/5.8 /usr/share/perl/5.8 /usr/local/lib/site_perl .) at /home/brandenb/pencil-code/bin/nl2idl line 49.
+BEGIN failed--compilation aborted at /home/brandenb/pencil-code/bin/nl2idl line 49.
+\end{Verbatim}
+
+\medskip
+
+{\bf A}:
+{\em
+  Go into \file{\$PENCIL_HOME} and say \cmd{cvs up source.csh}
+  and/or \cmd{cvs up source.sh}. (They were just out of date.)
+}
+
 
 % ---------------------------------------------------------------------- %
 
@@ -4732,7 +4756,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-06-30 07:25:27 $ $,~ $ $Revision: 1.293 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-07-10 10:03:02 $ $,~ $ $Revision: 1.294 $ $}
 
 \section{Timings}
 
@@ -5350,15 +5374,16 @@ radiative flux at the bottom, i.e.\ $F_{\rm bot}=-K\dd T/\dd z$.
 Assuming that the density in the ghost zones has already been
 updated, we can calculate the entropy gradient from
 \begin{equation}\label{Fbot}
-F_{\rm bot}=-K{c_{\rm s}^2\over\gamma-1}\left(
+F_{\rm bot}=-{K\over c_p}{c_{\rm s}^2\over\gamma-1}\left(
 (\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s/c_p\over\dd z}\right),
 \end{equation}
 which gives
 \begin{equation}\label{Fbot2}
 {\dd s/c_p\over\dd z}=-{\gamma-1\over\gamma}\left(
-{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right)
+c_p{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right)
 \end{equation}
 for the derivative of the entropy at the bottom.
+This is implemented as the \option{c1} boundary condition at the bottom.
 
 \subsubsection{Temperature boundary condition at the top}
 
@@ -7795,6 +7820,11 @@ initial condition.
 \bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
   \emph{Numerical Recipes in Fortran 90}, 2nd ed., Cambridge (1996)
 
+\bibitem{Snodin}
+Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
+{Cosmic ray confinement in the diffusion approximation}
+(\astroph{0507176})
+
 \bibitem{SH88} Stanescu, D., Habashi, W. G.,
   \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
 
@@ -7814,7 +7844,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.293 2005-06-30 07:25:27 dobler Exp $ $}
+$ $Id: manual.tex,v 1.294 2005-07-10 10:03:02 brandenb Exp $ $}
 
 
 \end{document}
