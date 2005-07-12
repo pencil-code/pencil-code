@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.14 2005-07-04 12:45:31 mee Exp $
+! $Id: eos_idealgas.f90,v 1.15 2005-07-12 08:38:02 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.14 2005-07-04 12:45:31 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.15 2005-07-12 08:38:02 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -119,9 +119,11 @@ module EquationOfState
       call getmu(mu_tmp)
       if (lcalc_cp) then 
         cp=k_B/(mu_tmp*m_H)
+        cp=real(R_cgs*gamma/(gamma1*mu_tmp)/unit_velocity**2)
+       else
+        cp=1.
+        unit_temperature=unit_velocity**2*gamma1/gamma*mu_tmp/R_cgs
       endif
-
-      if (cp==impossible) cp=1.       
 
       if (lroot) print*,'initialize_eos: cp=',cp
 
