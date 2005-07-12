@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.270 2005-07-01 02:56:08 mee Exp $
+! $Id: cdata.f90,v 1.271 2005-07-12 05:11:21 brandenb Exp $
 
 module Cdata
 
@@ -180,7 +180,7 @@ module Cdata
   logical :: lgravx_dust=.true.,lgravy_dust=.true.,lgravz_dust=.true.
   logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
   logical :: lout=.false.,headt=.false.,headtt=.true.,ldt,lfirst=.false.
-  logical :: ldiagnos=.false.,lvid=.false.
+  logical :: ldiagnos=.false.,lvid=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.

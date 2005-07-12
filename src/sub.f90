@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.211 2005-07-05 16:21:43 mee Exp $ 
+! $Id: sub.f90,v 1.212 2005-07-12 05:11:22 brandenb Exp $ 
 
 module Sub 
 
@@ -11,7 +11,7 @@ module Sub
   public :: identify_bcs, parse_bc, parse_bc_rad
 
   public :: poly, notanumber
-  public :: blob, vecout, cubic_step
+  public :: blob, vecout, cubic_step, cubic_der_step
   public :: hypergeometric2F1
   public :: gamma_function
 
@@ -57,6 +57,7 @@ module Sub
   public :: max_for_dt
 
   public :: write_dx_general, wdim
+  public :: write_zprof, remove_zprof
 
   public :: tensor_diffusion_coef
 
@@ -158,6 +159,12 @@ module Sub
     module procedure cubic_step_pt
     module procedure cubic_step_mn
     module procedure cubic_step_global
+  endinterface
+
+  interface cubic_der_step
+    module procedure cubic_der_step_pt
+    module procedure cubic_der_step_mn
+    module procedure cubic_der_step_global
   endinterface
 
 !ajwm Commented pending a C replacement
@@ -2018,7 +2025,7 @@ module Sub
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
-      integer :: mxout1,myout1,mzout1,real_prec
+      integer :: mxout1,myout1,mzout1,real_prec,iprocz_slowest=0
 !
 !  determine whether mxout=mx (as on each processor)
 !  or whether mxout is different (eg when writing out full array)
@@ -2060,7 +2067,8 @@ module Sub
         !
         write(1,'(3i3)') nghost, nghost, nghost
         if (present(mzout)) then
-          write(1,'(3i3)') nprocx, nprocy, nprocz
+          if(lprocz_slowest) iprocz_slowest=1
+          write(1,'(4i3)') nprocx, nprocy, nprocz, iprocz_slowest
         else
           write(1,'(3i3)') ipx, ipy, ipz
         endif
@@ -2693,6 +2701,73 @@ module Sub
 !
       endfunction cubic_step_global
 !***********************************************************************
+      function cubic_der_step_pt(x,x0,width,shift)
+!
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Optional argument SHIFT shifts center:
+!  for shift=1. the interval is [x0    ,x0+2*w],
+!  for shift=-1. it is          [x0-2*w,x0    ].
+!  This version is for scalar args.
+!
+!  12-jul-05/axel: adapted from cubic_step_pt
+!
+        real :: x
+        real :: cubic_der_step_pt,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) relshift=shift
+        xi = (x-x0-shift*width)/width
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        cubic_der_step_pt = 1.5*(0.5-xi**2)
+!
+      endfunction cubic_der_step_pt
+!***********************************************************************
+      function cubic_der_step_mn(x,x0,width,shift)
+!
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Version for 1d arg (in particular pencils).
+!
+!  12-jul-05/axel: adapted from cubic_step_mn
+!
+        real, dimension(:) :: x
+        real, dimension(size(x,1)) :: cubic_der_step_mn,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) relshift=shift
+        xi = (x-x0-shift*width)/width
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        cubic_der_step_mn = 1.5*(0.5-xi**2)
+!
+      endfunction cubic_der_step_mn
+!***********************************************************************
+      function cubic_der_step_global(x,x0,width,shift)
+!
+!  Smooth unit der_step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Version for 3d-array arg.
+!
+!  12-jul-05/axel: adapted from cubic_step_global
+!
+        use Cdata, only: mx,my,mz
+!
+        real, dimension(mx,my,mz) :: x,cubic_der_step_global,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) relshift=shift
+        xi = (x-x0-shift*width)/width
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        cubic_der_step_global = 1.5*(0.5-xi**2)
+!
+      endfunction cubic_der_step_global
+!***********************************************************************
       function notanumber_0(f)
 !
 !  Check for denormalised floats (in fact NaN or -Inf, Inf).
@@ -3113,6 +3188,14 @@ nameloop: do
 !  5-mar-02/wolf: coded
 !
         character (len=*) :: fname
+        logical :: exist
+!
+!  check whether file exists
+!
+        inquire(FILE=fname,exist=exist)
+        print*,'remove_file: fname,exist=',fname,exist
+!
+!  remove file
 !
         open(1,FILE=fname)
         close(1,STATUS='DELETE')
@@ -3292,6 +3375,77 @@ nameloop: do
       close(1)
 
     endsubroutine write_dx_general
+!***********************************************************************
+    subroutine write_zprof(file,a)
+!
+!  writes z-profile to a file (if constructed for identical pencils)
+!
+!  10-jul-05/axel: coded
+!
+      use Cdata
+      use General, only: safe_character_assign
+!
+      real, dimension(nx) :: a
+      character (len=*) :: file
+      character (len=120) :: wfile
+!
+!  do this only for the first step
+!
+      if (lwrite_prof) then
+        if (m==m1) then
+!
+!  write zprofile file
+!
+          call safe_character_assign(wfile, &
+            trim(directory)//'/zprof_'//trim(file)//'.dat')
+          open(1,file=wfile,position='append')
+          write(1,*) z(n),a(1)
+          close(1)
+!
+!  add file name to list of f zprofile files
+!
+          if (n==n1) then
+            call safe_character_assign(wfile,trim(directory)//'/zprof_list.dat')
+            open(1,file=wfile,position='append')
+            write(1,*) file
+            close(1)
+          endif
+        endif
+      endif
+!
+    endsubroutine write_zprof
+!***********************************************************************
+    subroutine remove_zprof()
+!
+!  remove z-profile file
+!
+!  10-jul-05/axel: coded
+!
+      use Cdata
+      use General, only: safe_character_assign
+!
+      character (len=120) :: filename,wfile,listfile
+!
+!  do this only for the first step
+!
+      call safe_character_assign(listfile,trim(directory)//'/zprof_list.dat')
+!
+!  read list of file and remove them one by one
+!
+      open(2,file=listfile)
+      filename_loop: do while (it<=nt)
+        read(2,*,end=999) filename
+        call safe_character_assign(wfile, &
+          trim(directory)//'/zprof_'//trim(filename)//'.dat')
+        call remove_file(wfile)
+      enddo filename_loop
+999   close(2)
+!
+!  now delete this listfile altogether
+!
+      call remove_file(listfile)
+!
+    endsubroutine remove_zprof
 !***********************************************************************
     subroutine date_time_string(date)
 !

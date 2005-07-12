@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.148 2005-06-27 22:20:51 brandenb Exp $
+! $Id: register.f90,v 1.149 2005-07-12 05:11:22 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -150,6 +150,7 @@ module Register
 ! 11-sep-04/axel: began adding spherical coordinates 
 !
       use Cdata
+      use Sub, only: remove_zprof
       use Param_IO
       use Print
 !      use Hydro
@@ -303,6 +304,11 @@ module Register
 !  AB: should check whether this can come under initialize_modules
 !
 !       call border_profiles()
+!
+!  cleanup profile files
+!
+      call remove_zprof()
+      lwrite_prof=.true.
 !
 !----------------------------------------------------------------------------
 !  timestep: distinguish two cases,

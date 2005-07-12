@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.343 2005-07-01 04:58:27 mee Exp $
+! $Id: entropy.f90,v 1.344 2005-07-12 05:11:21 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -95,6 +95,9 @@ module Entropy
       ampl_ss,    &
       widthss,    &
       epsilon_ss, &
+!AB: allowing Fbot as input would break conv-slab and conv-slab 
+!AB: need to work on some better method for allowing alternative input.
+      !Fbot, &
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -148,7 +151,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.343 2005-07-01 04:58:27 mee Exp $")
+           "$Id: entropy.f90,v 1.344 2005-07-12 05:11:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -357,6 +360,9 @@ module Entropy
 !
       lnothing=.false.
 !
+!  select which radiative heating we are using
+!
+      if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
         select case (iheatcond(i))
         case('K-const') 
@@ -515,6 +521,7 @@ module Entropy
         case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
         case('hor-fluxtube'); call htube(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
+        case('mixinglength'); call mixinglength(f)
 
         case('sedov') 
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
@@ -929,6 +936,72 @@ module Entropy
       f(:,:,:,iss)=ss_const
 
     endsubroutine hydrostatic_isentropic
+!***********************************************************************
+    subroutine mixinglength(f)
+!
+!  Mixing length initial condition.
+!
+!  ds/dz=-HT1*(F/rho*cs3)^(2/3) in the convection zone.
+!  ds/dz=-HT1*(1-F/gK) in the radiative interior, where ...
+!  Solves dlnrho/dz=-ds/dz-gravz/cs2 using 2nd order Runge-Kutta.
+!
+!  Currently only works for vertical gravity field.
+!  Starts at bottom boundary where the density has to be set in the gravity
+!  module.
+!
+!  12-jul-05/axel: coded
+!
+      use Gravity, only: gravz
+      use EquationOfState, only: mpoly1
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (nzgrid) :: cs2m,lnrhom,ssm
+      real :: zm,dsdz,dlnrhodz,HT1,cp1tilde=1.
+!
+      if (.not.lgravz) then
+        call fatal_error("mixinglength","works only for vertical gravity")
+      endif
+!
+!  do the calculation on all processors, and then put the relevant piece
+!  into the f array.
+!
+!  begin with lower overshoot layer
+!
+      print*,'mixinglength: iproc,Fbot=',iproc,Fbot,cp1tilde
+!
+      Kbot=(mpoly1+1.)*(1.-1./gamma)*abs(gravz)*cp1tilde/Fbot
+      print*,'mixinglength: Kbot,mpoly1,cp1tilde=',Kbot,mpoly1,cp1tilde
+!
+      do iz=1,nzgrid
+        zm=z0+(iz-1)*dz
+        if (zm<=0.) then
+          cs2m(iz)=1.-gamma/(mpoly1+1.)*zm
+          lnrhom(iz)=mpoly1*alog(cs2m(iz))
+          ssm(iz)=-(gamma1/gamma*(mpoly1+1.)-1.)*alog(cs2m(iz))
+        else
+          HT1=gamma1*abs(gravz)/cs2m(iz-1)
+          if (zm<=1.) then
+            dsdz=-HT1*(Fbot/(exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
+          else
+            dsdz=+HT1
+          endif
+          ssm(iz)=ssm(iz-1)+dsdz*dz
+          dlnrhodz=-dsdz-abs(gravz)/cs2m(iz-1)
+          lnrhom(iz)=lnrhom(iz-1)+dlnrhodz*dz
+          cs2m(iz)=exp(gamma1*lnrhom(iz)+gamma*ssm(iz))
+        endif
+        !if(ip<=15) print*,'z,s,lr,cs2=',zm,ssm(iz),lnrhom(iz),cs2m(iz)
+      enddo
+!
+! put density and entropy into f-array
+!
+      do n=1,nz
+        iz=n+ipz*nz
+        f(:,:,n+nghost,ilnrho)=lnrhom(iz)
+        f(:,:,n+nghost,iss)=ssm(iz)
+      enddo
+!
+    endsubroutine mixinglength
 !***********************************************************************
     subroutine shell_ss(f)
 !
@@ -1926,7 +1999,12 @@ module Entropy
         glhc = 0
       endif
 !
+!  write z-profile (for post-processing)
+!
+      call write_zprof('hcond',hcond)
+!
 !  "turbulent" entropy diffusion
+!  [simplified, because grad(lnpp) term is omitted]
 !
       if (chi_t/=0.) then
         if (headtt) then
@@ -1936,14 +2014,16 @@ module Entropy
           endif
         endif
 !        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)+chi_t*del2ss
-        thdiff = chi_t*p%del2ss
+!AB:    thdiff = chi_t*p%del2ss
+!AB: thdiff should just be added, not overwritten, right??
+        thdiff=thdiff+chi_t*p%del2ss
       endif
 !
 !  check for NaNs initially
 !
       if (headt .and. (hcond0 /= 0)) then
         if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
-        if (notanumber(p%rho1))      print*,'calc_heatcond: NaNs in rho1'
+        if (notanumber(p%rho1))    print*,'calc_heatcond: NaNs in rho1'
         if (notanumber(hcond))     print*,'calc_heatcond: NaNs in hcond'
         if (notanumber(chix))      print*,'calc_heatcond: NaNs in chix'
         if (notanumber(p%del2ss))    print*,'calc_heatcond: NaNs in del2ss'
@@ -2023,6 +2103,8 @@ module Entropy
       if (lgravz .and. (luminosity .ne. 0. .or. cool .ne. 0.)) then
 !
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
+!AB: Wolfgang, the last part of above comment seems wrong; 
+!AB: We do divide by rho and T. But what about the heating profile?
 !
         ! heating profile, normalised, so volume integral = 1
         prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
@@ -2035,7 +2117,7 @@ module Entropy
         ! cooling profile; maximum = 1
         ssref = ss0 + (-log(gamma) + log(cs20))/gamma + grads0*ztop
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
-        !heat = heat - cool*prof*(cs2-cs20)/cs20
+        call write_zprof('cooling_profile',prof)
         heat = heat - cool*prof*(cs2-cs2cool)/cs2cool
       endif
 !
@@ -2308,6 +2390,35 @@ module Entropy
       endif
 !
     endsubroutine rprint_entropy
+!***********************************************************************
+    subroutine calc_heatcond_zprof(zprof_hcond,zprof_glhc)
+!
+!  calculate z-profile of heat conduction for multilayer setup
+!
+!  12-jul-05/axel: coded
+!
+      use Cdata
+      use Sub
+      use Gravity, only: z1, z2
+!
+      real, dimension (nz,3) :: zprof_glhc
+      real, dimension (nz) :: zprof_hcond
+      real :: zpt
+!
+      intent(out) :: zprof_hcond,zprof_glhc
+!
+      do n=1,nz
+        zpt=z(n+nghost)
+        zprof_hcond(n) = 1 + (hcond1-1)*cubic_step(zpt,z1,-widthss) &
+                           + (hcond2-1)*cubic_step(zpt,z2,+widthss)
+        zprof_hcond(n) = hcond0*zprof_hcond(n)
+        zprof_glhc(n,1:2) = 0.
+        zprof_glhc(n,3) = (hcond1-1)*cubic_der_step(zpt,z1,-widthss) &
+                        + (hcond2-1)*cubic_der_step(zpt,z2,+widthss)
+        zprof_glhc(n,3) = hcond0*zprof_glhc(n,3)
+      enddo
+!
+    endsubroutine calc_heatcond_zprof
 !***********************************************************************
     subroutine heatcond(hcond)
 !

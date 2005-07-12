@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.246 2005-07-09 17:08:22 dobler Exp $
+! $Id: equ.f90,v 1.247 2005-07-12 05:11:21 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -314,7 +314,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.246 2005-07-09 17:08:22 dobler Exp $")
+           "$Id: equ.f90,v 1.247 2005-07-12 05:11:21 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -648,6 +648,10 @@ module Equ
 !  Force reiniting of dust variables if certain criteria are fulfilled
 !
       call reinit_criteria_dust
+!
+!  reset lwrite_prof
+!
+      lwrite_prof=.false.
 !
     endsubroutine pde
 !***********************************************************************
