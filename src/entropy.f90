@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.344 2005-07-12 05:11:21 brandenb Exp $
+! $Id: entropy.f90,v 1.345 2005-07-13 09:10:53 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -40,6 +40,7 @@ module Entropy
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.,T0=1.
+  real :: mixinglength_flux=0.
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: center2_x=0., center2_y=0., center2_z=0.
@@ -64,12 +65,12 @@ module Entropy
   logical :: lpressuregradient_gas=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: pertss='zero'
-  character (len=labellen) :: cooltype='Temp'
+  character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=4) :: iinit_str
   
   !
-  ! Parameters for subroutine cool_RTV in SI units (from Cook et Al. 1989)
+  ! Parameters for subroutine cool_RTV in SI units (from Cook et al. 1989)
   ! 
   double precision, parameter, dimension (10) :: & 
        intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /) 
@@ -95,9 +96,8 @@ module Entropy
       ampl_ss,    &
       widthss,    &
       epsilon_ss, &
-!AB: allowing Fbot as input would break conv-slab and conv-slab 
-!AB: need to work on some better method for allowing alternative input.
-      !Fbot, &
+!AB: mixinglength_flux is used as flux in mixing length initial condition
+      mixinglength_flux, &
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -106,7 +106,10 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss, &
-      luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
+!AB: allow polytropic indices to be read in also during run stage.
+!AB: They are used to re-calculate the radiative conductivity profile.
+      mpoly0,mpoly1,mpoly2, &
+      luminosity,wheat,cooling_profile,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
       chi_t,chi_shock,chi,iheatcond, &
       Kgperp,Kgpara, cool_RTV, &
       tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
@@ -151,7 +154,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.344 2005-07-12 05:11:21 brandenb Exp $")
+           "$Id: entropy.f90,v 1.345 2005-07-13 09:10:53 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -186,8 +189,10 @@ module Entropy
       use Gravity, only: gravz,g0
       use EquationOfState, only: cs0, lnTT0, get_soundspeed, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
-                                 mpoly, mpoly0, mpoly1, mpoly2 
-
+                                 mpoly, mpoly0, mpoly1, mpoly2
+!AB: Tony, what's the plan; should these entries all be declared at the
+!AB: beginning of the module (as is done now already), or should we do it
+!AB: again in each routine?
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -224,6 +229,20 @@ module Entropy
       endif
       !
       if (lgravz) then
+!
+!  make sure the top boundary condition for temperature (if cT is used)
+!  knows about the cooling function
+!
+        if (cs2top/=cs2cool) then
+          if (lroot) then
+            print*,'initialize_entropy: cs2top,cs2cool=',cs2top,cs2cool
+            print*,'initialize_entropy: now set cs2top=cs2cool'
+          endif
+          cs2top=cs2cool
+        endif
+!
+!  settings for fluxes
+!
         if (lmultilayer) then
           !
           !  calculate hcond1,hcond2 if they have not been set in run.in
@@ -947,16 +966,18 @@ module Entropy
 !
 !  Currently only works for vertical gravity field.
 !  Starts at bottom boundary where the density has to be set in the gravity
-!  module.
+!  module. Use mixinglength_flux as flux in convection zone (no further
+!  scaling is applied, ie no further free parameter is assumed.)
 !
 !  12-jul-05/axel: coded
 !
       use Gravity, only: gravz
-      use EquationOfState, only: mpoly1
+!--   use EquationOfState, only: mpoly1
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nzgrid) :: cs2m,lnrhom,ssm
-      real :: zm,dsdz,dlnrhodz,HT1,cp1tilde=1.
+      real :: zm,dsdz,dlnrhodz,HT1
+      real :: cp1tilde=1. !(used as 1/cp; but not consistently applied)
 !
       if (.not.lgravz) then
         call fatal_error("mixinglength","works only for vertical gravity")
@@ -967,9 +988,7 @@ module Entropy
 !
 !  begin with lower overshoot layer
 !
-      print*,'mixinglength: iproc,Fbot=',iproc,Fbot,cp1tilde
-!
-      Kbot=(mpoly1+1.)*(1.-1./gamma)*abs(gravz)*cp1tilde/Fbot
+      Kbot=(mpoly1+1.)*(1.-1./gamma)*abs(gravz)*cp1tilde/mixinglength_flux
       print*,'mixinglength: Kbot,mpoly1,cp1tilde=',Kbot,mpoly1,cp1tilde
 !
       do iz=1,nzgrid
@@ -981,7 +1000,8 @@ module Entropy
         else
           HT1=gamma1*abs(gravz)/cs2m(iz-1)
           if (zm<=1.) then
-            dsdz=-HT1*(Fbot/(exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
+            dsdz=-HT1*(mixinglength_flux/ &
+              (exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
           else
             dsdz=+HT1
           endif
@@ -1677,6 +1697,7 @@ module Entropy
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
+!  The variable g2 is reused to calculate glnP.gss a few lines below.
 !
       glnT = gamma*p%gss + gamma1*p%glnrho
       glnP = gamma*p%gss + gamma*p%glnrho
@@ -1945,6 +1966,7 @@ module Entropy
 !  heat conduction
 !
 !  17-sep-01/axel: coded
+!  14-jul-05/axel: corrected expression for chi_t diffusion.
 !
       use Cdata
       use Sub
@@ -1954,7 +1976,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnT,glnThcond,glhc
+      real, dimension (nx,3) :: glnT,glnThcond,glhc,glnP
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond
@@ -2016,7 +2038,9 @@ module Entropy
 !        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)+chi_t*del2ss
 !AB:    thdiff = chi_t*p%del2ss
 !AB: thdiff should just be added, not overwritten, right??
-        thdiff=thdiff+chi_t*p%del2ss
+        glnP=gamma*(p%gss+p%glnrho)
+        call dot(glnP,p%gss,g2)
+        thdiff=thdiff+chi_t*(p%del2ss+g2)
       endif
 !
 !  check for NaNs initially
@@ -2115,8 +2139,24 @@ module Entropy
           heat = heat * t*(2*ttransient-t)/ttransient**2
         endif
         ! cooling profile; maximum = 1
+!AB: is ssref used anywhere?
         ssref = ss0 + (-log(gamma) + log(cs20))/gamma + grads0*ztop
-        prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
+!
+!  allow for different cooling profile functions
+!  The gaussian default is rather broad and disturbs the entire interior
+!
+if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,z2,wcool
+        select case(cooling_profile)
+        case ('gaussian')
+          prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
+        case ('step')
+          prof = step(z_mn,z2,wcool)
+        case ('cubic_step')
+          prof = cubic_step(z_mn,z2,wcool)
+        endselect
+!
+!  write out (during first time step only) and apply
+!
         call write_zprof('cooling_profile',prof)
         heat = heat - cool*prof*(cs2-cs2cool)/cs2cool
       endif
@@ -2224,7 +2264,7 @@ module Entropy
 !    with ne*ni = 1.2*np^2 = 1.2*rho^2/(1.4*mp)^2
 !    Q(T) = H*T^B is piecewice poly
 !
-!  15-dez-04/bing: coded
+!  15-dec-04/bing: coded
 !
       use IO
 !     
@@ -2454,6 +2494,7 @@ module Entropy
 !
 !  calculate grad(log hcond), where hcond is the heat conductivity
 !  NB: *Must* be in sync with heatcond() above.
+!
 !  23-jan-2002/wolf: coded
 !
       use Sub, only: der_step
@@ -2477,7 +2518,7 @@ module Entropy
 !  Keeps the temperature in the lower chromosphere and the upper corona
 !  at a constant level using newton cooling
 !
-!  15-dez-2004/bing: coded
+!  15-dec-2004/bing: coded
 !
       use EquationOfState, only: rho0
 
