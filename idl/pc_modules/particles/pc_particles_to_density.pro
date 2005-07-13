@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.7 2005-07-13 13:23:26 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.8 2005-07-13 14:15:44 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -27,9 +27,9 @@ nz=n_elements(z)
 np=fltarr(nx,ny,nz)*one
 
 if (lsigma) then begin
-  vvpm  =fltarr(nx,ny,nz,3)
-  vvp2m =fltarr(nx,ny,nz,3)
-  sigmap=fltarr(nx,ny,nz,3)
+  vvpm  =fltarr(nx,ny,nz,3)*one
+  vvp2m =fltarr(nx,ny,nz,3)*one
+  sigmap=fltarr(nx,ny,nz,3)*one
 endif
 
 for k=0L,npar-1 do begin
@@ -55,12 +55,14 @@ endfor
 if (lsigma) then begin
   for l=0,nx-1 do begin & for m=0,ny-1 do begin & for n=0,nz-1 do begin
 ;  Divide by number of particles
-    if (np[l,m,n] ne 0.0) then begin
+    if (np[l,m,n] gt 1.0) then begin
       vvpm[l,m,n,*]=vvpm[l,m,n,*]/np[l,m,n]
       vvp2m[l,m,n,*]=vvp2m[l,m,n,*]/np[l,m,n]
     endif
   endfor & endfor & endfor
-  sigmap=sqrt(vvp2m-vvpm^2)
+  sigmap=vvp2m-vvpm^2
+  sigmap[where(sigmap lt 0.0)]=0.0
+  sigmap=sqrt(sigmap)
 endif
 
 return, reform(np)
