@@ -1,13 +1,15 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.6 2005-07-07 07:50:27 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.7 2005-07-13 13:23:26 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
 ;  Author: Anders Johansen
 ;
-function pc_particles_to_density, xxp, x, y, z
+function pc_particles_to_density, xxp, x, y, z, vvp=vvp, sigmap=sigmap
 
 COMMON pc_precision, zero, one
+
+if (n_elements(vvp) ne 0) then lsigma=1
 
 pc_set_precision
 if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one
@@ -24,6 +26,12 @@ nz=n_elements(z)
 
 np=fltarr(nx,ny,nz)*one
 
+if (lsigma) then begin
+  vvpm  =fltarr(nx,ny,nz,3)
+  vvp2m =fltarr(nx,ny,nz,3)
+  sigmap=fltarr(nx,ny,nz,3)
+endif
+
 for k=0L,npar-1 do begin
   
   ix = round((xxp[k,0]-x[0])*dx1)
@@ -36,8 +44,24 @@ for k=0L,npar-1 do begin
   if (iy eq -1) then iy=0
   if (iz eq -1) then iz=0
   np[ix,iy,iz]=np[ix,iy,iz]+1.0*one
+;  Velocity dispersion
+  if (lsigma) then begin
+    vvpm[ix,iy,iz,*]=vvpm[ix,iy,iz,*]+vvp[k,*]
+    vvp2m[ix,iy,iz,*]=vvp2m[ix,iy,iz,*]+vvp[k,*]^2
+  endif
 
 endfor
+
+if (lsigma) then begin
+  for l=0,nx-1 do begin & for m=0,ny-1 do begin & for n=0,nz-1 do begin
+;  Divide by number of particles
+    if (np[l,m,n] ne 0.0) then begin
+      vvpm[l,m,n,*]=vvpm[l,m,n,*]/np[l,m,n]
+      vvp2m[l,m,n,*]=vvp2m[l,m,n,*]/np[l,m,n]
+    endif
+  endfor & endfor & endfor
+  sigmap=sqrt(vvp2m-vvpm^2)
+endif
 
 return, reform(np)
 
