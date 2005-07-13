@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.8 2005-07-13 14:15:44 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.9 2005-07-13 14:18:40 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -61,7 +61,8 @@ if (lsigma) then begin
     endif
   endfor & endfor & endfor
   sigmap=vvp2m-vvpm^2
-  sigmap[where(sigmap lt 0.0)]=0.0
+  i0=where(sigmap lt 0.0)
+  if (i0[0] ne -1) then sigmap[i0]=0.0
   sigmap=sqrt(sigmap)
 endif
 
