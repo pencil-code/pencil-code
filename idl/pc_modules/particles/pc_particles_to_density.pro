@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.9 2005-07-13 14:18:40 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.10 2005-07-14 10:14:34 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -9,7 +9,11 @@ function pc_particles_to_density, xxp, x, y, z, vvp=vvp, sigmap=sigmap
 
 COMMON pc_precision, zero, one
 
-if (n_elements(vvp) ne 0) then lsigma=1
+if (n_elements(vvp) ne 0) then begin
+  lsigma=1
+  pc_read_param, obj=par
+  lshear=par.lshear
+endif
 
 pc_set_precision
 if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one
@@ -46,8 +50,17 @@ for k=0L,npar-1 do begin
   np[ix,iy,iz]=np[ix,iy,iz]+1.0*one
 ;  Velocity dispersion
   if (lsigma) then begin
-    vvpm[ix,iy,iz,*]=vvpm[ix,iy,iz,*]+vvp[k,*]
-    vvp2m[ix,iy,iz,*]=vvp2m[ix,iy,iz,*]+vvp[k,*]^2
+    vvpm[ix,iy,iz,0]  = vvpm[ix,iy,iz,0]  + vvp[k,0]
+    vvp2m[ix,iy,iz,0] = vvp2m[ix,iy,iz,0] + vvp[k,0]^2
+    if (lshear) then begin
+      vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1]  +(vvp[k,1]-1.5*1.0*xxp[k,0])
+      vvp2m[ix,iy,iz,1] = vvp2m[ix,iy,iz,1] +(vvp[k,1]-1.5*1.0*xxp[k,0])^2
+    endif else begin
+      vvpm[ix,iy,iz,1]  = vvpm[ix,iy,iz,1]  + vvp[k,1]
+      vvp2m[ix,iy,iz,1] = vvp2m[ix,iy,iz,1] + vvp[k,1]^2
+    endelse
+    vvpm[ix,iy,iz,2]  = vvpm[ix,iy,iz,2]  + vvp[k,2]
+    vvp2m[ix,iy,iz,2] = vvp2m[ix,iy,iz,2] + vvp[k,2]^2
   endif
 
 endfor
