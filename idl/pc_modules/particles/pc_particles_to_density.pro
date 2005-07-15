@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.10 2005-07-14 10:14:34 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.11 2005-07-15 12:06:28 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -13,7 +13,9 @@ if (n_elements(vvp) ne 0) then begin
   lsigma=1
   pc_read_param, obj=par
   lshear=par.lshear
-endif
+endif else begin
+  lsigma=0
+endelse
 
 pc_set_precision
 if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one
@@ -66,13 +68,16 @@ for k=0L,npar-1 do begin
 endfor
 
 if (lsigma) then begin
-  for l=0,nx-1 do begin & for m=0,ny-1 do begin & for n=0,nz-1 do begin
+  ii=array_indices(np,where(np gt 1.0))
 ;  Divide by number of particles
-    if (np[l,m,n] gt 1.0) then begin
-      vvpm[l,m,n,*]=vvpm[l,m,n,*]/np[l,m,n]
-      vvp2m[l,m,n,*]=vvp2m[l,m,n,*]/np[l,m,n]
-    endif
-  endfor & endfor & endfor
+  ii3=intarr(n_elements(ii[0,*]))
+  for j=0,2 do begin
+    ii3[*]=j
+    vvpm[ii[0,*],ii[1,*],ii[2,*],ii3] = $
+        vvpm[ii[0,*],ii[1,*],ii[2,*],ii3]/np[ii[0,*],ii[1,*],ii[2,*]]
+    vvp2m[ii[0,*],ii[1,*],ii[2,*],ii3] = $
+        vvp2m[ii[0,*],ii[1,*],ii[2,*],ii3]/np[ii[0,*],ii[1,*],ii[2,*]]
+  endfor
   sigmap=vvp2m-vvpm^2
   i0=where(sigmap lt 0.0)
   if (i0[0] ne -1) then sigmap[i0]=0.0
