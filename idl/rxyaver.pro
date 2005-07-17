@@ -1,7 +1,10 @@
-; $Id: rxyaver.pro,v 1.12 2005-06-12 10:52:24 brandenb Exp $
+; $Id: rxyaver.pro,v 1.13 2005-07-17 19:56:56 brandenb Exp $
 ;
-;  read global sizes
+;  reads xyaver.dat file
+;  read first global array sizes
 ;
+t=0.
+@data/index
 default, datatopdir, 'data'
 default, dimfile, 'dim.dat'
 ;
@@ -22,37 +25,19 @@ nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
 ;
-;  calculate z array
+;  read mesh
 ;
-dz=2*!pi/nz
-z=-!pi+dz*(.5+dindgen(nz))
+pc_read_grid,obj=obj
+z=obj.z
 ;
-;  reads the xyaver.dat file
+;  usuable array boundaries
 ;
-t=0.
-bxmz=fltarr(nz)
-bymz=fltarr(nz)
-alpijz=fltarr(nz,3,3)
-etaijkz=fltarr(nz,3,3)
-alpijz1=fltarr(nz,3,3)
-etaijkz1=fltarr(nz,3,3)
+n1=3 & n2=mz-4 & n12=n1+indgen(nz)
+zzz=z(n1:n2)
 ;
-;  prepare matrix for calculating proper alpha and eta tensors
+;  set input array
 ;
-sz=sin(z)
-cz=cos(z)
-mat=dblarr(nz,2,2)
-mat1=dblarr(nz,2,2)
-mat(*,0,0)=+sz
-mat(*,0,1)=+cz
-mat(*,1,0)=+cz
-mat(*,1,1)=-sz
-;
-;  invert
-;
-for iz=0,nz-1 do begin
-  mat1(iz,*,*)=invert(reform(mat(iz,*,*)))
-endfor
+fmz=fltarr(nz*nprocz,nnamez)
 ;
 ;  read data
 ;
@@ -63,37 +48,14 @@ print,'read from file: ',datatopdir+'/xyaverages.dat'
 it=0
 fo='(8e12.5)'
 default,w,.01
-default,tmax,1e33
 while not eof(1) do begin
   readf,1,t & print,t
-  readf,1,bxmz,bymz,alpijz,etaijkz,fo=fo
-  if (t ge tmax) then goto,ending
-  ;
-  ;  remove alpha part from etaijkz
-  ;
-  for j=0,2 do begin
-  for i=0,2 do begin
-    alpijz1(*,i,j)=mat1(*,0,0)*alpijz(*,i,j)+mat1(*,0,1)*etaijkz(*,i,j)
-    etaijkz1(*,i,j)=mat1(*,1,0)*alpijz(*,i,j)+mat1(*,1,1)*etaijkz(*,i,j)
-  endfor
-  endfor
-  ;
-  ;  print mean tensor on console
-  ;
-  alpijz1m=total(alpijz1,1)/nz
-  etaijkz1m=total(etaijkz1,1)/nz
-  ;
+  readf,1,fmz,fo=fo
   if it eq 0 then begin
-    bxmzt=bxmz
-    bymzt=bymz
-    alpijz1t=alpijz1
-    etaijkz1t=etaijkz1
+    fmzt=fmz
     tt=t
   endif else begin
-    bxmzt=[bxmzt,bxmz]
-    bymzt=[bymzt,bymz]
-    alpijz1t=[alpijz1t,alpijz1]
-    etaijkz1t=[etaijkz1t,etaijkz1]
+    fmzt=[fmzt,fmz]
     tt=[tt,t]
   endelse
   it=it+1
@@ -102,9 +64,6 @@ ending:
 close,1
 ;
 nt=n_elements(tt)
-bxmzt=reform(bxmzt,nz,nt)
-bymzt=reform(bymzt,nz,nt)
-alpijz1t=reform(alpijz1t,nz,nt,3,3)
-etaijkz1t=reform(etaijkz1t,nz,nt,3,3)
+fmzt=reform(fmzt,nz,nt,nnamez)
 ;
 END
