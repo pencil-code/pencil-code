@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.345 2005-07-13 09:10:53 brandenb Exp $
+! $Id: entropy.f90,v 1.346 2005-07-17 20:13:42 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -122,6 +122,7 @@ module Entropy
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
+  integer :: idiag_fconvz=0,idiag_dcoolz,idiag_fradz=0,idiag_fturbz=0
 
   contains
 
@@ -154,7 +155,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.345 2005-07-13 09:10:53 brandenb Exp $")
+           "$Id: entropy.f90,v 1.346 2005-07-17 20:13:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -384,9 +385,9 @@ module Entropy
       if (lroot) print*,'initialize_entropy: nheatc_max,iheatcond=',nheatc_max,iheatcond(1:nheatc_max)
       do i=1,nheatc_max
         select case (iheatcond(i))
-        case('K-const') 
+        case('K-profile', 'K-const')
           lheatc_Kconst=.true.
-          if (lroot) print*, 'heat conduction: constant K'
+          if (lroot) print*, 'heat conduction: K-profile'
         case('simple')
           lheatc_simple=.true.
           if (lroot) print*, 'heat conduction: simple'
@@ -1368,6 +1369,10 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
       endif
+      if (idiag_fconvz/=0 .or. idiag_fturbz/=0 ) then
+          lpenc_diagnos(i_rho)=.true.
+          lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
+      endif
       if (idiag_TTm/=0 .or. idiag_TTmax/=0 .or. idiag_TTmin/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
@@ -1645,8 +1650,6 @@ module Entropy
 !
 !      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/ee/cdts) 
 !
-!
-!
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
@@ -1664,6 +1667,11 @@ module Entropy
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
+!
+!  xy averages for fluxes; doesn't need to be as frequent (check later)
+!  idiag_fradz is done in the calc_headcond routine
+!
+        if (idiag_fconvz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
       endif
 !
     endsubroutine dss_dt
@@ -2025,6 +2033,13 @@ module Entropy
 !
       call write_zprof('hcond',hcond)
 !
+!  Write radiative flux array
+!
+      if (ldiagnos) then
+        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond*p%TT*glnT(:,3),idiag_fradz)
+        if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
+      endif
+!
 !  "turbulent" entropy diffusion
 !  [simplified, because grad(lnpp) term is omitted]
 !
@@ -2159,6 +2174,12 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
         call write_zprof('cooling_profile',prof)
         heat = heat - cool*prof*(cs2-cs2cool)/cs2cool
+!
+!  Write divergence of cooling flux
+!
+        if (ldiagnos) then
+          if (idiag_dcoolz/=0) call xysum_mn_name_z(heat,idiag_dcoolz)
+        endif
       endif
 !
 !  Spherical case:
@@ -2368,7 +2389,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       use Cdata
       use Sub
 !
-      integer :: iname,irz
+      integer :: iname,inamez,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -2382,6 +2403,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
+        idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2401,6 +2423,15 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         call parse_name(iname,cname(iname),cform(iname),'TTmin',idiag_TTmin)
       enddo
 !
+!  check for those quantities for which we want xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbz',idiag_fturbz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
+      enddo
+!
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
@@ -2418,6 +2449,10 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_ssmphi=',idiag_ssmphi
+        write(3,*) 'i_fturbz=',idiag_fturbz
+        write(3,*) 'i_fconvz=',idiag_fconvz
+        write(3,*) 'i_dcoolz=',idiag_dcoolz
+        write(3,*) 'i_fradz=',idiag_fradz
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
         write(3,*) 'i_yHmax=',idiag_yHmax
