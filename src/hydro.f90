@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.205 2005-07-17 20:13:42 brandenb Exp $
+! $Id: hydro.f90,v 1.206 2005-07-18 14:12:18 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -88,7 +88,7 @@ module Hydro
   integer :: idiag_ox2m=0,idiag_oy2m=0,idiag_oz2m=0
   integer :: idiag_oxm=0,idiag_oym=0,idiag_ozm=0
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0,idiag_oxoym=0
-  integer :: idiag_oxozm=0,idiag_oyozm=0
+  integer :: idiag_oxozm=0,idiag_oyozm=0,idiag_uyuzmz=0
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0,idiag_umy=0
   integer :: idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
@@ -144,7 +144,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.205 2005-07-17 20:13:42 brandenb Exp $")
+           "$Id: hydro.f90,v 1.206 2005-07-18 14:12:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -877,6 +877,7 @@ module Hydro
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
+        if (idiag_uyuzmz/=0)  call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
@@ -1277,7 +1278,7 @@ module Hydro
         idiag_orms=0; idiag_omax=0
         idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
         idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
-        idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0
+        idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0; idiag_uyuzmz=0
         idiag_ox2m=0; idiag_oy2m=0; idiag_oz2m=0; idiag_oxm=0; idiag_oym=0
         idiag_ozm=0; idiag_oxoym=0; idiag_oxozm=0; idiag_oyozm=0
         idiag_umx=0; idiag_umy=0; idiag_umz=0
@@ -1349,6 +1350,7 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',idiag_uymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyuzmz',idiag_uyuzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fmassz',idiag_fmassz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fkinz',idiag_fkinz)
       enddo
