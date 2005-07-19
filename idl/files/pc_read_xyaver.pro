@@ -1,4 +1,4 @@
-;; $Id: pc_read_xyaver.pro,v 1.2 2005-07-19 09:38:35 ajohan Exp $
+;; $Id: pc_read_xyaver.pro,v 1.3 2005-07-19 09:43:16 ajohan Exp $
 ;;
 ;;   Read xy-averages from file
 ;;
@@ -34,9 +34,8 @@ nvar=n_elements(varnames)
 ;;  Define arrays to put data in.
 ;;
 spawn, 'wc -l '+datadir+'/'+varfile, nlines
-nlines=nlines[0]
+nlines=long(nlines[0])
 nit=nlines/(1+nvar*nz/8)
-print, nlines, nvar, nz, nit
 
 if (not quiet) then print, 'Going to read averages at ', strtrim(nit,2), ' times'
 
