@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.271 2005-07-12 05:11:21 brandenb Exp $
+! $Id: cdata.f90,v 1.272 2005-07-19 17:28:00 theine Exp $
 
 module Cdata
 
@@ -275,7 +275,6 @@ module Cdata
   logical :: lpencil_check=.false., lpencil_init=.false.
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
-  real :: dtau_thresh1,dtau_thresh2
   real :: b_ell=1., rbound=1.
 
 endmodule Cdata

@@ -274,18 +274,19 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
-    subroutine radboundary_zx_periodic_ray(mrad,Qrad_zx,tau_zx,Qrad0_zx)
+    subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
+                                           Qrad_zx_all,tau_zx_all)
 !
-!  6-nov-03/tobi: dummy created
+!  Trivial counterpart of radboundary_zx_periodic_ray() from mpicomm.f90
 !
-      integer, intent(in) :: mrad
-      real, dimension(mx,mz) :: Qrad_zx,tau_zx,Qrad0_zx
+!  19-jul-05/tobi: coded
 !
-      if (NO_WARN) then
-         print*,mrad
-         print*,Qrad_zx(1,1),tau_zx(1,1),Qrad0_zx(1,1)
-      endif
-!
+      real, dimension(nx,nz), intent(in) :: Qrad_zx,tau_zx
+      real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
+
+      Qrad_zx_all(:,:,ipy)=Qrad_zx
+      tau_zx_all(:,:,ipy)=tau_zx
+
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
     subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
