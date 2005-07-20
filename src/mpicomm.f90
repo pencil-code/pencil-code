@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.140 2005-07-19 17:28:00 theine Exp $
+! $Id: mpicomm.f90,v 1.141 2005-07-20 19:54:14 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -189,7 +189,8 @@ module Mpicomm
 
   integer, dimension(MPI_STATUS_SIZE) :: irecv_xy, irecv_zx   !(for radiation)
 !ajwm UNUSED!!!
-!  integer, dimension(MPI_STATUS_SIZE) :: isend_xy, isend_zx  !(for radiation)
+!tobi CALM DOWN!!!
+  integer, dimension(MPI_STATUS_SIZE) :: isend_xy, isend_zx  !(for radiation)
 
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
@@ -977,6 +978,7 @@ module Mpicomm
 !  receive intensities from neighboring processor in y
 !
 !  11-jul-03/tobi: coded
+!  20-jul-05/tobi: use non-blocking MPI calls
 !
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qbuf_zx
@@ -997,16 +999,29 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_RECV(Qbuf_zx,nQbuf_zx,MPI_REAL,isource,Qtag_zx+idir, &
+      call MPI_IRECV(Qbuf_zx,nQbuf_zx,MPI_REAL,isource,Qtag_zx+idir, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
 !
     endsubroutine radboundary_zx_recv
+!***********************************************************************
+    subroutine radboundary_zx_recv_wait()
+!
+!  wait for the above MPI call to be completed
+!
+!  20-jul-05/tobi: coded
+!
+      integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_zx
+
+      call MPI_WAIT(irecv_zx,irecv_stat_zx,ierr)
+
+    endsubroutine radboundary_zx_recv_wait
 !***********************************************************************
     subroutine radboundary_xy_recv(nrad,idir,Qbuf_xy)
 !
 !  receive intensities from neighboring processor in z
 !
 !  11-jul-03/tobi: coded
+!  20-jul-05/tobi: use non-blocking MPI calls
 !
       integer :: nrad,idir
       real, dimension(mx,my) :: Qbuf_xy
@@ -1027,16 +1042,29 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_RECV(Qbuf_xy,nQbuf_xy,MPI_REAL,isource,Qtag_xy+idir, &
+      call MPI_IRECV(Qbuf_xy,nQbuf_xy,MPI_REAL,isource,Qtag_xy+idir, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
     endsubroutine radboundary_xy_recv
+!***********************************************************************
+    subroutine radboundary_xy_recv_wait()
+!
+!  wait for the above MPI call to be completed
+!
+!  20-jul-05/tobi: coded
+!
+      integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_xy
+
+      call MPI_WAIT(irecv_xy,irecv_stat_xy,ierr)
+
+    endsubroutine radboundary_xy_recv_wait
 !***********************************************************************
     subroutine radboundary_zx_send(mrad,idir,Qbuf_zx)
 !
 !  send intensities to neighboring processor in y
 !
 !  11-jul-03/tobi: coded
+!  20-jul-05/tobi: use non-blocking MPI calls
 !
       integer :: mrad,idir
       real, dimension(mx,mz) :: Qbuf_zx
@@ -1057,16 +1085,29 @@ module Mpicomm
 !
 !  initiate send for the intensity
 !
-      call MPI_SEND(Qbuf_zx,nQbuf_zx,MPI_REAL,idest,Qtag_zx+idir, &
-                     MPI_COMM_WORLD,ierr)
+      call MPI_ISEND(Qbuf_zx,nQbuf_zx,MPI_REAL,idest,Qtag_zx+idir, &
+                     MPI_COMM_WORLD,isend_zx,ierr)
 !
     endsubroutine radboundary_zx_send
+!***********************************************************************
+    subroutine radboundary_zx_send_wait()
+!
+!  wait for the above MPI call to be completed
+!
+!  20-jul-05/tobi: coded
+!
+      integer, dimension(MPI_STATUS_SIZE) :: isend_stat_zx
+
+      call MPI_WAIT(isend_zx,isend_stat_zx,ierr)
+
+    endsubroutine radboundary_zx_send_wait
 !***********************************************************************
     subroutine radboundary_xy_send(nrad,idir,Qbuf_xy)
 !
 !  send intensities to neighboring processor in z
 !
 !  11-jul-03/tobi: coded
+!  20-jul-05/tobi: use non-blocking MPI calls
 !
       integer :: nrad,idir
       real, dimension(mx,my) :: Qbuf_xy
@@ -1087,10 +1128,22 @@ module Mpicomm
 !
 !  initiate send for the intensity
 !
-      call MPI_SEND(Qbuf_xy,nQbuf_xy,MPI_REAL,idest,Qtag_xy+idir, &
-                     MPI_COMM_WORLD,ierr)
+      call MPI_ISEND(Qbuf_xy,nQbuf_xy,MPI_REAL,idest,Qtag_xy+idir, &
+                     MPI_COMM_WORLD,isend_xy,ierr)
 !
     endsubroutine radboundary_xy_send
+!***********************************************************************
+    subroutine radboundary_xy_send_wait()
+!
+!  wait for the above MPI call to be completed
+!
+!  20-jul-05/tobi: coded
+!
+      integer, dimension(MPI_STATUS_SIZE) :: isend_stat_xy
+
+      call MPI_WAIT(isend_xy,isend_stat_xy,ierr)
+
+    endsubroutine radboundary_xy_send_wait
 !***********************************************************************
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)

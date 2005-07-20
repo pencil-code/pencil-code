@@ -235,6 +235,12 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
+    subroutine radboundary_zx_recv_wait()
+!
+!  20-jul-05/tobi: dummy created
+!
+    endsubroutine radboundary_zx_recv_wait
+!***********************************************************************
     subroutine radboundary_xy_recv(nrad,idir,Ibuf_xy)
 !
 !   2-jul-03/tony: dummy created
@@ -247,6 +253,12 @@ module Mpicomm
       endif
 !
     endsubroutine radboundary_xy_recv
+!***********************************************************************
+    subroutine radboundary_xy_recv_wait()
+!
+!  20-jul-05/tobi: dummy created
+!
+    endsubroutine radboundary_xy_recv_wait
 !***********************************************************************
     subroutine radboundary_zx_send(mrad,idir,Ibuf_zx)
 !
@@ -261,6 +273,12 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
+    subroutine radboundary_zx_send_wait()
+!
+!  20-jul-05/tobi: dummy created
+!
+    endsubroutine radboundary_zx_send_wait
+!***********************************************************************
     subroutine radboundary_xy_send(nrad,idir,Ibuf_xy)
 !
 !   2-jul-03/tony: dummy created
@@ -273,6 +291,12 @@ module Mpicomm
       endif
 !
     endsubroutine radboundary_xy_send
+!***********************************************************************
+    subroutine radboundary_xy_send_wait()
+!
+!  20-jul-05/tobi: dummy created
+!
+    endsubroutine radboundary_xy_send_wait
 !***********************************************************************
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)

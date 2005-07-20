@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.17 2005-07-19 17:28:00 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.18 2005-07-20 19:54:14 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -118,7 +118,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.17 2005-07-19 17:28:00 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.18 2005-07-20 19:54:14 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -463,6 +463,8 @@ module Radiation
       use Mpicomm, only: ipy,ipz
       use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
+      use Mpicomm, only: radboundary_zx_recv_wait,radboundary_zx_send_wait
+      use Mpicomm, only: radboundary_xy_recv_wait,radboundary_xy_send_wait
       use Cparam, only: nprocy,nprocz
       use IO, only: output
 !
@@ -484,6 +486,7 @@ module Radiation
         call radboundary_xy_set(Qrad0_xy)
       else
         call radboundary_xy_recv(nrad,idir,Qrad0_xy)
+        call radboundary_xy_recv_wait()
       endif
 
       forall (l=llstart-lrad:llstop:lsign,m=mmstart-mrad:mmstop:msign)
@@ -539,6 +542,8 @@ module Radiation
         if (nprocy>1) then
           call radboundary_zx_send(mrad,idir,Qrad0_zx)
           call radboundary_zx_recv(mrad,idir,Qrad0_zx)
+          call radboundary_zx_send_wait()
+          call radboundary_zx_recv_wait()
         endif
 !
 !  Add boundary contribution
@@ -565,6 +570,7 @@ module Radiation
         enddo
 
         call radboundary_xy_send(nrad,idir,Qrad0_xy)
+        call radboundary_xy_send_wait()
 
       endif
 

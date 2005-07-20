@@ -31,6 +31,8 @@
   public :: radboundary_zx_periodic_ray
   public :: radboundary_xy_recv,radboundary_xy_send
   public :: radboundary_zx_recv,radboundary_zx_send
+  public :: radboundary_xy_recv_wait,radboundary_xy_send_wait
+  public :: radboundary_zx_recv_wait,radboundary_zx_send_wait
 
 ! Variables
   public :: ipx,ipy,ipz,lroot,iproc
