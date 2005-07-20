@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.25 2005-07-05 16:21:43 mee Exp $
+! $Id: shear.f90,v 1.26 2005-07-20 08:18:36 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -15,13 +15,17 @@ module Shear
 
   implicit none
 
+  real, dimension (nz) :: uy0_extra=0.0
+  real :: eps_vshear=0.0
+  logical :: luy0_extra=.false.
+
   include 'shear.h'
 
   namelist /shear_init_pars/ &
-       qshear,Sshear
+       qshear,Sshear,eps_vshear
 
   namelist /shear_run_pars/ &
-       qshear,Sshear
+       qshear,Sshear,eps_vshear
 
   integer :: idiag_dtshear=0
 
@@ -46,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.25 2005-07-05 16:21:43 mee Exp $")
+           "$Id: shear.f90,v 1.26 2005-07-20 08:18:36 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -58,52 +62,70 @@ module Shear
 !  calculate shear flow velocity; if qshear is given then Sshear=-qshear*Omega
 !  is calculated. Otherwise Sshear keeps its value from the input list.
 !
-      if (qshear /= 0.) Sshear=-qshear*Omega
-      if (lroot .and. ip <= 12) &
+      if (qshear/=0.0) Sshear=-qshear*Omega
+      if (lroot .and. ip<=12) &
           print*,'initialize_shear: Sshear,qshear=',Sshear,qshear
-
+!
+!  Possible to add extra rotation profile.
+!
+      if (eps_vshear/=0.0) then
+        if (lroot) print*, 'initialize_shear: eps_vshear=', eps_vshear
+        uy0_extra=-Sshear*eps_vshear*Lxyz(3)*cos(2*pi/Lxyz(3)*z(n1:n2))
+        luy0_extra=.true.
+      endif
+!
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine read_shear_init_pars(unit,iostat)
+!
+!
+!    
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+!      
       if (present(iostat)) then
         read(unit,NML=shear_init_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=shear_init_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+!      
 99    return
+!
     endsubroutine read_shear_init_pars
 !***********************************************************************
     subroutine write_shear_init_pars(unit)
+!    
+!
+!
       integer, intent(in) :: unit
-                                                                                                   
+!
       write(unit,NML=shear_init_pars)
-                                                                                                   
+!      
     endsubroutine write_shear_init_pars
 !***********************************************************************
     subroutine read_shear_run_pars(unit,iostat)
+!
+!
+!    
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
+!
       if (present(iostat)) then
         read(unit,NML=shear_run_pars,ERR=99, IOSTAT=iostat)
       else
         read(unit,NML=shear_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+!      
 99    return
+!
     endsubroutine read_shear_run_pars
 !***********************************************************************
     subroutine write_shear_run_pars(unit)
+!    
       integer, intent(in) :: unit
-                                                                                                   
+!
       write(unit,NML=shear_run_pars)
-                                                                                                   
+!
     endsubroutine write_shear_run_pars
 !***********************************************************************
     subroutine shearing(f,df)
@@ -128,11 +150,16 @@ module Shear
 !
 !  print identifier
 !
-      if (headtt.or.ldebug) print*,'shearing: Sshear,qshear=',Sshear,qshear
+      if (headtt.or.ldebug) print*, 'shearing: Sshear,qshear=', Sshear, qshear
 !
 !  add shear term, -uy0*df/dy, for all variables
 !
       uy0=Sshear*x(l1:l2)
+!
+!  Add extra rotation profile.
+!
+      if (luy0_extra) uy0=uy0+uy0_extra(n-nghost)
+!        
       do j=1,nvar
         call der(f,j,dfdy,2)
         df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
