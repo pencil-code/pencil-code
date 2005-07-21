@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.346 2005-07-17 20:13:42 brandenb Exp $
+! $Id: entropy.f90,v 1.347 2005-07-21 12:12:48 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -155,7 +155,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.346 2005-07-17 20:13:42 brandenb Exp $")
+           "$Id: entropy.f90,v 1.347 2005-07-21 12:12:48 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2284,6 +2284,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !    calculate cool term:  C = ne*ni*Q(T) 
 !    with ne*ni = 1.2*np^2 = 1.2*rho^2/(1.4*mp)^2
 !    Q(T) = H*T^B is piecewice poly
+!    [Q] = [v]^3 / [rho] / [l]
 !
 !  15-dec-04/bing: coded
 !
@@ -2293,8 +2294,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lncool,lnneni,rtv_cool,lnTT_SI
       integer :: i,imax
-      real :: unit_temp,unit_dens,unit_power
-      real :: p0,p1,p2,p3,p4
+      real :: unit_temp,unit_Q
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -2303,8 +2303,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !     All is in SI units and has to be rescaled to PENCIL units
 !
       unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
-      unit_dens = unit_density
-      unit_power = unit_density * unit_velocity**3 / unit_length
+      unit_Q =  unit_velocity**3 / unit_length / unit_density
 !
       lnTT_SI = p%lnTT + alog(unit_temp) 
 !
@@ -2345,7 +2344,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !      
 !    rtv_cool=exp(lnneni+lncool-lnrho-lnTT)/unit_power
 !    =>
-     rtv_cool=exp(lncool+log(p%rho)-p%lnTT+122.82)/unit_power
+     rtv_cool=exp(lncool-p%lnTT+122.82)*p%rho / unit_Q
 !     
      rtv_cool=rtv_cool * cool_RTV  ! just for adjusting by setting cool_RTV in run.in
 !
