@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.212 2005-07-12 05:11:22 brandenb Exp $ 
+! $Id: sub.f90,v 1.213 2005-07-22 15:36:14 dobler Exp $ 
 
 module Sub 
 
@@ -536,7 +536,7 @@ module Sub
       evr(:,2) = y_mn
       evr(:,3) = z_mn
 !  wolf: dave, did you mean tini instead of epsi?
-      evr = evr / spread(r_mn+epsi,2,3)
+      evr = evr / spread(r_mn+tini,2,3)
 !
     endsubroutine calc_unitvects_sphere
 !***********************************************************************
