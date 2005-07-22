@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.121 2005-07-22 22:38:15 dobler Exp $
+### $Id: Makefile.src,v 1.122 2005-07-22 22:47:26 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -8,6 +8,7 @@
 LIBSIG=
 LDONLYFLAGS=
 LDMPI=-lmpi
+DEBUGFLAGS=-g
 
 MPICOMM      = nompicomm
 GLOBAL       = noglobal
@@ -454,6 +455,16 @@ fast:
 	else \
 	    $(MAKE) startfast.x runfast.x read_videofiles.x read_vectorfiles.x ; \
 	fi
+
+debug:
+	$(MAKE) cleann
+	if [ ! -z "$(FCCLEANER)" ]; then \
+	    ($(MAKE) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
+	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	    $(MAKE) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
+	fi
+
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 

@@ -9,7 +9,7 @@
 default:
 	cd src; $(MAKE) -f Makefile.src Makefile; $(MAKE)
 
-# Use calculated dependancies instead:
+# Use calculated dependencies instead:
 depend dep:
 	cd src; $(MAKE) -f Makefile.src depend
 
@@ -20,8 +20,12 @@ clean:
 # Clean up even more files:
 cleann:
 	cd src; $(MAKE) -f Makefile.src cleann
-# same thing:
+# Same thing:
 cleanall: cleann
+
+# Compile with -g
+debug:
+	cd src; $(MAKE) debug
 
 # Clean up files produced by common queuing systems:
 qoutclean:
