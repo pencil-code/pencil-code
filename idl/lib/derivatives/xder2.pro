@@ -1,11 +1,11 @@
-;***********************************************************************
-function xder2,f
-COMPILE_OPT IDL2,HIDDEN
-;
-print,'You have not forced compilation of a particular set of derivative routines.'
-print,'This is accomplished by manually compiling routines from lib/derivatives.'
-print,"Or automatically by running 'pc_init' or the '.r start' method depending upon your preference."
-message,"ABORTING",/INFO
-;
-return,0.
-end
+;;;;;;;;;;;;;;;;;;;;;
+;;;   xder2.pro   ;;;
+;;;;;;;;;;;;;;;;;;;;;
+
+;;; $Id: xder2.pro,v 1.2 2005-07-22 16:57:22 dobler Exp $
+;;;  Wrapper for 6th-order derivative routine with ghost cells
+;;;  22-Jul-05/wolf: coded
+
+@xder2_6th_ghost.pro
+
+; End of file xder2.pro
