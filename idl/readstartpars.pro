@@ -1,4 +1,4 @@
-;  $Id: readstartpars.pro,v 1.16 2004-07-03 04:13:44 dobler Exp $
+;  $Id: readstartpars.pro,v 1.17 2005-07-22 23:59:15 dobler Exp $
 ;
 ;  Read startup parameters
 ;
@@ -54,7 +54,7 @@ if (cpar gt 0) then begin
     eta=par2.eta
     b_ext=par2.b_ext
   endif
-  if (lionization_fixed) then begin
+  if (leos_fixed_ionization) then begin
     yH0=par2.yH0
   endif
 endif else begin
