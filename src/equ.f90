@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.247 2005-07-12 05:11:21 brandenb Exp $
+! $Id: equ.f90,v 1.248 2005-07-22 22:36:33 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -17,9 +17,13 @@ module Equ
   private
 !
   public :: pde, debug_imn_arrays
-  public :: pencil_consistency_check
+  public :: initialize_pencils,pencil_consistency_check
 !
   contains
+
+!***********************************************************************
+
+      include 'pencil_init.inc' ! defines subroutine initialize_pencils()
 
 !***********************************************************************
       subroutine collect_UUmax
@@ -314,7 +318,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.247 2005-07-12 05:11:21 brandenb Exp $")
+           "$Id: equ.f90,v 1.248 2005-07-22 22:36:33 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -727,7 +731,7 @@ module Equ
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
       df_ref=0.0
-      include 'pencil_init.inc' 
+      call initialize_pencils(p,penc0) 
 !
 !  Calculate reference results with all requested pencils on
 !
@@ -740,7 +744,7 @@ module Equ
         do i=1,mvar+maux
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
-        include 'pencil_init.inc' 
+        call initialize_pencils(p,penc0) 
 !
 !  Calculate results with one pencil swapped
 !
@@ -782,7 +786,7 @@ f_loop: do iv=1,mvar
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
       fname=0.0
-      include 'pencil_init.inc' 
+      call initialize_pencils(p,penc0) 
 !
 !  Calculate reference diagnostics with all diagnostic pencils on
 !
@@ -798,7 +802,7 @@ f_loop: do iv=1,mvar
           call random_number_wrapper(f_other(:,:,:,i))
         enddo
         fname=0.0
-        include 'pencil_init.inc' 
+        call initialize_pencils(p,penc0) 
 !
 !  Calculate diagnostics with one pencil swapped
 !

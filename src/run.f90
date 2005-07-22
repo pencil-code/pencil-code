@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.202 2005-07-06 19:03:50 dobler Exp $
+! $Id: run.f90,v 1.203 2005-07-22 22:36:33 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.202 2005-07-06 19:03:50 dobler Exp $")
+             "$Id: run.f90,v 1.203 2005-07-22 22:36:33 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -224,9 +224,12 @@
         call border_profiles()
 !
 !  Initialize pencils in the pencil_case...
+!  wd: This has nothing to do with pencil_consistency_check, right? So we
+!   probably want to initialize to zero, rather than penc0
 !
         if (lpencil_init) then
-          include 'pencil_init.inc'
+!          call initialize_pencils(p,penc0)
+          call initialize_pencils(p,0.)
         endif
 !
 !  Perform pencil_case consistency check if requested
