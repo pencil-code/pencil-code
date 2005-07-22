@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.70 2005-02-09 09:37:20 mee Exp $
+;;; $Id: start.pro,v 1.71 2005-07-22 14:41:52 theine Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -171,7 +171,7 @@ if (cpar gt 0) then begin
   unit_density=par.unit_density
   unit_temperature=par.unit_temperature
   ;
-  default, STRUCT=par, ['lionization','lionization_fixed'],  0L
+  default, STRUCT=par, ['leos_ionization','leos_fixed_ionization'],  0L
   default, STRUCT=par, 'lequidist', [-1L, -1L, -1L]
   lequidist = par.lequidist
   lhydro    = par.lhydro
@@ -181,8 +181,8 @@ if (cpar gt 0) then begin
   lentropy  = par.lentropy
   lmagnetic = par.lmagnetic
   lradiation= par.lradiation
-  lionization=par.lionization
-  lionization_fixed=par.lionization_fixed
+  leos_ionization=par.leos_ionization
+  leos_fixed_ionization=par.leos_fixed_ionization
   ;lvisc_shock=par.lvisc_shock
   ;lvisc_hyper3=par.lvisc_hyper3
   lpscalar  = par.lpscalar
@@ -203,7 +203,7 @@ if (cpar gt 0) then begin
   endif
   ;
   if (ldensity) then begin
-    if (not lionization) then begin
+    if (not leos_ionization) then begin
     cs0=par.cs0 & rho0=par.rho0
     gamma=par.gamma & gamma1=gamma-1.
     cs20 = cs0^2 & lnrho0 = alog(rho0)
