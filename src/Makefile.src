@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.120 2005-07-04 14:07:07 mee Exp $
+### $Id: Makefile.src,v 1.121 2005-07-22 22:38:15 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -208,7 +208,7 @@ FCCLEANER=
 #FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl11|sandin|lynx)
 #FFLAGS=-O3 #(nw[0-9]*|nl11|wormhole|sandin|lynx)
 #FFLAGS=-O3 -ieee=full #(barilko)
-#FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-1][0-9]|obelix|kolmogorov)
+#FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-1][0-9]|obelix)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
 #FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix)
@@ -577,8 +577,7 @@ sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 cdata.o $(MPICOMM).o sub.o timestep.o $(TIMEAVG).o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o equ.o
 prints.o:    prints.f90 cdata.o sub.o param_io.o $(physics)
-equ.o:       equ.f90 cdata.o $(MPICOMM).o messages.o sub.o $(physics) boundcond.o \
-             $(GLOBAL).o 
+equ.o:       equ.f90 cdata.o $(MPICOMM).o messages.o sub.o $(physics) boundcond.o $(GLOBAL).o 
 boundcond.o: boundcond.f90 cdata.o messages.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 filter.o:    filter.f90 cdata.o sub.o boundcond.o
 initcond.o:  initcond.f90 cdata.o $(MPICOMM).o general.o sub.o $(EOS).o

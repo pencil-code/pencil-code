@@ -1,4 +1,4 @@
-! $Id: viscosity.f90,v 1.4 2005-07-05 16:21:43 mee Exp $
+! $Id: viscosity.f90,v 1.5 2005-07-22 22:38:15 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -76,7 +76,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.4 2005-07-05 16:21:43 mee Exp $")
+           "$Id: viscosity.f90,v 1.5 2005-07-22 22:38:15 dobler Exp $")
 
       ivisc(1)='nu-const'
 
@@ -356,7 +356,7 @@ module Viscosity
 !      
       real, dimension (nx) :: heat,Hmax
 !
-      heat= 0.
+      heat=0.
       if (lvisc_simplified) then
         if (headtt) print*,"no viscous heating: ivisc(x)='simplified'"
       endif
