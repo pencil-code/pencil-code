@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.55 2005-07-05 22:48:12 dobler Exp $
+# CVS: $Id: auto-test,v 1.56 2005-07-22 05:34:44 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -75,19 +75,21 @@ my $usage =
   $tmpdir -- both link and directory are removed after
   each run.
 Options:
-  -h,  --help           \tShow usage overview
-  -v,  --version        \tPrint version number
-  -C,  --clean          \tClean up (make cleann) before compiling
-  -c,  --compile-only   \tTest compilation only
-  -n,  --norun          \tTest compilation and starting only
-  -l,  --list           \tList test directories (don't run any tests)
-  -t,  --time           \tPrint CPU time used
-  -j,  --jobs=n         \tPass through -j option to make
-  -d,  --datadir        \tUse mkdir if data/ is needed, don't link to /var/tmp
-  -s,  --short          \tPrint short directory names only
-  -p,  --postproc=PP    \tApply postprocessor PP to output from make
-  --rsh=RSH-PROG        \tUse the specified program as to get a remote shell
-  --nodelist=NODE1,...  \tUse a forked remote shell to parallelize";
+  -h,  --help              \tShow usage overview
+  -v,  --version           \tPrint version number
+  -C,  --clean             \tClean up (make cleann) before compiling
+  -c,  --compile-only      \tTest compilation only
+  -n,  --norun             \tTest compilation and starting only
+  -l,  --list              \tList test directories (don't run any tests)
+  -t,  --time              \tPrint CPU time used
+  -D,  --pencil-home=<dir> \tSet PENCIL_HOME directory to <dir>
+  -N,  --nice=<n>          \tRun tests with nice value <n>
+  -j,  --jobs=<n>          \tPass through -j option to make
+  -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /var/tmp
+  -s,  --short             \tPrint short directory names only
+  -p,  --postproc=PP       \tApply postprocessor PP to output from make
+  --rsh=RSH-PROG           \tUse the specified program as to get a remote shell
+  --nodelist=NODE1,...     \tUse a forked remote shell to parallelize";
 ## Process command line options
 eval {
     Getopt::Long::config("bundling"); # makes single-letter options case-sensitive
@@ -101,6 +103,7 @@ GetOptions(\%opts,
 	       -n   --norun
 	       -l   --list
 	       -t   --time
+               -D=s --pencil-home=s
 	       -N=s --nice=s
 	       -j=n --jobs=n
 	       -d   --datadir
@@ -114,22 +117,24 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.55 2005-07-05 22:48:12 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.56 2005-07-22 05:34:44 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
-my $debug     = (              $opts{'debug'}      || 0    );
-my $clean     = ($opts{'C'} || $opts{'clean'}      || 0    );
-my $list_only = ($opts{'l'} || $opts{'list'}       || 0    );
-my $time      = ($opts{'t'} || $opts{'time'}       || 0    );
-my $niceval   = ($opts{'N'} || $opts{'nice'}       || 0    );
-my $makejobs  = ($opts{'j'} || $opts{'jobs'}       || 0    );
-my $datadir   = ($opts{'d'} || $opts{'datadir'}    || 0    );
-my $short     = ($opts{'s'} || $opts{'short'}      || 0    );
-my $nosummary = (              $opts{'no-summary'} || 0    );
-my $postproc  = ($opts{'p'} || $opts{'postproc'}   || ''   );
-my $RSH       = (              $opts{'rsh'}        || 'ssh');
-my $nodelist  = (              $opts{'nodelist'}   || 0    );
+my $debug     	= (              $opts{'debug'}       || 0    );
+my $clean     	= ($opts{'C'} || $opts{'clean'}       || 0    );
+my $list_only 	= ($opts{'l'} || $opts{'list'}        || 0    );
+my $time      	= ($opts{'t'} || $opts{'time'}        || 0    );
+my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || "$ENV{PENCIL_HOME}"
+		   || '');
+my $niceval   	= ($opts{'N'} || $opts{'nice'}        || 0    );
+my $makejobs  	= ($opts{'j'} || $opts{'jobs'}        || 0    );
+my $datadir   	= ($opts{'d'} || $opts{'datadir'}     || 0    );
+my $short     	= ($opts{'s'} || $opts{'short'}       || 0    );
+my $nosummary 	= (              $opts{'no-summary'}  || 0    );
+my $postproc  	= ($opts{'p'} || $opts{'postproc'}    || ''   );
+my $RSH       	= (              $opts{'rsh'}         || 'ssh');
+my $nodelist  	= (              $opts{'nodelist'}    || 0    );
 
 my @exit_status=('setting up directory','cleaning up','compilation','starting','running','results');
 
@@ -164,10 +169,10 @@ my $cwd = `pwd`; chomp($cwd);
 
 # Make sure we are in the top directory and have the right PATH
 die "Need to set environment variable PENCIL_HOME\n" 
-    unless (defined($ENV{PENCIL_HOME}));
-my $topdir = "$ENV{PENCIL_HOME}";
+    unless (defined($pencil_home));
+my $topdir = "$pencil_home";
 chdir $topdir;
-$ENV{PATH} .= ":$ENV{PENCIL_HOME}/bin";
+$ENV{PATH} .= ":$pencil_home/bin";
 
 # Autoflush stdout:
 $| = 1;
