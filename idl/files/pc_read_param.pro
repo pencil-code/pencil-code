@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.9 2004-06-03 17:13:14 mee Exp $
+; $Id: pc_read_param.pro,v 1.10 2005-07-25 08:54:27 brandenb Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 17:13:14 $
-;  $Revision: 1.9 $
+;  $Date: 2005-07-25 08:54:27 $
+;  $Revision: 1.10 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -17,28 +17,31 @@ COMPILE_OPT IDL2,HIDDEN
 ; compiled below
 end
 ;
-pro pc_read_param, object=object, dim=dim, $
-                   datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+pro pc_read_param, object=object, dim=dim, datadir=datadir, $
+                   param2=param2, PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "
     print, ""
-    print, "pc_read_param, object=object,                                                             "
-    print, "               datadir=datadir, proc=proc,                                                "
-    print, "               /PRINT, /QUIET, /HELP                                                       "
-    print, "                                                                                           "
-    print, "Returns the parameters of a Pencil-Code run. Returns zeros and empty in all variables on   "
-    print, "fail ure.                                                                                  "
-    print, "                                                                                           "
-    print, "    datadir: specify the root data directory. Default is './data'                  [string]"
+    print, "pc_read_param, object=object,"
+    print, "               datadir=datadir, proc=proc,"
+    print, "               /PRINT, /QUIET, /HELP,"
+    print, "               /param2"
     print, ""
-    print, "   object: optional structure in which to return all the above as tags          [structure] "
+    print, "Returns the parameters of a Pencil-Code run."
+    print, "Returns zeros and empty in all variables on failure."
     print, ""
-    print, "   /PRINT: instruction to print all variables to standard output                            "
-    print, "   /QUIET: instruction not to print any 'helpful' information                               "
-    print, "    /HELP: display this usage information, and exit                                         "
+    print, "   datadir: specify the root data directory. Default is './data'        [string]"
+    print, ""
+    print, "   object: optional structure in which to return all the above as tags  [struct]"
+    print, ""
+    print, "   /param2: for reading param2.nml"
+    print, "   /PRINT: instruction to print all variables to standard output"
+    print, "   /QUIET: instruction not to print any 'helpful' information"
+    print, "   /HELP: display this usage information, and exit"
+    print
     return
   ENDIF
 
@@ -52,8 +55,11 @@ precision=dim.precision
 
 
 ; Build the full path and filename
-filename=datadir+'/param.nml'   
-
+if keyword_set(param2) then begin
+  filename=datadir+'/param2.nml'
+endif else begin
+  filename=datadir+'/param.nml'
+endelse
 
 ;If double precision, force input from params.nml to be doubles
 if ((precision eq 'S') or (precision eq 's')) then begin ; single precision
@@ -103,5 +109,3 @@ if keyword_set(PRINT) then begin
 endif
 
 end
-
-
