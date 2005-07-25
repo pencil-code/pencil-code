@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.294 2005-07-10 10:03:02 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.295 2005-07-25 05:35:12 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -105,7 +105,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage{hyperref}
+\usepackage[dvipdfm]{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-07-10 10:03:02 $ $,~ $ $Revision: 1.294 $ $}
+%\date{$ $Date: 2005-07-25 05:35:12 $ $,~ $ $Revision: 1.295 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-07-10 10:03:02 $ $,~ $ $Revision: 1.294 $ $}\\
+  \emph{$ $Date: 2005-07-25 05:35:12 $ $,~ $ $Revision: 1.295 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1081,8 +1081,8 @@ can set the environment variable
 
 \paragraph{Note 3}
 Do not just source the \file{sourceme} script from your shell startup file
-(\file[.cshrc]{\~{}/.cshrc} or \file[.bashrc]{\~{}/.bashrc}, bcause it
-outputs a few lines of diagnostics for each subshell, which will break
+(\file[.cshrc]{\~{}/.cshrc} or \file[.bashrc]{\~{}/.bashrc}, because it
+outputs a few lines of diagnostics for each sub-shell, which will break
 many applications.
 To suppress all output, follow the instructions given in the header
 documentation of \file{sourceme.csh} and \file{sourceme.sh}.
@@ -4470,9 +4470,40 @@ Pencil Code?
 
   Finally, if you have ever tried to figure out what a \file{configure}
   script does, you will appreciate a comprehensible configuration system.
-
 }
 
+%%%
+\subsubsection{Small numbers in the code}
+ What is actually the difference between epsi, tini and tiny?
+
+\medskip
+
+\begin{Verbatim}
+F90 has two functions epsilon() and tiny(), with
+
+  epsilon(x) = 1.1920929e-07
+  tiny(x)    = 1.1754944e-38
+(and then there is huge(x) = 3.4028235e+38)
+for a single-precision number x.
+
+epsilon(x) is the smallest number that satisfies
+  1+epsilon(1.) /= 1 ,
+while tiny(x) is the smallest number that can be represented without
+precision loss.
+
+In the code we have variants hereof,
+   epsi=5*epsilon(1.0)
+   tini=5*tiny(1.0)
+   huge1=0.2*huge(1.0)
+that have added safety margins, so we don't have to think about doing
+things like 1/tini.
+
+So in sub.f90,
+  -      evr = evr / spread(r_mn+epsi,2,3)
+did (minimally) affect the result for r_mn=O(1), while the correct version
+  +      evr = evr / spread(r_mn+tini,2,3)
+only avoids overflow.
+\end{Verbatim}
 
 \cleardoublepage
 % ====================================================================== %
@@ -4756,7 +4787,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-07-10 10:03:02 $ $,~ $ $Revision: 1.294 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-07-25 05:35:12 $ $,~ $ $Revision: 1.295 $ $}
 
 \section{Timings}
 
@@ -7844,7 +7875,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.294 2005-07-10 10:03:02 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.295 2005-07-25 05:35:12 brandenb Exp $ $}
 
 
 \end{document}
