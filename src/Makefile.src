@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.122 2005-07-22 22:47:26 dobler Exp $
+### $Id: Makefile.src,v 1.123 2005-07-25 20:48:40 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -176,7 +176,7 @@ FCCLEANER=
 #LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
-#FFLAGS=-O3 -xW #(obelix)
+#FFLAGS=-O3 -xW -vec_report0 #(obelix)
 #FC=f95 #(karbala)
 #FC=pgf90 #(tycho|linux29|monolith)
 #FC=ifort #(erland|bohm|igor|onsager|hades|char)
@@ -212,7 +212,6 @@ FCCLEANER=
 #FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-1][0-9]|obelix)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
-#FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl11|wormhole)  
 #FC=ifc -w95 #(sandin)
 #FC=f95 -dusty #(davey[12])  
@@ -235,7 +234,7 @@ FCCLEANER=
 #LDMPI= # (Samos|fire|sandin)
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
-#CFLAGS=$(FFLAGS) -DFUNDERSC=1 #(obelix)
+#CFLAGS=-DFUNDERSC=1 #(obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern|renton|lanark)
 #F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
