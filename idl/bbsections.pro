@@ -47,9 +47,23 @@ default, z1,0                   ; possibly needed later
 default, z2,0
 default, z3,0
 
-nxi = [0.25,0.5,0.75]*mx > 3 < (mx-4)
-nyi = [0.25,0.5,0.75]*my > 3 < (my-4)
-nzi = [0.25,0.5,0.75]*mz > 3 < (mz-4)
+if (par.r_ext gt 0.) then begin ; choose planes based on geometry
+  nx0 = (where(abs(x) eq min(abs(x))))[0]
+  ny0 = (where(abs(y) eq min(abs(y))))[0]
+  nz0 = (where(abs(z) eq min(abs(z))))[0]
+  nxi = nx0 + [-1, 0, 1]*0.7*par.r_ext/dx + 1
+  nyi = ny0 + [-1, 0, 1]*0.7*par.r_ext/dy + 1
+  nzi = nz0 + [-1, 0, 1]*0.7*par.r_ext/dz + 1
+endif else begin                ; choose plains based on grid
+  nxi = [0.25,0.5,0.75]*mx
+  nyi = [0.25,0.5,0.75]*my
+  nzi = [0.25,0.5,0.75]*mz
+endelse
+
+;; Sanitize
+nxi = nxi > 3 < (mx-4)
+nyi = nyi > 3 < (my-4)
+nzi = nzi > 3 < (mz-4)
 
 sxi = '!8x!6='+strtrim(x[nxi],2)+'!X'
 syi = '!8y!6='+strtrim(y[nyi],2)+'!X'
