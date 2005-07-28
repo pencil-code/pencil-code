@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.7 2005-07-08 19:42:54 ajohan Exp $
+! $Id: particles_dust.f90,v 1.8 2005-07-28 13:48:49 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -30,7 +30,7 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, rhop=0.0, eps_dtog=0.01
   real :: dsnap_par_minor=0.0, nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: tausgmin=0.0, tausg1max=0.0
+  real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2
   logical :: ldragforce_gas=.false.
   character (len=labellen) :: initxxp='origin', initvvp='zero'
 
@@ -40,14 +40,14 @@ module Particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, nu_epicycle, &
-      ldragforce_gas, rhop, eps_dtog, tausgmin
+      ldragforce_gas, rhop, eps_dtog, tausgmin, cdtp
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhopmax=0
+  integer :: idiag_rhopmax=0, idiag_dtdragp=0
 
   contains
 
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.7 2005-07-08 19:42:54 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.8 2005-07-28 13:48:49 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -521,16 +521,25 @@ module Particles
 !
       if (tausp1/=0.) then
         if (lheader) print*,'dvvp_dt: Add drag force; tausp=', tausp
+!
+!  Use interpolation to calculate gas velocity at position of particles.
+!          
         do k=1,npar_loc
           call interpolate_3d_1st(f,iux,fp(k,ixp:izp),uup,ipar(k))
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tausp1*(fp(k,ivpx:ivpz)-uup)
         enddo
+!
+!  Back-reaction from dust particles on the gas.
+!        
         if (ldragforce_gas) then
           call reset_global('np')
           call reset_global('uupsum')
           do k=1,npar_loc
             call map_xxp_vvp_grid(fp(k,ixp:izp),fp(k,ivpx:ivpz))
           enddo
+!
+!  Loop over pencils for avoid global arrays.
+!          
           do imn=1,ny*nz
             n=nn(imn); m=mm(imn)
             lfirstpoint=(imn==1)
@@ -543,13 +552,29 @@ module Particles
               rho=exp(f(l1:l2,m,n,ilnrho))
             endif
             tausg1 = rhop*np*tausp1/rho
+!
+!  Minimum friction time of the gas.
+!            
             if (tausgmin/=0.0) where (tausg1>=tausg1max) tausg1=tausg1max
+!
+!  Add drag force on gas.
+!              
             do i=iux,iuz
               where (np/=0) df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - &
                   tausg1*(f(l1:l2,m,n,i)-uupsum(:,i)/np(:))
             enddo
+!
+!  Drag force contribution to time-step.
+!            
+            if (lfirst.and.ldt) dt1_max=max(dt1_max,tausg1/cdtp)
+!            
           enddo
         endif
+!
+!  Drag force contribution to time-step.
+!            
+        if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1/cdtp)
+!          
       endif
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
@@ -606,6 +631,8 @@ module Particles
             if (idiag_rhopmax/=0) call max_mn_name(rhop*np,idiag_rhopmax)
           enddo
         endif
+        if (idiag_dtdragp/=0) &
+            call max_mn_name((tausp1+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
       endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -691,7 +718,7 @@ module Particles
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhopmax=0
+        idiag_rhopmax=0; idiag_dtdragp=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -710,6 +737,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpx2m',idiag_vpx2m)
         call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
         call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
+        call parse_name(iname,cname(iname),cform(iname),'dtdragp',idiag_dtdragp)
         call parse_name(iname,cname(iname),cform(iname),'npm',idiag_npm)
         call parse_name(iname,cname(iname),cform(iname),'np2m',idiag_np2m)
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
