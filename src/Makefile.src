@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.123 2005-07-25 20:48:40 dobler Exp $
+### $Id: Makefile.src,v 1.124 2005-07-29 23:35:42 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -456,7 +456,6 @@ fast:
 	fi
 
 debug:
-	$(MAKE) cleann
 	if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \

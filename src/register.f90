@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.149 2005-07-12 05:11:22 brandenb Exp $
+! $Id: register.f90,v 1.150 2005-07-29 23:35:43 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -207,7 +207,8 @@ module Register
         sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
       elseif (unit_system=='SI') then
-        if(lroot.and.leos_ionization) print*,'initialize_modules: unit_velocity, unit_density, etc, are in SI'
+        if(lroot.and.leos_ionization) print*,&
+            'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs*1e-3/unit_mass

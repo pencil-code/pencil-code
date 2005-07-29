@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.146 2005-07-01 02:56:08 mee Exp $
+! $Id: start.f90,v 1.147 2005-07-29 23:35:43 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -86,7 +86,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.146 2005-07-01 02:56:08 mee Exp $")
+             "$Id: start.f90,v 1.147 2005-07-29 23:35:43 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -336,9 +336,7 @@
 !ajwm
 !ajwm        seed(1) = 1812
 !ajwm        call outpui(trim(directory)//'/seed.dat',seed,nseed)
-!ajwm Commented as now handled bi Persist module
-
-
+!ajwm Commented as now handled by Persist module
 !
         call mpifinalize
         if (lroot) print*

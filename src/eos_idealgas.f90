@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.17 2005-07-14 06:58:44 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.18 2005-07-29 23:35:43 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -93,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.17 2005-07-14 06:58:44 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.18 2005-07-29 23:35:43 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -124,7 +124,9 @@ module EquationOfState
        else
 !AB: commented this out to make geodynamo auto-test work
         !cp=1.
-        unit_temperature=unit_velocity**2*gamma1/gamma*mu_tmp/R_cgs
+         ! Avoid setting unit_temperature=0 to avoid flaoting point exceptions
+         if (gamma1 /= 0.) &
+             unit_temperature=unit_velocity**2*gamma1/gamma*mu_tmp/R_cgs
       endif
 
       if (lroot) print*,'initialize_eos: cp=',cp
