@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.145 2005-07-26 08:25:09 dobler Exp $
+# $Id: getconf.csh,v 1.146 2005-07-29 15:29:57 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -569,7 +569,8 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
 
 else if ($hn =~ cosmo) then
   echo "Cosmo - Tobi's laptop"
-  set mpirunops = '-x NLSPATH'
+  set mpirun = 'mpiexec'
+  set mpirunops = '-boot'
 
 else if ($hn =~ mhd) then
   echo "mhd node - Newcastle (alpha linux running LAM MPI)"
