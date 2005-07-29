@@ -1,10 +1,10 @@
-!                               -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 ! Convection in vertically stratified atmosphere/solar convection zone
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2005-06-26 17:34:27 eos_merger_tony Exp $'
+  cvsid='$Id: run.in,v 1.5 2005-07-29 16:33:40 theine Exp $'
   nt=250,it1=50,isave=1000,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
   bcz = 's','s','a','a2','a2'
