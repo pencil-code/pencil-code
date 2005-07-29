@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.8 2005-07-28 13:48:49 ajohan Exp $
+! $Id: particles_dust.f90,v 1.9 2005-07-29 10:19:10 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -47,7 +47,7 @@ module Particles
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhopmax=0, idiag_dtdragp=0
+  integer :: idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
 
   contains
 
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.8 2005-07-28 13:48:49 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.9 2005-07-29 10:19:10 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -596,9 +596,9 @@ module Particles
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_xpm/=0) call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        if (idiag_ypm/=0) call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        if (idiag_zpm/=0) call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
         if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
         if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
@@ -624,11 +624,12 @@ module Particles
             lfirstpoint=(imn==1)
             llastpoint=(imn==(ny*nz))
             call get_global(np,m,n,'np')
-            if (idiag_npm/=0) call sum_mn_name(np,idiag_npm)
-            if (idiag_np2m/=0) call sum_mn_name(np**2,idiag_np2m)
-            if (idiag_npmax/=0) call max_mn_name(np,idiag_npmax)
-            if (idiag_npmin/=0) call max_mn_name(-np,idiag_npmin,lneg=.true.)
+            if (idiag_npm/=0)     call sum_mn_name(np,idiag_npm)
+            if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
+            if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
+            if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
             if (idiag_rhopmax/=0) call max_mn_name(rhop*np,idiag_rhopmax)
+            if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
           enddo
         endif
         if (idiag_dtdragp/=0) &
@@ -697,7 +698,7 @@ module Particles
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
+      integer :: iname,inamez
       logical :: lwr
 ! 
 !  Write information to index.pro
@@ -718,7 +719,7 @@ module Particles
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhopmax=0; idiag_dtdragp=0
+        idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -743,6 +744,12 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
       enddo
 !
     endsubroutine rprint_particles
