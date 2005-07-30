@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.18 2005-07-20 19:54:14 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.19 2005-07-30 16:54:58 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -26,20 +26,37 @@ module Radiation
 !
   include 'radiation.h'
 !
+  type Qbound !Qbc
+    real :: val
+    logical :: set
+  endtype Qbound
+
+  type Qpoint !Qpt
+    real, pointer :: val
+    logical, pointer :: set
+  endtype Qpoint
+
+  real, dimension (mx,my,mz) :: Srad,lnchi,tau,Qrad,Qrad0
+  type (Qbound), dimension (my,mz), target :: Qbc_yz
+  type (Qbound), dimension (mx,mz), target :: Qbc_zx
+  type (Qbound), dimension (mx,my), target :: Qbc_xy
+  type (Qpoint), dimension (my,mz) :: Qpt_yz
+  type (Qpoint), dimension (mx,mz) :: Qpt_zx
+  type (Qpoint), dimension (mx,my) :: Qpt_xy
+
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
   character (len=bclen) :: bc_ray_x,bc_ray_y,bc_ray_z
   integer, parameter :: maxdir=26
-  real, dimension (mx,my,mz) :: Srad,lnchi,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
   real :: arad
   real :: dtau_thresh1,dtau_thresh2
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
-  integer :: llstart,llstop,lsign
-  integer :: mmstart,mmstop,msign
-  integer :: nnstart,nnstop,nsign
+  integer :: llstart,llstop,ll1,ll2,lsign
+  integer :: mmstart,mmstop,mm1,mm2,msign
+  integer :: nnstart,nnstop,nn1,nn2,nsign
   integer :: ipzstart,ipzstop
   logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
@@ -118,7 +135,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.18 2005-07-20 19:54:14 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.19 2005-07-30 16:54:58 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -153,17 +170,6 @@ module Radiation
       if (radx>1) call stop_it("radx currently must not be greater than 1")
       if (rady>1) call stop_it("rady currently must not be greater than 1")
       if (radz>1) call stop_it("radz currently must not be greater than 1")
-
-      if (radx==1.and.radz==1.and.rad2max>1.and.nz>nx) then
-        ! Could be fixed but it's probably not worth it...
-        call stop_it("initialize_radiation: For inclined rays with periodic "//&
-                     "boundaries in the x-direction we need nz <= nx")
-      endif
-      if (rady==1.and.radz==1.and.rad2max>1.and.nz>ny) then
-        ! Could be fixed but it's probably not worth it...
-        call stop_it("initialize_radiation: For inclined rays with periodic "//&
-                     "boundaries in the y-direction we need nz <= ny")
-      endif
 !
 !  Count
 !
@@ -252,7 +258,8 @@ module Radiation
           if (lperiodic_ray) then
             call Qperiodic
           else
-            call Qcommunicate
+            call Qassign_pointers
+            call Qcommunicate2
           endif
         endif
 
@@ -272,9 +279,6 @@ module Radiation
 !
       use Cdata, only: ldebug,headt
 
-      integer, dimension(my,mz) :: raysteps_yz
-      integer, dimension(mx,mz) :: raysteps_zx
-      integer, dimension(mx,my) :: raysteps_xy
       integer :: l,m,n
 !
 !  Identifier
@@ -289,20 +293,20 @@ module Radiation
 !
 !  Determine start and stop positions
 !
-      llstart=l1; llstop=l2; lsign=+1
-      mmstart=m1; mmstop=m2; msign=+1
-      nnstart=n1; nnstop=n2; nsign=+1
-      if (lrad>0) then; llstart=l1; llstop=l2; lsign=+1; endif
-      if (lrad<0) then; llstart=l2; llstop=l1; lsign=-1; endif
-      if (mrad>0) then; mmstart=m1; mmstop=m2; msign=+1; endif
-      if (mrad<0) then; mmstart=m2; mmstop=m1; msign=-1; endif
-      if (nrad>0) then; nnstart=n1; nnstop=n2; nsign=+1; endif
-      if (nrad<0) then; nnstart=n2; nnstop=n1; nsign=-1; endif
+      llstart=l1; llstop=l2; ll1=l1; ll2=l2; lsign=+1
+      mmstart=m1; mmstop=m2; mm1=m1; mm2=m2; msign=+1
+      nnstart=n1; nnstop=n2; nn1=n1; nn2=n2; nsign=+1
+      if (lrad>0) then; llstart=l1; llstop=l2; ll1=l1-lrad; lsign=+1; endif
+      if (lrad<0) then; llstart=l2; llstop=l1; ll2=l2-lrad; lsign=-1; endif
+      if (mrad>0) then; mmstart=m1; mmstop=m2; mm1=m1-mrad; msign=+1; endif
+      if (mrad<0) then; mmstart=m2; mmstop=m1; mm2=m2-mrad; msign=-1; endif
+      if (nrad>0) then; nnstart=n1; nnstop=n2; nn1=n1-nrad; nsign=+1; endif
+      if (nrad<0) then; nnstart=n2; nnstop=n1; nn2=n2-nrad; nsign=-1; endif
 !
 !  Are we dealing with a periodic ray?
 !
-      lperiodic_ray_x=(mrad==0.and.nrad==0)
-      lperiodic_ray_y=(nrad==0.and.lrad==0)
+      lperiodic_ray_x=(lrad/=0.and.mrad==0.and.nrad==0)
+      lperiodic_ray_y=(lrad==0.and.mrad/=0.and.nrad==0)
       lperiodic_ray=(lperiodic_ray_x.or.lperiodic_ray_y)
 !
 !  Determine boundary conditions
@@ -314,57 +318,6 @@ module Radiation
 !
       if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
       if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
-!
-!  Determine distance (ray steps) from the incoming to the outgoing
-!  boundary for the given direction.
-!
-!  yz-plane
-!
-      if (lrad/=0) then
-
-        raysteps_yz=(llstop+lrad-llstart)/lrad
-
-        forall (m=mmstart-mrad:mmstop:msign,mrad/=0)
-          raysteps_yz(m,:)=min(raysteps_yz(m,:),(m+mrad-mmstart)/mrad)
-        endforall
-
-        forall (n=nnstart-nrad:nnstop:nsign,nrad/=0)
-          raysteps_yz(:,n)=min(raysteps_yz(:,n),(n+nrad-nnstart)/nrad)
-        endforall
-
-      endif
-!
-!  zx-plane
-!
-      if (mrad/=0) then
-
-        raysteps_zx=(mmstop+mrad-mmstart)/mrad
-
-        forall (n=nnstart-nrad:nnstop:nsign,nrad/=0)
-          raysteps_zx(:,n)=min(raysteps_zx(:,n),(n+nrad-nnstart)/nrad)
-        endforall
-
-        forall (l=llstart-lrad:llstop:lsign,lrad/=0)
-          raysteps_zx(l,:)=min(raysteps_zx(l,:),(l+lrad-llstart)/lrad)
-        endforall
-
-      endif
-!
-!  xy-plane
-!
-      if (nrad/=0) then
-
-        raysteps_xy=(nnstop+nrad-nnstart)/nrad
-
-        forall (l=llstart-lrad:llstop:lsign,lrad/=0)
-          raysteps_xy(l,:)=min(raysteps_xy(l,:),(l+lrad-llstart)/lrad)
-        endforall
-
-        forall (m=mmstart-mrad:mmstop:msign,mrad/=0)
-          raysteps_xy(:,m)=min(raysteps_xy(:,m),(m+mrad-mmstart)/mrad)
-        endforall
-
-      endif
 !
 !  Label for debug output
 !
@@ -444,7 +397,9 @@ module Radiation
       enddo
       enddo
       enddo
-
+!
+!  debug output
+!
       if (lrad_debug) then
         call output(trim(directory_snap)//'/tau-'//raydir_str//'.dat',tau,1)
         call output(trim(directory_snap)//'/Qintr-'//raydir_str//'.dat',Qrad,1)
@@ -452,129 +407,327 @@ module Radiation
 !
     endsubroutine Qintrinsic
 !***********************************************************************
-    subroutine Qcommunicate
+    subroutine Qassign_pointers
 !
-!  DOCUMENT ME!
+!  For each gridpoint at the downstream boundaries, set up a
+!  pointer (Qpt_{yz,zx,xy}) that points to a unique location
+!  at the upstream boundaries (Qbc_{yz,zx,xy}). Both
+!  Qpt_{yz,zx,xy} and Qbc_{yz,zx,xy} are derived types
+!  containing at each grid point the value of the heating rate
+!  (...%val) and whether the heating rate at that point has
+!  been already set or not (...%set).
 !
-!  This is for non-horizontal rays.
+!  30-jul-05/tobi: coded
 !
-!  11-jul-03/tobi: coded
+      integer :: l,m,n
+      integer :: steps
+      integer :: minsteps
+      integer :: lsteps,msteps,nsteps
 !
-      use Mpicomm, only: ipy,ipz
+!  yz-plane
+!
+      if (lrad/=0) then
+
+           l=llstop
+        do m=mm1,mm2
+        do n=nn1,nn2
+
+          steps=(l+lrad-llstart)/lrad
+          minsteps=1
+
+          if (mrad/=0) then
+            msteps=(m+mrad-mmstart)/mrad
+            if (msteps<steps) then
+              steps=msteps
+              minsteps=2
+            endif
+          endif
+
+          if (nrad/=0) then
+            nsteps=(n+nrad-nnstart)/nrad
+            if (nsteps<steps) then
+              steps=nsteps
+              minsteps=3
+            endif
+          endif
+
+          select case (minsteps)
+            case (1)
+              Qpt_yz(m,n)%val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
+              Qpt_yz(m,n)%set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
+            case (2)
+              Qpt_yz(m,n)%val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
+              Qpt_yz(m,n)%set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
+            case (3)
+              Qpt_yz(m,n)%val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
+              Qpt_yz(m,n)%set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
+          endselect
+
+        enddo
+        enddo
+
+      endif
+!
+!  zx-plane
+!
+      if (mrad/=0) then
+
+           m=mmstop
+        do n=nn1,nn2
+        do l=ll1,ll2
+
+          steps=(m+mrad-mmstart)/mrad
+          minsteps=2
+
+          if (nrad/=0) then
+            nsteps=(n+nrad-nnstart)/nrad
+            if (nsteps<steps) then
+              steps=nsteps
+              minsteps=3
+            endif
+          endif
+
+          if (lrad/=0) then
+            lsteps=(l+lrad-llstart)/lrad
+            if (lsteps<steps) then
+              steps=lsteps
+              minsteps=1
+            endif
+          endif
+
+          select case (minsteps)
+            case (1)
+              Qpt_zx(l,n)%val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
+              Qpt_zx(l,n)%set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
+            case (2)
+              Qpt_zx(l,n)%val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
+              Qpt_zx(l,n)%set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
+            case (3)
+              Qpt_zx(l,n)%val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
+              Qpt_zx(l,n)%set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
+          endselect
+
+        enddo
+        enddo
+
+      endif
+!
+!  xy-plane
+!
+      if (nrad/=0) then
+
+           n=nnstop
+        do l=ll1,ll2
+        do m=mm1,mm2
+
+          steps=(n+nrad-nnstart)/nrad
+          minsteps=3
+
+          if (lrad/=0) then
+            lsteps=(l+lrad-llstart)/lrad
+            if (lsteps<steps) then
+              steps=lsteps
+              minsteps=1
+            endif
+          endif
+
+          if (mrad/=0) then
+            msteps=(m+mrad-mmstart)/mrad
+            if (msteps<steps) then
+              steps=msteps
+              minsteps=2
+            endif
+          endif
+
+          select case (minsteps)
+            case (1)
+              Qpt_xy(l,m)%val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
+              Qpt_xy(l,m)%set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
+            case (2)
+              Qpt_xy(l,m)%val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
+              Qpt_xy(l,m)%set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
+            case (3)
+              Qpt_xy(l,m)%val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
+              Qpt_xy(l,m)%set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
+          endselect
+
+        enddo
+        enddo
+
+      endif
+
+    endsubroutine Qassign_pointers
+!***********************************************************************
+    subroutine Qcommunicate2
+!
+!  Determine the boundary heating rates at all upstream boundaries.
+!
+!  First the boundary heating rates at the non-periodic xy-boundary 
+!  are set either through the boundary condition for the entire
+!  computational domain (ipz==ipzstart) or through communication with
+!  the neighboring processor in the upstream z-direction (ipz/=ipzstart).
+!
+!  The boundary heating rates at the periodic yz- and zx-boundaries
+!  are then obtained by repetitive communication along the y-direction
+!  until both boundaries are entirely set with the correct values.
+!
+!  30-jul-05/tobi: coded
+!
+      use Cdata, only: ipz
       use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
       use Mpicomm, only: radboundary_zx_recv_wait,radboundary_zx_send_wait
       use Mpicomm, only: radboundary_xy_recv_wait,radboundary_xy_send_wait
-      use Cparam, only: nprocy,nprocz
-      use IO, only: output
-!
-      real, dimension(my,mz) :: Qrad0_yz
-      real, dimension(mx,mz) :: Qrad0_zx
-      real, dimension(mx,my) :: Qrad0_xy
-      integer :: steps
+
+      real, dimension (my,mz) :: emtau_yz,Qrad_yz
+      real, dimension (mx,mz) :: emtau_zx,Qrad_zx
+      real, dimension (mx,my) :: emtau_xy,Qrad_xy
+      real, dimension (mx,mz) :: Qsend_zx,Qrecv_zx
+      real, dimension (mx,my) :: Qrecv_xy,Qsend_xy
+
       integer :: l,m,n
+      logical :: all_yz,all_zx
 !
-!  Initialize Qrad0 to zero
+!  Initially no boundaries are set
 !
-      Qrad0=0.0
+      Qbc_xy%set=.false.
+      Qbc_yz%set=.false.
+      Qbc_zx%set=.false.
+
+      all_yz=.false.
+      all_zx=.false.
 !
-!  Non-periodic z-boundary
-!
-!  Set or receive boundary values
+!  either receive or set xy-boundary heating rate
 !
       if (ipz==ipzstart) then
-        call radboundary_xy_set(Qrad0_xy)
+        call radboundary_xy_set(Qrecv_xy)
       else
-        call radboundary_xy_recv(nrad,idir,Qrad0_xy)
+        call radboundary_xy_recv(nrad,idir,Qrecv_xy)
         call radboundary_xy_recv_wait()
       endif
-
-      forall (l=llstart-lrad:llstop:lsign,m=mmstart-mrad:mmstop:msign)
-        Qrad0(l,m,nnstart-nrad)=Qrad0_xy(l,m)
-      endforall
 !
-!  Periodic x-boundary
+!  copy the above heating rates to the xy-target arrays which are then set
+!
+      Qbc_xy(ll1:ll2,mm1:mm2)%val = Qrecv_xy(ll1:ll2,mm1:mm2)
+      Qbc_xy(ll1:ll2,mm1:mm2)%set = .true.
+!
+!  do the same for the yz- and zx-target arrays where those boundaries
+!  overlap with the xy-boundary and calculate exp(-tau) and Qrad at the
+!  downstream boundaries.
 !
       if (lrad/=0) then
-!
-!  Propagate values
-!
-        do m=mmstart-mrad,mmstop,msign
-        do n=nnstart-nrad,nnstop,nsign
-          steps=(llstop+lrad-llstart)/lrad
-          if (mrad/=0) steps=min(steps,(m+mrad-mmstart)/mrad)
-          if (nrad/=0) steps=min(steps,(n+nrad-nnstart)/nrad)
-          Qrad0(llstop,m,n)=Qrad0(llstop-lrad*steps,m-mrad*steps,n-nrad*steps)
-          Qrad0_yz(m,n)=Qrad0(llstop,m,n)*exp(-tau(llstop,m,n))+Qrad(llstop,m,n)
-        enddo
-        enddo
-!
-!  Add boundary contribution
-!
-!  TH: This should be done in the loop above. Right now it's in a seperate
-!      loop for the sake of analogy to the mrad/=0 case.
-!
-        forall (m=mmstart-mrad:mmstop:msign,n=nnstart-nrad:nnstop:nsign)
-          Qrad0(llstart-lrad,m,n)=Qrad0_yz(m,n)
-        endforall
+
+        Qbc_yz(mm1:mm2,nnstart-nrad)%val = Qrecv_xy(llstart-lrad,mm1:mm2)
+        Qbc_yz(mm1:mm2,nnstart-nrad)%set = .true.
+
+        emtau_yz(mm1:mm2,nn1:nn2) = exp(-tau(llstop,mm1:mm2,nn1:nn2))
+         Qrad_yz(mm1:mm2,nn1:nn2) =     Qrad(llstop,mm1:mm2,nn1:nn2)
+
+      else
+
+        all_yz=.true.
 
       endif
-!
-!  Periodic y-boundary
-!
+
       if (mrad/=0) then
-!
-!  Propagate values
-!
-        do n=nnstart-nrad,nnstop,nsign
-        do l=llstart-lrad,llstop,lsign
-          steps=(mmstop+mrad-mmstart)/mrad
-          if (nrad/=0) steps=min(steps,(n+nrad-nnstart)/nrad)
-          if (lrad/=0) steps=min(steps,(l+lrad-llstart)/lrad)
-          Qrad0(l,mmstop,n)=Qrad0(l-lrad*steps,mmstop-mrad*steps,n-nrad*steps)
-          Qrad0_zx(l,n)=Qrad0(l,mmstop,n)*exp(-tau(l,mmstop,n))+Qrad(l,mmstop,n)
-        enddo
-        enddo
-!
-!  If there are more than one processor in the y-direction
-!  send boundary values to the next one
-!
-        if (nprocy>1) then
-          call radboundary_zx_send(mrad,idir,Qrad0_zx)
-          call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-          call radboundary_zx_send_wait()
-          call radboundary_zx_recv_wait()
-        endif
-!
-!  Add boundary contribution
-!
-        forall (n=nnstart-nrad:nnstop:nsign,l=llstart-lrad:llstop:lsign)
-          Qrad0(l,mmstart-mrad,n)=Qrad0_zx(l,n)
-        endforall
+
+        Qbc_zx(ll1:ll2,nnstart-nrad)%val = Qrecv_xy(ll1:ll2,mmstart-mrad)
+        Qbc_zx(ll1:ll2,nnstart-nrad)%set = .true.
+
+        emtau_zx(ll1:ll2,nn1:nn2) = exp(-tau(ll1:ll2,mmstop,nn1:nn2))
+         Qrad_zx(ll1:ll2,nn1:nn2) =     Qrad(ll1:ll2,mmstop,nn1:nn2)
+
+      else
+
+        all_zx=.true.
 
       endif
 !
-!  Non-periodic z-direction
-!  Propagate and send boundary values
+!  communicate along the y-direction until all upstream heating rates at
+!  the yz- and zx-boundaries are determined.
+!
+      if (lrad/=0.or.mrad/=0) then; do
+
+        if (lrad/=0) then
+
+          forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
+
+            Qbc_yz(m,n)%val = Qpt_yz(m,n)%val*emtau_yz(m,n)+Qrad_yz(m,n)
+            Qbc_yz(m,n)%set = Qpt_yz(m,n)%set
+
+          endforall
+
+          all_yz=all(Qbc_yz(mm1:mm2,nn1:nn2)%set)
+
+          if (all_yz.and.all_zx) exit
+
+        endif
+
+        if (mrad/=0) then
+
+          forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
+
+            Qsend_zx(l,n) = Qpt_zx(l,n)%val*emtau_zx(l,n)+Qrad_zx(l,n)
+
+          endforall
+
+          if (nprocy>1) then
+            call radboundary_zx_send(mrad,idir,Qsend_zx)
+            call radboundary_zx_recv(mrad,idir,Qrecv_zx)
+            call radboundary_zx_send_wait()
+            call radboundary_zx_recv_wait()
+          endif
+
+          forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
+
+            Qbc_zx(l,n)%val = Qrecv_zx(l,n)
+            Qbc_zx(l,n)%set = Qpt_zx(l,n)%set
+
+          endforall
+
+          all_zx=all(Qbc_zx(ll1:ll2,nn1:nn2)%set)
+
+          if (all_yz.and.all_zx) exit
+
+        endif
+
+      enddo; endif
+!
+!  copy all heating rates at the upstream boundaries to the Qrad0 which
+!  is used in Qrevision below.
+!
+      if (lrad/=0) then
+        Qrad0(llstart-lrad,mm1:mm2,nn1:nn2)=Qbc_yz(mm1:mm2,nn1:nn2)%val
+      endif
+
+      if (mrad/=0) then
+        Qrad0(ll1:ll2,mmstart-mrad,nn1:nn2)=Qbc_zx(ll1:ll2,nn1:nn2)%val
+      endif
+
+      if (nrad/=0) then
+        Qrad0(ll1:ll2,mm1:mm2,nnstart-nrad)=Qbc_xy(ll1:ll2,mm1:mm2)%val
+      endif
+!
+!  If this is not the last processor in ray direction (z-component) then
+!  calculate the downstream heating rates at the xy-boundary and send them
+!  to the next processor.
 !
       if (ipz/=ipzstop) then
 
-        do l=llstart,llstop,lsign
-        do m=mmstart,mmstop,msign
-          steps=(nnstop+nrad-nnstart)/nrad
-          if (lrad/=0) steps=min(steps,(l+lrad-llstart)/lrad)
-          if (mrad/=0) steps=min(steps,(m+mrad-mmstart)/mrad)
-          Qrad0(l,m,nnstop)=Qrad0(l-lrad*steps,m-mrad*steps,nnstop-nrad*steps)
-          Qrad0_xy(l,m)=Qrad0(l,m,nnstop)*exp(-tau(l,m,nnstop)+Qrad(l,m,nnstop))
-        enddo
-        enddo
+        forall (l=ll1:ll2,m=mm1:mm2)
 
-        call radboundary_xy_send(nrad,idir,Qrad0_xy)
+          emtau_xy(l,m) = exp(-tau(l,m,nnstop))
+          Qrad_xy(l,m) = Qrad(l,m,nnstop)
+          Qsend_xy(l,m) = Qpt_xy(l,m)%val*emtau_xy(l,m)+Qrad_xy(l,m)
+
+        endforall
+
+        call radboundary_xy_send(nrad,idir,Qsend_xy)
         call radboundary_xy_send_wait()
 
       endif
 
-    endsubroutine Qcommunicate
+    endsubroutine Qcommunicate2
 !***********************************************************************
     subroutine Qperiodic
 !
