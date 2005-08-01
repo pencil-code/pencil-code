@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.121 2005-06-26 17:34:13 eos_merger_tony Exp $ 
+! $Id: initcond.f90,v 1.122 2005-08-01 12:06:04 theine Exp $ 
 
 module Initcond 
  
@@ -977,10 +977,11 @@ module Initcond
       use EquationOfState, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer, parameter :: ntotal=nz*nprocz
-      real, dimension (ntotal) :: lnrho0,lnTT0,ss0
-      real :: ztmp
+      integer, parameter :: ntotal=nz*nprocz,mtotal=nz*nprocz+2*nghost
+      real, dimension (mtotal) :: lnrho0,lnTT0,ss0
+      real :: tmp,var1,var2
       logical :: exist
+      integer :: stat
       character (len=labellen) :: strati_type
 !
 !  read mean stratification and write into array
@@ -1003,25 +1004,62 @@ module Initcond
 !
       select case(strati_type)
       case('lnrho_ss')
-        do n=1,ntotal
-          read(19,*) ztmp,lnrho0(n),ss0(n)
-          if (ip<5) print*,"stratification: ",ztmp,lnrho0(n),SS0(n)
+        do n=1,mtotal
+          read(19,*,iostat=stat) tmp,var1,var2
+          if (stat>=0) then
+            if (ip<5) print*,"stratification: ",tmp,var1,var2
+            lnrho0(n)=var1
+            ss0(n)=var2
+          else
+            exit
+          endif
         enddo
 !
       case('lnrho_lnTT')
-        do n=1,ntotal
-          read(19,*) ztmp,lnrho0(n),lnTT0(n)
-          if (ip<5) print*,"stratification: ",ztmp,lnrho0(n),lnTT0(n)
-          call eoscalc(ilnrho_lnTT,lnrho0(n),lnTT0(n),ss=ss0(n))
+        do n=1,mtotal
+          read(19,*,iostat=stat) tmp,var1,var2
+          if (stat>=0) then
+            if (ip<5) print*,"stratification: ",tmp,var1,var2
+            call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
+            lnrho0(n)=var1
+            ss0(n)=tmp
+          else
+            exit
+          endif
         enddo
       endselect
 !
 !  select the right region for the processor afterwards
 !
-      do n=n1,n2
-        f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-3)
-        f(:,:,n,iss)=ss0(ipz*nz+n-3)
-      enddo
+      select case (n)
+  !
+  !  without ghost zones
+  !
+      case (ntotal+1)
+        do n=n1,n2
+          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
+          f(:,:,n,iss)=ss0(ipz*nz+n-nghost)
+        enddo
+  !
+  !  with ghost zones
+  !
+      case (mtotal+1)
+        do n=1,mz
+          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+          f(:,:,n,iss)=ss0(ipz*nz+n)
+        enddo
+
+      case default
+        if (lroot) then
+          print '(A,I4,A,I4,A,I4,A)','ERROR: The stratification file '// &
+                'for this run is allowed to contain either',ntotal, &
+                ' lines (without ghost zones) or more than',mtotal, &
+                ' lines (with ghost zones). It does contain',n-1, &
+                ' lines though.'
+        endif
+        call stop_it('')
+
+      endselect
 !      
       close(19)
 !
