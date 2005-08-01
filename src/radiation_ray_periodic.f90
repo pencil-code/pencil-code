@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.19 2005-07-30 16:54:58 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.20 2005-08-01 12:44:16 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -62,7 +62,9 @@ module Radiation
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
   real :: kappa_cst=1.0
   real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
+  real :: kx_Srad=0.0,ky_Srad=0.0,kz_Srad=0.0
   real :: lnchi_const=1.0,ampllnchi=1.0,radius_lnchi=1.0
+  real :: kx_lnchi=0.0,ky_lnchi=0.0,kz_lnchi=0.0
   integer :: nrad_rep=1 ! for timings
 !
 !  Default values for one pair of vertical rays
@@ -85,6 +87,7 @@ module Radiation
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
+       kx_Srad,ky_Srad,kz_Srad,kx_lnchi,ky_lnchi,kz_lnchi, &
        lnchi_const,ampllnchi,radius_lnchi, &
        lintrinsic,lcommunicate,lrevision,nrad_rep
 
@@ -92,6 +95,7 @@ module Radiation
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
+       kx_Srad,ky_Srad,kz_Srad,kx_lnchi,ky_lnchi,kz_lnchi, &
        lnchi_const,ampllnchi,radius_lnchi, &
        lintrinsic,lcommunicate,lrevision,lcooling,nrad_rep
 
@@ -135,7 +139,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.19 2005-07-30 16:54:58 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.20 2005-08-01 12:44:16 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -259,7 +263,7 @@ module Radiation
             call Qperiodic
           else
             call Qassign_pointers
-            call Qcommunicate2
+            call Qcommunicate
           endif
         endif
 
@@ -558,7 +562,7 @@ module Radiation
 
     endsubroutine Qassign_pointers
 !***********************************************************************
-    subroutine Qcommunicate2
+    subroutine Qcommunicate
 !
 !  Determine the boundary heating rates at all upstream boundaries.
 !
@@ -727,7 +731,7 @@ module Radiation
 
       endif
 
-    endsubroutine Qcommunicate2
+    endsubroutine Qcommunicate
 !***********************************************************************
     subroutine Qperiodic
 !
@@ -971,9 +975,9 @@ module Radiation
       case ('cos')
         if (lfirst) then
           Srad=Srad_const &
-              +amplSrad*spread(spread(cos((x-pi/2)/2)**2,2,my),3,mz) &
-                       *spread(spread(cos((y-pi/2)/2)**2,1,mx),3,mz) &
-                       *spread(spread(cos((z-pi/2)/2)**2,1,mx),2,my)
+              +amplSrad*spread(spread(cos(kx_Srad*x),2,my),3,mz) &
+                       *spread(spread(cos(ky_Srad*y),1,mx),3,mz) &
+                       *spread(spread(cos(kz_Srad*z),1,mx),2,my)
           lfirst=.false.
         endif
 
@@ -1034,9 +1038,9 @@ module Radiation
       case ('cos')
         if (lfirst) then
           lnchi=lnchi_const &
-               +ampllnchi*spread(spread(cos((x-pi/2)/2)**2,2,my),3,mz) &
-                         *spread(spread(cos((y-pi/2)/2)**2,1,mx),3,mz) &
-                         *spread(spread(cos((z-pi/2)/2)**2,1,mx),2,my)
+               +ampllnchi*spread(spread(cos(kx_lnchi*x),2,my),3,mz) &
+                         *spread(spread(cos(ky_lnchi*y),1,mx),3,mz) &
+                         *spread(spread(cos(kz_lnchi*z),1,mx),2,my)
           lfirst=.false.
         endif
 
