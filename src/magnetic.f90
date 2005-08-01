@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.248 2005-07-23 13:35:10 brandenb Exp $
+! $Id: magnetic.f90,v 1.249 2005-08-01 13:28:11 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED aa,a2,aij,bb,ab,uxb,b2,bij,del2a,graddiva,jj
+! PENCILS PROVIDED aa,a2,aij,bb,bbb,ab,uxb,b2,bij,del2a,graddiva,jj
 ! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta
 ! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
 ! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12 
@@ -128,9 +128,6 @@ module Magnetic
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
   integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
 
-  ! define bbb, which is the same as p%bb, but before adding B_ext.
-  real, dimension(nx,3) :: bbb
-
   contains
 
 !***********************************************************************
@@ -170,7 +167,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.248 2005-07-23 13:35:10 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.249 2005-08-01 13:28:11 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -617,6 +614,9 @@ module Magnetic
 ! bb
       if (lpencil(i_bb)) then
         call curl_mn(p%aij,p%bb,p%aa)
+!  save field before adding imposed field (for diagnostics)
+        p%bbb=p%bb
+!
         B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
 !
 !  allow external field to precess about z-axis
@@ -632,8 +632,6 @@ module Magnetic
             B_ext_tmp(2)=B_ext(1)*s+B_ext(2)*c
             B_ext_tmp(3)=B_ext(3)
           endif
-!  save field before adding imposed field (for diagnostics)
-          bbb=p%bb
 !  add the external field
           if (B_ext(1)/=0.) p%bb(:,1)=p%bb(:,1)+B_ext_tmp(1)
           if (B_ext(2)/=0.) p%bb(:,2)=p%bb(:,2)+B_ext_tmp(2)
@@ -999,12 +997,12 @@ module Magnetic
             call sum_mn_name(2*p%aa(:,2)*p%bb(:,2),idiag_aybym2)
         if (idiag_abm/=0) call sum_mn_name(p%ab,idiag_abm)
         if (idiag_ubm/=0) call sum_mn_name(p%ub,idiag_ubm)
-        if (idiag_bx2m/=0) call sum_mn_name(bbb(:,1)**2,idiag_bx2m)
-        if (idiag_by2m/=0) call sum_mn_name(bbb(:,2)**2,idiag_by2m)
-        if (idiag_bz2m/=0) call sum_mn_name(bbb(:,3)**2,idiag_bz2m)
-        if (idiag_bxbym/=0) call sum_mn_name(bbb(:,1)*bbb(:,2),idiag_bxbym)
-        if (idiag_bxbzm/=0) call sum_mn_name(bbb(:,1)*bbb(:,3),idiag_bxbzm)
-        if (idiag_bybzm/=0) call sum_mn_name(bbb(:,2)*bbb(:,3),idiag_bybzm)
+        if (idiag_bx2m/=0) call sum_mn_name(p%bbb(:,1)**2,idiag_bx2m)
+        if (idiag_by2m/=0) call sum_mn_name(p%bbb(:,2)**2,idiag_by2m)
+        if (idiag_bz2m/=0) call sum_mn_name(p%bbb(:,3)**2,idiag_bz2m)
+        if (idiag_bxbym/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,2),idiag_bxbym)
+        if (idiag_bxbzm/=0) call sum_mn_name(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzm)
+        if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
 
         if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
 !
