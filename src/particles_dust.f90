@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.9 2005-07-29 10:19:10 ajohan Exp $
+! $Id: particles_dust.f90,v 1.10 2005-08-02 13:17:51 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -22,7 +22,7 @@ module Particles
 
   include 'particles.h'
 
-  real, dimension (mpar_loc,mpvar) :: fp=0.0, dfp=0.0
+  real, dimension (mpar_loc,mpvar) :: fp, dfp
   integer, dimension (mpar_loc) :: ipar
   integer :: npar_loc, npvar
 
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.9 2005-07-29 10:19:10 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.10 2005-08-02 13:17:51 ajohan Exp $")
 !
 !  Indices for particle position.
 !
