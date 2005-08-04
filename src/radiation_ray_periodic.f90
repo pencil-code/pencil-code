@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.21 2005-08-04 16:48:37 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.22 2005-08-04 20:03:47 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -139,7 +139,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.21 2005-08-04 16:48:37 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.22 2005-08-04 20:03:47 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -213,7 +213,7 @@ module Radiation
 !
 !  Calculate weights
 !
-      weight=1.0/ndir
+      if (ndir>0) weight=1.0/ndir
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',ndir
 !
