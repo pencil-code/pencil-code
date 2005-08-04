@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.70 2005-07-20 19:54:14 theine Exp $
+! $Id: radiation_ray.f90,v 1.71 2005-08-04 16:48:37 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -38,9 +38,9 @@ module Radiation
   real :: arad
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
-  integer :: llstart,llstop,lsign
-  integer :: mmstart,mmstop,msign
-  integer :: nnstart,nnstop,nsign
+  integer :: llstart,llstop,ll1,ll2,lsign
+  integer :: mmstart,mmstop,mm1,mm2,msign
+  integer :: nnstart,nnstop,nn1,nn2,nsign
   integer :: ipystart,ipystop,ipzstart,ipzstop
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
   real :: kappa_cst=1.0
@@ -118,7 +118,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.70 2005-07-20 19:54:14 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.71 2005-08-04 16:48:37 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -433,15 +433,15 @@ module Radiation
 !
 !  determine start and stop positions
 !
-      llstart=l1; llstop=l2; lsign=+1
-      mmstart=m1; mmstop=m2; msign=+1
-      nnstart=n1; nnstop=n2; nsign=+1
-      if (lrad>0) then; llstart=l1; llstop=l2; lsign=+1; endif
-      if (lrad<0) then; llstart=l2; llstop=l1; lsign=-1; endif
-      if (mrad>0) then; mmstart=m1; mmstop=m2; msign=+1; endif
-      if (mrad<0) then; mmstart=m2; mmstop=m1; msign=-1; endif
-      if (nrad>0) then; nnstart=n1; nnstop=n2; nsign=+1; endif
-      if (nrad<0) then; nnstart=n2; nnstop=n1; nsign=-1; endif
+      llstart=l1; llstop=l2; ll1=l1; ll2=l2; lsign=+1
+      mmstart=m1; mmstop=m2; mm1=m1; mm2=m2; msign=+1
+      nnstart=n1; nnstop=n2; nn1=n1; nn2=n2; nsign=+1
+      if (lrad>0) then; llstart=l1; llstop=l2; ll1=l1-lrad; lsign=+1; endif
+      if (lrad<0) then; llstart=l2; llstop=l1; ll2=l2-lrad; lsign=-1; endif
+      if (mrad>0) then; mmstart=m1; mmstop=m2; mm1=m1-mrad; msign=+1; endif
+      if (mrad<0) then; mmstart=m2; mmstop=m1; mm2=m2-mrad; msign=-1; endif
+      if (nrad>0) then; nnstart=n1; nnstop=n2; nn1=n1-nrad; nsign=+1; endif
+      if (nrad<0) then; nnstart=n2; nnstop=n1; nn2=n2-nrad; nsign=-1; endif
 !
 !  determine boundary conditions
 !
@@ -553,8 +553,6 @@ module Radiation
       use Mpicomm, only: ipy,ipz
       use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
-      use Mpicomm, only: radboundary_zx_recv_wait,radboundary_zx_send_wait
-      use Mpicomm, only: radboundary_xy_recv_wait,radboundary_xy_send_wait
 !
       real, dimension(my,mz) :: Qrad0_yz
       real, dimension(mx,mz) :: Qrad0_zx
@@ -566,35 +564,26 @@ module Radiation
 !
       if (lrad/=0) then
         call radboundary_yz_set(Qrad0_yz)
-        Qrad0(llstart-lrad,mmstart-mrad:mmstop:msign,nnstart-nrad:nnstop:nsign) &
-    =Qrad0_yz(             mmstart-mrad:mmstop:msign,nnstart-nrad:nnstop:nsign)
+        Qrad0(llstart-lrad,mm1:mm2,nn1:nn2)=Qrad0_yz(mm1:mm2,nn1:nn2)
       endif
 !
       if (mrad/=0) then
         if (ipy==ipystart) call radboundary_zx_set(Qrad0_zx)
-        if (ipy/=ipystart) then
-          call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-          call radboundary_zx_recv_wait()
-        endif
-        Qrad0(llstart-lrad:llstop:lsign,mmstart-mrad,nnstart-nrad:nnstop:nsign) &
-    =Qrad0_zx(llstart-lrad:llstop:lsign,             nnstart-nrad:nnstop:nsign)
+        if (ipy/=ipystart) call radboundary_zx_recv(mrad,idir,Qrad0_zx)
+        Qrad0(ll1:ll2,mmstart-mrad,nn1:nn2)=Qrad0_zx(ll1:ll2,nn1:nn2)
       endif
 !
       if (nrad/=0) then
         if (ipz==ipzstart) call radboundary_xy_set(Qrad0_xy)
-        if (ipz/=ipzstart) then
-          call radboundary_xy_recv(nrad,idir,Qrad0_xy)
-          call radboundary_xy_recv_wait()
-        endif
-        Qrad0(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstart-nrad) &
-    =Qrad0_xy(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign             )
+        if (ipz/=ipzstart) call radboundary_xy_recv(nrad,idir,Qrad0_xy)
+        Qrad0(ll1:ll2,mm1:mm2,nnstart-nrad)=Qrad0_xy(ll1:ll2,mm1:mm2)
       endif
 !
 !  propagate boundary values
 !
       if (lrad/=0) then
-        do m=mmstart,mmstop,msign
-        do n=nnstart,nnstop,nsign
+        do m=mm1,mm2
+        do n=nn1,nn2
           raysteps=(llstop-llstart)/lrad
           if (mrad/=0) raysteps=min(raysteps,(mmstop-m)/mrad)
           if (nrad/=0) raysteps=min(raysteps,(nnstop-n)/nrad)
@@ -605,8 +594,8 @@ module Radiation
       endif
 !
       if (mrad/=0) then
-        do n=nnstart,nnstop,nsign
-        do l=llstart,llstop,lsign
+        do n=nn1,nn2
+        do l=ll1,ll2
           raysteps=(mmstop-mmstart)/mrad
           if (nrad/=0) raysteps=min(raysteps,(nnstop-n)/nrad)
           if (lrad/=0) raysteps=min(raysteps,(llstop-l)/lrad)
@@ -617,8 +606,8 @@ module Radiation
       endif
 !
       if (nrad/=0) then
-        do l=llstart,llstop,lsign
-        do m=mmstart,mmstop,msign
+        do l=ll1,ll2
+        do m=mm1,mm2
           raysteps=(nnstop-nnstart)/nrad
           if (lrad/=0) raysteps=min(raysteps,(llstop-l)/lrad)
           if (mrad/=0) raysteps=min(raysteps,(mmstop-m)/mrad)
@@ -631,21 +620,17 @@ module Radiation
 !  send boundary values
 !
       if (mrad/=0.and.ipy/=ipystop) then
-        Qrad0_zx(llstart-lrad:llstop:lsign,       nnstart-nrad:nnstop:nsign) &
-          =Qrad0(llstart-lrad:llstop:lsign,mmstop,nnstart-nrad:nnstop:nsign) &
-       *exp(-tau(llstart-lrad:llstop:lsign,mmstop,nnstart-nrad:nnstop:nsign)) &
-           +Qrad(llstart-lrad:llstop:lsign,mmstop,nnstart-nrad:nnstop:nsign)
+        Qrad0_zx(ll1:ll2,nn1:nn2)=Qrad0(ll1:ll2,mmstop,nn1:nn2) &
+                              *exp(-tau(ll1:ll2,mmstop,nn1:nn2)) &
+                                  +Qrad(ll1:ll2,mmstop,nn1:nn2)
         call radboundary_zx_send(mrad,idir,Qrad0_zx)
-        call radboundary_zx_send_wait()
       endif
 !
       if (nrad/=0.and.ipz/=ipzstop) then
-        Qrad0_xy(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign       ) &
-          =Qrad0(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstop) &
-       *exp(-tau(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstop)) &
-           +Qrad(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstop)
+        Qrad0_xy(ll1:ll2,mm1:mm2)=Qrad0(ll1:ll2,mm1:mm2,nnstop) &
+                              *exp(-tau(ll1:ll2,mm1:mm2,nnstop)) &
+                                  +Qrad(ll1:ll2,mm1:mm2,nnstop)
         call radboundary_xy_send(nrad,idir,Qrad0_xy)
-        call radboundary_xy_send_wait()
       endif
 !
     endsubroutine Qcommunicate

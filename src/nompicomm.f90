@@ -222,81 +222,70 @@ module Mpicomm
       end if
     end subroutine finalize_shearing
 !***********************************************************************
-    subroutine radboundary_zx_recv(mrad,idir,Ibuf_zx)
+    subroutine radboundary_zx_recv(mrad,idir,Qrecv_zx)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: mrad,idir
-      real, dimension(mx,mz) :: Ibuf_zx
+      real, dimension(mx,mz) :: Qrecv_zx
 !
       if (NO_WARN) then
-         print*,mrad,idir,Ibuf_zx(1,1)
+         print*,mrad,idir,Qrecv_zx(1,1)
       endif
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radboundary_zx_recv_wait()
-!
-!  20-jul-05/tobi: dummy created
-!
-    endsubroutine radboundary_zx_recv_wait
-!***********************************************************************
-    subroutine radboundary_xy_recv(nrad,idir,Ibuf_xy)
+    subroutine radboundary_xy_recv(nrad,idir,Qrecv_xy)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: nrad,idir
-      real, dimension(mx,my) :: Ibuf_xy
+      real, dimension(mx,my) :: Qrecv_xy
 !
       if (NO_WARN) then
-         print*,nrad,idir,Ibuf_xy(1,1)
+         print*,nrad,idir,Qrecv_xy(1,1)
       endif
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radboundary_xy_recv_wait()
-!
-!  20-jul-05/tobi: dummy created
-!
-    endsubroutine radboundary_xy_recv_wait
-!***********************************************************************
-    subroutine radboundary_zx_send(mrad,idir,Ibuf_zx)
+    subroutine radboundary_zx_send(mrad,idir,Qsend_zx)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: mrad,idir
-      real, dimension(mx,mz) :: Ibuf_zx
+      real, dimension(mx,mz) :: Qsend_zx
 !
       if (NO_WARN) then
-         print*,mrad,idir,Ibuf_zx(1,1)
+         print*,mrad,idir,Qsend_zx(1,1)
       endif
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
-    subroutine radboundary_zx_send_wait()
-!
-!  20-jul-05/tobi: dummy created
-!
-    endsubroutine radboundary_zx_send_wait
-!***********************************************************************
-    subroutine radboundary_xy_send(nrad,idir,Ibuf_xy)
+    subroutine radboundary_xy_send(nrad,idir,Qsend_xy)
 !
 !   2-jul-03/tony: dummy created
 !
       integer :: nrad,idir
-      real, dimension(mx,my) :: Ibuf_xy
+      real, dimension(mx,my) :: Qsend_xy
 !
       if (NO_WARN) then
-         print*,nrad,idir,Ibuf_xy(1,1)
+         print*,nrad,idir,Qsend_xy(1,1)
       endif
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
-    subroutine radboundary_xy_send_wait()
+    subroutine radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
 !
-!  20-jul-05/tobi: dummy created
+!   2-jul-03/tony: dummy created
 !
-    endsubroutine radboundary_xy_send_wait
+      integer :: mrad,idir
+      real, dimension(mx,mz) :: Qsend_zx,Qrecv_zx
+!
+      if (NO_WARN) then
+         print*,mrad,idir,Qsend_zx(1,1),Qrecv_zx(1,1)
+      endif
+!
+    endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)

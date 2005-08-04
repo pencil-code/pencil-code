@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.20 2005-08-01 12:44:16 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.21 2005-08-04 16:48:37 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -139,7 +139,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.20 2005-08-01 12:44:16 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.21 2005-08-04 16:48:37 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -578,10 +578,8 @@ module Radiation
 !  30-jul-05/tobi: coded
 !
       use Cdata, only: ipz
-      use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
       use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
-      use Mpicomm, only: radboundary_zx_recv_wait,radboundary_zx_send_wait
-      use Mpicomm, only: radboundary_xy_recv_wait,radboundary_xy_send_wait
+      use Mpicomm, only: radboundary_zx_sendrecv
 
       real, dimension (my,mz) :: emtau_yz,Qrad_yz
       real, dimension (mx,mz) :: emtau_zx,Qrad_zx
@@ -607,7 +605,6 @@ module Radiation
         call radboundary_xy_set(Qrecv_xy)
       else
         call radboundary_xy_recv(nrad,idir,Qrecv_xy)
-        call radboundary_xy_recv_wait()
       endif
 !
 !  copy the above heating rates to the xy-target arrays which are then set
@@ -652,7 +649,7 @@ module Radiation
 !
       if (lrad/=0.or.mrad/=0) then; do
 
-        if (lrad/=0) then
+        if (lrad/=0.and..not.all_yz) then
 
           forall (m=mm1:mm2,n=nn1:nn2,Qpt_yz(m,n)%set.and..not.Qbc_yz(m,n)%set)
 
@@ -667,7 +664,7 @@ module Radiation
 
         endif
 
-        if (mrad/=0) then
+        if (mrad/=0.and..not.all_zx) then
 
           forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
 
@@ -676,10 +673,7 @@ module Radiation
           endforall
 
           if (nprocy>1) then
-            call radboundary_zx_send(mrad,idir,Qsend_zx)
-            call radboundary_zx_recv(mrad,idir,Qrecv_zx)
-            call radboundary_zx_send_wait()
-            call radboundary_zx_recv_wait()
+            call radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
           endif
 
           forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
@@ -727,7 +721,6 @@ module Radiation
         endforall
 
         call radboundary_xy_send(nrad,idir,Qsend_xy)
-        call radboundary_xy_send_wait()
 
       endif
 

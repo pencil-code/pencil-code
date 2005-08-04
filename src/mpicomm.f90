@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.141 2005-07-20 19:54:14 theine Exp $
+! $Id: mpicomm.f90,v 1.142 2005-08-04 16:48:37 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -187,11 +187,6 @@ module Mpicomm
   integer :: isend_rq_velTOll,isend_rq_velTOul,isend_rq_velTOuu,isend_rq_velTOlu  !(corners)
   integer :: irecv_rq_velFRuu,irecv_rq_velFRlu,irecv_rq_velFRll,irecv_rq_velFRul  !(corners)
 
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_xy, irecv_zx   !(for radiation)
-!ajwm UNUSED!!!
-!tobi CALM DOWN!!!
-  integer, dimension(MPI_STATUS_SIZE) :: isend_xy, isend_zx  !(for radiation)
-
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
@@ -212,10 +207,6 @@ module Mpicomm
                                          isend_stat_velTuu,isend_stat_velTlu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_velFuu,irecv_stat_velFlu, &
                                          irecv_stat_velFll,irecv_stat_velFul
-!ajwm UNUSED!!!
-!  integer, dimension(MPI_STATUS_SIZE) :: isend_xy_stat,irecv_xy_stat, &
-!                                         isend_yz_stat,irecv_yz_stat, &
-!                                         isend_zx_stat,irecv_zx_stat
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
@@ -973,7 +964,7 @@ module Mpicomm
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
     endsubroutine finalize_isendrcv_uu
 !***********************************************************************
-    subroutine radboundary_zx_recv(mrad,idir,Qbuf_zx)
+    subroutine radboundary_zx_recv(mrad,idir,Qrecv_zx)
 !
 !  receive intensities from neighboring processor in y
 !
@@ -981,42 +972,27 @@ module Mpicomm
 !  20-jul-05/tobi: use non-blocking MPI calls
 !
       integer :: mrad,idir
-      real, dimension(mx,mz) :: Qbuf_zx
-      integer :: nQbuf_zx,isource
+      real, dimension(mx,mz) :: Qrecv_zx
+      integer :: isource
+      integer, dimension(MPI_STATUS_SIZE) :: irecv_zx
 !
 !  Identifier
 !
       if(lroot.and.ip<5) print*,'radboundary_zx_recv: ENTER'
-!
-!  buffer sizes
-!
-      nQbuf_zx=mx*mz
 !
 !  source
 !
       if (mrad>0) isource=ylneigh
       if (mrad<0) isource=yuneigh
 !
-!  initiate receive for the intensity
+!  actual MPI call
 !
-      call MPI_IRECV(Qbuf_zx,nQbuf_zx,MPI_REAL,isource,Qtag_zx+idir, &
-                     MPI_COMM_WORLD,irecv_zx,ierr)
+      call MPI_RECV(Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
+                    MPI_COMM_WORLD,irecv_zx,ierr)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radboundary_zx_recv_wait()
-!
-!  wait for the above MPI call to be completed
-!
-!  20-jul-05/tobi: coded
-!
-      integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_zx
-
-      call MPI_WAIT(irecv_zx,irecv_stat_zx,ierr)
-
-    endsubroutine radboundary_zx_recv_wait
-!***********************************************************************
-    subroutine radboundary_xy_recv(nrad,idir,Qbuf_xy)
+    subroutine radboundary_xy_recv(nrad,idir,Qrecv_xy)
 !
 !  receive intensities from neighboring processor in z
 !
@@ -1024,42 +1000,27 @@ module Mpicomm
 !  20-jul-05/tobi: use non-blocking MPI calls
 !
       integer :: nrad,idir
-      real, dimension(mx,my) :: Qbuf_xy
-      integer :: nQbuf_xy,isource
+      real, dimension(mx,my) :: Qrecv_xy
+      integer :: isource
+      integer, dimension(MPI_STATUS_SIZE) :: irecv_xy
 !
 !  Identifier
 !
       if(lroot.and.ip<5) print*,'radboundary_xy_recv: ENTER'
-!
-!  buffer sizes
-!
-      nQbuf_xy=mx*my
 !
 !  source
 !
       if (nrad>0) isource=zlneigh
       if (nrad<0) isource=zuneigh
 !
-!  initiate receive for the intensity
+!  actual MPI call
 !
-      call MPI_IRECV(Qbuf_xy,nQbuf_xy,MPI_REAL,isource,Qtag_xy+idir, &
-                     MPI_COMM_WORLD,irecv_xy,ierr)
+      call MPI_RECV(Qrecv_xy,mx*my,MPI_REAL,isource,Qtag_xy+idir, &
+                    MPI_COMM_WORLD,irecv_xy,ierr)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radboundary_xy_recv_wait()
-!
-!  wait for the above MPI call to be completed
-!
-!  20-jul-05/tobi: coded
-!
-      integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_xy
-
-      call MPI_WAIT(irecv_xy,irecv_stat_xy,ierr)
-
-    endsubroutine radboundary_xy_recv_wait
-!***********************************************************************
-    subroutine radboundary_zx_send(mrad,idir,Qbuf_zx)
+    subroutine radboundary_zx_send(mrad,idir,Qsend_zx)
 !
 !  send intensities to neighboring processor in y
 !
@@ -1067,83 +1028,81 @@ module Mpicomm
 !  20-jul-05/tobi: use non-blocking MPI calls
 !
       integer :: mrad,idir
-      real, dimension(mx,mz) :: Qbuf_zx
-      integer :: nQbuf_zx,idest
+      real, dimension(mx,mz) :: Qsend_zx
+      integer :: idest
+      integer, dimension(MPI_STATUS_SIZE) :: isend_zx
 !
 !  Identifier
 !
       if(lroot.and.ip<5) print*,'radboundary_zx_send: ENTER'
-!
-!  buffer sizes
-!
-      nQbuf_zx=mx*mz
 !
 !  destination
 !
       if (mrad>0) idest=yuneigh
       if (mrad<0) idest=ylneigh
 !
-!  initiate send for the intensity
+!  actual MPI call
 !
-      call MPI_ISEND(Qbuf_zx,nQbuf_zx,MPI_REAL,idest,Qtag_zx+idir, &
-                     MPI_COMM_WORLD,isend_zx,ierr)
+      call MPI_SEND(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
+                    MPI_COMM_WORLD,isend_zx,ierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
-    subroutine radboundary_zx_send_wait()
-!
-!  wait for the above MPI call to be completed
-!
-!  20-jul-05/tobi: coded
-!
-      integer, dimension(MPI_STATUS_SIZE) :: isend_stat_zx
-
-      call MPI_WAIT(isend_zx,isend_stat_zx,ierr)
-
-    endsubroutine radboundary_zx_send_wait
-!***********************************************************************
-    subroutine radboundary_xy_send(nrad,idir,Qbuf_xy)
+    subroutine radboundary_xy_send(nrad,idir,Qsend_xy)
 !
 !  send intensities to neighboring processor in z
 !
 !  11-jul-03/tobi: coded
 !  20-jul-05/tobi: use non-blocking MPI calls
 !
-      integer :: nrad,idir
-      real, dimension(mx,my) :: Qbuf_xy
-      integer :: nQbuf_xy,idest
+      integer, intent(in) :: nrad,idir
+      real, dimension(mx,my) :: Qsend_xy
+      integer :: idest
+      integer, dimension(MPI_STATUS_SIZE) :: isend_xy
 !
 !  Identifier
 !
       if(lroot.and.ip<5) print*,'radboundary_xy_send: ENTER'
-!
-!  buffer size
-!
-      nQbuf_xy=mx*my
 !
 !  destination
 !
       if (nrad>0) idest=zuneigh
       if (nrad<0) idest=zlneigh
 !
-!  initiate send for the intensity
+!  actual MPI call
 !
-      call MPI_ISEND(Qbuf_xy,nQbuf_xy,MPI_REAL,idest,Qtag_xy+idir, &
-                     MPI_COMM_WORLD,isend_xy,ierr)
+      call MPI_SEND(Qsend_xy,mx*my,MPI_REAL,idest,Qtag_xy+idir, &
+                    MPI_COMM_WORLD,isend_xy,ierr)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
-    subroutine radboundary_xy_send_wait()
+    subroutine radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
 !
-!  wait for the above MPI call to be completed
+!  receive intensities from isource and send intensities to idest
 !
-!  20-jul-05/tobi: coded
+!  04-aug-03/tobi: coded
 !
-      integer, dimension(MPI_STATUS_SIZE) :: isend_stat_xy
+      integer, intent(in) :: mrad,idir
+      real, dimension(mx,mz) :: Qsend_zx,Qrecv_zx
+      integer :: idest,isource
+      integer, dimension(MPI_STATUS_SIZE) :: isendrecv_zx
+!
+!  Identifier
+!
+      if(lroot.and.ip<5) print*,'radboundary_zx_sendrecv: ENTER'
+!
+!  destination and source id
+!
+      if (mrad>0) then; idest=yuneigh; isource=ylneigh; endif
+      if (mrad<0) then; idest=ylneigh; isource=yuneigh; endif
+!
+!  actual MPI call
+!
+      call MPI_SENDRECV(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
+                        Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
+                        MPI_COMM_WORLD,isendrecv_zx,ierr)
 
-      call MPI_WAIT(isend_xy,isend_stat_xy,ierr)
-
-    endsubroutine radboundary_xy_send_wait
+    endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)
@@ -1155,7 +1114,13 @@ module Mpicomm
 !
       real, dimension(nx,nz), intent(in) :: Qrad_zx,tau_zx
       real, dimension(nx,nz,0:nprocy-1), intent(out) :: Qrad_zx_all,tau_zx_all
-
+!
+!  Identifier
+!
+      if(lroot.and.ip<5) print*,'radboundary_zx_periodic_ray: ENTER'
+!
+!  actual MPI calls
+!
       call MPI_ALLGATHER(tau_zx,nx*nz,MPI_REAL,tau_zx_all,nx*nz,MPI_REAL, &
                          MPI_COMM_ROW,ierr)
 
