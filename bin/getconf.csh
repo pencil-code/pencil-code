@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.146 2005-07-29 15:29:57 theine Exp $
+# $Id: getconf.csh,v 1.147 2005-08-06 12:08:57 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -652,7 +652,8 @@ else if ($hn =~ rio*) then
   set mpirunops2 = '-hostfile $TMPDIR/machines'
 #  set mpirunops2 = '-hostfile hosts.list'
 #  set nodelist=`cat hosts.list`
-  set nodelist=`echo $nodelist | sed -e 's/\..*$//g'`
+#  set nodelist=`echo $nodelist | sed -e 's/\..*$//g'`
+  set nodelist=`cat $TMPDIR/machines`
   echo $nodelist
   setenv SSH 'ssh -x'
   setenv SCP scp
