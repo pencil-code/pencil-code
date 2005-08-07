@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.10 2005-08-02 13:17:51 ajohan Exp $
+! $Id: particles_dust.f90,v 1.11 2005-08-07 11:13:32 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -215,7 +215,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.10 2005-08-02 13:17:51 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.11 2005-08-07 11:13:32 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -287,8 +287,8 @@ module Particles
 !  Calculate mass density per particle (for back-reaction drag force on gas).
 !
       if (rhop==0.0) then
-        rhom=sqrt(2*pi)*1.0/Lz   ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*rho1
-        rhop=eps_dtog*rhom*nxgrid*nygrid*nzgrid/npar
+        rhom=sqrt(2*pi)*1.0/Lz   ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
+        rhop=eps_dtog*rhom*nxgrid*nygrid*nzgrid/npar  ! rhop*N_cell=eps*rho
         if (lroot) then
           print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
@@ -538,7 +538,7 @@ module Particles
             call map_xxp_vvp_grid(fp(k,ixp:izp),fp(k,ivpx:ivpz))
           enddo
 !
-!  Loop over pencils for avoid global arrays.
+!  Loop over pencils to avoid global arrays.
 !          
           do imn=1,ny*nz
             n=nn(imn); m=mm(imn)
