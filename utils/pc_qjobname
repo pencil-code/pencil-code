@@ -1,12 +1,12 @@
 #!/usr/bin/perl
 ##
-## $Id: pc_qjobname,v 1.1 2005-08-07 10:26:48 ajohan Exp $
+## $Id: pc_qjobname,v 1.2 2005-08-07 10:29:46 ajohan Exp $
 ##
 $host = `hostname`;
 #
 # Go through list of hosts to use proper method.
 #
-if ($host == /fe[0-9]/){
+if ($host =~ /fe[0-9]/){
 
   foreach $job (@ARGV){
     $a = `qstat -f $job`;
@@ -16,7 +16,7 @@ if ($host == /fe[0-9]/){
     }
 
   }
-elsif ($host == riologin){   # SGE
+elsif ($host =~ /riologin/){   # SGE
 
   foreach $job (@ARGV){
     $a = `qstat -j $job | grep cwd:`;
