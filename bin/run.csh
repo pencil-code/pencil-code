@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.81 2005-06-26 17:34:17 eos_merger_tony Exp $
+# CVS: $Id: run.csh,v 1.82 2005-08-08 12:10:02 ajohan Exp $
 
 #                       run.csh
 #                      ---------
@@ -11,11 +11,6 @@
 #PBS -r n
 #$ -S /bin/csh
 #@$-s /bin/csh
-#
-# Join stderr and stout:
-#$ -j y -o run.log
-#@$-eo
-#@$-o run.log
 #
 # Work in submit directory (SGE):
 #$ -cwd
