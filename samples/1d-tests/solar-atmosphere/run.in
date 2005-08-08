@@ -4,14 +4,14 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2005-07-29 16:33:40 theine Exp $'
+  cvsid='$Id: run.in,v 1.6 2005-08-08 15:43:28 theine Exp $'
   nt=250,it1=50,isave=1000,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
   bcz = 's','s','a','a2','a2'
   lmaxadvec_sum=T
   lwrite_aux=T
   ip=14
-  lpencil_check=T
+  lpencil_check=F
 /
 &eos_run_pars
   yMetals=1e-4                          ! fixed electron contribution by metals

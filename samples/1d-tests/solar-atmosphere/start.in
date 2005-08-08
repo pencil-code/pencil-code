@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2005-08-08 15:37:39 theine Exp $'
+  cvsid='$Id: start.in,v 1.6 2005-08-08 15:43:28 theine Exp $'
 
   unit_length=1e8               !
   unit_velocity=1e6             ! unit system (relative to cgs)
@@ -15,7 +15,7 @@
   lperi =  T ,   T ,   F        ! periodic direction?
   bcz = 's','s','a','a2','a2'   ! boundary conditions
 
-  lwrite_aux=F                  ! write out auxiliary variables
+  lwrite_aux=T                  ! write out auxiliary variables
   ip=14                         ! debugging parameter
 /
 
