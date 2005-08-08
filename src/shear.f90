@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.27 2005-08-08 12:00:00 ajohan Exp $
+! $Id: shear.f90,v 1.28 2005-08-08 14:18:44 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.27 2005-08-08 12:00:00 ajohan Exp $")
+           "$Id: shear.f90,v 1.28 2005-08-08 14:18:44 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -178,8 +178,8 @@ module Shear
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
         endif
-        if (luy0_extra) &
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-f(l1:l2,m,n,iuz)*duy0dz_extra
+        if (luy0_extra) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) &
+            -f(l1:l2,m,n,iuz)*duy0dz_extra(n-nghost)
       endif
 !
 !  Loop over dust species
