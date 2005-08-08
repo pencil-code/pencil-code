@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.11 2005-07-08 08:23:26 dobler Exp $
+! $Id: noeos.f90,v 1.12 2005-08-08 16:49:12 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.11 2005-07-08 08:23:26 dobler Exp $')
+           '$Id: noeos.f90,v 1.12 2005-08-08 16:49:12 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -240,7 +240,7 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,lnchi)
+    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -248,7 +248,7 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,lnchi
+      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,kapparho
 !
       call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
 
@@ -256,7 +256,7 @@ module EquationOfState
       yH=0.
       ee=0.
       pp=0.
-      lnchi=0.
+      kapparho=0.
       if (NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine eoscalc_farray
@@ -314,22 +314,6 @@ module EquationOfState
       if (NO_WARN) print*,ivars,var1,var2  !(keep compiler quiet)
 !
     endsubroutine eoscalc_pencil
-!***********************************************************************
-    subroutine radcalc(f,lnchi,Srad)
-!
-!  calculate source function and opacity
-!
-!  31-mar-04/tony: dummy created
-!
-   real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-   real, dimension(mx,my,mz), intent(out) :: lnchi,Srad
-
-   call not_implemented('radcalc')
-   lnchi=0.
-   Srad=0.
-   if (NO_WARN) print*,f
-!
-    endsubroutine radcalc
 !***********************************************************************
     subroutine scale_height_xy(radz0,nrad,f,H_xy)
 !

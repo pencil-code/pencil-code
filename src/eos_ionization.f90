@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.6 2005-07-05 16:21:42 mee Exp $
+! $Id: eos_ionization.f90,v 1.7 2005-08-08 16:49:12 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -39,7 +39,7 @@ module EquationOfState
   
   !  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
-  real :: ss_ion,ee_ion,kappa0,lnchi0,xHe_term,ss_ion1,Srad0
+  real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   integer :: l
 
@@ -113,7 +113,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.6 2005-07-05 16:21:42 mee Exp $")
+           "$Id: eos_ionization.f90,v 1.7 2005-08-08 16:49:12 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -168,8 +168,7 @@ module EquationOfState
       ss_ion=k_B/m_H/mu1yHxHe
       ss_ion1=1/ss_ion
       ee_ion=ss_ion*TT_ion
-      kappa0=sigmaH_/m_H/mu1yHxHe
-      lnchi0=log(kappa0)-log(4.0)
+      kappa0=sigmaH_/m_H/mu1yHxHe/4.0
       Srad0=sigmaSB*TT_ion**4/pi
 !
       if (xHe>0) then
@@ -205,7 +204,6 @@ module EquationOfState
         write (1,*) 'ss_ion=',ss_ion
         write (1,*) 'ee_ion=',ee_ion
         write (1,*) 'kappa0=',kappa0
-        write (1,*) 'lnchi0=',lnchi0
         write (1,*) 'Srad0=',Srad0
         write (1,*) 'k_B=',k_B
         write (1,*) 'm_H=',m_H
@@ -483,7 +481,7 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,lnchi)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -501,7 +499,7 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss
       real, dimension(psize), intent(out), optional :: yH,lnTT
-      real, dimension(psize), intent(out), optional :: ee,pp,lnchi
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions
 !
       select case (psize)
@@ -535,9 +533,11 @@ module EquationOfState
 !
 !  Hminus opacity
 !
-      if (present(lnchi)) then
-         lnchi=2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_) &
-              +TT_ion_/TT_+log(yH_+yMetals)+log(1-yH_)+lnchi0
+      if (present(kapparho)) then
+!        lnchi=2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_) &
+!             +TT_ion_/TT_+log(yH_+yMetals)+log(1-yH_)+lnchi0
+         kapparho=exp(2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT_) &
+                 *(yH_+yMetals)*(1-yH_)*kappa0
       endif
 !
     endsubroutine eoscalc_farray

@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.71 2005-08-04 16:48:37 theine Exp $
+! $Id: radiation_ray.f90,v 1.72 2005-08-08 16:49:12 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -31,7 +31,7 @@ module Radiation
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
   character (len=bclen) :: bc_ray_x,bc_ray_y,bc_ray_z
   integer, parameter :: maxdir=26
-  real, dimension (mx,my,mz) :: Srad,lnchi,tau,Qrad,Qrad0
+  real, dimension (mx,my,mz) :: Srad,kapparho,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
   real :: dtau_thresh1,dtau_thresh2
@@ -45,7 +45,7 @@ module Radiation
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
   real :: kappa_cst=1.0
   real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
-  real :: lnchi_const=1.0,ampllnchi=1.0,radius_lnchi=1.0
+  real :: kapparho_const=1.0,amplkapparho=1.0,radius_kapparho=1.0
   integer :: nrad_rep=1 ! for timings
 !
 !  default values for one pair of vertical rays
@@ -68,14 +68,14 @@ module Radiation
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
-       lnchi_const,ampllnchi,radius_lnchi, &
+       kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,nrad_rep
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
-       lnchi_const,ampllnchi,radius_lnchi, &
+       kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,nrad_rep
 
   contains
@@ -118,7 +118,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.71 2005-08-04 16:48:37 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.72 2005-08-08 16:49:12 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -264,8 +264,8 @@ module Radiation
       case ('Hminus')
         do m=1,my
         do n=1,mz
-          call eoscalc(f,mx,lnchi=tmp)
-          lnchi(:,m,n)=tmp
+          call eoscalc(f,mx,kapparho=tmp)
+          kapparho(:,m,n)=tmp
         enddo
         enddo
 
@@ -273,16 +273,16 @@ module Radiation
         do m=1,my
         do n=1,mz
           call eoscalc(f,mx,lnrho=lnrho)
-          lnchi(:,m,n)=log(kappa_cst)+lnrho
+          kapparho(:,m,n)=kappa_cst*exp(lnrho)
         enddo
         enddo
 
       case ('blob')
         if (lfirst) then
-          lnchi=lnchi_const &
-               +ampllnchi*spread(spread(exp(-(x/radius_lnchi)**2),2,my),3,mz) &
-                         *spread(spread(exp(-(y/radius_lnchi)**2),1,mx),3,mz) &
-                         *spread(spread(exp(-(z/radius_lnchi)**2),1,mx),2,my)
+          kapparho=kapparho_const + amplkapparho &
+                  *spread(spread(exp(-(x/radius_kapparho)**2),2,my),3,mz) &
+                  *spread(spread(exp(-(y/radius_kapparho)**2),1,mx),3,mz) &
+                  *spread(spread(exp(-(z/radius_kapparho)**2),1,mx),2,my)
           lfirst=.false.
         endif
 
@@ -509,8 +509,8 @@ module Radiation
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign 
 
-        dtau_m=sqrt(exp(lnchi(l-lrad,m-mrad,n-nrad)+lnchi(l,m,n)))*dlength
-        dtau_p=sqrt(exp(lnchi(l,m,n)+lnchi(l+lrad,m+mrad,n+nrad)))*dlength
+        dtau_m=sqrt(kapparho(l-lrad,m-mrad,n-nrad)*kapparho(l,m,n))*dlength
+        dtau_p=sqrt(kapparho(l,m,n)*kapparho(l+lrad,m+mrad,n+nrad))*dlength
         dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
         dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
@@ -785,23 +785,23 @@ module Radiation
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: Qrad,Qrad2
+      real, dimension (nx) :: pQrad,pQrad2,pkapparho
 !
-      Qrad=f(l1:l2,m,n,iQrad)
+      pQrad=f(l1:l2,m,n,iQrad)
+      pkapparho=kapparho(l1:l2,m,n)
 !
 !  Add radiative cooling
 !
       if (lcooling) then
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
-            + 4*pi*exp(lnchi(l1:l2,m,n)-p%lnrho)*p%TT1*Qrad
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+4*pi*pkapparho*p%rho1*p%TT1*pQrad
       endif
 !
 !  diagnostics
 !
       if (ldiagnos) then
-        Qrad2=f(l1:l2,m,n,iQrad)**2
-        if (idiag_Qradrms/=0) call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
-        if (idiag_Qradmax/=0) call max_mn_name(Qrad2,idiag_Qradmax,lsqrt=.true.)
+        pQrad2=f(l1:l2,m,n,iQrad)**2
+        if(idiag_Qradrms/=0) call sum_mn_name(pQrad2,idiag_Qradrms,lsqrt=.true.)
+        if(idiag_Qradmax/=0) call max_mn_name(pQrad2,idiag_Qradmax,lsqrt=.true.)
       endif
 !
     endsubroutine radiative_cooling
@@ -830,7 +830,7 @@ module Radiation
 !  21-11-04/anders: coded
 !
       lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_lnrho)=.true.
+      lpenc_requested(i_rho1)=.true.
 !
     endsubroutine pencil_criteria_radiation
 !***********************************************************************

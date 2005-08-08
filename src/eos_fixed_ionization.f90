@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.8 2005-07-08 21:46:33 dobler Exp $
+! $Id: eos_fixed_ionization.f90,v 1.9 2005-08-08 16:49:12 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -43,12 +43,11 @@ module EquationOfState
 
   ! secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
-  real :: ss_ion,ee_ion,kappa0,lnchi0,Srad0
+  real :: ss_ion,ee_ion,kappa0,Srad0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   real :: xHe_term,yH_term,one_yH_term
 
   real :: yH0=.0,xHe=0.1,xH2=0.,kappa_cst=1.
-  logical :: radcalc_test=.false.
   character (len=labellen) :: opacity_type='ionized_H'
 
   ! input parameters
@@ -102,7 +101,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.8 2005-07-08 21:46:33 dobler Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.9 2005-08-08 16:49:12 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -164,8 +163,7 @@ module EquationOfState
       ee_ion=ss_ion*TT_ion
       gamma1=gamma-1.
       nabla_ad=gamma1/gamma
-      kappa0=sigmaH_/m_H/mu1yHxHe
-      lnchi0=log(kappa0)-log(4.0)
+      kappa0=sigmaH_/m_H/mu1yHxHe/4.0
       Srad0=sigmaSB*TT_ion**4/pi
 !
       if(lroot) then
@@ -227,7 +225,6 @@ module EquationOfState
         write (1,*) 'ss_ion=',ss_ion
         write (1,*) 'ee_ion=',ee_ion
         write (1,*) 'kappa0=',kappa0
-        write (1,*) 'lnchi0=',lnchi0
         write (1,*) 'Srad0=',Srad0
         write (1,*) 'lnTTss=',lnTTss
         write (1,*) 'lnTTlnrho=',lnTTlnrho
@@ -382,7 +379,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,lnchi)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -399,7 +396,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss,yH,lnTT
-      real, dimension(psize), intent(out), optional :: ee,pp,lnchi
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
       real, dimension(psize) :: lnrho_,ss_,lnTT_,TT_,yH_
 !
       select case (psize)
@@ -430,9 +427,9 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
 !  Hminus opacity
 !
-      if (present(lnchi)) then
-        lnchi=2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_) &
-             +TT_ion_/TT_+log(yH_)+log(1-yH_)+lnchi0
+      if (present(kapparho)) then
+        kapparho=exp(2*lnrho_-lnrho_e+1.5*(lnTT_ion_-lnTT_)+TT_ion_/TT_) &
+                *yH_*(1-yH_)*kappa0
       endif
 !
     endsubroutine eoscalc_farray

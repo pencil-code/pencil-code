@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.18 2005-07-29 23:35:43 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.19 2005-08-08 16:49:12 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -93,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.18 2005-07-29 23:35:43 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.19 2005-08-08 16:49:12 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -368,7 +368,7 @@ module EquationOfState
       if (NO_WARN) print*,f !(keep compiler quiet)
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,lnchi)
+    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -383,7 +383,7 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,lnchi
+      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,kapparho
       real, dimension(psize) :: lnTT_
       real, dimension(psize) :: lnrho,ss
 !
@@ -425,8 +425,8 @@ module EquationOfState
             pp=gamma1*cp/gamma*exp(lnTT_+lnrho)
       endif
 !
-      if (present(lnchi)) then
-        lnchi=0
+      if (present(kapparho)) then
+        kapparho=0
         call fatal_error("eoscalc","sorry, no Hminus opacity with noionization")
       endif
 !
@@ -559,22 +559,6 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine radcalc(f,lnchi,Srad)
-!
-!  calculate source function and opacity
-!
-!  31-mar-04/tony: dummy created
-!
-   real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-   real, dimension(mx,my,mz), intent(out) :: lnchi,Srad
-
-   call not_implemented('radcalc')
-   lnchi=0.
-   Srad=0.
-   if (NO_WARN) print*,f
-!
-    endsubroutine radcalc
-!***********************************************************************
     subroutine scale_height_xy(radz0,nrad,f,H_xy)
 !
 !  calculate characteristic scale height for exponential boundary
@@ -705,19 +689,19 @@ module EquationOfState
 !
     endsubroutine isothermal_lnrho_ss
 !***********************************************************************
-    subroutine Hminus_opacity(f,lnchi)
+    subroutine Hminus_opacity(f,kapparho)
 !
 !  dummy routine
 !
 !  03-apr-2004/tobi: coded
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: lnchi
+      real, dimension(mx,my,mz), intent(out) :: kapparho
 
       call fatal_error('Hminus_opacity',"opacity_type='Hminus' may not be used with noionization")
 
       if (NO_WARN) then
-        lnchi=0
+        kapparho=0
         print*,f
       endif
 
