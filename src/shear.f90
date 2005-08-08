@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.26 2005-07-20 08:18:36 ajohan Exp $
+! $Id: shear.f90,v 1.27 2005-08-08 12:00:00 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -15,7 +15,7 @@ module Shear
 
   implicit none
 
-  real, dimension (nz) :: uy0_extra=0.0
+  real, dimension (nz) :: uy0_extra, duy0dz_extra
   real :: eps_vshear=0.0
   logical :: luy0_extra=.false.
 
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.26 2005-07-20 08:18:36 ajohan Exp $")
+           "$Id: shear.f90,v 1.27 2005-08-08 12:00:00 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -70,7 +70,8 @@ module Shear
 !
       if (eps_vshear/=0.0) then
         if (lroot) print*, 'initialize_shear: eps_vshear=', eps_vshear
-        uy0_extra=-Sshear*eps_vshear*Lxyz(3)*cos(2*pi/Lxyz(3)*z(n1:n2))
+        uy0_extra=Sshear*eps_vshear*Lx*cos(2*pi/Lz*z(n1:n2))
+        duy0dz_extra=-Sshear*eps_vshear*Lx*sin(2*pi/Lz*z(n1:n2))*2*pi/Lz
         luy0_extra=.true.
       endif
 !
@@ -177,6 +178,8 @@ module Shear
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
         endif
+        if (luy0_extra) &
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-f(l1:l2,m,n,iuz)*duy0dz_extra
       endif
 !
 !  Loop over dust species
