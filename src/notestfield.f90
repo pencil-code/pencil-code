@@ -1,5 +1,3 @@
-! $Id: notestfield.f90,v 1.4 2005-06-26 22:59:43 mee Exp $
-
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -22,7 +20,9 @@ module Testfield
 
   include 'testfield.h'
 
+  integer, parameter :: ntestfield=0
   real :: dummy=0.
+
   namelist /testfield_init_pars/ &
        dummy
   namelist /testfield_run_pars/ &

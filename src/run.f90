@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.203 2005-07-22 22:36:33 dobler Exp $
+! $Id: run.f90,v 1.204 2005-08-09 18:37:56 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.203 2005-07-22 22:36:33 dobler Exp $")
+             "$Id: run.f90,v 1.204 2005-08-09 18:37:56 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -412,7 +412,7 @@
             time_last_diagnostic=time_this_diagnostic
             call save_name(time_per_step,idiag_timeperstep) 
           endif
-           if(lout) call prints()
+          if(lout) call prints()
 !
 !  Setting ialive=1 can be useful on flaky machines!
 !  Each processor writes it's processor number (if it is alive!)

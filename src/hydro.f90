@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.206 2005-07-18 14:12:18 ajohan Exp $
+! $Id: hydro.f90,v 1.207 2005-08-09 18:37:56 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -87,8 +87,9 @@ module Hydro
   integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
   integer :: idiag_ox2m=0,idiag_oy2m=0,idiag_oz2m=0
   integer :: idiag_oxm=0,idiag_oym=0,idiag_ozm=0
-  integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0,idiag_oxoym=0
-  integer :: idiag_oxozm=0,idiag_oyozm=0,idiag_uyuzmz=0
+  integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0
+  integer :: idiag_uxuymz=0,idiag_uxuzmz=0,idiag_uyuzmz=0
+  integer :: idiag_oxoym=0,idiag_oxozm=0,idiag_oyozm=0
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0,idiag_umy=0
   integer :: idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
@@ -144,7 +145,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.206 2005-07-18 14:12:18 ajohan Exp $")
+           "$Id: hydro.f90,v 1.207 2005-08-09 18:37:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -304,6 +305,15 @@ module Hydro
         case('sinwave-x'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
         case('sinwave-y'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
         case('sinwave-z'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
+        case('sinwave-ux-kx'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
+        case('sinwave-ux-ky'); call sinwave(ampluu(j),f,iux,ky=ky_uu)
+        case('sinwave-ux-kz'); call sinwave(ampluu(j),f,iux,kz=kz_uu)
+        case('sinwave-uy-kx'); call sinwave(ampluu(j),f,iuy,kx=kx_uu)
+        case('sinwave-uy-ky'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
+        case('sinwave-uy-kz'); call sinwave(ampluu(j),f,iuy,kz=kz_uu)
+        case('sinwave-uz-kx'); call sinwave(ampluu(j),f,iuz,kx=kx_uu)
+        case('sinwave-uz-ky'); call sinwave(ampluu(j),f,iuz,ky=ky_uu)
+        case('sinwave-uz-kz'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
         case('sinwave-y-z')
           if (lroot) print*, 'init_uu: sinwave-y-z, ampluu=', ampluu(j)
           call sinwave(ampluu(j),f,iuy,kz=kz_uu)
@@ -767,7 +777,9 @@ module Hydro
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
           !
-          !  add centrifugal force
+          !  add centrifugal force (doing this with periodic boundary
+          !  conditions in x and y would not be compatible, so it is
+          !  therefore usually ignored in those cases!)
           !
           if (lcentrifugal_force) then
             if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
@@ -775,6 +787,11 @@ module Hydro
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+y(  m  )*Omega**2
           endif
         else
+          !
+          !  add Coriolis force with an angle (defined such that theta=-60,
+          !  for example, would correspond to 30 degrees latitude).
+          !  Omega=(sin(theta), 0, cos(theta)).
+          !
           if (headtt) print*,'duu_dt: Coriolis force; Omega,theta=',Omega,theta
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
@@ -877,6 +894,8 @@ module Hydro
         if (idiag_uxuym/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,2),idiag_uxuym)
         if (idiag_uxuzm/=0)   call sum_mn_name(p%uu(:,1)*p%uu(:,3),idiag_uxuzm)
         if (idiag_uyuzm/=0)   call sum_mn_name(p%uu(:,2)*p%uu(:,3),idiag_uyuzm)
+        if (idiag_uxuymz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
+        if (idiag_uxuzmz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
         if (idiag_uyuzmz/=0)  call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
@@ -1278,7 +1297,8 @@ module Hydro
         idiag_orms=0; idiag_omax=0
         idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
         idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
-        idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0; idiag_uyuzmz=0
+        idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0
+        idiag_uxuymz=0; idiag_uxuzmz=0; idiag_uyuzmz=0
         idiag_ox2m=0; idiag_oy2m=0; idiag_oz2m=0; idiag_oxm=0; idiag_oym=0
         idiag_ozm=0; idiag_oxoym=0; idiag_oxozm=0; idiag_oyozm=0
         idiag_umx=0; idiag_umy=0; idiag_umz=0
@@ -1350,6 +1370,8 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',idiag_uymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxuymz',idiag_uxuymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxuzmz',idiag_uxuzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyuzmz',idiag_uyuzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fmassz',idiag_fmassz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fkinz',idiag_fkinz)
@@ -1508,7 +1530,7 @@ module Hydro
           call save_name(umy,idiag_umy)
         endif
 !
-!  Magnetic energy in horizontally averaged field
+!  Kinetic energy in horizontally averaged flow
 !  The uxmz and uymz must have been calculated,
 !  so they are present on the root processor.
 !

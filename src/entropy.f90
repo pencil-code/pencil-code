@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.347 2005-07-21 12:12:48 bingert Exp $
+! $Id: entropy.f90,v 1.348 2005-08-09 18:37:56 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -50,6 +50,7 @@ module Entropy
   real :: hcond1=impossible,hcond2=impossible
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
+  real :: chit_prof1=1.,chit_prof2=1.
   real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
@@ -110,7 +111,7 @@ module Entropy
 !AB: They are used to re-calculate the radiative conductivity profile.
       mpoly0,mpoly1,mpoly2, &
       luminosity,wheat,cooling_profile,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
-      chi_t,chi_shock,chi,iheatcond, &
+      chi_t,chit_prof1,chit_prof2,chi_shock,chi,iheatcond, &
       Kgperp,Kgpara, cool_RTV, &
       tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
@@ -123,6 +124,7 @@ module Entropy
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz,idiag_fradz=0,idiag_fturbz=0
+  integer :: idiag_ssmz=0,idiag_TTmz=0
 
   contains
 
@@ -155,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.347 2005-07-21 12:12:48 bingert Exp $")
+           "$Id: entropy.f90,v 1.348 2005-08-09 18:37:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1364,7 +1366,7 @@ module Entropy
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
-      if (idiag_ssm/=0) lpenc_diagnos(i_ss)=.true.
+      if (idiag_ssm/=0 .or. idiag_ssmz/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_eth/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0) then
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
@@ -1373,7 +1375,8 @@ module Entropy
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_TTm/=0 .or. idiag_TTmax/=0 .or. idiag_TTmin/=0) &
+      if (idiag_TTm/=0 .or. idiag_TTmz/=0 .or. idiag_TTmax/=0 &
+        .or. idiag_TTmin/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_yHm/=0 .or. idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_dtc/=0) lpenc_diagnos(i_cs2)=.true.
@@ -1672,6 +1675,8 @@ module Entropy
 !  idiag_fradz is done in the calc_headcond routine
 !
         if (idiag_fconvz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
+        if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
+        if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
     endsubroutine dss_dt
@@ -1984,10 +1989,10 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnT,glnThcond,glhc,glnP
+      real, dimension (nx,3) :: glnT,glnThcond,glhc,glnP,glchit_prof
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
-      real, dimension (nx) :: hcond
+      real, dimension (nx) :: hcond,chit_prof
       real :: z_prev=-1.23e20
 !
       save :: z_prev,hcond,glhc
@@ -2009,11 +2014,15 @@ module Entropy
           if (z_mn(1) /= z_prev) then
             call heatcond(hcond)
             call gradloghcond(glhc)
+            call chit_profile(chit_prof)
+            call gradlogchit_profile(glchit_prof)
             z_prev = z_mn(1)
           endif
         else
           call heatcond(hcond)       ! returns hcond=hcond0
           call gradloghcond(glhc)    ! returns glhc=0
+          call chit_profile(chit_prof)
+          call gradlogchit_profile(glchit_prof)
         endif
         chix = p%rho1*hcond
         glnT = gamma*p%gss + gamma1*p%glnrho             ! grad ln(T)
@@ -2041,7 +2050,7 @@ module Entropy
       endif
 !
 !  "turbulent" entropy diffusion
-!  [simplified, because grad(lnpp) term is omitted]
+!  should only be present if g.gradss > 0 (unstable stratification)
 !
       if (chi_t/=0.) then
         if (headtt) then
@@ -2050,12 +2059,10 @@ module Entropy
             call warning('calc_heatcond',"hcond0 and chi_t combined don't seem to make sense")
           endif
         endif
-!        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)+chi_t*del2ss
-!AB:    thdiff = chi_t*p%del2ss
-!AB: thdiff should just be added, not overwritten, right??
         glnP=gamma*(p%gss+p%glnrho)
-        call dot(glnP,p%gss,g2)
-        thdiff=thdiff+chi_t*(p%del2ss+g2)
+        call dot(glnP+glchit_prof,p%gss,g2)
+        !thdiff=thdiff+chi_t*(p%del2ss+g2)
+        thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
       endif
 !
 !  check for NaNs initially
@@ -2403,6 +2410,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
+        idiag_ssmz=0; idiag_TTmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2429,6 +2437,8 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ssmz',idiag_ssmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'TTmz',idiag_TTmz)
       enddo
 !
 !  check for those quantities for which we want phi-averages
@@ -2452,6 +2462,8 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         write(3,*) 'i_fconvz=',idiag_fconvz
         write(3,*) 'i_dcoolz=',idiag_dcoolz
         write(3,*) 'i_fradz=',idiag_fradz
+        write(3,*) 'i_ssmz=',idiag_ssmz
+        write(3,*) 'i_TTmz=',idiag_TTmz
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
         write(3,*) 'i_yHmax=',idiag_yHmax
@@ -2546,6 +2558,57 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       endif
 !
     endsubroutine gradloghcond
+!***********************************************************************
+    subroutine chit_profile(chit_prof)
+!
+!  calculate the chit_profile conductivity chit_prof along a pencil.
+!  This is an attempt to remove explicit reference to chit_prof[0-2] from
+!  code, e.g. the boundary condition routine.
+!
+!  NB: if you modify this profile, you *must* adapt gradlogchit_prof below.
+!
+!  23-jan-2002/wolf: coded
+!  18-sep-2002/axel: added lmultilayer switch
+!
+      use Sub, only: step
+      use Gravity
+!
+      real, dimension (nx) :: chit_prof
+!
+      if (lgravz) then
+        if (lmultilayer) then
+          chit_prof = 1 + (chit_prof1-1)*step(z_mn,z1,-widthss) &
+                        + (chit_prof2-1)*step(z_mn,z2,widthss)
+        else
+          chit_prof=1.
+        endif
+      else
+        chit_prof=1.
+      endif
+!
+    endsubroutine chit_profile
+!***********************************************************************
+    subroutine gradlogchit_profile(glchit_prof)
+!
+!  calculate grad(log chit_prof), where chit_prof is the heat conductivity
+!  NB: *Must* be in sync with heatcond() above.
+!
+!  23-jan-2002/wolf: coded
+!
+      use Sub, only: der_step
+      use Gravity
+!
+      real, dimension (nx,3) :: glchit_prof
+!
+      if (lgravz) then
+        glchit_prof(:,1:2) = 0.
+        glchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,z1,-widthss) &
+                         + (chit_prof2-1)*der_step(z_mn,z2,widthss)
+      else
+        glchit_prof = 0.
+      endif
+!
+    endsubroutine gradlogchit_profile
 !***********************************************************************
     subroutine newton_cool(f,df,p)
 !

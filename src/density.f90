@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.189 2005-07-06 20:35:31 dobler Exp $
+! $Id: density.f90,v 1.190 2005-08-09 18:37:56 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -68,6 +68,7 @@ module Density
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
+  integer :: idiag_rhomz=0
 
   contains
 
@@ -103,7 +104,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.189 2005-07-06 20:35:31 dobler Exp $")
+           "$Id: density.f90,v 1.190 2005-08-09 18:37:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -906,7 +907,7 @@ module Density
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
-      if (idiag_rhom/=0 .or. idiag_rho2m/=0  &
+      if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rho2m/=0  &
            .or. idiag_rhomin/=0 .or. idiag_rhomax/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
 !
@@ -1182,6 +1183,7 @@ module Density
         if (idiag_rhomax/=0) call max_mn_name(p%rho,idiag_rhomax)
         if (idiag_rho2m/=0) call sum_mn_name(p%rho**2,idiag_rho2m)
         if (idiag_lnrho2m/=0) call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
+        if (idiag_rhomz/=0) call xysum_mn_name_z(p%rho,idiag_rhomz)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
@@ -1197,7 +1199,7 @@ module Density
 !
       use Sub
 !
-      integer :: iname,irz
+      integer :: iname,inamez,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1211,6 +1213,7 @@ module Density
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
+        idiag_rhomz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1223,6 +1226,12 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
+      enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
       enddo
 !
 !  check for those quantities for which we want phi-averages
@@ -1241,6 +1250,7 @@ module Density
         write(3,*) 'i_rhomin=',idiag_rhomin
         write(3,*) 'i_rhomax=',idiag_rhomax
         write(3,*) 'i_lnrho2m=',idiag_lnrho2m
+        write(3,*) 'i_rhomz=',idiag_rhomz
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
         write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi

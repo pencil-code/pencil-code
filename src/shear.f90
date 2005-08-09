@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.28 2005-08-08 14:18:44 ajohan Exp $
+! $Id: shear.f90,v 1.29 2005-08-09 18:37:56 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.28 2005-08-08 14:18:44 ajohan Exp $")
+           "$Id: shear.f90,v 1.29 2005-08-09 18:37:56 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -141,6 +141,8 @@ module Shear
       use Cparam
       use Deriv
       use Hydro, only:theta
+!--   use Testfield, only:ntestfield
+      integer, parameter :: ntestfield=36
 !
       integer :: j,k
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -207,6 +209,14 @@ module Shear
 !
       if (lmagnetic) then
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*f(l1:l2,m,n,iay)
+      endif
+!
+!  Testfield stretching term
+!
+      if (ltestfield) then
+        do j=iaatest,iaatest+ntestfield-1,3
+          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-Sshear*f(l1:l2,m,n,j+1)
+        enddo
       endif
 !
 !  take shear into account for calculating time step
