@@ -24,7 +24,7 @@ if ip gt 4 then print,minmax(imyz)
 ;  special version of boxbot which inputs only data on the walls
 ;
 if n_params(0) eq 0 then begin
-  print,'pro boxbot, ?????,
+  print,'pro boxbot, ?????,'
   print,'  xval=xval,yval=yval,zval=zval,zof=zof,$'
   print,'  zoom=zoom,lmax=lmax,xrot=xrot,zrot=zrot,dev=dev,npx=npx,npy=npy,$'
   print,'  amax=amax,amin=amin,thick=thick,zpos=zpos,scale=scale,title=title,$'
@@ -289,19 +289,17 @@ if not keyword_set(centred) then begin
   endelse
 endif else begin
   ; centre-slices through box; with transparency if shell options set
-  ; nb: currently uses zimgbot for both horizontal slices!!!
   xm=x0+0.5*xmax*npx+xval & ym=y0+0.5*ymax*npy & zm=z0+0.5*zval
   verts=[[xm,y0,z0],[x1,ym,z0],[xm,y1,z0],[x0,ym,z0],$
          [x0,y0,zm],[x1,y0,zm],[x1,y1,zm],[x0,y1,zm],$
          [xm,y0,z1],[x1,ym,z1],[xm,y1,z1],[x0,ym,z1],$
          [x0,y0,z0-zof],[x1,y0,z0-zof],[x1,y1,z0-zof],[x0,y1,z0-zof]]
-  
   polyfill,verts(*,[2,0,8,10]),/t3d,pattern=ximg, transparent=mincol, $
         image_coord=[[xs(1)-1,0],[0,0],[0,xs(2)-1],[xs(1)-1,xs(2)-1]]
   polyfill,verts(*,[3,1,9,11]),/t3d,pattern=yimg, transparent=mincol, $
         image_coord=[[0,0],[ys(1)-1,0],[ys(1)-1,ys(2)-1],[0,ys(2)-1]]
   if xrot gt 0 then begin
-    polyfill,verts(*,[4,5,6,7]),/t3d,pattern=zimgbot, transparent=mincol, $
+    polyfill,verts(*,[4,5,6,7]),/t3d,pattern=zimg, transparent=mincol, $
         image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
     if not keyword_set(nobottom) then begin
       polyfill,verts(*,[12,13,14,15]),/t3d,pattern=zimgbot, transparent=mincol, $
