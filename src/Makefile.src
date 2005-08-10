@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.126 2005-08-09 18:37:56 brandenb Exp $
+### $Id: Makefile.src,v 1.127 2005-08-10 04:31:47 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -257,7 +257,7 @@ FCCLEANER=
 #FC=~brandenb/apps/intel/fc/9.0/bin/ifort #(fe[0-9])
 #FFLAGS=-I/usr/local/lib/LAM/include -O3 -assume 2underscores #(fe[0-4])
 #CC=~brandenb/apps/intel/cc/9.0/bin/icc #(fe[0-9])
-#CFLAGS=-O3 -DFUNDERSC=2
+#CFLAGS=-O3 -DFUNDERSC=2 #(fe[0-4])
 #LDMPI=-pthread -L/usr/local/lib/LAM/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(fe[0-4])
 ##
 ## Axel on Horseshoe (ifc 7.1)
@@ -265,7 +265,7 @@ FCCLEANER=
 #FC=~dobler/opt/intel/compiler70/ia32/bin/ifc #(fe[0-9])
 #FFLAGS=-I/usr/local/lib/LAM/include -O3 #(fe[0-4])
 #CC=icc #(fe[0-9])
-#CFLAGS=-O3 -DFUNDERSC=1
+#CFLAGS=-O3 -DFUNDERSC=1 #(fe[0-9])
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
 ##
 ## Axel's laptop (nl6, 2.0 GHz)
