@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.190 2005-08-09 18:37:56 brandenb Exp $
+! $Id: density.f90,v 1.191 2005-08-10 20:12:31 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -44,7 +44,7 @@ module Density
   integer, parameter :: ndiff_max=4
   logical :: lupw_lnrho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
-  logical :: ldiff_hyper3lnrho=.false., lmass_source=.false.
+  logical :: ldiff_hyper3lnrho=.false.,lmass_source=.false.,lmass_spline=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
@@ -62,7 +62,7 @@ module Density
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock, &
-       cs2bot,cs2top,lupw_lnrho,idiff, &
+       cs2bot,cs2top,lupw_lnrho,idiff,lmass_spline, &
        lmass_source,lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,wdamp
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -104,7 +104,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.190 2005-08-09 18:37:56 brandenb Exp $")
+           "$Id: density.f90,v 1.191 2005-08-10 20:12:31 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -283,7 +283,7 @@ module Density
       use General, only: chn
       use Global
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
-                          lnumerical_equilibrium
+                          lnumerical_equilibrium,g0
       use Initcond
       use Initcond_spec
       use IO
@@ -631,6 +631,13 @@ module Density
       !
         call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
+
+      case('mmsn')
+         !
+         !minimum mass solar nebula
+         !
+         call solar_nebula(f,xx,yy,zz,g0,lnrho_const,&
+           lnrho_int,lnrho_ext,wdamp)
 
       case default
         !
@@ -1109,6 +1116,8 @@ module Density
 !  mass sources and sinks
 !
       if (lmass_source) call mass_source(f,df)
+      if (lmass_spline) call mass_source_spline(f,lnrho_int,&
+           lnrho_ext,lnrho_const,wdamp)
 !
 !  Mass diffusion
 !
@@ -1650,5 +1659,169 @@ module Density
 !
     endsubroutine mass_source
 !***********************************************************************
+    subroutine mass_source_spline(f,lnrho_int,lnrho_ext,lnrho_const,wdamp)
+!   
+! alternative to mass_source: cut 'good' part of density
+!   profile and spline it toward predefined limits 
+!
+! 10-may-05/wlad: coded
+!  
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity, only: g0
+      use General
 
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: lnrho_int,lnrho_ext,wdamp,lnrho_const,Omega_int
+      real :: inner,outer,limit,inner2,outer2,limit2
+      integer :: i,ci,cii,ce,cee
+      real, dimension (mx) :: r,ome,den
+      !internal
+      real, dimension (nx) :: rad_int,rho_int,ome_int
+      real, dimension (nx) :: valuerho_int,valueome_int,irts 
+      !external
+      real, dimension (nx) :: rad_ext,rho_ext,ome_ext
+      real, dimension (nx) :: valuerho_ext,valueome_ext,erts
+                 
+      inner = r_int -   wdamp
+      outer = r_int +   wdamp
+      limit = r_int + 2*wdamp      
+      ci=0;cii=0
+      
+      limit2 = r_ext - 2*wdamp
+      inner2 = r_ext -   wdamp
+      outer2 = r_ext +   wdamp
+      ce=0;cee=0
+      
+      !
+      !computational domain -> limit < r < limit2
+      !
+      
+      !the whole thing between comments could be calculated only once
+      !and set to global variables or into a file
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      Omega_int = sqrt(g0*(r_int - 0.5*wdamp)**(-3))
+      
+      do i=lpoint,l2
+         
+         !inner boundary
+         !
+         !rad_int and d_int are the vectors to call in spline_damp
+         !ci is their dimension. cii is also needed.
+         
+         if (x(i).le.inner) then 
+            !center - rigid rotator with constant density
+            cii=cii+1; ci = ci + 1; rad_int(ci) = x(i)  
+            rho_int(ci) = lnrho_int   
+            ome_int(ci) = Omega_int 
+         endif
+         
+         if ((x(i).ge.outer).and.(x(i).le.limit)) then 
+            !smooth joint with the disk - initial condition
+            ci = ci + 1 ; rad_int(ci) = x(i) 
+            rho_int(ci) = lnrho_const - 0.5*alog(x(i))  
+            ome_int(ci) = sqrt(g0/x(i)**3)            
+         endif
+         
+         !outer boundary
+         
+         !
+         !rad_ext and d_ext are the vectors to call in spline_damp
+         !ce is their dimension. cee is also needed.
+         !
+         
+         !outskirts of disk 
+         if (x(i).ge.outer2) then 
+            !box boundary - stop the motion and set constant density 
+            cee=cee+1;
+            ce = ce + 1 ; rad_ext(ce) = x(i) 
+            rho_ext(ce) = lnrho_ext  
+            ome_ext(ce) = 0. 
+         endif
+         !
+         if ((x(i).ge.limit2).and.(x(i).le.inner2)) then 
+            !smooth joint - initial condition
+            ce = ce + 1 ; rad_ext(ce) = x(i) ; 
+            rho_ext(ce) = lnrho_const - 0.5*alog(x(i)) 
+            ome_ext(ce) = sqrt(g0/x(i)**3)
+         endif
+      enddo
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      !now spline the values
+      r = sqrt(x**2 + y(m)**2) 
+      ome = sqrt(g0*r**(-3))
+      den = lnrho_const - 0.5*alog(r)
+
+
+      !fixed internal radius to spline
+      irts(1:cii)      = rad_int(1:cii) 
+      irts(cii+2:ci+1) = rad_int(cii+1:ci)
+      
+      !fixed external radius to spline
+      erts(1:cee)      = rad_ext(1:cee)
+      erts(cee+2:ce+1) = rad_ext(cee+1:ci)
+
+      do i=l1,l2
+
+         if ((r(i).ge.inner).and.(r(i).le.outer)) then
+
+            irts(cii+1) = r(i)
+
+            call spline(rad_int,rho_int,irts,valuerho_int,ci,ci+1)
+            call spline(rad_int,ome_int,irts,valueome_int,ci,ci+1)
+
+            f(i,m,n,ilnrho) =       valuerho_int(cii+1)
+            f(i,m,n,iux)    = -y(m)*valueome_int(cii+1) 
+            f(i,m,n,iuy)    =  x(i)*valueome_int(cii+1) 
+
+         endif
+         
+         if (r(i).le.inner) then 
+            f(i,m,n,ilnrho) =       lnrho_int
+            f(i,m,n,iux)    = -y(m)*Omega_int
+            f(i,m,n,iuy)    =  x(i)*Omega_int
+         endif 
+  
+         if ((r(i).ge.outer).and.(r(i).le.limit)) then
+            !initial condition
+            f(i,m,n,ilnrho) =       den(i) 
+            f(i,m,n,iux)    = -y(m)*ome(i)
+            f(i,m,n,iuy)    =  x(i)*ome(i)
+         endif
+      
+
+         !outer disk
+         if ((r(i).ge.inner2).and.(r(i).le.outer2)) then
+
+            erts(cee+1) = r(i)
+
+            call spline(rad_ext,rho_ext,erts,valuerho_ext,ce,ce+1)
+            call spline(rad_ext,ome_ext,erts,valueome_ext,ce,ce+1)
+
+            f(i,m,n,ilnrho) =       valuerho_ext(cee+1)
+            f(i,m,n,iux)    = -y(m)*valueome_ext(cee+1) 
+            f(i,m,n,iuy)    =  x(i)*valueome_ext(cee+1) 
+
+         endif
+
+         if ((r(i).ge.limit2).and.(r(i).le.inner2)) then
+            !initial condition
+            f(i,m,n,ilnrho) =       den(i) 
+            f(i,m,n,iux)    = -y(m)*ome(i)
+            f(i,m,n,iuy)    =  x(i)*ome(i)
+         endif
+
+         if (r(i).ge.outer2) then 
+            f(i,m,n,ilnrho) = lnrho_ext
+            f(i,m,n,iux)    = 0. 
+            f(i,m,n,iuy)    = 0. 
+         endif   
+
+      enddo
+
+      endsubroutine mass_source_spline
+!***************************************************
 endmodule Density
