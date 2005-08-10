@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.122 2005-08-01 12:06:04 theine Exp $ 
+! $Id: initcond.f90,v 1.123 2005-08-10 20:09:07 wlyra Exp $ 
 
 module Initcond 
  
@@ -39,6 +39,7 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
+  public :: solar_nebula
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -1376,7 +1377,8 @@ module Initcond
       yy = yy - sy
 
       rrp=sqrt(xx**2+yy**2) + epsi
-      OO=sqrt(g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.))
+      !OO=sqrt(g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.))
+      OO=sqrt(g0*rrp**(-3))
 
       if (lcor) then 
          f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO-Omega)
@@ -2399,7 +2401,43 @@ module Initcond
 !
 !
     endsubroutine random_isotropic_KS
+!********************************************************** 
+    subroutine solar_nebula(f,xx,yy,zz,g0,lnrho_const,lnrho_int,lnrho_ext,wdamp)
+!
+! 24-fev-05/wlad : coded.
+! yields from Minimum Mass Solar Nebula model
+!
+! initial condition for density as yielded by the 
+! Minimum Mass Solar Nebula model
+!
+! rho    = rho(R) * rho(z) 
+! rho(R) = C2 r**-1.5 
+! rho(z) = exp(-z^2/(2*H^2), where H/R=0.05 is the scale height
+!
+! sigma(r) = Int rho dz = C1 r**-0.5 
 
+
+      use Cdata
+
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz) :: xx,yy,zz,rr,H
+      real :: lnrho_const,lnrho_int,lnrho_ext,wdamp,g0
+
+      if (lroot) print*, &
+              'init_lnrho: initialize density initial condition for planet building'
+
+      rr  = sqrt(xx**2 + yy**2)
+     
+      if (n1.eq.n2) then 
+         !2D
+         f(:,:,:,ilnrho) = lnrho_const - 0.5*alog(rr)  
+      else 
+         !3D - not tested yet
+         H  = 0.05 * rr
+         f(:,:,:,ilnrho) = lnrho_const - 1.5*alog(rr) - 0.5*(zz/H)**2 
+      endif
+      
+    endsubroutine solar_nebula
 !*********************************************************
 
 endmodule Initcond
