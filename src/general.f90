@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.43 2005-07-01 02:56:08 mee Exp $
+! $Id: general.f90,v 1.44 2005-08-10 20:06:41 wlyra Exp $
 
 module General
 
@@ -19,6 +19,8 @@ module General
 
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
+
+  public :: spline
 
   include 'record_types.h'
 
@@ -816,4 +818,80 @@ module General
       end do
     endsubroutine tridag_double
 !***********************************************************************
+    subroutine spline(arrx,arry,x2,S,psize1,psize2,err)
+!
+! Interpolates in x2 a natural cubic spline with knots defined by the 1d arrays arrx and arry
+! 25-03-05/wlad : coded
+
+      integer, intent(in) :: psize1,psize2
+      integer :: i,j,ct1,ct2
+      real, dimension (psize1) :: arrx,arry,h,a,b,c,d,sol
+      real, dimension (psize2) :: x2,S
+      logical, intent(out), optional :: err
+      
+      intent(in)  :: arrx,arry,x2
+      intent(out) :: S
+       
+      if (present(err)) err=.false.      
+      ct1 = psize1
+      ct2 = psize2
+!
+!breaks if x2 exceeds the interval defined by arrx
+!
+      do j=1,ct2
+         if ((x2(j).lt.arrx(1)).or.(x2(j).gt.arrx(ct1))) then
+            print*,'spline : attempt of extrapolation'
+            if (present(err)) err=.true.
+            return
+         endif
+      enddo
+!      
+!also breaks if x is not monotonically increasing
+!
+      do i=1,ct1-1
+         if (arrx(i+1).le.arrx(i)) then
+            print*,'spline x:y in x2:y2 : vector x is not monotonically increasing' 
+            if (present(err)) err=.true.
+            return
+         endif
+      enddo
+!
+!step h
+!
+      h(1:ct1-1) = arrx(2:ct1) - arrx(1:ct1-1) 
+      h(ct1) = h(ct1-1)
+!
+!coefficients for tridiagonal system
+!
+      a(2:ct1) = h(1:ct1-1)
+      a(1) = a(2)
+!      
+      b(2:ct1) = 2*(h(1:ct1-1) + h(2:ct1)) 
+      b(1) = b(2)
+!
+      c = h
+! 
+      d(2:ct1-1) = 6*((arry(3:ct1) - arry(2:ct1-1))/h(2:ct1-1) - (arry(2:ct1-1) - arry(1:ct1-2))/h(1:ct1-2))
+      d(1) = 0. ; d(ct1) = 0.
+!        
+      call tridag(a,b,c,d,sol)        
+!
+!interpolation formula
+!
+      do j=1,ct2
+         do i=1,ct1-1
+!               
+            if ((x2(j).ge.arrx(i)).and.(x2(j).le.arrx(i+1))) then  
+!               
+!                
+               S(j) = (1./(6*h(i))) * (sol(i+1)*(x2(j)-arrx(i))**3 + sol(i)*(arrx(i+1) - x2(j))**3)  + &
+                    (x2(j) - arrx(i))*(arry(i+1)/h(i) - h(i)*sol(i+1)/6.)                          + &
+                    (arrx(i+1) - x2(j))*(arry(i)/h(i) - h(i)*sol(i)/6.)
+            endif
+!            
+         enddo
+      enddo
+!           
+    endsubroutine spline
+!**********************************************************************************
 endmodule General
