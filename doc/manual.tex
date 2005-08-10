@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.295 2005-07-25 05:35:12 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.296 2005-08-10 13:45:42 bingert Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-07-25 05:35:12 $ $,~ $ $Revision: 1.295 $ $}
+%\date{$ $Date: 2005-08-10 13:45:42 $ $,~ $ $Revision: 1.296 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-07-25 05:35:12 $ $,~ $ $Revision: 1.295 $ $}\\
+  \emph{$ $Date: 2005-08-10 13:45:42 $ $,~ $ $Revision: 1.296 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1821,10 +1821,10 @@ For \code{grid_function='sinh'}, the function $z(\zeta)$ is given by
 \begin{equation}
   z(\zeta)
   = z_0
-    - L_z \frac{\sinh a(\zeta  {-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)}
+    + L_z \frac{\sinh a(\zeta  {-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)}
                {\sinh a(\zeta_2{-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)} \; ,
 \end{equation}
-where $z_0$ and $z_0+Lz$ are the lowest and uppermost levels, 
+where $z_0$ and $z_0+L_z$ are the lowest and uppermost levels, 
 $\zeta_1$, $\zeta_2$ are the $\zeta$ values representing those levels
 (normally $\zeta_1 = 0, \zeta_2 = N_z-1$ for a grid of $N_z$ vertical
 layers [excluding ghost layers]), and $\zeta_*$ is the
@@ -4787,7 +4787,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-07-25 05:35:12 $ $,~ $ $Revision: 1.295 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-08-10 13:45:42 $ $,~ $ $Revision: 1.296 $ $}
 
 \section{Timings}
 
@@ -7875,7 +7875,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.295 2005-07-25 05:35:12 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.296 2005-08-10 13:45:42 bingert Exp $ $}
 
 
 \end{document}
