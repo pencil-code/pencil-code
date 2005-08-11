@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.207 2005-08-09 18:37:56 brandenb Exp $
+! $Id: hydro.f90,v 1.208 2005-08-11 16:22:08 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -145,7 +145,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.207 2005-08-09 18:37:56 brandenb Exp $")
+           "$Id: hydro.f90,v 1.208 2005-08-11 16:22:08 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -279,7 +279,7 @@ module Hydro
           f(:,:,:,iux:iuz)=0. 
         case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
         case('keplerian'); call keplerian(f,g0,r0_pot,n_pot,Omega,xx,yy,zz &
-           ,lcentrifugal_force,star_offx,star_offy)
+           ,star_offx,star_offy)
         case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu,xx,yy,zz)
         case('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
