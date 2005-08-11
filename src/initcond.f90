@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.123 2005-08-10 20:09:07 wlyra Exp $ 
+! $Id: initcond.f90,v 1.124 2005-08-11 16:20:16 wlyra Exp $ 
 
 module Initcond 
  
@@ -1355,7 +1355,7 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,g0,r0_pot,n_pot,Omega,xx,yy,zz,lcor,sx,sy)
+    subroutine keplerian(f,g0,r0_pot,n_pot,Omega,xx,yy,zz,sx,sy)
 !
 !  Keplerian initial condition
 !
@@ -1367,7 +1367,6 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
       real :: g0,r0_pot,Omega,sx,sy
       integer :: n_pot
-      logical :: lcor
 !
 !  angular velocity for centrifugally supported disc in given potential
 !  Subtract angular velocity of the reference frame, if lcentrifugal_force is
@@ -1378,15 +1377,10 @@ module Initcond
 
       rrp=sqrt(xx**2+yy**2) + epsi
       !OO=sqrt(g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.))
-      OO=sqrt(g0*rrp**(-3))
+      OO=sqrt(g0*rrp**(-3)) - Omega
 
-      if (lcor) then 
-         f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO-Omega)
-         f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO-Omega)
-      else
          f(:,:,:,iux)=f(:,:,:,iux)-yy*OO
          f(:,:,:,iuy)=f(:,:,:,iuy)+xx*OO
-      endif
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2402,7 +2396,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !********************************************************** 
-    subroutine solar_nebula(f,xx,yy,zz,g0,lnrho_const,lnrho_int,lnrho_ext,wdamp)
+    subroutine solar_nebula(f,xx,yy,zz,lnrho_const)
 !
 ! 24-fev-05/wlad : coded.
 ! yields from Minimum Mass Solar Nebula model
@@ -2421,7 +2415,7 @@ module Initcond
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,rr,H
-      real :: lnrho_const,lnrho_int,lnrho_ext,wdamp,g0
+      real :: lnrho_const
 
       if (lroot) print*, &
               'init_lnrho: initialize density initial condition for planet building'

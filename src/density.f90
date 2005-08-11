@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.191 2005-08-10 20:12:31 wlyra Exp $
+! $Id: density.f90,v 1.192 2005-08-11 16:20:16 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -104,7 +104,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.191 2005-08-10 20:12:31 wlyra Exp $")
+           "$Id: density.f90,v 1.192 2005-08-11 16:20:16 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -283,7 +283,7 @@ module Density
       use General, only: chn
       use Global
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
-                          lnumerical_equilibrium,g0
+                          lnumerical_equilibrium
       use Initcond
       use Initcond_spec
       use IO
@@ -636,8 +636,7 @@ module Density
          !
          !minimum mass solar nebula
          !
-         call solar_nebula(f,xx,yy,zz,g0,lnrho_const,&
-           lnrho_int,lnrho_ext,wdamp)
+         call solar_nebula(f,xx,yy,zz,lnrho_const)
 
       case default
         !
@@ -1669,6 +1668,7 @@ module Density
       use Mpicomm, only: stop_it
       use Cdata
       use Gravity, only: g0
+      use Hydro, only: Omega
       use General
 
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1682,7 +1682,7 @@ module Density
       !external
       real, dimension (nx) :: rad_ext,rho_ext,ome_ext
       real, dimension (nx) :: valuerho_ext,valueome_ext,erts
-                 
+
       inner = r_int -   wdamp
       outer = r_int +   wdamp
       limit = r_int + 2*wdamp      
@@ -1701,7 +1701,7 @@ module Density
       !and set to global variables or into a file
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Omega_int = sqrt(g0*(r_int - 0.5*wdamp)**(-3))
+      Omega_int = sqrt(g0*(r_int - 0.5*wdamp)**(-3)) - Omega
       
       do i=lpoint,l2
          
@@ -1721,7 +1721,7 @@ module Density
             !smooth joint with the disk - initial condition
             ci = ci + 1 ; rad_int(ci) = x(i) 
             rho_int(ci) = lnrho_const - 0.5*alog(x(i))  
-            ome_int(ci) = sqrt(g0/x(i)**3)            
+            ome_int(ci) = sqrt(g0/x(i)**3) - Omega           
          endif
          
          !outer boundary
@@ -1744,7 +1744,7 @@ module Density
             !smooth joint - initial condition
             ce = ce + 1 ; rad_ext(ce) = x(i) ; 
             rho_ext(ce) = lnrho_const - 0.5*alog(x(i)) 
-            ome_ext(ce) = sqrt(g0/x(i)**3)
+            ome_ext(ce) = sqrt(g0/x(i)**3) - Omega
          endif
       enddo
       
@@ -1752,7 +1752,7 @@ module Density
       
       !now spline the values
       r = sqrt(x**2 + y(m)**2) 
-      ome = sqrt(g0*r**(-3))
+      ome = sqrt(g0*r**(-3)) - Omega
       den = lnrho_const - 0.5*alog(r)
 
 
