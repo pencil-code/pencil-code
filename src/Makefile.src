@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.127 2005-08-10 04:31:47 brandenb Exp $
+### $Id: Makefile.src,v 1.128 2005-08-11 16:38:02 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -326,6 +326,12 @@ FCCLEANER=
 #FC=f95
 #FFLAGS=-O3 
 #LDMPI=
+#F77=xlf  #(Nils)
+#FC=xlf90 #(Nils)
+#FFLAGS= -w -qsuppress=1501-510  #(Nils)
+#F90FLAGS=-qsuffix=f=f90 #(Nils)
+#CFLAGS=-O3 -DFUNDERSC=0 #(Nils)
+
 
 ## SunOS:
 ## Sun
