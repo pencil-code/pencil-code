@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.192 2005-08-11 16:20:16 wlyra Exp $
+! $Id: density.f90,v 1.193 2005-08-11 17:15:34 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -104,7 +104,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.192 2005-08-11 16:20:16 wlyra Exp $")
+           "$Id: density.f90,v 1.193 2005-08-11 17:15:34 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1668,7 +1668,6 @@ module Density
       use Mpicomm, only: stop_it
       use Cdata
       use Gravity, only: g0
-      use Hydro, only: Omega
       use General
 
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1702,7 +1701,11 @@ module Density
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       Omega_int = sqrt(g0*(r_int - 0.5*wdamp)**(-3)) - Omega
-      
+
+      !
+      !Note that omega is already defined in cdata
+      !
+
       do i=lpoint,l2
          
          !inner boundary
