@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.150 2005-08-14 14:27:41 dobler Exp $
+# $Id: getconf.csh,v 1.151 2005-08-14 14:29:15 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -66,7 +66,8 @@ if (-e "LOCK") then
 endif
 
 # Are we running the MPI version?
-set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
+#set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile`
+set mpi = `fgrep -c 'mpicomm_init: MPICOMM neighbors' src/start.x`
 # Determine number of CPUS
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 echo "$ncpus CPUs"
