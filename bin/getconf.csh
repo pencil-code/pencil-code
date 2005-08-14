@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.148 2005-08-06 13:33:12 ajohan Exp $
+# $Id: getconf.csh,v 1.149 2005-08-14 14:26:25 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -60,7 +60,8 @@ if (-e "LOCK") then
     echo "No NEWDIR file -- exiting"
     echo
     # exit                        # won't work in a sourced file
-    kill -KILL $$			# full-featured suicide
+    (sleep 1; kill -KILL $$ >& /dev/null) &	  # schedule full-featured suicide
+    kill -TERM $$	  	  # .. but try exiting in civilized manner
   endif  
 endif
 
