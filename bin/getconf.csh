@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.149 2005-08-14 14:26:25 dobler Exp $
+# $Id: getconf.csh,v 1.150 2005-08-14 14:27:41 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -509,6 +509,8 @@ else if ($hn =~ obelix || \
     set booted_lam = 1
     # set mpirun = /opt/intel/compiler70/lam/bin/mpirun
     set mpirun = /opt/gnu/lam-7.0/bin/mpirun
+    set mpirun = /opt/intel/lam-7.1.1/bin/mpiexec
+    set mpirunops = '-boot'
   endif
 
 else if ($hn == rasmussen) then
@@ -570,6 +572,11 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
 
 else if ($hn =~ cosmo) then
   echo "Cosmo - Tobi's laptop"
+  set mpirun = 'mpiexec'
+  set mpirunops = '-boot'
+
+else if ($hn =~ kolmogorov) then
+  echo "Kolmogorov on Wolfgang's desk"
   set mpirun = 'mpiexec'
   set mpirunops = '-boot'
 
