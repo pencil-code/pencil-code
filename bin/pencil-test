@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-07-22 05:34:44 $
-# $Revision: 1.22 $
+# $Date: 2005-08-14 14:29:51 $
+# $Revision: 1.23 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -31,6 +31,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -U, --up-d-samples     -- `cvs update; cvs update -d samples'
 #                              before compiling
 #   -c, --clean            -- `make cleann' before compiling
+#   -D <DIR>, --pencil-home=<DIR>
+#                          -- set PENCIL_HOME directory to DIR
 #   -N <N>, --nice=<N>     -- Run tests with nice value of <N>
 #   -p <PP>,
 #       --postproc=<PP>    -- Use postprocessor <PP> for output from make
