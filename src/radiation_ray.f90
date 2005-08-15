@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.72 2005-08-08 16:49:12 theine Exp $
+! $Id: radiation_ray.f90,v 1.73 2005-08-15 23:17:48 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -118,7 +118,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.72 2005-08-08 16:49:12 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.73 2005-08-15 23:17:48 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -522,7 +522,7 @@ module Radiation
         elseif (dtau_m<dtau_thresh2) then
           emdtau1=dtau_m*(1-0.5*dtau_m*(1-0.33333333*dtau_m))
           emdtau_m=1-emdtau1
-          emdtau2=-dtau_m**2*(0.5+0.33333333*dtau_m)
+          emdtau2=-dtau_m**2*(0.5-0.33333333*dtau_m)
         else
           emdtau_m=exp(-dtau_m)
           emdtau1=1-emdtau_m
