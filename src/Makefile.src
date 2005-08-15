@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.129 2005-08-11 17:25:16 mee Exp $
+### $Id: Makefile.src,v 1.130 2005-08-15 14:12:43 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -67,6 +67,7 @@ F90FLAGS=
 F77FLAGS=
 CFLAGS=-O3 -DFUNDERSC=1
 FCCLEANER=
+LIBMPISUFFIX=
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
@@ -283,6 +284,7 @@ FCCLEANER=
 #FCCLEANER=2>&1 | scripts/cleanf95 #(wormhole)
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)  
 #LDMPI= #(wormhole)
+#LIBMPISUFFIX=_#(wormhole)
 #LDMPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 #LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
 #F77=$(FC) #(wormhole)
@@ -387,6 +389,7 @@ FCCLEANER=
 
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
+MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 # -Mpencil.map
 
 ## Generic rules:
@@ -406,14 +409,14 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 
 technical=cparam.o cdata.o messages.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
 physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(PARTICLES).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o  $(TESTFIELD).o
-comm_deps=$(technical) sub.o $(IO).o $(PARTICLES_SUB).o snapshot.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
+comm_deps=$(technical) sub.o $(IO).o $(PARTICLES_SUB).o snapshot.o param_io.o $(MPICOMM_FIX).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
 start_deps_f90=$(comm_deps) $(GRID).o
 start_deps=$(start_deps_f90) $(DEBUG).o
 run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
 shock_finder_deps=cparam.o
-start_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f $(GRID).f90 start.f90
-run_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).f90 equ.f90 timestep.f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f run.f90
+start_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM_FIX).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f $(GRID).f90 start.f90
+run_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM_FIX).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).f90 equ.f90 timestep.f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f run.f90
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 shock_finder=$(SHOCK_FINDER).o $(shock_finder_deps)
@@ -458,7 +461,8 @@ mpicomm_.f90: mpicomm.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm.f90 > mpicomm_.f90
 mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
-
+nompicomm_.f90: nompicomm.f90
+	cp nompicomm.f90 nompicomm_.f90
 # The strange construct below is needed to have `make' realize there was
 # an error even when last command in pipe is FCCLEANER: 
 code:
@@ -575,10 +579,10 @@ var2ascii.x: $(var2ascii)
 fft.o:	     fft.f Makefile.src
 $(FFTPACK).o:   $(FFTPACK).f Makefile.src Makefile.local
 #fft_nr.o:    fft_nr.f90
-$(MPICOMM).o:         $(FFT).o 
+$(MPICOMM_FIX).o:         $(FFT).o 
 $(MAGNETIC).o:        $(FFT).o
 $(FFT).o:	          cdata.o
-nodebug.o:            nodebug.f90 cdata.o $(MPICOMM).o
+nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
 #$(TIMEAVG).o:        ctimeavg.local
 #axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
 
