@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.19 2005-08-08 16:49:12 theine Exp $
+! $Id: eos_idealgas.f90,v 1.20 2005-08-15 10:50:56 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -93,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.19 2005-08-08 16:49:12 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.20 2005-08-15 10:50:56 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -127,6 +127,7 @@ module EquationOfState
          ! Avoid setting unit_temperature=0 to avoid flaoting point exceptions
          if (gamma1 /= 0.) &
              unit_temperature=unit_velocity**2*gamma1/gamma*mu_tmp/R_cgs
+         if (lroot) print*,'initialize_eos: unit_temperature=',unit_temperature
       endif
 
       if (lroot) print*,'initialize_eos: cp=',cp

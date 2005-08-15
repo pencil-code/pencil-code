@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.248 2005-07-22 22:36:33 dobler Exp $
+! $Id: equ.f90,v 1.249 2005-08-15 10:50:56 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -318,7 +318,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.248 2005-07-22 22:36:33 dobler Exp $")
+           "$Id: equ.f90,v 1.249 2005-08-15 10:50:56 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -363,6 +363,16 @@ module Equ
       call initiate_isendrcv_bdry(f)
       if (early_finalize) call finalize_isendrcv_bdry(f)
 !
+!  set inverse timestep to zero before entering loop over m and n
+!
+      if (lfirst.and.ldt) then
+        if (dtmax/=0) then 
+          dt1_max=1./dtmax
+        else
+          dt1_max=0.
+        endif
+      endif
+!
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
 !
@@ -375,9 +385,6 @@ module Equ
 !  Turbulence parameters (alpha, scale height, etc.)      
       if (lcalc_turbulence_pars) call calc_turbulence_pars(f)
 !
-!  set inverse timestep to zero before entering loop over m and n
-!
-      if (lfirst.and.ldt) dt1_max=0.0
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
