@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.71 2005-07-01 03:16:47 mee Exp $
+! $Id: noentropy.f90,v 1.72 2005-08-15 14:13:39 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,7 +8,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cs2,pp,TT1
+! PENCILS PROVIDED cs2,pp,TT1,Ma2
 !
 !***************************************************************
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.71 2005-07-01 03:16:47 mee Exp $")
+           "$Id: noentropy.f90,v 1.72 2005-08-15 14:13:39 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -124,6 +124,10 @@ module Entropy
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_Ma2)) then
+        lpencil_in(i_u2)=.true.
+        lpencil_in(i_cs2)=.true.
+      endif
       if (lpencil_in(i_TT1) .and. gamma1/=0.) lpencil_in(i_cs2)=.true.
       if (lpencil_in(i_cs2) .and. gamma1/=0.) lpencil_in(i_lnrho)=.true.
 !
@@ -152,6 +156,8 @@ module Entropy
           p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
         endif
       endif
+! Ma2
+      if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! pp
       if (lpencil(i_pp)) p%pp=1/gamma*p%cs2*p%rho
 ! TT1

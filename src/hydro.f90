@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.208 2005-08-11 16:22:08 wlyra Exp $
+! $Id: hydro.f90,v 1.209 2005-08-15 14:13:38 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu,Ma2
+! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu
 ! PENCILS PROVIDED u2u13,del2u,del6u,graddivu
 !
 !***************************************************************
@@ -145,7 +145,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.208 2005-08-11 16:22:08 wlyra Exp $")
+           "$Id: hydro.f90,v 1.209 2005-08-15 14:13:38 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -613,10 +613,6 @@ module Hydro
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
       endif
-      if (lpencil_in(i_Ma2)) then
-        lpencil_in(i_u2)=.true.
-        lpencil_in(i_cs2)=.true.
-      endif
       if (lpencil_in(i_u2u13)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
@@ -697,8 +693,6 @@ module Hydro
           p%ugu(:,3) = ugui
         endif
       endif
-! Ma2
-      if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! u2u13
       if (lpencil(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
 ! del2u

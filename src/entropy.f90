@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.348 2005-08-09 18:37:56 brandenb Exp $
+! $Id: entropy.f90,v 1.349 2005-08-15 14:13:38 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -12,7 +12,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1,Ma2
 ! PENCILS PROVIDED ugss,yH,hss,hlnTT,del2ss,del6ss
 !
 !***************************************************************
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.348 2005-08-09 18:37:56 brandenb Exp $")
+           "$Id: entropy.f90,v 1.349 2005-08-15 14:13:38 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1402,6 +1402,10 @@ module Entropy
         lpencil_in(i_gss)=.true.
       endif
       if (pretend_lnTT .and. lpencil_in(i_glnTT)) lpencil_in(i_gss)=.true.
+      if (lpencil_in(i_Ma2)) then
+        lpencil_in(i_u2)=.true.
+        lpencil_in(i_cs2)=.true.
+      endif
       if (lpencil_in(i_hlnTT)) then
         if (pretend_lnTT) then
           lpencil_in(i_hss)=.true.
@@ -1447,6 +1451,8 @@ module Entropy
 ! cs2 and cp1tilde
       if (lpencil(i_cs2) .or. lpencil(i_cp1tilde)) &
           call pressure_gradient(f,p%cs2,p%cp1tilde)
+! Ma2
+      if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! glnTT
       if (lpencil(i_glnTT)) then
         if (pretend_lnTT) then
