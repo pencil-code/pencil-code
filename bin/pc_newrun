@@ -1,6 +1,6 @@
 #!/bin/sh 
 #
-#  $Id: pc_new,v 1.1 2005-08-16 11:42:00 mee Exp $
+#  $Id: pc_newrun,v 1.1 2005-08-16 23:51:03 mee Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
