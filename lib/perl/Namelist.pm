@@ -5,8 +5,8 @@
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-06-30 05:26:20 $
-# $Revision: 1.3 $
+# $Date: 2005-08-16 23:57:12 $
+# $Revision: 1.1 $
 
 # Current test statistics:
 # All tests successful, 1 subtest skipped.

@@ -47,10 +47,10 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 use strict;
 BEGIN {
-    if (-d "$ENV{PENCIL_HOME}/perl") {
-        unshift @INC, "$ENV{PENCIL_HOME}/perl";
+    if (-d "$ENV{PENCIL_HOME}/lib/perl") {
+        unshift @INC, "$ENV{PENCIL_HOME}/lib/perl";
     } else {
-        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../perl"; }
+        if ($0 =~ m!(.*[/\\])!) { unshift @INC, "$1../lib/perl"; }
     }
 }
 
@@ -58,14 +58,14 @@ eval "use Namelist";
 if ($@) {		 # Error reading Namelist.pm -- give useful advice
     my $error = join("\n",$@);
     if ($error =~ /Can't locate Namelist.pm in \@INC/) {
-	if (! -d "$ENV{PENCIL_HOME}/perl") { # forgot to cvs up -d perl
+	if (! -d "$ENV{PENCIL_HOME}/lib/perl") { # forgot to cvs up -d perl
           die "Perl: Can't locate Namelist.pm in \@INC\n"
 	      . "You need to check out the Pencil perl directory:\n"
 	      . "  (cd \$PENCIL_HOME; cvs up -d perl)\n";
-	} else {		# $PENCIL_HOME/perl missing in PERL5LIB
+	} else {		# $PENCIL_HOME/lib/perl missing in PERL5LIB
 	  die "Perl: Can't locate Namelist.pm in \@INC\n"
 	      ."Namelist.pm must be missing from your working copy, try:\n"
-              ."(cd \$PENCIL_HOME/perl; cvs up -dA)\n";
+              ."(cd \$PENCIL_HOME/lib/perl; cvs up -dA)\n";
 	}
     } else {			# unknown error message
 	die "$@\n";
@@ -187,8 +187,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.27 $';
-    my $date = '$Date: 2005-06-30 12:16:40 $';
+    my $rev = '$Revision: 1.28 $';
+    my $date = '$Date: 2005-08-16 23:57:12 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
