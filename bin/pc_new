@@ -1,6 +1,6 @@
-#!/bin/csh
+#!/bin/sh 
 #
-#  $Id: new,v 1.14 2005-06-26 17:34:16 eos_merger_tony Exp $
+#  $Id: pc_new,v 1.1 2005-08-16 11:42:00 mee Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -11,62 +11,89 @@
 #  Alternative usage, if one is already in run1
 #     new run2
 #
-if ($#argv == 2) then
-  set olddir=$cwd/$1
-  set newdir=$cwd/$2
+
+while expr $1 : - ; do
+  case $1 in
+    -s) 
+      same_source=1
+      echo "Using same source directory"
+      shift
+    ;;
+    --same-source)
+      same_source=1
+      echo "Using same source directory"
+      shift
+  esac
+done
+
+if [ $# -eq 2 ]; then
+  olddir=`pwd`/$1
+  newdir=`pwd`/$2
 else
-  set olddir=$cwd
+  olddir=`pwd`
   cd ..
-  set newdir=$cwd/$1
-endif
+  newdir=`pwd`/$1
+fi
 #
 #  save current working directory and make new run directory
 #  and go there.
 #
-set parentdir=$cwd
+parentdir=`pwd`
 echo "Parent directory: " $parentdir
 mkdir $newdir
 cd $newdir
-set targetdir=$cwd
+targetdir=`pwd`
 #
 #  In the new run directory, call mkdatadir, and
 #  write file with name of directory from which
 #  the new one is generated
 #
 $PENCIL_HOME/bin/mkdatadir
-(echo $olddir; /bin/date) >>! data/new_from.dir
+
+[ -e data/new_from.dir ] || touch data/new_from.dir
+(echo $olddir; /bin/date) >> data/new_from.dir
 #
 #  make src dir and go there
 #
-mkdir src
-cd src
+
+if [ $same_source ]; then
+  if [ -h $olddir/src ]; then 
+    ln -s `readlink $olddir/src`
+  else
+    ln -s $olddir/src
+  fi
+else
+  mkdir src
+  cd src
 #
 #  use *.local files from previous src directory
 #  and run setup-src
 #
-echo "old source directory: " $olddir/src
-cp $olddir/src/*.local .
-echo "Use *.local files from:" `pwd`; ls -l *.local
-cd ..
+  echo "old source directory: " $olddir/src
+  cp $olddir/src/*.local .
+  echo "Use *.local files from:" `pwd`; ls -l *.local
+  cd ..
 #
 #  if there exists a bin/setup-src.local file
 #  it is being executed prior to setup-src
 #  This gives the possibility to link your own routines
 #  into src (setup-src below won't overwrite those)
 #
-if (-f $parentdir/bin/setup-src.local) $parentdir/bin/setup-src.local
+  [ -f $parentdir/bin/setup-src.local ] && $parentdir/bin/setup-src.local
 #
 #  continue with the usual setup procedure
 #
-$PENCIL_HOME/bin/setup-src
+  $PENCIL_HOME/bin/setup-src
 #
 #  copy *.in and k.dat files into new directory
 #  the k.dat file is actually only needed for forced
 #  turbulence runs
 #
+fi
+
 cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
-if (-f k.dat) cp k.dat $targetdir
-if (-f stratification.dat) cp stratification.dat $targetdir
+[ -f k.dat ] && cp k.dat $targetdir
+[ -f stratification.dat ] && cp stratification.dat $targetdir
 #
