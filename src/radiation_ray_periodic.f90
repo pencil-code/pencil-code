@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.25 2005-08-16 14:20:11 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.26 2005-08-16 21:27:55 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -140,7 +140,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.25 2005-08-16 14:20:11 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.26 2005-08-16 21:27:55 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -384,9 +384,9 @@ module Radiation
           emdtau1=1.0
           emdtau2=-1.0
         elseif (dtau_m<dtau_thresh_min) then
-          emdtau1=dtau_m*(1-0.5*dtau_m*(1-0.33333333*dtau_m))
+          emdtau1=dtau_m*(1-0.5*dtau_m*(1-dtau_m/3))
           emdtau=1-emdtau1
-          emdtau2=-dtau_m**2*(0.5-0.33333333*dtau_m)
+          emdtau2=-dtau_m**2*(0.5-dtau_m/3)
         else
           emdtau=exp(-dtau_m)
           emdtau1=1-emdtau
@@ -723,7 +723,7 @@ module Radiation
         where (tau_yz>dtau_thresh_max)
           emtau1_yz=1.0
         elsewhere (tau_yz<dtau_thresh_min)
-          emtau1_yz=tau_yz*(1-0.5*tau_yz*(1-0.33333333*tau_yz))
+          emtau1_yz=tau_yz*(1-0.5*tau_yz*(1-tau_yz/3))
         elsewhere
           emtau1_yz=1-exp(-tau_yz)
         endwhere
@@ -786,7 +786,7 @@ module Radiation
         where (tau_tot_zx>dtau_thresh_max)
           emtau1_tot_zx=1.0
         elsewhere (tau_tot_zx<dtau_thresh_min)
-          emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-0.33333333*tau_tot_zx))
+          emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-tau_tot_zx/3))
         elsewhere 
           emtau1_tot_zx=1-exp(-tau_tot_zx)
         endwhere
