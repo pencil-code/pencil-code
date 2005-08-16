@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.73 2005-08-15 23:17:48 theine Exp $
+! $Id: radiation_ray.f90,v 1.74 2005-08-16 14:20:11 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -34,7 +34,7 @@ module Radiation
   real, dimension (mx,my,mz) :: Srad,kapparho,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
-  real :: dtau_thresh1,dtau_thresh2
+  real :: dtau_thresh_min,dtau_thresh_max
   real :: arad
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
@@ -118,7 +118,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.73 2005-08-15 23:17:48 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.74 2005-08-16 14:20:11 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -183,8 +183,8 @@ module Radiation
 !  relative errors for (emdtau1, emdtau2) will be
 !  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles
 !
-      dtau_thresh1=-log(epsilon(dtau_thresh1))
-      dtau_thresh2=1.6*epsilon(dtau_thresh2)**0.25
+      dtau_thresh_min=1.6*epsilon(dtau_thresh_min)**0.25
+      dtau_thresh_max=-log(tiny(dtau_thresh_max))
 !
 !  calculate arad for LTE source function
 !
@@ -515,11 +515,11 @@ module Radiation
         dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
         Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
-        if (dtau_m>dtau_thresh1) then
+        if (dtau_m>dtau_thresh_max) then
           emdtau_m=0.0
           emdtau1=1.0
           emdtau2=-1.0
-        elseif (dtau_m<dtau_thresh2) then
+        elseif (dtau_m<dtau_thresh_min) then
           emdtau1=dtau_m*(1-0.5*dtau_m*(1-0.33333333*dtau_m))
           emdtau_m=1-emdtau1
           emdtau2=-dtau_m**2*(0.5-0.33333333*dtau_m)

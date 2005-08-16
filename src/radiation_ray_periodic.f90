@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.24 2005-08-15 23:17:48 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.25 2005-08-16 14:20:11 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -51,9 +51,10 @@ module Radiation
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
   real :: arad
-  real :: dtau_thresh1,dtau_thresh2
+  real :: dtau_thresh_min,dtau_thresh_max
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
+  integer :: l,m,n
   integer :: llstart,llstop,ll1,ll2,lsign
   integer :: mmstart,mmstop,mm1,mm2,msign
   integer :: nnstart,nnstop,nn1,nn2,nsign
@@ -139,7 +140,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.24 2005-08-15 23:17:48 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.25 2005-08-16 14:20:11 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -204,8 +205,8 @@ module Radiation
 !  Relative errors for (emdtau1, emdtau2) will be
 !  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles
 !
-      dtau_thresh1=-log(epsilon(dtau_thresh1))
-      dtau_thresh2=1.6*epsilon(dtau_thresh2)**0.25
+      dtau_thresh_min=1.6*epsilon(dtau_thresh_min)**0.25
+      dtau_thresh_max=-log(tiny(dtau_thresh_max))
 !
 !  Calculate arad for LTE source function
 !
@@ -262,7 +263,7 @@ module Radiation
           if (lperiodic_ray) then
             call Qperiodic
           else
-            call Qassign_pointers
+            call Qpointers
             call Qcommunicate
           endif
         endif
@@ -282,8 +283,6 @@ module Radiation
 !  10-nov-03/tobi: coded
 !
       use Cdata, only: ldebug,headt
-
-      integer :: l,m,n
 !
 !  Identifier
 !
@@ -353,7 +352,6 @@ module Radiation
 !
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
-      integer :: l,m,n
       character(len=3) :: raydir
 !
 !  identifier
@@ -381,11 +379,11 @@ module Radiation
         dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
         Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
-        if (dtau_m>dtau_thresh1) then
+        if (dtau_m>dtau_thresh_max) then
           emdtau=0.0
           emdtau1=1.0
           emdtau2=-1.0
-        elseif (dtau_m<dtau_thresh2) then
+        elseif (dtau_m<dtau_thresh_min) then
           emdtau1=dtau_m*(1-0.5*dtau_m*(1-0.33333333*dtau_m))
           emdtau=1-emdtau1
           emdtau2=-dtau_m**2*(0.5-0.33333333*dtau_m)
@@ -411,7 +409,7 @@ module Radiation
 !
     endsubroutine Qintrinsic
 !***********************************************************************
-    subroutine Qassign_pointers
+    subroutine Qpointers
 !
 !  For each gridpoint at the downstream boundaries, set up a
 !  pointer (Qpt_{yz,zx,xy}) that points to a unique location
@@ -423,49 +421,32 @@ module Radiation
 !
 !  30-jul-05/tobi: coded
 !
-      integer :: l,m,n
       integer :: steps
       integer :: minsteps
       integer :: lsteps,msteps,nsteps
+      real, pointer :: val
+      logical, pointer :: set
 !
 !  yz-plane
 !
       if (lrad/=0) then
 
-           l=llstop
+        l=llstop
+        lsteps=(l+lrad-llstart)/lrad
+
+        msteps=huge(msteps)
+        nsteps=huge(nsteps)
+
         do m=mm1,mm2
         do n=nn1,nn2
 
-          steps=(l+lrad-llstart)/lrad
-          minsteps=1
+          if (mrad/=0) msteps = (m+mrad-mmstart)/mrad
+          if (nrad/=0) nsteps = (n+nrad-nnstart)/nrad
 
-          if (mrad/=0) then
-            msteps=(m+mrad-mmstart)/mrad
-            if (msteps<steps) then
-              steps=msteps
-              minsteps=2
-            endif
-          endif
+          call assign_pointer(lsteps,msteps,nsteps,val,set)
 
-          if (nrad/=0) then
-            nsteps=(n+nrad-nnstart)/nrad
-            if (nsteps<steps) then
-              steps=nsteps
-              minsteps=3
-            endif
-          endif
-
-          select case (minsteps)
-            case (1)
-              Qpt_yz(m,n)%val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
-              Qpt_yz(m,n)%set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
-            case (2)
-              Qpt_yz(m,n)%val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
-              Qpt_yz(m,n)%set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
-            case (3)
-              Qpt_yz(m,n)%val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
-              Qpt_yz(m,n)%set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
-          endselect
+          Qpt_yz(m,n)%set => set
+          Qpt_yz(m,n)%val => val
 
         enddo
         enddo
@@ -476,40 +457,22 @@ module Radiation
 !
       if (mrad/=0) then
 
-           m=mmstop
+        m=mmstop
+        msteps=(m+mrad-mmstart)/mrad
+
+        nsteps=huge(nsteps)
+        lsteps=huge(lsteps)
+
         do n=nn1,nn2
         do l=ll1,ll2
 
-          steps=(m+mrad-mmstart)/mrad
-          minsteps=2
+          if (nrad/=0) nsteps = (n+nrad-nnstart)/nrad
+          if (lrad/=0) lsteps = (l+lrad-llstart)/lrad
 
-          if (nrad/=0) then
-            nsteps=(n+nrad-nnstart)/nrad
-            if (nsteps<steps) then
-              steps=nsteps
-              minsteps=3
-            endif
-          endif
+          call assign_pointer(lsteps,msteps,nsteps,val,set)
 
-          if (lrad/=0) then
-            lsteps=(l+lrad-llstart)/lrad
-            if (lsteps<steps) then
-              steps=lsteps
-              minsteps=1
-            endif
-          endif
-
-          select case (minsteps)
-            case (1)
-              Qpt_zx(l,n)%val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
-              Qpt_zx(l,n)%set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
-            case (2)
-              Qpt_zx(l,n)%val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
-              Qpt_zx(l,n)%set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
-            case (3)
-              Qpt_zx(l,n)%val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
-              Qpt_zx(l,n)%set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
-          endselect
+          Qpt_zx(l,n)%set => set
+          Qpt_zx(l,n)%val => val
 
         enddo
         enddo
@@ -520,47 +483,52 @@ module Radiation
 !
       if (nrad/=0) then
 
-           n=nnstop
+        n=nnstop
+        nsteps=(n+nrad-nnstart)/nrad
+
         do l=ll1,ll2
         do m=mm1,mm2
 
-          steps=(n+nrad-nnstart)/nrad
-          minsteps=3
+          if (lrad/=0) lsteps = (l+lrad-llstart)/lrad
+          if (mrad/=0) msteps = (m+mrad-mmstart)/mrad
 
-          if (lrad/=0) then
-            lsteps=(l+lrad-llstart)/lrad
-            if (lsteps<steps) then
-              steps=lsteps
-              minsteps=1
-            endif
-          endif
+          call assign_pointer(lsteps,msteps,nsteps,val,set)
 
-          if (mrad/=0) then
-            msteps=(m+mrad-mmstart)/mrad
-            if (msteps<steps) then
-              steps=msteps
-              minsteps=2
-            endif
-          endif
-
-          select case (minsteps)
-            case (1)
-              Qpt_xy(l,m)%val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
-              Qpt_xy(l,m)%set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
-            case (2)
-              Qpt_xy(l,m)%val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
-              Qpt_xy(l,m)%set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
-            case (3)
-              Qpt_xy(l,m)%val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
-              Qpt_xy(l,m)%set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
-          endselect
+          Qpt_xy(l,m)%set => set
+          Qpt_xy(l,m)%val => val
 
         enddo
         enddo
 
       endif
 
-    endsubroutine Qassign_pointers
+    endsubroutine Qpointers
+!***********************************************************************
+    subroutine assign_pointer(lsteps,msteps,nsteps,val,set)
+
+      integer, intent(in) :: lsteps,msteps,nsteps
+      real, pointer :: val
+      logical, pointer :: set
+      integer :: steps
+
+      steps=min(lsteps,msteps,nsteps)
+
+      if (steps==lsteps) then
+        val => Qbc_yz(m-mrad*steps,n-nrad*steps)%val
+        set => Qbc_yz(m-mrad*steps,n-nrad*steps)%set
+      endif
+
+      if (steps==msteps) then
+        val => Qbc_zx(l-lrad*steps,n-nrad*steps)%val
+        set => Qbc_zx(l-lrad*steps,n-nrad*steps)%set
+      endif
+
+      if (steps==nsteps) then
+        val => Qbc_xy(l-lrad*steps,m-mrad*steps)%val
+        set => Qbc_xy(l-lrad*steps,m-mrad*steps)%set
+      endif
+
+    endsubroutine assign_pointer
 !***********************************************************************
     subroutine Qcommunicate
 !
@@ -587,7 +555,6 @@ module Radiation
       real, dimension (mx,mz) :: Qsend_zx,Qrecv_zx
       real, dimension (mx,my) :: Qrecv_xy,Qsend_xy
 
-      integer :: l,m,n
       logical :: all_yz,all_zx
 !
 !  Initially no boundaries are set
@@ -674,6 +641,8 @@ module Radiation
 
           if (nprocy>1) then
             call radboundary_zx_sendrecv(mrad,idir,Qsend_zx,Qrecv_zx)
+          else
+            Qrecv_zx=Qsend_zx
           endif
 
           forall (l=ll1:ll2,n=nn1:nn2,Qpt_zx(l,n)%set.and..not.Qbc_zx(l,n)%set)
@@ -738,7 +707,6 @@ module Radiation
       real, dimension(nx,nz) :: Qrad_zx,tau_zx,emtau1_zx
       real, dimension(nx,nz) :: Qrad_tot_zx,tau_tot_zx,emtau1_tot_zx
       real, dimension(nx,nz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
-      integer :: l,m,n
       integer :: ipystart,ipystop,ipm
 !
 !  x-direction
@@ -752,9 +720,9 @@ module Radiation
   !
   !  Try to avoid time consuming exponentials and loss of precision.
   !
-        where (tau_yz>dtau_thresh1)
+        where (tau_yz>dtau_thresh_max)
           emtau1_yz=1.0
-        elsewhere (tau_yz<dtau_thresh2)
+        elsewhere (tau_yz<dtau_thresh_min)
           emtau1_yz=tau_yz*(1-0.5*tau_yz*(1-0.33333333*tau_yz))
         elsewhere
           emtau1_yz=1-exp(-tau_yz)
@@ -815,9 +783,9 @@ module Radiation
   !  term involving the total optical depths across all processors.
   !  Try to avoid time consuming exponentials and loss of precision.
   !
-        where (tau_tot_zx>dtau_thresh1)
+        where (tau_tot_zx>dtau_thresh_max)
           emtau1_tot_zx=1.0
-        elsewhere (tau_tot_zx<dtau_thresh2)
+        elsewhere (tau_tot_zx<dtau_thresh_min)
           emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-0.33333333*tau_tot_zx))
         elsewhere 
           emtau1_tot_zx=1-exp(-tau_tot_zx)
@@ -843,8 +811,6 @@ module Radiation
       use Cdata, only: ldebug,headt,directory_snap
       use Slices, only: Isurf_xy
       use IO, only: output
-!
-      integer :: l,m,n
 !
 !  identifier
 !
