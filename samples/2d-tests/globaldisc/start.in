@@ -3,10 +3,10 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2005-08-17 13:25:15 ajohan Exp $',
+  cvsid='$Id: start.in,v 1.5 2005-08-17 23:36:54 wlyra Exp $',
   ip=14,                        ! debugging parameter
-  xyz0  = -20.,-20.,-20.,       ! first corner of box
-  xyz1  =  20., 20., 20.,       ! second corner of box
+  xyz0  = -4.,-4.,-4.,       ! first corner of box
+  xyz1  =  4., 4., 4.,       ! second corner of box
   lperi =  F  , F  , T,         ! periodic direction?
   !lshift_origin =  F,  F,  F,
 
@@ -15,30 +15,35 @@
 
   !bcz = 's','s','a','s:a2','s:a2'
   !random_gen='nr_f90',
-  r_int=2.,                    ! radius of interior spherical boundary
-  r_ext=18.,                   ! radius of exterior spherical boundary
+  r_int=0.3,                    ! radius of interior spherical boundary
+  r_ext=3.7,                    ! radius of exterior spherical boundary
   lcylindrical=T
-  lwrite_ic=T
 /
 &eos_init_pars
-  cs0=0.7
+  cs0=0.05 ! 0.7 km/s at Jupiter's orbit. 
+           ! in these units, Rj=1,Omega=1.,[v]~13km/s
   !rho0=1.,
 /
 &hydro_init_pars
-  !Omega = 2.51588    !for jupiter 5.2 AU
-  !Omega=0.39         !for outer edge r_ext=18
   inituu='keplerian'
-  !urand=0.05,
+  !if corotational
+  !Omega = 2.51588    !for jupiter 5.2 AU
+  !Omega = 1 
   !lcentrifugal_force = T
-  !Omega_int = 15.
 /
 &density_init_pars
   initlnrho='mmsn'
-  lnrho_const=1.
+  lnrho_const=1
+  wdamp=0.1
+  plaw=0.5
 /
 &grav_init_pars
-  ipotential='smoothed-newton', g0=890., r0_pot=0.05,n_pot=10
-  ![x]=1 UA and [u] = 1km/s lead to g0=GM=890
-  !using [x]= planet distance and [t]=1 orbit, g0=(2pi)**2 
-
+  ipotential='smoothed-newton', g0=1.,r0_pot=0.1,n_pot=10
+  !!Rp = planet distance... 5.2 or 1
+  !!gp is the mass of the planet, G*Mp
+  !!GMjup = g0*0.001 ; Gpl   = 10*GMjup
+  !![x]=1 UA and [u] = 1km/s lead to g0=GM=890
+  !!using [x]= planet distance and [t]=1 orbit, g0=(2pi)**2 =39.48
+  !now I'm using [x]=planet's distance, g0=1., so [t]=Omega-1 and
+  !assuming r=5.2AU and Omega=2pi/11.8yr, [v]=13km/s
 /
