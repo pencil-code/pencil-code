@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $
+! $Id: equ.f90,v 1.251 2005-08-17 00:40:18 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $")
+           "$Id: equ.f90,v 1.251 2005-08-17 00:40:18 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -539,7 +539,7 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
               ' : ', lfreeze_var
-          pfreeze = cubic_step(r_mn,rfreeze_int,wfreeze,SHIFT=1.)
+          pfreeze = quintic_step(r_mn,rfreeze_int,wfreeze,SHIFT=-1.)
           do iv=1,nvar
             if (lfreeze_var(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
           enddo

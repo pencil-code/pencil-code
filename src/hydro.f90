@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.210 2005-08-17 00:33:22 dobler Exp $
+! $Id: hydro.f90,v 1.211 2005-08-17 00:40:18 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -75,7 +75,8 @@ module Hydro
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot, &
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-       nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint
+       nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint, &
+       lcentrifugal_force
 
 ! end geodynamo
 
@@ -145,7 +146,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.210 2005-08-17 00:33:22 dobler Exp $")
+           "$Id: hydro.f90,v 1.211 2005-08-17 00:40:18 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
