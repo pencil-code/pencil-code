@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $
+! $Id: magnetic.f90,v 1.251 2005-08-17 23:09:55 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -91,7 +91,7 @@ module Magnetic
   real :: eta=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
-  logical :: lfreeze_aint=.false.
+  logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
 
   namelist /magnetic_run_pars/ &
        eta,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -106,7 +106,7 @@ module Magnetic
        reinitalize_aa,rescale_aa,lB_ext_pot, &
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
-       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint
+       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
@@ -168,7 +168,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $")
+           "$Id: magnetic.f90,v 1.251 2005-08-17 23:09:55 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -228,7 +228,8 @@ module Magnetic
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
       endif
 !
-      if (lfreeze_aint) lfreeze_var(iax:iaz) = .true.
+      if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
+      if (lfreeze_aext) lfreeze_varext(iax:iaz) = .true.
 !
     endsubroutine initialize_magnetic
 !***********************************************************************

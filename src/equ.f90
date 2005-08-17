@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.251 2005-08-17 00:40:18 dobler Exp $
+! $Id: equ.f90,v 1.252 2005-08-17 23:09:55 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -301,7 +301,7 @@ module Equ
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec,maxdiffus,pfreeze
+      real, dimension (nx) :: maxadvec,maxdiffus,pfreeze_int,pfreeze_ext
       integer :: iv,ider,j,k
 !
 !  print statements when they are first executed
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.251 2005-08-17 00:40:18 dobler Exp $")
+           "$Id: equ.f90,v 1.252 2005-08-17 23:09:55 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -534,16 +534,27 @@ module Equ
 !  -------------------------------------------------------------
 !
 !  Similar to velocity damping, but more radical: set some df=0 for r_mn<r_int:
-!
-        if (any(lfreeze_var)) then
+
+        if (any(lfreeze_varint)) then
           if (headtt) &
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
-              ' : ', lfreeze_var
-          pfreeze = quintic_step(r_mn,rfreeze_int,wfreeze,SHIFT=-1.)
+              ' : ', lfreeze_varint
+          pfreeze_int  = quintic_step(r_mn,rfreeze_int,wfreeze,SHIFT=-1.)
           do iv=1,nvar
-            if (lfreeze_var(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+            if (lfreeze_varint(iv)) df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
           enddo
         endif
+
+        if (any(lfreeze_varext)) then
+          if (headtt) &
+              print*, 'pde: freezing variables for r > ', rfreeze_ext, &
+              ' : ', lfreeze_varext
+          pfreeze_ext  = 1-quintic_step(r_mn,rfreeze_ext,wfreeze,SHIFT=1.)
+          do iv=1,nvar
+            if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
+          enddo
+        endif
+
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'

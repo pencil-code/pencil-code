@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.124 2005-08-11 16:20:16 wlyra Exp $ 
+! $Id: initcond.f90,v 1.125 2005-08-17 23:09:55 wlyra Exp $ 
 
 module Initcond 
  
@@ -1363,6 +1363,8 @@ module Initcond
 !   5-may-05/wlad: added possibility of star offset and non-corotational 
 !                  frame of reference. 
 
+      use Cdata
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
       real :: g0,r0_pot,Omega,sx,sy
@@ -1375,12 +1377,15 @@ module Initcond
       xx = xx - sx
       yy = yy - sy
 
-      rrp=sqrt(xx**2+yy**2) + epsi
+      rrp=sqrt(xx**2+yy**2) !+ epsi
       !OO=sqrt(g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.))
       OO=sqrt(g0*rrp**(-3)) - Omega
-
+      
+      where ((rrp.ge.r_int).and.(rrp.lt.r_ext))
          f(:,:,:,iux)=f(:,:,:,iux)-yy*OO
          f(:,:,:,iuy)=f(:,:,:,iuy)+xx*OO
+      endwhere
+      !elsewhere will be defined in solar_nebula   
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2396,7 +2401,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !********************************************************** 
-    subroutine solar_nebula(f,xx,yy,zz,lnrho_const)
+    subroutine solar_nebula(f,xx,yy,zz,lnrho_const,plaw,wdamp)
 !
 ! 24-fev-05/wlad : coded.
 ! yields from Minimum Mass Solar Nebula model
@@ -2410,27 +2415,182 @@ module Initcond
 !
 ! sigma(r) = Int rho dz = C1 r**-0.5 
 
-
       use Cdata
+      use Mpicomm, only: stop_it
+      use Gravity, only: g0
+      use General
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,rr,H
-      real :: lnrho_const
+      real :: lnrho_int,lnrho_ext,lnrho_const
+      real :: Omega_int,plaw,wdamp
+      real :: inner,outer,limit,inner2,outer2,limit2
+      integer :: i,ci,cii,ce,cee
+      real, dimension (mx) :: r,ome,den
+      !internal
+      real, dimension (nx) :: rad_int,rho_int,ome_int
+      real, dimension (nx) :: valuerho_int,valueome_int,irts 
+      !external
+      real, dimension (nx) :: rad_ext,rho_ext,ome_ext
+      real, dimension (nx) :: valuerho_ext,valueome_ext,erts
 
+      print*,'mass_source_spline called'
+      
       if (lroot) print*, &
               'init_lnrho: initialize density initial condition for planet building'
 
       rr  = sqrt(xx**2 + yy**2)
+      f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)  
      
-      if (n1.eq.n2) then 
-         !2D
-         f(:,:,:,ilnrho) = lnrho_const - 0.5*alog(rr)  
-      else 
-         !3D - not tested yet
-         H  = 0.05 * rr
-         f(:,:,:,ilnrho) = lnrho_const - 1.5*alog(rr) - 0.5*(zz/H)**2 
-      endif
+      !3D - not tested yet
+      !H  = 0.05 * rr
+      !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
+     
+
+      !Ok, now fix the boundaries
+      !This all could go to another subroutine, perhaps, fix_bound_disk
+
+      lnrho_int=lnrho_const - plaw*alog(r_int-1.5*wdamp)
+      lnrho_ext=lnrho_const - plaw*alog(r_ext+1.5*wdamp)
+      Omega_int = sqrt(g0*(r_int - 1.5*wdamp)**(-3)) - Omega
+
+      inner = r_int - 2*wdamp
+      outer = r_int -   wdamp
+      limit = r_int 
+      ci=0;cii=0
       
+      limit2 = r_ext 
+      inner2 = r_ext +   wdamp
+      outer2 = r_ext + 2*wdamp
+      ce=0;cee=0
+      
+      !
+      !computational domain -> limit < r < limit2
+      !
+  
+      do i=lpoint,l2
+         
+         !inner boundary
+         !
+         !rad_int and d_int are the vectors to call in spline_damp
+         !ci is their dimension. cii is also needed.
+         
+         if (x(i).le.inner) then 
+            !center - rigid rotator with constant density
+            cii=cii+1; ci = ci + 1; rad_int(ci) = x(i)  
+            rho_int(ci) = lnrho_int   
+            ome_int(ci) = Omega_int 
+         endif
+         
+         if ((x(i).ge.outer).and.(x(i).le.limit)) then 
+            !smooth joint with the disk - initial condition
+            ci = ci + 1 ; rad_int(ci) = x(i) 
+            rho_int(ci) = lnrho_const - plaw*alog(x(i))  
+            ome_int(ci) = sqrt(g0/x(i)**3) - Omega           
+         endif
+         
+         !outer boundary
+         
+         !
+         !rad_ext and d_ext are the vectors to call in spline_damp
+         !ce is their dimension. cee is also needed.
+         !
+         
+         !outskirts of disk 
+         if (x(i).ge.outer2) then 
+            !box boundary - stop the motion and set constant density 
+            cee=cee+1;
+            ce = ce + 1 ; rad_ext(ce) = x(i) 
+            rho_ext(ce) = lnrho_ext  
+            ome_ext(ce) = 0. 
+         endif
+         !
+         if ((x(i).ge.limit2).and.(x(i).le.inner2)) then 
+            !smooth joint - initial condition
+            ce = ce + 1 ; rad_ext(ce) = x(i) ; 
+            rho_ext(ce) = lnrho_const - plaw*alog(x(i)) 
+            ome_ext(ce) = sqrt(g0/x(i)**3) - Omega
+         endif
+      enddo
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      !now spline the values through the disk
+
+      !fixed internal radius to spline
+      irts(1:cii)      = rad_int(1:cii) 
+      irts(cii+2:ci+1) = rad_int(cii+1:ci)
+      !fixed external radius to spline
+      erts(1:cee)      = rad_ext(1:cee)
+      erts(cee+2:ce+1) = rad_ext(cee+1:ci)
+
+      do n=n1,n2
+         do m=m1,m2
+
+            r = sqrt(x**2 + y(m)**2) 
+            ome = sqrt(g0*r**(-3)) - Omega
+            den = lnrho_const - plaw*alog(r)
+            
+            do i=l1,l2
+            
+               if ((r(i).ge.inner).and.(r(i).le.outer)) then
+               
+                  irts(cii+1) = r(i)
+            
+                  call spline(rad_int,rho_int,irts,valuerho_int,ci,ci+1)
+                  call spline(rad_int,ome_int,irts,valueome_int,ci,ci+1)
+                  
+                  f(i,m,n,ilnrho) =       valuerho_int(cii+1)
+                  f(i,m,n,iux)    = -y(m)*valueome_int(cii+1) 
+                  f(i,m,n,iuy)    =  x(i)*valueome_int(cii+1) 
+            
+               endif
+            
+               if (r(i).le.inner) then 
+                  f(i,m,n,ilnrho) =       lnrho_int
+                  f(i,m,n,iux)    = -y(m)*Omega_int
+                  f(i,m,n,iuy)    =  x(i)*Omega_int
+               endif
+  
+               if ((r(i).ge.outer).and.(r(i).le.limit)) then
+                  !initial condition
+                  f(i,m,n,ilnrho) =       den(i) 
+                  f(i,m,n,iux)    = -y(m)*ome(i)
+                  f(i,m,n,iuy)    =  x(i)*ome(i)
+               endif
+            
+            
+               !outer disk
+               if ((r(i).ge.inner2).and.(r(i).le.outer2)) then
+                  
+                  erts(cee+1) = r(i)
+                  
+                  call spline(rad_ext,rho_ext,erts,valuerho_ext,ce,ce+1)
+                  call spline(rad_ext,ome_ext,erts,valueome_ext,ce,ce+1)
+                  
+                  f(i,m,n,ilnrho) =       valuerho_ext(cee+1)
+                  f(i,m,n,iux)    = -y(m)*valueome_ext(cee+1) 
+                  f(i,m,n,iuy)    =  x(i)*valueome_ext(cee+1) 
+                  
+               endif
+               
+               if ((r(i).ge.limit2).and.(r(i).le.inner2)) then
+                  !initial condition
+                  f(i,m,n,ilnrho) =       den(i) 
+                  f(i,m,n,iux)    = -y(m)*ome(i)
+                  f(i,m,n,iuy)    =  x(i)*ome(i)
+               endif
+               
+               if (r(i).ge.outer2) then 
+                  f(i,m,n,ilnrho) = lnrho_ext
+                  f(i,m,n,iux)    = 0. 
+                  f(i,m,n,iuy)    = 0. 
+               endif
+               
+            enddo
+         enddo
+      enddo
+     
     endsubroutine solar_nebula
 !*********************************************************
 

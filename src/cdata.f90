@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.274 2005-08-17 00:33:22 dobler Exp $
+! $Id: cdata.f90,v 1.275 2005-08-17 23:09:55 wlyra Exp $
 
 module Cdata
 
@@ -46,7 +46,7 @@ module Cdata
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dtmax=1E37,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
-  real :: r_ref=0., rfreeze_int=-impossible,wfreeze=0.
+  real :: r_ref=0., rfreeze_int=-impossible,rfreeze_ext=-impossible,wfreeze=0.
   real :: ttransient=0.,C_smag=0.17
   real, dimension (2) :: fran1,fran2
 
@@ -241,7 +241,7 @@ module Cdata
                                              ! to the snapshots
   logical :: lfrozen_bcs_z=.false.
   logical, dimension(mvar) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
-  logical, dimension(mvar) :: lfreeze_var=.false.
+  logical, dimension(mvar) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 
   ! possibility to set boundary values
   real, dimension(mvar) :: fbcx1=0.,fbcy1=0.,fbcz1=0.

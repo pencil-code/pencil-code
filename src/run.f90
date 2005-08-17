@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.205 2005-08-17 00:33:22 dobler Exp $
+! $Id: run.f90,v 1.206 2005-08-17 23:09:55 wlyra Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.205 2005-08-17 00:33:22 dobler Exp $")
+             "$Id: run.f90,v 1.206 2005-08-17 23:09:55 wlyra Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -92,6 +92,11 @@
         if (rfreeze_int == -impossible .and. r_int > epsi) then
           rfreeze_int = r_int
         endif
+        
+        if (rfreeze_ext == -impossible) then
+          rfreeze_ext = r_ext
+        endif
+
 !
 !  Will we write all slots of f?
 !

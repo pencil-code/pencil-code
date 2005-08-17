@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.211 2005-08-17 00:40:18 dobler Exp $
+! $Id: hydro.f90,v 1.212 2005-08-17 23:09:55 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -66,7 +66,7 @@ module Hydro
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lcalc_turbulence_pars=.false.
-  logical :: lfreeze_uint=.false.
+  logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -76,7 +76,7 @@ module Hydro
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint, &
-       lcentrifugal_force
+       lfreeze_uext,lcentrifugal_force
 
 ! end geodynamo
 
@@ -146,7 +146,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.211 2005-08-17 00:40:18 dobler Exp $")
+           "$Id: hydro.f90,v 1.212 2005-08-17 23:09:55 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -176,7 +176,7 @@ module Hydro
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
-      use CData,   only: r_int,r_ext,lfreeze_var,epsi,leos,iux,iuy,iuz
+      use CData,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -204,7 +204,8 @@ module Hydro
         endif
       endif
 !
-      if (lfreeze_uint) lfreeze_var(iux:iuz) = .true.
+      if (lfreeze_uint) lfreeze_varint(iux:iuz) = .true.
+      if (lfreeze_uext) lfreeze_varext(iux:iuz) = .true.
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
       endsubroutine initialize_hydro
