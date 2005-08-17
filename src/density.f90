@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.193 2005-08-11 17:15:34 wlyra Exp $
+! $Id: density.f90,v 1.194 2005-08-17 00:26:18 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -104,7 +104,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.193 2005-08-11 17:15:34 wlyra Exp $")
+           "$Id: density.f90,v 1.194 2005-08-17 00:26:18 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -294,7 +294,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
-      real :: pot_ext,lnrho_ext,cs2_ext
+      real :: pot_ext,lnrho_ext,cs2_ext,tmp1
       real :: zbot,ztop
       logical :: lnothing
 !
@@ -444,8 +444,18 @@ module Density
             !     only work if grav_r<=0 everywhere -- but that seems
             !     reasonable.
             call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
-            lnrho_ext = lnrho0 + log(1 - gamma1*(pot_ext-pot0)/cs20) / gamma1
-            cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
+            ! Do consistency check before taking the log() of a potentially
+            ! negative number
+            tmp1 = 1 - gamma1*(pot_ext-pot0)/cs20
+            if (tmp1 <= 0.) then
+              if (lroot) then
+                print*, 'BAD IDEA: Trying to calculate log(', tmp1, ')'
+                print*, '  for r_ext -- need to increase cs20?'
+              endif
+              call error('init_lnrho', 'Imaginary density values')
+            endif
+            lnrho_ext = lnrho0 + log(tmp1) / gamma1
+            cs2_ext   = cs20*tmp1
             ! Adjust for given cs2cool (if given) or set cs2cool (otherwise)
             if (cs2cool/=0) then
               lnrho_ext = lnrho_ext - log(cs2cool/cs2_ext)
