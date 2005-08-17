@@ -60,8 +60,8 @@ if ($@) {		 # Error reading Namelist.pm -- give useful advice
     if ($error =~ /Can't locate Namelist.pm in \@INC/) {
 	if (! -d "$ENV{PENCIL_HOME}/lib/perl") { # forgot to cvs up -d perl
           die "Perl: Can't locate Namelist.pm in \@INC\n"
-	      . "You need to check out the Pencil perl directory:\n"
-	      . "  (cd \$PENCIL_HOME; cvs up -d perl)\n";
+	      . "You need to check out the Pencil library (including lib/perl) directory:\n"
+	      . "  (cd \$PENCIL_HOME; cvs up -d lib)\n";
 	} else {		# $PENCIL_HOME/lib/perl missing in PERL5LIB
 	  die "Perl: Can't locate Namelist.pm in \@INC\n"
 	      ."Namelist.pm must be missing from your working copy, try:\n"
@@ -187,8 +187,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.28 $';
-    my $date = '$Date: 2005-08-16 23:57:12 $';
+    my $rev = '$Revision: 1.29 $';
+    my $date = '$Date: 2005-08-17 13:19:43 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
