@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.73 2005-08-15 16:41:50 wlyra Exp $
+! $Id: grav_r.f90,v 1.74 2005-08-17 00:26:36 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -81,7 +81,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.73 2005-08-15 16:41:50 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.74 2005-08-17 00:26:36 dobler Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -389,7 +389,7 @@ module Gravity
       use Sub, only: poly
 
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
-      real, optional :: pot0           ! potential ar r=0
+      real, optional :: pot0           ! potential at r=0
 
       real, dimension (mx,my,mz) :: rr
 !
@@ -400,7 +400,7 @@ module Gravity
       select case (ipotential)
 
       case ('geo-kws','smoothed-newton')
-        pot=-g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+        pot = -g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
         if (present(pot0)) pot0=-g0/r0_pot
 
       case default
