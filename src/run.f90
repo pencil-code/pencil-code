@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.204 2005-08-09 18:37:56 brandenb Exp $
+! $Id: run.f90,v 1.205 2005-08-17 00:33:22 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.204 2005-08-09 18:37:56 brandenb Exp $")
+             "$Id: run.f90,v 1.205 2005-08-17 00:33:22 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -82,7 +82,16 @@
 !  read parameters and output parameter list
 !
         call read_runpars()
-        call rprint_list(.false.)
+        call rprint_list(LRESET=.false.)
+!
+!  inner radius for freezing variables defaults to r_min
+!  Note: currently (July 2005), hydro.f90 uses a different approach:
+!  r_int will override rdampint, which doesn't seem to make much sense (if
+!  you want rdampint to be overridden, then don't specify it in the first
+!  place)
+        if (rfreeze_int == -impossible .and. r_int > epsi) then
+          rfreeze_int = r_int
+        endif
 !
 !  Will we write all slots of f?
 !
@@ -100,6 +109,8 @@
 !
 !  check if we want to divide cdtv by dimensionality
 !  (old_cdtv defaults to .false.)
+!  [This is obsolete now that we calculate the time step in a different
+!   manner -- could somebody please adjust visc_var and remove cdtvDim?]
 !
         if (old_cdtv) then
           cdtvDim=cdtv
@@ -109,7 +120,7 @@
 !
 !  set up directory names `directory' and `directory_snap'
 !
-      call directory_names()
+        call directory_names()
 !
 !  get state length of random number generator
 !
@@ -180,26 +191,24 @@
 !
 !  Write data to file for IDL
 !
-      call wparam2()
+        call wparam2()
 !
 !  possible debug output (can only be done after "directory" is set)
 !  check whether mn array is correct
 !
-      if(ip<=3) call debug_imn_arrays
+        if(ip<=3) call debug_imn_arrays
 !
-!  Find out which pencils are needed
+!  Find out which pencils are needed and write information about required,
+!  requested and diagnostic pencils to disc 
 !
-      call choose_pencils()
-!
-!  Write information about required, requested and diagnostic pencils to disc
-!
-      call write_pencil_info()
+        call choose_pencils()
+        call write_pencil_info()
 !
 !ajwm - moved call to run_hooks and renamed run_hooks_grav
 !  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
 !        if (lgravr) call setup_grav()
 !
-      call wglobal()
+        call wglobal()
 !
 !  advance equations
 !  NOTE: headt=.true. in order to print header titles

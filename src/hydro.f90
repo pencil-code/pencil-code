@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.209 2005-08-15 14:13:38 mee Exp $
+! $Id: hydro.f90,v 1.210 2005-08-17 00:33:22 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -46,7 +46,6 @@ module Hydro
   integer :: N_modes_uu=0
   real :: star_offx=0.,star_offy=0.
   logical :: lcentrifugal_force=.false.
-  
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu, radiusuu,urand, &
@@ -60,13 +59,14 @@ module Hydro
   ! run parameters
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,wdamp=0.
-  real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
+  real :: dampuint=0.0,dampuext=0.0,rdampint=-1e20,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lcalc_turbulence_pars=.false.
+  logical :: lfreeze_uint=.false.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -75,8 +75,8 @@ module Hydro
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot, &
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-       nu_turb0, tau_nuturb, nu_turb1, lcalc_turbulence_pars
-       
+       nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint
+
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
@@ -145,7 +145,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.209 2005-08-15 14:13:38 mee Exp $")
+           "$Id: hydro.f90,v 1.210 2005-08-17 00:33:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -175,7 +175,7 @@ module Hydro
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !
       use Mpicomm, only: stop_it
-      use CData,   only: r_int, r_ext, epsi,leos
+      use CData,   only: r_int,r_ext,lfreeze_var,epsi,leos,iux,iuy,iuz
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -187,7 +187,7 @@ module Hydro
       endif
 !  r_int and r_ext override rdampint and rdampext if both are set
 ! 
-      if (dampuint /= 0.0) then 
+      if (dampuint /= 0.) then
         if (r_int > epsi) then
           rdampint = r_int
         elseif (rdampint <= epsi) then
@@ -202,6 +202,8 @@ module Hydro
           write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
         endif
       endif
+!
+      if (lfreeze_uint) lfreeze_var(iux:iuz) = .true.
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
       endsubroutine initialize_hydro
@@ -1079,22 +1081,22 @@ module Hydro
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_ruym1*ruym/rho
 !
     endsubroutine damp_ruym
-!***********************************************************************
-    function step(x,x0,width)
-!
-!  Smooth unit step function centred at x0; implemented as tanh profile
-!  23-jan-02/wolf: coded
-!  09-feb-05/tony: copied here to prevent compiler error with intel 7.1
-!
-      use Cdata, only: epsi
-!
-      real, dimension(:) :: x
-      real, dimension(size(x,1)) :: step
-      real :: x0,width
+! !***********************************************************************
+!     function step(x,x0,width)
+! !
+! !  Smooth unit step function centred at x0; implemented as tanh profile
+! !  23-jan-02/wolf: coded
+! !  09-feb-05/tony: copied here to prevent compiler error with intel 7.1
+! !
+!       use Cdata, only: epsi
+! !
+!       real, dimension(:) :: x
+!       real, dimension(size(x,1)) :: step
+!       real :: x0,width
 
-        step = 0.5*(1+tanh((x-x0)/(width+epsi)))
-!
-      endfunction step
+!         step = 0.5*(1+tanh((x-x0)/(width+epsi)))
+! !
+!       endfunction step
 !***********************************************************************
     subroutine udamping(f,df)
 !
@@ -1104,7 +1106,7 @@ module Hydro
 !
       use Cdata
       use Mpicomm, only: stop_it
-      use Sub, only: sum_mn_name
+      use Sub, only: step,sum_mn_name
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1187,7 +1189,7 @@ module Hydro
 !
 !  2. damp motions for r_mn > rdampext or r_ext AND r_mn < rdampint or r_int
 !
-        if (lgravr) then
+        if (lgravr) then        ! why lgravr here? to ensure we know r_mn??
 ! geodynamo
 ! original block
 !          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
@@ -1195,10 +1197,12 @@ module Hydro
 !            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
 !          enddo
 !
-          pdamp = step(r_mn,rdampext,wdamp) ! outer damping profile
-          do i=iux,iuz
-            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
-          enddo
+          if (dampuint > 0.0 .and. rdampext /= impossible) then
+            pdamp = step(r_mn,rdampext,wdamp) ! outer damping profile
+            do i=iux,iuz
+              df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
+            enddo
+          endif
 
           if (dampuint > 0.0) then
             pdamp = 1 - step(r_mn,rdampint,wdamp) ! inner damping profile

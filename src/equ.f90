@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.249 2005-08-15 10:50:56 mee Exp $
+! $Id: equ.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -300,16 +300,8 @@ module Equ
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-!Structure replacement for individual pencil variables...
       type (pencil_case) :: p
-!Formerly:
-!      real, dimension (nx,3,3) :: uij,udij,bij,aij
-!      real, dimension (nx,3) :: uu,glnrho,bb,jj,JxBr,gshock,del2A,graddivA
-!      real, dimension (nx,3,ndustspec) :: uud,gnd
-!      real, dimension (nx,ndustspec) :: divud,ud2
-!      real, dimension (nx) :: lnrho,divu,u2,rho,rho1
-!      real, dimension (nx) :: cs2,va2,TT1,cc,cc1,shock
-      real, dimension (nx) :: maxadvec,maxdiffus
+      real, dimension (nx) :: maxadvec,maxdiffus,pfreeze
       integer :: iv,ider,j,k
 !
 !  print statements when they are first executed
@@ -318,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.249 2005-08-15 10:50:56 mee Exp $")
+           "$Id: equ.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -537,9 +529,21 @@ module Equ
 !
         if (lshear)                      call shearing(f,df)
 !
-!  ---------------------------------------
-!  NO CALLS MODIFYING DF BEYOND THIS POINT
-!  ---------------------------------------
+!  -------------------------------------------------------------
+!  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
+!  -------------------------------------------------------------
+!
+!  Similar to velocity damping, but more radical: set some df=0 for r_mn<r_int:
+!
+        if (any(lfreeze_var)) then
+          if (headtt) &
+              print*, 'pde: freezing variables for r < ', rfreeze_int, &
+              ' : ', lfreeze_var
+          pfreeze = cubic_step(r_mn,rfreeze_int,wfreeze,SHIFT=1.)
+          do iv=1,nvar
+            if (lfreeze_var(iv)) df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+          enddo
+        endif
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'
@@ -552,6 +556,9 @@ module Equ
           if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
             do iv=1,nvar
               if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+!
+!  This can never work [wd]:
+!
               if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
             enddo
           endif
@@ -590,7 +597,7 @@ module Equ
           endif
         endif
 !
-!  Display derivitive info
+!  Display derivative info
 !
 !ajwm   if (loptimise_ders.and.lout) then                         !DERCOUNT
 !ajwm     do iv=1,nvar                                            !DERCOUNT
@@ -656,7 +663,7 @@ module Equ
         if (lwrite_zaverages) call zaverages_xy
       endif
 !
-!  Force reiniting of dust variables if certain criteria are fulfilled
+!  Force reinitializing of dust variables if certain criteria are fulfilled
 !
       call reinit_criteria_dust
 !

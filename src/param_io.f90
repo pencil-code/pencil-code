@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.205 2005-08-15 10:50:56 mee Exp $ 
+! $Id: param_io.f90,v 1.206 2005-08-17 00:33:22 dobler Exp $ 
 
 module Param_IO
 
@@ -60,7 +60,8 @@ module Param_IO
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lwrite_aux,lcalc_cp,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
-       bcx,bcy,bcz,r_int,r_ext,r_ref,mu0,force_lower_bound,force_upper_bound, &
+       bcx,bcy,bcz,r_int,r_ext,r_ref, &
+       mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
        xyz_step,xi_step_frac,xi_step_width, &
        lcylindrical,init_loops
@@ -77,6 +78,7 @@ module Param_IO
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &
+       lfreeze_var,rfreeze_int,wfreeze, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
@@ -86,7 +88,8 @@ module Param_IO
        border_frac,border_frac_x,border_frac_y,border_frac_z, &
        lpoint,mpoint,npoint, &
        lrescaling, lcylindrical, &
-       ipencil_swap, lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, lpencil_init
+       ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
+       lpencil_check,lpencil_init
   contains
 
 !***********************************************************************

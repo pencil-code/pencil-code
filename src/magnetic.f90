@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.249 2005-08-01 13:28:11 ajohan Exp $
+! $Id: magnetic.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -49,10 +49,10 @@ module Magnetic
   real :: rhomin_jxb=0.,va2max_jxb=0.
   real :: omega_Bz_ext=0.
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
-  real :: mu_ext_pot=-0.5
+  real :: mu_ext_pot=-0.5,inclaa=0.
   real :: rescale_aa=1.
   real :: ampl_B0=0.,D_smag=0.17,B_ext21
-  real :: Omega_ampl
+  real :: Omega_ampl=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
@@ -83,7 +83,7 @@ module Magnetic
        radius,epsilonaa,x0aa,z0aa,widthaa, &
        by_left,by_right,bz_left,bz_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r, &
+       kx_aa2,ky_aa2,kz_aa2,inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa
 
@@ -91,6 +91,7 @@ module Magnetic
   real :: eta=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
+  logical :: lfreeze_aint=.false.
 
   namelist /magnetic_run_pars/ &
        eta,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -105,7 +106,7 @@ module Magnetic
        reinitalize_aa,rescale_aa,lB_ext_pot, &
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
-       lOmega_effect,Omega_profile,Omega_ampl
+       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
@@ -167,7 +168,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.249 2005-08-01 13:28:11 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.250 2005-08-17 00:33:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -226,6 +227,8 @@ module Magnetic
       if (reinitalize_aa) then
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
       endif
+!
+      if (lfreeze_aint) lfreeze_var(iax:iaz) = .true.
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -295,6 +298,7 @@ module Magnetic
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
       case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
+      case('piecewise-dipole'); call piecew_dipole_aa (amplaa,inclaa,f,iaa,xx,yy,zz)
       case('tony-nohel')
         f(:,:,:,iay) = amplaa/kz_aa*cos(kz_aa*2.*pi/Lz*zz)
       case('tony-nohel-yz')
@@ -2095,6 +2099,71 @@ module Magnetic
 
     endsubroutine force_free_jet
 !***********************************************************************
+    subroutine piecew_dipole_aa(ampl,inclaa,f,ivar,xx,yy,zz)
+!
+!  A field that is vertical uniform for r<R_int, inclined dipolar for
+!  r>R_ext, and potential in the shell R_int<r<R_ext.
+!  This mimics a neutron star just after the Meissner effect forced the
+!  internal field to become vertical (aligned with rotation axis).
+!
+!  AMPL represents mu/4 pi, where  mu = 1/2 Int rr × jj dV  is the
+!  magnetic moment of the external dipole field.
+!  INCLAA is the inclination of the dipolar field.
+!
+!  Pencilized in order to minimize memory consumption with all the
+!  auxiliary variables used.
+!
+!  23-jul-05/wolf:coded
+!
+      use Cdata, only: pi,tini, &
+                       imn,m,n,mm,nn,x_mn,y_mn,z_mn,r_mn, &
+                       r_int,r_ext
+      use Sub, only: calc_unitvects_sphere
+!
+      real, intent(inout), dimension (mx,my,mz,mvar+maux) :: f
+      real, intent(in), dimension (mx,my,mz) :: xx,yy,zz
+      real, intent(in) :: ampl,inclaa
+      real, dimension (nx) :: r_1_mn,r_2_mn,sigma0,sigma1
+      real :: fact
+      real, dimension(2) :: beta(0:1)
+      real, dimension(2,3) :: a(0:1,1:3),b(0:1,1:3)
+      integer :: ivar
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        call calc_unitvects_sphere() ! gives us [x-z]_mn, r_mn
+        r_1_mn = 1./max(r_mn,tini)
+        r_2_mn = 1./max(r_mn**2,tini)
+
+        fact = ampl
+        ! beta = [beta_1^0, beta_1^1] combines coefficients for m=0, m=1
+        beta =  fact * (/ cos(inclaa), -sin(inclaa)/sqrt(2.) /)
+        ! a and b for m=0, m=1 (index 1) and interior, shell, exterior index 2)
+        a(0,:) = (/ 1./r_ext**3, 1./r_ext**3                  , 0. /) * beta(0)
+        a(1,:) = (/ 0.         , 1./(r_ext**3-r_int**3)       , 0. /) * beta(1)
+        !
+        b(0,:) = (/ 0.         , 0.                           , 1. /) * beta(0)
+        b(1,:) = (/ 0.         , -r_int**3/(r_ext**3-r_int**3), 1. /) * beta(1)
+        !
+        where(r_mn<r_int)
+          sigma0 = a(0,1)*r_mn + b(0,1)*r_2_mn
+          sigma1 = a(1,1)*r_mn + b(1,1)*r_2_mn
+        elsewhere(r_mn<r_ext)
+          sigma0 = a(0,2)*r_mn + b(0,2)*r_2_mn
+          sigma1 = a(1,2)*r_mn + b(1,2)*r_2_mn
+        elsewhere
+          sigma0 = a(0,3)*r_mn + b(0,3)*r_2_mn
+          sigma1 = a(1,3)*r_mn + b(1,3)*r_2_mn
+        endwhere
+        sigma1 = sigma1*sqrt(2.)
+        f(l1:l2,m,n,ivar+0) = -sigma0*y_mn*r_1_mn
+        f(l1:l2,m,n,ivar+1) =  sigma0*x_mn*r_1_mn + sigma1*z_mn*r_1_mn
+        f(l1:l2,m,n,ivar+2) =                     - sigma1*y_mn*r_1_mn
+      enddo
+!
+    endsubroutine piecew_dipole_aa
+!***********************************************************************
     subroutine geo_benchmark_B(f)
 !
 !  30-june-04/grs: coded
@@ -2118,10 +2187,10 @@ module Magnetic
           select case(initaa) 
             case('geo-benchmark-case1')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case1'
-              C_int=-( -1./63.*r_int**4 + 11./84.*r_int**3*r_ext             &
+              C_int=-( -1./63.*r_int**4 + 11./84.*r_int**3*r_ext            &
                      + 317./1050.*r_int**2*r_ext**2                         &
                      - 1./5.*r_int**2*r_ext**2*log(r_int) )
-              C_ext=-( -1./63.*r_ext**9 + 11./84.*r_ext**8*r_int             &
+              C_ext=-( -1./63.*r_ext**9 + 11./84.*r_ext**8*r_int            &
                      + 317./1050.*r_ext**7*r_int**2                         &
                      - 1./5.*r_ext**7*r_int**2*log(r_ext) )
               A_int=5./2.*(r_ext-r_int)
@@ -2140,7 +2209,7 @@ module Magnetic
                      - 1./3.*(r_int**2*r_ext+r_int*r_ext**2)*r_mn**2        &
                      - 1./25.*r_int**2*r_ext**2*r_mn                        &
                      + 1./5.*r_int**2*r_ext**2*r_mn*log(r_mn) )
-                atheta=-ampl_B0*80.*sin(2.*theta_mn)*                        &
+                atheta=-ampl_B0*80.*sin(2.*theta_mn)*                       &
                    (   7./36.*r_mn**5 - 1./2.*(r_int+r_ext)*r_mn**4         &
                      + 5./14.*(r_int**2+4.*r_int*r_ext+r_ext**2)*r_mn**3    &
                      - 4./3.*(r_int**2*r_ext+r_int*r_ext**2)*r_mn**2        &
