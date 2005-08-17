@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2005-08-10 20:17:38 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.4 2005-08-17 13:25:15 ajohan Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -20.,-20.,-20.,       ! first corner of box
   xyz1  =  20., 20., 20.,       ! second corner of box
@@ -18,6 +18,7 @@
   r_int=2.,                    ! radius of interior spherical boundary
   r_ext=18.,                   ! radius of exterior spherical boundary
   lcylindrical=T
+  lwrite_ic=T
 /
 &eos_init_pars
   cs0=0.7
