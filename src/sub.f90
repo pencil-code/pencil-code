@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.214 2005-07-22 22:38:15 dobler Exp $ 
+! $Id: sub.f90,v 1.215 2005-08-17 00:31:44 dobler Exp $ 
 
 module Sub 
 
@@ -11,7 +11,8 @@ module Sub
   public :: identify_bcs, parse_bc, parse_bc_rad
 
   public :: poly, notanumber
-  public :: blob, vecout, cubic_step, cubic_der_step
+  public :: blob, vecout
+  public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step
   public :: hypergeometric2F1
   public :: gamma_function
 
@@ -165,6 +166,18 @@ module Sub
     module procedure cubic_der_step_pt
     module procedure cubic_der_step_mn
     module procedure cubic_der_step_global
+  endinterface
+
+  interface quintic_step
+    module procedure quintic_step_pt
+    module procedure quintic_step_mn
+    module procedure quintic_step_global
+  endinterface
+
+  interface quintic_der_step
+    module procedure quintic_der_step_pt
+    module procedure quintic_der_step_mn
+    module procedure quintic_der_step_global
   endinterface
 
 !ajwm Commented pending a C replacement
@@ -503,7 +516,7 @@ module Sub
 !
 !  pomega and 1/pomega
 !
-      rcyl_mn1=1./max(rcyl_mn,epsi)
+      rcyl_mn1=1./max(rcyl_mn,tini)
 !
 !  pomega unit vector
 !
@@ -2601,13 +2614,12 @@ module Sub
 !  Smooth unit step function centred at x0; implemented as tanh profile
 !  23-jan-02/wolf: coded
 !
-      use Cdata, only: epsi
+      use Cdata, only: tini
 !
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: step
       real :: x0,width
-        
-      step = 0.5*(1+tanh((x-x0)/(width+epsi)))
+      step = 0.5*(1+tanh((x-x0)/(width+tini)))
 !
     endfunction step
 !***********************************************************************
@@ -2616,9 +2628,10 @@ module Sub
 !  Derivative of smooth unit STEP() function given above (i.e. a bump profile).
 !  Adapt this if you change the STEP() profile, or you will run into
 !  inconsistenies.
+!
 !  23-jan-02/wolf: coded
 !
-      use Cdata, only: epsi
+      use Cdata, only: tini
 !
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: der_step,arg
@@ -2627,7 +2640,7 @@ module Sub
 !  Some argument gymnastics to avoid `floating overflow' for large
 !  arguments
 !
-      arg = abs((x-x0)/(width+epsi))
+      arg = abs((x-x0)/(width+tini))
       arg = min(arg,8.)         ! cosh^2(8) = 3e+27
       der_step = 0.5/(width*cosh(arg)**2)
 !
@@ -2639,9 +2652,13 @@ module Sub
 !  Optional argument SHIFT shifts center:
 !  for shift=1. the interval is [x0    ,x0+2*w],
 !  for shift=-1. it is          [x0-2*w,x0    ].
+!  Maximum slope is 3/2=1.5 times that of a linear profile.
+!
 !  This version is for scalar args.
 !
 !  18-apr-04/wolf: coded
+!
+        use Cdata, only: tini
 !
         real :: x
         real :: cubic_step_pt,xi
@@ -2649,11 +2666,11 @@ module Sub
         real, optional :: shift
         real :: relshift=0.
 !
-        if (present(shift)) relshift=shift
-        xi = (x-x0-shift*width)/width
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
         xi = max(xi,-1.)
         xi = min(xi, 1.)
-        cubic_step_pt = 0.5 + 0.25*xi*(3.-xi**2)
+        cubic_step_pt = 0.5 + xi*(0.75-xi**2*0.25)
 !
       endfunction cubic_step_pt
 !***********************************************************************
@@ -2664,17 +2681,19 @@ module Sub
 !
 !  18-apr-04/wolf: coded
 !
+        use Cdata, only: tini
+!
         real, dimension(:) :: x
         real, dimension(size(x,1)) :: cubic_step_mn,xi
         real :: x0,width
         real, optional :: shift
         real :: relshift=0.
 !
-        if (present(shift)) relshift=shift
-        xi = (x-x0-shift*width)/width
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
         xi = max(xi,-1.)
         xi = min(xi, 1.)
-        cubic_step_mn = 0.5 + 0.25*xi*(3.-xi**2)
+        cubic_step_mn = 0.5 + xi*(0.75-xi**2*0.25)
 !
       endfunction cubic_step_mn
 !***********************************************************************
@@ -2685,18 +2704,18 @@ module Sub
 !
 !  18-apr-04/wolf: coded
 !
-        use Cdata, only: mx,my,mz
+        use Cdata, only: mx,my,mz,tini
 !
         real, dimension(mx,my,mz) :: x,cubic_step_global,xi
         real :: x0,width
         real, optional :: shift
         real :: relshift=0.
 !
-        if (present(shift)) relshift=shift
-        xi = (x-x0-shift*width)/width
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
         xi = max(xi,-1.)
         xi = min(xi, 1.)
-        cubic_step_global = 0.5 + 0.25*xi*(3.-xi**2)
+        cubic_step_global = 0.5 + xi*(0.75-xi**2*0.25)
 !
       endfunction cubic_step_global
 !***********************************************************************
@@ -2710,17 +2729,20 @@ module Sub
 !
 !  12-jul-05/axel: adapted from cubic_step_pt
 !
+        use Cdata, only: tini
+!
         real :: x
         real :: cubic_der_step_pt,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift=0.,width1
 !
-        if (present(shift)) relshift=shift
-        xi = (x-x0-shift*width)/width
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        width1 = 1./(width+tini)
+        xi = (x-x0)*width1 - relshift
         xi = max(xi,-1.)
         xi = min(xi, 1.)
-        cubic_der_step_pt = 1.5*(0.5-xi**2)
+        cubic_der_step_pt = (0.75-xi**2*0.75) * width1
 !
       endfunction cubic_der_step_pt
 !***********************************************************************
@@ -2731,17 +2753,20 @@ module Sub
 !
 !  12-jul-05/axel: adapted from cubic_step_mn
 !
+        use Cdata, only: tini
+!
         real, dimension(:) :: x
         real, dimension(size(x,1)) :: cubic_der_step_mn,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift=0.,width1
 !
-        if (present(shift)) relshift=shift
-        xi = (x-x0-shift*width)/width
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        width1 = 1./(width+tini)
+        xi = (x-x0)*width1 - relshift
         xi = max(xi,-1.)
         xi = min(xi, 1.)
-        cubic_der_step_mn = 1.5*(0.5-xi**2)
+        cubic_der_step_mn = (0.75-xi**2*0.75) * width1
 !
       endfunction cubic_der_step_mn
 !***********************************************************************
@@ -2752,20 +2777,173 @@ module Sub
 !
 !  12-jul-05/axel: adapted from cubic_step_global
 !
-        use Cdata, only: mx,my,mz
+        use Cdata, only: mx,my,mz,tini
 !
         real, dimension(mx,my,mz) :: x,cubic_der_step_global,xi
         real :: x0,width
         real, optional :: shift
-        real :: relshift=0.
+        real :: relshift=0.,width1
 !
-        if (present(shift)) relshift=shift
-        xi = (x-x0-shift*width)/width
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        width1 = 1./(width+tini)
+        xi = (x-x0)*width1 - relshift
         xi = max(xi,-1.)
         xi = min(xi, 1.)
-        cubic_der_step_global = 1.5*(0.5-xi**2)
+        cubic_der_step_global = (0.75-xi**2*0.75) * width1
 !
       endfunction cubic_der_step_global
+!***********************************************************************
+      function quintic_step_pt(x,x0,width,shift)
+!
+!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w]. 
+!  Optional argument SHIFT shifts center:
+!  for shift=1. the interval is [x0    ,x0+2*w],
+!  for shift=-1. it is          [x0-2*w,x0    ].
+!  Maximum slope is 15/8=1.875 times that of a linear profile.
+!
+!  This version is for scalar args.
+!
+!  09-aug-05/wolf: coded
+!
+        use Cdata, only: tini
+!
+        real :: x
+        real :: quintic_step_pt,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        quintic_step_pt = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
+!
+      endfunction quintic_step_pt
+!***********************************************************************
+      function quintic_step_mn(x,x0,width,shift)
+!
+!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w].
+! 
+!  Version for 1d arg (in particular pencils).
+!
+!  09-aug-05/wolf: coded
+!
+        use Cdata, only: tini
+!
+        real, dimension(:) :: x
+        real, dimension(size(x,1)) :: quintic_step_mn,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        quintic_step_mn = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
+!
+      endfunction quintic_step_mn
+!***********************************************************************
+      function quintic_step_global(x,x0,width,shift)
+!
+!  Smooth unit step function with quintic (smooth) transition over [x0-w,x0+w]. 
+!
+!  Version for 3d-array arg.
+!
+!  09-aug-05/wolf: coded
+!
+        use Cdata, only: mx,my,mz,tini
+!
+        real, dimension(mx,my,mz) :: x,quintic_step_global,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        quintic_step_global = 0.5 + xi*(0.9375 + xi**2*(-0.625 + xi**2*0.1875))
+!
+      endfunction quintic_step_global
+!***********************************************************************
+      function quintic_der_step_pt(x,x0,width,shift)
+!
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w]. 
+!
+!  This version is for scalar args.
+!
+!  09-aug-05/wolf: coded
+!
+        use Cdata, only: tini
+!
+        real :: x
+        real :: quintic_der_step_pt,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.,width1
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        width1 = 1./(width+tini)
+        xi = (x-x0)*width1 - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        quintic_der_step_pt = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
+                              * width1
+!
+      endfunction quintic_der_step_pt
+!***********************************************************************
+      function quintic_der_step_mn(x,x0,width,shift)
+!
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w]. 
+!
+!  Version for 1d arg (in particular pencils).
+!
+!  09-aug-05/wolf: coded
+!
+        use Cdata, only: tini
+!
+        real, dimension(:) :: x
+        real, dimension(size(x,1)) :: quintic_der_step_mn,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.,width1
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        width1 = 1./(width+tini)
+        xi = (x-x0)*width1 - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        quintic_der_step_mn = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
+                              * width1
+!
+      endfunction quintic_der_step_mn
+!***********************************************************************
+      function quintic_der_step_global(x,x0,width,shift)
+!
+!  Derivative of smooth unit step function, localized to [x0-w,x0+w]. 
+!
+!  Version for 3d-array arg.
+!
+!  09-aug-05/wolf: coded
+!
+        use Cdata, only: mx,my,mz,tini
+!
+        real, dimension(mx,my,mz) :: x,quintic_der_step_global,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.,width1
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        width1 = 1./(width+tini)
+        xi = (x-x0)*width1 - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        quintic_der_step_global = (0.9375 + xi**2*(-1.875 + xi**2*0.9375)) &
+                                  * width1
+!
+      endfunction quintic_der_step_global
 !***********************************************************************
       function notanumber_0(f)
 !
@@ -3192,12 +3370,14 @@ nameloop: do
 !  check whether file exists
 !
         inquire(FILE=fname,exist=exist)
-        print*,'remove_file: fname,exist=',fname,exist
 !
 !  remove file
 !
-        open(1,FILE=fname)
-        close(1,STATUS='DELETE')
+        if (exist) then
+          print*,'remove_file: Removing file <',trim(fname),'>'
+          open(1,FILE=fname)
+          close(1,STATUS='DELETE')
+        endif
 !
       endsubroutine remove_file
 !***********************************************************************
