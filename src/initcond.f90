@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.126 2005-08-18 06:52:48 wlyra Exp $ 
+! $Id: initcond.f90,v 1.127 2005-08-18 16:54:47 dobler Exp $ 
 
 module Initcond 
  
@@ -1363,7 +1363,7 @@ module Initcond
 !   5-may-05/wlad: added possibility of star offset and non-corotational 
 !                  frame of reference. 
 
-      use Cdata
+      use Cdata, only: r_int,r_ext
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
