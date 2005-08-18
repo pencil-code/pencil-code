@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2005-08-17 23:36:54 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.6 2005-08-18 07:01:12 wlyra Exp $',
   ip=13,
   nt=5000, it1=5, isave=10, itorder=3, ialive=1
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
@@ -12,7 +12,7 @@
   !tavg = 10.,                   ! time constant for time averaging
   !random_gen='nr_f90',
   !slice_position='e'
-  wfreeze = 0.1
+  wfreeze = 0.05
 /
 &eos_run_pars
 /
@@ -24,17 +24,18 @@
   lfreeze_uint=T,lfreeze_uext=T
 /
 &density_run_pars
-  lupw_lnrho=T! use upwinding for lnrho to avoid wiggles
-  lfreeze_lnrhoint=T,lfreeze_lnrhoext=T
+  lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
+  !lfreeze_lnrhoint=T
+  lfreeze_lnrhoext=T
 /
 &grav_run_pars
   ipotential='smoothed-newton', 
-  g0=1.,r0_pot=0.1,n_pot=10 !star
-  !lcompanion=F
-  !gP=0.89,np=2,b=0.15 !planet
+  g0=1.,r0_pot=0.1,n_pot=5 !10!star
+  lcompanion=T
+  gc=0.001,nc=5,b=0.07 !planet
 
   !!for corotational
-  !Rx=-5.2
+  Rx=-1
 
   !!for inertial
   !!Rc=5.2,phase=3.141592,
@@ -48,5 +49,5 @@
   !!every time-step
 /
 &viscosity_run_pars
-  nu=1e-2
+  nu=1e-4
 /

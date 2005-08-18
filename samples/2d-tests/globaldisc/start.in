@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2005-08-17 23:36:54 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.6 2005-08-18 07:01:12 wlyra Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -4.,-4.,-4.,       ! first corner of box
   xyz1  =  4., 4., 4.,       ! second corner of box
@@ -16,7 +16,7 @@
   !bcz = 's','s','a','s:a2','s:a2'
   !random_gen='nr_f90',
   r_int=0.3,                    ! radius of interior spherical boundary
-  r_ext=3.7,                    ! radius of exterior spherical boundary
+  r_ext=3.7,                   ! radius of exterior spherical boundary
   lcylindrical=T
 /
 &eos_init_pars
@@ -36,9 +36,11 @@
   lnrho_const=1
   wdamp=0.1
   plaw=0.5
+  !gap=0.25
 /
 &grav_init_pars
-  ipotential='smoothed-newton', g0=1.,r0_pot=0.1,n_pot=10
+  ipotential='smoothed-newton', g0=1.,r0_pot=0.1,n_pot=5 !10
+  gc=0.001,b=0.07,nc=5,Rx=-1
   !!Rp = planet distance... 5.2 or 1
   !!gp is the mass of the planet, G*Mp
   !!GMjup = g0*0.001 ; Gpl   = 10*GMjup
