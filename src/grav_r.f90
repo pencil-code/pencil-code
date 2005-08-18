@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.74 2005-08-17 00:26:36 dobler Exp $
+! $Id: grav_r.f90,v 1.75 2005-08-18 06:54:12 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -81,7 +81,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.74 2005-08-17 00:26:36 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.75 2005-08-18 06:54:12 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -545,6 +545,7 @@ module Gravity
       type (pencil_case) :: p
       real, dimension (nx,3) :: ggc
       real, dimension (nx) :: g_companion,rrc
+      real :: Omega_inertial,Rc,phase,phi,ax,ay,az
 
 
       if (headtt) print*,&
@@ -552,18 +553,33 @@ module Gravity
       if (headtt) print*,&
            'gravity_companion: Mass ratio of secondary-to-primary = ',gc/g0
 
-      rrc=sqrt((x(l1:l2)-Rx)**2+(y(m)-Ry)**2+(z(n)-Rz)**2)
+      if (Omega /= 0) then  
+         if (headtt) print*,'gravity_companion: corotational frame'
+         ax = Rx  
+         ay = Ry            
+      else
+         if (headtt) print*,'gravity_companion: inertial frame'
+         !add these three to grav_run_pars later
+         Rc = sqrt(Rx**2+Ry**2+Rz**2)
+         Omega_inertial = sqrt((g0+gc)/Rc**3)
+         phase = acos(Rx/Rc)
+
+         phi = Omega_inertial*t + phase  
+         ax = Rc * cos(phi) 
+         ay = Rc * sin(phi) 
+      endif
+            
+      az = Rz !just for notational consistency
+
+      rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2)
       
       g_companion=-gc*rrc**(nc-1) &
           *(rrc**nc+b**nc)**(-1./nc-1.)
-      
-      if (Omega /= 0) then !corotational
+
          if (headtt) print*,'gravity_companion: corotational frame'
-         ggc(:,1) = (x(l1:l2)-Rx)/(rrc)*g_companion 
-         ggc(:,2) = (y(  m  )-Ry)/(rrc)*g_companion
-         ggc(:,3) = (z(  n  )-Rz)/(rrc)*g_companion
-      endif
-      
+         ggc(:,1) = (x(l1:l2)-ax)/(rrc)*g_companion 
+         ggc(:,2) = (y(  m  )-ay)/(rrc)*g_companion
+         ggc(:,3) = (z(  n  )-az)/(rrc)*g_companion
       ! 
 
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggc
