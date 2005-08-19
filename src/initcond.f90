@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.127 2005-08-18 16:54:47 dobler Exp $ 
+! $Id: initcond.f90,v 1.128 2005-08-19 08:49:55 wlyra Exp $ 
 
 module Initcond 
  
@@ -1355,7 +1355,7 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,g0,r0_pot,n_pot,Omega,xx,yy,zz,sx,sy)
+    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy,zz,sx,sy)
 !
 !  Keplerian initial condition
 !
@@ -1363,11 +1363,11 @@ module Initcond
 !   5-may-05/wlad: added possibility of star offset and non-corotational 
 !                  frame of reference. 
 
-      use Cdata, only: r_int,r_ext
+      use Cdata, only: r_int,r_ext,Omega
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
-      real :: g0,r0_pot,Omega,sx,sy
+      real :: g0,r0_pot,sx,sy
       integer :: n_pot
 !
 !  angular velocity for centrifugally supported disc in given potential
@@ -2432,8 +2432,6 @@ module Initcond
       real, dimension (nx) :: rad_ext,rho_ext,ome_ext
       real, dimension (nx) :: valuerho_ext,valueome_ext,erts
 
-      print*,'mass_source_spline called'
-      
       if (lroot) print*, &
               'init_lnrho: initialize density initial condition for planet building'
 
@@ -2441,7 +2439,6 @@ module Initcond
       f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)  
      
       
-
       !3D - not tested yet
       !H  = 0.05 * rr
       !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
