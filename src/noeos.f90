@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.12 2005-08-08 16:49:12 theine Exp $
+! $Id: noeos.f90,v 1.13 2005-08-19 21:26:31 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.12 2005-08-08 16:49:12 theine Exp $')
+           '$Id: noeos.f90,v 1.13 2005-08-19 21:26:31 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -775,6 +775,187 @@ module EquationOfState
       endselect
 !
     endsubroutine bc_ss_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_temp_z(f,topbot)
+!
+!  boundary condition for lnrho *and* ss: constant temperature
+!
+!  27-sep-2002/axel: coded
+!  19-aug-2005/tobi: distributed across ionization modules
+!
+      use Cdata
+      use Gravity
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: tmp
+      integer :: i
+!
+      if(ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
+!
+!  Constant temperature/sound speed for entropy, i.e. antisymmetric
+!  ln(cs2) relative to cs2top/cs2bot.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!
+      case('bot')
+        if (ldebug) print*, &
+                 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*, &
+                 'bc_lnrho_temp_z: cannot have cs2bot<=0'
+        tmp = 2/gamma*log(cs2bot/cs20)
+!
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
+!
+        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
+        do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2bot
+!  for the time being, we don't worry about lnrho0 (assuming that it is 0)
+!
+        tmp=-gravz/cs2bot
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) +f(:,:,n1+i,iss) &
+                                                  -f(:,:,n1-i,iss) +2*i*dz*tmp
+        enddo
+!
+!  top boundary
+!
+      case('top')
+        if (ldebug) print*, &
+                    'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*, &
+                    'bc_lnrho_temp_z: cannot have cs2top<=0'
+        tmp = 2/gamma*log(cs2top/cs20)
+!
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
+!
+        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
+        do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2top
+!  for the time being, we don't worry about lnrho0 (assuming that it is 0)
+!
+        tmp=gravz/cs2top
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) +f(:,:,n2-i,iss) &
+                                                  -f(:,:,n2+i,iss) +2*i*dz*tmp
+        enddo
+
+      case default
+        call fatal_error('bc_lnrho_temp_z','invalid argument')
+      endselect
+!
+    endsubroutine bc_lnrho_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_pressure_z(f,topbot)
+!
+!  boundary condition for lnrho: constant pressure
+!
+!   4-apr-2003/axel: coded
+!   1-may-2003/axel: added the same for top boundary
+!  19-aug-2005/tobi: distributed across ionization modules
+!
+      use Cdata
+      use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i
+!
+      if(ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
+!
+!  Constant pressure, i.e. antisymmetric
+!  This assumes that the entropy is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!
+      case('top')
+        if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_top,ss_top=',lnrho_top,ss_top
+!
+!  fix entropy if inflow (uz>0); otherwise leave s unchanged
+!  afterwards set s antisymmetrically about boundary value
+!
+        if(lentropy) then
+!         do m=m1,m2
+!         do l=l1,l2
+!           if (f(l,m,n1,iuz)>=0) then
+!             f(l,m,n1,iss)=ss_bot
+!           else
+!             f(l,m,n1,iss)=f(l,m,n1+1,iss)
+!           endif
+!         enddo
+!         enddo
+          f(:,:,n2,iss)=ss_top
+          do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
+!
+!  set density value such that pressure is constant at the bottom
+!
+          f(:,:,n2,ilnrho)=lnrho_top+ss_top-f(:,:,n2,iss)
+        else
+          f(:,:,n2,ilnrho)=lnrho_top
+        endif
+!
+!  make density antisymmetric about boundary
+!  another possibility might be to enforce hydrostatics
+!  ie to set dlnrho/dz=-g/cs^2, assuming zero entropy gradient
+!
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho)=2*f(:,:,n2,ilnrho)-f(:,:,n2-i,ilnrho)
+        enddo
+!
+!  top boundary
+!
+      case('bot')
+        if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
+!
+!  fix entropy if inflow (uz>0); otherwise leave s unchanged
+!  afterwards set s antisymmetrically about boundary value
+!
+        if(lentropy) then
+!         do m=m1,m2
+!         do l=l1,l2
+!           if (f(l,m,n1,iuz)>=0) then
+!             f(l,m,n1,iss)=ss_bot
+!           else
+!             f(l,m,n1,iss)=f(l,m,n1+1,iss)
+!           endif
+!         enddo
+!         enddo
+          f(:,:,n1,iss)=ss_bot
+          do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
+!
+!  set density value such that pressure is constant at the bottom
+!
+          f(:,:,n1,ilnrho)=lnrho_bot+ss_bot-f(:,:,n1,iss)
+        else
+          f(:,:,n1,ilnrho)=lnrho_bot
+        endif
+!
+!  make density antisymmetric about boundary
+!  another possibility might be to enforce hydrostatics
+!  ie to set dlnrho/dz=-g/cs^2, assuming zero entropy gradient
+!
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho)=2*f(:,:,n1,ilnrho)-f(:,:,n1+i,ilnrho)
+        enddo
+!
+      case default
+        call fatal_error('bc_lnrho_pressure_z','invalid argument')
+      endselect
+!
+    endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
     subroutine bc_ss_temp2_z(f,topbot)
 !

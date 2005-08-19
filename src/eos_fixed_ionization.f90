@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.9 2005-08-08 16:49:12 theine Exp $
+! $Id: eos_fixed_ionization.f90,v 1.10 2005-08-19 21:26:31 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -101,7 +101,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.9 2005-08-08 16:49:12 theine Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.10 2005-08-19 21:26:31 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -825,6 +825,40 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (NO_WARN) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_temp_z(f,topbot)
+!
+!  boundary condition for density: constant temperature
+!
+!  19-aug-2005/tobi: distributed across ionization modules
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      if (NO_WARN) print*,f(1,1,1,1),topbot
+!
+    endsubroutine bc_lnrho_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_pressure_z(f,topbot)
+!
+!  boundary condition for density: constant pressure
+!
+!  19-aug-2005/tobi: distributed across ionization modules
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      if (NO_WARN) print*,f(1,1,1,1),topbot
+!
+    endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
     subroutine bc_ss_temp2_z(f,topbot)
 !

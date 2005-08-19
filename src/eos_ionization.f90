@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.8 2005-08-19 15:48:43 theine Exp $
+! $Id: eos_ionization.f90,v 1.9 2005-08-19 21:26:31 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -112,7 +112,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.8 2005-08-19 15:48:43 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.9 2005-08-19 21:26:31 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1210,6 +1210,40 @@ module EquationOfState
       if (NO_WARN) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_temp_z(f,topbot)
+!
+!  boundary condition for density: constant temperature
+!
+!  19-aug-2005/tobi: distributed across ionization modules
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      if (NO_WARN) print*,f(1,1,1,1),topbot
+!
+    endsubroutine bc_lnrho_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_pressure_z(f,topbot)
+!
+!  boundary condition for density: constant pressure
+!
+!  19-aug-2005/tobi: distributed across ionization modules
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
+      if (NO_WARN) print*,f(1,1,1,1),topbot
+!
+    endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
     subroutine bc_ss_temp2_z(f,topbot)
 !

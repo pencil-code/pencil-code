@@ -7,7 +7,6 @@
   public :: rprint_density
   public :: init_lnrho, dlnrho_dt
 
-  public :: bc_lnrho_temp_z, bc_lnrho_pressure_z
   public :: pencil_criteria_density, pencil_interdep_density
   public :: calc_pencils_density
 

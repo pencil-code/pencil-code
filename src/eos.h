@@ -24,6 +24,7 @@
   public :: bc_ss_flux,bc_ss_temp_old,bc_ss_energy
   public :: bc_ss_temp_x,bc_ss_temp_y,bc_ss_temp_z,bc_ss_temp2_z
   public :: bc_ss_stemp_x,bc_ss_stemp_y,bc_ss_stemp_z
+  public :: bc_lnrho_temp_z,bc_lnrho_pressure_z
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
 

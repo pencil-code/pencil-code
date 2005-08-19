@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.38 2005-07-01 03:20:28 mee Exp $
+! $Id: nodensity.f90,v 1.39 2005-08-19 21:26:31 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.38 2005-07-01 03:20:28 mee Exp $")
+           "$Id: nodensity.f90,v 1.39 2005-08-19 21:26:31 theine Exp $")
 !
 !ajwm Necessary? added incase
 !      gamma=1.
@@ -223,25 +223,4 @@ module Density
 !
     endsubroutine rprint_density
 !***********************************************************************
-    subroutine bc_lnrho_temp_z(f,topbot)
-!
-!  dummy routine
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if(NO_WARN) print*,f,topbot
-    endsubroutine bc_lnrho_temp_z
-!***********************************************************************
-    subroutine bc_lnrho_pressure_z(f,topbot)
-!
-!  dummy routine
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if(NO_WARN) print*,f,topbot
-    endsubroutine bc_lnrho_pressure_z
-!***********************************************************************
-
 endmodule Density
