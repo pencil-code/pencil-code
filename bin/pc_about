@@ -30,9 +30,9 @@ pencil_home() {
 
 cvs_check_status() {
   echo -n "Checking CVS status of source files... "
-  if (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; exit(1);' 2>/dev/null); then
+  if ! (cd $PENCIL_HOME; cvs -q status src bin samples lib idl | perl -e 'my $found=0; while (<>) { next unless /Sticky (Date|Tag):/; next if /\(none\)/; $found=1;} exit($found);') 2>&1 >/dev/null ; then
     echo "STICKY TAGS FOUND!!!"
-    (cd $PENCIL_HOME; cvs -Q status src bin samples perl idl | perl -ne 'next if ! /^\sSticky/; next if ! /(none)/; print;' 2>/dev/null)
+    (cd $PENCIL_HOME; cvs -q status src bin samples lib idl | perl -e 'my $found=0; my $repoversion; while (<>) { $repoversion=$_ if /Repository Version:/; next unless /Sticky (Date|Tag):/; next if /\(none\)/; print $repoversion}')
   else
     echo "ok"
   fi
