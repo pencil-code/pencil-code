@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.7 2005-08-08 16:49:12 theine Exp $
+! $Id: eos_ionization.f90,v 1.8 2005-08-19 15:48:43 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -44,8 +44,7 @@ module EquationOfState
   integer :: l
 
   ! namelist parameters
-  !real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
-  real, parameter :: yHmin=epsilon(TT_ion), yHmax=1-epsilon(TT_ion)
+  real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
   real :: yMetals=0
   real :: yHacc=1e-5
@@ -113,7 +112,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.7 2005-08-08 16:49:12 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.8 2005-08-19 15:48:43 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -748,8 +747,9 @@ module EquationOfState
       real, dimension(mx), intent(in) :: lnrho,ss
       real, dimension(mx), intent(inout) :: yH
 !
-      real, dimension(mx) :: dyHold,dyH,yHlow,yHhigh,f,df,yHcheck
+      real, dimension(mx) :: dyHold,dyH,yHlow,yHhigh,f,df
       real, dimension(mx) :: lnTT_,dlnTT_,TT1_,fractions1
+      logical, dimension(mx) :: found
       integer             :: i
       integer, parameter  :: maxit=1000
 !
@@ -758,7 +758,7 @@ module EquationOfState
       dyH=yHhigh-yHlow
       dyHold=dyH
 !
-      yHcheck=0
+      found=.false.
 !
       fractions1=1/(1+yH+xHe)
       lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
@@ -770,14 +770,13 @@ module EquationOfState
       df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
 !
       do i=1,maxit
-        where (yHcheck/=yH)
+        where (.not.found)
           where (((yH-yHlow)*df-f)*((yH-yHhigh)*df-f)>0.or.abs(2*f)>abs(dyHold*df))
             !
             !  Bisection
             !
             dyHold=dyH
             dyH=0.5*(yHhigh-yHlow)
-            yHcheck=yHhigh
             yH=yHhigh-dyH
           elsewhere
             !
@@ -785,15 +784,14 @@ module EquationOfState
             !
             dyHold=dyH
             dyH=f/df
-            yHcheck=yH
+            ! Apply floor to dyH (necessary to avoid negative yH in samples
+            ! /0d-tests/heating_ionize)
+            dyH=min(dyH,yH-yHmin)
+            dyH=max(dyH,yH-yHmax)    ! plausibly needed as well
             yH=yH-dyH
           endwhere
         endwhere
-        ! Apply floor to yH (necessary to avoid negative yH in samples
-        ! /0d-tests/heating_ionize)
-        yH = max(yH,yHmin)
-        yH = min(yH,yHmax)    ! plausibly needed as well
-        where (abs(dyH)>yHacc*yH.and.yHcheck/=yH)
+        where (abs(dyH)>yHacc*yH)
           fractions1=1/(1+yH+xHe)
           lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
                              +yH*(2*log(yH)-lnrho_e-lnrho_p) &
@@ -808,9 +806,9 @@ module EquationOfState
             yHlow=yH
           endwhere
         elsewhere
-          yHcheck=yH
+          found=.true.
         endwhere
-        if (all(yHcheck==yH)) return
+        if (all(found)) return
       enddo
 !
     endsubroutine rtsafe_pencil
