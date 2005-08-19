@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.197 2005-08-19 09:05:39 wlyra Exp $
+! $Id: density.f90,v 1.198 2005-08-19 15:13:54 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -108,7 +108,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.197 2005-08-19 09:05:39 wlyra Exp $")
+           "$Id: density.f90,v 1.198 2005-08-19 15:13:54 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -656,8 +656,7 @@ module Density
          !
          !minimum mass solar nebula
          !
-         if (lroot)  print*,'init_lnrho: &
-              initialize initial condition for planet building'
+         if (lroot)  print*,'init_lnrho: initialize initial condition for planet building'
          call power_law(f,xx,yy,zz,lnrho_const,plaw)
 
       case default
