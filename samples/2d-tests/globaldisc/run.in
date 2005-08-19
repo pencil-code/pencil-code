@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2005-08-18 07:01:12 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.7 2005-08-19 10:08:02 wlyra Exp $',
   ip=13,
   nt=5000, it1=5, isave=10, itorder=3, ialive=1
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
@@ -49,5 +49,5 @@
   !!every time-step
 /
 &viscosity_run_pars
-  nu=1e-4
+  nu=1e-3
 /
