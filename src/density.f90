@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.196 2005-08-18 12:06:38 ajohan Exp $
+! $Id: density.f90,v 1.197 2005-08-19 09:05:39 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -40,7 +40,7 @@ module Density
   real :: q_ell=5., hh0=0.
   real :: co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
-  real :: wdamp=0.,plaw=0., scaleH=1.0
+  real :: wdamp=0.,plaw=0.
   integer, parameter :: ndiff_max=4
   logical :: lupw_lnrho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
@@ -61,13 +61,13 @@ module Density
        mpoly,strati_type,                            &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,scaleH
+       wdamp,plaw
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
-       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,scaleH
+       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
@@ -108,7 +108,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.196 2005-08-18 12:06:38 ajohan Exp $")
+           "$Id: density.f90,v 1.197 2005-08-19 09:05:39 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -360,10 +360,6 @@ module Density
       case('coswave-y'); call coswave(ampllnrho,f,ilnrho,ky=ky_lnrho)
       case('coswave-z'); call coswave(ampllnrho,f,ilnrho,kz=kz_lnrho)
       case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho)
-      case('gaussian-z')
-        do n=n1,n2
-          f(:,:,n,ilnrho)=-z(n)**2/(2*scaleH**2)
-        enddo
       case('gaussian-noise')
         If (lnrho_left /= 0.) f(:,:,:,ilnrho)=lnrho_left
         call gaunoise(ampllnrho,f,ilnrho,ilnrho)
@@ -656,11 +652,13 @@ module Density
         call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
 
-      case('mmsn')
+      case('solar_nebula')
          !
          !minimum mass solar nebula
          !
-         call solar_nebula(f,xx,yy,zz,lnrho_const,plaw,wdamp)
+         if (lroot)  print*,'init_lnrho: &
+              initialize initial condition for planet building'
+         call power_law(f,xx,yy,zz,lnrho_const,plaw)
 
       case default
         !

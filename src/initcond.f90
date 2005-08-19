@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.128 2005-08-19 08:49:55 wlyra Exp $ 
+! $Id: initcond.f90,v 1.129 2005-08-19 09:05:39 wlyra Exp $ 
 
 module Initcond 
  
@@ -39,7 +39,7 @@ module Initcond
   public :: vfield2
   public :: hawley_etal99a
   public :: robertsflow
-  public :: solar_nebula
+  public :: power_law
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -1363,27 +1363,22 @@ module Initcond
 !   5-may-05/wlad: added possibility of star offset and non-corotational 
 !                  frame of reference. 
 
-      use Cdata, only: r_int,r_ext,Omega
-
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
       real :: g0,r0_pot,sx,sy
       integer :: n_pot
 !
-!  angular velocity for centrifugally supported disc in given potential
-!  Subtract angular velocity of the reference frame, if lcentrifugal_force is
-!  activated
+!  Angular velocity for centrifugally supported disc in given potential.
+!  Subtract angular velocity of the reference frame, if Omega is non-zero
 !
       xx = xx - sx
       yy = yy - sy
 
       rrp=sqrt(xx**2+yy**2) !+ epsi
       OO=sqrt(g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.))
-      !OO=sqrt(g0*rrp**(-3)) - Omega
       
-         f(:,:,:,iux)=f(:,:,:,iux)-yy*OO
-         f(:,:,:,iuy)=f(:,:,:,iuy)+xx*OO
-      
+      f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
+      f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2399,7 +2394,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !********************************************************** 
-    subroutine solar_nebula(f,xx,yy,zz,lnrho_const,plaw,wdamp)
+    subroutine power_law(f,xx,yy,zz,lnrho_const,plaw)
 !
 ! 24-fev-05/wlad : coded.
 ! yields from Minimum Mass Solar Nebula model
@@ -2420,31 +2415,16 @@ module Initcond
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,rr,H
-      real :: lnrho_int,lnrho_ext,lnrho_const
-      real :: Omega_int,plaw,wdamp
-      real :: inner,outer,limit,inner2,outer2,limit2
-      integer :: i,ci,cii,ce,cee
-      real, dimension (mx) :: r,ome,den
-      !internal
-      real, dimension (nx) :: rad_int,rho_int,ome_int
-      real, dimension (nx) :: valuerho_int,valueome_int,irts 
-      !external
-      real, dimension (nx) :: rad_ext,rho_ext,ome_ext
-      real, dimension (nx) :: valuerho_ext,valueome_ext,erts
-
-      if (lroot) print*, &
-              'init_lnrho: initialize density initial condition for planet building'
-
+      real :: lnrho_const,plaw
+   
       rr  = sqrt(xx**2 + yy**2)
       f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)  
-     
-      
+    
       !3D - not tested yet
       !H  = 0.05 * rr
       !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
      
-     
-    endsubroutine solar_nebula
+    endsubroutine power_law
 !*********************************************************
 
 endmodule Initcond
