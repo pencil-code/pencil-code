@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.296 2005-08-10 13:45:42 bingert Exp $
+%%  CVS: $Id: manual.tex,v 1.297 2005-08-19 13:34:05 theine Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-08-10 13:45:42 $ $,~ $ $Revision: 1.296 $ $}
+%\date{$ $Date: 2005-08-19 13:34:05 $ $,~ $ $Revision: 1.297 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-08-10 13:45:42 $ $,~ $ $Revision: 1.296 $ $}\\
+  \emph{$ $Date: 2005-08-19 13:34:05 $ $,~ $ $Revision: 1.297 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -2316,9 +2316,6 @@ Here is a list of the more important ones.
 \item[move-slice] Moves all the slice files from a processor tree structure,
   \file[proc$N$]{proc$N$/}, to a new target tree creating directories where
   necessary.
-\item[new] Generates a new run directory from an old one. The new one contains
-  a copy of the old \file{*.local} files, runs \cmd{setup-src}, and
-  makes also a copy of the old \file{*.in} and \file{k.dat} files.
 \item[nl2idl] Transform a Fortran \name{namelist} (normally the files
   \file{param.nml}, \file{param2.nml} written by the code) into an
   \name{IDL} structure.
@@ -2326,6 +2323,14 @@ Here is a list of the more important ones.
   or \file{run.pro}.
 \item[pacx-adapt-makefile] Version of adapt-makefile for highly 
   distributed runs using PACX MPI.
+\item[pc_newrun] Generates a new run directory from an old one. The new one
+  contains a copy of the old \file{*.local} files, runs \cmd{setup-src}, and
+  makes also a copy of the old \file{*.in} and \file{k.dat} files.
+\item[pc_inspect_run] Check the execution of the current run: prints legend
+  and the last few lines of the \file{time_series.dat} file. It also appends
+  this result to a file called \file{SPEED}, which contains also the current
+  wall clock time, so you can work out the speed of the code (without being
+  affected by i/o time).
 \item[read_videofiles.csh] The script for running read_videofiles.x.
 \item[remote-top] Create a file \file{top.log} in the relevant 
   \file[proc$N$]{proc$N$/} directory containing the output of \code{top}
@@ -2348,10 +2353,6 @@ Here is a list of the more important ones.
 \item[timestr] Generate a unique time string that can be appended to file
   names from shell scripts through the backtick mechanism.
 \item[tsnap] Extract time information from a snapshot file, \file{VAR$N$}.
-\item[x] Check the execution of the current run: prints legend and the last
- few lines of the \file{time_series.dat} file. It also appends this result to a file
- called \file{SPEED}, which contains also the current wall clock time, so
- you can work out the speed of the code (without being affected by i/o time).
 \end{description}
 
 \vspace{5cm}
@@ -4787,7 +4788,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-08-10 13:45:42 $ $,~ $ $Revision: 1.296 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-08-19 13:34:05 $ $,~ $ $Revision: 1.297 $ $}
 
 \section{Timings}
 
@@ -7875,7 +7876,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.296 2005-08-10 13:45:42 bingert Exp $ $}
+$ $Id: manual.tex,v 1.297 2005-08-19 13:34:05 theine Exp $ $}
 
 
 \end{document}
