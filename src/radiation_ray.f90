@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.76 2005-08-20 00:04:32 theine Exp $
+! $Id: radiation_ray.f90,v 1.77 2005-08-20 00:10:21 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -120,7 +120,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.76 2005-08-20 00:04:32 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.77 2005-08-20 00:10:21 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -758,7 +758,7 @@ module Radiation
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my), intent(out) :: Qrad0_xy
-      real, dimension(mx,my) :: Irad
+      real :: Irad_xy
 !
 !  no incoming intensity
 !
@@ -769,9 +769,9 @@ module Radiation
 !  incoming intensity from a layer of constant temperature TT_top
 !
       if (bc_ray_z=='c') then
-        if (nrad<0) Irad=arad*TT_top**4*(exp(tau_top/mu(idir)))
-        if (nrad>0) Irad=arad*TT_bot**4*(exp(tau_top/mu(idir)))
-        Qrad0_xy=Irad-Srad(:,:,nnstart-nrad)
+        if (nrad<0) Irad_xy=arad*TT_top**4*(exp(tau_top/mu(idir)))
+        if (nrad>0) Irad_xy=arad*TT_bot**4*(exp(tau_top/mu(idir)))
+        Qrad0_xy=Irad_xy-Srad(:,:,nnstart-nrad)
       endif
 !
 ! periodic boundary consition (currently not implemented for
