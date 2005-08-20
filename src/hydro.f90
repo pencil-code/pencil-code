@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.213 2005-08-19 08:49:55 wlyra Exp $
+! $Id: hydro.f90,v 1.214 2005-08-20 14:47:29 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -146,7 +146,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.213 2005-08-19 08:49:55 wlyra Exp $")
+           "$Id: hydro.f90,v 1.214 2005-08-20 14:47:29 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1199,7 +1199,7 @@ module Hydro
 !            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
 !          enddo
 !
-          if (dampuint > 0.0 .and. rdampext /= impossible) then
+          if (dampuext > 0.0 .and. rdampext /= impossible) then
             pdamp = step(r_mn,rdampext,wdamp) ! outer damping profile
             do i=iux,iuz
               df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
