@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.75 2005-08-16 21:27:55 theine Exp $
+! $Id: radiation_ray.f90,v 1.76 2005-08-20 00:04:32 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -33,7 +33,7 @@ module Radiation
   integer, parameter :: maxdir=26
   real, dimension (mx,my,mz) :: Srad,kapparho,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
-  real, dimension (maxdir) :: weight
+  real, dimension (maxdir) :: weight,mu
   real :: dtau_thresh_min,dtau_thresh_max
   real :: arad
   integer :: lrad,mrad,nrad,rad2
@@ -43,6 +43,8 @@ module Radiation
   integer :: nnstart,nnstop,nn1,nn2,nsign
   integer :: ipystart,ipystop,ipzstart,ipzstop
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
+  real :: tau_top=0.0,TT_top=0.0
+  real :: tau_bot=0.0,TT_bot=0.0
   real :: kappa_cst=1.0
   real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
   real :: kapparho_const=1.0,amplkapparho=1.0,radius_kapparho=1.0
@@ -66,14 +68,14 @@ module Radiation
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
-       source_function_type,opacity_type, &
+       TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,nrad_rep
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
-       source_function_type,opacity_type, &
+       TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
        kapparho_const,amplkapparho,radius_kapparho, &
        lintrinsic,lcommunicate,lrevision,lcooling,nrad_rep
@@ -118,7 +120,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.75 2005-08-16 21:27:55 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.76 2005-08-20 00:04:32 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -145,6 +147,7 @@ module Radiation
 !  03-jul-03/tobi: position array added
 !
       use Cdata, only: lroot,sigmaSB,pi,datadir
+      use Cdata, only: dx,dy,dz
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
 !
@@ -161,13 +164,21 @@ module Radiation
       do nrad=-radz,radz
       do mrad=-rady,rady
       do lrad=-radx,radx
+
         rad2=lrad**2+mrad**2+nrad**2
+
         if (rad2>0.and.rad2<=rad2max) then 
+
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
+
+          mu(idir)=nrad*dz/sqrt((lrad*dx)**2+(mrad*dy)**2+(nrad*dz)**2)
+
           idir=idir+1
+
         endif
+
       enddo
       enddo
       enddo
@@ -746,12 +757,21 @@ module Radiation
 !
       use Mpicomm, only: stop_it
 !
-      real, dimension(mx,my) :: Qrad0_xy
+      real, dimension(mx,my), intent(out) :: Qrad0_xy
+      real, dimension(mx,my) :: Irad
 !
 !  no incoming intensity
 !
       if (bc_ray_z=='0') then
         Qrad0_xy=-Srad(:,:,nnstart-nrad)
+      endif
+!
+!  incoming intensity from a layer of constant temperature TT_top
+!
+      if (bc_ray_z=='c') then
+        if (nrad<0) Irad=arad*TT_top**4*(exp(tau_top/mu(idir)))
+        if (nrad>0) Irad=arad*TT_bot**4*(exp(tau_top/mu(idir)))
+        Qrad0_xy=Irad-Srad(:,:,nnstart-nrad)
       endif
 !
 ! periodic boundary consition (currently not implemented for
