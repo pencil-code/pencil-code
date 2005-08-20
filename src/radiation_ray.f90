@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.77 2005-08-20 00:10:21 theine Exp $
+! $Id: radiation_ray.f90,v 1.78 2005-08-20 11:10:25 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -120,7 +120,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.77 2005-08-20 00:10:21 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.78 2005-08-20 11:10:25 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -769,8 +769,8 @@ module Radiation
 !  incoming intensity from a layer of constant temperature TT_top
 !
       if (bc_ray_z=='c') then
-        if (nrad<0) Irad_xy=arad*TT_top**4*(exp(tau_top/mu(idir)))
-        if (nrad>0) Irad_xy=arad*TT_bot**4*(exp(tau_top/mu(idir)))
+        if (nrad<0) Irad_xy=arad*TT_top**4*(1-exp(tau_top/mu(idir)))
+        if (nrad>0) Irad_xy=arad*TT_bot**4*(1-exp(tau_top/mu(idir)))
         Qrad0_xy=Irad_xy-Srad(:,:,nnstart-nrad)
       endif
 !
