@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.9 2005-07-08 19:42:54 ajohan Exp $
+! $Id: particles_sub.f90,v 1.10 2005-08-21 08:42:57 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -313,14 +313,6 @@ module Particles_sub
 !  Copy migrating particle to the end of the fp array.
           nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)+1
           k_move(iproc_rec)=k_move(iproc_rec)+1
-          if (nmig(iproc,iproc_rec)>npar_mig) then
-            print '(a,i3,a,i3,a)', &
-                'redist_particles_procs: too many particles migrating '// &
-                'from proc ', iproc, ' to proc ', iproc_rec
-            print*, 'redist_particles_procs: set npar_mig higher '// &
-                'in cparam.local'
-            call fatal_error('redist_particles_procs','')
-          endif
           fp(k_move(iproc_rec),:)=fp(k,:)
           if (present(dfp)) dfp(k_move(iproc_rec),:)=dfp(k,:)
           ipar(k_move(iproc_rec))=ipar(k)
@@ -349,6 +341,21 @@ module Particles_sub
           enddo
         endif
       enddo
+!
+!  Check whether too many particles want to migrate.
+!      
+      do i=0,ncpus-1; do j=0,ncpus-1
+        if (nmig(i,j)>npar_mig) then
+          if (lroot) print '(a,i3,a,i3,a)', &
+              'redist_particles_procs: too many particles migrating '// &
+              'from proc ', i, ' to proc ', j
+          if (lroot) print*, 'redist_particles_procs: set npar_mig higher '// &
+              'in cparam.local'
+          if (lroot) print*, 'npar_mig=', npar_mig
+          if (lroot) print*, 'nmig=', nmig
+          call fatal_error('redist_particles_procs','')
+        endif
+      enddo; enddo
 !
 !  Set to receive.
 !      
