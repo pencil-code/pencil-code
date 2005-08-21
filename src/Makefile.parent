@@ -32,6 +32,9 @@ qoutclean:
 	rm -f start.csh.[eo][0-9]* start.csh.[0-9]*out
 	rm -f run.csh.[eo][0-9]* run.csh.[0-9]*out
 	rm -f start_run.csh.[eo][0-9]* start_run.csh.[0-9]*out
+	rm -f start.csh.p[eo][0-9]* start.csh.p[0-9]*out
+	rm -f run.csh.p[eo][0-9]* run.csh.p[0-9]*out
+	rm -f start_run.csh.p[eo][0-9]* start_run.csh.p[0-9]*out
 
 # Clean up files produced by running MPI
 mpiclean:
