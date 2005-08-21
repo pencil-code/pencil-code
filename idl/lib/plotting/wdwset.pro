@@ -15,7 +15,8 @@ pro wdwset, wid, _EXTRA=extra
 
   okerrs = [-459, $ ; Window is closed and unavailable (Linux IDL5.5a)
             -480, $ ; Window is closed and unavailable (Linux IDL5.3)
-            -386  $ ; Window is closed and unavailable (OSF1 IDL5.2)
+            -386, $ ; Window is closed and unavailable (OSF1 IDL5.2)
+            -531  $ ; Window is closed and unavailable (Linux IDL6.0)
            ]                    ; these error codes are OK
 
   ; Establish error handler

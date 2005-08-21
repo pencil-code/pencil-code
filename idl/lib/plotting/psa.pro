@@ -3,8 +3,8 @@
 ;;;;;;;;;;;;;;;;;
 
 ;;; Author:  wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;; $Date: 2005-04-22 01:50:53 $
-;;; $Revision: 1.5 $
+;;; $Date: 2005-08-21 05:14:03 $
+;;; $Revision: 1.6 $
 
 ;;;   Switch output device to PostScript
 ;;;   Usage:
@@ -74,14 +74,15 @@ pro psa, $
       DEVICE, FILENAME=filename, _EXTRA=extra, /PORTRAIT
     ENDIF ELSE BEGIN
       DEVICE, FILENAME=filename, _EXTRA=extra, /PORTRAIT, $
-          XSIZE=18, YSIZE=26, XOFFSET=1, YOFFSET=2.2
+          XSIZE=width, YSIZE=height, $
+          XOFFSET=margin, YOFFSET=margin
     ENDELSE
   ENDIF ELSE BEGIN              ; landscape
     DEVICE, FILENAME=filename, _EXTRA=extra, LANDSCAPE=landscape
     if (landscape) then begin   ; we want landscape, not seascape
       device, $
           XSIZE=height, YSIZE=width, $
-          XOFF=paperwidth-margin, YOFF=margin, scale_factor=-1.
+          XOFFSET=paperwidth-margin, YOFFSET=margin, scale_factor=-1.
     endif
   ENDELSE
   IF (NOT (KEYWORD_SET(nops) OR KEYWORD_SET(no_ps))) THEN ps_fonts
