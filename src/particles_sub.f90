@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.10 2005-08-21 08:42:57 ajohan Exp $
+! $Id: particles_sub.f90,v 1.11 2005-08-21 12:39:29 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -269,7 +269,7 @@ module Particles_sub
 !
 !  01-jan-05/anders: coded
 !
-      use Messages, only: fatal_error
+      use Messages, only: fatal_error, warning
       use Mpicomm, only: mpirecv_real, mpisend_real, mpirecv_int, mpisend_int
 !
       real, dimension (mpar_loc,mpvar) :: fp
@@ -280,7 +280,7 @@ module Particles_sub
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
       integer, dimension (0:ncpus-1), save :: k0_move, k0_move1
       integer, dimension (0:ncpus-1) :: k_move
-      integer :: i, j, k, iproc_rec
+      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
       integer, save :: mpar_loc_mig
       logical, save :: lfirstcall=.true.
 !
@@ -303,16 +303,55 @@ module Particles_sub
 !
       nmig=0
       do k=npar_loc,1,-1
-        iproc_rec = int( (fp(k,iyp)-xyz0(2))/Lxyz_loc(2) ) + &
-             nprocy*int( (fp(k,izp)-xyz0(3))/Lxyz_loc(3) )
+!  Find y index of receiving processor.
+        ipy_rec=ipy
+        if (fp(k,iyp)>=xyz1_loc(2)) then
+          do while ( (fp(k,iyp)-(ipy_rec+1)*Lxyz_loc(2)) >= xyz0(2) )
+            ipy_rec=ipy_rec+1
+          enddo
+        else if (fp(k,iyp)< xyz0_loc(2)) then
+          do while ( (fp(k,iyp)+(nprocy-ipy_rec)*Lxyz_loc(2)) <  xyz1(2) )
+            ipy_rec=ipy_rec-1
+          enddo
+        endif
+!  Find z index of receiving processor.
+        ipz_rec=ipz
+        if (fp(k,izp)>=xyz1_loc(3)) then
+          do while ( (fp(k,izp)-(ipz_rec+1)*Lxyz_loc(3)) >= xyz0(3) )
+            ipz_rec=ipz_rec+1
+          enddo
+        else if (fp(k,izp)< xyz0_loc(3)) then
+          do while ( (fp(k,izp)+(nprocz-ipz_rec)*Lxyz_loc(3)) <  xyz1(3) )
+            ipz_rec=ipz_rec-1
+          enddo
+        endif
+!  Calculate serial index of receiving processor.
+        iproc_rec=ipy_rec+nprocy*ipz_rec
+!  Migrate particle if it is no longer at the current processor.        
         if (iproc_rec/=iproc) then
           if (ip<=8) print '(a,i7,a,i3,a,i3)', &
               'redist_particles_procs: Particle ', ipar(k), &
               ' moves out of proc ', iproc, &
               ' and into proc ', iproc_rec
+          if (iproc_rec>=ncpus .or. iproc_rec<0) then
+            call warning('redist_particles_procs','',iproc)
+            print*, 'redist_particles_procs: receiving processor does not exist'
+            print*, 'redist_particles_procs: iproc, iproc_rec=', &
+                iproc, iproc_rec
+          endif
 !  Copy migrating particle to the end of the fp array.
           nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)+1
           k_move(iproc_rec)=k_move(iproc_rec)+1
+          if (nmig(iproc,iproc_rec)>npar_mig) then
+            print '(a,i3,a,i3,a)', &
+                'redist_particles_procs: too many particles migrating '// &
+                'from proc ', iproc, ' to proc ', iproc_rec
+            print*, 'redist_particles_procs: set npar_mig higher '// &
+                'in cparam.local'
+            print*, 'npar_mig=', npar_mig
+            print*, 'nmig=', nmig
+            call fatal_error('redist_particles_procs','')
+          endif
           fp(k_move(iproc_rec),:)=fp(k,:)
           if (present(dfp)) dfp(k_move(iproc_rec),:)=dfp(k,:)
           ipar(k_move(iproc_rec))=ipar(k)
@@ -341,21 +380,6 @@ module Particles_sub
           enddo
         endif
       enddo
-!
-!  Check whether too many particles want to migrate.
-!      
-      do i=0,ncpus-1; do j=0,ncpus-1
-        if (nmig(i,j)>npar_mig) then
-          if (lroot) print '(a,i3,a,i3,a)', &
-              'redist_particles_procs: too many particles migrating '// &
-              'from proc ', i, ' to proc ', j
-          if (lroot) print*, 'redist_particles_procs: set npar_mig higher '// &
-              'in cparam.local'
-          if (lroot) print*, 'npar_mig=', npar_mig
-          if (lroot) print*, 'nmig=', nmig
-          call fatal_error('redist_particles_procs','')
-        endif
-      enddo; enddo
 !
 !  Set to receive.
 !      
