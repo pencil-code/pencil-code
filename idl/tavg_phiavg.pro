@@ -12,6 +12,7 @@
 ;;;    RANGE -- time interval (if real) or index interval enumerating
 ;;;             PHIAVG<N> files (if integer) for data to include
 ;;;  KEYWORDS:
+;;;    AVG2  -- if present, store averaged squares of slots here 
 ;;;    DIR   -- data directory
 ;;;    QUIET -- be quiet
 ;;;  Usage:
@@ -21,12 +22,13 @@
 ;;;                                       ; directory data/avg2
 ;;;    avg = tavg_phiavg([2,10])          ; average PHIAVG2 to PHIAVG10
 ;;;    avg = tavg_phiavg([10.,35.])       ; average from time 10. to 35.
+;;;    avg = tavg_phiavg(AVG2=avg2)       ; all PHIAVG files, squares in avg2
 
 ; ---------------------------------------------------------------------- ;
 
 pro struct_mul, struc, fact, labels
 ;; Multiply all slots of structure STRUC indicated in LABELS with FACTOR.
-;; Looks like we can only do this usign the execute function.
+;; Looks like we can only do this using the execute function.
   cmd = ''
   for j=0,n_elements(labels)-1 do begin
     struc_l = 'struc.'+strtrim(labels[j],2)
@@ -53,7 +55,24 @@ end
 
 ; ---------------------------------------------------------------------- ;
 
-function tavg_phiavg, range, DIR=avgdir, QUIET=quiet, $
+pro struct_add2, struc1, struc2, labels
+;; For all slots indicated in LABELS, add struc2^2 to struc1. 
+;; Looks like we can only do this usign the execute function.
+  cmd = ''
+  for j=0,n_elements(labels)-1 do begin
+    struc1_l = 'struc1.'+strtrim(labels[j],2)
+    struc2_l = 'struc2.'+strtrim(labels[j],2)
+    cmd = cmd + struc1_l+'='+struc1_l+'+'+struc2_l+'^2 & '
+  endfor
+  if (execute(cmd) ne 1) then $
+      message, 'STRUCT_MUL: Couldn''t execute "'+cmd+'"'
+end
+
+; ---------------------------------------------------------------------- ;
+
+function tavg_phiavg, range, $
+                      AVG2=avg2, $
+                      DIR=avgdir, QUIET=quiet, $
                       HELP=help
 
   if (keyword_set(help)) then extract_help, 'tavg_phiavg'
@@ -99,11 +118,14 @@ function tavg_phiavg, range, DIR=avgdir, QUIET=quiet, $
         endif
         if (first) then begin
           avg = avg_i           ; copy first struct (for grid, etc.)
-          struct_mul, avg, 0., avg.labels ; zero out content
+          avg2 = avg_i
+          struct_mul, avg,  0., avg.labels ; zero out content (add avg_i later)
+          struct_mul, avg2, 0., avg.labels ; zero out content
           first = 0
         endif
         ;; Sum up and count
-        struct_add, avg, avg_i, avg.labels
+        struct_add,  avg,  avg_i, avg.labels
+        struct_add2, avg2, avg_i, avg.labels
         count = count+1.
         need_newline = 0
         last_file_was_in_range = 1
@@ -131,7 +153,8 @@ function tavg_phiavg, range, DIR=avgdir, QUIET=quiet, $
   if (need_newline) then print
 
   if (count gt 0) then begin
-    struct_mul, avg, 1./count, avg.labels ; normalize
+    struct_mul, avg,  1./count, avg.labels ; normalize
+    struct_mul, avg2, 1./count, avg.labels ; normalize
   endif else begin
     message, /INFO, 'No data read -- all averages set to zero'
     avg = [0.]
