@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.22 2005-08-19 21:26:31 theine Exp $
+! $Id: eos_idealgas.f90,v 1.23 2005-08-22 15:42:09 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -57,13 +57,15 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
   integer :: isothtop=0
+! 
+  logical ::llocal_iso=.false.
 
   ! input parameters
-  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, lcalc_cp, gamma
+  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, lcalc_cp, gamma, llocal_iso
 
 
   ! run parameters
-  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, lcalc_cp, gamma
+  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, lcalc_cp, gamma, llocal_iso
 
   contains
 
@@ -93,7 +95,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.22 2005-08-19 21:26:31 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.23 2005-08-22 15:42:09 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1491,4 +1493,44 @@ module EquationOfState
 
     end subroutine bc_ss_energy
 !***********************************************************************
+    subroutine local_isothermal(cs20,corr)
+!
+!22-aug-05/wlad: coded
+!
+! Locally isothermal structure for accretion disks. 
+! The energy equation is not solved,but the variation
+! of temperature with radius (T ~ r-1) is crucial for the
+! treatment of ad hoc alpha viscosity.
+!
+! cs2 = H * Omega, being H the scale height and (H/r) = cte.
+!
+      use Cdata
+      use Gravity, only : g0 
+      use Global, only: get_global
+
+      real :: Om2rp
+      real, dimension(nx,3) :: gg_mn
+      real, dimension(nx) :: rr_mn,gr
+
+      real, intent(in)  :: cs20
+      real, dimension (nx), intent(out) :: corr
+
+      if (llocal_iso) then
+         Om2rp = g0   ! actually,  g0/sqrt(Rx**2 + Ry**2 + Rz**2)
+                      ! too bad, assumes that r0 must be 1, and
+                      ! I can't easily communicate Rx,Ry and Rz to 
+                      ! this subroutine
+!                = ((Omega*r)_0)**2
+         call get_global(gg_mn,m,n,'gg')
+         gr = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
+         rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)
+           
+         corr = (1./Om2rp) * gr*rr_mn  !gr*rr_mn = (Omega*r)**2
+      else
+         corr = 1. 
+      endif
+
+    endsubroutine local_isothermal
+!***********************************************************************
+
 endmodule EquationOfState

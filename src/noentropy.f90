@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.72 2005-08-15 14:13:39 mee Exp $
+! $Id: noentropy.f90,v 1.73 2005-08-22 15:41:48 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.72 2005-08-15 14:13:39 mee Exp $")
+           "$Id: noentropy.f90,v 1.73 2005-08-22 15:41:48 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -141,20 +141,27 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
-      use EquationOfState, only: gamma,gamma1,cs20,lnrho0
-!
+      use EquationOfState, only: gamma,gamma1,cs20,lnrho0,&
+           llocal_iso,local_isothermal
+ !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: corr
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
 ! cs2
       if (lpencil(i_cs2)) then
-        if (gamma==1.) then
-          p%cs2=cs20
-        else
-          p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
-        endif
+         if (gamma==1.) then
+            if (llocal_iso) then 
+               call local_isothermal(cs20,corr)
+               p%cs2 = cs20 * corr   
+            else
+               p%cs2=cs20 
+            endif
+         else  
+            p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
+         endif
       endif
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
