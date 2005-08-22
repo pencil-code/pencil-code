@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.1 2005-08-22 12:16:38 ajohan Exp $
+! $Id: particles_radius.f90,v 1.2 2005-08-22 14:03:12 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -22,9 +22,16 @@ module Particles_radius
 
   include 'particles_radius.h'
 
-  namelist /particles_radius_init_pars/
+  real :: ap0=0.0, rhops=1.0e10
+  character (len=labellen), dimension(ninit) :: initap='nothing'
 
-  namelist /particles_radius_run_pars/
+  namelist /particles_radius_init_pars/ &
+      initap, ap0, rhops
+
+  namelist /particles_radius_run_pars/ &
+      rhops
+
+  integer :: idiag_apm=0, idiag_ap2m=0
 
   contains
 
@@ -43,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.1 2005-08-22 12:16:38 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.2 2005-08-22 14:03:12 ajohan Exp $")
 !
 !  Indix for particle radius.
 !
@@ -60,7 +67,7 @@ module Particles_radius
         call stop_it('register_particles: npvar > mpvar')
       endif
 !
-    endsubroutine register_particles
+    endsubroutine register_particles_radius
 !***********************************************************************
     subroutine initialize_particles_radius(lstarting)
 !
@@ -71,7 +78,7 @@ module Particles_radius
 !
       logical :: lstarting
 !
-    endsubroutine initialize_particles
+    endsubroutine initialize_particles_radius
 !***********************************************************************
     subroutine init_particles_radius(f,fp)
 !
@@ -83,7 +90,24 @@ module Particles_radius
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
-    endsubroutine init_particles
+      integer :: j
+!
+      do j=1,ninit
+        
+        select case(initap(j))
+
+        case('nothing')
+          if (lroot.and.j==1) print*, 'init_particles_radius: nothing'
+
+        case('constant')
+          if (lroot) print*, 'init_particles_radius: constant radius'
+          fp(1:npar_loc,iap)=ap0
+
+        endselect
+
+      enddo
+!
+    endsubroutine init_particles_radius
 !***********************************************************************
     subroutine dap_dt(f,fp,dfp)
 !
@@ -94,8 +118,25 @@ module Particles_radius
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
+      real, dimension(1) :: rho_ip
+      integer :: k
+!
       intent (in) :: f, fp
       intent (out) :: dfp
+!
+      do k=1,npar_loc
+        call interpolate_3d_1st(f,ilnrho,ilnrho,fp(k,ixp:izp),rho_ip,ipar(k))
+        if (.not. ldensity_nolog) rho_ip=exp(rho_ip)
+        dfp(k,iap) = dfp(k,iap) + &
+          0.25*sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)*rho_ip(1)/rhops
+      enddo
+!
+!  Diagnostic output
+!
+      if (ldiagnos) then
+        if (idiag_apm/=0)  call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
+        if (idiag_ap2m/=0)  call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
+      endif
 !
     endsubroutine dap_dt
 !***********************************************************************
@@ -135,7 +176,7 @@ module Particles_radius
 !
 99    return
 !
-    endsubroutine read_particles_run_pars
+    endsubroutine read_particles_radius_run_pars
 !***********************************************************************
     subroutine write_particles_radius_run_pars(unit)
 !    
@@ -157,6 +198,9 @@ module Particles_radius
       logical :: lreset
       logical, optional :: lwrite
 !
+      integer :: iname
+      logical :: lwr
+!
 !  Write information to index.pro
 ! 
       lwr = .false.
@@ -166,7 +210,7 @@ module Particles_radius
 !  Reset everything in case of reset
 !
       if (lreset) then
-!        idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
+        idiag_apm=0; idiag_ap2m=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -174,7 +218,8 @@ module Particles_radius
       if (lroot.and.ip<14) &
           print*, 'rprint_particles_radius: run through parse list'
       do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
+        call parse_name(iname,cname(iname),cform(iname),'apm',idiag_apm)
+        call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
       enddo
 !
     endsubroutine rprint_particles_radius
