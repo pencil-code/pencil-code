@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.73 2005-08-22 15:41:48 wlyra Exp $
+! $Id: noentropy.f90,v 1.74 2005-08-22 17:55:42 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.73 2005-08-22 15:41:48 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.74 2005-08-22 17:55:42 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -152,17 +152,19 @@ module Entropy
       intent(inout) :: p
 ! cs2
       if (lpencil(i_cs2)) then
-         if (gamma==1.) then
-            if (llocal_iso) then 
-               call local_isothermal(cs20,corr)
-               p%cs2 = cs20 * corr   
-            else
-               p%cs2=cs20 
-            endif
-         else  
-            p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
-         endif
-      endif
+        if (gamma==1.) then
+           p%cs2=cs20 
+        else
+!
+           if (llocal_iso) then
+              call local_isothermal(cs20,corr)
+              p%cs2 = cs20 * corr
+           else   
+              p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
+           endif
+!
+        endif
+     endif
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! pp
