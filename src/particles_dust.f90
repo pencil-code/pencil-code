@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.13 2005-08-22 14:05:19 ajohan Exp $
+! $Id: particles_dust.f90,v 1.14 2005-08-22 15:09:42 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -23,7 +23,7 @@ module Particles
   include 'particles.h'
 
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, rhop=0.0, eps_dtog=0.01
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.13 2005-08-22 14:05:19 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.14 2005-08-22 15:09:42 ajohan Exp $")
 !
 !  Indices for particle position.
 !
