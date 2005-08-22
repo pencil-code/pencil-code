@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.208 2005-08-22 12:16:38 ajohan Exp $ 
+! $Id: param_io.f90,v 1.209 2005-08-22 14:03:53 ajohan Exp $ 
 
 module Param_IO
 
@@ -345,6 +345,8 @@ module Param_IO
         if (linterstellar )  print*,'&interstellar_init_pars   /'
         if (lshear        )  print*,'&shear_init_pars          /'
         if (lspecial      )  print*,'&special_init_pars        /'
+        if (lparticles       ) print*,'&particles_init_pars       /'
+        if (lparticles_radius) print*,'&particles_radius_init_pars/'
         !if (lshock       ) print*,'&shock_init_pars          /'
         ! no input parameters for viscosity
         print*,'------END sample namelist -------'
