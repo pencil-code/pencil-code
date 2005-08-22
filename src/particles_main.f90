@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.2 2005-08-22 13:49:00 ajohan Exp $
+! $Id: particles_main.f90,v 1.3 2005-08-22 15:10:18 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -187,7 +187,7 @@ module Particles_main
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
       call dxxp_dt(f,fp,dfp)
       call dvvp_dt(f,df,fp,dfp)
-      if (lparticles_radius) call dap_dt(f,fp,dfp)
+      if (lparticles_radius) call dap_dt(f,df,fp,dfp)
 !
     endsubroutine particles_pde
 !***********************************************************************

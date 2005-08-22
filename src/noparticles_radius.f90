@@ -1,4 +1,4 @@
-! $Id: noparticles_radius.f90,v 1.1 2005-08-22 12:16:38 ajohan Exp $
+! $Id: noparticles_radius.f90,v 1.2 2005-08-22 15:10:18 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -56,16 +56,17 @@ module Particles_radius
 !
     endsubroutine init_particles_radius
 !***********************************************************************
-    subroutine dap_dt(f,fp,dfp)
+    subroutine dap_dt(f,df,fp,dfp)
 !
 !  Evolution of particle radius.
 !
 !  22-aug-05/anders: dummy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
-      if (NO_WARN) print*, f, fp, dfp
+      if (NO_WARN) print*, f, df, fp, dfp
 !
     endsubroutine dap_dt
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.2 2005-08-22 14:03:12 ajohan Exp $
+! $Id: particles_radius.f90,v 1.3 2005-08-22 15:10:18 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -50,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.2 2005-08-22 14:03:12 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.3 2005-08-22 15:10:18 ajohan Exp $")
 !
 !  Indix for particle radius.
 !
@@ -109,33 +109,51 @@ module Particles_radius
 !
     endsubroutine init_particles_radius
 !***********************************************************************
-    subroutine dap_dt(f,fp,dfp)
+    subroutine dap_dt(f,df,fp,dfp)
 !
 !  Evolution of particle radius.
 !
 !  22-aug-05/anders: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
-      real, dimension(1) :: rho_ip
-      integer :: k
+      real, dimension (3) :: uu
+      real :: rho, deltav
+      integer :: k, ix0, iy0, iz0
 !
       intent (in) :: f, fp
       intent (out) :: dfp
 !
+!  Increase in particle radius due to sweep-up of small grains in the gas.
+!
       do k=1,npar_loc
-        call interpolate_3d_1st(f,ilnrho,ilnrho,fp(k,ixp:izp),rho_ip,ipar(k))
-        if (.not. ldensity_nolog) rho_ip=exp(rho_ip)
-        dfp(k,iap) = dfp(k,iap) + &
-          0.25*sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)*rho_ip(1)/rhops
+        call find_lowest_cornerpoint(fp(k,ixp:izp),ix0,iy0,iz0)
+        rho=f(ix0,iy0,iz0,ilnrho)
+        if (.not. ldensity_nolog) rho=exp(rho)
+        uu=f(ix0,iy0,iz0,iux:iuz)
+        deltav=sqrt( (fp(k,ivpx)-uu(1))**2 + (fp(k,ivpy)-uu(2))**2 + (fp(k,ivpz)-uu(3))**2)
+        dfp(k,iap) = dfp(k,iap) + 0.25*deltav*rho/rhops
+!
+!  Deplete gas of small grains.
+!        
+        if (lpscalar) then
+          if (lpscalar_nolog) then 
+            df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
+                rhop/rhops*1/fp(k,iap)*deltav*f(ix0,iy0,iz0,ilncc)
+          else
+            df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
+                rhop/rhops*1/fp(k,iap)*deltav
+          endif
+        endif
       enddo
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_apm/=0)  call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
-        if (idiag_ap2m/=0)  call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
+        if (idiag_apm/=0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
+        if (idiag_ap2m/=0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
       endif
 !
     endsubroutine dap_dt
