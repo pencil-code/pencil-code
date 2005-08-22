@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.252 2005-08-17 23:09:55 wlyra Exp $
+! $Id: equ.f90,v 1.253 2005-08-22 12:16:38 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -295,7 +295,7 @@ module Equ
       use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
                            lvisc_first, idiag_epsK
-      use Particles
+      use Particles_main
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.252 2005-08-17 23:09:55 wlyra Exp $")
+           "$Id: equ.f90,v 1.253 2005-08-22 12:16:38 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

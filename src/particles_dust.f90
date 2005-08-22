@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.11 2005-08-07 11:13:32 ajohan Exp $
+! $Id: particles_dust.f90,v 1.12 2005-08-22 12:16:38 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -11,10 +11,10 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 !***************************************************************
-
 module Particles
 
   use Cdata
+  use Particles_cdata
   use Particles_sub
   use Messages
 
@@ -22,13 +22,9 @@ module Particles
 
   include 'particles.h'
 
-  real, dimension (mpar_loc,mpvar) :: fp, dfp
-  integer, dimension (mpar_loc) :: ipar
-  integer :: npar_loc, npvar
-
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, rhop=0.0, eps_dtog=0.01
-  real :: dsnap_par_minor=0.0, nu_epicycle=0.0, nu_epicycle2=0.0
+  real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2
   logical :: ldragforce_gas=.false.
@@ -52,155 +48,6 @@ module Particles
   contains
 
 !***********************************************************************
-    subroutine particles_register_modules()
-!
-!  Register particle modules.
-!
-!  07-jan-05/anders: coded
-!
-      call register_particles()
-!
-    endsubroutine particles_register_modules
-!***********************************************************************
-    subroutine particles_rprint_list(lreset)
-!
-!  Read names of diagnostic particle variables to print out during run.
-!
-!  07-jan-05/anders: coded
-!
-      logical :: lreset
-!
-      if (lroot) open(3, file=trim(datadir)//'/index.pro', &
-          STATUS='old', POSITION='append')
-      call rprint_particles(lreset,LWRITE=lroot)
-      if (lroot) close(3)
-!
-    endsubroutine particles_rprint_list
-!***********************************************************************
-    subroutine particles_initialize_modules(lstarting)
-!
-!  Initialize particle modules.
-!
-!  07-jan-05/anders: coded
-!
-      logical :: lstarting
-!
-      call initialize_particles(lstarting)
-!
-    endsubroutine particles_initialize_modules
-!***********************************************************************
-    subroutine particles_init(f)
-!
-!  Set up initial conditios for particle modules.
-!
-!  07-jan-05/anders: coded
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      intent (in) :: f
-!
-      call init_particles(f)
-!
-    endsubroutine particles_init
-!***********************************************************************
-    subroutine particles_read_snapshot(filename)
-!
-!  Read particle snapshot from file.
-!
-!  07-jan-05/anders: coded
-!
-      character (len=*) :: filename
-!
-      call input_particles(filename,fp,npar_loc,ipar)
-!
-    endsubroutine particles_read_snapshot
-!***********************************************************************
-    subroutine particles_write_snapshot(chsnap,msnap,enum,flist)
-!
-!  Write particle snapshot to file.
-!
-!  07-jan-05/anders: coded
-!
-      integer :: msnap
-      logical :: enum
-      character (len=*) :: chsnap,flist
-      optional :: flist
-!
-      logical :: lsnap
-!
-      if (present(flist)) then
-        call wsnap_particles(chsnap,fp,msnap,enum,lsnap,dsnap_par_minor, &
-            npar_loc,ipar,flist)
-      else
-        call wsnap_particles(chsnap,fp,msnap,enum,lsnap,dsnap_par_minor, &
-            npar_loc,ipar)
-      endif
-!
-    endsubroutine particles_write_snapshot
-!***********************************************************************
-    subroutine particles_write_pdim(filename)
-!   
-!  Write npar and mpvar to file.
-!
-!  09-jan-05/anders: coded
-!
-      character (len=*) :: filename
-!
-      open(1,file=filename)
-        write(1,'(2i7)') npar, mpvar
-      close(1)
-!
-    endsubroutine particles_write_pdim
-!***********************************************************************
-    subroutine particles_timestep_first()
-!
-!  Setup dfp in the beginning of each itsub.
-!
-!  07-jan-05/anders: coded
-!
-      integer :: k
-!
-      if (itsub==1) then
-        do k=1,npar_loc
-          dfp(k,:)=0.
-        enddo
-      else
-        do k=1,npar_loc
-          dfp(k,:)=alpha(itsub)*dfp(k,:)
-        enddo
-      endif
-!
-    endsubroutine particles_timestep_first
-!***********************************************************************
-    subroutine particles_timestep_second()
-!
-!  Time evolution of particle variables.
-!
-!  07-jan-05/anders: coded
-!
-      integer :: k
-!
-      do k=1,npar_loc
-        fp(k,:) = fp(k,:) + dt_beta(itsub)*dfp(k,:)
-      enddo
-!
-    endsubroutine particles_timestep_second
-!***********************************************************************
-    subroutine particles_pde(f,df)
-!
-!  07-jan-05/anders: coded
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-!
-      intent (in) :: f
-!
-      call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
-      call dxxp_dt(f,fp,dfp)
-      call dvvp_dt(f,df,fp,dfp)
-!
-    endsubroutine particles_pde
-!***********************************************************************
     subroutine register_particles()
 !
 !  Set up indices for access to the fp and dfp arrays
@@ -215,21 +62,19 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.11 2005-08-07 11:13:32 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.12 2005-08-22 12:16:38 ajohan Exp $")
 !
 !  Indices for particle position.
 !
-      ixxp=1
-      ixp=1
-      iyp=2
-      izp=3
+      ixp=npvar+1
+      iyp=npvar+2
+      izp=npvar+3
 !
 !  Indices for particle velocity.
 !
-      ivvp=4
-      ivpx=4
-      ivpy=5
-      ivpz=6
+      ivpx=npvar+4
+      ivpy=npvar+5
+      ivpz=npvar+6
 !
 !  Increase npvar accordingly.
 !
@@ -314,7 +159,7 @@ module Particles
 !
     endsubroutine initialize_particles
 !***********************************************************************
-    subroutine init_particles(f)
+    subroutine init_particles(f,fp)
 !
 !  Initial positions and velocities of dust particles.
 !
@@ -326,12 +171,14 @@ module Particles
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
 !
       real, dimension (3) :: uup
       real :: r, p
       integer :: k
 !
       intent (in) :: f
+      intent (out) :: fp
 !
 !  Initial particle position.
 !
@@ -707,8 +554,12 @@ module Particles
       if (present(lwrite)) lwr=lwrite
       
       if (lwr) then
-        write(3,*) 'ixxp=',ixxp
-        write(3,*) 'ivvp=',ivvp
+        write(3,*) 'ixp=', ixp
+        write(3,*) 'iyp=', iyp
+        write(3,*) 'izp=', izp
+        write(3,*) 'ivpx=', ivpx
+        write(3,*) 'ivpy=', ivpy
+        write(3,*) 'ivpz=', ivpz
       endif
 !
 !  Reset everything in case of reset

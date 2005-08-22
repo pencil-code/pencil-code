@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.31 2005-08-15 10:50:56 mee Exp $
+! $Id: timestep.f90,v 1.32 2005-08-22 12:16:38 ajohan Exp $
 
 module Timestep
 
@@ -32,7 +32,7 @@ module Timestep
       use Mpicomm
       use Cdata
       use Equ
-      use Particles
+      use Particles_main
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df

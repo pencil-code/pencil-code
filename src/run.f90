@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.206 2005-08-17 23:09:55 wlyra Exp $
+! $Id: run.f90,v 1.207 2005-08-22 12:16:38 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -36,7 +36,7 @@
         use Dustvelocity, only: init_uud
         use Dustdensity, only: init_nd
         use Magnetic, only: pert_aa, rescaling
-        use Particles
+        use Particles_main
 !
         implicit none
 
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.206 2005-08-17 23:09:55 wlyra Exp $")
+             "$Id: run.f90,v 1.207 2005-08-22 12:16:38 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)

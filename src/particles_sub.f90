@@ -1,10 +1,11 @@
-! $Id: particles_sub.f90,v 1.11 2005-08-21 12:39:29 ajohan Exp $
+! $Id: particles_sub.f90,v 1.12 2005-08-22 12:16:38 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
 module Particles_sub
 
   use Cdata
+  use Particles_cdata
 
   implicit none
 

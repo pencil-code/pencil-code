@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.275 2005-08-17 23:09:55 wlyra Exp $
+! $Id: cdata.f90,v 1.276 2005-08-22 12:16:38 ajohan Exp $
 
 module Cdata
 
@@ -103,8 +103,6 @@ module Cdata
   integer :: mvar_io=0,dimensionality
   integer :: iinit
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0
-  integer :: ixxp=0,ixp=0,iyp=0,izp=0,ivvp=0,ivpx=0,ivpy=0,ivpz=0
-  character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'

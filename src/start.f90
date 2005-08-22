@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.147 2005-07-29 23:35:43 dobler Exp $
+! $Id: start.f90,v 1.148 2005-08-22 12:16:38 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -41,7 +41,7 @@
         use Dustvelocity, only: init_uud
 
         use Radiation,    only: init_rad, radtransfer
-        use Particles
+        use Particles_main
 !
         implicit none
 
@@ -86,7 +86,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.147 2005-07-29 23:35:43 dobler Exp $")
+             "$Id: start.f90,v 1.148 2005-08-22 12:16:38 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !

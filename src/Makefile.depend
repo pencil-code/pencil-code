@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.2 2005-08-15 14:12:43 mee Exp $
+### $Id: Makefile.depend,v 1.3 2005-08-22 12:16:38 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -36,10 +36,10 @@ fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM_FIX).o general.o
-param_io.o:  param_io.f90 cdata.o $(MPICOMM_FIX).o sub.o timestep.o $(TIMEAVG).o $(physics)
+param_io.o:  param_io.f90 cdata.o $(MPICOMM_FIX).o sub.o timestep.o $(TIMEAVG).o $(physics) $(PARTICLES_MAIN).o
 register.o:  register.f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o equ.o
 prints.o:    prints.f90 cdata.o sub.o param_io.o $(physics)
-equ.o:       equ.f90 cdata.o $(MPICOMM_FIX).o messages.o sub.o $(physics) boundcond.o $(GLOBAL).o 
+equ.o:       equ.f90 cdata.o $(MPICOMM_FIX).o messages.o sub.o $(physics) boundcond.o $(GLOBAL).o $(PARTICLES_MAIN).o
 boundcond.o: boundcond.f90 cdata.o messages.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 filter.o:    filter.f90 cdata.o sub.o boundcond.o
 initcond.o:  initcond.f90 cdata.o $(MPICOMM_FIX).o general.o sub.o $(EOS).o
@@ -70,8 +70,6 @@ $(CHIRAL).o:       chiral.h         $(CHIRAL).f90 cdata.o $(MPICOMM_FIX).o sub.o
 $(DUSTVELOCITY).o: dustvelocity.h   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM_FIX).o general.o sub.o initcond.o $(INITCOND_SPEC).o $(EOS).o $(HYDRO).o $(PSCALAR).o $(GRAVITY).o
 $(DUSTDENSITY).o:  dustdensity.h    $(DUSTDENSITY).f90 cdata.o $(MPICOMM_FIX).o sub.o initcond.o $(DUSTVELOCITY).o
 $(TESTFIELD).o:    testfield.h      $(TESTFIELD).f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o
-$(PARTICLES).o:    particles.h      $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o
-$(PARTICLES_SUB).o:                 $(PARTICLES_SUB).f90 cdata.o $(GLOBAL).o
 $(INTERSTELLAR).o: interstellar.h   $(INTERSTELLAR).f90 cdata.o $(MPICOMM_FIX).o sub.o $(INITCOND_SPEC).o $(EOS).o
 $(EOS).o:          eos.h            $(EOS).f90 cdata.o $(MPICOMM_FIX).o messages.o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
 $(IO).o:           io.h             $(IO).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o sub.o
@@ -81,5 +79,13 @@ $(POWER).o:        power_spectrum.h $(POWER).f90 cdata.o sub.o $(MPICOMM_FIX).o 
 $(STRUCT_FUNC).o:  struct_func.h    $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o
 $(SPECIAL).o:      special.h        $(SPECIAL).f90 cdata.o $(MPICOMM_FIX).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
 $(DEBUG).o:        debug_c.c Makefile.src Makefile.local
+#
+#  Particle modules
+#
+particles_cdata.o :    particles_cdata.f90 cdata.o
+$(PARTICLES_MAIN).o:   particles_main.h $(PARTICLES).o $(PARTICLES_SUB).o cdata.o
+$(PARTICLES_SUB).o:    $(PARTICLES_SUB).f90 cdata.o particles_cdata.o $(GLOBAL).o
+$(PARTICLES).o:        particles.h      particles_cdata.o $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o
+$(PARTICLES_RADIUS).o: particles_radius.h particles_cdata.o
 
 # DO NOT DELETE

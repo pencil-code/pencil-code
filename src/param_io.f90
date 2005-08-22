@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.207 2005-08-17 23:09:55 wlyra Exp $ 
+! $Id: param_io.f90,v 1.208 2005-08-22 12:16:38 ajohan Exp $ 
 
 module Param_IO
 
@@ -31,7 +31,7 @@ module Param_IO
   use Timeavg
   use Viscosity
   use Special
-  use Particles
+  use Particles_main
   use Shock
   use Messages
  
@@ -253,7 +253,7 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('special_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
-      call read_particles_init_pars(1,IOSTAT=ierr)
+      call read_particles_init_pars_wrapper(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('particles_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
@@ -402,7 +402,7 @@ module Param_IO
         call write_shear_init_pars(unit)
         call write_viscosity_init_pars(unit)
         call write_special_init_pars(unit)
-        call write_particles_init_pars(unit)
+        call write_particles_init_pars_wrapper(unit)
         call write_shock_init_pars(unit)
 !
         if (present(file)) then
@@ -535,7 +535,7 @@ module Param_IO
       if (ierr.ne.0) call sample_runpars('special_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
-      call read_particles_run_pars(1,IOSTAT=ierr)
+      call read_particles_run_pars_wrapper(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('particles_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
@@ -723,7 +723,8 @@ module Param_IO
         if (lshear        ) print*,'&shear_run_pars           /'
         if (lviscosity    ) print*,'&viscosity_run_pars       /'
         if (lspecial      ) print*,'&special_run_pars         /'
-        if (lparticles    ) print*,'&particles_run_pars       /'
+        if (lparticles       ) print*,'&particles_run_pars       /'
+        if (lparticles_radius) print*,'&particles_radius_run_pars       /'
         if (lshock        ) print*,'&shock_run_pars           /'
         print*,'------END sample namelist -------'
         print*
@@ -803,7 +804,7 @@ module Param_IO
         call write_shear_run_pars(unit)
         call write_viscosity_run_pars(unit)
         call write_special_run_pars(unit)
-        call write_particles_run_pars(unit)
+        call write_particles_run_pars_wrapper(unit)
         call write_shock_run_pars(unit)
 !
         if (present(file)) then
@@ -959,7 +960,7 @@ module Param_IO
         call write_shear_init_pars(1)
         call write_viscosity_init_pars(1)
         call write_special_init_pars(1)
-        call write_particles_init_pars(1)
+        call write_particles_init_pars_wrapper(1)
         call write_shock_init_pars(1)
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
@@ -998,7 +999,7 @@ module Param_IO
         call read_shear_init_pars(1)
         call read_viscosity_init_pars(1)
         call read_special_init_pars(1)
-        call read_particles_init_pars(1)
+        call read_particles_init_pars_wrapper(1)
         call read_shock_init_pars(1)
         close(1)
 !
@@ -1038,7 +1039,7 @@ module Param_IO
         call write_shear_run_pars(1)
         call write_viscosity_run_pars(1)
         call write_special_run_pars(1)
-        call write_particles_run_pars(1)
+        call write_particles_run_pars_wrapper(1)
         call write_shock_run_pars(1)
         close(1)
       endif
