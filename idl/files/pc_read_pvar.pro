@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.9 2005-06-21 11:24:59 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.10 2005-08-22 13:51:46 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -48,15 +48,19 @@ INIT_3VECTOR = 'fltarr(npar,3)*one'
 ;
 ;  Go through all possible particle variables
 ;
-varcontent[ixxp].variable = 'Particle position (xx)'
-varcontent[ixxp].idlvar   = 'xx'
-varcontent[ixxp].idlinit  = INIT_3VECTOR
-varcontent[ixxp].skip     = 2
+varcontent[ixp].variable = 'Particle position (xx)'
+varcontent[ixp].idlvar   = 'xx'
+varcontent[ixp].idlinit  = INIT_3VECTOR
+varcontent[ixp].skip     = 2
 
-varcontent[ivvp].variable = 'Particle velocity (vv)'
-varcontent[ivvp].idlvar   = 'vv'
-varcontent[ivvp].idlinit  = INIT_3VECTOR
-varcontent[ivvp].skip     = 2
+varcontent[ivpx].variable = 'Particle velocity (vv)'
+varcontent[ivpx].idlvar   = 'vv'
+varcontent[ivpx].idlinit  = INIT_3VECTOR
+varcontent[ivpx].skip     = 2
+
+varcontent[iap].variable = 'Particle radius (a)'
+varcontent[iap].idlvar   = 'a'
+varcontent[iap].idlinit  = INIT_SCALAR
 
 varcontent[0].variable    = 'UNKNOWN'
 varcontent[0].idlvar      = 'UNKNOWN'
