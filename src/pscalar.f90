@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.55 2005-07-05 16:21:43 mee Exp $
+! $Id: pscalar.f90,v 1.56 2005-08-22 15:08:51 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cc,cc1,glncc,uglncc,del2lncc,hlncc
+! PENCILS PROVIDED cc,cc1,lncc,glncc,uglncc,del2lncc,hlncc
 !
 !***************************************************************
 
@@ -40,10 +40,9 @@ module Pscalar
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
-  logical :: lpscalar_turb_diff=.false.
 
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lpscalar_turb_diff
+       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
@@ -85,7 +84,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.55 2005-07-05 16:21:43 mee Exp $")
+           "$Id: pscalar.f90,v 1.56 2005-08-22 15:08:51 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -244,7 +243,7 @@ module Pscalar
       intent(in) :: f
       intent(inout) :: p
 ! cc
-      if (lpencil(i_cc)) p%cc=exp(f(l1:l2,m,n,icc))
+      if (lpencil(i_cc)) p%cc=exp(f(l1:l2,m,n,ilncc))
 ! cc1
       if (lpencil(i_cc1)) p%cc1=1/p%cc
 ! glncc
@@ -266,7 +265,6 @@ module Pscalar
 !   6-jul-02/axel: coded
 !
       use Sub
-      use Hydro, only: nu_turb
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -299,10 +297,9 @@ module Pscalar
 !
 !  diffusion operator
 !
-        if (lpscalar_turb_diff) pscalar_diff=nu_turb
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
-          call dot_mn(p%glncc+p%glnrho,glncc,diff_op)
+          call dot_mn(p%glncc+p%glnrho,p%glncc,diff_op)
           diff_op=diff_op+p%del2lncc
           df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + pscalar_diff*diff_op
         endif
