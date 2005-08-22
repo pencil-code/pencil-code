@@ -1,4 +1,5 @@
-! $Id: viscosity.f90,v 1.5 2005-07-22 22:38:15 dobler Exp $
+
+! $Id: viscosity.f90,v 1.6 2005-08-22 15:37:36 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -26,7 +27,7 @@ module Viscosity
 
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
-  real :: nu_mol=0., nu_hyper3=0., nu_shock=0.
+  real :: nu_mol=0., nu_hyper3=0., nu_shock=0., alpha_sksv=0.
 
   ! dummy logical
   logical :: lvisc_first=.false.
@@ -40,13 +41,14 @@ module Viscosity
   logical :: lvisc_hyper3_nu_const=.false.
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
+  logical :: lvisc_alpha=.false.
 
   ! input parameters
   !integer :: dummy1
   !namelist /viscosity_init_pars/ dummy1
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol, C_smag, nu_shock
+  namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol, C_smag, alpha_sksv,nu_shock
  
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK=0,idiag_epsK_LES=0,idiag_epsK2=0
@@ -76,7 +78,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.5 2005-07-22 22:38:15 dobler Exp $")
+           "$Id: viscosity.f90,v 1.6 2005-08-22 15:37:36 wlyra Exp $")
 
       ivisc(1)='nu-const'
 
@@ -110,6 +112,7 @@ module Viscosity
       lvisc_hyper3_nu_const=.false.
       lvisc_smag_simplified=.false.
       lvisc_smag_cross_simplified=.false.
+      lvisc_alpha=.false.
 
       do i=1,nvisc_max
         select case (ivisc(i))
@@ -148,6 +151,9 @@ module Viscosity
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
           if (nu/=0.) lvisc_smag_cross_simplified=.true.
+        case ('alpha-recipe')
+           if (lroot) print*,'viscous force: Shakura-Sunayev alpha recipe'
+           if (alpha_sksv/=0.) lvisc_alpha=.true.
         case ('')
           ! do nothing
         case default
@@ -395,13 +401,17 @@ module Viscosity
       use Mpicomm
       use Sub
       use EquationOfState, only: rho0
+      use Global, only: get_global
 !
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
       real, dimension (nx,3) :: fvisc,tmp,tmp2
       real, dimension (nx) :: ufvisc,rufvisc,murho1,nu_smag, diffus_total
+      real, dimension (nx) :: nu_sksv,rr_mn,gr
+      real :: alpha_sksv
       integer :: i,j
 !
       intent (in) :: f,p
@@ -445,8 +455,9 @@ module Viscosity
           fvisc=fvisc+nu*(p%del2u+1./3.*p%graddivu)
         endif
         if (lfirst.and.ldt) diffus_total=diffus_total+nu
-      endif
+     endif
 !
+
       if (lvisc_hyper3_simplified) then
 !
 !  viscous force: nu_hyper3*del6v (not momentum-conserving)
@@ -533,6 +544,41 @@ module Viscosity
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
       endif
+
+     if (lvisc_alpha) then
+!
+!  Standard alpha-viscosity recipe of Shakura and Sunyaev (1973).
+!  viscous force: nu_sksv*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_sksv
+!  where nu_sksv = alpha * cs2 / Omega,
+!  and alpha is a dimensionless parameter. 
+!  ps: reduces to rho*nu=const if they follow complementary power laws
+!
+        if (ldensity) then
+!
+           call get_global(tmp,m,n,'gg')
+           gr = sqrt(tmp(:,1)**2+tmp(:,2)**2+tmp(:,3)**2)
+           alpha_sksv = nu
+           rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi 
+
+           nu_sksv = alpha_sksv * p%cs2 / sqrt(gr/rr_mn)
+!
+!Calculate viscous force         
+!
+           call multsv_mn(nu_sksv,p%sglnrho,tmp2)
+           call multsv_mn(nu_sksv,p%del2u+1./3.*p%graddivu,tmp)
+           fvisc=fvisc+2*tmp2+tmp
+           !call grad(nu_sksv,tmp)
+           !call multmv_mn(p%sij,tmp,tmp2)
+
+           !fvisc=fvisc + nu_sksv*(p%del2u+1./3.*p%graddivu + 2*p%sglnrho) + 2*tmp2
+           
+           if (lfirst.and.ldt) diffus_total=diffus_total+nu_sksv
+        else
+           if (lfirstpoint) print*, 'calc_viscous_force: '// &
+                "ldensity better be .true. for ivisc='alpha-recipe'"
+        endif
+     endif
+
 !
 !  Add viscosity to equation of motion
 !
