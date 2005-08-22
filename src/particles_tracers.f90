@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.6 2005-08-22 12:16:38 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.7 2005-08-22 14:05:19 ajohan Exp $
 !
 !  This module takes care of everything related to tracer particles
 !
@@ -51,7 +51,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.6 2005-08-22 12:16:38 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.7 2005-08-22 14:05:19 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -212,7 +212,7 @@ module Particles
 !  Then set particle velocity equal to the local gas velocity.
 !       
       do k=1,npar_loc
-        call interpolate_3d_1st(f,iux,fp(k,ixp:izp),uu)
+        call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uu)
         dfp(k,ixp:iyp) = dfp(k,ixp:iyp) + uu
       enddo
 !

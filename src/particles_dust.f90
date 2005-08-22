@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.12 2005-08-22 12:16:38 ajohan Exp $
+! $Id: particles_dust.f90,v 1.13 2005-08-22 14:05:19 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.12 2005-08-22 12:16:38 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.13 2005-08-22 14:05:19 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -260,7 +260,7 @@ module Particles
         if (lroot) &
             print*, 'init_particles: Particle velocity equal to gas velocity'
         do k=1,npar_loc
-          call interpolate_3d_1st(f,iux,fp(k,ixp:izp),uup)
+          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup)
           fp(k,ivpx:ivpz) = uup
         enddo
 
@@ -372,7 +372,7 @@ module Particles
 !  Use interpolation to calculate gas velocity at position of particles.
 !          
         do k=1,npar_loc
-          call interpolate_3d_1st(f,iux,fp(k,ixp:izp),uup,ipar(k))
+          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ipar(k))
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tausp1*(fp(k,ivpx:ivpz)-uup)
         enddo
 !

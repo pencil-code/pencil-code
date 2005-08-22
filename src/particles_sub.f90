@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.12 2005-08-22 12:16:38 ajohan Exp $
+! $Id: particles_sub.f90,v 1.13 2005-08-22 14:05:19 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -549,7 +549,7 @@ module Particles_sub
 !
     endsubroutine find_lowest_cornerpoint
 !***********************************************************************
-    subroutine interpolate_3d_1st(f,ii0,xxp,gp,ipar)
+    subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using first order formula 
@@ -565,15 +565,15 @@ module Particles_sub
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (3) :: xxp, gp
-      integer :: ii0
+      real, dimension (3) :: xxp
+      integer :: ii0, ii1
+      real, dimension (ii1-ii0+1) :: gp
       integer, optional :: ipar
 !
-      real, dimension (3) :: g1, g2, g3, g4, g5, g6, g7, g8
+      real, dimension (ii1-ii0+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer, dimension (3) :: ixx0
-      integer :: ii1
       logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ii0
@@ -626,7 +626,6 @@ module Particles_sub
 !
 !  Function values at all corners.
 !
-      ii1=ii0+2
       g1=f(ixx0(1)+1,ixx0(2)+1,ixx0(3)+1,ii0:ii1)
       g2=f(ixx0(1)  ,ixx0(2)+1,ixx0(3)+1,ii0:ii1)
       g3=f(ixx0(1)+1,ixx0(2)  ,ixx0(3)+1,ii0:ii1)
