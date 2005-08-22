@@ -3,7 +3,6 @@
 ### Included by `Makefile'
 ###
 
-#MPICOMM   =   mpicomm
 MPICOMM   = nompicomm
 GLOBAL    =   global_gg_halo
 
@@ -17,3 +16,4 @@ PSCALAR   = nopscalar
 GRAVITY   =   grav_r
 FORCING   = noforcing
 SHEAR     = noshear
+SHOCK     =   shock

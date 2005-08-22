@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.7 2005-08-19 10:08:02 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.8 2005-08-22 17:58:12 wlyra Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -4.,-4.,-4.,       ! first corner of box
   xyz1  =  4., 4., 4.,       ! second corner of box
@@ -23,17 +23,18 @@
   cs0=0.05 ! 0.7 km/s at Jupiter's orbit. 
            ! in these units, Rj=1,Omega=1.,[v]~13km/s
   !rho0=1.,
+  llocal_iso = T
 /
 &hydro_init_pars
   inituu='keplerian'
   !if corotational
   !Omega = 2.51588    !for jupiter 5.2 AU
-  !Omega = 1 
+  !Omega = 1. 
   !lcentrifugal_force = T
 /
 &density_init_pars
   initlnrho='solar_nebula'
-  lnrho_const=1
+  lnrho_const=0.21
   wdamp=0.1
   plaw=0.5
   !gap=0.25
