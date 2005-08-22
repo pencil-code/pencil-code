@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.75 2005-08-18 06:54:12 wlyra Exp $
+! $Id: grav_r.f90,v 1.76 2005-08-22 17:15:57 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -81,7 +81,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.75 2005-08-18 06:54:12 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.76 2005-08-22 17:15:57 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -561,7 +561,7 @@ module Gravity
          if (headtt) print*,'gravity_companion: inertial frame'
          !add these three to grav_run_pars later
          Rc = sqrt(Rx**2+Ry**2+Rz**2)
-         Omega_inertial = sqrt((g0+gc)/Rc**3)
+         Omega_inertial = sqrt(g0/Rc**3)
          phase = acos(Rx/Rc)
 
          phi = Omega_inertial*t + phase  
@@ -576,7 +576,6 @@ module Gravity
       g_companion=-gc*rrc**(nc-1) &
           *(rrc**nc+b**nc)**(-1./nc-1.)
 
-         if (headtt) print*,'gravity_companion: corotational frame'
          ggc(:,1) = (x(l1:l2)-ax)/(rrc)*g_companion 
          ggc(:,2) = (y(  m  )-ay)/(rrc)*g_companion
          ggc(:,3) = (z(  n  )-az)/(rrc)*g_companion

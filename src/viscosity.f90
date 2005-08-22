@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.6 2005-08-22 15:37:36 wlyra Exp $
+! $Id: viscosity.f90,v 1.7 2005-08-22 17:15:57 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -27,7 +27,7 @@ module Viscosity
 
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
-  real :: nu_mol=0., nu_hyper3=0., nu_shock=0., alpha_sksv=0.
+  real :: nu_mol=0., nu_hyper3=0., nu_shock=0.
 
   ! dummy logical
   logical :: lvisc_first=.false.
@@ -48,7 +48,7 @@ module Viscosity
   !namelist /viscosity_init_pars/ dummy1
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol, C_smag, alpha_sksv,nu_shock
+  namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol, C_smag,nu_shock
  
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK=0,idiag_epsK_LES=0,idiag_epsK2=0
@@ -78,7 +78,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.6 2005-08-22 15:37:36 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.7 2005-08-22 17:15:57 wlyra Exp $")
 
       ivisc(1)='nu-const'
 
@@ -153,7 +153,7 @@ module Viscosity
           if (nu/=0.) lvisc_smag_cross_simplified=.true.
         case ('alpha-recipe')
            if (lroot) print*,'viscous force: Shakura-Sunayev alpha recipe'
-           if (alpha_sksv/=0.) lvisc_alpha=.true.
+           if (nu/=0.) lvisc_alpha=.true.
         case ('')
           ! do nothing
         case default
@@ -396,6 +396,7 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 !   9-jul-04/nils: added Smagorinsky viscosity
+!  22-aug-05/wlad: added Shakura-Sunyaev viscosity
 !
       use Cdata
       use Mpicomm
