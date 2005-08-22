@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.1 2005-08-22 12:16:38 ajohan Exp $
+! $Id: particles_main.f90,v 1.2 2005-08-22 13:49:00 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -55,6 +55,20 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       logical :: lstarting
+!
+!  Check if there is enough total space allocated for particles.
+!
+      if (mpar_loc-ncpus*npar_mig<npar/ncpus) then
+        if (lroot) then
+          print*, 'particles_initialize_modules: '// &
+          'total number of particle slots available at the processors '// &
+          'is smaller than the number of particles!'
+          print*, 'particles_initialize_modules: npar/ncpus=', npar/ncpus
+          print*, 'particles_initialize_modules: mpar_loc-ncpus*npar_mig=', &
+              mpar_loc-ncpus*npar_mig
+        endif
+        call fatal_error('particles_initialize_modules','')
+      endif
 !
       call initialize_particles(lstarting)
       if (lparticles_radius) call initialize_particles_radius(lstarting)
