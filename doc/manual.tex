@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.297 2005-08-19 13:34:05 theine Exp $
+%%  CVS: $Id: manual.tex,v 1.298 2005-08-23 10:59:31 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-08-19 13:34:05 $ $,~ $ $Revision: 1.297 $ $}
+%\date{$ $Date: 2005-08-23 10:59:31 $ $,~ $ $Revision: 1.298 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-08-19 13:34:05 $ $,~ $ $Revision: 1.297 $ $}\\
+  \emph{$ $Date: 2005-08-23 10:59:31 $ $,~ $ $Revision: 1.298 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3862,6 +3862,100 @@ where $K_{ij}=\tau\tilde{K}_{ij}$ would be the original diffusion tensor
 of \Eq{Difftensor}, if the time derivative were negligible.
 Further details are described in Snodin et al.\ (2005).
 
+
+\subsection{Particles}
+\index{Particles}
+
+Particles are entities that each have a space coordinate and a velocity vector,
+where a fluid only has a velocity vector field (the continuity equation of a
+fluid in some way corresponds to the space coordinate of particles). In the
+code particles are present either as tracer particles or as dust particles
+
+\subsubsection{Tracer particles}
+
+Tracer particles always have the local velocity of the gas. The dynamical
+equations are thus
+\begin{equation}
+  \frac{\partial \vec{x}_i}{\partial t} = \vec{u} \, ,
+\end{equation}
+where the index $i$ runs over all particles. Here $\vec{u}$ is the gas velocity
+at the position of the particle. A simple first order interpolation scheme is
+used to aquire this velocity outside the grid points.
+
+The sample run \file{samples/dust-vortex} contains the latest setup for
+tracer particles.
+
+\subsubsection{Dust particles}
+
+Dust particles are allowed to have a velocity that is not similar to the gas.
+\begin{equation}
+  \frac{\partial \vec{x}_i}{\partial t} = \vec{v}_i \, ,
+\end{equation}
+The particle velocity follows an equation of motion similar to a fluid, only
+there is no advection term. Dust particles also experience a drag force from
+the gas (proportional to the velocity difference between a particle and the
+gas).
+\begin{equation}
+  \frac{\partial \vec{v}_i}{\partial t} = \ldots -\frac{1}{\tau_{\rm s}}
+  (\vec{v}_i-\vec{u}) \, .
+\end{equation}
+Here $\tau_{\rm s}$ is the stopping time of the dust particle. A first order
+interpolation scheme is used to calculate the gas velocity $\vec{u}$ at the
+position of the particle. The particle description is the proper description of
+dust grains, since they do not feel any pressure forces (too low number
+density). Thus there is no guarantee that the grains present within a given
+volume will be equilibrated with each other, although drag force may work for
+small grains to achieve that. Larger grains (meter-sized in protoplanetary
+discs) must be treated as individual particles.
+
+The sample run \file{samples/random_uu_particles} contains the latest setup for
+dust particles.
+
+\subsubsection{Particles in parallel}
+
+The particle variables (e.g. $\vec{x}_i$ and $\vec{v}_i$) are kept in the arrays
+\code{fp} and \code{dfp}.  For parallel runs, particles must be able to move
+from processor to processor as they pass out of the $(x,y,z)$-interval of the
+local processor. Since not all particles are present at the same processor at
+the same time (hopefully), there is some memory optimisation in making
+\code{fp} not big enough to contain all the particles at once. This is achieved
+by setting the code variable \code{mpar_loc} less than \code{npar} in
+\code{cparam.local} for parallel runs. When running with millions of particles,
+this trick is necessary to keep the memory need of the code down.
+
+The communication of migrating particles between the processors happens as
+follows (see the subroutine \code{redist_particles_procs} in
+\code{particles_sub.f90}):
+\begin{enumerate}
+  \item In the beginning of each time-step all processors check if any of their
+      particles have crossed the local $(x,y,z)$-interval. These particles are
+      called migrating particles.
+  \item The index number of the receiving processor is then calculated. This
+      requires some assumption about the grid on other processors and will
+      currently not work for nonequidistant grids. Particles don't always pass
+      to neighbouring processors as the global boundary conditions may send
+      them to the other side of the global domains (periodic boundary
+      conditions).
+  \item The migrating particle information is copied to the end of $\code{fp}$,
+      and the empty spot left behind is filled up with the particle of the
+      highest index number currently present at the processor.
+  \item Once the number of migrating particles is known, this information is
+      shared between the processors so that they all know what they have to
+      receive.
+  \item The communication happens as directed MPI communication. That means
+      that processors 0 and 1 can share migrating particles at the
+      same time as processors 2 and 3 do it. The communication happens from a
+      chunk at the end of \code{fp} (migrating particles) to a chunk that is
+      present just after the particle of the highest index number that is
+      currently at the receiving processor. Thus the particles are put directly
+      at their final destination, and the migrating particle information at
+      the source processor is simply overwritten by other migrating particles
+      at the next time-step.
+  \item Once a particle has been received, the code checks if it really belongs
+      to the local $(x,y,z)$-interval. If not, the code dies with a warning.
+      This has turned out to be valuable for debugging.
+\end{enumerate}
+
 % ====================================================================== %
 
 \section{Troubleshooting / Frequently Asked Questions}
@@ -4788,7 +4882,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-08-19 13:34:05 $ $,~ $ $Revision: 1.297 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-08-23 10:59:31 $ $,~ $ $Revision: 1.298 $ $}
 
 \section{Timings}
 
@@ -7876,7 +7970,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.297 2005-08-19 13:34:05 theine Exp $ $}
+$ $Id: manual.tex,v 1.298 2005-08-23 10:59:31 ajohan Exp $ $}
 
 
 \end{document}
