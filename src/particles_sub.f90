@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.14 2005-08-23 12:04:23 ajohan Exp $
+! $Id: particles_sub.f90,v 1.15 2005-08-23 16:39:07 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -14,8 +14,9 @@ module Particles_sub
   public :: input_particles, output_particles
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
-  public :: sum_par_name, find_lowest_cornerpoint, interpolate_3d_1st
+  public :: sum_par_name, sum_par_name_nw, interpolate_3d_1st
   public :: map_xxp_vvp_grid, map_xxp_grid
+  public :: find_lowest_cornerpoint, find_closest_gridpoint
 
   contains
 
@@ -505,6 +506,36 @@ module Particles_sub
       endif
 !
     endsubroutine sum_par_name
+!***********************************************************************
+    subroutine sum_par_name_nw(a,iname,lsqrt)
+!
+!  successively calculate sum of a, which is supplied at each call.
+!  Works for particle diagnostics.
+!
+!  22-aug-05/anders: adapted from sum_par_name
+!
+      use Cdata
+!
+      real, dimension (:) :: a
+      integer :: iname
+      logical, optional :: lsqrt
+!
+      if (iname/=0) then
+!
+        fname(iname)=0.
+        fname(iname)=fname(iname)+sum(a)
+!
+!  set corresponding entry in itype_name
+!
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_sum_sqrt
+        else
+          itype_name(iname)=ilabel_sum
+        endif
+!
+      endif
+!
+    endsubroutine sum_par_name_nw
 !***********************************************************************
     subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,ipar)
 !
