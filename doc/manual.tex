@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.300 2005-08-23 16:15:31 bingert Exp $
+%%  CVS: $Id: manual.tex,v 1.301 2005-08-23 16:25:12 bingert Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -105,7 +105,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage[dvipdfm]{hyperref}
+\usepackage{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-08-23 16:15:31 $ $,~ $ $Revision: 1.300 $ $}
+%\date{$ $Date: 2005-08-23 16:25:12 $ $,~ $ $Revision: 1.301 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-08-23 16:15:31 $ $,~ $ $Revision: 1.300 $ $}\\
+  \emph{$ $Date: 2005-08-23 16:25:12 $ $,~ $ $Revision: 1.301 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3553,7 +3553,7 @@ Shock viscosity, as it is used here and also in the Stagger Code of {\AA}ke Nord
 is proportional to positive flow convergence, maximum over
 five zones, and smoothed to second order,
 \begin{equation}
-\zeta_{\rm shock}=c_{\rm shock}\left<\max_5[(-\Div\uv)_+]\right>*min(\delta x,\delta y,\delta z),
+\zeta_{\rm shock}=c_{\rm shock}\left<\max_5[(-\Div\uv)_+]\right>(\min(\delta x,\delta y,\delta z))^2,
 \end{equation}
 where $c_{\rm shock}$ is a constant defining the strength of the shock viscosity.
 In the code this dimensionless coefficient is called \code{nu_shock}, and it
@@ -4884,7 +4884,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-08-23 16:15:31 $ $,~ $ $Revision: 1.300 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-08-23 16:25:12 $ $,~ $ $Revision: 1.301 $ $}
 
 \section{Timings}
 
@@ -7972,7 +7972,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.300 2005-08-23 16:15:31 bingert Exp $ $}
+$ $Id: manual.tex,v 1.301 2005-08-23 16:25:12 bingert Exp $ $}
 
 
 \end{document}
