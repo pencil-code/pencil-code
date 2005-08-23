@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.14 2005-08-22 15:09:42 ajohan Exp $
+! $Id: particles_dust.f90,v 1.15 2005-08-23 16:42:00 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -32,18 +32,18 @@ module Particles
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, nu_epicycle, rhop, eps_dtog
+      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, nu_epicycle, rhop_tilde, eps_dtog
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, nu_epicycle, &
-      ldragforce_gas, rhop, eps_dtog, tausgmin, cdtp
+      ldragforce_gas, rhop_tilde, eps_dtog, tausgmin, cdtp
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
+  integer :: idiag_rhopm=0, idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
 
   contains
 
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.14 2005-08-22 15:09:42 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.15 2005-08-23 16:42:00 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -131,18 +131,22 @@ module Particles
 !
 !  Calculate mass density per particle (for back-reaction drag force on gas).
 !
-      if (rhop==0.0) then
-        rhom=sqrt(2*pi)*1.0/Lz   ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
-        rhop=eps_dtog*rhom*nxgrid*nygrid*nzgrid/npar  ! rhop*N_cell=eps*rho
+      if (rhop_tilde==0.0) then
+        if (lgrav) then
+          rhom=sqrt(2*pi)*1.0/Lz   ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
+        else
+          rhom=1.0
+        endif
+        rhop_tilde=eps_dtog*rhom*nxgrid*nygrid*nzgrid/npar ! rhop*N_cell=eps*rho
         if (lroot) then
           print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
           print*, 'initialize_particles: '// &
-            'mass density per particle rhop=', rhop
+            'mass density per particle rhop_tilde=', rhop_tilde
         endif
       else
         if (lroot) print*, 'initialize_particles: '// &
-            'mass density per particle rhop=', rhop
+            'mass density per particle rhop_tilde=', rhop_tilde
       endif
 !
 !  Calculate nu_epicycle**2 for gravity.
@@ -398,7 +402,7 @@ module Particles
             else
               rho=exp(f(l1:l2,m,n,ilnrho))
             endif
-            tausg1 = rhop*np*tausp1/rho
+            tausg1 = rhop_tilde*np*tausp1/rho
 !
 !  Minimum friction time of the gas.
 !            
@@ -458,6 +462,7 @@ module Particles
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_rhopm/=0) call sum_par_name_nw(4/3.*pi*rhops*fp(1:npar_loc,iap)**3*np_tilde,idiag_rhopm)
         if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
             idiag_npmin/=0 .or. idiag_rhopmax/=0) then
           if (.not. ldragforce_gas) then
@@ -475,7 +480,7 @@ module Particles
             if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
             if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
             if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
-            if (idiag_rhopmax/=0) call max_mn_name(rhop*np,idiag_rhopmax)
+            if (idiag_rhopmax/=0) call max_mn_name(rhop_tilde*np,idiag_rhopmax)
             if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
           enddo
         endif
@@ -570,7 +575,7 @@ module Particles
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
+        idiag_rhopm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -594,6 +599,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'np2m',idiag_np2m)
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
+        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_rhopm)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
       enddo
 !
