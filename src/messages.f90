@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.3 2005-07-05 16:21:42 mee Exp $
+! $Id: messages.f90,v 1.4 2005-08-23 16:40:21 ajohan Exp $
 !
 !  This module takes care of messages.
 !
@@ -99,7 +99,7 @@ module Messages
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
         write (*,*) trim(message)//" occured at "//trim(location)
-!  
+!
         if (ldie_onfatalerror) call die_gracefully
 !
       endif
