@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.13 2005-08-22 14:05:19 ajohan Exp $
+! $Id: particles_sub.f90,v 1.14 2005-08-23 12:04:23 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -506,49 +506,6 @@ module Particles_sub
 !
     endsubroutine sum_par_name
 !***********************************************************************
-    subroutine find_lowest_cornerpoint(xxp,ix0,iy0,iz0)
-!
-!  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
-!  surrounding the point xxp.
-!
-!  23-jan-05/anders: coded
-!
-      use Cdata
-      use Global
-      use Mpicomm, only: stop_it
-!
-      real, dimension(3) :: xxp
-      integer :: ix0, iy0, iz0
-!
-      real, save :: dx1, dy1, dz1
-      logical, save :: lfirstcall=.true.
-!
-      intent(in)  :: xxp
-      intent(out) :: ix0, iy0, iz0
-!
-      ix0=4; iy0=4; iz0=4
-!
-      if (lfirstcall) then
-        if (.not. all(lequidist)) then
-          print*, 'find_lowest_cornerpoint: only works for equidistant grid!'
-          call stop_it('find_lowest_cornerpoint')
-        endif
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
-      endif
-!      
-      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
-      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
-      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
-!
-!      call set_global(1.0,iy0,iz0,'nd',ix0)
-!
-      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
-      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
-      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
-!
-    endsubroutine find_lowest_cornerpoint
-!***********************************************************************
     subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
@@ -721,6 +678,81 @@ module Particles_sub
       call set_global_point(vvp,ix0,iy0,iz0,'uupsum')
 !
     endsubroutine map_xxp_vvp_grid
+!***********************************************************************
+    subroutine find_lowest_cornerpoint(xxp,ix0,iy0,iz0)
+!
+!  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
+!  surrounding the point xxp.
+!
+!  23-jan-05/anders: coded
+!
+      use Cdata
+      use Messages, only: fatal_error
+!
+      real, dimension(3) :: xxp
+      integer :: ix0, iy0, iz0
+!
+      real, save :: dx1, dy1, dz1
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: xxp
+      intent(out) :: ix0, iy0, iz0
+!
+      ix0=4; iy0=4; iz0=4
+!
+      if (lfirstcall) then
+        if (.not. all(lequidist)) then
+          print*, 'find_lowest_cornerpoint: only works for equidistant grid!'
+          call fatal_error('find_lowest_cornerpoint','')
+        endif
+        dx1=1/dx; dy1=1/dy; dz1=1/dz
+        lfirstcall=.false.
+      endif
+!      
+      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
+      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
+      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
+!
+      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
+      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
+      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
+!
+    endsubroutine find_lowest_cornerpoint
+!***********************************************************************
+    subroutine find_closest_gridpoint(xxp,ix0,iy0,iz0)
+!
+!  Find index (ix0, iy0, iz0) of closest grid point to the point xxp.
+!
+!  23-aug-05/anders: coded
+!
+      use Cdata
+      use Messages, only: fatal_error
+!
+      real, dimension(3) :: xxp
+      integer :: ix0, iy0, iz0
+!
+      real, save :: dx1, dy1, dz1
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: xxp
+      intent(out) :: ix0, iy0, iz0
+!
+      ix0=4; iy0=4; iz0=4
+!
+      if (lfirstcall) then
+        if (.not. all(lequidist)) then
+          print*, 'find_closeset_gridpoint: only works for equidistant grid!'
+          call fatal_error('find_closest_gridpoint','')
+        endif
+        dx1=1/dx; dy1=1/dy; dz1=1/dz
+        lfirstcall=.false.
+      endif
+!      
+      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
+      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
+      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
+!
+    endsubroutine find_closest_gridpoint
 !***********************************************************************
 
 endmodule Particles_sub
