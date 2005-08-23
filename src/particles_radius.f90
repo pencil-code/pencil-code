@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.3 2005-08-22 15:10:18 ajohan Exp $
+! $Id: particles_radius.f90,v 1.4 2005-08-23 12:04:52 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -50,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.3 2005-08-22 15:10:18 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.4 2005-08-23 12:04:52 ajohan Exp $")
 !
 !  Indix for particle radius.
 !
@@ -120,7 +120,7 @@ module Particles_radius
       real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
       real, dimension (3) :: uu
-      real :: rho, deltav
+      real :: rho, deltav, cc
       integer :: k, ix0, iy0, iz0
 !
       intent (in) :: f, fp
@@ -129,23 +129,23 @@ module Particles_radius
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
       do k=1,npar_loc
-        call find_lowest_cornerpoint(fp(k,ixp:izp),ix0,iy0,iz0)
+        call find_closest_gridpoint(fp(k,ixp:izp),ix0,iy0,iz0)
         rho=f(ix0,iy0,iz0,ilnrho)
         if (.not. ldensity_nolog) rho=exp(rho)
         uu=f(ix0,iy0,iz0,iux:iuz)
-        deltav=sqrt( (fp(k,ivpx)-uu(1))**2 + (fp(k,ivpy)-uu(2))**2 + (fp(k,ivpz)-uu(3))**2)
-        dfp(k,iap) = dfp(k,iap) + 0.25*deltav*rho/rhops
+        deltav=sqrt( (fp(k,ivpx)-uu(1))**2 + (fp(k,ivpy)-uu(2))**2 + (fp(k,ivpz)-uu(3))**2 )
+        cc=f(ix0,iy0,iz0,ilncc)
+        if (.not. lpscalar_nolog) cc=exp(cc)
+        dfp(k,iap) = dfp(k,iap) + 0.25*deltav*cc*rho/rhops
 !
 !  Deplete gas of small grains.
 !        
-        if (lpscalar) then
-          if (lpscalar_nolog) then 
-            df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
-                rhop/rhops*1/fp(k,iap)*deltav*f(ix0,iy0,iz0,ilncc)
-          else
-            df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
-                rhop/rhops*1/fp(k,iap)*deltav
-          endif
+        if (lpscalar_nolog) then 
+          df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
+              rhop/rhops*1/fp(k,iap)*deltav*cc
+        else
+          df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
+              rhop/rhops*1/fp(k,iap)*deltav
         endif
       enddo
 !
