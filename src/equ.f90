@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.253 2005-08-22 12:16:38 ajohan Exp $
+! $Id: equ.f90,v 1.254 2005-08-23 16:39:40 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.253 2005-08-22 12:16:38 ajohan Exp $")
+           "$Id: equ.f90,v 1.254 2005-08-23 16:39:40 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -883,7 +883,7 @@ f_loop: do iv=1,mvar
       deallocate(fname_ref)
       deallocate(f_other)
 !
-! Return the code to its former mortal state
+!  Return the code to its former mortal state
 !
       call life_support_off
 !
