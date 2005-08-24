@@ -21,6 +21,4 @@ VISCOSITY =   viscosity
 DUSTDENSITY  = nodustdensity
 DUSTVELOCITY = nodustvelocity
 
-PARTICLES_MAIN=   particles_main
-PARTICLES     =   particles_dust
-PARTICLES_SUB =   particles_sub
+PARTICLES =   particles_dust
