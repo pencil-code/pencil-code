@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.10 2005-08-22 15:42:09 wlyra Exp $
+! $Id: eos_ionization.f90,v 1.11 2005-08-24 17:31:35 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -112,7 +112,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.10 2005-08-22 15:42:09 wlyra Exp $")
+           "$Id: eos_ionization.f90,v 1.11 2005-08-24 17:31:35 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1435,7 +1435,7 @@ module EquationOfState
       use Cdata
 
       real, intent(in)  :: cs20
-      real, dimension (nx), intent(out) :: corr
+      real, dimension (nx) :: corr
 
       call stop_it("local_isothermal: NOT IMPLEMENTED IN EOS_IONIZATION")
 
