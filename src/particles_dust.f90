@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.15 2005-08-23 16:42:00 ajohan Exp $
+! $Id: particles_dust.f90,v 1.16 2005-08-24 09:17:11 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.15 2005-08-23 16:42:00 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.16 2005-08-24 09:17:11 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -410,9 +410,9 @@ module Particles
 !
 !  Add drag force on gas.
 !              
-            do i=iux,iuz
-              where (np/=0) df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - &
-                  tausg1*(f(l1:l2,m,n,i)-uupsum(:,i)/np(:))
+            do i=1,3
+              where (np/=0) df(l1:l2,m,n,iux-1+i) = df(l1:l2,m,n,iux-1+i) - &
+                  tausg1*(f(l1:l2,m,n,iux-1+i)-uupsum(:,i)/np(:))
             enddo
 !
 !  Drag force contribution to time-step.
