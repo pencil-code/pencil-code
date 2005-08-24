@@ -22,12 +22,10 @@ VISCOSITY =   viscosity
 IO        = io_dist
 SHEAR     =   shear
 
-DUSTDENSITY =  dustdensity
-DUSTVELOCITY=  dustvelocity
+DUSTDENSITY  =   dustdensity
+DUSTVELOCITY =   dustvelocity
 
-PARTICLES_MAIN=   particles_main
-PARTICLES     =   particles_tracers
-PARTICLES_SUB =   particles_sub
+PARTICLES =   particles_tracers
 
 FFTPACK   = nofftpack
 FFT       = nofft
