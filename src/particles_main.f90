@@ -1,8 +1,7 @@
-! $Id: particles_main.f90,v 1.3 2005-08-22 15:10:18 ajohan Exp $
+! $Id: particles_main.f90,v 1.4 2005-08-24 13:06:30 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
-!***********************************************************************
 module Particles_main
 
   use Cdata
@@ -28,7 +27,7 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       call register_particles()
-      if (lparticles_radius) call register_particles_radius()
+      call register_particles_radius()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -43,7 +42,7 @@ module Particles_main
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
       call rprint_particles(lreset,LWRITE=lroot)
-      if (lparticles_radius) call rprint_particles_radius(lreset,LWRITE=lroot)
+      call rprint_particles_radius(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
