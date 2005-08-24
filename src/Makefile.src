@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.132 2005-08-24 13:50:09 ajohan Exp $
+### $Id: Makefile.src,v 1.133 2005-08-24 14:02:12 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -62,7 +62,7 @@ CFLAGS_GENERAL=
 include Makefile.local
 
 ## Compile files with particle programming structure if particles are chosen.
-ifneq ($(PARTICLES),'noparticles')
+ifneq ($(PARTICLES),noparticles)
   PARTICLES_MAIN =   particles_main
   PARTICLES_SUB  =   particles_sub
 endif
