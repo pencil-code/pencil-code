@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.29 2005-08-09 18:37:56 brandenb Exp $
+! $Id: shear.f90,v 1.30 2005-08-25 12:25:11 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.29 2005-08-09 18:37:56 brandenb Exp $")
+           "$Id: shear.f90,v 1.30 2005-08-25 12:25:11 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -209,6 +209,7 @@ module Shear
 !
       if (lmagnetic) then
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Sshear*f(l1:l2,m,n,iay)
+        if (luy0_extra) df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-duy0dz_extra(n-nghost)*f(l1:l2,m,n,iay)
       endif
 !
 !  Testfield stretching term
