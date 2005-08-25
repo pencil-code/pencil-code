@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.16 2005-08-24 09:17:11 ajohan Exp $
+! $Id: particles_dust.f90,v 1.17 2005-08-25 13:59:47 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.16 2005-08-24 09:17:11 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.17 2005-08-25 13:59:47 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -417,14 +417,19 @@ module Particles
 !
 !  Drag force contribution to time-step.
 !            
-            if (lfirst.and.ldt) dt1_max=max(dt1_max,tausg1/cdtp)
+            if (lfirst.and.ldt) dt1_max=max(dt1_max,(tausp1+tausg1)/cdtp)
+            if (ldiagnos.and.idiag_dtdragp/=0) &
+                call max_mn_name((tausp1+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
 !            
           enddo
-        endif
+        else
 !
-!  Drag force contribution to time-step.
+!  No back-reaction on gas.
 !            
-        if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1/cdtp)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1/cdtp)
+          if (ldiagnos.and.idiag_dtdragp/=0) &
+              call max_mn_name(tausp1/cdtp,idiag_dtdragp,l_dt=.true.)
+        endif
 !          
       endif
 !
@@ -484,8 +489,6 @@ module Particles
             if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
           enddo
         endif
-        if (idiag_dtdragp/=0) &
-            call max_mn_name((tausp1+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
       endif
 !
       if (lfirstcall) lfirstcall=.false.
