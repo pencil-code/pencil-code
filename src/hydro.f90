@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.214 2005-08-20 14:47:29 dobler Exp $
+! $Id: hydro.f90,v 1.215 2005-08-26 08:40:28 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -86,6 +86,7 @@ module Hydro
   integer :: idiag_dtu=0,idiag_dtv=0,idiag_urms=0,idiag_umax=0
   integer :: idiag_uzrms=0,idiag_uzmax=0,idiag_orms=0,idiag_omax=0
   integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
+  integer :: idiag_ux2mz=0,idiag_uy2mz=0,idiag_uz2mz=0
   integer :: idiag_ox2m=0,idiag_oy2m=0,idiag_oz2m=0
   integer :: idiag_oxm=0,idiag_oym=0,idiag_ozm=0
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0
@@ -146,7 +147,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.214 2005-08-20 14:47:29 dobler Exp $")
+           "$Id: hydro.f90,v 1.215 2005-08-26 08:40:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -917,6 +918,9 @@ module Hydro
         if (idiag_uxmz/=0) call xysum_mn_name_z(p%uu(:,1),idiag_uxmz)
         if (idiag_uymz/=0) call xysum_mn_name_z(p%uu(:,2),idiag_uymz)
         if (idiag_uzmz/=0) call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
+        if (idiag_ux2mz/=0) call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
+        if (idiag_uy2mz/=0) call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
+        if (idiag_uz2mz/=0) call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
@@ -1370,11 +1374,22 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',idiag_uymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxuymz',idiag_uxuymz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxuzmz',idiag_uxuzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyuzmz',idiag_uyuzmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fmassz',idiag_fmassz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fkinz',idiag_fkinz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'ux2mz',idiag_ux2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uy2mz',idiag_uy2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uz2mz',idiag_uz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uxuymz',idiag_uxuymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uxuzmz',idiag_uxuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'uyuzmz',idiag_uyuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'fmassz',idiag_fmassz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'fkinz',idiag_fkinz)
       enddo
 !
 !  check for those quantities for which we want z-averages
