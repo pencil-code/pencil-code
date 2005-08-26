@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.199 2005-08-19 21:26:31 theine Exp $
+! $Id: density.f90,v 1.200 2005-08-26 10:15:47 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -14,7 +14,7 @@
 !
 ! PENCILS PROVIDED lnrho,rho,rho1,glnrho,grho,uglnrho,ugrho
 ! PENCILS PROVIDED gshockglnrho,glnrho2,del2lnrho,del2rho,del6rho
-! PENCILS PROVIDED del6lnrho,hlnrho,sglnrho
+! PENCILS PROVIDED del6lnrho,hlnrho,sglnrho,uij5glnrho
 !
 !***************************************************************
 
@@ -108,7 +108,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.199 2005-08-19 21:26:31 theine Exp $")
+           "$Id: density.f90,v 1.200 2005-08-26 10:15:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -970,6 +970,10 @@ module Density
         lpencil_in(i_sij)=.true.
         lpencil_in(i_glnrho)=.true.
       endif
+      if (lpencil_in(i_uij5glnrho)) then
+        lpencil_in(i_uij5)=.true.
+        lpencil_in(i_glnrho)=.true.
+      endif
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -1097,6 +1101,8 @@ module Density
       endif
 ! sglnrho
       if (lpencil(i_sglnrho)) call multmv_mn(p%sij,p%glnrho,p%sglnrho)
+! uij5glnrho
+      if (lpencil(i_uij5glnrho)) call multmv_mn(p%uij5,p%glnrho,p%uij5glnrho)
 !
     endsubroutine calc_pencils_density
 !***********************************************************************

@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.7 2005-08-22 17:15:57 wlyra Exp $
+! $Id: viscosity.f90,v 1.8 2005-08-26 10:15:47 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -78,7 +78,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.7 2005-08-22 17:15:57 wlyra Exp $")
+           "$Id: viscosity.f90,v 1.8 2005-08-26 10:15:47 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -283,9 +283,10 @@ module Viscosity
       if (lvisc_rho_nu_const .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_rho1)=.true.
-      if (lvisc_nu_const .or. lvisc_hyper3_nu_const .or. &
+      if (lvisc_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified)  &
           lpenc_requested(i_sglnrho)=.true.
+      if (lvisc_hyper3_nu_const) lpenc_requested(i_uij5glnrho)=.true.
       if ((lvisc_rho_nu_const .or. lvisc_hyper3_rho_nu_const) .and. lentropy) &
           lpenc_requested(i_sij2)=.true.
       if (ldensity.and.lvisc_nu_shock) then
@@ -401,7 +402,6 @@ module Viscosity
       use Cdata
       use Mpicomm
       use Sub
-      use EquationOfState, only: rho0
       use Global, only: get_global
 !
 
@@ -436,9 +436,9 @@ module Viscosity
       if (lvisc_rho_nu_const) then
 !
 !  viscous force: mu/rho*(del2u+graddivu/3)
-!  -- the correct expression for rho*nu=const (=rho0*nu)
+!  -- the correct expression for rho*nu=const
 !
-        murho1=(nu*rho0)*p%rho1  !(=mu/rho)
+        murho1=nu*p%rho1  !(=mu/rho)
         do i=1,3
           fvisc(:,i)=fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
         enddo
@@ -471,7 +471,7 @@ module Viscosity
 !
 !  viscous force: mu/rho*del6u
 !
-        murho1=(nu_hyper3*rho0)*p%rho1  !(=mu/rho)
+        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
         do i=1,3
           fvisc(:,i)=fvisc(:,i)+murho1*p%del6u(:,i)
         enddo
@@ -482,7 +482,7 @@ module Viscosity
 !
 !  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
 !
-        fvisc=fvisc+nu_hyper3*(p%del6u+p%sglnrho)
+        fvisc=fvisc+nu_hyper3*(p%del6u+p%uij5glnrho)
         if (lfirst.and.ldt) diffus_total=diffus_total+nu_hyper3*dxyz_6/dxyz_2
       endif
 !
