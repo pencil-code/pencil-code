@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.28 2005-03-24 17:21:17 mee Exp $
+; $Id: pc_read_var.pro,v 1.29 2005-08-28 13:07:39 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-03-24 17:21:17 $
-;  $Revision: 1.28 $
+;  $Date: 2005-08-28 13:07:39 $
+;  $Revision: 1.29 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -83,7 +83,11 @@ default,varfile,'var.dat'
 ; and check pc_precision is set!                                                    
 pc_set_precision,dim=dim,quiet=quiet
 
-if keyword_set(TRIMALL) then TRIMXYZ=1L
+if (keyword_set(TRIMALL)) then begin
+  TRIMXYZ=1L
+endif else begin
+  TRIMALL=0
+endelse
 
 nx=dim.nx
 ny=dim.ny
@@ -347,7 +351,7 @@ endif
 
 ; If requested print a summary
 if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(QUIET))) then begin
-  pc_object_stats,object,dim=dim,QUIET=QUIET
+  pc_object_stats, object, dim=dim, TRIM=TRIMALL, QUIET=QUIET
   print,' t = ', t
 endif
 

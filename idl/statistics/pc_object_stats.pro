@@ -1,12 +1,10 @@
-;  $Id: pc_object_stats.pro,v 1.1 2004-06-03 17:23:27 mee Exp $
+;  $Id: pc_object_stats.pro,v 1.2 2005-08-28 13:07:40 ajohan Exp $
 ;
 ;  Summarize data
 ;  omit ghost zones in the analysis
 ;
-pro pc_object_stats,object,tags=tags,skiptags=skiptags, $
-                    dim=dim,  $
-                    NOVECTORS=NOVECTORS, QUIET=QUIET, $
-                    _EXTRA=e
+pro pc_object_stats,object,tags=tags,skiptags=skiptags, dim=dim,  $
+    TRIM=TRIM, NOVECTORS=NOVECTORS, QUIET=QUIET, _EXTRA=e
 COMPILE_OPT IDL2,HIDDEN
 
   default,tags,tag_names(object)
@@ -18,7 +16,7 @@ COMPILE_OPT IDL2,HIDDEN
   ;
   for iv=0L,n_elements(tags)-1 do begin
     res=execute("pc_variable_stats,object." + tags[iv] + $
-                ",varname=tags[iv],NOVECTORS=NOVECTORS," + $
+                ",varname=tags[iv],TRIM=TRIM,NOVECTORS=NOVECTORS," + $
                   "dim=dim,NOHEADER=donefirst")
     donefirst=1
   endfor
