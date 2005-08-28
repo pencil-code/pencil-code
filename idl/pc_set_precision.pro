@@ -1,4 +1,4 @@
-; $Id: pc_set_precision.pro,v 1.5 2004-05-11 17:43:34 mee Exp $
+; $Id: pc_set_precision.pro,v 1.6 2005-08-28 13:07:36 ajohan Exp $
 ;
 ;
 ;  Read ensure 'zero' and 'one' are set in the pc_precision common block.
@@ -17,7 +17,7 @@ if n_elements(precision) eq 1 then begin
     zero = 0*one
 endif else begin
 ;    if N_ELEMENTS(one) EQ 0 then begin
-        if n_elements(dim) ne 1 then pc_read_dim,object=dim
+        if n_elements(dim) ne 1 then pc_read_dim,object=dim,/quiet
         precision=dim.precision
         if ((precision eq 'S') or (precision eq 's')) then begin
             one = 1.e0
