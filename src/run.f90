@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.208 2005-08-28 15:53:48 ajohan Exp $
+! $Id: run.f90,v 1.209 2005-08-28 16:28:58 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.208 2005-08-28 15:53:48 ajohan Exp $")
+             "$Id: run.f90,v 1.209 2005-08-28 16:28:58 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -295,8 +295,10 @@
               call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
               call rprint_list(LRESET=.true.) !(Re-read output list)
               call initialize_modules(f,lstarting=.false.)
-              if (lparticles) &
-                  call particles_initialize_modules(lstarting=.false.)
+              if (lparticles) then
+                call particles_rprint_list(.false.)
+                call particles_initialize_modules(lstarting=.false.)
+              endif
               call choose_pencils()
               call wparam2()
               if (lroot) call remove_file("RELOAD")
