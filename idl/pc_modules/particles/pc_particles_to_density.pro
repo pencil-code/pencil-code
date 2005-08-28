@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.11 2005-07-15 12:06:28 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.12 2005-08-28 13:04:33 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -11,7 +11,7 @@ COMMON pc_precision, zero, one
 
 if (n_elements(vvp) ne 0) then begin
   lsigma=1
-  pc_read_param, obj=par
+  pc_read_param, obj=par, /quiet
   lshear=par.lshear
 endif else begin
   lsigma=0
