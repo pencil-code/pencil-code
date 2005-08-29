@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.3 2005-08-23 16:42:00 ajohan Exp $
+! $Id: particles_cdata.f90,v 1.4 2005-08-29 08:26:09 ajohan Exp $
 !!
 !! Global particle variables
 !!
@@ -14,6 +14,7 @@ module Particles_cdata
   integer, dimension (mpar_loc) :: ipar
   integer :: npvar=0, npar_loc=0
   integer :: ixp=0,iyp=0,izp=0,ivpx=0,ivpy=0,ivpz=0,iap=0
+  logical :: linterp_reality_check=.false.
   character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
 
 endmodule Particles_cdata

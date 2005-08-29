@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.19 2005-08-28 15:56:05 ajohan Exp $
+! $Id: particles_dust.f90,v 1.20 2005-08-29 08:26:09 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -36,7 +36,8 @@ module Particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, nu_epicycle, &
-      ldragforce_gas, rhop_tilde, eps_dtog, tausgmin, cdtp
+      ldragforce_gas, rhop_tilde, eps_dtog, tausgmin, cdtp, &
+      linterp_reality_check
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -62,7 +63,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.19 2005-08-28 15:56:05 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.20 2005-08-29 08:26:09 ajohan Exp $")
 !
 !  Indices for particle position.
 !

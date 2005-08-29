@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.15 2005-08-23 16:39:07 ajohan Exp $
+! $Id: particles_sub.f90,v 1.16 2005-08-29 08:26:09 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -562,6 +562,7 @@ module Particles_sub
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer, dimension (3) :: ixx0
+      integer :: i
       logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ii0
@@ -596,6 +597,7 @@ module Particles_sub
 !  Redefine the interpolation point in coordinates relative to lowest corner.
 !
       xp0=xxp(1)-x(ixx0(1))
+!      xp0=0.0
       yp0=xxp(2)-y(ixx0(2))
       zp0=xxp(3)-z(ixx0(3))
 !
@@ -630,6 +632,35 @@ module Particles_sub
           + xp0*zp0*dxdz1*(g3-g5-g7+g8) &
           + yp0*zp0*dydz1*(g2-g5-g6+g8) &
           + xp0*dx1*(g7-g8) + yp0*dy1*(g6-g8) + zp0*dz1*(g5-g8) + g8
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (linterp_reality_check) then
+        do i=0,ii1-ii0+1
+          if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'interpolate_3d_1st: interpolated value is LARGER than'
+            print*, 'interpolate_3d_1st: all values at the corner ponts!'
+            print*, 'interpolate_3d_1st: xxp=', xxp
+            print*, 'interpolate_3d_1st: x0, y0, z0=', &
+                x(ixx0(1)), y(ixx0(2)), z(ixx0(3))
+            print*, 'interpolate_3d_1st: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_3d_1st: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+          if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'interpolate_3d_1st: interpolated value is smaller than'
+            print*, 'interpolate_3d_1st: all values at the corner ponts!'
+            print*, 'interpolate_3d_1st: xxp=', xxp
+            print*, 'interpolate_3d_1st: x0, y0, z0=', &
+                x(ixx0(1)), y(ixx0(2)), z(ixx0(3))
+            print*, 'interpolate_3d_1st: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_3d_1st: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+        enddo
+      endif
 !
     endsubroutine interpolate_3d_1st
 !***********************************************************************
