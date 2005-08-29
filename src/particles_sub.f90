@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.16 2005-08-29 08:26:09 ajohan Exp $
+! $Id: particles_sub.f90,v 1.17 2005-08-29 09:01:09 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -721,7 +721,7 @@ module Particles_sub
 !
       intent(in)  :: xxp, vvp
 !
-      ix0=4; iy0=4; iz0=4
+      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
       if (lfirstcall) then
         if (.not. all(lequidist)) then
@@ -760,7 +760,7 @@ module Particles_sub
       intent(in)  :: xxp
       intent(out) :: ix0, iy0, iz0
 !
-      ix0=4; iy0=4; iz0=4
+      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
       if (lfirstcall) then
         if (.not. all(lequidist)) then
@@ -799,7 +799,7 @@ module Particles_sub
       intent(in)  :: xxp
       intent(out) :: ix0, iy0, iz0
 !
-      ix0=4; iy0=4; iz0=4
+      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
       if (lfirstcall) then
         if (.not. all(lequidist)) then
