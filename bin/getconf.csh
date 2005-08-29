@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.151 2005-08-14 14:29:15 dobler Exp $
+# $Id: getconf.csh,v 1.152 2005-08-29 15:16:59 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -648,28 +648,29 @@ else if ($hn =~ rio*) then
   if ($#nodelist == 1) then
     echo "Apparently an interactive run."
     set nodelist = `repeat $ncpus echo $nodelist`
-  endif
-  set nprocpernode = 1
-  if ($mpi) then
-    set local_disc = 1
-    set one_local_disc = 0
   else
-    set local_disc = 0
-    set one_local_disc = 1
-  endif
-  set mpirun = /nfs/mpia/ajohan/mvapich095_pgf90/bin/mpirun
-  set mpirunops2 = '-hostfile $TMPDIR/machines'
+    set nprocpernode = 1
+    if ($mpi) then
+      set local_disc = 1
+      set one_local_disc = 0
+    else
+      set local_disc = 0
+      set one_local_disc = 1
+    endif
+    set mpirun = /nfs/mpia/ajohan/mvapich095_pgf90/bin/mpirun
+    set mpirunops2 = '-hostfile $TMPDIR/machines'
 #  set mpirunops2 = '-hostfile hosts.list'
 #  set nodelist=`cat hosts.list`
 #  set nodelist=`echo $nodelist | sed -e 's/\..*$//g'`
-  set nodelist=`cat $TMPDIR/machines`
-  echo $nodelist
-  setenv SSH 'ssh -x'
-  setenv SCP scp
-  setenv SCRATCH_DIR /var/tmp/$USER
-  foreach node ($nodelist)
-    $SSH $node 'killall start.x run.x && rm -rf /var/tmp/ajohan'
-  end
+    set nodelist=`cat $TMPDIR/machines`
+    echo $nodelist
+    setenv SSH 'ssh -x'
+    setenv SCP scp
+    setenv SCRATCH_DIR /var/tmp/$USER
+    foreach node ($nodelist)
+      $SSH $node 'killall start.x run.x && rm -rf /var/tmp/ajohan'
+    end
+  endif
 
 else
   echo "Generic setup; hostname is <$hn>"
