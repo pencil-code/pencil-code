@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.215 2005-08-17 00:31:44 dobler Exp $ 
+! $Id: sub.f90,v 1.216 2005-08-29 14:22:46 ajohan Exp $ 
 
 module Sub 
 
@@ -43,7 +43,7 @@ module Sub
   public :: inpui, outpui, inpup, outpup
   public :: parse_shell
   public :: expand_cname
-  public :: parse_name, save_name
+  public :: parse_name, save_name, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name
   public :: surf_mn_name
   public :: xysum_mn_name_z
@@ -208,6 +208,24 @@ module Sub
       itype_name(iname)=ilabel_save
 !
    endsubroutine save_name
+!***********************************************************************
+    subroutine max_name(a,iname)
+!
+!  Successively calculate maximum of a, which is supplied at each call.
+!
+!  29-aug-05/anders: adapted from save_name
+!
+      use Cdata
+!
+      integer :: a, iname
+!
+      fname(iname)=a
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_max
+!
+    endsubroutine max_name
 !***********************************************************************
     subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
 !
