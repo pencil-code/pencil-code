@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.23 2005-08-29 13:28:59 ajohan Exp $
+! $Id: particles_dust.f90,v 1.24 2005-08-29 14:24:04 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -63,7 +63,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.23 2005-08-29 13:28:59 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.24 2005-08-29 14:24:04 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -631,6 +631,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
         call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_rhopm)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
+        call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
       enddo
 !
 !  check for those quantities for which we want z-averages

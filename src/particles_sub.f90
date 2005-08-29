@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.18 2005-08-29 12:09:21 ajohan Exp $
+! $Id: particles_sub.f90,v 1.19 2005-08-29 14:24:04 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -273,6 +273,7 @@ module Particles_sub
 !
       use Messages, only: fatal_error, warning
       use Mpicomm, only: mpirecv_real, mpisend_real, mpirecv_int, mpisend_int
+      use Sub, only: max_name
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mpar_loc,mpvar), optional :: dfp
@@ -371,6 +372,13 @@ module Particles_sub
 !
       if (ip<=6) print*, 'redist_particles_procs: iproc, nmigrate = ', &
           iproc, sum(nmig(iproc,:))
+!
+!  Diagnostic about number of migrating particles.
+!  WARNING: in time-steps where snapshots are written, this diagnostic
+!  parameter will be zero (quite confusing)!
+!          
+      if (ldiagnos.and.idiag_nmigmax) &
+          call max_name(sum(nmig(iproc,:)),idiag_nmigmax)
 !
 !  Share information about number of migrating particles.
 !
@@ -816,5 +824,4 @@ module Particles_sub
 !
     endsubroutine find_closest_gridpoint
 !***********************************************************************
-
 endmodule Particles_sub
