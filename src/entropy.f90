@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.350 2005-08-24 13:37:53 ajohan Exp $
+! $Id: entropy.f90,v 1.351 2005-08-29 09:23:51 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.350 2005-08-24 13:37:53 ajohan Exp $")
+           "$Id: entropy.f90,v 1.351 2005-08-29 09:23:51 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1892,7 +1892,7 @@ module Entropy
 !  gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
+        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
