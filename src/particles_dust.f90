@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.22 2005-08-29 12:15:07 ajohan Exp $
+! $Id: particles_dust.f90,v 1.23 2005-08-29 13:28:59 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -63,7 +63,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.22 2005-08-29 12:15:07 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.23 2005-08-29 13:28:59 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -131,15 +131,20 @@ module Particles
             'gradient with beta_dPdr_dust=', beta_dPdr_dust
       endif
 !
-!  Calculate mass density per particle (for back-reaction drag force on gas).
+!  Calculate mass density per particle (for back-reaction drag force on gas)
+!  following the formula
+!    rhop_tilde*N_cell = eps*rhom
+!  where rhop_tilde is the mass density per particle, N_cell is the number of
+!  particles per grid cell and rhom is the mean gas density in the box. 
 !
       if (rhop_tilde==0.0) then
+! For stratification, take into account gas present outside the simulation box.
         if (lgrav) then
-          rhom=sqrt(2*pi)*1.0/Lz   ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
+          rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
         endif
-        rhop_tilde=eps_dtog*rhom*nxgrid*nygrid*nzgrid/npar ! rhop*N_cell=eps*rho
+        rhop_tilde=eps_dtog*rhom*nxgrid*nygrid*nzgrid/npar
         if (lroot) then
           print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
