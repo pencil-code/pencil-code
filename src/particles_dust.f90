@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.20 2005-08-29 08:26:09 ajohan Exp $
+! $Id: particles_dust.f90,v 1.21 2005-08-29 09:02:38 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -63,7 +63,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.20 2005-08-29 08:26:09 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.21 2005-08-29 09:02:38 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -230,6 +230,13 @@ module Particles
         call stop_it("")
 
       endselect
+!      
+!  Particles are not allowed to be present in non-existing dimensions.
+!  This would give huge problems with interpolation later.
+!
+      if (nxgrid==1) fp(1:npar_loc,ixp)=x(nghost+1)
+      if (nygrid==1) fp(1:npar_loc,iyp)=y(nghost+1)
+      if (nzgrid==1) fp(1:npar_loc,izp)=z(nghost+1)
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
@@ -311,11 +318,16 @@ module Particles
 !
 !  The rate of change of a particle's position is the particle's velocity.
 !
-      dfp(1:npar_loc,ixp:izp)=dfp(1:npar_loc,ixp:izp) + fp(1:npar_loc,ivpx:ivpz)
+      if (nxgrid/=1) &
+          dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+      if (nygrid/=1) &
+          dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
+      if (nzgrid/=1) &
+          dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-      if (lshear) dfp(1:npar_loc,iyp) = &
+      if (lshear.and.nygrid/=0) dfp(1:npar_loc,iyp) = &
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
 !
       if (lfirstcall) lfirstcall=.false.

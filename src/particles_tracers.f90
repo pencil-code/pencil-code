@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.7 2005-08-22 14:05:19 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.8 2005-08-29 09:02:38 ajohan Exp $
 !
 !  This module takes care of everything related to tracer particles
 !
@@ -51,7 +51,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.7 2005-08-22 14:05:19 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.8 2005-08-29 09:02:38 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -169,6 +169,13 @@ module Particles
         call stop_it("")
 
       endselect
+!      
+!  Particles are not allowed to be present in non-existing dimensions.
+!  This would give huge problems with interpolation later.
+!
+      if (nxgrid==1) fp(1:npar_loc,ixp)=x(nghost+1)
+      if (nygrid==1) fp(1:npar_loc,iyp)=y(nghost+1)
+      if (nzgrid==1) fp(1:npar_loc,izp)=z(nghost+1)
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
@@ -213,7 +220,9 @@ module Particles
 !       
       do k=1,npar_loc
         call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uu)
-        dfp(k,ixp:iyp) = dfp(k,ixp:iyp) + uu
+        if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
+        if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
+        if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
       enddo
 !
 !  Diagnostic output
