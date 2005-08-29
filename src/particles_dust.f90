@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.21 2005-08-29 09:02:38 ajohan Exp $
+! $Id: particles_dust.f90,v 1.22 2005-08-29 12:15:07 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -63,7 +63,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.21 2005-08-29 09:02:38 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.22 2005-08-29 12:15:07 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -161,6 +161,14 @@ module Particles
         tausg1max=1.0/tausgmin
         if (lroot) print*, 'initialize_particles: '// &
             'minimum gas friction time tausgmin=', tausgmin
+      endif
+!
+!  Write constants to disc.
+!      
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro')
+          write (1,*) 'rhop_tilde=', rhop_tilde
+        close (1)
       endif
 !
     endsubroutine initialize_particles
