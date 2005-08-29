@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.17 2005-08-29 09:01:09 ajohan Exp $
+! $Id: particles_sub.f90,v 1.18 2005-08-29 12:09:21 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -85,15 +85,15 @@ module Particles_sub
 !  numbers of the particles.
 !
         write(lun_output) npar_loc
-        write(lun_output) ipar
+        write(lun_output) ipar(1:npar_loc)
 !
 !  Then write particle data.
 !
         if (npar_loc/=0) write(lun_output) fp(1:npar_loc,:)
 !
-!  Write time
+!  Write time and grid parameters.
 !
-        write(lun_output) t
+        write(lun_output) t, x, y, z, dx, dy, dz
 !
       close(lun_output)
 !
