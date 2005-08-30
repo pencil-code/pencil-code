@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.215 2005-08-26 08:40:28 ajohan Exp $
+! $Id: hydro.f90,v 1.216 2005-08-30 12:10:48 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -34,7 +34,6 @@ module Hydro
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
-!ajwm  real :: nu_turb=0. !! MOVED TO CDATA
   real :: nu_turb0=0.,tau_nuturb=0.,nu_turb1=0.
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
@@ -45,7 +44,7 @@ module Hydro
   real :: u_out_kep=0.0
   integer :: N_modes_uu=0
   real :: star_offx=0.,star_offy=0.
-  logical :: lcentrifugal_force=.false.
+  logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu, radiusuu,urand, &
@@ -54,7 +53,8 @@ module Hydro
        nu_turb0, tau_nuturb, nu_turb1, &
        kep_cutoff_pos_ext,kep_cutoff_width_ext, &
        kep_cutoff_pos_int,kep_cutoff_width_int, &
-       u_out_kep,N_modes_uu,lcentrifugal_force,star_offx,star_offy
+       u_out_kep,N_modes_uu,lcoriolis_force,lcentrifugal_force, &
+       star_offx,star_offy
 
   ! run parameters
   real :: theta=0.
@@ -76,7 +76,7 @@ module Hydro
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint, &
-       lfreeze_uext,lcentrifugal_force
+       lfreeze_uext,lcoriolis_force,lcentrifugal_force
 
 ! end geodynamo
 
@@ -147,7 +147,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.215 2005-08-26 08:40:28 ajohan Exp $")
+           "$Id: hydro.f90,v 1.216 2005-08-30 12:10:48 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -771,32 +771,37 @@ module Hydro
 !
       if (Omega/=0.) then
         if (theta==0) then
-          if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
-          c2=2*Omega
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
-          !
-          !  add centrifugal force (doing this with periodic boundary
-          !  conditions in x and y would not be compatible, so it is
-          !  therefore usually ignored in those cases!)
-          !
+          if (lcoriolis_force) then
+            if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
+            c2=2*Omega
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+!
+!  add centrifugal force (doing this with periodic boundary
+!  conditions in x and y would not be compatible, so it is
+!  therefore usually ignored in those cases!)
+!
+          endif
           if (lcentrifugal_force) then
             if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+x(l1:l2)*Omega**2
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+y(  m  )*Omega**2
           endif
         else
-          !
-          !  add Coriolis force with an angle (defined such that theta=-60,
-          !  for example, would correspond to 30 degrees latitude).
-          !  Omega=(sin(theta), 0, cos(theta)).
-          !
-          if (headtt) print*,'duu_dt: Coriolis force; Omega,theta=',Omega,theta
-          c2=2*Omega*cos(theta*pi/180.)
-          s2=2*Omega*sin(theta*pi/180.)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)+s2*p%uu(:,3)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)             -s2*p%uu(:,2)
+!
+!  add Coriolis force with an angle (defined such that theta=-60,
+!  for example, would correspond to 30 degrees latitude).
+!  Omega=(sin(theta), 0, cos(theta)).
+!
+          if (lcoriolis_force) then
+            if (headtt) &
+                print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+            c2=2*Omega*cos(theta*pi/180.)
+            s2=2*Omega*sin(theta*pi/180.)
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)+s2*p%uu(:,3)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)             -s2*p%uu(:,2)
+          endif
         endif
       endif
 !
