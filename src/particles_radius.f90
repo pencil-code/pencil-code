@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.5 2005-08-23 16:42:31 ajohan Exp $
+! $Id: particles_radius.f90,v 1.6 2005-08-31 20:37:24 dobler Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -49,7 +49,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.5 2005-08-23 16:42:31 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.6 2005-08-31 20:37:24 dobler Exp $")
 !
 !  Index for particle radius.
 !
@@ -187,7 +187,7 @@ module Particles_radius
 !
     endsubroutine dap_dt
 !***********************************************************************
-    subroutine read_particles_radius_init_pars(unit,iostat)
+    subroutine read_particles_rad_init_pars(unit,iostat)
 !    
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -200,17 +200,17 @@ module Particles_radius
 !
 99    return
 !
-    endsubroutine read_particles_radius_init_pars
+    endsubroutine read_particles_rad_init_pars
 !***********************************************************************
-    subroutine write_particles_radius_init_pars(unit)
+    subroutine write_particles_rad_init_pars(unit)
 !    
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_radius_init_pars)
 !
-    endsubroutine write_particles_radius_init_pars
+    endsubroutine write_particles_rad_init_pars
 !***********************************************************************
-    subroutine read_particles_radius_run_pars(unit,iostat)
+    subroutine read_particles_rad_run_pars(unit,iostat)
 !    
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
@@ -223,15 +223,15 @@ module Particles_radius
 !
 99    return
 !
-    endsubroutine read_particles_radius_run_pars
+    endsubroutine read_particles_rad_run_pars
 !***********************************************************************
-    subroutine write_particles_radius_run_pars(unit)
+    subroutine write_particles_rad_run_pars(unit)
 !    
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_radius_run_pars)
 !
-    endsubroutine write_particles_radius_run_pars
+    endsubroutine write_particles_rad_run_pars
 !***********************************************************************
     subroutine rprint_particles_radius(lreset,lwrite)
 !   

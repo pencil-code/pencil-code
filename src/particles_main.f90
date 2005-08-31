@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.4 2005-08-24 13:06:30 ajohan Exp $
+! $Id: particles_main.f90,v 1.5 2005-08-31 20:37:24 dobler Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -190,43 +190,43 @@ module Particles_main
 !
     endsubroutine particles_pde
 !***********************************************************************
-    subroutine read_particles_init_pars_wrapper(unit,iostat)
+    subroutine read_partcls_initpars_wrapper(unit,iostat)
 !    
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       call read_particles_init_pars(unit,iostat)
-      if (lparticles_radius) call read_particles_radius_init_pars(unit,iostat)
+      if (lparticles_radius) call read_particles_rad_init_pars(unit,iostat)
 !
-    endsubroutine read_particles_init_pars_wrapper
+    endsubroutine read_partcls_initpars_wrapper
 !***********************************************************************
-    subroutine write_particles_init_pars_wrapper(unit)
+    subroutine write_partcls_initpars_wrapper(unit)
 !    
       integer, intent (in) :: unit
 !
       call write_particles_init_pars(unit)
-      if (lparticles_radius) call write_particles_radius_init_pars(unit)
+      if (lparticles_radius) call write_particles_rad_init_pars(unit)
 !
-    endsubroutine write_particles_init_pars_wrapper
+    endsubroutine write_partcls_initpars_wrapper
 !***********************************************************************
-    subroutine read_particles_run_pars_wrapper(unit,iostat)
+    subroutine read_partcls_runpars_wrapper(unit,iostat)
 !    
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       call read_particles_run_pars(unit,iostat)
-      if (lparticles_radius) call read_particles_radius_run_pars(unit,iostat)
+      if (lparticles_radius) call read_particles_rad_run_pars(unit,iostat)
 !
-    endsubroutine read_particles_run_pars_wrapper
+    endsubroutine read_partcls_runpars_wrapper
 !***********************************************************************
-    subroutine write_particles_run_pars_wrapper(unit)
+    subroutine write_partcls_runpars_wrapper(unit)
 !    
       integer, intent (in) :: unit
 !
       call write_particles_run_pars(unit)
-      if (lparticles_radius) call write_particles_radius_run_pars(unit)
+      if (lparticles_radius) call write_particles_rad_run_pars(unit)
 !
-    endsubroutine write_particles_run_pars_wrapper
+    endsubroutine write_partcls_runpars_wrapper
 !***********************************************************************
 
 
