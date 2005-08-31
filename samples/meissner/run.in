@@ -1,0 +1,47 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2005-08-31 23:16:23 dobler Exp $',
+  ip=13,
+  nt=10000, it1=5, isave=500, itorder=3
+  !tmax=200.
+  tmax=0.918
+  cdt=0.4, cdtv=0.3, dtmin=1e-6,
+  dsnap=0.5, dvid=.05, d2davg=10.
+  tavg=10.,                   ! time constant for time averaging
+  slice_position='e'
+  lfreeze_varint=T T T T T T T T
+  wfreeze=0.2
+  lpencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  Omega=0., theta=0. ! amount and direction of angular velocity
+  ! lcentrifugal_force=T
+  ! dampuext=20., rdampext=3., wdamp=0.1, ! Damp uu outside r_ext
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-const',
+  chi=2.e-3
+  lupw_ss=T
+/
+&magnetic_run_pars
+  iresistivity='shell',
+  eta=2.e-3, eta_int=0., wresistivity=0.01
+/
+&viscosity_run_pars
+  ivisc='nu-const','nu-shock'
+  nu=2.e-3
+  nu_shock=0.5
+/
+&shock_run_pars
+  lshock_max5=F
+/
