@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.19 2005-08-29 14:24:04 ajohan Exp $
+! $Id: particles_sub.f90,v 1.20 2005-08-31 18:18:58 dobler Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -377,7 +377,7 @@ module Particles_sub
 !  WARNING: in time-steps where snapshots are written, this diagnostic
 !  parameter will be zero (quite confusing)!
 !          
-      if (ldiagnos.and.idiag_nmigmax) &
+      if (ldiagnos.and.(idiag_nmigmax/=0)) &
           call max_name(sum(nmig(iproc,:)),idiag_nmigmax)
 !
 !  Share information about number of migrating particles.
