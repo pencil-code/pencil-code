@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.210 2005-08-31 20:37:24 dobler Exp $ 
+! $Id: param_io.f90,v 1.211 2005-09-01 18:57:56 ajohan Exp $ 
 
 module Param_IO
 
@@ -253,7 +253,7 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('special_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
-      call read_partcls_initpars_wrapper(1,IOSTAT=ierr)
+      call read_particles_init_pars_wrap(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('particles_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
@@ -404,7 +404,7 @@ module Param_IO
         call write_shear_init_pars(unit)
         call write_viscosity_init_pars(unit)
         call write_special_init_pars(unit)
-        call write_partcls_initpars_wrapper(unit)
+        call write_particles_init_pars_wrap(unit)
         call write_shock_init_pars(unit)
 !
         if (present(file)) then
@@ -537,7 +537,7 @@ module Param_IO
       if (ierr.ne.0) call sample_runpars('special_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
-      call read_partcls_runpars_wrapper(1,IOSTAT=ierr)
+      call read_particles_run_pars_wrap(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('particles_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
@@ -806,7 +806,7 @@ module Param_IO
         call write_shear_run_pars(unit)
         call write_viscosity_run_pars(unit)
         call write_special_run_pars(unit)
-        call write_partcls_runpars_wrapper(unit)
+        call write_particles_run_pars_wrap(unit)
         call write_shock_run_pars(unit)
 !
         if (present(file)) then
@@ -962,7 +962,7 @@ module Param_IO
         call write_shear_init_pars(1)
         call write_viscosity_init_pars(1)
         call write_special_init_pars(1)
-        call write_partcls_initpars_wrapper(1)
+        call write_particles_init_pars_wrap(1)
         call write_shock_init_pars(1)
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
@@ -1001,7 +1001,7 @@ module Param_IO
         call read_shear_init_pars(1)
         call read_viscosity_init_pars(1)
         call read_special_init_pars(1)
-        call read_partcls_initpars_wrapper(1)
+        call read_particles_init_pars_wrap(1)
         call read_shock_init_pars(1)
         close(1)
 !
@@ -1041,7 +1041,7 @@ module Param_IO
         call write_shear_run_pars(1)
         call write_viscosity_run_pars(1)
         call write_special_run_pars(1)
-        call write_partcls_runpars_wrapper(1)
+        call write_particles_run_pars_wrap(1)
         call write_shock_run_pars(1)
         close(1)
       endif

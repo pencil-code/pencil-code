@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.2 2005-08-31 20:37:24 dobler Exp $
+! $Id: noparticles_main.f90,v 1.3 2005-09-01 18:57:56 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -127,39 +127,39 @@ module Particles_main
 !
     endsubroutine particles_pde
 !***********************************************************************
-    subroutine read_partcls_initpars_wrapper(unit,iostat)
+    subroutine read_particles_init_pars_wrap(unit,iostat)
 !    
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (NO_WARN) print*, unit, iostat
 !
-    endsubroutine read_partcls_initpars_wrapper
+    endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
-    subroutine write_partcls_initpars_wrapper(unit)
+    subroutine write_particles_init_pars_wrap(unit)
 !    
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
 !
-    endsubroutine write_partcls_initpars_wrapper
+    endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
-    subroutine read_partcls_runpars_wrapper(unit,iostat)
+    subroutine read_particles_run_pars_wrap(unit,iostat)
 !    
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
       if (NO_WARN) print*, unit, iostat
 !
-    endsubroutine read_partcls_runpars_wrapper
+    endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
-    subroutine write_partcls_runpars_wrapper(unit)
+    subroutine write_particles_run_pars_wrap(unit)
 !    
       integer, intent (in) :: unit
 !
       if (NO_WARN) print*, unit
 !
-    endsubroutine write_partcls_runpars_wrapper
+    endsubroutine write_particles_run_pars_wrap
 !***********************************************************************
 
 
