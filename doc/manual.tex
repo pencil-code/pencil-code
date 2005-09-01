@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.301 2005-08-23 16:25:12 bingert Exp $
+%%  CVS: $Id: manual.tex,v 1.302 2005-09-01 22:27:50 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-08-23 16:25:12 $ $,~ $ $Revision: 1.301 $ $}
+%\date{$ $Date: 2005-09-01 22:27:50 $ $,~ $ $Revision: 1.302 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-08-23 16:25:12 $ $,~ $ $Revision: 1.301 $ $}\\
+  \emph{$ $Date: 2005-09-01 22:27:50 $ $,~ $ $Revision: 1.302 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1973,9 +1973,9 @@ Snapshot files consist of the following
   A \name{Fortran record} is marked by the 4-byte integer byte count of
   the data in the record at the beginning and the end, i.e.~has the form
   $\left< N_{\rm bytes}, \mathtt{raw\_data}, N_{\rm bytes} \right>$
-} :
+}:
 \begin{enumerate}
-\item variable vector \verb|f| [$\var{mx}{\times}\var{my}{\times}\var{mz}$]
+\item variable vector \verb|f| [$\var{mx}{\times}\var{my}{\times}\var{mz}{\times}\var{nvar}$]
 \item time $t$ [1],
   coordinate vectors $x$ [\var{mx}], $y$ [\var{my}], $z$ [\var{mz}],
   grid spacings $\delta x$ [1], $\delta y$ [1], $\delta z$ [1],
@@ -2683,6 +2683,12 @@ Often the largest possible value of $\mbox{Re}_{\rm mesh}$ is around 5.
 Similarly there exist mesh Peclet and mesh magnetic Reynolds numbers that
 should not be too small.
 %ajwm - not sure what to write here about the shock viscosity
+
+Note that in some cases, `wiggles' in $\ln\varrho$ will develop despite
+sufficiently large diffusion coefficients, essentially because the
+continuity equation contains no dissipative term.
+For convection runs (but not only for these), we have found that this can
+often be prevented by \name[Upwinding]{upwinding}, see Sec.~\ref{S-upwind}.
 
 % ---------------------------------------------------------------------- %
 
@@ -4884,7 +4890,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-08-23 16:25:12 $ $,~ $ $Revision: 1.301 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-09-01 22:27:50 $ $,~ $ $Revision: 1.302 $ $}
 
 \section{Timings}
 
@@ -5692,19 +5698,6 @@ continue from \file{VAR1} at $128^3$ (on
 
 % ====================================================================== %
 
-\section{Things to bear in mind for specific types of simulations}
-\label{S-specific-sim}
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Convection}
-
-[Discuss \var{iwig} (hopefully no longer needed), \var{lupw_lnrho},
-\var{lupw_ss}]
-
-
-% ====================================================================== %
-
 \section{Runs and reference data}
 \label{S-ref-data}
 
@@ -5974,25 +5967,34 @@ the Lorentz force $\Jv\times\Bv$ from a vector potential $\Av$ using
 $-\mu_0\Jv=\nabla^2\Av-\nab\nab\cdot\Av$. This will be important in
 the MHD calculations presented below.
 
-\subsection{Upwind derivatives and relation to boundary conditions}
-\index{Upwind}
+\subsection{Upwind derivatives to avoid `wiggles'}
+\index{Upwinding}
 \label{S-upwind}
 \newcommand{\Order}[1]{O\left(#1\right)}
 
-%AB: Wolfgang, this is a cut+paste version of your text
-%AB: in kompendien/numerik/FiniteDiff.tex
-%AB: If your checked-in version was not up-to-date, you can overwrite this.
+High-order centered-difference convection simulations often show
+``wiggles'' (Nyquist zigzag pattern) in $\ln\varrho$, which are apparently
+caused by a velocity profile where the velocity approaches zero on the
+boundary or inside the box.\footnote{%
+  A simple one-dimensional test profile would be $u(x) = 1-x^2$ on $x \in
+  [-1,1]$, which will accumulate more and more mass near the right
+  boundary $x=1$.
 
-The ``wiggles'' in $\ln\varrho$ in (high-order centered-difference)
-convection simulations are apparently caused by a velocity profile where
-the velocity approaches zero at the boundary.
+  In two- or three-dimensional settings, the presence of stagnation points
+  of X-type leads to the same configuration, this time with the
+  possibility of a steady state (i.e.~without accumulation of mass).
+  Such stagnation points occur e.g.~at the top of an upwelling, or at
+  the bottom of a downdraft in convection simulations, where locally
+  $u_z \propto z_{\rm X}-z$.
+}
 This causes the density profile to be squeezed into a boundary layer where
 eventually numerical resolution is insufficient and, for centered
 differences, a spurious Nyquist signal is generated that almost
-instantaneously propagates into the whole box.
+instantaneously propagates into much of the whole box.
 
-This behavior is hardly influenced by the boundary conditions on
-$\ln\varrho$ at all.
+Even if the stagnation point is on the boundary (and enforced by the
+boundary conditions), this behavior is hardly influenced by the boundary
+conditions on $\ln\varrho$ at all.
 A solution, however, is to apply upwinded derivative operators.
 The simplest upwind derivative is a finite-difference derivative operator
 where the point furthest downwind is excluded from the stencil.
@@ -6011,9 +6013,9 @@ one takes
   = \frac{-2 f_{-3} + 15 f_{-2} - 60 f_{-1} + 20 f_{0} + 30 f_{1} - 3 f_{2}}
          {60\,\delta x}
     + \frac{\delta x^5\,f^{(6)}}{60}
-  = D^{\rm(up,5)} + \Order{\delta x^5} \; ;
+  = D^{\rm(up,5)} + \Order{\delta x^5} \; .
 \end{equation}
-the fourth-order upwind scheme would be
+A fourth-order upwind scheme (excluding two downwind points) would be
 \begin{equation}
   f'_0
   = \frac{-f_{-3} + 6 f_{-2} - 18 f_{-1} + 10 f_{0} + 3 f_{1}}
@@ -6021,10 +6023,10 @@ the fourth-order upwind scheme would be
     - \frac{\delta x^4\,f^{(5)}}{20}
   = D^{\rm(up,4)} + \Order{\delta x^4} \; .
 \end{equation}
-
 The effect of upwinding is mostly to stop the Nyquist perturbations from
-spreading away from the boundary.
+spreading away from the boundary or stagnation point.
 With the fourth-order formula they actually hardly ever develop.
+
 The difference between central and fifth-order upwind derivative is
 \begin{equation}
   [D^{\rm(up,5)} - D^{\rm(cent,6)}] f_0
@@ -6035,11 +6037,25 @@ The difference between central and fifth-order upwind derivative is
 \end{equation}
 In other words, 5th-order upwinding can be represented for any sign of $u$
 as hyper-diffusion:
-\begin{equation}
+\begin{equation} \label{Eq-upwind-hyperdiff}
   -u f'_{\rm(up,5th)}
-  = -u f'_{\rm(centr,6th)}  + \frac{|u|\delta x^5}{60} f^{(6)} \; .
+  = -u f'_{\rm(centr,6th)}  + \frac{|u|\,\delta x^5}{60} f^{(6)} \; .
 \end{equation}
+The advantage over adopting constant hyperdiffusion is that in the
+upwinding scheme hyperdiffusion is only applied where it is needed
+(i.e.~where advection is happening, hence the factor $|u|$).
 
+The form (\ref{Eq-upwind-hyperdiff}) also suggests an easy way to get
+`stronger' upwinding: Rather than excluding more points in the downwind
+direction, we can simply treat the weight of the hyperdiffusion term as a
+free parameter $\alpha$:
+\begin{equation}
+  -u f'_{\rm(up,5th,\alpha)}
+  = -u f'_{\rm(centr,6th)}  + \alpha\,|u|\,\delta x^5 f^{(6)} \; .
+\end{equation}
+If $\alpha$ is large, this may affect the time step, but for
+$\alpha=1/60$, the stability requirement for the hyperdiffusive term
+should always be weaker than the advective Courant criterion.
 
 \subsection{The 2N-scheme for time-stepping}
 \index{2N-scheme}
@@ -7972,7 +7988,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.301 2005-08-23 16:25:12 bingert Exp $ $}
+$ $Id: manual.tex,v 1.302 2005-09-01 22:27:50 dobler Exp $ $}
 
 
 \end{document}

@@ -1,14 +1,95 @@
 %!PS-Adobe-2.0
-%%Creator: dot version 1.7.6 (Sun Sep 23 23:38:45 GMT 2001)
-%%For: (dobler) 
+%%Creator: dot version 1.10 (Mon Oct 25 14:26:02 MDT 2004)
+%%For: (wdobler) Wolfgang Dobler
 %%Title: G
 %%Pages: (atend)
-%%BoundingBox: 35 35 526 625
+%%BoundingBox: 35 35 627 633
 %%EndComments
-%%BeginProlog
 save
+%%BeginProlog
 /DotDict 200 dict def
 DotDict begin
+
+/setupLatin1 {
+mark
+/EncodingVector 256 array def
+ EncodingVector 0
+
+ISOLatin1Encoding 0 255 getinterval putinterval
+
+EncodingVector
+  dup 306 /AE
+  dup 301 /Aacute
+  dup 302 /Acircumflex
+  dup 304 /Adieresis
+  dup 300 /Agrave
+  dup 305 /Aring
+  dup 303 /Atilde
+  dup 307 /Ccedilla
+  dup 311 /Eacute
+  dup 312 /Ecircumflex
+  dup 313 /Edieresis
+  dup 310 /Egrave
+  dup 315 /Iacute
+  dup 316 /Icircumflex
+  dup 317 /Idieresis
+  dup 314 /Igrave
+  dup 334 /Udieresis
+  dup 335 /Yacute
+  dup 376 /thorn
+  dup 337 /germandbls
+  dup 341 /aacute
+  dup 342 /acircumflex
+  dup 344 /adieresis
+  dup 346 /ae
+  dup 340 /agrave
+  dup 345 /aring
+  dup 347 /ccedilla
+  dup 351 /eacute
+  dup 352 /ecircumflex
+  dup 353 /edieresis
+  dup 350 /egrave
+  dup 355 /iacute
+  dup 356 /icircumflex
+  dup 357 /idieresis
+  dup 354 /igrave
+  dup 360 /dcroat
+  dup 361 /ntilde
+  dup 363 /oacute
+  dup 364 /ocircumflex
+  dup 366 /odieresis
+  dup 362 /ograve
+  dup 365 /otilde
+  dup 370 /oslash
+  dup 372 /uacute
+  dup 373 /ucircumflex
+  dup 374 /udieresis
+  dup 371 /ugrave
+  dup 375 /yacute
+  dup 377 /ydieresis  
+
+% Set up ISO Latin 1 character encoding
+/starnetISO {
+        dup dup findfont dup length dict begin
+        { 1 index /FID ne { def }{ pop pop } ifelse
+        } forall
+        /Encoding EncodingVector def
+        currentdict end definefont
+} def
+/Times-Roman starnetISO def
+/Times-Italic starnetISO def
+/Times-Bold starnetISO def
+/Times-BoldItalic starnetISO def
+/Helvetica starnetISO def
+/Helvetica-Oblique starnetISO def
+/Helvetica-Bold starnetISO def
+/Helvetica-BoldOblique starnetISO def
+/Courier starnetISO def
+/Courier-Oblique starnetISO def
+/Courier-Bold starnetISO def
+/Courier-BoldOblique starnetISO def
+cleartomark
+} bind def
 
 %%BeginResource: procset
 /coord-font-family /Times-Roman def
@@ -22,7 +103,7 @@ DotDict begin
 } bind def
 
 % styles
-/solid { } bind def
+/solid { [] 0 setdash } bind def
 /dashed { [9 InvScaleFactor mul dup ] 0 setdash } bind def
 /dotted { [1 InvScaleFactor mul 6 InvScaleFactor mul] 0 setdash } bind def
 /invis {/fill {newpath} def /stroke {newpath} def /show {pop newpath} def} bind def
@@ -58,19 +139,15 @@ DotDict begin
 } def
 
 % draw aligned label in bounding box aligned to current point
-% alignfactor tells what fraction to place on the left.
-% -.5 is centered.
-/alignedtext {			% text labelwidth fontsz alignfactor
-	/alignfactor exch def
-	/fontsz exch def
-	/width exch def
+/alignedtext {			% width adj text
 	/text exch def
+	/adj exch def
+	/width exch def
 	gsave
-		% even if node or edge is dashed, don't paint text with dashes
+		width 0 gt {
+			text stringwidth pop adj mul 0 rmoveto
+		} if
 		[] 0 setdash
-		currentpoint newpath moveto
-		text stringwidth pop
-		alignfactor mul fontsz -.3 mul rmoveto
 		text show
 	grestore
 } def
@@ -99,6 +176,7 @@ DotDict begin
 } bind def
 
 /endpage { showpage } bind def
+/showpage { } def
 
 /layercolorseq
 	[	% layer color sequence - darkest to lightest
@@ -110,8 +188,10 @@ DotDict begin
 	]
 def
 
+/layerlen layercolorseq length def
+
 /setlayer {/maxlayer exch def /curlayer exch def
-	layercolorseq curlayer get
+	layercolorseq curlayer 1 sub layerlen mod get
 	aload pop sethsbcolor
 	/nodecolor {nopcolor} def
 	/edgecolor {nopcolor} def
@@ -131,6 +211,7 @@ def
 
 /curlayer 0 def
 
+%%EndResource
 %%EndProlog
 %%BeginSetup
 14 default-font-family set_font
@@ -147,392 +228,556 @@ def
     userdict (>>) cvn ([) cvn load put
 } if
 
-%%EndResource
 %%EndSetup
 %%Page: 1 1
-%%PageBoundingBox: 36 36 526 625
+%%PageBoundingBox: 36 36 627 633
 %%PageOrientation: Portrait
 gsave
-35 35 491 590 boxprim clip newpath
+35 35 592 598 boxprim clip newpath
 36 36 translate
 0 0 1 beginpage
 0 0 translate 0 rotate
-[ /CropBox [36 36 526 625] /PAGES pdfmark
 0.000 0.000 0.000 graphcolor
 14.00 /Times-Roman set_font
 
 %	pencilcode
 gsave 10 dict begin
-221 562 43 18 ellipse_path
+256 570 49 18 ellipse_path
 stroke
 gsave 10 dict begin
-221 563 moveto (pencil-code) 65 14.00 -0.50 alignedtext
+256 565 moveto 76 -0.5 (pencil-code) alignedtext
 end grestore
 end grestore
 
 %	src
 gsave 10 dict begin
-73 490 27 18 ellipse_path
+90 498 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-73 491 moveto (src) 16 14.00 -0.50 alignedtext
+90 493 moveto 19 -0.5 (src) alignedtext
 end grestore
 end grestore
 
 %	pencilcode -> src
-newpath 192 549 moveto
-166 536 129 519 106 508 curveto
-105 507 104 507 103 506 curveto
+newpath 224 556 moveto
+195 543 152 524 122 512 curveto
 stroke
-newpath 102 508 moveto
-94 502 lineto
-104 504 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 123 510 moveto
+113 508 lineto
+121 514 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 123 510 moveto
+113 508 lineto
+121 514 lineto
+closepath
+stroke
+end grestore
 
 %	idl_dx
 gsave 10 dict begin
-147 490 29 18 ellipse_path
+178 498 33 18 ellipse_path
 stroke
 gsave 10 dict begin
-147 491 moveto (idl | dx) 38 14.00 -0.50 alignedtext
+178 493 moveto 44 -0.5 (idl | dx) alignedtext
 end grestore
 end grestore
 
 %	pencilcode -> idl_dx
-newpath 204 545 moveto
-194 535 181 523 170 512 curveto
+newpath 238 553 moveto
+227 543 213 530 202 520 curveto
 stroke
-newpath 169 514 moveto
-163 506 lineto
-172 511 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 204 519 moveto
+195 514 lineto
+201 522 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 204 519 moveto
+195 514 lineto
+201 522 lineto
+closepath
+stroke
+end grestore
 
 %	doc
 gsave 10 dict begin
-221 490 27 18 ellipse_path
+256 498 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-221 491 moveto (doc) 20 14.00 -0.50 alignedtext
+256 493 moveto 23 -0.5 (doc) alignedtext
 end grestore
 end grestore
 
 %	pencilcode -> doc
-newpath 221 544 moveto
-221 536 221 527 221 518 curveto
+newpath 256 552 moveto
+256 544 256 535 256 526 curveto
 stroke
-newpath 219 518 moveto
-221 508 lineto
-224 518 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 259 526 moveto
+256 516 lineto
+254 526 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 259 526 moveto
+256 516 lineto
+254 526 lineto
+closepath
+stroke
+end grestore
 
 %	bin
 gsave 10 dict begin
-293 490 27 18 ellipse_path
+328 498 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-293 491 moveto (bin) 17 14.00 -0.50 alignedtext
+328 493 moveto 22 -0.5 (bin) alignedtext
 end grestore
 end grestore
 
 %	pencilcode -> bin
-newpath 238 545 moveto
-248 535 260 523 271 512 curveto
+newpath 273 553 moveto
+283 543 295 531 306 520 curveto
 stroke
-newpath 269 510 moveto
-278 505 lineto
-273 514 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 308 522 moveto
+313 513 lineto
+304 518 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 308 522 moveto
+313 513 lineto
+304 518 lineto
+closepath
+stroke
+end grestore
 
 %	samples
 gsave 10 dict begin
-371 490 33 18 ellipse_path
+430 498 37 18 ellipse_path
 stroke
 gsave 10 dict begin
-371 491 moveto (samples) 45 14.00 -0.50 alignedtext
+430 493 moveto 53 -0.5 (samples) alignedtext
 end grestore
 end grestore
 
 %	pencilcode -> samples
-newpath 250 548 moveto
-275 536 311 519 338 506 curveto
+newpath 289 556 moveto
+318 544 362 527 393 514 curveto
 stroke
-newpath 336 504 moveto
-346 502 lineto
-338 509 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 394 516 moveto
+402 510 lineto
+392 512 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 394 516 moveto
+402 510 lineto
+392 512 lineto
+closepath
+stroke
+end grestore
 
 %	Makefile
 gsave 10 dict begin
-newpath 105 436 moveto
-41 436 lineto
-41 400 lineto
-105 400 lineto
+newpath 128 444 moveto
+52 444 lineto
+52 408 lineto
+128 408 lineto
 closepath
 stroke
 gsave 10 dict begin
-73 419 moveto (Makefile) 50 14.00 -0.50 alignedtext
+90 421 moveto 63 -0.5 (Makefile) alignedtext
 end grestore
 end grestore
 
 %	src -> Makefile
-newpath 73 472 moveto
-73 461 73 447 73 436 curveto
+newpath 90 480 moveto
+90 469 90 455 90 444 curveto
 stroke
 
 %	conv_slab
 gsave 10 dict begin
-262 418 37 18 ellipse_path
+291 426 43 18 ellipse_path
 stroke
 gsave 10 dict begin
-262 419 moveto (conv-slab) 54 14.00 -0.50 alignedtext
+291 421 moveto 65 -0.5 (conv-slab) alignedtext
 end grestore
 end grestore
 
 %	samples -> conv_slab
-newpath 350 476 moveto
-333 465 310 449 292 438 curveto
+newpath 405 485 moveto
+383 473 350 457 326 444 curveto
 stroke
-newpath 291 440 moveto
-284 433 lineto
-294 436 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 328 442 moveto
+318 440 lineto
+326 447 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 328 442 moveto
+318 440 lineto
+326 447 lineto
+closepath
+stroke
+end grestore
 
-%	conv_slab_flat
+%	fluxrings
 gsave 10 dict begin
-368 418 49 18 ellipse_path
+435 426 83 18 ellipse_path
 stroke
 gsave 10 dict begin
-368 419 moveto (conv-slab-flat) 77 14.00 -0.50 alignedtext
+435 421 moveto 145 -0.5 (interlocked-fluxrings) alignedtext
 end grestore
 end grestore
 
-%	samples -> conv_slab_flat
-newpath 370 472 moveto
-369 464 369 455 369 446 curveto
+%	samples -> fluxrings
+newpath 431 480 moveto
+432 472 432 463 433 454 curveto
 stroke
-newpath 367 446 moveto
-369 436 lineto
-372 446 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 435 454 moveto
+434 444 lineto
+431 454 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 435 454 moveto
+434 444 lineto
+431 454 lineto
+closepath
+stroke
+end grestore
 
 %	dot_dot_dot
 gsave 10 dict begin
-462 418 27 18 ellipse_path
+563 426 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-462 419 moveto (...) 10 14.00 -0.50 alignedtext
+563 421 moveto 6 -0.5 (...) alignedtext
 end grestore
 end grestore
 
 %	samples -> dot_dot_dot
-newpath 390 475 moveto
-404 464 423 449 438 437 curveto
+newpath 455 484 moveto
+477 472 510 454 534 442 curveto
 stroke
-newpath 435 436 moveto
-445 432 lineto
-438 440 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 534 445 moveto
+542 438 lineto
+532 440 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 534 445 moveto
+542 438 lineto
+532 440 lineto
+closepath
+stroke
+end grestore
 
 %	src1
 gsave 10 dict begin
-262 346 27 18 ellipse_path
+291 354 27 18 ellipse_path
 stroke
 gsave 10 dict begin
-262 347 moveto (src) 16 14.00 -0.50 alignedtext
+291 349 moveto 19 -0.5 (src) alignedtext
 end grestore
 end grestore
 
 %	conv_slab -> src1
-newpath 262 400 moveto
-262 392 262 383 262 374 curveto
+newpath 291 408 moveto
+291 400 291 391 291 382 curveto
 stroke
-newpath 260 374 moveto
-262 364 lineto
-265 374 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 294 382 moveto
+291 372 lineto
+289 382 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 294 382 moveto
+291 372 lineto
+289 382 lineto
+closepath
+stroke
+end grestore
 
 %	startrun
 gsave 10 dict begin
-newpath 105 364 moveto
-41 364 lineto
-41 328 lineto
-105 328 lineto
+newpath 128 372 moveto
+52 372 lineto
+52 336 lineto
+128 336 lineto
 closepath
 stroke
 gsave 10 dict begin
-73 347 moveto (start, run) 49 14.00 -0.50 alignedtext
+90 349 moveto 62 -0.5 (start, run) alignedtext
 end grestore
 end grestore
 
 %	Makefile -> startrun
-newpath 73 400 moveto
-73 389 73 375 73 364 curveto
+newpath 90 408 moveto
+90 397 90 383 90 372 curveto
 stroke
 
 %	Makefile -> src1
 gsave 10 dict begin
 dashed
-newpath 105 406 moveto
-140 392 197 371 231 358 curveto
+newpath 128 412 moveto
+166 398 223 379 258 365 curveto
 stroke
-newpath 228 357 moveto
-238 355 lineto
-230 361 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 258 368 moveto
+267 362 lineto
+257 363 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 258 368 moveto
+267 362 lineto
+257 363 lineto
+closepath
+stroke
+end grestore
 end grestore
 
 %	scheme
 gsave 10 dict begin
-newpath 121 278 moveto
-25 278 lineto
-25 242 lineto
-121 242 lineto
+newpath 147 284 moveto
+33 284 lineto
+33 248 lineto
+147 248 lineto
 closepath
 stroke
 gsave 10 dict begin
-73 261 moveto (timestep, deriv) 83 14.00 -0.50 alignedtext
+90 261 moveto 100 -0.5 (timestep, deriv) alignedtext
 end grestore
 end grestore
 
 %	startrun -> scheme
-newpath 73 328 moveto
-73 313 73 293 73 278 curveto
+newpath 90 336 moveto
+90 321 90 299 90 284 curveto
 stroke
 
 %	startrun -> src1
 gsave 10 dict begin
 dashed
-newpath 105 346 moveto
-145 346 186 346 226 346 curveto
+newpath 128 354 moveto
+170 354 212 354 254 354 curveto
 stroke
-newpath 225 344 moveto
-235 346 lineto
-225 349 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 254 357 moveto
+264 354 lineto
+254 352 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 254 357 moveto
+264 354 lineto
+254 352 lineto
+closepath
+stroke
+end grestore
 end grestore
 
 %	equ
 gsave 10 dict begin
-newpath 100 192 moveto
-46 192 lineto
-46 156 lineto
-100 156 lineto
+newpath 117 196 moveto
+63 196 lineto
+63 160 lineto
+117 160 lineto
 closepath
 stroke
 gsave 10 dict begin
-73 175 moveto (equ) 20 14.00 -0.50 alignedtext
+90 173 moveto 25 -0.5 (equ) alignedtext
 end grestore
 end grestore
 
 %	scheme -> equ
-newpath 73 242 moveto
-73 227 73 207 73 192 curveto
+newpath 90 248 moveto
+90 233 90 211 90 196 curveto
 stroke
 
 %	scheme -> src1
 gsave 10 dict begin
 dashed
-newpath 233 334 moveto
-203 322 158 304 132 292 curveto
-124 288 115 283 105 278 curveto
+newpath 127 284 moveto
+138 289 150 295 161 300 curveto
+194 314 233 330 260 341 curveto
 stroke
-newpath 231 330 moveto
-239 337 lineto
-229 335 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 258 343 moveto
+268 345 lineto
+260 338 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 258 343 moveto
+268 345 lineto
+260 338 lineto
+closepath
+stroke
+end grestore
 end grestore
 
 %	physics
 gsave 10 dict begin
-newpath 146 120 moveto
-0 120 lineto
+newpath 180 124 moveto
+0 124 lineto
 0 8 lineto
-146 8 lineto
+180 8 lineto
 closepath
 stroke
 gsave 10 dict begin
-73 113 moveto () 0 14.00 -0.50 alignedtext
-73 97 moveto (hydro | hohydro) 89 14.00 -0.50 alignedtext
-73 81 moveto (density | nodensity) 104 14.00 -0.50 alignedtext
-73 65 moveto (entropy | noentropy) 109 14.00 -0.50 alignedtext
-73 49 moveto (grav_z | grav_r | nograv) 132 14.00 -0.50 alignedtext
-73 33 moveto (magnetic | nomagnetic) 126 14.00 -0.50 alignedtext
-73 17 moveto () 0 14.00 -0.50 alignedtext
+90 109 moveto 0 -0.5 () alignedtext
+90 93 moveto 110 -0.5 (hydro | hohydro) alignedtext
+90 77 moveto 126 -0.5 (density | nodensity) alignedtext
+90 61 moveto 135 -0.5 (entropy | noentropy) alignedtext
+90 45 moveto 166 -0.5 (grav_z | grav_r | nograv) alignedtext
+90 29 moveto 153 -0.5 (magnetic | nomagnetic) alignedtext
+90 13 moveto 0 -0.5 () alignedtext
 end grestore
 end grestore
 
 %	equ -> physics
-newpath 73 156 moveto
-73 146 73 133 73 120 curveto
+newpath 90 160 moveto
+90 150 90 137 90 124 curveto
 stroke
 
 %	equ -> src1
 gsave 10 dict begin
 dashed
-newpath 235 332 moveto
-213 321 185 306 170 292 curveto
-151 275 148 247 133 228 curveto
-124 217 108 203 95 192 curveto
+newpath 116 196 moveto
+129 206 144 218 156 232 curveto
+179 258 173 275 199 300 curveto
+209 309 238 326 261 339 curveto
 stroke
-newpath 233 328 moveto
-240 335 lineto
-230 332 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 259 341 moveto
+269 343 lineto
+261 336 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 259 341 moveto
+269 343 lineto
+261 336 lineto
+closepath
+stroke
+end grestore
 end grestore
 
 %	physics -> src1
 gsave 10 dict begin
 dashed
-newpath 240 327 moveto
-225 314 207 297 203 292 curveto
-185 269 135 180 103 120 curveto
+newpath 126 124 moveto
+146 156 170 196 192 232 curveto
+210 262 209 272 232 300 curveto
+242 312 255 325 266 334 curveto
 stroke
-newpath 240 323 moveto
-245 332 lineto
-236 327 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 264 335 moveto
+273 340 lineto
+267 332 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 264 335 moveto
+273 340 lineto
+267 332 lineto
+closepath
+stroke
+end grestore
 end grestore
 
 %	src_local
 gsave 10 dict begin
-newpath 309 292 moveto
-215 292 lineto
-215 228 lineto
-309 228 lineto
+newpath 351 300 moveto
+241 300 lineto
+241 232 lineto
+351 232 lineto
 closepath
 stroke
 gsave 10 dict begin
-262 285 moveto () 0 14.00 -0.50 alignedtext
-262 269 moveto (Makefile.local) 81 14.00 -0.50 alignedtext
-262 253 moveto (cparam.local) 71 14.00 -0.50 alignedtext
-262 237 moveto () 0 14.00 -0.50 alignedtext
+296 285 moveto 0 -0.5 () alignedtext
+296 269 moveto 96 -0.5 (Makefile.local) alignedtext
+296 253 moveto 85 -0.5 (cparam.local) alignedtext
+296 237 moveto 0 -0.5 () alignedtext
 end grestore
 end grestore
 
 %	src1 -> src_local
-newpath 262 328 moveto
-262 321 262 311 262 302 curveto
+newpath 292 336 moveto
+293 328 294 319 294 309 curveto
 stroke
-newpath 260 302 moveto
-262 292 lineto
-265 302 lineto
+gsave 10 dict begin
+solid
+1 setlinewidth
+0.000 0.000 0.000 edgecolor
+newpath 297 310 moveto
+294 300 lineto
+292 310 lineto
 closepath
 fill
+0.000 0.000 0.000 edgecolor
+newpath 297 310 moveto
+294 300 lineto
+292 310 lineto
+closepath
+stroke
+end grestore
 endpage
+showpage
 grestore
 %%PageTrailer
 %%EndPage: 1
