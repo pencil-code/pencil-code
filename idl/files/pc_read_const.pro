@@ -1,9 +1,13 @@
-;; $Id: pc_read_const.pro,v 1.1 2005-09-01 16:36:07 ajohan Exp $
+;; $Id: pc_read_const.pro,v 1.2 2005-09-01 16:38:20 ajohan Exp $
 ;;
-;;   Read Pencil Code constants from a file.
+;;  Read Pencil Code constants from a file.
 ;;
-pro pc_read_const, object=object, varfile=varfile, datadir=datadir, $
-    quiet=quiet
+;;  Usage:
+;;
+;;    IDL> pc_read_const, obj=const
+;;    IDL> print, const.tt_ion
+;;
+pro pc_read_const, object=object, varfile=varfile, datadir=datadir, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
