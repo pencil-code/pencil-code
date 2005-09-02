@@ -3,10 +3,10 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2005-08-31 23:16:23 dobler Exp $',
+  cvsid='$Id: start.in,v 1.2 2005-09-02 23:51:58 dobler Exp $',
   ip=14,                        ! debugging parameter
-  xyz0  = -3,-3,-3,       ! first corner of box
-  xyz1  =  3, 3, 3,       ! second corner of box
+  xyz0  = -2.5,-2.5,-2.5,       ! first corner of box
+  xyz1  =  2.5, 2.5, 2.5,       ! second corner of box
   lperi =  F  , F  , F,         ! periodic direction?
   lshift_origin =  F,  F,  F,
   !      ux  uy  uz   lnrho  ss    ax  ay  az

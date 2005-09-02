@@ -3,9 +3,9 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2005-08-31 23:16:23 dobler Exp $',
+  cvsid='$Id: run.in,v 1.2 2005-09-02 23:51:58 dobler Exp $',
   ip=13,
-  nt=10000, it1=5, isave=500, itorder=3
+  nt=50, it1=10, isave=500, itorder=3
   !tmax=200.
   tmax=0.918
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
@@ -21,7 +21,7 @@
 &hydro_run_pars
   Omega=0., theta=0. ! amount and direction of angular velocity
   ! lcentrifugal_force=T
-  ! dampuext=20., rdampext=3., wdamp=0.1, ! Damp uu outside r_ext
+  dampuext=20., rdampext=3., wdamp=0.1, ! Damp uu outside r_ext
 /
 &density_run_pars
   lupw_lnrho=T
