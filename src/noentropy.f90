@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.74 2005-08-22 17:55:42 wlyra Exp $
+! $Id: noentropy.f90,v 1.75 2005-09-02 02:12:38 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.74 2005-08-22 17:55:42 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.75 2005-09-02 02:12:38 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -197,10 +197,12 @@ module Entropy
 !
 !  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
-      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      if (leos) then            ! no sound waves without equation of state
+        if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
+        if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+      endif
 !
-!  subtract isothermal/polytropic pressure gradient term in momentum equation
+!  add isothermal/polytropic pressure term in momentum equation
 !
       if (lhydro) then
         do j=1,3
