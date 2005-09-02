@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.148 2005-08-22 12:16:38 ajohan Exp $
+! $Id: start.f90,v 1.149 2005-09-02 09:11:40 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -53,8 +53,6 @@
 !
         integer :: i,ifilter,stat
         logical :: lnoerase=.false.
-!       logical :: lock=.false.
-!       logical :: exist
         real :: x00,y00,z00
 !        real, dimension (mx,my,mz,mvar+maux) :: f
 !        real, dimension (mx,my,mz,mvar) :: df
@@ -64,7 +62,7 @@
 !
         lstart = .true.
 !
-! Initialize the message subsystem, eg. color setting etc.
+!  Initialize the message subsystem, eg. color setting etc.
 !
         call initialize_messages()
 !
@@ -83,10 +81,15 @@
 !
         call register_modules()         ! register modules, etc.
 !
+!  The logical headtt is sometimes referred to in start.x, even though it is
+!  not yet defined. So we set it simply to lroot here.
+!
+        headtt=lroot
+!
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.148 2005-08-22 12:16:38 ajohan Exp $")
+             "$Id: start.f90,v 1.149 2005-09-02 09:11:40 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
