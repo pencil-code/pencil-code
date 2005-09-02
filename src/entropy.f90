@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.351 2005-08-29 09:23:51 bingert Exp $
+! $Id: entropy.f90,v 1.352 2005-09-02 02:13:55 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.351 2005-08-29 09:23:51 bingert Exp $")
+           "$Id: entropy.f90,v 1.352 2005-09-02 02:13:55 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1539,8 +1539,8 @@ module Entropy
 !
       if (lhydro) then
 !
-!  subtract pressure gradient term in momentum equation
-!  (allow suppression of pressure gradient for test purposes)
+!  pressure term in momentum equation (setting lpressuregradient_gas to
+!  .false. allows suppressing pressure term for test purposes)
 !
         if (lpressuregradient_gas) then
           do j=1,3

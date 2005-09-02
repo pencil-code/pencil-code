@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.254 2005-08-23 16:39:40 ajohan Exp $
+! $Id: equ.f90,v 1.255 2005-09-02 02:13:55 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.254 2005-08-23 16:39:40 ajohan Exp $")
+           "$Id: equ.f90,v 1.255 2005-09-02 02:13:55 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -756,7 +756,7 @@ module Equ
         call random_number_wrapper(f_other(:,:,:,i))
       enddo
       df_ref=0.0
-      call initialize_pencils(p,penc0) 
+      call initialize_pencils(p,penc0)
 !
 !  Calculate reference results with all requested pencils on
 !
