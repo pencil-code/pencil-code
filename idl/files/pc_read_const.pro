@@ -1,4 +1,4 @@
-;; $Id: pc_read_const.pro,v 1.2 2005-09-01 16:38:20 ajohan Exp $
+;; $Id: pc_read_const.pro,v 1.3 2005-09-02 07:55:02 ajohan Exp $
 ;;
 ;;  Read Pencil Code constants from a file.
 ;;
@@ -23,7 +23,8 @@ if (not quiet) then $
 ;;
 ;;  Set precision
 ;;
-pc_set_precision, quiet=quiet
+pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+pc_set_precision, dim=dim, quiet=quiet
 ;;
 ;;  Find length of data file and define data arrays.
 ;;
