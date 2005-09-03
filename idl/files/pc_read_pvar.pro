@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.11 2005-08-29 12:10:22 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.12 2005-09-03 14:43:08 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -263,8 +263,9 @@ endif
 ;
 ;if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(QUIET))) then begin
 ;  pc_object_stats,object,dim=dim,QUIET=QUIET
-if (not keyword_set(QUIET)) then print,' t = ', t
 ;endif
+
+print,' t = ', t
 
 
 end
