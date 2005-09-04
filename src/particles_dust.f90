@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.25 2005-09-02 08:59:02 ajohan Exp $
+! $Id: particles_dust.f90,v 1.26 2005-09-04 10:38:10 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -26,18 +26,20 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2
+  real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2, gravz=0.0, kz_gg=1.0
   logical :: ldragforce_gas=.false.
   character (len=labellen) :: initxxp='origin', initvvp='zero'
+  character (len=labellen) :: gravz_profile='zero'
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, nu_epicycle, rhop_tilde, eps_dtog
+      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, nu_epicycle, &
+      gravz_profile, gravz, kz_gg, rhop_tilde, eps_dtog
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, nu_epicycle, &
       ldragforce_gas, rhop_tilde, eps_dtog, tausgmin, cdtp, &
-      linterp_reality_check
+      linterp_reality_check, gravz, kz_gg, gravz_profile
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -63,7 +65,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.25 2005-09-02 08:59:02 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.26 2005-09-04 10:38:10 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -158,7 +160,10 @@ module Particles
 !
 !  Calculate nu_epicycle**2 for gravity.
 !
-      if (nu_epicycle/=0.0) nu_epicycle2=nu_epicycle**2
+      if (nu_epicycle/=0.0) then
+        gravz_profile='linear'
+        nu_epicycle2=nu_epicycle**2
+      endif
 !
 !  Calculate inverse of minimum gas friction time.
 !
@@ -477,9 +482,25 @@ module Particles
 !
 !  Gravity on the particles.
 !
-      if (nu_epicycle2/=0.0) then     
-        dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz)-nu_epicycle2*fp(1:npar_loc,izp)
-      endif
+      select case (gravz_profile)
+
+        case ('zero')
+          if (lheader) print*, 'dvvp_dt: No gravity in z'
+ 
+        case ('linear')
+          if (lheader) print*, 'dvvp_dt: Linear gravity field in z'
+          dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+              nu_epicycle2*fp(1:npar_loc,izp)
+ 
+        case ('sinusoidal')
+          if (lheader) print*, 'dvvp_dt: Sinusoidal gravity field in z'
+          dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+              gravz*sin(kz_gg*fp(1:npar_loc,izp))
+ 
+        case ('default')
+          call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
+
+      endselect
 !
 !  Diagnostic output
 !
