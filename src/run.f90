@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.209 2005-08-28 16:28:58 ajohan Exp $
+! $Id: run.f90,v 1.210 2005-09-05 10:41:29 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.209 2005-08-28 16:28:58 ajohan Exp $")
+             "$Id: run.f90,v 1.210 2005-09-05 10:41:29 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -422,7 +422,8 @@
           if (lout.and.lroot.and.(idiag_walltime/=0 .or. max_walltime/=0.)) then
             time2=mpiwtime()
             wall_clock_time = (time2-time1)
-            call save_name(wall_clock_time,idiag_walltime) 
+            if (idiag_walltime/=0) &
+                call save_name(wall_clock_time,idiag_walltime) 
           endif
           if (lout.and.lroot.and.idiag_timeperstep/=0) then
             time_this_diagnostic=mpiwtime()
