@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.210 2005-09-05 10:41:29 ajohan Exp $
+! $Id: run.f90,v 1.211 2005-09-05 11:51:17 theine Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.210 2005-09-05 10:41:29 ajohan Exp $")
+             "$Id: run.f90,v 1.211 2005-09-05 11:51:17 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -275,8 +275,8 @@
 !
 !  Exit do loop if wall_clock_time has exeeded max_walltime 
 !
-            if (lroot.and.(wall_clock_time .gt. max_walltime)) then
-              timeover=.true. 
+            if (lroot.and.max_walltime > 0.0) then 
+              if (wall_clock_time > max_walltime) timeover=.true. 
             endif
             call mpibcast_logical(timeover, 1)
             if (timeover) then
