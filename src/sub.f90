@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.216 2005-08-29 14:22:46 ajohan Exp $ 
+! $Id: sub.f90,v 1.217 2005-09-06 12:25:28 theine Exp $ 
 
 module Sub 
 
@@ -179,6 +179,30 @@ module Sub
     module procedure quintic_der_step_mn
     module procedure quintic_der_step_global
   endinterface
+!!
+!!  extended intrinsic operators to do some scalar/vector pencil arithmetic
+!!
+!  public :: operator(*),operator(+),operator(/),operator(-)
+!
+!  interface operator (*)
+!    module procedure pencil_multiply1
+!    module procedure pencil_multiply2
+!  endinterface
+!
+!  interface operator (+)
+!    module procedure pencil_add1
+!    module procedure pencil_add2
+!  endinterface
+!
+!  interface operator (/)
+!    module procedure pencil_divide1
+!    module procedure pencil_divide2
+!  endinterface
+!
+!  interface operator (-)
+!    module procedure pencil_substract1
+!    module procedure pencil_substract2
+!  endinterface
 
 !ajwm Commented pending a C replacement
 !  INTERFACE getenv
@@ -4023,6 +4047,158 @@ nameloop: do
       maxf = max(f1,f2,f3,maxf)
 
     endsubroutine max_for_dt_1_1_1_nx
+!***********************************************************************
+    function pencil_multiply1(s,v)
+!
+!  The `*' operator may be extended through this function to allow
+!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx,3) :: pencil_multiply1
+
+      integer :: i
+
+      do i=1,3; pencil_multiply1(:,i) = s(:) * v(:,i); enddo
+
+    endfunction pencil_multiply1
+!***********************************************************************
+    function pencil_multiply2(v,s)
+!
+!  The `*' operator may be extended through this function to allow
+!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3) :: pencil_multiply2
+
+      integer :: i
+
+      do i=1,3; pencil_multiply2(:,i) = v(:,i) * s(:); enddo
+
+    endfunction pencil_multiply2
+!***********************************************************************
+    function pencil_add1(s,v)
+!
+!  The `+' operator may be extended through this function to allow
+!  elementwise addition of a `pencil-scalar' to a `pencil-vector'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx,3) :: pencil_add1
+
+      integer :: i
+
+      do i=1,3; pencil_add1(:,i) = s(:) + v(:,i); enddo
+
+    endfunction pencil_add1
+!***********************************************************************
+    function pencil_add2(v,s)
+!
+!  The `+' operator may be extended through this function to allow
+!  elementwise addition of a `pencil-scalar' to a `pencil-vector'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3) :: pencil_add2
+
+      integer :: i
+
+      do i=1,3; pencil_add2(:,i) = v(:,i) + s(:); enddo
+
+    endfunction pencil_add2
+!***********************************************************************
+    function pencil_divide1(s,v)
+!
+!  The `/' operator may be extended through this function to allow
+!  elementwise division of a `pencil-scalar' by a `pencil-vector'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx,3) :: pencil_divide1
+
+      integer :: i
+
+      do i=1,3; pencil_divide1(:,i) = s(:) / v(:,i); enddo
+
+    endfunction pencil_divide1
+!***********************************************************************
+    function pencil_divide2(v,s)
+!
+!  The `/' operator may be extended through this function to allow
+!  elementwise division of a `pencil-vector' by a `pencil-scalar'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3) :: pencil_divide2
+
+      integer :: i
+
+      do i=1,3; pencil_divide2(:,i) = v(:,i) / s(:); enddo
+
+    endfunction pencil_divide2
+!***********************************************************************
+    function pencil_substract1(s,v)
+!
+!  The `-' operator may be extended through this function to allow
+!  elementwise substraction of a `pencil-vector' from a `pencil-scalar'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx,3) :: pencil_substract1
+
+      integer :: i
+
+      do i=1,3; pencil_substract1(:,i) = s(:) - v(:,i); enddo
+
+    endfunction pencil_substract1
+!***********************************************************************
+    function pencil_substract2(v,s)
+!
+!  The `-' operator may be extended through this function to allow
+!  elementwise substraction of a `pencil-scalar' from a `pencil-vector'
+!
+!   6-Sep-05/tobi: coded
+!
+      use Cdata
+
+      real, dimension(nx,3), intent(in) :: v
+      real, dimension(nx), intent(in) :: s
+      real, dimension(nx,3) :: pencil_substract2
+
+      integer :: i
+
+      do i=1,3; pencil_substract2(:,i) = v(:,i) - s(:); enddo
+
+    endfunction pencil_substract2
 !***********************************************************************
 
 
