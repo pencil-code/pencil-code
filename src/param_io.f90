@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.212 2005-09-07 07:24:04 dobler Exp $ 
+! $Id: param_io.f90,v 1.213 2005-09-07 16:05:16 wlyra Exp $ 
 
 module Param_IO
 
@@ -78,7 +78,8 @@ module Param_IO
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &
-       lfreeze_varint,lfreeze_varext,rfreeze_int,rfreeze_ext,wfreeze, &
+       lfreeze_varint,lfreeze_varext,rfreeze_int,rfreeze_ext,&
+       wfreezeint,wfreezeext, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &

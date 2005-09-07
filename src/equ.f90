@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.255 2005-09-02 02:13:55 dobler Exp $
+! $Id: equ.f90,v 1.256 2005-09-07 16:05:16 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -310,7 +310,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.255 2005-09-02 02:13:55 dobler Exp $")
+           "$Id: equ.f90,v 1.256 2005-09-07 16:05:16 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -539,7 +539,7 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
               ' : ', lfreeze_varint
-          pfreeze_int  = quintic_step(r_mn,rfreeze_int,wfreeze,SHIFT=-1.)
+          pfreeze_int  = quintic_step(r_mn,rfreeze_int,wfreezeint,SHIFT=-1.)
           do iv=1,nvar
             if (lfreeze_varint(iv)) df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
           enddo
@@ -549,7 +549,7 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r > ', rfreeze_ext, &
               ' : ', lfreeze_varext
-          pfreeze_ext  = 1-quintic_step(r_mn,rfreeze_ext,wfreeze,SHIFT=1.)
+          pfreeze_ext  = 1-quintic_step(r_mn,rfreeze_ext,wfreezeext,SHIFT=1.)
           do iv=1,nvar
             if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
           enddo
