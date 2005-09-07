@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.19 2005-07-05 16:21:43 mee Exp $
+! $Id: testfield.f90,v 1.20 2005-09-07 17:25:10 dobler Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -106,7 +106,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.19 2005-07-05 16:21:43 mee Exp $")
+           "$Id: testfield.f90,v 1.20 2005-09-07 17:25:10 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -283,9 +283,9 @@ module Testfield
 !
       if (headtt.or.ldebug) print*,'daatest_dt: SOLVE'
       if (headtt) then
-        call identify_bcs('Axtest',iaxtest)
-        call identify_bcs('Aytest',iaytest)
-        call identify_bcs('Aztest',iaztest)
+        if (iaxtest /= 0) call identify_bcs('Axtest',iaxtest)
+        if (iaytest /= 0) call identify_bcs('Aytest',iaytest)
+        if (iaztest /= 0) call identify_bcs('Aztest',iaztest)
       endif
 !
 !  do each of the 9 test fields at a time
