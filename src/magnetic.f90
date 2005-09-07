@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.253 2005-08-26 11:40:26 snod Exp $
+! $Id: magnetic.f90,v 1.254 2005-09-07 00:43:24 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -169,7 +169,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.253 2005-08-26 11:40:26 snod Exp $")
+           "$Id: magnetic.f90,v 1.254 2005-09-07 00:43:24 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2156,15 +2156,18 @@ module Magnetic
         b(0,:) = (/ 0.         , 0.                           , 1. /) * beta(0)
         b(1,:) = (/ 0.         , -r_int**3/(r_ext**3-r_int**3), 1. /) * beta(1)
         !
-        sigma0 = a(0,3)*r_mn + b(0,3)*r_2_mn
-        sigma1 = a(1,3)*r_mn + b(1,3)*r_2_mn
-        where(r_mn<r_int)
+        ! The following could be coded much clearer using elsewhere, but
+        ! that is not in F90 (and pgf90 doesn't support F95)
+        ! r_in < r < r_ext
+        sigma0 = a(0,2)*r_mn + b(0,2)*r_2_mn
+        sigma1 = a(1,2)*r_mn + b(1,2)*r_2_mn
+        where(r_mn>r_ext) ! r > r_ext
+          sigma0 = a(0,3)*r_mn + b(0,3)*r_2_mn
+          sigma1 = a(1,3)*r_mn + b(1,3)*r_2_mn
+        endwhere
+        where(r_mn<r_int) ! r < r_int
           sigma0 = a(0,1)*r_mn + b(0,1)*r_2_mn
           sigma1 = a(1,1)*r_mn + b(1,1)*r_2_mn
-        endwhere
-        where(r_mn<r_ext)
-          sigma0 = a(0,2)*r_mn + b(0,2)*r_2_mn
-          sigma1 = a(1,2)*r_mn + b(1,2)*r_2_mn
         endwhere
         sigma1 = sigma1*sqrt(2.)
         f(l1:l2,m,n,ivar+0) = -sigma0*y_mn*r_1_mn
