@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.49 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: slices.f90,v 1.50 2005-09-07 17:03:58 dobler Exp $
 
 !  This module produces slices for animation purposes
 
@@ -122,6 +122,7 @@ module Slices
 !
       use Sub
       use General
+      use Messages
       use EquationOfState, only: eoscalc, ilnrho_ss
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -280,14 +281,19 @@ module Slices
           do k=1,ndustspec
             call chn(k,sdust)
             if (k == 1) sdust = ''
-            nd_yz=f(ix,m1:m2,n1:n2,ind(k))
-            nd_xz=f(l1:l2,iy,n1:n2,ind(k))
-            nd_xy=f(l1:l2,m1:m2,iz,ind(k))
-            nd_xy2=f(l1:l2,m1:m2,iz2,ind(k))
-            call wslice(path//'nd'//trim(sdust)//'.yz',nd_yz,x(ix),ny,nz)
-            call wslice(path//'nd'//trim(sdust)//'.xz',nd_xz,y(iy),nx,nz)
-            call wslice(path//'nd'//trim(sdust)//'.xy',nd_xy,z(iz),nx,ny)
-            call wslice(path//'nd'//trim(sdust)//'.Xy',nd_xy2,z(iz2),nx,ny)
+            if (ldustdensity) then
+              nd_yz=f(ix,m1:m2,n1:n2,ind(k))
+              nd_xz=f(l1:l2,iy,n1:n2,ind(k))
+              nd_xy=f(l1:l2,m1:m2,iz,ind(k))
+              nd_xy2=f(l1:l2,m1:m2,iz2,ind(k))
+              call wslice(path//'nd'//trim(sdust)//'.yz',nd_yz,x(ix),ny,nz)
+              call wslice(path//'nd'//trim(sdust)//'.xz',nd_xz,y(iy),nx,nz)
+              call wslice(path//'nd'//trim(sdust)//'.xy',nd_xy,z(iz),nx,ny)
+              call wslice(path//'nd'//trim(sdust)//'.Xy',nd_xy2,z(iz2),nx,ny)
+            else
+              if (lroot) call warning('WVID', &
+                  "Can't use 'nd' slices with nodustdensity")
+            endif
           enddo
 !
 !  Degree of ionization (auxiliary variable)
