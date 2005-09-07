@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.142 2005-08-04 16:48:37 theine Exp $
+! $Id: mpicomm.f90,v 1.143 2005-09-07 18:09:33 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -28,7 +28,7 @@
 !             3         - - - - - - - - - . - - - - - - - - -
 !             2         - - - - - - - - - . - - - - - - - - -
 !         n = 1         - - - - - - - - - . - - - - - - - - -
-!                            
+!
 !                                m1i             m2i
 !                             m1. . . . .   . . . . . m2
 !               m     = 1 2 3 . . . . . .   . . . . . . . . my
@@ -129,13 +129,13 @@ module Mpicomm
   real, dimension (mx,nghost,nghost,mcom) :: llbufo,lubufo,uubufo,ulbufo
 !
 ! For Shock profile contributions
-  real, dimension (mx,nghost,nz) :: lshkbufyi,ushkbufyi,lshkbufyo,ushkbufyo 
+  real, dimension (mx,nghost,nz) :: lshkbufyi,ushkbufyi,lshkbufyo,ushkbufyo
   real, dimension (mx,ny,nghost) :: lshkbufzi,ushkbufzi,lshkbufzo,ushkbufzo
   real, dimension (mx,nghost,nghost) :: llshkbufi,lushkbufi,uushkbufi,ulshkbufi
   real, dimension (mx,nghost,nghost) :: llshkbufo,lushkbufo,uushkbufo,ulshkbufo
 !
 ! For premature velocity comms contributions
-  real, dimension (mx,nghost,nz,3) :: lvelbufyi,uvelbufyi,lvelbufyo,uvelbufyo 
+  real, dimension (mx,nghost,nz,3) :: lvelbufyi,uvelbufyi,lvelbufyo,uvelbufyo
   real, dimension (mx,ny,nghost,3) :: lvelbufzi,uvelbufzi,lvelbufzo,uvelbufzo
   real, dimension (mx,nghost,nghost,3) :: llvelbufi,luvelbufi,uuvelbufi,ulvelbufi
   real, dimension (mx,nghost,nghost,3) :: llvelbufo,luvelbufo,uuvelbufo,ulvelbufo
@@ -410,13 +410,13 @@ module Mpicomm
       if (nprocy>1) then
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
-        do j=1,mcom
-           if (ipy /= 0 .OR. bcy1(j)=='p') then
-              f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
-           endif
-           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
-              f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
-           endif
+        do j=1,mvar
+          if (ipy /= 0 .OR. bcy1(j)=='p') then
+            f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
+          endif
+          if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+            f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
+          endif
         enddo
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
@@ -427,13 +427,13 @@ module Mpicomm
       if (nprocz>1) then
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
-        do j=1,mcom
-           if (ipz /= 0 .OR. bcz1(j)=='p') then 
-              f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
-           endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
-              f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
-           endif
+        do j=1,mvar
+          if (ipz /= 0 .OR. bcz1(j)=='p') then
+            f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
+          endif
+          if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
+            f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
+          endif
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
@@ -446,23 +446,23 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,ierr)
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
-        do j=1,mcom
-           if (ipz /= 0 .OR. bcz1(j)=='p') then 
-              if (ipy /= 0 .OR. bcy1(j)=='p') then 
-                 f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
-              endif
-              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-                 f(:,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
-              endif
-           endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
-              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
-                 f(:,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
-              endif
-              if (ipy /= 0 .OR. bcy1(j)=='p') then
-                 f(:, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
-              endif
-           endif
+        do j=1,mvar
+          if (ipz /= 0 .OR. bcz1(j)=='p') then
+            if (ipy /= 0 .OR. bcy1(j)=='p') then
+              f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
+            endif
+            if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+              f(:,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
+            endif
+          endif
+          if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
+            if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+              f(:,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
+            endif
+            if (ipy /= 0 .OR. bcy1(j)=='p') then
+              f(:, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
+            endif
+          endif
         enddo
         call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,ierr)
         call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,ierr)
@@ -742,7 +742,7 @@ module Mpicomm
         if (ipy /= 0 .OR. lperi(2)) then
           f(:, m1:m1i,n1:n2,ishock)=f(:,m1:m1i,n1:n2,ishock)+lshkbufyi  !!(set lower buffer)
         endif
-        if (ipy /= nprocy-1 .OR. lperi(2)) then 
+        if (ipy /= nprocy-1 .OR. lperi(2)) then
           f(:,m2i:m2,n1:n2,ishock)=f(:,m2i:m2,n1:n2,ishock)+ushkbufyi  !!(set upper buffer)
         endif
         call MPI_WAIT(isend_rq_shktolowy,isend_stat_shktl,ierr)
@@ -754,10 +754,10 @@ module Mpicomm
       if (nprocz>1) then
         call MPI_WAIT(irecv_rq_shkfromuppz,irecv_stat_shkfu,ierr)
         call MPI_WAIT(irecv_rq_shkfromlowz,irecv_stat_shkfl,ierr)
-        if (ipz /= 0 .OR. lperi(3)) then 
+        if (ipz /= 0 .OR. lperi(3)) then
            f(:,m1:m2,n1:n1i,ishock)=f(:,m1:m2,n1:n1i,ishock)+lshkbufzi  !!(set lower buffer)
         endif
-        if (ipz /= nprocz-1 .OR. lperi(3)) then 
+        if (ipz /= nprocz-1 .OR. lperi(3)) then
            f(:,m1:m2,n2i:n2,ishock)=f(:,m1:m2,n2i:n2,ishock)+ushkbufzi  !!(set upper buffer)
         endif
         call MPI_WAIT(isend_rq_shktolowz,isend_stat_shktl,ierr)
@@ -771,16 +771,16 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_shkFRlu,irecv_stat_shkFlu,ierr)
         call MPI_WAIT(irecv_rq_shkFRll,irecv_stat_shkFll,ierr)
         call MPI_WAIT(irecv_rq_shkFRul,irecv_stat_shkFul,ierr)
-        if (ipz /= 0 .OR. lperi(3)) then 
-           if (ipy /= 0 .OR. lperi(2)) then 
+        if (ipz /= 0 .OR. lperi(3)) then
+           if (ipy /= 0 .OR. lperi(2)) then
               f(:, m1:m1i, n1:n1i,ishock)=f(:, m1:m1i, n1:n1i,ishock)+llshkbufi  !!(set ll corner)
            endif
            if (ipy /= nprocy-1 .OR. lperi(2)) then
               f(:, m2i:m2, n1:n1i,ishock)=f(:, m2i:m2, n1:n1i,ishock)+ulshkbufi  !!(set ul corner)
            endif
         endif
-        if (ipz /= nprocz-1 .OR. lperi(3)) then 
-           if (ipy /= nprocy-1 .OR. lperi(2)) then 
+        if (ipz /= nprocz-1 .OR. lperi(3)) then
+           if (ipy /= nprocy-1 .OR. lperi(2)) then
               f(:, m2i:m2, n2i:n2,ishock)=f(:, m2i:m2, n2i:n2,ishock)+uushkbufi  !!(set uu corner)
            endif
            if (ipy /= 0 .OR. lperi(2)) then
@@ -895,7 +895,7 @@ module Mpicomm
            if (ipy /= 0 .OR. bcy1(j)=='p') then
               f(:, 1:m1-1,n1:n2,j)=lvelbufyi(:,:,:,j-iux+1)  !!(set lower buffer)
            endif
-           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
               f(:,m2+1:my,n1:n2,j)=uvelbufyi(:,:,:,j-iux+1)  !!(set upper buffer)
            endif
         enddo
@@ -909,10 +909,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_velfromuppz,irecv_stat_velfu,ierr)
         call MPI_WAIT(irecv_rq_velfromlowz,irecv_stat_velfl,ierr)
         do j=iux,iuz
-           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+           if (ipz /= 0 .OR. bcz1(j)=='p') then
               f(:,m1:m2, 1:n1-1,j)=lvelbufzi(:,:,:,j-iux+1)  !!(set lower buffer)
            endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
               f(:,m1:m2,n2+1:mz,j)=uvelbufzi(:,:,:,j-iux+1)  !!(set upper buffer)
            endif
         enddo
@@ -928,16 +928,16 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_velFRll,irecv_stat_velFll,ierr)
         call MPI_WAIT(irecv_rq_velFRul,irecv_stat_velFul,ierr)
         do j=iux,iuz
-           if (ipz /= 0 .OR. bcz1(j)=='p') then 
-              if (ipy /= 0 .OR. bcy1(j)=='p') then 
+           if (ipz /= 0 .OR. bcz1(j)=='p') then
+              if (ipy /= 0 .OR. bcy1(j)=='p') then
                  f(:, 1:m1-1, 1:n1-1,j)=llvelbufi(:,:,:,j-iux+1)  !!(set ll corner)
               endif
               if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
                  f(:,m2+1:my, 1:n1-1,j)=ulvelbufi(:,:,:,j-iux+1)  !!(set ul corner)
               endif
            endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
-              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
+              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
                  f(:,m2+1:my,n2+1:mz,j)=uuvelbufi(:,:,:,j-iux+1)  !!(set uu corner)
               endif
               if (ipy /= 0 .OR. bcy1(j)=='p') then
@@ -1142,7 +1142,7 @@ module Mpicomm
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
           tag_id, MPI_COMM_WORLD, stat, ierr)
-!      
+!
     endsubroutine mpirecv_real_scl
 !***********************************************************************
     subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id)
@@ -1192,7 +1192,7 @@ module Mpicomm
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
           tag_id, MPI_COMM_WORLD, stat, ierr)
-!      
+!
     endsubroutine mpirecv_int_scl
 !***********************************************************************
     subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id)
@@ -1223,7 +1223,7 @@ module Mpicomm
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
           tag_id, MPI_COMM_WORLD, ierr)
-!      
+!
     endsubroutine mpisend_real_scl
 !***********************************************************************
     subroutine mpisend_real_arr(bcast_array,nbcast_array,proc_rec,tag_id)
@@ -1270,7 +1270,7 @@ module Mpicomm
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
           tag_id, MPI_COMM_WORLD, ierr)
-!      
+!
     endsubroutine mpisend_int_scl
 !***********************************************************************
     subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
@@ -1385,7 +1385,7 @@ module Mpicomm
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
           MPI_COMM_WORLD,ierr)
-!      
+!
     endsubroutine mpibcast_real_scl
 !***********************************************************************
     subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
@@ -1425,7 +1425,7 @@ module Mpicomm
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_PRECISION,ibcast_proc, &
           MPI_COMM_WORLD,ierr)
-!      
+!
     endsubroutine mpibcast_double_scl
 !***********************************************************************
     subroutine mpibcast_double_arr(bcast_array,nbcast_array,proc)
@@ -1485,7 +1485,7 @@ module Mpicomm
 !
       call MPI_BCAST(cbcast_array,nbcast_array,MPI_CHARACTER,ibcast_proc, &
           MPI_COMM_WORLD,ierr)
-!      
+!
     endsubroutine mpibcast_char_arr
 !***********************************************************************
     subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
@@ -1567,7 +1567,7 @@ module Mpicomm
 !
 !  Do block between start_serialize and end_serialize serially in iproc
 !  order. root goes first, then sends proc1 permission, waits for succes,
-!  then sends proc2 permisssion, waits for success, etc. 
+!  then sends proc2 permisssion, waits for success, etc.
 !
 !  19-nov-02/wolf: coded
 !
