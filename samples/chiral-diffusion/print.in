@@ -1,7 +1,7 @@
 it(i6)
 t(f8.3)
 dt(e10.2)
-XXm(f8.5)
+XXm(f8.4)
 YYm(f8.5)
 XXmax(f8.5)
 YYmax(f8.5)
