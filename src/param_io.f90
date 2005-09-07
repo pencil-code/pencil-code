@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.211 2005-09-01 18:57:56 ajohan Exp $ 
+! $Id: param_io.f90,v 1.212 2005-09-07 07:24:04 dobler Exp $ 
 
 module Param_IO
 
@@ -270,7 +270,7 @@ module Param_IO
 !
 !  Give online feedback if called with the PRINT optional argument
 !  Note: Some compiler's [like Compaq's] code crashes with the more
-!  compact `if (present(print) .and. print)' 
+!  compact `if (present(print) .and. print)'
 !
       if (present(print)) then
         if (print) then
@@ -377,10 +377,10 @@ module Param_IO
           call date_time_string(date)
           open(unit,FILE=file)
           write(unit,*) &
-               '# -------------------------------------------------------------'
-          write(unit,'(A,A)') ' # ', 'Initializing'
-          write(unit,'(A,A)') ' # Date: ', trim(date)
-          write(unit,*) '# t=', t
+               '! -------------------------------------------------------------'
+          write(unit,'(A,A)') ' ! ', 'Initializing'
+          write(unit,'(A,A)') ' ! Date: ', trim(date)
+          write(unit,*) '! t=', t
         endif
 !
         write(unit,NML=init_pars          )
@@ -777,13 +777,13 @@ module Param_IO
           call date_time_string(date)
           open(unit,FILE=file,position='append')
           write(unit,*) &
-               '# -------------------------------------------------------------'
+               '! -------------------------------------------------------------'
           !
           ! Add comment from `RELOAD' and time
           !
-          write(unit,'(A,A)') ' # ', trim(line)
-          write(unit,'(A,A)') ' # Date: ', trim(date)
-          write(unit,*) '# t=', t
+          write(unit,'(A,A)') ' ! ', trim(line)
+          write(unit,'(A,A)') ' ! Date: ', trim(date)
+          write(unit,*) '! t=', t
         endif
 !
         write(unit,NML=run_pars             )

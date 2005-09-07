@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.352 2005-09-02 02:13:55 dobler Exp $
+! $Id: entropy.f90,v 1.353 2005-09-07 07:24:04 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -123,7 +123,7 @@ module Entropy
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
-  integer :: idiag_fconvz=0,idiag_dcoolz,idiag_fradz=0,idiag_fturbz=0
+  integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
   integer :: idiag_ssmz=0,idiag_TTmz=0
 
   contains
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.352 2005-09-02 02:13:55 dobler Exp $")
+           "$Id: entropy.f90,v 1.353 2005-09-07 07:24:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

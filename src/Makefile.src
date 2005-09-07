@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.134 2005-08-31 18:17:48 dobler Exp $
+### $Id: Makefile.src,v 1.135 2005-09-07 07:24:04 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -473,21 +473,25 @@ mpicomm_double_.f90: mpicomm_double.f90
 nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 # The strange construct below is needed to have `make' realize there was
-# an error even when last command in pipe is FCCLEANER: 
+# an error even when last command in pipe is FCCLEANER:
+EXECUTABLES=start.x run.x \
+	read_videofiles.x read_vectorfiles.x \
+        write_dummy_namelists.x
 code:
 	if [ ! -z "$(FCCLEANER)" ]; then \
-	    ($(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x \
+	    ($(MAKE) $(EXECUTABLES) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
-	    $(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x ; \
+	    $(MAKE) $(EXECUTABLES) ; \
 	fi
 
+FASTEXECS=startfast.x runfast.x read_videofiles.x read_vectorfiles.x
 fast:
 	if [ ! -z "$(FCCLEANER)" ]; then \
-	    ($(MAKE) startfast.x runfast.x read_videofiles.x read_vectorfiles.x \
+	    ($(MAKE) $(FASTEXECS) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
-	    $(MAKE) startfast.x runfast.x read_videofiles.x read_vectorfiles.x ; \
+	    $(MAKE) $(FASTEXECS) ; \
 	fi
 
 debug:
@@ -581,6 +585,10 @@ read_vectorfiles.x: $(read_vectorfiles)
 var2ascii.x: $(var2ascii)
 	$(LD) $(LDFLAGS) $(var2ascii) $(LDMPI) -o var2ascii.x 
 
+write_dnlists_deps=write_dummy_namelists.o $(comm_deps) $(DEBUG).o
+write_dummy_namelists.x: $(write_dnlists_deps)
+	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LDMPI) -o write_dummy_namelists.x
+
 ## ---------------------------------------------------------------------- #
 ## Non-F90 / undetectable dependencies
 ## ---------------------------------------------------------------------- #
@@ -594,6 +602,7 @@ $(FFT).o:	          cdata.o
 nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
 #$(TIMEAVG).o:        ctimeavg.local
 #axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
+write_dummy_namelists.o: write_dummy_namelists.f90 $(comm_deps)
 
 ## ---------------------------------------------------------------------- #
 ## Dependencies
