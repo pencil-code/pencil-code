@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2005-09-07 00:35:41 dobler Exp $',
+  cvsid='$Id: run.in,v 1.4 2005-09-07 19:14:51 dobler Exp $',
   ip=13,
   nt=50, it1=10, isave=500, itorder=3
   !tmax=200.
@@ -13,7 +13,7 @@
   tavg=10.,                   ! time constant for time averaging
   slice_position='e'
   lfreeze_varint=T T T T T T T T
-  wfreeze=0.1
+  wfreezeint=0.1
   lpencil_check=F
 /
 &eos_run_pars
