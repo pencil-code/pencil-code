@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.135 2005-09-07 07:24:04 dobler Exp $
+### $Id: Makefile.src,v 1.136 2005-09-07 07:56:08 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -475,8 +475,8 @@ nompicomm_.f90: nompicomm.f90
 # The strange construct below is needed to have `make' realize there was
 # an error even when last command in pipe is FCCLEANER:
 EXECUTABLES=start.x run.x \
-	read_videofiles.x read_vectorfiles.x \
-        write_dummy_namelists.x
+	read_videofiles.x read_vectorfiles.x 
+        # write_dummy_namelists.x
 code:
 	if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(EXECUTABLES) \
