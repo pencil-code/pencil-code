@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.149 2005-09-02 09:11:40 ajohan Exp $
+! $Id: start.f90,v 1.150 2005-09-09 00:20:46 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -89,7 +89,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.149 2005-09-02 09:11:40 ajohan Exp $")
+             "$Id: start.f90,v 1.150 2005-09-09 00:20:46 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -169,17 +169,17 @@
 !  check consistency
 !
         if (.not.lperi(1).and.nxgrid<2) &
-            call stop_it('for nonperiodic: must have nxgrid>1')
+            call stop_it('for lperi(1)=F: must have nxgrid>1')
         if (.not.lperi(2).and.nygrid<2) &
-            call stop_it('for nonperiodic: must have nygrid>1')
+            call stop_it('for lperi(2)=F: must have nygrid>1')
         if (.not.lperi(3).and.nzgrid<2) &
-            call stop_it('for nonperiodic: must have nzgrid>1')
+            call stop_it('for lperi(3)=F: must have nzgrid>1')
         if (lperi(1).and.lshift_origin(1)) &
-            call stop_it('for periodic: must have lshift_origin=F')
+            call stop_it('for lperi(1)=T: must have lshift_origin(1)=F')
         if (lperi(2).and.lshift_origin(2)) &
-            call stop_it('for periodic: must have lshift_origin=F')
+            call stop_it('for lperi(2)=T: must have lshift_origin(2)=F')
         if (lperi(3).and.lshift_origin(3)) &
-            call stop_it('for periodic: must have lshift_origin=F')
+            call stop_it('for lperi(3)=T: must have lshift_origin(3)=F')
 !
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.
