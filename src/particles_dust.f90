@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.26 2005-09-04 10:38:10 ajohan Exp $
+! $Id: particles_dust.f90,v 1.27 2005-09-09 14:25:10 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -27,6 +27,7 @@ module Particles
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2, gravz=0.0, kz_gg=1.0
+  integer :: it_dustburst=0
   logical :: ldragforce_gas=.false.
   character (len=labellen) :: initxxp='origin', initvvp='zero'
   character (len=labellen) :: gravz_profile='zero'
@@ -39,7 +40,8 @@ module Particles
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, nu_epicycle, &
       ldragforce_gas, rhop_tilde, eps_dtog, tausgmin, cdtp, &
-      linterp_reality_check, gravz, kz_gg, gravz_profile
+      linterp_reality_check, gravz, kz_gg, gravz_profile, &
+      it_dustburst
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -65,7 +67,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.26 2005-09-04 10:38:10 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.27 2005-09-09 14:25:10 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -315,9 +317,14 @@ module Particles
 !
 !  02-jan-05/anders: coded
 !
+      use General, only: random_number_wrapper, random_seed_wrapper
+!      
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
+      real :: ran_xp, ran_yp, ran_zp
+      integer, dimension (mseed) :: iseed_org
+      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp
@@ -352,6 +359,29 @@ module Particles
 !
       if (lshear.and.nygrid/=0) dfp(1:npar_loc,iyp) = &
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
+!
+!  Displace all dust particles a random distance of around the size of
+!  a grid cell.
+!
+      if (it_dustburst/=0 .and. it==it_dustburst) then      
+        if (lroot.and.itsub==1) print*, 'dxxp_dt: dust burst!'
+        if (itsub==1) call random_seed_wrapper(get=iseed_org)
+        call random_seed_wrapper(put=iseed_org)  ! get same number for all itsub
+        do k=1,npar_loc
+          if (nxgrid/=1) then
+            call random_number_wrapper(ran_xp)
+            dfp(k,ixp) = dfp(k,ixp) + dx/dt*(2*ran_xp-1.0)
+          endif
+          if (nxgrid/=1) then
+            call random_number_wrapper(ran_yp)
+            dfp(k,iyp) = dfp(k,iyp) + dy/dt*(2*ran_yp-1.0)
+          endif
+          if (nzgrid/=1) then
+            call random_number_wrapper(ran_zp)
+            dfp(k,izp) = dfp(k,izp) + dz/dt*(2*ran_zp-1.0)
+          endif
+        enddo
+      endif
 !
       if (lfirstcall) lfirstcall=.false.
 !
