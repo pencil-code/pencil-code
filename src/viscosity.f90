@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.8 2005-08-26 10:15:47 ajohan Exp $
+! $Id: viscosity.f90,v 1.9 2005-09-10 12:48:26 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -51,7 +51,7 @@ module Viscosity
   namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol, C_smag,nu_shock
  
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_epsK=0,idiag_epsK_LES=0,idiag_epsK2=0
+  integer :: idiag_epsK=0,idiag_epsK2=0,idiag_epsK_LES=0,idiag_epsKsh=0
   integer :: idiag_dtnu=0
   integer :: idiag_meshRemax=0
 
@@ -78,7 +78,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.8 2005-08-26 10:15:47 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.9 2005-09-10 12:48:26 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -223,8 +223,9 @@ module Viscosity
         idiag_dtnu=0
         idiag_nu_LES=0
         idiag_epsK=0
-        idiag_epsK_LES=0
         idiag_epsK2=0
+        idiag_epsK_LES=0
+        idiag_epsKsh=0
         idiag_meshRemax=0
       endif
 !
@@ -235,9 +236,10 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'epsK',idiag_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'epsK2',idiag_epsK2)
         call parse_name(iname,cname(iname),cform(iname),&
             'epsK_LES',idiag_epsK_LES)
-        call parse_name(iname,cname(iname),cform(iname),'epsK2',idiag_epsK2)
+        call parse_name(iname,cname(iname),cform(iname),'epsKsh',idiag_epsKsh)
         call parse_name(iname,cname(iname),cform(iname),&
             'meshRemax',idiag_meshRemax)
       enddo
@@ -249,8 +251,9 @@ module Viscosity
           write(3,*) 'i_dtnu=',idiag_dtnu
           write(3,*) 'i_nu_LES=',idiag_nu_LES
           write(3,*) 'i_epsK=',idiag_epsK
-          write(3,*) 'i_epsK_LES=',idiag_epsK_LES
           write(3,*) 'i_epsK2=',idiag_epsK2
+          write(3,*) 'i_epsK_LES=',idiag_epsK_LES
+          write(3,*) 'i_epsKsh=',idiag_epsKsh
           write(3,*) 'i_meshRemax=',idiag_meshRemax
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'itest=',0
@@ -298,9 +301,19 @@ module Viscosity
       endif
 !
       if (idiag_meshRemax/=0) lpenc_diagnos(i_u2)=.true.
-      if (idiag_epsK/=0 .or. idiag_epsK2/=0 .or. idiag_epsK_LES/=0) &
-          lpenc_diagnos(i_rho)=.true.
-      if (idiag_epsK2/=0) lpenc_diagnos(i_uu)=.true.
+      if (idiag_epsK/=0.or.idiag_epsK_LES/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_sij2)=.true.
+      endif
+      if (idiag_epsK2/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_uu)=.true.
+      endif
+      if (idiag_epsKsh/=0) then
+        lpenc_diagnos(i_shock)=.true.
+        lpenc_diagnos(i_divu)=.true.
+        lpenc_diagnos(i_rho)=.true.
+      endif
       if ( (idiag_meshRemax/=0 .or. idiag_dtnu/=0) .and. lvisc_nu_shock) &
           lpenc_diagnos(i_shock)=.true.
 !
@@ -496,8 +509,8 @@ module Viscosity
           call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
           if (lfirst.and.ldt) diffus_total=diffus_total+(nu_shock*p%shock)
           fvisc=fvisc+tmp
-          if (ldiagnos.and.(idiag_epsK/=0)) &
-              call sum_mn_name((nu_shock*p%shock*p%divu**2)*p%rho,idiag_epsK)
+          if (ldiagnos.and.(idiag_epsKsh/=0)) &
+              call sum_mn_name((nu_shock*p%shock*p%divu**2)*p%rho,idiag_epsKsh)
         endif
       endif
 !
@@ -597,12 +610,15 @@ module Viscosity
         if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
         if (idiag_meshRemax/=0) &
            call max_mn_name(sqrt(p%u2(:))*dxmax/diffus_total,idiag_meshRemax)
+!  Viscous heating as explicit analytical term.
+        if (idiag_epsK/=0) call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
+!  Viscous heating dE/dt = -rho*fvisc.u .
         if (idiag_epsK2/=0) then
           call dot_mn(p%uu,fvisc,ufvisc)
           rufvisc=ufvisc*p%rho
           call sum_mn_name(-rufvisc,idiag_epsK2)
         endif
-!  mean heating term
+!  Viscous heating for Smagorinsky viscosity.
         if (idiag_epsK_LES/=0) then
           if (lvisc_smag_simplified) then
             call sum_mn_name(2*nu_smag*p%rho*p%sij2,idiag_epsK_LES)
@@ -610,7 +626,6 @@ module Viscosity
             call sum_mn_name(2*nu_smag*p%rho*p%sij2,idiag_epsK_LES)
           endif
         endif
-        if (idiag_epsK/=0) call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
       endif
 !
     end subroutine calc_viscous_force
