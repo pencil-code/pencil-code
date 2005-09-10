@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.9 2005-09-10 12:48:26 ajohan Exp $
+! $Id: viscosity.f90,v 1.10 2005-09-10 16:42:35 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -78,7 +78,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.9 2005-09-10 12:48:26 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.10 2005-09-10 16:42:35 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -612,7 +612,7 @@ module Viscosity
            call max_mn_name(sqrt(p%u2(:))*dxmax/diffus_total,idiag_meshRemax)
 !  Viscous heating as explicit analytical term.
         if (idiag_epsK/=0) call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
-!  Viscous heating dE/dt = -rho*fvisc.u .
+!  Viscous work dE/dt = -rho*fvisc.u . Not to be confused with heating.
         if (idiag_epsK2/=0) then
           call dot_mn(p%uu,fvisc,ufvisc)
           rufvisc=ufvisc*p%rho
