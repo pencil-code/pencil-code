@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.302 2005-09-01 22:27:50 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.303 2005-09-11 09:57:45 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -105,7 +105,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage{hyperref}
+\usepackage[dvipdfm]{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-09-01 22:27:50 $ $,~ $ $Revision: 1.302 $ $}
+%\date{$ $Date: 2005-09-11 09:57:45 $ $,~ $ $Revision: 1.303 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-09-01 22:27:50 $ $,~ $ $Revision: 1.302 $ $}\\
+  \emph{$ $Date: 2005-09-11 09:57:45 $ $,~ $ $Revision: 1.303 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3520,6 +3520,36 @@ polytropic behavior
 A better way to achieve isothermality is to use the \name{noentropy}
 module.
 
+\subsubsection{Viscous heating}
+
+We can write the viscosity as the divergence of a tensor $\tau_{ij,j}$,
+\begin{equation}
+  \rho \frac{\partial u_i}{\partial t} = \tau_{ij,j} \, ,
+\end{equation}
+where $\tau_{ij}=2\nu\rho{\sf S}_{ij}$ is the stress tensor. The viscous power
+density $P$ is
+\begin{eqnarray}
+  P &=& u_i\tau_{ij,j}\\
+    &=& {\partial\over\partial x_j}\left(u_i\tau_{ij}\right) - u_{i,j}\tau_{ij}
+\end{eqnarray}
+The term under the divergence is the viscous energy flux and the other
+term is the kinetic energy loss due to heating.
+The heating term $+u_{i,j}\tau_{ij}$ is positive definite, because $\tau_{ij}$ is a symmetric tensor
+and the term only gives a contribution from the symmetric part of $u_{i,j}$,    which
+is $\frac{1}{2}(u_{i,j}+u_{j,i})$, so
+\begin{equation}
+  u_{i,j}\tau_{ij}=\frac{1}{2}\nu\rho(u_{i,j}+u_{j,i})(2{\sf S}_{ij}) \, .
+\end{equation}
+But, because ${\sf S}_{ij}$ is traceless, we can add anything
+proportional to $\delta_{ij}$ and, in particular, we can write
+\begin{eqnarray}
+u_{i,j}\tau_{ij}&=&\frac{1}{2}(u_{i,j}+u_{j,i})(2\nu\rho{\sf S}_{ij})\\
+&=&\frac{1}{2}(u_{i,j}+u_{j,i}-\frac{1}{3}\delta_{ij}\nab\cdot\vec{u})(2\nu\rho{\sf         S}_{ij})\\
+&=&2\nu\rho\mathbf{S}^2,
+\end{eqnarray}
+which is positive definite.
+
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Transport equation for a passive scalar}
@@ -4890,7 +4920,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-09-01 22:27:50 $ $,~ $ $Revision: 1.302 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-09-11 09:57:45 $ $,~ $ $Revision: 1.303 $ $}
 
 \section{Timings}
 
@@ -7988,7 +8018,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.302 2005-09-01 22:27:50 dobler Exp $ $}
+$ $Id: manual.tex,v 1.303 2005-09-11 09:57:45 ajohan Exp $ $}
 
 
 \end{document}
