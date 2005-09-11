@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.27 2005-09-09 14:25:10 ajohan Exp $
+! $Id: particles_dust.f90,v 1.28 2005-09-11 10:23:20 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -26,21 +26,24 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2, gravz=0.0, kz_gg=1.0
+  real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2
+  real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
   integer :: it_dustburst=0
   logical :: ldragforce_gas=.false.
   character (len=labellen) :: initxxp='origin', initvvp='zero'
-  character (len=labellen) :: gravz_profile='zero'
+  character (len=labellen) ::gravx_profile='zero',  gravz_profile='zero'
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, nu_epicycle, &
-      gravz_profile, gravz, kz_gg, rhop_tilde, eps_dtog
+      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, &
+      gravz_profile, gravz, kz_gg, rhop_tilde, eps_dtog, nu_epicycle, &
+      gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg
 
   namelist /particles_run_pars/ &
-      bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, nu_epicycle, &
+      bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
       ldragforce_gas, rhop_tilde, eps_dtog, tausgmin, cdtp, &
-      linterp_reality_check, gravz, kz_gg, gravz_profile, &
+      linterp_reality_check, nu_epicycle, &
+      gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       it_dustburst
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -67,7 +70,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.27 2005-09-09 14:25:10 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.28 2005-09-11 10:23:20 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -512,18 +515,35 @@ module Particles
 !
 !  Gravity on the particles.
 !
+      select case (gravx_profile)
+
+        case ('zero')
+          if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
+ 
+        case ('sinusoidal')
+          if (lheader) &
+              print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
+          dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
+              gravx*sin(kx_gg*fp(1:npar_loc,ixp))
+ 
+        case ('default')
+          call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
+
+      endselect
+
       select case (gravz_profile)
 
         case ('zero')
-          if (lheader) print*, 'dvvp_dt: No gravity in z'
+          if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
  
         case ('linear')
-          if (lheader) print*, 'dvvp_dt: Linear gravity field in z'
+          if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
           dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
               nu_epicycle2*fp(1:npar_loc,izp)
  
         case ('sinusoidal')
-          if (lheader) print*, 'dvvp_dt: Sinusoidal gravity field in z'
+          if (lheader) &
+              print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
           dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
               gravz*sin(kz_gg*fp(1:npar_loc,izp))
  
