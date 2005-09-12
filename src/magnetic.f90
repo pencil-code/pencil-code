@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.254 2005-09-07 00:43:24 dobler Exp $
+! $Id: magnetic.f90,v 1.255 2005-09-12 11:33:02 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -31,8 +31,11 @@ module Magnetic
 
   include 'magnetic.h'
 
+  integer, parameter :: nresi_max=4
+
   character (len=labellen) :: initaa='zero',initaa2='zero'
-  character (len=labellen) :: iresistivity='eta-const',Omega_profile='nothing'
+  character (len=labellen), dimension(nresi_max) :: iresistivity=''
+  character (len=labellen) :: Omega_profile='nothing'
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./),B_ext_tmp
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
@@ -57,9 +60,13 @@ module Magnetic
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
-  logical :: lresistivity_hyper=.false.
-!ajwm - Unused???
-!    logical :: leta_const=.true.
+  logical :: lresi_eta_const=.false.
+  logical :: lresi_hyper2=.false.
+  logical :: lresi_hyper3=.false.
+  logical :: lresi_eta_shock=.false.
+  logical :: lresi_shell=.false.
+  logical :: lresi_smagorinsky=.false.
+  logical :: lresi_smagorinsky_cross=.false.
   logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
   logical :: reinitalize_aa=.false.
   logical :: lB_ext_pot=.false.
@@ -88,19 +95,19 @@ module Magnetic
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa
 
   ! run parameters
-  real :: eta=0.,height_eta=0.,eta_out=0.
+  real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext,omega_Bz_ext,nu_ni,hall_term, &
+       eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
        meanfield_etat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
-       iresistivity,lresistivity_hyper, &
+       iresistivity, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
        reinitalize_aa,rescale_aa,lB_ext_pot, &
@@ -169,7 +176,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.254 2005-09-07 00:43:24 dobler Exp $")
+           "$Id: magnetic.f90,v 1.255 2005-09-12 11:33:02 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -198,8 +205,11 @@ module Magnetic
 !  20-may-03/axel: reinitalize_aa added
 !
       use Cdata
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      integer :: i      
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
@@ -231,6 +241,51 @@ module Magnetic
 !
       if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
       if (lfreeze_aext) lfreeze_varext(iax:iaz) = .true.
+!
+!  Initialize resistivity.
+!
+      if (iresistivity(1)=='') iresistivity(1)='eta-const'  ! default
+      lresi_eta_const=.false.
+      lresi_hyper2=.false.
+      lresi_hyper3=.false.
+      lresi_eta_shock=.false.
+      lresi_smagorinsky=.false.
+      lresi_smagorinsky_cross=.false.
+
+      do i=1,nresi_max
+        select case (iresistivity(i))
+        case ('eta-const')
+          if (lroot) print*, 'resistivity: constant eta'
+          if (eta/=0.) lresi_eta_const=.true.
+        case('hyper2')
+          if (lroot) print*, 'resistivity: hyper2'
+          if (eta_hyper2/=0.) lresi_hyper2=.true.
+        case('hyper3')
+          if (lroot) print*, 'resistivity: hyper3'
+          if (eta_hyper3/=0.) lresi_hyper3=.true.
+        case('shell')
+          if (lroot) print*, 'resistivity: shell'
+          lresi_shell=.true.
+        case ('shock')
+          if (lroot) print*, 'resistivity: shock'
+          if (eta_shock/=0.) lresi_eta_shock=.true.
+          if (.not. lshock) &
+            call fatal_error('initialize_mangetic', &
+                'shock resistivity, but module setting SHOCK=noshock')
+        case ('smagorinsky')
+          if (lroot) print*, 'resistivity: smagorinsky'
+          lresi_smagorinsky=.true.
+        case ('smagorinsky-cross')
+          if (lroot) print*, 'resistivity: smagorinsky_cross'
+          lresi_smagorinsky_cross=.true.
+        case ('')
+          ! do nothing
+        case default
+          if (lroot) print*, 'No such such value for iresistivity(',i,'): ', &
+              trim(iresistivity(i))
+          call fatal_error('initialize_magnetic','')
+        endselect
+      enddo
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -412,20 +467,20 @@ module Magnetic
       if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4) &
           lpenc_requested(i_jj)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
-      if (iresistivity=='eta-const' .or. iresistivity=='shell' .or. &
-          iresistivity=='shock' .or. iresistivity=='Smagorinsky' .or. &
-          iresistivity=='Smagorinsky_cross') lpenc_requested(i_del2a)=.true.
-      if (iresistivity=='shock') then
+      if (lresi_eta_const .or. lresi_shell .or. &
+          lresi_eta_shock .or. lresi_smagorinsky .or. &
+          lresi_smagorinsky_cross) lpenc_requested(i_del2a)=.true.
+      if (lresi_eta_shock) then
         lpenc_requested(i_gshock)=.true.
         lpenc_requested(i_shock)=.true.
       endif
-      if (iresistivity=='shock' .or. iresistivity=='shell') &
+      if (lresi_eta_shock .or. lresi_shell) &
           lpenc_requested(i_diva)=.true.
-      if (iresistivity=='Smagorinsky_cross') lpenc_requested(i_jo)=.true.
-      if (iresistivity=='hyper2') lpenc_requested(i_del4a)=.true.
-      if (iresistivity=='hyper3') lpenc_requested(i_del6a)=.true.
+      if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
+      if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
+      if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
       if (lspherical) lpenc_requested(i_graddiva)=.true.
-      if (lentropy .or. iresistivity=='Smagorinsky') &
+      if (lentropy .or. lresi_smagorinsky) &
           lpenc_requested(i_j2)=.true.
       if (lentropy .or. ldt) lpenc_requested(i_rho1)=.true.
       if (lentropy) lpenc_requested(i_TT1)=.true.
@@ -433,7 +488,7 @@ module Magnetic
       if (hall_term/=0.) lpenc_requested(i_jxb)=.true.
       if ((lhydro .and. llorentzforce) .or. nu_ni/=0.) &
           lpenc_requested(i_jxbr)=.true.
-      if (iresistivity=='Smagorinsky_cross' .or. delta_effect/=0.) &
+      if (lresi_smagorinsky_cross .or. delta_effect/=0.) &
           lpenc_requested(i_oo)=.true.
       if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
       if (lmeanfield_theory) then
@@ -844,38 +899,50 @@ module Magnetic
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta*mu0)*p%j2*p%rho1*p%TT1
       endif
 !
-!  calculate restive term
+!  Restivivity term
 !
-      select case (iresistivity)
-
-      case ('eta-const')
-        fres=eta*p%del2a
-        etatotal=eta
-      case ('hyper3')
-        fres=eta*p%del6a
-        etatotal=eta
-      case ('hyper2')
-        fres=eta*p%del4a
-        etatotal=eta  
-      case ('shell')
+      fres=0.0
+      etatotal=0.0
+!
+      if (lresi_eta_const) then
+        fres=fres+eta*p%del2a
+        etatotal=etatotal+eta
+      endif
+!
+      if (lresi_hyper2) then
+        fres=fres+eta_hyper2*p%del4a
+        etatotal=etatotal+eta_hyper2
+      endif
+!
+      if (lresi_hyper3) then
+        fres=fres+eta_hyper3*p%del6a
+        etatotal=etatotal+eta_hyper3
+      endif
+!
+      if (lresi_shell) then
         call eta_shell(eta_mn,geta)
-        do j=1,3; fres(:,j)=eta_mn*p%del2a(:,j)+geta(:,j)*p%diva; enddo
-        etatotal=eta_mn
-      case ('shock')
-        if (eta_shock/=0) then
-          eta_tot=eta+eta_shock*p%shock
-          geta=eta_shock*p%gshock
-          do j=1,3; fres(:,j)=eta_tot*p%del2a(:,j)+geta(:,j)*p%diva; enddo
-          etatotal=eta+eta_shock*p%shock
-        else
-          fres=eta*p%del2a
-          etatotal=eta
-        endif
-      case ('Smagorinsky')
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta_mn*p%del2a(:,j)+geta(:,j)*p%diva
+        enddo
+        etatotal=etatotal+eta_mn
+      endif
+!
+      if (lresi_eta_shock) then
+        eta_tot=eta+eta_shock*p%shock
+        geta=eta_shock*p%gshock
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta_tot*p%del2a(:,j)+geta(:,j)*p%diva
+        enddo
+        etatotal=etatotal+eta+eta_shock*p%shock
+      endif
+!
+      if (lresi_smagorinsky) then
         eta_smag=(D_smag*dxmax)**2.*sqrt(p%j2)
         call multsv(eta_smag+eta,p%del2a,fres)
-        etatotal=eta_smag+eta
-      case ('Smagorinsky_cross')        
+        etatotal=etatotal+eta_smag+eta
+      endif
+!
+      if (lresi_smagorinsky_cross) then
         sign_jo=1.
         do i=1,nx 
           if (p%jo(i) .lt. 0) sign_jo(i)=-1.
@@ -883,10 +950,8 @@ module Magnetic
         eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(p%jo*sign_jo)
         call multsv(eta_smag+eta,p%del2a,fres)
         etatotal=eta_smag+eta
-      case default
-        if (lroot) print*,'daa_dt: no such ires:',iresistivity
-        call stop_it("")
-      end select
+      endif
+!
       if (headtt) print*,'daa_dt: iresistivity=',iresistivity
 !
 !  Switch off diffusion of horizontal components in boundary slice if
