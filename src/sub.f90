@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.217 2005-09-06 12:25:28 theine Exp $ 
+! $Id: sub.f90,v 1.218 2005-09-13 16:33:13 bingert Exp $ 
 
 module Sub 
 
@@ -3936,8 +3936,8 @@ nameloop: do
 !  by 1/sqrt(1.+dxmin^2*H^2).
 !  and dot H with ecr gradient
 !
-      call dot2_mn(hhh,hhh2)
-      quenchfactor=1./sqrt(1.+(limiter_tensordiff*dxmin)**2*hhh2)
+      call dot2_mn(hhh,hhh2,PRECISE_SQRT=.true.)
+      quenchfactor=1./max(1.,limiter_tensordiff*hhh2*dxmin)
       call multsv_mn(quenchfactor,hhh,hhh)
       call dot_mn(hhh,gecr,tmp)
 !
