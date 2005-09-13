@@ -22,7 +22,7 @@ endif
 
 for m=0,ny-1 do begin
   for n=0,nz-1 do begin
-    AA=fft(gg[*,m,n],-1)
+    AA=fft(reform(gg[*,m,n]),-1)
     for j=1,nx/2-1 do begin
       g_x[j] = g_x[j] + 2*sqrt(float(AA[j])^2+imaginary(AA[j])^2)
     endfor
@@ -31,7 +31,7 @@ endfor
 
 for l=0,nx-1 do begin
   for n=0,nz-1 do begin
-    AA=fft(gg[l,*,n],-1)
+    AA=fft(reform(gg[l,*,n]),-1)
     for j=1,ny/2-1 do begin
       g_y[j] = g_y[j] + 2*sqrt(float(AA[j])^2+imaginary(AA[j])^2)
     endfor
@@ -40,7 +40,7 @@ endfor
 
 for l=0,nx-1 do begin
   for m=0,ny-1 do begin
-    AA=fft(gg[l,m,*],-1)
+    AA=fft(reform(gg[l,m,*]),-1)
     for j=1,nz/2-1 do begin
       g_z[j] = g_z[j] + 2*sqrt(float(AA[j])^2+imaginary(AA[j])^2)
     endfor
@@ -59,8 +59,8 @@ if (plot) then begin
     pmax=max([pmax,g_y[1:ny/2-1]])
   endif
   if (nz gt 1) then begin
-    pmin=min([pmin,g_z[1:ny/2-1]])
-    pmax=max([pmax,g_z[1:ny/2-1]])
+    pmin=min([pmin,g_z[1:nz/2-1]])
+    pmax=max([pmax,g_z[1:nz/2-1]])
   endif
 
   linestyles=[0,1,2]
