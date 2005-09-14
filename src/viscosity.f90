@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.11 2005-09-11 09:36:00 ajohan Exp $
+! $Id: viscosity.f90,v 1.12 2005-09-14 15:26:25 wlyra Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -28,6 +28,7 @@ module Viscosity
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   real :: nu_mol=0., nu_hyper3=0., nu_shock=0.
+  real :: nuint_inc=0.,nuint_lim=0.
 
   ! dummy logical
   logical :: lvisc_first=.false.
@@ -41,14 +42,15 @@ module Viscosity
   logical :: lvisc_hyper3_nu_const=.false.
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
-  logical :: lvisc_alpha=.false.
+  logical :: lspongezone=.false.
 
   ! input parameters
   !integer :: dummy1
   !namelist /viscosity_init_pars/ dummy1
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol, C_smag,nu_shock
+  namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol,&
+       C_smag, nu_shock, lspongezone,nuint_inc,nuint_lim
  
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_epsK=0,idiag_epsK2=0,idiag_epsK_LES=0
@@ -78,7 +80,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.11 2005-09-11 09:36:00 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.12 2005-09-14 15:26:25 wlyra Exp $")
 
       ivisc(1)='nu-const'
 
@@ -112,7 +114,6 @@ module Viscosity
       lvisc_hyper3_nu_const=.false.
       lvisc_smag_simplified=.false.
       lvisc_smag_cross_simplified=.false.
-      lvisc_alpha=.false.
 
       do i=1,nvisc_max
         select case (ivisc(i))
@@ -151,10 +152,7 @@ module Viscosity
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
           if (nu/=0.) lvisc_smag_cross_simplified=.true.
-        case ('alpha-recipe')
-           if (lroot) print*,'viscous force: Shakura-Sunayev alpha recipe'
-           if (nu/=0.) lvisc_alpha=.true.
-        case ('')
+         case ('')
           ! do nothing
         case default
           if (lroot) print*, 'No such such value for ivisc(',i,'): ', trim(ivisc(i))
@@ -296,6 +294,7 @@ module Viscosity
         lpenc_requested(i_divu)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
+      if (lspongezone) lpenc_requested(i_sglnrho)=.true.
 !
       if (idiag_meshRemax/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0) then
@@ -407,8 +406,7 @@ module Viscosity
 !
 !  20-nov-02/tony: coded
 !   9-jul-04/nils: added Smagorinsky viscosity
-!  22-aug-05/wlad: added Shakura-Sunyaev viscosity
-!
+
       use Cdata
       use Mpicomm
       use Sub
@@ -420,9 +418,7 @@ module Viscosity
       type (pencil_case) :: p
 !      
       real, dimension (nx,3) :: fvisc,tmp,tmp2
-      real, dimension (nx) :: ufvisc,rufvisc,murho1,nu_smag, diffus_total
-      real, dimension (nx) :: nu_sksv,rr_mn,gr
-      real :: alpha_sksv
+      real, dimension (nx) :: ufvisc,rufvisc,murho1,nu_smag, diffus_total,rr_mn
       integer :: i,j
 !
       intent (in) :: f,p
@@ -448,10 +444,33 @@ module Viscosity
 !  viscous force: mu/rho*(del2u+graddivu/3)
 !  -- the correct expression for rho*nu=const
 !
+!  12-sep-05/wlad: Sponge zone to damp motion in the inner boundary.
+!                  It is similar to freezing, but not so drastic.
+!                  For now, it is not generalized, since I only need
+!                  it here in rho_nu_const. Anyway, we will probably
+!                  drop it soon, in favour of nested grids.
+
         murho1=nu*p%rho1  !(=mu/rho)
-        do i=1,3
-          fvisc(:,i)=fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
-        enddo
+        if (lspongezone) then
+           if (headtt) print*,'calc_viscous_force: lspongezone activated'
+           if (headtt) print*,'internal radius: ', nuint_lim
+           if (headtt) print*,'internal viscosity: ', nuint_inc
+           rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi 
+           do i=1,3
+              do j=1,nx
+                 if (rr_mn(j) .ge. nuint_lim) then
+                    fvisc(j,i)=murho1(j)*(p%del2u(j,i)+1./3.*p%graddivu(j,i))
+                 else
+                    fvisc(j,i)=2*nuint_inc*p%sglnrho(j,i)+nuint_inc*(p%del2u(j,i)+1./3.*p%graddivu(j,i))
+                 endif
+              enddo
+           enddo
+        else 
+           do i=1,3
+              fvisc(:,i)=fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
+           enddo
+        endif
+
         if (lfirst.and.ldt) diffus_total=diffus_total+murho1
       endif
 !
@@ -551,40 +570,6 @@ module Viscosity
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
               "ldensity better be .true. for ivisc='smagorinsky'"
-        endif
-      endif
-
-     if (lvisc_alpha) then
-!
-!  Standard alpha-viscosity recipe of Shakura and Sunyaev (1973).
-!  viscous force: nu_sksv*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_sksv
-!  where nu_sksv = alpha * cs2 / Omega,
-!  and alpha is a dimensionless parameter. 
-!  ps: reduces to rho*nu=const if they follow complementary power laws
-!
-        if (ldensity) then
-!
-           call get_global(tmp,m,n,'gg')
-           gr = sqrt(tmp(:,1)**2+tmp(:,2)**2+tmp(:,3)**2)
-           alpha_sksv = nu
-           rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi 
-
-           nu_sksv = alpha_sksv * p%cs2 / sqrt(gr/rr_mn)
-!
-!Calculate viscous force         
-!
-           call multsv_mn(nu_sksv,p%sglnrho,tmp2)
-           call multsv_mn(nu_sksv,p%del2u+1./3.*p%graddivu,tmp)
-           fvisc=fvisc+2*tmp2+tmp
-           !call grad(nu_sksv,tmp)
-           !call multmv_mn(p%sij,tmp,tmp2)
-
-           !fvisc=fvisc + nu_sksv*(p%del2u+1./3.*p%graddivu + 2*p%sglnrho) + 2*tmp2
-           
-           if (lfirst.and.ldt) diffus_total=diffus_total+nu_sksv
-        else
-           if (lfirstpoint) print*, 'calc_viscous_force: '// &
-                "ldensity better be .true. for ivisc='alpha-recipe'"
         endif
      endif
 
