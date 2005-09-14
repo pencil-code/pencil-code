@@ -3,14 +3,16 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM=mpicomm
-GLOBAL=noglobal
-GRAVITY=nograv
-FORCING=noforcing
-ENTROPY=noentropy
-MAGNETIC=nomagnetic
-HYDRO=nohydro
-DENSITY=nodensity
-TESTFIELD=testfield
-VISCOSITY=noviscosity
-EOS=noeos
+MPICOMM   =   mpicomm
+GLOBAL    = noglobal
+
+HYDRO     = nohydro
+DENSITY   = nodensity
+ENTROPY   = noentropy
+MAGNETIC  = nomagnetic
+
+GRAVITY   = nograv
+FORCING   = noforcing
+VISCOSITY = noviscosity
+EOS       = noeos
+TESTFIELD =   testfield
