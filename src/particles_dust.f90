@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.29 2005-09-14 09:03:02 ajohan Exp $
+! $Id: particles_dust.f90,v 1.30 2005-09-14 12:52:39 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -71,7 +71,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.29 2005-09-14 09:03:02 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.30 2005-09-14 12:52:39 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -449,8 +449,7 @@ module Particles
             1/gamma*cs20*beta_glnrho_scaled(1)*eps_penc*tausp/ &
             (1.0+2*eps_penc+eps_penc**2+(Omega*tausp)**2)
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)* &
-            (1+eps_penc+(Omega*tausp)**2)/ &
+            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps_penc+(Omega*tausp)**2)/ &
             (2*Omega*(1.0+2*eps_penc+eps_penc**2+(Omega*tausp)**2))
       enddo
 !
