@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.28 2005-09-11 10:23:20 ajohan Exp $
+! $Id: particles_dust.f90,v 1.29 2005-09-14 09:03:02 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -28,16 +28,17 @@ module Particles
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2
   real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
+  real :: Ri0=0.25, eps1=0.5
   integer :: it_dustburst=0
   logical :: ldragforce_gas=.false.
-  character (len=labellen) :: initxxp='origin', initvvp='zero'
+  character (len=labellen) :: initxxp='origin', initvvp='nothing'
   character (len=labellen) ::gravx_profile='zero',  gravz_profile='zero'
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, &
       gravz_profile, gravz, kz_gg, rhop_tilde, eps_dtog, nu_epicycle, &
-      gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg
+      gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -70,7 +71,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.28 2005-09-11 10:23:20 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.29 2005-09-14 09:03:02 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -252,6 +253,9 @@ module Particles
         if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
         if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
 
+      case ('constant-Ri')
+        call constant_richardson(fp,f)
+
       case default
         if (lroot) print*, 'init_particles: No such such value for initxxp: ', &
             trim(initxxp)
@@ -274,6 +278,8 @@ module Particles
 !
       select case(initvvp)
 
+      case ('nothing')
+        if (lroot) print*, 'init_particles: No particle velocity set'
       case ('zero')
         if (lroot) print*, 'init_particles: Zero particle velocity'
         fp(1:npar_loc,ivpx:ivpz)=0.
@@ -313,6 +319,158 @@ module Particles
       endselect
 !
     endsubroutine init_particles
+!***********************************************************************
+    subroutine constant_richardson(fp,f)
+!
+!  Setup dust density with a constant Richardson number (Sekiya, 1998).
+!    eps=1/sqrt(z^2/Hd^2+1/(1+eps1)^2)-1
+!
+!  14-sep-05/anders: coded
+!
+      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use General, only: random_number_wrapper
+!      
+      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      integer, parameter :: nz_inc=10
+      real, dimension (nz_inc*nz) :: z_dense, eps
+      real, dimension (nx) :: np, eps_penc
+      real :: r, p, Hg, Hd, frac, rho1, Sigmad, Sigmad_num, Xi, fXi, dfdXi
+      real :: dz_dense, eps_point
+      integer :: nz_dense=nz_inc*nz, npar_bin
+      integer :: i, i0, k
+!
+!  Calculate dust "scale height".
+!
+      rho1=1.0
+      Hg=1.0
+      Sigmad=eps_dtog*rho1*Hg*sqrt(2*pi)
+      Hd = sqrt(Ri0)*abs(beta_glnrho_scaled(1))/(2*gamma)*1.0
+!
+!  Need to find eps1 that results in given dust column density.
+!
+      Xi = sqrt(eps1*(2+eps1))/(1+eps1)
+      fXi=-2*Xi + alog((1+Xi)/(1-Xi))-Sigmad/(Hd*rho1)
+      i=0
+!
+!  Newton-Raphson on equation Sigmad/(Hd*rho1)=-2*Xi + alog((1+Xi)/(1-Xi)).
+!  Here Xi = sqrt(eps1*(2+eps1))/(1+eps1).
+!
+      do while (abs(fXi)>=0.00001)
+        
+        dfdXi=2*Xi**2/(1-Xi**2)
+        Xi=Xi-0.1*fXi/dfdXi
+         
+        fXi=-2*Xi + alog((1+Xi)/(1-Xi))-Sigmad/(Hd*rho1)
+             
+        i=i+1
+        if (i>=1000) stop
+                 
+      enddo
+!
+!  Calculate eps1 from Xi.
+!      
+      eps1=-1+1/sqrt(-(Xi**2)+1)
+      if (lroot) print*, 'constant_richardson: Hd, eps1=', Hd, eps1
+!
+!  Make z denser for higher resolution in density.
+!
+      z_dense(1)=z(nghost+1)
+      z_dense(nz_dense)=z(mz-nghost)
+      dz_dense=(z_dense(nz_dense)-z_dense(1))/(nz_dense-1)
+      do n=2,nz_dense-1
+        z_dense(n)=z(nghost+1)+(n-1)*dz_dense
+      enddo
+!
+!  Dust-to-gas ratio as a function of z (with cutoff).
+!
+      eps=1/sqrt(z_dense**2/Hd**2+1/(1+eps1)**2)-1
+      where (eps<=0.0) eps=0.0
+!
+!  Calculate the dust column density numerically.
+!
+      Sigmad_num=sum(rho1*eps*dz_dense)
+      if (lroot) print*, 'constant_richardson: Sigmad, Sigmad (numerical) = ', &
+          Sigmad, Sigmad_num
+!
+!  Place particles according to probability function.
+!
+      i0=0
+      do n=1,nz_dense
+        frac=eps(n)/Sigmad_num*dz_dense
+        npar_bin=int(frac*npar)
+        if (npar_bin>=2.and.mod(n,2)==0) npar_bin=npar_bin+1
+        do i=i0+1,i0+npar_bin
+          if (i<=npar_loc) then
+            call random_number_wrapper(r)
+            fp(i,izp)=z_dense(n)+(2*r-1)*dz_dense
+          endif
+        enddo
+        i0=i0+npar_bin
+      enddo
+      if (lroot) print'(A,i7,A)', 'constant_richardson: placed ', &
+          i0, ' particles according to a Ri=const'
+!
+!  Particles left out by round off are just placed randomly.
+!      
+      if (i0<npar_loc) then
+        do k=i0,npar_loc
+          call random_number_wrapper(fp(k,izp))
+          fp(i0:npar_loc,izp)=xyz0_loc(3)+fp(i0:npar_loc,izp)*Lxyz_loc(3)
+        enddo
+        if (lroot) print'(A,i7,A)', 'constant_richardson: placed ', &
+            npar_loc-i0, ' particles randomly.'
+      endif
+!
+!  Random positions in x and y.
+!      
+      do k=1,npar_loc
+        if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+        if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+      enddo
+      if (nxgrid/=1) &
+          fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+      if (nygrid/=1) &
+          fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+!       
+!  Set gas velocity according to dust-to-gas ratio and global pressure gradient.
+!          
+      do imn=1,ny*nz
+
+        n=nn(imn); m=mm(imn)
+        lfirstpoint=(imn==1)
+        llastpoint=(imn==(ny*nz))
+
+        eps_penc=1/sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)-1
+        where (eps_penc<=0.0) eps_penc=0.0
+
+        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
+            1/gamma*cs20*beta_glnrho_scaled(1)*eps_penc*tausp/ &
+            (1.0+2*eps_penc+eps_penc**2+(Omega*tausp)**2)
+        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+            1/gamma*cs20*beta_glnrho_scaled(1)* &
+            (1+eps_penc+(Omega*tausp)**2)/ &
+            (2*Omega*(1.0+2*eps_penc+eps_penc**2+(Omega*tausp)**2))
+      enddo
+!
+!  Set particle velocity.
+!      
+      do k=1,npar_loc
+
+        eps_point=1/sqrt(fp(k,izp)**2/Hd**2+1/(1+eps1)**2)-1
+        if (eps_point<=0.0) eps_point=0.0
+
+        fp(k,ivpx) = fp(k,ivpx) + &
+            1/gamma*cs20*beta_glnrho_scaled(1)*tausp/ &
+            (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
+        fp(k,ivpy) = fp(k,ivpy) + &
+            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps_point)/ &
+            (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
+
+      enddo
+!
+    endsubroutine constant_richardson
 !***********************************************************************
     subroutine dxxp_dt(f,fp,dfp)
 !
