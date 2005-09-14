@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.30 2005-09-14 12:52:39 ajohan Exp $
+! $Id: particles_dust.f90,v 1.31 2005-09-14 14:29:53 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -71,7 +71,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.30 2005-09-14 12:52:39 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.31 2005-09-14 14:29:53 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -337,7 +337,7 @@ module Particles
       real, dimension (nz_inc*nz) :: z_dense, eps
       real, dimension (nx) :: np, eps_penc
       real :: r, p, Hg, Hd, frac, rho1, Sigmad, Sigmad_num, Xi, fXi, dfdXi
-      real :: dz_dense, eps_point
+      real :: dz_dense, eps_point, z00_dense
       integer :: nz_dense=nz_inc*nz, npar_bin
       integer :: i, i0, k
 !
@@ -376,11 +376,10 @@ module Particles
 !
 !  Make z denser for higher resolution in density.
 !
-      z_dense(1)=z(nghost+1)
-      z_dense(nz_dense)=z(mz-nghost)
-      dz_dense=(z_dense(nz_dense)-z_dense(1))/(nz_dense-1)
-      do n=2,nz_dense-1
-        z_dense(n)=z(nghost+1)+(n-1)*dz_dense
+      dz_dense=Lxyz_loc(3)/nz_dense
+      z00_dense=xyz0_loc(3)+0.5*dz_dense
+      do n=1,nz_dense
+        z_dense(n)=z00_dense+(n-1)*dz_dense
       enddo
 !
 !  Dust-to-gas ratio as a function of z (with cutoff).
@@ -399,12 +398,12 @@ module Particles
       i0=0
       do n=1,nz_dense
         frac=eps(n)/Sigmad_num*dz_dense
-        npar_bin=int(frac*npar)
+        npar_bin=int(frac*npar_loc)
         if (npar_bin>=2.and.mod(n,2)==0) npar_bin=npar_bin+1
         do i=i0+1,i0+npar_bin
           if (i<=npar_loc) then
             call random_number_wrapper(r)
-            fp(i,izp)=z_dense(n)+(2*r-1)*dz_dense
+            fp(i,izp)=z_dense(n)+(2*r-1.0)*dz_dense/2
           endif
         enddo
         i0=i0+npar_bin
