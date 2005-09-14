@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.200 2005-08-26 10:15:47 ajohan Exp $
+! $Id: density.f90,v 1.201 2005-09-14 15:21:14 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -42,7 +42,7 @@ module Density
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,plaw=0.
   integer, parameter :: ndiff_max=4
-  logical :: lupw_lnrho=.false.
+  logical :: lupw_lnrho=.false.,lmass_spline=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,lmass_source=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
@@ -67,7 +67,9 @@ module Density
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
-       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext
+       wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
+       lnrho_const,plaw,lmass_spline
+  
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
@@ -108,7 +110,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.200 2005-08-26 10:15:47 ajohan Exp $")
+           "$Id: density.f90,v 1.201 2005-09-14 15:21:14 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1142,6 +1144,8 @@ module Density
 !  mass sources and sinks
 !
       if (lmass_source) call mass_source(f,df)
+      if (lmass_spline) call mass_source_spline(f,lnrho_int,&
+              lnrho_const,wdamp)
 !
 
 !  Mass diffusion
@@ -1505,4 +1509,126 @@ module Density
 !
     endsubroutine mass_source
 !***********************************************************************
+    subroutine mass_source_spline(f,lnrho_int,lnrho_const,wdamp)
+!   
+! alternative to mass_source: cut 'good' part of density
+!   profile and spline it toward predefined limits 
+!
+! 10-may-05/wlad: coded
+!  
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity, only: g0,n_pot,r0_pot
+      use General
+      use EquationOfState, only: cs20
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: lnrho_int,wdamp,lnrho_const,Omega_int
+      real :: inner,outer,limit,Mach,rlim
+      integer :: i,ci,cii,countlimit
+      real, dimension (mx) :: r,ome,den
+      !internal
+      real, dimension (nx) :: rad_int,rho_int,ome_int
+      real, dimension (nx) :: valuerho_int,valueome_int,irts 
+    
+
+      inner = r_int - 2*wdamp
+      outer = r_int -   wdamp
+      limit = r_int 
+      ci=0;cii=0
+      Mach = sqrt(1./cs20)
+
+      rlim = r_int - 1.5*wdamp
+
+      !
+      !computational domain -> limit < r < limit2
+      !
+      
+      !the whole thing between comments could be calculated only once
+      !and set to global variables or into a file
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      Omega_int = sqrt(g0*rlim**(-3)) - Omega
+      lnrho_int=lnrho_const - plaw*alog(rlim)
+
+      !
+      !Note that omega is already defined in cdata
+      !
+      
+      countlimit = lpoint + floor(limit/Lx*256) + 2
+
+      do i=lpoint,countlimit
+         
+         !inner boundary
+         !
+         !rad_int and d_int are the vectors to call in spline_damp
+         !ci is their dimension. cii is also needed.
+         
+         if (x(i).le.inner) then 
+            !center - rigid rotator with constant density
+            cii=cii+1; ci = ci + 1; rad_int(ci) = x(i)  
+            rho_int(ci) = lnrho_int   
+            ome_int(ci) = Omega_int 
+         endif
+         
+         if ((x(i).ge.outer).and.(x(i).le.limit)) then 
+            !smooth joint with the disk - initial condition
+            ci = ci + 1 ; rad_int(ci) = x(i) 
+            rho_int(ci) = lnrho_const - 0.5*alog(x(i))  
+            !ome_int(ci) = g0*x(i)**(n_pot-2)*(x(i)**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+            !ome_int(ci)=sqrt(ome_int(ci)*(1. + 0.5/Mach**2)**(-1)) - Omega
+            
+            ome_int(ci) = sqrt(g0/x(i)**3) - Omega           
+         endif
+    
+      enddo
+      
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      
+      !now spline the values
+      r = sqrt(x**2 + y(m)**2) 
+      !ome = g0*r**(n_pot-2)*(r**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+      !ome = sqrt(ome*(1. + 0.5/Mach**2)**(-1)) - Omega
+      ome = sqrt(g0*r**(-3)) - Omega
+      den = lnrho_const - 0.5*alog(r)
+
+
+      !fixed internal radius to spline
+      irts(1:cii)      = rad_int(1:cii) 
+      irts(cii+2:ci+1) = rad_int(cii+1:ci)
+      
+
+      do i=l1,l2
+
+         if ((r(i).ge.inner).and.(r(i).le.outer)) then
+
+            irts(cii+1) = r(i)
+
+            call spline(rad_int,rho_int,irts,valuerho_int,ci,ci+1)
+            call spline(rad_int,ome_int,irts,valueome_int,ci,ci+1)
+
+            f(i,m,n,ilnrho) =       valuerho_int(cii+1)
+            f(i,m,n,iux)    = -y(m)*valueome_int(cii+1) 
+            f(i,m,n,iuy)    =  x(i)*valueome_int(cii+1) 
+
+         endif
+         
+         if (r(i).le.inner) then 
+            f(i,m,n,ilnrho) =       lnrho_int
+            f(i,m,n,iux)    = -y(m)*Omega_int
+            f(i,m,n,iuy)    =  x(i)*Omega_int
+         endif 
+  
+         if ((r(i).ge.outer).and.(r(i).le.limit)) then
+            !initial condition
+            f(i,m,n,ilnrho) =       den(i) 
+            f(i,m,n,iux)    = -y(m)*ome(i)
+            f(i,m,n,iuy)    =  x(i)*ome(i)
+         endif
+      
+
+      enddo
+
+      endsubroutine mass_source_spline
+!***************************************************
 endmodule Density

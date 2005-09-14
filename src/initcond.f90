@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.129 2005-08-19 09:05:39 wlyra Exp $ 
+! $Id: initcond.f90,v 1.130 2005-09-14 15:21:14 wlyra Exp $ 
 
 module Initcond 
  
@@ -1362,10 +1362,14 @@ module Initcond
 !   2-may-05/axel: coded
 !   5-may-05/wlad: added possibility of star offset and non-corotational 
 !                  frame of reference. 
+!  25-aug-06/wlad: added gas pressure correction to angular velocity 
+
+      use Cdata
+      use EquationOfState, only : cs20
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
-      real :: g0,r0_pot,sx,sy
+      real :: g0,r0_pot,sx,sy,Mach
       integer :: n_pot
 !
 !  Angular velocity for centrifugally supported disc in given potential.
@@ -1374,9 +1378,14 @@ module Initcond
       xx = xx - sx
       yy = yy - sy
 
-      rrp=sqrt(xx**2+yy**2) !+ epsi
-      OO=sqrt(g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.))
-      
+      Mach = sqrt(1./cs20)
+
+      rrp=sqrt(xx**2+yy**2+zz**2) + epsi
+      OO=g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+      OO=sqrt(OO*(1. + 0.5/Mach**2)**(-1)) !0.5 is plaw
+
+      !put OO in a pencil for the viscous force calculation?
+     
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
 !
@@ -2414,16 +2423,17 @@ module Initcond
       use General
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,rr,H
+      real, dimension(mx,my,mz) :: xx,yy,zz,rr 
       real :: lnrho_const,plaw
-   
-      rr  = sqrt(xx**2 + yy**2)
-      f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)  
-    
+!      
+      rr  = sqrt(xx**2 + yy**2 + zz**2) + epsi
+      f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
+!      
+!    
       !3D - not tested yet
       !H  = 0.05 * rr
       !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
-     
+!    
     endsubroutine power_law
 !*********************************************************
 
