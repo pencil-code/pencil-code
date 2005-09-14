@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.75 2005-09-02 02:12:38 dobler Exp $
+! $Id: noentropy.f90,v 1.76 2005-09-14 15:18:09 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.75 2005-09-02 02:12:38 dobler Exp $")
+           "$Id: noentropy.f90,v 1.76 2005-09-14 15:18:09 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -141,11 +141,10 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
-      use EquationOfState, only: gamma,gamma1,cs20,lnrho0,&
-           llocal_iso,local_isothermal
+      use EquationOfState, only: gamma,gamma1,cs20,lnrho0,llocal_iso,local_isothermal
  !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: corr
+      real, dimension (nx) :: tmp
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -157,8 +156,8 @@ module Entropy
         else
 !
            if (llocal_iso) then
-              call local_isothermal(cs20,corr)
-              p%cs2 = cs20 * corr
+              call local_isothermal(cs20,tmp)              
+              p%cs2=tmp
            else   
               p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
            endif
