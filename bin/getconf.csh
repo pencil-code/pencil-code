@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.153 2005-09-07 01:09:23 dobler Exp $
+# $Id: getconf.csh,v 1.154 2005-09-15 17:22:47 wlyra Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -573,6 +573,11 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
 
 else if ($hn =~ cosmo) then
   echo "Cosmo - Tobi's laptop"
+  set mpirun = 'mpiexec'
+  set mpirunops = '-boot'
+
+else if ($hn =~ hades) then
+  echo "Hades - Wlad's laptop"
   set mpirun = 'mpiexec'
   set mpirunops = '-boot'
 
