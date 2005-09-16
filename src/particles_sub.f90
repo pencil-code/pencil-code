@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.21 2005-09-16 12:26:13 ajohan Exp $
+! $Id: particles_sub.f90,v 1.22 2005-09-16 13:16:12 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -365,8 +365,12 @@ module Particles_sub
                     iproc, npar_mig
                 print*, 'redist_particles_procs: nmig=', nmig(iproc,:)
               endif
-              iredo=1
-              exit
+              if (lmigration_redo) then
+                iredo=1
+                exit
+              else
+                call fatal_error('redist_particles_procs','')
+              endif
             endif
             fp(k_move(iproc_rec),:)=fp(k,:)
             if (present(dfp)) dfp(k_move(iproc_rec),:)=dfp(k,:)
@@ -461,8 +465,12 @@ module Particles_sub
 !
 !  Sum up processors who have not had place to let all migrating particles go.
 !
-        call mpireduce_sum_int_scl(iredo, iredo_sum, 1)
-        call mpibcast_int(iredo_sum, 1)
+        if (lmigration_redo) then   !  5-10% slowdown of code
+          call mpireduce_sum_int_scl(iredo, iredo_sum, 1)
+          call mpibcast_int(iredo_sum, 1)
+        else
+          iredo_sum=0
+        endif
 !
 !  If sum is not zero, the while loop while be executed once more.
 !        
