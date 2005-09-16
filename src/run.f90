@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.211 2005-09-05 11:51:17 theine Exp $
+! $Id: run.f90,v 1.212 2005-09-16 23:40:40 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.211 2005-09-05 11:51:17 theine Exp $")
+             "$Id: run.f90,v 1.212 2005-09-16 23:40:40 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -215,14 +215,6 @@
 !
         call wglobal()
 !
-!  advance equations
-!  NOTE: headt=.true. in order to print header titles
-!
-        if(lroot) then
-          time1 = mpiwtime()
-          count = 0
-        endif
-!
 !  update ghost zones, so rprint works corrected for at the first
 !  time step even if we didn't read ghost zones
 !
@@ -250,9 +242,17 @@
 !
         if (lpencil_check) call pencil_consistency_check(f,df,p)
 !
-!  Initialize timestep diagnostics (whether used or not)
+!  Initialize timestep diagnostics during the run (whether used or not,
+!  see idiag_timeperstep)
 !
         time_this_diagnostic=mpiwtime()
+!
+!  Start timing for final timing statistics
+!
+        if(lroot) then
+          time1 = mpiwtime()
+          count = 0
+        endif
 !
 !  Do loop in time
 !
