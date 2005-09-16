@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.32 2005-09-14 16:36:49 dobler Exp $
+! $Id: particles_dust.f90,v 1.33 2005-09-16 08:33:32 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -71,7 +71,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.32 2005-09-14 16:36:49 dobler Exp $")
+           "$Id: particles_dust.f90,v 1.33 2005-09-16 08:33:32 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -413,10 +413,10 @@ module Particles
 !
 !  Particles left out by round off are just placed randomly.
 !      
-      if (i0<npar_loc) then
-        do k=i0,npar_loc
+      if (i0+1<=npar_loc) then
+        do k=i0+1,npar_loc
           call random_number_wrapper(fp(k,izp))
-          fp(i0:npar_loc,izp)=xyz0_loc(3)+fp(i0:npar_loc,izp)*Lxyz_loc(3)
+          fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
         enddo
         if (lroot) print '(A,i7,A)', 'constant_richardson: placed ', &
             npar_loc-i0, ' particles randomly.'
