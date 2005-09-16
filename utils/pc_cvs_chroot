@@ -2,7 +2,7 @@
 
 # check options
 if [ $# -lt 1 ]; then
-    echo "usage: cvschroot [-d work_directory] new_cvsroot [new_module]" >&2
+    echo "usage: pc_cvs_chroot [-d work_directory] old_cvsroot new_cvsroot" >&2
     exit 1
 fi
 
