@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.33 2005-09-16 08:33:32 ajohan Exp $
+! $Id: particles_dust.f90,v 1.34 2005-09-16 08:41:50 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -71,7 +71,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.33 2005-09-16 08:33:32 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.34 2005-09-16 08:41:50 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -409,7 +409,7 @@ module Particles
         i0=i0+npar_bin
       enddo
       if (lroot) print '(A,i7,A)', 'constant_richardson: placed ', &
-          i0, ' particles according to a Ri=const'
+          i0, ' particles according to Ri=const'
 !
 !  Particles left out by round off are just placed randomly.
 !      
