@@ -1,0 +1,28 @@
+#!/bin/sh
+[ ! "$CVS_MIRROR_DIR" ] && CVS_MIRROR_DIR=${HOME}/CVS_MIRROR
+
+unset remove_mirror
+if [ "$1" == "--remove" ]; then
+  remove_mirror=1
+  shift
+fi
+
+subdir=cvs-pencil-code
+localdir=$CVS_MIRROR_DIR/$subdir
+
+if [ -e $localdir/ONLINE_CVSROOT ]; then
+  online_cvsroot=`cat $localdir/ONLINE_CVSROOT`
+  rm -f $localdir/ONLINE_CVSROOT
+else
+  echo "Already online, or ONLINE_CVSROOT not found in $localdir"
+  exit 1
+fi
+
+
+pc_cvschroot -d $PENCIL_HOME $localdir $online_cvsroot
+
+if [ "$remove_mirror" ]; then
+  echo -n "Removing offline content... "
+  rm -rf $localdir
+  echo "Done."
+fi

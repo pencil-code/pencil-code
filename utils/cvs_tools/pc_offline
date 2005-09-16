@@ -1,0 +1,51 @@
+#!/bin/sh
+[ ! "$CVS_MIRROR_DIR" ] && CVS_MIRROR_DIR=${HOME}/CVS_MIRROR
+
+subdir=cvs-pencil-code
+localdir=$CVS_MIRROR_DIR/$subdir
+
+if [ -e $localdir/ONLINE_CVSROOT ]; then
+  echo "You appear to be offline already... UPDATING OFFLINE CONTENT" 
+fi
+#online_cvsroot=`cat $PENCIL_HOME/CVS/Root`
+#remote_repository=`cat $PENCIL_HOME/CVS/Root | sed -e 's/^:[a-z]*://'`
+online_cvsroot=":pserver:${USER}@norserv.nordita.dk:/home/brandenb/CVS"
+remote_repository='norserv.nordita.dk:/home/brandenb/CVS'
+
+cat <<EOF
+Acquiring a local copy of the CVS repository...
+Warning... You CANNOT commit changes while offline.
+           You CAN perform all cvs read operations however,
+           such as checkout and update.
+           You can return to the online version later by running 
+           the pc_online script.
+EOF
+
+echo -n "Rsyncing CVSROOT... "
+mkdir -p $localdir/CVSROOT
+rsync -r -e ssh $remote_repository/CVSROOT $localdir/
+echo Done.
+echo -n "Rsyncing f90/pencil-code... "
+mkdir -p $localdir/f90/pencil-code
+rsync -r -e ssh $remote_repository/f90/pencil-code $localdir/f90/
+echo Done.
+
+echo $online_cvsroot > $localdir/ONLINE_CVSROOT
+date > $localdir/MIRROR_TIMESTAMP
+
+rm -f $localdir/CVSROOT/readers
+cat <<EOF > $localdir/CVSROOT/writers
+nobody
+EOF
+
+chmod 700 $localdir/CVSROOT/writers
+chmod 700 $localdir/CVSROOT/commitinfo
+cat <<EOF > $localdir/CVSROOT/commitinfo
+ALL false
+EOF
+
+
+pc_cvschroot -d $PENCIL_HOME $online_cvsroot $localdir
+echo -n "Offline content size (MB) = "
+expr `du -ks /home/mee/CVS_MIRROR/cvs-pencil-code/ | cut -f1` / 1024
+
