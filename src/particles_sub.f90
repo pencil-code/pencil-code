@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.23 2005-09-17 11:24:21 ajohan Exp $
+! $Id: particles_sub.f90,v 1.24 2005-09-17 11:25:24 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -429,7 +429,7 @@ module Particles_sub
               if (nmig(iproc,j)/=0) then
                 call mpisend_real(fp_mig(j,1:nmig(iproc,j),:), &
                     (/nmig(iproc,j),mpvar/), j, 222)
-                call mpisend_in1t(ipar_mig(j,1:nmig(iproc,j)), &
+                call mpisend_int(ipar_mig(j,1:nmig(iproc,j)), &
                     nmig(iproc,j), j, 223)
                 if (present(dfp)) &
                     call mpisend_real(dfp_mig(j,1:nmig(iproc,j),:), &
