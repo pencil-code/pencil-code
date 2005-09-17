@@ -596,6 +596,17 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_scl
 !***********************************************************************
+    subroutine mpireduce_or(flor_tmp,flor,nreduce)
+!
+!  17-sep-05/anders: coded
+!
+      integer :: nreduce
+      logical :: flor_tmp, flor
+!
+      flor=flor_tmp
+!
+    endsubroutine mpireduce_or
+!***********************************************************************
     subroutine start_serialize()
     endsubroutine start_serialize
 !***********************************************************************

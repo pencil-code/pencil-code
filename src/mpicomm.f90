@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.144 2005-09-17 08:28:39 ajohan Exp $
+! $Id: mpicomm.f90,v 1.145 2005-09-17 12:04:25 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1570,8 +1570,7 @@ module Mpicomm
       integer :: nreduce
       integer :: fsum_tmp,fsum
 !
-!  calculate total sum for each array element and return to root
-!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
+!  Calculate sum and return to root.
 !
       if (nprocs==1) then
         fsum=fsum_tmp
@@ -1581,6 +1580,24 @@ module Mpicomm
       endif
 !
     endsubroutine mpireduce_sum_int_scl
+!***********************************************************************
+    subroutine mpireduce_or(flor_tmp,flor,nreduce)
+!
+!  17-sep-05/anders: coded
+!
+      integer :: nreduce
+      logical :: flor_tmp, flor
+!
+!  Calculate logical or over all procs and return to root.
+!
+      if (nprocs==1) then
+        flor=flor_tmp
+      else
+        call MPI_REDUCE(flor_tmp, flor, 1, MPI_LOGICAL, MPI_LOR, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_or
 !***********************************************************************
     subroutine start_serialize()
 !
