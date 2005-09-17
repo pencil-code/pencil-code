@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.35 2005-09-16 14:18:08 ajohan Exp $
+! $Id: particles_dust.f90,v 1.36 2005-09-17 14:00:19 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -72,7 +72,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.35 2005-09-16 14:18:08 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.36 2005-09-17 14:00:19 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -532,7 +532,7 @@ module Particles
             call random_number_wrapper(ran_xp)
             dfp(k,ixp) = dfp(k,ixp) + dx/dt*(2*ran_xp-1.0)
           endif
-          if (nxgrid/=1) then
+          if (nygrid/=1) then
             call random_number_wrapper(ran_yp)
             dfp(k,iyp) = dfp(k,iyp) + dy/dt*(2*ran_yp-1.0)
           endif
