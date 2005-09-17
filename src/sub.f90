@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.218 2005-09-13 16:33:13 bingert Exp $ 
+! $Id: sub.f90,v 1.219 2005-09-17 12:54:08 ajohan Exp $ 
 
 module Sub 
 
@@ -3406,6 +3406,8 @@ nameloop: do
 !  Remove a file; this variant seems to be portable
 !  5-mar-02/wolf: coded
 !
+        use Cdata, only: ip
+!
         character (len=*) :: fname
         logical :: exist
 !
@@ -3416,7 +3418,7 @@ nameloop: do
 !  remove file
 !
         if (exist) then
-          print*,'remove_file: Removing file <',trim(fname),'>'
+          if (ip<=14) print*,'remove_file: Removing file <',trim(fname),'>'
           open(1,FILE=fname)
           close(1,STATUS='DELETE')
         endif
