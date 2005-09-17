@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.25 2005-09-17 11:31:08 ajohan Exp $
+! $Id: particles_sub.f90,v 1.26 2005-09-17 12:13:26 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -283,15 +283,16 @@ module Particles_sub
       real, dimension (ncpus,npar_mig,mpvar) :: fp_mig, dfp_mig
       integer, dimension (ncpus,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
-      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec, iredo, iredo_sum
+      integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
+      logical :: lredo, lredo_all
 !
       intent (out) :: fp, npar_loc, ipar, dfp
 !
 !  Possible to iterate untill all particles have migrated.
 !
-      iredo=0; iredo_sum=1
-      do while (iredo_sum/=0)
-        iredo=0
+      lredo=.false.; lredo_all=.true.
+      do while (lredo_all)
+        lredo=.false.
 !
 !  Find out which particles are not in the local processor's yz-interval.
 !
@@ -350,7 +351,7 @@ module Particles_sub
                 print*, 'redist_particles_procs: nmig=', nmig(iproc,:)
               endif
               if (lmigration_redo) then
-                iredo=1
+                lredo=.true.
                 exit
               else
                 call fatal_error('redist_particles_procs','')
@@ -452,10 +453,10 @@ module Particles_sub
 !  Sum up processors that have not had place to let all migrating particles go.
 !
         if (lmigration_redo) then   !  5-10% slowdown of code
-          call mpireduce_sum_int_scl(iredo, iredo_sum, 1)
-          call mpibcast_int(iredo_sum, 1)
+          call mpireduce_or(lredo, lredo_all, 1)
+          call mpibcast_logical(lredo_all, 1)
         else
-          iredo_sum=0
+          lredo_all=.false.
         endif
 !
 !  If sum is not zero, then the while loop while be executed once more.
