@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.24 2005-09-17 11:25:24 ajohan Exp $
+! $Id: particles_sub.f90,v 1.25 2005-09-17 11:31:08 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -449,7 +449,7 @@ module Particles_sub
           endif
         enddo
 !
-!  Sum up processors who have not had place to let all migrating particles go.
+!  Sum up processors that have not had place to let all migrating particles go.
 !
         if (lmigration_redo) then   !  5-10% slowdown of code
           call mpireduce_sum_int_scl(iredo, iredo_sum, 1)
@@ -458,7 +458,7 @@ module Particles_sub
           iredo_sum=0
         endif
 !
-!  If sum is not zero, the while loop while be executed once more.
+!  If sum is not zero, then the while loop while be executed once more.
 !        
       enddo
 !
