@@ -1,4 +1,4 @@
-! $Id: particles_dust_tausred.f90,v 1.1 2005-09-17 13:52:20 ajohan Exp $
+! $Id: particles_dust_tausred.f90,v 1.2 2005-09-17 14:33:20 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -71,7 +71,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust_tausred.f90,v 1.1 2005-09-17 13:52:20 ajohan Exp $")
+           "$Id: particles_dust_tausred.f90,v 1.2 2005-09-17 14:33:20 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -634,8 +634,8 @@ module Particles
 !  Increase friction time if too low.
             if (tausmin/=0.0) then
               eps_point=rhop_tilde*np_point/rho_point
-              if ( (1+eps_point)*tausp1 > taus1max) then
-                tausp1_point=(1+eps_point)*taus1max
+              if ( (1+eps_point)*tausp1_point > taus1max) then
+                tausp1_point=1/(1+eps_point)*taus1max
               endif
             endif
             tausg1_point=rhop_tilde/rho_point*tausp1_point
