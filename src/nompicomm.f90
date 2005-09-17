@@ -585,6 +585,17 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int
 !***********************************************************************
+    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,nreduce)
+!
+!  16-sep-05/anders: adapted from mpireduce_sum_int
+!
+      integer :: nreduce
+      integer :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+!
+    endsubroutine mpireduce_sum_int_scl
+!***********************************************************************
     subroutine start_serialize()
     endsubroutine start_serialize
 !***********************************************************************
