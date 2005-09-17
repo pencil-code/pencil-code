@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.22 2005-09-16 13:16:12 ajohan Exp $
+! $Id: particles_sub.f90,v 1.23 2005-09-17 11:24:21 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -280,33 +280,18 @@ module Particles_sub
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
 !
+      real, dimension (ncpus,npar_mig,mpvar) :: fp_mig, dfp_mig
+      integer, dimension (ncpus,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
-      integer, dimension (0:ncpus-1), save :: k0_move, k0_move1
-      integer, dimension (0:ncpus-1) :: k_move
       integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec, iredo, iredo_sum
-      integer, save :: mpar_loc_mig
-      logical, save :: lfirstcall=.true.
 !
       intent (out) :: fp, npar_loc, ipar, dfp
-!
-!  Initialise start index of migrating particles..
-!
-      if (lfirstcall) then
-        do i=0,ncpus-1
-          k0_move(i)=mpar_loc-npar_mig*(i+1)
-        enddo
-        k0_move1=k0_move-1
-!  Calculate how many particles there is room for at the local processor.
-        mpar_loc_mig=mpar_loc-ncpus*npar_mig
-        lfirstcall=.false.
-      endif
 !
 !  Possible to iterate untill all particles have migrated.
 !
       iredo=0; iredo_sum=1
       do while (iredo_sum/=0)
         iredo=0
-        k_move=k0_move1
 !
 !  Find out which particles are not in the local processor's yz-interval.
 !
@@ -350,7 +335,6 @@ module Particles_sub
             endif
 !  Copy migrating particle to the end of the fp array.
             nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)+1
-            k_move(iproc_rec)=k_move(iproc_rec)+1
             if (nmig(iproc,iproc_rec)>npar_mig) then
               print '(a,i3,a,i3,a)', &
                   'redist_particles_procs: too many particles migrating '// &
@@ -372,9 +356,10 @@ module Particles_sub
                 call fatal_error('redist_particles_procs','')
               endif
             endif
-            fp(k_move(iproc_rec),:)=fp(k,:)
-            if (present(dfp)) dfp(k_move(iproc_rec),:)=dfp(k,:)
-            ipar(k_move(iproc_rec))=ipar(k)
+            fp_mig(iproc_rec,nmig(iproc,iproc_rec),:)=fp(k,:)
+            if (present(dfp)) &
+                dfp_mig(iproc_rec,nmig(iproc,iproc_rec),:)=dfp(k,:)
+            ipar_mig(iproc_rec,nmig(iproc,iproc_rec))=ipar(k)
 !  Move the particle with the highest index number to the empty spot left by
 !  the migrating particle.
             fp(k,:)=fp(npar_loc,:)
@@ -429,10 +414,10 @@ module Particles_sub
                   dfp(npar_loc+1:npar_loc+nmig(i,iproc),:)
             endif
             npar_loc=npar_loc+nmig(i,iproc)
-            if (npar_loc>=mpar_loc_mig) then
+            if (npar_loc>mpar_loc) then
               print*, 'redist_particles_proc: Too many particles at proc', iproc
-              print*, 'redist_particles_proc: npar_loc, mpar_loc_mig=', &
-                  npar_loc, mpar_loc_mig
+              print*, 'redist_particles_proc: npar_loc, mpar_loc=', &
+                  npar_loc, mpar_loc
               call fatal_error('redist_particles_proc','')
             endif
           endif
@@ -442,21 +427,22 @@ module Particles_sub
           if (iproc==i) then
             do j=0,ncpus-1
               if (nmig(iproc,j)/=0) then
-                call mpisend_real(fp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:), &
+                call mpisend_real(fp_mig(j,1:nmig(iproc,j),:), &
                     (/nmig(iproc,j),mpvar/), j, 222)
-                call mpisend_int(ipar(k0_move(j):k0_move(j)+nmig(iproc,j)-1), &
+                call mpisend_in1t(ipar_mig(j,1:nmig(iproc,j)), &
                     nmig(iproc,j), j, 223)
                 if (present(dfp)) &
-                    call mpisend_real(dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:), (/nmig(iproc,j),mpvar/), j, 333)
+                    call mpisend_real(dfp_mig(j,1:nmig(iproc,j),:), &
+                    (/nmig(iproc,j),mpvar/), j, 333)
                 if (ip<=6) then
                   print*, 'redist_particles_proc: iproc, iproc_rec=', iproc, j
                   print*, 'redist_particles_proc: sent fp=', &
-                      fp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:)
+                      fp_mig(j,1:nmig(iproc,j),:)
                   print*, 'redist_particles_proc: sent ipar=', &
-                      ipar(k0_move(j):k0_move(j)+nmig(iproc,j)-1)
+                      ipar_mig(j,1:nmig(iproc,j))
                   if (present(dfp)) &
                       print*, 'redist_particles_proc: sent dfp=', &
-                      dfp(k0_move(j):k0_move(j)+nmig(iproc,j)-1,:)
+                      dfp_mig(j,1:nmig(iproc,j),:)
                 endif
               endif
             enddo
