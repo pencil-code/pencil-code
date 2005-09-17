@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.8 2005-07-01 02:56:08 mee Exp $
+! $Id: noglobal.f90,v 1.9 2005-09-17 12:25:02 ajohan Exp $
 
 module Global
 
@@ -25,6 +25,11 @@ module Global
   interface get_global
     module procedure get_global_vect
     module procedure get_global_scal
+  endinterface
+
+  interface get_global_point
+    module procedure get_global_point_vect
+    module procedure get_global_point_scal
   endinterface
 
   contains
@@ -143,6 +148,40 @@ module Global
       if (NO_WARN) print*, var(1),m,n,label ! keep compiler quiet
 !
     endsubroutine get_global_scal
+!***********************************************************************
+    subroutine get_global_point_vect(var,l,m,n,label)
+!
+!  Get (l,m,n)-point of the global vector variable identified by LABEL
+!  [dummy routine]
+!
+!  18-jul-02/wolf coded
+!
+!      use Cparam
+!
+      real, dimension(3) :: var
+      integer :: l,m,n
+      character (len=*) :: label
+!
+      if (NO_WARN) print*, var(1),l,m,n,label ! keep compiler quiet
+!
+    endsubroutine get_global_point_vect
+!***********************************************************************
+    subroutine get_global_point_scal(var,m,n,label)
+!
+!  Set (l,m,n)-pointof the global scalar variable identified by LABEL
+!  [dummy routine]
+!
+!  18-jul-02/wolf coded
+!
+!      use Cparam
+!
+      real :: var
+      integer :: l,m,n
+      character (len=*) :: label
+!
+      if (NO_WARN) print*, var,l,m,n,label ! keep compiler quiet
+!
+    endsubroutine get_global_point_scal
 !***********************************************************************
     subroutine global_derivs(m,n,label,der6)
 !

@@ -1,4 +1,4 @@
-! $Id: global_rr.f90,v 1.6 2005-06-27 00:14:18 mee Exp $
+! $Id: global_rr.f90,v 1.7 2005-09-17 12:25:02 ajohan Exp $
 
 module Global
 
@@ -29,6 +29,11 @@ module Global
   interface get_global
     module procedure get_global_vect
     module procedure get_global_scal
+  endinterface
+
+  interface get_global_point
+    module procedure get_global_vect_point
+    module procedure get_global_scal_point
   endinterface
 
   real, dimension (mx,my,mz) :: rr
@@ -124,7 +129,7 @@ module Global
 !***********************************************************************
     subroutine get_global_vect(var,m,n,label)
 !
-!  get (m,n)-pencil of the global vector variable identified by LABEL
+!  Get (m,n)-pencil of the global vector variable identified by LABEL.
 !  [dummy routine]
 !
       use Mpicomm, only: stop_it
@@ -140,7 +145,7 @@ module Global
 !***********************************************************************
     subroutine get_global_scal(var,m,n,label)
 !
-!  set (m,n)-pencil of the global scalar variable identified by LABEL
+!  Get (m,n)-pencil of the global scalar variable identified by LABEL.
 !  [dummy routine]
 !
       use Mpicomm, only: stop_it
@@ -153,6 +158,38 @@ module Global
       if (ip == 0) print*, var(1),m,n,label ! keep compiler quiet
 !
     endsubroutine get_global_scal
+!***********************************************************************
+    subroutine get_global_vect_point(var,l,m,n,label)
+!
+!  Get (l,m,n)-point of the global vector variable identified by LABEL.
+!  [dummy routine]
+!
+      use Mpicomm, only: stop_it
+!
+      real, dimension(3) :: var
+      integer :: l,m,n
+      character (len=*) :: label
+!
+      call stop_it("GLOBAL_RR: get_global_vect not implemented")
+      if (NO_WARN) print*, var(1),l,m,n,label ! keep compiler quiet
+!
+    endsubroutine get_global_vect_point
+!***********************************************************************
+    subroutine get_global_scal_point(var,l,m,n,label)
+!
+!  Get (l,m,n)-pointof the global scalar variable identified by LABEL.
+!  [dummy routine]
+!
+      use Mpicomm, only: stop_it
+!
+      real :: var
+      integer :: l,m,n
+      character (len=*) :: label
+!
+      call stop_it("GLOBAL_RR: get_global_scla not implemented")
+      if (ip == 0) print*, var(1),l,m,n,label ! keep compiler quiet
+!
+    endsubroutine get_global_scal_point
 !***********************************************************************
     subroutine global_derivs(m,n,label,der6)
 !

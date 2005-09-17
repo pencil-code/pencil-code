@@ -1,4 +1,4 @@
- ! $Id: global_particles.f90,v 1.3 2005-06-27 00:14:18 mee Exp $
+ ! $Id: global_particles.f90,v 1.4 2005-09-17 12:25:02 ajohan Exp $
 
 module Global
 
@@ -23,6 +23,11 @@ module Global
   interface get_global
     module procedure get_global_vect
     module procedure get_global_scal
+  endinterface
+
+  interface get_global_point
+    module procedure get_global_vect_point
+    module procedure get_global_scal_point
   endinterface
 !
   real, dimension (mx,my,mz,3) :: uupsum
@@ -150,7 +155,7 @@ module Global
 !***********************************************************************
     subroutine get_global_vect(var,m,n,label)
 !
-!  set (m,n)-pencil of the global vector variable identified by LABEL
+!  Get (m,n)-pencil of the global vector variable identified by LABEL.
 !
 !  13-jun-05/anders: adapted
 !
@@ -173,7 +178,7 @@ module Global
 !***********************************************************************
     subroutine get_global_scal(var,m,n,label)
 !
-!  set (m,n)-pencil of the global scalar variable identified by LABEL
+!  Get (m,n)-pencil of the global scalar variable identified by LABEL.
 !
 !  13-jun-05/anders: adapted
 !
@@ -193,6 +198,54 @@ module Global
       endselect
 !
     endsubroutine get_global_scal
+!***********************************************************************
+    subroutine get_global_vect_point(var,l,m,n,label)
+!
+!  Get (l,m,n)-point of the global vector variable identified by LABEL.
+!
+!  15-sep-05/anders: adapted
+!
+      real, dimension(3) :: var
+      integer :: l,m,n
+      character (len=*) ::label
+!
+      select case(label)
+
+      case ('uupsum')
+        var = uupsum(l,m,n,:)
+
+      case default
+        if (lroot) print*, &
+            'get_global_vect_point: No such value for label=', trim(label)
+        call stop_it('get_global_vect_point')
+
+      endselect
+!
+    endsubroutine get_global_vect_point
+!***********************************************************************
+    subroutine get_global_scal_point(var,l,m,n,label)
+!
+!  Get (l,m,n)-point of the global scalar variable identified by LABEL.
+!
+!  15-sep-05/anders: adapted
+!
+      real :: var
+      integer :: l,m,n
+      character (len=*) ::label
+!
+      select case(label)
+
+      case ('np')
+        var = np(l,m,n)
+
+      case default
+        if (lroot) print*, &
+            'get_global_scal_point: No such value for label=', trim(label)
+        call stop_it('get_global_scal_point')
+
+      endselect
+!
+    endsubroutine get_global_scal_point
 !***********************************************************************
     subroutine global_derivs(m,n,label,der6)
 !
