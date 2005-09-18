@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.100 2005-07-01 04:58:26 mee Exp $
+! $Id: dustvelocity.f90,v 1.101 2005-09-18 12:03:09 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -29,7 +29,7 @@ module Dustvelocity
 !ajwm but are used consistently with the Dustdensity module
 !ajwm - not good but for reasons of dust density / velocity interaction
   public :: dust_geometry, dimd1, rhods, surfd, mdplus, mdminus
-  public :: ad, scolld, ustcst, tausd1
+  public :: ad, scolld, ustcst, tausd1, tausd
   public :: unit_md, dust_chemistry, mumon, mmon, mi, md
 
   ! init parameters
@@ -129,7 +129,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.100 2005-07-01 04:58:26 mee Exp $")
+           "$Id: dustvelocity.f90,v 1.101 2005-09-18 12:03:09 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
