@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.138 2005-09-18 12:35:59 ajohan Exp $
+! $Id: dustdensity.f90,v 1.139 2005-09-19 09:29:58 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -135,7 +135,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.138 2005-09-18 12:35:59 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.139 2005-09-19 09:29:58 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -478,8 +478,7 @@ module Dustdensity
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      real, dimension (nx) :: rho
-      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, eps
+      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, eps, lnrho, rho
       integer :: i
 !
 !  Calculate dust "scale height".
@@ -520,15 +519,33 @@ module Dustdensity
       do imn=1,ny*nz
 
         n=nn(imn); m=mm(imn)
+!
+!  Take into account drag force from falling dust on gas stratification.
+!
+        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.0
+        f(l1:l2,m,n,iudz(1)) = f(l1:l2,m,n,iudz(1)) - tausd(1)*Omega**2*z(n)
+        if (abs(z(n))<=Hd*sqrt(1-1/(1+eps1)**2)) then
+          lnrho = -sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)* &
+              gamma*Omega**2*Hd**2/cs20 + gamma*Omega**2*Hd**2/(cs20*(1+eps1))
+        else
+          lnrho = -0.5*gamma*Omega**2/cs20*z(n)**2 + &
+              gamma*Omega**2*Hd**2/cs20*(1/(1+eps1)-1/(2*(1+eps1)**2) - 0.5)
+        endif
+!
+!  Isothermal stratification.
+!        
+        if (lentropy) f(l1:l2,m,n,iss) = (1/gamma-1.0)*lnrho
+
+        rho=exp(lnrho)
 
         if (ldensity_nolog) then
-          rho=f(l1:l2,m,n,ilnrho)
+          f(l1:l2,m,n,ilnrho)=rho
         else
-          rho=exp(f(l1:l2,m,n,ilnrho))
+          f(l1:l2,m,n,ilnrho)=lnrho
         endif
 
         eps=1/sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)-1
-        if (eps<=0.0) eps=0.001
+        if (eps<=0.0) eps=0.00001
 
         f(l1:l2,m,n,ind(1))=rho*eps
 
@@ -546,6 +563,7 @@ module Dustdensity
             (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
 
       enddo
+!
     endsubroutine constant_richardson
 !***********************************************************************
     subroutine pencil_criteria_dustdensity()
