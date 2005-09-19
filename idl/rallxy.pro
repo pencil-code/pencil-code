@@ -4,7 +4,7 @@
 
 ;;;
 ;;;  Author: nils/ adapted from rall.pro 20-nov-2003    
-;;;  $Id: rallxy.pro,v 1.4 2004-05-05 17:10:31 mee Exp $
+;;;  $Id: rallxy.pro,v 1.5 2005-09-19 04:44:31 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors in a xy-plane (select plane by 
@@ -55,11 +55,12 @@ close,1
 
 
 ;
-; must set mz=mzloc such that varcontent defines the correct arrays
+;  must set mz=mzloc such that varcontent defines the correct arrays
+;  allow this value to be read in interactively if equal to default.
 ;
 mz=mzloc
 default,target_ipz,0
-
+if target_ipz eq 0 then read,'give target_ipz> ',target_ipz
 
 
 ;
