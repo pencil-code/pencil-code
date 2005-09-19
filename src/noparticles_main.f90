@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.3 2005-09-01 18:57:56 ajohan Exp $
+! $Id: noparticles_main.f90,v 1.4 2005-09-19 13:29:50 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -85,6 +85,21 @@ module Particles_main
       if (NO_WARN) print*, chsnap, msnap, enum, flist
 !
     endsubroutine particles_write_snapshot
+!***********************************************************************
+    subroutine particles_write_dsnapshot(chsnap,msnap,enum,flist)
+!
+!  Write particle derivative snapshot to file.
+!
+!  22-aug-05/anders: dummy
+!
+      integer :: msnap
+      logical :: enum
+      character (len=*) :: chsnap,flist
+      optional :: flist
+!
+      if (NO_WARN) print*, chsnap, msnap, enum, flist
+!
+    endsubroutine particles_write_dsnapshot
 !***********************************************************************
     subroutine particles_write_pdim(filename)
 !   

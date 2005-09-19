@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.6 2005-09-01 18:57:56 ajohan Exp $
+! $Id: particles_main.f90,v 1.7 2005-09-19 13:29:50 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -123,6 +123,29 @@ module Particles_main
       endif
 !
     endsubroutine particles_write_snapshot
+!***********************************************************************
+    subroutine particles_write_dsnapshot(chsnap,msnap,enum,flist)
+!
+!  Write particle derivative snapshot to file.
+!
+!  07-jan-05/anders: coded
+!
+      integer :: msnap
+      logical :: enum
+      character (len=*) :: chsnap,flist
+      optional :: flist
+!
+      logical :: lsnap
+!
+      if (present(flist)) then
+        call wsnap_particles(chsnap,dfp,msnap,enum,lsnap,dsnap_par_minor, &
+            npar_loc,ipar,flist)
+      else
+        call wsnap_particles(chsnap,dfp,msnap,enum,lsnap,dsnap_par_minor, &
+            npar_loc,ipar)
+      endif
+!
+    endsubroutine particles_write_dsnapshot
 !***********************************************************************
     subroutine particles_write_pdim(filename)
 !   

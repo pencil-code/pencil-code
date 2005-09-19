@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.212 2005-09-16 23:40:40 dobler Exp $
+! $Id: run.f90,v 1.213 2005-09-19 13:29:50 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.212 2005-09-16 23:40:40 dobler Exp $")
+             "$Id: run.f90,v 1.213 2005-09-19 13:29:50 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -509,8 +509,10 @@
               trim(directory_snap)//'/pvar.dat',mvar_io,ENUM=.false.)
           call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
                                   ENUM=.false.)
-          if (ip<=11) &
-               call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
+          if (ip<=11) then
+            call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
+            call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',mvar,ENUM=.false.)
+          endif
         else
           call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)
           if (ip<=11) &
