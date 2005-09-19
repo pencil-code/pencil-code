@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.36 2005-09-17 14:00:19 ajohan Exp $
+! $Id: particles_dust.f90,v 1.37 2005-09-19 12:23:01 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -72,7 +72,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.36 2005-09-17 14:00:19 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.37 2005-09-19 12:23:01 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -336,9 +336,9 @@ module Particles
 !
       integer, parameter :: nz_inc=10
       real, dimension (nz_inc*nz) :: z_dense, eps
-      real, dimension (nx) :: np, eps_penc
+      real, dimension (nx) :: np
       real :: r, p, Hg, Hd, frac, rho1, Sigmad, Sigmad_num, Xi, fXi, dfdXi
-      real :: dz_dense, eps_point, z00_dense
+      real :: dz_dense, eps_point, z00_dense, rho, lnrho
       integer :: nz_dense=nz_inc*nz, npar_bin
       integer :: i, i0, k
 !
@@ -439,18 +439,37 @@ module Particles
       do imn=1,ny*nz
 
         n=nn(imn); m=mm(imn)
-        lfirstpoint=(imn==1)
-        llastpoint=(imn==(ny*nz))
 
-        eps_penc=1/sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)-1
-        where (eps_penc<=0.0) eps_penc=0.0
+        if (abs(z(n))<=Hd*sqrt(1-1/(1+eps1)**2)) then
+          lnrho = -sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)* &
+              gamma*Omega**2*Hd**2/cs20 + gamma*Omega**2*Hd**2/(cs20*(1+eps1))
+        else
+          lnrho = -0.5*gamma*Omega**2/cs20*z(n)**2 + &
+              gamma*Omega**2*Hd**2/cs20*(1/(1+eps1)-1/(2*(1+eps1)**2) - 0.5)
+        endif
+!
+!  Isothermal stratification.
+!        
+        if (lentropy) f(l1:l2,m,n,iss) = (1/gamma-1.0)*lnrho
+
+        rho=exp(lnrho)
+
+        if (ldensity_nolog) then
+          f(l1:l2,m,n,ilnrho)=rho
+        else
+          f(l1:l2,m,n,ilnrho)=lnrho
+        endif
+
+        eps_point=1/sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)-1
+        if (eps_point<=0.0) eps_point=0.0
 
         f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
-            1/gamma*cs20*beta_glnrho_scaled(1)*eps_penc*tausp/ &
-            (1.0+2*eps_penc+eps_penc**2+(Omega*tausp)**2)
+            1/gamma*cs20*beta_glnrho_scaled(1)*eps_point*tausp/ &
+            (1.0+2*eps_point+eps_point**2+(Omega*tausp)**2)
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps_penc+(Omega*tausp)**2)/ &
-            (2*Omega*(1.0+2*eps_penc+eps_penc**2+(Omega*tausp)**2))
+            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps_point+(Omega*tausp)**2)/ &
+            (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
+        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.0
       enddo
 !
 !  Set particle velocity.
@@ -466,6 +485,7 @@ module Particles
         fp(k,ivpy) = fp(k,ivpy) + &
             1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps_point)/ &
             (2*Omega*(1.0+2*eps_point+eps_point**2+(Omega*tausp)**2))
+        fp(k,ivpz) = fp(k,ivpz) - tausp*Omega**2*fp(k,izp)
 
       enddo
 !
