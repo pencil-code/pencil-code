@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.101 2005-09-18 12:03:09 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.102 2005-09-20 11:00:03 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -73,6 +73,7 @@ module Dustvelocity
   integer, dimension(ndustspec) :: idiag_udrms=0,idiag_udmax=0,idiag_odrms=0
   integer, dimension(ndustspec) :: idiag_odmax=0,idiag_rdudmax=0
   integer, dimension(ndustspec) :: idiag_udxmz=0,idiag_udymz=0,idiag_udzmz=0
+  integer, dimension(ndustspec) :: idiag_udx2mz=0,idiag_udy2mz=0,idiag_udz2mz=0
   integer, dimension(ndustspec) :: idiag_udmx=0,idiag_udmy=0,idiag_udmz=0
   integer, dimension(ndustspec) :: idiag_udxmxy=0,idiag_udymxy=0,idiag_udzmxy=0
   integer, dimension(ndustspec) :: idiag_divud2m=0,idiag_epsKd=0
@@ -129,7 +130,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.101 2005-09-18 12:03:09 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.102 2005-09-20 11:00:03 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1009,12 +1010,24 @@ module Dustvelocity
               call sum_mn_name(p%rhod(:,k)*p%uud(:,3,k),idiag_rdudzm(k))
           if (idiag_rdudx2m(k)/=0) &
               call sum_mn_name((p%rhod(:,k)*p%uud(:,1,k))**2,idiag_rdudx2m(k))
+!
+!  xy-averages
+!
           if (idiag_udxmz(k)/=0) &
               call xysum_mn_name_z(p%uud(:,1,k),idiag_udxmz(k))
           if (idiag_udymz(k)/=0) &
               call xysum_mn_name_z(p%uud(:,2,k),idiag_udymz(k))
           if (idiag_udzmz(k)/=0) &
               call xysum_mn_name_z(p%uud(:,3,k),idiag_udzmz(k))
+          if (idiag_udx2mz(k)/=0) &
+              call xysum_mn_name_z(p%uud(:,1,k)**2,idiag_udx2mz(k))
+          if (idiag_udy2mz(k)/=0) &
+              call xysum_mn_name_z(p%uud(:,2,k)**2,idiag_udy2mz(k))
+          if (idiag_udz2mz(k)/=0) &
+              call xysum_mn_name_z(p%uud(:,3,k)**2,idiag_udz2mz(k))
+!
+!  z-averages
+!
           if (idiag_udxmxy(k)/=0) &
               call zsum_mn_name_xy(p%uud(:,1,k),idiag_udxmxy(k))
           if (idiag_udymxy(k)/=0) &
@@ -1160,7 +1173,7 @@ module Dustvelocity
       use Sub
       use General, only: chn
 !
-      integer :: iname,k
+      integer :: iname,inamez,k
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=4) :: sdust,sdustspec,suud1,sudx1,sudy1,sudz1
@@ -1184,50 +1197,7 @@ module Dustvelocity
         idiag_udmax=0; idiag_odrms=0; idiag_odmax=0; idiag_rdudmax=0
         idiag_udmx=0; idiag_udmy=0; idiag_udmz=0; idiag_divud2m=0
         idiag_epsKd=0; idiag_rdudxm=0;idiag_rdudym=0; idiag_rdudzm=0;
-        idiag_rdudx2m=0
-      endif
-
-      call chn(ndustspec,sdustspec)
-!
-!  Define arrays for multiple dust species
-!
-      if (lwr .and. ndustspec /= 1) then
-        write(3,*) 'iuud=intarr('//trim(sdustspec)//')'
-        write(3,*) 'iudx=intarr('//trim(sdustspec)//')'
-        write(3,*) 'iudy=intarr('//trim(sdustspec)//')'
-        write(3,*) 'iudz=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_dtud=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_dtnud=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_ud2m=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udx2m=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udy2m=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udz2m=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udm2=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_od2m=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_oudm=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udrms=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udmax=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_rdudmax=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_rdudxm=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_rdudym=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_rdudzm=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_rdudx2m=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_odrms=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_odmax=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udmx=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udmy=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udmz=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_divud2m=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_epsKd=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udxpt=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udypt=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udzpt=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udxmz=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udymz=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udzmz=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udxmxy=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udymxy=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_udzmxy=intarr('//trim(sdustspec)//')'
+        idiag_rdudx2m=0; idiag_udx2mz=0; idiag_udy2mz=0; idiag_udz2mz=0
       endif
 !
 !  Loop over dust layers
@@ -1294,77 +1264,22 @@ module Dustvelocity
               'udzpt'//trim(sdust),idiag_udzpt(k))
         enddo
 !
-!  write column where which variable is stored
+!  check for those quantities for which we want xy-averages
 !
-        if (lwr) then
-          call chn(k-1,sdust)
-          sdust = '['//sdust//']'
-          if (ndustspec == 1) sdust=''
-          if (idiag_dtud(k) /= 0) &
-              write(3,*) 'i_dtud'//trim(sdust)//'=',idiag_dtud(k)
-          if (idiag_dtnud(k) /= 0) &
-              write(3,*) 'i_dtnud'//trim(sdust)//'=',idiag_dtnud(k)
-          if (idiag_ud2m(k) /= 0) &
-              write(3,*) 'i_ud2m'//trim(sdust)//'=',idiag_ud2m(k)
-          if (idiag_udx2m(k) /= 0) &
-              write(3,*) 'i_udx2m'//trim(sdust)//'=',idiag_udx2m(k)
-          if (idiag_udy2m(k) /= 0) &
-              write(3,*) 'i_udy2m'//trim(sdust)//'=',idiag_udy2m(k)
-          if (idiag_udz2m(k) /= 0) &
-              write(3,*) 'i_udz2m'//trim(sdust)//'=',idiag_udz2m(k)
-          if (idiag_udm2(k) /= 0) &
-              write(3,*) 'i_udm2'//trim(sdust)//'=',idiag_udm2(k)
-          if (idiag_od2m(k) /= 0) &
-              write(3,*) 'i_od2m'//trim(sdust)//'=',idiag_od2m(k)
-          if (idiag_oudm(k) /= 0) &
-              write(3,*) 'i_oudm'//trim(sdust)//'=',idiag_oudm(k)
-          if (idiag_udrms(k) /= 0) &
-              write(3,*) 'i_udrms'//trim(sdust)//'=',idiag_udrms(k)
-          if (idiag_udmax(k) /= 0) &
-              write(3,*) 'i_udmax'//trim(sdust)//'=',idiag_udmax(k)
-          if (idiag_rdudmax(k) /= 0) &
-              write(3,*) 'i_rdudmax'//trim(sdust)//'=',idiag_rdudmax(k)
-          if (idiag_rdudxm(k) /= 0) &
-              write(3,*) 'i_rdudxm'//trim(sdust)//'=',idiag_rdudxm(k)
-          if (idiag_rdudym(k) /= 0) &
-              write(3,*) 'i_rdudym'//trim(sdust)//'=',idiag_rdudym(k)
-          if (idiag_rdudzm(k) /= 0) &
-              write(3,*) 'i_rdudzx'//trim(sdust)//'=',idiag_rdudzm(k)
-          if (idiag_rdudx2m(k) /= 0) &
-              write(3,*) 'i_rdudx2m'//trim(sdust)//'=',idiag_rdudx2m(k)
-          if (idiag_odrms(k) /= 0) &
-              write(3,*) 'i_odrms'//trim(sdust)//'=',idiag_odrms(k)
-          if (idiag_odmax(k) /= 0) &
-              write(3,*) 'i_odmax'//trim(sdust)//'=',idiag_odmax(k)
-          if (idiag_udmx(k) /= 0) &
-              write(3,*) 'i_udmx'//trim(sdust)//'=',idiag_udmx(k)
-          if (idiag_udmy(k) /= 0) &
-              write(3,*) 'i_udmy'//trim(sdust)//'=',idiag_udmy(k)
-          if (idiag_udmz(k) /= 0) &
-              write(3,*) 'i_udmz'//trim(sdust)//'=',idiag_udmz(k)
-          if (idiag_divud2m(k) /= 0) &
-              write(3,*) 'i_divud2m'//trim(sdust)//'=',idiag_divud2m(k)
-          if (idiag_epsKd(k) /= 0) &
-              write(3,*) 'i_epsKd'//trim(sdust)//'=',idiag_epsKd(k)
-          if (idiag_udxpt(k) /= 0) &
-              write(3,*) 'i_udxpt'//trim(sdust)//'=',idiag_udxpt(k)
-          if (idiag_udypt(k) /= 0) &
-              write(3,*) 'i_udypt'//trim(sdust)//'=',idiag_udypt(k)
-          if (idiag_udzpt(k) /= 0) &
-              write(3,*) 'i_udzpt'//trim(sdust)//'=',idiag_udzpt(k)
-          if (idiag_udxmz(k) /= 0) &
-              write(3,*) 'i_udxmz'//trim(sdust)//'=',idiag_udxmz(k)
-          if (idiag_udymz(k) /= 0) &
-              write(3,*) 'i_udymz'//trim(sdust)//'=',idiag_udymz(k)
-          if (idiag_udzmz(k) /= 0) &
-              write(3,*) 'i_udzmz'//trim(sdust)//'=',idiag_udzmz(k)
-          if (idiag_udxmxy(k) /= 0) &
-              write(3,*) 'i_udxmxy'//trim(sdust)//'=',idiag_udxmxy(k)
-          if (idiag_udymxy(k) /= 0) &
-              write(3,*) 'i_udymxy'//trim(sdust)//'=',idiag_udymxy(k)
-          if (idiag_udzmxy(k) /= 0) &
-              write(3,*) 'i_udzmxy'//trim(sdust)//'=',idiag_udzmxy(k)
-        endif
+        do inamez=1,nnamez
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'udxmz'//trim(sdust),idiag_udxmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'udymz'//trim(sdust),idiag_udymz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'udzmz'//trim(sdust),idiag_udzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'udx2mz'//trim(sdust),idiag_udx2mz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'udy2mz'//trim(sdust),idiag_udy2mz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'udz2mz'//trim(sdust),idiag_udz2mz(k))
+        enddo
 !
 !  End loop over dust layers
 !
@@ -1372,6 +1287,7 @@ module Dustvelocity
 !
 !  Write dust index in short notation
 !
+      call chn(ndustspec,sdustspec)
       call chn(iuud(1),suud1)
       call chn(iudx(1),sudx1)
       call chn(iudy(1),sudy1)
