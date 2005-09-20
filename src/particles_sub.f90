@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.26 2005-09-17 12:13:26 ajohan Exp $
+! $Id: particles_sub.f90,v 1.27 2005-09-20 14:26:16 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -280,8 +280,8 @@ module Particles_sub
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
 !
-      real, dimension (ncpus,npar_mig,mpvar) :: fp_mig, dfp_mig
-      integer, dimension (ncpus,npar_mig) :: ipar_mig
+      real, dimension (0:ncpus-1,npar_mig,mpvar) :: fp_mig, dfp_mig
+      integer, dimension (0:ncpus-1,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
       integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
       logical :: lredo, lredo_all
