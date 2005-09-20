@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.139 2005-09-19 09:29:58 ajohan Exp $
+! $Id: dustdensity.f90,v 1.140 2005-09-20 10:41:38 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -65,6 +65,7 @@ module Dustdensity
   integer :: idiag_ssrm=0,idiag_ssrmax=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
+  integer, dimension(ndustspec) :: idiag_rhodmz
 
   contains
 
@@ -135,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.139 2005-09-19 09:29:58 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.140 2005-09-20 10:41:38 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1034,6 +1035,14 @@ module Dustdensity
               call sum_mn_name(f(l1:l2,m,n,imi(k))*p%nd(:,k),idiag_rhoimt)
             endif
           endif
+!
+          if (idiag_rhodmz(k)/=0) then
+            if (lmdvar) then
+              call xysum_mn_name_z(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_rhodmz(k))
+            else
+              call xysum_mn_name_z(p%nd(:,k)*md(k),idiag_rhodmz(k))
+            endif 
+          endif
         endif
 !
 !  Write md slices for use in Slices 
@@ -1421,7 +1430,7 @@ module Dustdensity
       use Sub
       use General, only: chn
 !
-      integer :: iname,k
+      integer :: iname,inamez,k
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=4) :: sdust,sdustspec,snd1,smd1,smi1
@@ -1441,6 +1450,7 @@ module Dustdensity
       if (lreset) then
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
+        idiag_rhodmz=0
       endif
 
       call chn(ndustspec,sdustspec)
@@ -1477,6 +1487,12 @@ module Dustdensity
               'rhodm'//trim(sdust),idiag_rhodm(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'epsdrms'//trim(sdust),idiag_epsdrms(k))
+        enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+        do inamez=1,nnamez
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhodmz', idiag_rhodmz(k))
         enddo
 !
 !  write column where which variable is stored
