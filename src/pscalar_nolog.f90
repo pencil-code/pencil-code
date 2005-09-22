@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.40 2005-07-05 16:21:43 mee Exp $
+! $Id: pscalar_nolog.f90,v 1.41 2005-09-22 20:18:01 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -43,11 +43,13 @@ module Pscalar
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
-  logical :: lpscalar_turb_diff
+  real :: pscalar_sink=0., Rpscalar_sink=1.
+  logical :: lpscalar_turb_diff,lpscalar_sink
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0, &
-       reinitalize_lncc,lpscalar_turb_diff
+       reinitalize_lncc,lpscalar_turb_diff, &
+       lpscalar_sink,pscalar_sink,Rpscalar_sink
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
@@ -94,7 +96,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.40 2005-07-05 16:21:43 mee Exp $")
+           "$Id: pscalar_nolog.f90,v 1.41 2005-09-22 20:18:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -252,6 +254,7 @@ module Pscalar
       integer :: i
 !
       if (.not. nopscalar) lpenc_requested(i_ugcc)=.true.
+      if (lpscalar_sink) lpenc_requested(i_rho1)=.true.
       if (pscalar_diff/=0.) then
         lpenc_requested(i_gcc)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -345,7 +348,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx) :: diff_op
+      real, dimension (nx) :: diff_op,bump
       integer :: j
 !
       intent(in)  :: f
@@ -369,6 +372,13 @@ module Pscalar
 !  passive scalar equation
 !
         df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - p%ugcc
+!
+!  passive scalar sink
+!
+        if (lpscalar_sink) then
+          bump=exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
+          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-p%rho1*pscalar_sink*bump/f(l1:l2,m,n,ilncc)
+        endif
 !
 !  diffusion operator
 !
