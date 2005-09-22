@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.255 2005-09-12 11:33:02 ajohan Exp $
+! $Id: magnetic.f90,v 1.256 2005-09-22 10:56:31 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -176,7 +176,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.255 2005-09-12 11:33:02 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.256 2005-09-22 10:56:31 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -470,12 +470,8 @@ module Magnetic
       if (lresi_eta_const .or. lresi_shell .or. &
           lresi_eta_shock .or. lresi_smagorinsky .or. &
           lresi_smagorinsky_cross) lpenc_requested(i_del2a)=.true.
-      if (lresi_eta_shock) then
-        lpenc_requested(i_gshock)=.true.
-        lpenc_requested(i_shock)=.true.
-      endif
-      if (lresi_eta_shock .or. lresi_shell) &
-          lpenc_requested(i_diva)=.true.
+      if (lresi_eta_shock) lpenc_requested(i_shock)=.true.
+      if (lresi_shell) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
@@ -870,7 +866,7 @@ module Magnetic
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,hall_ueff2
       real, dimension (nx) :: b2b13,sign_jo
-      real, dimension (nx) :: eta_mn,eta_tot
+      real, dimension (nx) :: eta_mn
       real, dimension (nx) :: eta_smag,etatotal,fres2
       real :: tmp,eta_out1
       integer :: i,j
@@ -928,12 +924,10 @@ module Magnetic
       endif
 !
       if (lresi_eta_shock) then
-        eta_tot=eta+eta_shock*p%shock
-        geta=eta_shock*p%gshock
         do j=1,3
-          fres(:,j)=fres(:,j)+eta_tot*p%del2a(:,j)+geta(:,j)*p%diva
+          fres(:,j)=fres(:,j)+eta_shock*p%shock*p%del2a(:,j)
         enddo
-        etatotal=etatotal+eta+eta_shock*p%shock
+        etatotal=etatotal+eta_shock*p%shock
       endif
 !
       if (lresi_smagorinsky) then
