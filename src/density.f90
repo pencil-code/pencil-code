@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.202 2005-09-23 08:12:59 ajohan Exp $
+! $Id: density.f90,v 1.203 2005-09-23 11:48:57 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -13,8 +13,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnrho,rho,rho1,glnrho,grho,uglnrho,ugrho
-! PENCILS PROVIDED gshockglnrho,glnrho2,del2lnrho,del2rho,del6rho
-! PENCILS PROVIDED del6lnrho,hlnrho,sglnrho,uij5glnrho
+! PENCILS PROVIDED glnrho2,del2lnrho,del2rho
+! PENCILS PROVIDED del6lnrho,del6rho,hlnrho,sglnrho,uij5glnrho
 !
 !***************************************************************
 
@@ -110,7 +110,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.202 2005-09-23 08:12:59 ajohan Exp $")
+           "$Id: density.f90,v 1.203 2005-09-23 11:48:57 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -922,9 +922,16 @@ module Density
       if (ldiff_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
-        lpenc_requested(i_gshockglnrho)=.true.
+        if (ldensity_nolog) then
+          lpenc_requested(i_grho)=.true.
+          lpenc_requested(i_del2rho)=.true.
+        else
+          lpenc_requested(i_glnrho)=.true.
+          lpenc_requested(i_glnrho2)=.true.
+          lpenc_requested(i_del2lnrho)=.true.
+        endif
       endif
-      if ( (ldiff_normal .and. .not. ldensity_nolog) .or. ldiff_shock) then
+      if ( ldiff_normal .and. .not. ldensity_nolog) then
         lpenc_requested(i_glnrho2)=.true.
         lpenc_requested(i_del2lnrho)=.true.
       endif
@@ -962,10 +969,6 @@ module Density
       if (lpencil_in(i_ugrho)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_grho)=.true.
-      endif
-      if (lpencil_in(i_gshockglnrho)) then
-        lpencil_in(i_gshock)=.true.
-        lpencil_in(i_glnrho)=.true.
       endif
       if (lpencil_in(i_glnrho2)) lpencil_in(i_glnrho)=.true.
       if (lpencil_in(i_sglnrho)) then
@@ -1040,8 +1043,6 @@ module Density
       endif
 ! ugrho
       if (lpencil(i_ugrho)) call dot_mn(p%uu,p%grho,p%ugrho)
-! gshockglnrho
-      if (lpencil(i_gshockglnrho)) call dot_mn(p%gshock,p%glnrho,p%gshockglnrho)
 ! glnrho2
       if (lpencil(i_glnrho2)) call dot2_mn(p%glnrho,p%glnrho2)
 ! del2lnrho
@@ -1122,7 +1123,7 @@ module Density
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx) :: fdiff
+      real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho
       integer :: j
 !
       intent(in)  :: f,p
@@ -1185,12 +1186,16 @@ module Density
 !  Shock diffusion
 !      
       if (ldiff_shock) then
-        if (ldensity_nolog) &
-            call fatal_error('dlnrho_dt','shock diffusion only '// &
-            'works with logarithmic density!')
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
-            diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
-            diffrho_shock*p%gshockglnrho
+        if (ldensity_nolog) then
+          call dot_mn(p%gshock,p%grho,gshockgrho)
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
+              diffrho_shock*p%shock*p%del2rho + diffrho_shock*gshockgrho
+        else
+          call dot_mn(p%gshock,p%glnrho,gshockglnrho)
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
+              diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
+              diffrho_shock*gshockglnrho
+        endif
         if (lfirst.and.ldt) &
             diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock*dxyz_2
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
