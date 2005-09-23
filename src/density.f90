@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.201 2005-09-14 15:21:14 wlyra Exp $
+! $Id: density.f90,v 1.202 2005-09-23 08:12:59 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -110,7 +110,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.201 2005-09-14 15:21:14 wlyra Exp $")
+           "$Id: density.f90,v 1.202 2005-09-23 08:12:59 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1185,13 +1185,15 @@ module Density
 !  Shock diffusion
 !      
       if (ldiff_shock) then
-        if (ldensity_nolog) call fatal_error('dlnrho_dt','shock diffusion only '// &
+        if (ldensity_nolog) &
+            call fatal_error('dlnrho_dt','shock diffusion only '// &
             'works with logarithmic density!')
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + &
             diffrho_shock*p%shock*(p%del2lnrho+p%glnrho2) + &
             diffrho_shock*p%gshockglnrho
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock*dxyz_2
-        if (headtt) print*,'dlnrho_dt: diffrho_shock=',diffrho_shock
+        if (lfirst.and.ldt) &
+            diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock*dxyz_2
+        if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
 !
 !  Add diffusion term to continuity equation
