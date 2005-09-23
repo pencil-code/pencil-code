@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2005-08-08 15:43:28 theine Exp $'
+  cvsid='$Id: run.in,v 1.7 2005-09-23 11:58:30 ajohan Exp $'
   nt=250,it1=50,isave=1000,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
   bcz = 's','s','a','a2','a2'
@@ -20,7 +20,8 @@
 &hydro_run_pars
 /
 &density_run_pars
-  diffrho=0.0,diffrho_shock=0.5         ! density (shock-) diffusion
+  idiff='shock'
+  diffrho_shock=0.5                     ! density (shock-) diffusion
   lupw_lnrho=T                          ! avoid wiggles
 /
 &grav_run_pars
