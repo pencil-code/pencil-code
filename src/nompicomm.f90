@@ -189,38 +189,40 @@ module Mpicomm
 !  but in this dummy routine this is done in finalize_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      double precision    :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
+      double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
       integer :: displs
 !
 !  Periodic boundary conditions in x, with shearing sheat
 !
       if (nygrid==1) then !If 2D
-         f( 1:l1-1,:,:,:) = f(l2i:l2,:,:,:)
-         f(l2+1:mx,:,:,:) = f(l1:l1i,:,:,:)
+        f( 1:l1-1,:,:,1:mvar) = f(l2i:l2,:,:,1:mvar)
+        f(l2+1:mx,:,:,1:mvar) = f(l1:l1i,:,:,1:mvar)
       else
-         deltay_dy=deltay/dy
-         displs=int(deltay_dy)
-         frak=deltay_dy-displs
-         c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-         c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-         c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-         c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-         c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-         c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-         f( 1:l1-1,m1:m2,:,:)=c1*cshift(f(l2i:l2,m1:m2,:,:),-displs+2,2) &
-                             +c2*cshift(f(l2i:l2,m1:m2,:,:),-displs+1,2) &
-                             +c3*cshift(f(l2i:l2,m1:m2,:,:),-displs,2) &
-                             +c4*cshift(f(l2i:l2,m1:m2,:,:),-displs-1,2) &
-                             +c5*cshift(f(l2i:l2,m1:m2,:,:),-displs-2,2) &
-                             +c6*cshift(f(l2i:l2,m1:m2,:,:),-displs-3,2)  
-         f(l2+1:mx,m1:m2,:,:)=c1*cshift(f(l1:l1i,m1:m2,:,:),displs-2,2) &
-                             +c2*cshift(f(l1:l1i,m1:m2,:,:),displs-1,2) &
-                             +c3*cshift(f(l1:l1i,m1:m2,:,:),displs,2) &
-                             +c4*cshift(f(l1:l1i,m1:m2,:,:),displs+1,2) &
-                             +c5*cshift(f(l1:l1i,m1:m2,:,:),displs+2,2) &
-                             +c6*cshift(f(l1:l1i,m1:m2,:,:),displs+3,2) 
-      end if
-    end subroutine finalize_shearing
+        deltay_dy=deltay/dy
+        displs=int(deltay_dy)
+        frak=deltay_dy-displs
+        c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+        c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+        c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+        c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+        c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+        c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+        f( 1:l1-1,m1:m2,:,1:mvar) = &
+             c1*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs+2,2) &
+            +c2*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs+1,2) &
+            +c3*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs  ,2) &
+            +c4*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-1,2) &
+            +c5*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-2,2) &
+            +c6*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-3,2)  
+        f(l2+1:mx,m1:m2,:,1:mvar) = &
+             c1*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs-2,2) &
+            +c2*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs-1,2) &
+            +c3*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs,2) &
+            +c4*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs+1,2) &
+            +c5*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs+2,2) &
+            +c6*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs+3,2) 
+      endif
+    endsubroutine finalize_shearing
 !***********************************************************************
     subroutine radboundary_zx_recv(mrad,idir,Qrecv_zx)
 !
