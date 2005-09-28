@@ -215,12 +215,12 @@ module Mpicomm
             +c5*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-2,2) &
             +c6*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-3,2)  
         f(l2+1:mx,m1:m2,:,1:mvar) = &
-             c1*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs-2,2) &
-            +c2*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs-1,2) &
-            +c3*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs,2) &
-            +c4*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs+1,2) &
-            +c5*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs+2,2) &
-            +c6*cshift(f(l1:l1i,m1:m2,:,1:mvar),displs+3,2) 
+             c1*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs-2,2) &
+            +c2*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs-1,2) &
+            +c3*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs  ,2) &
+            +c4*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs+1,2) &
+            +c5*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs+2,2) &
+            +c6*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs+3,2) 
       endif
     endsubroutine finalize_shearing
 !***********************************************************************
