@@ -7,7 +7,7 @@
 ;;;  Date:   28-Sep-2005
 ;;;
 ;;;  Description:
-;;;    Test boxbotex (Anders reports to get different layout in IDL 6.0,
+;;;    Test boxbotex_scl (Anders reports to get different layout in IDL 6.0,
 ;;;    6.1 and 6.2)
 
 ;; Construct some data (in interval [0,1]) to plot
@@ -20,7 +20,7 @@ s2=s1^2
 s3=s2^2
 s4=s3^2
 
-wdwset, 0              ; need to have window open ere calling boxbotex
+wdwset, 0              ; need to have window open ere calling boxbote_scl
 boxbotex_scl,s1,s2,s3,s4,2,2,ip=3,amin=0.,amax=1.
 
 
