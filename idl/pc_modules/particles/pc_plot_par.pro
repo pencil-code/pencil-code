@@ -1,13 +1,14 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.7 2005-07-08 16:47:20 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.8 2005-09-28 13:28:06 ajohan Exp $
 ;
 pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, quiet=quiet
 
+default, pos, [0.1,0.1,0.9,0.9]
 default, ps, 0
 default, color, 0
 default, filename, 'particles.eps'
-default, pos, [0.1,0.1,0.9,0.9]
+default, imgdir, '.'
 default, quiet, 0
 
 pc_read_param, obj=par, /quiet
