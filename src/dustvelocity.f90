@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.102 2005-09-20 11:00:03 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.103 2005-09-29 09:36:43 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -42,7 +42,7 @@ module Dustvelocity
   real :: ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.0
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
   real :: mmon,mumon,mumon1,surfmon,ustcst,unit_md
-  real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
+  real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
@@ -57,13 +57,13 @@ module Dustvelocity
        rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
        kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
        dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, &
-       ldustcoagulation, ldustcondensation
+       ldustcoagulation, ldustcondensation, cdtd
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
        nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
        ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, &
-       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin
+       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd
 
   ! other variables (needs to be consistent with reset list below)
   integer, dimension(ndustspec) :: idiag_ud2m=0
@@ -130,7 +130,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.102 2005-09-20 11:00:03 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.103 2005-09-29 09:36:43 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -876,6 +876,9 @@ module Dustvelocity
             do i=1,3; tausg13(:,i) = tausg1; enddo
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - &
                 tausg13*(p%uu-p%uud(:,:,k))
+            if (lfirst.and.ldt) dt1_max=max(dt1_max,(tausg1+tausd1(:,k))/cdtd)
+          else
+            if (lfirst.and.ldt) dt1_max=max(dt1_max,tausd1(:,k)/cdtd)
           endif
         endif
 !
