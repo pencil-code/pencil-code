@@ -1,22 +1,25 @@
-; $Id: pc_read_pvar.pro,v 1.12 2005-09-03 14:43:08 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.13 2005-09-30 13:19:23 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
 pro pc_read_pvar, object=object, varfile=varfile, datadir=datadir, $
-    QUIET=QUIET
+    quiet=quiet, qquiet=qquiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
-;  Default data directory.
+;  Defaults.
 ;
 default, datadir, 'data'
 default, varfile, 'pvar.dat'
+default, quiet, 0
+default, qquiet, 0
+if (qquiet) then quiet=1
 ;
 ;  Get necessary dimensions.
 ;
-pc_read_dim, obj=dim, datadir=datadir, QUIET=QUIET
-pc_read_pdim, obj=pdim, datadir=datadir, QUIET=QUIET
-pc_set_precision, dim=dim, QUIET=QUIET
+pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+pc_read_pdim, obj=pdim, datadir=datadir, quiet=quiet
+pc_set_precision, dim=dim, quiet=quiet
 ;
 ;  Derived dimensions.
 ;
@@ -33,7 +36,7 @@ dx=zero &  dy=zero &  dz=zero
 ;
 ;
 if (ncpus gt 1) then begin
-  pc_read_dim, obj=procdim, datadir=datadir, proc=0, QUIET=QUIET
+  pc_read_dim, obj=procdim, datadir=datadir, proc=0, quiet=quiet
 endif else begin
   procdim=dim
 endelse
@@ -111,7 +114,7 @@ npar_loc=0L
 for i=0,ncpus-1 do begin
 
   filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile 
-  if (not keyword_set(QUIET)) then print, 'Reading ', filename
+  if (not keyword_set(quiet)) then print, 'Reading ', filename
 ;
 ;  Check if file exists.
 ;
@@ -165,7 +168,7 @@ for i=0,ncpus-1 do begin
 ;  Create global x, y and z arrays from local ones.
 ;
   if (ncpus gt 1) then begin
-    pc_read_dim, object=procdim, datadir=datadir, proc=i, QUIET=QUIET
+    pc_read_dim, object=procdim, datadir=datadir, proc=i, quiet=quiet
 
     if (procdim.ipx eq 0L) then begin
       i0x=0L
@@ -261,11 +264,11 @@ endif
 
 ; If requested print a summary
 ;
-;if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(QUIET))) then begin
-;  pc_object_stats,object,dim=dim,QUIET=QUIET
+;if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(quiet))) then begin
+;  pc_object_stats,object,dim=dim,quiet=quiet
 ;endif
 
-print,' t = ', t
+if (not qquiet) then print,' t = ', t
 
 
 end
