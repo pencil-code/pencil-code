@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.6 2005-09-30 08:23:26 ajohan Exp $
+! $Id: shock.f90,v 1.7 2005-09-30 09:29:53 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -12,7 +12,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
-! COMMUNICATED AUXILIARIES 1  
+! COMMUNICATED AUXILIARIES 1
 !
 ! PENCILS PROVIDED shock,gshock
 !
@@ -95,13 +95,13 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.6 2005-09-30 08:23:26 ajohan Exp $")
+           "$Id: shock.f90,v 1.7 2005-09-30 09:29:53 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
-        call stop_it('register_shock: naux> maux')
+        call stop_it('register_shock: naux > maux')
       endif
       if (naux_com > maux_com) then
         if (lroot) write(0,*) 'naux_com = ', naux_com, ', maux_com = ', maux_com
@@ -305,7 +305,7 @@ module Shock
 !  23-nov-02/tony: coded
 !
 !for debug      use IO
-     use CData
+     use Cdata
 !
      real, dimension (mx,my,mz,mvar+maux) :: f
      real, dimension (mx,my,mz) :: tmp
@@ -360,9 +360,10 @@ module Shock
 !
 !  12-apr-05/tony: coded
 !
-      use CData
-      use Mpicomm
+      use Cdata
       use Boundcond
+      use Mpicomm
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp 
@@ -397,120 +398,120 @@ module Shock
 !        call scale_and_chop_internalboundary(f)
          !f(:,:,:,ishock) = tmp * dxmin**2 
         elseif (lcommunicate_uu) then
+!  Communicate uu ghost zones
           call initiate_isendrcv_uu(f)
           f(:,:,:,ishock)=0.
-          do n=n1+1,n2-1
-          do m=m1+1,m2-1
-             call shock_divu(f,iuu,penc) 
-             f(:,m,n,ishock)=max(0.,-penc)
-          enddo
-          enddo
-          do n=n1+2,n2-2
-          do m=m1+2,m2-2
-             call shock_max3(f,ishock,penc) 
-             tmp(:,m,n)=penc
-          enddo
-          enddo
-!          do n=n1+3,n2-3
-!          do m=m1+3,m2-3
-!             call shock_max5_pencil(f,ishock,penc) 
-!             tmp(:,m,n)=penc
-!          enddo
-!          enddo
-          do n=n1+3,n2-3
-          do m=m1+3,m2-3
-             call shock_smooth(tmp,penc) 
-             f(:,m,n,ishock)=penc
-!             f(:,m,n,ishock)=tmp(:,m,n)
-          enddo
-          enddo
+!
+!  Divu over internal region
+!          
+          do n=n1+1,n2-1; do m=m1+1,m2-1
+            call shock_divu(f,iuu,penc) 
+            f(:,m,n,ishock)=max(0.,-penc)
+          enddo; enddo
+!
+!  Max3 over internal region
+!          
+          do n=n1+2,n2-2; do m=m1+2,m2-2
+            call shock_max3(f,ishock,penc) 
+            tmp(:,m,n)=penc
+          enddo; enddo
+!
+!  Smooth over internal region
+!          
+          do n=n1+3,n2-3; do m=m1+3,m2-3
+            call shock_smooth(tmp,penc) 
+            f(:,m,n,ishock)=penc
+          enddo; enddo
+!
+!  Set periodic x-boundaries in smooth(max3(shock))
+!          
           if (nxgrid/=1) then 
             call bc_per_x(f,'top',ishock)
             call bc_per_x(f,'bot',ishock)
           endif
-!
+!  End communication of uu ghost zones.
           call finalize_isendrcv_uu(f)
+          call boundconds_y(f)
+          call boundconds_z(f)
 !
 ! Divu over external region
 !
-          do n=2,mz-1
-          do jj=1,3
-             m=1+jj
-             call shock_divu(f,iuu,penc) 
-             f(:,m,n,ishock)=max(-penc,0.)
-             m=my-jj
-             call shock_divu(f,iuu,penc) 
-             f(:,m,n,ishock)=max(-penc,0.)
-          enddo
-          enddo
-          do kk=1,3
-          do m=5,my-4
-             n=1+kk
-             call shock_divu(f,iuu,penc) 
-             f(:,m,n,ishock)=max(-penc,0.)
-             n=mz-kk
-             call shock_divu(f,iuu,penc) 
-             f(:,m,n,ishock)=max(-penc,0.)
-          enddo
-          enddo
+          do n=2,mz-1; do jj=1,3
+            m=1+jj
+            call shock_divu(f,iuu,penc) 
+            f(:,m,n,ishock)=max(-penc,0.)
+            m=my-jj
+            call shock_divu(f,iuu,penc) 
+            f(:,m,n,ishock)=max(-penc,0.)
+          enddo; enddo
+          do kk=1,3; do m=5,my-4
+            n=1+kk
+            call shock_divu(f,iuu,penc) 
+            f(:,m,n,ishock)=max(-penc,0.)
+            n=mz-kk
+            call shock_divu(f,iuu,penc) 
+            f(:,m,n,ishock)=max(-penc,0.)
+          enddo; enddo
 !
 ! Max over external region
 !
-          do n=3,mz-2
-          do jj=2,4
-             m=1+jj
-             call shock_max3(f,ishock,penc) 
-             tmp(:,m,n)=penc
-             m=my-jj
-             call shock_max3(f,ishock,penc) 
-             tmp(:,m,n)=penc
-          enddo
-          enddo
-          do kk=2,4
-          do m=6,my-5
-             n=1+kk
-             call shock_max3(f,ishock,penc) 
-             tmp(:,m,n)=penc
-             n=mz-kk
-             call shock_max3(f,ishock,penc) 
-             tmp(:,m,n)=penc
-          enddo
-          enddo
+          do n=3,mz-2; do jj=2,4
+            m=1+jj
+            call shock_max3(f,ishock,penc) 
+            tmp(:,m,n)=penc
+            m=my-jj
+            call shock_max3(f,ishock,penc) 
+            tmp(:,m,n)=penc
+          enddo; enddo
+          do kk=2,4; do m=6,my-5
+            n=1+kk
+            call shock_max3(f,ishock,penc) 
+            tmp(:,m,n)=penc
+            n=mz-kk
+            call shock_max3(f,ishock,penc) 
+            tmp(:,m,n)=penc
+          enddo; enddo
 !
 ! Smooth over external region
 !
-          do n=4,mz-3
-          do jj=3,5
-             m=1+jj
-             call shock_smooth(tmp,penc) 
-             f(:,m,n,ishock)=penc
-             m=my-jj
-             call shock_smooth(tmp,penc) 
-             f(:,m,n,ishock)=penc
-          enddo
-          enddo
-          do kk=3,5
-          do m=7,my-6
-             n=1+kk
-             call shock_smooth(tmp,penc) 
-             f(:,m,n,ishock)=penc
-             n=mz-kk
-             call shock_smooth(tmp,penc) 
-             f(:,m,n,ishock)=penc
-          enddo
-          enddo
-          if (nygrid/=1) then 
-            call bc_per_y(f,'top',ishock)
-            call bc_per_y(f,'bot',ishock)
-          endif
-          if (nzgrid/=1) then 
-            call bc_per_z(f,'top',ishock)
-            call bc_per_z(f,'bot',ishock)
-          endif
+          do n=4,mz-3; do jj=3,5
+            m=1+jj
+            call shock_smooth(tmp,penc) 
+            f(:,m,n,ishock)=penc
+            m=my-jj
+            call shock_smooth(tmp,penc) 
+            f(:,m,n,ishock)=penc
+          enddo; enddo
+          do kk=3,5; do m=7,my-6
+            n=1+kk
+            call shock_smooth(tmp,penc) 
+            f(:,m,n,ishock)=penc
+            n=mz-kk
+            call shock_smooth(tmp,penc) 
+            f(:,m,n,ishock)=penc
+          enddo; enddo
+!
+!  Non-MPI version:
+!          
+!          do n=2,mz-1; do m=2,my-1
+!            call shock_divu(f,iuu,penc) 
+!            f(:,m,n,ishock)=max(0.,-penc)
+!          enddo; enddo
+!          do n=3,mz-2; do m=3,my-2
+!            call shock_max3(f,ishock,penc) 
+!            tmp(:,m,n)=penc
+!          enddo; enddo
+!          do n=4,mz-3; do m=4,my-3
+!            call shock_smooth(tmp,penc) 
+!            f(:,m,n,ishock)=penc
+!          enddo; enddo
+!
+!  Set global x-boundaries.
+!
+          call boundconds_x(f)
           f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
         endif
       endif
-
 !
 !ajwm debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
