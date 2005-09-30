@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.219 2005-09-17 12:54:08 ajohan Exp $ 
+! $Id: sub.f90,v 1.220 2005-09-30 08:00:42 ajohan Exp $ 
 
 module Sub 
 
@@ -3175,18 +3175,18 @@ module Sub
 !
 !  24-jan-02/wolf: coded
 !
-        use Cparam, only: mvar,bclen
+        use Cparam, only: mcom,bclen
         use Mpicomm
 !
-        character (len=2*bclen+1), dimension(mvar) :: bc
-        character (len=bclen), dimension(mvar) :: bc1,bc2
+        character (len=2*bclen+1), dimension(mcom) :: bc
+        character (len=bclen), dimension(mcom) :: bc1,bc2
         integer :: j,isep
 !
         intent(in) :: bc
         intent(out) :: bc1,bc2
 !
 
-        do j=1,mvar
+        do j=1,mcom
           if (bc(j) == '') then ! will probably never happen due to default='p'
             if (lroot) print*, 'Empty boundary condition No. ', &
                  j, 'in (x, y, or z)'

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.280 2005-09-07 16:05:16 wlyra Exp $
+! $Id: cdata.f90,v 1.281 2005-09-30 08:00:42 ajohan Exp $
 
 module Cdata
 
@@ -239,15 +239,15 @@ module Cdata
 !  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
                                              ! to the snapshots
   logical :: lfrozen_bcs_z=.false.
-  logical, dimension(mvar) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
-  logical, dimension(mvar) :: lfreeze_varint=.false.,lfreeze_varext=.false.
+  logical, dimension(mcom) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
+  logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 
   ! possibility to set boundary values
-  real, dimension(mvar) :: fbcx1=0.,fbcy1=0.,fbcz1=0.
-  real, dimension(mvar) :: fbcx2=0.,fbcy2=0.,fbcz2=0.
+  real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0.
+  real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0.
 
-  character (len=2*bclen+1), dimension(mvar) :: bcx='p',bcy='p',bcz='p'
-  character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
+  character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
+  character (len=bclen), dimension(mcom) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
   character (len=10), dimension(mvar+maux) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
   character (len=120) :: datadir='data' ! default; may be overwritten in

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.213 2005-09-07 16:05:16 wlyra Exp $ 
+! $Id: param_io.f90,v 1.214 2005-09-30 08:00:42 ajohan Exp $ 
 
 module Param_IO
 
@@ -159,7 +159,7 @@ module Param_IO
 !
 !  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
 !
-      if (lshear) bcx(1:nvar)='she'
+      if (lshear) bcx(:)='she'
 !
 ! find out if we should open and close the file everytime
 ! to fix the SGI reading problem
@@ -438,7 +438,7 @@ module Param_IO
       !
       !  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
       !
-      if (lshear) bcx(1:nvar)='she'
+      if (lshear) bcx(:)='she'
       !
       !  entropy
       !

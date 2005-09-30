@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.11 2005-09-23 11:48:57 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.12 2005-09-30 08:00:42 ajohan Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -346,6 +346,7 @@ print OUT <<"EOF";
 
 integer, parameter :: mvar=$mvar, maux=$maux
 integer, parameter :: maux_com=$maux_com
+integer, parameter :: mcom=mvar+maux_com
 integer, parameter :: mpvar=$mpvar
 integer, parameter :: ndustspec=$ndustspec
 logical, parameter :: lmdvar=$lmdvar, lmice=$lmice

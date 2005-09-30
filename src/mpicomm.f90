@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.145 2005-09-17 12:04:25 ajohan Exp $
+! $Id: mpicomm.f90,v 1.146 2005-09-30 08:00:42 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -106,9 +106,7 @@ module Mpicomm
   include 'mpif.h'
 
 !
-  integer, parameter :: mcom=mvar+maux_com
-!
-  integer, parameter :: nbufx_gh=my*mz*nghost*mvar ! For shear
+  integer, parameter :: nbufx_gh=my*mz*nghost*mcom ! For shear
   integer, parameter :: nbufy=mx*nz*nghost*mcom
   integer, parameter :: nbufz=mx*ny*nghost*mcom
   integer, parameter :: nbufyz=mx*nghost*nghost*mcom
@@ -140,7 +138,7 @@ module Mpicomm
   real, dimension (mx,nghost,nghost,3) :: llvelbufi,luvelbufi,uuvelbufi,ulvelbufi
   real, dimension (mx,nghost,nghost,3) :: llvelbufo,luvelbufo,uuvelbufo,ulvelbufo
 !
-  real, dimension (nghost,my,mz,mvar) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
+  real, dimension (nghost,my,mz,mcom) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
   integer :: ierr
   integer :: nprocs
@@ -410,7 +408,7 @@ module Mpicomm
       if (nprocy>1) then
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
-        do j=1,mvar
+        do j=1,mcom
           if (ipy /= 0 .OR. bcy1(j)=='p') then
             f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
           endif
@@ -427,7 +425,7 @@ module Mpicomm
       if (nprocz>1) then
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
-        do j=1,mvar
+        do j=1,mcom
           if (ipz /= 0 .OR. bcz1(j)=='p') then
             f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
           endif
@@ -446,7 +444,7 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,ierr)
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
-        do j=1,mvar
+        do j=1,mcom
           if (ipz /= 0 .OR. bcz1(j)=='p') then
             if (ipy /= 0 .OR. bcy1(j)=='p') then
               f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
@@ -508,18 +506,20 @@ module Mpicomm
          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-         f(1:l1-1,m1:m2,:,:)=c1*cshift(f(l2i:l2,m1:m2,:,:),-displs+2,2) &
-              +c2*cshift(f(l2i:l2,m1:m2,:,:),-displs+1,2) &
-              +c3*cshift(f(l2i:l2,m1:m2,:,:),-displs,2) &
-              +c4*cshift(f(l2i:l2,m1:m2,:,:),-displs-1,2) &
-              +c5*cshift(f(l2i:l2,m1:m2,:,:),-displs-2,2) &
-              +c6*cshift(f(l2i:l2,m1:m2,:,:),-displs-3,2)
-         f(l2+1:mx,m1:m2,:,:)=c1*cshift(f(l1:l1i,m1:m2,:,:),displs-2,2) &
-              +c2*cshift(f(l1:l1i,m1:m2,:,:),displs-1,2) &
-              +c3*cshift(f(l1:l1i,m1:m2,:,:),displs,2) &
-              +c4*cshift(f(l1:l1i,m1:m2,:,:),displs+1,2) &
-              +c5*cshift(f(l1:l1i,m1:m2,:,:),displs+2,2) &
-              +c6*cshift(f(l1:l1i,m1:m2,:,:),displs+3,2)
+         f(1:l1-1,m1:m2,:,1:mcom) = &
+              c1*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs+2,2) &
+             +c2*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs+1,2) &
+             +c3*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs  ,2) &
+             +c4*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs-1,2) &
+             +c5*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs-2,2) &
+             +c6*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs-3,2)
+         f(l2+1:mx,m1:m2,:,1:mcom)= &
+              c1*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs-2,2) &
+             +c2*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs-1,2) &
+             +c3*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs  ,2) &
+             +c4*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs+1,2) &
+             +c5*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs+2,2) &
+             +c6*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs+3,2)
       else
 !
 !  With more than one CPU in the y-direction it will become necessary to
@@ -531,8 +531,8 @@ module Mpicomm
          lastya = ipz*nprocy+modulo(ipy-ystep-1,nprocy)
          lastyb = ipz*nprocy+modulo(ipy+ystep,nprocy)
          nextyb = ipz*nprocy+modulo(ipy+ystep+1,nprocy)
-         fao(:,:,:,1:mvar) = f(l1:l1i,:,:,1:mvar)
-         fbo(:,:,:,1:mvar) = f(l2i:l2,:,:,1:mvar)
+         fao(:,:,:,1:mcom) = f(l1:l1i,:,:,1:mcom)
+         fbo(:,:,:,1:mcom) = f(l2i:l2,:,:,1:mcom)
          if (lastya/=iproc) then
             call MPI_ISEND(fao,nbufx_gh,MPI_REAL,lastya,tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
          endif
@@ -577,7 +577,7 @@ module Mpicomm
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nghost,2*my-2*nghost,mz,mvar) :: fa, fb
+      real, dimension (nghost,2*my-2*nghost,mz,mcom) :: fa, fb
       integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fal, irecv_stat_fan, irecv_stat_fbl, irecv_stat_fbn
       integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla, isend_stat_tnb, isend_stat_tlb
       integer :: m2long,i
@@ -609,20 +609,20 @@ module Mpicomm
          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-         f(1:l1-1,m1:m2,:,1:mvar) &
-              =c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,1:mvar) &
-              +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,1:mvar) &
-              +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,1:mvar) &
-              +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,1:mvar) &
-              +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,1:mvar) &
-              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,1:mvar)
-         f(l2+1:mx,m1:m2,:,1:mvar) &
-              =c1*fb(:,m1+displs-2:m2+displs-2,:,1:mvar) &
-              +c2*fb(:,m1+displs-1:m2+displs-1,:,1:mvar) &
-              +c3*fb(:,m1+displs  :m2+displs  ,:,1:mvar) &
-              +c4*fb(:,m1+displs+1:m2+displs+1,:,1:mvar) &
-              +c5*fb(:,m1+displs+2:m2+displs+2,:,1:mvar) &
-              +c6*fb(:,m1+displs+3:m2+displs+3,:,1:mvar)
+         f(1:l1-1,m1:m2,:,1:mcom) &
+              =c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,1:mcom) &
+              +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,1:mcom) &
+              +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,1:mcom) &
+              +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,1:mcom) &
+              +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,1:mcom) &
+              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,1:mcom)
+         f(l2+1:mx,m1:m2,:,1:mcom) &
+              =c1*fb(:,m1+displs-2:m2+displs-2,:,1:mcom) &
+              +c2*fb(:,m1+displs-1:m2+displs-1,:,1:mcom) &
+              +c3*fb(:,m1+displs  :m2+displs  ,:,1:mcom) &
+              +c4*fb(:,m1+displs+1:m2+displs+1,:,1:mcom) &
+              +c5*fb(:,m1+displs+2:m2+displs+2,:,1:mcom) &
+              +c6*fb(:,m1+displs+3:m2+displs+3,:,1:mcom)
 !
 !  Filling also the x-y corners in order to avoid only zeros at these corners.
 !  One should acctually have communicated with an extra processor in order to
@@ -630,10 +630,10 @@ module Mpicomm
 !  necessary.
 !
          do i=1,nghost
-            f(1:l1-1 ,i   ,:,1:mvar)=f(1:l1-1 ,m1+nghost-i,:,1:mvar)
-            f(1:l1-1 ,m2+i,:,1:mvar)=f(1:l1-1 ,m2-i+1     ,:,1:mvar)
-            f(l2+1:mx,i   ,:,1:mvar)=f(l2+1:mx,m1+nghost-i,:,1:mvar)
-            f(l2+1:mx,m2+i,:,1:mvar)=f(l2+1:mx,m2-i+1     ,:,1:mvar)
+            f(1:l1-1 ,i   ,:,1:mcom)=f(1:l1-1 ,m1+nghost-i,:,1:mcom)
+            f(1:l1-1 ,m2+i,:,1:mcom)=f(1:l1-1 ,m2-i+1     ,:,1:mcom)
+            f(l2+1:mx,i   ,:,1:mcom)=f(l2+1:mx,m1+nghost-i,:,1:mcom)
+            f(l2+1:mx,m2+i,:,1:mcom)=f(l2+1:mx,m2-i+1     ,:,1:mcom)
          enddo
 !
 !  need to wait till buffer is empty before re-using it again

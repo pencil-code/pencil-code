@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.77 2005-07-01 02:56:08 mee Exp $
+! $Id: boundcond.f90,v 1.78 2005-09-30 08:00:42 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -60,9 +60,9 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mvar) :: fbcx12
+      real, dimension (mcom) :: fbcx12
       integer :: j,k,ip_ok
-      character (len=bclen), dimension(mvar) :: bc12
+      character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
 !
       if(ldebug) print*,'boundconds_x: ENTER: boundconds_x'
@@ -90,7 +90,7 @@ module Boundcond
               topbot='top'; bc12=bcx2; fbcx12=fbcx2; ip_ok=nprocx-1
             endif
             !
-            do j=1,mvar
+            do j=1,mcom
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
               if (ipx == ip_ok) then
                 select case(bc12(j))
@@ -148,9 +148,9 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mvar) :: fbcy12
+      real, dimension (mcom) :: fbcy12
       integer :: j,k,ip_ok
-      character (len=bclen), dimension(mvar) :: bc12
+      character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
 !
       if(ldebug) print*,'boundconds_y: ENTER: boundconds_y'
@@ -170,7 +170,7 @@ module Boundcond
             topbot='top'; bc12=bcy2; fbcy12=fbcy2; ip_ok=nprocy-1
           endif
           !
-          do j=1,mvar 
+          do j=1,mcom 
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
             if (ipy == ip_ok) then
               select case(bc12(j))
@@ -222,10 +222,10 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mvar) :: fbcz12
+      real, dimension (mcom) :: fbcz12
       real :: Ftopbot,FtopbotK
       integer :: j,k,ip_ok
-      character (len=bclen), dimension(mvar) :: bc12
+      character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
 !
       if(ldebug) print*,'boundconds_z: ENTER: boundconds_z'
@@ -255,7 +255,7 @@ module Boundcond
             FtopbotK=FtopKtop
           endif
           !
-          do j=1,mvar
+          do j=1,mcom
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
             if (ipz == ip_ok) then
               select case(bc12(j))
@@ -423,7 +423,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mvar), optional :: val
+      real, dimension (mcom), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -472,7 +472,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mvar), optional :: val
+      real, dimension (mcom), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -521,7 +521,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mvar), optional :: val
+      real, dimension (mcom), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
