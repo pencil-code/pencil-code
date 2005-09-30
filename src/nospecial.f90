@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.11 2005-07-05 16:21:43 mee Exp $
+! $Id: nospecial.f90,v 1.12 2005-09-30 08:14:43 ajohan Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,18 +136,18 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.11 2005-07-05 16:21:43 mee Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.12 2005-09-30 08:14:43 ajohan Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.11 2005-07-05 16:21:43 mee Exp $")
+           "$Id: nospecial.f90,v 1.12 2005-09-30 08:14:43 ajohan Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
 !
       if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', nvar, ', maux = ', mvar
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
         call stop_it('register_special: naux > maux')
       endif
 !
