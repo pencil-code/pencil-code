@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.150 2005-07-29 23:35:43 dobler Exp $
+! $Id: register.f90,v 1.151 2005-09-30 08:23:26 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -61,11 +61,8 @@ module Register
 !  initialize nvar; is increased by the following routines
 !
       nvar     = 0 
-      naux_com = 0          ! Reset counter of communicated auxilliaries
-      naux     = maux_com   ! Start counting aux variables 
-                            ! so as to leave space for and
-                            ! communicated auxilliaries at
-                            ! the front.
+      naux     = 0
+      naux_com = 0
 !
 !  Writing files for use with IDL
 !

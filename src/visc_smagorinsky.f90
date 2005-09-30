@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.7 2005-07-05 16:21:43 mee Exp $
+! $Id: visc_smagorinsky.f90,v 1.8 2005-09-30 08:23:27 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -58,7 +58,7 @@ module Viscosity
       lvisc_LES  = .true.
       lvisc_smagorinsky = .true.
 !
-      ismagorinsky = mvar + naux + 1
+      ismagorinsky = mcom + naux + 1
       naux = naux + 1
 !
       if ((ip<=8) .and. lroot) then
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.7 2005-07-05 16:21:43 mee Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.8 2005-09-30 08:23:27 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

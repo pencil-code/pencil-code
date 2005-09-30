@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.78 2005-08-20 11:10:25 theine Exp $
+! $Id: radiation_ray.f90,v 1.79 2005-09-30 08:23:26 ajohan Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -106,7 +106,7 @@ module Radiation
 !
 !  set indices for auxiliary variables
 !
-      iQrad = mvar + naux +1; naux = naux + 1
+      iQrad = mcom + naux + 1; naux = naux + 1
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_radiation: radiation naux = ', naux
@@ -120,11 +120,11 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.78 2005-08-20 11:10:25 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.79 2005-09-30 08:23:26 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
-      if (nvar > mvar) then
+      if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
         call stop_it('register_radiation: naux > maux')
       endif
