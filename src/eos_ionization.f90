@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.14 2005-10-01 08:01:58 ajohan Exp $
+! $Id: eos_ionization.f90,v 1.15 2005-10-01 08:26:59 ajohan Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -95,8 +95,8 @@ module EquationOfState
 !
 !  set indices for auxiliary variables
 !
-      iyH = mvar + naux + 1 - naux_com; naux = naux + 1 
-      ilnTT = mvar + naux + 1 - naux_com; naux = naux + 1 
+      iyH   = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1 
+      ilnTT = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1 
 
       if ((ip<=8) .and. lroot) then
         print*, 'register_eos: ionization nvar = ', nvar
@@ -112,7 +112,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.14 2005-10-01 08:01:58 ajohan Exp $")
+           "$Id: eos_ionization.f90,v 1.15 2005-10-01 08:26:59 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

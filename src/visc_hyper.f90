@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.21 2005-10-01 08:01:58 ajohan Exp $
+! $Id: visc_hyper.f90,v 1.22 2005-10-01 08:26:59 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -60,7 +60,7 @@ module Viscosity
 !
       lvisc_hyper = .true.
 !
-      ihyper = mvar + naux + 1 - naux_com
+      ihyper = mvar + naux + 1 + (maux_com - naux_com)
       naux = naux + 3
 !
       if ((ip<=8) .and. lroot) then
@@ -71,7 +71,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.21 2005-10-01 08:01:58 ajohan Exp $")
+           "$Id: visc_hyper.f90,v 1.22 2005-10-01 08:26:59 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
