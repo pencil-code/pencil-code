@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.13 2005-09-30 13:19:23 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.14 2005-10-01 08:40:49 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -106,6 +106,7 @@ endfor
 ;
 array=fltarr(npar,totalvars)*one
 ipar=lonarr(npar)
+tarr=fltarr(ncpus)*one
 t=zero
 npar_loc=0L
 ;
@@ -216,6 +217,7 @@ for i=0,ncpus-1 do begin
     z=zloc
 
   endelse
+  tarr[i]=t
 ;
   close, file
   free_lun, file
@@ -267,8 +269,17 @@ endif
 ;if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(quiet))) then begin
 ;  pc_object_stats,object,dim=dim,quiet=quiet
 ;endif
+;
+;  Check if times are consistent between processors.
+;
+for i=0,ncpus-1 do begin
+  if (tarr[i] ne mean(tarr)) then begin
+    print, 'The time of the snapshot at processor ', i, ' is strange!'
+    print, 't[i], mean(t)=', tarr[i], mean(tarr)
+  endif
+endfor
 
-if (not qquiet) then print,' t = ', t
+if (not qquiet) then print,' t = ', mean(tarr)
 
 
 end
