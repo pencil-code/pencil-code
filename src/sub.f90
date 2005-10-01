@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.220 2005-09-30 08:00:42 ajohan Exp $ 
+! $Id: sub.f90,v 1.221 2005-10-01 09:16:07 ajohan Exp $ 
 
 module Sub 
 
@@ -3418,7 +3418,7 @@ nameloop: do
 !  remove file
 !
         if (exist) then
-          if (ip<=14) print*,'remove_file: Removing file <',trim(fname),'>'
+          if (ip<=6) print*,'remove_file: Removing file <',trim(fname),'>'
           open(1,FILE=fname)
           close(1,STATUS='DELETE')
         endif
