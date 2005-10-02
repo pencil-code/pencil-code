@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.4 2005-08-23 16:40:21 ajohan Exp $
+! $Id: messages.f90,v 1.5 2005-10-02 12:30:57 ajohan Exp $
 !
 !  This module takes care of messages.
 !
@@ -76,10 +76,11 @@ module Messages
         errors=errors+1
 !
         call terminal_highlight_error()
-        write (*,'(A7)',ADVANCE='NO') "NOT IMPLEMENTED: "
+        write (*,'(A18)',ADVANCE='NO') "NOT IMPLEMENTED: "
         call terminal_defaultcolor()
-        write (*,*) "Attempted to use a routine not capable of handling the"// &
-                    "current parameters at "//trim(location)
+        write (*,*) &
+            "Attempted to use a routine that is not capable of handling the "
+        write (*,*) "current parameters at the location '"//trim(location)//"'"
 !
         if (ldie_onfatalerror) call die_gracefully
 !
