@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.9 2005-09-17 12:25:02 ajohan Exp $
+! $Id: noglobal.f90,v 1.10 2005-10-02 12:18:24 ajohan Exp $
 
 module Global
 
@@ -55,6 +55,8 @@ module Global
       integer :: m,n
       character (len=*) :: label
 !
+      call not_implemented('set_global_vect')
+!
       if (NO_WARN) print*, length, var(1,1), m, n, label ! keep compiler quiet
 !
     endsubroutine set_global_vect
@@ -71,6 +73,8 @@ module Global
       integer :: m,n
       character (len=*) :: label
 !
+      call not_implemented('set_global_scal')
+!
       if (NO_WARN) print*, length, var(1), m, n, label ! keep compiler quiet
 !
     endsubroutine set_global_scal
@@ -84,6 +88,8 @@ module Global
       real, dimension(3) :: var
       integer :: l,m,n
       character (len=*) :: label
+!
+      call not_implemented('set_global_vect_point')
 !
       if (NO_WARN) print*, l, var(1), m, n, label ! keep compiler quiet
 !
@@ -99,6 +105,8 @@ module Global
       integer :: l,m,n
       character (len=*) :: label
 !
+      call not_implemented('set_global_scal_point')
+!
       if (NO_WARN) print*, l, var, m, n, label ! keep compiler quiet
 !
     endsubroutine set_global_scal_point
@@ -110,6 +118,8 @@ module Global
 !  20-jun-05/anders: dummy
 !
       character (len=*) :: label
+!
+      call not_implemented('reset_global')
 !
       if (NO_WARN) print*, label ! keep compiler quiet
 !
@@ -128,6 +138,8 @@ module Global
       integer :: m,n
       character (len=*) :: label
 !
+      call not_implemented('get_global_vect')
+!
       if (NO_WARN) print*, var(1,1),m,n,label ! keep compiler quiet
 !
     endsubroutine get_global_vect
@@ -144,6 +156,8 @@ module Global
       real, dimension(nx) :: var
       integer :: m,n
       character (len=*) :: label
+!
+      call not_implemented('get_global_scal')
 !
       if (NO_WARN) print*, var(1),m,n,label ! keep compiler quiet
 !
@@ -162,6 +176,8 @@ module Global
       integer :: l,m,n
       character (len=*) :: label
 !
+      call not_implemented('get_global_point_vect')
+!
       if (NO_WARN) print*, var(1),l,m,n,label ! keep compiler quiet
 !
     endsubroutine get_global_point_vect
@@ -178,6 +194,8 @@ module Global
       real :: var
       integer :: l,m,n
       character (len=*) :: label
+!
+      call not_implemented('get_global_point_scal')
 !
       if (NO_WARN) print*, var,l,m,n,label ! keep compiler quiet
 !
