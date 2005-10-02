@@ -1,4 +1,4 @@
-;; $Id: pc_read_xyaver.pro,v 1.3 2005-07-19 09:43:16 ajohan Exp $
+;; $Id: pc_read_xyaver.pro,v 1.4 2005-10-02 11:22:51 ajohan Exp $
 ;;
 ;;   Read xy-averages from file
 ;;
@@ -20,7 +20,6 @@ pc_set_precision, dim=dim, quiet=quiet
 ;;
 ;;  Derived dimensions.
 ;;
-nprocz=dim.nprocz
 nz=dim.nz
 ;;
 ;;  Read variables from xyaver.in
