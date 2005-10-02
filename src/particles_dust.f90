@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.37 2005-09-19 12:23:01 ajohan Exp $
+! $Id: particles_dust.f90,v 1.38 2005-10-02 11:26:04 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -54,6 +54,7 @@ module Particles
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_rhopm=0, idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
+  integer :: idiag_npmx=0
 
   contains
 
@@ -72,7 +73,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.37 2005-09-19 12:23:01 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.38 2005-10-02 11:26:04 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -749,7 +750,8 @@ module Particles
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
         if (idiag_rhopm/=0) call sum_par_name_nw(4/3.*pi*rhops*fp(1:npar_loc,iap)**3*np_tilde,idiag_rhopm)
         if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
-            idiag_npmin/=0 .or. idiag_rhopmax/=0) then
+            idiag_npmin/=0 .or. idiag_rhopmax/=0 .or. idiag_npmz/=0 .or. &
+            idiag_npmx/=0) then
           if (.not. ldragforce_gas) then
             call reset_global('np')
             do k=1,npar_loc
@@ -767,6 +769,7 @@ module Particles
             if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
             if (idiag_rhopmax/=0) call max_mn_name(rhop_tilde*np,idiag_rhopmax)
             if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
+            if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
           enddo
         endif
       endif
@@ -833,7 +836,7 @@ module Particles
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname,inamez
+      integer :: iname,inamez,inamex
       logical :: lwr
 ! 
 !  Write information to index.pro
@@ -859,6 +862,7 @@ module Particles
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_rhopm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
+        idiag_npmx=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -891,6 +895,12 @@ module Particles
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
+      enddo
+!
+!  check for those quantities for which we want x-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
       enddo
 !
     endsubroutine rprint_particles

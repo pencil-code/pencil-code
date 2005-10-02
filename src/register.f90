@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.151 2005-09-30 08:23:26 ajohan Exp $
+! $Id: register.f90,v 1.152 2005-10-02 11:26:04 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -498,7 +498,7 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
 !
-      integer :: iname,inamev,inamez,inamexy,inamexz,inamerz
+      integer :: iname,inamev,inamez,inamex,inamexy,inamexz,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat,iname_tmp
       integer :: isubstract
       logical :: lreset,exist
@@ -555,6 +555,19 @@ module Register
         close(1)
       endif
       if (lroot.and.ip<14) print*,'rprint_list: nnamez=',nnamez
+!
+!  read in the list of variables for yz-averages
+!
+      inquire(file='yzaver.in',exist=exist)
+      if (exist) then
+        open(1,file='yzaver.in')
+        do inamex=1,mnamex
+          read(1,*,end=93) cnamex(inamex)
+        enddo
+93      nnamex=inamex-1
+        close(1)
+      endif
+      if (lroot.and.ip<14) print*,'rprint_list: nnamex=',nnamex
 !
 !  read in the list of variables for y-averages
 !

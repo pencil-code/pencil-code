@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.221 2005-10-01 09:16:07 ajohan Exp $ 
+! $Id: sub.f90,v 1.222 2005-10-02 11:26:04 ajohan Exp $ 
 
 module Sub 
 
@@ -46,10 +46,8 @@ module Sub
   public :: parse_name, save_name, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name
   public :: surf_mn_name
-  public :: xysum_mn_name_z
-  public :: ysum_mn_name_xz
-  public :: zsum_mn_name_xy
-  public :: phisum_mn_name_rz
+  public :: xysum_mn_name_z, yzsum_mn_name_x
+  public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: date_time_string
 
   public :: calc_phiavg_general, calc_phiavg_profile
@@ -409,6 +407,27 @@ module Sub
       fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
 !
     endsubroutine xysum_mn_name_z
+!***********************************************************************
+    subroutine yzsum_mn_name_x(a,iname)
+!
+!  Successively calculate sum over y,z of a, which is supplied at each call.
+!  The result fnamex is x-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!   2-oct-05/anders: adapted from xysum_mn_name_z
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname,n_nghost
+!
+!  Initialize to zero.
+!
+      if (lfirstpoint) fnamex(:,iname)=0.
+!
+      fnamex(:,iname)=fnamex(:,iname)+a
+!
+    endsubroutine yzsum_mn_name_x
 !***********************************************************************
     subroutine ysum_mn_name_xz(a,iname)
 !

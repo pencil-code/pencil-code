@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.74 2005-08-09 18:37:56 brandenb Exp $
+! $Id: prints.f90,v 1.75 2005-10-02 11:26:04 ajohan Exp $
 
 module Print
 
@@ -223,7 +223,10 @@ public :: write_zaverages
 !
 !   7-aug-03/wolf: coded
 !
-      if (lout) call write_xyaverages()
+      if (lout) then
+        call write_xyaverages()
+        call write_yzaverages()
+      endif
 !
     endsubroutine write_1daverages
 !***********************************************************************
@@ -292,6 +295,22 @@ public :: write_zaverages
       endif
 !
     endsubroutine write_xyaverages
+!***********************************************************************
+    subroutine write_yzaverages()
+!
+!  Write yz-averages (which are 1d data) that have been requested via
+!  `yzaver.in'
+!
+!   2-oct-05/anders: adapted from write_xyaverages
+!
+      if(lroot.and.nnamex>0) then
+        open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
+        write(1,'(1pe12.5)') t
+        write(1,'(1p,8e13.5)') fnamex(:,1:nnamex)
+        close(1)
+      endif
+!
+    endsubroutine write_yzaverages
 !***********************************************************************
     subroutine write_yaverages(ch)
 !
