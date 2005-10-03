@@ -1,0 +1,226 @@
+#!/bin/sh
+# Name:   pc_xmlexport
+# Author: Antony Mee (A.J.Mee@ncl.ac.uk)
+# Started:   04-Aug-2005
+# CVS: $Id: pc_xmlexport,v 1.1 2005-10-03 09:13:59 mee Exp $
+# Usage:
+#   Hello
+
+# History:
+#   23-jun-05/tony: Created
+#
+
+IAM=$0
+. $PENCIL_HOME/lib/sh/functions.sh
+
+buildtime ()
+{
+  if [ -e .buildtime ]; then
+    cat .buildtime
+  else
+    echo "<buildtime></buildtime>"
+  fi
+}
+
+variable ()
+{
+  local varname=$1
+  eval local value=\$$varname
+  echo "<var name=\"$varname\">$value</var>"
+}
+
+module ()
+{
+  local module_name=$1
+  eval local module_setting="\$$module_name"
+
+  if [ -e $module_setting.f90 ]; then
+    module_source=$module_setting.f90
+  elif [ -e $module_setting.f ]; then
+    module_source=$module_setting.f
+  elif [ -e $module_setting.c ]; then
+    module_source=$module_setting.c
+  else
+    module_source=""
+  fi 
+
+#  if [ -e "$module_source" ]; then
+#    cvs_get_status $module_source
+#  fi
+
+  echo "<module name=\"$module_name\" option=\"$module_setting\">"
+  echo "<source>$module_source</source>'"
+#  echo "<vc_status>$cvs_status</vc_status>'"
+#  echo "<vc_info>$cvs_repository_version</vc_info>'"
+  echo "</module>'"
+}
+
+
+rundirinfo ()
+{
+  local restorecwd=`pwd`
+  [ -e Makefile.src ] || [ ! -e scripts ] && cd ..
+  if [ ! -e start.in ] || [ ! -e run.in ]; then
+    cd $restorecwd
+    return
+  fi
+  
+  echo "<rundirinfo>"
+  if [ -d CVS ]; then
+    echo "<path>`pwd`</path>"
+    echo "<vc_root>`cat CVS/Root`</vc_root>"
+    echo "<vc_path>`cat CVS/Repository`</vc_path>"
+  fi
+  echo "</rundirinfo>"
+
+  cd $restorecwd
+}
+
+buildinfo ()
+{
+cat <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<buildinfo version="0.1" xmlns:media="http://www.nordita.dk/software/pencil-code/buildinfo">
+  <timestamp>`date`</timestamp>
+  <buildhost>
+    <hostname>`hostname`</hostname>
+    <processor>`uname -p`</processor>
+    <os>`uname -s`</os>
+    <osrelease>`uname -r`</osrelease>
+    <user>$USER</user>
+    <uptime>`uptime`</uptime>
+  </buildhost>
+  `buildtime`
+  <makeinfo>
+    `variable FC`
+    `variable F77`
+    `variable F90`
+    `variable FFLAGS`
+    `variable F90FLAGS`
+    `variable F77FLAGS`
+    `variable FFLAGS_GENERAL`
+    `variable CFLAGS_GENERAL`
+    `variable LDMPI`
+    `variable LDONLYFLAGS`
+  </makeinfo>
+  `rundirinfo`
+  <moduleinfo>
+    `module MPICOMM` 
+    `module GLOBAL` 
+    `module GRID` 
+    `module IO` 
+    `module FFT` 
+    `module FFTPACK` 
+    `module POWER` 
+    `module DEBUG` 
+    `module HYDRO` 
+    `module VISCOSITY` 
+    `module DENSITY` 
+    `module ENTROPY` 
+    `module MAGNETIC` 
+    `module RADIATION` 
+    `module PSCALAR` 
+    `module CHIRAL` 
+    `module DUSTVELOCITY` 
+    `module DUSTDENSITY` 
+    `module INTERSTELLAR` 
+    `module COSMICRAY` 
+    `module COSMICRAYFLUX` 
+    `module EOS` 
+    `module STRUCT_FUNC` 
+    `module INITCOND_SPEC` 
+    `module SHOCK` 
+    `module TESTFIELD` 
+    `module GRAVITY` 
+    `module FORCING` 
+    `module SHEAR` 
+    `module TIMEAVG` 
+    `module SPECIAL` 
+    `module PARTICLES` 
+    `module PARTICLES_SUB` 
+    `module PARTICLES_MAIN` 
+    `module PARTICLES_RADIUS` 
+    `module SHOCK_PROFILE` 
+    `module SHOCK_FINDER` 
+  </moduleinfo>
+</buildinfo>
+EOF
+#        <link>http://www.flickr.com/photos/onlymee/</link>
+#        <description>A feed of onlymee's Photos</description>
+#        <pubDate>Mon, 8 Aug 2005 10:01:22 -0700</pubDate>
+#        <lastBuildDate>Mon, 8 Aug 2005 10:01:22 -0700</lastBuildDate>
+#
+#        <generator>http://www.flickr.com/</generator>
+#        <image>
+#            <url>http://www.flickr.com/images/buddyicon.jpg?32025003@N00</url>
+#            <title>onlymee's Photos</title>
+#            <link>http://www.flickr.com/photos/onlymee/</link>
+#        </image>
+#
+#        <item>
+#            <title>img_1912.jpg</title>
+#            <link>http://www.flickr.com/photos/onlymee/32324192/</link>
+#            <description>&lt;p&gt;&lt;a href=&quot;http://www.flickr.com/people/onlymee/&quot;&gt;onlymee&lt;/a&gt; posted a photo:&lt;/p&gt;
+#
+#&lt;p&gt;&lt;a href=&quot;http://www.flickr.com/photos/onlymee/32324192/&quot; title=&quot;img_1912.jpg&quot;&gt;&lt;img src=&quot;http://photos21.flickr.com/32324192_55247dc614_m.jpg&quot; width=&quot;180&quot; height=&quot;240&quot; alt=&quot;img_1912.jpg&quot; style=&quot;border: 1px solid #000000;&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+#
+#</description>
+#            <pubDate>Mon, 8 Aug 2005 10:01:22 -0700</pubDate>
+#            <author>nobody@flickr.com (onlymee)</author>
+#            <guid isPermaLink="false">tag:flickr.com,2004:/photo/32324192</guid>
+#            <media:content url="http://photos21.flickr.com/32324192_55247dc614_o.jpg" 
+#                       type="image/jpeg"
+#                       height="2592"
+#                       width="1944"/>
+#            <media:title>img_1912.jpg</media:title>
+#            <media:text type="html">&lt;p&gt;&lt;a href=&quot;http://www.flickr.com/people/onlymee/&quot;&gt;onlymee&lt;/a&gt; posted a photo:&lt;/p&gt;
+#
+#&lt;p&gt;&lt;a href=&quot;http://www.flickr.com/photos/onlymee/32324192/&quot; title=&quot;img_1912.jpg&quot;&gt;&lt;img src=&quot;http://photos21.flickr.com/32324192_55247dc614_m.jpg&quot; width=&quot;180&quot; height=&quot;240&quot; alt=&quot;img_1912.jpg&quot; style=&quot;border: 1px solid #000000;&quot; /&gt;&lt;/a&gt;&lt;/p&gt;
+#
+#</media:text>
+#            <media:thumbnail url="http://photos21.flickr.com/32324192_55247dc614_s.jpg" height="75" width="75" />
+#            <media:credit role="photographer">onlymee</media:credit>
+#            <media:category scheme="urn:flickr:tags">blythmaritimefestival2005 nest2005</media:category>
+#
+#        </item>
+}
+
+
+[[ $# -gt 0 ]] || (usage_from_header $IAM; exit 1)
+while [ $# -gt 0 ]
+do
+  case $1 in
+  -e)
+    eval "$2"
+    shift
+  ;;
+  -h)
+    usage_from_header $IAM
+    exit 1
+  ;;
+  -?)
+    usage_from_header $IAM
+    exit 1
+  ;;
+  --help)
+    usage_from_header $IAM
+    exit 1
+  ;;
+  buildinfo)
+    flag_buildinfo=1
+  ;;
+  --)
+    shift
+    break
+  ;;
+  *)
+  echo UNRECOGNISED PARAMETER
+  usage_from_header $IAM
+  exit 1
+  ;;
+  esac
+
+  shift
+done 
+
+[ $flag_buildinfo ] && buildinfo
