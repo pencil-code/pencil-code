@@ -3,3 +3,5 @@ makefile Makefile
 *.d
 *.inc
 *.il
+.buildinfo
+.buildtime
