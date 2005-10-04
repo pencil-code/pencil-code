@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.27 2005-09-20 14:26:16 ajohan Exp $
+! $Id: particles_sub.f90,v 1.28 2005-10-04 17:18:54 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -43,7 +43,7 @@ module Particles_sub
 !  numbers of the particles.
 !
         read(1) npar_loc
-        read(1) ipar(1:npar_loc)
+        if (npar_loc/=0) read(1) ipar(1:npar_loc)
 !
 !  Then read particle data.
 !        
@@ -85,7 +85,7 @@ module Particles_sub
 !  numbers of the particles.
 !
         write(lun_output) npar_loc
-        write(lun_output) ipar(1:npar_loc)
+        if (npar_loc/=0) write(lun_output) ipar(1:npar_loc)
 !
 !  Then write particle data.
 !
