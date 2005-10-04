@@ -3,5 +3,7 @@ makefile Makefile
 *.d
 *.inc
 *.il
+nompicomm_.f90
+mpicomm_.f90
 .buildinfo
 .buildtime
