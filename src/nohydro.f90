@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.41 2005-07-05 16:21:43 mee Exp $
+! $Id: nohydro.f90,v 1.42 2005-10-04 11:58:23 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.41 2005-07-05 16:21:43 mee Exp $")
+           "$Id: nohydro.f90,v 1.42 2005-10-04 11:58:23 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -244,6 +244,23 @@ module Hydro
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_u2)=.true.
       endif
+!
+!  Calculate maxima and rms values for diagnostic purposes
+!
+      if (ldiagnos) then
+        if (idiag_urms/=0)  call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
+        if (idiag_umax/=0)  call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
+        if (idiag_uzrms/=0) &
+            call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
+        if (idiag_uzmax/=0) &
+            call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
+        if (idiag_u2m/=0)   call sum_mn_name(p%u2,idiag_u2m)
+        if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
+!
+        if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
+        if (idiag_ekintot/=0) & 
+            call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
+      endif
 !     
       if(NO_WARN) print*,f(1,1,1,1)   !(keep compiler quiet)
 !
@@ -270,23 +287,6 @@ module Hydro
                                    abs(p%uu(:,2))*dy_1(  m  )+ &
                                    abs(p%uu(:,3))*dz_1(  n  )
       if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
-!
-!  Calculate maxima and rms values for diagnostic purposes
-!
-      if (ldiagnos) then
-        if (idiag_urms/=0)  call sum_mn_name(p%u2,idiag_urms,lsqrt=.true.)
-        if (idiag_umax/=0)  call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
-        if (idiag_uzrms/=0) &
-            call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
-        if (idiag_uzmax/=0) &
-            call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
-        if (idiag_u2m/=0)   call sum_mn_name(p%u2,idiag_u2m)
-        if (idiag_um2/=0)   call max_mn_name(p%u2,idiag_um2)
-!
-        if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
-        if (idiag_ekintot/=0) & 
-            call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
-      endif
 !
       if(NO_WARN) print*, f, df     !(keep compiler quiet)
 !
