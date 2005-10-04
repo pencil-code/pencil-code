@@ -63,6 +63,11 @@ module Mpicomm
     module procedure mpibcast_char_arr
   endinterface
 
+  interface mpireduce_sum_int
+    module procedure mpireduce_sum_int_scl
+    module procedure mpireduce_sum_int_arr
+  endinterface
+
   contains
 
 !***********************************************************************
@@ -126,7 +131,7 @@ module Mpicomm
       if (NO_WARN) print*,f       !(keep compiler quiet)
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
-    subroutine initiate_isendrcv_shock(f)
+    subroutine initiate_isendrcv_scalar(f,j)
 !
       use Cdata
 !
@@ -134,10 +139,11 @@ module Mpicomm
 !  but in this dummy routine this is done in finalize_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
 !
-      if (NO_WARN) print*,f       !(keep compiler quiet)
+      if (NO_WARN) print*,f,j       !(keep compiler quiet)
 !
-    endsubroutine initiate_isendrcv_shock
+    endsubroutine initiate_isendrcv_scalar
 !***********************************************************************
     subroutine finalize_isendrcv_uu(f)
 !
@@ -163,16 +169,17 @@ module Mpicomm
 !
     endsubroutine initiate_isendrcv_uu
 !***********************************************************************
-    subroutine finalize_isendrcv_shock(f)
+    subroutine finalize_isendrcv_scalar(f,j)
 !
       use Cparam
 !
 !  apply boundary conditions
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
 !
-      if (NO_WARN) print*,f       !(keep compiler quiet)
-    endsubroutine finalize_isendrcv_shock
+      if (NO_WARN) print*,f,j       !(keep compiler quiet)
+    endsubroutine finalize_isendrcv_scalar
 !***********************************************************************
     subroutine initiate_shearing(f)
 !
@@ -576,7 +583,7 @@ module Mpicomm
       dsum=dsum_tmp
     endsubroutine mpireduce_sum_double
 !***********************************************************************
-    subroutine mpireduce_sum_int(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
 !
 !  12-jan-05/anders: dummy coded
 !
@@ -585,7 +592,7 @@ module Mpicomm
 !
       fsum=fsum_tmp
 !
-    endsubroutine mpireduce_sum_int
+    endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
     subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,nreduce)
 !

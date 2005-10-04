@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.146 2005-09-30 08:00:42 ajohan Exp $
+! $Id: mpicomm.f90,v 1.147 2005-10-04 11:56:05 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -101,6 +101,11 @@ module Mpicomm
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
+  endinterface
+
+  interface mpireduce_sum_int
+    module procedure mpireduce_sum_int_arr
+    module procedure mpireduce_sum_int_scl
   endinterface
 
   include 'mpif.h'
@@ -645,7 +650,7 @@ module Mpicomm
 !
        endsubroutine finalize_shearing
 !***********************************************************************
-    subroutine initiate_isendrcv_shock(f)
+    subroutine initiate_isendrcv_scalar(f,j)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
 !  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
@@ -656,6 +661,7 @@ module Mpicomm
       use CData
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
 !
 !  So far no distribution over x
 !
@@ -667,8 +673,8 @@ module Mpicomm
 !
 ! y-Boundary contributions...
 !
-        lshkbufyo(:,:,:)=f(:,1:m1-1 ,n1:n2,ishock)  !!(lower y-zone)
-        ushkbufyo(:,:,:)=f(:,m2+1:my,n1:n2,ishock)  !!(upper y-zone)
+        lshkbufyo(:,:,:)=f(:,1:m1-1 ,n1:n2,j)  !!(lower y-zone)
+        ushkbufyo(:,:,:)=f(:,m2+1:my,n1:n2,j)  !!(upper y-zone)
         call MPI_IRECV(ushkbufyi,nshkbufy,MPI_REAL,yuneigh,shk_tolowy,MPI_COMM_WORLD,irecv_rq_shkfromuppy,ierr)
         call MPI_IRECV(lshkbufyi,nshkbufy,MPI_REAL,ylneigh,shk_touppy,MPI_COMM_WORLD,irecv_rq_shkfromlowy,ierr)
         call MPI_ISEND(lshkbufyo,nshkbufy,MPI_REAL,ylneigh,shk_tolowy,MPI_COMM_WORLD,isend_rq_shktolowy,ierr)
@@ -681,8 +687,8 @@ module Mpicomm
 !
 ! z-Boundary contributions...
 !
-        lshkbufzo(:,:,:)=f(:,m1:m2,1:n1-1 ,ishock)  !!(lower z-zone)
-        ushkbufzo(:,:,:)=f(:,m1:m2,n2+1:mz,ishock)  !!(upper z-zone)
+        lshkbufzo(:,:,:)=f(:,m1:m2,1:n1-1 ,j)  !!(lower z-zone)
+        ushkbufzo(:,:,:)=f(:,m1:m2,n2+1:mz,j)  !!(upper z-zone)
         call MPI_IRECV(ushkbufzi,nshkbufz,MPI_REAL,zuneigh,shk_tolowz,MPI_COMM_WORLD,irecv_rq_shkfromuppz,ierr)
         call MPI_IRECV(lshkbufzi,nshkbufz,MPI_REAL,zlneigh,shk_touppz,MPI_COMM_WORLD,irecv_rq_shkfromlowz,ierr)
         call MPI_ISEND(lshkbufzo,nshkbufz,MPI_REAL,zlneigh,shk_tolowz,MPI_COMM_WORLD,isend_rq_shktolowz,ierr)
@@ -695,10 +701,10 @@ module Mpicomm
 !
 ! Calculate corner contributions...
 !
-        llshkbufo(:,:,:)=f(:, 1:nghost, 1:nghost ,ishock)
-        ulshkbufo(:,:,:)=f(:, m2+1:my , 1:nghost,ishock)
-        uushkbufo(:,:,:)=f(:, m2+1:my , n2+1:mz,ishock)
-        lushkbufo(:,:,:)=f(:, 1:nghost, n2+1:mz,ishock)
+        llshkbufo(:,:,:)=f(:, 1:nghost, 1:nghost ,j)
+        ulshkbufo(:,:,:)=f(:, m2+1:my , 1:nghost,j)
+        uushkbufo(:,:,:)=f(:, m2+1:my , n2+1:mz,j)
+        lushkbufo(:,:,:)=f(:, 1:nghost, n2+1:mz,j)
         call MPI_IRECV(uushkbufi,nshkbufyz,MPI_REAL,uucorn,shk_TOll,MPI_COMM_WORLD,irecv_rq_shkFRuu,ierr)
         call MPI_IRECV(lushkbufi,nshkbufyz,MPI_REAL,lucorn,shk_TOul,MPI_COMM_WORLD,irecv_rq_shkFRlu,ierr)
         call MPI_IRECV(llshkbufi,nshkbufyz,MPI_REAL,llcorn,shk_TOuu,MPI_COMM_WORLD,irecv_rq_shkFRll,ierr)
@@ -715,11 +721,11 @@ module Mpicomm
 !     if (ip<7.and.ipy==0.and.ipz==3) &
 !       print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
 !
-    endsubroutine initiate_isendrcv_shock
+    endsubroutine initiate_isendrcv_scalar
 !***********************************************************************
-    subroutine finalize_isendrcv_shock(f)
+    subroutine finalize_isendrcv_scalar(f,j)
 !
-      use Cdata, only: bcy1,bcy2,bcz1,bcz2,lperi,ishock
+      use Cdata, only: bcy1,bcy2,bcz1,bcz2,lperi
 !
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
@@ -740,10 +746,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_shkfromuppy,irecv_stat_shkfu,ierr)
         call MPI_WAIT(irecv_rq_shkfromlowy,irecv_stat_shkfl,ierr)
         if (ipy /= 0 .OR. lperi(2)) then
-          f(:, m1:m1i,n1:n2,ishock)=f(:,m1:m1i,n1:n2,ishock)+lshkbufyi  !!(set lower buffer)
+          f(:, m1:m1i,n1:n2,j)=f(:,m1:m1i,n1:n2,j)+lshkbufyi  !!(set lower buffer)
         endif
-        if (ipy /= nprocy-1 .OR. lperi(2)) then
-          f(:,m2i:m2,n1:n2,ishock)=f(:,m2i:m2,n1:n2,ishock)+ushkbufyi  !!(set upper buffer)
+        if (ipy /= nprocy-1 .OR. lperi(2)) then 
+          f(:,m2i:m2,n1:n2,j)=f(:,m2i:m2,n1:n2,j)+ushkbufyi  !!(set upper buffer)
         endif
         call MPI_WAIT(isend_rq_shktolowy,isend_stat_shktl,ierr)
         call MPI_WAIT(isend_rq_shktouppy,isend_stat_shktu,ierr)
@@ -754,11 +760,11 @@ module Mpicomm
       if (nprocz>1) then
         call MPI_WAIT(irecv_rq_shkfromuppz,irecv_stat_shkfu,ierr)
         call MPI_WAIT(irecv_rq_shkfromlowz,irecv_stat_shkfl,ierr)
-        if (ipz /= 0 .OR. lperi(3)) then
-           f(:,m1:m2,n1:n1i,ishock)=f(:,m1:m2,n1:n1i,ishock)+lshkbufzi  !!(set lower buffer)
+        if (ipz /= 0 .OR. lperi(3)) then 
+           f(:,m1:m2,n1:n1i,j)=f(:,m1:m2,n1:n1i,j)+lshkbufzi  !!(set lower buffer)
         endif
-        if (ipz /= nprocz-1 .OR. lperi(3)) then
-           f(:,m1:m2,n2i:n2,ishock)=f(:,m1:m2,n2i:n2,ishock)+ushkbufzi  !!(set upper buffer)
+        if (ipz /= nprocz-1 .OR. lperi(3)) then 
+           f(:,m1:m2,n2i:n2,j)=f(:,m1:m2,n2i:n2,j)+ushkbufzi  !!(set upper buffer)
         endif
         call MPI_WAIT(isend_rq_shktolowz,isend_stat_shktl,ierr)
         call MPI_WAIT(isend_rq_shktouppz,isend_stat_shktu,ierr)
@@ -771,20 +777,20 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_shkFRlu,irecv_stat_shkFlu,ierr)
         call MPI_WAIT(irecv_rq_shkFRll,irecv_stat_shkFll,ierr)
         call MPI_WAIT(irecv_rq_shkFRul,irecv_stat_shkFul,ierr)
-        if (ipz /= 0 .OR. lperi(3)) then
-           if (ipy /= 0 .OR. lperi(2)) then
-              f(:, m1:m1i, n1:n1i,ishock)=f(:, m1:m1i, n1:n1i,ishock)+llshkbufi  !!(set ll corner)
+        if (ipz /= 0 .OR. lperi(3)) then 
+           if (ipy /= 0 .OR. lperi(2)) then 
+              f(:, m1:m1i, n1:n1i,j)=f(:, m1:m1i, n1:n1i,j)+llshkbufi  !!(set ll corner)
            endif
            if (ipy /= nprocy-1 .OR. lperi(2)) then
-              f(:, m2i:m2, n1:n1i,ishock)=f(:, m2i:m2, n1:n1i,ishock)+ulshkbufi  !!(set ul corner)
+              f(:, m2i:m2, n1:n1i,j)=f(:, m2i:m2, n1:n1i,j)+ulshkbufi  !!(set ul corner)
            endif
         endif
-        if (ipz /= nprocz-1 .OR. lperi(3)) then
-           if (ipy /= nprocy-1 .OR. lperi(2)) then
-              f(:, m2i:m2, n2i:n2,ishock)=f(:, m2i:m2, n2i:n2,ishock)+uushkbufi  !!(set uu corner)
+        if (ipz /= nprocz-1 .OR. lperi(3)) then 
+           if (ipy /= nprocy-1 .OR. lperi(2)) then 
+              f(:, m2i:m2, n2i:n2,j)=f(:, m2i:m2, n2i:n2,j)+uushkbufi  !!(set uu corner)
            endif
            if (ipy /= 0 .OR. lperi(2)) then
-              f(:, m1:m1i, n2i:n2,ishock)=f(:, m1:m1i, n2i:n2,ishock)+lushkbufi  !!(set lu corner)
+              f(:, m1:m1i, n2i:n2,j)=f(:, m1:m1i, n2i:n2,j)+lushkbufi  !!(set lu corner)
            endif
         endif
         call MPI_WAIT(isend_rq_shkTOll,isend_stat_shkTll,ierr)
@@ -804,7 +810,7 @@ module Mpicomm
 !  which could be mistaken for an earlier time
 !
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-    endsubroutine finalize_isendrcv_shock
+    endsubroutine finalize_isendrcv_scalar
 !***********************************************************************
     subroutine initiate_isendrcv_uu(f)
 !
@@ -1544,7 +1550,7 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_double
 !***********************************************************************
-    subroutine mpireduce_sum_int(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
 !
 !  12-jan-05/anders: coded
 !
@@ -1561,7 +1567,7 @@ module Mpicomm
                         MPI_COMM_WORLD, ierr)
       endif
 !
-    endsubroutine mpireduce_sum_int
+    endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
     subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,nreduce)
 !

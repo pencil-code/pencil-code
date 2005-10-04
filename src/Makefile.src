@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.137 2005-09-15 17:22:46 wlyra Exp $
+### $Id: Makefile.src,v 1.138 2005-10-04 11:56:05 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -446,7 +446,7 @@ TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c read_videofiles.f
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
 
-default: Makefile cparam.inc code
+default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
 
 pacx: pacx-makefile cparam.inc code
 
@@ -459,7 +459,30 @@ pacx-makefile: Makefile.src
 depend dep: 
 	rm -f Makefile.depend
 	scripts/mkdep start.f90 run.f90 equ.f90 timestep.f90 $(comm_deps:.o=.f90) > Makefile.depend
+# Generate files for automated debugging and testing etc.
+start_buildtime:
+	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
+stop_buildtime:
+	@echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
+buildinfo: 
+	@pc_xmlexport buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
+	                       -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
+	                       -e "FCCLEANER='$(FCCLEANER)';LDMPI='$(LDMPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
+	                       -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
+	                       -e "FC='$(FC)';" \
+	                       -e "MPICOMM='$(MPICOMM_FIX)';GLOBAL='$(GLOBAL)';GRID='$(GRID)';IO='$(IO)';FFT='$(FFT)';" \
+	                       -e "FFTPACK='$(FFTPACK)';POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';" \
+	                       -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENTROPY='$(ENTROPY)';" \
+	                       -e "MAGNETIC='$(MAGNETIC)';RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
+	                       -e "CHIRAL='$(CHIRAL)';DUSTVELOCITY='$(DUSTVELOCITY)';DUSTDENSITY='$(DUSTDENSITY)';" \
+	                       -e "INTERSTELLAR='$(INTERSTELLAR)';COSMICRAY='$(COSMICRAY)';COSMICRAYFLUX='$(COSMICRAYFLUX)';" \
+	                       -e "EOS='$(EOS)';STRUCT_FUNC='$(STRUCT_FUNC)';INITCOND_SPEC='$(INITCOND_SPEC)';SHOCK='$(SHOCK)';" \
+	                       -e "TESTFIELD='$(TESTFIELD)';GRAVITY='$(GRAVITY)';FORCING='$(FORCING)';SHEAR='$(SHEAR)';" \
+	                       -e "TIMEAVG='$(TIMEAVG)';SPECIAL='$(SPECIAL)';PARTICLES='$(PARTICLES)';PARTICLES_SUB='$(PARTICLES_SUB)';" \
+	                       -e "PARTICLES_MAIN='$(PARTICLES_MAIN)';PARTICLES_RADIUS='$(PARTICLES_RADIUS)';" \
+	                       -e "SHOCK_PROFILE='$(SHOCK_PROFILE)';SHOCK_FINDER='$(SHOCK_FINDER)';" > .buildinfo
 
+#
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
 depend.dot: Makefile.src Makefile.local scripts/mkdot

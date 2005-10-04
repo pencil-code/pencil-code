@@ -8,8 +8,8 @@
 
   public :: mpirecv_real, mpirecv_int
   public :: mpisend_real, mpisend_int
-  public :: mpireduce_sum, mpireduce_sum_int, mpireduce_max, mpireduce_min
-  public :: mpireduce_sum_double, mpireduce_sum_int_scl, mpireduce_or
+  public :: mpireduce_sum, mpireduce_max, mpireduce_min
+  public :: mpireduce_sum_double, mpireduce_sum_int, mpireduce_or
   public :: mpibcast_real,mpibcast_logical
   public :: mpibcast_double
   public :: mpibcast_int, mpibcast_char
@@ -19,7 +19,7 @@
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   public :: initiate_shearing, finalize_shearing
-  public :: initiate_isendrcv_shock, finalize_isendrcv_shock
+  public :: initiate_isendrcv_scalar, finalize_isendrcv_scalar
   public :: initiate_isendrcv_uu, finalize_isendrcv_uu
 
   public :: transp

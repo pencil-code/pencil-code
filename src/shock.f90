@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.7 2005-09-30 09:29:53 ajohan Exp $
+! $Id: shock.f90,v 1.8 2005-10-04 11:56:05 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -95,7 +95,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.7 2005-09-30 09:29:53 ajohan Exp $")
+           "$Id: shock.f90,v 1.8 2005-10-04 11:56:05 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -380,7 +380,7 @@ module Shock
 ! Initiate asyncronous communication of contributions to other processors 
 !
           if (nxgrid/=1) call bcshock_per_x(f)
-          call initiate_isendrcv_shock(f)
+          call initiate_isendrcv_scalar(f,ishock)
 !
 ! Calculate all local shock profile contributions
 !
@@ -389,7 +389,7 @@ module Shock
 !
 ! Finalize all shock profile communications
 !
-          call finalize_isendrcv_shock(f)
+          call finalize_isendrcv_scalar(f,ishock)
           if (nygrid/=1) call bcshock_per_y(f)
           if (nzgrid/=1) call bcshock_per_z(f)
 !FIX ME
