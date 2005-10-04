@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.14 2005-10-01 08:40:49 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.15 2005-10-04 17:13:38 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -164,7 +164,7 @@ for i=0,ncpus-1 do begin
 ;
 ;  Read time.
 ;
-  readu, file, t, xloc, yloc, zloc, dx, dy, dz
+  if (npar_loc ne 0) then readu, file, t, xloc, yloc, zloc, dx, dy, dz
 ;
 ;  Create global x, y and z arrays from local ones.
 ;
