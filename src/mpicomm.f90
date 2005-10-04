@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.147 2005-10-04 11:56:05 mee Exp $
+! $Id: mpicomm.f90,v 1.148 2005-10-04 12:33:12 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -735,6 +735,7 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
 !
 !  1. wait until data received
 !  2. set ghost zones
