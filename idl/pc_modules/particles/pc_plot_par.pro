@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.8 2005-09-28 13:28:06 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.9 2005-10-05 15:18:34 ajohan Exp $
 ;
 pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, quiet=quiet
@@ -15,7 +15,7 @@ pc_read_param, obj=par, /quiet
 pc_read_dim, obj=dim, /quiet
 
 if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid ne 1) ) then begin
-  thick=1
+  thick=3
   !p.charsize=2.0
   xsize=14.0
   ysize=11.0
@@ -30,10 +30,7 @@ if (ps) then begin
   set_plot, 'ps'
   device, /encapsulated, color=color, xsize=xsize, ysize=ysize, $
       font_size=11, filename=imgdir+'/'+filename
-  !p.font=1
-  ps_fonts
 endif else begin
-  !p.font=0
   thick=1
 endelse
 
