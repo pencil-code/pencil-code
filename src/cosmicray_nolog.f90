@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.20 2005-07-05 16:21:42 mee Exp $
+! $Id: cosmicray_nolog.f90,v 1.21 2005-10-05 13:09:52 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -14,7 +14,9 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ecr,gecr,ugecr
+! PENCILS PROVIDED ecr,gecr,ugecr,bgecr,bglnrho
+!
+!
 !
 !***************************************************************
 
@@ -39,6 +41,7 @@ module CosmicRay
 
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
+  logical :: lalfven_advect = .false.
   
   
   namelist /cosmicray_init_pars/ &
@@ -57,7 +60,8 @@ module CosmicRay
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr,ampl_Qcr2, &
-       limiter_cr,blimiter_cr
+       limiter_cr,blimiter_cr, &
+       lalfven_advect
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_ecrm=0,idiag_ecrmax=0,idiag_ecrpt=0
@@ -98,7 +102,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.20 2005-07-05 16:21:42 mee Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.21 2005-10-05 13:09:52 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -211,6 +215,11 @@ print*,"init_ecr: amplecr = ", amplecr
         lpenc_requested(i_bb)=.true.
       endif
       if (cosmicray_diff/=0.) lpenc_requested(i_gecr)=.true.
+      if (lalfven_advect) then
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_bgecr)=.true.
+        lpenc_requested(i_bglnrho)=.true.
+      endif
 !
       lpenc_diagnos(i_ecr)=.true.
 !
@@ -231,6 +240,14 @@ print*,"init_ecr: amplecr = ", amplecr
       if (lpencil_in(i_ugecr)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gecr)=.true.
+      endif
+      if (lpencil_in(i_bgecr)) then
+        lpencil_in(i_bb)=.true.
+        lpencil_in(i_gecr)=.true.
+      endif
+      if(lpencil_in(i_bglnrho)) then
+        lpencil_in(i_bb)=.true.
+        lpencil_in(i_glnrho)=.true.
       endif
 !
     endsubroutine pencil_interdep_cosmicray
@@ -255,6 +272,10 @@ print*,"init_ecr: amplecr = ", amplecr
       if (lpencil(i_gecr)) call grad(f,iecr,p%gecr)
 ! ugecr
       if (lpencil(i_ugecr)) call dot_mn(p%uu,p%gecr,p%ugecr)
+! bgecr
+      if (lpencil(i_bgecr)) call dot_mn(p%bb,p%gecr,p%bgecr)
+! bglnrho
+      if (lpencil(i_bglnrho)) call dot_mn(p%glnrho,p%bb,p%bglnrho)
 !
     endsubroutine calc_pencils_cosmicray
 !***********************************************************************
@@ -264,6 +285,7 @@ print*,"init_ecr: amplecr = ", amplecr
 !  calculate decr/dt + div(u.ecr - flux) = -pcr*divu = -(gammacr-1)*ecr*divu
 !  solve as decr/dt + u.grad(ecr) = -gammacr*ecr*divu + div(flux)
 !  add du = ... - (1/rho)*grad(pcr) to momentum equation
+!  Alternatively, use w
 !
 !   09-oct-03/tony: coded
 !  
@@ -273,7 +295,7 @@ print*,"init_ecr: amplecr = ", amplecr
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr
+      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr,wgecr,divw,tmp
       integer :: j
 !
       intent (in) :: f,p
@@ -286,7 +308,28 @@ print*,"init_ecr: amplecr = ", amplecr
 !
 !  Evolution equation of cosmic ray energy density
 !
-      df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - p%ugecr - gammacr*p%ecr*p%divu
+!  Alfv\'en advection? (with w, an alternative to u for now)
+      if(lalfven_advect)then
+!
+!  simple model for w depending on the sign of bgecr
+!
+          tmp = sqrt(mu01*p%rho1)
+          where(p%bgecr > 0.)  
+             divw  =  tmp*0.5*p%bglnrho
+             wgecr = -tmp*p%bgecr
+          elsewhere
+             divw  = -tmp*0.5*p%bglnrho
+             wgecr =  tmp*p%bgecr
+          endwhere
+!          where(abs(p%bgecr) < some_cutoff )
+!             divw = 0.
+!             wgecr =0.
+!          endwhere
+! 
+          df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - wgecr - gammacr*p%ecr*divw
+      else
+          df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - p%ugecr - gammacr*p%ecr*p%divu
+      endif
 !
 !  effect on the momentum equation, (1/rho)*grad(pcr)
 !  cosmic ray pressure is: pcr=(gammacr-1)*ecr
