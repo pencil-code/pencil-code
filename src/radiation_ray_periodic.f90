@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.31 2005-10-01 08:26:59 ajohan Exp $
+! $Id: radiation_ray_periodic.f90,v 1.32 2005-10-06 19:23:58 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -111,7 +111,7 @@ module Radiation
 !
 !  24-mar-03/axel+tobi: coded
 !
-      use Cdata, only: iQrad,nvar,naux,aux_var,aux_count,lroot,varname
+      use Cdata, only: iQrad,nvar,naux,aux_var,naux_com,aux_count,lroot,varname
       use Cdata, only: lradiation,lradiation_ray
       use Mpicomm, only: stop_it
 !
@@ -142,7 +142,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.31 2005-10-01 08:26:59 ajohan Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.32 2005-10-06 19:23:58 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
