@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# Script to update the Pencil-Code tree from CVS
+#
+# Update all the necessaries but nothing else.
+#  (eg. miss out the runs directory)   
+#
+if [ ! "$PENCIL_HOME" ]; then
+  echo PENCIL_HOME variable not set! Exiting...
+  exit 1 
+fi
+if [ ! -d "$PENCIL_HOME/" ]; then
+  echo PENCIL_HOME variable set but is not an existing directory! Exiting...
+  exit 1 
+fi
+
+cd ${PENCIL_HOME}
+
+UPDATE_PATHS="src bin lib"
+
+# Allow the strange situation that someone may have removed the samples tree
+[ -e samples ] && UPDATE_PATHS="$UPDATE_PATHS samples"
+# Allow the strange situation that someone may have removed the doc tree
+[ -e doc ] && UPDATE_PATHS="$UPDATE_PATHS doc"
+
+# Update files in the PENCIL_HOME root
+echo "Updating the root of PENCIL_HOME"
+cvs -q up -l .
+
+# Update files in the selected subdirectories 
+echo "Updating the subtrees of PENCIL_HOME ($UPDATE_PATHS)"
+cvs -q up -dP $UPDATE_PATHS
