@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.42 2005-10-04 11:58:23 mee Exp $
+! $Id: nohydro.f90,v 1.43 2005-10-06 08:04:37 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.42 2005-10-04 11:58:23 mee Exp $")
+           "$Id: nohydro.f90,v 1.43 2005-10-06 08:04:37 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -180,7 +180,7 @@ module Hydro
 !   08-nov-04/tony: coded
 !
       use Cdata
-      use Sub, only: dot2_mn
+      use Sub, only: dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
 !
       real, dimension (mx,my,mz,mvar+maux) :: f       
