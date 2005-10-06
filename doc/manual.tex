@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.303 2005-09-11 09:57:45 ajohan Exp $
+%%  CVS: $Id: manual.tex,v 1.304 2005-10-06 15:46:39 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-09-11 09:57:45 $ $,~ $ $Revision: 1.303 $ $}
+%\date{$ $Date: 2005-10-06 15:46:39 $ $,~ $ $Revision: 1.304 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-09-11 09:57:45 $ $,~ $ $Revision: 1.303 $ $}\\
+  \emph{$ $Date: 2005-10-06 15:46:39 $ $,~ $ $Revision: 1.304 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -975,16 +975,22 @@ back up your changes before upgrading.
 
 Here is the upgrading procedure:
 \begin{enumerate}
-\item Go to the top directory of the code:
+%\item Go to the top directory of the code:
+%  \begin{alltt}
+%  \prompt{unix> } cd somewhere/pencil-code \
+%  \end{alltt}
+\item Perform a \cmd{cvs} update of the tree:
   \begin{alltt}
-  \prompt{unix> } cd somewhere/pencil-code \
+  \prompt{unix> } pc_cvsup \
   \end{alltt}
-\item Run \cmd{cvs update}:
-  \begin{alltt}
-  \prompt{unix> } cvs -q update -dP \
-  \end{alltt}
-  (the option \option{-q} means ``somewhat quiet'', \option{-d} checks out
-  new directories, and \option{-P} removes empty directories)
+  (This is equivalent to typing \cmd{cvs -q update -dP} from the top directory
+  of the code, except that it only performs a full update of the core 
+  Pencil Code directories.  This for example avoids the problem of having
+  a partially checked out \file{runs} directory under your Pencil Code
+  which would otherwise be checked out in full if the simple cvs command 
+  were used.)
+%  (the option \option{-q} means ``somewhat quiet'', \option{-d} checks out
+%  new directories, and \option{-P} removes empty directories)
 \item Fix any conflicts you encounter and make sure the examples in the
   directory \file{samples/} are still working.
 \end{enumerate}
@@ -1003,9 +1009,9 @@ this by:
   \begin{alltt}
   \prompt{unix> } cd somewhere/pencil-code \
   \end{alltt}
-\item Run \cmd{cvs update}:
+\item Run \cmd{pc_cvsup}:
   \begin{alltt}
-  \prompt{unix> } cvs up -D "26 Nov 2002"\
+  \prompt{unix> } pc_cvsup -D "26 Nov 2002"\
   \end{alltt}
 \end{enumerate}
 
@@ -4920,7 +4926,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-09-11 09:57:45 $ $,~ $ $Revision: 1.303 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-10-06 15:46:39 $ $,~ $ $Revision: 1.304 $ $}
 
 \section{Timings}
 
@@ -8018,7 +8024,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.303 2005-09-11 09:57:45 ajohan Exp $ $}
+$ $Id: manual.tex,v 1.304 2005-10-06 15:46:39 mee Exp $ $}
 
 
 \end{document}
