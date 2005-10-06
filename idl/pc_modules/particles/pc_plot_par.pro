@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.9 2005-10-05 15:18:34 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.10 2005-10-06 14:05:43 ajohan Exp $
 ;
 pro pc_plot_par, xx, pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, quiet=quiet
@@ -34,7 +34,8 @@ endif else begin
   thick=1
 endelse
 
-!p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
+!p.charthick=thick & !p.thick=thick
+!x.thick=thick & !y.thick=thick & !z.thick=thick
 
 if (color) then loadct, 12
 frame_color=100
@@ -56,14 +57,14 @@ if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid ne 1) ) then begin
   axis, xaxis=1, x0, y1, z0, /t3d, xtickformat='noticknames_aj',col=frame_color
   axis, yaxis=1, x1, y0, z0, /t3d, ytickformat='noticknames_aj',col=frame_color
   axis, yaxis=1, x1, y0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, zaxis=1, x1, y1, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
-  axis, zaxis=1, x1, y0, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
+  axis, zaxis=0, x1, y1, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
+  axis, zaxis=0, x1, y0, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
 
   plots, xx[*,0], xx[*,1], xx[*,2], psym=3, col=par_color, /t3d
 
   axis, zaxis=1, x0, y0, z0, /t3d, ztickformat='noticknames_aj',col=frame_color
-  axis, yaxis=1, x0, y0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
-  axis, xaxis=1, x0, y0, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
+  axis, yaxis=0, x0, y0, z1, /t3d, ytickformat='noticknames_aj',col=frame_color
+  axis, xaxis=0, x0, y0, z1, /t3d, xtickformat='noticknames_aj',col=frame_color
  
 endif else if ( (dim.nxgrid ne 1) and (dim.nygrid ne 1) and (dim.nzgrid eq 1) ) then begin
   
