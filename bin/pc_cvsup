@@ -5,6 +5,22 @@
 # Update all the necessaries but nothing else.
 #  (eg. miss out the runs directory)   
 #
+add_update_path()
+{
+  while [ $1 ]; do
+    [ -e $1 ] && UPDATE_PATHS="$UPDATE_PATHS $1"
+    shift
+  done
+}
+
+add_update_path_nonewdir()
+{
+  while [ $1 ]; do
+    [ -e $1 ] && UPDATE_PATHS_NONEWDIR="$UPDATE_PATHS_NONEWDIR $1"
+    shift
+  done
+}
+
 if [ ! "$PENCIL_HOME" ]; then
   echo PENCIL_HOME variable not set! Exiting...
   exit 1 
@@ -16,17 +32,33 @@ fi
 
 cd ${PENCIL_HOME}
 
-UPDATE_PATHS="src bin lib"
+EXTRA_ARGS=$@
+UPDATE_PATHS="src bin lib idl"
+UPDATE_PATHS_NONEWDIR=""
 
-# Allow the strange situation that someone may have removed the samples tree
-[ -e samples ] && UPDATE_PATHS="$UPDATE_PATHS samples"
+# Conditionally add some other directories to the full update 
+#   (if they exist!)
+add_update_path samples doc
+
 # Allow the strange situation that someone may have removed the doc tree
-[ -e doc ] && UPDATE_PATHS="$UPDATE_PATHS doc"
+add_update_path_nonewdir runs pencil-runs
+add_update_path_nonewdir tony pencil-tony anders 
+
+# Shallow update other paths in the selected subdirectories 
+if [ "$UPDATE_PATHS_NONEWDIR" ]; then
+  echo "Updating the subtrees of PENCIL_HOME ($UPDATE_PATHS_NONEWDIR)"
+  cvs -q up -P $EXTRA_ARGS $UPDATE_PATHS_NONEWDIR
+fi
 
 # Update files in the PENCIL_HOME root
 echo "Updating the root of PENCIL_HOME"
-cvs -q up -l .
+cvs -q up -l $EXTRA_ARGS .
 
 # Update files in the selected subdirectories 
 echo "Updating the subtrees of PENCIL_HOME ($UPDATE_PATHS)"
-cvs -q up -dP $UPDATE_PATHS
+cvs -q up -dP $EXTRA_ARGS $UPDATE_PATHS
+
+
+
+
+
