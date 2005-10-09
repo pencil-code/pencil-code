@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.7 2005-09-19 13:29:50 ajohan Exp $
+! $Id: particles_main.f90,v 1.8 2005-10-09 12:53:06 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -57,7 +57,7 @@ module Particles_main
 !
 !  Check if there is enough total space allocated for particles.
 !
-      if (mpar_loc-ncpus*npar_mig<npar/ncpus) then
+      if (ncpus*mpar_loc<npar) then
         if (lroot) then
           print*, 'particles_initialize_modules: '// &
           'total number of particle slots available at the processors '// &
