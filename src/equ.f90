@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.257 2005-10-02 11:26:04 ajohan Exp $
+! $Id: equ.f90,v 1.258 2005-10-09 22:13:21 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -331,7 +331,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.257 2005-10-02 11:26:04 ajohan Exp $")
+           "$Id: equ.f90,v 1.258 2005-10-09 22:13:21 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -374,7 +374,11 @@ module Equ
 !
       if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      if (early_finalize) call finalize_isendrcv_bdry(f)
+      if (early_finalize) then
+        call finalize_isendrcv_bdry(f)
+        call boundconds_y(f)
+        call boundconds_z(f)
+      endif
 !
 !  set inverse timestep to zero before entering loop over m and n
 !
@@ -410,8 +414,11 @@ module Equ
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
 
 !        if (loptimise_ders) der_call_count=0 !DERCOUNT
-        if (necessary(imn)) then  ! make sure all ghost points are set
-          if (.not.early_finalize) call finalize_isendrcv_bdry(f)
+!
+! make sure all ghost points are set
+!
+        if (.not.early_finalize.and.necessary(imn)) then
+          call finalize_isendrcv_bdry(f)
           call boundconds_y(f)
           call boundconds_z(f)
         endif
