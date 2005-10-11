@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.213 2005-09-19 13:29:50 ajohan Exp $
+! $Id: run.f90,v 1.214 2005-10-11 21:36:15 theine Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
         logical :: stop=.false.,timeover=.false.,reload=.false.
         logical :: lreinit_file=.false., exist=.false.
         real :: wall_clock_time=0., time_per_step=0.
-        real :: time_last_diagnostic, time_this_diagnostic
+        double precision :: time_last_diagnostic, time_this_diagnostic
         integer :: it_last_diagnostic
         integer :: i,ivar
 !
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.213 2005-09-19 13:29:50 ajohan Exp $")
+             "$Id: run.f90,v 1.214 2005-10-11 21:36:15 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -245,7 +245,7 @@
 !  Initialize timestep diagnostics during the run (whether used or not,
 !  see idiag_timeperstep)
 !
-        time_this_diagnostic=mpiwtime()
+        time_last_diagnostic=mpiwtime()
 !
 !  Start timing for final timing statistics
 !
