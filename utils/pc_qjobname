@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ##
-## $Id: pc_qjobname,v 1.4 2005-10-05 13:13:56 ajohan Exp $
+## $Id: pc_qjobname,v 1.5 2005-10-12 09:09:56 ajohan Exp $
 ##
 $host = `hostname`;
 #
@@ -11,13 +11,13 @@ if ($host =~ /fe[0-9]/){
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
     @jobs = `qstat | grep $ENV{'USER'} `;
-    foreach $job (@jobs) { $job =~ s/([0-9]*\.[a-z]*) .*/$1/g; chomp $job; }
+      foreach $job (@jobs) { $job =~ /([0-9]*\.[a-z]*)/; $job=$1; }
     }
 
   foreach $job (@jobs){
     $a = `qstat -f $job`;
     $a =~ s/\s//g;
-    $a =~ /PBS_O_WORKDIR=(.*),PBS_O_SYSTEM/;
+    $a =~ /PBS_O_WORKDIR=(.*),/;
     $a = $1;
     $a =~ s/$ENV{'HOME'}/\~/g;
     print "$job : $a\n";
