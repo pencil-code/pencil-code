@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.205 2005-10-09 15:16:14 ajohan Exp $
+! $Id: density.f90,v 1.206 2005-10-12 18:34:42 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -74,7 +74,7 @@ module Density
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
-  integer :: idiag_rhomz=0, idiag_rhomx=0
+  integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0
 
   contains
 
@@ -110,7 +110,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.205 2005-10-09 15:16:14 ajohan Exp $")
+           "$Id: density.f90,v 1.206 2005-10-12 18:34:42 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -943,9 +943,9 @@ module Density
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
 !
-      if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomx/=0 .or. &
-           idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. idiag_rhomax/=0) &
-           lpenc_diagnos(i_rho)=.true.
+      if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
+           idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
+           idiag_rhomax/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
 !
     endsubroutine pencil_criteria_density
@@ -1231,6 +1231,7 @@ module Density
         if (idiag_lnrho2m/=0) call sum_mn_name(p%lnrho**2,idiag_lnrho2m)
         if (idiag_rhomz/=0)   call xysum_mn_name_z(p%rho,idiag_rhomz)
         if (idiag_rhomx/=0)   call yzsum_mn_name_x(p%rho,idiag_rhomx)
+        if (idiag_rhomy/=0)   call xzsum_mn_name_y(p%rho,idiag_rhomy)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
@@ -1246,7 +1247,7 @@ module Density
 !
       use Sub
 !
-      integer :: iname,inamez,inamex,irz
+      integer :: iname,inamez,inamey,inamex,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1260,7 +1261,7 @@ module Density
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
-        idiag_rhomz=0; idiag_rhomx=0
+        idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1279,6 +1280,12 @@ module Density
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
+      enddo
+!
+!  check for those quantities for which we want xz-averages
+!
+      do inamey=1,nnamey
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhomy',idiag_rhomy)
       enddo
 !
 !  check for those quantities for which we want yz-averages
@@ -1304,6 +1311,7 @@ module Density
         write(3,*) 'i_rhomax=',idiag_rhomax
         write(3,*) 'i_lnrho2m=',idiag_lnrho2m
         write(3,*) 'i_rhomz=',idiag_rhomz
+        write(3,*) 'i_rhomy=',idiag_rhomy
         write(3,*) 'i_rhomx=',idiag_rhomx
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.222 2005-10-02 11:26:04 ajohan Exp $ 
+! $Id: sub.f90,v 1.223 2005-10-12 18:34:42 ajohan Exp $ 
 
 module Sub 
 
@@ -46,7 +46,7 @@ module Sub
   public :: parse_name, save_name, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name
   public :: surf_mn_name
-  public :: xysum_mn_name_z, yzsum_mn_name_x
+  public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: date_time_string
 
@@ -408,6 +408,31 @@ module Sub
 !
     endsubroutine xysum_mn_name_z
 !***********************************************************************
+    subroutine xzsum_mn_name_y(a,iname)
+!
+!  Successively calculate sum over x,z of a, which is supplied at each call.
+!  The result fnamey is y-dependent.
+!  Start from zero if lfirstpoint=.true.
+!
+!  12-oct-05/anders: adapted from xysum_mn_name_z
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname,m_nghost
+!
+!  Initialize to zero, including other parts of the z-array
+!  which are later merged with an mpi reduce command.
+!
+      if (lfirstpoint) fnamey(:,:,iname)=0.
+!
+!  m starts with mghost+1=4, so the correct index is m-nghost
+!
+      m_nghost=m-nghost
+      fnamey(m_nghost,ipy+1,iname)=fnamey(m_nghost,ipy+1,iname)+sum(a)
+!
+    endsubroutine xzsum_mn_name_y
+!***********************************************************************
     subroutine yzsum_mn_name_x(a,iname)
 !
 !  Successively calculate sum over y,z of a, which is supplied at each call.
@@ -419,7 +444,7 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a
-      integer :: iname,n_nghost
+      integer :: iname
 !
 !  Initialize to zero.
 !

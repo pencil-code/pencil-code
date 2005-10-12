@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.282 2005-10-02 11:26:04 ajohan Exp $
+! $Id: cdata.f90,v 1.283 2005-10-12 18:34:42 ajohan Exp $
 
 module Cdata
 
@@ -132,13 +132,16 @@ module Cdata
 !
 !  in this section are all the things related to printing
 !
-  integer :: nname=0,nnamev=0,nnamez=0,nnamexy=0,nnamex=0,nnamexz=0,nnamerz=0
+  integer :: nname=0,nnamev=0,nnamexy=0,nnamexz=0,nnamerz=0
+  integer :: nnamez=0,nnamey=0,nnamex=0
   integer :: nr_directions=1
-  integer, parameter :: mname=100,mnamev=100,mnamez=30,mnamex=30,mnamerz=20
+  integer, parameter :: mname=100,mnamev=100,mnamerz=20
+  integer, parameter :: mnamez=30,mnamey=30,mnamex=30
   integer, parameter :: mnamexy=6,mnamexz=40
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
+  real, dimension (ny,nprocy,mnamey) :: fnamey
   real, dimension (nx,mnamex) :: fnamex
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
   real, dimension (nx,nz,nprocz,mnamexz) :: fnamexz
@@ -150,6 +153,7 @@ module Cdata
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
   character (LEN=30) :: cnamexz(mnamexz),cformxz(mnamexz)
   character (LEN=30) :: cnamez(mnamez),cformz(mnamez)
+  character (LEN=30) :: cnamey(mnamey),cformy(mnamey)
   character (LEN=30) :: cnamex(mnamex),cformx(mnamex)
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 

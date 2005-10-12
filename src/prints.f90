@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.75 2005-10-02 11:26:04 ajohan Exp $
+! $Id: prints.f90,v 1.76 2005-10-12 18:34:42 ajohan Exp $
 
 module Print
 
@@ -225,6 +225,7 @@ public :: write_zaverages
 !
       if (lout) then
         call write_xyaverages()
+        call write_xzaverages()
         call write_yzaverages()
       endif
 !
@@ -295,6 +296,22 @@ public :: write_zaverages
       endif
 !
     endsubroutine write_xyaverages
+!***********************************************************************
+    subroutine write_xzaverages()
+!
+!  Write xz-averages (which are 1d data) that have been requested via
+!  `xzaver.in'
+!
+!  12-oct-05/anders: adapted from write_xyaverages
+!
+      if(lroot.and.nnamey>0) then
+        open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
+        write(1,'(1pe12.5)') t
+        write(1,'(1p,8e13.5)') fnamey(:,:,1:nnamey)
+        close(1)
+      endif
+!
+    endsubroutine write_xzaverages
 !***********************************************************************
     subroutine write_yzaverages()
 !

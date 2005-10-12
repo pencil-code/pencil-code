@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.258 2005-10-09 22:13:21 theine Exp $
+! $Id: equ.f90,v 1.259 2005-10-12 18:34:42 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -174,12 +174,34 @@ module Equ
 !  the result is only present on the root processor
 !
       if (nnamez>0) then
-        call mpireduce_sum(fnamez,fsumz,nnamez*nz*nprocz)
+        call mpireduce_sum(fnamez,fsumz,nz*nprocz*nnamez)
         if (lroot) &
             fnamez(:,:,1:nnamez)=fsumz(:,:,1:nnamez)/(nx*ny*nprocy)
       endif
 !
     endsubroutine xyaverages_z
+!***********************************************************************
+    subroutine xzaverages_y()
+!
+!  Calculate xz-averages (still depending on y)
+!
+!  12-oct-05/anders: adapted from xyaverages_z
+!
+      use Mpicomm
+      use Cdata
+!
+      real, dimension (ny,nprocy,mnamey) :: fsumy
+!
+!  communicate over all processors
+!  the result is only present on the root processor
+!
+      if (nnamey>0) then
+        call mpireduce_sum(fnamey,fsumy,ny*nprocy*nnamey)
+        if (lroot) &
+            fnamey(:,:,1:nnamey)=fsumy(:,:,1:nnamey)/(nx*nz*nprocz)
+      endif
+!
+    endsubroutine xzaverages_y
 !***********************************************************************
     subroutine yzaverages_x()
 !
@@ -331,7 +353,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.258 2005-10-09 22:13:21 theine Exp $")
+           "$Id: equ.f90,v 1.259 2005-10-12 18:34:42 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -685,6 +707,7 @@ module Equ
       if (ldiagnos) then
         call diagnostic
         call xyaverages_z
+        call xzaverages_y
         call yzaverages_x
       endif
 !
