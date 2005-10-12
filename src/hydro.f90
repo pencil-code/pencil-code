@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.218 2005-10-12 19:07:24 ajohan Exp $
+! $Id: hydro.f90,v 1.219 2005-10-12 19:14:40 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -150,7 +150,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.218 2005-10-12 19:07:24 ajohan Exp $")
+           "$Id: hydro.f90,v 1.219 2005-10-12 19:14:40 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1426,11 +1426,11 @@ module Hydro
         call parse_name(inamey,cnamey(inamey),cformy(inamey), &
             'uz2my',idiag_uz2my)
         call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uxuymz',idiag_uxuymy)
+            'uxuymy',idiag_uxuymy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uxuzmz',idiag_uxuzmy)
+            'uxuzmy',idiag_uxuzmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey), &
-            'uyuzmz',idiag_uyuzmy)
+            'uyuzmy',idiag_uyuzmy)
       enddo
 !
 !  check for those quantities for which we want z-averages
