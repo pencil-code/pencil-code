@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.32 2005-10-06 19:23:58 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.33 2005-10-12 13:55:28 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -23,8 +23,9 @@ module Radiation
   use Messages
 !
   implicit none
-!
+
   include 'radiation.h'
+
 !
   type Qbound !Qbc
     real :: val
@@ -36,7 +37,7 @@ module Radiation
     logical, pointer :: set
   endtype Qpoint
 
-  real, dimension (mx,my,mz) :: Srad,kapparho,tau,Qrad,Qrad0,dtau,dSdtau
+  real, dimension (mx,my,mz) :: Srad,kapparho,tau,Qrad,Qrad0
   type (Qbound), dimension (my,mz), target :: Qbc_yz
   type (Qbound), dimension (mx,mz), target :: Qbc_zx
   type (Qbound), dimension (mx,my), target :: Qbc_xy
@@ -68,13 +69,12 @@ module Radiation
   real :: kx_Srad=0.0,ky_Srad=0.0,kz_Srad=0.0
   real :: kapparho_const=1.0,amplkapparho=1.0,radius_kapparho=1.0
   real :: kx_kapparho=0.0,ky_kapparho=0.0,kz_kapparho=0.0
-  integer :: nrad_rep=1 ! for timings
 !
 !  Default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-  logical :: lcooling=.true.,lrad_debug=.false.,lrad_timing=.false.
+  logical :: lcooling=.true.,lrad_debug=.false.
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
 
   character :: lrad_str,mrad_str,nrad_str
@@ -89,18 +89,17 @@ module Radiation
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       Srad_const,amplSrad,radius_Srad,lrad_timing, &
-       kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
+       Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,nrad_rep
+       lintrinsic,lcommunicate,lrevision
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
-       Srad_const,amplSrad,radius_Srad,lrad_timing, &
+       Srad_const,amplSrad,radius_Srad, &
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,lcooling,nrad_rep
+       lintrinsic,lcommunicate,lrevision,lcooling
 
   contains
 
@@ -142,7 +141,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.32 2005-10-06 19:23:58 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.33 2005-10-12 13:55:28 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -241,11 +240,13 @@ module Radiation
 !
 !  Integration of the radiative transfer equation along rays
 !
+!  This routine is called before the communication part
+!  (certainly needs to be given a better name)
+!  All rays start with zero intensity
+!
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata, only: ldebug,headt,iQrad
-      use Mpicomm, only: mpiwtime,lroot
-      use Mpicomm, only: mpireduce_sum, mpireduce_min, mpireduce_max
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
 !
@@ -262,7 +263,7 @@ module Radiation
 !
       f(:,:,:,iQrad)=0
 !
-!  Loop over directions ``in the upper half room'' (nrad==1)
+!  loop over rays
 !
       do idir=1,ndir
 
@@ -1046,9 +1047,10 @@ module Radiation
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+      if (NO_WARN) print*,f,xx,yy,zz !(keep compiler quiet)
+!        
     endsubroutine init_rad
 !***********************************************************************
     subroutine pencil_criteria_radiation()
@@ -1088,7 +1090,7 @@ module Radiation
       type (pencil_case) :: p
 !      
       intent(in) :: f,p
-! 
+!
       if (NO_WARN) print*, f !(keep compiler quiet)
 ! 
     endsubroutine calc_pencils_radiation
@@ -1104,7 +1106,7 @@ module Radiation
       type (pencil_case) :: p
       real :: gamma
 !
-      if(NO_WARN) print*,f,df,p,gamma !(keep compiler quiet)
+      if (NO_WARN) print*,f,df,p,gamma !(keep compiler quiet)
 !        
     endsubroutine de_dt
 !***********************************************************************
@@ -1200,7 +1202,8 @@ module Radiation
         write(3,*) 'iQrad=',iQrad
       endif
 !   
-      if(NO_WARN) print*,lreset  !(to keep compiler quiet)
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+!        
     endsubroutine rprint_radiation
 !***********************************************************************
     subroutine  bc_ee_inflow_x(f,topbot)
