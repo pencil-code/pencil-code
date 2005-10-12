@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.214 2005-10-11 21:36:15 theine Exp $
+! $Id: run.f90,v 1.215 2005-10-12 22:21:18 theine Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
         logical :: lreinit_file=.false., exist=.false.
         real :: wall_clock_time=0., time_per_step=0.
         double precision :: time_last_diagnostic, time_this_diagnostic
-        integer :: it_last_diagnostic
+        integer :: it_last_diagnostic,it_this_diagnostic
         integer :: i,ivar
 !
         lrun = .true.
@@ -65,7 +65,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.214 2005-10-11 21:36:15 theine Exp $")
+             "$Id: run.f90,v 1.215 2005-10-12 22:21:18 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -242,16 +242,15 @@
 !
         if (lpencil_check) call pencil_consistency_check(f,df,p)
 !
+!  Start timing for final timing statistics
 !  Initialize timestep diagnostics during the run (whether used or not,
 !  see idiag_timeperstep)
 !
-        time_last_diagnostic=mpiwtime()
-!
-!  Start timing for final timing statistics
-!
         if(lroot) then
           time1 = mpiwtime()
+          time_last_diagnostic = time1
           count = 0
+          it_last_diagnostic = count
         endif
 !
 !  Do loop in time
@@ -425,12 +424,17 @@
             if (idiag_walltime/=0) &
                 call save_name(wall_clock_time,idiag_walltime) 
           endif
+!
           if (lout.and.lroot.and.idiag_timeperstep/=0) then
-            time_this_diagnostic=mpiwtime()
-            time_per_step = (time_this_diagnostic-time_last_diagnostic)/(it-it_last_diagnostic)
-            time_last_diagnostic=time_this_diagnostic
+              it_this_diagnostic = it
+            time_this_diagnostic = mpiwtime()
+            time_per_step = (time_this_diagnostic - time_last_diagnostic) &
+                           /(  it_this_diagnostic -   it_last_diagnostic)
+              it_last_diagnostic =   it_this_diagnostic
+            time_last_diagnostic = time_this_diagnostic
             call save_name(time_per_step,idiag_timeperstep) 
           endif
+!
           if(lout) call prints()
 !
 !  Setting ialive=1 can be useful on flaky machines!
@@ -492,7 +496,6 @@
             exit Time_loop
           endif
 !
-          if (lout) it_last_diagnostic = it
           it=it+1
           headt=.false.
         enddo Time_loop
