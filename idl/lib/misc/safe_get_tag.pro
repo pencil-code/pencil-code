@@ -1,4 +1,4 @@
-; $Id: safe_get_tag.pro,v 1.2 2005-07-06 09:05:11 ajohan Exp $
+; $Id: safe_get_tag.pro,v 1.1 2005-10-13 10:30:29 dobler Exp $
 ;
 ;  Safely attempt to access a particular tag of a structure by ensuring 
 ;  that the tag exists first. 
@@ -9,8 +9,8 @@
 ;  If DEFAULT is set to some value then this value will be returned instead.
 ; 
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-07-06 09:05:11 $
-;  $Revision: 1.2 $
+;  $Date: 2005-10-13 10:30:29 $
+;  $Revision: 1.1 $
 ;
 ;  03-jun-02/tony: coded 
 ;

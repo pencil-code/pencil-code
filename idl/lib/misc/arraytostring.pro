@@ -1,9 +1,9 @@
-; $Id: arraytostring.pro,v 1.1 2004-06-03 17:08:59 mee Exp $
+; $Id: arraytostring.pro,v 1.1 2005-10-13 10:30:29 dobler Exp $
 ;
 ;  Concatenate an array of strings into a single string 
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 17:08:59 $
+;  $Date: 2005-10-13 10:30:29 $
 ;  $Revision: 1.1 $
 ;
 ;  03-jun-02/tony: coded 
