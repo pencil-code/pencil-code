@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.41 2005-10-13 11:22:44 ajohan Exp $
+! $Id: particles_dust.f90,v 1.42 2005-10-13 11:43:46 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.41 2005-10-13 11:22:44 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.42 2005-10-13 11:43:46 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -741,7 +741,6 @@ module Particles
       if (ldiagnos) then
         if (.not. ldragforce_gas) then
           f(l1:l2,m1:m2,n1:n2,inp)=0.0
-          f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
           do k=1,npar_loc
             call map_xxp_grid(f,fp(k,ixp:izp))
           enddo
