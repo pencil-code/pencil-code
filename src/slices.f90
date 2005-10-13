@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.50 2005-09-07 17:03:58 dobler Exp $
+! $Id: slices.f90,v 1.51 2005-10-13 12:27:39 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -14,13 +14,13 @@ module Slices
 
 !  Variables for xy slices start here
 !  Code variables
-  real, public, dimension (nx,ny,3) :: uu_xy,aa_xy,uud_xy
+  real, public, dimension (nx,ny,3) :: uu_xy,aa_xy,uud_xy,vvp_xy
   real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,lncc_xy
   real, public, dimension (nx,ny) :: XX_chiral_xy,YY_chiral_xy
   real, public, dimension (nx,ny) :: nd_xy
   real, public, dimension (nx,ny,ndustspec) :: md_xy
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy,shock_xy,Qrad_xy,ecr_xy
+  real, public, dimension (nx,ny) :: yH_xy,shock_xy,Qrad_xy,ecr_xy,np_xy
 !  Derived variables
   real, public, dimension (nx,ny,3) :: oo_xy,bb_xy
   real, public, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy,lnTT_xy,b2_xy,jb_xy,Isurf_xy
@@ -29,13 +29,13 @@ module Slices
   real, public, dimension (nx,ny) :: pp_xy
 !  Variables for xy2 slices start here
 !  Code variables
-  real, public, dimension (nx,ny,3) :: uu_xy2,aa_xy2,uud_xy2
+  real, public, dimension (nx,ny,3) :: uu_xy2,aa_xy2,uud_xy2,vvp_xy2
   real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,lncc_xy2
   real, public, dimension (nx,ny) :: XX_chiral_xy2,YY_chiral_xy2
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy2,shock_xy2,Qrad_xy2,ecr_xy2
+  real, public, dimension (nx,ny) :: yH_xy2,shock_xy2,Qrad_xy2,ecr_xy2,np_xy2
 !  Derived variables
   real, public, dimension (nx,ny,3) :: oo_xy2,bb_xy2
   real, public, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,lnTT_xy2,b2_xy2,jb_xy2
@@ -44,12 +44,12 @@ module Slices
   real, public, dimension (nx,ny) :: pp_xy2
 !  Variables for xz slices start here
 !  Code variables
-  real, public, dimension (nx,nz,3) :: uu_xz,aa_xz,uud_xz
+  real, public, dimension (nx,nz,3) :: uu_xz,aa_xz,uud_xz,vvp_xz
   real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,lncc_xz,XX_chiral_xz,YY_chiral_xz
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
 !  Auxiliary variables  
-  real, public, dimension (nx,nz) :: yH_xz,shock_xz,Qrad_xz,ecr_xz
+  real, public, dimension (nx,nz) :: yH_xz,shock_xz,Qrad_xz,ecr_xz,np_xz
 !  Derived variables
   real, public, dimension (nx,nz,3) :: oo_xz,bb_xz
   real, public, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,lnTT_xz,b2_xz,jb_xz
@@ -58,12 +58,12 @@ module Slices
   real, public, dimension (nx,nz) :: pp_xz
 !  Variables for yz slices start here
 !  Code variables
-  real, public, dimension (ny,nz,3) :: uu_yz,aa_yz,uud_yz
+  real, public, dimension (ny,nz,3) :: uu_yz,aa_yz,uud_yz,vvp_yz
   real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,lncc_yz,XX_chiral_yz,YY_chiral_yz
   real, public, dimension (ny,nz) :: nd_yz
   real, public, dimension (ny,nz,ndustspec) :: md_yz
 !  Auxiliary variables  
-  real, public, dimension (ny,nz) :: yH_yz,shock_yz,Qrad_yz,ecr_yz
+  real, public, dimension (ny,nz) :: yH_yz,shock_yz,Qrad_yz,ecr_yz,np_yz
 !  Derived variables
   real, public, dimension (ny,nz,3) :: oo_yz,bb_yz
   real, public, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,lnTT_yz,b2_yz,jb_yz
@@ -120,17 +120,18 @@ module Slices
 !  13-nov-02/axel: added more fields, use wslice.
 !  16-aug-04/anders: put slices in the order code-aux-derived
 !
-      use Sub
+      use EquationOfState, only: eoscalc, ilnrho_ss
       use General
       use Messages
-      use EquationOfState, only: eoscalc, ilnrho_ss
+      use Particles_cdata
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character(len=*) :: path
       character(len=4) :: sdust
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
-      integer :: inamev,k
+      integer :: inamev,k,i
       real :: tmpval
       integer :: l
 !
@@ -343,6 +344,48 @@ module Slices
           call wslice(path//'ecr.xz',ecr_xz,y(iy),nx,nz)
           call wslice(path//'ecr.xy',ecr_xy,z(iz),nx,ny)
           call wslice(path//'ecr.Xy',ecr_xy2,z(iz2),nx,ny)
+!
+!  Dust number density (auxiliary variable)
+!
+        case ('np')
+          np_yz=f(ix,m1:m2,n1:n2,inp)
+          np_xz=f(l1:l2,iy,n1:n2,inp)
+          np_xy=f(l1:l2,m1:m2,iz,inp)
+          np_xy2=f(l1:l2,m1:m2,iz2,inp)
+          call wslice(path//'np.yz',np_yz,x(ix),ny,nz)
+          call wslice(path//'np.xz',np_xz,y(iy),nx,nz)
+          call wslice(path//'np.xy',np_xy,z(iz),nx,ny)
+          call wslice(path//'np.Xy',np_xy2,z(iz2),nx,ny)
+!
+!  Particle velocity field (auxiliary variable)
+!
+        case ('vvp')
+          np_yz=f(ix,m1:m2,n1:n2,inp)
+          np_xz=f(l1:l2,iy,n1:n2,inp)
+          np_xy=f(l1:l2,m1:m2,iz,inp)
+          np_xy2=f(l1:l2,m1:m2,iz2,inp)
+          vvp_yz=f(ix,m1:m2,n1:n2,ivpxsum:ivpzsum)
+          vvp_xz=f(l1:l2,iy,n1:n2,ivpxsum:ivpzsum)
+          vvp_xy=f(l1:l2,m1:m2,iz,ivpxsum:ivpzsum)
+          vvp_xy2=f(l1:l2,m1:m2,iz2,ivpxsum:ivpzsum)
+          do i=1,3
+            where (np_yz/=0.0)  vvp_yz(:,:,i) =vvp_yz(:,:,i) /np_yz(:,:)
+            where (np_xz/=0.0)  vvp_xz(:,:,i) =vvp_xz(:,:,i) /np_xz(:,:)
+            where (np_xy/=0.0)  vvp_xy(:,:,i) =vvp_xy(:,:,i) /np_xy(:,:)
+            where (np_xy2/=0.0) vvp_xy2(:,:,i)=vvp_xy2(:,:,i)/np_xy2(:,:)
+          enddo
+          call wslice(path//'vpx.yz',vvp_yz(:,:,1),x(ix),ny,nz)
+          call wslice(path//'vpy.yz',vvp_yz(:,:,2),x(ix),ny,nz)
+          call wslice(path//'vpz.yz',vvp_yz(:,:,3),x(ix),ny,nz)
+          call wslice(path//'vpx.xz',vvp_xz(:,:,1),y(iy),nx,nz)
+          call wslice(path//'vpy.xz',vvp_xz(:,:,2),y(iy),nx,nz)
+          call wslice(path//'vpz.xz',vvp_xz(:,:,3),y(iy),nx,nz)
+          call wslice(path//'vpx.xy',vvp_xy(:,:,1),z(iz),nx,ny)
+          call wslice(path//'vpy.xy',vvp_xy(:,:,2),z(iz),nx,ny)
+          call wslice(path//'vpz.xy',vvp_xy(:,:,3),z(iz),nx,ny)
+          call wslice(path//'vpx.Xy',vvp_xy2(:,:,1),z(iz2),nx,ny)
+          call wslice(path//'vpy.Xy',vvp_xy2(:,:,2),z(iz2),nx,ny)
+          call wslice(path//'vpz.Xy',vvp_xy2(:,:,3),z(iz2),nx,ny)
 !
 !  Divergence of velocity (derived variable)
 !
