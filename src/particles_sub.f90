@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.29 2005-10-13 11:22:45 ajohan Exp $
+! $Id: particles_sub.f90,v 1.30 2005-10-13 11:40:24 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -586,8 +586,7 @@ module Particles_sub
       real, dimension (ii1-ii0+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer, dimension (3) :: ixx0
-      integer :: i
+      integer :: i, ix0, iy0, iz0
       logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ii0
@@ -596,13 +595,13 @@ module Particles_sub
 !  Determine index value of lowest lying corner point of grid box surrounding
 !  the interpolation point.
 !
-      call find_lowest_cornerpoint(xxp,ixx0(1),ixx0(2),ixx0(3))
+      call find_lowest_cornerpoint(xxp,ix0,iy0,iz0)
 !
 !  Check if the grid point interval is really correct.
 !
-      if ((x(ixx0(1))<=xxp(1) .and. x(ixx0(1)+1)>=xxp(1) .or. nxgrid==1) .and. &
-          (y(ixx0(2))<=xxp(2) .and. y(ixx0(2)+1)>=xxp(2) .or. nygrid==1) .and. &
-          (z(ixx0(3))<=xxp(3) .and. z(ixx0(3)+1)>=xxp(3) .or. nzgrid==1)) then
+      if ((x(ix0)<=xxp(1) .and. x(ix0+1)>=xxp(1) .or. nxgrid==1) .and. &
+          (y(iy0)<=xxp(2) .and. y(iy0+1)>=xxp(2) .or. nygrid==1) .and. &
+          (z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3) .or. nzgrid==1)) then
         ! Everything okay
       else
         print*, 'interpolate_3d_1st: Interpolation point does not ' // &
@@ -612,19 +611,18 @@ module Particles_sub
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
         print*, 'my, y(1), y(my) = ', my, y(1), y(my)
         print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
-        print*, 'ixx0(1), ixx0(2), ixx0(3) = ', ixx0(1), ixx0(2), ixx0(3)
-        print*, 'xp, xp0, xp1 = ', xxp(1), x(ixx0(1)), x(ixx0(1)+1)
-        print*, 'yp, yp0, yp1 = ', xxp(2), y(ixx0(2)), y(ixx0(2)+1)
-        print*, 'zp, zp0, zp1 = ', xxp(3), z(ixx0(3)), z(ixx0(3)+1)
+        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
+        print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
+        print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
         call stop_it('interpolate_3d_1st')
       endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
 !
-      xp0=xxp(1)-x(ixx0(1))
-!      xp0=0.0
-      yp0=xxp(2)-y(ixx0(2))
-      zp0=xxp(3)-z(ixx0(3))
+      xp0=xxp(1)-x(ix0)
+      yp0=xxp(2)-y(iy0)
+      zp0=xxp(3)-z(iz0)
 !
 !  Calculate derived grid spacing variables in the first call to this sub.
 !      
@@ -641,14 +639,14 @@ module Particles_sub
 !
 !  Function values at all corners.
 !
-      g1=f(ixx0(1)+1,ixx0(2)+1,ixx0(3)+1,ii0:ii1)
-      g2=f(ixx0(1)  ,ixx0(2)+1,ixx0(3)+1,ii0:ii1)
-      g3=f(ixx0(1)+1,ixx0(2)  ,ixx0(3)+1,ii0:ii1)
-      g4=f(ixx0(1)+1,ixx0(2)+1,ixx0(3)  ,ii0:ii1)
-      g5=f(ixx0(1)  ,ixx0(2)  ,ixx0(3)+1,ii0:ii1)
-      g6=f(ixx0(1)  ,ixx0(2)+1,ixx0(3)  ,ii0:ii1)
-      g7=f(ixx0(1)+1,ixx0(2)  ,ixx0(3)  ,ii0:ii1)
-      g8=f(ixx0(1)  ,ixx0(2)  ,ixx0(3)  ,ii0:ii1)
+      g1=f(ix0+1,iy0+1,iz0+1,ii0:ii1)
+      g2=f(ix0  ,iy0+1,iz0+1,ii0:ii1)
+      g3=f(ix0+1,iy0  ,iz0+1,ii0:ii1)
+      g4=f(ix0+1,iy0+1,iz0  ,ii0:ii1)
+      g5=f(ix0  ,iy0  ,iz0+1,ii0:ii1)
+      g6=f(ix0  ,iy0+1,iz0  ,ii0:ii1)
+      g7=f(ix0+1,iy0  ,iz0  ,ii0:ii1)
+      g8=f(ix0  ,iy0  ,iz0  ,ii0:ii1)
 !
 !  Interpolation formula.
 !
@@ -667,7 +665,7 @@ module Particles_sub
             print*, 'interpolate_3d_1st: all values at the corner ponts!'
             print*, 'interpolate_3d_1st: xxp=', xxp
             print*, 'interpolate_3d_1st: x0, y0, z0=', &
-                x(ixx0(1)), y(ixx0(2)), z(ixx0(3))
+                x(ix0), y(iy0), z(iz0)
             print*, 'interpolate_3d_1st: i, gp(i)=', i, gp(i)
             print*, 'interpolate_3d_1st: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
@@ -678,7 +676,7 @@ module Particles_sub
             print*, 'interpolate_3d_1st: all values at the corner ponts!'
             print*, 'interpolate_3d_1st: xxp=', xxp
             print*, 'interpolate_3d_1st: x0, y0, z0=', &
-                x(ixx0(1)), y(ixx0(2)), z(ixx0(3))
+                x(ix0), y(iy0), z(iz0)
             print*, 'interpolate_3d_1st: i, gp(i)=', i, gp(i)
             print*, 'interpolate_3d_1st: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
