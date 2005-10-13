@@ -2,9 +2,9 @@
 !  Run parameters for KHI turbulence.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2005-10-13 11:54:21 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.3 2005-10-13 12:28:30 ajohan Exp $',
   nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=1000, itorder=3
-  dsnap=1.0, dvid=0.2, dtmin=1e-6, isaveglobal=1000
+  dsnap=1.0, dvid=0.01, dtmin=1e-6, isaveglobal=1000
   lpencil_check=F
 /
 &eos_run_pars
