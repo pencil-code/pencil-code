@@ -2,7 +2,7 @@
 !  Run parameters for KHI turbulence.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2005-10-13 11:13:42 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.2 2005-10-13 11:54:21 ajohan Exp $',
   nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=1000, itorder=3
   dsnap=1.0, dvid=0.2, dtmin=1e-6, isaveglobal=1000
   lpencil_check=F
@@ -23,7 +23,7 @@
 &shear_run_pars
 /
 &viscosity_run_pars
-  nu_hyper3=2.0e-16, ivisc='hyper3_nu-const'
+  nu_hyper3=2.0e-16, ivisc='hyper3_rho_nu-const'
 /
 &particles_run_pars
   ldragforce_gas=T
