@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.40 2005-10-12 18:45:06 ajohan Exp $
+! $Id: particles_dust.f90,v 1.41 2005-10-13 11:22:44 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
+! MAUX CONTRIBUTION 4
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 !***************************************************************
@@ -26,7 +27,7 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: tausgmin=0.0, tausg1max=0.0, cdtp=0.2
+  real :: cdtp=0.2
   real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
   real :: Ri0=0.25, eps1=0.5
   integer :: it_dustburst=0
@@ -43,7 +44,7 @@ module Particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas, rhop_tilde, eps_dtog, tausgmin, cdtp, &
+      ldragforce_gas, rhop_tilde, eps_dtog, cdtp, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       it_dustburst, lmigration_redo
@@ -74,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.40 2005-10-12 18:45:06 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.41 2005-10-13 11:22:44 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -92,11 +93,25 @@ module Particles
 !
       npvar=npvar+6
 !
+!  Set indices for auxiliary variables
+!
+      inp     = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      ivpxsum = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      ivpysum = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      ivpzsum = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+!
 !  Check that the fp and dfp arrays are big enough.
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call stop_it('register_particles: npvar > mpvar')
+      endif
+!
+!  Check that we aren't registering too many auxilary variables
+!
+      if (naux > maux) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+            call stop_it('register_particles: naux > maux')
       endif
 !
     endsubroutine register_particles
@@ -172,14 +187,6 @@ module Particles
       if (nu_epicycle/=0.0) then
         gravz_profile='linear'
         nu_epicycle2=nu_epicycle**2
-      endif
-!
-!  Calculate inverse of minimum gas friction time.
-!
-      if (tausgmin/=0.0) then
-        tausg1max=1.0/tausgmin
-        if (lroot) print*, 'initialize_particles: '// &
-            'minimum gas friction time tausgmin=', tausgmin
       endif
 !
 !  Write constants to disc.
@@ -577,7 +584,6 @@ module Particles
 !
       use Cdata
       use EquationOfState, only: cs20, gamma
-      use Global
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -592,7 +598,7 @@ module Particles
       integer :: i,k
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp
+      intent (in) :: fp
       intent (out) :: dfp
 !
 !  Print out header information in first time step.
@@ -623,7 +629,7 @@ module Particles
         if (lheader) print*,'dvvp_dt: Add drag force; tausp=', tausp
 !
 !  Use interpolation to calculate gas velocity at position of particles.
-!          
+!
         do k=1,npar_loc
           call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ipar(k))
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tausp1*(fp(k,ivpx:ivpz)-uup)
@@ -632,10 +638,13 @@ module Particles
 !  Back-reaction from dust particles on the gas.
 !        
         if (ldragforce_gas) then
-          call reset_global('np')
-          call reset_global('uupsum')
+!
+!  Calculate auxiliary variables np and vvpsum.
+!          
+          f(l1:l2,m1:m2,n1:n2,inp)=0.0
+          f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
           do k=1,npar_loc
-            call map_xxp_vvp_grid(fp(k,ixp:izp),fp(k,ivpx:ivpz))
+            call map_xxp_vvp_grid(f,fp(k,ixp:izp),fp(k,ivpx:ivpz))
           enddo
 !
 !  Loop over pencils to avoid global arrays.
@@ -644,18 +653,14 @@ module Particles
             n=nn(imn); m=mm(imn)
             lfirstpoint=(imn==1)
             llastpoint=(imn==(ny*nz))
-            call get_global(np,m,n,'np')
-            call get_global(uupsum,m,n,'uupsum')
+            np=f(l1:l2,m,n,inp)
+            uupsum=f(l1:l2,m,n,ivpxsum:ivpzsum)
             if (ldensity_nolog) then
               rho=f(l1:l2,m,n,ilnrho)
             else
               rho=exp(f(l1:l2,m,n,ilnrho))
             endif
             tausg1 = rhop_tilde*np*tausp1/rho
-!
-!  Minimum friction time of the gas.
-!            
-            if (tausgmin/=0.0) where (tausg1>=tausg1max) tausg1=tausg1max
 !
 !  Add drag force on gas.
 !              
@@ -709,7 +714,7 @@ module Particles
           call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
 
       endselect
-
+!
       select case (gravz_profile)
 
         case ('zero')
@@ -734,6 +739,13 @@ module Particles
 !  Diagnostic output
 !
       if (ldiagnos) then
+        if (.not. ldragforce_gas) then
+          f(l1:l2,m1:m2,n1:n2,inp)=0.0
+          f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
+          do k=1,npar_loc
+            call map_xxp_grid(f,fp(k,ixp:izp))
+          enddo
+        endif
         if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
         if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
         if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
@@ -750,41 +762,30 @@ module Particles
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
         if (idiag_rhopm/=0) call sum_par_name_nw(4/3.*pi*rhops*fp(1:npar_loc,iap)**3*np_tilde,idiag_rhopm)
-        if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
-            idiag_npmin/=0 .or. idiag_rhopmax/=0 .or. idiag_npmz/=0 .or. &
-            idiag_npmx/=0 .or. idiag_rhopmx/=0 .or. idiag_epspmx/=0 .or. &
-            idiag_npmy/=0) then
-          if (.not. ldragforce_gas) then
-            call reset_global('np')
-            do k=1,npar_loc
-              call map_xxp_grid(fp(k,ixp:izp))
-            enddo
-          endif
-          do imn=1,ny*nz
-            n=nn(imn); m=mm(imn)
-            lfirstpoint=(imn==1)
-            llastpoint=(imn==(ny*nz))
-            call get_global(np,m,n,'np')
-            if (idiag_npm/=0)     call sum_mn_name(np,idiag_npm)
-            if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
-            if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
-            if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
-            if (idiag_rhopmax/=0) call max_mn_name(rhop_tilde*np,idiag_rhopmax)
-            if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
-            if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
-            if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
-            if (idiag_rhopmx/=0) &
-                call yzsum_mn_name_x(rhop_tilde*np,idiag_rhopmx)
-            if (idiag_epspmx/=0) then
-              if (ldensity_nolog) then
-                rho=f(l1:l2,m,n,ilnrho)
-              else
-                rho=exp(f(l1:l2,m,n,ilnrho))
-              endif
-              call yzsum_mn_name_x(rhop_tilde*np/rho,idiag_epspmx)
+        do imn=1,ny*nz
+          n=nn(imn); m=mm(imn)
+          lfirstpoint=(imn==1)
+          llastpoint=(imn==(ny*nz))
+          np=f(l1:l2,m,n,inp)
+          if (idiag_npm/=0)     call sum_mn_name(np,idiag_npm)
+          if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
+          if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
+          if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
+          if (idiag_rhopmax/=0) call max_mn_name(rhop_tilde*np,idiag_rhopmax)
+          if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
+          if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
+          if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
+          if (idiag_rhopmx/=0) &
+              call yzsum_mn_name_x(rhop_tilde*np,idiag_rhopmx)
+          if (idiag_epspmx/=0) then
+            if (ldensity_nolog) then
+              rho=f(l1:l2,m,n,ilnrho)
+            else
+              rho=exp(f(l1:l2,m,n,ilnrho))
             endif
-          enddo
-        endif
+            call yzsum_mn_name_x(rhop_tilde*np/rho,idiag_epspmx)
+          endif
+        enddo
       endif
 !
       if (lfirstcall) lfirstcall=.false.
@@ -864,6 +865,10 @@ module Particles
         write(3,*) 'ivpx=', ivpx
         write(3,*) 'ivpy=', ivpy
         write(3,*) 'ivpz=', ivpz
+        write(3,*) 'inp=', inp
+        write(3,*) 'ivpxsum=', ivpxsum
+        write(3,*) 'ivpysum=', ivpysum
+        write(3,*) 'ivpzsum=', ivpzsum
       endif
 !
 !  Reset everything in case of reset

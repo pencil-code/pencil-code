@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.28 2005-10-04 17:18:54 ajohan Exp $
+! $Id: particles_sub.f90,v 1.29 2005-10-13 11:22:45 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -689,7 +689,7 @@ module Particles_sub
 !
     endsubroutine interpolate_3d_1st
 !***********************************************************************
-    subroutine map_xxp_grid(xxp)
+    subroutine map_xxp_grid(f,xxp)
 !
 !  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
 !  surrounding the point xxp.
@@ -697,9 +697,9 @@ module Particles_sub
 !  02-jul-05/anders: adapted from map_xx_vv_grid
 !
       use Cdata
-      use Global
       use Mpicomm, only: stop_it
 !
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension(3) :: xxp
       integer :: ix0, iy0, iz0
 !
@@ -707,6 +707,7 @@ module Particles_sub
       logical, save :: lfirstcall=.true.
 !
       intent(in)  :: xxp
+      intent(out) :: f
 !
       ix0=4; iy0=4; iz0=4
 !
@@ -723,11 +724,11 @@ module Particles_sub
       if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
       if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
 !
-      call set_global_point(1.0,ix0,iy0,iz0,'np')
+      f(ix0,iy0,iz0,inp)=f(ix0,iy0,iz0,inp)+1.0
 !
     endsubroutine map_xxp_grid
 !***********************************************************************
-    subroutine map_xxp_vvp_grid(xxp,vvp)
+    subroutine map_xxp_vvp_grid(f,xxp,vvp)
 !
 !  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
 !  surrounding the point xxp.
@@ -735,9 +736,9 @@ module Particles_sub
 !  23-jan-05/anders: coded
 !
       use Cdata
-      use Global
       use Mpicomm, only: stop_it
 !
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension(3) :: xxp, vvp
       integer :: ix0, iy0, iz0
 !
@@ -745,6 +746,7 @@ module Particles_sub
       logical, save :: lfirstcall=.true.
 !
       intent(in)  :: xxp, vvp
+      intent(out) :: f
 !
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
@@ -761,8 +763,8 @@ module Particles_sub
       if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
       if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
 !
-      call set_global_point(1.0,ix0,iy0,iz0,'np')
-      call set_global_point(vvp,ix0,iy0,iz0,'uupsum')
+      f(ix0,iy0,iz0,inp)=f(ix0,iy0,iz0,inp)+1.0
+      f(ix0,iy0,iz0,ivpxsum:ivpzsum)=f(ix0,iy0,iz0,ivpxsum:ivpzsum)+vvp
 !
     endsubroutine map_xxp_vvp_grid
 !***********************************************************************
