@@ -2,11 +2,11 @@
 !  Initialisation parameters for KHI turbulence.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2005-10-13 11:13:42 ajohan Exp $',
+  cvsid='$Id: start.in,v 1.2 2005-10-13 12:27:57 ajohan Exp $',
   xyz0  =  -0.20,  -0.20,  -0.10
   Lxyz  =   0.40,   0.40,   0.20
   lperi =      T,      T,      F
-  ip=14, lwrite_ic=T, lcopysnapshots_exp=T
+  ip=14, lwrite_ic=T, lcopysnapshots_exp=T, lwrite_aux=T
   bcz='a2','a2','a','v3','v3'
 /
 &eos_init_pars
