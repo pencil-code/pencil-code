@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.139 2005-10-04 11:59:11 mee Exp $
+### $Id: Makefile.src,v 1.140 2005-10-13 12:31:11 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -422,7 +422,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 # ---------------------------------------------------------------------- #
 ## Abbreviations
 
-technical=cparam.o cdata.o messages.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o particles_cdata.o
+technical=cparam.o cdata.o particles_cdata.o messages.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
 physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o  $(TESTFIELD).o $(PARTICLES).o $(PARTICLES_RADIUS).o
 comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o $(MPICOMM_FIX).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 start_deps_f90=$(comm_deps) $(GRID).o
