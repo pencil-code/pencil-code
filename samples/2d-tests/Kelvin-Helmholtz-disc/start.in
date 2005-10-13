@@ -1,0 +1,37 @@
+!
+!  Initialisation parameters for KHI turbulence.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2005-10-13 11:13:42 ajohan Exp $',
+  xyz0  =  -0.20,  -0.20,  -0.10
+  Lxyz  =   0.40,   0.40,   0.20
+  lperi =      T,      T,      F
+  ip=14, lwrite_ic=T, lcopysnapshots_exp=T
+  bcz='a2','a2','a','v3','v3'
+/
+&eos_init_pars
+  gamma=1.66667, rho0=1.0
+/
+&hydro_init_pars
+  inituu='sub-Keplerian'
+  Omega=1.0
+/
+&density_init_pars
+  initlnrho='isothermal'
+/
+&grav_init_pars
+  gravz_profile='linear', nu_epicycle=1.0
+/
+&entropy_init_pars
+  initss='nothing'
+  beta_glnrho_global=-0.1,0.0,0.0
+/
+&shear_init_pars
+  qshear=1.5
+/
+&particles_init_pars
+  initxxp='gaussian-z', initvvp='random'
+  zp0=0.02, delta_vp0=0.01
+  eps_dtog=0.01, tausp=0.1
+  nu_epicycle=1.0
+/

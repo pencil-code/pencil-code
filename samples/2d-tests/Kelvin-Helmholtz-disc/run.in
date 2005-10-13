@@ -1,0 +1,31 @@
+!
+!  Run parameters for KHI turbulence.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2005-10-13 11:13:42 ajohan Exp $',
+  nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=1000, itorder=3
+  dsnap=1.0, dvid=0.2, dtmin=1e-6, isaveglobal=1000
+  lpencil_check=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&grav_run_pars
+  lgravz_gas=T
+/
+&entropy_run_pars
+  lupw_ss=T
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+  nu_hyper3=2.0e-16, ivisc='hyper3_nu-const'
+/
+&particles_run_pars
+  ldragforce_gas=T
+  cdtp=0.2
+/
