@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.16 2005-06-27 16:47:04 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.17 2005-10-13 12:07:53 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -241,37 +241,49 @@ end
 ; THEN DO maux VARIABLES 
 ; ** ONLY IF THEY HAVE BEEN SAVED **
 if (param.lwrite_aux ne 0) then begin
-    varcontent[iQrad].variable = 'Radiation (Qrad)'
-    varcontent[iQrad].idlvar   = 'Qrad'
-    varcontent[iQrad].idlinit    = INIT_SCALAR
-    varcontent[iQrad].idlvarloc= 'Qrad_loc'
-    varcontent[iQrad].idlinitloc = INIT_SCALAR_LOC
-    
-    ;varcontent[iSrad].variable = 'Radiation (Srad)'
-    ;varcontent[iSrad].idlvar   = 'Srad'
-    ;varcontent[iSrad].idlinit    = INIT_SCALAR
-    ;varcontent[iSrad].idlvarloc= 'Srad_loc'
-    ;varcontent[iSrad].idlinitloc = INIT_SCALAR_LOC
-    
-    ;varcontent[ikappa].variable = 'Radiation (kappa)'
-    ;varcontent[ikappa].idlvar   = 'kappa'
-    ;varcontent[ikappa].idlinit    = INIT_SCALAR
-    ;varcontent[ikappa].idlvarloc= 'kappa_loc'
-    ;varcontent[ikappa].idlinitloc = INIT_SCALAR_LOC
-    
+  varcontent[iQrad].variable = 'Radiation (Qrad)'
+  varcontent[iQrad].idlvar   = 'Qrad'
+  varcontent[iQrad].idlinit    = INIT_SCALAR
+  varcontent[iQrad].idlvarloc= 'Qrad_loc'
+  varcontent[iQrad].idlinitloc = INIT_SCALAR_LOC
+  
+  ;varcontent[iSrad].variable = 'Radiation (Srad)'
+  ;varcontent[iSrad].idlvar   = 'Srad'
+  ;varcontent[iSrad].idlinit    = INIT_SCALAR
+  ;varcontent[iSrad].idlvarloc= 'Srad_loc'
+  ;varcontent[iSrad].idlinitloc = INIT_SCALAR_LOC
+  
+  ;varcontent[ikappa].variable = 'Radiation (kappa)'
+  ;varcontent[ikappa].idlvar   = 'kappa'
+  ;varcontent[ikappa].idlinit    = INIT_SCALAR
+  ;varcontent[ikappa].idlvarloc= 'kappa_loc'
+  ;varcontent[ikappa].idlinitloc = INIT_SCALAR_LOC
 
-    varcontent[iyH].variable   = 'Hydrogen ionization fraction (yH)'
-    varcontent[iyH].idlvar     = 'yH'
-    varcontent[iyH].idlinit    = INIT_SCALAR
-    varcontent[iyH].idlvarloc  = 'yH_loc'
-    varcontent[iyH].idlinitloc = INIT_SCALAR_LOC
+  varcontent[iyH].variable   = 'Hydrogen ionization fraction (yH)'
+  varcontent[iyH].idlvar     = 'yH'
+  varcontent[iyH].idlinit    = INIT_SCALAR
+  varcontent[iyH].idlvarloc  = 'yH_loc'
+  varcontent[iyH].idlinitloc = INIT_SCALAR_LOC
 
-    varcontent[ishock].variable = 'Shock Profile (shock)'
-    varcontent[ishock].idlvar   = 'shock'
-    varcontent[ishock].idlinit    = INIT_SCALAR
-    varcontent[ishock].idlvarloc= 'shock_loc'
-    varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
-end
+  varcontent[ishock].variable = 'Shock Profile (shock)'
+  varcontent[ishock].idlvar   = 'shock'
+  varcontent[ishock].idlinit    = INIT_SCALAR
+  varcontent[ishock].idlvarloc= 'shock_loc'
+  varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
+
+  varcontent[inp].variable   = 'Particle number density'
+  varcontent[inp].idlvar     = 'np'
+  varcontent[inp].idlinit    = INIT_SCALAR
+  varcontent[inp].idlvarloc  = 'np_loc'
+  varcontent[inp].idlinitloc = INIT_SCALAR_LOC
+
+  varcontent[ivpxsum].variable   = 'Sum of particle velocity'
+  varcontent[ivpxsum].idlvar     = 'ivvpsum'
+  varcontent[ivpxsum].idlinit    = INIT_3VECTOR
+  varcontent[ivpxsum].idlvarloc  = 'ivvpsum_loc'
+  varcontent[ivpxsum].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[ivpxsum].skip       = 2
+endif
 
 ; ZERO out default 'should never be used' definition
 ; will have been filled in where i?????? has not been
