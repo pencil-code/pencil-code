@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.304 2005-10-06 15:46:39 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.305 2005-10-16 08:11:59 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-10-06 15:46:39 $ $,~ $ $Revision: 1.304 $ $}
+%\date{$ $Date: 2005-10-16 08:11:59 $ $,~ $ $Revision: 1.305 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-10-06 15:46:39 $ $,~ $ $Revision: 1.304 $ $}\\
+  \emph{$ $Date: 2005-10-16 08:11:59 $ $,~ $ $Revision: 1.305 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3924,7 +3924,7 @@ equations are thus
 \end{equation}
 where the index $i$ runs over all particles. Here $\vec{u}$ is the gas velocity
 at the position of the particle. A simple first order interpolation scheme is
-used to aquire this velocity outside the grid points.
+used to acquire this velocity outside the grid points.
 
 The sample run \file{samples/dust-vortex} contains the latest setup for
 tracer particles.
@@ -4573,6 +4573,45 @@ BEGIN failed--compilation aborted at /home/brandenb/pencil-code/bin/nl2idl line 
 }
 
 
+\subsubsection{nl2idl problem when reading param2.nml}
+
+{\bf Q}:
+Does anybody encounter a backward problem with nl2idl? The file
+param*.nml files are checked in under
+\file{pencil-code/axel/couette/SStrat128a_mu0.20_g2}
+and the problem is below.
+\begin{Verbatim}
+ at /people/disk2/brandenb/pencil-code/bin/nl2idl line 120
+HCOND0= 0.0,HCOND1= 1.000000,HCOND2= 1.000000,WIDTHSS= 1.192093E-06,MPOLY0=
+^------  HERE
+ at /people/disk2/brandenb/pencil-code/bin/nl2idl line 120
+\end{Verbatim}
+
+\medskip
+
+{\bf A}:
+The problem is the stupid ifc compiler writing the following into the
+namelist file:
+\begin{Verbatim}
+  COOLING_PROFILE='gaussian                 ',COOLTYPE='Temp
+  'COOL= 0.0,CS2COOL= 0.0,RCOOL= 1.000000,WCOOL= 0.1000000,FBOT= 0.0,CHI_T= 0.0
+\end{Verbatim}
+{\em
+If you add a comma after the closing quote:
+}
+\begin{Verbatim}
+  COOLING_PROFILE='gaussian                 ',COOLTYPE='Temp
+  ',COOL= 0.0,CS2COOL= 0.0,RCOOL= 1.000000,WCOOL= 0.1000000,FBOT= 0.0,CHI_T= 0.0
+\end{Verbatim}
+{\em
+things will work.
+}
+
+Note that ifc cannot even itself read what it is writing here, so if this
+happened to occur in param.nml, the code would require manual intervention
+after each start.csh.
+
+
 % ---------------------------------------------------------------------- %
 
 \subsection{General questions}
@@ -4926,7 +4965,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-10-06 15:46:39 $ $,~ $ $Revision: 1.304 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-10-16 08:11:59 $ $,~ $ $Revision: 1.305 $ $}
 
 \section{Timings}
 
@@ -8024,7 +8063,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.304 2005-10-06 15:46:39 mee Exp $ $}
+$ $Id: manual.tex,v 1.305 2005-10-16 08:11:59 brandenb Exp $ $}
 
 
 \end{document}
