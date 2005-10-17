@@ -1,0 +1,33 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Magnetic field amplification in hexagonal convection cell
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2005-10-17 17:18:51 dobler Exp $',
+  ip=14,                        ! debugging parameter
+  xyz0  = -1.634, -2.830, -0.5, ! first corner of box
+  Lxyz  =  3.268,  5.661,  1. , ! box size
+  lperi = T , T ,  F,           ! periodic direction?
+/
+&eos_init_pars
+  cs0=1., gamma=1.6666666,
+/
+&hydro_init_pars
+  inituu='zero',
+  urand=0.,
+/
+&density_init_pars
+  initlnrho='polytropic',
+/
+&grav_init_pars
+  zref=0., gravz=-1.,
+  z1=-50., z2=50.               ! put these far outside the box
+/
+&entropy_init_pars
+  initss='polytropic', pertss='hexagonal', ampl_ss=3.e-3, khor_ss=2.22
+  mpoly0=1.,
+/
+&magnetic_init_pars
+  ! initaa='uniform-By', amplaa=1.e-6,
+/

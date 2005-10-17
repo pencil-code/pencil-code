@@ -1,0 +1,48 @@
+!                               -*-f90-*-   (for emacs)
+!
+! Magnetic field amplification in hexagonal convection cell
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2005-10-17 17:18:51 dobler Exp $',
+  ip=14,
+  nt=50, it1=10, isave=1000,
+  tmax=50
+  dsnap=5., dvid=0.2,
+  cdt=0.4, cdtv=0.08, dtmin=1e-6, itorder=1,
+  bcx = 'p','p','p', 'p', 'p', 'p', 'p', 'p'
+  bcy = 'p','p','p', 'p', 'p', 'p', 'p', 'p'
+  bcz = 's','s','a','a2','c2', 'a', 'a', 's'
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  cdiffrho=0.
+  lupw_lnrho=T
+/
+&grav_run_pars
+  gravz=-1.
+/
+&entropy_run_pars
+  hcond0=5.95e-3,
+  lupw_ss=T
+/
+&magnetic_run_pars
+  eta=1.98e-4,
+  B_ext = 1.09e-3, 0., 0.,
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=5.95e-3
+/ 
+
+! Nomenclature for boundary conditions:
+!   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
+!   p      : periodic
+!   s/a/a2 : symmetric/antisymmetric/antisymmetric w.r.t. boundary value
+!   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
+
+! tinit    -- initial time for smoothly switching on heating, etc
+

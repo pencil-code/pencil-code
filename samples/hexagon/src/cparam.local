@@ -1,0 +1,9 @@
+!                             -*-f90-*-    (for Emacs)
+!  cparam.local
+!
+!  Local settings concerning grid size and number of CPUs.
+!  This file is included by cparam.f90
+!
+integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
+! integer, parameter :: nxgrid=128,nygrid=1.73*nxgrid,nzgrid=0.303*nxgrid
+integer, parameter :: nxgrid=42,nygrid=72,nzgrid=12
