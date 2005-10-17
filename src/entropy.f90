@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.354 2005-10-12 19:07:24 ajohan Exp $
+! $Id: entropy.f90,v 1.355 2005-10-17 22:28:51 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.354 2005-10-12 19:07:24 ajohan Exp $")
+           "$Id: entropy.f90,v 1.355 2005-10-17 22:28:51 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -230,18 +230,21 @@ module Entropy
           call warning('initialize_entropy','You should not set Kbot and hcond0 at the same time')
         endif
       endif
-      !
-      if (lgravz) then
 !
 !  make sure the top boundary condition for temperature (if cT is used)
-!  knows about the cooling function
+!  knows about the cooling function or vice versa (cs2cool will take over
+!  if /=0)
 !
+      if (lgravz .and. lrun) then
         if (cs2top/=cs2cool) then
-          if (lroot) then
-            print*,'initialize_entropy: cs2top,cs2cool=',cs2top,cs2cool
-            print*,'initialize_entropy: now set cs2top=cs2cool'
+          if (lroot) print*,'initialize_entropy: cs2top,cs2cool=',cs2top,cs2cool
+          if (cs2cool /= 0.) then ! cs2cool is the value to go for
+            if (lroot) print*,'initialize_entropy: now set cs2top=cs2cool'
+            cs2top=cs2cool
+          else                  ! cs2cool=0, so go for cs2top
+            if (lroot) print*,'initialize_entropy: now set cs2cool=cs2top'
+            cs2cool=cs2top
           endif
-          cs2top=cs2cool
         endif
 !
 !  settings for fluxes
@@ -430,6 +433,9 @@ module Entropy
       endif
       if (lheatc_chiconst .and. chi==0.0) then
         call warning('initialize_entropy','chi is zero!')
+      endif
+      if (all(iheatcond=='nothing') .and. hcond0/=0.0) then
+        call warning('initialize_entropy', 'No heat conduction, but hcond0 /= 0')
       endif
       if (lheatc_simple .and. Kbot==0.0) then
         call warning('initialize_entropy','Kbot is zero!')

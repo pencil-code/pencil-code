@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.24 2005-09-14 15:18:09 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.25 2005-10-17 22:28:51 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -95,7 +95,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.24 2005-09-14 15:18:09 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.25 2005-10-17 22:28:51 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -844,7 +844,7 @@ module EquationOfState
         if (ldebug) print*, &
                 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) &
-              print*,'bc_ss_temp_old: cannot have cs2bot<=0'
+              print*,'bc_ss_temp_old: cannot have cs2bot = ', cs2bot, ' <= 0'
         tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
              + log(cs2bot/cs20)) / gamma
         f(:,:,n1,iss) = tmp_xy
@@ -861,7 +861,7 @@ module EquationOfState
         if (ldebug) print*, &
                    'bc_ss_temp_old: set top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
-                   'bc_ss_temp_old: cannot have cs2top<=0'
+                   'bc_ss_temp_old: cannot have cs2top = ',cs2top, ' <= 0'
   !     if (bcz1(ilnrho) /= 'a2') &
   !          call fatal_error('bc_ss_temp_old','Inconsistent boundary conditions 4.')
         tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
@@ -1028,7 +1028,7 @@ module EquationOfState
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_z: cannot have cs2bot<=0'
+                   'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
         tmp = 2/gamma*log(cs2bot/cs20)
         f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost
@@ -1040,8 +1040,9 @@ module EquationOfState
 !
       case('top')
         if (ldebug) print*, &
-                     'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
-        if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
+                   'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
+        if (cs2top<=0.) print*, &
+                   'bc_ss_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
         tmp = 2/gamma*log(cs2top/cs20)
         f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost
