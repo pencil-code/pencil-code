@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2005-10-17 17:18:51 dobler Exp $',
+  cvsid='$Id: run.in,v 1.2 2005-10-17 22:16:25 dobler Exp $',
   ip=14,
   nt=50, it1=10, isave=1000,
   tmax=50
@@ -26,7 +26,7 @@
   gravz=-1.
 /
 &entropy_run_pars
-  hcond0=5.95e-3,
+  iheatcond='K-const', hcond0=5.95e-3,
   lupw_ss=T
 /
 &magnetic_run_pars
