@@ -9,7 +9,9 @@
 #   resource.
 
 # Join stderr and stout:
-#$ -j y -o run.log
+#$ -j y -o run.log -notify
+#$ -notify
+#$ -m beas
 #@$-eo
 #@$-o run.log
 #
