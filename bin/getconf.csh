@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.154 2005-09-15 17:22:47 wlyra Exp $
+# $Id: getconf.csh,v 1.155 2005-10-18 12:22:41 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -648,7 +648,7 @@ else if ($hn =~ lfc*) then
 #  setenv SGE_O_WORKDIR `pwd`
 #  setenv JOB_SCRIPT `pwd`/start.csh
 
-else if ($hn =~ rio*) then
+else if ($hn =~ rio* || $hn =~ pia*) then
   echo "opteron cluster at RZG with SGE queue."
   if ($#nodelist == 1) then
     echo "Apparently an interactive run."
