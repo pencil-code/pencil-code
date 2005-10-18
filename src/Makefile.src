@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.140 2005-10-13 12:31:11 ajohan Exp $
+### $Id: Makefile.src,v 1.141 2005-10-18 12:13:03 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -164,9 +164,9 @@ LIBMPISUFFIX=
 #FC=ifort #(opto[1-4])
 #FFLAGS=-O3 -I/home/johansen/mpich/include/ #(opto[1-4])
 #LDMPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
-#FC=/nfs/mpia/ajohan/mvapich095_pgf90/bin/mpif90 #(rio*)
-#FFLAGS=-O3 -I/nfs/mpia/ajohan/mvapich095_pgf90/include #(rio*)
-#LDMPI=-L/nfs/mpia/ajohan/mvapich095_pgf90/lib -lmpich #(rio*)
+#FC=/nfs/mpia/ajohan/mvapich095_pgf90/bin/mpif90 #(rio*|pia*)
+#FFLAGS=-O3 -I/nfs/mpia/ajohan/mvapich095_pgf90/include #(rio*|pia*)
+#LDMPI=-L/nfs/mpia/ajohan/mvapich095_pgf90/lib -lmpich #(rio*|pia*)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/usr/local/bin/ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/people/disk2/brandenb/bin/ifort -I/usr/local/lib/LAM/include #(fe[0-9])
