@@ -2,7 +2,7 @@
 # Name:   pc_xmlexport
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   04-Aug-2005
-# CVS: $Id: pc_xmlexport,v 1.1 2005-10-03 09:13:59 mee Exp $
+# CVS: $Id: pc_xmlexport,v 1.2 2005-10-18 00:05:26 dobler Exp $
 # Usage:
 #   Hello
 
@@ -84,7 +84,6 @@ cat <<EOF
   <timestamp>`date`</timestamp>
   <buildhost>
     <hostname>`hostname`</hostname>
-    <processor>`uname -p`</processor>
     <os>`uname -s`</os>
     <osrelease>`uname -r`</osrelease>
     <user>$USER</user>
