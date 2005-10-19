@@ -3,9 +3,9 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.9 2005-09-14 15:29:29 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.10 2005-10-19 18:37:07 wlyra Exp $',
   ip=13,
-  nt=1000000, it1=500, isave=500, itorder=3, ialive=1
+  nt=500000, it1=1000, isave=1000, itorder=3, ialive=1
   cdt=0.4, 
   !dt=1.5e-3 
   cdtv=0.3, 
@@ -15,36 +15,36 @@
   !tavg = 10.,                   ! time constant for time averaging
   !random_gen='nr_f90',
   !slice_position='e'
-  wfreezeint = 1e-8
-  wfreezeext = 0.1
+  wfreezeint = 0.1
+  wfreezeext = 0.2
 /
 &eos_run_pars
 llocal_iso=T
-rho0=1.23 !exp(lnrho_const)
+rho0=1. !.23 !exp(lnrho_const)
 /
 &hydro_run_pars
   wdamp=0.1
   !Omega = 2.51588  !for jupiter at 5.2 AU if [x]=1AU
   !Omega = 1.        !r = 1, g0 = 1
   lcalc_turbulence_pars=T
-  lfreeze_uint=F,lfreeze_uext=T
+  lfreeze_uint=T,lfreeze_uext=T
 /
 &density_run_pars
   lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
-  lfreeze_lnrhoint=F
+  lfreeze_lnrhoint=T
   lfreeze_lnrhoext=T
-  lmass_spline=T
-  lnrho_int=1.15
+  lmass_spline=F
+  lnrho_int=0. !.15
   wdamp = 0.1
-  lnrho_const=0.21
-  plaw=0.5
+  lnrho_const= 0. !0.21
+  !plaw=0.5
   
 /
 &grav_run_pars
   ipotential='smoothed-newton', 
   g0=1.,r0_pot=0.2,n_pot=10 ! !10!star
   lcompanion=T
-  gc=0.001,nc=5,b=0.05 !planet
+  gc=0.0001,nc=2,b=0.07 !planet
 
   !!for corotational
   Rx=-1.0 !,ecc=0.5
@@ -65,9 +65,9 @@ rho0=1.23 !exp(lnrho_const)
   ivisc='rho_nu-const','nu-shock'
   !ivisc='alpha-recipe','nu-shock'
   !nu = 1.e-3
-  nu = 2.5e-5  !nu=alpha*cs20/Omega
+  nu = 0. !2.5e-5  !nu=alpha*cs20/Omega
   nu_shock=1.0
-  lspongezone=T
+  lspongezone=F
   nuint_inc = 1e-3
   nuint_lim = 0.5
 /
