@@ -1,0 +1,13 @@
+                     samples/sound-spherical-noequi
+                     ------------------------------
+
+Spherical sound wave treated with non-equidistant grid (in z) to check the
+nonequi-sistant stuff.
+
+This is derived from sound-spherical, but now has different geometry and
+probably different boundary conditions as all we care about is sphericity
+of the wave.
+
+
+Created: 19-Oct-2005
+Author: wolf
