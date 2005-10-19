@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.305 2005-10-16 08:11:59 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.306 2005-10-19 19:44:59 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-10-16 08:11:59 $ $,~ $ $Revision: 1.305 $ $}
+%\date{$ $Date: 2005-10-19 19:44:59 $ $,~ $ $Revision: 1.306 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-10-16 08:11:59 $ $,~ $ $Revision: 1.305 $ $}\\
+  \emph{$ $Date: 2005-10-19 19:44:59 $ $,~ $ $Revision: 1.306 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1802,27 +1802,43 @@ and edit the \file{cparam.local} for the new resolution.
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
 
 We introduce a non-equidistant grid $z_i$
-(so far this is only implemented for the vertical direction)
+(by now, this is also impolemented for the other directions)
 as a function $=z(\zeta)$ of an equidistant grid
 $\zeta_i$ with grid spacing $\Delta\zeta = 1$.
-The first derivative can be calculated by
+
+The way the parameters are handled, the box size and position are
+\emph{not} changed when you switch to a non-equdistant grid, i.e.~they are
+still determined by \var{xyz0} and \var{Lxyz}.
+
+The first and second derivatives can be calculated by
 \begin{equation} \label{Eq-nonequi-fprime}
   \frac{df}{dz} = \frac{df}{d\zeta}\frac{d\zeta}{dz}
                 = \frac{1}{z'}f'(\zeta) \; ,
-\end{equation}
-and the second derivative is
-\begin{equation} \label{Eq-nonequi-f2prime}
+  \qquad
   \frac{d^2f}{dz^2} =   \frac{1}{z'^2}f''(\zeta)
-                      - \frac{z''}{z'^3}f'(\zeta) \; .
+                      - \frac{z''}{z'^3}f'(\zeta) \; ,
 \end{equation}
+which can be written somewhat more compactly using the inverse function
+$\zeta(z)$:
+\begin{equation} \label{Eq-nonequi-fprime-zeta-z}
+  \frac{df}{dz}     =   \zeta'(z)\, f'(\zeta) \; ,
+  \qquad
+  \frac{d^2f}{dz^2} =   \zeta'^2(z)\,f''(\zeta)
+                        + \zeta''(z) f'(\zeta) \; .
+\end{equation}
+Internally, the code uses the quantities
+$\var{dz_1} \equiv 1/z' = \zeta'(z)$ and
+$\var{dz_tilde} \equiv -z''/z'^2 = \zeta''/\zeta'$, and stores them in
+\file[grid.dat]{data/proc$N$/grid.dat}.
 
 The parameters \var{lequidist} (a 3-element logical array),
 \var{grid_func}, \var{coef_grid} (a $\ge 2$-element real array)
 are used to choose a non-equidistant grid and define the function $z(\zeta)$.
-So far, one can choose between \code{grid_function='sinh'} and
+So far, one can choose between \code{grid_function='sinh'},
 \code{grid_function='linear'} (which produces an equidistant grid for
-testing purposes).
+testing purposes), and \code{grid_function='step-linear'}.
 
+\subparagraph{The \code{sinh} profile:}
 For \code{grid_function='sinh'}, the function $z(\zeta)$ is given by
 \begin{equation}
   z(\zeta)
@@ -1853,39 +1869,46 @@ which can be inverted (``after some algebra'') to
               \right] \; .
 \end{equation}
 
-To apply that profile, you can set the following in \file{start.in}:
+\subparagraph{General profile:}
+For a general monotonic function $\psi()$ instead of $\sinh$ we get,
+\begin{equation}
+  z(\zeta)
+  = z_0
+    + L_z \frac{\psi[a(\zeta  {-}\zeta_*)] + \psi[a(\zeta_*{-}\zeta_1)]}
+               {\psi[a(\zeta_2{-}\zeta_*)] + \psi[a(\zeta_*{-}\zeta_1)]} \; ,
+\end{equation}
+and the reference point $\zeta_*$ is found by inverting
+\begin{equation}
+  z_*
+  = z_0
+    + L_z \frac{\psi[a(\zeta_*{-}\zeta_1)]}
+               {\psi[a(\zeta_2{-}\zeta_*)] + \psi[a(\zeta_*{-}\zeta_1)]} \; ,
+\end{equation}
+numerically.
+
+\subparagraph{Example:}
+To apply the \code{sinh} profile, you can set the following in
+\file{start.in} (this example is from
+\file[sound-spherical-noequi]{samples/sound-spherical-noequi}):
 \begin{Verbatim}
   &init_pars
     [...]
-    lequidist = T, T, F         ! non-equidistant grid in z
-    coef_grid = , 0.05          ! (z_*, a) -- note the comma!
-    grid_func = 'sinh'          ! sinh function: linear for small, but
+    xyz0  = -2., -2., -2.       ! first corner of box
+    Lxyz  =  4.,  4.,  4.       ! box size
+    lperi =  F ,  F ,  F        ! periodic direction?
+    lequidist = F, F, T         ! non-equidistant grid in z
+    xyz_star   = , , -2.        ! position of inflection point
+    grid_func  = , , 'sinh'     ! sinh function: linear for small, but
                                 ! exponential for large z
-    ! zeta_grid0 = 0.           ! old and soon to be removed
+    coeff_grid = , , 0.5
   /
 \end{Verbatim}
-The parameter array \var{coef_grid} represents $z_*$ and $a$; the bottom
+The parameter array \var{coeff_grid} represents $z_*$ and $a$; the bottom
 height $z_0$ and the total box height $L_z$ are taken from \var{xyz0} and
 \var{Lxyz} as in the equidistant case.
-If you want the inflection point of the $\sinh$ profile (the part where it
-is linear) at a non-zero height, you can set \var[coef_grid]{coef_grid(1)}
-(i.\,e.~$z_*$ to a value different from $z_0$.
-
-%
-\paragraph{Alternative formulation:}
-Equations~(\ref{Eq-timeavg-exp-alg}) and (\ref{Eq-timeavg-exp-int}) take a
-somewhat more compact form when working with the inverse function
-$\zeta(z)$:
-\begin{eqnarray} \label{Eq-nonequi-fprime-zeta-z}
-  \frac{df}{dz}     &=&   \zeta'(z)\, f'(\zeta) \; , \\
-  \frac{d^2f}{dz^2} &=&   \zeta'^2(z)\,f''(\zeta)
-                        + \zeta''(z) f'(\zeta) \; ,
-\end{eqnarray}
-because of
-\begin{equation}
-  \zeta'(z)  = \frac{1}{z'(\zeta)} \; , \qquad
-  \zeta''(z) = -\frac{z''}{z'^3} \; .
-\end{equation}
+The inflection point of the $\sinh$ profile (the part where it is linear)
+is not in the middle of the box, because we have set
+\var[xyz_star]{xyz_star(3)} (i.\,e.~$z_*$) to $-2$.
 
 
 % ---------------------------------------------------------------------- %
@@ -4965,7 +4988,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-10-16 08:11:59 $ $,~ $ $Revision: 1.305 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-10-19 19:44:59 $ $,~ $ $Revision: 1.306 $ $}
 
 \section{Timings}
 
@@ -8063,7 +8086,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.305 2005-10-16 08:11:59 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.306 2005-10-19 19:44:59 dobler Exp $ $}
 
 
 \end{document}
