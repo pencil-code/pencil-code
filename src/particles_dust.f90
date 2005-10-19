@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.42 2005-10-13 11:43:46 ajohan Exp $
+! $Id: particles_dust.f90,v 1.43 2005-10-19 07:40:14 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -56,7 +56,7 @@ module Particles
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_rhopm=0, idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
   integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0
-  integer :: idiag_npmy=0
+  integer :: idiag_npmy=0, idiag_nparmax=0
 
   contains
 
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.42 2005-10-13 11:43:46 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.43 2005-10-19 07:40:14 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -745,6 +745,7 @@ module Particles
             call map_xxp_grid(f,fp(k,ixp:izp))
           enddo
         endif
+        if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
         if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
         if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
         if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
@@ -880,13 +881,14 @@ module Particles
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_rhopm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
         idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0
-        idiag_npmy=0
+        idiag_npmy=0; idiag_nparmax=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
