@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.258 2005-10-03 09:53:57 ajohan Exp $
+! $Id: magnetic.f90,v 1.259 2005-10-20 06:47:33 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -176,7 +176,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.258 2005-10-03 09:53:57 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.259 2005-10-20 06:47:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -197,7 +197,7 @@ module Magnetic
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic(f)
+    subroutine initialize_magnetic(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
@@ -208,7 +208,7 @@ module Magnetic
       use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-!
+      logical :: lstarting
       integer :: i      
 !
 !  Precalculate 1/mu (moved here from register.f90)
@@ -237,6 +237,7 @@ module Magnetic
 !
       if (reinitalize_aa) then
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
+        call pert_aa(f)
       endif
 !
       if (lfreeze_aint) lfreeze_varint(iax:iaz) = .true.
@@ -288,7 +289,7 @@ module Magnetic
       enddo
 !
       if (lresi_eta_const.and.eta==0.0) then
-        call warning('initialize_magnetic', &
+        if (.not.lstarting) call warning('initialize_magnetic', &
             'Resistivity coefficient eta is zero!')
         lresi_eta_const=.false.
       endif
