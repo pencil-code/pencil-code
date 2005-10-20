@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.11 2004-06-22 14:16:07 mee Exp $
+; $Id: pc_read_grid.pro,v 1.12 2005-10-20 08:52:00 bingert Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-22 14:16:07 $
-;  $Revision: 1.11 $
+;  $Date: 2005-10-20 08:52:00 $
+;  $Revision: 1.12 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -139,23 +139,39 @@ for i=0,ncpus-1 do begin
   openr,file,filename,/F77
     
   if n_elements(proc) ne 0 then begin
-    readu,file, t,x,y,z
+      readu,file, t,x,y,z
+      readu,file, dx,dy,dz
+      found_Lxyz=0
+      found_grid_der=0
+      ON_IOERROR, missing
+      found_Lxyz=1
+      readu,file, Lx,Ly,Lz
+      readu,file, xprim,yprim,zprim
+      readu,file, xprim2,yprim2,zprim2
   endif else begin
-    readu,file, t,xloc,yloc,zloc
-    x[i0x:i1x] = xloc[i0xloc:i1xloc]
-    y[i0y:i1y] = yloc[i0yloc:i1yloc]
-    z[i0z:i1z] = zloc[i0zloc:i1zloc]
-  endelse
-  readu,file, dx,dy,dz
+      readu,file, t,xloc,yloc,zloc
+      x[i0x:i1x] = xloc[i0xloc:i1xloc]
+      y[i0y:i1y] = yloc[i0yloc:i1yloc]
+      z[i0z:i1z] = zloc[i0zloc:i1zloc]
+      
+      readu,file, dx,dy,dz
+      found_Lxyz=0
+      found_grid_der=0
+      ON_IOERROR, missing
+      found_Lxyz=1
+      readu,file, Lx,Ly,Lz
 
-  found_Lxyz=0
-  found_grid_der=0
-  ON_IOERROR, missing
-  readu,file,Lx,Ly,Lz
-  found_Lxyz=1
-  readu,file,xprim,yprim,zprim
-  readu,file,xprim2,yprim2,zprim2
-  found_grid_der=1
+      readu,file,xloc,yloc,zloc
+      xprim[i0x:i1x] = xloc[i0xloc:i1xloc]
+      yprim[i0y:i1y] = yloc[i0yloc:i1yloc]
+      zprim[i0z:i1z] = zloc[i0zloc:i1zloc]
+
+      readu,file,xloc,yloc,zloc
+      xprim2[i0x:i1x] = xloc[i0xloc:i1xloc]
+      yprim2[i0y:i1y] = yloc[i0yloc:i1yloc]
+      zprim2[i0z:i1z] = zloc[i0zloc:i1zloc]
+  endelse
+  found_grid_der=1    
 
 missing:
   ON_IOERROR, Null
@@ -170,7 +186,6 @@ if (keyword_set(TRIMXYZ)) then begin
   y=y[dim.m1:dim.m2]
   z=z[dim.n1:dim.n2]
 endif
-
 ; Build structure of all the variables
 if (found_Lxyz and found_grid_der) then begin
   object = CREATE_STRUCT(name="pc_read_grid_" + $
