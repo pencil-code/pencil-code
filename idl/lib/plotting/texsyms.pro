@@ -77,19 +77,21 @@ function texsyms, DEVICE=device
               psi_c       : '!7Y!X' , $
               omega_c     : '!7W!X' , $
     ; other symbols
-              cdot        : '!6∑!X' , $
+              cdot        : '!6Å∑!X' , $
               mid         : '!6|!X' , $
-              Im          : '!7¡!X' , $
-              Re          : '!7¬!X' , $
-              sqrt        : '!7÷!X' , $
-              times       : '!7¥!X' , $
+              Im          : '!7Å¡!X' , $
+              Re          : '!7Å¬!X' , $
+              sqrt        : '!7Å÷!X' , $
+              times       : '!7Å¥!X' , $
               leq         : '!6!S<!R_!X' , $ ; `le' is reserved..
               geq         : '!6!S>!R_!X' , $ ; `ge' is reserved..
-              nabla       : '!M—!X' , $
-              uparrow     : '!7≠!X', $
-              downarrow   : '!7Ø!X', $
-              leftarrow   : '!7¨!X', $†
-              rightarrow  : '!7Æ!X', $
+              int         : '!MÚ!X' , $
+              partial     : '!M∂!X' , $
+              nabla       : '!MÅ—!X' , $
+              uparrow     : '!7Å≠!X', $
+              downarrow   : '!7ÅØ!X', $
+              leftarrow   : '!7Å¨!X', $Å†
+              rightarrow  : '!7ÅÆ!X', $
     ; harder stuff like tilde on top of symbol, etc
     ; Usage: PLOT, [...], TITLE=sym.tilde+'!8Q!X' to get \tilde{Q}, etc
               tilde       : '!S!N!A!3~!R!X', $
@@ -153,20 +155,22 @@ function texsyms, DEVICE=device
               psi_c       : '!7W!X' , $
               omega_c     : '!7X!X' , $
     ; other symbols
-              cdot        : '!3∑!X',   $
-              mid         : '!3|!X' ,  $
-              Im          : '!15I!X',  $
-              Re          : '!15R!X',  $
-              sqrt        : '!9r!X',   $
-              times       : '!9X!X',   $
-              odot        : '!9n!X',   $
-              leq         : '!9l!X',   $ ; `le' is reserved..
-              geq         : '!9b!X',   $ ; `ge' is reserved..
-              nabla       : '!MG!X', $
-              uparrow     : '!97!X', $
-              downarrow   : '!95!X', $
-              leftarrow   : '!94!X', $
-              rightarrow  : '!96!X', $
+              cdot        : '!3Å∑!X',  $
+              mid         : '!3|!X' , $
+              Im          : '!15I!X', $
+              Re          : '!15R!X', $
+              sqrt        : '!9r!X',  $
+              times       : '!9X!X',  $
+              odot        : '!9n!X',  $
+              leq         : '!9l!X',  $ ; `le' is reserved..
+              geq         : '!9b!X',  $ ; `ge' is reserved..
+              int         : '!MI!X',  $
+              partial     : '!MD!X',  $
+              nabla       : '!MG!X',  $
+              uparrow     : '!97!X',  $
+              downarrow   : '!95!X',  $
+              leftarrow   : '!94!X',  $
+              rightarrow  : '!96!X',  $
     ; harder stuff like tilde on top of symbol, etc
     ; Usage: PLOT, [...], TITLE=sym.tilde+'!8Q!X' to get \tilde{Q}, etc
               tilde       : '!S!U!N!A!9A!R!X', $
