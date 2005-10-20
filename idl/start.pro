@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.71 2005-07-22 14:41:52 theine Exp $
+;;; $Id: start.pro,v 1.72 2005-10-20 09:20:26 bingert Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -14,6 +14,7 @@ function param
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
 ;forward_function safe_get_tag
 ;
 ;  Compile the derivative routines for data that have ghost zones
