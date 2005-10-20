@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.62 2005-07-05 16:21:43 mee Exp $
+! $Id: nomagnetic.f90,v 1.63 2005-10-20 06:56:05 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,17 +59,18 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.62 2005-07-05 16:21:43 mee Exp $")
+           "$Id: nomagnetic.f90,v 1.63 2005-10-20 06:56:05 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic(f)
+    subroutine initialize_magnetic(f,lstarting)
 !
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine
       use Cdata
       real, dimension (mx,my,mz,mvar+maux) :: f
+      logical :: lstarting
 !
 !  Precalculate 1/mu (moved here from register.f90)
 !
