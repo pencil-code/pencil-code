@@ -1,5 +1,5 @@
 ;
-;  $Id: xder_6th_ghost.pro,v 1.7 2004-12-25 14:21:23 ajohan Exp $
+;  $Id: xder_6th_ghost.pro,v 1.8 2005-10-21 10:19:13 bingert Exp $
 ;
 ;***********************************************************************
 function xder,f
@@ -23,7 +23,7 @@ function xder,f
   endif else begin
     tt = where(xprim eq 0)
     if (tt[0] ne -1) then xprim[tt] = 1
-    dx2=spread(spread(xprim/60.,1,ny),2,nz)
+    dx2=spread(spread(xprim[n1:n2]/60.,1,ny),2,nz)
   endelse
 ;
   if (s[0] eq 1) then begin

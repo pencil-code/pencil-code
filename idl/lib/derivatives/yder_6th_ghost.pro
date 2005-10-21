@@ -1,5 +1,5 @@
 ;
-;  $Id: yder_6th_ghost.pro,v 1.7 2004-12-25 14:21:23 ajohan Exp $
+;  $Id: yder_6th_ghost.pro,v 1.8 2005-10-21 10:19:13 bingert Exp $
 ;
 ;***********************************************************************
 function yder,f
@@ -23,7 +23,7 @@ function yder,f
   endif else begin
     tt = where(yprim eq 0)
     if (tt[0] ne -1) then yprim[tt] = 1 
-    dy2=spread(spread(yprim/60.,0,nx),2,nz)
+    dy2=spread(spread(yprim[n1:n2]/60.,0,nx),2,nz)
   endelse
 ;
   if (s[0] eq 1) then begin

@@ -1,5 +1,5 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.7 2004-12-25 14:21:23 ajohan Exp $
+;  $Id: zder_6th_ghost.pro,v 1.8 2005-10-21 10:19:13 bingert Exp $
 ;
 ;***********************************************************************
 function zder,f
@@ -23,7 +23,7 @@ function zder,f
   endif else begin
     tt = where(zprim eq 0)
     if (tt[0] ne -1) then zprim[tt] = 1 
-    dz2=spread(spread(zprim/60.,0,nx),1,ny)
+    dz2=spread(spread(zprim[n1:n2]/60.,0,nx),1,ny)
   endelse
 ;
   if (s[0] eq 1) then begin
