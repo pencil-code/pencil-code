@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.59 2005-10-23 06:02:33 dobler Exp $
+# CVS: $Id: auto-test,v 1.60 2005-10-23 21:45:31 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -57,6 +57,7 @@ my @runsdir = qw( );
 my $tmpdir = "/var/tmp/pencil-tmp-$$";
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
                                                                # for C float
+my $headerpat = '^-*\s*(-+[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $noheader = "Couldn't find header line";
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
@@ -116,7 +117,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.59 2005-10-23 06:02:33 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.60 2005-10-23 21:45:31 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -312,7 +313,7 @@ sub my_ok {
     if ($arg1 eq $arg2) {
 	print "  ok\n" unless ($quiet);
     } else {
-	print "  not ok:\n  $mesg\n";
+	print "  not ok:\n$mesg\n";
 	$test_status = 1;
 	# report only first failure:
 	$failed{$dir} = $phase unless defined($failed{$dir});
@@ -404,7 +405,6 @@ sub extract_results {
     my $lineptr = shift;
     my @lines = @$lineptr;
 
-    my $headerpat = '^-*\s*(-+[A-Za-z0-9_]+)+-*\s*$';
     my @results = ();
     my @labels = ();
     my $body = 0;		# true after header line
@@ -487,17 +487,21 @@ sub compare_lines_fuzzily {
     my $xline = shift;
     my $yline = shift;
 
-    my @x = split(/\s+/,$xline);
-    my @y = split(/\s+/,$yline);
-    @x = grep(/[0-9]/, @x);	# weed out empty entries
-    @y = grep(/[0-9]/, @y);
-
-    return 0 unless ($#x == $#y); # lengths must match
-
     my $equal = 1;
-    foreach my $i (0..$#x) {
-	my ($x,$y) = ($x[$i], $y[$i]);
-	$equal = 0 unless (compare_numbers_fuzzily($x,$y));
+
+    if ($xline =~ /$headerpat/) { # header lines --> string comparison
+	$equal = 0 unless ($xline eq $yline);
+    } else {			  #  diagnostic lines --> fuzzy comparison
+	my @x = split(/\s+/,$xline);
+	my @y = split(/\s+/,$yline);
+	@x = grep(/[0-9]/, @x);	# weed out empty entries
+	@y = grep(/[0-9]/, @y);
+
+	return 0 unless ($#x == $#y); # lengths must match
+	foreach my $i (0..$#x) {
+	    my ($x,$y) = ($x[$i], $y[$i]);
+	    $equal = 0 unless (compare_numbers_fuzzily($x,$y));
+	}
     }
 
     return $equal;
