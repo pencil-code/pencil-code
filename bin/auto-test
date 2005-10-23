@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.57 2005-09-07 01:09:50 dobler Exp $
+# CVS: $Id: auto-test,v 1.58 2005-10-23 05:57:59 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -35,8 +35,6 @@ use POSIX qw(floor);
 use Getopt::Long;
 use vars qw{ %failed $ntests $test_status };
 use IPC::Open2;
-
-$ntests=0;
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ :
@@ -118,7 +116,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.57 2005-09-07 01:09:50 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.58 2005-10-23 05:57:59 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -240,58 +238,56 @@ if (@ARGV) {			# Process dirs given in cmd line
     }
 }
 
-sub go_multiprocess 
-{
-  my $jobs=shift;
-  my $nodelist=shift;
-  my $passthru_opts=shift;
-  my @queue=@$jobs;
-  my %nodes;
-  
-  for my $node (@$nodelist) {
-    $nodes{$node}{'busy'}=0;
-    $nodes{$node}{'pid'}=0;
-  } 
-  my $running=0;
-  my $queued=scalar @queue;
-  while ((scalar @queue) || $running) {
-    if (scalar @queue) { 
-      foreach my $node (keys %nodes)
-      {
-        next if $nodes{$node}{'busy'};
-        my $job = shift @queue;
-        $nodes{$node}{'busy'}=$job;
-        $ntests++;
-        $running++;
-        if (! ($nodes{$node}{'pid'} = fork)) {
-          my $nodeb=$node;
-          exec "$RSH $node auto-test --no-summary $passthru_opts $job | sed 's/^/$nodeb : /'";
-          exit 0;
-        }
-      }
-    }
-    if ($running) {
-      my $pid=wait;
-      if ($pid != -1) {
-        my $result=$?;
-        $running--;
-        foreach my $node (keys %nodes)
-        {
-          if ($nodes{$node}{'pid'} == $pid) {
-            my $exit_code = ($result >> 8);
-	    $failed{$nodes{$node}{'busy'}} = $exit_status[$exit_code-1] 
-                                                        if ($exit_code);
-            $nodes{$node}{'busy'}=0;
-            $nodes{$node}{'pid'}=0;
-            last;
-          }
-        }
-      } 
-    } 
-  }
-   
-}
+# ---------------------------------------------------------------------- #
+sub do_tests_in_parallel {
+# Distribute auto-tests over nodes contained in $nodelist
+    my $jobs          = shift;
+    my $nodelist      = shift;
+    my $passthru_opts = shift;
 
+    my @queue=@$jobs;
+    my %nodes;
+
+    for my $node (@$nodelist) {
+	$nodes{$node}{'busy'} = 0;
+	$nodes{$node}{'pid'}  = 0;
+    }
+    my $running = 0;
+    my $queued = scalar @queue;
+    while ((scalar @queue) || $running) {
+	if (scalar @queue) {
+	    foreach my $node (keys %nodes) {
+		next if $nodes{$node}{'busy'};
+		my $job = shift @queue;
+		$nodes{$node}{'busy'}=$job;
+		$ntests++;
+		$running++;
+		if (! ($nodes{$node}{'pid'} = fork)) {
+		    my $nodeb=$node;
+		    exec "$RSH $node auto-test --no-summary $passthru_opts $job | sed 's/^/$nodeb : /'";
+		    exit 0;
+		}
+	    }
+	}
+	if ($running) {
+	    my $pid = wait;
+	    if ($pid != -1) {
+		my $result = $?;
+		$running--;
+		foreach my $node (keys %nodes) {
+		    if ($nodes{$node}{'pid'} == $pid) {
+			my $exit_code = ($result >> 8);
+			$failed{$nodes{$node}{'busy'}}
+			  = $exit_status[$exit_code-1] if ($exit_code);
+			$nodes{$node}{'busy'} = 0;
+			$nodes{$node}{'pid'}  = 0;
+			last;
+		    }
+		}
+	    }
+	}
+    }
+}
 # ---------------------------------------------------------------------- #
 sub my_ok {
 # Similar to Test's and Test::Harness' ok() function: consider success if
@@ -303,7 +299,7 @@ sub my_ok {
 
     my $arg1 = shift;
     my $arg2 = shift;
-    my $mesg = (shift || "<No diagnostics>"); 
+    my $mesg = (shift || "<No diagnostics>");
     chomp($mesg);
     my $dir = shift;
     my $phase = shift;
@@ -339,7 +335,7 @@ sub test_shell_cmd {
 	$res = postprocess($res);
     }
     my_ok($cmdstatus,0,$res,$dir,$phase,$quiet); # $? = 0 means success
-    $res;			# Return output so we can analyze it if desired
+    $res;		   # Return output so we can analyze it if desired
 }
 # ---------------------------------------------------------------------- #
 sub test_compile {
@@ -349,7 +345,7 @@ sub test_compile {
 	my $makeopts = shift;
 	print "    Compiling..         ";
 # First setup-src, then make clean (if requested). Must be done in this order
-# as setup-src links the Makefile to the run directory.    
+# as setup-src links the Makefile to the run directory.
 	test_shell_cmd('setup-src',$dir,"setting up directory",QUIET);
 	return 'ERROR calling setup-src' if ($test_status);
 	if ($clean) {
@@ -456,8 +452,8 @@ sub read_lines {
 }
 # ---------------------------------------------------------------------- #
 sub compare_results {
-# Compare two arrays linewise; if all lines are the same, return 1; if
-# not, return 0 and write report to third argument
+# Compare two arrays of lines linewise; if all lines are the same, return
+# 1; if not, return 0 and write report to third argument
     my $arr1 = shift;
     my $arr2 = shift;
 
@@ -470,7 +466,7 @@ sub compare_results {
     for my $i (0..$N) {
 	my $line1 = ($$arr1[$i] || ""); chomp $line1;
 	my $line2 = ($$arr2[$i] || ""); chomp $line2;
-	if ($line1 ne $line2) {
+	unless (compare_lines_fuzzily($line1,$line2)) {
 	    $diagn .= $pref[0] . $line1 . "\n" if ($line1);
 	    $diagn .= $pref[1] . $line2 . "\n" if ($line2);
 	    $equal = 0;
@@ -484,6 +480,86 @@ sub compare_results {
     $equal;
 }
 # ---------------------------------------------------------------------- #
+sub compare_lines_fuzzily {
+# Compare the numerical values in two lines fuzzily. Return 1 if numbers
+# are approximately equal (differ by 1 or less in the last decimal), zero
+# otherwise.
+    my $xline = shift;
+    my $yline = shift;
+
+    my @x = split(/\s+/,$xline);
+    my @y = split(/\s+/,$yline);
+    @x = grep(/[0-9]/, @x);	# weed out empty entries
+    @y = grep(/[0-9]/, @y);
+
+    return 0 unless ($#x == $#y); # lengths must match
+
+    my $equal = 1;
+    foreach my $i (0..$#x) {
+	my ($x,$y) = ($x[$i], $y[$i]);
+	$equal = 0 unless (compare_numbers_fuzzily($x,$y));
+    }
+
+    return $equal;
+}
+# ---------------------------------------------------------------------- #
+sub compare_numbers_fuzzily {
+# Compare two numbers and return true if they differ only by one in the
+# last digit, else false.
+    my $x = shift;
+    my $y = shift;
+
+    my $debug = 0;
+
+    # Regexp for general float, groups into pre-exponent and
+    # post-exponent part
+    my $numeric = '((?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?)((?:[EeDd](?:[+-]?\d+))?)';
+    my ($x1,$x2) = ($x =~ /^\s*$numeric\s*$/);
+    $x2 = '' unless defined($x2);
+    my ($y1,$y2) = ($y =~ /^\s*$numeric\s*$/);
+    $y2 = '' unless defined($y2);
+
+    # Are $x, $y really numeric?
+    unless(defined($x1) && defined($y1)) {
+	warn "Not a numerical value: <$x> or <$y>\n";
+	return 0;
+    }
+
+    # Choose the longer string for decrementing/incrementing, so we
+    # correctly compare stuff like [1.3599, 1.36] (succeeds) and [1.3598,
+    # 1.36] (fails) in both directions.
+    if (length($x1) < length($y1)) {
+	($x,$x1,$x2, $y,$y1,$y2) = ($y,$y1,$y2, $x,$x1,$x2);
+    }
+
+    # Do comparison
+    $x1 =~ /([+-]?[0-9]*)\.?([0-9]*)/;
+    my ($xint,$xfrac) = ($1, $2);
+
+    die "Cannot split <$x1> into int/fract parts (should not happen)"
+      unless defined($xint);
+    my $delta;
+    if (length($xfrac) > 0) {
+	$delta = '0.' . '0'x(length($xfrac)-1) . '1';
+    } else {
+	$delta = 1;
+    }
+    my $x1_p = $x1 + $delta;
+    my $x1_m = $x1 - $delta;
+    ($x1_m, $x1_p) = sort  { $a <=> $b } $x1_m, $x1_p;
+    my ($x_m, $x_p) = ("${x1_m}${x2}", "${x1_p}${x2}");
+
+    printf "%8s -> %8s -> <%6s>.<%6s> -> %8s -> [%8s, %8s]\n",
+      $x, $x1, $xint, $xfrac, $delta, $x_m, $x_p   if ($debug);
+
+    if (($y >= $x_m) && ($y <= $x_p)) {
+	return 1;
+    } else {
+	return 0;
+    }
+}
+# ---------------------------------------------------------------------- #
+
 sub test_rundir {
 # Test compilation, starting, running and results
     my $dir = shift;
@@ -610,7 +686,7 @@ sub postprocess {
 }
 # ---------------------------------------------------------------------- #
 
-
+## Summarize results
 END {
     if ( ! ($help || $nosummary || $list_only)) {
 	print "\n" . "-" x 70 . "\n";
