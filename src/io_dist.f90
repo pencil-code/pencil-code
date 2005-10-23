@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.86 2005-07-05 16:21:42 mee Exp $
+! $Id: io_dist.f90,v 1.87 2005-10-23 04:54:00 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -93,7 +93,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.86 2005-07-05 16:21:42 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.87 2005-10-23 04:54:00 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -188,7 +188,11 @@ contains
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
       write(lun_output) a
-      write(lun_output) t,x,y,z,dx,dy,dz,deltay
+      if (lshear) then
+        write(lun_output) t,x,y,z,dx,dy,dz,deltay
+      else
+        write(lun_output) t,x,y,z,dx,dy,dz
+      endif
 !
       close(lun_output)
       if (lserial_io) call end_serialize()
@@ -214,7 +218,11 @@ contains
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
       write(lun_output) a
-      write(lun_output) t,x,y,z,dx,dy,dz,deltay
+      if (lshear) then
+        write(lun_output) t,x,y,z,dx,dy,dz,deltay
+      else
+        write(lun_output) t,x,y,z,dx,dy,dz
+      endif
 !
       close(lun_output)
       if (lserial_io) call end_serialize()
