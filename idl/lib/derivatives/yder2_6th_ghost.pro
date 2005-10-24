@@ -1,5 +1,5 @@
 ;
-;  $Id: yder2_6th_ghost.pro,v 1.6 2005-10-24 08:19:12 dobler Exp $
+;  $Id: yder2_6th_ghost.pro,v 1.7 2005-10-24 14:43:17 bingert Exp $
 ;
 ;  Second derivative d^2/dy^2
 ;  - 6th-order (7-point stencil)
@@ -35,7 +35,7 @@ function yder2,f
 ;
   if (s[0] eq 3) then begin
     if (m2 gt m1) then begin
-      if (lequidist[2] eq 0) then begin
+      if (lequidist[1] eq 0) then begin
         dy2 =    spread(dy2,     [0,2],[s[1],s[3]])
         dd  = d1*spread(dy_tilde,[0,2],[s[1],s[3]])
         ; will also work on slices like yder2(ss[10,*,*])
@@ -52,7 +52,7 @@ function yder2,f
   endif else if (s[0] eq 4) then begin
 ;
     if (m2 gt m1) then begin
-      if (lequidist[2] eq 0) then begin
+      if (lequidist[1] eq 0) then begin
         dy2 =    spread(dy2,     [0,2,3],[s[1],s[3],s[4]])
         dd  = d1*spread(dy_tilde,[0,2,3],[s[1],s[3],s[4]])
         ; will also work on slices like yder2(uu[10,*,*,*])

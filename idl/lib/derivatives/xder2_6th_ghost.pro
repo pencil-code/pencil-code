@@ -1,5 +1,5 @@
 ;
-;  $Id: xder2_6th_ghost.pro,v 1.6 2005-10-24 08:19:12 dobler Exp $
+;  $Id: xder2_6th_ghost.pro,v 1.7 2005-10-24 14:43:17 bingert Exp $
 ;
 ;  Second derivative d^2/dx^2
 ;  - 6th-order (7-point stencil)
@@ -34,7 +34,7 @@ function xder2,f
 ;
   if (s[0] eq 3) then begin
     if (l2 gt l1) then begin
-      if (lequidist[2] eq 0) then begin
+      if (lequidist[0] eq 0) then begin
         dx2 =    spread(dx2,     [1,2],[s[2],s[3]])
         dd  = d1*spread(dx_tilde,[1,2],[s[2],s[3]])
       endif
@@ -50,7 +50,7 @@ function xder2,f
   endif else if (s[0] eq 4) then begin
 ;
     if (l2 gt l1) then begin
-      if (lequidist[2] eq 0) then begin
+      if (lequidist[0] eq 0) then begin
         dx2 =    spread(dx2,     [1,2,3],[s[2],s[3],s[4]])
         dd  = d1*spread(dx_tilde,[1,2,3],[s[2],s[3],s[4]])
       endif
@@ -70,7 +70,7 @@ function xder2,f
 ;
 ; apply correction only for nonuniform mesh
 ;
-  if not lequidist[1] then d=d+dd
+  if not lequidist[0] then d=d+dd
 ;
   return,d
 ;
