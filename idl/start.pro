@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.72 2005-10-20 09:20:26 bingert Exp $
+;;; $Id: start.pro,v 1.73 2005-10-24 02:12:21 dobler Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -14,7 +14,7 @@ function param
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
+common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;forward_function safe_get_tag
 ;
 ;  Compile the derivative routines for data that have ghost zones
@@ -100,19 +100,19 @@ if (quiet le 2) then print,'nname=',nname
 t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
-gfile=datadir+'/'+'grid.dat'
-dummy=findfile(gfile, COUNT=cgrid)
+gridfile=datadir+'/'+'grid.dat'
+dummy=findfile(gridfile, COUNT=cgrid)
 dummy2=zero
 if (cgrid gt 0) then begin
   if (quiet le 2) then print, 'Reading grid.dat..'
-  openr,1, gfile, /F77
+  openr,1, gridfile, /F77
   readu,1, t,x,y,z
   readu,1, dx,dy,dz
   readu,1, dummy2,dummy2,dummy2 ; instead of Lx,Ly,Lz
-  point_lun,-1,pos              ; to read non equidistant stuff below 
+  point_lun,-1,pos              ; to read nonequidistant stuff below 
   close,1
 endif else begin
-  if (quiet le 4) then print, 'Warning: cannot find file ', gfile
+  if (quiet le 4) then print, 'Warning: cannot find file ', gridfile
 endelse
 ;
 ;print,'calculating xx,yy,zz (comment this out if there is not enough memory)'
@@ -193,15 +193,27 @@ if (cpar gt 0) then begin
   lshear    = par.lshear
   lradiation_fld = par.lradiation_fld
   ;
-  if (any(not lequidist)) then begin
-    openr,1,gfile,/F77
+  ;  Read coefficients for nonequidistant grid
+  ;
+  dx_1=fltarr(mx)*zero & dy_1=fltarr(my)*zero & dz_1=fltarr(mz)*zero
+  dx_tilde=fltarr(mx)*zero& dy_tilde=fltarr(my)*zero& dz_tilde=fltarr(mz)*zero
+  if (any(lequidist ne 0)) then begin
+    openr,1,gridfile,/F77
     point_lun,1,pos
-    dx_1=fltarr(mx)*zero & dy_1=fltarr(my)*zero & dz_1=fltarr(mz)*zero
-    dx_tilde=fltarr(mx)*zero& dy_tilde=fltarr(my)*zero& dz_tilde=fltarr(mz)*zero
     readu,1, dx_1,     dy_1,     dz_1
     readu,1, dx_tilde, dy_tilde, dz_tilde
     close,1
-  endif
+  endif else begin
+    ;
+    ;  Ensure we don't use these values
+    ;
+    dx_1 = dx_1*!values.f_nan
+    dy_1 = dy_1*!values.f_nan
+    dz_1 = dz_1*!values.f_nan
+    dx_tilde = dx_tilde*!values.f_nan
+    dy_tilde = dy_tilde*!values.f_nan
+    dz_tilde = dz_tilde*!values.f_nan
+  endelse
   ;
   if (ldensity) then begin
     if (not leos_ionization) then begin

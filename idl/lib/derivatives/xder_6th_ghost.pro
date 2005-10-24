@@ -1,5 +1,8 @@
 ;
-;  $Id: xder_6th_ghost.pro,v 1.8 2005-10-21 10:19:13 bingert Exp $
+;  $Id: xder_6th_ghost.pro,v 1.9 2005-10-24 02:12:21 dobler Exp $
+;
+;  6th-order first derivative in x direction for date with ghost cells and on
+;  potentially non-equidistant grid.
 ;
 ;***********************************************************************
 function xder,f

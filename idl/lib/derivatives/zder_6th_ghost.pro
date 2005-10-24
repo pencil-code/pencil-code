@@ -1,12 +1,15 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.8 2005-10-21 10:19:13 bingert Exp $
+;  $Id: zder_6th_ghost.pro,v 1.9 2005-10-24 02:12:21 dobler Exp $
+;
+;  6th-order first derivative in x direction for date with ghost cells and on
+;  potentially non-equidistant grid.
 ;
 ;***********************************************************************
 function zder,f
   COMPILE_OPT IDL2,HIDDEN
 ;
   common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
-  common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
+  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
 ;  Check if we have a degenerate case (no x-extension)
 ;
@@ -14,24 +17,15 @@ function zder,f
   if (nz eq 1) then return,fltarr(nx,ny,nz)
   s=size(f) & d=make_array(size=s)
 ;
-;  assume uniform mesh
-;
   n1=3 & n2=nz-4
 ;
   if (lequidist[2]) then begin
     dz2=1./(60.*(z[4]-z[3])) 
   endif else begin
-    tt = where(zprim eq 0)
-    if (tt[0] ne -1) then zprim[tt] = 1 
-    dz2=spread(spread(zprim[n1:n2]/60.,0,nx),1,ny)
+    dz2=spread(dz_1[n1:n2]/60.,[0,1],[nx,ny])
   endelse
 ;
-  if (s[0] eq 1) then begin
-    print, 'error: zder_6th_ghost not implemented for 1-D arrays'
-  endif else if (s[0] eq 2) then begin
-    print, 'error: zder_6th_ghost not implemented for 2-D arrays'
-  endif else if (s[0] eq 3) then begin
-;
+  if (s[0] eq 3) then begin
     if (n2 gt n1) then begin
       d[*,*,n1:n2]=dz2*( +45.*(f[*,*,n1+1:n2+1]-f[*,*,n1-1:n2-1]) $
                           -9.*(f[*,*,n1+2:n2+2]-f[*,*,n1-2:n2-2]) $
@@ -52,7 +46,7 @@ function zder,f
 ;
   endif else begin
     print, 'error: zder_6th_ghost not implemented for ', $
-        strtrim(s[0],2), '-D arrays'
+           strtrim(s[0],2), '-D arrays'
   endelse
 ;
   return, d

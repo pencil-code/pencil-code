@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start_ez.pro,v 1.6 2005-06-05 03:51:08 brandenb Exp $
+;;; $Id: start_ez.pro,v 1.7 2005-10-24 02:12:21 dobler Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -57,16 +57,16 @@ print,'nname=',nname
 t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
-gfile=datadir+'/'+'grid.dat'
-dummy=findfile(gfile, COUNT=cgrid)
+gridfile=datadir+'/'+'grid.dat'
+dummy=findfile(gridfile, COUNT=cgrid)
 if (cgrid gt 0) then begin
   print, 'Reading grid.dat..'
-  openr,1, gfile, /F77
+  openr,1, gridfile, /F77
   readu,1, t,x,y,z
   readu,1, dx,dy,dz
   close,1
 endif else begin
-  print, 'Warning: cannot find file ', gfile
+  print, 'Warning: cannot find file ', gridfile
 endelse
 ;
 ;print,'calculating xx,yy,zz (comment this out if there is not enough memory)'
