@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.306 2005-10-19 19:44:59 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.307 2005-10-24 06:59:54 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-10-19 19:44:59 $ $,~ $ $Revision: 1.306 $ $}
+%\date{$ $Date: 2005-10-24 06:59:54 $ $,~ $ $Revision: 1.307 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-10-19 19:44:59 $ $,~ $ $Revision: 1.306 $ $}\\
+  \emph{$ $Date: 2005-10-24 06:59:54 $ $,~ $ $Revision: 1.307 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1802,12 +1802,12 @@ and edit the \file{cparam.local} for the new resolution.
 \index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
 
 We introduce a non-equidistant grid $z_i$
-(by now, this is also impolemented for the other directions)
+(by now, this is also implemented for the other directions)
 as a function $=z(\zeta)$ of an equidistant grid
 $\zeta_i$ with grid spacing $\Delta\zeta = 1$.
 
 The way the parameters are handled, the box size and position are
-\emph{not} changed when you switch to a non-equdistant grid, i.e.~they are
+\emph{not} changed when you switch to a non-equidistant grid, i.e.~they are
 still determined by \var{xyz0} and \var{Lxyz}.
 
 The first and second derivatives can be calculated by
@@ -2615,7 +2615,7 @@ and temperatures are in
   \caption{Units of magnetic field and temperature for some choices of
     $[\varrho]$ and $[v]$ according to Eqs.~(\ref{unit-B}) and
     (\ref{unit-T}).
-    Values are for a monatomic gas ($\gamma=5/3$) of mean atomic
+    Values are for a monoatomic gas ($\gamma=5/3$) of mean atomic
     weight $\bar{\mu}_{\rm g} = \bar{\mu}/\unit[1]{g}$ in grams.}
   \label{Tab-units-B-T}
   \newcommand{\fracstrut}{\rule[-2.0ex]{0pt}{5.2ex}}%
@@ -3605,7 +3605,7 @@ times.
 \label{Bulkviscosity}
 \index{Viscosity}
 
-For a monatomic gas it can be shown that the bulk viscosity vanishes.
+For a monoatomic gas it can be shown that the bulk viscosity vanishes.
 We therefore don't use it in most of our runs.
 However, for supersonic flows, or even otherwise, one might want to add a
 shock viscosity which, in its simplest formulation, take the form of a
@@ -3984,7 +3984,7 @@ The particle variables (e.g. $\vec{x}_i$ and $\vec{v}_i$) are kept in the arrays
 \code{fp} and \code{dfp}.  For parallel runs, particles must be able to move
 from processor to processor as they pass out of the $(x,y,z)$-interval of the
 local processor. Since not all particles are present at the same processor at
-the same time (hopefully), there is some memory optimisation in making
+the same time (hopefully), there is some memory optimization in making
 \code{fp} not big enough to contain all the particles at once. This is achieved
 by setting the code variable \code{mpar_loc} less than \code{npar} in
 \code{cparam.local} for parallel runs. When running with millions of particles,
@@ -4000,7 +4000,7 @@ follows (see the subroutine \code{redist_particles_procs} in
   \item The index number of the receiving processor is then calculated. This
       requires some assumption about the grid on other processors and will
       currently not work for nonequidistant grids. Particles don't always pass
-      to neighbouring processors as the global boundary conditions may send
+      to neighboring processors as the global boundary conditions may send
       them to the other side of the global domains (periodic boundary
       conditions).
   \item The migrating particle information is copied to the end of $\code{fp}$,
@@ -4988,7 +4988,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-10-19 19:44:59 $ $,~ $ $Revision: 1.306 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-10-24 06:59:54 $ $,~ $ $Revision: 1.307 $ $}
 
 \section{Timings}
 
@@ -8086,7 +8086,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.306 2005-10-19 19:44:59 dobler Exp $ $}
+$ $Id: manual.tex,v 1.307 2005-10-24 06:59:54 dobler Exp $ $}
 
 
 \end{document}
@@ -8156,4 +8156,19 @@ $ $Id: manual.tex,v 1.306 2005-10-19 19:44:59 dobler Exp $ $}
 % LocalWords:  hyperviscous geodynamo DM coords substeps dec noionization pc ll
 % LocalWords:  Kramers Myr Spitzer Kippenhahn Weigert Remeshing remeshing coef
 % LocalWords:  phiaver pE pF datafiles PNG MPEG mpeg Secs mphi chiral autoconf
-% LocalWords:  automake wd's NEC
+% LocalWords:  automake wd's NEC ifpdf lll vpariev torkel Ulf theine Heinemann
+% LocalWords:  Nordita tarek Tarek Yousef snod Snodin pkapyla apyl Oulu Erland
+% LocalWords:  Haugen ngrs Sarson mee tOnY Mee mcmillan mattias Christensson ph
+% LocalWords:  dorch Bertil Dorch christer Christer Sandin Uppsala Bingert nav
+% LocalWords:  amjed Amjed Mohammed sprache english ajohan astro cond bio Lett
+% LocalWords:  Astron Mech Geophys Dyn Europhys Bifurc Solitons Fickian Multam
+% LocalWords:  protoplanetary aki Astrobiol Stix Anja PPARC Odense userid grav
+% LocalWords:  Xmgrace namelist hostname janus llll CFLAGS DFUNDERSC ifort YEXT
+% LocalWords:  Absoft LCS pgf Mips mips xlf qsuffix df lequidist sinh coeff mT
+% LocalWords:  proc Gnuplot's newrun monoatomic nK kG Upwinding upwinding vT ij
+% LocalWords:  iso viewport Gigabit qmax imax HII Htot pT Tetrode ik dI mon ikl
+% LocalWords:  jk je nonequidistant stacksize ulimit KMP IOT UTF WD's epsi tini
+% LocalWords:  evr xz yz workq subclusters gigabit Gb uplinks OSF Ny Beltrami
+% LocalWords:  varphi cccc gd hydrostat lcc regridding isocontours num eff dF
+% LocalWords:  upwinded centr hyperdiffusion hyperdiffusive meshpoint kpc uint
+% LocalWords:  dampint dampext uext unst irrotational dV cr poly nez
