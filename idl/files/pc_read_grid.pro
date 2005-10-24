@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.12 2005-10-20 08:52:00 bingert Exp $
+; $Id: pc_read_grid.pro,v 1.13 2005-10-24 08:19:11 dobler Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-10-20 08:52:00 $
-;  $Revision: 1.12 $
+;  $Date: 2005-10-24 08:19:11 $
+;  $Revision: 1.13 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -14,26 +14,27 @@ pro pc_read_grid,object=object, dim=dim, param=param, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-  common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
-  COMMON pc_precision, zero, one
+  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "
     print, ""
-    print, "pc_read_grid, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, datadir=datadir, proc=proc,          "
-    print, "              /PRINT, /QUIET, /HELP                                                         "
-    print, "                                                                                            "
-    print, "Returns the grid position arrays and grid deltas of a Pencil-Code run. For a specific       "
-    print, "processor. Returns zeros and empty in all variables on failure.                             "
-    print, "                                                                                            "
-    print, "  datadir: specify the root data directory. Default is './data'                    [string] "
-    print, "     proc: specify a processor to get the data from. Default is 0                 [integer] "
-    print, ""
-    print, "   object: optional structure in which to return all the above as tags          [structure] "
-    print, ""
-    print, "   /PRINT: instruction to print all variables to standard output                            "
-    print, "   /QUIET: instruction not to print any 'helpful' information                               "
-    print, "    /HELP: display this usage information, and exit                                         "
+    print, "pc_read_grid, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, $                      "
+    print, "              datadir=datadir, proc=proc, $                                   "
+    print, "              /PRINT, /QUIET, /HELP                                           "
+    print, "                                                                              "
+    print, "Returns the grid position arrays and grid deltas of a Pencil-Code run. For a  "
+    print, "specific processor. Returns zeros and empty in all variables on failure.      "
+    print, "                                                                              "
+    print, "  datadir: specify root data directory. Default: './data'          [string]   "
+    print, "     proc: specify a processor to get the data from. Default is 0  [integer]  "
+    print, "                                                                              "
+    print, "   object: optional structure in which to return all the above     [structure]"
+    print, "                                                                              "
+    print, "   /PRINT: instruction to print all variables to standard output              "
+    print, "   /QUIET: instruction not to print any 'helpful' information                 "
+    print, "    /HELP: display this usage information, and exit                           "
     return
   ENDIF
 
@@ -65,8 +66,8 @@ t=zero
 x=fltarr(dim.mx)*one & y=fltarr(dim.my)*one & z=fltarr(dim.mz)*one
 dx=zero &  dy=zero &  dz=zero 
 Lx=zero &  Ly=zero &  Lz=zero 
-xprim=fltarr(dim.mx)*one & yprim=fltarr(dim.my)*one & zprim=fltarr(dim.mz)*one
-xprim2=fltarr(dim.mx)*one & yprim2=fltarr(dim.my)*one & zprim2=fltarr(dim.mz)*one
+dx_1=fltarr(dim.mx)*one & dy_1=fltarr(dim.my)*one & dz_1=fltarr(dim.mz)*one
+dx_tilde=fltarr(dim.mx)*one & dy_tilde=fltarr(dim.my)*one & dz_tilde=fltarr(dim.mz)*one
 
 ; Get a unit number
 GET_LUN, file
@@ -81,12 +82,12 @@ for i=0,ncpus-1 do begin
     xloc=fltarr(procdim.mx)*one  
     yloc=fltarr(procdim.my)*one 
     zloc=fltarr(procdim.mz)*one
-    xprimloc=fltarr(procdim.mx)*one  
-    yprimloc=fltarr(procdim.my)*one 
-    zprimloc=fltarr(procdim.mz)*one
-    xprim2loc=fltarr(procdim.mx)*one  
-    yprim2loc=fltarr(procdim.my)*one 
-    zprim2loc=fltarr(procdim.mz)*one
+    dx_1loc=fltarr(procdim.mx)*one  
+    dy_1loc=fltarr(procdim.my)*one 
+    dz_1loc=fltarr(procdim.mz)*one
+    dx_tildeloc=fltarr(procdim.mx)*one  
+    dy_tildeloc=fltarr(procdim.my)*one 
+    dz_tildeloc=fltarr(procdim.mz)*one
     ;
     ;  Don't overwrite ghost zones of processor to the left (and
     ;  accordingly in y and z direction makes a difference on the
@@ -146,8 +147,8 @@ for i=0,ncpus-1 do begin
       ON_IOERROR, missing
       found_Lxyz=1
       readu,file, Lx,Ly,Lz
-      readu,file, xprim,yprim,zprim
-      readu,file, xprim2,yprim2,zprim2
+      readu,file, dx_1,dy_1,dz_1
+      readu,file, dx_tilde,dy_tilde,dz_tilde
   endif else begin
       readu,file, t,xloc,yloc,zloc
       x[i0x:i1x] = xloc[i0xloc:i1xloc]
@@ -162,14 +163,14 @@ for i=0,ncpus-1 do begin
       readu,file, Lx,Ly,Lz
 
       readu,file,xloc,yloc,zloc
-      xprim[i0x:i1x] = xloc[i0xloc:i1xloc]
-      yprim[i0y:i1y] = yloc[i0yloc:i1yloc]
-      zprim[i0z:i1z] = zloc[i0zloc:i1zloc]
+      dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
+      dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
+      dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
 
       readu,file,xloc,yloc,zloc
-      xprim2[i0x:i1x] = xloc[i0xloc:i1xloc]
-      yprim2[i0y:i1y] = yloc[i0yloc:i1yloc]
-      zprim2[i0z:i1z] = zloc[i0zloc:i1zloc]
+      dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
+      dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
+      dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
   endelse
   found_grid_der=1    
 
@@ -194,9 +195,9 @@ if (found_Lxyz and found_grid_der) then begin
                           str((size(z))[1]), $
                      ['t','x','y','z','dx','dy','dz', $
                       'Lx','Ly','Lz', $
-                      'xprim','yprim','zprim', $
-                      'xprim2','yprim2','zprim2'], $
-                       t,x,y,z,dx,dy,dz,Lx,Ly,Lz,xprim,yprim,zprim,xprim2,yprim2,zprim2)
+                      'dx_1','dy_1','dz_1', $
+                      'dx_tilde','dy_tilde','dz_tilde'], $
+                       t,x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
 endif else if (found_Lxyz) then begin
   object = CREATE_STRUCT(name="pc_read_grid_" + $
                           str((size(x))[1]) + '_' + $
@@ -206,17 +207,17 @@ endif else if (found_Lxyz) then begin
                       'Lx','Ly','Lz'], $
                        t,x,y,z,dx,dy,dz,Lx,Ly,Lz)
 
-  xprim=zero  & yprim=zero  & zprim=zero
-  xprim2=zero & yprim2=zero & zprim2=zero
+  dx_1=zero  & dy_1=zero  & dz_1=zero
+  dx_tilde=zero & dy_tilde=zero & dz_tilde=zero
 endif else if (found_grid_der) then begin
   object = CREATE_STRUCT(name="pc_read_grid_" + $
                           str((size(x))[1]) + '_' + $
                           str((size(y))[1]) + '_' + $
                           str((size(z))[1]), $
                      ['t','x','y','z','dx','dy','dz', $
-                      'xprim','yprim','zprim', $
-                      'xprim2','yprim2','zprim2'], $
-                       t,x,y,z,dx,dy,dz,xprim,yprim,zprim,xprim2,yprim2,zprim2)
+                      'dx_1','dy_1','dz_1', $
+                      'dx_tilde','dy_tilde','dz_tilde'], $
+                       t,x,y,z,dx,dy,dz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
 endif
 
 

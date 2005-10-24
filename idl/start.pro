@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.73 2005-10-24 02:12:21 dobler Exp $
+;;; $Id: start.pro,v 1.74 2005-10-24 08:19:11 dobler Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -197,7 +197,7 @@ if (cpar gt 0) then begin
   ;
   dx_1=fltarr(mx)*zero & dy_1=fltarr(my)*zero & dz_1=fltarr(mz)*zero
   dx_tilde=fltarr(mx)*zero& dy_tilde=fltarr(my)*zero& dz_tilde=fltarr(mz)*zero
-  if (any(lequidist ne 0)) then begin
+  if (any(lequidist eq 0)) then begin
     openr,1,gridfile,/F77
     point_lun,1,pos
     readu,1, dx_1,     dy_1,     dz_1

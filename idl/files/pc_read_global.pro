@@ -1,5 +1,5 @@
 ;
-; $Id: pc_read_global.pro,v 1.3 2005-06-21 11:22:16 ajohan Exp $
+; $Id: pc_read_global.pro,v 1.4 2005-10-24 08:19:11 dobler Exp $
 ;
 ;   Read global variable from file.
 ;  
@@ -7,8 +7,8 @@ pro pc_read_global, gvar, varfile=varfile, datadir=datadir, $
     dim=dim, param=param, TRIMALL=TRIMALL, QUIET=QUIET
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-  common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
-  COMMON pc_precision, zero, one
+  common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
+  common pc_precision, zero, one
 ; Default data directory
 
 default, datadir, 'data'

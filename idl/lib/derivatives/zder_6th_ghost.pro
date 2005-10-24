@@ -1,8 +1,10 @@
 ;
-;  $Id: zder_6th_ghost.pro,v 1.9 2005-10-24 02:12:21 dobler Exp $
+;  $Id: zder_6th_ghost.pro,v 1.10 2005-10-24 08:19:12 dobler Exp $
 ;
-;  6th-order first derivative in x direction for date with ghost cells and on
-;  potentially non-equidistant grid.
+;  First derivative d/dz
+;  - 6th-order (7-point stencil)
+;  - with ghost cells
+;  - on potentially non-equidistant grid
 ;
 ;***********************************************************************
 function zder,f
@@ -11,7 +13,7 @@ function zder,f
   common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
 ;
-;  Check if we have a degenerate case (no x-extension)
+;  Check for degenerate case (no z-extension)
 ;
   if (n_elements(lequidist) ne 3) then lequidist=[1,1,1]
   if (nz eq 1) then return,fltarr(nx,ny,nz)
@@ -22,11 +24,13 @@ function zder,f
   if (lequidist[2]) then begin
     dz2=1./(60.*(z[4]-z[3])) 
   endif else begin
-    dz2=spread(dz_1[n1:n2]/60.,[0,1],[nx,ny])
+    dz2=dz_1[n1:n2]/60.
   endelse
 ;
   if (s[0] eq 3) then begin
     if (n2 gt n1) then begin
+      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0],[s[2],s[1]])
+      ; will also work on slices like zder(ss[10,20,*])
       d[*,*,n1:n2]=dz2*( +45.*(f[*,*,n1+1:n2+1]-f[*,*,n1-1:n2-1]) $
                           -9.*(f[*,*,n1+2:n2+2]-f[*,*,n1-2:n2-2]) $
                              +(f[*,*,n1+3:n2+3]-f[*,*,n1-3:n2-3]) )
@@ -37,6 +41,8 @@ function zder,f
   endif else if (s[0] eq 4) then begin
 ;
     if (n2 gt n1) then begin
+      if (lequidist[2] eq 0) then dz2=spread(dz2,[0,0,3],[s[2],s[1],s[4]])
+      ; will also work on slices like zder(uu[10,20,*,*])
       d[*,*,n1:n2,*]=dz2*( +45.*(f[*,*,n1+1:n2+1,*]-f[*,*,n1-1:n2-1,*]) $
                             -9.*(f[*,*,n1+2:n2+2,*]-f[*,*,n1-2:n2-2,*]) $
                                +(f[*,*,n1+3:n2+3,*]-f[*,*,n1-3:n2-3,*]) )
