@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.60 2005-10-23 21:45:31 dobler Exp $
+# CVS: $Id: auto-test,v 1.61 2005-10-24 19:12:04 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -117,7 +117,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.60 2005-10-23 21:45:31 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.61 2005-10-24 19:12:04 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -571,6 +571,12 @@ sub test_rundir {
     my $created_datadir = 0;
 
     $test_status = 0;		#  so far, everything is OK
+
+    # Indicate current run directory in process name (for ps)
+    my $shortdir = $dir;
+    $shortdir =~ s{^$topdir/}{};	# remove common directory prefix
+    $shortdir =~ s{^samples/}{};	# remove leading 'samples/'
+    $0 =~ s/^\s*(\[.*?\])?\s*/[$shortdir] /;
 
     # Go to directory and identify it
     if (! -d $dir) {
