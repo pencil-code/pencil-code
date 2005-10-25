@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.223 2005-10-12 18:34:42 ajohan Exp $ 
+! $Id: sub.f90,v 1.224 2005-10-25 13:10:23 bingert Exp $ 
 
 module Sub 
 
@@ -3955,7 +3955,7 @@ nameloop: do
       logical, optional :: llog
       real, optional, dimension (nx,3) :: gvKperp,gvKpara
 !
-      intent(in) :: bb
+      intent(in) :: bb,bij,gecr,ecr_ij
       intent(out) :: rhs
 !
 !  calculate unit vector of bb
@@ -4024,7 +4024,7 @@ nameloop: do
       do i=1,3
         tmpi(:)=bunit(:,i)*(gvKpara1(:,i)-gvKperp1(:,i))
         do j=1,3
-          tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(i)
+          tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(:)
         enddo
       enddo
 !
