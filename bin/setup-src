@@ -4,7 +4,7 @@
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: setup-src,v 1.27 2005-08-11 17:25:16 mee Exp $
+# CVS $Id: setup-src,v 1.28 2005-10-26 20:26:06 theine Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -28,6 +28,7 @@ set bindir = $PENCIL_HOME/bin
 set srcdir = $PENCIL_HOME/src
 
 ## Remove any broken links...
+## FIXME: The -r option is a GNU extension to xargs and doesn't work on AIX
 find . -type l -print0 | xargs -r0 file | grep "broken symbolic" | sed -e 's/^\|: *broken symbolic.*$/"/g' | xargs rm -f
 
 ## Link csh scripts
