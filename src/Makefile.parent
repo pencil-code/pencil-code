@@ -4,6 +4,8 @@
 #  Pencil Code Makefile for run directories that builds the code in the
 #  src/ subdirectory by running `make' there.
 #
+#  FIXME: ``make -C'' is a GNU extension and doesn't work on AIX for instance.
+#
 
 # Build the code:
 default:
