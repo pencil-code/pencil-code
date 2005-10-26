@@ -7,25 +7,25 @@
 
 # Build the code:
 default:
-	$(MAKE) -C src -f Makefile.src Makefile; $(MAKE) -C src
+	(cd src; $(MAKE) -f Makefile.src Makefile; $(MAKE))
 
 # Use calculated dependencies instead:
 depend dep:
-	$(MAKE) -C src -f Makefile.src depend
+	(cd src; $(MAKE) -f Makefile.src depend)
 
 # Clean up most files:
 clean:
-	$(MAKE) -C src -f Makefile.src clean
+	(cd src; $(MAKE) -f Makefile.src clean)
 
 # Clean up even more files:
 cleann:
-	$(MAKE) -C src -f Makefile.src cleann
+	(cd src; $(MAKE) -f Makefile.src cleann)
 # Same thing:
 cleanall: cleann
 
 # Compile with -g
 debug:
-	$(MAKE) -C src debug
+	(cd src; $(MAKE) debug)
 
 # Clean up files produced by common queuing systems:
 qoutclean:
