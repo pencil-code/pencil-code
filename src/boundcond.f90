@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.78 2005-09-30 08:00:42 ajohan Exp $
+! $Id: boundcond.f90,v 1.79 2005-10-27 15:07:31 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -116,6 +116,10 @@ module Boundcond
                   call bc_one_x(f,topbot,j)
                 case ('set')      ! set boundary value
                   call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
+                case ('e1')       ! extrapolation
+                  call bcx_extrap_2_1(f,topbot,j)
+                case ('e2')       ! extrapolation
+                  call bcx_extrap_2_2(f,topbot,j)
                 case ('')         ! do nothing; assume that everything is set
                 case default
                   write(unit=errormsg,fmt='(A,A4,A,I3)') &
@@ -190,6 +194,10 @@ module Boundcond
                 call bc_one_y(f,topbot,j)
               case ('set')      ! set boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.,val=fbcy12)
+              case ('e1')       ! extrapolation
+                call bcy_extrap_2_1(f,topbot,j)
+              case ('e2')       ! extrapolation
+                call bcy_extrap_2_2(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
               case default
                 write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
@@ -717,6 +725,73 @@ module Boundcond
 !
     endsubroutine bc_extrap_2_1
 !***********************************************************************
+    subroutine bcx_extrap_2_1(f,topbot,j)
+!
+!  Extrapolation boundary condition for x.
+!  Correct for polynomials up to 2nd order, determined 1 further degree
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!   19-jun-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+!
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(l1-1,:,:,j)=0.25*(  9*f(l1,:,:,j)- 3*f(l1+1,:,:,j)- 5*f(l1+2,:,:,j)+ 3*f(l1+3,:,:,j))
+        f(l1-2,:,:,j)=0.05*( 81*f(l1,:,:,j)-43*f(l1+1,:,:,j)-57*f(l1+2,:,:,j)+39*f(l1+3,:,:,j))
+        f(l1-3,:,:,j)=0.05*(127*f(l1,:,:,j)-81*f(l1+1,:,:,j)-99*f(l1+2,:,:,j)+73*f(l1+3,:,:,j))
+
+      case('top')               ! top boundary
+        f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
+        f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
+        f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
+
+      case default
+        print*, "bcx_extrap_2_1: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bcx_extrap_2_1
+!***********************************************************************
+    subroutine bcy_extrap_2_1(f,topbot,j)
+!
+!  Extrapolation boundary condition for x.
+!  Correct for polynomials up to 2nd order, determined 1 further degree
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!   19-jun-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(:,m1-1,:,j)=0.25*(  9*f(:,m1,:,j)- 3*f(:,m1+1,:,j)- 5*f(:,m1+2,:,j)+ 3*f(:,m1+3,:,j))
+        f(:,m1-2,:,j)=0.05*( 81*f(:,m1,:,j)-43*f(:,m1+1,:,j)-57*f(:,m1+2,:,j)+39*f(:,m1+3,:,j))
+        f(:,m1-3,:,j)=0.05*(127*f(:,m1,:,j)-81*f(:,m1+1,:,j)-99*f(:,m1+2,:,j)+73*f(:,m1+3,:,j))
+
+      case('top')               ! top boundary
+        f(:,m2+1,:,j)=0.25*(  9*f(:,m2,:,j)- 3*f(:,m2-1,:,j)- 5*f(:,m2-2,:,j)+ 3*f(:,m2-3,:,j))
+        f(:,m2+2,:,j)=0.05*( 81*f(:,m2,:,j)-43*f(:,m2-1,:,j)-57*f(:,m2-2,:,j)+39*f(:,m2-3,:,j))
+        f(:,m2+3,:,j)=0.05*(127*f(:,m2,:,j)-81*f(:,m2-1,:,j)-99*f(:,m2-2,:,j)+73*f(:,m2-3,:,j))
+
+      case default
+        print*, "bcy_extrap_2_1: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bcy_extrap_2_1
+!***********************************************************************
     subroutine bc_extrap_2_2(f,topbot,j)
 !
 !  Extrapolation boundary condition.
@@ -756,6 +831,86 @@ module Boundcond
       endselect
 !
     endsubroutine bc_extrap_2_2
+!***********************************************************************
+    subroutine bcx_extrap_2_2(f,topbot,j)
+!
+!  Extrapolation boundary condition.
+!  Correct for polynomials up to 2nd order, determined 2 further degrees
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!   19-jun-03/wolf: coded
+!    1-jul-03/axel: introduced abbreviations n1p4,n2m4
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j,l1p4,l2m4
+!
+!  abbreviations, because otherwise the ifc compiler complains
+!  for 1-D runs without vertical extent
+!
+      l1p4=l1+4
+      l2m4=l2-4
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(l1-1,:,:,j)=0.2   *(  9*f(l1,:,:,j)                 -  4*f(l1+2,:,:,j)- 3*f(l1+3,:,:,j)+ 3*f(l1p4,:,:,j))
+        f(l1-2,:,:,j)=0.2   *( 15*f(l1,:,:,j)- 2*f(l1+1,:,:,j)-  9*f(l1+2,:,:,j)- 6*f(l1+3,:,:,j)+ 7*f(l1p4,:,:,j))
+        f(l1-3,:,:,j)=1./35.*(157*f(l1,:,:,j)-33*f(l1+1,:,:,j)-108*f(l1+2,:,:,j)-68*f(l1+3,:,:,j)+87*f(l1p4,:,:,j))
+
+      case('top')               ! top boundary
+        f(l2+1,:,:,j)=0.2   *(  9*f(l2,:,:,j)                 -  4*f(l2-2,:,:,j)- 3*f(l2-3,:,:,j)+ 3*f(l2m4,:,:,j))
+        f(l2+2,:,:,j)=0.2   *( 15*f(l2,:,:,j)- 2*f(l2-1,:,:,j)-  9*f(l2-2,:,:,j)- 6*f(l2-3,:,:,j)+ 7*f(l2m4,:,:,j))
+        f(l2+3,:,:,j)=1./35.*(157*f(l2,:,:,j)-33*f(l2-1,:,:,j)-108*f(l2-2,:,:,j)-68*f(l2-3,:,:,j)+87*f(l2m4,:,:,j))
+
+      case default
+        print*, "bcx_extrap_2_2: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bcx_extrap_2_2
+!***********************************************************************
+    subroutine bcy_extrap_2_2(f,topbot,j)
+!
+!  Extrapolation boundary condition.
+!  Correct for polynomials up to 2nd order, determined 2 further degrees
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!   19-jun-03/wolf: coded
+!    1-jul-03/axel: introduced abbreviations n1p4,n2m4
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j,m1p4,m2m4
+!
+!  abbreviations, because otherwise the ifc compiler complains
+!  for 1-D runs without vertical extent
+!
+      m1p4=m1+4
+      m2m4=m2-4
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(:,m1-1,:,j)=0.2   *(  9*f(:,m1,:,j)                 -  4*f(:,m1+2,:,j)- 3*f(:,m1+3,:,j)+ 3*f(:,m1p4,:,j))
+        f(:,m1-2,:,j)=0.2   *( 15*f(:,m1,:,j)- 2*f(:,m1+1,:,j)-  9*f(:,m1+2,:,j)- 6*f(:,m1+3,:,j)+ 7*f(:,m1p4,:,j))
+        f(:,m1-3,:,j)=1./35.*(157*f(:,m1,:,j)-33*f(:,m1+1,:,j)-108*f(:,m1+2,:,j)-68*f(:,m1+3,:,j)+87*f(:,m1p4,:,j))
+
+      case('top')               ! top boundary
+        f(:,m2+1,:,j)=0.2   *(  9*f(:,m2,:,j)                 -  4*f(:,m2-2,:,j)- 3*f(:,m2-3,:,j)+ 3*f(:,m2m4,:,j))
+        f(:,m2+2,:,j)=0.2   *( 15*f(:,m2,:,j)- 2*f(:,m2-1,:,j)-  9*f(:,m2-2,:,j)- 6*f(:,m2-3,:,j)+ 7*f(:,m2m4,:,j))
+        f(:,m2+3,:,j)=1./35.*(157*f(:,m2,:,j)-33*f(:,m2-1,:,j)-108*f(:,m2-2,:,j)-68*f(:,m2-3,:,j)+87*f(:,m2m4,:,j))
+
+      case default
+        print*, "bcy_extrap_2_2: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bcy_extrap_2_2
 !***********************************************************************
     subroutine bc_extrap0_2_0(f,topbot,j)
 !
