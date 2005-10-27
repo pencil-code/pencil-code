@@ -5,12 +5,14 @@
 !  gaussian seed magnetic field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2005-06-26 17:34:41 eos_merger_tony Exp $',
+  cvsid='$Id: start.in,v 1.4 2005-10-27 05:00:08 dobler Exp $',
+/
+&eos_init_pars
+  gamma=1.
 /
 &hydro_init_pars
 /
 &density_init_pars
-  gamma=1.
 /
 &magnetic_init_pars
   initaa='gaussian-noise', amplaa=1e-4

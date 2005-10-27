@@ -3,13 +3,14 @@
 !  forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2005-06-26 17:34:41 eos_merger_tony Exp $',
+  cvsid='$Id: run.in,v 1.4 2005-10-27 05:00:08 dobler Exp $',
   nt=20000, it1=20, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50., dvid=1., ialive=1
   dspec=10, ou_spec=T, ab_spec=T, fft_switch='fftpack'
 /
+&eos_run_pars
+/
 &hydro_run_pars
-  nu=5e-3
 /
 &density_run_pars
 /
@@ -18,4 +19,7 @@
 /
 &magnetic_run_pars
   eta=5e-3
+/
+&viscosity_run_pars
+  nu=5e-3
 /
