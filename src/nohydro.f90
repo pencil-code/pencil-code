@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.44 2005-10-28 21:12:53 dobler Exp $
+! $Id: nohydro.f90,v 1.45 2005-10-28 21:44:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -15,6 +15,7 @@
 module Hydro
 
   use Cparam
+  use Cdata, only: huge1
   use Density
   use Messages
 
@@ -76,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.44 2005-10-28 21:12:53 dobler Exp $")
+           "$Id: nohydro.f90,v 1.45 2005-10-28 21:44:35 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
