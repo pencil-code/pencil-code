@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.43 2005-10-06 08:04:37 ajohan Exp $
+! $Id: nohydro.f90,v 1.44 2005-10-28 21:12:53 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,8 +25,8 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: nu_turb=0.,nu_turb0=0.,tau_nuturb=0.,nu_turb1=0.
   logical :: lcalc_turbulence_pars=.false.
-  real :: kep_cutoff_pos_ext= huge(1.0),kep_cutoff_width_ext=0.0
-  real :: kep_cutoff_pos_int=-huge(1.0),kep_cutoff_width_int=0.0
+  real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
+  real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0
 
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber? 
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.43 2005-10-06 08:04:37 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.44 2005-10-28 21:12:53 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
