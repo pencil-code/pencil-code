@@ -44,9 +44,9 @@ case type of
   end
 
   5: begin                      ; double precision
-    epsi = 2.220446049250313e-016
-    hug  = 1.797693134862316e+308
-    tiny = 2.225073858507201e-308
+    epsi = 2.220446049250313d-016
+    hug  = 1.7976931348623158d+308
+    tiny = 2.225073858507201d-308
   end
 
   else: begin
