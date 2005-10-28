@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.155 2005-10-18 12:22:41 ajohan Exp $
+# $Id: getconf.csh,v 1.156 2005-10-28 22:34:10 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -764,7 +764,7 @@ endif
 # them under $datadir/)
 set subdirs = ("allprocs" "averages" "idl")
 set procdirs = \
-    `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"proc";' 'i; }' | bc`
+    `perl -e 'for $i (0..'"$ncpus"'-1) { print "proc$i\n"}'`
 if ($local_disc) then
   if ($one_local_disc) then
     echo "Creating directory structure on common scratch disc"
