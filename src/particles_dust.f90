@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.43 2005-10-19 07:40:14 ajohan Exp $
+! $Id: particles_dust.f90,v 1.44 2005-11-01 16:26:16 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -27,7 +27,7 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: cdtp=0.2
+  real :: tausmin=0.0, taus1max=0.0, cdtp=0.2
   real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
   real :: Ri0=0.25, eps1=0.5
   integer :: it_dustburst=0
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.43 2005-10-19 07:40:14 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.44 2005-11-01 16:26:16 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -187,6 +187,14 @@ module Particles
       if (nu_epicycle/=0.0) then
         gravz_profile='linear'
         nu_epicycle2=nu_epicycle**2
+      endif
+!
+!  Calculate inverse of minimum friction time.
+!
+      if (tausmin/=0.0) then
+        taus1max=1.0/tausmin
+        if (lroot) print*, 'initialize_particles: '// &
+            'minimum friction time tausmin=', tausmin
       endif
 !
 !  Write constants to disc.
@@ -595,7 +603,8 @@ module Particles
       real, dimension (nx) :: np, tausg1, rho
       real, dimension (3) :: uup
       real :: Omega2, cp1tilde
-      integer :: i,k
+      real :: np_point, eps_point, rho_point, tausp1_point, tausg1_point
+      integer :: i, k, ix0, iy0, iz0
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: fp
@@ -628,63 +637,109 @@ module Particles
       if (tausp1/=0.) then
         if (lheader) print*,'dvvp_dt: Add drag force; tausp=', tausp
 !
+!  Two methods for calculating drag force are implemented. The fastest
+!  method is when the combined drag force of dust and gas is not limited
+!  downwards. This can, however, lead to very small time-steps.
+!          
+        if (tausmin==0.0) then
+!
 !  Use interpolation to calculate gas velocity at position of particles.
 !
-        do k=1,npar_loc
-          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ipar(k))
-          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tausp1*(fp(k,ivpx:ivpz)-uup)
-        enddo
+          do k=1,npar_loc
+            call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ipar(k))
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tausp1*(fp(k,ivpx:ivpz)-uup)
+          enddo
 !
 !  Back-reaction from dust particles on the gas.
 !        
-        if (ldragforce_gas) then
+          if (ldragforce_gas) then
 !
 !  Calculate auxiliary variables np and vvpsum.
 !          
+            f(l1:l2,m1:m2,n1:n2,inp)=0.0
+            f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
+            do k=1,npar_loc
+              call map_xxp_vvp_grid(f,fp(k,ixp:izp),fp(k,ivpx:ivpz))
+            enddo
+!
+!  Loop over pencils to avoid global arrays.
+!          
+            do imn=1,ny*nz
+              n=nn(imn); m=mm(imn)
+              lfirstpoint=(imn==1)
+              llastpoint=(imn==(ny*nz))
+              np=f(l1:l2,m,n,inp)
+              uupsum=f(l1:l2,m,n,ivpxsum:ivpzsum)
+              if (ldensity_nolog) then
+                rho=f(l1:l2,m,n,ilnrho)
+              else
+                rho=exp(f(l1:l2,m,n,ilnrho))
+              endif
+              tausg1 = rhop_tilde*np*tausp1/rho
+!
+!  Add drag force on gas.
+!              
+              do i=1,3
+                where (np/=0) df(l1:l2,m,n,iux-1+i) = df(l1:l2,m,n,iux-1+i) - &
+                    tausg1*(f(l1:l2,m,n,iux-1+i)-uupsum(:,i)/np(:))
+              enddo
+!
+!  Drag force contribution to time-step.
+!            
+              if (lfirst.and.ldt) dt1_max=max(dt1_max,(tausp1+tausg1)/cdtp)
+              if (ldiagnos.and.idiag_dtdragp/=0) &
+                  call max_mn_name((tausp1+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
+!            
+            enddo
+          else
+!
+!  No back-reaction on gas.
+!            
+            if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1/cdtp)
+            if (ldiagnos.and.idiag_dtdragp/=0) &
+                call max_mn_name(spread(tausp1/cdtp,1,nx),idiag_dtdragp,l_dt=.true.)
+          endif
+!
+!  Method whereby friction time is increased in places of high dust-to-gas
+!  ratio. Quite a lot slower, but sometimes necessary to avoid small time-steps.
+!
+        else
           f(l1:l2,m1:m2,n1:n2,inp)=0.0
           f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
           do k=1,npar_loc
             call map_xxp_vvp_grid(f,fp(k,ixp:izp),fp(k,ivpx:ivpz))
           enddo
 !
-!  Loop over pencils to avoid global arrays.
-!          
-          do imn=1,ny*nz
-            n=nn(imn); m=mm(imn)
-            lfirstpoint=(imn==1)
-            llastpoint=(imn==(ny*nz))
-            np=f(l1:l2,m,n,inp)
-            uupsum=f(l1:l2,m,n,ivpxsum:ivpzsum)
+!  Take one particle at a time to be able to increase friction time if
+!  the friction time-step is otherwise too low.
+!           
+          do k=1,npar_loc
+            call find_closest_gridpoint(fp(k,ixp:izp),ix0,iy0,iz0)
+            np_point=f(ix0,iy,iz0,inp)
             if (ldensity_nolog) then
-              rho=f(l1:l2,m,n,ilnrho)
+              rho_point=f(ix0,iy0,iz0,ilnrho)
             else
-              rho=exp(f(l1:l2,m,n,ilnrho))
+              rho_point=exp(f(ix0,iy0,iz0,ilnrho))
             endif
-            tausg1 = rhop_tilde*np*tausp1/rho
-!
-!  Add drag force on gas.
-!              
-            do i=1,3
-              where (np/=0) df(l1:l2,m,n,iux-1+i) = df(l1:l2,m,n,iux-1+i) - &
-                  tausg1*(f(l1:l2,m,n,iux-1+i)-uupsum(:,i)/np(:))
-            enddo
-!
+            tausp1_point=tausp1
+            eps_point=rhop_tilde*np_point/rho_point
+!  Increase friction time if too low.
+            if ( (1+eps_point)*tausp1_point > taus1max) then
+              tausp1_point=1/(1+eps_point)*taus1max
+            endif
+            tausg1_point=rhop_tilde/rho_point*tausp1_point
+            call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ipar(k))
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) &
+                - tausp1_point*(fp(k,ivpx:ivpz)-uup)
+            df(ix0,iy0,iz0,iux:iuz)=df(ix0,iy0,iz0,iux:iuz) &
+                - tausg1_point*(f(ix0,iy0,iz0,iux:iuz)-fp(k,ivpx:ivpz))
 !  Drag force contribution to time-step.
-!            
-            if (lfirst.and.ldt) dt1_max=max(dt1_max,(tausp1+tausg1)/cdtp)
+            if (lfirst.and.ldt) &
+                dt1_max=max(dt1_max,(tausp1_point+np_point*tausg1_point)/cdtp)
             if (ldiagnos.and.idiag_dtdragp/=0) &
-                call max_mn_name((tausp1+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
-!            
+                call max_mn_name(spread((tausp1_point+np_point*tausg1_point)/   cdtp,1,nx),idiag_dtdragp,l_dt=.true.)
           enddo
-        else
-!
-!  No back-reaction on gas.
-!            
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1/cdtp)
-          if (ldiagnos.and.idiag_dtdragp/=0) &
-              call max_mn_name(spread(tausp1/cdtp,1,nx),idiag_dtdragp,l_dt=.true.)
         endif
-!          
       endif
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
