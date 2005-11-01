@@ -1,4 +1,4 @@
-! $Id: special_sample.f90,v 1.4 2005-07-05 16:21:43 mee Exp $
+! $Id: special_sample.f90,v 1.5 2005-11-01 14:28:08 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -30,13 +30,13 @@ module Special
   real :: kx_alpm=1.,ky_alpm=1.,kz_alpm=1.
   real :: Omega_ampl=.0
 
-  namelist /alpm_init_pars/ &
+  namelist /special_init_pars/ &
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
 
   ! run parameters
   real :: etat_alpm=1., Rm_alpm=1., kf_alpm=1.
 
-  namelist /alpm_run_pars/ &
+  namelist /special_run_pars/ &
        etat_alpm,Rm_alpm,kf_alpm, &
        Omega_profile,Omega_ampl
 
@@ -74,7 +74,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.4 2005-07-05 16:21:43 mee Exp $")
+           "$Id: special_sample.f90,v 1.5 2005-11-01 14:28:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -207,9 +207,9 @@ module Special
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
-        read(unit,NML=alpm_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=alpm_init_pars,ERR=99)
+        read(unit,NML=special_init_pars,ERR=99)
       endif
 
 99    return
@@ -218,7 +218,7 @@ module Special
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=alpm_init_pars)
+      write(unit,NML=special_init_pars)
 
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -227,9 +227,9 @@ module Special
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
-        read(unit,NML=alpm_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=alpm_run_pars,ERR=99)
+        read(unit,NML=special_run_pars,ERR=99)
       endif
 
 99    return
@@ -238,7 +238,7 @@ module Special
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=alpm_run_pars)
+      write(unit,NML=special_run_pars)
 
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -429,7 +429,7 @@ module Special
 !  Fi = a*eps_ijl Slk BjBk
 !
       select case(Omega_profile)
-      case('nothing'); print*,'Omega_profile=nothing'
+      case('nothing'); if (headtt) print*,'Omega_profile=nothing'
       case('(0,Sx,0)')
         if (headtt) print*,'divflux: uniform shear, S=',Omega_ampl
         divflux=Omega_ampl*(p%bb(:,1)*p%bij(:,1,3)-p%bb(:,2)*p%bij(:,2,3))

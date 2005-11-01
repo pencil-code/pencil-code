@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.259 2005-10-20 06:47:33 brandenb Exp $
+! $Id: magnetic.f90,v 1.260 2005-11-01 14:28:08 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -176,7 +176,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.259 2005-10-20 06:47:33 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.260 2005-11-01 14:28:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1420,8 +1420,11 @@ module Magnetic
       select case(Omega_profile)
       case('nothing'); print*,'Omega_profile=nothing'
       case('(0,Sx,0)')
-        if (headtt) print*,'Omega_effect: uniform shear, S=',Omega_ampl
+        if (headtt) print*,'Omega_effect: uniform shear in x, S=',Omega_ampl
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)-Omega_ampl*f(l1:l2,m,n,iay)
+      case('(Sz,0,0)')
+        if (headtt) print*,'Omega_effect: uniform shear in z, S=',Omega_ampl
+        df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iax)
       case('(0,cosx*cosz,0)')
         if (headtt) print*,'Omega_effect: solar shear, S=',Omega_ampl
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iay) &
