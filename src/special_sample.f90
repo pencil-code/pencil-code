@@ -1,4 +1,4 @@
-! $Id: special_sample.f90,v 1.5 2005-11-01 14:28:08 brandenb Exp $
+! $Id: special_sample.f90,v 1.6 2005-11-02 10:27:34 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -35,9 +35,10 @@ module Special
 
   ! run parameters
   real :: etat_alpm=1., Rm_alpm=1., kf_alpm=1.
+  logical :: ladvect_alpm=.false.
 
   namelist /special_run_pars/ &
-       etat_alpm,Rm_alpm,kf_alpm, &
+       etat_alpm,Rm_alpm,kf_alpm,ladvect_alpm, &
        Omega_profile,Omega_ampl
 
   ! other variables (needs to be consistent with reset list below)
@@ -74,7 +75,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.5 2005-11-01 14:28:08 brandenb Exp $")
+           "$Id: special_sample.f90,v 1.6 2005-11-02 10:27:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -168,7 +169,8 @@ module Special
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: alpm,EMFdotB,divflux
+      real, dimension (nx,3) :: galpm
+      real, dimension (nx) :: alpm,ugalpm,EMFdotB,divflux
       type (pencil_case) :: p
       integer :: j
 !
@@ -184,12 +186,18 @@ module Special
       alpm=f(l1:l2,m,n,ialpm)
 !
 !  dynamical quenching equation
+!  with advection flux proportional to uu
 !
       if(lmagnetic) then
         call dot_mn(p%mf_EMF,p%bb,EMFdotB)
         call divflux_from_Omega_effect(p,divflux)
-        if(lmagnetic) df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
+        df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
            -2*etat_alpm*kf_alpm**2*(EMFdotB+alpm/Rm_alpm)-etat_alpm*divflux
+        if(ladvect_alpm) then
+          call grad(f,ialpm,galpm)
+          call dot_mn(p%uu,galpm,ugalpm)
+          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm
+        endif
       endif
 !
 !  diagnostics
