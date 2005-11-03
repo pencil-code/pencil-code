@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.30 2005-10-24 08:19:11 dobler Exp $
+; $Id: pc_read_var.pro,v 1.31 2005-11-03 14:04:16 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-10-24 08:19:11 $
-;  $Revision: 1.30 $
+;  $Date: 2005-11-03 14:04:16 $
+;  $Revision: 1.31 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -296,12 +296,6 @@ if (n_elements(proc) ne 1) then begin
   endfor
 endif
 
-if (keyword_set(TRIMXYZ)) then begin
-  x=x[dim.l1:dim.l2]
-  y=y[dim.m1:dim.m2]
-  z=z[dim.n1:dim.n2]
-endif
-
 ; Build structure of all the variables
 ;if (n_elements(proc) eq 1) then begin
 ;  objectname=filename+arraytostring(tags,LIST='_')
@@ -334,16 +328,23 @@ endif
 ;Save changs to the variables array (but don't include the effect of /TRIMALL)
 variables_in=variables
 
+;  Trim x, y and z if requested
+if (keyword_set(TRIMXYZ)) then begin
+  xyzstring="x[dim.l1:dim.l2],y[dim.m1:dim.m2],z[dim.n1:dim.n2]"
+endif else begin
+  xyzstring="x,y,z"
+endelse
+
 if keyword_set(TRIMALL) then begin
 ;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
   variables = 'pc_noghost('+variables+',dim=dim)'
 endif
 
+makeobject = "object = "+ $
+    "CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
+    arraytostring(tags,QUOTE="'") + "],t,"+xyzstring+",dx,dy,dz" + $
+    arraytostring(variables) + ")"
 
-makeobject="object = CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
-                                     arraytostring(tags,QUOTE="'") + $
-                                     "],t,x,y,z,dx,dy,dz" + $
-                                     arraytostring(variables) + ")"
 if (execute(makeobject) ne 1) then begin
       message, 'ERROR Evaluating variables: '+makeobject,/INFO
       undefine,object
