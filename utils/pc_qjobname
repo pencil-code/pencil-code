@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 ##
-## $Id: pc_qjobname,v 1.6 2005-10-18 12:22:21 ajohan Exp $
+## $Id: pc_qjobname,v 1.7 2005-11-03 09:09:31 ajohan Exp $
 ##
 $host = `hostname`;
 #
@@ -28,7 +28,7 @@ elsif ($host =~ /riologin/ || $host =~ /pia/){   # SGE
   
   if ($#ARGV ne -1) { @jobs = @ARGV; }
   else {
-    @jobs = `qstat | grep $ENV{'USER'} `;
+    @jobs = `qstat | grep $ENV{'USER'} | sort`;
     foreach $job (@jobs) { $job =~ s/^ +([0-9]*)/$1/g; $job=$1; chomp $job; }
     }
 
