@@ -1,6 +1,14 @@
-! $Id: special_sample.f90,v 1.7 2005-11-07 18:09:26 dobler Exp $
+! $Id: special_sample.f90,v 1.8 2005-11-07 18:53:01 dobler Exp $
 
-!  This modules solves the passive scalar advection equation
+!
+!  This module serves as a sample for a special_XXX modulej htat
+!  introduces additional primitive variables. Use this as a basis for you
+!  own special_ module if you need one.
+!
+!  To ensure it is kept up to date, we also use it for production stuff
+!  involving mean-field theory, which explains the presence of a number
+!  of non-generic routines
+!
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -75,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.7 2005-11-07 18:09:26 dobler Exp $")
+           "$Id: special_sample.f90,v 1.8 2005-11-07 18:53:01 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
