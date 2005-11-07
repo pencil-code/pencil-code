@@ -1,4 +1,4 @@
-! $Id: special_sample.f90,v 1.6 2005-11-02 10:27:34 brandenb Exp $
+! $Id: special_sample.f90,v 1.7 2005-11-07 18:09:26 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -75,7 +75,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.6 2005-11-02 10:27:34 brandenb Exp $")
+           "$Id: special_sample.f90,v 1.7 2005-11-07 18:09:26 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,7 +128,7 @@ module Special
       use Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,prof
+      real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       select case(initalpm)
         case('zero'); f(:,:,:,ialpm)=0.
@@ -153,7 +153,7 @@ module Special
 !
       intent(in) :: f
       intent(inout) :: p
-!     
+!
       if(NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
 !
     endsubroutine calc_pencils_special
@@ -172,7 +172,6 @@ module Special
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,ugalpm,EMFdotB,divflux
       type (pencil_case) :: p
-      integer :: j
 !
       intent(in)  :: f
       intent(out) :: df
@@ -434,10 +433,14 @@ module Special
       real, dimension (nx) :: divflux
       type (pencil_case) :: p
 !
+      intent(in)  :: p
+      intent(out) :: divflux
+!
 !  Fi = a*eps_ijl Slk BjBk
 !
       select case(Omega_profile)
       case('nothing'); if (headtt) print*,'Omega_profile=nothing'
+        divflux=0               ! or we will be using uninitialized memory...
       case('(0,Sx,0)')
         if (headtt) print*,'divflux: uniform shear, S=',Omega_ampl
         divflux=Omega_ampl*(p%bb(:,1)*p%bij(:,1,3)-p%bb(:,2)*p%bij(:,2,3))
@@ -452,6 +455,7 @@ module Special
                            +(p%bb(:,1)**2-p%bb(:,3)**2)&
                               *sin(x(l1:l2))*sin(z(n)))
       case default; print*,'Omega_profile=unknown'
+        divflux=0               ! or we will be using uninitialized memory...
       endselect
 !
     endsubroutine divflux_from_Omega_effect
