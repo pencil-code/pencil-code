@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.219 2005-10-12 19:14:40 ajohan Exp $
+! $Id: hydro.f90,v 1.220 2005-11-07 18:53:23 dobler Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -150,7 +150,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.219 2005-10-12 19:14:40 ajohan Exp $")
+           "$Id: hydro.f90,v 1.220 2005-11-07 18:53:23 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -478,7 +478,7 @@ module Hydro
 !    exp(-(z-z1)^2/(2w^2))*(cos(kk)+2*sin(kk)+3*cos(3kk)),
 !    with kk=k_x*x+k_y*y
 !  Not a big success (convection starts much slower than with
-!  random or 'up-down' ..
+!  random or 'up-down') ..
 !
           if (lroot) print*,'init_uu: truncated Fourier'
           prof = ampluu(j)*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical Gaussian
@@ -748,7 +748,7 @@ module Hydro
 !      
       real, dimension (nx) :: pdamp
       real :: c2,s2
-      integer :: i,j
+      integer :: j
 !
       intent(in) :: f,p
       intent(out) :: df

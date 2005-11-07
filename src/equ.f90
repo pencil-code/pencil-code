@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.259 2005-10-12 18:34:42 ajohan Exp $
+! $Id: equ.f90,v 1.260 2005-11-07 18:53:23 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -345,7 +345,7 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: maxadvec,maxdiffus,pfreeze_int,pfreeze_ext
-      integer :: iv,ider,j,k
+      integer :: iv
 !
 !  print statements when they are first executed
 !
@@ -353,7 +353,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.259 2005-10-12 18:34:42 ajohan Exp $")
+           "$Id: equ.f90,v 1.260 2005-11-07 18:53:23 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -377,7 +377,6 @@ module Equ
 !
       if (ldustdensity .and. ldustnulling) call null_dust_vars(f)
       if (ldustdensity .and. lmdvar .and. itsub == 1) call redist_mdbins(f)
-!
 !
 ! Prepare x-ghost zones required before f-array communication AND shock calculation
 !
@@ -774,12 +773,11 @@ module Equ
       use Cdata
       use General, only: random_number_wrapper, random_seed_wrapper
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f 
-      real, dimension(mx,my,mz,mvar) :: df 
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, allocatable, dimension(:,:,:,:) :: df_ref, f_other
       real, allocatable, dimension(:) :: fname_ref
-      real :: a
       integer :: i,j,k,penc,iv
       integer, dimension (mseed) :: iseed_org
       logical :: lconsistent=.true., ldie=.false.
@@ -940,7 +938,9 @@ f_loop: do iv=1,mvar
       call life_support_off
 !
       if (ldie) call fatal_error('pencil_consistency_check','DYING')
-!        
+!
+      if (NO_WARN) print*, f(1,1,1,1) !(keep compiler quiet)
+!
     endsubroutine pencil_consistency_check
 !***********************************************************************
 

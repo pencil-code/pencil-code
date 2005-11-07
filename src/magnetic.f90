@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.260 2005-11-01 14:28:08 brandenb Exp $
+! $Id: magnetic.f90,v 1.261 2005-11-07 18:53:23 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -176,7 +176,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.260 2005-11-01 14:28:08 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.261 2005-11-07 18:53:23 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -679,8 +679,8 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f       
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
-      real, dimension (nx) :: rho1_jxb,quenching_factor,alpha_total
+      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext!,jj_ext
+      real, dimension (nx) :: rho1_jxb,alpha_total
       real :: B2_ext,c,s
       integer :: i,j
 !
@@ -780,7 +780,7 @@ module Magnetic
       if (lpencil(i_jxbr)) then
         rho1_jxb=p%rho1
 !  set rhomin_jxb>0 in order to limit the jxb term at very low densities.
-!  set va2max_jxb>0 in order to limit the jxb term at very high alven speeds.
+!  set va2max_jxb>0 in order to limit the jxb term at very high Alfven speeds.
 !  set va2power_jxb to an integer value in order to specify the power
 !  of the limiting term,
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
@@ -888,9 +888,9 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: geta,uxDxuxb,fres,meanfield_EMF
+      real, dimension (nx,3) :: geta,uxDxuxb,fres
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,hall_ueff2,b2b13,sign_jo
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,gshockgai
       real :: tmp,eta_out1
       integer :: i,j
@@ -1122,7 +1122,7 @@ module Magnetic
           if (idiag_bzpt/=0) call save_name(p%bb(lpoint-nghost,3),idiag_bzpt)
         endif
 !
-!  v_A = |B|/sqrt(rho); in units where "4pi"=1
+!  v_A = |B|/sqrt(rho); in units where mu_0=1
 !
         if (idiag_vArms/=0) call sum_mn_name(p%va2,idiag_vArms,lsqrt=.true.)
         if (idiag_vAmax/=0) call max_mn_name(p%va2,idiag_vAmax,lsqrt=.true.)
@@ -2261,6 +2261,8 @@ module Magnetic
         f(l1:l2,m,n,ivar+1) =  sigma0*x_mn*r_1_mn + sigma1*z_mn*r_1_mn
         f(l1:l2,m,n,ivar+2) =                     - sigma1*y_mn*r_1_mn
       enddo
+!
+      if (NO_WARN) print*, xx(1,1,1),yy(1,1,1),zz(1,1,1) !(keep compiler quiet)
 !
     endsubroutine piecew_dipole_aa
 !***********************************************************************
