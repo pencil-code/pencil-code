@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.10 2005-10-02 12:18:24 ajohan Exp $
+! $Id: noglobal.f90,v 1.11 2005-11-07 19:36:33 dobler Exp $
 
 module Global
 
@@ -192,12 +192,12 @@ module Global
 !      use Cparam
 !
       real :: var
-      integer :: l,m,n
+      integer :: m,n
       character (len=*) :: label
 !
       call not_implemented('get_global_point_scal')
 !
-      if (NO_WARN) print*, var,l,m,n,label ! keep compiler quiet
+      if (NO_WARN) print*, var,m,n,label ! keep compiler quiet
 !
     endsubroutine get_global_point_scal
 !***********************************************************************
