@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.130 2005-09-14 15:21:14 wlyra Exp $ 
+! $Id: initcond.f90,v 1.131 2005-11-07 19:35:46 dobler Exp $ 
 
 module Initcond 
  
@@ -949,7 +949,7 @@ module Initcond
       k4=8.0*pi/(Lxyz(1))
       phi1=k1*0.226818
       phi2=k2*0.597073
-      phi2=k3*0.962855
+      phi3=k3*0.962855
       phi4=k4*0.762091
 !
 !  use l,m,n as loop variables; inner loop should be on first index
