@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.1 2005-11-08 23:02:54 wlyra Exp $
+! $Id: noplanet.f90,v 1.2 2005-11-08 23:42:05 wlyra Exp $
 !
 !  Dummy module
 !
@@ -45,7 +45,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.1 2005-11-08 23:02:54 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.2 2005-11-08 23:42:05 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -59,7 +59,7 @@ module Planet
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  22-aug-05/anders: dummy
+!  05-nov-05/wlad: dummy
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -125,6 +125,8 @@ module Planet
 !***********************************************************************
     subroutine gravity_companion(f,df,p)
       
+!8-nov-05/wlad : dummy      
+
       use Cdata
       use Mpicomm, only: stop_it
 
