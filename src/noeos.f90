@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.15 2005-09-02 02:12:38 dobler Exp $
+! $Id: noeos.f90,v 1.16 2005-11-08 23:12:55 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -50,7 +50,7 @@ module EquationOfState
 !ajwm  Moved here from Density.f90
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
-  logical :: lcalc_cp=.false.,llocal_iso=.false.
+  logical :: lcalc_cp=.false. !,llocal_iso=.false.
   real :: gamma=5./3., gamma1=2./3.
   real :: cs2bot=1., cs2top=1. 
   real :: cs2cool=0.
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.15 2005-09-02 02:12:38 dobler Exp $')
+           '$Id: noeos.f90,v 1.16 2005-11-08 23:12:55 wlyra Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1209,27 +1209,5 @@ module EquationOfState
     endselect
 
     end subroutine bc_ss_energy
-!***********************************************************************
-    subroutine local_isothermal(cs20,corr)
-!
-!22-aug-2005/wlad: coded
-!
-! Locally isothermal structure for accretion disks. 
-! The energy equation is not solved,but the variation
-! of temperature with radius (T ~ r-1) is crucial for the
-! treatment of ad hoc alpha viscosity.
-!
-! cs2 = H * Omega, being H the scale height and (H/r) = cte.
-!
-
-      use Mpicomm, only: stop_it
-      use Cdata
-
-      real, intent(in)  :: cs20
-      real, dimension (nx), intent(out) :: corr
-
-      call stop_it("local_isothermal: NOT IMPLEMENTED IN NOEOS")
-
-    endsubroutine local_isothermal
 !***********************************************************************
 endmodule EquationOfState
