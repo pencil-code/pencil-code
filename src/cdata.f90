@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.283 2005-10-12 18:34:42 ajohan Exp $
+! $Id: cdata.f90,v 1.284 2005-11-08 23:07:50 wlyra Exp $
 
 module Cdata
 
@@ -231,6 +231,7 @@ module Cdata
   logical, parameter :: linterstellar_var=linterstellar
   logical, parameter :: lcosmicray_var=lcosmicray
   logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
+  logical, parameter :: lplanet_var=lplanet
 
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
