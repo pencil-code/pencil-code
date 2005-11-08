@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.260 2005-11-07 18:53:23 dobler Exp $
+! $Id: equ.f90,v 1.261 2005-11-08 23:25:38 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -339,6 +339,7 @@ module Equ
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
                            lvisc_first, idiag_epsK
       use Particles_main
+      use Planet
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -353,7 +354,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.260 2005-11-07 18:53:23 dobler Exp $")
+           "$Id: equ.f90,v 1.261 2005-11-08 23:25:38 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -544,10 +545,22 @@ module Equ
 !  WD: there is some virtue in calling all of the dXX_dt in equ.f90
 !  AB: but it is not really a new dXX_dt, because XX=uu.
 !  AJ: it should go into the duu_dt and duud_dt subs
-!  duu_dt_grav now also takes care of dust velocity
-!
+!      duu_dt_grav now also takes care of dust velocity
+!  WL: Call the gravity of a companion here as well. Do not change  
+!      the order!!! gravity companion must come BEFORE duu_dt_grav, 
+!      since the star feels the gravity of planet and therefore 
+!      gravity_companion changes the position of the star, resetting
+!      the global variable gg. 
+!      Anders, I'm still thinking about changing it all to the dust 
+!      module, and to treat planet(s) and star as particles. What's 
+!      your opinion? 
+
+
         if (lgrav) then
-          if (lhydro) call duu_dt_grav(f,df,p)
+          if (lhydro) then 
+             if (lplanet.and.gc/=0) call gravity_companion(f,df,p) 
+             call duu_dt_grav(f,df,p)             
+          endif
         endif
 !
 !  cosmic ray energy density
@@ -603,7 +616,6 @@ module Equ
             if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
           enddo
         endif
-
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'

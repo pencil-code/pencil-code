@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.76 2005-08-22 17:15:57 wlyra Exp $
+! $Id: grav_r.f90,v 1.77 2005-11-08 23:25:38 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -44,18 +44,10 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
   logical :: lnumerical_equilibrium=.false.
-  
-  !things needed for companion
-  real :: Rx=0.,Ry=0.,Rz=0.,gc=0.  !location and mass
-  real :: b=0.      !peak radius for potential
-  integer :: nc=2   !exponent of smoothed potential 
-  logical :: lcompanion=.false.
 
-  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium,&
-       Rx,Ry,Rz,gc,lcompanion,nc,b
+  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
 
-  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium,&
-       Rx,Ry,Rz,gc,lcompanion,nc,b
+  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -81,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.76 2005-08-22 17:15:57 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.77 2005-11-08 23:25:38 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -216,6 +208,7 @@ module Gravity
             ! smoothed 1/r potential in a spherical shell
             g_r=-g0*rr_mn**(n_pot-1) &
                    *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+           
           endif
 !
           gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
@@ -364,10 +357,10 @@ module Gravity
 !      gg_mn = evr*spread(g_r,2,3)
 !      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 !else
+
       call get_global(gg_mn,m,n,'gg')
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 !
-      if (lcompanion) call gravity_companion(f,df,p)
 !
 !endif
 !
@@ -505,12 +498,14 @@ module Gravity
 !  26-apr-03/axel: coded
 !
       use Cdata
+      use Sub
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
+
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
@@ -529,60 +524,5 @@ module Gravity
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
 !
     endsubroutine rprint_gravity
-!***********************************************************************
-    subroutine gravity_companion(f,df,p)
-!
-!  add duu/dt according to the gravity of a companion offcentered by (Rx,Ry,Rz)
-!
-!  12-aug-05/wlad: coded
-!
-      use Cdata
-      use Sub
-      use Global
-!     
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      real, dimension (nx,3) :: ggc
-      real, dimension (nx) :: g_companion,rrc
-      real :: Omega_inertial,Rc,phase,phi,ax,ay,az
-
-
-      if (headtt) print*,&
-           'gravity_companion: Adding gravity of companion located at x,y,z=',Rx,Ry,Rz
-      if (headtt) print*,&
-           'gravity_companion: Mass ratio of secondary-to-primary = ',gc/g0
-
-      if (Omega /= 0) then  
-         if (headtt) print*,'gravity_companion: corotational frame'
-         ax = Rx  
-         ay = Ry            
-      else
-         if (headtt) print*,'gravity_companion: inertial frame'
-         !add these three to grav_run_pars later
-         Rc = sqrt(Rx**2+Ry**2+Rz**2)
-         Omega_inertial = sqrt(g0/Rc**3)
-         phase = acos(Rx/Rc)
-
-         phi = Omega_inertial*t + phase  
-         ax = Rc * cos(phi) 
-         ay = Rc * sin(phi) 
-      endif
-            
-      az = Rz !just for notational consistency
-
-      rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2)
-      
-      g_companion=-gc*rrc**(nc-1) &
-          *(rrc**nc+b**nc)**(-1./nc-1.)
-
-         ggc(:,1) = (x(l1:l2)-ax)/(rrc)*g_companion 
-         ggc(:,2) = (y(  m  )-ay)/(rrc)*g_companion
-         ggc(:,3) = (z(  n  )-az)/(rrc)*g_companion
-      ! 
-
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggc
-      
-    endsubroutine gravity_companion
 !***********************************************************************
 endmodule Gravity
