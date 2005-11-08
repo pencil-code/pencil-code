@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.224 2005-10-25 13:10:23 bingert Exp $ 
+! $Id: sub.f90,v 1.225 2005-11-08 23:33:28 wlyra Exp $ 
 
 module Sub 
 
@@ -45,7 +45,7 @@ module Sub
   public :: expand_cname
   public :: parse_name, save_name, max_name
   public :: max_mn_name,sum_mn_name,integrate_mn_name
-  public :: surf_mn_name
+  public :: surf_mn_name,sum_lim_mn_name
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
   public :: date_time_string
@@ -330,6 +330,37 @@ module Sub
       endif
 !
     endsubroutine sum_mn_name
+!***********************************************************************
+    subroutine sum_lim_mn_name(a,iname)
+!
+!  successively calculate integral of a, which is supplied at each call.
+!  Just takes values between r_int < r < r_ext
+!  The purpose is to compute the total mass at each timestep to
+!  monitor mass inflow/outflow and mass conservation
+!
+!   2-nov-05/wlad: adapted from sum_mn_name
+      use Cdata
+!
+      real, dimension (nx) :: a,r
+      integer :: iname,i
+!
+
+      if (iname /= 0) then 
+!
+        if (lfirstpoint) fname(iname) = 0.
+
+        r = sqrt(x(l1:l2)**2+y(m)**2)
+
+        do i=l1,l2
+           if ((r(i) .le. r_ext) .and. (r(i) .ge. r_int)) then
+              fname(iname)=fname(iname)+ a(i)*dx*dy / &
+                   (pi*(r_ext**2 - r_int**2))
+           endif
+        enddo
+!
+      endif
+!
+    endsubroutine sum_lim_mn_name
 !***********************************************************************
     subroutine surf_mn_name(a,iname)
 !

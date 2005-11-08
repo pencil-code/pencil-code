@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.207 2005-11-07 18:53:23 dobler Exp $
+! $Id: density.f90,v 1.208 2005-11-08 23:33:28 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -42,9 +42,9 @@ module Density
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,plaw=0.
   integer, parameter :: ndiff_max=4
-  logical :: lupw_lnrho=.false.,lmass_spline=.false.
+  logical :: lupw_lnrho=.false.,lmass_source=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
-  logical :: ldiff_hyper3lnrho=.false.,lmass_source=.false.
+  logical :: ldiff_hyper3lnrho=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
@@ -68,13 +68,14 @@ module Density
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw,lmass_spline
+       lnrho_const,plaw
   
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
   integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0
+  integer :: idiag_totmass=0
 
   contains
 
@@ -110,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.207 2005-11-07 18:53:23 dobler Exp $")
+           "$Id: density.f90,v 1.208 2005-11-08 23:33:28 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -945,7 +946,7 @@ module Density
 !
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
-           idiag_rhomax/=0) lpenc_diagnos(i_rho)=.true.
+           idiag_rhomax/=0 .or. idiag_totmass/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
 !
     endsubroutine pencil_criteria_density
@@ -993,7 +994,7 @@ module Density
       use Global, only: set_global,global_derivs
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 !      
       integer :: i, mm, nn
@@ -1145,10 +1146,7 @@ module Density
 !  mass sources and sinks
 !
       if (lmass_source) call mass_source(f,df)
-      if (lmass_spline) call mass_source_spline(f,lnrho_int,&
-              lnrho_const,wdamp)
 !
-
 !  Mass diffusion
 !
       fdiff=0.0
@@ -1233,6 +1231,7 @@ module Density
         if (idiag_rhomy/=0)   call xzsum_mn_name_y(p%rho,idiag_rhomy)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+        if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass)
       endif
 !
     endsubroutine dlnrho_dt
@@ -1261,6 +1260,7 @@ module Density
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
+        idiag_totmass=0;
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1273,6 +1273,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
+        call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1317,6 +1318,7 @@ module Density
         write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
         write(3,*) 'i_rhomphi=',idiag_rhomphi
         write(3,*) 'i_dtd=',idiag_dtd
+        write(3,*) 'i_totmass=',idiag_totmass
       endif
 !
     endsubroutine rprint_density
@@ -1531,126 +1533,4 @@ module Density
 !
     endsubroutine mass_source
 !***********************************************************************
-    subroutine mass_source_spline(f,lnrho_int,lnrho_const,wdamp)
-!   
-! alternative to mass_source: cut 'good' part of density
-!   profile and spline it toward predefined limits 
-!
-! 10-may-05/wlad: coded
-!  
-      use Mpicomm, only: stop_it
-      use Cdata
-      use Gravity, only: g0,n_pot,r0_pot
-      use General
-      use EquationOfState, only: cs20
-
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: lnrho_int,wdamp,lnrho_const,Omega_int
-      real :: inner,outer,limit,Mach,rlim
-      integer :: i,ci,cii,countlimit
-      real, dimension (mx) :: r,ome,den
-      !internal
-      real, dimension (nx) :: rad_int,rho_int,ome_int
-      real, dimension (nx) :: valuerho_int,valueome_int,irts 
-    
-
-      inner = r_int - 2*wdamp
-      outer = r_int -   wdamp
-      limit = r_int 
-      ci=0;cii=0
-      Mach = sqrt(1./cs20)
-
-      rlim = r_int - 1.5*wdamp
-
-      !
-      !computational domain -> limit < r < limit2
-      !
-      
-      !the whole thing between comments could be calculated only once
-      !and set to global variables or into a file
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-      Omega_int = sqrt(g0*rlim**(-3)) - Omega
-      lnrho_int=lnrho_const - plaw*alog(rlim)
-
-      !
-      !Note that omega is already defined in cdata
-      !
-      
-      countlimit = lpoint + floor(limit/Lx*256) + 2
-
-      do i=lpoint,countlimit
-         
-         !inner boundary
-         !
-         !rad_int and d_int are the vectors to call in spline_damp
-         !ci is their dimension. cii is also needed.
-         
-         if (x(i).le.inner) then 
-            !center - rigid rotator with constant density
-            cii=cii+1; ci = ci + 1; rad_int(ci) = x(i)  
-            rho_int(ci) = lnrho_int   
-            ome_int(ci) = Omega_int 
-         endif
-         
-         if ((x(i).ge.outer).and.(x(i).le.limit)) then 
-            !smooth joint with the disk - initial condition
-            ci = ci + 1 ; rad_int(ci) = x(i) 
-            rho_int(ci) = lnrho_const - 0.5*alog(x(i))  
-            !ome_int(ci) = g0*x(i)**(n_pot-2)*(x(i)**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-            !ome_int(ci)=sqrt(ome_int(ci)*(1. + 0.5/Mach**2)**(-1)) - Omega
-            
-            ome_int(ci) = sqrt(g0/x(i)**3) - Omega           
-         endif
-    
-      enddo
-      
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      
-      !now spline the values
-      r = sqrt(x**2 + y(m)**2) 
-      !ome = g0*r**(n_pot-2)*(r**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-      !ome = sqrt(ome*(1. + 0.5/Mach**2)**(-1)) - Omega
-      ome = sqrt(g0*r**(-3)) - Omega
-      den = lnrho_const - 0.5*alog(r)
-
-
-      !fixed internal radius to spline
-      irts(1:cii)      = rad_int(1:cii) 
-      irts(cii+2:ci+1) = rad_int(cii+1:ci)
-      
-
-      do i=l1,l2
-
-         if ((r(i).ge.inner).and.(r(i).le.outer)) then
-
-            irts(cii+1) = r(i)
-
-            call spline(rad_int,rho_int,irts,valuerho_int,ci,ci+1)
-            call spline(rad_int,ome_int,irts,valueome_int,ci,ci+1)
-
-            f(i,m,n,ilnrho) =       valuerho_int(cii+1)
-            f(i,m,n,iux)    = -y(m)*valueome_int(cii+1) 
-            f(i,m,n,iuy)    =  x(i)*valueome_int(cii+1) 
-
-         endif
-         
-         if (r(i).le.inner) then 
-            f(i,m,n,ilnrho) =       lnrho_int
-            f(i,m,n,iux)    = -y(m)*Omega_int
-            f(i,m,n,iuy)    =  x(i)*Omega_int
-         endif 
-  
-         if ((r(i).ge.outer).and.(r(i).le.limit)) then
-            !initial condition
-            f(i,m,n,ilnrho) =       den(i) 
-            f(i,m,n,iux)    = -y(m)*ome(i)
-            f(i,m,n,iuy)    =  x(i)*ome(i)
-         endif
-      
-
-      enddo
-
-      endsubroutine mass_source_spline
-!***************************************************
 endmodule Density
