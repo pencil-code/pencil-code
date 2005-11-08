@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.154 2005-10-20 06:47:33 brandenb Exp $
+! $Id: register.f90,v 1.155 2005-11-08 23:05:19 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -51,6 +51,7 @@ module Register
       use Shear,           only: register_shear
       use Viscosity,       only: register_viscosity
       use Special,         only: register_special
+      use Planet,          only: register_planet
 !
       logical :: ioerr
 !
@@ -99,6 +100,7 @@ module Register
       call register_interstellar
       call register_shear
       call register_special
+      call register_planet
 !
 !  Writing files for use with IDL
 !
@@ -173,6 +175,7 @@ module Register
       use Shear,           only: initialize_shear
       use Viscosity,       only: initialize_viscosity
       use Special,         only: initialize_special
+      use Planet,          only: initialize_planet
 !     use Timestep,        only: border_profiles
 
       real, dimension(mx,my,mz,mvar+maux) :: f
@@ -264,6 +267,7 @@ module Register
       call initialize_shock(lstarting)
       call initialize_viscosity(lstarting)
       call initialize_special(f)
+      call initialize_planet(f,lstarting) !will need f for torque
 !
 !----------------------------------------------------------------------------
 !  Coordinate-related issues: nonuniform meshes, different corrdinate systems
@@ -403,6 +407,7 @@ module Register
       use Chiral, only: pencil_criteria_chiral
       use Radiation, only: pencil_criteria_radiation
       use Interstellar, only: pencil_criteria_interstellar
+      use Planet, only: pencil_criteria_planet
 !
       call pencil_criteria_hydro()
       call pencil_criteria_density()
@@ -420,6 +425,7 @@ module Register
       call pencil_criteria_cosmicrayflux()
       call pencil_criteria_chiral()
       call pencil_criteria_radiation()
+      call pencil_criteria_planet()
 !    
     endsubroutine pencil_criteria
 !***********************************************************************
@@ -497,6 +503,7 @@ module Register
       use Shock,           only: rprint_shock
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
+      use Planet,          only: rprint_planet
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamexy,inamexz,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat,iname_tmp
@@ -660,7 +667,7 @@ module Register
       call rprint_shock        (lreset,LWRITE=lroot)
       call rprint_viscosity    (lreset,LWRITE=lroot)
       call rprint_shear        (lreset,LWRITE=lroot)
-
+      call rprint_planet       (lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine rprint_list

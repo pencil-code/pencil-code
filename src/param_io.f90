@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.214 2005-09-30 08:00:42 ajohan Exp $ 
+! $Id: param_io.f90,v 1.215 2005-11-08 23:05:19 wlyra Exp $ 
 
 module Param_IO
 
@@ -34,6 +34,7 @@ module Param_IO
   use Particles_main
   use Shock
   use Messages
+  use Planet
  
   implicit none 
 
@@ -261,6 +262,10 @@ module Param_IO
       call read_shock_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('shock_init_pars',ierr)
 
+      call sgi_fix(lsgifix,1,'start.in')
+      call read_planet_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('planet_init_pars',ierr)
+
       ! no input parameters for viscosity
       label='[none]'
       close(1)
@@ -344,6 +349,7 @@ module Param_IO
         if (lcosmicray    )  print*,'&cosmicray_init_pars      /'
         if (lcosmicrayflux)  print*,'&cosmicrayflux_init_pars  /'
         if (linterstellar )  print*,'&interstellar_init_pars   /'
+        ! no input parameters for planet
         if (lshear        )  print*,'&shear_init_pars          /'
         if (lspecial      )  print*,'&special_init_pars        /'
         if (lparticles       ) print*,'&particles_init_pars       /'
@@ -407,6 +413,7 @@ module Param_IO
         call write_special_init_pars(unit)
         call write_particles_init_pars_wrap(unit)
         call write_shock_init_pars(unit)
+        call write_planet_init_pars(unit)
 !
         if (present(file)) then
           close(unit)
@@ -544,6 +551,10 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       call read_shock_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('shock_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_planet_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('planet_run_pars',ierr)
 
       label='[none]'
       close(1)
@@ -729,6 +740,7 @@ module Param_IO
         if (lparticles       ) print*,'&particles_run_pars       /'
         if (lparticles_radius) print*,'&particles_radius_run_pars       /'
         if (lshock        ) print*,'&shock_run_pars           /'
+        if (lplanet       ) print*,'&planet_run_pars          /'
         print*,'------END sample namelist -------'
         print*
         if (present(label))  print*, 'Found error in input namelist "' // trim(label)
@@ -809,6 +821,7 @@ module Param_IO
         call write_special_run_pars(unit)
         call write_particles_run_pars_wrap(unit)
         call write_shock_run_pars(unit)
+        call write_planet_run_pars(unit)
 !
         if (present(file)) then
           close(unit)
@@ -915,7 +928,7 @@ module Param_IO
            leos,lspecial, ltestfield, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
            lcosmicray_var, lcosmicrayflux_var, linterstellar_var, &
-           datadir
+           lplanet_var,datadir
 !
       logical :: lhydro         = lhydro_var
       logical :: ldensity       = ldensity_var
@@ -925,13 +938,15 @@ module Param_IO
       logical :: linterstellar  = linterstellar_var
       logical :: lcosmicray     = lcosmicray_var
       logical :: lcosmicrayflux = lcosmicrayflux_var
+      logical :: lplanet        = lplanet_var
+
 !ajwm           lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,ltestfield,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            lcosmicrayflux,ldustvelocity,ldustdensity,lshock,lradiation_fld, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-           leos
+           lplanet,leos
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories
@@ -965,6 +980,7 @@ module Param_IO
         call write_special_init_pars(1)
         call write_particles_init_pars_wrap(1)
         call write_shock_init_pars(1)
+        call write_planet_init_pars(1)
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
         write(1,NML=lphysics              ) 
@@ -1004,6 +1020,7 @@ module Param_IO
         call read_special_init_pars(1)
         call read_particles_init_pars_wrap(1)
         call read_shock_init_pars(1)
+        call read_planet_init_pars(1)
         close(1)
 !
       if (lroot.and.ip<14) then
@@ -1044,6 +1061,7 @@ module Param_IO
         call write_special_run_pars(1)
         call write_particles_run_pars_wrap(1)
         call write_shock_run_pars(1)
+        call write_planet_run_pars(1)
         close(1)
       endif
 !
