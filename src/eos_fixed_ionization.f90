@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.11 2005-08-22 15:42:09 wlyra Exp $
+! $Id: eos_fixed_ionization.f90,v 1.12 2005-11-08 23:12:09 wlyra Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -61,7 +61,7 @@ module EquationOfState
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped 
   real :: cs0=1., rho0=1., cp=1.
   real :: cs20=1., lnrho0=0.
-  logical :: lcalc_cp = .false.,llocal_iso=.false.
+  logical :: lcalc_cp = .false.!,llocal_iso=.false.
   real :: gamma=5./3., gamma1, nabla_ad
   !real :: cp=impossible, cp1=impossible
   real :: cp1=impossible
@@ -101,7 +101,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.11 2005-08-22 15:42:09 wlyra Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.12 2005-11-08 23:12:09 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -953,28 +953,4 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     end subroutine bc_ss_energy
 !***********************************************************************
-    subroutine local_isothermal(cs20,corr)
-!
-!22-aug-2005/wlad: coded
-!
-! Locally isothermal structure for accretion disks. 
-! The energy equation is not solved,but the variation
-! of temperature with radius (T ~ r-1) is crucial for the
-! treatment of ad hoc alpha viscosity.
-!
-! cs2 = H * Omega, being H the scale height and (H/r) = cte.
-!
-
-      use Mpicomm, only: stop_it
-      use Cdata
-
-      real, intent(in)  :: cs20
-      real, dimension (nx), intent(out) :: corr
-
-      call stop_it("local_isothermal: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      
-
-    endsubroutine local_isothermal
-!***********************************************************************
-
 endmodule EquationOfState

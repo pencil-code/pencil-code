@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.25 2005-10-17 22:28:51 dobler Exp $
+! $Id: eos_idealgas.f90,v 1.26 2005-11-08 23:12:09 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -57,15 +57,13 @@ module EquationOfState
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
   integer :: isothtop=0
-!
-  logical :: llocal_iso
 
   ! input parameters
-  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, lcalc_cp, gamma,llocal_iso
+  namelist /eos_init_pars/ xHe, mu, cp, cs0, rho0, lcalc_cp, gamma
 
 
   ! run parameters
-  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, lcalc_cp, gamma,llocal_iso
+  namelist /eos_run_pars/  xHe, mu, cp, cs0, rho0, lcalc_cp, gamma
 
   contains
 
@@ -95,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.25 2005-10-17 22:28:51 dobler Exp $')
+           '$Id: eos_idealgas.f90,v 1.26 2005-11-08 23:12:09 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1494,40 +1492,4 @@ module EquationOfState
 
     end subroutine bc_ss_energy
 !***********************************************************************
-    subroutine local_isothermal(cs20,cs2)
-!
-!22-aug-05/wlad: coded
-!
-! Locally isothermal structure for accretion disks. 
-! The energy equation is not solved,but the variation
-! of temperature with radius (T ~ r-1) is crucial for the
-! treatment of ad hoc alpha viscosity.
-!
-! cs = H * Omega, being H the scale height and (H/r) = cte.
-!
-      use Cdata
-      use Global, only: get_global
-
-      real, dimension(nx,3) :: gg_mn
-      real, dimension(nx) :: rr_mn,gr,Om
-      real :: Mach
-
-      real, intent(in)  :: cs20
-      real, dimension (nx), intent(out) :: cs2
-!
-      Mach = sqrt(1./cs20)
-
-      rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi
-
-      call get_global(gg_mn,m,n,'gg')
-      gr = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
-      
-      Om = sqrt(gr/rr_mn * (1 + 0.5/Mach**2)**(-1))
-      
-      !0.5 is plaw
-
-      cs2 = (Om * rr_mn / Mach)**2
-
-    endsubroutine local_isothermal
-!***********************************************************
 endmodule EquationOfState
