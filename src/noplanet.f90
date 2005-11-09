@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.3 2005-11-09 00:33:54 wlyra Exp $
+! $Id: noplanet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $
 !
 !  Dummy module
 !
@@ -21,6 +21,7 @@ module Planet
   include 'planet.h'
 
   real :: gc=0.
+  logical :: llocal_iso=.false.
 
   !namelist /planet_init_pars/ dummy
   !namelist /planet_run_pars/ dummy
@@ -44,7 +45,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.3 2005-11-09 00:33:54 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,15 +143,15 @@ module Planet
       if (NO_WARN) print*,unit
     endsubroutine calc_torque
 !**********************************************************************
-!    subroutine local_isothermal(cs20,corr)
-!      use Mpicomm, only: stop_it
-!      use Cdata
-!
-!      real, intent(in)  :: cs20
-!      real, dimension (nx) :: corr
-!
-!      call stop_it("local_isothermal: llocal_iso true but noplanet is used")
-!
-!    endsubroutine local_isothermal
+    subroutine local_isothermal(cs20,corr)
+      use Mpicomm, only: stop_it
+      use Cdata
+
+      real, intent(in)  :: cs20
+      real, dimension (nx) :: corr
+
+      call stop_it("local_isothermal: llocal_iso true but noplanet is used")
+
+    endsubroutine local_isothermal
 !**********************************************************************
   endmodule Planet

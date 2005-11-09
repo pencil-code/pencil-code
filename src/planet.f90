@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.3 2005-11-09 00:33:54 wlyra Exp $
+! $Id: planet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -41,10 +41,10 @@ module Planet
   real :: b=0.      !peak radius for potential
   integer :: nc=2   !exponent of smoothed potential 
   logical :: lcompanion=.false.,lramp=.false.
-  logical :: lwavedamp=.false.
+  logical :: lwavedamp=.false.,llocal_iso=.false.
 
   namelist /planet_run_pars/ Rx,Ry,Rz,gc,lcompanion,nc,b,lramp, &
-       lwavedamp
+       lwavedamp,llocal_iso
 ! 
 
   integer :: idiag_torqint=0,idiag_torqext=0
@@ -72,7 +72,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.3 2005-11-09 00:33:54 wlyra Exp $")
+           "$Id: planet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -89,11 +89,11 @@ module Planet
 !  08-nov-05/wlad: coded
 !
 !will need to add itorque as f-variable
-
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 
       if (lroot) print*, 'initialize_planet'
+
 !
     endsubroutine initialize_planet
 !***********************************************************************
@@ -171,7 +171,6 @@ module Planet
          idiag_torqext=0
          idiag_torqrocheint=0
          idiag_torqrocheext=0
-         idiag_totalmass=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -186,9 +185,6 @@ module Planet
               'torqrocheint',idiag_torqrocheint)
          call parse_name(iname,cname(iname),cform(iname),&
               'torqrocheext',idiag_torqrocheext)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'totalmass',idiag_totalmass)
-
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -199,7 +195,6 @@ module Planet
         write(3,*) 'i_torqext=',idiag_torqext
         write(3,*) 'i_torqrocheint',idiag_torqrocheint
         write(3,*) 'i_torqrocheext',idiag_torqrocheext
-        write(3,*) 'i_totalmass',idiag_totalmass
         write(3,*) 'nname=',nname
       endif
 !
@@ -264,7 +259,6 @@ module Planet
 
       rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2)
 
-
       !where (rrc.ge.b)
       !   g_companion = -gtc/rrc**2
       !elsewhere
@@ -274,8 +268,7 @@ module Planet
       !        -31.50*rrc**3/b**5 &
       !        + 8.75*rrc   /b**3 )
       !endwhere
-      
-      
+            
       g_companion=-gtc*rrc**(nc-1) &
           *(rrc**nc+b**nc)**(-1./nc-1.)
 
@@ -299,6 +292,17 @@ module Planet
 
       rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2)
       
+      where (rrs.ge.r0_pot)
+         g_star = -g0/rrs**2
+      elsewhere
+         g_star = -g0*(    &
+              -11.25*rrs**5/r0_pot**7 &
+              +35.00*rrs**4/r0_pot**6 &
+              -31.50*rrs**3/r0_pot**5 &
+              + 8.75*rrs   /r0_pot**3 )
+      endwhere
+
+
       g_star=-g0*rrs**(n_pot-1) &
           *(rrs**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
 
@@ -373,48 +377,64 @@ module Planet
 
     endsubroutine calc_torque
 !***********************************************************************
-!    subroutine local_isothermal(cs20,cs2)
-!!
-!!22-aug-05/wlad: coded
-!!08-nov-05/wlad: moved here (previously in the EoS module)
-!!
-!! Locally isothermal structure for accretion disks. 
-!! The energy equation is not solved,but the variation
-!! of temperature with radius (T ~ r-1) is crucial for the
-!! treatment of ad hoc alpha viscosity.
-!!
-!! cs = H * Omega, being H the scale height and (H/r) = cte.
-!!
-!      use Cdata
-!      use Global, only: get_global
+    subroutine local_isothermal(cs20,cs2)
 !
-!      real, dimension(nx,3) :: gg_mn
-!      real, dimension(nx) :: rr_mn,gr,Om
-!      real :: Mach,plaw
+!22-aug-05/wlad: coded
+!08-nov-05/wlad: moved here (previously in the EoS module)
 !
-!      real, intent(in)  :: cs20
-!      real, dimension (nx), intent(out) :: cs2
-!!
 !
-!      if (headtt) print*,&
-!           'planet: local isothermal equation of state for accretion disk'
-!      
-!      plaw = 0.
+! Locally isothermal structure for accretion disks. 
+! The energy equation is not solved,but the variation
+! of temperature with radius (T ~ r-1) is crucial for the
+! treatment of ad hoc alpha viscosity.
 !
-!      Mach = sqrt(1./cs20)
+! cs = H * Omega, being H the scale height and (H/r) = cte.
 !
-!      rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi
+      use Cdata
+      use Gravity, only: g0,r0_pot
+      use Global, only: get_global
+
+      !real, dimension(nx,3) :: gg_mn
+      real, dimension(nx) :: rr_mn,gr,Om
+      real :: Mach,plaw
+
+      real, intent(in)  :: cs20
+      real, dimension (nx), intent(out) :: cs2
 !
-!      call get_global(gg_mn,m,n,'gg')
-!      gr = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
-!      
-!      Om = sqrt(gr/rr_mn * (1 + plaw/Mach**2)**(-1))
-!      
-!      !0.5 is plaw
+!     It is better to set cs2 as a global variable than to recalculate it
+!     at every timestep...
 !
-!      cs2 = (Om * rr_mn / Mach)**2
-!
-!    endsubroutine local_isothermal
+      if (headtt) print*,&
+           'planet: local isothermal equation of state for accretion disk'
+      
+      plaw = 0.
+
+      Mach = sqrt(1./cs20)
+
+      rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi
+
+      !call get_global(gg_mn,m,n,'gg')
+      !gr = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
+
+      where (rr_mn.ge.r0_pot)
+         gr = -g0/rr_mn**2
+      elsewhere
+         gr = -g0*(    &
+              -11.25*rr_mn**5/r0_pot**7 &
+              +35.00*rr_mn**4/r0_pot**6 &
+              -31.50*rr_mn**3/r0_pot**5 &
+              + 8.75*rr_mn   /r0_pot**3 )
+      endwhere
+      
+      Om = sqrt(abs(gr)/rr_mn) !* (1 + plaw/Mach**2)**(-1))
+      
+      !where (rr_mn.ge.r0_pot)
+         cs2 = (Om * rr_mn / Mach)**2
+      !elsewhere   
+      !   cs2 = (-0.2222*rr_mn**2 + 0.11)**2
+      !endwhere   
+
+    endsubroutine local_isothermal
 !***********************************************************
     subroutine wave_damping(f,df)
 !

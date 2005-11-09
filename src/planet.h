@@ -7,9 +7,9 @@
   public :: read_planet_run_pars,  write_planet_run_pars
   public :: pencil_criteria_planet
   
-  public :: gravity_companion !,local_isothermal
+  public :: gravity_companion,local_isothermal
   !public :: wave_damping,calc_torque,gravity_companion
 
 !public logicals to use "abroad"
-  !public :: llocal_iso,gc
-  public :: gc
+  public :: llocal_iso,gc
+  
