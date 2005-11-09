@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.131 2005-11-07 19:35:46 dobler Exp $ 
+! $Id: initcond.f90,v 1.132 2005-11-09 09:23:12 wlyra Exp $ 
 
 module Initcond 
  
@@ -1366,29 +1366,56 @@ module Initcond
 
       use Cdata
       use EquationOfState, only : cs20
+!      use Global
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO
-      real :: g0,r0_pot,sx,sy,Mach
+      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO,grav
+      real :: g0,r0_pot,sx,sy,Mach,plaw
       integer :: n_pot
 !
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero
 !
+      plaw=0.
+
       xx = xx - sx
       yy = yy - sy
 
       Mach = sqrt(1./cs20)
 
       rrp=sqrt(xx**2+yy**2+zz**2) + epsi
-      OO=g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-      OO=sqrt(OO*(1. + 0.5/Mach**2)**(-1)) !0.5 is plaw
+
+      where (rrp.ge.r0_pot)
+         grav = -g0/rrp**2
+      elsewhere
+         grav = -g0*(    &
+              -11.25*rrp**5/r0_pot**7 &
+              +35.00*rrp**4/r0_pot**6 &
+              -31.50*rrp**3/r0_pot**5 &
+              + 8.75*rrp   /r0_pot**3 )
+      endwhere
+                
+      OO = sqrt(abs(grav)/rrp)
+
+      !correction
+      
+      !OO=g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+      !OO=sqrt(OO*(1. + plaw/Mach**2)**(-1)) 
 
       !put OO in a pencil for the viscous force calculation?
      
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
 !
+
+      !write sound speed as global variable
+      
+      !where (rrp.ge.r0_pot)
+      !   cs2 = (OO * rrp / Mach)**2
+      !elsewhere   
+      !   cs2 = (-0.2222*rrp**2 + 0.11)**2
+      !endwhere   
+
     endsubroutine keplerian
 !***********************************************************************
     subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
@@ -2429,7 +2456,7 @@ module Initcond
       rr  = sqrt(xx**2 + yy**2 + zz**2) + epsi
       f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
 !      
-!    
+
       !3D - not tested yet
       !H  = 0.05 * rr
       !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 

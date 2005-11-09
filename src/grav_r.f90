@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.77 2005-11-08 23:25:38 wlyra Exp $
+! $Id: grav_r.f90,v 1.78 2005-11-09 09:23:12 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -44,10 +44,13 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
   logical :: lnumerical_equilibrium=.false.
+  logical :: lsmooth_local=.false.
 
-  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
-
-  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
+  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium,&
+       lsmooth_local
+  
+  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium,&
+       lsmooth_local
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_curlggrms=0,idiag_curlggmax=0,idiag_divggrms=0
@@ -73,7 +76,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.77 2005-11-08 23:25:38 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.78 2005-11-09 09:23:12 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -205,10 +208,32 @@ module Gravity
                                             cpot(3) /), rr_mn)**2
 
           else
-            ! smoothed 1/r potential in a spherical shell
-            g_r=-g0*rr_mn**(n_pot-1) &
-                   *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-           
+
+             if (.not.lsmooth_local) then 
+!
+                ! smoothed 1/r potential in a spherical shell
+                g_r=-g0*rr_mn**(n_pot-1) &
+                     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+! 
+            else
+               !smooth the potential locally (only for r < r0)
+               !
+               !needed when the gravity profile 
+               !should be like rr_mn in the inner boundary
+               !but one does not want the ridiculous
+               !smoothing that smooth_newton gives to n=2 
+!
+                where (rr_mn.ge.r0_pot)
+                   g_r = -g0/rr_mn**2
+                elsewhere
+                   g_r = -g0*(    &
+                        -11.25*rr_mn**5/r0_pot**7 &
+                        +35.00*rr_mn**4/r0_pot**6 &
+                        -31.50*rr_mn**3/r0_pot**5 &
+                        + 8.75*rr_mn   /r0_pot**3 )
+                endwhere
+             endif
+!
           endif
 !
           gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
