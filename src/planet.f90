@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.2 2005-11-08 23:42:05 wlyra Exp $
+! $Id: planet.f90,v 1.3 2005-11-09 00:33:54 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -40,16 +40,15 @@ module Planet
   real :: Rx=0.,Ry=0.,Rz=0.,gc=0.  !location and mass
   real :: b=0.      !peak radius for potential
   integer :: nc=2   !exponent of smoothed potential 
-  logical :: lcompanion=.false.,lramp=.false.,llocal_iso=.false.
+  logical :: lcompanion=.false.,lramp=.false.
   logical :: lwavedamp=.false.
 
   namelist /planet_run_pars/ Rx,Ry,Rz,gc,lcompanion,nc,b,lramp, &
-       llocal_iso,lwavedamp
+       lwavedamp
 ! 
 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_torqrocheint=0,idiag_torqrocheext=0
-  integer :: idiag_totalmass=0
 
   contains
 
@@ -73,7 +72,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.2 2005-11-08 23:42:05 wlyra Exp $")
+           "$Id: planet.f90,v 1.3 2005-11-09 00:33:54 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -440,6 +439,10 @@ module Planet
       integer ider,j,k,i,ii
       real, dimension(nx) :: r,pdamp,aux0,velx0,vely0
       real :: tau
+
+      if (headtt) print*,&
+           'wave_damping: damping motions for inner and outer boundary'
+
       
       tau = 2*pi/(r_int)**(-1.5)
       r = sqrt(x(l1:l2)**2 + y(m)**2)
