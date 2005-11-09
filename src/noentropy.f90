@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.78 2005-11-08 23:12:10 wlyra Exp $
+! $Id: noentropy.f90,v 1.79 2005-11-09 09:13:40 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,10 +25,9 @@ module Entropy
   implicit none
 
   include 'entropy.h'
-
+  
   !namelist /entropy_init_pars/ dummyss
-  logical :: llocal_iso
-  namelist /entropy_run_pars/ llocal_iso 
+  !namelist /entropy_run_pars/ dummyss 
 
   ! run parameters
   real :: hcond0=0.,hcond1=impossible,chi=impossible
@@ -61,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.78 2005-11-08 23:12:10 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.79 2005-11-09 09:13:40 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -143,7 +142,9 @@ module Entropy
 !
       use Cdata
       use EquationOfState, only: gamma,gamma1,cs20,lnrho0
- !
+      use Planet, only:llocal_iso,local_isothermal
+
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: tmp
       type (pencil_case) :: p
@@ -151,6 +152,7 @@ module Entropy
       intent(in) :: f
       intent(inout) :: p
 ! cs2
+
       if (lpencil(i_cs2)) then
         if (gamma==1.) then
            p%cs2=cs20 
@@ -207,7 +209,7 @@ module Entropy
       if (lhydro) then
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju) -p%cs2*p%glnrho(:,j)
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-p%cs2*p%glnrho(:,j)
         enddo
       endif
 !
@@ -328,61 +330,4 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine local_isothermal(cs20,cs2)
-!
-!22-aug-05/wlad: coded
-!08-nov-05/wlad: moved here (previously in the EoS module)
-!
-! I actually want to move it to the Planet module,
-! but noentropy keeps on complaining that it can't
-! find the planet libraries.
-!
-! This is the error message I got. If someone can help,
-! it would be highly appreciated:
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!fortcom: Error: noentropy.f90, line 146: Error in opening the !!
-!!                Library module file.   [PLANET]               !!
-!!      use Planet, only: llocal_iso,local_isothermal           !!
-!!----------^                                                   !!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! Locally isothermal structure for accretion disks. 
-! The energy equation is not solved,but the variation
-! of temperature with radius (T ~ r-1) is crucial for the
-! treatment of ad hoc alpha viscosity.
-!
-! cs = H * Omega, being H the scale height and (H/r) = cte.
-!
-      use Cdata
-      use Global, only: get_global
-
-      real, dimension(nx,3) :: gg_mn
-      real, dimension(nx) :: rr_mn,gr,Om
-      real :: Mach,plaw
-
-      real, intent(in)  :: cs20
-      real, dimension (nx), intent(out) :: cs2
-!
-
-      if (headtt) print*,&
-           'planet: local isothermal equation of state for accretion disk'
-      
-      plaw = 0.
-
-      Mach = sqrt(1./cs20)
-
-      rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi
-
-      call get_global(gg_mn,m,n,'gg')
-      gr = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
-      
-      Om = sqrt(gr/rr_mn * (1 + plaw/Mach**2)**(-1))
-      
-      !0.5 is plaw
-
-      cs2 = (Om * rr_mn / Mach)**2
-
-    endsubroutine local_isothermal
-!***********************************************************
 endmodule Entropy

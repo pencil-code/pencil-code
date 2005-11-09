@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.12 2005-11-08 23:12:09 wlyra Exp $
+! $Id: eos_fixed_ionization.f90,v 1.13 2005-11-09 09:13:40 wlyra Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -61,7 +61,7 @@ module EquationOfState
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped 
   real :: cs0=1., rho0=1., cp=1.
   real :: cs20=1., lnrho0=0.
-  logical :: lcalc_cp = .false.!,llocal_iso=.false.
+  logical :: lcalc_cp = .false.
   real :: gamma=5./3., gamma1, nabla_ad
   !real :: cp=impossible, cp1=impossible
   real :: cp1=impossible
@@ -101,7 +101,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.12 2005-11-08 23:12:09 wlyra Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.13 2005-11-09 09:13:40 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

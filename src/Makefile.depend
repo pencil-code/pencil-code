@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.3 2005-08-22 12:16:38 ajohan Exp $
+### $Id: Makefile.depend,v 1.4 2005-11-09 09:13:40 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -71,13 +71,15 @@ $(DUSTVELOCITY).o: dustvelocity.h   $(DUSTVELOCITY).f90 cdata.o $(MPICOMM_FIX).o
 $(DUSTDENSITY).o:  dustdensity.h    $(DUSTDENSITY).f90 cdata.o $(MPICOMM_FIX).o sub.o initcond.o $(DUSTVELOCITY).o
 $(TESTFIELD).o:    testfield.h      $(TESTFIELD).f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o
 $(INTERSTELLAR).o: interstellar.h   $(INTERSTELLAR).f90 cdata.o $(MPICOMM_FIX).o sub.o $(INITCOND_SPEC).o $(EOS).o
-$(EOS).o:          eos.h            $(EOS).f90 cdata.o $(MPICOMM_FIX).o messages.o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o
+$(EOS).o:          eos.h            $(EOS).f90 cdata.o $(MPICOMM_FIX).o messages.o sub.o   $(INITCOND_SPEC).o $(GRAVITY).o $(PLANET).o
 $(IO).o:           io.h             $(IO).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o sub.o
 #$(TIMEAVG).o:         $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM_FIX).o ctimeavg.local
 $(TIMEAVG).o:      timeavg.h        $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM_FIX).o
 $(POWER).o:        power_spectrum.h $(POWER).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o
 $(STRUCT_FUNC).o:  struct_func.h    $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o
 $(SPECIAL).o:      special.h        $(SPECIAL).f90 cdata.o $(MPICOMM_FIX).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
+$(PLANET).o:       planet.h	    cdata.o sub.o general.o cparam.o $(GLOBAL).o $(GRAVITY).o $(MPICOMM_FIX).o 
+
 $(DEBUG).o:        debug_c.c Makefile.src Makefile.local
 #
 #  Particle modules

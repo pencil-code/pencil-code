@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.16 2005-11-08 23:12:10 wlyra Exp $
+! $Id: eos_ionization.f90,v 1.17 2005-11-09 09:13:40 wlyra Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -63,7 +63,7 @@ module EquationOfState
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
-  logical :: lcalc_cp = .false.!,llocal_iso=.false.
+  logical :: lcalc_cp = .false.
   real :: gamma=impossible, gamma1=impossible
   real :: cs2bot=impossible, cs2top=impossible
 !ajwm  Not sure this should exist either...
@@ -112,7 +112,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.16 2005-11-08 23:12:10 wlyra Exp $")
+           "$Id: eos_ionization.f90,v 1.17 2005-11-09 09:13:40 wlyra Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
