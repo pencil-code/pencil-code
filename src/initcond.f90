@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.133 2005-11-11 09:29:37 wlyra Exp $ 
+! $Id: initcond.f90,v 1.134 2005-11-11 11:58:37 wlyra Exp $ 
 
 module Initcond 
  
@@ -1371,7 +1371,7 @@ module Initcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO,grav,cs2
       real :: g0,r0_pot,sx,sy,Mach,plaw
-      integer :: n_pot,m,n
+      integer :: n_pot,mcount,ncount
       real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: aux
 !
@@ -1390,12 +1390,11 @@ module Initcond
 
       rrp=sqrt(xx**2+yy**2+zz**2) + epsi
 
-
-      do m=m1,m2
-         do n=n1,n2
-            call get_global(gg_mn,m,n,'gg')
+      do mcount=m1,m2
+         do ncount=n1,n2
+            call get_global(gg_mn,mcount,ncount,'gg')
             aux = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
-            grav(l1:l2,m,n) = aux
+            grav(l1:l2,mcount,ncount) = aux
          enddo
       enddo
      
@@ -1435,10 +1434,10 @@ module Initcond
          cs2 = 0.007
       endwhere
       
-      do m=m1,m2
-         do n=n1,n2
-            aux = cs2(l1:l2,m,n)
-            call set_global(aux,m,n,'cs2',nx)
+      do mcount=m1,m2
+         do ncount=n1,n2
+            aux = cs2(l1:l2,mcount,ncount)
+            call set_global(aux,mcount,ncount,'cs2',nx)
          enddo
       enddo
       
