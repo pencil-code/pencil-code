@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.132 2005-11-09 09:23:12 wlyra Exp $ 
+! $Id: initcond.f90,v 1.133 2005-11-11 09:29:37 wlyra Exp $ 
 
 module Initcond 
  
@@ -1366,16 +1366,21 @@ module Initcond
 
       use Cdata
       use EquationOfState, only : cs20
-!      use Global
+      use Global
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO,grav
+      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO,grav,cs2
       real :: g0,r0_pot,sx,sy,Mach,plaw
-      integer :: n_pot
+      integer :: n_pot,m,n
+      real, dimension(nx,3) :: gg_mn
+      real, dimension(nx) :: aux
 !
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero
 !
+
+      print*,'accretion disk initial condition'
+
       plaw=0.
 
       xx = xx - sx
@@ -1385,22 +1390,21 @@ module Initcond
 
       rrp=sqrt(xx**2+yy**2+zz**2) + epsi
 
-      where (rrp.ge.r0_pot)
-         grav = -g0/rrp**2
-      elsewhere
-         grav = -g0*(    &
-              -11.25*rrp**5/r0_pot**7 &
-              +35.00*rrp**4/r0_pot**6 &
-              -31.50*rrp**3/r0_pot**5 &
-              + 8.75*rrp   /r0_pot**3 )
-      endwhere
-                
-      OO = sqrt(abs(grav)/rrp)
 
-      !correction
-      
+      do m=m1,m2
+         do n=n1,n2
+            call get_global(gg_mn,m,n,'gg')
+            aux = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
+            grav(l1:l2,m,n) = aux
+         enddo
+      enddo
+     
+      OO = sqrt(grav/rrp)
+
       !OO=g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
       !OO=sqrt(OO*(1. + plaw/Mach**2)**(-1)) 
+
+      
 
       !put OO in a pencil for the viscous force calculation?
      
@@ -1409,13 +1413,35 @@ module Initcond
 !
 
       !write sound speed as global variable
-      
-      !where (rrp.ge.r0_pot)
-      !   cs2 = (OO * rrp / Mach)**2
-      !elsewhere   
-      !   cs2 = (-0.2222*rrp**2 + 0.11)**2
-      !endwhere   
 
+      
+      where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
+         !g_r(i) = -1./(8*r0_pot) &
+         !     *(20.*rr_mn(i)/r0_pot**2 - 12*rr_mn(i)**3/r0_pot**4)
+         
+         cs2 =  0.00696037     &
+              + 0.00285893*rrp   &
+              - 0.0471130 *rrp**2 &
+              + 0.234658  *rrp**3 &
+              + 0.0636717 *rrp**4 &
+              - 3.01896   *rrp**5 &
+              + 6.47995   *rrp**6 &
+              - 4.07479   *rrp**7
+      endwhere
+      where (rrp.gt.0.4) 
+         cs2 = (0.05*OO*rrp)**2 
+      end where
+      where (rrp.lt.0.2) 
+         cs2 = 0.007
+      endwhere
+      
+      do m=m1,m2
+         do n=n1,n2
+            aux = cs2(l1:l2,m,n)
+            call set_global(aux,m,n,'cs2',nx)
+         enddo
+      enddo
+      
     endsubroutine keplerian
 !***********************************************************************
     subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)

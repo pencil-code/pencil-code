@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.261 2005-11-08 23:25:38 wlyra Exp $
+! $Id: equ.f90,v 1.262 2005-11-11 09:29:37 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -354,7 +354,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.261 2005-11-08 23:25:38 wlyra Exp $")
+           "$Id: equ.f90,v 1.262 2005-11-11 09:29:37 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -558,7 +558,7 @@ module Equ
 
         if (lgrav) then
           if (lhydro) then 
-             if (lplanet.and.gc/=0) call gravity_companion(f,df,p) 
+             if (lplanet.and.gc/=0) call gravity_companion(f,df,p,g0) 
              call duu_dt_grav(f,df,p)             
           endif
         endif
@@ -616,6 +616,8 @@ module Equ
             if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
           enddo
         endif
+
+
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'

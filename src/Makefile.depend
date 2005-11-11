@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.5 2005-11-09 12:31:42 wlyra Exp $
+### $Id: Makefile.depend,v 1.6 2005-11-11 09:29:37 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -56,7 +56,7 @@ $(VISCOSITY).o:    viscosity.h      $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY)
 shock.o:           shock.h          shock.f90 shock_profile.inc cdata.o cparam.o $(DENSITY).o sub.o boundcond.o
 noshock.o:         shock.h          noshock.f90 cdata.o cparam.o sub.o 
 $(SHEAR).o:        shear.h          $(SHEAR).f90 $(MPICOMM_FIX).o cdata.o sub.o cparam.o $(HYDRO).o
-$(GRAVITY).o:      gravity.h        $(GRAVITY).f90 cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o
+$(GRAVITY).o:      gravity.h        $(GRAVITY).f90 cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o $(PLANET).o
 $(FORCING).o:      forcing.h        $(FORCING).f90 cdata.o $(MPICOMM_FIX).o sub.o $(HYDRO).o
 $(ENTROPY).o:      entropy.h        $(ENTROPY).f90 cdata.o messages.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o $(PLANET).o
 $(MAGNETIC).o:     magnetic.h       $(MAGNETIC).f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
@@ -78,7 +78,7 @@ $(TIMEAVG).o:      timeavg.h        $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICO
 $(POWER).o:        power_spectrum.h $(POWER).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o
 $(STRUCT_FUNC).o:  struct_func.h    $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o
 $(SPECIAL).o:      special.h        $(SPECIAL).f90 cdata.o $(MPICOMM_FIX).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
-$(PLANET).o:       planet.h	    cdata.o sub.o general.o cparam.o $(GLOBAL).o $(GRAVITY).o $(MPICOMM_FIX).o 
+$(PLANET).o:       planet.h	    cdata.o sub.o general.o cparam.o $(GLOBAL).o $(MPICOMM_FIX).o
 
 $(DEBUG).o:        debug_c.c Makefile.src Makefile.local
 #

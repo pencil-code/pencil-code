@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $
+! $Id: planet.f90,v 1.5 2005-11-11 09:29:37 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -32,7 +32,7 @@ module Planet
   integer :: dummy1
   namelist /planet_init_pars/ dummy1
     
-  !
+ !
   ! run parameters
   !
   
@@ -40,15 +40,16 @@ module Planet
   real :: Rx=0.,Ry=0.,Rz=0.,gc=0.  !location and mass
   real :: b=0.      !peak radius for potential
   integer :: nc=2   !exponent of smoothed potential 
-  logical :: lcompanion=.false.,lramp=.false.
+  logical :: lramp=.false.
   logical :: lwavedamp=.false.,llocal_iso=.false.
 
-  namelist /planet_run_pars/ Rx,Ry,Rz,gc,lcompanion,nc,b,lramp, &
+  namelist /planet_run_pars/ Rx,Ry,Rz,gc,nc,b,lramp, &
        lwavedamp,llocal_iso
 ! 
 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_torqrocheint=0,idiag_torqrocheext=0
+  integer :: idiag_totalenergy=0,idiag_angularmomentum
 
   contains
 
@@ -72,7 +73,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $")
+           "$Id: planet.f90,v 1.5 2005-11-11 09:29:37 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -171,6 +172,7 @@ module Planet
          idiag_torqext=0
          idiag_torqrocheint=0
          idiag_torqrocheext=0
+         idiag_totalenergy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -185,6 +187,10 @@ module Planet
               'torqrocheint',idiag_torqrocheint)
          call parse_name(iname,cname(iname),cform(iname),&
               'torqrocheext',idiag_torqrocheext)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'totalenergy',idiag_totalenergy)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'angularmomentum',idiag_angularmomentum)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -193,8 +199,10 @@ module Planet
       if (lwr) then
         write(3,*) 'i_torqint=',idiag_torqint
         write(3,*) 'i_torqext=',idiag_torqext
-        write(3,*) 'i_torqrocheint',idiag_torqrocheint
-        write(3,*) 'i_torqrocheext',idiag_torqrocheext
+        write(3,*) 'i_torqrocheint=',idiag_torqrocheint
+        write(3,*) 'i_torqrocheext=',idiag_torqrocheext
+        write(3,*) 'i_totalenergy=',idiag_totalenergy
+        write(3,*) 'i_angularmomentum=',idiag_angularmomentum
         write(3,*) 'nname=',nname
       endif
 !
@@ -202,7 +210,7 @@ module Planet
 !
     endsubroutine rprint_planet
 !***********************************************************************
-    subroutine gravity_companion(f,df,p)
+    subroutine gravity_companion(f,df,p,gs)
 !
 !  add duu/dt according to the gravity of a companion offcentered by (Rx,Ry,Rz)
 !
@@ -213,7 +221,6 @@ module Planet
       use Cdata
       use Sub
       use Global
-      use Gravity
 !     
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -221,7 +228,7 @@ module Planet
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,rrc,rrs,g_star,dens
       real :: Omega_inertial,Rc,phase,phi,ax,ay,az,gtc
-      real :: Rs, axs,ays,azs,mc,ms,phis
+      real :: Rs, axs,ays,azs,mc,ms,phis,gs
 
       gtc = gc
       if (lramp) then
@@ -237,7 +244,7 @@ module Planet
       if (headtt) print*,&
            'gravity_companion: Adding gravity of companion located at x,y,z=',Rx,Ry,Rz
       if (headtt) print*,&
-           'gravity_companion: Mass ratio of secondary-to-primary = ',gc/g0
+           'gravity_companion: Mass ratio of secondary-to-primary = ',gc/gs
 
       if (Omega /= 0) then  
          if (headtt) print*,'gravity_companion: corotational frame'
@@ -247,7 +254,7 @@ module Planet
          if (headtt) print*,'gravity_companion: inertial frame'
          !add these three to grav_run_pars later
          Rc = sqrt(Rx**2+Ry**2+Rz**2)
-         Omega_inertial = sqrt(g0/Rc**3)
+         Omega_inertial = sqrt(gs/Rc**3)
          phase = acos(Rx/Rc)
 
          phi = Omega_inertial*t + phase  
@@ -258,16 +265,6 @@ module Planet
       az = Rz !just for notational consistency
 
       rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2)
-
-      !where (rrc.ge.b)
-      !   g_companion = -gtc/rrc**2
-      !elsewhere
-      !   g_companion = -gtc*(    &
-      !        -11.25*rrc**5/b**7 &
-      !        +35.00*rrc**4/b**6 &
-      !        -31.50*rrc**3/b**5 &
-      !        + 8.75*rrc   /b**3 )
-      !endwhere
             
       g_companion=-gtc*rrc**(nc-1) &
           *(rrc**nc+b**nc)**(-1./nc-1.)
@@ -292,19 +289,10 @@ module Planet
 
       rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2)
       
-      where (rrs.ge.r0_pot)
-         g_star = -g0/rrs**2
-      elsewhere
-         g_star = -g0*(    &
-              -11.25*rrs**5/r0_pot**7 &
-              +35.00*rrs**4/r0_pot**6 &
-              -31.50*rrs**3/r0_pot**5 &
-              + 8.75*rrs   /r0_pot**3 )
-      endwhere
+      !gravity from star
+      call gravity_star(gs,g_star,axs,ays)
 
-
-      g_star=-g0*rrs**(n_pot-1) &
-          *(rrs**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+      rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2)
 
       ggs(:,1) = (x(l1:l2)-axs)/(rrs)*g_star
       ggs(:,2) = (y(  m  )-ays)/(rrs)*g_star
@@ -315,8 +303,18 @@ module Planet
       call set_global(ggs,m,n,'gg',nx)
       
       !stuff for calc_torque
-      dens = f(l1:l2,m,n,ilnrho)
-      call calc_torque(dens,gtc,ax,ay,b,Rc,phi)
+
+      if ((idiag_torqint/=0) .or. (idiag_torqext/=0) .or. &
+           (idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) then 
+         dens = f(l1:l2,m,n,ilnrho)
+         call calc_torque(dens,gtc,ax,ay,b,Rc,phi)
+      endif
+
+      
+     !move to gravity companion later
+      if ((idiag_totalenergy/=0).or.(idiag_angularmomentum/=0)) &
+           call calc_monitored(f,axs,ays,ax,ay,gs)
+      
 
     endsubroutine gravity_companion
 !***********************************************************************
@@ -370,10 +368,10 @@ module Planet
 
       !call sum_mn_name(torque,idiag_torqint)
 
-      if (idiag_torqint/=0) call sum_mn_name(torqint,idiag_torqint)
-      if (idiag_torqext/=0) call sum_mn_name(torqext,idiag_torqext)
-      if (idiag_torqrocheint/=0) call sum_mn_name(torqrocheint,idiag_torqrocheint)
-      if (idiag_torqrocheext/=0) call sum_mn_name(torqrocheext,idiag_torqrocheext)
+      call sum_mn_name(torqint,idiag_torqint)
+      call sum_mn_name(torqext,idiag_torqext)
+      call sum_mn_name(torqrocheint,idiag_torqrocheint)
+      call sum_mn_name(torqrocheext,idiag_torqrocheext)
 
     endsubroutine calc_torque
 !***********************************************************************
@@ -391,15 +389,12 @@ module Planet
 ! cs = H * Omega, being H the scale height and (H/r) = cte.
 !
       use Cdata
-      use Gravity, only: g0,r0_pot
       use Global, only: get_global
-
-      !real, dimension(nx,3) :: gg_mn
-      real, dimension(nx) :: rr_mn,gr,Om
-      real :: Mach,plaw
 
       real, intent(in)  :: cs20
       real, dimension (nx), intent(out) :: cs2
+      real, dimension (nx) :: r
+      integer :: i
 !
 !     It is better to set cs2 as a global variable than to recalculate it
 !     at every timestep...
@@ -407,33 +402,27 @@ module Planet
       if (headtt) print*,&
            'planet: local isothermal equation of state for accretion disk'
       
-      plaw = 0.
+      !call get_global(cs2,m,n,'cs2')
 
-      Mach = sqrt(1./cs20)
+      r = sqrt(x(l1:l2)**2 + y(m)**2)
 
-      rr_mn = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + epsi
-
-      !call get_global(gg_mn,m,n,'gg')
-      !gr = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
-
-      where (rr_mn.ge.r0_pot)
-         gr = -g0/rr_mn**2
-      elsewhere
-         gr = -g0*(    &
-              -11.25*rr_mn**5/r0_pot**7 &
-              +35.00*rr_mn**4/r0_pot**6 &
-              -31.50*rr_mn**3/r0_pot**5 &
-              + 8.75*rr_mn   /r0_pot**3 )
+      where ((r.le.0.4).and.(r.ge.0.2)) 
+         cs2 =  0.00696037     &
+              + 0.00285893*r   &
+              - 0.0471130 *r**2 &
+              + 0.234658  *r**3 &
+              + 0.0636717 *r**4 &
+              - 3.01896   *r**5 &
+              + 6.47995   *r**6 &
+              - 4.07479   *r**7
+      endwhere
+      where (r.gt.0.4) 
+         cs2 = (0.05*r**(-0.5))**2 
+      endwhere
+      where (r.lt.0.2) 
+         cs2 = 0.007
       endwhere
       
-      Om = sqrt(abs(gr)/rr_mn) !* (1 + plaw/Mach**2)**(-1))
-      
-      !where (rr_mn.ge.r0_pot)
-         cs2 = (Om * rr_mn / Mach)**2
-      !elsewhere   
-      !   cs2 = (-0.2222*rr_mn**2 + 0.11)**2
-      !endwhere   
-
     endsubroutine local_isothermal
 !***********************************************************
     subroutine wave_damping(f,df)
@@ -452,11 +441,12 @@ module Planet
 !
 
       use Cdata
-      use Gravity
+      use Global
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz,mvar) :: df
       integer ider,j,k,i,ii
+      real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: r,pdamp,aux0,velx0,vely0
       real :: tau
 
@@ -464,7 +454,7 @@ module Planet
            'wave_damping: damping motions for inner and outer boundary'
 
       
-      tau = 2*pi/(r_int)**(-1.5)
+      tau = 2*pi/(0.4)**(-1.5)
       r = sqrt(x(l1:l2)**2 + y(m)**2)
      
       !for 0.4 : 1 ; 0.5 : 0
@@ -472,21 +462,26 @@ module Planet
       !for 0.4 : 0 ; 0.5 : 1
       !pdamp = 11.1111111*r**2 - 1.777777778  
       
-      where (r .le. r_int) 
+      where (r .le. 0.4) 
          pdamp = 1.
       endwhere
       where (r .ge. 0.5)
          pdamp = 0.
       endwhere
       
-      aux0 = g0*r**(n_pot-2)*(r**n_pot+r0_pot**n_pot)**(-1./n_pot-1.) !omega**2
+      call get_global(gg_mn,m,n,'gg')
+      aux0 = 1./r*sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
+      !aux0 is omega2
+           
+      !aux0 = g0*r**(n_pot-2)*(r**n_pot+r0_pot**n_pot)**(-1./n_pot-1.) 
+      !aux is gravity, aux0 is omega**2
       
       velx0 =  -y(  m  ) * sqrt(aux0)   !initial conditions
       vely0 =  x(l1:l2) * sqrt(aux0)
       
       do i=l1,l2
          ii = i-l1+1
-         if ((r(ii).le.0.5).and.(r(ii).ge.0.4)) then
+         if ((r(ii).le.0.5).and.(r(ii).gt.0.4)) then
             df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - 1.       )/tau * pdamp(ii) 
             df(i,m,n,iux)    = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
             df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
@@ -519,8 +514,106 @@ module Planet
            df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
         endif
      enddo
-      
+
    endsubroutine wave_damping
+!***************************************************************
+   subroutine gravity_star(gs,g_r,xstar,ystar)
+
+     use Cdata
+
+     real, dimension (nx), intent(out) :: g_r
+     real, dimension (nx) :: rr_mn
+     real, optional :: xstar,ystar !initial position of star
+     integer :: i
+     real :: gs,axs,ays
+
+     if (present(xstar)) then;axs=xstar;else;axs=0.;endif
+     if (present(ystar)) then;ays=ystar;else;ays=0.;endif
+  
+     rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2)
+
+     !smooth the potential locally (only for r < r0)
+     !
+     !needed when the gravity profile 
+     !should be like rr_mn in the inner boundary
+     !but one does not want the ridiculous
+     !smoothing that smooth_newton gives to n=2 
+     
+     do i=l1,l2
+      
+        if ((rr_mn(i).le.0.4).and.(rr_mn(i).ge.0.2)) then
+
+           !g_r(i) = -1./(8*r0_pot) &
+           !     *(20.*rr_mn(i)/r0_pot**2 - 12*rr_mn(i)**3/r0_pot**4)
+           
+           g_r(i) = 0.0733452     &
+                - 33.0137*rr_mn(i)   &
+                + 136.921*rr_mn(i)**2 &
+                - 1061.37*rr_mn(i)**3 &
+                + 2801.66*rr_mn(i)**4 &
+                + 606.876*rr_mn(i)**5 &
+                - 9074.97*rr_mn(i)**6 &
+                + 7504.01*rr_mn(i)**7
+        endif
+        if (rr_mn(i).gt.0.4) then 
+           g_r(i) = -gs/rr_mn(i)**2
+        endif
+        if (rr_mn(i).lt.0.2) then
+           !a=-13.3333333333
+           !g_r(i) = -1./(8*r0_pot) &
+           !     *20.*rr_mn(i)/r0_pot**2
+           g_r(i) = 2*rr_mn(i)*(-13.3333333333)
+        endif
+     enddo
+
+ 
+   endsubroutine gravity_star
+!***************************************************************
+   subroutine calc_monitored(f,xs,ys,xp,yp,gs)
+
+! calculate total energy and output its evolution 
+! as monitored variable
+!
+! 10-nov-05/wlad : coded
+
+
+     use Sub
+     use Cdata
+ 
+     real, dimension(mx,my,mz,mvar+maux) :: f
+     real, dimension(nx) :: rstar,rplanet,vel,r,uphi
+     real, dimension(nx) :: angular_momentum
+     real, dimension(nx) :: kin_energy,pot_energy,total_energy
+     real :: xs,ys,xp,yp,gs !position of star and planet
+
+     if (headtt) print*,'planet : calculate total energy'
+     if (headtt) print*,'planet : calculate total angular momentum'
+
+     !calculate the total energy and integrate it
+
+     rstar   = sqrt((x(l1:l2)-xs)**2 + (y(m)-ys)**2)+epsi
+     rplanet = sqrt((x(l1:l2)-xp)**2 + (y(m)-yp)**2)+epsi
+
+     !kinetic energy
+     vel = sqrt(f(l1:l2,m,n,iux)**2 + f(l1:l2,m,n,iuy)**2)
+     kin_energy = f(l1:l2,m,n,ilnrho) * vel**2/2.
+     
+     !potential energy
+
+     pot_energy = -(gs/rstar + gc/rplanet)*f(l1:l2,m,n,ilnrho)
+
+     total_energy = kin_energy + pot_energy
+
+     call sum_lim_mn_name(total_energy,idiag_totalenergy)
+
+     r = sqrt(x(l1:l2)**2 + y(m)**2)+epsi !this is correct: baricenter
+     uphi = (-f(l1:l2,m,n,iux)*y(m) + f(l1:l2,m,n,iuy)*x(l1:l2))/r
+
+     angular_momentum = f(l1:l2,m,n,ilnrho) * r * uphi
+          
+     call sum_lim_mn_name(angular_momentum,idiag_angularmomentum)
+
+   endsubroutine calc_monitored
 !***************************************************************
   endmodule Planet
   
