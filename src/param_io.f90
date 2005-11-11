@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.215 2005-11-08 23:05:19 wlyra Exp $ 
+! $Id: param_io.f90,v 1.216 2005-11-11 23:00:33 dobler Exp $ 
 
 module Param_IO
 
@@ -982,7 +982,6 @@ module Param_IO
         call write_shock_init_pars(1)
         call write_planet_init_pars(1)
         ! The following parameters need to be communicated to IDL
-        ! Note: logicals will be written as Fortran integers
         write(1,NML=lphysics              ) 
         close(1)
 !      endif
