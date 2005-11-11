@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $
+! $Id: noplanet.f90,v 1.5 2005-11-11 09:30:28 wlyra Exp $
 !
 !  Dummy module
 !
@@ -45,7 +45,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.4 2005-11-09 09:16:12 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.5 2005-11-11 09:30:28 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -123,7 +123,7 @@ module Planet
       !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
-    subroutine gravity_companion(f,df,p)
+    subroutine gravity_companion(f,df,p,gs)
       
 !8-nov-05/wlad : dummy      
 
@@ -133,6 +133,7 @@ module Planet
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+      real :: gs
 
       call stop_it("gravity_companion: noplanet is used")
       
@@ -154,4 +155,20 @@ module Planet
 
     endsubroutine local_isothermal
 !**********************************************************************
+   subroutine gravity_star(gs,g_r,xstar,ystar)
+
+     use Cdata
+     use Mpicomm, only: stop_it
+
+     ! dummy
+
+     real, dimension (nx), intent(out) :: g_r
+     real, optional :: xstar,ystar !initial position of star
+     real :: gs
+
+     call stop_it("gravity_star")
+
+
+   endsubroutine gravity_star
+!***************************************************************
   endmodule Planet
