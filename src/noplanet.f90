@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.5 2005-11-11 09:30:28 wlyra Exp $
+! $Id: noplanet.f90,v 1.6 2005-11-11 14:58:40 mee Exp $
 !
 !  Dummy module
 !
@@ -45,7 +45,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.5 2005-11-11 09:30:28 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.6 2005-11-11 14:58:40 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,6 +166,7 @@ module Planet
      real, optional :: xstar,ystar !initial position of star
      real :: gs
 
+     g_r=0.
      call stop_it("gravity_star")
 
 
