@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.145 2005-11-08 23:05:19 wlyra Exp $
+### $Id: Makefile.src,v 1.146 2005-11-11 22:43:49 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -74,6 +74,7 @@ FC=f90
 FFLAGS=-O3
 FFLAGS=
 F90FLAGS=
+F77=f90
 F77FLAGS=
 CFLAGS=-O3 -DFUNDERSC=1
 FCCLEANER=
@@ -343,17 +344,18 @@ LIBMPISUFFIX=_#(Kolmogorov)
 ## Darwin:
 ## Power Macintosh
 #FC=f95
+#F77=$(FC)
 #FFLAGS=-O3 
 #LDMPI=
-#F77=xlf  #(Nils)
 #FC=xlf90 #(Nils)
+#F77=xlf  #(Nils)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
 #F90FLAGS=-qsuffix=f=f90 #(Nils)
 #CFLAGS=-O3 -DFUNDERSC=0 #(Nils)
 
 
 ## SunOS:
-## Sun
+## Solaris
 #FC=f90
 #FC=pghpf #(Lomond)
 #FFLAGS=-O4
