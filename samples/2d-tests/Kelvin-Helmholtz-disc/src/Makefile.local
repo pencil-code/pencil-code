@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
+MPICOMM   =   mpicomm_double
 GLOBAL    = noglobal
 
 HYDRO     =   hydro
@@ -18,8 +18,6 @@ FORCING   = noforcing
 SHEAR     =   shear
 
 PARTICLES =   particles_dust
-
-GLOBAL    =   global_particles
 
 FFLAGS_GENERAL=-r8
 CFLAGS_GENERAL=-DDOUBLE_PRECISION
