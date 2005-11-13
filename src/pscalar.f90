@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.57 2005-08-23 16:37:34 ajohan Exp $
+! $Id: pscalar.f90,v 1.58 2005-11-13 10:22:55 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -28,14 +28,15 @@ module Pscalar
   logical :: nopscalar=.false.
 
   ! input parameters
+  real, dimension(3) :: gradC0=(/0.,0.,0./)
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
   real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.
-  real :: epsilon_lncc=0., cc_const=0., unit_rhocc=0.
-  real, dimension(3) :: gradC0=(/0.,0.,0./)
+  real :: epsilon_lncc=0., cc_const=0.
+  logical :: lupw_lncc=.false.
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const
+       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
@@ -84,7 +85,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.57 2005-08-23 16:37:34 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.58 2005-11-13 10:22:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -250,7 +251,8 @@ module Pscalar
 ! glncc
       if (lpencil(i_glncc)) call grad(f,ilncc,p%glncc)
 ! uglncc
-      if (lpencil(i_uglncc)) call dot_mn(p%uu,p%glncc,p%uglncc)
+      if (lpencil(i_uglncc)) &
+          call u_dot_gradf(f,ilncc,p%glncc,p%uu,p%uglncc,UPWIND=lupw_lncc)
 ! del2lncc
       if (lpencil(i_del2lncc)) call del2(f,ilncc,p%del2lncc)
 ! hlncc        
