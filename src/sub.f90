@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.225 2005-11-08 23:33:28 wlyra Exp $ 
+! $Id: sub.f90,v 1.226 2005-11-15 13:49:49 wlyra Exp $ 
 
 module Sub 
 
@@ -351,7 +351,7 @@ module Sub
 
         r = sqrt(x(l1:l2)**2+y(m)**2)
 
-        do i=l1,l2
+        do i=1,nx
            if ((r(i) .le. r_ext) .and. (r(i) .ge. r_int)) then
               fname(iname)=fname(iname)+ a(i)*dx*dy / &
                    (pi*(r_ext**2 - r_int**2))
