@@ -3,8 +3,9 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
-GLOBAL    =   global_gg_halo
+MPICOMM   =   mpicomm
+#MPICOMM   = nompicomm
+GLOBAL    =   global_gg_cs2_nolnrho
 
 HYDRO     =   hydro
 DENSITY   =   density
@@ -17,3 +18,6 @@ GRAVITY   =   grav_r
 FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock
+
+PLANET   =    planet
+#DEBUG    = nodebug
