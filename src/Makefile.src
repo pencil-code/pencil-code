@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.146 2005-11-11 22:43:49 dobler Exp $
+### $Id: Makefile.src,v 1.147 2005-11-15 14:34:06 apichat Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -220,7 +220,6 @@ LIBMPISUFFIX=
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl11|sandin|lynx)
 #FFLAGS=-O3 #(nw[0-9]*|nl11|wormhole|sandin|lynx)
-#FFLAGS=-O3 -ieee=full #(barilko)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-1][0-9]|obelix)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
@@ -287,6 +286,13 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #FFLAGS=-O3 -I/usr/include/lam #(nl6)
 #LDMPI=-I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #F77FLAGS=-w90 #(nl6)
+##
+## barilko Apichat Neamvonk's desktop
+##
+#FC=ifort #(barilko)
+#FFLAGS=-O3 -I/usr/local/lib/idl/lam/include #(barilko)
+#LDMPI=-I/usr/local/lib/idl/lam/include -L/usr/local/lib/idl/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(barilko)
+#F77FLAGS=-w90 #(barilko)
 ##
 ## wormhole Tony's Laptop
 ##
