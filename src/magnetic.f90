@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.261 2005-11-07 18:53:23 dobler Exp $
+! $Id: magnetic.f90,v 1.262 2005-11-16 08:44:34 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -61,6 +61,7 @@ module Magnetic
   logical :: llorentzforce=.true.,linduction=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresi_eta_const=.false.
+  logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
   logical :: lresi_eta_shock=.false.
@@ -98,6 +99,7 @@ module Magnetic
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
+  real :: alphaSSm=0.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
 
   namelist /magnetic_run_pars/ &
@@ -108,6 +110,7 @@ module Magnetic
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
        iresistivity, &
+       alphaSSm, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
        reinitalize_aa,rescale_aa,lB_ext_pot, &
@@ -176,7 +179,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.261 2005-11-07 18:53:23 dobler Exp $")
+           "$Id: magnetic.f90,v 1.262 2005-11-16 08:44:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -258,6 +261,9 @@ module Magnetic
         case ('eta-const')
           if (lroot) print*, 'resistivity: constant eta'
           lresi_eta_const=.true.
+        case ('etaSS')
+          if (lroot) print*, 'resistivity: etaSS (Shakura-Sunyaev)'
+          lresi_etaSS=.true.
         case('hyper2')
           if (lroot) print*, 'resistivity: hyper2'
           lresi_hyper2=.true.
@@ -891,8 +897,8 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo
-      real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,gshockgai
-      real :: tmp,eta_out1
+      real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,gshockgai,etaSS
+      real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j
 !
       intent(in)     :: f
@@ -927,6 +933,21 @@ module Magnetic
       if (lresi_eta_const) then
         fres=fres+eta*p%del2a
         etatotal=etatotal+eta
+      endif
+!
+!  Shakura-Sunyaev type resistivity (mainly just as a demo to show
+!  how resistivity can be made depend on temperature.
+!  Since etaSS is nonuniform, we use this contribution only for -etaSS*JJ
+!  and keep the constant piece with +eta*del2A. (The divA term is eliminated
+!  by a suitable gauge transformation.) A sample run is checked in under
+!  pencil-runs/1d-tests/bdecay
+!
+      if (lresi_etaSS) then
+        etaSS=alphaSSm*p%cs2/OmegaSS
+        do j=1,3
+          fres(:,j)=fres(:,j)+eta*p%del2a(:,j)-etaSS*p%jj(:,j)
+        enddo
+        etatotal=etaSS+eta
       endif
 !
       if (lresi_hyper2) then
