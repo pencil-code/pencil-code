@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.147 2005-11-15 14:34:06 apichat Exp $
+### $Id: Makefile.src,v 1.148 2005-11-16 11:21:16 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -220,7 +220,7 @@ LIBMPISUFFIX=
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl11|sandin|lynx)
 #FFLAGS=-O3 #(nw[0-9]*|nl11|wormhole|sandin|lynx)
-#FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-1][0-9]|obelix)
+#FCCLEANER=2>&1 | scripts/cleanf95 #(obelix)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl11|wormhole)  
@@ -254,9 +254,6 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #F77=$(FC) #(erland|bohm|igor|onsager)
 #F77=$(FC) #(Owen|Master|nw17|nl11)
 #F77FLAGS=-w90 #(nw[0-9]*|ns0|nw17|nl11|sandin)
-#FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
-#FFLAGS=-O2 -ipo -xW -tpp7 #(giga[0-9]*)  
-#LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
 #FC=ifort #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #F77=$(FC) #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #FFLAGS=-O3 -ipo #(lws.Stanford.EDU|lws2.Stanford.EDU)
@@ -325,11 +322,16 @@ LIBMPISUFFIX=_#(Kolmogorov)
 ## giga[0-9] Newcastle eScience (tony,dave,greame)
 ##
 #FC=mpif90 #(giga[0-9]*)  
+#FC=/addon/shared/mpich/bin/mpif90 -static -I/addon/shared/mpich/include/ #(giga[0-9]*)  
+##FC=gfortran_4win -static -I/addon/shared/lam/include #(giga01)  
+##CC=gcc_4win -static -I/addon/shared/lam/include #(giga01)  
 #FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-9]*)
+#FCCLEANER=  #(giga01)
 #FFLAGS=-O0 -CA -CB -CS -CV #(giga[0-9]*)  
 #FFLAGS=-O2 -ipo -tpp7 -vec_report0 #(giga[0-9]*)  
 #FFLAGS=-C -tpp7 -vec_report0  #(giga[0-9]*)  
 #FFLAGS=-O2 -tpp7 -vec_report0  #(giga[0-9]*)  
+##FFLAGS=-O2 -I/addon/shared/mpich-1.2.7/include #(giga01)  
 #LDMPI= #(giga[0-9]*)
 ##
 ## St. Andrews Copson Cluster (tony,dave,greame)
