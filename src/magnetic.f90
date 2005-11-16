@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.263 2005-11-16 08:47:08 brandenb Exp $
+! $Id: magnetic.f90,v 1.264 2005-11-16 11:25:19 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -181,7 +181,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.263 2005-11-16 08:47:08 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.264 2005-11-16 11:25:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -296,25 +296,29 @@ module Magnetic
         endselect
       enddo
 !
-      if (lresi_eta_const.and.eta==0.0) then
-        if (.not.lstarting) call warning('initialize_magnetic', &
-            'Resistivity coefficient eta is zero!')
-        lresi_eta_const=.false.
-      endif
-      if (lresi_hyper2.and.eta_hyper2==0.0) then
-        call warning('initialize_magnetic', &
-            'Resistivity coefficient eta_hyper2 is zero!')
-        lresi_hyper2=.false.
-      endif
-      if (lresi_hyper3.and.eta_hyper3==0.0) then
-        call warning('initialize_magnetic', &
-            'Resistivity coefficient eta_hyper3 is zero!')
-        lresi_hyper3=.false.
-      endif
-      if (lresi_eta_shock.and.eta_shock==0.0) then
-        call warning('initialize_magnetic', &
-            'Resistivity coefficient eta_shock is zero!')
-        lresi_eta_shock=.false.
+! If we're timestepping warn if there's no resistivity
+!
+      if (lrun) then
+        if (lresi_eta_const.and.eta==0.0) then
+          call warning('initialize_magnetic', &
+              'Resistivity coefficient eta is zero!')
+          lresi_eta_const=.false.
+        endif
+        if (lresi_hyper2.and.eta_hyper2==0.0) then
+          call warning('initialize_magnetic', &
+              'Resistivity coefficient eta_hyper2 is zero!')
+          lresi_hyper2=.false.
+        endif
+        if (lresi_hyper3.and.eta_hyper3==0.0) then
+          call warning('initialize_magnetic', &
+              'Resistivity coefficient eta_hyper3 is zero!')
+          lresi_hyper3=.false.
+        endif
+        if (lresi_eta_shock.and.eta_shock==0.0) then
+          call warning('initialize_magnetic', &
+              'Resistivity coefficient eta_shock is zero!')
+          lresi_eta_shock=.false.
+        endif
       endif
 !
     endsubroutine initialize_magnetic
@@ -1036,7 +1040,7 @@ module Magnetic
                      abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
                      abs(p%uu(:,3)-hall_term*p%jj(:,3))*dz_1(  n  )
         endif
-        if (headtt.or.ldebug) print*,'duu_dt: max(advec_hall) =',&
+        if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
                                      maxval(advec_hall)
       endif
 !
@@ -1076,8 +1080,8 @@ module Magnetic
         endif
       endif
       if (headtt.or.ldebug) then
-        print*,'duu_dt: max(advec_va2) =',maxval(advec_va2)
-        print*,'duu_dt: max(diffus_eta) =',maxval(diffus_eta)
+        print*,'daa_dt: max(advec_va2) =',maxval(advec_va2)
+        print*,'daa_dt: max(diffus_eta) =',maxval(diffus_eta)
       endif
 !
 !  Special contributions to this module are called here
