@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.262 2005-11-16 08:44:34 brandenb Exp $
+! $Id: magnetic.f90,v 1.263 2005-11-16 08:47:08 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -35,7 +35,7 @@ module Magnetic
 
   character (len=labellen) :: initaa='zero',initaa2='zero'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
-  character (len=labellen) :: Omega_profile='nothing'
+  character (len=labellen) :: Omega_profile='nothing',alpha_profile='nothing'
   ! input parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./),B_ext_tmp
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
@@ -74,6 +74,7 @@ module Magnetic
   logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
+  logical :: lmeanfield_noalpm=.false.
   real :: nu_ni=0.,nu_ni1,hall_term=0.
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
   real :: displacement_gun=0.
@@ -105,6 +106,7 @@ module Magnetic
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
        lmeanfield_theory,alpha_effect,alpha_quenching,delta_effect, &
+       lmeanfield_noalpm,alpha_profile, &
        meanfield_etat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
@@ -179,7 +181,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.262 2005-11-16 08:44:34 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.263 2005-11-16 08:47:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -687,6 +689,7 @@ module Magnetic
 !      
       real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext!,jj_ext
       real, dimension (nx) :: rho1_jxb,alpha_total
+      real, dimension (nx) :: alpha_tmp
       real :: B2_ext,c,s
       integer :: i,j
 !
@@ -840,13 +843,17 @@ module Magnetic
 ! needed if a mean field (mf) model is calculated
 !
       if (lpencil(i_mf_EMF)) then
+        select case(alpha_profile)
+        case('nothing'); alpha_tmp=1.
+        case('siny'); alpha_tmp=sin(y(m))
+        endselect
 !
 !  possibility of dynamical alpha
 !
-        if (lalpm) then
-          alpha_total=alpha_effect+f(l1:l2,m,n,ialpm)
+        if (lalpm.and..not.lmeanfield_noalpm) then
+          alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
         else
-          alpha_total=alpha_effect
+          alpha_total=alpha_effect*alpha_tmp
         endif
 !
 !  possibility of conventional alpha quenching (rescales alpha_total)
@@ -1446,6 +1453,7 @@ module Magnetic
       case('(Sz,0,0)')
         if (headtt) print*,'Omega_effect: uniform shear in z, S=',Omega_ampl
         df(l1:l2,m,n,iaz)=df(l1:l2,m,n,iaz)-Omega_ampl*f(l1:l2,m,n,iax)
+        if (lhydro) df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Omega_ampl*f(l1:l2,m,n,iuz)
       case('(0,cosx*cosz,0)')
         if (headtt) print*,'Omega_effect: solar shear, S=',Omega_ampl
         df(l1:l2,m,n,iax)=df(l1:l2,m,n,iax)+Omega_ampl*f(l1:l2,m,n,iay) &

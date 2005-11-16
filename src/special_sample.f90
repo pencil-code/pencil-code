@@ -1,11 +1,11 @@
-! $Id: special_sample.f90,v 1.8 2005-11-07 18:53:01 dobler Exp $
-
+! $Id: special_sample.f90,v 1.9 2005-11-16 08:47:08 brandenb Exp $
 !
-!  This module serves as a sample for a special_XXX modulej htat
-!  introduces additional primitive variables. Use this as a basis for you
+!  This module serves as a sample for a special_XXX module that
+!  introduces additional primitive variables. Use this as a basis for your
 !  own special_ module if you need one.
 !
-!  To ensure it is kept up to date, we also use it for production stuff
+!  To ensure it is kept up to date, we also use it for production stuff.
+!  This sample modules solves the dynamical alpha quenching equation,
 !  involving mean-field theory, which explains the presence of a number
 !  of non-generic routines
 !
@@ -42,11 +42,11 @@ module Special
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
 
   ! run parameters
-  real :: etat_alpm=1., Rm_alpm=1., kf_alpm=1.
+  real :: etat_alpm=1., Rm_alpm=1., kf_alpm=1., alpmdiff=0.
   logical :: ladvect_alpm=.false.
 
   namelist /special_run_pars/ &
-       etat_alpm,Rm_alpm,kf_alpm,ladvect_alpm, &
+       etat_alpm,Rm_alpm,kf_alpm,ladvect_alpm,alpmdiff, &
        Omega_profile,Omega_ampl
 
   ! other variables (needs to be consistent with reset list below)
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.8 2005-11-07 18:53:01 dobler Exp $")
+           "$Id: special_sample.f90,v 1.9 2005-11-16 08:47:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -178,7 +178,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
-      real, dimension (nx) :: alpm,ugalpm,EMFdotB,divflux
+      real, dimension (nx) :: alpm,ugalpm,EMFdotB,divflux,del2alpm
       type (pencil_case) :: p
 !
       intent(in)  :: f
@@ -204,6 +204,10 @@ module Special
           call grad(f,ialpm,galpm)
           call dot_mn(p%uu,galpm,ugalpm)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm
+        endif
+        if(alpmdiff/=0) then
+          call del2(f,ialpm,del2alpm)
+          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
         endif
       endif
 !
