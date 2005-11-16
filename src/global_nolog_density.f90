@@ -1,10 +1,11 @@
- ! $Id: global_nolog_density.f90,v 1.3 2005-06-27 00:14:18 mee Exp $
+ ! $Id: global_nolog_density.f90,v 1.4 2005-11-16 11:20:08 mee Exp $
 
 module Global
 
 !
   use Cparam
   use Mpicomm
+  use Messages
 
   implicit none
 
@@ -23,6 +24,11 @@ module Global
   interface get_global
     module procedure get_global_vect
     module procedure get_global_scal
+  endinterface
+
+  interface get_global_point
+    module procedure get_global_vect_point
+    module procedure get_global_scal_point
   endinterface
 !
   real, dimension (mx,my,mz) :: rho,nd
@@ -104,6 +110,7 @@ module Global
       integer :: l,m,n
       character (len=*) :: label
 !
+      call not_implemented("set_global_vect_point")
       if (NO_WARN) print*, l, var(1), m, n, label ! keep compiler quiet
 !
     endsubroutine set_global_vect_point
@@ -118,6 +125,7 @@ module Global
       integer :: l,m,n
       character (len=*) :: label
 !
+      call not_implemented("set_global_scal_point")
       if (NO_WARN) print*, l, var, m, n, label ! keep compiler quiet
 !
     endsubroutine set_global_scal_point
@@ -134,6 +142,47 @@ module Global
 !
     endsubroutine reset_global
 !***********************************************************************
+    subroutine get_global_vect_point(var,l,m,n,label)
+!
+!  set (m,n)-pencil of the global vector variable identified by LABEL
+!
+!  04-oct-05/tony: adapted
+!
+      real, dimension(3) :: var
+      integer :: l,m,n
+      character (len=*) ::label
+!
+      call not_implemented("get_global_vect_point")
+      if (NO_WARN) print*, var(1),m,n,label ! keep compiler quiet
+!
+    endsubroutine get_global_vect_point
+!***********************************************************************
+    subroutine get_global_scal_point(var,l,m,n,label)
+!
+!  set (m,n)-pencil of the global scalar variable identified by LABEL
+!
+!  04-oct-05/tony: adapted
+!
+      real :: var
+      integer :: l,m,n
+      character (len=*) ::label
+!
+      select case(label)
+
+      case ('rho')
+        var = rho(l,m,n)
+
+      case ('nd')
+        var = nd(l,m,n)
+
+      case default
+        if (lroot) print*, 'get_global_scal: No such value for label', trim(label)
+        call stop_it('get_global_scal')
+
+      endselect
+!
+    endsubroutine get_global_scal_point
+!***********************************************************************
     subroutine get_global_vect(var,m,n,label)
 !
 !  set (m,n)-pencil of the global vector variable identified by LABEL
@@ -144,6 +193,7 @@ module Global
       integer :: m,n
       character (len=*) ::label
 !
+      call not_implemented("get_global_vect")
       if (NO_WARN) print*, var(1,1),m,n,label ! keep compiler quiet
 !
     endsubroutine get_global_vect
