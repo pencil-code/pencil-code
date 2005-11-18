@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.356 2005-11-18 08:12:17 dintrans Exp $
+! $Id: entropy.f90,v 1.357 2005-11-18 19:07:54 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.356 2005-11-18 08:12:17 dintrans Exp $")
+           "$Id: entropy.f90,v 1.357 2005-11-18 19:07:54 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2716,73 +2716,75 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
     subroutine strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
                      ssm, cs2m, rhobot)
 !
+!  DOCUMENT ME!
+!
 ! 17-Nov-2005/bdintrans: coded
 !
-    use Cdata
-    use Gravity, only: z1,z2,gravz
-    use EquationOfState, only: gamma, gamma1
+      use Cdata
+      use Gravity, only: z1,z2,gravz
+      use EquationOfState, only: gamma, gamma1
 !
-    real, dimension (nzgrid) :: lnrhom, ssm, cs2m, zz, eem
-    real :: rhotop, cs2top, zm, ztop, HT1, dlnrho, dee, &
-               mixinglength_flux, lnrhobot, rhobot
-    real :: del, delad, fr_frac, fc_frac, fc, polyad=3./2.
-    integer :: n1, n2
+      real, dimension (nzgrid) :: lnrhom, ssm, cs2m, zz, eem
+      real :: rhotop, cs2top, zm, ztop, HT1, dlnrho, dee, &
+              mixinglength_flux, lnrhobot, rhobot
+      real :: del, delad, fr_frac, fc_frac, fc, polyad=3./2.
+      integer :: nbot1, nbot2
 !
 !  inital values at the top
 !
-    lnrhom(1)=alog(rhotop)
-    cs2m(1)=cs2top
-    eem(1)=cs2top/gamma/gamma1
-    ssm(1)=(alog(cs2m(1))-gamma1*lnrhom(1))/gamma
-    ztop=xyz0(3)+Lxyz(3)
-    zz(1)=ztop
+      lnrhom(1)=alog(rhotop)
+      cs2m(1)=cs2top
+      eem(1)=cs2top/gamma/gamma1
+      ssm(1)=(alog(cs2m(1))-gamma1*lnrhom(1))/gamma
+      ztop=xyz0(3)+Lxyz(3)
+      zz(1)=ztop
 !
-    delad=1.-1./gamma
-    fr_frac=delad*(mpoly0+1.)
-    fc_frac=1.-fr_frac
-    fc=fc_frac*mixinglength_flux
+      delad=1.-1./gamma
+      fr_frac=delad*(mpoly0+1.)
+      fc_frac=1.-fr_frac
+      fc=fc_frac*mixinglength_flux
 !   print*,'fr_frac, fc_frac, fc=',fr_frac,fc_frac,fc
 !
-    do iz=2,nzgrid
-      zm=ztop-(iz-1)*dz
-      zz(iz)=zm
-      if (zm<=z1) then
+      do iz=2,nzgrid
+        zm=ztop-(iz-1)*dz
+        zz(iz)=zm
+        if (zm<=z1) then
 ! radiative zone=polytropic stratification
-        del=1./(mpoly1+1.)
-      else
-        if (zm<=z2) then
+          del=1./(mpoly1+1.)
+        else
+          if (zm<=z2) then
 ! convective zone=mixing-length stratification
 !         del=delad
-          del=delad+1.5*(fc/ &
-                      (exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
-        else
+            del=delad+1.5*(fc/ &
+                (exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
+          else
 ! upper zone=isothermal stratification
-          del=0.
+            del=0.
+          endif
         endif
-      endif
-      dee=-polyad*del
-      dlnrho=-polyad*(1.-del)/eem(iz-1)
-      eem(iz)=eem(iz-1)-dee*dz
-      lnrhom(iz)=lnrhom(iz-1)-dlnrho*dz
-      cs2m(iz)=gamma*gamma1*eem(iz)
-      ssm(iz)=(alog(cs2m(iz))-gamma1*lnrhom(iz))/gamma
-    enddo
+        dee=-polyad*del
+        dlnrho=-polyad*(1.-del)/eem(iz-1)
+        eem(iz)=eem(iz-1)-dee*dz
+        lnrhom(iz)=lnrhom(iz-1)-dlnrho*dz
+        cs2m(iz)=gamma*gamma1*eem(iz)
+        ssm(iz)=(alog(cs2m(iz))-gamma1*lnrhom(iz))/gamma
+      enddo
 !
 !  find the value of rhobot
 !
       do iz=1,nzgrid
-        if (zz(iz)<z1) goto 30
+        if (zz(iz)<z1) exit     ! wd: Shouldn't this be (zz(iz)>=z1) ?
       enddo
 !     stop 'find rhobot: didnt find bottom value of z'
- 30   n1=iz-1
-      n2=iz
+      nbot1=iz-1
+      nbot2=iz
 !
 !  interpolate
 !
-      lnrhobot=lnrhom(n1)+(lnrhom(n2)-lnrhom(n1))/ &
-               (zz(n2)-zz(n1))*(z1-zz(n1))
+      lnrhobot=lnrhom(nbot1)+(lnrhom(nbot2)-lnrhom(nbot1))/ &
+               (zz(nbot2)-zz(nbot1))*(z1-zz(nbot1))
       rhobot=exp(lnrhobot) 
-!     print*,'find rhobot=',rhobot
+!   print*,'find rhobot=',rhobot
 !
     endsubroutine strat_MLT
 !***********************************************************************    
