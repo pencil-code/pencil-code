@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.355 2005-10-17 22:28:51 dobler Exp $
+! $Id: entropy.f90,v 1.356 2005-11-18 08:12:17 dintrans Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.355 2005-10-17 22:28:51 dobler Exp $")
+           "$Id: entropy.f90,v 1.356 2005-11-18 08:12:17 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -549,7 +549,7 @@ module Entropy
         case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
         case('hor-fluxtube'); call htube(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
-        case('mixinglength'); call mixinglength(f)
+        case('mixinglength'); call mixinglength(cs2cool,mixinglength_flux,f)
 
         case('sedov') 
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
@@ -965,7 +965,7 @@ module Entropy
 
     endsubroutine hydrostatic_isentropic
 !***********************************************************************
-    subroutine mixinglength(f)
+    subroutine mixinglength(cs2cool,mixinglength_flux,f)
 !
 !  Mixing length initial condition.
 !
@@ -979,56 +979,91 @@ module Entropy
 !  scaling is applied, ie no further free parameter is assumed.)
 !
 !  12-jul-05/axel: coded
+!  17-Nov-2005/bdintrans: updated using strat_MLT
 !
-      use Gravity, only: gravz
+      use Cdata
+      use Gravity, only: gravz, z1
+      use General, only: safe_character_assign
 !--   use EquationOfState, only: mpoly1
+      use EquationOfState, only: gamma, gamma1, cs2top
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nzgrid) :: cs2m,lnrhom,ssm
-      real :: zm,dsdz,dlnrhodz,HT1
-      real :: cp1tilde=1. !(used as 1/cp; but not consistently applied)
+      real :: zm,ztop,cs2cool,mixinglength_flux
+      real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
+              rhotop,rhobot
+      integer :: iter
+      character (len=120) :: wfile
 !
+      if (headtt) print*,'init_ss : mixinglength stratification'
       if (.not.lgravz) then
         call fatal_error("mixinglength","works only for vertical gravity")
       endif
 !
 !  do the calculation on all processors, and then put the relevant piece
 !  into the f array.
+!  choose value zbot where rhobot should be applied and give two first
+!  estimates for rhotop
 !
-!  begin with lower overshoot layer
+      zbot=z1
+      rbot=1.
+      rt_old=.1*rbot
+      rt_new=.12*rbot
 !
-      Kbot=(mpoly1+1.)*(1.-1./gamma)*abs(gravz)*cp1tilde/mixinglength_flux
-      print*,'mixinglength: Kbot,mpoly1,cp1tilde=',Kbot,mpoly1,cp1tilde
+!  need to iterate for rhobot=1.
+!  produce first estimate
 !
-      do iz=1,nzgrid
-        zm=z0+(iz-1)*dz
-        if (zm<=0.) then
-          cs2m(iz)=1.-gamma/(mpoly1+1.)*zm
-          lnrhom(iz)=mpoly1*alog(cs2m(iz))
-          ssm(iz)=-(gamma1/gamma*(mpoly1+1.)-1.)*alog(cs2m(iz))
-        else
-          HT1=gamma1*abs(gravz)/cs2m(iz-1)
-          if (zm<=1.) then
-            dsdz=-HT1*(mixinglength_flux/ &
-              (exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
-          else
-            dsdz=+HT1
-          endif
-          ssm(iz)=ssm(iz-1)+dsdz*dz
-          dlnrhodz=-dsdz-abs(gravz)/cs2m(iz-1)
-          lnrhom(iz)=lnrhom(iz-1)+dlnrhodz*dz
-          cs2m(iz)=exp(gamma1*lnrhom(iz)+gamma*ssm(iz))
-        endif
-        !if(ip<=15) print*,'z,s,lr,cs2=',zm,ssm(iz),lnrhom(iz),cs2m(iz)
-      enddo
+      rhotop=rt_old
+      cs2top=cs2cool
+      call strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
+                  ssm, cs2m, rhobot)
+      rb_old=rhobot
+!
+!  next estimate
+!
+      rhotop=rt_new
+      call strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
+                  ssm, cs2m, rhobot)
+      rb_new=rhobot
+
+      do 10 iter=1,10
+!
+!  new estimate
+!
+        rhotop=rt_old+(rt_new-rt_old)/(rb_new-rb_old)*(rbot-rb_old)
+!
+!  check convergence
+!
+        crit=abs(rhotop/rt_new-1.)
+        if (crit.le.1e-4) goto 20
+!
+        call strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
+                    ssm, cs2m, rhobot)
+!
+!  update new estimates
+!
+        rt_old=rt_new
+        rb_old=rb_new
+        rt_new=rhotop
+        rb_new=rhobot
+   10 continue
+   20 if (ipz.eq.0) print*,'- iteration completed: rhotop,crit=',rhotop,crit
 !
 ! put density and entropy into f-array
+! write the initial stratification in data/proc*/stratMLT.dat
 !
+      ztop=xyz0(3)+Lxyz(3)
+      call safe_character_assign(wfile,trim(directory)//'/stratMLT.dat')
+      open(11+ipz,file=wfile,status='unknown')
       do n=1,nz
         iz=n+ipz*nz
-        f(:,:,n+nghost,ilnrho)=lnrhom(iz)
-        f(:,:,n+nghost,iss)=ssm(iz)
+        zm=ztop-(iz-1)*dz
+        f(:,:,n+nghost,ilnrho)=lnrhom(nzgrid-iz+1)
+        f(:,:,n+nghost,iss)=ssm(nzgrid-iz+1)
+        write(11+ipz,'(4(2x,1pe12.5))') zm,exp(lnrhom(iz)),ssm(iz),cs2m(iz) 
       enddo
+      close(11+ipz)
+      return
 !
     endsubroutine mixinglength
 !***********************************************************************
@@ -2677,6 +2712,78 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - newton
 !
     endsubroutine newton_cool
+!***********************************************************************
+    subroutine strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
+                     ssm, cs2m, rhobot)
+!
+! 17-Nov-2005/bdintrans: coded
+!
+    use Cdata
+    use Gravity, only: z1,z2,gravz
+    use EquationOfState, only: gamma, gamma1
+!
+    real, dimension (nzgrid) :: lnrhom, ssm, cs2m, zz, eem
+    real :: rhotop, cs2top, zm, ztop, HT1, dlnrho, dee, &
+               mixinglength_flux, lnrhobot, rhobot
+    real :: del, delad, fr_frac, fc_frac, fc, polyad=3./2.
+    integer :: n1, n2
+!
+!  inital values at the top
+!
+    lnrhom(1)=alog(rhotop)
+    cs2m(1)=cs2top
+    eem(1)=cs2top/gamma/gamma1
+    ssm(1)=(alog(cs2m(1))-gamma1*lnrhom(1))/gamma
+    ztop=xyz0(3)+Lxyz(3)
+    zz(1)=ztop
+!
+    delad=1.-1./gamma
+    fr_frac=delad*(mpoly0+1.)
+    fc_frac=1.-fr_frac
+    fc=fc_frac*mixinglength_flux
+!   print*,'fr_frac, fc_frac, fc=',fr_frac,fc_frac,fc
+!
+    do iz=2,nzgrid
+      zm=ztop-(iz-1)*dz
+      zz(iz)=zm
+      if (zm<=z1) then
+! radiative zone=polytropic stratification
+        del=1./(mpoly1+1.)
+      else
+        if (zm<=z2) then
+! convective zone=mixing-length stratification
+!         del=delad
+          del=delad+1.5*(fc/ &
+                      (exp(lnrhom(iz-1))*cs2m(iz-1)**1.5))**.6666667
+        else
+! upper zone=isothermal stratification
+          del=0.
+        endif
+      endif
+      dee=-polyad*del
+      dlnrho=-polyad*(1.-del)/eem(iz-1)
+      eem(iz)=eem(iz-1)-dee*dz
+      lnrhom(iz)=lnrhom(iz-1)-dlnrho*dz
+      cs2m(iz)=gamma*gamma1*eem(iz)
+      ssm(iz)=(alog(cs2m(iz))-gamma1*lnrhom(iz))/gamma
+    enddo
+!
+!  find the value of rhobot
+!
+      do iz=1,nzgrid
+        if (zz(iz)<z1) goto 30
+      enddo
+!     stop 'find rhobot: didnt find bottom value of z'
+ 30   n1=iz-1
+      n2=iz
+!
+!  interpolate
+!
+      lnrhobot=lnrhom(n1)+(lnrhom(n2)-lnrhom(n1))/ &
+               (zz(n2)-zz(n1))*(z1-zz(n1))
+      rhobot=exp(lnrhobot) 
+!     print*,'find rhobot=',rhobot
+!
+    endsubroutine strat_MLT
 !***********************************************************************    
 endmodule Entropy
- 
