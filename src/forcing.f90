@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.76 2005-07-05 16:21:42 mee Exp $
+! $Id: forcing.f90,v 1.77 2005-11-19 01:18:57 dobler Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.76 2005-07-05 16:21:42 mee Exp $")
+           "$Id: forcing.f90,v 1.77 2005-11-19 01:18:57 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -577,7 +577,7 @@ module Forcing
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
+      real, dimension (nx) :: radius,tmpx,ruf,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -632,6 +632,7 @@ module Forcing
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
@@ -679,7 +680,7 @@ module Forcing
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
+      real, dimension (nx) :: radius,tmpx,ruf,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -732,6 +733,7 @@ module Forcing
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
               call multsv_mn(rho/dt,forcing_rhs,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)

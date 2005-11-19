@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.20 2005-09-07 17:25:10 dobler Exp $
+! $Id: testfield.f90,v 1.21 2005-11-19 01:18:57 dobler Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -106,7 +106,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.20 2005-09-07 17:25:10 dobler Exp $")
+           "$Id: testfield.f90,v 1.21 2005-11-19 01:18:57 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -318,6 +318,8 @@ module Testfield
             do j=1,3
               jfnamez=idiag_alp11z+3*(jtest-1)+(j-1)
 !TEST         duxbtest(:,j)=uxbtest(:,j)-fnamez_copy(n-nghost,ipz+1,jfnamez)
+! wd: if you do not run this test, you must at least initialize duxbtest:
+              duxbtest(:,j) = 0.
             enddo
 !
 !  advance test field equation
