@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.1 2005-11-21 16:43:24 wlyra Exp $
+! $Id: particles_planet.f90,v 1.2 2005-11-21 17:30:07 ajohan Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -49,7 +49,7 @@ module Particles
 !
 !  Set up indices for access to the fp and dfp arrays
 !
-!  29-dec-04/anders: coded
+!  17-nov-05/anders+wlad: adapted
 !
       use Mpicomm, only: stop_it
 !
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.1 2005-11-21 16:43:24 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.2 2005-11-21 17:30:07 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -92,6 +92,8 @@ module Particles
             call stop_it('register_particles: naux > maux')
       endif
 !
+!  Set npar_loc=npar for non-parallel implementation of few particles.
+!
       npar_loc=npar
       do k=1,npar
         ipar(k)=k
@@ -104,7 +106,7 @@ module Particles
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  29-dec-04/anders: coded
+!  17-nov-05/anders+wlad: adapted
 !
       logical :: lstarting
 !
@@ -112,9 +114,9 @@ module Particles
 !***********************************************************************
     subroutine init_particles(f,fp)
 !
-!  Initial positions and velocities of dust particles.
+!  Initial positions and velocities of planet particles.
 !
-!  29-dec-04/anders: coded
+!  17-nov-05/anders+wlad: adapted
 !
       use Boundcond
       use General, only: random_number_wrapper
@@ -223,9 +225,9 @@ module Particles
 !***********************************************************************
     subroutine dxxp_dt(f,fp,dfp)
 !
-!  Evolution of dust particle position.
+!  Evolution of planet particle position.
 !
-!  02-jan-05/anders: coded
+!  17-nov-05/anders+wlad: adapted
 !
       use General, only: random_number_wrapper, random_seed_wrapper
 !      
@@ -416,6 +418,8 @@ module Particles
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    
+!  17-nov-05/anders+wlad: adapted
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -431,6 +435,8 @@ module Particles
 !***********************************************************************
     subroutine write_particles_init_pars(unit)
 !    
+!  17-nov-05/anders+wlad: adapted
+!
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_init_pars)
@@ -439,6 +445,8 @@ module Particles
 !***********************************************************************
     subroutine read_particles_run_pars(unit,iostat)
 !    
+!  17-nov-05/anders+wlad: adapted
+!
       integer, intent (in) :: unit
       integer, intent (inout), optional :: iostat
 !
@@ -454,6 +462,8 @@ module Particles
 !***********************************************************************
     subroutine write_particles_run_pars(unit)
 !    
+!  17-nov-05/anders+wlad: adapted
+!    
       integer, intent (in) :: unit
 !
       write(unit,NML=particles_run_pars)
@@ -464,8 +474,8 @@ module Particles
 !   
 !  Read and register print parameters relevant for particles.
 !
-!  29-dec-04/anders: coded
-!
+!  17-nov-05/anders+wlad: adapted
+!    
       use Cdata
       use Sub, only: parse_name
 !
