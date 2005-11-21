@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.209 2005-11-21 14:40:46 mee Exp $
+! $Id: density.f90,v 1.210 2005-11-21 14:50:56 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.209 2005-11-21 14:40:46 mee Exp $")
+           "$Id: density.f90,v 1.210 2005-11-21 14:50:56 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1459,6 +1459,17 @@ module Density
             dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
             f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
           endwhere
+!
+!  entropy
+!
+          if(lentropy) then
+            where (r_mn > r_ext)
+              f(l1:l2,m,n,iss)=-(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
+            elsewhere
+              dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
+              f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+            endwhere
+          endif
         enddo
         enddo
       else
@@ -1470,6 +1481,7 @@ module Density
           call potential(x(l1:l2),y(m),z(n),pot=pot)
           dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
           f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
+          if(lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
         enddo
         enddo
 !
