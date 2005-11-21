@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.107 2005-07-05 16:56:02 mee Exp $
+! $Id: interstellar.f90,v 1.108 2005-11-21 14:40:01 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -8,6 +8,8 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: linterstellar = .true.
+!
+! MAUX CONTRIBUTION 1
 !
 !***************************************************************
 
@@ -28,6 +30,8 @@ module Interstellar
   real :: rho_SN=0.,lnrho_SN=0.,yH_SN=0.,lnTT_SN=0.,TT_SN=0.,ss_SN=0.,ee_SN=0.
   integer :: l_SN=-1,m_SN=-1,n_SN=-1
   integer :: iproc_SN,ipy_SN,ipz_SN
+  integer :: icooling=0
+
 !
 ! Squared distance to the SNe site along the current pencil
 !
@@ -245,7 +249,7 @@ module Interstellar
 !
 !  19-nov-02/tony: coded
 !
-      use Cdata, only: linterstellar,ip,nvar,lroot !,mvar,nvar
+      use Cdata, only: linterstellar,ip,nvar,lroot,naux,naux_com,maux,aux_count,varname,aux_var !,mvar,nvar
       use Mpicomm, only: stop_it
 !
       logical, save :: first=.true.
@@ -257,15 +261,36 @@ module Interstellar
         print*, 'register_interstellar: ENTER'
       endif
 !
+      icooling = mvar+naux+1             ! indices to access uu
+      naux = naux+1             ! added 3 variables
+!
+      if ((ip<=8) .and. lroot) then
+        print*, 'register_interstellar: naux = ', naux
+        print*, 'register_interstellar: icooling = ', icooling
+      endif
+!
+!  Put variable names in array
+!
+      varname(icooling) = 'cooling'
+!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.107 2005-07-05 16:56:02 mee Exp $")
+           "$Id: interstellar.f90,v 1.108 2005-11-21 14:40:01 mee Exp $")
 !
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_interstellar: nvar > mvar')
+! Check we aren't registering too many auxiliary variables
+!
+      if (naux > maux) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
+        call stop_it('register_interstellar: naux > maux')
       endif
+!
+!  Writing files for use with IDL
+!
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',cooling $'
+      if (naux+naux_com  == maux+maux_com) aux_var(aux_count)=',cooling'
+      aux_count=aux_count+1
+      if (lroot) write(15,*) 'cooling = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -486,6 +511,7 @@ module Interstellar
       if (lwr) then
         write(3,*) 'i_taucmin=',idiag_taucmin
         write(3,*) 'i_Hmax=',idiag_Hmax
+        write(3,*) 'icooling=',icooling
       endif
 !
     endsubroutine rprint_interstellar
@@ -547,7 +573,7 @@ module Interstellar
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
-    subroutine calc_heat_cool_interstellar(df,p,Hmax)
+    subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  This routine calculates and applies the optically thin cooling function
 !  together with UV heating.
@@ -568,6 +594,7 @@ module Interstellar
       use Sub, only: max_mn_name
 !      use EquationOfState, only: getmu
 !
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case) :: p
       
@@ -601,6 +628,7 @@ module Interstellar
         where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1)) &
                cool=cool+exp(lncoolH(i)+p%lnrho+p%lnTT*coolB(i))
       enddo
+      cool=(cool+f(l1:l2,m,n,icooling))*0.5
 !      open(1,file=trim(datadir)//'/cooling.dat',position='append')
 !      do i=1,nx
 !        write(1,'(4e15.8)') exp(p%lnTT(i)), cool(i)/exp(p%lnrho(i)), cool(i), exp(p%lnrho)
@@ -676,7 +704,8 @@ module Interstellar
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
 !  so therefore we now need to multiply by TT1.
 !
-      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%TT1*(heat-cool)
+       f(l1:l2,m,n,icooling)=cool
+       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%TT1*(heat-cool)
 !      
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
@@ -1257,6 +1286,9 @@ find_SN: do n=n1,n2
       if (nxgrid/=1) x_SN=x(l_SN)+dx/2.
       if (nygrid/=1) y_SN=y(m_SN)+dy/2.
       if (nzgrid/=1) z_SN=z(n_SN)+dz/2.
+    print*, &
+ 'share_SN_parameters: (MY SNe) iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN,TT_SN = ' &
+          ,iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN,TT_SN
     else
       ! Better initialise these to something on the other processors
       lnrho_SN=0.

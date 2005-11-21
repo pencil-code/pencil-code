@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.18 2005-07-05 16:21:43 mee Exp $
+! $Id: nointerstellar.f90,v 1.19 2005-11-21 14:40:01 mee Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.18 2005-07-05 16:21:43 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.19 2005-11-21 14:40:01 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -155,18 +155,19 @@ module Interstellar
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
-    subroutine calc_heat_cool_interstellar(df,p,Hmax)
+    subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  adapted from calc_heat_cool
 !
       use Cdata
 !
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
       type (pencil_case), intent(in) :: p 
       real, dimension(nx), intent(in) :: Hmax 
 !
 ! (to keep compiler quiet)
-      if (NO_WARN) print*,'calc_heat_cool_interstellar',df,p,Hmax
+      if (NO_WARN) print*,'calc_heat_cool_interstellar',f,df,p,Hmax
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
