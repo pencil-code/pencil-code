@@ -1,4 +1,4 @@
- ! $Id: global_gg_cs2_nolnrho.f90,v 1.1 2005-11-11 09:35:26 wlyra Exp $
+ ! $Id: global_gg_cs2_nolnrho.f90,v 1.2 2005-11-21 16:45:28 wlyra Exp $
 
 module Global
 
@@ -109,9 +109,9 @@ module Global
         endif
      case ('cs2')
         if (length==nx) then
-           nd(l1:l2,m,n) = var
+           cs2(l1:l2,m,n) = var
         elseif (length==mx) then
-           nd(:,m,n) = var
+           cs2(:,m,n) = var
         endif
 
 
