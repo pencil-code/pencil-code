@@ -1,4 +1,5 @@
-! $Id: equ.f90,v 1.262 2005-11-11 09:29:37 wlyra Exp $
+
+! $Id: equ.f90,v 1.263 2005-11-21 16:43:24 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -354,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.262 2005-11-11 09:29:37 wlyra Exp $")
+           "$Id: equ.f90,v 1.263 2005-11-21 16:43:24 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -423,8 +424,7 @@ module Equ
       endif
 !  Turbulence parameters (alpha, scale height, etc.)      
       if (lcalc_turbulence_pars) call calc_turbulence_pars(f)
-!
-!
+!      
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.
@@ -546,19 +546,9 @@ module Equ
 !  AB: but it is not really a new dXX_dt, because XX=uu.
 !  AJ: it should go into the duu_dt and duud_dt subs
 !      duu_dt_grav now also takes care of dust velocity
-!  WL: Call the gravity of a companion here as well. Do not change  
-!      the order!!! gravity companion must come BEFORE duu_dt_grav, 
-!      since the star feels the gravity of planet and therefore 
-!      gravity_companion changes the position of the star, resetting
-!      the global variable gg. 
-!      Anders, I'm still thinking about changing it all to the dust 
-!      module, and to treat planet(s) and star as particles. What's 
-!      your opinion? 
-
 
         if (lgrav) then
-          if (lhydro) then 
-             if (lplanet.and.gc/=0) call gravity_companion(f,df,p,g0) 
+           if (lhydro) then 
              call duu_dt_grav(f,df,p)             
           endif
         endif
@@ -590,6 +580,11 @@ module Equ
 !  Add shear if present
 !
         if (lshear)                      call shearing(f,df)
+!
+!  Add wave damping 
+!
+        if (lplanet.and.lwavedamp)       call wave_damping(f,df)
+
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -696,12 +691,12 @@ module Equ
 !  end of loops over m and n
 !
         headtt=.false.
-      enddo
+     enddo
 !        
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !       
 !  Change dfp according to the chosen particle modules
-!       
+!
       if (lparticles) call particles_pde(f,df)
 !
 !  in case of lvisc_hyper=true epsK is calculated for the whole array 
