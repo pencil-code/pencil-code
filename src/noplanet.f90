@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.6 2005-11-11 14:58:40 mee Exp $
+! $Id: noplanet.f90,v 1.7 2005-11-21 16:44:45 wlyra Exp $
 !
 !  Dummy module
 !
@@ -20,8 +20,11 @@ module Planet
 
   include 'planet.h'
 
-  real :: gc=0.
-  logical :: llocal_iso=.false.
+  real :: gc=0.  !location and mass
+  real :: b=0.      !peak radius for potential
+  integer :: nc=2   !exponent of smoothed potential 
+  logical :: lramp=.false.
+  logical :: lwavedamp=.false.,llocal_iso=.false.
 
   !namelist /planet_init_pars/ dummy
   !namelist /planet_run_pars/ dummy
@@ -45,7 +48,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.6 2005-11-11 14:58:40 mee Exp $")
+           "$Id: noplanet.f90,v 1.7 2005-11-21 16:44:45 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -123,7 +126,7 @@ module Planet
       !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
-    subroutine gravity_companion(f,df,p,gs)
+    subroutine gravity_companion(f,df,fp,gs)
       
 !8-nov-05/wlad : dummy      
 
@@ -132,10 +135,11 @@ module Planet
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp !,dfp
       type (pencil_case) :: p
       real :: gs
 
-      call stop_it("gravity_companion: noplanet is used")
+      call stop_it("noplanet.f90 - gravity_companion")
       
     endsubroutine gravity_companion
 !***********************************************************************
@@ -145,31 +149,47 @@ module Planet
     endsubroutine calc_torque
 !**********************************************************************
     subroutine local_isothermal(cs20,corr)
+
+!8-nov-05/wlad : dummy  
+
       use Mpicomm, only: stop_it
       use Cdata
 
       real, intent(in)  :: cs20
       real, dimension (nx) :: corr
 
-      call stop_it("local_isothermal: llocal_iso true but noplanet is used")
+      call stop_it("noplanet.f90 - local_isothermal")
 
     endsubroutine local_isothermal
 !**********************************************************************
    subroutine gravity_star(gs,g_r,xstar,ystar)
 
+!8-nov-05/wlad : dummy  
+
      use Cdata
      use Mpicomm, only: stop_it
-
-     ! dummy
 
      real, dimension (nx), intent(out) :: g_r
      real, optional :: xstar,ystar !initial position of star
      real :: gs
 
      g_r=0.
-     call stop_it("gravity_star")
-
+     call stop_it("noplanet.f90 - gravity_star")
 
    endsubroutine gravity_star
+!***************************************************************
+    subroutine wave_damping(f,df)
+
+!20-nov-05/wlad : dummy  
+
+      use Cdata
+      use Mpicomm, only: stop_it
+
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+
+      call stop_it("noplanet.f90 - wave_damping")
+    
+    endsubroutine wave_damping
 !***************************************************************
   endmodule Planet
