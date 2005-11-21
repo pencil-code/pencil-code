@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.357 2005-11-18 19:07:54 dobler Exp $
+! $Id: entropy.f90,v 1.358 2005-11-21 14:40:46 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -24,7 +24,7 @@ module Entropy
   use Interstellar
   use Viscosity
   use EquationOfState, only: gamma, gamma1, cs20, cs2top, cs2bot, &
-                         isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
+                         isothtop, mpoly, mpoly0, mpoly1, mpoly2, cs2cool, &
                          beta_glnrho_global
 
   implicit none
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.357 2005-11-18 19:07:54 dobler Exp $")
+           "$Id: entropy.f90,v 1.358 2005-11-21 14:40:46 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -536,6 +536,7 @@ module Entropy
         case('zero', '0'); f(:,:,:,iss) = 0.
         case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
+        case('polytropic_simple'); call polytropic_simple(f)
         case('isothermal'); call isothermal_entropy(f,T0)
         case('isothermal_lnrho_ss')
           print*, 'init_ss: Isothermal density and entropy stratification'
@@ -799,6 +800,122 @@ module Entropy
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
+!***********************************************************************
+    subroutine polytropic_simple(f)
+!
+!  Polytropic stratification (for lnrho and ss)
+!  This routine should be independent of the gravity module used.
+!
+!  To maintain continuity with respect to the isothermal case,
+!  one may want to specify cs20 (=1), and so zinfty is calculated from that.
+!  On the other hand, for polytropic atmospheres it may be more
+!  physical to specify zinfty (=1), ie the top of the polytropic atmosphere.
+!  This is done if zinfty is different from 0.
+!
+!   8-jul-02/axel: incorporated/adapted from init_lnrho
+!
+      use Gravity, only: grav_profile,gravz,zinfty,zref,zgrav,  &
+                             potential
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
+      real :: ggamma,ztop,zbot,zinfty2,pot_ext,lnrho_ref
+!
+!  identifier
+!
+      if (lroot) print*,'polytropic_simple: mpoly=',mpoly
+!
+!  The following is specific only to cases with gravity in the z direction
+!  zinfty is calculated such that rho=rho0 and cs2=cs20 at z=zref.
+!  Note: gravz is normally negative!
+!
+      if (lgravz) then
+        if (grav_profile=='const') then
+          if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
+          zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
+        elseif (grav_profile=='const_zero') then
+          if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
+          zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
+        elseif (grav_profile=='linear') then
+          if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
+          zinfty2=zref**2+(mpoly+1.)*cs20/(-.5*gamma*gravz)
+          if(zinfty2<0) then
+            if(lroot) print*,'polytropic_simple: zinfty**2<0 is not ok'
+            zinfty2=0. !(and see what happens)
+          endif
+          zinfty=sqrt(zinfty2)
+        else
+          if(lroot) print*,'polytropic_simple: zinfty not prepared!'
+        endif
+!
+!  check whether zinfty lies outside the domain (otherwise density
+!  would vanish within the domain). At the moment we are not properly
+!  testing the lower boundary on the case of a disk (commented out).
+!
+        ztop=xyz0(3)+Lxyz(3)
+        zbot=xyz0(3)
+        !-- if(zinfty<min(ztop,zgrav) .or. (-zinfty)>min(zbot,zgrav)) then
+        if(zinfty<min(ztop,zgrav)) then
+          if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
+          !call stop_it( &
+          !         'polytropic_simply: rho and cs2 will vanish within domain')
+        endif
+      endif
+!
+!  stratification Gamma (upper case in the manual)
+!
+      ggamma=1.+1./mpoly
+!
+!  polytropic sphere with isothermal exterior
+!  calculate potential at the stellar surface, pot_ext
+!
+      if (lgravr) then
+        call potential(R=r_ext,POT=pot_ext)
+        cs2top=-gamma/(mpoly+1.)*pot_ext
+        lnrho_ref=mpoly*log(cs2top)-(mpoly+1.)
+        print*,'polytropic_simple: pot_ext=',pot_ext
+        do n=n1,n2
+        do m=m1,m2
+          r_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+          call potential(x(l1:l2),y(m),z(n),pot=pot)
+!
+!  entropy
+!
+          where (r_mn > r_ext)
+            f(l1:l2,m,n,iss)=-(1.-1./gamma)*f(l1:l2,m,n,ilnrho)+log(cs2top)/gamma
+          elsewhere
+            dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
+            f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+          endwhere
+        enddo
+        enddo
+      else
+!
+!  cartesian case with gravity in the z direction
+!
+        do n=n1,n2
+        do m=m1,m2
+          call potential(x(l1:l2),y(m),z(n),pot=pot)
+          dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
+          f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
+        enddo
+        enddo
+!
+!  cs2 values at top and bottom may be needed to boundary conditions.
+!  In spherical geometry, ztop is z at the outer edge of the box,
+!  so this calculation still makes sense.
+!
+        call potential(zero,0.,ztop,pot=ptop)
+        cs2top=-gamma/(mpoly+1.)*ptop(1)
+!
+!  In spherical geometry ztop should never be used.
+!  Even in slab geometry ztop is not normally used.
+!
+        call potential(zero,0.,zbot,pot=pbot)
+        cs2bot=-gamma/(mpoly+1.)*pbot(1)
+      endif
+!
+    endsubroutine polytropic_simple
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
@@ -1555,7 +1672,7 @@ module Entropy
       real :: zbot,ztop,xi,profile_cor
       integer :: j,ju
 !
-      intent(in)  :: f,p
+      intent(inout)  :: f,p
       intent(out) :: df
 !
 !  identify module and boundary conditions
@@ -1679,7 +1796,7 @@ module Entropy
 !  interstellar radiative cooling and UV heating
 !
       if (linterstellar) &
-          call calc_heat_cool_interstellar(df,p,Hmax)
+          call calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  possibility of entropy relaxation in exterior region
 !
