@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.7 2005-11-21 16:43:24 wlyra Exp $
+! $Id: planet.f90,v 1.8 2005-11-21 23:18:23 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -75,7 +75,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.7 2005-11-21 16:43:24 wlyra Exp $")
+           "$Id: planet.f90,v 1.8 2005-11-21 23:18:23 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -550,23 +550,6 @@ module Planet
      !should be like rr_mn in the inner boundary
      !but one does not want the ridiculous
      !smoothing that smooth_newton gives to n=2 
-<<<<<<< planet.f90
-=======
-     
-     
-      
-     where ((rr_mn.le.0.4).and.(rr_mn.ge.0.2)) 
->>>>>>> 1.6
-
-<<<<<<< planet.f90
-
-     !the potential is correct. The constant -4.81042 is valid for r0=0.4 ONLY
-     !and is here to join the two functions smoothly
-     !where (rr_mn.le.r0_pot)
-     !   g_r = -gs*(3*rr_mn**2/r0_pot**4 - 4.*rr_mn/r0_pot**3)  
-     !elsewhere
-     !   g_r = -gs/rr_mn**2
-     !endwhere
 
      !my gravity profile for r0 = 0.4
         where ((rr_mn.le.0.4).and.(rr_mn.ge.0.2))
@@ -595,30 +578,6 @@ module Planet
         
      endif
 
-=======
-        !g_r(i) = -1./(8*r0_pot) &
-        !     *(20.*rr_mn(i)/r0_pot**2 - 12*rr_mn(i)**3/r0_pot**4)
-           
-        g_r = 0.0733452     &
-             - 33.0137*rr_mn   &
-             + 136.921*rr_mn**2 &
-             - 1061.37*rr_mn**3 &
-             + 2801.66*rr_mn**4 &
-             + 606.876*rr_mn**5 &
-             - 9074.97*rr_mn**6 &
-             + 7504.01*rr_mn**7
-     endwhere
-     where (rr_mn.gt.0.4)  
-        g_r = -gs/rr_mn**2
-     endwhere
-     where (rr_mn.lt.0.2) 
-        !a=-13.3333333333
-        !g_r(i) = -1./(8*r0_pot) &
-        !     *20.*rr_mn(i)/r0_pot**2
-        g_r = 2*rr_mn*(-13.3333333333)
-     endwhere
-      
->>>>>>> 1.6
    endsubroutine gravity_star
 !***************************************************************
    subroutine calc_monitored(f,xs,ys,xp,yp,gs,gp)
