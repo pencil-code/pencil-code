@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.8 2005-10-09 12:53:06 ajohan Exp $
+! $Id: particles_main.f90,v 1.9 2005-11-24 15:40:12 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -9,6 +9,7 @@ module Particles_main
   use Particles_sub
   use Particles
   use Particles_radius
+  use Particles_number
   use Messages
 
   implicit none
@@ -210,6 +211,7 @@ module Particles_main
       call dxxp_dt(f,fp,dfp)
       call dvvp_dt(f,df,fp,dfp)
       if (lparticles_radius) call dap_dt(f,df,fp,dfp)
+      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp)
 !
     endsubroutine particles_pde
 !***********************************************************************
