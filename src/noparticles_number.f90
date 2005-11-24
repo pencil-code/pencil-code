@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.1 2005-11-24 15:37:08 ajohan Exp $
+! $Id: noparticles_number.f90,v 1.2 2005-11-24 15:39:13 ajohan Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -7,7 +7,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_number=.false.
 !
 !***************************************************************
