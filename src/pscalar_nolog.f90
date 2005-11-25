@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.41 2005-09-22 20:18:01 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.42 2005-11-25 09:41:21 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -33,7 +33,7 @@ module Pscalar
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
   real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.
-  real :: epsilon_lncc=0., cc_const=1., unit_rhocc=1.
+  real :: epsilon_lncc=0., cc_const=1.
   real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /pscalar_init_pars/ &
@@ -96,7 +96,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.41 2005-09-22 20:18:01 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.42 2005-11-25 09:41:21 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -420,7 +420,7 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
-        if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc/unit_rhocc,idiag_rhoccm)
+        if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
         if (idiag_ccmax/=0) call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0) call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
         if (idiag_lnccmz/=0) call xysum_mn_name_z(p%cc,idiag_lnccmz)

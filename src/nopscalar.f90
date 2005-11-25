@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.19 2005-07-05 16:21:43 mee Exp $
+! $Id: nopscalar.f90,v 1.20 2005-11-25 09:41:21 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -22,8 +22,6 @@ module Pscalar
 
   include 'pscalar.h'
 
-!ajwm needed by dustvelocity.f90 for some reason.
-  real :: unit_rhocc=1.
 !ajwm needed by prints.f90 for some reason.
   real :: rhoccm=0., cc2m=0., gcc2m=0. 
   integer :: idiag_gcc2m=0, idiag_cc2m=0, idiag_rhoccm=0
@@ -54,7 +52,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.19 2005-07-05 16:21:43 mee Exp $")
+           "$Id: nopscalar.f90,v 1.20 2005-11-25 09:41:21 ajohan Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
