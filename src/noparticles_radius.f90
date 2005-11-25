@@ -1,4 +1,4 @@
-! $Id: noparticles_radius.f90,v 1.3 2005-08-31 20:37:24 dobler Exp $
+! $Id: noparticles_radius.f90,v 1.4 2005-11-25 20:12:02 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -35,9 +35,11 @@ module Particles_radius
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  22-aug-05/anders: dummy
+!  25-nov-05/anders: coded
 !
       logical :: lstarting
+!
+      mp_tilde=1.0
 !
       if (NO_WARN) print*, lstarting
 !
