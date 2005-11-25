@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.103 2005-09-29 09:36:43 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.104 2005-11-25 09:41:50 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -130,7 +130,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.103 2005-09-29 09:36:43 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.104 2005-11-25 09:41:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -163,7 +163,6 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use EquationOfState, only: cs0
-      use Pscalar, only: unit_rhocc
 !
       integer :: k,l
       real :: gsurften=0.,Eyoung=1.,nu_Poisson=0.,Eyoungred=1.
@@ -218,7 +217,6 @@ module Dustvelocity
 
         case ('nothing')
           unit_md = 1.
-          unit_rhocc = unit_md
 
         case ('ice')
 !
@@ -232,7 +230,6 @@ module Dustvelocity
           mumon = 18.
           mmon  = mumon*1.6733e-24
           unit_md = mmon
-          if (lpscalar) unit_rhocc = unit_md
 
           if (lroot) print*, &
               'initialize_dustvelocity: mmon, surfmon = ', mmon, surfmon
