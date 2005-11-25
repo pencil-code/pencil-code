@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.79 2005-11-11 09:29:37 wlyra Exp $
+! $Id: grav_r.f90,v 1.80 2005-11-25 18:15:43 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.79 2005-11-11 09:29:37 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.80 2005-11-25 18:15:43 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -216,7 +216,7 @@ module Gravity
                      *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
 ! 
             else
-               call gravity_star(g0,g_r)    
+               call gravity_star(g0,r0_pot,n_pot,g_r)    
             endif
             
          endif

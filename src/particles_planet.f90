@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.2 2005-11-21 17:30:07 ajohan Exp $
+! $Id: particles_planet.f90,v 1.3 2005-11-25 18:15:43 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.2 2005-11-21 17:30:07 ajohan Exp $")
+           "$Id: particles_planet.f90,v 1.3 2005-11-25 18:15:43 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -283,13 +283,13 @@ module Particles
 !  gravity_companion and gravity_star just to set the
 !  gravity field as global variable. 
 !
-!  29-nov-05/anders+wlad: coded
+!  17-nov-05/anders+wlad: coded
 !
       use Cdata
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Sub
-      use Gravity,only: g0
+      use Gravity,only: g0,r0_pot,n_pot
       use Planet, only: gc,b,gravity_companion
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -372,13 +372,13 @@ module Particles
                        + sum(grav_gas * (x(l1:l2) - fp(k,ixp))/re)
 !                  
                   dfp(k,ivpy) = dfp(k,ivpy) & 
-                       + sum(grav_gas * (    y(m) - fp(k,iyp))/re)
+                       + sum(grav_gas * (y(  m  ) - fp(k,iyp))/re)
                enddo
             endif
 !
 !  Reset gravity field (star+planet) as global variable
 !
-            call gravity_companion(f,df,fp,g0)
+            call gravity_companion(f,df,fp,g0,r0_pot,n_pot)
 !
          enddo
       enddo

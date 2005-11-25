@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.8 2005-11-21 23:18:23 wlyra Exp $
+! $Id: planet.f90,v 1.9 2005-11-25 18:15:43 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -44,9 +44,10 @@ module Planet
   logical :: lramp=.false.
   logical :: lwavedamp=.false.,llocal_iso=.false.
   logical :: lsmoothlocal=.false.
+  logical :: lcs2_global=.false.
 
   namelist /planet_run_pars/ gc,nc,b,lramp, &
-       lwavedamp,llocal_iso,lsmoothlocal
+       lwavedamp,llocal_iso,lsmoothlocal,lcs2_global
 ! 
 
   integer :: idiag_torqint=0,idiag_torqext=0
@@ -75,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.8 2005-11-21 23:18:23 wlyra Exp $")
+           "$Id: planet.f90,v 1.9 2005-11-25 18:15:43 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,11 +93,19 @@ module Planet
 !  08-nov-05/wlad: coded
 !
 !will need to add itorque as f-variable
+!
+      use Mpicomm, only : stop_it
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
-
+!
       if (lroot) print*, 'initialize_planet'
-
+      if ((lcs2_global).and.(.not.llocal_iso)) then
+         print*,'planet : not isothermal, but sound speed is set'
+         print*,'as global variable. Better stop and check'
+         call stop_it('')
+      endif
+!
 !
     endsubroutine initialize_planet
 !***********************************************************************
@@ -212,9 +221,9 @@ module Planet
 !
     endsubroutine rprint_planet
 !***********************************************************************
-    subroutine gravity_companion(f,df,fp,gs)
+    subroutine gravity_companion(f,df,fp,g0,r0_pot,n_pot)
 !
-!  add duu/dt according to the gravity of a companion offcentered by (Rx,Ry,Rz)
+!  calculate the gravity of a companion offcentered by (Rx,Ry,Rz)
 !
 !  12-aug-05/wlad       : coded
 !  08-nov-05/wlad       : moved here (previously in Gravity Module)
@@ -233,7 +242,8 @@ module Planet
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,rrc,rrs,g_star,dens
       real :: Omega_inertial,ax,ay,az,gtc
-      real :: axs,ays,azs,gs
+      real :: axs,ays,azs,g0,r0_pot
+      integer :: n_pot
       logical :: lheader,lfirstcall=.true.
 !
 !  Position of the particles
@@ -249,7 +259,7 @@ module Planet
            'gravity_companion: Adding gravity of companion located at x,y,z=',&
            ax,ay,az
       if (lheader) print*,&
-           'gravity_companion: Mass ratio of secondary-to-primary = ',gc/gs
+           'gravity_companion: Mass ratio of secondary-to-primary = ',gc/g0
 !
       if (lheader.and.(Omega.eq.0)) print*,'gravity_companion: inertial frame'
 !
@@ -283,7 +293,7 @@ module Planet
 !
       rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2) + tini
 !      
-      call gravity_star(gs,g_star,axs,ays)
+      call gravity_star(g0,r0_pot,n_pot,g_star,axs,ays)
 !
       ggs(:,1) = (x(l1:l2)-axs)/rrs*g_star
       ggs(:,2) = (y(  m  )-ays)/rrs*g_star
@@ -303,7 +313,7 @@ module Planet
       endif
 
       if ((idiag_totalenergy/=0).or.(idiag_angularmomentum/=0)) & 
-           call calc_monitored(f,axs,ays,ax,ay,gs,gtc)
+           call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot)
 
       lfirstcall = .false.
 
@@ -377,54 +387,19 @@ module Planet
 !
 !22-aug-05/wlad: coded
 !08-nov-05/wlad: moved here (previously in the EoS module)
-!
-!
-! Locally isothermal structure for accretion disks. 
-! The energy equation is not solved,but the variation
-! of temperature with radius (T ~ r-1) is crucial for the
-! treatment of ad hoc alpha viscosity.
-!
-! cs = H * Omega, being H the scale height and (H/r) = cte.
+!25-nov-05/wlad: changed to be just a call of a global variable
 !
       use Cdata
       use Global, only: get_global
-
+!
       real, intent(in)  :: cs20
       real, dimension (nx), intent(out) :: cs2
-      real, dimension (nx) :: r
-      integer :: i,mtest
-!
-!     It is better to set cs2 as a global variable than to recalculate it
-!     at every timestep...
 !
       if (headtt) print*,&
            'planet: local isothermal equation of state for accretion disk'
-      
-      !call get_global(cs2,m,n,'cs2')
-
-      !mtest = int(0.5*(m1+m2))
-
-      !if (m .eq. mtest) print*,cs2
-
-      r = sqrt(x(l1:l2)**2 + y(m)**2) + tini
- 
-      where ((r.le.0.4).and.(r.ge.0.2)) 
-         cs2 = 0.00788363     &
-              -0.0182141 *r   &
-              +0.125531  *r**2 &
-              -0.330236  *r**3 &
-              +0.258058  *r**4 
-              !- 3.01896   *r**5 &
-              !+ 6.47995   *r**6 &
-              !- 4.07479   *r**7
-      endwhere
-      where (r.gt.0.4) 
-         cs2 = (0.05*r**(-0.5))**2 
-      endwhere
-      where (r.lt.0.2) 
-         cs2 = 0.007
-      endwhere
-      
+!      
+      call get_global(cs2,m,n,'cs2')
+!
     endsubroutine local_isothermal
 !***********************************************************
     subroutine wave_damping(f,df)
@@ -520,27 +495,35 @@ module Planet
 
    endsubroutine wave_damping
 !***************************************************************
-   subroutine gravity_star(gs,g_r,xstar,ystar)
-
+   subroutine gravity_star(g0,r0_pot,n_pot,g_r,xstar,ystar)
+!
+! 08-nov-05/wlad : coded
+! 25-nov-05/wlad : call global cs2 here, if local isothermal
+!
      use Cdata
-
+     use Mpicomm, only : stop_it
+!
      real, dimension (nx), intent(out) :: g_r
      real, dimension (nx) :: rr_mn
      real, optional :: xstar,ystar !initial position of star
      integer :: i,n_pot
-     real :: gs,axs,ays,r0_pot
-
+     real :: g0,axs,ays,r0_pot
+!
      if (present(xstar)) then;axs=xstar;else;axs=0.;endif
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
-
-     r0_pot=0.1
-     n_pot=2
-  
+!  
      rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2) + tini
-
+!
      if (.not.lsmoothlocal) then 
-
-        g_r=-gs*rr_mn**(n_pot-1) &
+!
+        if (n_pot.ne.2) then
+           print*,'planet: smoothed gravity used for star but smoothing lenght'
+           print*,'is not equal to 2. Better stop and change, since it will lead'
+           print*,'to boundary troubles as omega does not flatten properly.'
+           call stop_it('')
+        endif
+!
+        g_r=-g0*rr_mn**(n_pot-1) &
              *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
      else
 
@@ -553,34 +536,30 @@ module Planet
 
      !my gravity profile for r0 = 0.4
         where ((rr_mn.le.0.4).and.(rr_mn.ge.0.2))
-           !g_r(i) = -1./(8*r0_pot) &
-           !     *(20.*rr_mn(i)/r0_pot**2 - 12*rr_mn(i)**3/r0_pot**4)
            g_r = 2.01669                &
                 -1.69235   *rr_mn**(-1) &
                 -0.821300  *rr_mn**(-2) &
                 +0.0812857 *rr_mn**(-3) &
                 -0.00195754*rr_mn**(-4) 
-           !*rr_mn**5 & 
-           !*rr_mn**6 &
-           !*rr_mn**7
         endwhere
         where (rr_mn.gt.0.4) 
-           g_r = -gs/rr_mn**2
+           g_r = -g0/rr_mn**2
         endwhere
         where (rr_mn.lt.0.2) 
-           !a=-13.3333333333
-           !g_r(i) = -1./(8*r0_pot) &
-           !     *20.*rr_mn(i)/r0_pot**2
-           g_r = -gs*rr_mn**(n_pot-1) &
+           g_r = -g0*rr_mn**(n_pot-1) &
                 *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-           !2*rr_mn*(-13.3333333333)
         endwhere
         
      endif
 
+     if (lcs2_global.and.llocal_iso) then
+        call set_soundspeed(g0,r0_pot,n_pot)
+        if (llastpoint) lcs2_global=.false.
+     endif
+
    endsubroutine gravity_star
 !***************************************************************
-   subroutine calc_monitored(f,xs,ys,xp,yp,gs,gp)
+   subroutine calc_monitored(f,xs,ys,xp,yp,g0,gp,r0_pot)
 
 ! calculate total energy and angular momentum
 ! and output their evolution as monitored variables
@@ -596,7 +575,7 @@ module Planet
      real, dimension(nx) :: angular_momentum
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
      real :: xs,ys,xp,yp !position of star and planet
-     real :: gs,gp !star's and planet's mass
+     real :: g0,gp,r0_pot !star's and planet's mass
      integer :: i
 
      if (headtt) print*,'planet : calculate total energy'
@@ -612,8 +591,8 @@ module Planet
      kin_energy = f(l1:l2,m,n,ilnrho) * vel2/2.
      
      !potential energy
-
-     pot_energy = -(gs/rstar + gp/rplanet)*f(l1:l2,m,n,ilnrho)
+     pot_energy = -1.*(g0*(rstar**2+r0_pot**2)**(-1./2) &
+          + gp*(rplanet**2+b**2)**(-1./2))*f(l1:l2,m,n,ilnrho)
 
      total_energy = kin_energy + pot_energy
 
@@ -629,6 +608,55 @@ module Planet
      call sum_lim_mn_name(angular_momentum,idiag_angularmomentum)
 
    endsubroutine calc_monitored
+!***************************************************************
+   subroutine set_soundspeed(g0,r0_pot,n_pot)
+!
+! Locally isothermal structure for accretion disks. 
+! The energy equation is not solved,but the variation
+! of temperature with radius (T ~ r-1) is crucial for the
+! treatment of ad hoc alpha viscosity.
+!
+! cs = H * Omega, being H the scale height and (H/r) = cte.
+!
+      use Cdata
+      use Global, only: set_global
+!
+      real, dimension (nx) :: rrp,cs2
+      real :: g0,r0_pot
+      integer :: n_pot
+      logical :: lheader,lfirstcall=.true.
+!
+!     It is better to set cs2 as a global variable than to recalculate it
+!     at every timestep...
+!
+      lheader = headtt.and.lfirstcall.and.lroot
+!
+      if (lheader) print*,&
+           'planet: setting sound speed as global variable'
+!
+      rrp = sqrt(x(l1:l2)**2 + y(m)**2)
+!      
+      where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
+         
+         cs2 = 0.00749375        & 
+              +0.00679450*rrp    &
+              -0.0149310 *rrp**2 &
+              -0.0580586 *rrp**3 &
+              +0.0816006 *rrp**4 
+      endwhere
+      where (rrp.gt.0.4)
+         !cs = 0.05 * Omega * r
+         cs2 = 0.05**2 * g0 / rrp
+      endwhere
+      where (rrp.lt.0.2) 
+         cs2 = 0.008
+      endwhere
+!    
+      call set_global(cs2,m,n,'cs2',nx)
+!       
+      lfirstcall=.false.
+!
+    endsubroutine set_soundspeed
 !***************************************************************
   endmodule Planet
   

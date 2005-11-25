@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.134 2005-11-11 11:58:37 wlyra Exp $ 
+! $Id: initcond.f90,v 1.135 2005-11-25 18:15:43 wlyra Exp $ 
 
 module Initcond 
  
@@ -1359,10 +1359,7 @@ module Initcond
 !
 !  Keplerian initial condition
 !
-!   2-may-05/axel: coded
-!   5-may-05/wlad: added possibility of star offset and non-corotational 
-!                  frame of reference. 
-!  25-aug-06/wlad: added gas pressure correction to angular velocity 
+!   2-may-05/axel: coded   
 
       use Cdata
       use EquationOfState, only : cs20
@@ -1378,7 +1375,6 @@ module Initcond
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero
 !
-
       print*,'accretion disk initial condition'
 
       plaw=0.
@@ -1402,45 +1398,10 @@ module Initcond
 
       !OO=g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
       !OO=sqrt(OO*(1. + plaw/Mach**2)**(-1)) 
-
-      
-
-      !put OO in a pencil for the viscous force calculation?
      
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
 !
-
-      !write sound speed as global variable
-
-      
-      where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
-         !g_r(i) = -1./(8*r0_pot) &
-         !     *(20.*rr_mn(i)/r0_pot**2 - 12*rr_mn(i)**3/r0_pot**4)
-         
-         cs2 =  0.00696037     &
-              + 0.00285893*rrp   &
-              - 0.0471130 *rrp**2 &
-              + 0.234658  *rrp**3 &
-              + 0.0636717 *rrp**4 &
-              - 3.01896   *rrp**5 &
-              + 6.47995   *rrp**6 &
-              - 4.07479   *rrp**7
-      endwhere
-      where (rrp.gt.0.4) 
-         cs2 = (0.05*OO*rrp)**2 
-      end where
-      where (rrp.lt.0.2) 
-         cs2 = 0.007
-      endwhere
-      
-      do mcount=m1,m2
-         do ncount=n1,n2
-            aux = cs2(l1:l2,mcount,ncount)
-            call set_global(aux,mcount,ncount,'cs2',nx)
-         enddo
-      enddo
-      
     endsubroutine keplerian
 !***********************************************************************
     subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
