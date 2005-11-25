@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.2 2005-11-25 10:29:06 ajohan Exp $
+! $Id: particles_number.f90,v 1.3 2005-11-25 12:52:07 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.2 2005-11-25 10:29:06 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.3 2005-11-25 12:52:07 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -152,36 +152,37 @@ module Particles_number
       do l=l1,l2; do m=m1,m2; do n=n1,n2
 !  Get index number of shepherd particle at grid point.
         k=ishepherd(l,m,n)
-        if (ip<=12.and.lroot) then
-          print*, 'dnptilde_dt: l, m, n, ishepherd=', l, m, n, k
+        if (ip<=6.and.lroot) then
+          print*, 'dnptilde_dt: l, m, n=', l, m, n
+          print*, 'dnptilde_dt: ishepherd, np(l,m,n)=', k, f(l,m,n,inp)
           print*, 'dnptilde_dt: x(l), y(m), z(n)  =', x(l), y(m), z(n)
         endif
-!  Only continue of the shepherd particle has a neighbour.        
+!  Only continue of the shepherd particle has a neighbour.
         do while (ineighbour(k)/=0)
           j=k
-!  Consider neighbours one at a time.          
+!  Consider neighbours one at a time.
           do while (ineighbour(j)/=0)
             j=ineighbour(j)
-            if (ip<=12.and.lroot) then
+            if (ip<=6.and.lroot) then
               print*, 'dnptilde_dt: fragmentation between ', k, 'and', j
             endif
-!  Collision speed.            
+!  Collision speed.
             deltavp=sqrt( &
                 (fp(k,ivpx)-fp(j,ivpx))**2 + &
                 (fp(k,ivpy)-fp(j,ivpy))**2 + &
                 (fp(k,ivpz)-fp(j,ivpz))**2 )
-!  Collision cross section.            
+!  Collision cross section.
             sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
-!  Smoluchowski equation.            
+!  Smoluchowski equation for fragmentation.
             deltanptilde = -sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
 !  Colliding superparticles lose equal number of internal particles.            
             dfp(j,inptilde) = dfp(j,inptilde) + deltanptilde
             dfp(k,inptilde) = dfp(k,inptilde) + deltanptilde
-!  Put fragments in small grains.           
+!  Put fragments in small grains.
             if (lpscalar_nolog) then
               rho=f(l,m,n,ilnrho)
               if (.not. ldensity_nolog) rho=exp(rho)
-              df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+              df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
                   1/rho*4/3.*pi*rhops* &
                   (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
             else
@@ -189,7 +190,7 @@ module Particles_number
               if (.not. ldensity_nolog) rho=exp(rho)
               cc=f(l,m,n,ilncc)
               if (.not. lpscalar_nolog) cc=exp(cc)
-              df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+              df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
                   1/cc*1/rho*4/3.*pi*rhops* &
                   (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
             endif
