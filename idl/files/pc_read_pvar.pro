@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.16 2005-10-10 08:10:01 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.17 2005-11-25 10:30:50 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -79,6 +79,10 @@ varcontent[ivpx].skip     = 2
 varcontent[iap].variable = 'Particle radius (a)'
 varcontent[iap].idlvar   = 'a'
 varcontent[iap].idlinit  = INIT_SCALAR
+
+varcontent[inptilde].variable = 'Particle internal number (nptilde)'
+varcontent[inptilde].idlvar   = 'nptilde'
+varcontent[inptilde].idlinit  = INIT_SCALAR
 
 varcontent[0].variable    = 'UNKNOWN'
 varcontent[0].idlvar      = 'UNKNOWN'
