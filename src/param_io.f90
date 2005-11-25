@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.216 2005-11-11 23:00:33 dobler Exp $ 
+! $Id: param_io.f90,v 1.217 2005-11-25 10:29:06 ajohan Exp $ 
 
 module Param_IO
 
@@ -354,6 +354,7 @@ module Param_IO
         if (lspecial      )  print*,'&special_init_pars        /'
         if (lparticles       ) print*,'&particles_init_pars       /'
         if (lparticles_radius) print*,'&particles_radius_init_pars/'
+        if (lparticles_number) print*,'&particles_number_init_pars/'
         !if (lshock       ) print*,'&shock_init_pars          /'
         ! no input parameters for viscosity
         print*,'------END sample namelist -------'
@@ -739,6 +740,7 @@ module Param_IO
         if (lspecial      ) print*,'&special_run_pars         /'
         if (lparticles       ) print*,'&particles_run_pars       /'
         if (lparticles_radius) print*,'&particles_radius_run_pars       /'
+        if (lparticles_number) print*,'&particles_number_run_pars       /'
         if (lshock        ) print*,'&shock_run_pars           /'
         if (lplanet       ) print*,'&planet_run_pars          /'
         print*,'------END sample namelist -------'

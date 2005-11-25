@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.7 2005-11-24 15:41:29 ajohan Exp $
+### $Id: Makefile.depend,v 1.8 2005-11-25 10:29:06 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -87,8 +87,8 @@ $(DEBUG).o:        debug_c.c Makefile.src Makefile.local
 particles_cdata.o :    particles_cdata.f90 cdata.o
 $(PARTICLES_MAIN).o:   particles_main.h $(PARTICLES).o $(PARTICLES_SUB).o cdata.o
 $(PARTICLES_SUB).o:    $(PARTICLES_SUB).f90 cdata.o particles_cdata.o $(GLOBAL).o
-$(PARTICLES).o:        particles.h      particles_cdata.o $(PARTICLES).f90 $(PARTICLES_SUB).o cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o
-$(PARTICLES_RADIUS).o: particles_radius.h particles_cdata.o
+$(PARTICLES).o:        particles.h particles_cdata.o $(PARTICLES_SUB).o $(PARTICLES_NUMBER).o cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o
+$(PARTICLES_RADIUS).o: particles_radius.h particles_cdata.o $(PARTICLES_NUMBER).o
 $(PARTICLES_NUMBER).o: particles_number.h particles_cdata.o
 
 # DO NOT DELETE

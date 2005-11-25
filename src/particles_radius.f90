@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.7 2005-11-24 14:27:48 ajohan Exp $
+! $Id: particles_radius.f90,v 1.8 2005-11-25 10:29:06 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -49,7 +49,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.7 2005-11-24 14:27:48 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.8 2005-11-25 10:29:06 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -80,11 +80,8 @@ module Particles_radius
 !  Calculate the number density of bodies within a superparticle.
 !
       mp_tilde=4/3.*pi*rhops*ap0**3
-      np_tilde=rhop_tilde/mp_tilde
       if (lroot) print*, 'initialize_particles_radius: '// &
           'mass per dust grain mp_tilde=', mp_tilde
-      if (lroot) print*, 'initialize_particles_radius: '// &
-          'number density per particle np_tilde=', np_tilde
 !
     endsubroutine initialize_particles_radius
 !***********************************************************************
@@ -124,13 +121,14 @@ module Particles_radius
 !  22-aug-05/anders: coded
 !
       use Messages, only: fatal_error
+      use Particles_number
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
       real, dimension (3) :: uu
-      real :: rho, deltav, cc
+      real :: rho, deltav, cc, np_tilde
       integer :: k, ix0, iy0, iz0
       logical :: lheader, lfirstcall=.true.
 !
@@ -165,7 +163,8 @@ module Particles_radius
           dfp(k,iap) = dfp(k,iap) + 0.25*deltav*cc*rho/rhops
 !
 !  Deplete gas of small grains.
-!        
+!
+          call get_nptilde(fp,k,np_tilde)
           if (lpscalar_nolog) then 
             df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
                 np_tilde*pi*fp(k,iap)**2*deltav*cc

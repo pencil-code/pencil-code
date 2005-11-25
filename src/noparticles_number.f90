@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.2 2005-11-24 15:39:13 ajohan Exp $
+! $Id: noparticles_number.f90,v 1.3 2005-11-25 10:29:06 ajohan Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -18,6 +18,8 @@ module Particles_number
 
   implicit none
 
+  real :: np_tilde0
+
   include 'particles_number.h'
 
   contains
@@ -36,9 +38,13 @@ module Particles_number
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-05/anders: dummy
+!  25-nov-05/anders: coded
 !
       logical :: lstarting
+!
+      np_tilde0=rhop_tilde/mp_tilde
+      if (lroot) print*, 'initialize_particles_number: '// &
+          'number density per particle np_tilde0=', np_tilde0
 !
       if (NO_WARN) print*, lstarting
 !
@@ -70,6 +76,30 @@ module Particles_number
       if (NO_WARN) print*, f, df, fp, dfp
 !
     endsubroutine dnptilde_dt
+!***********************************************************************
+    subroutine get_nptilde(fp,k,np_tilde)
+!
+!  Get internal particle number.
+!
+!  25-oct-05/anders: coded
+!
+      use Messages, only: fatal_error
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      real :: np_tilde
+      integer :: k
+!
+      intent (in)  :: fp, k
+      intent (out) :: np_tilde
+!
+      if (k<1 .or. k>mpar_loc) then
+        if (lroot) print*, 'get_nptilde: k out of range, k=', k
+        call fatal_error('get_nptilde','')
+      endif
+!
+      np_tilde=np_tilde0
+!
+    endsubroutine get_nptilde
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
 !    

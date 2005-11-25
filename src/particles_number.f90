@@ -1,6 +1,6 @@
-! $Id: particles_number.f90,v 1.1 2005-11-24 15:35:40 ajohan Exp $
+! $Id: particles_number.f90,v 1.2 2005-11-25 10:29:06 ajohan Exp $
 !
-!  This module takes care of everything related to particle number.
+!  This module takes care of everything related to internal particle number.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -21,16 +21,18 @@ module Particles_number
 
   include 'particles_number.h'
 
-  real :: nptilde0
+  real :: np_tilde0
   integer, dimension (mpar_loc) :: ineighbour
   integer, dimension (mx,my,mz) :: ishepherd
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
 
+  integer :: idiag_nptm=0
+
   namelist /particles_number_init_pars/ &
-      initnptilde, nptilde0
+      initnptilde
 
   namelist /particles_number_run_pars/ &
-      nptilde0
+      initnptilde
 
   contains
 
@@ -49,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.1 2005-11-24 15:35:40 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.2 2005-11-25 10:29:06 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -77,6 +79,10 @@ module Particles_number
 !
       logical :: lstarting
 !
+      np_tilde0=rhop_tilde/mp_tilde
+      if (lroot) print*, 'initialize_particles_number: '// &
+          'number density per particle np_tilde0=', np_tilde0
+!
     endsubroutine initialize_particles_number
 !***********************************************************************
     subroutine init_particles_number(f,fp)
@@ -98,8 +104,11 @@ module Particles_number
           if (lroot.and.j==1) print*, 'init_particles_number: nothing'
 
         case('constant')
-          if (lroot) print*, 'init_particles_number: constant internal number'
-          fp(1:npar_loc,inptilde)=nptilde0
+          if (lroot) then
+            print*, 'init_particles_number: constant internal number'
+            print*, 'init_particles_number: np_tilde0=', np_tilde0
+          endif
+          fp(1:npar_loc,inptilde)=np_tilde0
 
         endselect
 
@@ -111,7 +120,7 @@ module Particles_number
 !
 !  Evolution of internal particle number.
 !
-!  24-oct-05/anders: adapted
+!  24-oct-05/anders: coded
 !
       use Messages, only: fatal_error
 !
@@ -119,12 +128,12 @@ module Particles_number
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
 !
-      real :: deltavp
+      real :: deltavp, sigma_jk, deltanptilde, cc, rho
       integer :: j, k, l, m, n
       logical :: lheader, lfirstcall=.true.
 !
-!      intent (in) :: f, fp
-!      intent (out) :: dfp
+      intent (in) :: f, fp
+      intent (out) :: dfp
 !
 !  Print out header information in first time step.
 !
@@ -134,35 +143,65 @@ module Particles_number
 !
       if (lheader) print*,'dnptilde_dt: Calculate dnptilde_dt'
 !
-!
+!  Store information about which grid point each particle is closest to.
 !
       call nearest_gridpoint_map(f,fp)
-
+!
+!  Fragmentation inside each superparticle.
+!      
       do l=l1,l2; do m=m1,m2; do n=n1,n2
-        print*, 'AAA', l, m, n, f(l,m,n,inp)
+!  Get index number of shepherd particle at grid point.
         k=ishepherd(l,m,n)
+        if (ip<=12.and.lroot) then
+          print*, 'dnptilde_dt: l, m, n, ishepherd=', l, m, n, k
+          print*, 'dnptilde_dt: x(l), y(m), z(n)  =', x(l), y(m), z(n)
+        endif
+!  Only continue of the shepherd particle has a neighbour.        
         do while (ineighbour(k)/=0)
           j=k
+!  Consider neighbours one at a time.          
           do while (ineighbour(j)/=0)
             j=ineighbour(j)
-            print*, k, j
+            if (ip<=12.and.lroot) then
+              print*, 'dnptilde_dt: fragmentation between ', k, 'and', j
+            endif
+!  Collision speed.            
             deltavp=sqrt( &
                 (fp(k,ivpx)-fp(j,ivpx))**2 + &
                 (fp(k,ivpy)-fp(j,ivpy))**2 + &
                 (fp(k,ivpz)-fp(j,ivpz))**2 )
-            dfp(k,inptilde)=dfp(k,inptilde)+pi*(fp(j,iap)+fp(k,iap))**2*fp(j,inptilde)*fp(k,inptilde)*deltavp
+!  Collision cross section.            
+            sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
+!  Smoluchowski equation.            
+            deltanptilde = -sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
+!  Colliding superparticles lose equal number of internal particles.            
+            dfp(j,inptilde) = dfp(j,inptilde) + deltanptilde
+            dfp(k,inptilde) = dfp(k,inptilde) + deltanptilde
+!  Put fragments in small grains.           
+            if (lpscalar_nolog) then
+              rho=f(l,m,n,ilnrho)
+              if (.not. ldensity_nolog) rho=exp(rho)
+              df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                  1/rho*4/3.*pi*rhops* &
+                  (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+            else
+              rho=f(l,m,n,ilnrho)
+              if (.not. ldensity_nolog) rho=exp(rho)
+              cc=f(l,m,n,ilncc)
+              if (.not. lpscalar_nolog) cc=exp(cc)
+              df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                  1/cc*1/rho*4/3.*pi*rhops* &
+                  (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+            endif
           enddo
           k=ineighbour(k)
         enddo
       enddo; enddo; enddo
-      stop
-
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
-!        if (idiag_apm/=0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
-!        if (idiag_ap2m/=0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
+        if (idiag_nptm/=0) call sum_par_name(fp(1:npar_loc,inptilde),idiag_nptm)
       endif
 !
       lfirstcall=.false.
@@ -196,6 +235,30 @@ module Particles_number
       enddo
 !
     endsubroutine nearest_gridpoint_map
+!***********************************************************************
+    subroutine get_nptilde(fp,k,np_tilde)
+!
+!  Get internal particle number.
+!
+!  25-oct-05/anders: coded
+!
+      use Messages, only: fatal_error
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      real :: np_tilde
+      integer :: k
+!
+      intent (in)  :: fp, k
+      intent (out) :: np_tilde
+!
+      if (k<1 .or. k>mpar_loc) then
+        if (lroot) print*, 'get_nptilde: k out of range, k=', k
+        call fatal_error('get_nptilde','')
+      endif
+!
+      np_tilde=fp(k,inptilde)
+!
+    endsubroutine get_nptilde
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
 !    
@@ -262,22 +325,21 @@ module Particles_number
 ! 
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iap=', inptilde
+      if (lwr) write(3,*) 'inptilde=', inptilde
 !
 !  Reset everything in case of reset
 !
-!      if (lreset) then
-!        idiag_apm=0; idiag_ap2m=0
-!      endif
+      if (lreset) then
+        idiag_nptm=0
+      endif
 !
 !  Run through all possible names that may be listed in print.in
 !
-!      if (lroot.and.ip<14) &
-!          print*, 'rprint_particles_radius: run through parse list'
-!      do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),'apm',idiag_apm)
-!        call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
-!      enddo
+      if (lroot.and.ip<14) &
+          print*, 'rprint_particles_number: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'nptm',idiag_nptm)
+      enddo
 !
     endsubroutine rprint_particles_number
 !***********************************************************************

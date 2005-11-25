@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.9 2005-11-24 15:40:12 ajohan Exp $
+! $Id: particles_main.f90,v 1.10 2005-11-25 10:29:06 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -27,8 +27,9 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      call register_particles()
+      call register_particles       ()
       call register_particles_radius()
+      call register_particles_number()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -42,8 +43,9 @@ module Particles_main
 !
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
-      call rprint_particles(lreset,LWRITE=lroot)
+      call rprint_particles       (lreset,LWRITE=lroot)
       call rprint_particles_radius(lreset,LWRITE=lroot)
+      call rprint_particles_number(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
@@ -71,7 +73,8 @@ module Particles_main
       endif
 !
       call initialize_particles(lstarting)
-      if (lparticles_radius) call initialize_particles_radius(lstarting)
+      call initialize_particles_radius(lstarting)
+      call initialize_particles_number(lstarting)
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
@@ -87,6 +90,7 @@ module Particles_main
 !
       call init_particles(f,fp)
       if (lparticles_radius) call init_particles_radius(f,fp)
+      if (lparticles_number) call init_particles_number(f,fp)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -222,6 +226,7 @@ module Particles_main
 !
       call read_particles_init_pars(unit,iostat)
       if (lparticles_radius) call read_particles_rad_init_pars(unit,iostat)
+      if (lparticles_number) call read_particles_num_init_pars(unit,iostat)
 !
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
@@ -231,6 +236,7 @@ module Particles_main
 !
       call write_particles_init_pars(unit)
       if (lparticles_radius) call write_particles_rad_init_pars(unit)
+      if (lparticles_number) call write_particles_num_init_pars(unit)
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
@@ -241,6 +247,7 @@ module Particles_main
 !
       call read_particles_run_pars(unit,iostat)
       if (lparticles_radius) call read_particles_rad_run_pars(unit,iostat)
+      if (lparticles_number) call read_particles_num_run_pars(unit,iostat)
 !
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
@@ -250,6 +257,7 @@ module Particles_main
 !
       call write_particles_run_pars(unit)
       if (lparticles_radius) call write_particles_rad_run_pars(unit)
+      if (lparticles_number) call write_particles_num_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
 !***********************************************************************

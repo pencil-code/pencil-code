@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.45 2005-11-01 16:31:22 ajohan Exp $
+! $Id: particles_dust.f90,v 1.46 2005-11-25 10:29:06 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.45 2005-11-01 16:31:22 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.46 2005-11-25 10:29:06 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -593,6 +593,7 @@ module Particles
       use Cdata
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
+      use Particles_number, only: get_nptilde
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -602,7 +603,7 @@ module Particles
       real, dimension (nx,3) :: uupsum
       real, dimension (nx) :: np, tausg1, rho
       real, dimension (3) :: uup
-      real :: Omega2, cp1tilde
+      real :: Omega2, np_tilde
       real :: np_point, eps_point, rho_point, tausp1_point, tausg1_point
       integer :: i, k, ix0, iy0, iz0
       logical :: lheader, lfirstcall=.true.
@@ -816,7 +817,16 @@ module Particles
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_rhopm/=0) call sum_par_name_nw(4/3.*pi*rhops*fp(1:npar_loc,iap)**3*np_tilde,idiag_rhopm)
+        if (idiag_rhopm/=0) then
+          if (lparticles_number) then
+            call sum_par_name_nw( &
+                4/3.*pi*rhops*fp(1:npar_loc,iap)**3*fp(:,inptilde),idiag_rhopm)
+          else
+            call get_nptilde(fp,k,np_tilde)
+            call sum_par_name_nw( &
+                4/3.*pi*rhops*fp(1:npar_loc,iap)**3*np_tilde,idiag_rhopm)
+          endif
+        endif
         do imn=1,ny*nz
           n=nn(imn); m=mm(imn)
           lfirstpoint=(imn==1)
