@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.10 2005-11-25 10:29:06 ajohan Exp $
+! $Id: particles_main.f90,v 1.11 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -17,6 +17,7 @@ module Particles_main
   include 'particles_main.h'
 
   real, dimension (mpar_loc,mpvar) :: fp, dfp
+  integer, dimension (mpar_loc,3) :: ineargrid
 
   contains
 
@@ -86,9 +87,9 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      intent (in) :: f
+      intent (out) :: f
 !
-      call init_particles(f,fp)
+      call init_particles(f,fp,ineargrid)
       if (lparticles_radius) call init_particles_radius(f,fp)
       if (lparticles_number) call init_particles_number(f,fp)
 !
@@ -209,13 +210,22 @@ module Particles_main
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      intent (in) :: f
+      intent (out) :: f, df
+!
+!  Particle boundary conditions and parallel communication.
 !
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
-      call dxxp_dt(f,fp,dfp)
-      call dvvp_dt(f,df,fp,dfp)
-      if (lparticles_radius) call dap_dt(f,df,fp,dfp)
-      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp)
+!
+!  Map the particles on the grid for later use.
+!
+      call map_nearest_grid(f,fp,ineargrid)
+!
+!  Dynamical equations.
+!
+      call dxxp_dt(f,fp,dfp,ineargrid)
+      call dvvp_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_radius) call dap_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)
 !
     endsubroutine particles_pde
 !***********************************************************************

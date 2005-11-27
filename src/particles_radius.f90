@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.8 2005-11-25 10:29:06 ajohan Exp $
+! $Id: particles_radius.f90,v 1.9 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -49,7 +49,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.8 2005-11-25 10:29:06 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.9 2005-11-27 10:33:44 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -114,7 +114,7 @@ module Particles_radius
 !
     endsubroutine init_particles_radius
 !***********************************************************************
-    subroutine dap_dt(f,df,fp,dfp)
+    subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of particle radius.
 !
@@ -126,6 +126,7 @@ module Particles_radius
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uu
       real :: rho, deltav, cc, np_tilde
@@ -146,7 +147,7 @@ module Particles_radius
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
       do k=1,npar_loc
-        call find_closest_gridpoint(fp(k,ixp:izp),ix0,iy0,iz0)
+        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !  No interpolation needed here.
         rho=f(ix0,iy0,iz0,ilnrho)
         if (.not. ldensity_nolog) rho=exp(rho)

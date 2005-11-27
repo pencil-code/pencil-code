@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.3 2005-11-25 18:15:43 wlyra Exp $
+! $Id: particles_planet.f90,v 1.4 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.3 2005-11-25 18:15:43 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.4 2005-11-27 10:33:44 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -112,7 +112,7 @@ module Particles
 !
     endsubroutine initialize_particles
 !***********************************************************************
-    subroutine init_particles(f,fp)
+    subroutine init_particles(f,fp,ineargrid)
 !
 !  Initial positions and velocities of planet particles.
 !
@@ -125,6 +125,7 @@ module Particles
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
       real :: r, p
@@ -223,7 +224,7 @@ module Particles
 !
     endsubroutine init_particles
 !***********************************************************************
-    subroutine dxxp_dt(f,fp,dfp)
+    subroutine dxxp_dt(f,fp,dfp,ineargrid)
 !
 !  Evolution of planet particle position.
 !
@@ -233,6 +234,7 @@ module Particles
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: ran_xp, ran_yp, ran_zp
       integer, dimension (mseed) :: iseed_org

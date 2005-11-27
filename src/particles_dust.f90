@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.46 2005-11-25 10:29:06 ajohan Exp $
+! $Id: particles_dust.f90,v 1.47 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.46 2005-11-25 10:29:06 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.47 2005-11-27 10:33:44 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -207,7 +207,7 @@ module Particles
 !
     endsubroutine initialize_particles
 !***********************************************************************
-    subroutine init_particles(f,fp)
+    subroutine init_particles(f,fp,ineargrid)
 !
 !  Initial positions and velocities of dust particles.
 !
@@ -220,13 +220,13 @@ module Particles
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
       real :: r, p
       integer :: k
 !
-      intent (in) :: f
-      intent (out) :: fp
+      intent (out) :: f, fp, ineargrid
 !
 !  Initial particle position.
 !
@@ -325,7 +325,7 @@ module Particles
         if (lroot) &
             print*, 'init_particles: Particle velocity equal to gas velocity'
         do k=1,npar_loc
-          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup)
+          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
           fp(k,ivpx:ivpz) = uup
         enddo
 
@@ -508,7 +508,7 @@ module Particles
 !
     endsubroutine constant_richardson
 !***********************************************************************
-    subroutine dxxp_dt(f,fp,dfp)
+    subroutine dxxp_dt(f,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle position.
 !
@@ -518,14 +518,14 @@ module Particles
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: ran_xp, ran_yp, ran_zp
       integer, dimension (mseed) :: iseed_org
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp
-      intent (out) :: dfp
+      intent (inout) :: f, fp, dfp, ineargrid
 !
 !  Print out header information in first time step.
 !
@@ -584,7 +584,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp)
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -599,6 +599,7 @@ module Particles
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx,3) :: uupsum
       real, dimension (nx) :: np, tausg1, rho
@@ -608,8 +609,8 @@ module Particles
       integer :: i, k, ix0, iy0, iz0
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: fp
-      intent (out) :: dfp
+      intent (in) :: ineargrid
+      intent (inout) :: f, df, fp, dfp
 !
 !  Print out header information in first time step.
 !
@@ -647,7 +648,8 @@ module Particles
 !  Use interpolation to calculate gas velocity at position of particles.
 !
           do k=1,npar_loc
-            call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ipar(k))
+            call interpolate_3d_1st( &
+                f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - tausp1*(fp(k,ivpx:ivpz)-uup)
           enddo
 !
@@ -655,13 +657,10 @@ module Particles
 !        
           if (ldragforce_gas) then
 !
-!  Calculate auxiliary variables np and vvpsum.
-!          
-            f(l1:l2,m1:m2,n1:n2,inp)=0.0
-            f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
-            do k=1,npar_loc
-              call map_xxp_vvp_grid(f,fp(k,ixp:izp),fp(k,ivpx:ivpz))
-            enddo
+!  Map particle positions and velocities on the grid.
+!
+            call map_xxp_grid(f,fp,ineargrid)
+            call map_vvp_grid(f,fp,ineargrid)
 !
 !  Loop over pencils to avoid global arrays.
 !          
@@ -705,17 +704,12 @@ module Particles
 !  ratio. Quite a lot slower, but sometimes necessary to avoid small time-steps.
 !
         else
-          f(l1:l2,m1:m2,n1:n2,inp)=0.0
-          f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
-          do k=1,npar_loc
-            call map_xxp_vvp_grid(f,fp(k,ixp:izp),fp(k,ivpx:ivpz))
-          enddo
 !
 !  Take one particle at a time to be able to increase friction time if
 !  the friction time-step is otherwise too low.
 !           
           do k=1,npar_loc
-            call find_closest_gridpoint(fp(k,ixp:izp),ix0,iy0,iz0)
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             np_point=f(ix0,iy,iz0,inp)
             if (ldensity_nolog) then
               rho_point=f(ix0,iy0,iz0,ilnrho)
@@ -729,7 +723,8 @@ module Particles
               tausp1_point=1/(1+eps_point)*taus1max
             endif
             tausg1_point=rhop_tilde/rho_point*tausp1_point
-            call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ipar(k))
+            call interpolate_3d_1st( &
+                f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) &
                 - tausp1_point*(fp(k,ivpx:ivpz)-uup)
             df(ix0,iy0,iz0,iux:iuz)=df(ix0,iy0,iz0,iux:iuz) &
@@ -795,12 +790,6 @@ module Particles
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (.not. ldragforce_gas) then
-          f(l1:l2,m1:m2,n1:n2,inp)=0.0
-          do k=1,npar_loc
-            call map_xxp_grid(f,fp(k,ixp:izp))
-          enddo
-        endif
         if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
         if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
         if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
@@ -827,6 +816,8 @@ module Particles
                 4/3.*pi*rhops*fp(1:npar_loc,iap)**3*np_tilde,idiag_rhopm)
           endif
         endif
+!  Map particle positions on the grid.        
+        call map_xxp_grid(f,fp,ineargrid)
         do imn=1,ny*nz
           n=nn(imn); m=mm(imn)
           lfirstpoint=(imn==1)

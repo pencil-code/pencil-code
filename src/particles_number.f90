@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.4 2005-11-25 13:10:01 ajohan Exp $
+! $Id: particles_number.f90,v 1.5 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.4 2005-11-25 13:10:01 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.5 2005-11-27 10:33:44 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -116,7 +116,7 @@ module Particles_number
 !
     endsubroutine init_particles_number
 !***********************************************************************
-    subroutine dnptilde_dt(f,df,fp,dfp)
+    subroutine dnptilde_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of internal particle number.
 !
@@ -127,6 +127,7 @@ module Particles_number
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: deltavp, sigma_jk, deltanptilde, cc, rho
       integer :: j, k, l, m, n
@@ -145,7 +146,7 @@ module Particles_number
 !
 !  Store information about which grid point each particle is closest to.
 !
-      call nearest_gridpoint_map(f,fp)
+      call nearest_gridpoint_map(f,fp,ineargrid)
 !
 !  Fragmentation inside each superparticle.
 !      
@@ -213,7 +214,7 @@ module Particles_number
 !
     endsubroutine dnptilde_dt
 !***********************************************************************
-    subroutine nearest_gridpoint_map(f,fp)
+    subroutine nearest_gridpoint_map(f,fp,ineargrid)
 !
 !  Attach information about present particles to each grid point.
 !
@@ -223,18 +224,17 @@ module Particles_number
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       integer :: k, ix0, iy0, iz0
 !
       intent (in) :: fp
 !
-      f(l1:l2,m1:m2,n1:n2,inp)=0.0
       ineighbour=0
       ishepherd=0
 !
       do k=1,npar_loc
-        call find_closest_gridpoint(fp(k,ixp:izp),ix0,iy0,iz0)
-        f(ix0,iy0,iz0,inp)=f(ix0,iy0,iz0,inp)+1
+        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
         ineighbour(k)=ishepherd(ix0,iy0,iz0)
         ishepherd(ix0,iy0,iz0)=k
       enddo

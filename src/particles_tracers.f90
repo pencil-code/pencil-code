@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.8 2005-08-29 09:02:38 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.9 2005-11-27 10:33:45 ajohan Exp $
 !
 !  This module takes care of everything related to tracer particles
 !
@@ -51,7 +51,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.8 2005-08-29 09:02:38 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.9 2005-11-27 10:33:45 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -104,7 +104,7 @@ module Particles
 !
     endsubroutine initialize_particles
 !***********************************************************************
-    subroutine init_particles(f,fp)
+    subroutine init_particles(f,fp,ineargrid)
 !
 !  Initial positions and velocities of tracer particles.
 !
@@ -117,6 +117,7 @@ module Particles
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
       real :: r, p
@@ -183,7 +184,7 @@ module Particles
 !
     endsubroutine init_particles
 !***********************************************************************
-    subroutine dxxp_dt(f,fp,dfp)
+    subroutine dxxp_dt(f,fp,dfp,ineargrid)
 !
 !  Evolution of tracer particle position.
 !
@@ -191,13 +192,14 @@ module Particles
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uu
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp
-      intent (out) :: dfp
+      intent (in) :: fp
+      intent (out) :: f, dfp, ineargrid
 !
 !  Print out header information in first time step.
 !
@@ -217,9 +219,9 @@ module Particles
 !
 !  Interpolate gas velocity to position of particles. 
 !  Then set particle velocity equal to the local gas velocity.
-!       
+!
       do k=1,npar_loc
-        call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uu)
+        call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
         if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
         if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
         if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
@@ -238,7 +240,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp)
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
 !
@@ -247,8 +249,9 @@ module Particles
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp
+      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dvvp_dt
 !***********************************************************************

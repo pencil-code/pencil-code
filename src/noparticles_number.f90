@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.3 2005-11-25 10:29:06 ajohan Exp $
+! $Id: noparticles_number.f90,v 1.4 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -63,7 +63,7 @@ module Particles_number
 !
     endsubroutine init_particles_number
 !***********************************************************************
-    subroutine dnptilde_dt(f,df,fp,dfp)
+    subroutine dnptilde_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of internal particle number.
 !
@@ -72,8 +72,9 @@ module Particles_number
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp
+      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dnptilde_dt
 !***********************************************************************

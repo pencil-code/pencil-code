@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.30 2005-10-13 11:40:24 ajohan Exp $
+! $Id: particles_sub.f90,v 1.31 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -15,8 +15,8 @@ module Particles_sub
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
   public :: sum_par_name, sum_par_name_nw, interpolate_3d_1st
-  public :: map_xxp_vvp_grid, map_xxp_grid
-  public :: find_lowest_cornerpoint, find_closest_gridpoint
+  public :: map_nearest_grid, map_xxp_grid, map_vvp_grid
+  public :: find_closest_gridpoint
 
   contains
 
@@ -562,7 +562,7 @@ module Particles_sub
 !
     endsubroutine sum_par_name_nw
 !***********************************************************************
-    subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,ipar)
+    subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,inear,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using first order formula 
@@ -579,6 +579,7 @@ module Particles_sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (3) :: xxp
+      integer, dimension (3) :: inear
       integer :: ii0, ii1
       real, dimension (ii1-ii0+1) :: gp
       integer, optional :: ipar
@@ -595,7 +596,10 @@ module Particles_sub
 !  Determine index value of lowest lying corner point of grid box surrounding
 !  the interpolation point.
 !
-      call find_lowest_cornerpoint(xxp,ix0,iy0,iz0)
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
+      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
+      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
 !
 !  Check if the grid point interval is really correct.
 !
@@ -687,49 +691,9 @@ module Particles_sub
 !
     endsubroutine interpolate_3d_1st
 !***********************************************************************
-    subroutine map_xxp_grid(f,xxp)
+    subroutine map_nearest_grid(f,fp,ineargrid)
 !
-!  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
-!  surrounding the point xxp.
-!
-!  02-jul-05/anders: adapted from map_xx_vv_grid
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension(3) :: xxp
-      integer :: ix0, iy0, iz0
-!
-      real, save :: dx1, dy1, dz1
-      logical, save :: lfirstcall=.true.
-!
-      intent(in)  :: xxp
-      intent(out) :: f
-!
-      ix0=4; iy0=4; iz0=4
-!
-      if (lfirstcall) then
-        if (.not. all(lequidist)) then
-          print*, 'map_xxp_grid: only works for equidistant grid!'
-          call stop_it('map_xxp_grid')
-        endif
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
-      endif
-!      
-      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
-      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
-      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
-!
-      f(ix0,iy0,iz0,inp)=f(ix0,iy0,iz0,inp)+1.0
-!
-    endsubroutine map_xxp_grid
-!***********************************************************************
-    subroutine map_xxp_vvp_grid(f,xxp,vvp)
-!
-!  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
-!  surrounding the point xxp.
+!  Find index (ix0, iy0, iz0) of nearest grid point of all the particles.
 !
 !  23-jan-05/anders: coded
 !
@@ -737,14 +701,17 @@ module Particles_sub
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension(3) :: xxp, vvp
-      integer :: ix0, iy0, iz0
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, save :: dx1, dy1, dz1
+      integer :: k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
-      intent(in)  :: xxp, vvp
-      intent(out) :: f
+      intent(in)  :: f, fp
+      intent(out) :: ineargrid
+!
+!  Default values in case of missing directions.
 !
       ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
 !
@@ -756,55 +723,76 @@ module Particles_sub
         dx1=1/dx; dy1=1/dy; dz1=1/dz
         lfirstcall=.false.
       endif
-!      
-      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
-      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
-      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
 !
-      f(ix0,iy0,iz0,inp)=f(ix0,iy0,iz0,inp)+1.0
-      f(ix0,iy0,iz0,ivpxsum:ivpzsum)=f(ix0,iy0,iz0,ivpxsum:ivpzsum)+vvp
+      do k=1,npar_loc
+        if (nxgrid/=1) ix0 = nint((fp(k,ixp)-x(1))*dx1) + 1
+        if (nygrid/=1) iy0 = nint((fp(k,iyp)-y(1))*dy1) + 1
+        if (nzgrid/=1) iz0 = nint((fp(k,izp)-z(1))*dz1) + 1
+        ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
+      enddo
 !
-    endsubroutine map_xxp_vvp_grid
+    endsubroutine map_nearest_grid
 !***********************************************************************
-    subroutine find_lowest_cornerpoint(xxp,ix0,iy0,iz0)
+    subroutine map_xxp_grid(f,fp,ineargrid)
 !
-!  Find index (ix0, iy0, iz0) of lowest corner point in the grid box
-!  surrounding the point xxp.
+!  Calculate the number of particles in each grid cell.
 !
-!  23-jan-05/anders: coded
+!  27-nov-05/anders: coded
 !
       use Cdata
-      use Messages, only: fatal_error
+      use Mpicomm, only: stop_it
 !
-      real, dimension(3) :: xxp
-      integer :: ix0, iy0, iz0
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, save :: dx1, dy1, dz1
-      logical, save :: lfirstcall=.true.
+      integer :: k, ix0, iy0, iz0
 !
-      intent(in)  :: xxp
-      intent(out) :: ix0, iy0, iz0
+      intent(in)  :: fp, ineargrid
+      intent(out) :: f
 !
-      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
+!  Number of particles in each grid cell.
 !
-      if (lfirstcall) then
-        if (.not. all(lequidist)) then
-          print*, 'find_lowest_cornerpoint: only works for equidistant grid!'
-          call fatal_error('find_lowest_cornerpoint','')
-        endif
-        dx1=1/dx; dy1=1/dy; dz1=1/dz
-        lfirstcall=.false.
+      if (inp/=0) then
+        f(l1:l2,m1:m2,n1:n2,inp)=0.0
+        do k=1,npar_loc
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
+        enddo
       endif
-!      
-      if (nxgrid/=1) ix0 = nint((xxp(1)-x(1))*dx1) + 1
-      if (nygrid/=1) iy0 = nint((xxp(2)-y(1))*dy1) + 1
-      if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
 !
-      if ( (x(ix0)>xxp(1)) .and. nxgrid/=1) ix0=ix0-1
-      if ( (y(iy0)>xxp(2)) .and. nygrid/=1) iy0=iy0-1
-      if ( (z(iz0)>xxp(3)) .and. nzgrid/=1) iz0=iz0-1
+    endsubroutine map_xxp_grid
+!***********************************************************************
+    subroutine map_vvp_grid(f,fp,ineargrid)
 !
-    endsubroutine find_lowest_cornerpoint
+!  Calculate the sum of particle velocities in each grid cell.
+!
+!  27-nov-05/anders: coded
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      integer :: k, ix0, iy0, iz0
+!
+      intent(in)  :: fp, ineargrid
+      intent(out) :: f
+!
+!  Sum of particles velocities in each grid cell.
+!
+      if (ivpxsum/=0) then
+        f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
+        do k=1,npar_loc
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          f(ix0,iy0,iz0,ivpxsum:ivpzsum) = &
+              f(ix0,iy0,iz0,ivpxsum:ivpzsum) + fp(k,ivpx:ivpz)
+        enddo
+      endif
+!
+    endsubroutine map_vvp_grid
 !***********************************************************************
     subroutine find_closest_gridpoint(xxp,ix0,iy0,iz0)
 !

@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.4 2005-08-22 12:16:38 ajohan Exp $
+! $Id: noparticles.f90,v 1.5 2005-11-27 10:33:44 ajohan Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -45,7 +45,7 @@ module Particles
 !***********************************************************************
     subroutine init_particles(f,fp)
 !
-!  Initial positions and velocities of dust particles.
+!  Initial positions and velocities of particles.
 !
 !  22-aug-05/anders: dummy
 !
@@ -58,7 +58,7 @@ module Particles
 !***********************************************************************
     subroutine dxxp_dt(f,fp,dfp)
 !
-!  Evolution of dust particle position.
+!  Evolution of particle position.
 !
 !  22-aug-05/anders: dummy
 !
@@ -69,17 +69,18 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp)
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of dust particle velocity.
+!  Evolution of particle velocity.
 !
 !  22-aug-05/anders: dummy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp
+      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dvvp_dt
 !***********************************************************************
