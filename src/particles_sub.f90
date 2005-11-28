@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.31 2005-11-27 10:33:44 ajohan Exp $
+! $Id: particles_sub.f90,v 1.32 2005-11-28 16:52:25 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -14,7 +14,7 @@ module Particles_sub
   public :: input_particles, output_particles
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
-  public :: sum_par_name, sum_par_name_nw, interpolate_3d_1st
+  public :: sum_par_name, max_par_name, sum_par_name_nw, interpolate_3d_1st
   public :: map_nearest_grid, map_xxp_grid, map_vvp_grid
   public :: find_closest_gridpoint
 
@@ -561,6 +561,36 @@ module Particles_sub
       endif
 !
     endsubroutine sum_par_name_nw
+!***********************************************************************
+    subroutine max_par_name(a,iname,lneg)
+!
+!  Successively calculate sum of a, which is supplied at each call.
+!  Works for particle diagnostics.
+!
+!  28-nov-05/anders: adapted from max_par_name
+!
+      use Cdata
+!
+      real, dimension (:) :: a
+      integer :: iname
+      logical, optional :: lneg
+!
+      if (iname/=0) then
+!
+        fname(iname)=0.
+        fname(iname)=fname(iname)+maxval(a)
+!
+!  set corresponding entry in itype_name
+!
+        if (present(lneg)) then
+          itype_name(iname)=ilabel_max_neg
+        else
+          itype_name(iname)=ilabel_max
+        endif
+!
+      endif
+!
+    endsubroutine max_par_name
 !***********************************************************************
     subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,inear,ipar)
 !

@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.9 2005-11-27 10:33:44 ajohan Exp $
+! $Id: particles_radius.f90,v 1.10 2005-11-28 16:52:25 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -30,7 +30,7 @@ module Particles_radius
   namelist /particles_radius_run_pars/ &
       rhops
 
-  integer :: idiag_apm=0, idiag_ap2m=0
+  integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
 
   contains
 
@@ -49,7 +49,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.9 2005-11-27 10:33:44 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.10 2005-11-28 16:52:25 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -180,7 +180,11 @@ module Particles_radius
 !
       if (ldiagnos) then
         if (idiag_apm/=0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
-        if (idiag_ap2m/=0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
+        if (idiag_ap2m/=0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m,lsqrt=.true.)
+        if (idiag_apmin/=0) &
+            call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
+        if (idiag_apmax/=0) &
+            call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
       endif
 !
       lfirstcall=.false.
@@ -257,7 +261,7 @@ module Particles_radius
 !  Reset everything in case of reset
 !
       if (lreset) then
-        idiag_apm=0; idiag_ap2m=0
+        idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -267,6 +271,8 @@ module Particles_radius
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'apm',idiag_apm)
         call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
+        call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
+        call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
       enddo
 !
     endsubroutine rprint_particles_radius
