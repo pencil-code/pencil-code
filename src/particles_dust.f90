@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.47 2005-11-27 10:33:44 ajohan Exp $
+! $Id: particles_dust.f90,v 1.48 2005-11-29 15:42:35 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.47 2005-11-27 10:33:44 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.48 2005-11-29 15:42:35 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -807,14 +807,11 @@ module Particles
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
         if (idiag_rhopm/=0) then
-          if (lparticles_number) then
-            call sum_par_name_nw( &
-                4/3.*pi*rhops*fp(1:npar_loc,iap)**3*fp(:,inptilde),idiag_rhopm)
-          else
+          do k=1,npar_loc
             call get_nptilde(fp,k,np_tilde)
-            call sum_par_name_nw( &
-                4/3.*pi*rhops*fp(1:npar_loc,iap)**3*np_tilde,idiag_rhopm)
-          endif
+            call sum_par_name( &
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhopm)
+          enddo
         endif
 !  Map particle positions on the grid.        
         call map_xxp_grid(f,fp,ineargrid)

@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.5 2005-11-27 10:33:44 ajohan Exp $
+! $Id: particles_number.f90,v 1.6 2005-11-29 15:42:35 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -26,7 +26,7 @@ module Particles_number
   integer, dimension (mx,my,mz) :: ishepherd
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
 
-  integer :: idiag_nptm=0
+  integer :: idiag_nptm=0, idiag_dvp22m=0
 
   namelist /particles_number_init_pars/ &
       initnptilde
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.5 2005-11-27 10:33:44 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.6 2005-11-29 15:42:35 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -202,6 +202,9 @@ module Particles_number
           enddo
 !  "if (k>0) then"
         endif
+        if (ldiagnos) then
+          if (idiag_dvp22m/=0) call sum_par_name_nw((/deltavp/),idiag_dvp22m)
+        endif
       enddo; enddo; enddo
 !
 !  Diagnostic output
@@ -335,7 +338,7 @@ module Particles_number
 !  Reset everything in case of reset
 !
       if (lreset) then
-        idiag_nptm=0
+        idiag_nptm=0; idiag_dvp22m=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -344,6 +347,7 @@ module Particles_number
           print*, 'rprint_particles_number: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nptm',idiag_nptm)
+        call parse_name(iname,cname(iname),cform(iname),'dvp22m',idiag_dvp22m)
       enddo
 !
     endsubroutine rprint_particles_number

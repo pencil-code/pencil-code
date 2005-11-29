@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.34 2005-11-29 14:58:50 ajohan Exp $
+! $Id: particles_sub.f90,v 1.35 2005-11-29 15:42:35 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -555,22 +555,35 @@ module Particles_sub
 !  22-aug-05/anders: adapted from sum_par_name
 !
       use Cdata
+      use Messages, only: fatal_error
 !
       real, dimension (:) :: a
       integer :: iname
       logical, optional :: lsqrt
 !
+      integer, save :: icount
+!
       if (iname/=0) then
 !
-        fname(iname)=0.
+        if (icount==0) fname(iname)=0
+!
         fname(iname)=fname(iname)+sum(a)
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
         else
           itype_name(iname)=ilabel_sum
+        endif
+!
+        icount=icount+size(a)
+        if (icount==nw) then
+          icount=0
+        elseif (icount>=nw) then
+          print*, 'sum_par_name_nw: Too many grid points entered this sub.'
+          print*, 'sum_par_name_nw: Can only do statistics on nw grid points!'
+          call fatal_error('sum_par_name_nw','')
         endif
 !
       endif
