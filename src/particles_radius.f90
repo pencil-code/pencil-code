@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.10 2005-11-28 16:52:25 ajohan Exp $
+! $Id: particles_radius.f90,v 1.11 2005-11-29 14:58:50 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -31,6 +31,7 @@ module Particles_radius
       rhops
 
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
+  integer :: idiag_dvp12m=0
 
   contains
 
@@ -49,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.10 2005-11-28 16:52:25 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.11 2005-11-29 14:58:50 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -154,6 +155,7 @@ module Particles_radius
         uu=f(ix0,iy0,iz0,iux:iuz)
 !  Relative speed.
         deltav=sqrt( (fp(k,ivpx)-uu(1))**2 + (fp(k,ivpy)-uu(2))**2 + (fp(k,ivpz)-uu(3))**2 )
+
 !  Concentration of small grains in the gas.
         if (.not. lpscalar) then
           call fatal_error('dap_dt','must have passive scalar module for sweep-up')
@@ -173,6 +175,9 @@ module Particles_radius
             df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
                 np_tilde*pi*fp(k,iap)**2*deltav
           endif
+        endif
+        if (ldiagnos) then
+          if (idiag_dvp12m/=0) call sum_par_name((/deltav/),idiag_dvp12m)
         endif
       enddo
 !
@@ -262,6 +267,7 @@ module Particles_radius
 !
       if (lreset) then
         idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
+        idiag_dvp12m=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -273,6 +279,7 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
         call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
         call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
+        call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
       enddo
 !
     endsubroutine rprint_particles_radius

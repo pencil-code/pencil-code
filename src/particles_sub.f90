@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.33 2005-11-29 14:46:02 ajohan Exp $
+! $Id: particles_sub.f90,v 1.34 2005-11-29 14:58:50 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -516,13 +516,11 @@ module Particles_sub
       integer :: iname
       logical, optional :: lsqrt
 !
-      integer :: icount
+      integer, save :: icount
 !
       if (iname/=0) then
 !
-        if (icount==0) then
-          fname(iname)=0
-        endif
+        if (icount==0) fname(iname)=0
 !
         fname(iname)=fname(iname)+sum(a)
 !
