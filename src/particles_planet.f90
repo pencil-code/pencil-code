@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.4 2005-11-27 10:33:44 ajohan Exp $
+! $Id: particles_planet.f90,v 1.5 2005-11-29 18:48:14 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.4 2005-11-27 10:33:44 ajohan Exp $")
+           "$Id: particles_planet.f90,v 1.5 2005-11-29 18:48:14 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -211,7 +211,7 @@ module Particles
         if (lroot) &
             print*, 'init_particles: Particle velocity equal to gas velocity'
         do k=1,npar
-          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup)
+          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
           fp(k,ivpx:ivpz) = uup
         enddo
 
@@ -278,7 +278,7 @@ module Particles
 !
     endsubroutine dxxp_dt
 !***********************************************************************
-    subroutine dvvp_dt(f,df,fp,dfp)
+    subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of planet velocity and star velocity
 !  It can't change gas velocity, so it will call
@@ -298,6 +298,7 @@ module Particles
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (mpar_loc) :: vel,dist
+      integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: re, grav_gas
       real :: Omega2,rp0_pot,rsep
