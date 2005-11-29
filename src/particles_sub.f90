@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.35 2005-11-29 15:42:35 ajohan Exp $
+! $Id: particles_sub.f90,v 1.36 2005-11-29 19:17:32 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -14,7 +14,8 @@ module Particles_sub
   public :: input_particles, output_particles
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
-  public :: sum_par_name, max_par_name, sum_par_name_nw, interpolate_3d_1st
+  public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
+  public :: interpolate_3d_1st
   public :: map_nearest_grid, map_xxp_grid, map_vvp_grid
   public :: find_closest_gridpoint
 
@@ -619,6 +620,46 @@ module Particles_sub
       endif
 !
     endsubroutine max_par_name
+!***********************************************************************
+    subroutine integrate_par_name(a,iname)
+!
+!  Calculate integral of a, which is supplied at each call.
+!  Works for particle diagnostics.
+!
+!  29-nov-05/anders: adapted from sum_par_name
+!
+      use Cdata
+      use Messages, only: fatal_error
+!
+      real, dimension (:) :: a
+      integer :: iname
+!
+      integer, save :: icount
+!
+      if (iname/=0) then
+!
+        if (icount==0) fname(iname)=0
+!
+        fname(iname)=fname(iname)+sum(a)
+!
+!  Set corresponding entry in itype_name
+!
+        itype_name(iname)=ilabel_integrate
+!
+!  Reset sum when npar_loc particles have been considered.
+!
+        icount=icount+size(a)
+        if (icount==npar_loc) then
+          icount=0
+        elseif (icount>=npar_loc) then
+          print*, 'integral_par_name: Too many particles entered this sub.'
+          print*, 'integral_par_name: Can only do statistics on npar_loc particles!'
+          call fatal_error('integral_par_name','')
+        endif
+!
+      endif
+!
+    endsubroutine integrate_par_name
 !***********************************************************************
     subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,inear,ipar)
 !

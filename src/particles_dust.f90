@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.48 2005-11-29 15:42:35 ajohan Exp $
+! $Id: particles_dust.f90,v 1.49 2005-11-29 19:17:32 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -54,9 +54,9 @@ module Particles
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhopm=0, idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
+  integer :: idiag_rhoptilm=0, idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
   integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0
-  integer :: idiag_npmy=0, idiag_nparmax=0
+  integer :: idiag_npmy=0, idiag_nparmax=0, idiag_mpt=0
 
   contains
 
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.48 2005-11-29 15:42:35 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.49 2005-11-29 19:17:32 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -806,11 +806,18 @@ module Particles
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-        if (idiag_rhopm/=0) then
+        if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
             call get_nptilde(fp,k,np_tilde)
             call sum_par_name( &
-                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhopm)
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_rhoptilm)
+          enddo
+        endif
+        if (idiag_mpt/=0) then
+          do k=1,npar_loc
+            call get_nptilde(fp,k,np_tilde)
+            call integrate_par_name( &
+                (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
           enddo
         endif
 !  Map particle positions on the grid.        
@@ -932,9 +939,9 @@ module Particles
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhopm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
+        idiag_rhoptilm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
         idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0
-        idiag_npmy=0; idiag_nparmax=0
+        idiag_npmy=0; idiag_nparmax=0; idiag_mpt=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -959,9 +966,10 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'np2m',idiag_np2m)
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
-        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_rhopm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_rhoptilm)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
+        call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
       enddo
 !
 !  check for those quantities for which we want z-averages
