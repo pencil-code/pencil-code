@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.58 2005-11-13 10:22:55 ajohan Exp $
+! $Id: pscalar.f90,v 1.59 2005-11-29 19:16:34 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -47,7 +47,7 @@ module Pscalar
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
-  integer :: idiag_lnccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
+  integer :: idiag_mcct=0, idiag_lnccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
   integer :: idiag_ucm=0,idiag_uudcm=0,idiag_Cz2m=0,idiag_Cz4m=0,idiag_Crmsm=0
   integer :: idiag_cc1m=0,idiag_cc2m=0,idiag_cc3m=0,idiag_cc4m=0,idiag_cc5m=0
   integer :: idiag_cc6m=0,idiag_cc7m=0,idiag_cc8m=0,idiag_cc9m=0,idiag_cc10m=0
@@ -85,7 +85,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.58 2005-11-13 10:22:55 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.59 2005-11-29 19:16:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -202,9 +202,10 @@ module Pscalar
 !
       if (idiag_rhoccm/=0 .or. idiag_ccmax/=0 .or. idiag_ccmin/=0 .or. &
           idiag_ucm/=0 .or. idiag_uudcm/=0 .or. idiag_Cz2m/=0 .or. &
-          idiag_Cz4m/=0 .or. idiag_Crmsm/=0) lpenc_diagnos(i_cc)=.true.
+          idiag_Cz4m/=0 .or. idiag_Crmsm/=0 .or. idiag_rhoccm/=0 .or. &
+          idiag_mcct/=0) lpenc_diagnos(i_cc)=.true.
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
-          idiag_Crmsm/=0) lpenc_diagnos(i_rho)=.true.
+          idiag_Crmsm/=0 .or. idiag_mcct/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnccmz/=0) lpenc_diagnos(i_lncc)=.true.
       if (idiag_ucm/=0 .or. idiag_uudcm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_uudcm/=0) lpenc_diagnos(i_uglncc)=.true.
@@ -330,6 +331,7 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
+        if (idiag_mcct/=0) call integrate_mn_name(p%rho*p%cc,idiag_mcct)
         if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
         if (idiag_ccmax/=0) call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0) call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
@@ -408,12 +410,13 @@ module Pscalar
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_lnccm=0
         idiag_lnccmz=0; idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0
-        idiag_Crmsm=0
+        idiag_Crmsm=0; idiag_mcct=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'mcct',idiag_mcct)
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',idiag_rhoccm)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',idiag_ccmax)
         call parse_name(iname,cname(iname),cform(iname),'ccmin',idiag_ccmin)
