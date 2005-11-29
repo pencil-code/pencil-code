@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.32 2005-11-28 16:52:25 ajohan Exp $
+! $Id: particles_sub.f90,v 1.33 2005-11-29 14:46:02 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -504,28 +504,45 @@ module Particles_sub
 !***********************************************************************
     subroutine sum_par_name(a,iname,lsqrt)
 !
-!  successively calculate sum of a, which is supplied at each call.
+!  Successively calculate sum of a, which is supplied at each call.
 !  Works for particle diagnostics.
 !
 !  02-jan-05/anders: adapted from sum_mn_name
 !
       use Cdata
+      use Messages, only: fatal_error
 !
       real, dimension (:) :: a
       integer :: iname
       logical, optional :: lsqrt
 !
+      integer :: icount
+!
       if (iname/=0) then
 !
-        fname(iname)=0.
+        if (icount==0) then
+          fname(iname)=0
+        endif
+!
         fname(iname)=fname(iname)+sum(a)
 !
-!  set corresponding entry in itype_name
+!  Set corresponding entry in itype_name
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt_par
         else
           itype_name(iname)=ilabel_sum_par
+        endif
+!
+!  Reset sum when npar_loc particles have been considered.
+!
+        icount=icount+size(a)
+        if (icount==npar_loc) then
+          icount=0
+        elseif (icount>=npar_loc) then
+          print*, 'sum_par_name: Too many particles entered this sub.'
+          print*, 'sum_par_name: Can only do statistics on npar_loc particles!'
+          call fatal_error('sum_par_name','')
         endif
 !
       endif
