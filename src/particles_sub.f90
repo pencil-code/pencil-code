@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.36 2005-11-29 19:17:32 ajohan Exp $
+! $Id: particles_sub.f90,v 1.37 2005-12-01 06:01:23 dobler Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -517,7 +517,7 @@ module Particles_sub
       integer :: iname
       logical, optional :: lsqrt
 !
-      integer, save :: icount
+      integer, save :: icount=0
 !
       if (iname/=0) then
 !
