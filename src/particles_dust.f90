@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.49 2005-11-29 19:17:32 ajohan Exp $
+! $Id: particles_dust.f90,v 1.50 2005-12-03 11:24:17 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.49 2005-11-29 19:17:32 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.50 2005-12-03 11:24:17 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -170,7 +170,7 @@ module Particles
         else
           rhom=1.0
         endif
-        rhop_tilde=eps_dtog*rhom*nxgrid*nygrid*nzgrid/npar
+        rhop_tilde=eps_dtog*rhom/(npar/(nxgrid*nygrid*nzgrid))
         if (lroot) then
           print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
