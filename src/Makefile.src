@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.150 2005-11-28 16:52:43 ajohan Exp $
+### $Id: Makefile.src,v 1.151 2005-12-05 16:57:25 karlsson Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -129,13 +129,12 @@ LIBMPISUFFIX=
 ##
 ## OS Defaults
 ##
-#FC=f95
+#FC=g95
 #F77=$(FC)
 #FFLAGS=-O3
-#F90FLAGS=-u -tpp7
 #F90FLAGS=
 #LDMPI=
-#CFLAGS=-O3 -DFUNDERSC=1 -Wall
+#CFLAGS=-O3 -DFUNDERSC=2 -Wall
 ##
 ##
 ##
