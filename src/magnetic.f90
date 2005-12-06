@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.264 2005-11-16 11:25:19 mee Exp $
+! $Id: magnetic.f90,v 1.265 2005-12-06 09:27:49 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -181,7 +181,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.264 2005-11-16 11:25:19 mee Exp $")
+           "$Id: magnetic.f90,v 1.265 2005-12-06 09:27:49 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -672,6 +672,17 @@ module Magnetic
           lpencil_in(i_jj)=.true.
           lpencil_in(i_graddivA)=.true.
         endif
+      endif
+!  Pencils bij, del2a and graddiva come in a bundle.
+      if ( lpencil_in(i_bij) .and. &
+          (lpencil_in(i_del2a).or.lpencil_in(i_graddiva)) ) then
+        lpencil_in(i_del2a)=.false.
+        lpencil_in(i_graddiva)=.false.
+      endif
+      if (lpencil_in(i_del2a) .and. &
+          (lpencil_in(i_bij).or.lpencil_in(i_graddiva)) ) then
+        lpencil_in(i_bij)=.false.
+        lpencil_in(i_graddiva)=.false.
       endif
 !
     endsubroutine pencil_interdep_magnetic
