@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.361 2005-12-06 10:32:33 ajohan Exp $
+! $Id: entropy.f90,v 1.362 2005-12-06 12:54:09 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.361 2005-12-06 10:32:33 ajohan Exp $")
+           "$Id: entropy.f90,v 1.362 2005-12-06 12:54:09 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1332,13 +1332,23 @@ module Entropy
       lpenc_requested(i_glnrho)=.true.
       lpenc_requested(i_gss)=.true.
       lpenc_requested(i_ugss)=.true.
+      if (tau_cor>0.0) then
+        lpenc_requested(i_cp1tilde)=.true.
+        lpenc_requested(i_TT1)=.true.
+      endif
+      if (tauheat_buffer>0.0) then
+        lpenc_requested(i_ss)=.true.
+        lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
+      if (cool/=0.0 .or. cool_ext/=0.0 .or. cool_int/=0.0) &
+          lpenc_requested(i_cs2)=.true.
+      if (lgravz .and. (luminosity/=0.0 .or. cool/=0.0)) &
+          lpenc_requested(i_cs2)=.true.
       if (luminosity/=0 .or. cool/=0 .or. tau_cor/=0 .or. &
           tauheat_buffer/=0 .or. heat_uniform/=0 .or. &
           (cool_ext/=0 .and. cool_int /= 0) .or. lturbulent_heat) then
         lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_cs2)=.true.
-        lpenc_requested(i_cp1tilde)=.true.
-        lpenc_requested(i_ss)=.true.
         lpenc_requested(i_TT1)=.true.
       endif
       if (pretend_lnTT) lpenc_requested(i_divu)=.true.
@@ -1676,7 +1686,7 @@ module Entropy
           (heat_uniform /= 0) .or. &
           (cool_ext /= 0 .AND. cool_int /= 0) .or. &
           (lturbulent_heat)) &
-          call calc_heat_cool(f,df,p%rho1,p%cs2,p%cp1tilde,p%ss,p%TT1,Hmax)
+          call calc_heat_cool(f,df,p,Hmax)
 !
 !  interstellar radiative cooling and UV heating
 !
@@ -2162,7 +2172,7 @@ module Entropy
 !
     endsubroutine calc_heatcond
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,rho1,cs2,cp1tilde,ss,TT1,Hmax)
+    subroutine calc_heat_cool(f,df,p,Hmax)
 !
 !  add combined heating and cooling
 !
@@ -2174,11 +2184,13 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rho1,cs2,ss,cp1tilde,TT1
-      real, dimension (nx) :: heat,Hmax,prof,theta_profile
+      type (pencil_case) :: p
+      real, dimension (nx) :: Hmax
+!
+      real, dimension (nx) :: heat,prof,theta_profile
       real :: ssref,zbot,ztop,profile_buffer,xi,profile_cor
 !
-      intent(in) :: f,rho1,cs2
+      intent(in) :: f,p
       intent(out) :: df
 !
 !  identifier
@@ -2231,7 +2243,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !  write out (during first time step only) and apply
 !
         call write_zprof('cooling_profile',prof)
-        heat = heat - cool*prof*(cs2-cs2cool)/cs2cool
+        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
 !
 !  Write divergence of cooling flux
 !
@@ -2257,10 +2269,10 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         !
         select case(cooltype)
         case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
-          heat = heat - cool*prof*(cs2-cs2cool)/cs2cool
+          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
         case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
                                      ! in a more time-step neutral manner
-          heat = heat - cool*prof*(cs2-cs2cool)/cs2cool/rho1
+          heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
         case ('entropy')        ! cooling to reference entropy (currently =0)
           heat = heat - cool*prof*(f(l1:l2,m,n,iss)-0.)
 ! dgm
@@ -2280,14 +2292,14 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
             if (headtt) print*,'z_mn=',z_mn
             theta_profile=(1./3.-(rcyl_mn/z_mn)**2)*deltaT_poleq
             prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
-            heat = heat - cool_ext*prof*(cs2-cs2_ext)/cs2_ext*theta_profile
+            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext*theta_profile
             prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
-            heat = heat - cool_int*prof*(cs2-cs2_int)/cs2_int*theta_profile
+            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int*theta_profile
           else
             prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
-            heat = heat - cool_ext*prof*(cs2-cs2_ext)/cs2_ext
+            heat = heat - cool_ext*prof*(p%cs2-cs2_ext)/cs2_ext
             prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
-            heat = heat - cool_int*prof*(cs2-cs2_int)/cs2_int
+            heat = heat - cool_int*prof*(p%cs2-cs2_int)/cs2_int
           endif
 !
         case default
@@ -2309,7 +2321,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         if (z(n)>=z_cor) then
           xi=(z(n)-z_cor)/(ztop-z_cor)
           profile_cor=xi**2*(3-2*xi)
-          heat=heat+profile_cor*(TT_cor-1/TT1)/(rho1*tau_cor*cp1tilde)
+          heat=heat+profile_cor*(TT_cor-1/p%TT1)/(p%rho1*tau_cor*p%cp1tilde)
         endif
       endif
 !
@@ -2321,19 +2333,20 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)-zheat_buffer)))
         !profile_buffer=0.5*(1.+tanh(dheat_buffer1*(z(n)**2-zheat_buffer**2)))
 !       profile_buffer=1.+0.5*(tanh(dheat_buffer1*(z(n)-z(n1)-zheat_buffer)) + tanh(dheat_buffer1*(z(n)-z(n2)-zheat_buffer)))
-        heat=heat+profile_buffer*ss*(TTheat_buffer-1/TT1)/(rho1*tauheat_buffer)
+        heat=heat+profile_buffer*p%ss* &
+            (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
       endif
 !
 !  Parametrized turbulent heating
 !
       if (lturbulent_heat) then
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*nu_turb*(qshear*Omega)**2
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*nu_turb*(qshear*Omega)**2
       endif
 !
 !  add to entropy equation
 !
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*rho1*heat
-      if (lfirst.and.ldt) Hmax=Hmax+heat*rho1
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%rho1*heat
+      if (lfirst.and.ldt) Hmax=Hmax+heat*p%rho1
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
