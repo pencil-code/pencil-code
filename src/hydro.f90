@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.221 2005-12-06 13:04:28 ajohan Exp $
+! $Id: hydro.f90,v 1.222 2005-12-06 13:31:27 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -45,6 +45,7 @@ module Hydro
   integer :: N_modes_uu=0
   real :: star_offx=0.,star_offy=0.
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
+  logical :: ladvection_velocity=.true.
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu, radiusuu,urand, &
@@ -54,7 +55,7 @@ module Hydro
        kep_cutoff_pos_ext,kep_cutoff_width_ext, &
        kep_cutoff_pos_int,kep_cutoff_width_int, &
        u_out_kep,N_modes_uu,lcoriolis_force,lcentrifugal_force, &
-       star_offx,star_offy
+       star_offx,star_offy,ladvection_velocity
 
   ! run parameters
   real :: theta=0.
@@ -76,7 +77,7 @@ module Hydro
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint, &
-       lfreeze_uext,lcoriolis_force,lcentrifugal_force
+       lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity
 
 ! end geodynamo
 
@@ -150,7 +151,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.221 2005-12-06 13:04:28 ajohan Exp $")
+           "$Id: hydro.f90,v 1.222 2005-12-06 13:31:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -210,8 +211,16 @@ module Hydro
 !
       if (lfreeze_uint) lfreeze_varint(iux:iuz) = .true.
       if (lfreeze_uext) lfreeze_varext(iux:iuz) = .true.
+!       
+!  Turn off advection for 0-D runs.
+!       
+      if (nxgrid*nygrid*nzgrid==1) then
+        ladvection_velocity=.false.
+        print*, 'initialize_entropy: 0-D run, turned off advection of velocity'
+      endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
+!
       endsubroutine initialize_hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(unit,iostat)
@@ -564,7 +573,7 @@ module Hydro
 !
       use Cdata
 !      
-      lpenc_requested(i_ugu)=.true.
+      if (ladvection_velocity) lpenc_requested(i_ugu)=.true.
       if (ldt) lpenc_requested(i_uu)=.true.
 !
       if (lspecial) lpenc_requested(i_u2)=.true.
@@ -764,7 +773,8 @@ module Hydro
 !
 !  advection term
 !
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%ugu
+      if (ladvection_velocity) &
+          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%ugu
 !
 !  Coriolis force, -2*Omega x u
 !  Omega=(-sin_theta, 0, cos_theta)

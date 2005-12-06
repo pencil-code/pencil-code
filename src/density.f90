@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.212 2005-12-06 13:04:16 ajohan Exp $
+! $Id: density.f90,v 1.213 2005-12-06 13:31:27 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -42,7 +42,7 @@ module Density
   real :: lnrho_int=0.,lnrho_ext=0.,damplnrho_int=0.,damplnrho_ext=0.
   real :: wdamp=0.,plaw=0.
   integer, parameter :: ndiff_max=4
-  logical :: lupw_lnrho=.false.,lmass_source=.false.
+  logical :: lupw_lnrho=.false.,lmass_source=.false.,lcontinuity_gas=.true.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
@@ -61,14 +61,14 @@ module Density
        mpoly,strati_type,                            &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw
+       wdamp,plaw,lcontinuity_gas
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw
+       lnrho_const,plaw,lcontinuity_gas
   
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.212 2005-12-06 13:04:16 ajohan Exp $")
+           "$Id: density.f90,v 1.213 2005-12-06 13:31:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -182,6 +182,13 @@ module Density
 !  FIXME: This will not work with RELOAD if cdiffrho is changed in run.in
 !
         diffrho=cdiffrho*dxmin*cs0
+      endif
+!
+!  Turn off continuity equation term for 0-D runs.
+!
+      if (nxgrid*nygrid*nzgrid==1) then
+        lcontinuity_gas=.false.
+        print*, 'initialize_density: 0-D run, turned off continity equation'
       endif
 !
 !  Initialize dust diffusion
@@ -915,10 +922,12 @@ module Density
 !
       use Cdata
 !
-      lpenc_requested(i_divu)=.true.
       if (ldensity_nolog) lpenc_requested(i_rho)=.true.
-      if (ldensity_nolog) lpenc_requested(i_ugrho)=.true.
-      if (.not. ldensity_nolog) lpenc_requested(i_uglnrho)=.true.
+      if (lcontinuity_gas) then
+        lpenc_requested(i_divu)=.true.
+        if (ldensity_nolog) lpenc_requested(i_ugrho)=.true.
+        if (.not. ldensity_nolog) lpenc_requested(i_uglnrho)=.true.
+      endif
       if (ldiff_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
@@ -1144,10 +1153,12 @@ module Density
 ! 
 !  continuity equation
 !
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
-      else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+      if (lcontinuity_gas) then
+        if (ldensity_nolog) then
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%ugrho - p%rho*p%divu
+        else
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - p%uglnrho - p%divu
+        endif
       endif
 !
 !  mass sources and sinks

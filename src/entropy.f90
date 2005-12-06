@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.363 2005-12-06 13:07:54 ajohan Exp $
+! $Id: entropy.f90,v 1.364 2005-12-06 13:31:27 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -63,7 +63,7 @@ module Entropy
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
-  logical :: lpressuregradient_gas=.true.
+  logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
@@ -102,7 +102,7 @@ module Entropy
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss,beta_glnrho_global
+      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -117,7 +117,7 @@ module Entropy
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
-      tdown, allp,beta_glnrho_global
+      tdown, allp,beta_glnrho_global,ladvection_entropy
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.363 2005-12-06 13:07:54 ajohan Exp $")
+           "$Id: entropy.f90,v 1.364 2005-12-06 13:31:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -370,6 +370,15 @@ module Entropy
         beta_gss_scaled=Omega/cs0*beta_gss_global
         if (lroot) print*, 'initialize_entropy: Set isothermal entropy '// &
             'gradient to beta_gss_global=', beta_gss_global
+      endif
+!
+!  Turn off pressure gradient term and advection for 0-D runs.
+!
+      if (nxgrid*nygrid*nzgrid==1) then
+        lpressuregradient_gas=.false.
+        ladvection_entropy=.false.
+        print*, 'initialize_entropy: 0-D run, turned off pressure gradient term'
+        print*, 'initialize_entropy: 0-D run, turned off advection of entropy'
       endif
 !
 !  Initialize heat conduction.
@@ -1329,9 +1338,13 @@ module Entropy
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
-      lpenc_requested(i_glnrho)=.true.
-      lpenc_requested(i_gss)=.true.
-      lpenc_requested(i_ugss)=.true.
+      if (lpressuregradient_gas) then
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_cp1tilde)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_gss)=.true.
+      endif
+      if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1tilde)=.true.
         lpenc_requested(i_TT1)=.true.
@@ -1624,7 +1637,7 @@ module Entropy
 !
 !  advection term
 !
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
+      if (ladvection_entropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
 !
 !  if pretend_lnTT=.true., we pretend that ss is actually lnTT/gamma
 !
