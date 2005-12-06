@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.79 2005-11-09 09:13:40 wlyra Exp $
+! $Id: noentropy.f90,v 1.80 2005-12-06 09:11:01 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.79 2005-11-09 09:13:40 wlyra Exp $")
+           "$Id: noentropy.f90,v 1.80 2005-12-06 09:11:01 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -101,7 +101,7 @@ module Entropy
 !
       use Cdata
 !
-      if (ldt) lpenc_requested(i_cs2)=.true.
+      if (leos.and.ldt) lpenc_requested(i_cs2)=.true.
       if (lhydro) then
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_glnrho)=.true.
