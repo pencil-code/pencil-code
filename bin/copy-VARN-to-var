@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: copy-VARN-to-var,v 1.6 2005-06-26 17:34:16 eos_merger_tony Exp $
+#$Id: copy-VARN-to-var,v 1.7 2005-12-06 14:20:57 ajohan Exp $
 #
 #  Examples:
 #     nohup copy-VAR-to-var 10 .
@@ -21,21 +21,16 @@
 /bin/pwd >>! $2/data/copied_from.dir
 /bin/date >>! $2/data/copied_from.dir
 
-set procdirs  =  `\ls data | grep proc `
+set procdirs  =  `\ls data | grep ^proc `
 echo $procdirs
 foreach proc ($procdirs)
   echo "cp data/$proc/VAR$1 $2/data/$proc/var.dat"
   \cp data/$proc/VAR$1 $2/data/$proc/var.dat
-end
-#
-# Copy particle snapshots if requested.
-#
-if ( $3 == "p" ) then
-  foreach proc ($procdirs)
+  if ( -e "data/$proc/PVAR$1" ) then
     echo "cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat"
     \cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat
-  end
-endif
+  endif
+end
 #
 # Some output and a warning.
 #
