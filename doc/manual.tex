@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.308 2005-10-24 07:17:29 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.309 2005-12-06 01:41:23 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-10-24 07:17:29 $ $,~ $ $Revision: 1.308 $ $}
+%\date{$ $Date: 2005-12-06 01:41:23 $ $,~ $ $Revision: 1.309 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-10-24 07:17:29 $ $,~ $ $Revision: 1.308 $ $}\\
+  \emph{$ $Date: 2005-12-06 01:41:23 $ $,~ $ $Revision: 1.309 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3269,7 +3269,7 @@ In addition one must edit
   POWER=power_spectrum
   FFTPACK=fftpack \
 \end{alltt}
-You should also make sure $nxgrid=nygrid=nzgrid$.
+You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
 
 Running the code will now create the files \file{powerb.dat} and 
 \file{poweru.dat} containing the three-dimensional 
@@ -3282,7 +3282,7 @@ three-dimensional files we will also find the one-dimensional files
 \file[powerux_x.dat]{poweruy_x.dat} and
 \file[powerux_x.dat]{poweruz_x.dat}.
 In these files the data are stored such that the first line contain the
-time of the snapshot, the following $nxgrid/2$ numbers represent the
+time of the snapshot, the following $\var{nxgrid}/2$ numbers represent the
 power at each wavenumber, from the smallest to the largest.
 If several snapshots have been saved, they are being stored immediately 
 following the preceding snapshot.
@@ -3298,12 +3298,12 @@ for options to \cmd{power}.
 \label{structure-functions}
 We define the p-th order longitudinal structure function of $\vec{u}$ as
 \begin{equation}
-S^p_{long.}(l)=< | u_x(x{+}l,y,z)-u_x(x,y,z)|^p >,
+S^p_{\rm long}(l)=\left< | u_x(x{+}l,y,z)-u_x(x,y,z)|^p \right> \; ,
 \end{equation}
 while the transversal is 
 \begin{equation}
-S^p_{trans.}(l)= < | u_y(x{+}l,y,z)-u_y(x,y,z)|^p > 
-               + < | u_z(x{+}l,y,z)-u_z(x,y,z)|^p >.
+S^p_{\rm trans}(l)= \left< | u_y(x{+}l,y,z)-u_y(x,y,z)|^p \right> 
+               + \left< | u_z(x{+}l,y,z)-u_z(x,y,z)|^p \right> \; .
 \end{equation}
 
 Edit \file{run.in} and add for example the following lines 
@@ -3321,7 +3321,7 @@ In addition one must edit
   \begin{alltt}
   STRUCT_FUNC  = struct_func
   \end{alltt}
-You should also make sure $nxgrid=nygrid=nzgrid$.
+You should also make sure that \var{nxgrid}=\var{nygrid}=\var{nzgrid}.
 
 Running the code will now create the files: \\ 
 \file{sfu-1.dat},
@@ -3338,20 +3338,21 @@ Running the code will now create the files: \\
 \file[sfz1-1.dat]{sfz2-3.dat} (second Elsasser variable), \\ 
 which contains the data of interest. 
 The first line in each file contains the time $t$ 
-and the number $qmax$, such that the largest moment
-calculated is $qmax-1$. The next $imax$ numbers represent the first moment 
+and the number \var{qmax}, such that the largest moment
+calculated is $\var{qmax}-1$.
+The next \var{imax} numbers represent the first moment 
 structure function for the first snapshot, here
 \begin{equation}
-imax=2\frac{\log (nxgrid)}{\log 2}-2.
+\var{imax}=2\frac{\ln (\var{nxgrid})}{\ln 2}-2.
 \end{equation}
-The next $imax$ numbers contain the second moment structure function, 
-and so on 
-till $qmax-1$. The following $imax$ numbers then contain the data of the 
+The next \var{imax} numbers contain the second moment structure function, 
+and so on until $\var{qmax}-1$.
+The following \var{imax} numbers then contain the data of the 
 {\it signed} third order structure function i.e.  
-$S^3_{long.}(l)=< (u_x(x{+}l,y,z)-u_x(x,y,z))^3 >$.
+$S^3_{\rm long}(l)=\left< [u_x(x{+}l,y,z)-u_x(x,y,z)]^3 \right>$.
 
-The following $imax \times qmax \times 2$ numbers are zero if 
-\var{nr_directions}=1 
+The following $\var{imax} \times \var{qmax} \times 2$ numbers are zero if 
+$\var{nr_directions}=1$ 
 (default), otherwise they are the same data as above but for the 
 structure functions calculated in the y and z directions.
 
@@ -4988,7 +4989,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-10-24 07:17:29 $ $,~ $ $Revision: 1.308 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-12-06 01:41:23 $ $,~ $ $Revision: 1.309 $ $}
 
 \section{Timings}
 
@@ -8086,7 +8087,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.308 2005-10-24 07:17:29 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.309 2005-12-06 01:41:23 dobler Exp $ $}
 
 
 \end{document}
