@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.359 2005-11-21 14:50:56 mee Exp $
+! $Id: entropy.f90,v 1.360 2005-12-06 08:54:15 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.359 2005-11-21 14:50:56 mee Exp $")
+           "$Id: entropy.f90,v 1.360 2005-12-06 08:54:15 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1456,6 +1456,9 @@ module Entropy
           lpencil_in(i_hss)=.true.
         endif
       endif
+!  The pencils cs2 and cp1tilde come in a bundle, so enough to request one.
+      if (lpencil_in(i_cs2) .and. lpencil_in(i_cp1tilde)) &
+          lpencil_in(i_cp1tilde)=.false.
 !
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
