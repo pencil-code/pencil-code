@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.265 2005-12-06 10:03:29 ajohan Exp $
+! $Id: equ.f90,v 1.266 2005-12-06 12:24:38 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.265 2005-12-06 10:03:29 ajohan Exp $")
+           "$Id: equ.f90,v 1.266 2005-12-06 12:24:38 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -925,7 +925,7 @@ f_loop:   do iv=1,mvar
 !  !ref + !d +  r = d needed and not set, r needed and set; all OK
 !  !ref + !d + !r = d needed and not set, r needed and not set; missing d
 !
-        if ( lpencil_check_diagnos_optimization .and. &
+        if (lpencil_check_diagnos_opti .and. &
             lconsistent .and. lpenc_diagnos(penc) ) then
           if (lroot) print '(a,i4,a)', &
               'pencil_consistency_check: OPTIMISATION POTENTIAL... pencil '// &

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.285 2005-12-06 09:28:50 ajohan Exp $
+! $Id: cdata.f90,v 1.286 2005-12-06 12:24:38 ajohan Exp $
 
 module Cdata
 
@@ -280,7 +280,7 @@ module Cdata
   logical :: lpencil_requested_swap=.true., lpencil_diagnos_swap=.false.
   logical :: lreinit=.false.
   logical :: lpencil_check=.false., lpencil_init=.false.
-  logical :: lpencil_check_diagnos_optimization=.false.
+  logical :: lpencil_check_diagnos_opti=.false.
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: b_ell=1., rbound=1.

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.218 2005-12-06 09:28:51 ajohan Exp $ 
+! $Id: param_io.f90,v 1.219 2005-12-06 12:24:38 ajohan Exp $ 
 
 module Param_IO
 
@@ -91,7 +91,7 @@ module Param_IO
        lpoint,mpoint,npoint, &
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
-       lpencil_check,lpencil_check_diagnos_optimization,lpencil_init
+       lpencil_check,lpencil_check_diagnos_opti,lpencil_init
   contains
 
 !***********************************************************************
