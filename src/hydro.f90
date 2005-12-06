@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.220 2005-11-07 18:53:23 dobler Exp $
+! $Id: hydro.f90,v 1.221 2005-12-06 13:04:28 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -150,7 +150,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.220 2005-11-07 18:53:23 dobler Exp $")
+           "$Id: hydro.f90,v 1.221 2005-12-06 13:04:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -564,8 +564,8 @@ module Hydro
 !
       use Cdata
 !      
-      lpenc_requested(i_uu)=.true.
       lpenc_requested(i_ugu)=.true.
+      if (ldt) lpenc_requested(i_uu)=.true.
 !
       if (lspecial) lpenc_requested(i_u2)=.true.
       if (dvid/=0.) then
