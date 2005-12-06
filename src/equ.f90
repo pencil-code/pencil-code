@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.264 2005-12-06 09:28:50 ajohan Exp $
+! $Id: equ.f90,v 1.265 2005-12-06 10:03:29 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.264 2005-12-06 09:28:50 ajohan Exp $")
+           "$Id: equ.f90,v 1.265 2005-12-06 10:03:29 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -787,6 +787,7 @@ module Equ
       type (pencil_case) :: p
       real, allocatable, dimension(:,:,:,:) :: df_ref, f_other
       real, allocatable, dimension(:) :: fname_ref
+      real, dimension (nx) :: dt1_max_ref
       integer :: i,j,k,penc,iv
       integer, dimension (mseed) :: iseed_org
       logical :: lconsistent=.true., ldie=.false.
@@ -806,6 +807,7 @@ module Equ
 !
 !  Check requested pencils
 !
+      lfirst=.true.
       headt=.false.
       itsub=1                   ! some modules like dustvelocity.f90
                                 ! reference dt_beta(itsub)
@@ -821,6 +823,7 @@ module Equ
 !
       lpencil=lpenc_requested
       call pde(f_other,df_ref,p)
+      dt1_max_ref=dt1_max
 !
       do penc=1,npencils 
         df=0.0
@@ -839,12 +842,20 @@ module Equ
 !  Compare results...
 !
         lconsistent=.true.
-f_loop: do iv=1,mvar
-          do k=n1,n2; do j=m1,m2; do i=l1,l2
-            lconsistent=(df(i,j,k,iv)==df_ref(i,j,k,iv))
-            if (.not. lconsistent) exit f_loop
-          enddo; enddo; enddo
-        enddo f_loop
+        do i=1,nx
+          if (dt1_max(i)/=dt1_max_ref(i)) then
+            lconsistent=.false.
+            exit
+          endif
+        enddo
+        if (lconsistent) then
+f_loop:   do iv=1,mvar
+            do k=n1,n2; do j=m1,m2; do i=l1,l2
+              lconsistent=(df(i,j,k,iv)==df_ref(i,j,k,iv))
+              if (.not. lconsistent) exit f_loop
+            enddo; enddo; enddo
+          enddo f_loop
+        endif
 ! 
         if (lconsistent .and. lpenc_requested(penc)) then
           if (lroot) print '(a,i4,a)', &
