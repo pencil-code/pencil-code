@@ -13,6 +13,8 @@
   public :: calc_mpscalar
 
 !ajwm SHOULD NOT BE PUBLIC
+!axel: yes, but at the moment we need this to calculate PDFs.
   public :: rhoccm, idiag_rhoccm
   public :: cc2m, idiag_cc2m
   public :: gcc2m, idiag_gcc2m
+

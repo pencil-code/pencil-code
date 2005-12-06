@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.42 2005-11-25 09:41:21 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.43 2005-12-06 19:13:53 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -53,6 +53,7 @@ module Pscalar
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
+  integer :: idiag_Qrhoccm=0
   integer :: idiag_lnccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
   integer :: idiag_ucm=0,idiag_uudcm=0,idiag_Cz2m=0,idiag_Cz4m=0,idiag_Crmsm=0
   integer :: idiag_cc1m=0,idiag_cc2m=0,idiag_cc3m=0,idiag_cc4m=0,idiag_cc5m=0
@@ -96,7 +97,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.42 2005-11-25 09:41:21 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.43 2005-12-06 19:13:53 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -266,7 +267,8 @@ module Pscalar
       if (tensor_pscalar_diff/=0.) lpenc_requested(i_hcc)=.true.
 !
       lpenc_diagnos(i_cc)=.true.
-      if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0) &
+      if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
+          idiag_Qrhoccm/=0) &
           lpenc_diagnos(i_rho)=.true.
       if (idiag_ucm/=0 .or. idiag_uudcm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_uudcm/=0) lpenc_diagnos(i_ugcc)=.true.
@@ -376,8 +378,9 @@ module Pscalar
 !  passive scalar sink
 !
         if (lpscalar_sink) then
-          bump=exp(-(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
-          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-p%rho1*pscalar_sink*bump/f(l1:l2,m,n,ilncc)
+          bump=pscalar_sink* &
+            exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
+          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-bump*f(l1:l2,m,n,ilncc)
         endif
 !
 !  diffusion operator
@@ -420,6 +423,7 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
+        if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc,idiag_Qrhoccm)
         if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
         if (idiag_ccmax/=0) call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0) call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
@@ -516,6 +520,7 @@ module Pscalar
 !
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_lnccm=0
+        idiag_Qrhoccm=0
         idiag_lnccmz=0; 
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
         idiag_cc1m=0; idiag_cc2m=0; idiag_cc3m=0; idiag_cc4m=0; idiag_cc5m=0
@@ -528,6 +533,7 @@ module Pscalar
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'Qrhoccm',idiag_Qrhoccm)
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',idiag_rhoccm)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',idiag_ccmax)
         call parse_name(iname,cname(iname),cform(iname),'ccmin',idiag_ccmin)
@@ -568,6 +574,7 @@ module Pscalar
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_Qrhoccm=',idiag_Qrhoccm
         write(3,*) 'i_rhoccm=',idiag_rhoccm
         write(3,*) 'i_ccmax=',idiag_ccmax
         write(3,*) 'i_ccmin=',idiag_ccmin

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.76 2005-10-12 18:34:42 ajohan Exp $
+! $Id: prints.f90,v 1.77 2005-12-06 19:13:52 brandenb Exp $
 
 module Print
 
@@ -194,7 +194,7 @@ public :: write_zaverages
 !     endif
 !
 !  calculate rhoccm and cc2m (this requires that these are set in print.in)
-!  broadcast result to other processors
+!  broadcast result to other processors. This is needed for calculating PDFs.
 !
       if (idiag_rhoccm/=0) then
         if (iproc==0) rhoccm=fname(idiag_rhoccm)
