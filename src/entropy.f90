@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.362 2005-12-06 12:54:09 ajohan Exp $
+! $Id: entropy.f90,v 1.363 2005-12-06 13:07:54 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.362 2005-12-06 12:54:09 ajohan Exp $")
+           "$Id: entropy.f90,v 1.363 2005-12-06 13:07:54 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1328,7 +1328,7 @@ module Entropy
       use Cdata
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
 !
-      lpenc_requested(i_cs2)=.true.
+      if (ldt) lpenc_requested(i_cs2)=.true.
       lpenc_requested(i_glnrho)=.true.
       lpenc_requested(i_gss)=.true.
       lpenc_requested(i_ugss)=.true.
