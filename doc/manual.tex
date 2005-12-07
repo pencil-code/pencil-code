@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.309 2005-12-06 01:41:23 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.310 2005-12-07 17:49:48 tarek Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-12-06 01:41:23 $ $,~ $ $Revision: 1.309 $ $}
+%\date{$ $Date: 2005-12-07 17:49:48 $ $,~ $ $Revision: 1.310 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-12-06 01:41:23 $ $,~ $ $Revision: 1.309 $ $}\\
+  \emph{$ $Date: 2005-12-07 17:49:48 $ $,~ $ $Revision: 1.310 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1261,12 +1261,12 @@ The relevant part of the code's output looks like\\
 \bigskip
 \begin{small}
 \begin{alltt}
- ---it------t--------dt--------urms------umax------rhom------ssm-------dtc----
-      0     0.00  8.561E-03   0.00633   0.09560   14.4708  -0.44601  4.74E-01
-     10     0.09  8.561E-03   0.00536   0.06398   14.4708  -0.44591  4.74E-01
-     20     0.17  8.560E-03   0.00527   0.04088   14.4709  -0.44583  4.74E-01
-     30     0.26  8.561E-03   0.00533   0.04437   14.4708  -0.44575  4.74E-01
-     40     0.34  8.559E-03   0.00517   0.04520   14.4708  -0.44569  4.74E-01
+ --it----t-------dt-------urms----umax----rhom------ssm-----dtc----dtu---dtnu---dtchi-
+    0   0.34  6.792E-03  0.0060  0.0452  14.4708  -0.4478  0.978  0.013  0.207  0.346
+   10   0.41  6.787E-03  0.0062  0.0440  14.4707  -0.4480  0.978  0.013  0.207  0.345
+   20   0.48  6.781E-03  0.0064  0.0429  14.4705  -0.4481  0.977  0.012  0.207  0.345
+   30   0.54  6.777E-03  0.0067  0.0408  14.4703  -0.4482  0.977  0.012  0.207  0.345
+   40   0.61  6.776E-03  0.0069  0.0381  14.4702  -0.4482  0.977  0.011  0.207  0.346
 \end{alltt}
 \end{small}
 \bigskip
@@ -1276,12 +1276,18 @@ and lists
 \item the number \var{it} of the current time step; 
 \item the time, \var{t};
 \item the time step, \var{dt};
-\item the rms velocity, \var{urms}$=\sqrt{\left<\uv^2\right>}$;
-\item the maximum velocity, \var{umax}$=\max |\uv|$;
-\item the mean density, \var{rhom}$=\left<\varrho\right>$;
-\item the mean entropy, \var{ssm}$=\left<s\right>/c_p$;
+\item the rms velocity, \var{urms}$\,=\sqrt{\left<\uv^2\right>}$;
+\item the maximum velocity, \var{umax}$\,=\max |\uv|$;
+\item the mean density, \var{rhom}$\,=\left<\varrho\right>$;
+\item the mean entropy, \var{ssm}$\,=\left<s\right>/c_p$;
 \item the time step in units of the acoustic Courant step,
-  \var{dtc}$=\delta t/({\cs}_0\,\delta x_{\rm min})$.
+  \var{dtc}$\,=\delta t/({\cs}_0\,\delta x_{\rm min})$;
+\item the time step in units of the advective time step,
+  \var{dtu}$\,=\delta t/(c_{\delta t}\,\delta x/\max|\mathbf{u}|)$;
+\item the me step in units of viscous time step,
+  \var{dtnu}$\,=\delta t/(c_{\delta t,{\rm v}}\,\delta x^2/\nu_{\rm max})$;
+\item the time step in units of the conductive time step,
+  \var{dtchi}$\,=\delta t / (c_{\delta t,{\rm v}}\,\delta x^2/\chi_{\rm max})$.
 \end{enumerate}
 The entries in this list can be added, removed or reformatted in the file
 \file{print.in}, see Sects~\ref{diagnostic-IO} and \ref{S-print.in-params}.
@@ -4989,7 +4995,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-12-06 01:41:23 $ $,~ $ $Revision: 1.309 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-12-07 17:49:48 $ $,~ $ $Revision: 1.310 $ $}
 
 \section{Timings}
 
@@ -8087,7 +8093,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.309 2005-12-06 01:41:23 dobler Exp $ $}
+$ $Id: manual.tex,v 1.310 2005-12-07 17:49:48 tarek Exp $ $}
 
 
 \end{document}
