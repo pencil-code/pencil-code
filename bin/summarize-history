@@ -1,5 +1,4 @@
 #!/bin/sh
-# CVS: $Id: summarize-history,v 1.8 2005-06-26 17:34:17 eos_merger_tony Exp $
 #  -*-Perl-*-
 #======================================================================#
 # Run the right perl version:
@@ -19,6 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   summarize-history
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   03-Nov-2002
+# CVS:    $Id: summarize-history,v 1.9 2005-12-08 02:04:27 dobler Exp $
 # Description:
 #    Evaluate `params.log' and print a history of changes.
 
@@ -35,7 +35,7 @@ my @diff_opts = qw/-s -w78/;	# Options for $diff
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $need_cleanup = 0;
 my ($tmp1,$tmp2,$tmpname1,$tmpname2) = ('fh01', 'fh02');
-my $full = 0;
+my ($full,$debug) = (0,0);
 
 my $log;
 
@@ -53,6 +53,10 @@ Options:
 if (@ARGV > 0) {
     if ($ARGV[0] =~ /^(-h|--help)/) {
 	die $usage;
+    }
+    elsif ($ARGV[0] =~ /^(--debug)/) {
+	$debug = 1;
+	shift;
     }
     elsif ($ARGV[0] =~ /^(-f|--full)/) {
 	$full = 1;
@@ -74,18 +78,19 @@ if ($diff eq 'sdiff') {
 ## Read whole file and split contents by separator line
 {
     local $/=undef;
+    print STDERR "Opening <$parfile>\n" if ($debug);
     open (LOG,"< $parfile") or die "Can't open file `$parfile'\n";
     $log = <LOG>;
     close LOG;
 }
-my @entries = split(/^\s*#\s*---------------------------------*\s*$/m,$log);
+my @entries = split(/^\s*[!#]\s*---------------------------------*\s*$/m,$log);
 ## Drop empty entries..
 @entries = grep /\S/, @entries;
 ## ..and emtpy lines
 @entries = map { s/^\s*\n//gm; $_ } @entries;
 
 ## Drop the startup parameters
-if ($entries[0] =~ /^\s*#\s*Initializing/) {
+if ($entries[0] =~ /^\s*[!#]\s*Initializing/) {
     shift @entries;
 } else {
     warn "First entry doesn't look like output from start.x..\n";
