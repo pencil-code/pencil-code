@@ -1,11 +1,11 @@
-; $Id: pc_units.pro,v 1.1 2004-07-26 14:48:46 mee Exp $
+; $Id: pc_units.pro,v 1.2 2005-12-14 11:57:53 mee Exp $
 ;
 ;  Read defined units from params and return them along with a bunch
 ;  of calculated units in a structure
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-07-26 14:48:46 $
-;  $Revision: 1.1 $
+;  $Date: 2005-12-14 11:57:53 $
+;  $Revision: 1.2 $
 ;
 ;  26-jul-04/tony: coded 
 ;
@@ -36,16 +36,17 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; Default data directory
 
+pc_check_math,location='before entry to pc_units'
 default, datadir, 'data'
 if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, $
     quiet=quiet
 if (n_elements(param) eq 0) then pc_read_param, datadir=datadir, object=param, $
     dim=dim,quiet=quiet
 
-length=param.unit_length
-temperature=param.unit_temperature
-density=param.unit_density
-velocity=param.unit_velocity
+length=param.unit_length*1D0
+temperature=param.unit_temperature*1D0
+density=param.unit_density*1D0
+velocity=param.unit_velocity*1D0
 
 if param.unit_system eq "cgs" then begin
   object=create_struct(['temperature',       $
@@ -61,10 +62,11 @@ if param.unit_system eq "cgs" then begin
                         length,                $
                         velocity,              $
                         length/velocity,       $
-                        density*velocity^2*length^3, $
+                        1D0*density*velocity^2*length^3, $
                         velocity^2,            $
                         sqrt(4.*!pi*density)*velocity   $
                       )
+  pc_check_math,location='pc_units - cgs unit calculation'
   tex=texsyms()
   symbols=create_struct(['temperature',       $
                         'density',           $
