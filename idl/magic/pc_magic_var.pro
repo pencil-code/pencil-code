@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.15 2005-04-17 21:28:29 mee Exp $
+; $Id: pc_magic_var.pro,v 1.16 2005-12-14 11:57:01 mee Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-04-17 21:28:29 $
-;  $Revision: 1.15 $
+;  $Date: 2005-12-14 11:57:01 $
+;  $Revision: 1.16 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -36,7 +36,7 @@
 ;  Is equivalent to:
 ;    pc_read_var,obj=mydata,variables=['uu','lnrho','curl(aa)','div(uu)', $
 ;                                       'pc_eoscalc(lnrho,ss,/pp,/lnrho_ss)'], $
-;                                 tags=['uu','lnrho','bb','divu','pp'],/MAGIC
+;                                 tags=['uu','lnrho','bb','divu','pp']
 ;
 ;  NB. pc_init must be called prior to any possible derivative usage 
 ;      (e.g. here bb = curl(aa) )
@@ -54,7 +54,9 @@
 ;    cs2     -> Sound speed squared
 ;    ee      -> Specific energy
 ;    tt      -> Temperature
-;    pp      -> Pressure
+;    lntt    -> ln Temperature
+;    pp      -> Thermal Pressure
+; Dust
 ;    rhod    -> Dust density
 ;    fd      -> Dust distribution function dn = f dm
 ;    ad      -> Dust grain radius
@@ -62,6 +64,8 @@
 ;    smon    -> Supersaturation level Pmon/Psat
 ;    unit_md -> Dust mass unit
 ;    mdave   -> Average grain mass (mean over all bins)
+; Interstellar
+;    ismcool -> Interstellar cooling (Switched by params cooling_select)
 ;
 ;
 pro pc_magic_var,variables,tags,param=param,datadir=datadir
@@ -134,18 +138,18 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if variables[iv] eq 'cs2' then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/cs2,/lnrho_lnTT)'
+        variables[iv]='pc_eoscalc(lnrho,lnTT,/cs2,/lnrho_lnTT,dim=dim,param=param)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/cs2,/lnrho_ss)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/cs2,/lnrho_ss,dim=dim,param=param)'
       endelse
 
     ; Specific energy
     endif else if variables[iv] eq 'ee' then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/ee,/lnrho_lnTT)'
+        variables[iv]='pc_eoscalc(lnrho,lnTT,/ee,/lnrho_lnTT,dim=dim,param=param)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/ee,/lnrho_ss)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/ee,/lnrho_ss,dim=dim,param=param)'
       endelse
 
     ; Temperature
@@ -154,16 +158,25 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss,dim=dim,param=param)'
+      endelse
+
+    ; ln Temperature
+    endif else if variables[iv] eq 'lntt' then begin
+      tags[iv]=variables[iv]
+      if (lionization and not lionization_fixed) then begin
+        variables[iv]='lnTT'
+      endif else begin
+        variables[iv]='pc_eoscalc(lnrho,ss,/lntt,/lnrho_ss,dim=dim,param=param)'
       endelse
 
     ; Pressure
     endif else if variables[iv] eq 'pp' then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT)'
+        variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT,dim=dim,param=param)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss,dim=dim,param=param)'
       endelse
 
     ; Dust density
@@ -201,6 +214,11 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if variables[iv] eq 'mdave' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='mdave')"
+
+    ; Interstellar cooling term (as switched by the cooling_select param.)
+    endif else if variables[iv] eq 'ismcool' then begin
+      tags[iv]=variables[iv]
+      variables[iv]="pc_interstellar_cool(lnrho=lnrho,ss=ss,param=param)"
     endif
 
   endfor
