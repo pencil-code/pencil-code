@@ -116,6 +116,7 @@ my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
 @ARGV = ('-') unless(@ARGV);
 
 my $nl  = Namelist->new();
+$nl->debug(1) if ($debug);
 foreach my $f (@ARGV) {
     $nl->parse(file => $f, merge => 1)
       or die "Couldn't parse file <$f>\n";
@@ -187,8 +188,8 @@ sub version {
 # Return CVS data and version info.
     my $doll='\$';              # Need this to trick CVS
     my $cmdname = (split('/', $0))[-1];
-    my $rev = '$Revision: 1.29 $';
-    my $date = '$Date: 2005-08-17 13:19:43 $';
+    my $rev = '$Revision: 1.30 $';
+    my $date = '$Date: 2005-12-14 20:41:47 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     "$cmdname version $rev ($date)\n";
