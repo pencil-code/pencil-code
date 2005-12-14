@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.17 2005-10-13 12:07:53 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.18 2005-12-14 11:55:13 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -10,7 +10,8 @@ COMPILE_OPT IDL2,HIDDEN
 default,ifcr,0
 
 ishock=0
-
+inp=0
+ivpxsum=0
 ; 
 ;  Read the positions of variables in f
 ;  Can't just use `@data/index', as the data directory may have a different name
@@ -270,6 +271,13 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[ishock].idlinit    = INIT_SCALAR
   varcontent[ishock].idlvarloc= 'shock_loc'
   varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
+
+  default,icooling,0
+  varcontent[icooling].variable = 'Cooling Term (cooling)'
+  varcontent[icooling].idlvar   = 'cooling'
+  varcontent[icooling].idlinit    = INIT_SCALAR
+  varcontent[icooling].idlvarloc= 'cooling_loc'
+  varcontent[icooling].idlinitloc = INIT_SCALAR_LOC
 
   varcontent[inp].variable   = 'Particle number density'
   varcontent[inp].idlvar     = 'np'
