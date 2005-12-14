@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.31 2005-11-03 14:04:16 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.32 2005-12-14 12:00:59 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-11-03 14:04:16 $
-;  $Revision: 1.31 $
+;  $Date: 2005-12-14 12:00:59 $
+;  $Revision: 1.32 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -67,8 +67,8 @@ default, datadir, 'data'
 default,varfile,'var.dat'
 
 ; Get necessary dimensions, inheriting QUIET
-  if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,quiet=quiet
-  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
+  if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,/quiet
+  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,/QUIET
 
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the common block
 ; Don't need the data fro anything though
@@ -77,7 +77,7 @@ default,varfile,'var.dat'
   if (n_elements(proc) eq 1) then begin
     procdim=dim
   endif else begin
-    pc_read_dim,object=procdim,datadir=datadir,proc=0,QUIET=QUIET
+    pc_read_dim,object=procdim,datadir=datadir,proc=0,/QUIET
   endelse
 
 ; and check pc_precision is set!                                                    
@@ -188,7 +188,8 @@ for i=0,ncpus-1 do begin
     filename=datadir+'/proc'+str(proc)+'/'+varfile 
   endif else begin
     filename=datadir+'/proc'+str(i)+'/'+varfile 
-    pc_read_dim,object=procdim,datadir=datadir,proc=i,QUIET=QUIET 
+    if not keyword_set(QUIET) then print,'Loading chunk ',strtrim(str(i+1)),' of ',strtrim(str(ncpus)),' (',strtrim('/proc'+str(i)+'/'+varfile),')...'
+    pc_read_dim,object=procdim,datadir=datadir,proc=i,/QUIET
   endelse
   ; Check for existance and read the data
   dummy=findfile(filename, COUNT=countfile)
@@ -352,6 +353,8 @@ endif
 
 ; If requested print a summary
 if keyword_set(STATS) or (not (keyword_set(NOSTATS) or keyword_set(QUIET))) then begin
+  if not keyword_set(QUIET) then print,''
+  if not keyword_set(QUIET) then print,'VARIABLE SUMMARY:'
   pc_object_stats, object, dim=dim, TRIM=TRIMALL, QUIET=QUIET
   print,' t = ', t
 endif
