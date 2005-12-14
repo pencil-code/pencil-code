@@ -5,8 +5,8 @@
 # Description:
 #   Parse F90 namelist into a hash and export in different formats.
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2005-08-16 23:57:12 $
-# $Revision: 1.1 $
+# $Date: 2005-12-14 11:21:46 $
+# $Revision: 1.2 $
 
 # Current test statistics:
 # All tests successful, 1 subtest skipped.
@@ -899,7 +899,7 @@ sub get_value {
 
 	push @values, ($val) x $mul;
 	$text =~ s/.*\n// if ($rest eq '!'); # comment
-	print "<<", ($mul||'1'), "×>><<$val>> <<",
+	print "<<", ($mul||'1'), ">> <<$val>> <<",
 	  printable_substring($text), ">>\n" if ($debug);
     }
 
