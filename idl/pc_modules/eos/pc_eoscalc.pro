@@ -3,10 +3,11 @@ function rtsafe
 end
 
 
-function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
+function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
             lnrho_lntt=lnrho_lntt, lnrho_ss=lnrho_ss, $
-            datadir=datadir,param=param, $
+            datadir=datadir,param=param,dim=dim, $
             PRINT=PRINT,QUIET=QUIET,HELP=HELP
+
 
   if ( keyword_set(HELP) ) then begin
     print, "Usage: "
@@ -15,7 +16,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
     print, "             /PRESSURE,/ENERGY,                                               "
     print, "             datadir=datadir, proc=proc, /PRINT, /QUIET, /HELP)                              "
     print, "                                                                                            "
-    print, "Calculate appropriately (for the current PC eos module in use) a thermodynamic quantity     "
+    PRint, "Calculate appropriately (for the current PC eos module in use) a thermodynamic quantity     "
     print, "from two quantities provided                                                                "
     print, "Returns zeros and empty in all variables on failure.                                        "
     print, "                                                                                            "
@@ -30,6 +31,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
     return,0
   ENDIF
 
+  pc_check_math
   default, datadir, 'data'
   ; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
@@ -55,7 +57,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
-      endif else if keyword_set(ee) then begin
+      endif else if kEyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
       endif
@@ -70,28 +72,66 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
        message,"Thermodynamic combination not implemented yet: /pp,/lnrho_ee"
       endif
 
-    endif else begin
+    endif else begin ; Standard eos ideal gas with lnrho and ss
 
       lnrho=var1
       ss=var2
 
       @data/pc_constants.pro
-      
-      if (param.lcalc_cp) then cp=k_B/(param.mu*m_H) else cp=1.
+      impossible=3.9085e37
+      pc_check_math,location='pc_eoscalc - ideal gas constants from code'
+ 
+      pc_units,obj=units,param=param,dim=dim
+      if (param.mu eq impossible) then begin
+        mu_tmp=1.+2.97153*xHe
+      endif else begin
+        mu_tmp=param.mu
+      endelse
+      pc_check_math,location='pc_eoscalc - calc mu from composition'
+
       cs20=param.cs0^2
       lnrho0=alog(param.rho0)
       gamma=param.gamma
-      
-      cs2=cs20*exp((gamma-1.)*(lnrho-lnrho0)+gamma*ss)
+      gamma1=gamma-1.     
+      R_cgs=8.3144D7
+
+      cp=1.
+      if (param.lcalc_cp) then begin
+        ;cp=k_B/(param.mu*m_H)
+        cp=float(R_cgs*gamma/(gamma1*mu_tmp)/units.velocity^2)
+        pc_check_math,location='pc_eoscalc - cp given lcalc_cp '
+      endif
+      cp1=1./cp
+      if (gamma ne 1.) then begin
+        lnTT0=alog(cs20/(cp * (gamma-1)))
+      endif else begin
+        lnTT0=alog(cs20/cp)   
+      endelse
+
+      pc_check_math,location='pc_eoscalc - ideal gas coefficients'
+
+      lnTT_=lnTT0+gamma*cp1*ss+gamma1*(lnrho-lnrho0)
+     ; cs2=cs20*exp((gamma-1.)*(lnrho-lnrho0)+gamma*ss)
 
       if keyword_set(pp) then begin
-        result=exp(lnrho)*cs2/gamma
+       ; result=exp(lnrho)*cs2/gamma
+        result=gamma1*cp/gamma*exp(lnTT_+lnrho)
+        pc_check_math,location='pc_eoscalc - pp from lnrho and ss'
       endif else if keyword_set(ee) then begin
-        result=cs2/(gamma*(gamma-1.))
+        ;result=cs2/(gamma*(gamma-1.))
+        result=cp/gamma*exp(lnTT_)
+        pc_check_math,location='pc_eoscalc - ee from lnrho and ss'
       endif else if keyword_set(tt) then begin
-        result=cs20/(cp*(gamma-1.))*exp(gamma*ss+(gamma-1.)*(lnrho-lnrho0))
+        ;result=cs20/(cp*(gamma-1.))*exp(gamma*ss+(gamma-1.)*(lnrho-lnrho0))
+        result=exp(lnTT_)
+        pc_check_math,location='pc_eoscalc - TT from lnrho and ss'
+      endif else if keyword_set(lntt) then begin
+        ;result=alog(cs20/(cp*(gamma-1.))*exp(gamma*ss+(gamma-1.)*(lnrho-lnrho0)))
+        result=lnTT_
+        pc_check_math,location='pc_eoscalc - lnTT from lnrho and ss'
       endif else if keyword_set(cs2) then begin
-        result=cs2
+        result=cs20*exp(gamma*cp1*ss+(gamma-1)*(lnrho-lnrho0))
+        pc_check_math,location='pc_eoscalc - cs2 from lnrho and ss'
       endif
 
     endelse
@@ -137,12 +177,19 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
     
       if keyword_set(pp) then begin
         result=(1.+yH0+xHe-xH2)*exp(lnrho)*TT*ss_ion
+        pc_check_math,location='pc_eoscalc - pp from lnrho and ss'
       endif else if keyword_set(ee) then begin
         result=1.5*(1.+yH0+xHe-xH2)*ss_ion*TT+yH0*ss_ion*TT_ion
+        pc_check_math,location='pc_eoscalc - ee from lnrho and ss'
       endif else if keyword_set(tt) then begin
         result=tt
+        pc_check_math,location='pc_eoscalc - TT from lnrho and ss'
+      endif else if keyword_set(lntt) then begin
+        result=lnTT
+        pc_check_math,location='pc_eoscalc - lnTT from lnrho and ss'
       endif else if keyword_set(cs2) then begin
         result=gamma*(1.+yH0+xHe-xH2)*ss_ion*TT
+        pc_check_math,location='pc_eoscalc - cs2 from lnrho and ss'
       endif
 
     endelse
@@ -182,6 +229,8 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
       endif else if keyword_set(ee) then begin
 
       endif else if keyword_set(tt) then begin
+
+      endif else if keyword_set(lntt) then begin
 
       endif else if keyword_set(cs2) then begin
 
