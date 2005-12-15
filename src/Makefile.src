@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.153 2005-12-06 01:23:11 dobler Exp $
+### $Id: Makefile.src,v 1.154 2005-12-15 15:35:10 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -219,17 +219,16 @@ LIBMPISUFFIX=
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-i_dynamic -O3 #(nw[0-9]*|nl11|sandin|lynx)
-#FFLAGS=-O3 #(nw[0-9]*|nl11|wormhole|sandin|lynx)
+#FFLAGS=-O3  #(nw[0-9]*|nl11|sandin|lynx)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(obelix)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
-#FC=ifc -I/usr/lib/lam/include #(nw17|nl11|wormhole)  
+#FC=ifc -I/usr/lib/lam/include #(nw17|nl11)  
 #FC=ifc -w95 #(sandin)
 #FC=f95 -dusty #(davey[12])  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
 #CC=mpicc #(obelix)
 #CC=gcc -m32 #(kolmogorov)
-#FC=ifc -I/usr/lib/lam/include -i_dynamic #(wormhole)
 ##FCCLEANER=2>&1 | cleanf95 #(Kolmogorov)
 ##FC=ifc -e90 #(Kolmogorov)  
 ##CC=gcc -m32 #(Kolmogorov)
@@ -239,7 +238,6 @@ LIBMPISUFFIX=
 ##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov)
 #LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov)
 LIBMPISUFFIX=_#(Kolmogorov)
-#LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl11)
 #LDMPI=-L/opt/mpich/lib #(nw43)
 #LDMPI=-L/usr/local/mpich/lib #(pcponty)
@@ -295,7 +293,7 @@ LIBMPISUFFIX=_#(Kolmogorov)
 ##
 #FFLAGS=-CA -CV -CS -CB -tpp7 -vec_report0 #(wormhole)
 #FFLAGS=-O2 -align -tpp7 -vec_report0 #(wormhole)
-#FFLAGS=-O2 -tpp7 -vec_report0 #(wormhole)
+#FFLAGS=-O2 -mp -vec_report0 #(wormhole)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(wormhole)
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)  
 #LDMPI= #(wormhole)
@@ -330,7 +328,7 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #FFLAGS=-O0 -CA -CB -CS -CV #(giga[0-9]*)  
 #FFLAGS=-O2 -ipo -tpp7 -vec_report0 #(giga[0-9]*)  
 #FFLAGS=-C -tpp7 -vec_report0  #(giga[0-9]*)  
-#FFLAGS=-O2 -tpp7 -vec_report0  #(giga[0-9]*)  
+#FFLAGS=-O2 -mp -vec_report0  #(giga[0-9]*)  
 ##FFLAGS=-O2 -I/addon/shared/mpich-1.2.7/include #(giga01)  
 #LDMPI= #(giga[0-9]*)
 ##
