@@ -40,7 +40,7 @@ UPDATE_PATHS_NONEWDIR=""
 #   (if they exist!)
 add_update_path samples doc
 
-# Allow the strange situation that someone may have removed the doc tree
+#  Add other, perhaps personal trees to the shallow update
 add_update_path_nonewdir runs pencil-runs
 add_update_path_nonewdir tony pencil-tony anders 
 
