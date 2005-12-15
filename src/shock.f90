@@ -1,8 +1,14 @@
-! $Id: shock.f90,v 1.8 2005-10-04 11:56:05 mee Exp $
+! $Id: shock.f90,v 1.9 2005-12-15 18:03:59 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
 !    nu_total = nu + nu_shock*dx^2*smooth(max5(-(div u)))) 
+!
+!  NOTE: this works and has been tested for periodic boundaries.
+!  With the current version, if your shock fronts reach a non-periodic
+!  boundary, unexpected things may happen, so you should monitor the
+!  behavior on the boundaries in this case.
+!
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -95,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.8 2005-10-04 11:56:05 mee Exp $")
+           "$Id: shock.f90,v 1.9 2005-12-15 18:03:59 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
