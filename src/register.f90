@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.155 2005-11-08 23:05:19 wlyra Exp $
+! $Id: register.f90,v 1.156 2005-12-15 09:39:31 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -268,6 +268,12 @@ module Register
       call initialize_viscosity(lstarting)
       call initialize_special(f)
       call initialize_planet(f,lstarting) !will need f for torque
+!
+! Store the value of impossible for use in IDL
+!
+      open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+      write (1,*) 'impossible=',impossible
+      close (1)
 !
 !----------------------------------------------------------------------------
 !  Coordinate-related issues: nonuniform meshes, different corrdinate systems
