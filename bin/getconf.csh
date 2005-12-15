@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.156 2005-10-28 22:34:10 dobler Exp $
+# $Id: getconf.csh,v 1.157 2005-12-15 15:32:38 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -172,20 +172,28 @@ else if ($hn =~ hamlet) then
 
 else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   echo "Newcastle e-Science Cluster"
-  if ($?PE) then
-    echo "SGE job"
-    set local_disc = 1
+  if ($?PBS_JOBID) then
+  set mpirun = mpiexec
+  set mpirunops = 
+  #set mpirun = mpirun
+  #set mpirunops = "-machinefile $PBS_NODEFILE -O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
+  #set mpirunops = "-machinefile $PBS_NODEFILE" 
     set one_local_disc = 0
     set local_binary = 0
-
-  #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
-  #  set nodelist = `cat hostfile`
-
-    if ($PE =~ mpi2) then
-      set nprocpernode = 2
-    else if ($PE =~ mpi) then
-      set nprocpernode = 4
-    endif
+    #setenv SCRATCH_DIR /work/$PBS_JOBID 
+#    echo "SGE job"
+#    set local_disc = 1
+#    set one_local_disc = 0
+#    set local_binary = 0
+#
+#  #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
+#  #  set nodelist = `cat hostfile`
+#
+#    if ($PE =~ mpi2) then
+#      set nprocpernode = 2
+#    else if ($PE =~ mpi) then
+#      set nprocpernode = 4
+#    endif
   else
     echo "Non-SGE, running on `hostname`"
     if ( -e MANUALMPI ) then
@@ -196,11 +204,11 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
       setenv JOB_ID MANUALMPI
     endif
   endif
-  set mpirun = mpirun
-  set mpirunops = "-O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
+#  set mpirun = mpirun
+#  set mpirunops = "-O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
+#  set local_disc = 1
   if ($local_disc) then
     #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
-    setenv SCRATCH_DIR /work/$JOB_ID 
     set remove_scratch_root = 1
   endif
 
@@ -420,21 +428,6 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     lamnodes
     set mpirunops = ''
     set mpirun = ''
-  endif
-
-else if ($hn =~ giga*) then
-  echo "Giga Cluster - Newcastle"
-  setenv SCRATCH_DIR /work
-  if ($?JOB_ID) then
-# Need to find out/configure where the SGE is writing the node list
-    if (-e $HOME/.score/ndfile.$JOB_ID) then
-      set local_disc=1
-    else
-      echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
-      set local_disc=0
-    endif
-  else
-    set local_disc=0
   endif
 
 else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
