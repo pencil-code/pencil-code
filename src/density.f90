@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.213 2005-12-06 13:31:27 ajohan Exp $
+! $Id: density.f90,v 1.214 2005-12-16 16:44:28 bingert Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.213 2005-12-06 13:31:27 ajohan Exp $")
+           "$Id: density.f90,v 1.214 2005-12-16 16:44:28 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -369,6 +369,7 @@ module Density
       case('coswave-x'); call coswave(ampllnrho,f,ilnrho,kx=kx_lnrho)
       case('coswave-y'); call coswave(ampllnrho,f,ilnrho,ky=ky_lnrho)
       case('coswave-z'); call coswave(ampllnrho,f,ilnrho,kz=kz_lnrho)
+      case('corona'); call corona_init(f)
       case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho)
       case('gaussian-noise')
         If (lnrho_left /= 0.) f(:,:,:,ilnrho)=lnrho_left
