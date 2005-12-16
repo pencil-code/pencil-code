@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.265 2005-12-06 09:27:49 ajohan Exp $
+! $Id: magnetic.f90,v 1.266 2005-12-16 16:53:32 bingert Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -181,7 +181,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.265 2005-12-06 09:27:49 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.266 2005-12-16 16:53:32 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -383,6 +383,7 @@ module Magnetic
       case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('cosxcosy'); call cosx_cosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('sinxsiny'); call sinx_siny_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
+      case('magnetogram'); call mdi_init(f)
       case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
