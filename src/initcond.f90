@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.135 2005-11-25 18:15:43 wlyra Exp $ 
+! $Id: initcond.f90,v 1.136 2005-12-16 16:41:42 bingert Exp $ 
 
 module Initcond 
  
@@ -40,6 +40,7 @@ module Initcond
   public :: hawley_etal99a
   public :: robertsflow
   public :: power_law
+  public :: corona_init,mdi_init
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -2448,6 +2449,181 @@ module Initcond
       !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
 !    
     endsubroutine power_law
+!*********************************************************
+    subroutine corona_init(f)
+!
+! 07-dec-05/bing : coded.
+! intialize the density for given temperprofile in vertical 
+! z direction by solving hydrostatic equilibrium.
+! Temperatur is hard coded as three polynoms.
+!      
+      use Cdata
+      use EquationOfState, only: lnrho0,gamma,gamma1,cs20
+      
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real :: g,lnrho1,lnrho2,lnTT1,lnTT2,zp1,zp2
+      real :: unit_temp
+      real, dimension(5) :: p1
+      real, dimension(4) :: p2
+      real, dimension(4) :: p3
+      integer :: i
+      !
+      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
+      !
+      !mp = 1.6725000e-27   ! [ kg ]       mass proton
+      !kB = 1.3804000e-23   ! [ J/K ]      Boltzmann constant
+      !g  = 274.            ! [ m/s^2 ]    gravitational acceleration 
+      !mus =0.677
+      !
+      g =  2.24e-2 ! = g*mp*mus/kB
+      !
+      ! temperature given as function lnT(z) in SI units
+      !
+      ! RANGE = [0,4] Mm
+      p1(1)=  8.65
+      p1(2)= -7.93e-01
+      p1(3)=  1.07
+      p1(4)= -4.35e-01
+      p1(5)=  6.07e-02
+      !
+      ! RANGE = [4,9] Mm
+      p2(1)= -6.46
+      p2(2)=  6.90
+      p2(3)= -7.97e-01
+      p2(4)=  3.08e-02
+      !
+      ! RANGE = [9,35] Mm
+      p3(1)=  1.34e+01
+      p3(2)=  1.57e-02
+      p3(3)= -2.46e-04
+      p3(4)=  8.92e-07
+      !
+      lnTT2 = p1(1)
+      zp2 =  0.
+      lnrho2= lnrho0 + alog(real(unit_density)) 
+      !
+      do while ( zp2 .le. lz*unit_length*1.e-6)
+         lnTT1  = lnTT2
+         zp1    = zp2
+         lnrho1 = lnrho2
+         !
+         zp2 = zp1 + 0.01
+         !
+         if (zp2 .le. 4.) then
+            lnTT2 = p1(1) +p1(2)*zp2 +p1(3)*zp2**2 +p1(4)*zp2**3 +p1(5)*zp2**4
+         elseif (zp2 .le. 9. .and. zp2 .gt. 4.) then
+            lnTT2 = p2(1) +p2(2)*zp2 +p2(3)*zp2**2 +p2(4)*zp2**3 
+         elseif (zp2 .le. 35. .and. zp2 .gt. 9.) then
+            lnTT2 = p3(1) +p3(2)*zp2 +p3(3)*zp2**2 +p3(4)*zp2**3
+         elseif (zp2 .ge. 35.) then  
+            lnTT2 = p3(1) +p3(2)*35. +p3(3)*35.**2 +p3(4)*35.**3
+         endif
+         !
+         lnrho2 = (lnTT1-lnTT2) - g*exp(-lnTT1)*(zp2-zp1)*1.e6 +lnrho1
+         !
+         do i=n1,n2 
+            if (zp1 .le. z(i)*unit_length*1.e-6 .and. z(i)*unit_length*1.e-6 .lt. zp2) then
+               f(l1:l2,m1:m2,i,ilnrho) = lnrho1-alog(real(unit_density))            
+               f(l1:l2,m1:m2,i,iss) = ( alog(gamma1/cs20)+lnTT1-alog(unit_temp)- &
+                    gamma1*(lnrho1-lnrho0-alog(real(unit_density))) )/gamma
+            endif
+         enddo
+      enddo
+      !
+    endsubroutine corona_init
+!*********************************************************
+    subroutine mdi_init(f)
+!
+! 13-dec-05/bing : coded.
+! intialize the vector potential
+! by potential field extrapolation 
+! of a mdi magnetogram
+!      
+      use Cdata
+      use Sub
+      
+
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(nx,ny*nprocy) :: kx,ky,k2
+
+      real, dimension(nx,ny*nprocy) :: Bz0,Bz0_i,Bz0_r 
+      real, dimension(nx,ny*nprocy) :: Ax_r,Ax_i,Ay_r,Ay_i
+      
+      real, dimension(nx) :: kxp
+      real, dimension(ny*nprocy) :: kyp
+      
+      real :: mu0_SI,u_b
+      integer :: nnx=nx,nny=ny*nprocy,nnz=nz*nprocz
+      integer :: i
+            
+      ! Magnetic field strength [B] = u_b 
+      !
+      mu0_SI = 4.*pi*1.e-7         
+      u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
+      ! 
+      nnx = nx 
+      nny = ny *nprocy
+      nnz = nz *nprocz
+      !
+      kxp=cshift((/(i-(nnx-1)/2,i=0,nnx-1)/),+(nnx-1)/2)*2*pi/Lx
+      kyp=cshift((/(i-(nny-1)/2,i=0,nny-1)/),+(nny-1)/2)*2*pi/Ly
+      !
+      kx =spread(kxp,2,nny)
+      ky =spread(kyp,1,nnx)
+      !
+      k2 = kx*kx + ky*ky
+      !
+      open (11,file='driver/magnetogram_k.dat',form='unformatted')
+      read (11) Bz0
+      close (11)
+      !
+      Bz0_i = 0.
+      Bz0_r = Bz0 * 1e-4 / u_b ! Gaus to Tesla  and SI to PENCIL units
+      !
+      ! Fourier Transform of Bz0:
+      !
+      call fft(Bz0_r,Bz0_i,nnx*nny,nnx,nnx,1)
+      call fft(Bz0_r,Bz0_i,nnx*nny,nny,nnx*nny,1)
+      !
+      Bz0_i = Bz0_i/sqrt(1.*nnx*nny)
+      Bz0_r = Bz0_r/sqrt(1.*nnx*nny)
+      !
+      do i=n1,n2
+         !
+         !  Calculate transformed vector potential at "each height"
+         !
+         where (k2 .ne. 0 ) 
+            Ax_r =  Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) ) 
+            Ax_i = -Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
+            !
+            Ay_r = -Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
+            Ay_i =  Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
+         elsewhere
+            Ax_r =  Bz0_i*ky/ky(1,2)*exp(-sqrt(k2)*z(i) ) 
+            Ax_i = -Bz0_r*ky/ky(1,2)*exp(-sqrt(k2)*z(i) )
+            !
+            Ay_r = -Bz0_i*kx/kx(2,1)*exp(-sqrt(k2)*z(i) )
+            Ay_i =  Bz0_r*kx/kx(2,1)*exp(-sqrt(k2)*z(i) )
+         endwhere
+         !
+         call fft(Ax_r,Ax_i,nnx*nny,nnx,nnx,-1)
+         call fft(Ax_r,Ax_i,nnx*nny,nny,nnx*nny,-1)
+         !
+         Ax_r = Ax_r/sqrt(1.*nnx*nny)
+         Ax_i = Ax_i/sqrt(1.*nnx*nny)
+         !
+         call fft(Ay_r,Ay_i,nnx*nny,nnx,nnx,-1)
+         call fft(Ay_r,Ay_i,nnx*nny,nny,nnx*nny,-1)
+         !
+         Ay_r = Ay_r/sqrt(1.*nnx*nny)
+         Ay_i = Ay_i/sqrt(1.*nnx*nny)
+         !
+         f(l1:l2,m1:m2,i,iax) = Ax_r(:,ipy*ny+1:(ipy+1)*ny+1)
+         f(l1:l2,m1:m2,i,iay) = Ay_r(:,ipy*ny+1:(ipy+1)*ny+1)
+         f(l1:l2,m1:m2,i,iaz) = 0. 
+      enddo
+      
+endsubroutine mdi_init
 !*********************************************************
 
 endmodule Initcond
