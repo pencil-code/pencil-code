@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.136 2005-12-16 16:41:42 bingert Exp $ 
+! $Id: initcond.f90,v 1.137 2005-12-17 16:28:49 dobler Exp $ 
 
 module Initcond 
  
@@ -2544,32 +2544,37 @@ module Initcond
       
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx,ny*nprocy) :: kx,ky,k2
+      real, dimension(nx,nygrid) :: kx,ky,k2
 
-      real, dimension(nx,ny*nprocy) :: Bz0,Bz0_i,Bz0_r 
-      real, dimension(nx,ny*nprocy) :: Ax_r,Ax_i,Ay_r,Ay_i
+      real, dimension(nx,nygrid) :: Bz0,Bz0_i,Bz0_r 
+      real, dimension(nx,nygrid) :: Ax_r,Ax_i,Ay_r,Ay_i
       
       real, dimension(nx) :: kxp
-      real, dimension(ny*nprocy) :: kyp
+      real, dimension(nygrid) :: kyp
       
-      real :: mu0_SI,u_b
-      integer :: nnx=nx,nny=ny*nprocy,nnz=nz*nprocz
-      integer :: i
-            
+      real :: mu0_SI,u_b,sqrt_nxy
+      integer :: i,idx2,idy2,nxygrid
+ 
+      ! Auxiliary quantities:
+      !
+      nxygrid = nxgrid*nygrid
+      sqrt_nxy = sqrt(1.*nxygrid)
+      ! idx2 and idy2 are essentially =2, but this makes compilers
+      ! complain if nygrid=1 (in which case this is highly unlikely to be
+      ! correct anyway), so we try to do this better:
+      idx2 = min(2,nxgrid)
+      idy2 = min(2,nygrid)
+
       ! Magnetic field strength [B] = u_b 
       !
       mu0_SI = 4.*pi*1.e-7         
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
       ! 
-      nnx = nx 
-      nny = ny *nprocy
-      nnz = nz *nprocz
+      kxp=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
+      kyp=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
       !
-      kxp=cshift((/(i-(nnx-1)/2,i=0,nnx-1)/),+(nnx-1)/2)*2*pi/Lx
-      kyp=cshift((/(i-(nny-1)/2,i=0,nny-1)/),+(nny-1)/2)*2*pi/Ly
-      !
-      kx =spread(kxp,2,nny)
-      ky =spread(kyp,1,nnx)
+      kx =spread(kxp,2,nygrid)
+      ky =spread(kyp,1,nxgrid)
       !
       k2 = kx*kx + ky*ky
       !
@@ -2578,15 +2583,15 @@ module Initcond
       close (11)
       !
       Bz0_i = 0.
-      Bz0_r = Bz0 * 1e-4 / u_b ! Gaus to Tesla  and SI to PENCIL units
+      Bz0_r = Bz0 * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
       !
       ! Fourier Transform of Bz0:
       !
-      call fft(Bz0_r,Bz0_i,nnx*nny,nnx,nnx,1)
-      call fft(Bz0_r,Bz0_i,nnx*nny,nny,nnx*nny,1)
+      call fft(Bz0_r,Bz0_i,nxygrid,nxgrid,nxgrid,1)
+      call fft(Bz0_r,Bz0_i,nxygrid,nygrid,nxygrid,1)
       !
-      Bz0_i = Bz0_i/sqrt(1.*nnx*nny)
-      Bz0_r = Bz0_r/sqrt(1.*nnx*nny)
+      Bz0_i = Bz0_i/sqrt_nxy
+      Bz0_r = Bz0_r/sqrt_nxy
       !
       do i=n1,n2
          !
@@ -2599,31 +2604,31 @@ module Initcond
             Ay_r = -Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
             Ay_i =  Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
          elsewhere
-            Ax_r =  Bz0_i*ky/ky(1,2)*exp(-sqrt(k2)*z(i) ) 
-            Ax_i = -Bz0_r*ky/ky(1,2)*exp(-sqrt(k2)*z(i) )
+            Ax_r =  Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) ) 
+            Ax_i = -Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
             !
-            Ay_r = -Bz0_i*kx/kx(2,1)*exp(-sqrt(k2)*z(i) )
-            Ay_i =  Bz0_r*kx/kx(2,1)*exp(-sqrt(k2)*z(i) )
+            Ay_r = -Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+            Ay_i =  Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
          endwhere
          !
-         call fft(Ax_r,Ax_i,nnx*nny,nnx,nnx,-1)
-         call fft(Ax_r,Ax_i,nnx*nny,nny,nnx*nny,-1)
+         call fft(Ax_r,Ax_i,nxygrid,nxgrid,nxgrid,-1)
+         call fft(Ax_r,Ax_i,nxygrid,nygrid,nxygrid,-1)
          !
-         Ax_r = Ax_r/sqrt(1.*nnx*nny)
-         Ax_i = Ax_i/sqrt(1.*nnx*nny)
+         Ax_r = Ax_r/sqrt_nxy
+         Ax_i = Ax_i/sqrt_nxy
          !
-         call fft(Ay_r,Ay_i,nnx*nny,nnx,nnx,-1)
-         call fft(Ay_r,Ay_i,nnx*nny,nny,nnx*nny,-1)
+         call fft(Ay_r,Ay_i,nxygrid,nxgrid,nxgrid,-1)
+         call fft(Ay_r,Ay_i,nxygrid,nygrid,nxygrid,-1)
          !
-         Ay_r = Ay_r/sqrt(1.*nnx*nny)
-         Ay_i = Ay_i/sqrt(1.*nnx*nny)
+         Ay_r = Ay_r/sqrt_nxy
+         Ay_i = Ay_i/sqrt_nxy
          !
          f(l1:l2,m1:m2,i,iax) = Ax_r(:,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iay) = Ay_r(:,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iaz) = 0. 
       enddo
       
-endsubroutine mdi_init
+    endsubroutine mdi_init
 !*********************************************************
 
 endmodule Initcond
