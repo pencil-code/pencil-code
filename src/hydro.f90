@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.222 2005-12-06 13:31:27 ajohan Exp $
+! $Id: hydro.f90,v 1.223 2005-12-18 09:43:08 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -89,16 +89,19 @@ module Hydro
   integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
   integer :: idiag_ux2mz=0,idiag_uy2mz=0,idiag_uz2mz=0
   integer :: idiag_ux2my=0,idiag_uy2my=0,idiag_uz2my=0
+  integer :: idiag_ux2mx=0,idiag_uy2mx=0,idiag_uz2mx=0
   integer :: idiag_ox2m=0,idiag_oy2m=0,idiag_oz2m=0
   integer :: idiag_oxm=0,idiag_oym=0,idiag_ozm=0
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0
   integer :: idiag_uxuymz=0,idiag_uxuzmz=0,idiag_uyuzmz=0
   integer :: idiag_uxuymy=0,idiag_uxuzmy=0,idiag_uyuzmy=0
+  integer :: idiag_uxuymx=0,idiag_uxuzmx=0,idiag_uyuzmx=0
   integer :: idiag_oxoym=0,idiag_oxozm=0,idiag_oyozm=0
   integer :: idiag_ruxm=0,idiag_ruym=0,idiag_ruzm=0,idiag_rumax=0
   integer :: idiag_uxmz=0,idiag_uymz=0,idiag_uzmz=0,idiag_umx=0,idiag_umy=0
   integer :: idiag_uxmy=0,idiag_uymy=0,idiag_uzmy=0
   integer :: idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
+  integer :: idiag_uxmx=0,idiag_uymx=0,idiag_uzmx=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divum=0,idiag_divu2m=0
   integer :: idiag_u2u13m=0,idiag_oumphi=0
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
@@ -151,7 +154,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.222 2005-12-06 13:31:27 ajohan Exp $")
+           "$Id: hydro.f90,v 1.223 2005-12-18 09:43:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -918,6 +921,9 @@ module Hydro
         if (idiag_uxuymy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
         if (idiag_uxuzmy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
         if (idiag_uyuzmy/=0)  call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
+        if (idiag_uxuymx/=0)  call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,2),idiag_uxuymx)
+        if (idiag_uxuzmx/=0)  call yzsum_mn_name_x(p%uu(:,1)*p%uu(:,3),idiag_uxuzmx)
+        if (idiag_uyuzmx/=0)  call yzsum_mn_name_x(p%uu(:,2)*p%uu(:,3),idiag_uyuzmx)
         if (idiag_duxdzma/=0) call sum_mn_name(abs(p%uij(:,1,3)),idiag_duxdzma)
         if (idiag_duydzma/=0) call sum_mn_name(abs(p%uij(:,2,3)),idiag_duydzma)
 !
@@ -943,12 +949,18 @@ module Hydro
         if (idiag_uxmy/=0)  call xzsum_mn_name_y(p%uu(:,1),idiag_uxmy)
         if (idiag_uymy/=0)  call xzsum_mn_name_y(p%uu(:,2),idiag_uymy)
         if (idiag_uzmy/=0)  call xzsum_mn_name_y(p%uu(:,3),idiag_uzmy)
+        if (idiag_uxmx/=0)  call yzsum_mn_name_x(p%uu(:,1),idiag_uxmx)
+        if (idiag_uymx/=0)  call yzsum_mn_name_x(p%uu(:,2),idiag_uymx)
+        if (idiag_uzmx/=0)  call yzsum_mn_name_x(p%uu(:,3),idiag_uzmx)
         if (idiag_ux2mz/=0) call xysum_mn_name_z(p%uu(:,1)**2,idiag_ux2mz)
         if (idiag_uy2mz/=0) call xysum_mn_name_z(p%uu(:,2)**2,idiag_uy2mz)
         if (idiag_uz2mz/=0) call xysum_mn_name_z(p%uu(:,3)**2,idiag_uz2mz)
         if (idiag_ux2my/=0) call xzsum_mn_name_y(p%uu(:,1)**2,idiag_ux2my)
         if (idiag_uy2my/=0) call xzsum_mn_name_y(p%uu(:,2)**2,idiag_uy2my)
         if (idiag_uz2my/=0) call xzsum_mn_name_y(p%uu(:,3)**2,idiag_uz2my)
+        if (idiag_ux2mx/=0) call yzsum_mn_name_x(p%uu(:,1)**2,idiag_ux2mx)
+        if (idiag_uy2mx/=0) call yzsum_mn_name_x(p%uu(:,2)**2,idiag_uy2mx)
+        if (idiag_uz2mx/=0) call yzsum_mn_name_x(p%uu(:,3)**2,idiag_uz2mx)
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
@@ -1312,7 +1324,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,inamey,ixy,irz
+      integer :: iname,inamez,inamey,inamex,ixy,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1441,6 +1453,26 @@ module Hydro
             'uxuzmy',idiag_uxuzmy)
         call parse_name(inamey,cnamey(inamey),cformy(inamey), &
             'uyuzmy',idiag_uyuzmy)
+      enddo
+!
+!  check for those quantities for which we want yz-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxmx',idiag_uxmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uymx',idiag_uymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'uzmx',idiag_uzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'ux2mx',idiag_ux2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uy2mx',idiag_uy2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uz2mx',idiag_uz2mx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uxuymx',idiag_uxuymx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uxuzmx',idiag_uxuzmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+            'uyuzmx',idiag_uyuzmx)
       enddo
 !
 !  check for those quantities for which we want z-averages
