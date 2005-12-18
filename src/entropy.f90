@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.364 2005-12-06 13:31:27 ajohan Exp $
+! $Id: entropy.f90,v 1.365 2005-12-18 09:43:26 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -124,7 +124,7 @@ module Entropy
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
-  integer :: idiag_ssmz=0,idiag_ssmy=0,idiag_TTmz=0
+  integer :: idiag_ssmz=0,idiag_ssmy=0,idiag_ssmx=0,idiag_TTmz=0
 
   contains
 
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.364 2005-12-06 13:31:27 ajohan Exp $")
+           "$Id: entropy.f90,v 1.365 2005-12-18 09:43:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1429,7 +1429,7 @@ module Entropy
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
-      if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0) &
+      if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0) &
           lpenc_diagnos(i_ss)=.true.
       if (idiag_eth/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0) then
           lpenc_diagnos(i_rho)=.true.
@@ -1750,6 +1750,7 @@ module Entropy
         if (idiag_fconvz/=0) call xysum_mn_name_z(p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         if (idiag_ssmz/=0) call xysum_mn_name_z(p%ss,idiag_ssmz)
         if (idiag_ssmy/=0) call xzsum_mn_name_y(p%ss,idiag_ssmy)
+        if (idiag_ssmx/=0) call yzsum_mn_name_x(p%ss,idiag_ssmx)
         if (idiag_TTmz/=0) call xysum_mn_name_z(p%TT,idiag_TTmz)
       endif
 !
@@ -2472,7 +2473,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,inamey,irz
+      integer :: iname,inamez,inamey,inamex,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -2487,7 +2488,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
-        idiag_ssmz=0; idiag_ssmy=0; idiag_TTmz=0
+        idiag_ssmz=0; idiag_ssmy=0; idiag_ssmx=0; idiag_TTmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2522,6 +2523,12 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'ssmy',idiag_ssmy)
+      enddo
+!
+!  check for those quantities for which we want yz-averages
+!
+      do inamex=1,nnamex
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
       enddo
 !
 !  check for those quantities for which we want phi-averages
