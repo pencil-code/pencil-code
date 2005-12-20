@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.313 2005-12-20 17:43:42 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.314 2005-12-20 18:47:46 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-12-20 17:43:42 $ $,~ $ $Revision: 1.313 $ $}
+%\date{$ $Date: 2005-12-20 18:47:46 $ $,~ $ $Revision: 1.314 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-12-20 17:43:42 $ $,~ $ $Revision: 1.313 $ $}\\
+  \emph{$ $Date: 2005-12-20 18:47:46 $ $,~ $ $Revision: 1.314 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3010,7 +3010,41 @@ sufficient.
 \bigskip
 
 To see the time evolution of velocity and magnetic field (if they are
-present in you run), start \name{IDL} and run \file{ts.pro}:
+present in you run), start \name{IDL}\footnote{
+  If you run IDL from the command line, you will highly appreciate the
+  following tip:
+  IDL's command line editing is broken beyond hope.
+  But you can fix it, by running IDL under \cmd{rlwrap}, a wrapper for the
+  excellent GNU \name{readline} library.
+
+  Download and install \cmd{rlwrap} from
+  \path{http://utopia.knoware.nl/~hlub/uck/rlwrap/} (on some systems you
+  just need to run `\code{emerge rlwrap}', or `\code{apt-get install
+    rlwrap}'), and alias your \cmd{idl} command:
+\begin{alltt}
+  \ \ \ \ \prompt{csh> } \ alias idl 'rlwrap -a -c idl'
+\end{alltt}
+\begin{alltt}
+  \ \ \ \ \prompt{bash> } alias idl='rlwrap -a -c idl' 
+\end{alltt}
+
+  From now on, you can
+  \begin{itemize}
+  \setlength{\itemsep}{-0.5\parsep}
+  \item use long command lines that correctly wrap around;
+  \item type the first letters of a command and then \key{PageUp} to recall
+    commands starting with these letters;
+  \item capitalize, uppercase or lowercase a word with \key{Esc}-C,
+    \key{Esc}-U, \key{Esc}-L;
+  \item use command line history across IDL sessions (you might
+    need to create \file{\~{}/.idl_history} for this);
+  \item complete file names with \key{Tab} (works to some extent);
+  \item \ldots use all the other \name{readline} features that you are
+    using in \cmd{bash}, \cmd{octave}, \cmd{bc}, \cmd{gnuplot},
+    \cmd{ftp}, etc.
+  \end{itemize}
+}
+and run \file{ts.pro}:
 \begin{alltt}
   \prompt{unix> } idl
   \prompt{IDL> }  .run ts
@@ -4609,7 +4643,7 @@ BEGIN failed--compilation aborted at /home/brandenb/pencil-code/bin/nl2idl line 
 {\bf Q}:
 Does anybody encounter a backward problem with nl2idl? The file
 param*.nml files are checked in under
-\file{pencil-code/axel/couette/SStrat128a_mu0.20_g2}
+\file[pencil-code/]{pencil-code/axel/couette/SStrat128a_mu0.20_g2}
 and the problem is below.
 \begin{Verbatim}
  at /people/disk2/brandenb/pencil-code/bin/nl2idl line 120
@@ -4996,7 +5030,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-12-20 17:43:42 $ $,~ $ $Revision: 1.313 $ $}
+  \hfill\normalsize\rm$ $Date: 2005-12-20 18:47:46 $ $,~ $ $Revision: 1.314 $ $}
 
 \section{Timings}
 
@@ -8049,7 +8083,7 @@ initial condition.
   heights''
 
 \bibitem{KW90} Kippenhahn, R. \& Weigert, A.
-  \emph{Stellar structure and evolution}{Springer: Berlin} (1990)
+  \emph{Stellar structure and evolution}, Springer: Berlin (1990)
 
 \bibitem{KR80} Krause, F., R\"adler, K.-H.,
   \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
@@ -8066,6 +8100,7 @@ initial condition.
 
 \bibitem{NS90} Nordlund, \AA., Stein, R. F.,
   \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
+  ``3-D simulations of solar and stellar convection and magnetoconvection''
 
 \bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
   \emph{Numerical Recipes in Fortran 90}, 2nd ed., Cambridge (1996)
@@ -8077,9 +8112,12 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
 
 \bibitem{SH88} Stanescu, D., Habashi, W. G.,
   \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
+  ``$2N$-storage low dissipation and dispersion Runge--Kutta
+  schemes for computational acoustics''
 
 \bibitem{2Nstorage} Williamson, J. H.,
   \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
+  ``Low-storage Runge--Kutta schemes''
 
 \end{thebibliography}
 
@@ -8094,7 +8132,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.313 2005-12-20 17:43:42 dobler Exp $ $}
+$ $Id: manual.tex,v 1.314 2005-12-20 18:47:46 dobler Exp $ $}
 
 
 \end{document}
