@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.80 2005-12-20 16:27:34 brandenb Exp $
+! $Id: forcing.f90,v 1.81 2005-12-20 16:54:24 mee Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.80 2005-12-20 16:27:34 brandenb Exp $")
+           "$Id: forcing.f90,v 1.81 2005-12-20 16:54:24 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -781,19 +781,20 @@ module Forcing
       real :: phase,ffnorm,irufm
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran, location
-      real, dimension (nx) :: radius,radius2,tmpx,ruf,rho
+      real, dimension (nx) :: radius2,tmp,ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,delta
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, save :: tforce=-1E37
       logical, dimension (3), save :: extent
       integer :: ik,j,jf
-      real :: force_ampl=1.,fact
+      real :: force_ampl=1.,fact,width12
 !
 !  length of time step
 !
       extent(1)=nx.ne.1
       extent(2)=ny.ne.1
       extent(3)=nz.ne.1
+      width12=1./width_ff**2
 
       if(ip<=6) print*,'forcing_gaussianpot: dt=',dt
 !
@@ -804,7 +805,7 @@ module Forcing
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      fact=force*sqrt(dt)
+      fact=-2*width12*force*sqrt(dt)
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
@@ -836,11 +837,12 @@ module Forcing
             if(.not.extent(j)) delta(:,j)=0.
           enddo
 !
-          radius=sqrt(delta(:,1)**2+delta(:,2)**2+delta(:,3)**2)
+          radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
+          tmp=fact*exp(-radius2*width12)
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
-          forcing_rhs(:,1)=fact*exp(-(radius/width_ff)**2)*x(l1:l2)/radius/width_ff
-          forcing_rhs(:,2)=fact*exp(-(radius/width_ff)**2)*y(m)/radius/width_ff
-          forcing_rhs(:,3)=fact*exp(-(radius/width_ff)**2)*z(n)/radius/width_ff
+          forcing_rhs(:,1)=tmp*x(l1:l2)
+          forcing_rhs(:,2)=tmp*y(m)
+          forcing_rhs(:,3)=tmp*z(n)
 
           do j=1,3
             if(extent(j)) then
