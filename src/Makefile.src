@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.154 2005-12-15 15:35:10 mee Exp $
+### $Id: Makefile.src,v 1.155 2005-12-20 13:26:28 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -295,11 +295,11 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #FFLAGS=-O2 -align -tpp7 -vec_report0 #(wormhole)
 #FFLAGS=-O2 -mp -vec_report0 #(wormhole)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(wormhole)
-#FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)  
+#FC=ifort  -I/usr/lib/lam/include #(wormhole)  
 #LDMPI= #(wormhole)
 #LIBMPISUFFIX=_#(wormhole)
-#LDMPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
-#LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
+##LDMPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
+##LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
 #F77=$(FC) #(wormhole)
 #F77FLAGS=-w90 #(wormhole)
 ##
