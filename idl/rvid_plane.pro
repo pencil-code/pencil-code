@@ -4,9 +4,9 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
-               contourplot=contourplot
+               contourplot=contourplot, sqroot=sqroot
 ;
-; $Id: rvid_plane.pro,v 1.17 2005-06-20 13:55:41 ajohan Exp $
+; $Id: rvid_plane.pro,v 1.18 2005-12-20 19:24:46 mee Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -38,6 +38,9 @@ default,zoom,1.0
 default,dimfile,'dim.dat'
 default,varfile,'var.dat'
 default,imgdir,'.'
+default,pixelsize,1
+default,ximg,1
+default,yimg,1
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
@@ -235,6 +238,15 @@ if keyword_set(global_scaling) then begin
         amax=max([amax,exp(max(plane))])
         amin=min([amin,exp(min(plane))])
       endelse
+    endif else if keyword_set(sqroot) then begin
+      if (first) then begin
+        amax=sqrt(max(plane))
+        amin=sqrt(min(plane))
+        first=0L
+      endif else begin
+        amax=max([amax,sqrt(max(plane))])
+        amin=min([amin,sqrt(min(plane))])
+      endelse
     endif else begin
       if (first) then begin
         amax=max(plane)
@@ -263,6 +275,8 @@ while not eof(1) do begin
 ;
   if keyword_set(exponential) then begin
     plane2=rebinbox(exp(plane),zoom)
+  endif else if keyword_set(sqroot) then begin
+    plane2=rebinbox(sqrt(plane),zoom)
   endif else begin
     plane2=rebinbox(plane,zoom)
   endelse
