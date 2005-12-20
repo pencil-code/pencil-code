@@ -30,6 +30,17 @@ if [ ! -d "$PENCIL_HOME/" ]; then
   exit 1 
 fi
 
+while expr "$1" : - >/dev/null; do
+  case $1 in
+    -a) 
+      include_rundirs=1
+      shift
+    ;;
+    --all)
+      include_rundirs=1
+      shift
+  esac
+done
 cd ${PENCIL_HOME}
 
 EXTRA_ARGS=$@
@@ -41,8 +52,9 @@ UPDATE_PATHS_NONEWDIR=""
 add_update_path samples doc
 
 #  Add other, perhaps personal trees to the shallow update
-add_update_path_nonewdir runs pencil-runs
-add_update_path_nonewdir tony pencil-tony anders 
+[ $include_rundirs ] && add_update_path_nonewdir runs pencil-runs
+[ $include_rundirs ] && add_update_path_nonewdir tony pencil-tony
+[ $include_rundirs ] && add_update_path_nonewdir anders pencil-anders 
 
 # Shallow update other paths in the selected subdirectories 
 if [ "$UPDATE_PATHS_NONEWDIR" ]; then
