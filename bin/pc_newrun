@@ -1,6 +1,6 @@
 #!/bin/sh 
 #
-#  $Id: pc_newrun,v 1.2 2005-12-20 19:01:39 mee Exp $
+#  $Id: pc_newrun,v 1.3 2005-12-20 19:29:30 mee Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -12,7 +12,7 @@
 #     new run2
 #
 
-while expr $1 : - ; do
+while expr "$1" : - ; do
   case $1 in
     -s) 
       same_source=1
