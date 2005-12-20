@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.365 2005-12-18 09:43:26 ajohan Exp $
+! $Id: entropy.f90,v 1.366 2005-12-20 19:11:46 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1,Ma2
-! PENCILS PROVIDED ugss,yH,hss,hlnTT,del2ss,del6ss
+! PENCILS PROVIDED ugss,yH,hss,hlnTT,del2ss,del6ss,del2lnTT
 !
 !***************************************************************
 module Entropy
@@ -39,6 +39,7 @@ module Entropy
   real :: Kgperp=0.,Kgpara=0.,tdown=1,allp=2
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
+  real :: pp_const=0.
   real :: tau_ss_exterior=0.,T0=1.
   real :: mixinglength_flux=0.
   !parameters for Sedov type initial condition
@@ -99,6 +100,7 @@ module Entropy
       epsilon_ss, &
 !AB: mixinglength_flux is used as flux in mixing length initial condition
       mixinglength_flux, &
+      pp_const, &
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -157,7 +159,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.365 2005-12-18 09:43:26 ajohan Exp $")
+           "$Id: entropy.f90,v 1.366 2005-12-20 19:11:46 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -515,10 +517,11 @@ module Entropy
       use EquationOfState,  only: mpoly, beta_glnrho_global, isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
-                                isothermal_lnrho_ss
+                                isothermal_lnrho_ss, eoscalc, ilnrho_pp
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
+      real, dimension (nx) :: pp,lnrho,ss
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
       logical :: lnothing=.true.
 !
@@ -579,7 +582,18 @@ module Entropy
           !  ss = - ln(rho/rho0)
           !
           if (lroot) print*,'init_ss: isobaric stratification'
-          f(:,:,:,iss) = -(f(:,:,:,ilnrho)-lnrho0)
+          if (pp_const==0.) then
+            f(:,:,:,iss) = -(f(:,:,:,ilnrho)-lnrho0)
+          else
+            pp=pp_const
+            do n=n1,n2
+            do m=m1,m2
+              lnrho=f(l1:l2,m,n,ilnrho)
+              call eoscalc(ilnrho_pp,lnrho,pp,ss=ss)
+              f(l1:l2,m,n,iss)=ss
+            enddo
+            enddo
+          endif
 
         case('isentropic', '1')
           !
@@ -1455,6 +1469,10 @@ module Entropy
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (lpencil_in(i_del2lnTT)) then
+        lpencil_in(i_del2lnrho)=.true.
+        lpencil_in(i_del2ss)=.true.
+      endif
       if (lpencil_in(i_glnTT)) then
         lpencil_in(i_glnrho)=.true.
         lpencil_in(i_gss)=.true.
@@ -1539,6 +1557,10 @@ module Entropy
 ! del2ss
       if (lpencil(i_del2ss)) then
         call del2(f,iss,p%del2ss)
+      endif
+! del2lnTT
+      if (lpencil(i_del2lnTT)) then
+          call temperature_laplacian(f,p%del2lnrho,p%del2ss,p%del2lnTT)
       endif
 ! del6ss
       if (lpencil(i_del6ss)) then
