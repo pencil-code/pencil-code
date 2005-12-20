@@ -1,6 +1,6 @@
 #!/bin/sh 
 #
-#  $Id: pc_newrun,v 1.1 2005-08-16 23:51:03 mee Exp $
+#  $Id: pc_newrun,v 1.2 2005-12-20 19:01:39 mee Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -79,6 +79,8 @@ else
 #  This gives the possibility to link your own routines
 #  into src (setup-src below won't overwrite those)
 #
+fi
+
   [ -f $parentdir/bin/setup-src.local ] && $parentdir/bin/setup-src.local
 #
 #  continue with the usual setup procedure
@@ -89,7 +91,6 @@ else
 #  the k.dat file is actually only needed for forced
 #  turbulence runs
 #
-fi
 
 cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
