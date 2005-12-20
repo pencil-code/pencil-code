@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.17 2005-11-09 09:13:40 wlyra Exp $
+! $Id: noeos.f90,v 1.18 2005-12-20 19:10:12 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.17 2005-11-09 09:13:40 wlyra Exp $')
+           '$Id: noeos.f90,v 1.18 2005-12-20 19:10:12 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -221,6 +221,26 @@ module EquationOfState
       call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
       if (NO_WARN) print*,f,glnrho,gss  !(keep compiler quiet)
     endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!
+!   12-dec-05/tony: adapted from subroutine temperature_gradient
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx), intent(in) :: del2lnrho,del2ss
+      real, dimension(nx), intent(out) :: del2lnTT
+!
+      call fatal_error('temperature_laplacian','SHOULD NOT BE CALLED WITH NOEOS')
+!
+      del2lnTT=0.
+      if (NO_WARN) print*,f,del2lnrho,del2ss !(keep compiler quiet)
+    endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
 !

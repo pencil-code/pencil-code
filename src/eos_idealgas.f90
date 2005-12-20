@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.26 2005-11-08 23:12:09 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.27 2005-12-20 19:10:12 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -93,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.26 2005-11-08 23:12:09 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.27 2005-12-20 19:10:12 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -341,6 +341,33 @@ module EquationOfState
 !
       if (NO_WARN) print*,f !(keep compiler quiet)
     endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!
+!   17-nov-03/tobi: adapted from subroutine eoscalc
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx), intent(in) :: del2lnrho,del2ss
+      real, dimension(nx), intent(out) :: del2lnTT
+!
+      if (gamma1==0.) call fatal_error('temperature_laplacian','gamma=1 not allowed w/entropy')
+!
+!  pretend_lnTT
+!
+      if (pretend_lnTT) then
+        del2lnTT=gamma*del2ss
+      else
+        del2lnTT=gamma1*del2lnrho+gamma*cp1*del2ss
+      endif
+!
+      if (NO_WARN) print*,f !(keep compiler quiet)
+    endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
 !

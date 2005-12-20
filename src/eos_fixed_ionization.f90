@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.13 2005-11-09 09:13:40 wlyra Exp $
+! $Id: eos_fixed_ionization.f90,v 1.14 2005-12-20 19:10:12 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -101,7 +101,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.13 2005-11-09 09:13:40 wlyra Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.14 2005-12-20 19:10:12 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -355,6 +355,26 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       enddo
 !
     endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine temperature_laplacian(f,del2lnrho,del2ss,del2lnTT)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!
+!   12-dec-05/tony: adapted from subroutine temperature_gradient
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx), intent(in) :: del2lnrho,del2ss
+      real, dimension(nx), intent(out) :: del2lnTT
+!
+      call not_implemented('temperature_laplacian')
+!
+      del2lnTT=0.
+      if (NO_WARN) print*,f,del2lnrho,del2ss !(keep compiler quiet)
+    endsubroutine temperature_laplacian
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
 !

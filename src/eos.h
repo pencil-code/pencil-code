@@ -3,6 +3,7 @@
   private
                                                                                                        
   public :: eoscalc,pressure_gradient,temperature_gradient
+  public :: temperature_laplacian
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee
   public :: perturb_energy
   public :: get_soundspeed
