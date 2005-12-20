@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.82 2005-12-20 17:23:24 mee Exp $
+! $Id: forcing.f90,v 1.83 2005-12-20 17:43:32 brandenb Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.82 2005-12-20 17:23:24 mee Exp $")
+           "$Id: forcing.f90,v 1.83 2005-12-20 17:43:32 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -778,7 +778,6 @@ module Forcing
       use Sub
       use Hydro
 !
-      real :: phase,ffnorm,irufm
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran, location
       real, dimension (nx) :: radius2,gaussian,ruf,rho
@@ -787,16 +786,17 @@ module Forcing
       real, save :: tforce=-1E37
       logical, dimension (3), save :: extent
       integer :: ik,j,jf
-      real :: force_ampl=1.,fact,width12
+      real :: irufm,fact,width_ff21
 !
-!  length of time step
+!  check length of time step
+!
+      if(ip<=6) print*,'forcing_gaussianpot: dt=',dt
+!
+!  check whether there is any extent in each of the three directions
 !
       extent(1)=nx.ne.1
       extent(2)=ny.ne.1
       extent(3)=nz.ne.1
-      width12=1./width_ff**2
-
-      if(ip<=6) print*,'forcing_gaussianpot: dt=',dt
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -804,8 +804,10 @@ module Forcing
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
+!  define 1/width^2
 !
-      fact=2.*width12*force*sqrt(dt)
+      width_ff21=1./width_ff**2
+      fact=2.*width_ff21*force*sqrt(dt)
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
@@ -838,9 +840,8 @@ module Forcing
           enddo
 !
           radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
-          gaussian=fact*exp(-radius2*width12)
+          gaussian=fact*exp(-radius2*width_ff21)
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
-
           do j=1,3
             if(extent(j)) then
               jf=j+ifff-1
