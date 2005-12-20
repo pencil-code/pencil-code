@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.77 2005-11-19 01:18:57 dobler Exp $
+! $Id: forcing.f90,v 1.78 2005-12-20 13:27:28 mee Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.77 2005-11-19 01:18:57 dobler Exp $")
+           "$Id: forcing.f90,v 1.78 2005-12-20 13:27:28 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -172,6 +172,7 @@ module Forcing
         case ('twist');         call forcing_twist(f)
         case ('diffrot');       call forcing_diffrot(f,force)
         case ('blobs');         call forcing_blobs(f)
+        case ('gaussianpot');   call forcing_gaussianpot(f)
         case ('hel_smooth');    call forcing_hel_smooth(f)
         case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
@@ -764,6 +765,98 @@ module Forcing
       if (ip.le.9) print*,'forcing_nocos: forcing OK'
 !
     endsubroutine forcing_nocos
+!***********************************************************************
+    subroutine forcing_gaussianpot(f)
+!
+!  Add no-cosine forcing function.
+!
+!  19-dec-05/tony: coded
+!
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use Hydro
+!
+      real :: phase,ffnorm,irufm
+      real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
+      real, dimension (3) :: fran, location
+      real, dimension (nx) :: radius,tmpx,ruf,rho
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, save :: tforce=-1E37
+      logical, dimension (3), save :: extent
+      integer :: ik,j,jf
+      real :: force_ampl=1.,fact
+!
+!
+      if(ip<=6) print*,'forcing_gaussianpot: dt=',dt
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=force*sqrt(dt)
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
+      
+      call random_number_wrapper(fran)
+      location=fran*Lxyz+xyz0
+
+      do n=n1,n2
+        do m=m1,m2
+          radius = sqrt((x(l1:l2)-location(1))**2+(y(m)-location(2))**2+(z(n)-location(3))**2)
+          variable_rhs=f(l1:l2,m,n,iffx:iffz)
+          forcing_rhs(:,1)=fact*exp((radius/width_ff)**2)*radius/width_ff
+          forcing_rhs(:,2)=fact*exp((radius/width_ff)**2)*radius/width_ff
+          forcing_rhs(:,3)=fact*exp((radius/width_ff)**2)*radius/width_ff
+          do j=1,3
+            if(extent(j)) then
+              jf=j+ifff-1
+              f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+            endif
+          enddo
+          if (lout) then
+            if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+        enddo
+      enddo
+      !
+      ! For printouts
+      !
+      if (lout) then
+        if (idiag_rufm/=0) then 
+          irufm=irufm/(nwgrid)
+          !
+          !  on different processors, irufm needs to be communicated
+          !  to other processors
+          !
+          fsum_tmp(1)=irufm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          irufm=fsum(1)
+          call mpibcast_real(irufm,1)
+          !
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
+        endif
+      endif
+!
+      if (ip.le.9) print*,'forcing_nocos: forcing OK'
+!
+    endsubroutine forcing_gaussianpot
 !***********************************************************************
     subroutine calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
 !
