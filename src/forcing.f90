@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.81 2005-12-20 16:54:24 mee Exp $
+! $Id: forcing.f90,v 1.82 2005-12-20 17:23:24 mee Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.81 2005-12-20 16:54:24 mee Exp $")
+           "$Id: forcing.f90,v 1.82 2005-12-20 17:23:24 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -781,8 +781,8 @@ module Forcing
       real :: phase,ffnorm,irufm
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran, location
-      real, dimension (nx) :: radius2,tmp,ruf,rho
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,delta
+      real, dimension (nx) :: radius2,gaussian,ruf,rho
+      real, dimension (nx,3) :: variable_rhs,force_all,delta
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, save :: tforce=-1E37
       logical, dimension (3), save :: extent
@@ -805,7 +805,7 @@ module Forcing
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
 !
-      fact=-2*width12*force*sqrt(dt)
+      fact=2.*width12*force*sqrt(dt)
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
@@ -838,22 +838,19 @@ module Forcing
           enddo
 !
           radius2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
-          tmp=fact*exp(-radius2*width12)
+          gaussian=fact*exp(-radius2*width12)
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
-          forcing_rhs(:,1)=tmp*x(l1:l2)
-          forcing_rhs(:,2)=tmp*y(m)
-          forcing_rhs(:,3)=tmp*z(n)
 
           do j=1,3
             if(extent(j)) then
               jf=j+ifff-1
-              f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+              f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+gaussian*delta(:,j)
             endif
           enddo
           if (lout) then
             if (idiag_rufm/=0) then
               rho=exp(f(l1:l2,m,n,ilnrho))
-              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call multsv_mn(rho/dt,spread(gaussian,2,3)*delta,force_all)
               call dot_mn(variable_rhs,force_all,ruf)
               irufm=irufm+sum(ruf)
             endif
