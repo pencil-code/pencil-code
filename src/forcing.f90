@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.78 2005-12-20 13:27:28 mee Exp $
+! $Id: forcing.f90,v 1.79 2005-12-20 16:13:42 mee Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.78 2005-12-20 13:27:28 mee Exp $")
+           "$Id: forcing.f90,v 1.79 2005-12-20 16:13:42 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -783,7 +783,7 @@ module Forcing
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran, location
       real, dimension (nx) :: radius,tmpx,ruf,rho
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,delta
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, save :: tforce=-1E37
       logical, dimension (3), save :: extent
@@ -791,6 +791,10 @@ module Forcing
       real :: force_ampl=1.,fact
 !
 !
+      extent(1)=nx.ne.1
+      extent(2)=ny.ne.1
+      extent(3)=nz.ne.1
+
       if(ip<=6) print*,'forcing_gaussianpot: dt=',dt
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
@@ -813,11 +817,26 @@ module Forcing
 
       do n=n1,n2
         do m=m1,m2
-          radius = sqrt((x(l1:l2)-location(1))**2+(y(m)-location(2))**2+(z(n)-location(3))**2)
+!
+!  Obtain distance to SN
+!
+          delta(:,1)=x(l1:l2)-location(1)
+          delta(:,2)=y(m)-location(2)
+          delta(:,3)=z(n)-location(3)
+          do j=1,3
+            if (lperi(j)) then
+              where (delta(:,j) .gt. Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
+              where (delta(:,j) .lt. -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
+            endif
+            if(.not.extent(j)) delta(:,j)=0.
+          enddo
+!
+          radius=sqrt(delta(:,1)**2+delta(:,2)**2+delta(:,3)**2)
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
-          forcing_rhs(:,1)=fact*exp((radius/width_ff)**2)*radius/width_ff
-          forcing_rhs(:,2)=fact*exp((radius/width_ff)**2)*radius/width_ff
-          forcing_rhs(:,3)=fact*exp((radius/width_ff)**2)*radius/width_ff
+          forcing_rhs(:,1)=fact*exp((radius/width_ff)**2)*x(l1:l2)/radius/width_ff
+          forcing_rhs(:,2)=fact*exp((radius/width_ff)**2)*y(m)/radius/width_ff
+          forcing_rhs(:,3)=fact*exp((radius/width_ff)**2)*z(n)/radius/width_ff
+
           do j=1,3
             if(extent(j)) then
               jf=j+ifff-1
