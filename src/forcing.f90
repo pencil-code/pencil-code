@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.79 2005-12-20 16:13:42 mee Exp $
+! $Id: forcing.f90,v 1.80 2005-12-20 16:27:34 brandenb Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.79 2005-12-20 16:13:42 mee Exp $")
+           "$Id: forcing.f90,v 1.80 2005-12-20 16:27:34 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -768,7 +768,7 @@ module Forcing
 !***********************************************************************
     subroutine forcing_gaussianpot(f)
 !
-!  Add no-cosine forcing function.
+!  gradient of gaussians as forcing function
 !
 !  19-dec-05/tony: coded
 !
@@ -779,10 +779,9 @@ module Forcing
       use Hydro
 !
       real :: phase,ffnorm,irufm
-      real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (3) :: fran, location
-      real, dimension (nx) :: radius,tmpx,ruf,rho
+      real, dimension (nx) :: radius,radius2,tmpx,ruf,rho
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,delta
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, save :: tforce=-1E37
@@ -790,6 +789,7 @@ module Forcing
       integer :: ik,j,jf
       real :: force_ampl=1.,fact
 !
+!  length of time step
 !
       extent(1)=nx.ne.1
       extent(2)=ny.ne.1
@@ -811,14 +811,19 @@ module Forcing
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
       irufm=0
-      
+!
+!  generate random numbers
+!
       call random_number_wrapper(fran)
       location=fran*Lxyz+xyz0
-
+      if(ip<=6) print*,'forcing_gaussianpot: location=',location
+!
+!  loop over all pencils
+!
       do n=n1,n2
         do m=m1,m2
 !
-!  Obtain distance to SN
+!  Obtain distance to center of blob
 !
           delta(:,1)=x(l1:l2)-location(1)
           delta(:,2)=y(m)-location(2)
@@ -833,9 +838,9 @@ module Forcing
 !
           radius=sqrt(delta(:,1)**2+delta(:,2)**2+delta(:,3)**2)
           variable_rhs=f(l1:l2,m,n,iffx:iffz)
-          forcing_rhs(:,1)=fact*exp((radius/width_ff)**2)*x(l1:l2)/radius/width_ff
-          forcing_rhs(:,2)=fact*exp((radius/width_ff)**2)*y(m)/radius/width_ff
-          forcing_rhs(:,3)=fact*exp((radius/width_ff)**2)*z(n)/radius/width_ff
+          forcing_rhs(:,1)=fact*exp(-(radius/width_ff)**2)*x(l1:l2)/radius/width_ff
+          forcing_rhs(:,2)=fact*exp(-(radius/width_ff)**2)*y(m)/radius/width_ff
+          forcing_rhs(:,3)=fact*exp(-(radius/width_ff)**2)*z(n)/radius/width_ff
 
           do j=1,3
             if(extent(j)) then
