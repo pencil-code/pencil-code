@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.16 2005-07-05 16:21:42 mee Exp $
+! $Id: noforcing.f90,v 1.17 2005-12-21 16:45:13 mee Exp $
 
 module Forcing
 
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.16 2005-07-05 16:21:42 mee Exp $")
+           "$Id: noforcing.f90,v 1.17 2005-12-21 16:45:13 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -97,6 +97,28 @@ module Forcing
                                                                                                    
       if (NO_WARN) print*,unit
     endsubroutine write_forcing_run_pars
+!***********************************************************************
+    subroutine input_persistent_forcing(id,lun,done)
+!
+!  Read in the stored time of the next SNI
+!
+      integer :: id,lun
+      logical :: done
+!
+      if (NO_WARN) print*,id,lun,done
+!
+    endsubroutine input_persistent_forcing
+!***********************************************************************
+    subroutine output_persistent_forcing(lun)
+!
+!  Writes out the time of the next SNI
+!
+!
+      integer :: lun
+!
+      if (NO_WARN) print*,lun
+!
+    endsubroutine output_persistent_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !

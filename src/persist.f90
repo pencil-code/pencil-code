@@ -1,4 +1,4 @@
-! $Id: persist.f90,v 1.3 2005-06-27 00:14:19 mee Exp $
+! $Id: persist.f90,v 1.4 2005-12-21 16:45:13 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   persist.f90   !!!
@@ -40,7 +40,8 @@ contains
 !  26-may-03/axel: adapted from output_vect
 !
       use Cdata
-      use Interstellar, only: input_persistent_interstellar
+      Use Interstellar, only: input_persistent_interstellar
+      Use Forcing, only: input_persistent_forcing
       use General, only: input_persistent_general
 !
       integer :: lun
@@ -64,6 +65,7 @@ dataloop: do
         if (ierr<0) exit dataloop
         if (.not.done) call input_persistent_general(id,lun,done)
         if (.not.done) call input_persistent_interstellar(id,lun,done)
+        if (.not.done) call input_persistent_forcing(id,lun,done)
         if (.not.done) read(lun,end=1000) dummy
       enddo dataloop
 
@@ -81,6 +83,7 @@ dataloop: do
 !
       use Cdata
       use Interstellar, only: output_persistent_interstellar
+      use Forcing, only: output_persistent_forcing
       use General, only: output_persistent_general
 !
       integer :: lun_output
@@ -90,6 +93,7 @@ dataloop: do
       write(lun_output) id_block_PERSISTANT
       call output_persistent_general(lun_output)
       call output_persistent_interstellar(lun_output)
+      call output_persistent_forcing(lun_output)
       write(lun_output) id_block_PERSISTANT
 !
     endsubroutine output_persistent

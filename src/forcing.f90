@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.84 2005-12-21 11:28:20 mee Exp $
+! $Id: forcing.f90,v 1.85 2005-12-21 16:45:13 mee Exp $
 
 module Forcing
 
@@ -11,6 +11,7 @@ module Forcing
 
   implicit none
 
+  include 'record_types.h'
   include 'forcing.h'
 
   real :: force=0.,force2=0.
@@ -18,7 +19,7 @@ module Forcing
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
-  real :: tsforce=-10., dtforce=10
+  real :: dtforce=0.
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(should initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz
@@ -27,6 +28,10 @@ module Forcing
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
+
+! Persistent stuff
+  real :: tsforce=-10.
+  real, dimension (3) :: location
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
@@ -64,7 +69,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.84 2005-12-21 11:28:20 mee Exp $")
+           "$Id: forcing.f90,v 1.85 2005-12-21 16:45:13 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -783,7 +788,6 @@ module Forcing
       real, dimension (nx) :: radius2,gaussian,ruf,rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (3), save :: location
       logical, dimension (3), save :: extent
       integer :: ik,j,jf
       real :: irufm,fact,width_ff21
@@ -807,7 +811,11 @@ module Forcing
 !  define 1/width^2
 !
       width_ff21=1./width_ff**2
-      fact=2.*width_ff21*force*sqrt(dt)
+      if (dtforce/=0.) then
+        fact=2.*width_ff21*force*dt*width_ff/dtforce
+      else
+        fact=2.*width_ff21*force*sqrt(dt)
+      endif
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
@@ -1830,6 +1838,42 @@ module Forcing
       write(unit,NML=forcing_run_pars)
                                                                                                    
     endsubroutine write_forcing_run_pars
+!***********************************************************************
+    subroutine input_persistent_forcing(id,lun,done)
+!
+!  Read in the stored time of the next SNI
+!
+      use Cdata, only: lroot
+!
+      integer :: id,lun
+      logical :: done
+!
+      if (id==id_record_FORCING_LOCATION) then
+        read (lun) location
+        done=.true.
+      elseif (id==id_record_FORCING_TSFORCE) then
+        read (lun) tsforce
+        done=.true.
+      endif
+      if (lroot) print*,'input_persistent_forcing: ', location,tsforce
+!
+    endsubroutine input_persistent_forcing
+!***********************************************************************
+    subroutine output_persistent_forcing(lun)
+!
+!  Writes out the time of the next SNI
+!
+      use Cdata, only: lroot
+!
+      integer :: lun
+!
+      if (lroot) print*,'output_persistent_forcing: ', location, tsforce
+      write (lun) id_record_FORCING_LOCATION
+      write (lun) location
+      write (lun) id_record_FORCING_TSFORCE
+      write (lun) tsforce
+!
+    endsubroutine output_persistent_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !
