@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.85 2005-12-21 16:45:13 mee Exp $
+! $Id: forcing.f90,v 1.86 2005-12-21 17:40:28 brandenb Exp $
 
 module Forcing
 
@@ -69,7 +69,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.85 2005-12-21 16:45:13 mee Exp $")
+           "$Id: forcing.f90,v 1.86 2005-12-21 17:40:28 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -781,6 +781,7 @@ module Forcing
       use Cdata
       use General
       use Sub
+      use EquationOfState, only: cs0
       use Hydro
 !
       real, dimension (1) :: fsum_tmp,fsum
@@ -802,36 +803,33 @@ module Forcing
       extent(2)=ny.ne.1
       extent(3)=nz.ne.1
 !
-!  Normalize ff; since we don't know dt yet, we finalize this
-!  within timestep where dt is determined and broadcast.
-!
-!  need to multiply by dt (for Euler step), but it also needs to be
-!  divided by sqrt(dt), because square of forcing is proportional
-!  to a delta function of the time difference
-!  define 1/width^2
-!
-      width_ff21=1./width_ff**2
-      if (dtforce/=0.) then
-        fact=2.*width_ff21*force*dt*width_ff/dtforce
-      else
-        fact=2.*width_ff21*force*sqrt(dt)
-      endif
-!
-!  loop the two cases separately, so we don't check for r_ff during
-!  each loop cycle which could inhibit (pseudo-)vectorisation
-!  calculate energy input from forcing; must use lout (not ldiagnos)
-!
-      irufm=0
-!
 !  generate random numbers
 !
       if (t .gt. tsforce) then  
         call random_number_wrapper(fran)
         location=fran*Lxyz+xyz0
         tsforce=t+dtforce
-
         if(ip<=6) print*,'forcing_gaussianpot: location=',location
       endif
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference.
+!  When dtforce is finite, take dtforce+.5*dt.
+!  The 1/2 factor takes care of round-off errors.
+!  Also define width_ff21 = 1/width^2
+!
+      width_ff21=1./width_ff**2
+      fact=2.*width_ff21*force*dt*sqrt(cs0*width_ff/max(dtforce+.5*dt,dt))
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
 !
 !  loop over all pencils
 !
