@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.83 2005-12-20 17:43:32 brandenb Exp $
+! $Id: forcing.f90,v 1.84 2005-12-21 11:28:20 mee Exp $
 
 module Forcing
 
@@ -64,7 +64,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.83 2005-12-20 17:43:32 brandenb Exp $")
+           "$Id: forcing.f90,v 1.84 2005-12-21 11:28:20 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -779,11 +779,11 @@ module Forcing
       use Hydro
 !
       real, dimension (1) :: fsum_tmp,fsum
-      real, dimension (3) :: fran, location
+      real, dimension (3) :: fran
       real, dimension (nx) :: radius2,gaussian,ruf,rho
       real, dimension (nx,3) :: variable_rhs,force_all,delta
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, save :: tforce=-1E37
+      real, dimension (3), save :: location
       logical, dimension (3), save :: extent
       integer :: ik,j,jf
       real :: irufm,fact,width_ff21
@@ -817,9 +817,13 @@ module Forcing
 !
 !  generate random numbers
 !
-      call random_number_wrapper(fran)
-      location=fran*Lxyz+xyz0
-      if(ip<=6) print*,'forcing_gaussianpot: location=',location
+      if (t .gt. tsforce) then  
+        call random_number_wrapper(fran)
+        location=fran*Lxyz+xyz0
+        tsforce=t+dtforce
+
+        if(ip<=6) print*,'forcing_gaussianpot: location=',location
+      endif
 !
 !  loop over all pencils
 !
