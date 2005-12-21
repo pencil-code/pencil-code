@@ -5,5 +5,7 @@ makefile Makefile
 *.il
 nompicomm_.f90
 mpicomm_.f90
+mpicomm_double.f90
+mpicomm_double_.f90
 .buildinfo
 .buildtime
