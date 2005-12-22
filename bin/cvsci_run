@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: cvsci_run,v 1.16 2005-06-26 17:34:16 eos_merger_tony Exp $
+#$Id: cvsci_run,v 1.17 2005-12-22 15:26:06 brandenb Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material
@@ -25,10 +25,8 @@ cd $dir
 #
 #  add directories and files to cvs
 #
-cvs add data src *.in k.dat
-cd src
-cvs add *.local
-cd ..
+cvs add *.in k.dat data
+#
 cd data
 cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml
 #
@@ -54,4 +52,16 @@ endif
 #  which may only be a link.
 #
 cd $CWD
-cvs ci -m "added new run: `uname -n -s`"
+cvs ci -l -m "added new run: `uname -n -s`" . data
+#
+#  add src stuff only if it is not a link
+#  Do this at the very end, in case this step fails.
+#
+test -h src
+if ( $status ) then
+  cvs add src
+  cd src
+  cvs add *.local
+  cvs ci -m "added new run: `uname -n -s`" src
+  cd ..
+endif
