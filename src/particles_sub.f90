@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.38 2005-12-01 11:47:26 ajohan Exp $
+! $Id: particles_sub.f90,v 1.39 2005-12-25 09:37:35 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -205,52 +205,58 @@ module Particles_sub
 !
 !  Boundary condition in the x-direction.
 !
-      if (bcpx=='p') then
-        do k=1,npar_loc
-          do while (fp(k,ixp)< xyz0(1))
-            fp(k,ixp)=fp(k,ixp)+Lxyz(1)
-            if (lshear) fp(k,iyp)=fp(k,iyp)-deltay
+      if (nxgrid/=1) then
+        if (bcpx=='p') then
+          do k=1,npar_loc
+            do while (fp(k,ixp)< xyz0(1))
+              fp(k,ixp)=fp(k,ixp)+Lxyz(1)
+              if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)-deltay
+            enddo
+            do while (fp(k,ixp)>=xyz1(1))
+              fp(k,ixp)=fp(k,ixp)-Lxyz(1)
+              if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)+deltay
+            enddo
           enddo
-          do while (fp(k,ixp)>=xyz1(1))
-            fp(k,ixp)=fp(k,ixp)-Lxyz(1)
-            if (lshear) fp(k,iyp)=fp(k,iyp)+deltay
-          enddo
-        enddo
-      else
-        print*, 'boundconds_particles: No such boundary condition bcpx=', bcpx
-        call stop_it('boundconds_particles')
+        else
+          print*, 'boundconds_particles: No such boundary condition bcpx=', bcpx
+          call stop_it('boundconds_particles')
+        endif
       endif
 !
 !  Boundary condition in the y-direction.
 !
-      if (bcpy=='p') then
-        do k=1,npar_loc
-          do while (fp(k,iyp)< xyz0(2))
-            fp(k,iyp)=fp(k,iyp)+Lxyz(2)
+      if (nygrid/=1) then
+        if (bcpy=='p') then
+          do k=1,npar_loc
+            do while (fp(k,iyp)< xyz0(2))
+              fp(k,iyp)=fp(k,iyp)+Lxyz(2)
+            enddo
+            do while (fp(k,iyp)>=xyz1(2))
+              fp(k,iyp)=fp(k,iyp)-Lxyz(2)
+            enddo
           enddo
-          do while (fp(k,iyp)>=xyz1(2))
-            fp(k,iyp)=fp(k,iyp)-Lxyz(2)
-          enddo
-        enddo
-      else
-        print*, 'boundconds_particles: No such boundary condition bcpy=', bcpy
-        call stop_it('boundconds_particles')
+        else
+          print*, 'boundconds_particles: No such boundary condition bcpy=', bcpy
+          call stop_it('boundconds_particles')
+        endif
       endif
 !
 !  Boundary condition in the z-direction.
 !
-      if (bcpz=='p') then
-        do k=1,npar_loc
-          do while (fp(k,izp)< xyz0(3))
-            fp(k,izp)=fp(k,izp)+Lxyz(3)
+      if (nzgrid/=1) then
+        if (bcpz=='p') then
+          do k=1,npar_loc
+            do while (fp(k,izp)< xyz0(3))
+              fp(k,izp)=fp(k,izp)+Lxyz(3)
+            enddo
+            do while (fp(k,izp)>=xyz1(3))
+              fp(k,izp)=fp(k,izp)-Lxyz(3)
+            enddo
           enddo
-          do while (fp(k,izp)>=xyz1(3))
-            fp(k,izp)=fp(k,izp)-Lxyz(3)
-          enddo
-        enddo
-      else
-        print*, 'boundconds_particles: No such boundary condition bcpz=', bcpz
-        call stop_it('boundconds_particles')
+        else
+          print*, 'boundconds_particles: No such boundary condition bcpz=', bcpz
+          call stop_it('boundconds_particles')
+        endif
       endif
 !
 !  Redistribute particles among processors (internal boundary conditions).
