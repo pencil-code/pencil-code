@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.51 2005-12-03 17:42:22 ajohan Exp $
+! $Id: particles_dust.f90,v 1.52 2005-12-25 09:36:33 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.51 2005-12-03 17:42:22 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.52 2005-12-25 09:36:33 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -554,7 +554,7 @@ module Particles
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-      if (lshear.and.nygrid/=0) dfp(1:npar_loc,iyp) = &
+      if (lshear.and.nygrid/=1) dfp(1:npar_loc,iyp) = &
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
 !
 !  Displace all dust particles a random distance of around the size of
