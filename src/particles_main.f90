@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.11 2005-11-27 10:33:44 ajohan Exp $
+! $Id: particles_main.f90,v 1.12 2005-12-25 09:44:12 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -173,16 +173,10 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      integer :: k
-!
       if (itsub==1) then
-        do k=1,npar_loc
-          dfp(k,:)=0.
-        enddo
+        dfp(1:npar_loc,:)=0.
       else
-        do k=1,npar_loc
-          dfp(k,:)=alpha(itsub)*dfp(k,:)
-        enddo
+        dfp(1:npar_loc,:)=alpha(itsub)*dfp(1:npar_loc,:)
       endif
 !
     endsubroutine particles_timestep_first
@@ -193,11 +187,7 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      integer :: k
-!
-      do k=1,npar_loc
-        fp(k,:) = fp(k,:) + dt_beta(itsub)*dfp(k,:)
-      enddo
+      fp(1:npar_loc,:) = fp(1:npar_loc,:) + dt_beta(itsub)*dfp(1:npar_loc,:)
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
