@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.140 2005-09-20 10:41:38 ajohan Exp $
+! $Id: dustdensity.f90,v 1.141 2005-12-28 16:43:05 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -65,7 +65,7 @@ module Dustdensity
   integer :: idiag_ssrm=0,idiag_ssrmax=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
-  integer, dimension(ndustspec) :: idiag_rhodmz
+  integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
 
   contains
 
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.140 2005-09-20 10:41:38 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.141 2005-12-28 16:43:05 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -309,11 +309,18 @@ module Dustdensity
         case('const_nd')
           f(:,:,:,ind) = nd_const
           if (lroot) print*, 'init_nd: Constant dust number density'
-        case('nd_sinx')
-          do l=1,mx; f(l,:,:,ind(1)) = nd0 + amplnd*sin(kx_nd*x(l)); enddo
-        case('nd_sinxsinysinz')
-          do l=1,mx; do m=1,my; do n=1,mz
-            f(l,m,n,ind(1)) = nd0 + &
+        case('sinx')
+          do l=l1,l2
+            f(l,:,:,ind(1)) = f(l,:,:,ind(1)) + amplnd*sin(kx_nd*x(l))
+          enddo
+        case('sinxsinz')
+          do l=l1,l2; do n=n1,n2
+            f(l,:,n,ind(1)) = f(l,:,n,ind(1)) + &
+                amplnd*sin(kx_nd*x(l))*sin(kz_nd*z(n))
+          enddo; enddo
+        case('sinxsinysinz')
+          do l=l1,l2; do m=m1,m2; do n=n1,n2
+            f(l,m,n,ind(1)) = f(l,m,n,ind(1)) + &
                 amplnd*sin(kx_nd*x(l))*sin(ky_nd*y(m))*sin(kz_nd*z(n))
           enddo; enddo; enddo
         case('gaussian_nd')
@@ -1043,6 +1050,14 @@ module Dustdensity
               call xysum_mn_name_z(p%nd(:,k)*md(k),idiag_rhodmz(k))
             endif 
           endif
+!
+          if (idiag_ndmx(k)/=0) then
+            if (lmdvar) then
+              call yzsum_mn_name_x(p%nd(:,k)*f(l1:l2,m,n,imd(k)),idiag_ndmx(k))
+            else
+              call yzsum_mn_name_x(p%nd(:,k),idiag_ndmx(k))
+            endif 
+          endif
         endif
 !
 !  Write md slices for use in Slices 
@@ -1430,7 +1445,7 @@ module Dustdensity
       use Sub
       use General, only: chn
 !
-      integer :: iname,inamez,k
+      integer :: iname,inamez,inamex,k
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=4) :: sdust,sdustspec,snd1,smd1,smi1
@@ -1450,7 +1465,7 @@ module Dustdensity
       if (lreset) then
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
-        idiag_rhodmz=0
+        idiag_rhodmz=0; idiag_ndmx=0
       endif
 
       call chn(ndustspec,sdustspec)
@@ -1492,7 +1507,15 @@ module Dustdensity
 !  check for those quantities for which we want xy-averages
 !
         do inamez=1,nnamez
-          call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhodmz', idiag_rhodmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+              'rhodmz'//trim(sdust), idiag_rhodmz(k))
+        enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+        do inamex=1,nnamex
+          call parse_name(inamex,cnamex(inamex),cformx(inamex), &
+              'ndmx'//trim(sdust), idiag_ndmx(k))
         enddo
 !
 !  write column where which variable is stored
