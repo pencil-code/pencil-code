@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.104 2005-11-25 09:41:50 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.105 2005-12-28 14:44:01 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -67,6 +67,7 @@ module Dustvelocity
 
   ! other variables (needs to be consistent with reset list below)
   integer, dimension(ndustspec) :: idiag_ud2m=0
+  integer, dimension(ndustspec) :: idiag_udxm=0,idiag_udym=0,idiag_udzm=0
   integer, dimension(ndustspec) :: idiag_udx2m=0,idiag_udy2m=0,idiag_udz2m=0
   integer, dimension(ndustspec) :: idiag_udm2=0,idiag_oudm=0,idiag_od2m=0
   integer, dimension(ndustspec) :: idiag_udxpt=0,idiag_udypt=0,idiag_udzpt=0
@@ -130,7 +131,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.104 2005-11-25 09:41:50 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.105 2005-12-28 14:44:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -993,6 +994,9 @@ module Dustvelocity
               call max_mn_name(p%rhod(:,k)**2*p%ud2(:,k),idiag_rdudmax(k), &
               lsqrt=.true.)
           if (idiag_ud2m(k)/=0) call sum_mn_name(p%ud2(:,k),idiag_ud2m(k))
+          if (idiag_udxm(k)/=0) call sum_mn_name(p%uud(:,1,k),idiag_udxm(k))
+          if (idiag_udym(k)/=0) call sum_mn_name(p%uud(:,2,k),idiag_udym(k))
+          if (idiag_udzm(k)/=0) call sum_mn_name(p%uud(:,3,k),idiag_udzm(k))
           if (idiag_udx2m(k)/=0) &
               call sum_mn_name(p%uud(:,1,k)**2,idiag_udx2m(k))
           if (idiag_udy2m(k)/=0) &
@@ -1192,6 +1196,7 @@ module Dustvelocity
 !
       if (lreset) then
         idiag_dtud=0; idiag_dtnud=0; idiag_ud2m=0; idiag_udx2m=0
+        idiag_udxm=0; idiag_udym=0; idiag_udzm=0
         idiag_udy2m=0; idiag_udz2m=0; idiag_udm2=0; idiag_oudm=0; idiag_od2m=0
         idiag_udxpt=0; idiag_udypt=0; idiag_udzpt=0; idiag_udrms=0
         idiag_udmax=0; idiag_odrms=0; idiag_odmax=0; idiag_rdudmax=0
@@ -1214,6 +1219,12 @@ module Dustvelocity
               'dtud'//trim(sdust),idiag_dtud(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'dtnud'//trim(sdust),idiag_dtnud(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'udxm'//trim(sdust),idiag_udxm(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'udym'//trim(sdust),idiag_udym(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'udzm'//trim(sdust),idiag_udzm(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'ud2m'//trim(sdust),idiag_ud2m(k))
           call parse_name(iname,cname(iname),cform(iname), &
