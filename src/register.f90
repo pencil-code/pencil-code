@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.156 2005-12-15 09:39:31 mee Exp $
+! $Id: register.f90,v 1.157 2005-12-30 08:33:31 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -271,9 +271,11 @@ module Register
 !
 ! Store the value of impossible for use in IDL
 !
-      open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
-      write (1,*) 'impossible=',impossible
-      close (1)
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro',position="append")
+        write (1,*) 'impossible=',impossible
+        close (1)
+      endif
 !
 !----------------------------------------------------------------------------
 !  Coordinate-related issues: nonuniform meshes, different corrdinate systems
