@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.18 2005-12-14 11:55:13 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.19 2005-12-30 08:11:53 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -279,16 +279,16 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[icooling].idlvarloc= 'cooling_loc'
   varcontent[icooling].idlinitloc = INIT_SCALAR_LOC
 
-  varcontent[inp].variable   = 'Particle number density'
+  varcontent[inp].variable   = 'Particle number (np)'
   varcontent[inp].idlvar     = 'np'
   varcontent[inp].idlinit    = INIT_SCALAR
   varcontent[inp].idlvarloc  = 'np_loc'
   varcontent[inp].idlinitloc = INIT_SCALAR_LOC
 
-  varcontent[ivpxsum].variable   = 'Sum of particle velocity'
-  varcontent[ivpxsum].idlvar     = 'ivvpsum'
+  varcontent[ivpxsum].variable   = 'Sum of particle velocities (vvpsum)'
+  varcontent[ivpxsum].idlvar     = 'vvpsum'
   varcontent[ivpxsum].idlinit    = INIT_3VECTOR
-  varcontent[ivpxsum].idlvarloc  = 'ivvpsum_loc'
+  varcontent[ivpxsum].idlvarloc  = 'vvpsum_loc'
   varcontent[ivpxsum].idlinitloc = INIT_3VECTOR_LOC
   varcontent[ivpxsum].skip       = 2
 endif
