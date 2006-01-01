@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.52 2005-12-25 09:36:33 ajohan Exp $
+! $Id: particles_dust.f90,v 1.53 2006-01-01 10:36:26 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -55,7 +55,7 @@ module Particles
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_rhoptilm=0, idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
-  integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0
+  integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0, idiag_epspmz=0
   integer :: idiag_npmy=0, idiag_nparmax=0, idiag_mpt=0
 
   contains
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.52 2005-12-25 09:36:33 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.53 2006-01-01 10:36:26 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -837,13 +837,16 @@ module Particles
           if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
           if (idiag_rhopmx/=0) &
               call yzsum_mn_name_x(rhop_tilde*np,idiag_rhopmx)
-          if (idiag_epspmx/=0) then
+          if (idiag_epspmx/=0.or.idiag_epspmz/=0) then
             if (ldensity_nolog) then
               rho=f(l1:l2,m,n,ilnrho)
             else
               rho=exp(f(l1:l2,m,n,ilnrho))
             endif
-            call yzsum_mn_name_x(rhop_tilde*np/rho,idiag_epspmx)
+            if (idiag_epspmx/=0) &
+                call yzsum_mn_name_x(rhop_tilde*np/rho,idiag_epspmx)
+            if (idiag_epspmz/=0) &
+                call xysum_mn_name_z(rhop_tilde*np/rho,idiag_epspmz)
           endif
         enddo
       endif
@@ -940,7 +943,7 @@ module Particles
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_rhoptilm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
-        idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0
+        idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0; idiag_epspmz=0
         idiag_npmy=0; idiag_nparmax=0; idiag_mpt=0
       endif
 !
@@ -976,6 +979,7 @@ module Particles
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
       enddo
 !
 !  check for those quantities for which we want x-averages
