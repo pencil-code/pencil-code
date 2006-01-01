@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.53 2006-01-01 10:36:26 ajohan Exp $
+! $Id: particles_dust.f90,v 1.54 2006-01-01 15:42:39 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -31,7 +31,7 @@ module Particles
   real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
   real :: Ri0=0.25, eps1=0.5
   integer :: it_dustburst=0
-  logical :: ldragforce_gas=.false.
+  logical :: ldragforce_gas=.false., lpar_spec=.false.
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
   character (len=labellen) ::gravx_profile='zero',  gravz_profile='zero'
 
@@ -44,7 +44,7 @@ module Particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas, rhop_tilde, eps_dtog, cdtp, &
+      ldragforce_gas, rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       it_dustburst, lmigration_redo, tausmin
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.53 2006-01-01 10:36:26 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.54 2006-01-01 15:42:39 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -900,6 +900,31 @@ module Particles
       write(unit,NML=particles_run_pars)
 !
     endsubroutine write_particles_run_pars
+!***********************************************************************
+    subroutine powersnap_particles(f)
+!
+!  Calculate power spectra of dust particle variables.
+!
+!  01-jan-06/anders: coded
+!
+      use Boundcond, only: bc_per_x, bc_per_y, bc_per_z
+      use Power_spectrum, only: power_1d
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (lpar_spec) then
+!  Fill out ghost zones in np.        
+        call bc_per_x(f,'top',inp)
+        call bc_per_x(f,'bot',inp)
+        call bc_per_y(f,'top',inp)
+        call bc_per_y(f,'bot',inp)
+        call bc_per_z(f,'top',inp)
+        call bc_per_z(f,'bot',inp)
+!
+        call power_1d(f,'p',0,inp)
+      endif
+!
+    endsubroutine powersnap_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !   

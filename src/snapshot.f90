@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.2 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: snapshot.f90,v 1.3 2006-01-01 15:42:39 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -159,14 +159,15 @@ contains
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
 !  28-dec-02/axel: call structure from herel; allow optional lwrite_only
 !
-      use Cdata
-      use Mpicomm
       use Boundcond
-      use Sub
+      use Cdata
       use Io
+      use Mpicomm
+      use Particles_main
       use Power_spectrum
-      use Struct_func
       use Pscalar
+      use Struct_func
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: a
       real, dimension (nx,ny,nz) :: b_vec
@@ -192,78 +193,83 @@ contains
 !  at first call, need to initialize tspec
 !  tspec calculated in read_snaptime, but only available to root processor
 !
-      if(ldo_all.and.ifirst==0) then
-         call read_snaptime(file,tspec,nspec,dspec,t)
-         ifirst=1
+      if (ldo_all.and.ifirst==0) then
+        call read_snaptime(file,tspec,nspec,dspec,t)
+        ifirst=1
       endif
 !
 !  Check whether we want to output power snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently)
 !
-      if(ldo_all) &
+      if (ldo_all) &
            call update_snaptime(file,tspec,nspec,dspec,t,lspec,ch,ENUM=.false.)
       if (lspec.or.llwrite_only) then
-         if (ldo_all)  call update_ghosts(a)
-         if (vel_spec) call power(a,'u')
-         if (mag_spec) call power(a,'b')
-         if (vec_spec) call power(a,'a')
-         if (uxj_spec) call powerhel(a,'uxj')
-         if (ab_spec)  call powerhel(a,'mag')
-         if (ou_spec)  call powerhel(a,'kin')
-         if (ro_spec)  call powerscl(a,'ro')
-         if (ss_spec)  call powerscl(a,'ss')
-         if (cc_spec)  call powerscl(a,'cc')
-         if (cr_spec)  call powerscl(a,'cr')
-         if (oned) then
-            if (vel_spec) call power_1d(a,'u',1)
-            if (mag_spec) call power_1d(a,'b',1)
-            if (vec_spec) call power_1d(a,'a',1)
-            if (vel_spec) call power_1d(a,'u',2)
-            if (mag_spec) call power_1d(a,'b',2)
-            if (vec_spec) call power_1d(a,'a',2)
-            if (vel_spec) call power_1d(a,'u',3)
-            if (mag_spec) call power_1d(a,'b',3)
-            if (vec_spec) call power_1d(a,'a',3)
-         endif
-         if (twod) then
-            if (vel_spec) call power_2d(a,'u')
-            if (mag_spec) call power_2d(a,'b')
-            if (vec_spec) call power_2d(a,'a')
-         endif
-         !
-         !  Doing structure functions
-         !
-         do ivec=1,3
-            if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. lpdfz1 .or. lpdfz2) then
-               do n=n1,n2
-                  do m=m1,m2
-                     call curli(a,iaa,bb,ivec)
-                     im=m-nghost
-                     in=n-nghost
-                     b_vec(:,im,in)=bb
-                  enddo
-               enddo
-               b_vec=b_vec/sqrt(exp(a(l1:l2,m1:m2,n1:n2,ilnrho)))
-            endif
-            if (lsfu)     call structure(a,ivec,b_vec,'u')
-            if (lsfb)     call structure(a,ivec,b_vec,'b')
-            if (lsfz1)    call structure(a,ivec,b_vec,'z1')
-            if (lsfz2)    call structure(a,ivec,b_vec,'z2')
-            if (lsfflux)  call structure(a,ivec,b_vec,'flux')
-            if (lpdfu)    call structure(a,ivec,b_vec,'pdfu')
-            if (lpdfb)    call structure(a,ivec,b_vec,'pdfb')
-            if (lpdfz1)   call structure(a,ivec,b_vec,'pdfz1')
-            if (lpdfz2)   call structure(a,ivec,b_vec,'pdfz2')
+        if (ldo_all)  call update_ghosts(a)
+        if (vel_spec) call power(a,'u')
+        if (mag_spec) call power(a,'b')
+        if (vec_spec) call power(a,'a')
+        if (uxj_spec) call powerhel(a,'uxj')
+        if (ab_spec)  call powerhel(a,'mag')
+        if (ou_spec)  call powerhel(a,'kin')
+        if (ro_spec)  call powerscl(a,'ro')
+        if (ss_spec)  call powerscl(a,'ss')
+        if (cc_spec)  call powerscl(a,'cc')
+        if (cr_spec)  call powerscl(a,'cr')
+        if (oned) then
+          if (vel_spec) call power_1d(a,'u',1)
+          if (mag_spec) call power_1d(a,'b',1)
+          if (vec_spec) call power_1d(a,'a',1)
+          if (vel_spec) call power_1d(a,'u',2)
+          if (mag_spec) call power_1d(a,'b',2)
+          if (vec_spec) call power_1d(a,'a',2)
+          if (vel_spec) call power_1d(a,'u',3)
+          if (mag_spec) call power_1d(a,'b',3)
+          if (vec_spec) call power_1d(a,'a',3)
+        endif
+        if (twod) then
+          if (vel_spec) call power_2d(a,'u')
+          if (mag_spec) call power_2d(a,'b')
+          if (vec_spec) call power_2d(a,'a')
+        endif
+!
+!  Spectra of particle variables.
+!         
+        if (lparticles) call particles_powersnap(a)
+!
+!  Structure functions
+!
+        do ivec=1,3
+           if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. &
+               lpdfz1 .or. lpdfz2) then
+              do n=n1,n2
+                do m=m1,m2
+                  call curli(a,iaa,bb,ivec)
+                  im=m-nghost
+                  in=n-nghost
+                  b_vec(:,im,in)=bb
+                enddo
+             enddo
+             b_vec=b_vec/sqrt(exp(a(l1:l2,m1:m2,n1:n2,ilnrho)))
+           endif
+           if (lsfu)     call structure(a,ivec,b_vec,'u')
+           if (lsfb)     call structure(a,ivec,b_vec,'b')
+           if (lsfz1)    call structure(a,ivec,b_vec,'z1')
+           if (lsfz2)    call structure(a,ivec,b_vec,'z2')
+           if (lsfflux)  call structure(a,ivec,b_vec,'flux')
+           if (lpdfu)    call structure(a,ivec,b_vec,'pdfu')
+           if (lpdfb)    call structure(a,ivec,b_vec,'pdfb')
+           if (lpdfz1)   call structure(a,ivec,b_vec,'pdfz1')
+           if (lpdfz2)   call structure(a,ivec,b_vec,'pdfz2')
          enddo
-         !
-         !  do pdf of passive scalar field (if present)
-         !
+!
+!  do pdf of passive scalar field (if present)
+!
          if (rhocc_pdf) call pdf(a,'rhocc',rhoccm,sqrt(cc2m))
          if (cc_pdf)    call pdf(a,'cc'   ,rhoccm,sqrt(cc2m))
          if (lncc_pdf)  call pdf(a,'lncc' ,rhoccm,sqrt(cc2m))
          if (gcc_pdf)   call pdf(a,'gcc'  ,0.    ,sqrt(gcc2m))
          if (lngcc_pdf) call pdf(a,'lngcc',0.    ,sqrt(gcc2m))
-         !
+!
       endif
 !
     endsubroutine powersnap

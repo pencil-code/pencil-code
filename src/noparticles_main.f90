@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.4 2005-09-19 13:29:50 ajohan Exp $
+! $Id: noparticles_main.f90,v 1.5 2006-01-01 15:42:39 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -175,6 +175,18 @@ module Particles_main
       if (NO_WARN) print*, unit
 !
     endsubroutine write_particles_run_pars_wrap
+!***********************************************************************
+    subroutine particles_powersnap(f)
+!
+!  Calculate power spectra of particle variables.
+!
+!  01-jan-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*, f
+!
+    endsubroutine particles_powersnap
 !***********************************************************************
 
 

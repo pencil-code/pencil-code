@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.13 2005-12-28 10:56:12 ajohan Exp $
+! $Id: particles_main.f90,v 1.14 2006-01-01 15:42:39 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -260,6 +260,18 @@ module Particles_main
       if (lparticles_number) call write_particles_num_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
+!***********************************************************************
+    subroutine particles_powersnap(f)
+!
+!  Calculate power spectra of particle variables.
+!
+!  01-jan-06/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      call powersnap_particles(f)
+!
+    endsubroutine particles_powersnap
 !***********************************************************************
 
 

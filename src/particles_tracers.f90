@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.9 2005-11-27 10:33:45 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.10 2006-01-01 15:42:39 ajohan Exp $
 !
 !  This module takes care of everything related to tracer particles
 !
@@ -51,7 +51,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.9 2005-11-27 10:33:45 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.10 2006-01-01 15:42:39 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -300,6 +300,18 @@ module Particles
       write(unit,NML=particles_run_pars)
 !
     endsubroutine write_particles_run_pars
+!***********************************************************************
+    subroutine powersnap_particles(f)
+!
+!  Calculate power spectra of particle variables.
+!
+!  01-jan-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*, f
+!
+    endsubroutine powersnap_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !   

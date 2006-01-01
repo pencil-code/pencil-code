@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.48 2005-07-05 16:21:43 mee Exp $
+! $Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -44,7 +44,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.48 2005-07-05 16:21:43 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -155,7 +155,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.48 2005-07-05 16:21:43 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -264,7 +264,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.48 2005-07-05 16:21:43 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -421,7 +421,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.48 2005-07-05 16:21:43 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -510,183 +510,194 @@ module  power_spectrum
   !
   endsubroutine powerscl
 !***********************************************************************
-    subroutine power_1d(f,sp,ivec)
+  subroutine power_1d(f,sp,ivec,ivar)
 !
 !  Calculate power spectra of the variable specified by `sp'.
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-  integer, parameter :: nk=nx/2
-  integer :: i,im,in,ivec,ikx,iky,ikz
-  integer :: kxx,kyy,kzz
-  real, dimension (mx,my,mz,mvar+maux) :: f
-  real, dimension(nx,ny,nz) :: a1,b1,a2
-  real, dimension(nx) :: bb
-  real, dimension(nk) :: spectrumx=0.,spectrumx_sum=0
-  real, dimension(nk) :: spectrumy=0.,spectrumy_sum=0
-  real, dimension(nk) :: spectrumz=0.,spectrumz_sum=0
-  character (len=1) :: sp
-  character (len=7) :: str
-  !
-  !  identify version
-  !
-  if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.48 2005-07-05 16:21:43 mee Exp $")
-  !
-  !  In fft, real and imaginary parts are handled separately.
-  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-  !
-  if (sp=='u') then
-     a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
-  elseif (sp=='b') then
-     do n=n1,n2
+    real, dimension (mx,my,mz,mvar+maux) :: f
+    character (len=1) :: sp
+    integer :: ivec
+    integer, optional :: ivar
+!
+    integer, parameter :: nk=nx/2
+    integer :: i,im,in,ikx,iky,ikz
+    integer :: kxx,kyy,kzz
+    real, dimension(nx,ny,nz) :: a1,b1,a2
+    real, dimension(nx) :: bb
+    real, dimension(nk) :: spectrumx=0.,spectrumx_sum=0
+    real, dimension(nk) :: spectrumy=0.,spectrumy_sum=0
+    real, dimension(nk) :: spectrumz=0.,spectrumz_sum=0
+    character (len=7) :: str
+!
+!  identify version
+!
+    if (lroot .AND. ip<10) call cvs_id( &
+        "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
+!
+!  In fft, real and imaginary parts are handled separately.
+!  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+!
+    if (sp=='u') then
+      a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+    elseif (sp=='b') then
+      do n=n1,n2
         do m=m1,m2
-           call curli(f,iaa,bb,ivec)
-           im=m-nghost
-           in=n-nghost
-           a1(:,im,in)=bb
+          call curli(f,iaa,bb,ivec)
+          im=m-nghost
+          in=n-nghost
+          a1(:,im,in)=bb
         enddo
-     enddo
-  elseif (sp=='a') then
-     a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
-  else
-     print*,'There is no such spectra variable: sp=',sp
-  endif
-  b1=0
-  a2=a1
-  !
-  ! Need to initialize
-  !
-  spectrumx=0
-  spectrumx_sum=0
-  spectrumy=0
-  spectrumy_sum=0
-  spectrumz=0
-  spectrumz_sum=0
-  !
-  !  Doing the Fourier transform
-  !
-  call transform_fftpack_1d(a1,b1)
-  !
-  !    Stopping the run if FFT=nofft
-  !
-  if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
-  !
-  ! Spectra in x-direction
-  !
-  if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-  do ikz=1,nz
-  do iky=1,ny
-  do ikx=1,nk
-    kxx=ikx-1
-    spectrumx(kxx+1)=spectrumx(kxx+1) &
-         +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-  enddo
-  enddo
-  enddo
-  !
-  ! Doing fourier spectra in all directions if onedall=T
-  !
-  if (onedall) then
-    !
-    ! Spectra in y-direction
-    !
-    a1=a2
+      enddo
+    elseif (sp=='a') then
+      a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+    elseif (sp=='p') then
+      a1=f(l1:l2,m1:m2,n1:n2,ivar)
+    else
+       print*,'There is no such spectra variable: sp=',sp
+    endif
     b1=0
-    call transp(a1,'y')
+    a2=a1
+!
+! Need to initialize
+!
+    spectrumx=0
+    spectrumx_sum=0
+    spectrumy=0
+    spectrumy_sum=0
+    spectrumz=0
+    spectrumz_sum=0
+!
+!  Do the Fourier transform
+!
     call transform_fftpack_1d(a1,b1)
-    do ikz=1,nz
-    do iky=1,ny
-    do ikx=1,nk
+!
+!  Stop the run if FFT=nofft
+!
+    if (.not.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+!
+!  Spectra in x-direction
+!
+    if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz; do iky=1,ny; do ikx=1,nk
       kxx=ikx-1
-      spectrumy(kxx+1)=spectrumy(kxx+1) &
+      spectrumx(kxx+1)=spectrumx(kxx+1) &
            +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-    enddo
-    enddo
-    enddo  
-    !
-    ! Spectra in z-direction
-    !
-    a1=a2
-    b1=0
-    call transp(a1,'z')
-    call transform_fftpack_1d(a1,b1)
-    do ikz=1,nz
-    do iky=1,ny
-    do ikx=1,nk
-      kxx=ikx-1
-      spectrumz(kxx+1)=spectrumz(kxx+1) &
-           +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-    enddo
-    enddo
-    enddo
-  endif
-  !
-  !  Summing up the results from the different processors
-  !  The result is available only on root
-  !
-  call mpireduce_sum(spectrumx,spectrumx_sum,nk)
-  if (onedall) call mpireduce_sum(spectrumy,spectrumy_sum,nk)
-  if (onedall) call mpireduce_sum(spectrumz,spectrumz_sum,nk)
-  !
-  !  on root processor, write global result to file
-  !  don't need to multiply by 1/2 to get \int E(k) dk = (1/2) <u^2>
-  !  because we have only taken the data for positive values of kx.
-  !
-  if (ivec .eq. 1) str='x_x.dat'
-  if (ivec .eq. 2) str='y_x.dat'
-  if (ivec .eq. 3) str='z_x.dat'
+    enddo; enddo; enddo
+!
+!  Doing fourier spectra in all directions if onedall=T
+!
+    if (onedall) then
+!
+!  Spectra in y-direction
+!
+      a1=a2
+      b1=0
+      call transp(a1,'y')
+      call transform_fftpack_1d(a1,b1)
+      do ikz=1,nz; do iky=1,ny; do ikx=1,nk
+        kxx=ikx-1
+        spectrumy(kxx+1)=spectrumy(kxx+1) &
+            +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+      enddo; enddo; enddo  
+!
+!  Spectra in z-direction
+!
+      a1=a2
+      b1=0
+      call transp(a1,'z')
+      call transform_fftpack_1d(a1,b1)
+      do ikz=1,nz; do iky=1,ny; do ikx=1,nk
+        kxx=ikx-1
+        spectrumz(kxx+1)=spectrumz(kxx+1) &
+             +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+      enddo; enddo; enddo
+    endif
+!
+!  Summing up the results from the different processors
+!  The result is available only on root
+!
+    call mpireduce_sum(spectrumx,spectrumx_sum,nk)
+    if (onedall) call mpireduce_sum(spectrumy,spectrumy_sum,nk)
+    if (onedall) call mpireduce_sum(spectrumz,spectrumz_sum,nk)
+!
+!  on root processor, write global result to file
+!  don't need to multiply by 1/2 to get \int E(k) dk = (1/2) <u^2>
+!  because we have only taken the data for positive values of kx.
+!
+    if (ivec==1) then
+      str='x_x.dat'
+    elseif (ivec==2) then
+      str='y_x.dat'
+    elseif (ivec==3) then
+      str='z_x.dat'
+    else
+      str='_x.dat'
+    endif
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
-     if (ip<10) print*,'Writing power spectra of variable',sp &
-          ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
-     open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
-     write(1,*) t
-     write(1,'(1p,8e10.2)') spectrumx_sum
-     close(1)
-  endif
-  !
-  ! Save data for y and z spectra if onedall=.true.
-  !
-  if (onedall) then
-    !
-    ! Save y data
-    !
-    if (ivec .eq. 1) str='x_y.dat'
-    if (ivec .eq. 2) str='y_y.dat'
-    if (ivec .eq. 3) str='z_y.dat'
-    !
-    !  append to diagnostics file
-    !
     if (iproc==root) then
-      if (ip<10) print*,'Writing power spectra of variable',sp &
-           ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
+      if (ip<10) print*,'Writing power spectra of variable', sp, &
+          'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
       open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumy_sum
+      write(1,'(1p,8e10.2)') spectrumx_sum
       close(1)
     endif
-    !
-    ! Save z data
-    !
-    if (ivec .eq. 1) str='x_z.dat'
-    if (ivec .eq. 2) str='y_z.dat'
-    if (ivec .eq. 3) str='z_z.dat'
-    !
-    !  append to diagnostics file
-    !
-    if (iproc==root) then
-      if (ip<10) print*,'Writing power spectra of variable',sp &
-           ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
-      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
-      write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumz_sum
-      close(1)
+!
+! Save data for y and z spectra if onedall=.true.
+!
+    if (onedall) then
+!
+! Save y data
+!
+      if (ivec==1) then
+        str='x_y.dat'
+      elseif (ivec==2) then
+        str='y_y.dat'
+      elseif (ivec==3) then
+        str='z_y.dat'
+      else
+        str='_y.dat'
+      endif
+!
+!  append to diagnostics file
+!
+      if (iproc==root) then
+        if (ip<10) print*,'Writing power spectra of variable',sp &
+             ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
+        write(1,*) t
+        write(1,'(1p,8e10.2)') spectrumy_sum
+        close(1)
+      endif
+!
+! Save z data
+!
+      if (ivec==1) then
+        str='x_z.dat'
+      elseif (ivec==2) then
+        str='y_z.dat'
+      elseif (ivec==3) then
+        str='z_z.dat'
+      else
+        str='_z.dat'
+      endif
+!
+!  append to diagnostics file
+!
+      if (iproc==root) then
+        if (ip<10) print*,'Writing power spectra of variable',sp &
+             ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
+        write(1,*) t
+        write(1,'(1p,8e10.2)') spectrumz_sum
+        close(1)
+      endif
     endif
-  endif
-
+!
   endsubroutine power_1d
 !***********************************************************************
     subroutine pdf(f,variabl,pdf_mean,pdf_rms)
