@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.77 2005-12-06 19:13:52 brandenb Exp $
+! $Id: prints.f90,v 1.78 2006-01-02 12:13:46 ajohan Exp $
 
 module Print
 
@@ -290,7 +290,7 @@ public :: write_zaverages
 !
       if(lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
-        write(1,'(1pe12.5)') t
+        write(1,'(1pe12.5)') tdiagnos
         write(1,'(1p,8e13.5)') fnamez(:,:,1:nnamez)
         close(1)
       endif
@@ -306,7 +306,7 @@ public :: write_zaverages
 !
       if(lroot.and.nnamey>0) then
         open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
-        write(1,'(1pe12.5)') t
+        write(1,'(1pe12.5)') tdiagnos
         write(1,'(1p,8e13.5)') fnamey(:,:,1:nnamey)
         close(1)
       endif
@@ -322,7 +322,7 @@ public :: write_zaverages
 !
       if(lroot.and.nnamex>0) then
         open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
-        write(1,'(1pe12.5)') t
+        write(1,'(1pe12.5)') tdiagnos
         write(1,'(1p,8e13.5)') fnamex(:,1:nnamex)
         close(1)
       endif
