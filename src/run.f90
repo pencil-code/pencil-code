@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.216 2005-11-08 23:05:19 wlyra Exp $
+! $Id: run.f90,v 1.217 2006-01-02 12:12:46 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -66,7 +66,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.216 2005-11-08 23:05:19 wlyra Exp $")
+             "$Id: run.f90,v 1.217 2006-01-02 12:12:46 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -185,7 +185,7 @@
 !
 !  initialize ionization array
 !
-        if(leos_ionization) call ioninit(f)
+        if (leos_ionization) call ioninit(f)
 !
 !  Prepare particles.
 !
@@ -202,7 +202,7 @@
 !  possible debug output (can only be done after "directory" is set)
 !  check whether mn array is correct
 !
-        if(ip<=3) call debug_imn_arrays
+        if (ip<=3) call debug_imn_arrays
 !
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc 
@@ -247,7 +247,7 @@
 !  Initialize timestep diagnostics during the run (whether used or not,
 !  see idiag_timeperstep)
 !
-        if(lroot) then
+        if (lroot) then
           time1 = mpiwtime()
           time_last_diagnostic = time1
           count = 0
@@ -414,11 +414,6 @@
 !
           if (linterstellar) call check_SN(f)
 !
-!  In regular intervals, calculate certain averages and do other output
-!
-          call write_1daverages()
-          call write_2daverages()
-!
           if (lout.and.lroot.and.(idiag_walltime/=0 .or. max_walltime/=0.)) then
             time2=mpiwtime()
             wall_clock_time = (time2-time1)
@@ -436,7 +431,12 @@
             call save_name(time_per_step,idiag_timeperstep) 
           endif
 !
-          if(lout) call prints()
+          if (lout) call prints()
+!
+!  In regular intervals, calculate certain averages and do other output
+!
+          call write_1daverages()
+          call write_2daverages()
 !
 !  Setting ialive=1 can be useful on flaky machines!
 !  Each processor writes it's processor number (if it is alive!)
@@ -500,14 +500,14 @@
           it=it+1
           headt=.false.
         enddo Time_loop
-        if(lroot) time2=mpiwtime()
+        if (lroot) time2=mpiwtime()
 !
 !  Write data at end of run for restart.
 !  dvar is written for analysis purposes only
 !
         if (lroot) print*, 'Writing final snapshot for t=', t
         call wtime(trim(directory)//'/time.dat',t)
-        if(save_lastsnap) then
+        if (save_lastsnap) then
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           if (lparticles) call particles_write_snapshot( &
               trim(directory_snap)//'/pvar.dat',mvar_io,ENUM=.false.)
@@ -525,13 +525,13 @@
 !
 !  Save spectrum snapshot
 !
-        if(save_lastsnap) then
-          if(dspec /= impossible) call powersnap(f,.true.)
+        if (save_lastsnap) then
+          if (dspec /= impossible) call powersnap(f,.true.)
         endif
 !
 !  Print wall clock time and time per step and processo  for diagnostic purposes
 !
-        if(lroot) then
+        if (lroot) then
           wall_clock_time = time2-time1
           print*
           write(*,'(A,1pG10.3,A,1pG8.2,A)') &
