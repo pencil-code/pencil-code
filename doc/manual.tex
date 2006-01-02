@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.314 2005-12-20 18:47:46 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.315 2006-01-02 14:03:15 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2005-12-20 18:47:46 $ $,~ $ $Revision: 1.314 $ $}
+%\date{$ $Date: 2006-01-02 14:03:15 $ $,~ $ $Revision: 1.315 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2005-12-20 18:47:46 $ $,~ $ $Revision: 1.314 $ $}\\
+  \emph{$ $Date: 2006-01-02 14:03:15 $ $,~ $ $Revision: 1.315 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -627,6 +627,11 @@ Dobler, W., Stix, M., \& Brandenburg, A.\papj{2005}{683}
 Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
 {Cosmic ray confinement in the diffusion approximation}
 (\astroph{0507176})
+
+Johansen, A., Henning, Th., \& Klahr, H.\sapj{2005}
+{Dust sedimentation and self-sustained Kelvin-Helmholtz turbulence in
+protoplanetary disc mid-planes}
+(\astroph{0512272})
 
 \end{list}
 
@@ -3117,7 +3122,48 @@ variable \var{datadir}:
 \end{alltt}
 will read the data written by processor 3.
 
+\subsubsection{Reading data into IDL structures}
 
+As an alternative to the method described above, there is also the possibility
+to read the data into structures. This makes some more operations possible,
+e.g.\ reading data from an IDL program where the command \cmd{.r} is not
+allowed.
+
+To read a snapshot \cmd{'VAR10'} into the IDL structure \cmd{ff}, type the
+following command
+\begin{alltt}
+  \prompt{IDL> } pc_read_var, obj=ff, varfile='VAR10', /trimall
+\end{alltt}
+The option \cmd{/trimall} removes ghost zones from the data. A number of other
+options are documented in the source code of \cmd{pc_read_var}. You can see
+what data the structure contains by using the command \cmd{tag_names}
+\begin{alltt}
+  \prompt{IDL> } print, tag_names(ff)
+  T X Y Z DX DY DZ UU LNRHO AA
+\end{alltt}
+One can access the individual variables by typing \cmd{ff.varname}, e.g.
+\begin{alltt}
+  \prompt{IDL> } help, ff.aa
+  <Expression>    FLOAT     = Array[32, 32, 32, 3]
+\end{alltt}
+There are a number of files that read different data into structures. They are
+placed in the directory \cmd{\$PENCIL_HOME/idl/files}. Here is a list of files
+(including suggested options to call them with)
+\begin{itemize}
+  \item \cmd{pc_read_var, obj=ff, /trimall} \\
+      Read snapshot into structure.
+  \item \cmd{pc_read_ts, obj=ts} \\
+      Read time series into structure.
+  \item \cmd{pc_read_xyaver, obj=xya} \\
+      \cmd{pc_read_xzaver, obj=xza} \\
+      \cmd{pc_read_yzaver, obj=yza} \\
+      Read 1-D time series into structure.
+  \item \cmd{pc_read_const, obj=cst} \\
+      Read code constants into structure.
+  \item \cmd{pc_read_pvar, obj=fp} \\
+      Read particle data into structure.
+\end{itemize}
+Other options are documented in the source code of the files.
 
 % ---------------------------------------------------------------------- %
 
@@ -5030,7 +5076,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2005-12-20 18:47:46 $ $,~ $ $Revision: 1.314 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-01-02 14:03:15 $ $,~ $ $Revision: 1.315 $ $}
 
 \section{Timings}
 
@@ -8132,7 +8178,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.314 2005-12-20 18:47:46 dobler Exp $ $}
+$ $Id: manual.tex,v 1.315 2006-01-02 14:03:15 ajohan Exp $ $}
 
 
 \end{document}
