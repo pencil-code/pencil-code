@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.148 2005-10-04 12:33:12 mee Exp $
+! $Id: mpicomm.f90,v 1.149 2006-01-02 12:55:33 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -247,7 +247,7 @@ module Mpicomm
       if (nprocx /= 1) &
            call stop_it('Inconsistency: nprocx > 1 not implemented')
       if (nprocs /= nprocy*nprocz) then
-        if(lroot) then
+        if (lroot) then
           print*, 'Compiled with NCPUS = ', ncpus, &
           ', but running on ', nprocs, ' processors'
         endif
@@ -256,7 +256,7 @@ module Mpicomm
 !
       if ((nprocy*ny /= nygrid) .or. &
           (nprocz*nz /= nzgrid)) then
-        if(lroot) then
+        if (lroot) then
           write(0,'(A,2I4,A,2I4,A)') &
                'nproc[y-z]*n[y-z] = (', &
                nprocy*ny, nprocz*nz, &
@@ -985,7 +985,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_recv: ENTER'
+      if (lroot.and.ip<5) print*,'radboundary_zx_recv: ENTER'
 !
 !  source
 !
@@ -1013,7 +1013,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_xy_recv: ENTER'
+      if (lroot.and.ip<5) print*,'radboundary_xy_recv: ENTER'
 !
 !  source
 !
@@ -1041,7 +1041,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_send: ENTER'
+      if (lroot.and.ip<5) print*,'radboundary_zx_send: ENTER'
 !
 !  destination
 !
@@ -1069,7 +1069,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_xy_send: ENTER'
+      if (lroot.and.ip<5) print*,'radboundary_xy_send: ENTER'
 !
 !  destination
 !
@@ -1096,7 +1096,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_sendrecv: ENTER'
+      if (lroot.and.ip<5) print*,'radboundary_zx_sendrecv: ENTER'
 !
 !  destination and source id
 !
@@ -1124,7 +1124,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_periodic_ray: ENTER'
+      if (lroot.and.ip<5) print*,'radboundary_zx_periodic_ray: ENTER'
 !
 !  actual MPI calls
 !
@@ -1753,7 +1753,7 @@ module Mpicomm
 !  Doing x-y transpose if var='y'
 !
       if (var=='y') then
-        if(nxgrid/=nygrid) then
+        if (nxgrid/=nygrid) then
           print*,'transp: need to have nxgrid=nygrid for var==y'
           call stop_it('Inconsistency: nxgrid/=nygrid')
         endif
@@ -1793,9 +1793,9 @@ module Mpicomm
 !  with only send_buf and recv_buf as buffers
 !
         do px=0,nprocy-1
-          if(px/=ipy) then
+          if (px/=ipy) then
             partner=px+ipz*nprocy ! = iproc + (px-ipy)
-            if(ip<=6) print*,'transp: MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
+            if (ip<=6) print*,'transp: MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
             send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
               call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
@@ -1819,20 +1819,20 @@ module Mpicomm
 !     original          2x2 blocks         each block
 !                       transposed         transposed
 !
-          do px=0,nprocy-1
-            do i=1,ny-1
-              do j=i+1,ny
-                tmp_z=a(i+px*ny,j,:)
-                a(i+px*ny,j,:)=a(j+px*ny,i,:)
-                a(j+px*ny,i,:)=tmp_z
-              enddo
+        do px=0,nprocy-1
+          do i=1,ny-1
+            do j=i+1,ny
+              tmp_z=a(i+px*ny,j,:)
+              a(i+px*ny,j,:)=a(j+px*ny,i,:)
+              a(j+px*ny,i,:)=tmp_z
             enddo
           enddo
+        enddo
 !
 !  Doing x-z transpose if var='z'
 !
       elseif (var=='z') then
-        if(nygrid/=nzgrid) then
+        if (nygrid/=nzgrid) then
           print*,'transp: need to have nygrid=nzgrid for var==z'
           call stop_it('transp: inconsistency - nygrid/=nzgrid')
         endif
@@ -1840,7 +1840,7 @@ module Mpicomm
 !  Send information to different processors (x-z transpose)
 !  See the discussion above for why we use this communication pattern
         do px=0,nprocz-1
-          if(px/=ipz) then
+          if (px/=ipz) then
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
@@ -1876,7 +1876,7 @@ module Mpicomm
 !
     endsubroutine transp
 !***********************************************************************
-subroutine transform(a1,a2,a3,b1,b2,b3)
+    subroutine transform(a1,a2,a3,b1,b2,b3)
 !
 !  Subroutine to do fourier transform
 !  The routine overwrites the input data
@@ -1884,73 +1884,73 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
 !  03-sep-02/nils: coded
 !  05-nov-02/axel: added normalization factor
 !
-  real,dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
+      real,dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
 
-  ! Doing the x field
-  if(lroot .AND. ip<10) print*,'transform: doing fft of x-component'
-  call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! x-direction
-  call transp(a1,'y')
-  call transp(b1,'y')
-  call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! y-direction
-  call transp(a1,'z')
-  call transp(b1,'z')
-  call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! z-direction
+! Doing the x field
+      if (lroot .and. ip<10) print*,'transform: doing fft of x-component'
+      call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! x-direction
+      call transp(a1,'y')
+      call transp(b1,'y')
+      call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! y-direction
+      call transp(a1,'z')
+      call transp(b1,'z')
+      call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! z-direction
 
-  ! Doing the y field
-  if(lroot .AND. ip<10) print*,'transform: doing fft of y-component'
-  call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! x-direction
-  call transp(a2,'y')
-  call transp(b2,'y')
-  call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! y-direction
-  call transp(a2,'z')
-  call transp(b2,'z')
-  call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! z-direction
+! Doing the y field
+      if (lroot .and. ip<10) print*,'transform: doing fft of y-component'
+      call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! x-direction
+      call transp(a2,'y')
+      call transp(b2,'y')
+      call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! y-direction
+      call transp(a2,'z')
+      call transp(b2,'z')
+      call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! z-direction
 
-  ! Doing the z field
-  if(lroot .AND. ip<10) print*,'transform: doing fft of z-component'
-  call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! x-direction
-  call transp(a3,'y')
-  call transp(b3,'y')
-  call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! y-direction
-  call transp(a3,'z')
-  call transp(b3,'z')
-  call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! z-direction
+! Doing the z field
+      if (lroot .and. ip<10) print*,'transform: doing fft of z-component'
+      call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! x-direction
+      call transp(a3,'y')
+      call transp(b3,'y')
+      call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! y-direction
+      call transp(a3,'z')
+      call transp(b3,'z')
+      call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! z-direction
 !
 !  Normalize
 !
-  a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
-  b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
-  if(lroot .AND. ip<10) print*,'transform: fft has finished'
+      a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
+      b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
+      if (lroot .and. ip<10) print*,'transform: fft has finished'
 !
-endsubroutine transform
+    endsubroutine transform
 !***********************************************************************
-subroutine transform_i(a_re,a_im)
+    subroutine transform_i(a_re,a_im)
 !
 !  Subroutine to do fourier transform
 !  The routine overwrites the input data
 !
 !  22-oct-02/axel+tarek: adapted from transform
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
+      real,dimension(nx,ny,nz) :: a_re,a_im
 
-  if(lroot .AND. ip<10) print*,'transform_i: doing three FFTs'
-  call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
-  call transp(a_re,'y')
-  call transp(a_im,'y')
-  call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
-  call transp(a_re,'z')
-  call transp(a_im,'z')
-  call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
+      if (lroot .and. ip<10) print*,'transform_i: doing three FFTs'
+      call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
+      call transp(a_re,'y')
+      call transp(a_im,'y')
+      call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
+      call transp(a_re,'z')
+      call transp(a_im,'z')
+      call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'transform_i: fft has finished'
+      a_re=a_re/nwgrid
+      a_im=a_im/nwgrid
+      if (lroot .and. ip<10) print*,'transform_i: fft has finished'
 !
-endsubroutine transform_i
+    endsubroutine transform_i
 !***********************************************************************
-subroutine transform_fftpack(a_re,a_im,dummy)
+    subroutine transform_fftpack(a_re,a_im,dummy)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data.
@@ -1959,79 +1959,72 @@ subroutine transform_fftpack(a_re,a_im,dummy)
 !
 !  27-oct-02/axel: adapted from transform_i, for fftpack
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  real,dimension(4*nx+15) :: wsavex
-  integer :: m,n
-  integer,optional :: dummy
-
+      real,dimension(nx,ny,nz) :: a_re,a_im
+      complex,dimension(nx) :: ax
+      real,dimension(4*nx+15) :: wsavex
+      integer :: m,n
+      integer,optional :: dummy
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
-  if(nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
-    print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
-    call stop_it("must have nxgrid=nygrid=nzgrid!")
-  endif
+      if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
+        print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
+        call stop_it("must have nxgrid=nygrid=nzgrid!")
+      endif
 !
 !  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
 !
-  call cffti(nx,wsavex)
+      call cffti(nx,wsavex)
 !
-  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in x'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call cfftf(nx,ax,wsavex)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
-  call transp(a_re,'y')
-  call transp(a_im,'y')
+      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in x'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        call cfftf(nx,ax,wsavex)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
+      call transp(a_re,'y')
+      call transp(a_im,'y')
 !
 !  The length of the array in the y-direction is nx
 !  (remember: nxgrid=nygrid=nzgrid!)
 !
-  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in y'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call cfftf(nx,ax,wsavex)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        call cfftf(nx,ax,wsavex)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
 !
 !  in 2-D, we can't do the last transpose
 !
-  if(nz>1) then
-    call transp(a_re,'z')
-    call transp(a_im,'z')
+      if (nz>1) then
+        call transp(a_re,'z')
+        call transp(a_im,'z')
 !
 !  The length of the array in the z-direction is also nx
 !
-    if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in z'
-    do n=1,nz
-    do m=1,ny
-      ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-      call cfftf(nx,ax,wsavex)
-      a_re(:,m,n)=real(ax)
-      a_im(:,m,n)=aimag(ax)
-    enddo
-    enddo
-  endif
+        if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+      endif
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'transform_fftpack: fft has finished'
+      a_re=a_re/nwgrid
+      a_im=a_im/nwgrid
+      if (lroot .and. ip<10) print*,'transform_fftpack: fft has finished'
 !
-  if(NO_WARN) print*,dummy  !(keep compiler quiet)
+      if (NO_WARN) print*,dummy  !(keep compiler quiet)
 !
-endsubroutine transform_fftpack
+    endsubroutine transform_fftpack
 !***********************************************************************
-subroutine transform_fftpack_2d(a_re,a_im,dummy)
+    subroutine transform_fftpack_2d(a_re,a_im,dummy)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data.
@@ -2040,59 +2033,54 @@ subroutine transform_fftpack_2d(a_re,a_im,dummy)
 !
 !  27-oct-02/axel: adapted from transform_fftpack
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  real,dimension(4*nx+15) :: wsavex
-  integer :: m,n
-  integer,optional :: dummy
-
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      complex, dimension(nx) :: ax
+      real, dimension(4*nx+15) :: wsavex
+      integer :: m,n
+      integer, optional :: dummy
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
-  if(nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
-    print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
-    call stop_it("must have nxgrid=nygrid=nzgrid!")
-  endif
+      if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
+        print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
+        call stop_it("must have nxgrid=nygrid=nzgrid!")
+      endif
 !
 !  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
 !
-  call cffti(nx,wsavex)
+      call cffti(nx,wsavex)
 !
-  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in x'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call cfftf(nx,ax,wsavex)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
-  call transp(a_re,'z')
-  call transp(a_im,'z')
-  !
-  !  The length of the array in the z-direction is also nx
-  !
-  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in z'
-  do n=1,nz
-    do m=1,ny
-      ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-      call cfftf(nx,ax,wsavex)
-      a_re(:,m,n)=real(ax)
-      a_im(:,m,n)=aimag(ax)
-    enddo
-  enddo
+      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in x'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        call cfftf(nx,ax,wsavex)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
+      call transp(a_re,'z')
+      call transp(a_im,'z')
+!
+!  The length of the array in the z-direction is also nx
+!
+      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        call cfftf(nx,ax,wsavex)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'transform_fftpack: fft has finished'
+      a_re=a_re/nwgrid
+      a_im=a_im/nwgrid
+      if (lroot .and. ip<10) print*,'transform_fftpack: fft has finished'
 !
-  if(NO_WARN) print*,dummy  !(keep compiler quiet)
+      if (NO_WARN) print*,dummy  !(keep compiler quiet)
 !
-endsubroutine transform_fftpack_2d
+    endsubroutine transform_fftpack_2d
 !***********************************************************************
-subroutine transform_nr(a_re,a_im)
+    subroutine transform_nr(a_re,a_im)
 !
 !  Subroutine to do Fourier transform using Numerical Recipes routine.
 !  Note that this routine requires that nx, ny, and nz are powers of 2.
@@ -2100,63 +2088,57 @@ subroutine transform_nr(a_re,a_im)
 !
 !  30-oct-02/axel: adapted from transform_fftpack for Numerical Recipes
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  integer :: m,n
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      complex, dimension(nx) :: ax
+      integer :: m,n
 !
 !  This Fourier transform would work, but it's very slow!
 !  Even the compilation is very slow, so we better get rid of it!
 !
-  call stop_it("transform_nr: currently disabled!")
+      call stop_it("transform_nr: currently disabled!")
 !
-  if(lroot .AND. ip<10) print*,'transform_nr: doing FFT_nr in x'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    !call four1(ax,nx,-1)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
-  call transp(a_re,'y')
-  call transp(a_im,'y')
+      if (lroot .and. ip<10) print*,'transform_nr: doing FFT_nr in x'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        !call four1(ax,nx,-1)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
+      call transp(a_re,'y')
+      call transp(a_im,'y')
 !
 !  The length of the array in the y-direction is nx
 !  (remember: nxgrid=nygrid=nzgrid!)
 !
-  if(lroot .AND. ip<10) print*,'transform_nr: doing FFT_nr in y'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    !call four1(ax,nx,-1)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
-  call transp(a_re,'z')
-  call transp(a_im,'z')
+      if (lroot .and. ip<10) print*,'transform_nr: doing FFT_nr in y'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        !call four1(ax,nx,-1)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
+      call transp(a_re,'z')
+      call transp(a_im,'z')
 !
 !  The length of the array in the z-direction is also nx
 !
-  if(lroot .AND. ip<10) print*,'transform_nr: doing FFT_nr in z'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    !call four1(ax,nx,-1)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*,'transform_nr: doing FFT_nr in z'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        !call four1(ax,nx,-1)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'transform_nr: fft has finished'
+      a_re=a_re/nwgrid
+      a_im=a_im/nwgrid
+      if (lroot .and. ip<10) print*,'transform_nr: fft has finished'
 !
-endsubroutine transform_nr
+    endsubroutine transform_nr
 !***********************************************************************
-subroutine transform_fftpack_1d(a_re,a_im)
+    subroutine transform_fftpack_1d(a_re,a_im)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data.
@@ -2165,38 +2147,36 @@ subroutine transform_fftpack_1d(a_re,a_im)
 !
 !  06-feb-03/nils: adapted from transform_fftpack
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  real,dimension(4*nx+15) :: wsavex
-  integer :: m,n
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      complex, dimension(nx) :: ax
+      real, dimension(4*nx+15) :: wsavex
+      integer :: m,n
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
-  if(nxgrid/=nygrid .or. nxgrid/=nzgrid) then
-    print*,'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
-    call stop_it("transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!")
-  endif
+      if (nxgrid/=nygrid .or. nxgrid/=nzgrid) then
+        print*,'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
+        call stop_it("transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!")
+      endif
 !
 !  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
 !
-  call cffti(nx,wsavex)
+      call cffti(nx,wsavex)
 !
-  if(lroot .AND. ip<10) print*,'transform_fftpack_1d: doing FFTpack in x'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call cfftf(nx,ax,wsavex)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*,'transform_fftpack_1d: doing FFTpack in x'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        call cfftf(nx,ax,wsavex)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
 !
 !  Normalize
 !
-  a_re=a_re/nxgrid
-  a_im=a_im/nxgrid
-  if(lroot .AND. ip<10) print*,'transform_fftpack_1d: fft has finished'
+      a_re=a_re/nxgrid
+      a_im=a_im/nxgrid
+      if (lroot .and. ip<10) print*,'transform_fftpack_1d: fft has finished'
 !
-endsubroutine transform_fftpack_1d
+    endsubroutine transform_fftpack_1d
 !***********************************************************************
 endmodule Mpicomm

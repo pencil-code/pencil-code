@@ -717,35 +717,35 @@ module Mpicomm
 !
 !  Doing x-y transpose if var='y'
 !
-if (var=='y') then
+      if (var=='y') then
 !
-      if (ny>1) then
-        do i=1,ny
-          do j=i+1,ny
-            tmp_z=a(i,j,:)
-            a(i,j,:)=a(j,i,:)
-            a(j,i,:)=tmp_z
+        if (ny>1) then
+          do i=1,ny
+            do j=i+1,ny
+              tmp_z=a(i,j,:)
+              a(i,j,:)=a(j,i,:)
+              a(j,i,:)=tmp_z
+            enddo
           enddo
-        enddo
-      endif
+        endif
 !
 !  Doing x-z transpose if var='z'
 !
-elseif (var=='z') then
+      elseif (var=='z') then
 !
-      if (nz>1) then
-        do i=1,nz
-          do j=i+1,nz
-            tmp_y=a(i,:,j)
-            a(i,:,j)=a(j,:,i)
-            a(j,:,i)=tmp_y
+        if (nz>1) then
+          do i=1,nz
+            do j=i+1,nz
+              tmp_y=a(i,:,j)
+              a(i,:,j)=a(j,:,i)
+              a(j,:,i)=tmp_y
+            enddo
           enddo
-        enddo
+        endif
+!
       endif
 !
-endif
-!
- end subroutine transp
+    endsubroutine transp
 !***********************************************************************
 subroutine transform(a1,a2,a3,b1,b2,b3)
 !
