@@ -5,6 +5,7 @@ pro power_snapshot, gg=gg, g_x=g_x, g_y=g_y, g_z=g_z, $
     plot=plot, ps=ps, filename=filename
 
 default, plot, 1
+default, ps, 0
 
 sizegg=size(gg)
 
