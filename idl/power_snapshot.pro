@@ -1,7 +1,8 @@
 ;
 ;  Calculate power spectrum of variable gg along x, y and z directions.
 ;
-pro power_snapshot, gg=gg, g_x=g_x, g_y=g_y, g_z=g_z, plot=plot
+pro power_snapshot, gg=gg, g_x=g_x, g_y=g_y, g_z=g_z, $
+    plot=plot, ps=ps, filename=filename
 
 default, plot, 1
 
@@ -64,15 +65,31 @@ if (plot) then begin
   endif
 
   linestyles=[0,1,2]
+
+  if (ps) then begin
+    default, filename, 'power.eps'
+    set_plot, 'ps'
+    device, /encapsulated, color=color, xsize=8.7, ysize=8.0, $
+        font_size=11, filename=filename
+    !p.font=-1
+    !p.charsize=1.0
+    thick=3
+    !p.charthick=thick & !p.thick=thick & !x.thick=thick & !y.thick=thick
+  endif
   
-  plot, g_x, xtitle='k', ytitle='|g(k)|', $
+  plot, g_x, xtitle='k/k0', ytitle='|g(k)|', $
       xrange=[1.0,nx/2], $
       yrange=[10.0^floor(alog10(pmin)),10.0^ceil(alog10(pmax))], $
       /xlog, /ylog, $
       linestyle=linestyles[0]
   if (ny gt 1) then oplot, g_y, linestyle=linestyles[1]
   if (nz gt 1) then oplot, g_z, linestyle=linestyles[2]
-  legend, ['k!Dx!N','k!Dy!N','k!Dz!N'], linestyle=linestyles, /bottom
+  legend, ['1','2','3'], linestyle=linestyles, /bottom
+
+  if (ps) then begin
+    device, /close
+    set_plot, 'x'
+  endif
 endif
 
 
