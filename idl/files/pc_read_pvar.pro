@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.17 2005-11-25 10:30:50 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.18 2006-01-04 12:50:32 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -17,9 +17,9 @@ if (qquiet) then quiet=1
 ;
 ;  Get necessary dimensions.
 ;
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-pc_read_pdim, obj=pdim, datadir=datadir, quiet=quiet
-pc_set_precision, dim=dim, quiet=quiet
+pc_read_dim, obj=dim, datadir=datadir, /quiet
+pc_read_pdim, obj=pdim, datadir=datadir, /quiet
+pc_set_precision, dim=dim, /quiet
 ;
 ;  Derived dimensions.
 ;
@@ -36,7 +36,7 @@ dx=zero &  dy=zero &  dz=zero
 ;
 ;
 if (ncpus gt 1) then begin
-  pc_read_dim, obj=procdim, datadir=datadir, proc=0, quiet=quiet
+  pc_read_dim, obj=procdim, datadir=datadir, proc=0, /quiet
 endif else begin
   procdim=dim
 endelse
@@ -118,8 +118,12 @@ npar_loc=0L
 ;
 for i=0,ncpus-1 do begin
 
+  if (not keyword_set(quiet)) then $
+      print,'Loading chunk ', strtrim(str(i+1)), ' of ', $
+      strtrim(str(ncpus)), ' (', $
+      strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
+
   filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile 
-  if (not keyword_set(quiet)) then print, 'Reading ', filename
 ;
 ;  Check if file exists.
 ;
@@ -173,7 +177,7 @@ for i=0,ncpus-1 do begin
 ;  Create global x, y and z arrays from local ones.
 ;
   if (ncpus gt 1) then begin
-    pc_read_dim, object=procdim, datadir=datadir, proc=i, quiet=quiet
+    pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet
 
     if (procdim.ipx eq 0L) then begin
       i0x=0L

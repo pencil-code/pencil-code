@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.32 2005-12-14 12:00:59 mee Exp $
+; $Id: pc_read_var.pro,v 1.33 2006-01-04 12:50:32 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-12-14 12:00:59 $
-;  $Revision: 1.32 $
+;  $Date: 2006-01-04 12:50:32 $
+;  $Revision: 1.33 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -188,7 +188,10 @@ for i=0,ncpus-1 do begin
     filename=datadir+'/proc'+str(proc)+'/'+varfile 
   endif else begin
     filename=datadir+'/proc'+str(i)+'/'+varfile 
-    if not keyword_set(QUIET) then print,'Loading chunk ',strtrim(str(i+1)),' of ',strtrim(str(ncpus)),' (',strtrim('/proc'+str(i)+'/'+varfile),')...'
+    if (not keyword_set(QUIET)) then $
+        print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
+        strtrim(str(ncpus)), ' (', $
+        strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
     pc_read_dim,object=procdim,datadir=datadir,proc=i,/QUIET
   endelse
   ; Check for existance and read the data
