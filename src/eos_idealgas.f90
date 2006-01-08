@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.27 2005-12-20 19:10:12 mee Exp $
+! $Id: eos_idealgas.f90,v 1.28 2006-01-08 14:55:51 bingert Exp $
 
 !  Dummy routine for ideal gas
 
@@ -93,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.27 2005-12-20 19:10:12 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.28 2006-01-08 14:55:51 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -380,8 +380,8 @@ module EquationOfState
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx,3), intent(in) :: hlnrho,hss
-      real, dimension(nx,3), intent(out) :: hlnTT
+      real, dimension(nx,3,3), intent(in) :: hlnrho,hss
+      real, dimension(nx,3,3), intent(out) :: hlnTT
 !
       if (gamma1==0.) call fatal_error('temperature_hessian','gamma=1 not allowed w/entropy')
 !
