@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.157 2005-12-15 15:32:38 mee Exp $
+# $Id: getconf.csh,v 1.158 2006-01-13 09:09:30 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -666,7 +666,10 @@ else if ($hn =~ rio* || $hn =~ pia*) then
     setenv SCP scp
     setenv SCRATCH_DIR /var/tmp/$USER
     foreach node ($nodelist)
-      $SSH $node 'killall start.x run.x && rm -rf /var/tmp/ajohan'
+      echo $SSH $node 'killall start.x run.x'
+      $SSH $node 'killall start.x run.x'
+      echo $SSH $node '\rm -rf /var/tmp/ajohan/*'
+      $SSH $node '\rm -rf /var/tmp/ajohan/*'
     end
   endif
 
