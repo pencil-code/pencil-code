@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.54 2006-01-01 15:42:39 ajohan Exp $
+! $Id: particles_dust.f90,v 1.55 2006-01-14 11:55:15 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.54 2006-01-01 15:42:39 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.55 2006-01-14 11:55:15 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -196,6 +196,16 @@ module Particles
         if (lroot) print*, 'initialize_particles: '// &
             'minimum friction time tausmin=', tausmin
       endif
+!
+!
+!
+      if (ldragforce_gas .and. .not. ldensity) then
+        if (lroot) then
+          print*, 'initialize_particles: friction force on gas only works '
+          print*, '                      together with gas density module!'
+        endif
+        call fatal_error('initialize_particles','')
+      endif      
 !
 !  Write constants to disc.
 !      
