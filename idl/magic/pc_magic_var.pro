@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.16 2005-12-14 11:57:01 mee Exp $
+; $Id: pc_magic_var.pro,v 1.17 2006-01-15 13:42:57 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-12-14 11:57:01 $
-;  $Revision: 1.16 $
+;  $Date: 2006-01-15 13:42:57 $
+;  $Revision: 1.17 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -219,6 +219,11 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if variables[iv] eq 'ismcool' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_interstellar_cool(lnrho=lnrho,ss=ss,param=param)"
+
+    ; Particle velocity
+    endif else if variables[iv] eq 'vvp' then begin
+      tags[iv]=variables[iv]
+      variables[iv]="pc_particles_aux(np=np,vvpsum=vvpsum,dim=dim,var='vvp')"
     endif
 
   endfor
