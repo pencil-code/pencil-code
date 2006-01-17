@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.62 2005-11-12 16:24:13 ajohan Exp $
+# CVS: $Id: auto-test,v 1.63 2006-01-17 00:49:37 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -35,6 +35,8 @@ use POSIX qw(floor);
 use Getopt::Long;
 use vars qw{ %failed $ntests $test_status };
 use IPC::Open2;
+
+$ntests = 0;
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ :
@@ -118,7 +120,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.62 2005-11-12 16:24:13 ajohan Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.63 2006-01-17 00:49:37 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
