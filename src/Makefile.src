@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.157 2006-01-18 02:39:31 tarek Exp $
+### $Id: Makefile.src,v 1.158 2006-01-19 16:27:06 nbabkovs Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -284,6 +284,11 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #FFLAGS=-O3 -I/usr/include/lam #(nl6)
 #LDMPI=-I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #F77FLAGS=-w90 #(nl6)
+##
+## Natalia's laptop (Natalia, 1.8 GHz)
+##
+##FC=gfortran #(natalia)
+#FC=ifort #(natalia)
 ##
 ## barilko Apichat Neamvonk's desktop
 ##
