@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.63 2006-01-17 00:49:37 dobler Exp $
+# CVS: $Id: auto-test,v 1.64 2006-01-20 22:01:15 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -120,7 +120,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.63 2006-01-17 00:49:37 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.64 2006-01-20 22:01:15 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -356,7 +356,7 @@ sub test_compile {
 	    test_shell_cmd('cd src; make cleann',$dir,"cleaning up",QUIET);
 	    return 'ERROR running make cleann' if ($test_status);
 	}
-	test_shell_cmd("cd src;$nice make $makeopts",$dir,"compilation");
+	test_shell_cmd("$nice make $makeopts",$dir,"compilation");
     }
 }
 # ---------------------------------------------------------------------- #
