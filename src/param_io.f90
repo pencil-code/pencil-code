@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.219 2005-12-06 12:24:38 ajohan Exp $ 
+! $Id: param_io.f90,v 1.220 2006-01-20 22:41:03 dobler Exp $ 
 
 module Param_IO
 
@@ -884,7 +884,7 @@ module Param_IO
           print*,'[bad BCs in start.in only affects post-processing' &
                //' of start data, not the run]'
         else
-          print*,'check_consistency_of_lperi: you better stop and check!'
+          print*,'check_consistency_of_lperi(run.in): you better stop and check!'
           print*,'------------------------------------------------------'
           print*
         endif
