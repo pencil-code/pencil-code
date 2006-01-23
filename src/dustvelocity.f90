@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.105 2005-12-28 14:44:01 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.106 2006-01-23 12:54:41 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -37,7 +37,9 @@ module Dustvelocity
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0,mdplus,mdminus,ad,surfd,mi,rhodsad1
   real, dimension(ndustspec) :: tausd=1.,betad=0.,nud=0.
-  real :: ampluud=0.,kx_uud=1.,ky_uud=1.,kz_uud=1.
+  real :: ampluud=0.,ampl_udx=0.0,ampl_udy=0.0,ampl_udz=0.0
+  real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
+  real :: kx_uud=1.,ky_uud=1.,kz_uud=1.
   real :: rhods=1.,nd0=1.,md0=1.,rhod0=1.
   real :: ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.0
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
@@ -47,17 +49,18 @@ module Dustvelocity
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
   logical :: lviscosity_dust=.true.
-  logical :: ldustvelocity_shorttausd=.false.
+  logical :: ldustvelocity_shorttausd=.false., lvshear_dust_global_eps=.false.
   logical :: ldustcoagulation=.false., ldustcondensation=.false.
   character (len=labellen), dimension(ninit) :: inituud='nothing'
   character (len=labellen) :: draglaw='epstein_cst',iviscd='simplified'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 
   namelist /dustvelocity_init_pars/ &
-       rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
-       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
-       dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, &
-       ldustcoagulation, ldustcondensation, cdtd
+      ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, phase_udz, &
+      rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
+      kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
+      dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, &
+      ldustcoagulation, ldustcondensation, lvshear_dust_global_eps, cdtd
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
@@ -131,7 +134,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.105 2005-12-28 14:44:01 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.106 2006-01-23 12:54:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -434,6 +437,12 @@ module Dustvelocity
           if(lroot) print*,'init_uud: zero dust velocity'
         case('gaussian-noise')
           do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
+        case('sinwave-phase')
+          do k=1,ndustspec
+            call sinwave_phase(f,iudx(k),ampl_udx,kx_uud,ky_uud,kz_uud,phase_udx)
+            call sinwave_phase(f,iudy(k),ampl_udy,kx_uud,ky_uud,kz_uud,phase_udy)
+            call sinwave_phase(f,iudz(k),ampl_udz,kx_uud,ky_uud,kz_uud,phase_udz)
+          enddo
         case('udx_sinx')
           do l=1,mx; f(l,:,:,iudx(1)) = ampluud*sin(kx_uud*x(l)); enddo
         case('udy_siny')
@@ -504,19 +513,39 @@ module Dustvelocity
               print*, 'init_uud: beta_dPdr_dust_scaled=', beta_dPdr_dust_scaled
             endif
           endif
+
+          if (ldensity_nolog) then
+            if (ldustdensity_log) then
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            else
+              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            endif
+          else
+            if (ldustdensity_log) then
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+            else
+              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+            endif
+          endif
+
+          if (lroot) print*, 'init_uud: average dust-to-gas ratio=', eps
+          
           do l=l1,l2; do m=m1,m2; do n=n1,n2
             cs=sqrt(cs20)
-            if (ldensity_nolog) then
-              if (ldustdensity_log) then
-                eps=exp(f(l,m,n,ind(1)))/f(l,m,n,ilnrho)
+
+            if (.not. lvshear_dust_global_eps) then
+              if (ldensity_nolog) then
+                if (ldustdensity_log) then
+                  eps=exp(f(l,m,n,ind(1)))/f(l,m,n,ilnrho)
+                else
+                  eps=f(l,m,n,ind(1))/f(l,m,n,ilnrho)
+                endif
               else
-                eps=f(l,m,n,ind(1))/f(l,m,n,ilnrho)
-              endif
-            else
-              if (ldustdensity_log) then
-                eps=exp(f(l,m,n,ind(1)))/exp(f(l,m,n,ilnrho))
-              else
-                eps=f(l,m,n,ind(1))/exp(f(l,m,n,ilnrho))
+                if (ldustdensity_log) then
+                  eps=exp(f(l,m,n,ind(1)))/exp(f(l,m,n,ilnrho))
+                else
+                  eps=f(l,m,n,ind(1))/exp(f(l,m,n,ilnrho))
+                endif
               endif
             endif
 

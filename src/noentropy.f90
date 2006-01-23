@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.80 2005-12-06 09:11:01 ajohan Exp $
+! $Id: noentropy.f90,v 1.81 2006-01-23 12:54:41 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.80 2005-12-06 09:11:01 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.81 2006-01-23 12:54:41 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -71,10 +71,21 @@ module Entropy
 !
 !  24-nov-02/tony: coded 
 !
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, cs0
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !
       if (ip == 0) print*,f,lstarting ! keep compiler quiet
+!
+!  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
+!  gradient dlnrho/dr = beta/H
+!
+      if (maxval(abs(beta_glnrho_global))/=0.0) then
+        beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
+        if (lroot) print*, 'initialize_entropy: Global density gradient '// &
+            'with beta_glnrho_global=', beta_glnrho_global
+      endif
 !
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -100,12 +111,14 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
+      use EquationOfState, only: beta_glnrho_scaled
 !
       if (leos.and.ldt) lpenc_requested(i_cs2)=.true.
       if (lhydro) then
         lpenc_requested(i_cs2)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
+      if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
       if (idiag_ugradpm/=0) then
         lpenc_diagnos(i_rho)=.true.
@@ -186,6 +199,7 @@ module Entropy
 !
 !  Isothermal/polytropic equation of state
 !
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -210,6 +224,16 @@ module Entropy
         do j=1,3
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-p%cs2*p%glnrho(:,j)
+        enddo
+      endif
+!
+!  Add pressure force from global density gradient.
+!  
+      if (maxval(abs(beta_glnrho_global))/=0.0) then
+        if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+        do j=1,3
+          df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
+              - p%cs2*beta_glnrho_scaled(j)
         enddo
       endif
 !

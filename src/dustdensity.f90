@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.141 2005-12-28 16:43:05 ajohan Exp $
+! $Id: dustdensity.f90,v 1.142 2006-01-23 12:54:41 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -34,7 +34,7 @@ module Dustdensity
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,Sigmad=1.0
   real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
   real :: amplnd=1.,kx_nd=1.,ky_nd=1.,kz_nd=1.,widthnd=1.,Hnd=1.0,Hepsd=1.0
-  real :: Ri0=1.0, eps1=0.5
+  real :: phase_nd=0.0,Ri0=1.0, eps1=0.5
   integer :: ind_extra
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
@@ -50,7 +50,7 @@ module Dustdensity
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
-      adpeak, amplnd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
+      adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltaud_thermal, ldeltaud_turbulent, ldustdensity_log, Ri0
 
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.141 2005-12-28 16:43:05 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.142 2006-01-23 12:54:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -309,6 +309,10 @@ module Dustdensity
         case('const_nd')
           f(:,:,:,ind) = nd_const
           if (lroot) print*, 'init_nd: Constant dust number density'
+        case('sinwave-phase')
+          do k=1,ndustspec
+            call sinwave_phase(f,ind(k),amplnd,kx_nd,ky_nd,kz_nd,phase_nd)
+          enddo
         case('sinx')
           do l=l1,l2
             f(l,:,:,ind(1)) = f(l,:,:,ind(1)) + amplnd*sin(kx_nd*x(l))

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.214 2005-12-16 16:44:28 bingert Exp $
+! $Id: density.f90,v 1.215 2006-01-23 12:54:41 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -25,7 +25,7 @@ module Density
   use Messages
   use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
                              gamma,gamma1,cs2top,cs2bot, &
-                             mpoly
+                             mpoly,beta_glnrho_global
 
   implicit none
 
@@ -34,7 +34,7 @@ module Density
   real :: ampllnrho=0.,widthlnrho=.1,rho_left=1.,rho_right=1.
   real :: cdiffrho=0.,diffrho=0.,diffrho_hyper3=0.,diffrho_shock=0.
   real :: lnrho_const=0., rho_const=1.
-  real :: amplrho=0
+  real :: amplrho=0, phase_lnrho=0.0
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: q_ell=5., hh0=0.
@@ -58,8 +58,8 @@ module Density
        rho_left,rho_right,lnrho_const,cs2bot,cs2top, &
        radius_lnrho,eps_planet,                      &
        b_ell,q_ell,hh0,rbound,                       &
-       mpoly,strati_type,                            &
-       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
+       mpoly,strati_type,beta_glnrho_global,         &
+       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
        wdamp,plaw,lcontinuity_gas
 
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.214 2005-12-16 16:44:28 bingert Exp $")
+           "$Id: density.f90,v 1.215 2006-01-23 12:54:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -363,6 +363,7 @@ module Density
       case('soundwave-x'); call soundwave(ampllnrho,f,ilnrho,kx=1.)
       case('soundwave-y'); call soundwave(ampllnrho,f,ilnrho,ky=1.)
       case('soundwave-z'); call soundwave(ampllnrho,f,ilnrho,kz=1.)
+      case('sinwave-phase'); call sinwave_phase(f,ilnrho,ampllnrho,kx_lnrho,ky_lnrho,kz_lnrho,phase_lnrho)
       case('sinwave-x'); call sinwave(ampllnrho,f,ilnrho,kx=kx_lnrho)
       case('sinwave-y'); call sinwave(ampllnrho,f,ilnrho,ky=ky_lnrho)
       case('sinwave-z'); call sinwave(ampllnrho,f,ilnrho,kz=kz_lnrho)
@@ -727,7 +728,7 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
+!      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
 !
 !  sanity check
 !

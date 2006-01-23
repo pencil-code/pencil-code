@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.224 2005-12-28 14:43:45 ajohan Exp $
+! $Id: hydro.f90,v 1.225 2006-01-23 12:54:41 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -35,6 +35,8 @@ module Hydro
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
   real :: nu_turb0=0.,tau_nuturb=0.,nu_turb1=0.
+  real :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
+  real :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
   real, dimension(3) :: uu_const=(/0.,0.,0./)
@@ -48,14 +50,15 @@ module Hydro
   logical :: ladvection_velocity=.true.
 
   namelist /hydro_init_pars/ &
-       ampluu,inituu,widthuu, radiusuu,urand, &
-       uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu,coefuu, &
-       uy_left,uy_right,uu_const, Omega,initpower,cutoff, &
+       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
+       inituu, widthuu, radiusuu, urand, &
+       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
+       uy_left, uy_right,uu_const, Omega, initpower, cutoff, &
        nu_turb0, tau_nuturb, nu_turb1, &
-       kep_cutoff_pos_ext,kep_cutoff_width_ext, &
-       kep_cutoff_pos_int,kep_cutoff_width_int, &
-       u_out_kep,N_modes_uu,lcoriolis_force,lcentrifugal_force, &
-       star_offx,star_offy,ladvection_velocity
+       kep_cutoff_pos_ext, kep_cutoff_width_ext, &
+       kep_cutoff_pos_int, kep_cutoff_width_int, &
+       u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
+       star_offx, star_offy, ladvection_velocity
 
   ! run parameters
   real :: theta=0.
@@ -155,7 +158,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.224 2005-12-28 14:43:45 ajohan Exp $")
+           "$Id: hydro.f90,v 1.225 2006-01-23 12:54:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -323,6 +326,10 @@ module Hydro
         case('tor_pert'); call tor_pert(ampluu(j),f,iux,xx,yy,zz)
         case('diffrot'); call diffrot(ampluu(j),f,iuy,xx,yy,zz)
         case('olddiffrot'); call olddiffrot(ampluu(j),f,iuy,xx,yy,zz)
+        case('sinwave-phase')
+          call sinwave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
+          call sinwave_phase(f,iuy,ampl_uy,kx_uu,ky_uu,kz_uu,phase_uy)
+          call sinwave_phase(f,iuz,ampl_uz,kx_uu,ky_uu,kz_uu,phase_uz)
         case('sinwave-x'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
         case('sinwave-y'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
         case('sinwave-z'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.137 2005-12-17 16:28:49 dobler Exp $ 
+! $Id: initcond.f90,v 1.138 2006-01-23 12:54:41 ajohan Exp $ 
 
 module Initcond 
  
@@ -17,7 +17,7 @@ module Initcond
   private
 
   public :: arcade_x
-  public :: soundwave,sinwave,coswave,cos_cos_sin
+  public :: soundwave,sinwave,sinwave_phase,coswave,cos_cos_sin
   public :: gaunoise, posnoise
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, beltrami, tor_pert
@@ -917,6 +917,28 @@ module Initcond
       endif
 !
     endsubroutine sinwave
+!***********************************************************************
+    subroutine sinwave_phase(f,i,ampl,kx,ky,kz,phase)
+!
+!  Sine wave (as initial condition)
+!
+!  23-jan-06/anders: adapted from sinwave.
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: ampl, kx, ky, kz, phase
+      integer :: i
+!
+!  Set sin wave
+!
+      if (lroot) print*, 'sinwave_phase: i, ampl, kx, ky, kz, phase=', &
+          i, ampl, kx, ky, kz, phase
+!          
+      do m=m1,m2; do n=n1,n2
+        f(l1:l2,m,n,i) = f(l1:l2,m,n,i) + &
+            ampl*sin(kx*x(l1:l2)+ky*y(m)+kz*z(n)+phase)
+      enddo; enddo
+!
+    endsubroutine sinwave_phase
 !***********************************************************************
     subroutine hawley_etal99a(ampl,f,i,width,Lxyz,xx,yy,zz)
 !

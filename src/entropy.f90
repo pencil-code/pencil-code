@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.366 2005-12-20 19:11:46 mee Exp $
+! $Id: entropy.f90,v 1.367 2006-01-23 12:54:41 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -56,7 +56,6 @@ module Entropy
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
   real :: deltaT_poleq=0.
-  real, dimension (3) :: beta_gss_global=0.0, beta_gss_scaled=0.0
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
@@ -159,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.366 2005-12-20 19:11:46 mee Exp $")
+           "$Id: entropy.f90,v 1.367 2006-01-23 12:54:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -361,17 +360,13 @@ module Entropy
 !
       endselect
 !
-!  For global density gradient, set entropy gradient for isothermal gradient.
-!  Scale with Omega/cs0 for later use.
+!  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
+!  gradient dlnrho/dr = beta/H
 !
       if (maxval(abs(beta_glnrho_global))/=0.0) then
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
         if (lroot) print*, 'initialize_entropy: Global density gradient '// &
             'with beta_glnrho_global=', beta_glnrho_global
-        beta_gss_global=(1/gamma-1.0)*beta_glnrho_global
-        beta_gss_scaled=Omega/cs0*beta_gss_global
-        if (lroot) print*, 'initialize_entropy: Set isothermal entropy '// &
-            'gradient to beta_gss_global=', beta_gss_global
       endif
 !
 !  Turn off pressure gradient term and advection for 0-D runs.
@@ -514,7 +509,7 @@ module Entropy
       use Gravity
       use General, only: chn
       use Initcond
-      use EquationOfState,  only: mpoly, beta_glnrho_global, isothtop, &
+      use EquationOfState,  only: mpoly, isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp
@@ -1349,7 +1344,7 @@ module Entropy
 !  20-11-04/anders: coded
 !
       use Cdata
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use EquationOfState, only: beta_glnrho_scaled
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) then
@@ -1435,7 +1430,6 @@ module Entropy
       endif
       if (lheatc_hyper3ss) lpenc_requested(i_del6ss)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_cp1tilde)=.true.
-      if (maxval(abs(beta_gss_scaled))/=0.0) lpenc_requested(i_uu)=.true.
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
@@ -1672,19 +1666,6 @@ module Entropy
         do j=1,3
           df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
               - 1/gamma*p%cs2*beta_glnrho_scaled(j)
-!
-!  Advection of global density and entropy gradient.
-!
-!          if (ldensity) then
-!            if (ldensity_nolog) then
-!              df(l1:l2,m,n,ilnrho) = &
-!                  df(l1:l2,m,n,ilnrho) - p%uu(:,j)*p%rho*beta_glnrho_scaled(j)
-!            else
-!              df(l1:l2,m,n,ilnrho) = &
-!                  df(l1:l2,m,n,ilnrho) - p%uu(:,j)*beta_glnrho_scaled(j)
-!            endif
-!            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uu(:,j)*beta_gss_scaled(j)
-!          endif
         enddo
       endif
 !
