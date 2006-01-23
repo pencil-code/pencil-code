@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.106 2006-01-23 12:54:41 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.107 2006-01-23 15:09:03 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -134,7 +134,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.106 2006-01-23 12:54:41 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.107 2006-01-23 15:09:03 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -410,7 +410,7 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !
       use Cdata
-      use EquationOfState, only: gamma, beta_glnrho_scaled
+      use EquationOfState, only: gamma, beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Global
       use Gravity
@@ -419,7 +419,8 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
-      real :: eps,cs
+      real :: eps,cs,eta_glnrho,v_Kepler
+      complex, dimension (7) :: coeff
       integer :: j,k,l
       logical :: lnothing
 !
@@ -608,6 +609,63 @@ module Dustvelocity
             f(l,m,n,iudx) = f(l,m,n,iudx) + &
                 u0_gas_pseudo/(1.0 + eps + Omega_pseudo*tausd(1))
           enddo; enddo; enddo
+!
+        case('streaming')
+!
+!  Mode unstable to streaming instability (Youdin & Goodman 2005)
+!
+          eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
+          v_Kepler   =  1.0/abs(beta_glnrho_global(1))
+          if (lroot) print*, 'init_uud: eta, vK=', eta_glnrho, v_Kepler
+          coeff      = (/ (-0.13986370335199474 , 0.03729258495924567), &
+                          ( 0.13055968952473443 , 0.06405801677715553), &
+                          ( 0.16395651383288362 ,-0.02332488129054103), &
+                          (-0.16914091599893033 , 0.03615278602511117), &
+                          ( 0.1336673744941929  , 0.05917022664447503), &
+                          ( 0.16914091599893033 ,-0.03615278602511117), &
+                          ( 0.008956192722501395, 0.00848240036927419) /)
+!
+          do m=m1,m2; do n=n1,n2
+!            
+            f(l1:l2,m,n,ind(1)) = 0.0*f(l1:l2,m,n,ind(1)) + &
+                3.0*ampluud*cos(kz_uud*z(n))*cos(kx_uud*x(l1:l2))
+!                
+            f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
+                (eta_glnrho*v_Kepler)**2*ampluud* &
+                ( real(coeff(7))*cos(kx_uud*x(l1:l2)) - &
+                 aimag(coeff(7))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
+!                
+            f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
+                eta_glnrho*v_Kepler*ampluud* &
+                ( real(coeff(4))*cos(kx_uud*x(l1:l2)) - &
+                 aimag(coeff(4))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
+!
+            f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
+                eta_glnrho*v_Kepler*(-ampluud)* &
+                (aimag(coeff(6))*cos(kx_uud*x(l1:l2)) + &
+                  real(coeff(6))*sin(kx_uud*x(l1:l2)))*sin(kz_uud*z(n))
+!                
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+                eta_glnrho*v_Kepler*ampluud* &
+                ( real(coeff(5))*cos(kx_uud*x(l1:l2)) - &
+                 aimag(coeff(5))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
+!                
+            f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
+                eta_glnrho*v_Kepler*ampluud* &
+                ( real(coeff(1))*cos(kx_uud*x(l1:l2)) - &
+                 aimag(coeff(1))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
+!                
+            f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
+                eta_glnrho*v_Kepler*ampluud* &
+                ( real(coeff(2))*cos(kx_uud*x(l1:l2)) - &
+                 aimag(coeff(2))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
+!
+            f(l1:l2,m,n,iudz(1)) = f(l1:l2,m,n,iudz(1)) + &
+                eta_glnrho*v_Kepler*(-ampluud)* &
+                (aimag(coeff(3))*cos(kx_uud*x(l1:l2)) + &
+                  real(coeff(3))*sin(kx_uud*x(l1:l2)))*sin(kz_uud*z(n))
+!
+          enddo; enddo
 !
 !  Catch unknown values
 !
