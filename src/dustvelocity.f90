@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.107 2006-01-23 15:09:03 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.108 2006-01-24 12:59:36 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -134,7 +134,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.107 2006-01-23 15:09:03 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.108 2006-01-24 12:59:36 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -616,6 +616,7 @@ module Dustvelocity
 !
           eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
           v_Kepler   =  1.0/abs(beta_glnrho_global(1))
+
           if (lroot) print*, 'init_uud: eta, vK=', eta_glnrho, v_Kepler
           coeff      = (/ (-0.13986370335199474 , 0.03729258495924567), &
                           ( 0.13055968952473443 , 0.06405801677715553), &
@@ -631,37 +632,37 @@ module Dustvelocity
                 3.0*ampluud*cos(kz_uud*z(n))*cos(kx_uud*x(l1:l2))
 !                
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
-                (eta_glnrho*v_Kepler)**2*ampluud* &
+                (eta_glnrho*v_Kepler)**2*2*ampluud* &
                 ( real(coeff(7))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(7))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !                
             f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
-                eta_glnrho*v_Kepler*ampluud* &
+                eta_glnrho*v_Kepler*2*ampluud* &
                 ( real(coeff(4))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(4))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
+!                
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+                eta_glnrho*v_Kepler*2*ampluud* &
+                ( real(coeff(5))*cos(kx_uud*x(l1:l2)) - &
+                 aimag(coeff(5))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !
             f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
-                eta_glnrho*v_Kepler*(-ampluud)* &
+                eta_glnrho*v_Kepler*(-2*ampluud)* &
                 (aimag(coeff(6))*cos(kx_uud*x(l1:l2)) + &
                   real(coeff(6))*sin(kx_uud*x(l1:l2)))*sin(kz_uud*z(n))
 !                
-            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-                eta_glnrho*v_Kepler*ampluud* &
-                ( real(coeff(5))*cos(kx_uud*x(l1:l2)) - &
-                 aimag(coeff(5))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
-!                
             f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
-                eta_glnrho*v_Kepler*ampluud* &
+                eta_glnrho*v_Kepler*2*ampluud* &
                 ( real(coeff(1))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(1))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !                
             f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
-                eta_glnrho*v_Kepler*ampluud* &
+                eta_glnrho*v_Kepler*2*ampluud* &
                 ( real(coeff(2))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(2))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !
             f(l1:l2,m,n,iudz(1)) = f(l1:l2,m,n,iudz(1)) + &
-                eta_glnrho*v_Kepler*(-ampluud)* &
+                eta_glnrho*v_Kepler*(-2*ampluud)* &
                 (aimag(coeff(3))*cos(kx_uud*x(l1:l2)) + &
                   real(coeff(3))*sin(kx_uud*x(l1:l2)))*sin(kz_uud*z(n))
 !
