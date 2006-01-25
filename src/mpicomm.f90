@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.149 2006-01-02 12:55:33 ajohan Exp $
+! $Id: mpicomm.f90,v 1.150 2006-01-25 20:22:13 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1832,9 +1832,9 @@ module Mpicomm
 !  Doing x-z transpose if var='z'
 !
       elseif (var=='z') then
-        if (nygrid/=nzgrid) then
-          print*,'transp: need to have nygrid=nzgrid for var==z'
-          call stop_it('transp: inconsistency - nygrid/=nzgrid')
+        if (nzgrid/=nxgrid) then
+          if (lroot) print*, 'transp: need to have nzgrid=nxgrid for var==z'
+          call stop_it('transp: inconsistency - nzgrid/=nxgrid')
         endif
 !
 !  Send information to different processors (x-z transpose)
@@ -1965,14 +1965,7 @@ module Mpicomm
       integer :: m,n
       integer,optional :: dummy
 !
-!  check whether nxgrid=nygrid=nzgrid
-!
-      if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
-        print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
-        call stop_it("must have nxgrid=nygrid=nzgrid!")
-      endif
-!
-!  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
+!  need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid
 !
       call cffti(nx,wsavex)
 !
@@ -1983,27 +1976,41 @@ module Mpicomm
         a_re(:,m,n)=real(ax)
         a_im(:,m,n)=aimag(ax)
       enddo; enddo
-      call transp(a_re,'y')
-      call transp(a_im,'y')
 !
-!  The length of the array in the y-direction is nx
-!  (remember: nxgrid=nygrid=nzgrid!)
+!  Power in y-direction.
+!      
+      if (nygrid/=1) then
+        if (nygrid/=nxgrid) then
+          if (lroot) &
+              print*, 'transform_fftpack: must have nygrid=nxgrid!'
+          call fatal_error('transform_fftpack','')
+        endif
+        call transp(a_re,'y')
+        call transp(a_im,'y')
 !
-      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-        call cfftf(nx,ax,wsavex)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
-      enddo; enddo
+!  The length of the array in the y-direction is nx.
 !
-!  in 2-D, we can't do the last transpose
+        if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
+        do n=1,nz; do m=1,ny
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+      endif
 !
-      if (nz>1) then
+!  Power in z-direction.
+!      
+      if (nzgrid/=1) then
+        if (nzgrid/=nxgrid) then
+          if (lroot) &
+              print*, 'transform_fftpack: must have nzgrid=nxgrid!'
+          call fatal_error('transform_fftpack','')
+        endif
         call transp(a_re,'z')
         call transp(a_im,'z')
 !
-!  The length of the array in the z-direction is also nx
+!  The length of the array in the z-direction is also nx.
 !
         if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
         do n=1,nz; do m=1,ny
@@ -2154,8 +2161,10 @@ module Mpicomm
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
-      if (nxgrid/=nygrid .or. nxgrid/=nzgrid) then
-        print*,'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
+      if ( (nygrid/=1.and.nygrid/=nxgrid) .or. &
+           (nzgrid/=1.and.nzgrid/=nxgrid) ) then
+        if (lroot) &
+            print*, 'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
         call stop_it("transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!")
       endif
 !

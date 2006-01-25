@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $
+! $Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -44,7 +44,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -155,7 +155,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -264,7 +264,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -421,7 +421,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -522,8 +522,7 @@ module  power_spectrum
     integer, optional :: ivar
 !
     integer, parameter :: nk=nx/2
-    integer :: i,im,in,ikx,iky,ikz
-    integer :: kxx,kyy,kzz
+    integer :: ix,iy,iz,im,in,ikx,iky,ikz
     real, dimension(nx,ny,nz) :: a1,b1,a2
     real, dimension(nx) :: bb
     real, dimension(nk) :: spectrumx=0.,spectrumx_sum=0
@@ -534,28 +533,51 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.49 2006-01-01 15:42:39 ajohan Exp $")
+        "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
 !
     if (sp=='u') then
-      a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      if (lhydro) then
+        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+      else
+        if (lroot) &
+            print*, 'power_1d: must have hydro module for velocity power'
+        call fatal_error('power_1d','')
+      endif
     elseif (sp=='b') then
-      do n=n1,n2
-        do m=m1,m2
+      if (lmagnetic) then
+        do n=n1,n2; do m=m1,m2
           call curli(f,iaa,bb,ivec)
           im=m-nghost
           in=n-nghost
           a1(:,im,in)=bb
-        enddo
-      enddo
+        enddo; enddo
+      else
+        if (lroot) &
+            print*, 'power_1d: must have magnetic module for magnetic power'
+        call fatal_error('power_1d','')
+      endif
     elseif (sp=='a') then
-      a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      if (lmagnetic) then
+        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+      else
+        if (lroot) &
+            print*, 'power_1d: must have magnetic module for magnetic power'
+        call fatal_error('power_1d','')
+      endif
     elseif (sp=='p') then
-      a1=f(l1:l2,m1:m2,n1:n2,ivar)
+      if (ivar>0) then
+        a1=f(l1:l2,m1:m2,n1:n2,ivar)
+      else
+        if (lroot) &
+            print*, 'power_1d: ivar must be >0, ivar=', ivar
+        call fatal_error('power_1d','')
+      endif
     else
-       print*,'There is no such spectra variable: sp=',sp
+      if (lroot) print*,'There is no such spectra variable: sp=',sp
+      call fatal_error('power_1d','')
     endif
     b1=0
     a2=a1
@@ -575,16 +597,17 @@ module  power_spectrum
 !
 !  Stop the run if FFT=nofft
 !
-    if (.not.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+    if (.not.lfft) &
+        call stop_it('Need FFT=fft in Makefile.local to get spectra!')
 !
 !  Spectra in x-direction
 !
-    if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-    do ikz=1,nz; do iky=1,ny; do ikx=1,nk
-      kxx=ikx-1
-      spectrumx(kxx+1)=spectrumx(kxx+1) &
-           +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+    do ikx=1,nk; do iy=1,ny; do iz=1,nz
+      spectrumx(ikx) = spectrumx(ikx) + &
+          sqrt(a1(ikx,iy,iz)**2 + b1(ikx,iy,iz)**2)
     enddo; enddo; enddo
+!  Multiply all modes, except the constant mode, by two.    
+    spectrumx(2:nk)=2*spectrumx(2:nk)
 !
 !  Doing fourier spectra in all directions if onedall=T
 !
@@ -592,35 +615,41 @@ module  power_spectrum
 !
 !  Spectra in y-direction
 !
-      a1=a2
-      b1=0
-      call transp(a1,'y')
-      call transform_fftpack_1d(a1,b1)
-      do ikz=1,nz; do iky=1,ny; do ikx=1,nk
-        kxx=ikx-1
-        spectrumy(kxx+1)=spectrumy(kxx+1) &
-            +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-      enddo; enddo; enddo  
+      if (nygrid/=1) then
+        a1=a2
+        b1=0
+        call transp(a1,'y')
+        call transform_fftpack_1d(a1,b1)
+        do iky=1,nk; do ix=1,nxgrid/nprocy; do iz=1,nz
+          spectrumy(iky) = spectrumy(iky) + &
+              sqrt(a1(iky,ix,iz)**2 + b1(iky,ix,iz)**2)
+        enddo; enddo; enddo  
+!  Multiply all modes, except the constant mode, by two.
+        spectrumy(2:nk)=2*spectrumy(2:nk)
+      endif
 !
 !  Spectra in z-direction
 !
-      a1=a2
-      b1=0
-      call transp(a1,'z')
-      call transform_fftpack_1d(a1,b1)
-      do ikz=1,nz; do iky=1,ny; do ikx=1,nk
-        kxx=ikx-1
-        spectrumz(kxx+1)=spectrumz(kxx+1) &
-             +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-      enddo; enddo; enddo
+      if (nzgrid/=1) then
+        a1=a2
+        b1=0
+        call transp(a1,'z')
+        call transform_fftpack_1d(a1,b1)
+        do ikz=1,nk; do ix=1,nxgrid/nprocz; do iy=1,ny
+          spectrumz(ikz) = spectrumz(ikz) + &
+              sqrt(a1(ikz,iy,ix)**2 + b1(ikz,iy,ix)**2)
+        enddo; enddo; enddo
+!  Multiply all modes, except the constant mode, by two.
+        spectrumz(2:nk)=2*spectrumz(2:nk)
+      endif
     endif
 !
 !  Summing up the results from the different processors
 !  The result is available only on root
 !
     call mpireduce_sum(spectrumx,spectrumx_sum,nk)
-    if (onedall) call mpireduce_sum(spectrumy,spectrumy_sum,nk)
-    if (onedall) call mpireduce_sum(spectrumz,spectrumz_sum,nk)
+    if (onedall.and.nygrid/=1) call mpireduce_sum(spectrumy,spectrumy_sum,nk)
+    if (onedall.and.nzgrid/=1) call mpireduce_sum(spectrumz,spectrumz_sum,nk)
 !
 !  on root processor, write global result to file
 !  don't need to multiply by 1/2 to get \int E(k) dk = (1/2) <u^2>
@@ -635,65 +664,62 @@ module  power_spectrum
     else
       str='_x.dat'
     endif
-!
-!  append to diagnostics file
-!
+!  Append to diagnostics file
     if (iproc==root) then
-      if (ip<10) print*,'Writing power spectra of variable', sp, &
-          'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
-      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
+      if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
+          'to ', trim(datadir)//'/power'//trim(sp)//trim(str)
+      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str), &
+          position='append')
       write(1,*) t
-      write(1,'(1p,8e10.2)') spectrumx_sum
+      write(1,'(1p,8e10.2)') spectrumx_sum/(nygrid*nzgrid)
       close(1)
     endif
 !
-! Save data for y and z spectra if onedall=.true.
+!  Save data for y and z spectra if onedall=.true.
 !
     if (onedall) then
 !
-! Save y data
+!  Save y data
 !
-      if (ivec==1) then
-        str='x_y.dat'
-      elseif (ivec==2) then
-        str='y_y.dat'
-      elseif (ivec==3) then
-        str='z_y.dat'
-      else
-        str='_y.dat'
-      endif
-!
-!  append to diagnostics file
-!
-      if (iproc==root) then
-        if (ip<10) print*,'Writing power spectra of variable',sp &
-             ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
-        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
+      if (lroot .and. nygrid/=1) then
+        if (ivec==1) then
+          str='x_y.dat'
+        elseif (ivec==2) then
+          str='y_y.dat'
+        elseif (ivec==3) then
+          str='z_y.dat'
+        else
+          str='_y.dat'
+        endif
+!  Append to diagnostics file
+        if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
+            'to ', trim(datadir)//'/power'//trim(sp)//trim(str)
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str), &
+            position='append')
         write(1,*) t
-        write(1,'(1p,8e10.2)') spectrumy_sum
+        write(1,'(1p,8e10.2)') spectrumy_sum/(nxgrid*nzgrid)
         close(1)
       endif
 !
-! Save z data
+!  Save z data
 !
-      if (ivec==1) then
-        str='x_z.dat'
-      elseif (ivec==2) then
-        str='y_z.dat'
-      elseif (ivec==3) then
-        str='z_z.dat'
-      else
-        str='_z.dat'
-      endif
-!
-!  append to diagnostics file
-!
-      if (iproc==root) then
-        if (ip<10) print*,'Writing power spectra of variable',sp &
-             ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
-        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
+      if (lroot .and. nzgrid/=1) then
+        if (ivec==1) then
+          str='x_z.dat'
+        elseif (ivec==2) then
+          str='y_z.dat'
+        elseif (ivec==3) then
+          str='z_z.dat'
+        else
+          str='_z.dat'
+        endif
+!  Append to diagnostics file
+        if (lroot.and.ip<10) print*,'Writing power spectra of variable', sp,  &
+            'to ', trim(datadir)//'/power'//trim(sp)//trim(str)
+        open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str), &
+            position='append')
         write(1,*) t
-        write(1,'(1p,8e10.2)') spectrumz_sum
+        write(1,'(1p,8e10.2)') spectrumz_sum/(nxgrid*nygrid)
         close(1)
       endif
     endif
