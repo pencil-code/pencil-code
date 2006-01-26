@@ -4,9 +4,9 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
-               contourplot=contourplot, sqroot=sqroot
+               contourplot=contourplot,color=color,sqroot=sqroot
 ;
-; $Id: rvid_plane.pro,v 1.18 2005-12-20 19:24:46 mee Exp $
+; $Id: rvid_plane.pro,v 1.19 2006-01-26 12:24:39 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -38,6 +38,7 @@ default,zoom,1.0
 default,dimfile,'dim.dat'
 default,varfile,'var.dat'
 default,imgdir,'.'
+default,color,1
 default,pixelsize,1
 default,ximg,1
 default,yimg,1
@@ -320,10 +321,11 @@ while not eof(1) do begin
         if keyword_set(contourplot) then begin
           contourfill,plane2,lev=grange(amin,amax,60)
         endif else begin
-          tv,bytscl(plane2,min=amin,max=amax),iplane
+          tv, bytscl(plane2,min=amin,max=amax), iplane
         endelse
         ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
-        ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
+        xyouts, 0.05, 0.9, /normal, $
+            '!8t!6='+string(t,fo="(f6.1)"), color=color, size=0.5*zoom
         if keyword_set(png) then begin
           istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
           image = tvrd()
