@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.151 2006-01-26 07:57:23 dobler Exp $
+! $Id: mpicomm.f90,v 1.152 2006-01-26 12:25:21 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1959,8 +1959,6 @@ module Mpicomm
 !
 !  27-oct-02/axel: adapted from transform_i, for fftpack
 !
-      use Messages
-!
       real,dimension(nx,ny,nz) :: a_re,a_im
       complex,dimension(nx) :: ax
       real,dimension(4*nx+15) :: wsavex
@@ -1985,7 +1983,7 @@ module Mpicomm
         if (nygrid/=nxgrid) then
           if (lroot) &
               print*, 'transform_fftpack: must have nygrid=nxgrid!'
-          call fatal_error('transform_fftpack','')
+          call stop_it('transform_fftpack')
         endif
         call transp(a_re,'y')
         call transp(a_im,'y')
@@ -2007,7 +2005,7 @@ module Mpicomm
         if (nzgrid/=nxgrid) then
           if (lroot) &
               print*, 'transform_fftpack: must have nzgrid=nxgrid!'
-          call fatal_error('transform_fftpack','')
+          call stop_it('transform_fftpack')
         endif
         call transp(a_re,'z')
         call transp(a_im,'z')
