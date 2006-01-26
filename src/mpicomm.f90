@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.150 2006-01-25 20:22:13 ajohan Exp $
+! $Id: mpicomm.f90,v 1.151 2006-01-26 07:57:23 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1958,6 +1958,8 @@ module Mpicomm
 !  The length of the work arrays for ffts is therefore always nx.
 !
 !  27-oct-02/axel: adapted from transform_i, for fftpack
+!
+      use Messages
 !
       real,dimension(nx,ny,nz) :: a_re,a_im
       complex,dimension(nx) :: ax
