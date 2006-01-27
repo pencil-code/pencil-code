@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.56 2006-01-27 15:56:31 ajohan Exp $
+! $Id: particles_dust.f90,v 1.57 2006-01-27 17:09:57 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -32,6 +32,7 @@ module Particles
   real :: Ri0=0.25, eps1=0.5
   integer :: it_dustburst=0
   logical :: ldragforce_gas=.false., lpar_spec=.false.
+  logical :: ldragforce_equi_global_eps=.false.
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
   character (len=labellen) ::gravx_profile='zero',  gravz_profile='zero'
 
@@ -40,7 +41,7 @@ module Particles
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, &
       gravz_profile, gravz, kz_gg, rhop_tilde, eps_dtog, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
-      lmigration_redo
+      lmigration_redo, ldragforce_equi_global_eps
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -75,7 +76,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.56 2006-01-27 15:56:31 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.57 2006-01-27 17:09:57 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -224,6 +225,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Boundcond
+      use EquationOfState, only: gamma, beta_glnrho_global, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
       use Sub
@@ -233,8 +235,8 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
-      real :: r, p
-      integer :: k
+      real :: r, p, eps, cs
+      integer :: l, k, ix0, iy0, iz0
 !
       intent (out) :: f, fp, ineargrid
 !
@@ -342,6 +344,66 @@ module Particles
         do k=1,npar_loc
           call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
           fp(k,ivpx:ivpz) = uup
+        enddo
+
+      case('dragforce_equilibrium')
+!
+!  Equilibrium between drag forces on dust and gas and other forces
+!  (from Nakagawa, Sekiya, & Hayashi 1986).
+!
+        if (lroot) then
+          print*, 'init_particles: drag equilibrium'
+          print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
+        endif
+!  Calculate average dust-to-gas ratio in box.
+        if (ldensity_nolog) then
+          eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+              sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        else
+          eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+              sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
+        endif
+
+        if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
+!  Set gas velocity field.
+        do l=l1,l2; do m=m1,m2; do n=n1,n2
+          cs=sqrt(cs20)
+!  Take either global or local dust-to-gas ratio.
+          if (.not. ldragforce_equi_global_eps) then
+            if (ldensity_nolog) then
+              eps = rhop_tilde*f(l,m,n,inp)/f(l,m,n,ilnrho)
+            else
+              eps = rhop_tilde*f(l,m,n,inp)/exp(f(l,m,n,ilnrho))
+            endif
+          endif
+
+          f(l,m,n,iux) = f(l,m,n,iux) - &
+              1/gamma*beta_glnrho_global(1)*eps*Omega*tausp/ &
+              ((1.0+eps)**2+(Omega*tausp)**2)*cs
+          f(l,m,n,iuy) = f(l,m,n,iuy) + &
+              1/gamma*beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+              (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+
+        enddo; enddo; enddo
+!  Set particle velocity field.
+        do k=1,npar_loc
+!  Take either global or local dust-to-gas ratio.
+          if (.not. ldragforce_equi_global_eps) then
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            if (ldensity_nolog) then
+              eps = rhop_tilde*f(ix0,iy0,iz0,inp)/f(ix0,iy0,iz0,ilnrho)
+            else
+              eps = rhop_tilde*f(ix0,iy0,iz0,inp)/exp(f(ix0,iy0,iz0,ilnrho))
+            endif
+          endif
+          
+          fp(k,ivpx) = fp(k,ivpx) + &
+              1/gamma*beta_glnrho_global(1)*Omega*tausp/ &
+              ((1.0+eps)**2+(Omega*tausp)**2)*cs
+          fp(k,ivpy) = fp(k,ivpy) + &
+              1/gamma*beta_glnrho_global(1)*(1+eps)/ &
+              (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+
         enddo
 
       case default
