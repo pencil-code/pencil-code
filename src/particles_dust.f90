@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.55 2006-01-14 11:55:15 ajohan Exp $
+! $Id: particles_dust.f90,v 1.56 2006-01-27 15:56:31 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,7 +75,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.55 2006-01-14 11:55:15 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.56 2006-01-27 15:56:31 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -302,6 +302,11 @@ module Particles
 !
       call boundconds_particles(fp,npar_loc,ipar)
 !
+!  Map particle position on the grid.
+!
+      call map_nearest_grid(f,fp,ineargrid)
+      call map_xxp_grid(f,fp,ineargrid)
+!
 !  Initial particle velocity.
 !
       select case(initvvp)
@@ -345,6 +350,10 @@ module Particles
         call stop_it("")
 
       endselect
+!
+!  Map particle velocities on the grid.
+!
+      call map_vvp_grid(f,fp,ineargrid)
 !
     endsubroutine init_particles
 !***********************************************************************
