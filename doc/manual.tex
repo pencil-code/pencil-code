@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.316 2006-01-02 14:18:53 ajohan Exp $
+%%  CVS: $Id: manual.tex,v 1.317 2006-01-28 11:01:28 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-01-02 14:18:53 $ $,~ $ $Revision: 1.316 $ $}
+%\date{$ $Date: 2006-01-28 11:01:28 $ $,~ $ $Revision: 1.317 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-01-02 14:18:53 $ $,~ $ $Revision: 1.316 $ $}\\
+  \emph{$ $Date: 2006-01-28 11:01:28 $ $,~ $ $Revision: 1.317 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1803,7 +1803,7 @@ If you have a $32^3$ run in some directory \file{runA_32a}, then go to
 its parent directory, i.e.\
 \begin{alltt}
   \prompt{runA_32a> } cd ..
-  \prompt{forced> } new runA_32a runA_64a
+  \prompt{forced> } pc_newrun runA_32a runA_64a
   \prompt{forced> } cd runA_64a/src
   \prompt{forced> } vi cparam.local
 \end{alltt}
@@ -5092,7 +5092,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-01-02 14:18:53 $ $,~ $ $Revision: 1.316 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-01-28 11:01:28 $ $,~ $ $Revision: 1.317 $ $}
 
 \section{Timings}
 
@@ -6814,8 +6814,14 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{lread_oldsnap_nomag} [\code{F}]
                & if set \code{T}, the old snapshot from a non-magnetic run
                  will be read in before producing (overwriting) initial
-                 conditions. This allows one to let a hydrodynamic run
-                 relax before adding a magnetic field.\\
+                 conditions. This allows one to let a hydrodynamic
+                 run relax before adding a magnetic field. However,
+                 for this to work one has to modify {\it manually}
+                 \file{data/param.nml} by adding an entry for
+                 \var{MAGNETIC_INIT_PARS} or \var{PSCALAR_INIT_PARS}.
+                 In addition, for \code{idl} to read correctly after the
+                 first restarted run, you must adjust the value of \var{mvar}
+                 in \file{data/dim.dat} \\
   \var{lread_oldsnap_nopscalar} [\code{F}]
                & if set \code{T}, the old snapshot from a run without
                  passive scalar will be read in before producing
@@ -8194,7 +8200,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.316 2006-01-02 14:18:53 ajohan Exp $ $}
+$ $Id: manual.tex,v 1.317 2006-01-28 11:01:28 brandenb Exp $ $}
 
 
 \end{document}
