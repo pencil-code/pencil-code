@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.317 2006-01-28 11:01:28 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.318 2006-01-28 15:36:00 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-01-28 11:01:28 $ $,~ $ $Revision: 1.317 $ $}
+%\date{$ $Date: 2006-01-28 15:36:00 $ $,~ $ $Revision: 1.318 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-01-28 11:01:28 $ $,~ $ $Revision: 1.317 $ $}\\
+  \emph{$ $Date: 2006-01-28 15:36:00 $ $,~ $ $Revision: 1.318 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4843,12 +4843,12 @@ diagnostic quantity \var{jbm} is already implemented) with
 If we pretend for the sake of the exercise that no trace of \var{jbm} was
 in the code, and we were only now adding it, we would need to do the following
 \begin{enumerate}
-\item add the variable \var{i_jbm} to the \emph{module variables} of
+\item add the variable \var{idiag_jbm} to the \emph{module variables} of
   \name{Magnetic} in both \file{magnetic.f90} and \file{nomagnetic.f90}:
   \begin{alltt}
-  integer :: i_jbm=0
+  integer :: idiag_jbm=0
   \end{alltt}
-  The variable \var{i_jbm} is needed for matching the position of \var{jbm}
+  The variable \var{idiag_jbm} is needed for matching the position of \var{jbm}
   with the list of diagnostic variables specified in \file{print.in}.
 \item in the subroutine \code{daa_dt} in \file{magnetic.f90}, declare and
   calculate the quantity \var{jb} (the average of which will be
@@ -4857,7 +4857,7 @@ in the code, and we were only now adding it, we would need to do the following
   real, dimension (nx) :: jb  {\sl! jj\(\,\cdot\,\)BB}
   {\sl[\ldots]}
   if (ldiagnos) then          {\sl! only calculate if diagnostics is required}
-    if (i_jbm/=0) then        {\sl! anybody asked for jbm?}
+    if (idiag_jbm/=0) then        {\sl! anybody asked for jbm?}
       call dot_mn(jj,bb,jb)   {\sl! assuming jj and bb are known}
       call sum_mn_name(jb,i_jbm)
     endif
@@ -4872,7 +4872,7 @@ in the code, and we were only now adding it, we would need to do the following
   !
   if (lreset) then  {\sl! need to reset list of diagnostic variables?}
     {\sl[\ldots]}
-    i_jbm=0
+    idiag_jbm=0
     {\sl[\ldots]}
   endif
   !
@@ -4880,7 +4880,7 @@ in the code, and we were only now adding it, we would need to do the following
   !
   do iname=1,nname
     {\sl[\ldots]}
-    call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
+    call parse_name(iname,cname(iname),cform(iname),'jbm',idiag_jbm)
     {\sl[\ldots]}
   enddo
   {\sl[\ldots]}
@@ -4888,7 +4888,7 @@ in the code, and we were only now adding it, we would need to do the following
   !  write column, i_XYZ, where our variable XYZ is stored
   !
   {\sl[\ldots]}
-  write(3,*) 'i_jbm=',i_jbm
+  write(3,*) 'i_jbm=',idiag_jbm
   {\sl[\ldots]}
   \end{alltt}
 \item in the subroutine \code{rprint_magnetic} in \file{nomagnetic.f90}, add
@@ -4899,7 +4899,7 @@ in the code, and we were only now adding it, we would need to do the following
   !  idl needs this even if everything is zero
   !
   {\sl[\ldots]}
-  write(3,*) 'i_jbm=',i_jbm
+  write(3,*) 'i_jbm=',idiag_jbm
   {\sl[\ldots]}
   \end{alltt}
 \item and don't forget to add your new variable to \file{print.in}:
@@ -4914,7 +4914,7 @@ replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Outputting new horizontal averages}
+\subsubsection{Outputting new horizontal averages}
 \label{S-new-hor-averages}
 
 Currently, only the horizontally $xy$-averaged $x$ and $y$ components
@@ -4928,7 +4928,7 @@ procedures as examples.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Other averages}
+\subsubsection{Other averages}
 \label{S-other-averages}
 
 There is the possibility to output also $xz$ and $yz$
@@ -4946,6 +4946,114 @@ quantity still depends.)
 {\it Disadvantage}: one needs to set the file \file{zaver.in} with
 the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
 rather big file \file[zaverages.dat]{data/zaverages.dat}.
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{The pencil case}
+
+Variables that are derived from the basic physical variables of the code are
+stored in one-dimensional \name{pencils} of length \var{nx}. All the pencils
+that are defined for a given set of physics modules are in turn bundled up in a
+Fortran structure called \code{p} (or, more illustrative, the \name{pencil
+case}). Access to individual pencils happens through the variable
+\code{p\%name}, where \code{name} is the name of a pencil, e.g. \code{rho} that
+is a derived variable of the logarithmic density \code{lnrho}.
+
+The pencils provided by a given physics module are declared in the header of
+the file, e.g. in the Density module:
+\begin{alltt}
+! PENCILS PROVIDED lnrho,rho,rho1,glnrho,grho,uglnrho,ugrho
+\end{alltt}
+Before compiling the code, the script \file{mkcparam} collects the names of all
+pencils that are provided by the chosen physics modules. It then defines the
+structure \code{p} with slots for every single of these pencils. The definition
+of the pencil case \code{p} is written in the include file
+\file{cparam_pencils.inc}. When the code is run, the actual pencils that are
+needed for the run are chosen based on the input parameters. This is done in
+the subroutines \code{pencil_criteria_modulename} that are present in each
+physics module. They are all called once before entering the time loop. In the
+\code{pencil_criteria} subroutines the logical arrays \code{lpenc_requested},
+\code{lpenc_diagnos}, \code{lpenc_diagnos2d}, and \code{lpenc_video} are set
+according to the pencils that are needed for the given run. Some pencils depend
+on each other, e.g. \code{uglnrho} depends on \code{uu} and \code{glnrho}. Such
+interdependencies are sorted out in the subroutines
+\code{pencil_interdep_modulename} that are called after
+\code{pencil_criteria_modulename}.
+
+In each time-step the values of the pencil logicals \code{lpenc_requested},
+\code{lpenc_diagnos}, \code{lpenc_diagnos2d}, and \code{lpenc_video} are
+combined to one single pencil array \code{lpencil} which is different from
+time-step to time-step depending on e.g.\ whether diagnostics or video output
+are done in that time-step.  The pencils are then calculated in the subroutines
+\code{calc_pencils_modulename}. This is done before calculating the time
+evolution of the physical variables, as this depends very often on derived
+variables in pencils.
+
+The centralised pencil calculation scheme is a guarantee that
+\begin{itemize}
+  \item All pencils are only calculated once
+  \item Pencils are always calculated by the proper physics module
+\end{itemize}
+Since the Pencil Code is a multipurpose code that has many different physics
+modules, it can lead to big problems if a module tries to calculate a derived
+variable that actually belongs to another module, because different input
+parameters can influence how the derived variables are calculated. One example
+is that the Density module can consider both logarithmic and non-logarithmic
+density, so if the Magnetic module calculates
+\begin{alltt}
+  rho = exp(f(l1:l2,m,n,ilnrho)
+\end{alltt}
+it is wrong if the Density module works with non-logarithmic density! The
+proper way for the Magnetic module to get to know the density is to request the
+pencil \code{rho} in \code{pencil_criteria_magnetic}.
+
+\subsubsection{Pencil check}
+
+To check that the correct pencils have been requested for a given run, one can
+run a \name{pencil consistency check} in the beginning of a run by setting the
+logical \code{lpencil_check} in \code{\&run_pars}. The check is meant to see if
+\begin{itemize}
+  \item All needed pencils have been requested
+  \item All requested pencils are needed
+\end{itemize}
+The consistency check first calculates the value of \code{df} with all the
+requested pencils. Then the pencil requests are flipped one at a time --
+requested to not requested, not requested to requested. The following
+combination of events can occur:
+\begin{itemize}
+  \item not requested $\rightarrow$ requested, \code{df} not changed\\
+    The pencil is not requested and is not needed.
+  \item not requested $\rightarrow$ requested, \code{df} changed\\
+    The pencil is not requested, but is needed. The code stops.
+  \item requested $\rightarrow$ not requested, \code{df} not changed\\
+    The pencil is requested, but is not needed. The code gives a warning.
+  \item requested $\rightarrow$ not requested, \code{df} changed\\
+    The pencil is requested and is needed.
+\end{itemize}
+
+\subsubsection{Adding new pencils}
+
+Adding a new pencil to the pencil case is trivial but requires a few steps.
+\begin{itemize}
+  \item Declare the name of the pencil in the header of the proper physics
+      module
+  \item Define the new pencil in \file{\$PENCIL_HOME/src/sripts/mkcparam}. Here
+      is also set whether the pencil is a scalar, a vector or a matrix.
+  \item Set interdependency of the new pencil (i.e.\ what other pencils does it
+      depend on) in the subroutine \code{pencil_interdep_modulename}
+  \item Make rule for calculating the pencil in \code{calc_pencils_modulename}
+  \item Request the new pencil based on the input parameters in any relevant
+      physics module
+\end{itemize}
+Remember that the centralised pencilation scheme is partially there to force
+the users of the code to think in general terms when implementing new physics.
+Any derived variable can be useful for a number of different physics problems,
+and it is important that a pencil is accessible in a transparent way to all
+modules.
+
+
+
 
 
 % ---------------------------------------------------------------------- %
@@ -5092,7 +5200,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-01-28 11:01:28 $ $,~ $ $Revision: 1.317 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-01-28 15:36:00 $ $,~ $ $Revision: 1.318 $ $}
 
 \section{Timings}
 
@@ -8200,7 +8308,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.317 2006-01-28 11:01:28 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.318 2006-01-28 15:36:00 ajohan Exp $ $}
 
 
 \end{document}
