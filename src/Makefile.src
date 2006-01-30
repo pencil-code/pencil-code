@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.158 2006-01-19 16:27:06 nbabkovs Exp $
+### $Id: Makefile.src,v 1.159 2006-01-30 19:43:35 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -185,7 +185,8 @@ LIBMPISUFFIX=
 #FC=ifort -I/usr/include/lam -L/usr/lib/lam/lib #(mmtf|nl19)
 #FC=/opt/intel/compiler60/ia32/bin/ifc -I/usr/lib/lam/include #(taspd209a)
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
-#LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
+#LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
+#LIBMPISUFFIX=_#(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
@@ -460,6 +461,7 @@ read_videofiles=read_videofiles.o $(read_videofiles_deps)
 read_vectorfiles_deps=cparam.o cdata.o general.o
 read_vectorfiles=read_vectorfiles.o $(read_vectorfiles_deps)
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c read_videofiles.f90
+PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
@@ -483,7 +485,7 @@ start_buildtime:
 stop_buildtime:
 	@echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
 buildinfo: 
-	@pc_xmlexport buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
+	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
 	                       -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
 	                       -e "FCCLEANER='$(FCCLEANER)';LDMPI='$(LDMPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
 	                       -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
