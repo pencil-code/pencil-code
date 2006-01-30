@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.109 2006-01-27 16:22:42 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.110 2006-01-30 14:07:07 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -33,6 +33,7 @@ module Dustvelocity
   public :: unit_md, dust_chemistry, mumon, mmon, mi, md
 
   ! init parameters
+  complex, dimension (7) :: coeff
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0,mdplus,mdminus,ad,surfd,mi,rhodsad1
@@ -59,7 +60,7 @@ module Dustvelocity
       ampl_udx, ampl_udy, ampl_udz, phase_udx, phase_udy, phase_udz, &
       rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
-      dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, &
+      dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, coeff, &
       ldustcoagulation, ldustcondensation, lvshear_dust_global_eps, cdtd
 
   ! run parameters
@@ -134,7 +135,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.109 2006-01-27 16:22:42 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.110 2006-01-30 14:07:07 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -420,7 +421,6 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
       real :: eps,cs,eta_glnrho,v_Kepler
-      complex, dimension (7) :: coeff
       integer :: j,k,l
       logical :: lnothing
 !
@@ -618,18 +618,29 @@ module Dustvelocity
           v_Kepler   =  1.0/abs(beta_glnrho_global(1))
 
           if (lroot) print*, 'init_uud: eta, vK=', eta_glnrho, v_Kepler
-          coeff      = (/ (-0.13986370335199474 , 0.03729258495924567), &
-                          ( 0.13055968952473443 , 0.06405801677715553), &
-                          ( 0.16395651383288362 ,-0.02332488129054103), &
-                          (-0.16914091599893033 , 0.03615278602511117), &
-                          ( 0.1336673744941929  , 0.05917022664447503), &
-                          ( 0.16914091599893033 ,-0.03615278602511117), &
-                          ( 0.008956192722501395, 0.00848240036927419) /)
 !
+          if (ldensity_nolog) then
+            if (ldustdensity_log) then
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/ &
+                  sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            else
+              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/ &
+                  sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+            endif
+          else
+            if (ldustdensity_log) then
+              eps=sum(exp(f(l1:l2,m1:m2,n1:n2,ind(1))))/ &
+                  sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+            else
+              eps=sum(f(l1:l2,m1:m2,n1:n2,ind(1)))/ &
+                  sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+            endif
+          endif
+!          
           do m=m1,m2; do n=n1,n2
 !            
             f(l1:l2,m,n,ind(1)) = 0.0*f(l1:l2,m,n,ind(1)) + &
-                3.0*ampluud*cos(kz_uud*z(n))*cos(kx_uud*x(l1:l2))
+                eps*ampluud*cos(kz_uud*z(n))*cos(kx_uud*x(l1:l2))
 !                
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
                 (eta_glnrho*v_Kepler)**2*ampluud* &
