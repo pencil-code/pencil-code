@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.14 2006-01-01 15:42:39 ajohan Exp $
+! $Id: particles_main.f90,v 1.15 2006-02-01 14:38:12 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -273,6 +273,22 @@ module Particles_main
 !
     endsubroutine particles_powersnap
 !***********************************************************************
-
-
+    subroutine auxcall_gravcomp(f,df,g0,r0_pot,n_pot)
+!
+!  Auxiliary call to gravity_companion in order 
+!  to fetch the array fp inside the mn loop  
+!
+!  01-feb-06/wlad : coded 
+!
+      use Planet, only : gravity_companion
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real :: g0,r0_pot
+      integer :: n_pot
+!
+      call gravity_companion(f,df,fp,g0,r0_pot,n_pot)
+!
+    endsubroutine auxcall_gravcomp
+!***********************************************************************
 endmodule Particles_main
