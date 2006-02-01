@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.10 2006-01-01 15:42:39 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.11 2006-02-01 14:27:59 ajohan Exp $
 !
 !  This module takes care of everything related to tracer particles
 !
@@ -9,6 +9,7 @@
 !
 ! MPVAR CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM logical, parameter :: lparticles_planet=.false.
 !
 !***************************************************************
 module Particles
@@ -51,7 +52,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.10 2006-01-01 15:42:39 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.11 2006-02-01 14:27:59 ajohan Exp $")
 !
 !  Indices for particle position.
 !
