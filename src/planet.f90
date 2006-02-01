@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.9 2005-11-25 18:15:43 wlyra Exp $
+! $Id: planet.f90,v 1.10 2006-02-01 17:08:33 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -45,9 +45,11 @@ module Planet
   logical :: lwavedamp=.false.,llocal_iso=.false.
   logical :: lsmoothlocal=.false.
   logical :: lcs2_global=.false.
+  logical :: lmigrate=.false.
 
   namelist /planet_run_pars/ gc,nc,b,lramp, &
-       lwavedamp,llocal_iso,lsmoothlocal,lcs2_global
+       lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
+       lmigrate
 ! 
 
   integer :: idiag_torqint=0,idiag_torqext=0
@@ -76,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.9 2005-11-25 18:15:43 wlyra Exp $")
+           "$Id: planet.f90,v 1.10 2006-02-01 17:08:33 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -221,7 +223,7 @@ module Planet
 !
     endsubroutine rprint_planet
 !***********************************************************************
-    subroutine gravity_companion(f,df,fp,g0,r0_pot,n_pot)
+    subroutine gravity_companion(f,df,fp,dfp,g0,r0_pot,n_pot,p)
 !
 !  calculate the gravity of a companion offcentered by (Rx,Ry,Rz)
 !
@@ -238,13 +240,14 @@ module Planet
 !     
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp 
+      real, dimension (mpar_loc,mpvar) :: fp,dfp 
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,rrc,rrs,g_star,dens
       real :: Omega_inertial,ax,ay,az,gtc
       real :: axs,ays,azs,g0,r0_pot
       integer :: n_pot
       logical :: lheader,lfirstcall=.true.
+      type (pencil_case) :: p
 !
 !  Position of the particles
 !  1 is planet, 2 is star
@@ -303,12 +306,16 @@ module Planet
 !  In the future, compute only potential and call grav=grad(pot)
 !      
       call set_global(ggs+ggc,m,n,'gg',nx)
+!
+!  Add force on planet and star due to disk gravity
+!
+      if (lmigrate) call gravity_disk(fp,dfp,p)
 !      
 !  Stuff for calc_torque. Should maybe change it to particles_planet
 !
       if ((idiag_torqint/=0) .or. (idiag_torqext/=0) .or. &
            (idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) then  
-         dens = f(l1:l2,m,n,ilnrho)
+         dens = p%rho
          call calc_torque(dens,gtc,ax,ay,b)
       endif
 
@@ -397,9 +404,10 @@ module Planet
 !
       if (headtt) print*,&
            'planet: local isothermal equation of state for accretion disk'
-!      
+!  
       call get_global(cs2,m,n,'cs2')
 !
+
     endsubroutine local_isothermal
 !***********************************************************
     subroutine wave_damping(f,df)
@@ -559,6 +567,49 @@ module Planet
 
    endsubroutine gravity_star
 !***************************************************************
+   subroutine gravity_disk(fp,dfp,p)
+!
+! This routine takes care of the migration process, calculating
+! the back reaction of the disk on the planet and star.
+!
+! 01-feb-06/wlad : coded
+!
+! ps: Apparently, there is a difference between a real number and 
+! an array of dimension=1. As mpireduce deals with arrays, I
+! have to define the sums as arrays as well. 
+!
+     use Mpicomm
+     use Particles_cdata
+!
+     real, dimension (mpar_loc,mpvar) :: fp,dfp 
+     real, dimension(nx) :: re,grav_gas
+     real, dimension(1) :: sumx_loc,sumy_loc,sumx,sumy
+     integer :: k
+     real :: rp0_pot=0.
+     type (pencil_case) :: p
+!
+     do k=1,npar
+        re = sqrt((x(l1:l2) - fp(k,ixp))**2 +  (y(m) - fp(k,iyp))**2)
+!
+        grav_gas = p%rho*dx*dy*re/ &
+             (re**2 + rp0_pot**2)**(-1.5)
+!                  
+        sumx_loc(1) = sum(grav_gas * (x(l1:l2) - fp(k,ixp))/re)
+        sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))/re)
+!                  
+        call mpireduce_sum(sumx_loc,sumx,1) 
+        call mpireduce_sum(sumy_loc,sumy,1) 
+        !call mpireduce_sum(sumz_loc,sumz,1)
+!        
+        if (lroot) then
+           dfp(k,ivpx) = dfp(k,ivpx) + sumx(1)  
+           dfp(k,ivpy) = dfp(k,ivpy) + sumy(1)
+        endif
+!       
+     enddo               
+!
+   endsubroutine gravity_disk
+!***************************************************************
    subroutine calc_monitored(f,xs,ys,xp,yp,g0,gp,r0_pot)
 
 ! calculate total energy and angular momentum
@@ -590,20 +641,21 @@ module Planet
      vel2 = f(l1:l2,m,n,iux)**2 + f(l1:l2,m,n,iuy)**2
      kin_energy = f(l1:l2,m,n,ilnrho) * vel2/2.
      
-     !potential energy
+     !potential energy - uses smoothed potential
      pot_energy = -1.*(g0*(rstar**2+r0_pot**2)**(-1./2) &
           + gp*(rplanet**2+b**2)**(-1./2))*f(l1:l2,m,n,ilnrho)
 
      total_energy = kin_energy + pot_energy
 
      !integrate it
+
      call sum_lim_mn_name(total_energy,idiag_totalenergy)
 
      !angular momentum
      r = sqrt(x(l1:l2)**2 + y(m)**2)+tini !this is correct: baricenter
      uphi = (-f(l1:l2,m,n,iux)*y(m) + f(l1:l2,m,n,iuy)*x(l1:l2))/r
      angular_momentum = f(l1:l2,m,n,ilnrho) * r * uphi
-       
+
      !integrate it
      call sum_lim_mn_name(angular_momentum,idiag_angularmomentum)
 

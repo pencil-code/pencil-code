@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.6 2006-02-01 12:59:56 ajohan Exp $
+! $Id: particles_planet.f90,v 1.7 2006-02-01 17:08:33 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -27,15 +27,13 @@ module Particles
   real, dimension(npar) :: vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: delta_vp0=1.0, cdtp=0.2
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
-  logical :: lmigrate=.false.
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz
 
   namelist /particles_run_pars/ &
-      bcpx, bcpy, bcpz, dsnap_par_minor, cdtp, linterp_reality_check, &
-      lmigrate
+      bcpx, bcpy, bcpz, dsnap_par_minor, cdtp, linterp_reality_check
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -61,7 +59,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.6 2006-02-01 12:59:56 ajohan Exp $")
+           "$Id: particles_planet.f90,v 1.7 2006-02-01 17:08:33 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -291,13 +289,14 @@ module Particles
 !  gravity field as global variable. 
 !
 !  17-nov-05/anders+wlad: coded
+!  01-feb-06/wlad : disk backreaction moved to planet.f90
 !
       use Cdata
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Sub
       use Gravity,only: g0,r0_pot,n_pot
-      use Planet, only: gc,b,gravity_companion
+      use Planet, only: gc,b 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -306,8 +305,8 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: re, grav_gas
-      real :: Omega2,rp0_pot,rsep
-      integer :: i, k, ix0, iy0, iz0
+      real :: Omega2,rsep
+      integer :: i, k, ix0, iy0, iz0,mg,ng
       logical :: lheader, lfirstcall=.true.
       real :: ax,ay,axs,ays
 !
@@ -353,50 +352,11 @@ module Particles
       dfp(1,ivpx) = dfp(1,ivpx) - g0/rsep**3 * (ax-axs)
       dfp(1,ivpy) = dfp(1,ivpy) - g0/rsep**3 * (ay-ays)
 !
-!  Acceleration of particles due to gas gravity.
-!
-!
-      rp0_pot = b
-!
-!  Acceleration due to gas gravity if lmigrate is present
-!
-      do m=m1,m2
-         do n=n1,n2
-!
-            if (lmigrate) then
-!
-               do k=1,npar
-                  re = sqrt((x(l1:l2) - fp(k,ixp))**2 +  (y(m) - fp(k,iyp))**2)
-                  !
-                  ! this thing here assumes G=1, which is NOT what I use 
-                  ! thru the simulation. Or I change g0 = 1e10, or I scale
-                  ! it down by G. Thing about it later on, as now the results
-                  ! will depend on the mass of the disk.
-                  !
-                  grav_gas = f(l1:l2,m,n,ilnrho)*dx*dy*re/ &
-                       (re**2 + rp0_pot**2)**(-1.5)
-!                  
-                  dfp(k,ivpx) = dfp(k,ivpx) & 
-                       + sum(grav_gas * (x(l1:l2) - fp(k,ixp))/re)
-!                  
-                  dfp(k,ivpy) = dfp(k,ivpy) & 
-                       + sum(grav_gas * (y(  m  ) - fp(k,iyp))/re)
-               enddo
-            endif
-!
-!  Reset gravity field (star+planet) as global variable
-!
-            call gravity_companion(f,df,fp,g0,r0_pot,n_pot)
-!
-         enddo
-      enddo
-!
 !  Add relative velocity and distance as diagnostic variables
 !  Don't understand why I need to fill a whole array
 ! 
       dist(1:npar) = rsep 
-      vel(1:npar)  = sqrt(fp(1,ivpx)**2 + fp(1,ivpy)**2)
-    
+      vel(1:npar)  = sqrt(fp(1,ivpx)**2 + fp(1,ivpy)**2)    
 !
 !  Diagnostic output
 !
@@ -551,5 +511,4 @@ module Particles
 !
     endsubroutine rprint_particles
 !***********************************************************************
-
 endmodule Particles
