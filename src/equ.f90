@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.267 2006-02-01 14:32:08 wlyra Exp $
+! $Id: equ.f90,v 1.268 2006-02-01 17:06:11 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.267 2006-02-01 14:32:08 wlyra Exp $")
+           "$Id: equ.f90,v 1.268 2006-02-01 17:06:11 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -584,7 +584,7 @@ module Equ
 !  Add planet gravity and wave damping
 !
         if (lplanet) then
-           call auxcall_gravcomp(f,df,g0,r0_pot,n_pot)
+           call auxcall_gravcomp(f,df,g0,r0_pot,n_pot,p)
            if (lwavedamp) call wave_damping(f,df)
         endif
 !
