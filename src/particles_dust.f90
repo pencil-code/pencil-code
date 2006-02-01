@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.57 2006-01-27 17:09:57 ajohan Exp $
+! $Id: particles_dust.f90,v 1.58 2006-02-01 10:39:08 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -30,6 +30,9 @@ module Particles
   real :: tausmin=0.0, taus1max=0.0, cdtp=0.2
   real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
   real :: Ri0=0.25, eps1=0.5
+  real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
+  real :: kx_vvp=0.0, ky_vvp=0.0, kz_vvp=0.0, amplvvp=0.0
+  complex, dimension (7) :: coeff=(0.0,0.0)
   integer :: it_dustburst=0
   logical :: ldragforce_gas=.false., lpar_spec=.false.
   logical :: ldragforce_equi_global_eps=.false.
@@ -41,7 +44,8 @@ module Particles
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, &
       gravz_profile, gravz, kz_gg, rhop_tilde, eps_dtog, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
-      lmigration_redo, ldragforce_equi_global_eps
+      lmigration_redo, ldragforce_equi_global_eps, coeff, &
+      kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -76,7 +80,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.57 2006-01-27 17:09:57 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.58 2006-02-01 10:39:08 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -283,6 +287,9 @@ module Particles
         if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
         if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
 
+      case ('streaming')
+        call streaming(fp,f)
+
       case ('constant-Ri')
         call constant_richardson(fp,f)
 
@@ -418,6 +425,97 @@ module Particles
       call map_vvp_grid(f,fp,ineargrid)
 !
     endsubroutine init_particles
+!***********************************************************************
+    subroutine streaming(fp,f)
+!
+!  Mode that is unstable to the streaming instability of Youdin & Goodman (2005)
+!
+!  30-jan-05/anders: coded
+!
+      use EquationOfState, only: gamma, beta_glnrho_global
+      use General, only: random_number_wrapper
+!      
+      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      integer, parameter :: nz_inc=10
+      real :: r, p, particles_per_gridcell
+      real :: eta_glnrho, v_Kepler
+      integer :: l, k, k0, npar_bin
+!
+!
+!
+      eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
+      v_Kepler   =  1.0/abs(beta_glnrho_global(1))      
+!
+!  Place particles according to probability function.
+!
+      particles_per_gridcell=npar/(nxgrid*nygrid*nzgrid)
+      k0=0
+      do l=l1,l2; do n=n1,n2
+        npar_bin=int(particles_per_gridcell* &
+            (1.0+amplxxp*cos(kx_xxp*x(l))*cos(kx_xxp*z(n))))
+        if (npar_bin>=2.and.mod(n,2)==0) npar_bin=npar_bin+1
+        do k=k0+1,k0+npar_bin
+          if (k<=npar_loc) then
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            fp(k,ixp)=x(l)+(2*r-1.0)*dx/2
+            fp(k,iyp)=0.0
+            fp(k,izp)=z(n)+(2*r-1.0)*dz/2
+            fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
+                ( real(coeff(1))*cos(kx_xxp*x(l)) - &
+                 aimag(coeff(1))*sin(kx_xxp*x(l)))*cos(kz_xxp*z(n))
+            fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
+                ( real(coeff(2))*cos(kx_xxp*x(l)) - &
+                 aimag(coeff(2))*sin(kx_xxp*x(l)))*cos(kz_xxp*z(n))
+            fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
+                (aimag(coeff(3))*cos(kx_xxp*x(l)) + &
+                  real(coeff(3))*sin(kx_xxp*x(l)))*sin(kz_xxp*z(n))
+          endif
+        enddo
+        k0=k0+npar_bin
+      enddo; enddo
+!
+!  Particles left out by round off are just placed randomly.
+!      
+      if (k0+1<=npar_loc) then
+        do k=k0+1,npar_loc
+          call random_number_wrapper(fp(k,ixp))
+          call random_number_wrapper(fp(k,izp))
+          fp(k,ixp)=xyz0(1)+fp(k,ixp)*Lxyz(1)
+          fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+          fp(k,iyp)=0.0
+        enddo
+        if (lroot) print '(A,i7,A)', 'streaming: placed ', &
+            npar_loc-k0, ' particles randomly.'
+      endif
+!
+!  Set fluid fields.
+!
+      do m=m1,m2; do n=n1,n2
+        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
+            (eta_glnrho*v_Kepler)**2*amplxxp* &
+            ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
+             aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+!                
+        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
+            eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
+             aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+!                
+        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+            eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
+             aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+!
+        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
+            eta_glnrho*v_Kepler*(-amplxxp)* &
+            (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
+              real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
+      enddo; enddo
+!
+    endsubroutine streaming
 !***********************************************************************
     subroutine constant_richardson(fp,f)
 !
