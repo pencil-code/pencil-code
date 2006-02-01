@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.5 2005-11-29 18:48:14 wlyra Exp $
+! $Id: particles_planet.f90,v 1.6 2006-02-01 12:59:56 ajohan Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -9,6 +9,7 @@
 !
 ! MPVAR CONTRIBUTION 6
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM logical, parameter :: lparticles_planet=.true.
 !
 !***************************************************************
 module Particles
@@ -60,7 +61,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.5 2005-11-29 18:48:14 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.6 2006-02-01 12:59:56 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -94,7 +95,11 @@ module Particles
 !
 !  Set npar_loc=npar for non-parallel implementation of few particles.
 !
-      npar_loc=npar
+      if (lroot) then
+        npar_loc=npar
+      else
+        npar_loc=0
+      endif
       do k=1,npar
         ipar(k)=k
       enddo
@@ -145,20 +150,20 @@ module Particles
       case ('constant')
         if (lroot) &
             print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
-        fp(:,ixp)=xp0
-        fp(:,iyp)=yp0
-        fp(:,izp)=zp0
+        fp(1:npar_loc,ixp)=xp0
+        fp(1:npar_loc,iyp)=yp0
+        fp(1:npar_loc,izp)=zp0
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle positions'
-        do k=1,npar
+        do k=1,npar_loc
           if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
           if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
           if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
         enddo
-        if (nxgrid/=1) fp(1:npar,ixp)=xyz0(1)+fp(1:npar,ixp)*Lxyz(1)
-        if (nygrid/=1) fp(1:npar,iyp)=xyz0(2)+fp(1:npar,iyp)*Lxyz(2)
-        if (nzgrid/=1) fp(1:npar,izp)=xyz0(3)+fp(1:npar,izp)*Lxyz(3)
+        if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0(1)+fp(1:npar_loc,ixp)*Lxyz(1)
+        if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0(2)+fp(1:npar_loc,iyp)*Lxyz(2)
+        if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0(3)+fp(1:npar_loc,izp)*Lxyz(3)
 
       case default
         if (lroot) print*, 'init_particles: No such such value for initxxp: ', &
@@ -176,7 +181,7 @@ module Particles
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
-!      call boundconds_particles(fp,npar,ipar)
+      call boundconds_particles(fp,npar_loc,ipar)
 !
 !  Initial particle velocity.
 !
@@ -186,31 +191,31 @@ module Particles
         if (lroot) print*, 'init_particles: No particle velocity set'
       case ('zero')
         if (lroot) print*, 'init_particles: Zero particle velocity'
-        fp(1:npar,ivpx:ivpz)=0.
+        fp(1:npar_loc,ivpx:ivpz)=0.
 
       case ('constant')
         if (lroot) print*, 'init_particles: Constant particle velocity'
         if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
-        fp(:,ivpx)=vpx0
-        fp(:,ivpy)=vpy0
-        fp(:,ivpz)=vpz0
+        fp(1:npar_loc,ivpx)=vpx0
+        fp(1:npar_loc,ivpy)=vpy0
+        fp(1:npar_loc,ivpz)=vpz0
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle velocities; '// &
             'delta_vp0=', delta_vp0
-        do k=1,npar
+        do k=1,npar_loc
           call random_number_wrapper(fp(k,ivpx))
           call random_number_wrapper(fp(k,ivpy))
           call random_number_wrapper(fp(k,ivpz))
         enddo
-        fp(1:npar,ivpx) = -delta_vp0 + fp(1:npar,ivpx)*2*delta_vp0
-        fp(1:npar,ivpy) = -delta_vp0 + fp(1:npar,ivpy)*2*delta_vp0
-        fp(1:npar,ivpz) = -delta_vp0 + fp(1:npar,ivpz)*2*delta_vp0
+        fp(1:npar_loc,ivpx) = -delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
+        fp(1:npar_loc,ivpy) = -delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
+        fp(1:npar_loc,ivpz) = -delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
 
       case ('follow-gas')
         if (lroot) &
             print*, 'init_particles: Particle velocity equal to gas velocity'
-        do k=1,npar
+        do k=1,npar_loc
           call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
           fp(k,ivpx:ivpz) = uup
         enddo
@@ -472,6 +477,18 @@ module Particles
       write(unit,NML=particles_run_pars)
 !
     endsubroutine write_particles_run_pars
+!***********************************************************************
+    subroutine powersnap_particles(f)
+!
+!  Calculate power spectra of dust particle variables.
+!
+!  01-feb-06/anders: dummy
+!     
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*, f
+!
+    endsubroutine powersnap_particles
 !***********************************************************************
     subroutine rprint_particles(lreset,lwrite)
 !   
