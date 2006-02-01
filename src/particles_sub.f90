@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.39 2005-12-25 09:37:35 ajohan Exp $
+! $Id: particles_sub.f90,v 1.40 2006-02-01 11:15:18 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -262,10 +262,14 @@ module Particles_sub
 !  Redistribute particles among processors (internal boundary conditions).
 !
       if (lmpicomm) then
-        if (present(dfp)) then
-          call redist_particles_procs(fp,npar_loc,ipar,dfp)
+        if (lparticles_planet) then
+          call share_allparticles_procs(fp)
         else
-          call redist_particles_procs(fp,npar_loc,ipar)
+          if (present(dfp)) then
+            call redist_particles_procs(fp,npar_loc,ipar,dfp)
+          else
+            call redist_particles_procs(fp,npar_loc,ipar)
+          endif
         endif
       endif
 !
@@ -508,6 +512,23 @@ module Particles_sub
       enddo
 !
     endsubroutine dist_particles_evenly_procs
+!***********************************************************************
+    subroutine share_allparticles_procs(fp)
+!
+!  For runs with few particles, e.g. planets, keep particles at root
+!  processor and inform other processors of positions and velocities.
+!
+      use Mpicomm
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+!
+      integer :: k
+!
+      do k=1,npar
+        call mpibcast_real(fp(k,:),npar*mpvar)      
+      enddo
+!
+    endsubroutine share_allparticles_procs
 !***********************************************************************
     subroutine sum_par_name(a,iname,lsqrt)
 !
