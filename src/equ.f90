@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.266 2005-12-06 12:24:38 ajohan Exp $
+! $Id: equ.f90,v 1.267 2006-02-01 14:32:08 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.266 2005-12-06 12:24:38 ajohan Exp $")
+           "$Id: equ.f90,v 1.267 2006-02-01 14:32:08 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -581,10 +581,12 @@ module Equ
 !
         if (lshear)                      call shearing(f,df)
 !
-!  Add wave damping 
+!  Add planet gravity and wave damping
 !
-        if (lplanet.and.lwavedamp)       call wave_damping(f,df)
-
+        if (lplanet) then
+           call auxcall_gravcomp(f,df,g0,r0_pot,n_pot)
+           if (lwavedamp) call wave_damping(f,df)
+        endif
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
