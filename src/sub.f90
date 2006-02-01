@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.226 2005-11-15 13:49:49 wlyra Exp $ 
+! $Id: sub.f90,v 1.227 2006-02-01 14:34:17 wlyra Exp $ 
 
 module Sub 
 
@@ -333,35 +333,39 @@ module Sub
 !***********************************************************************
     subroutine sum_lim_mn_name(a,iname)
 !
-!  successively calculate integral of a, which is supplied at each call.
+!  Successively calculate integral of a, which is supplied at each call.
 !  Just takes values between r_int < r < r_ext
 !  The purpose is to compute the total mass at each timestep to
 !  monitor mass inflow/outflow and mass conservation
 !
 !   2-nov-05/wlad: adapted from sum_mn_name
+!
       use Cdata
 !
-      real, dimension (nx) :: a,r
+      real, dimension (nx) :: a,r,aux
+      real :: sumaux
       integer :: iname,i
 !
 
       if (iname /= 0) then 
 !
-        if (lfirstpoint) fname(iname) = 0.
-
         r = sqrt(x(l1:l2)**2+y(m)**2)
-
         do i=1,nx
            if ((r(i) .le. r_ext) .and. (r(i) .ge. r_int)) then
-              fname(iname)=fname(iname)+ a(i)*dx*dy / &
+              aux(i) = a(i)*dx*dy / &
                    (pi*(r_ext**2 - r_int**2))
-           endif
+           else
+              aux(i) = 0.
+           endif                
         enddo
+!
+        sumaux = sum(aux)
+        call surf_mn_name(sumaux,iname)
 !
       endif
 !
     endsubroutine sum_lim_mn_name
-!***********************************************************************
+!*********************************************************    
     subroutine surf_mn_name(a,iname)
 !
 !  successively calculate surface integral. This routine assumes
