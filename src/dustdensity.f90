@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.143 2006-01-23 15:08:29 ajohan Exp $
+! $Id: dustdensity.f90,v 1.144 2006-02-02 12:29:39 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -10,7 +10,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED glnnd,gmi,gmd,gnd,md,mi,nd,rhod
+! PENCILS PROVIDED glnnd,gmi,gmd,gnd,md,mi,nd,rhod,epsd
 ! PENCILS PROVIDED udgmi,udgmd,udglnnd,udgnd,glnnd2
 ! PENCILS PROVIDED sdglnnd,del2nd,del2lnnd,del6nd,del2md,del2mi
 ! PENCILS PROVIDED gndglnrho,glnndglnrho,del6lnnd
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.143 2006-01-23 15:08:29 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.144 2006-02-02 12:29:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -672,6 +672,10 @@ module Dustdensity
         lpencil_in(i_nd)=.true.
         lpencil_in(i_md)=.true.
       endif
+      if (lpencil_in(i_epsd)) then
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_rhod)=.true.
+      endif
       if (lpencil_in(i_gndglnrho)) then
         lpencil_in(i_gnd)=.true.
         lpencil_in(i_glnrho)=.true.
@@ -804,6 +808,8 @@ module Dustdensity
         endif
 ! rhod
         if (lpencil(i_rhod)) p%rhod(:,k)=p%nd(:,k)*p%md(:,k)
+! epsd=rhod/rho
+        if (lpencil(i_epsd)) p%epsd(:,k)=p%rhod(:,k)/p%rho
 ! sdglnnd
         if (lpencil(i_sdglnnd)) &
             call multmv_mn(p%sdij(:,:,:,k),p%glnnd(:,:,k),p%sdglnnd(:,:,k))
