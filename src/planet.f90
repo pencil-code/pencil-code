@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.12 2006-02-02 09:59:51 wlyra Exp $
+! $Id: planet.f90,v 1.13 2006-02-02 12:26:53 ajohan Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.12 2006-02-02 09:59:51 wlyra Exp $")
+           "$Id: planet.f90,v 1.13 2006-02-02 12:26:53 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -317,17 +317,19 @@ module Planet
 !      
 !  Stuff for calc_torque. Should maybe change it to particles_planet
 !
-      if ((idiag_torqint/=0) .or. (idiag_torqext/=0) .or. &
-           (idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) then  
-         dens = p%rho
-         call calc_torque(dens,gtc,ax,ay,b)
+      if (ldiagnos) then
+        if ((idiag_torqint/=0) .or. (idiag_torqext/=0) .or. &
+             (idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) then  
+           dens = p%rho
+           call calc_torque(dens,gtc,ax,ay,b)
+        endif
+
+        if ((idiag_totalenergy/=0).or.(idiag_angularmomentum/=0)) & 
+             call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
+
+        lfirstcall = .false.
       endif
-
-      if ((idiag_totalenergy/=0).or.(idiag_angularmomentum/=0)) & 
-           call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
-
-      lfirstcall = .false.
-
+!
     endsubroutine gravity_companion
 !***********************************************************************
     subroutine calc_torque(dens,gtc,ax,ay,b)
