@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.13 2006-02-02 12:26:53 ajohan Exp $
+! $Id: planet.f90,v 1.14 2006-02-02 13:13:02 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -53,8 +53,8 @@ module Planet
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_torqrocheint=0,idiag_torqrocheext=0
-  integer :: idiag_totalenergy=0,idiag_angularmomentum=0
-  integer :: idiag_totmass2=0
+  integer :: idiag_totenergy=0,idiag_totangmom=0
+  integer :: idiag_totmass=0
 
   contains
 
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.13 2006-02-02 12:26:53 ajohan Exp $")
+           "$Id: planet.f90,v 1.14 2006-02-02 13:13:02 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -185,9 +185,9 @@ module Planet
          idiag_torqext=0
          idiag_torqrocheint=0
          idiag_torqrocheext=0
-         idiag_totalenergy=0
-         idiag_angularmomentum=0
-         idiag_totmass2=0
+         idiag_totenergy=0
+         idiag_totangmom=0
+         idiag_totmass=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -203,11 +203,11 @@ module Planet
          call parse_name(iname,cname(iname),cform(iname),&
               'torqrocheext',idiag_torqrocheext)
          call parse_name(iname,cname(iname),cform(iname),&
-              'totalenergy',idiag_totalenergy)
+              'totenergy',idiag_totenergy)
          call parse_name(iname,cname(iname),cform(iname),&
-              'angularmomentum',idiag_angularmomentum)
+              'totangmom',idiag_totangmom)
          call parse_name(iname,cname(iname),cform(iname),&
-              'totmass2',idiag_totmass2)
+              'totmass',idiag_totmass)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -218,9 +218,9 @@ module Planet
         write(3,*) 'i_torqext=',idiag_torqext
         write(3,*) 'i_torqrocheint=',idiag_torqrocheint
         write(3,*) 'i_torqrocheext=',idiag_torqrocheext
-        write(3,*) 'i_totalenergy=',idiag_totalenergy
-        write(3,*) 'i_angularmomentum=',idiag_angularmomentum
-        write(3,*) 'i_totmass2=',idiag_totmass2
+        write(3,*) 'i_totenergy=',idiag_totenergy
+        write(3,*) 'i_totangmom=',idiag_totangmom
+        write(3,*) 'i_totmass=',idiag_totmass
       endif
 !
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
@@ -324,7 +324,8 @@ module Planet
            call calc_torque(dens,gtc,ax,ay,b)
         endif
 
-        if ((idiag_totalenergy/=0).or.(idiag_angularmomentum/=0)) & 
+        if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
+             .or.(idiag_totmass/=0)) &
              call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
 
         lfirstcall = .false.
@@ -653,35 +654,38 @@ module Planet
      rstar   = sqrt((x(l1:l2)-xs)**2 + (y(m)-ys)**2)+tini
      rplanet = sqrt((x(l1:l2)-xp)**2 + (y(m)-yp)**2)+tini
 
+
      !kinetic energy
      vel2 = f(l1:l2,m,n,iux)**2 + f(l1:l2,m,n,iuy)**2
-     kin_energy = f(l1:l2,m,n,ilnrho) * vel2/2.
+     kin_energy = p%rho * vel2/2.
      
      !potential energy - uses smoothed potential
      pot_energy = -1.*(g0*(rstar**2+r0_pot**2)**(-1./2) &
-          + gp*(rplanet**2+b**2)**(-1./2))*f(l1:l2,m,n,ilnrho)
-
+          + gp*(rplanet**2+b**2)**(-1./2))*p%rho
+     
      total_energy = kin_energy + pot_energy
-
+     
+     
      !integrate it
      energy_tot = -pi*(r_ext - r_int)
-     call sum_lim_mn_name(total_energy,idiag_totalenergy, &
+     call sum_lim_mn_name(total_energy,idiag_totenergy, &
           energy_tot,lnorm)
-
+     
+     
      !angular momentum
      r = sqrt(x(l1:l2)**2 + y(m)**2)+tini !this is correct: baricenter
      uphi = (-f(l1:l2,m,n,iux)*y(m) + f(l1:l2,m,n,iuy)*x(l1:l2))/r
-     angular_momentum = f(l1:l2,m,n,ilnrho) * r * uphi
-
+     angular_momentum = p%rho * r * uphi
+     
      !integrate it
      ang_tot = 0.8*pi*(r_ext**2.5 - r_int**2.5)
-     call sum_lim_mn_name(angular_momentum,idiag_angularmomentum, &
+     call sum_lim_mn_name(angular_momentum,idiag_totangmom, &
           ang_tot,lnorm)
 
      mass_tot= pi*(r_ext**2 - r_int**2)
-     call sum_lim_mn_name(p%rho,idiag_totmass2, &
+     call sum_lim_mn_name(p%rho,idiag_totmass, &
           mass_tot,lnorm)
-          
+   
 
    endsubroutine calc_monitored
 !***************************************************************

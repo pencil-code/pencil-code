@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.217 2006-02-02 09:59:51 wlyra Exp $
+! $Id: density.f90,v 1.218 2006-02-02 13:13:01 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -75,7 +75,6 @@ module Density
   integer :: idiag_rhomin=0,idiag_rhomax=0
   integer :: idiag_lnrhomphi=0,idiag_rhomphi=0,idiag_dtd=0
   integer :: idiag_rhomz=0, idiag_rhomy=0, idiag_rhomx=0
-  integer :: idiag_totmass=0
 
   contains
 
@@ -111,7 +110,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.217 2006-02-02 09:59:51 wlyra Exp $")
+           "$Id: density.f90,v 1.218 2006-02-02 13:13:01 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -956,7 +955,7 @@ module Density
 !
       if (idiag_rhom/=0 .or. idiag_rhomz/=0 .or. idiag_rhomy/=0 .or. &
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
-           idiag_rhomax/=0 .or. idiag_totmass/=0) lpenc_diagnos(i_rho)=.true.
+           idiag_rhomax/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
 !
     endsubroutine pencil_criteria_density
@@ -1142,6 +1141,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+      logical :: ljunk=.true.
 !      
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho
 !
@@ -1251,7 +1251,6 @@ module Density
         if (idiag_rhomy/=0)   call xzsum_mn_name_y(p%rho,idiag_rhomy)
         if (idiag_dtd/=0) &
             call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
-        if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass,0.)
       endif
 !
     endsubroutine dlnrho_dt
@@ -1280,7 +1279,6 @@ module Density
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
-        idiag_totmass=0;
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1293,7 +1291,6 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhomax',idiag_rhomax)
         call parse_name(iname,cname(iname),cform(iname),'lnrho2m',idiag_lnrho2m)
         call parse_name(iname,cname(iname),cform(iname),'dtd',idiag_dtd)
-        call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1338,7 +1335,6 @@ module Density
         write(3,*) 'i_lnrhomphi=',idiag_lnrhomphi
         write(3,*) 'i_rhomphi=',idiag_rhomphi
         write(3,*) 'i_dtd=',idiag_dtd
-        write(3,*) 'i_totmass=',idiag_totmass
       endif
 !
     endsubroutine rprint_density
