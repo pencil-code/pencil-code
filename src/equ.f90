@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.268 2006-02-01 17:06:11 wlyra Exp $
+! $Id: equ.f90,v 1.269 2006-02-02 09:56:42 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -95,7 +95,7 @@ module Equ
 !        fsum=fsum/(nw*ncpus)
 !
 !  sort back into original array
-!  need to take sqare root if |itype|=2
+!  need to take square root if |itype|=2
 !  (in current version, don't need itype=2 anymore)
 !
          imax_count=0
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.268 2006-02-01 17:06:11 wlyra Exp $")
+           "$Id: equ.f90,v 1.269 2006-02-02 09:56:42 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
