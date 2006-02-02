@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.11 2006-02-02 09:42:49 wlyra Exp $
+! $Id: planet.f90,v 1.12 2006-02-02 09:59:51 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -32,29 +32,29 @@ module Planet
   integer :: dummy1
   namelist /planet_init_pars/ dummy1
     
- !
+  !
   ! run parameters
   !
-  
+
   !things needed for companion
   !real :: Rx=0.,Ry=0.,Rz=0.
-  real :: gc=0.  !location and mass
+  real :: gc=0.    !location and mass
   real :: b=0.      !peak radius for potential
   integer :: nc=2   !exponent of smoothed potential 
   logical :: lramp=.false.
   logical :: lwavedamp=.false.,llocal_iso=.false.
-  logical :: lsmoothlocal=.false.
-  logical :: lcs2_global=.false.
-  logical :: lmigrate=.false.
-
+  logical :: lsmoothlocal=.false.,lcs2_global=.false.
+  logical :: lmigrate=.false.,lnorm=.false.
+  real :: Gvalue=1. !gravity constant in same unit as density
+!
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
-       lmigrate
+       lmigrate,lnorm,Gvalue
 ! 
-
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_torqrocheint=0,idiag_torqrocheext=0
-  integer :: idiag_totalenergy=0,idiag_angularmomentum
+  integer :: idiag_totalenergy=0,idiag_angularmomentum=0
+  integer :: idiag_totmass2=0
 
   contains
 
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.11 2006-02-02 09:42:49 wlyra Exp $")
+           "$Id: planet.f90,v 1.12 2006-02-02 09:59:51 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -187,6 +187,7 @@ module Planet
          idiag_torqrocheext=0
          idiag_totalenergy=0
          idiag_angularmomentum=0
+         idiag_totmass2=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -205,6 +206,8 @@ module Planet
               'totalenergy',idiag_totalenergy)
          call parse_name(iname,cname(iname),cform(iname),&
               'angularmomentum',idiag_angularmomentum)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'totmass2',idiag_totmass2)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -217,6 +220,7 @@ module Planet
         write(3,*) 'i_torqrocheext=',idiag_torqrocheext
         write(3,*) 'i_totalenergy=',idiag_totalenergy
         write(3,*) 'i_angularmomentum=',idiag_angularmomentum
+        write(3,*) 'i_totmass2=',idiag_totmass2
       endif
 !
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
@@ -309,7 +313,7 @@ module Planet
 !
 !  Add force on planet and star due to disk gravity
 !
-      if (lmigrate) call gravity_disk(fp,dfp,p)
+      if (lmigrate) call gravity_disk(fp,dfp,p,r0_pot)
 !      
 !  Stuff for calc_torque. Should maybe change it to particles_planet
 !
@@ -567,10 +571,10 @@ module Planet
 
    endsubroutine gravity_star
 !***************************************************************
-   subroutine gravity_disk(fp,dfp,p)
+   subroutine gravity_disk(fp,dfp,p,r0_pot)
 !
 ! This routine takes care of the migration process, calculating
-! the back reaction of the disk on the planet and star.
+! the backreaction of the disk onto planet and star.
 !
 ! 01-feb-06/wlad : coded
 !
@@ -585,14 +589,22 @@ module Planet
      real, dimension(nx) :: re,grav_gas
      real, dimension(1) :: sumx_loc,sumy_loc,sumx,sumy
      integer :: k
-     real :: rp0_pot=0.
+     real :: r_smooth,r0_pot
      type (pencil_case) :: p
 !
      do k=1,npar
+        if (k==2) then
+           r_smooth = r0_pot !star
+        else if (k==1) then
+           r_smooth = b      !planet
+        else 
+           call stop_it('gravity_disk - more than 2 planet particles?')
+        endif   
+
         re = sqrt((x(l1:l2) - fp(k,ixp))**2 +  (y(m) - fp(k,iyp))**2)
 !
-        grav_gas = p%rho*dx*dy*re/ &
-             (re**2 + rp0_pot**2)**(-1.5)
+        grav_gas = Gvalue*p%rho*dx*dy*re/ &
+             (re**2 + r_smooth**2)**(-1.5)
 !                  
         sumx_loc(1) = sum(grav_gas * (x(l1:l2) - fp(k,ixp))/re)
         sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))/re)
@@ -617,6 +629,7 @@ module Planet
 !
 ! 10-nov-05/wlad : coded
 
+
      use Sub
      use Cdata
  
@@ -626,6 +639,7 @@ module Planet
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
      real :: xs,ys,xp,yp !position of star and planet
      real :: g0,gp,r0_pot !star's and planet's mass
+     real :: ang_tot,mass_tot,energy_tot
      integer :: i
      type (pencil_case) :: p
 
@@ -639,25 +653,33 @@ module Planet
 
      !kinetic energy
      vel2 = f(l1:l2,m,n,iux)**2 + f(l1:l2,m,n,iuy)**2
-     kin_energy = p%rho * vel2/2.
+     kin_energy = f(l1:l2,m,n,ilnrho) * vel2/2.
      
      !potential energy - uses smoothed potential
      pot_energy = -1.*(g0*(rstar**2+r0_pot**2)**(-1./2) &
-          + gp*(rplanet**2+b**2)**(-1./2))*p%rho
+          + gp*(rplanet**2+b**2)**(-1./2))*f(l1:l2,m,n,ilnrho)
 
      total_energy = kin_energy + pot_energy
 
      !integrate it
-
-     call sum_lim_mn_name(total_energy,idiag_totalenergy)
+     energy_tot = -pi*(r_ext - r_int)
+     call sum_lim_mn_name(total_energy,idiag_totalenergy, &
+          energy_tot,lnorm)
 
      !angular momentum
      r = sqrt(x(l1:l2)**2 + y(m)**2)+tini !this is correct: baricenter
      uphi = (-f(l1:l2,m,n,iux)*y(m) + f(l1:l2,m,n,iuy)*x(l1:l2))/r
-     angular_momentum = p%rho * r * uphi
+     angular_momentum = f(l1:l2,m,n,ilnrho) * r * uphi
 
      !integrate it
-     call sum_lim_mn_name(angular_momentum,idiag_angularmomentum)
+     ang_tot = 0.8*pi*(r_ext**2.5 - r_int**2.5)
+     call sum_lim_mn_name(angular_momentum,idiag_angularmomentum, &
+          ang_tot,lnorm)
+
+     mass_tot= pi*(r_ext**2 - r_int**2)
+     call sum_lim_mn_name(p%rho,idiag_totmass2, &
+          mass_tot,lnorm)
+          
 
    endsubroutine calc_monitored
 !***************************************************************

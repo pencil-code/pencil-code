@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.227 2006-02-01 14:34:17 wlyra Exp $ 
+! $Id: sub.f90,v 1.228 2006-02-02 09:59:51 wlyra Exp $ 
 
 module Sub 
 
@@ -331,7 +331,7 @@ module Sub
 !
     endsubroutine sum_mn_name
 !***********************************************************************
-    subroutine sum_lim_mn_name(a,iname)
+    subroutine sum_lim_mn_name(a,iname,norm,lnorm)
 !
 !  Successively calculate integral of a, which is supplied at each call.
 !  Just takes values between r_int < r < r_ext
@@ -343,8 +343,9 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a,r,aux
-      real :: sumaux
+      real :: sumaux,norm
       integer :: iname,i
+      logical, optional :: lnorm
 !
 
       if (iname /= 0) then 
@@ -352,14 +353,16 @@ module Sub
         r = sqrt(x(l1:l2)**2+y(m)**2)
         do i=1,nx
            if ((r(i) .le. r_ext) .and. (r(i) .ge. r_int)) then
-              aux(i) = a(i)*dx*dy / &
-                   (pi*(r_ext**2 - r_int**2))
-           else
+              aux(i) = a(i)*dx*dy
+            else
               aux(i) = 0.
-           endif                
+           endif
         enddo
 !
         sumaux = sum(aux)
+        if (present(lnorm)) sumaux = sumaux / norm
+        
+!
         call surf_mn_name(sumaux,iname)
 !
       endif
