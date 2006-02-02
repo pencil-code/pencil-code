@@ -3,21 +3,26 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =   mpicomm
-#MPICOMM   = nompicomm
-GLOBAL    =   global_gg_cs2_nolnrho
+MPICOMM      = nompicomm
+GLOBAL       =   global_gg_cs2_nolnrho
 
-HYDRO     =   hydro
-DENSITY   =   density
-ENTROPY   = noentropy
-MAGNETIC  = nomagnetic
-RADIATION = noradiation
-PSCALAR   = nopscalar
+HYDRO        =   hydro
+DENSITY      =   density
+ENTROPY      = noentropy
+MAGNETIC     = nomagnetic
+RADIATION    = noradiation
+PSCALAR      = nopscalar
+VISCOSITY    =   viscosity
 
-GRAVITY   =   grav_r
-FORCING   = noforcing
-SHEAR     = noshear
-SHOCK     =   shock
+GRAVITY      =   grav_r
+FORCING      = noforcing
+SHEAR        = noshear
+SHOCK        =   shock
+PLANET       =   planet
 
-PLANET   =    planet
-#DEBUG    = nodebug
+#DUSTDENSITY  =   dustdensity
+#DUSTVELOCITY =   dustvelocity
+
+PARTICLES    =   particles_planet
+
+#NESTING   =   nest
