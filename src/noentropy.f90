@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.81 2006-01-23 12:54:41 ajohan Exp $
+! $Id: noentropy.f90,v 1.82 2006-02-02 12:29:19 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.81 2006-01-23 12:54:41 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.82 2006-02-02 12:29:19 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -225,16 +225,16 @@ module Entropy
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-p%cs2*p%glnrho(:,j)
         enddo
-      endif
 !
 !  Add pressure force from global density gradient.
 !  
-      if (maxval(abs(beta_glnrho_global))/=0.0) then
-        if (headtt) print*, 'dss_dt: adding global pressure gradient force'
-        do j=1,3
-          df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-              - p%cs2*beta_glnrho_scaled(j)
-        enddo
+        if (maxval(abs(beta_glnrho_global))/=0.0) then
+          if (headtt) print*, 'dss_dt: adding global pressure gradient force'
+          do j=1,3
+            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
+                - p%cs2*beta_glnrho_scaled(j)
+          enddo
+        endif
       endif
 !
 !  Calculate entropy related diagnostics
