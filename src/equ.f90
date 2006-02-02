@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.269 2006-02-02 09:56:42 wlyra Exp $
+! $Id: equ.f90,v 1.270 2006-02-02 21:46:36 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.269 2006-02-02 09:56:42 wlyra Exp $")
+           "$Id: equ.f90,v 1.270 2006-02-02 21:46:36 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -548,7 +548,7 @@ module Equ
 !      duu_dt_grav now also takes care of dust velocity
 
         if (lgrav) then
-           if (lhydro) then 
+          if (lhydro.or.ldustvelocity) then 
              call duu_dt_grav(f,df,p)             
           endif
         endif
