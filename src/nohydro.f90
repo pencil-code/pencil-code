@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.45 2005-10-28 21:44:35 dobler Exp $
+! $Id: nohydro.f90,v 1.46 2006-02-02 12:28:26 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,7 +8,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED oo,uij,uu,u2,sij,divu
+! PENCILS PROVIDED oo,uij,uu,u2,sij,divu,uij5
 !
 !***************************************************************
 
@@ -77,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.45 2005-10-28 21:44:35 dobler Exp $")
+           "$Id: nohydro.f90,v 1.46 2006-02-02 12:28:26 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
