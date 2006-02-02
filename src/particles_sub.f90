@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.40 2006-02-01 11:15:18 ajohan Exp $
+! $Id: particles_sub.f90,v 1.41 2006-02-02 11:15:01 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -525,7 +525,7 @@ module Particles_sub
       integer :: k
 !
       do k=1,npar
-        call mpibcast_real(fp(k,:),npar*mpvar)      
+        call mpibcast_real(fp(k,:),mpvar)      
       enddo
 !
     endsubroutine share_allparticles_procs
