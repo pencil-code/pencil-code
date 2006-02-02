@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.10 2006-02-01 17:08:33 wlyra Exp $
+! $Id: planet.f90,v 1.11 2006-02-02 09:42:49 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.10 2006-02-01 17:08:33 wlyra Exp $")
+           "$Id: planet.f90,v 1.11 2006-02-02 09:42:49 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -320,7 +320,7 @@ module Planet
       endif
 
       if ((idiag_totalenergy/=0).or.(idiag_angularmomentum/=0)) & 
-           call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot)
+           call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
 
       lfirstcall = .false.
 
@@ -610,13 +610,12 @@ module Planet
 !
    endsubroutine gravity_disk
 !***************************************************************
-   subroutine calc_monitored(f,xs,ys,xp,yp,g0,gp,r0_pot)
+   subroutine calc_monitored(f,xs,ys,xp,yp,g0,gp,r0_pot,p)
 
 ! calculate total energy and angular momentum
 ! and output their evolution as monitored variables
 !
 ! 10-nov-05/wlad : coded
-
 
      use Sub
      use Cdata
@@ -628,6 +627,7 @@ module Planet
      real :: xs,ys,xp,yp !position of star and planet
      real :: g0,gp,r0_pot !star's and planet's mass
      integer :: i
+     type (pencil_case) :: p
 
      if (headtt) print*,'planet : calculate total energy'
      if (headtt) print*,'planet : calculate total angular momentum'
@@ -639,11 +639,11 @@ module Planet
 
      !kinetic energy
      vel2 = f(l1:l2,m,n,iux)**2 + f(l1:l2,m,n,iuy)**2
-     kin_energy = f(l1:l2,m,n,ilnrho) * vel2/2.
+     kin_energy = p%rho * vel2/2.
      
      !potential energy - uses smoothed potential
      pot_energy = -1.*(g0*(rstar**2+r0_pot**2)**(-1./2) &
-          + gp*(rplanet**2+b**2)**(-1./2))*f(l1:l2,m,n,ilnrho)
+          + gp*(rplanet**2+b**2)**(-1./2))*p%rho
 
      total_energy = kin_energy + pot_energy
 
@@ -654,7 +654,7 @@ module Planet
      !angular momentum
      r = sqrt(x(l1:l2)**2 + y(m)**2)+tini !this is correct: baricenter
      uphi = (-f(l1:l2,m,n,iux)*y(m) + f(l1:l2,m,n,iuy)*x(l1:l2))/r
-     angular_momentum = f(l1:l2,m,n,ilnrho) * r * uphi
+     angular_momentum = p%rho * r * uphi
 
      !integrate it
      call sum_lim_mn_name(angular_momentum,idiag_angularmomentum)
