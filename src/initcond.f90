@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.138 2006-01-23 12:54:41 ajohan Exp $ 
+! $Id: initcond.f90,v 1.139 2006-02-02 15:07:19 wlyra Exp $ 
 
 module Initcond 
  
@@ -1424,6 +1424,7 @@ module Initcond
      
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
+      f(:,:,:,iuz)=0.
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2459,16 +2460,17 @@ module Initcond
       use General
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,rr 
+      real, dimension(mx,my,mz) :: xx,yy,zz,rr,H 
       real :: lnrho_const,plaw
 !      
-      rr  = sqrt(xx**2 + yy**2 + zz**2) + epsi
-      f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
-!      
 
+      rr  = sqrt(xx**2 + yy**2 + zz**2) + epsi
+      !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
+!      
       !3D - not tested yet
-      !H  = 0.05 * rr
-      !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
+      H  = 0.05 * rr
+      f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
+         
 !    
     endsubroutine power_law
 !*********************************************************
