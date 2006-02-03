@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.147 2006-02-03 13:40:28 ajohan Exp $
+! $Id: dustdensity.f90,v 1.148 2006-02-03 16:15:22 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.147 2006-02-03 13:40:28 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.148 2006-02-03 16:15:22 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -539,7 +539,7 @@ module Dustdensity
 !
 !  Take into account drag force from falling dust on gas stratification.
 !
-        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.0
+        if (lhydro) f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.0
         f(l1:l2,m,n,iudz(1)) = f(l1:l2,m,n,iudz(1)) - tausd(1)*Omega**2*z(n)
         if (abs(z(n))<=Hd*sqrt(1-1/(1+eps1)**2)) then
           lnrho = -sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)* &
@@ -566,10 +566,10 @@ module Dustdensity
 
         f(l1:l2,m,n,ind(1))=rho*eps
 
-        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
+        if (lhydro) f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
             1/gamma*cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
             (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+        if (lhydro) f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
             1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps+(Omega*tausd(1))**2)/ &
             (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
         f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
