@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.4 2005-07-05 16:21:43 mee Exp $
+! $Id: noviscosity.f90,v 1.5 2006-02-03 16:13:17 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.4 2005-07-05 16:21:43 mee Exp $")
+           "$Id: noviscosity.f90,v 1.5 2006-02-03 16:13:17 ajohan Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -182,7 +182,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real :: Hmax
+      real, dimension (nx) :: Hmax
 !
       intent(in) :: f,df,p,Hmax
 !
