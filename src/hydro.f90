@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.225 2006-01-23 12:54:41 ajohan Exp $
+! $Id: hydro.f90,v 1.226 2006-02-03 10:28:58 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -45,7 +45,6 @@ module Hydro
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0
   integer :: N_modes_uu=0
-  real :: star_offx=0.,star_offy=0.
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
 
@@ -58,7 +57,7 @@ module Hydro
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       star_offx, star_offy, ladvection_velocity
+       ladvection_velocity
 
   ! run parameters
   real :: theta=0.
@@ -158,7 +157,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.225 2006-01-23 12:54:41 ajohan Exp $")
+           "$Id: hydro.f90,v 1.226 2006-02-03 10:28:58 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -302,8 +301,7 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0. 
         case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case('keplerian'); call keplerian(f,g0,r0_pot,n_pot,xx,yy,zz &
-           ,star_offx,star_offy)
+        case('keplerian'); call keplerian(f,g0,r0_pot,n_pot,xx,yy,zz)
         case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu,xx,yy,zz)
         case('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
