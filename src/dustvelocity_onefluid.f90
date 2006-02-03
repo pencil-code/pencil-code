@@ -1,4 +1,4 @@
-! $Id: dustvelocity_onefluid.f90,v 1.3 2006-02-03 13:39:50 ajohan Exp $
+! $Id: dustvelocity_onefluid.f90,v 1.4 2006-02-03 16:16:20 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !  in the one-fluid limit (valid for vanishing friction time).
@@ -123,7 +123,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity_onefluid.f90,v 1.3 2006-02-03 13:39:50 ajohan Exp $")
+           "$Id: dustvelocity_onefluid.f90,v 1.4 2006-02-03 16:16:20 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -301,6 +301,8 @@ module Dustvelocity
       if (lpressure_gradient) then
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_epsd)=.true.
+        if (lentropy) lpenc_requested(i_gss)=.true.
+        if (lentropy) lpenc_requested(i_cp1tilde)=.true.
       endif
       if (lviscosity_dust) then
         if ((iviscd=='nud-const' .or. iviscd=='hyper3_nud-const') &
@@ -435,6 +437,8 @@ module Dustvelocity
       if (lpencil(i_graddivud)) &
           call del2v_etc(f,iuud(1),GRADDIV=p%graddivud(:,:,1))
 !
+      if (.not.lhydro) p%uu=p%uud(:,:,1)
+!
     endsubroutine calc_pencils_dustvelocity
 !***********************************************************************
     subroutine duud_dt(f,df,p)
@@ -505,8 +509,14 @@ module Dustvelocity
 !
       if (lpressure_gradient) then
         do j=1,3
-          df(l1:l2,m,n,iudx(1)-1+j) = df(l1:l2,m,n,iudx(1)-1+j) &
-              - 1/(1+p%epsd(:,1))*p%cs2*p%glnrho(:,j)
+          if (lentropy) then
+            df(l1:l2,m,n,iudx(1)-1+j) = df(l1:l2,m,n,iudx(1)-1+j) &
+                - 1/(1+p%epsd(:,1))*p%cs2* &
+                (p%glnrho(:,j)/gamma + p%cp1tilde*p%gss(:,j))
+          else
+            df(l1:l2,m,n,iudx(1)-1+j) = df(l1:l2,m,n,iudx(1)-1+j) &
+                - 1/(1+p%epsd(:,1))*p%cs2*p%glnrho(:,j)/gamma
+          endif
         enddo
 !
 !  Add pressure force from global density gradient.
@@ -515,7 +525,7 @@ module Dustvelocity
           if (headtt) print*, 'duud_dt: adding global pressure gradient force'
           do j=1,3
             df(l1:l2,m,n,(iudx(1)-1)+j) = df(l1:l2,m,n,(iudx(1)-1)+j) &
-                - 1/(1+p%epsd(:,1))*p%cs2*beta_glnrho_scaled(j)
+                - 1/(1+p%epsd(:,1))*1/gamma*p%cs2*beta_glnrho_scaled(j)
           enddo
         endif
       endif
