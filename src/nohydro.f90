@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.47 2006-02-03 15:34:02 weezy Exp $
+! $Id: nohydro.f90,v 1.48 2006-02-03 23:28:20 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -77,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.47 2006-02-03 15:34:02 weezy Exp $")
+           "$Id: nohydro.f90,v 1.48 2006-02-03 23:28:20 wlyra Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -649,29 +649,29 @@ module Hydro
 !    
     ps=sqrt(2.*energy*dk)
 !    
-    KS_A(1,1)=1.00/dsqrt(2.00)
-    KS_A(2,1)=-1.00/dsqrt(2.00)
+    KS_A(1,1)=1.00/sqrt(2.00)
+    KS_A(2,1)=-1.00/sqrt(2.00)
     KS_A(3,1)=0.00
 !    
-    KS_A(1,2)=1.00/dsqrt(3.00)
-    KS_A(2,2)=1.00/dsqrt(3.00)
-    KS_A(3,2)=-1.00/dsqrt(3.00)
+    KS_A(1,2)=1.00/sqrt(3.00)
+    KS_A(2,2)=1.00/sqrt(3.00)
+    KS_A(3,2)=-1.00/sqrt(3.00)
 !    
     KS_A(1,3)=-1.00/2.00
     KS_A(2,3)=-1.00/2.00
-    KS_A(3,3)=1.00/dsqrt(2.00)
+    KS_A(3,3)=1.00/sqrt(2.00)
 !    
-    KS_B(1,3)=1.00/dsqrt(2.00)
-    KS_B(2,3)=-1.00/dsqrt(2.00)
+    KS_B(1,3)=1.00/sqrt(2.00)
+    KS_B(2,3)=-1.00/sqrt(2.00)
     KS_B(3,3)=0.00
 !    
-    KS_B(1,1)=1.00/dsqrt(3.00)
-    KS_B(2,1)=1.00/dsqrt(3.00)
-    KS_B(3,1)=-1.00/dsqrt(3.00)
+    KS_B(1,1)=1.00/sqrt(3.00)
+    KS_B(2,1)=1.00/sqrt(3.00)
+    KS_B(3,1)=-1.00/sqrt(3.00)
 !    
     KS_B(1,2)=-1.00/2.00
     KS_B(2,2)=-1.00/2.00
-    KS_B(3,2)=1.00/dsqrt(2.00)
+    KS_B(3,2)=1.00/sqrt(2.00)
 !    
     do modeN=1,KS_modes
        KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
