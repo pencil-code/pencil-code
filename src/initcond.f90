@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.139 2006-02-02 15:07:19 wlyra Exp $ 
+! $Id: initcond.f90,v 1.140 2006-02-03 10:28:17 wlyra Exp $ 
 
 module Initcond 
  
@@ -1378,19 +1378,19 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy,zz,sx,sy)
+    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy,zz)
 !
 !  Keplerian initial condition
 !
-!   2-may-05/axel: coded   
+!   2-may-05/axel+wlad: coded   
 
       use Cdata
       use EquationOfState, only : cs20
       use Global
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO,grav,cs2
-      real :: g0,r0_pot,sx,sy,Mach,plaw
+      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO,grav
+      real :: g0,r0_pot,Mach,plaw
       integer :: n_pot,mcount,ncount
       real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: aux
@@ -1400,14 +1400,7 @@ module Initcond
 !
       print*,'accretion disk initial condition'
 
-      plaw=0.
-
-      xx = xx - sx
-      yy = yy - sy
-
-      Mach = sqrt(1./cs20)
-
-      rrp=sqrt(xx**2+yy**2+zz**2) + epsi
+      rrp=sqrt(xx**2+yy**2+zz**2) !+ epsi
 
       do mcount=m1,m2
          do ncount=n1,n2
@@ -1418,13 +1411,11 @@ module Initcond
       enddo
      
       OO = sqrt(grav/rrp)
-
-      !OO=g0*rrp**(n_pot-2)*(rrp**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-      !OO=sqrt(OO*(1. + plaw/Mach**2)**(-1)) 
      
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
       f(:,:,:,iuz)=0.
+
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2449,7 +2440,7 @@ module Initcond
 ! Minimum Mass Solar Nebula model
 !
 ! rho    = rho(R) * rho(z) 
-! rho(R) = C2 r**-1.5 
+! rho(R) = C2 r**-plaw 
 ! rho(z) = exp(-z^2/(2*H^2), where H/R=0.05 is the scale height
 !
 ! sigma(r) = Int rho dz = C1 r**-0.5 
@@ -2458,19 +2449,37 @@ module Initcond
       use Mpicomm, only: stop_it
       use Gravity, only: g0
       use General
+      use Global
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,rr,H 
+      real, dimension(mx,my,mz) :: xx,yy,zz,rr,H2 
+      real, dimension (nx) :: cs2_mn,aux
+      real, dimension (nx,3) :: gg_mn
       real :: lnrho_const,plaw
+      integer :: mcount,ncount
 !      
-
       rr  = sqrt(xx**2 + yy**2 + zz**2) + epsi
-      !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
-!      
-      !3D - not tested yet
-      H  = 0.05 * rr
-      f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz/H)**2 
-         
+!
+      if (nzgrid==1) then
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
+      else 
+!        
+         do mcount=m1,m2
+            do ncount=n1,n2
+               call get_global( gg_mn,mcount,ncount, 'gg')
+               call get_global(cs2_mn,mcount,ncount,'cs2')
+               aux  = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
+               !H = cs/OO = sqrt(cs2)/sqrt(grav/rr)=sqrt(cs2*rr/grav)
+               !grav(l1:l2,mcount,ncount) = aux
+               !cs2(l1:l2,mcount,ncount) = cs2_mn
+               
+               H2(l1:l2,mcount,ncount) = cs2_mn/aux*rr(l1:l2,mcount,ncount)
+            enddo
+         enddo
+!
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz**2/H2) 
+!
+      endif
 !    
     endsubroutine power_law
 !*********************************************************

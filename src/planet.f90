@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.14 2006-02-02 13:13:02 wlyra Exp $
+! $Id: planet.f90,v 1.15 2006-02-03 10:28:17 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -29,11 +29,8 @@ module Planet
   
   !initialize variables needed for the planet module
 
-  integer :: dummy1
-  namelist /planet_init_pars/ dummy1
-    
   !
-  ! run parameters
+  ! start and run parameters
   !
 
   !things needed for companion
@@ -46,6 +43,9 @@ module Planet
   logical :: lsmoothlocal=.false.,lcs2_global=.false.
   logical :: lmigrate=.false.,lnorm=.false.
   real :: Gvalue=1. !gravity constant in same unit as density
+!
+  namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
+       lcs2_global,llocal_iso
 !
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.14 2006-02-02 13:13:02 wlyra Exp $")
+           "$Id: planet.f90,v 1.15 2006-02-03 10:28:17 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -93,6 +93,7 @@ module Planet
 !  parameters.
 !
 !  08-nov-05/wlad: coded
+!  02-feb-06/wlad: sound speed set as global in start time
 !
 !will need to add itorque as f-variable
 !
@@ -102,12 +103,20 @@ module Planet
       logical :: lstarting
 !
       if (lroot) print*, 'initialize_planet'
-      if ((lcs2_global).and.(.not.llocal_iso)) then
-         print*,'planet : not isothermal, but sound speed is set'
-         print*,'as global variable. Better stop and check'
-         call stop_it('')
-      endif
 !
+      if (lcs2_global) then
+         if (llocal_iso) then
+            do n=n1,n2
+               do m=m1,m2
+                  call set_soundspeed
+               enddo
+            enddo
+         else
+            print*,'planet : not isothermal, but sound speed is set'
+            print*,'as global variable. Better stop and check'
+            call stop_it('')
+         endif
+      endif
 !
     endsubroutine initialize_planet
 !***********************************************************************
@@ -118,27 +127,29 @@ module Planet
 !  06-nov-05/wlad: coded
 !
       use Cdata
-!
-      
-      lpenc_requested(i_lnrho)=.true.
-      
+!      
+      lpenc_requested(i_lnrho)=.true.     
 !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
     subroutine read_planet_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+            
+      if (present(iostat)) then
+        read(unit,NML=planet_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=planet_init_pars,ERR=99)
+      endif
+                                                                                                                                                                                                
+99    return                                                                                                   
     endsubroutine read_planet_init_pars
 !***********************************************************************
     subroutine write_planet_init_pars(unit)
-      integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
-                                                                                                   
+      integer, intent(in) :: unit                                                               
+
+      write(unit,NML=planet_init_pars)
+                                                                         
     endsubroutine write_planet_init_pars
 !***********************************************************************
     subroutine read_planet_run_pars(unit,iostat)
@@ -161,72 +172,6 @@ module Planet
 
     endsubroutine write_planet_run_pars
 !***********************************************************************
-    subroutine rprint_planet(lreset,lwrite)
-!
-!  reads and registers monitoring quantities for planet-disk
-!
-!  06-nov-05/wlad: coded
-!
-      use Cdata
-      use Sub
-!
-      integer :: iname
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-         idiag_torqint=0
-         idiag_torqext=0
-         idiag_torqrocheint=0
-         idiag_torqrocheext=0
-         idiag_totenergy=0
-         idiag_totangmom=0
-         idiag_totmass=0
-      endif
-!
-!  iname runs through all possible names that may be listed in print.in
-!
-      if(lroot.and.ip<14) print*,'rprint_gravity: run through parse list'
-      do iname=1,nname
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqint',idiag_torqint)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqext',idiag_torqext)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqrocheint',idiag_torqrocheint)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqrocheext',idiag_torqrocheext)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'totenergy',idiag_totenergy)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'totangmom',idiag_totangmom)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'totmass',idiag_totmass)
-      enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
-!
-      if (lwr) then
-        write(3,*) 'i_torqint=',idiag_torqint
-        write(3,*) 'i_torqext=',idiag_torqext
-        write(3,*) 'i_torqrocheint=',idiag_torqrocheint
-        write(3,*) 'i_torqrocheext=',idiag_torqrocheext
-        write(3,*) 'i_totenergy=',idiag_totenergy
-        write(3,*) 'i_totangmom=',idiag_totangmom
-        write(3,*) 'i_totmass=',idiag_totmass
-      endif
-!
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
-!
-    endsubroutine rprint_planet
-!***********************************************************************
     subroutine gravity_companion(f,df,fp,dfp,g0,r0_pot,n_pot,p)
 !
 !  calculate the gravity of a companion offcentered by (Rx,Ry,Rz)
@@ -246,7 +191,7 @@ module Planet
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp,dfp 
       real, dimension (nx,3) :: ggc,ggs
-      real, dimension (nx) :: g_companion,rrc,rrs,g_star,dens
+      real, dimension (nx) :: g_companion,rrc,rrs,g_star
       real :: Omega_inertial,ax,ay,az,gtc
       real :: axs,ays,azs,g0,r0_pot
       integer :: n_pot
@@ -258,7 +203,7 @@ module Planet
 !      
       ax = fp(1,ixp) ; axs = fp(2,ixp) 
       ay = fp(1,iyp) ; ays = fp(2,iyp) 
-      az = 0.        ; azs = 0. 
+      az = fp(1,izp) ; azs = fp(2,izp) 
 !
       lheader = lfirstcall .and. headtt .and. lroot
 !
@@ -300,11 +245,16 @@ module Planet
 !
       rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2) + tini
 !      
-      call gravity_star(g0,r0_pot,n_pot,g_star,axs,ays)
+      if (gc.ne.0) then
+         call gravity_star(g0,r0_pot,n_pot,g_star,axs,ays,azs)
+      else
+         call gravity_star(g0,r0_pot,n_pot,g_star)
+      endif
 !
       ggs(:,1) = (x(l1:l2)-axs)/rrs*g_star
       ggs(:,2) = (y(  m  )-ays)/rrs*g_star
       ggs(:,3) = (z(  n  )-azs)/rrs*g_star     
+      
 !
 !  Reset gravity as global variable 
 !  In the future, compute only potential and call grav=grad(pot)
@@ -320,16 +270,14 @@ module Planet
       if (ldiagnos) then
         if ((idiag_torqint/=0) .or. (idiag_torqext/=0) .or. &
              (idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) then  
-           dens = p%rho
-           call calc_torque(dens,gtc,ax,ay,b)
+           call calc_torque(p%rho,gtc,ax,ay,b)
         endif
 
         if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
              .or.(idiag_totmass/=0)) &
              call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
-
-        lfirstcall = .false.
-      endif
+     endif
+     lfirstcall=.false.
 !
     endsubroutine gravity_companion
 !***********************************************************************
@@ -342,7 +290,6 @@ module Planet
 
       real, dimension(nx) :: r,torqint,torqext
       real, dimension(nx) :: torqrocheint,torqrocheext
-      real, dimension(nx) :: gridmass
       real, dimension(nx) :: dist,rpre,dens
       real :: b,ax,ay,Rc,roche,gtc,r_lim
       integer :: i
@@ -357,44 +304,39 @@ module Planet
       Rc = sqrt(ax**2 + ay**2)
 
       torqint = 0.   ; torqext=0.
-      torqrocheint=0.; torqrocheext=0.; gridmass=0.
+      torqrocheint=0.; torqrocheext=0.
       
       roche = Rc*(gtc/3.)**(1./3.) !Jupiter roche
 
-      !gridmass = dens*dx*dy/(pi*r_ext**2)
-
       do i=1,nx
-         
+!         
          !external torque, excluding roche lobe
          if ((r(i).ge.Rc).and.(r(i).le.r_lim).and.(dist(i).ge.roche)) then 
             torqext(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
          endif 
-      
+!     
          !internal torque, excluding roche lobe
          if ((r(i).le.Rc).and.(r(i).ge.r_int).and.(dist(i).ge.roche)) then
             torqint(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
          endif
-
+!
          !external torque, roche lobe
          if ((r(i).ge.Rc).and.(dist(i).ge.0.5*roche).and.(dist(i).le.roche)) then 
             torqrocheext(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
          endif 
-      
+!      
          !internal torque, roche lobe
          if ((r(i).le.Rc).and.(dist(i).ge.0.5*roche).and.(dist(i).le.roche)) then 
             torqrocheint(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
          endif
-
-
+!
       enddo
-
-      !call sum_mn_name(torque,idiag_torqint)
-
+!
       call sum_mn_name(torqint,idiag_torqint)
       call sum_mn_name(torqext,idiag_torqext)
       call sum_mn_name(torqrocheint,idiag_torqrocheint)
       call sum_mn_name(torqrocheext,idiag_torqrocheext)
-      
+!      
     endsubroutine calc_torque
 !***********************************************************************
     subroutine local_isothermal(cs20,cs2)
@@ -510,68 +452,35 @@ module Planet
 
    endsubroutine wave_damping
 !***************************************************************
-   subroutine gravity_star(g0,r0_pot,n_pot,g_r,xstar,ystar)
+   subroutine gravity_star(g0,r0_pot,n_pot,g_r,xstar,ystar,zstar)
 !
 ! 08-nov-05/wlad : coded
-! 25-nov-05/wlad : call global cs2 here, if local isothermal
 !
      use Cdata
      use Mpicomm, only : stop_it
 !
      real, dimension (nx), intent(out) :: g_r
      real, dimension (nx) :: rr_mn
-     real, optional :: xstar,ystar !initial position of star
+     real, optional :: xstar,ystar,zstar !initial position of star
      integer :: i,n_pot
-     real :: g0,axs,ays,r0_pot
+     real :: g0,axs,ays,azs,r0_pot
 !
      if (present(xstar)) then;axs=xstar;else;axs=0.;endif
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
+     if (present(zstar)) then;azs=zstar;else;azs=0.;endif
 !  
-     rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2) + tini
+     rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2 + (z(n)-azs)**2) + tini
 !
-     if (.not.lsmoothlocal) then 
-!
-        if (n_pot.ne.2) then
-           print*,'planet: smoothed gravity used for star but smoothing lenght'
-           print*,'is not equal to 2. Better stop and change, since it will lead'
-           print*,'to boundary troubles as omega does not flatten properly.'
-           call stop_it('')
-        endif
-!
-        g_r=-g0*rr_mn**(n_pot-1) &
-             *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-     else
-
-     !smooth the potential locally (only for r < r0)
-     !
-     !needed when the gravity profile 
-     !should be like rr_mn in the inner boundary
-     !but one does not want the ridiculous
-     !smoothing that smooth_newton gives to n=2 
-
-     !my gravity profile for r0 = 0.4
-        where ((rr_mn.le.0.4).and.(rr_mn.ge.0.2))
-           g_r = 2.01669                &
-                -1.69235   *rr_mn**(-1) &
-                -0.821300  *rr_mn**(-2) &
-                +0.0812857 *rr_mn**(-3) &
-                -0.00195754*rr_mn**(-4) 
-        endwhere
-        where (rr_mn.gt.0.4) 
-           g_r = -g0/rr_mn**2
-        endwhere
-        where (rr_mn.lt.0.2) 
-           g_r = -g0*rr_mn**(n_pot-1) &
-                *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-        endwhere
-        
+     if (n_pot.ne.2) then
+        print*,'planet: smoothed gravity used for star but smoothing lenght'
+        print*,'is not equal to 2. Better stop and change, since it will lead'
+        print*,'to boundary troubles as omega does not flatten properly.'
+        call stop_it('')
      endif
-
-     if (lcs2_global.and.llocal_iso) then
-        call set_soundspeed(g0,r0_pot,n_pot)
-        if (llastpoint) lcs2_global=.false.
-     endif
-
+!
+     g_r=-g0*rr_mn**(n_pot-1) &
+          *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+   
    endsubroutine gravity_star
 !***************************************************************
    subroutine gravity_disk(fp,dfp,p,r0_pot)
@@ -579,9 +488,9 @@ module Planet
 ! This routine takes care of the migration process, calculating
 ! the backreaction of the disk onto planet and star.
 !
-! 01-feb-06/wlad : coded
+! 01-feb-06/wlad+anders: coded
 !
-! ps: Apparently, there is a difference between a real number and 
+! WL: Apparently, there is a difference between a real number and 
 ! an array of dimension=1. As mpireduce deals with arrays, I
 ! have to define the sums as arrays as well. 
 !
@@ -590,9 +499,10 @@ module Planet
 !
      real, dimension (mpar_loc,mpvar) :: fp,dfp 
      real, dimension(nx) :: re,grav_gas
-     real, dimension(1) :: sumx_loc,sumy_loc,sumx,sumy
+     real, dimension(1) :: sumx_loc,sumy_loc,sumz_loc
+     real, dimension(1) :: sumx,sumy,sumz
      integer :: k
-     real :: r_smooth,r0_pot
+     real :: r_smooth,r0_pot,dv
      type (pencil_case) :: p
 !
      do k=1,npar
@@ -604,21 +514,28 @@ module Planet
            call stop_it('gravity_disk - more than 2 planet particles?')
         endif   
 
-        re = sqrt((x(l1:l2) - fp(k,ixp))**2 +  (y(m) - fp(k,iyp))**2)
+        re = sqrt((x(l1:l2) - fp(k,ixp))**2 &
+             +    (y(  m  ) - fp(k,iyp))**2 &
+             +    (z(  n  ) - fp(k,izp))**2)
+!       
+        dv = dx*dy
+        if (nzgrid/=1) dv = dv*dz
 !
-        grav_gas = Gvalue*p%rho*dx*dy*re/ &
+        grav_gas = Gvalue*p%rho*dv*re/ &
              (re**2 + r_smooth**2)**(-1.5)
 !                  
         sumx_loc(1) = sum(grav_gas * (x(l1:l2) - fp(k,ixp))/re)
         sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))/re)
+        sumz_loc(1) = sum(grav_gas * (z(  n  ) - fp(k,izp))/re)
 !                  
         call mpireduce_sum(sumx_loc,sumx,1) 
         call mpireduce_sum(sumy_loc,sumy,1) 
-        !call mpireduce_sum(sumz_loc,sumz,1)
+        call mpireduce_sum(sumz_loc,sumz,1)
 !        
         if (lroot) then
            dfp(k,ivpx) = dfp(k,ivpx) + sumx(1)  
            dfp(k,ivpy) = dfp(k,ivpy) + sumy(1)
+           dfp(k,ivpz) = dfp(k,ivpz) + sumz(1)
         endif
 !       
      enddo               
@@ -630,8 +547,7 @@ module Planet
 ! calculate total energy and angular momentum
 ! and output their evolution as monitored variables
 !
-! 10-nov-05/wlad : coded
-
+! 10-nov-05/wlad   : coded
 
      use Sub
      use Cdata
@@ -640,7 +556,7 @@ module Planet
      real, dimension(nx) :: rstar,rplanet,vel2,r,uphi
      real, dimension(nx) :: angular_momentum
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
-     real :: xs,ys,xp,yp !position of star and planet
+     real :: xs,ys,xp,yp  !position of star and planet
      real :: g0,gp,r0_pot !star's and planet's mass
      real :: ang_tot,mass_tot,energy_tot
      integer :: i
@@ -689,7 +605,7 @@ module Planet
 
    endsubroutine calc_monitored
 !***************************************************************
-   subroutine set_soundspeed(g0,r0_pot,n_pot)
+   subroutine set_soundspeed
 !
 ! Locally isothermal structure for accretion disks. 
 ! The energy equation is not solved,but the variation
@@ -702,8 +618,7 @@ module Planet
       use Global, only: set_global
 !
       real, dimension (nx) :: rrp,cs2
-      real :: g0,r0_pot
-      integer :: n_pot
+      real :: g0=1.
       logical :: lheader,lfirstcall=.true.
 !
 !     It is better to set cs2 as a global variable than to recalculate it
@@ -714,7 +629,7 @@ module Planet
       if (lheader) print*,&
            'planet: setting sound speed as global variable'
 !
-      rrp = sqrt(x(l1:l2)**2 + y(m)**2)
+      rrp = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)
 !      
       where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
          
@@ -737,6 +652,72 @@ module Planet
       lfirstcall=.false.
 !
     endsubroutine set_soundspeed
+!***************************************************************
+    subroutine rprint_planet(lreset,lwrite)
+!
+!  reads and registers monitoring quantities for planet-disk
+!
+!  06-nov-05/wlad: coded
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+         idiag_torqint=0
+         idiag_torqext=0
+         idiag_torqrocheint=0
+         idiag_torqrocheext=0
+         idiag_totenergy=0
+         idiag_totangmom=0
+         idiag_totmass=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'rprint_gravity: run through parse list'
+      do iname=1,nname
+         call parse_name(iname,cname(iname),cform(iname),&
+              'torqint',idiag_torqint)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'torqext',idiag_torqext)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'torqrocheint',idiag_torqrocheint)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'torqrocheext',idiag_torqrocheext)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'totenergy',idiag_totenergy)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'totangmom',idiag_totangmom)
+         call parse_name(iname,cname(iname),cform(iname),&
+              'totmass',idiag_totmass)
+      enddo
+!
+!  write column, idiag_XYZ, where our variable XYZ is stored
+!  idl needs this even if everything is zero
+!
+      if (lwr) then
+        write(3,*) 'i_torqint=',idiag_torqint
+        write(3,*) 'i_torqext=',idiag_torqext
+        write(3,*) 'i_torqrocheint=',idiag_torqrocheint
+        write(3,*) 'i_torqrocheext=',idiag_torqrocheext
+        write(3,*) 'i_totenergy=',idiag_totenergy
+        write(3,*) 'i_totangmom=',idiag_totangmom
+        write(3,*) 'i_totmass=',idiag_totmass
+      endif
+!
+      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
+!
+    endsubroutine rprint_planet
 !***************************************************************
   endmodule Planet
   
