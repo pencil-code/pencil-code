@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.14 2005-12-05 17:53:27 ajohan Exp $
+! $Id: viscosity.f90,v 1.15 2006-02-03 06:18:42 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -54,6 +54,7 @@ module Viscosity
   integer :: idiag_epsK=0,idiag_epsK2=0,idiag_epsK_LES=0
   integer :: idiag_dtnu=0
   integer :: idiag_meshRemax=0
+  integer :: idiag_nuD2uxbxm=0, idiag_nuD2uxbym=0, idiag_nuD2uxbzm=0
 
   contains
 
@@ -78,7 +79,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.14 2005-12-05 17:53:27 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.15 2006-02-03 06:18:42 brandenb Exp $")
 
       ivisc(1)='nu-const'
 
@@ -222,6 +223,7 @@ module Viscosity
         idiag_epsK2=0
         idiag_epsK_LES=0
         idiag_meshRemax=0
+        idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -248,6 +250,9 @@ module Viscosity
           write(3,*) 'i_epsK2=',idiag_epsK2
           write(3,*) 'i_epsK_LES=',idiag_epsK_LES
           write(3,*) 'i_meshRemax=',idiag_meshRemax
+          write(3,*) 'i_nuD2uxbxm=',idiag_nuD2uxbxm
+          write(3,*) 'i_nuD2uxbym=',idiag_nuD2uxbym
+          write(3,*) 'i_nuD2uxbzm=',idiag_nuD2uxbzm
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'itest=',0
         endif
@@ -407,9 +412,9 @@ module Viscosity
       use Sub
       use Global, only: get_global
 !
-
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
 !      
       real, dimension (nx,3) :: fvisc,tmp,tmp2
@@ -588,6 +593,19 @@ module Viscosity
             call sum_mn_name(2*nu_smag*p%rho*p%sij2,idiag_epsK_LES)
           else if (lvisc_smag_cross_simplified) then
             call sum_mn_name(2*nu_smag*p%rho*p%sij2,idiag_epsK_LES)
+          endif
+        endif
+!
+!  correlation of viscous term with b-field; relevant for MTA
+!  (MTA: minimal tau approximation)
+!
+        if (lmagnetic) then
+          if (idiag_nuD2uxbxm/=0.or.idiag_nuD2uxbym/=0.or.idiag_nuD2uxbzm/=0) then
+!           call curl(f,iaa,bb)
+            call cross(fvisc,p%bb,nuD2uxb)
+            call sum_mn_name(nuD2uxb(:,1),idiag_nuD2uxbxm)
+            call sum_mn_name(nuD2uxb(:,2),idiag_nuD2uxbym)
+            call sum_mn_name(nuD2uxb(:,3),idiag_nuD2uxbzm)
           endif
         endif
       endif

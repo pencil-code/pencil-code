@@ -28,6 +28,8 @@ module Testfield
   namelist /testfield_run_pars/ &
        dummy
 
+  real, dimension (mz,3,ntestfield/3) :: uxbtestm=0.
+
   contains
 
 !***********************************************************************
@@ -131,6 +133,19 @@ module Testfield
       if(ip==0) print*, f, df, p  !(to keep compiler quiet)
 !        
     endsubroutine daatest_dt
+!***********************************************************************
+    subroutine calc_ltestfield_pars(f)
+!
+!  calculate <uxb>, which is needed when lsoca=.false.
+!
+!  29-jan-06/axel: dummy routine
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      intent(in)     :: f
+!
+    endsubroutine calc_ltestfield_pars
 !***********************************************************************
     subroutine rprint_testfield(lreset,lwrite)
 !

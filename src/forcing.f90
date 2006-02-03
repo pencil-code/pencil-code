@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.86 2005-12-21 17:40:28 brandenb Exp $
+! $Id: forcing.f90,v 1.87 2006-02-03 06:18:42 brandenb Exp $
 
 module Forcing
 
@@ -46,6 +46,7 @@ module Forcing
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0
+  integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 
   contains
 
@@ -69,7 +70,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.86 2005-12-21 17:40:28 brandenb Exp $")
+           "$Id: forcing.f90,v 1.87 2006-02-03 06:18:42 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -301,7 +302,7 @@ module Forcing
       real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx,rho1,ruf,uf,of,rho
       real, dimension (mz) :: tmpz
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo,bb,fxb
       real, dimension (mx,my,mz,mvar+maux) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -546,20 +547,29 @@ module Forcing
       ! For printouts
       !
       if (lout) then
-        if (idiag_rufm/=0) then 
+        if (idiag_rufm/=0) then
           uu=f(l1:l2,m,n,iux:iuz)
           call dot(uu,forcing_rhs,uf)
           call sum_mn_name(rho*uf,idiag_rufm)
         endif
-        if (idiag_ufm/=0) then 
+        if (idiag_ufm/=0) then
           uu=f(l1:l2,m,n,iux:iuz)
           call dot(uu,forcing_rhs,uf)
           call sum_mn_name(uf,idiag_ufm)
         endif
-        if (idiag_ofm/=0) then 
+        if (idiag_ofm/=0) then
           call curl(f,iuu,oo)
           call dot(oo,forcing_rhs,of)
           call sum_mn_name(of,idiag_ofm)
+        endif
+        if (lmagnetic) then
+          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then 
+            call curl(f,iaa,bb)
+            call cross(forcing_rhs,bb,fxb)
+            call sum_mn_name(fxb(:,1),idiag_fxbxm)
+            call sum_mn_name(fxb(:,2),idiag_fxbym)
+            call sum_mn_name(fxb(:,3),idiag_fxbzm)
+          endif
         endif
       endif
 !
@@ -1894,6 +1904,7 @@ module Forcing
 !
       if (lreset) then
         idiag_rufm=0; idiag_ufm=0; idiag_ofm=0
+        idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1903,6 +1914,9 @@ module Forcing
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)
         call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
+        call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
+        call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
+        call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -1911,6 +1925,9 @@ module Forcing
         write(3,*) 'i_rufm=',idiag_rufm
         write(3,*) 'i_ufm=',idiag_ufm
         write(3,*) 'i_ofm=',idiag_ofm
+        write(3,*) 'i_fxbxm=',idiag_fxbxm
+        write(3,*) 'i_fxbym=',idiag_fxbym
+        write(3,*) 'i_fxbzm=',idiag_fxbzm
       endif
 !
     endsubroutine rprint_forcing

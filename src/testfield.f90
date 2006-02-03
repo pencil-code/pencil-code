@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.21 2005-11-19 01:18:57 dobler Exp $
+! $Id: testfield.f90,v 1.22 2006-02-03 06:18:42 brandenb Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -26,20 +26,22 @@ module Testfield
   character (len=labellen) :: initaatest='zero'
 
   ! input parameters
+  real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension (nx,3) :: bbb
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
   logical :: reinitalize_aatest=.false.
   logical :: xextent=.true.,zextent=.true.,lsoca=.true.,lset_bbtest2=.false.
-  integer :: itestfield=1,ktestfield=1
+  integer :: itestfield=1
+  real :: ktestfield=1.
   integer, parameter :: ntestfield=36
 
   namelist /testfield_init_pars/ &
-       xextent,zextent,initaatest
+       B_ext,xextent,zextent,initaatest
 
   ! run parameters
   real :: etatest=0.
   namelist /testfield_run_pars/ &
-       reinitalize_aatest,xextent,zextent,lsoca, &
+       B_ext,reinitalize_aatest,xextent,zextent,lsoca, &
        lset_bbtest2,etatest,itestfield,ktestfield
 
   ! other variables (needs to be consistent with reset list below)
@@ -67,6 +69,8 @@ module Testfield
   integer :: idiag_alp11exz=0,idiag_alp21exz=0,idiag_alp31exz=0
   integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
   integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
+
+  real, dimension (mz,3,ntestfield/3) :: uxbtestm
 
   contains
 
@@ -106,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.21 2005-11-19 01:18:57 dobler Exp $")
+           "$Id: testfield.f90,v 1.22 2006-02-03 06:18:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -273,7 +277,7 @@ module Testfield
 
       real, dimension (nx,3) :: bb,aa,uxB,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3) :: del2Atest
-      real :: fnamez_mean
+!     real :: fnamez_mean
       integer :: jtest,jfnamez,j
 !
       intent(in)     :: f,p
@@ -305,6 +309,13 @@ module Testfield
             case(3); call set_bbtest3(bbtest,jtest)
             case(4); call set_bbtest4(bbtest,jtest)
           endselect
+!
+!  add an external field, if present
+!
+          if (B_ext(1)/=0.) bbtest(:,1)=bbtest(:,1)+B_ext(1)
+          if (B_ext(2)/=0.) bbtest(:,2)=bbtest(:,2)+B_ext(2)
+          if (B_ext(3)/=0.) bbtest(:,3)=bbtest(:,3)+B_ext(3)
+!
           call cross_mn(p%uu,bbtest,uxB)
           if (lsoca) then
             df(l1:l2,m,n,iaxtest:iaztest)=df(l1:l2,m,n,iaxtest:iaztest) &
@@ -316,10 +327,9 @@ module Testfield
 !  subtract average emf
 !
             do j=1,3
-              jfnamez=idiag_alp11z+3*(jtest-1)+(j-1)
-!TEST         duxbtest(:,j)=uxbtest(:,j)-fnamez_copy(n-nghost,ipz+1,jfnamez)
-! wd: if you do not run this test, you must at least initialize duxbtest:
-              duxbtest(:,j) = 0.
+!             jfnamez=idiag_alp11z+3*(jtest-1)+(j-1)
+!             duxbtest(:,j)=uxbtest(:,j)-fnamez_copy(n-nghost,ipz+1,jfnamez)
+              duxbtest(:,j)=uxbtest(:,j)-uxbtestm(n,j,jtest)
             enddo
 !
 !  advance test field equation
@@ -427,6 +437,66 @@ module Testfield
 !
     endsubroutine daatest_dt
 !***********************************************************************
+    subroutine calc_ltestfield_pars(f)
+!
+!  calculate <uxb>, which is needed when lsoca=.false.
+!
+!  21-jan-06/axel: coded
+!
+      use Cdata
+      use Sub
+      use Hydro, only: calc_pencils_hydro
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      real, dimension (nx,3) :: btest,uxbtest
+      integer :: jtest,j,nxy=nx*ny
+      logical :: headtt_save
+      type (pencil_case) :: p
+!
+      intent(in)     :: f
+!
+!  In this routine we will reset headtt after the first pencil,
+!  so we need to reset it afterwards.
+!
+      headtt_save=headtt
+!
+!  do each of the 12 test fields at a time
+!  but exclude redundancies, e.g. if the averaged field lacks x extent.
+!
+      do jtest=1,12
+        if ((jtest>= 1.and.jtest<= 3)&
+        .or.(jtest>= 4.and.jtest<= 6.and.xextent)&
+        .or.(jtest>=10.and.jtest<=12.and.xextent.and.(.not.lset_bbtest2))&
+        .or.(jtest>= 7.and.jtest<= 9.and.zextent)) then
+          iaxtest=iaatest+3*(jtest-1)
+          iaztest=iaxtest+2
+          if (lsoca) then
+            uxbtestm(:,:,jtest)=0.
+          else
+            do n=n1,n2
+              uxbtestm(n,:,jtest)=0.
+              do m=m1,m2
+                call calc_pencils_hydro(f,p)
+                call curl(f,iaxtest,btest)
+                call cross_mn(p%uu,btest,uxbtest)
+                do j=1,3
+                  uxbtestm(n,j,jtest)=uxbtestm(n,j,jtest)+sum(uxbtest(:,j))/nxy
+                enddo
+                headtt=.false.
+              enddo
+            enddo
+          endif
+        endif
+      enddo
+!
+!  reset headtt
+!
+      headtt=headtt_save
+!
+    endsubroutine calc_ltestfield_pars
+!***********************************************************************
     subroutine set_bbtest(bbtest,jtest,ktestfield)
 !
 !  set testfield
@@ -438,7 +508,8 @@ module Testfield
 !
       real, dimension (nx,3) :: bbtest
       real, dimension (nx) :: cx,sx,cz,sz
-      integer :: jtest,ktestfield
+      integer :: jtest
+      real :: ktestfield
 !
       intent(in)  :: jtest,ktestfield
       intent(out) :: bbtest

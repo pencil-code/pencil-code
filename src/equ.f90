@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.270 2006-02-02 21:46:36 ajohan Exp $
+! $Id: equ.f90,v 1.271 2006-02-03 06:18:42 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.270 2006-02-02 21:46:36 ajohan Exp $")
+           "$Id: equ.f90,v 1.271 2006-02-03 06:18:42 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -422,9 +422,15 @@ module Equ
       if (lvisc_hyper.or.lvisc_smagorinsky) then
         if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
       endif
-!  Turbulence parameters (alpha, scale height, etc.)      
+!
+!  Turbulence parameters (alpha, scale height, .., for Anders' accretion disks)
+!
       if (lcalc_turbulence_pars) call calc_turbulence_pars(f)
-!      
+!
+!  Calculate averages for testfield procedure (only when lsoca=.false.)
+!
+      if (ltestfield) call calc_ltestfield_pars(f)
+!
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.

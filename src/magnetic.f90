@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.266 2005-12-16 16:53:32 bingert Exp $
+! $Id: magnetic.f90,v 1.267 2006-02-03 06:18:42 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -110,6 +110,7 @@ module Magnetic
        meanfield_etat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
+!--    initaa,initaa2,amplaa,amplaa2, &
        bthresh,bthresh_per_brms, &
        iresistivity, &
        alphaSSm, &
@@ -181,7 +182,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.266 2005-12-16 16:53:32 bingert Exp $")
+           "$Id: magnetic.f90,v 1.267 2006-02-03 06:18:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -469,7 +470,8 @@ module Magnetic
     subroutine pert_aa(f)
 !
 !   perturb magnetic field when reading old NON-magnetic snapshot
-!   called from run.f90
+!   called from run.f90; this uses a lot of memory and should be modified.
+!
 !   30-july-2004/dave: coded
 !
       use Cdata
