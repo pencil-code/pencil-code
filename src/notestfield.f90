@@ -20,15 +20,12 @@ module Testfield
 
   include 'testfield.h'
 
-  integer, parameter :: ntestfield=0
   real :: dummy=0.
 
   namelist /testfield_init_pars/ &
        dummy
   namelist /testfield_run_pars/ &
        dummy
-
-  real, dimension (mz,3,ntestfield/3) :: uxbtestm=0.
 
   contains
 
