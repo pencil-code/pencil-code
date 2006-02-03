@@ -1,4 +1,4 @@
-! $Id: dustvelocity_onefluid.f90,v 1.2 2006-02-02 14:06:56 ajohan Exp $
+! $Id: dustvelocity_onefluid.f90,v 1.3 2006-02-03 13:39:50 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !  in the one-fluid limit (valid for vanishing friction time).
@@ -123,7 +123,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity_onefluid.f90,v 1.2 2006-02-02 14:06:56 ajohan Exp $")
+           "$Id: dustvelocity_onefluid.f90,v 1.3 2006-02-03 13:39:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -298,7 +298,10 @@ module Dustvelocity
 !
       lpenc_requested(i_uud)=.true.
       if (ladvection_dust) lpenc_requested(i_udgud)=.true.
-      if (lpressure_gradient) lpenc_requested(i_epsd)=.true.
+      if (lpressure_gradient) then
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_epsd)=.true.
+      endif
       if (lviscosity_dust) then
         if ((iviscd=='nud-const' .or. iviscd=='hyper3_nud-const') &
             .and. ldustdensity) then
