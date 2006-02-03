@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.46 2006-02-02 12:28:26 ajohan Exp $
+! $Id: nohydro.f90,v 1.47 2006-02-03 15:34:02 weezy Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -32,7 +32,7 @@ module Hydro
 
   real, allocatable, dimension (:,:) :: KS_k,KS_A,KS_B !or through whole field for each wavenumber? 
   real, allocatable, dimension (:) :: KS_omega !or through whole field for each wavenumber? 
-  integer :: KS_modes = 32
+  integer :: KS_modes = 3
   !namelist /hydro_init_pars/ dummyuu
   !namelist /hydro_run_pars/  dummyuu
 
@@ -77,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.46 2006-02-02 12:28:26 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.47 2006-02-03 15:34:02 weezy Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -94,7 +94,12 @@ module Hydro
       logical :: lstarting
 !      
       if (kinflow=='KS') then
-        call random_isotropic_KS_setup(-5./3.,1.,(nx-1.)/2)
+!        call random_isotropic_KS_setup(-5./3.,1.,(nxgrid)/2.)
+!
+!  Use constant values for testing KS model code with 3
+!  specific modes.
+!
+        call random_isotropic_KS_setup_test
       endif
 ! 
       if (ip == 0) print*,f,lstarting  !(keep compiler quiet)
@@ -230,8 +235,13 @@ module Hydro
            endif
         enddo
         if (lpencil(i_divu))  p%divu = 0.
+!weezy Simple test of urms calculation with nohydro
+      p%uu(:,1)=0.0  
+      p%uu(:,2)=0.0
+      p%uu(:,3)=6.0     
       else
 ! uu
+
         if (lpencil(i_uu)) then
           if (headtt) print*,'uu=0'
           p%uu=0.
@@ -293,27 +303,35 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
+    subroutine random_isotropic_KS_setup_tony(initpower,kmin,kmax)
 !
 !   produces random, isotropic field from energy spectrum following the
 !   KS method (Malik and Vassilicos, 1999.)  
 !
-!   more to do; unsatisfactory so far - at least for a steep power-law energy spectrum 
+!   more to do; unsatisfactory so far - at least for a steep power-law 
+!   energy spectrum 
 !   
 !   27-may-05/tony: modified from snod's KS hydro initial
+!   03-feb-06/weezy: Tony's code doesn't appear to have the 
+!                    correct periodicity. 
+!                    renamed from random_isotropic_KS_setup
 !  
     use Cdata, only: pi,Lxyz
     use Sub    
     use General    
 !  
     integer :: modeN
-
-! how many wavenumbers? 
+!
     real, dimension (3) :: k_unit
     real, dimension (3) :: vec,ee,e1,e2,field
-    real, dimension (4) :: r
-    real :: initpower,kmin,kmax,ps,k,phi,theta,alpha,beta,dk
-    real :: ex,ey,ez,norm,kdotx,a,energy
+!    real, dimension (4) :: r
+    real,dimension (6) :: r
+    real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
+    real :: initpower,kmin,kmax
+    real, dimension(KS_modes) :: k,dk,energy,ps
+    real :: theta,phi,alpha,beta
+    real :: ex,ey,ez,norm,kdotx,a,mkunit
+    real :: newthet,newphi  !get rid of this line if there's no change
 
     allocate(KS_k(3,KS_modes))
     allocate(KS_A(3,KS_modes))
@@ -342,9 +360,9 @@ module Hydro
 !
 !  set kmin
 !
-       kmin=2.*pi/Lxyz(1)
+       kmin=2.*pi      !/(1.0*Lxyz(1))
 !       kmin=kmin*2.*pi
-       kmax=nx*pi
+       kmax=128.*pi    !nx*pi
        a=(kmax/kmin)**(1./(KS_modes-1.))
 
 !       
@@ -353,83 +371,322 @@ module Hydro
 !  pick wavenumber
 !
 !       k=modeN*kmin
-       k=kmin*(a**(modeN-1.))
+      k=kmin*(a**(modeN-1.))
 !
 !  calculate dk
 !
 !       print *,kmin,kmax,k
 !       dk=1.0*kmin
-       if(modeN==1)dk=kmin*(a-1.)/2
-       if(modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2))*kmin*((a**2) -1.)/2.
-       if(modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
-
-!      print *,dk  !this has been checked and the dks are exactly right!
 !
-!   pick 4 random angles for each mode
-!         
-       call random_number_wrapper(r); 
-       theta=pi*(r(1) - 0.)  
-       phi=pi*(2*r(2) - 0.)  
-       alpha=pi*(2*r(3) - 0.)  
-       beta=pi*(2*r(4) - 0.)
-!       call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)  ! random phase?
-
+      if(modeN==1)&
+              dk=kmin*(a-1.)/2.
+      if(modeN.gt.1.and.modeN.lt.KS_modes) &
+              dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
+      if(modeN==KS_modes) &
+              dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
 !
-!   make a random unit vector by rotating fixed vector to random position
- !   (alternatively make a random transformation matrix for each k)
-!
+       call random_number_wrapper(r)
+       theta=r(1)*pi 
+       phi=r(2)*2.0*pi
+       alpha=r(3)*pi
+       beta=r(4)*2.0*pi
+       newthet=r(5)*pi
+       newphi=r(6)*2.0*pi
+! 
        k_unit(1)=sin(theta)*cos(phi)
        k_unit(2)=sin(theta)*sin(phi)
        k_unit(3)=cos(theta)
-
-!       energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.)*exp(-0.5*(k/kmax)**2.)
-       energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.)*exp(-0.5*(k/kmax)**2.)
-
-!
-!   make a vector KS_k of length k from the unit vector for each mode
-!
+! 
+       j(1)=sin(alpha)*cos(beta)
+       j(2)=sin(alpha)*sin(beta)
+       j(3)=cos(alpha)
+! 
+       l(1)=sin(newthet)*cos(newphi)
+       l(2)=sin(newthet)*sin(newphi)
+       l(3)=cos(newthet)
+!  
        KS_k(:,modeN)=k*k_unit(:)
-!       KS_omega(modeN)=k**(2./3.)
-       KS_omega(modeN)=sqrt(energy*(k**3))
+! 
+       call cross(KS_k(:,modeN),j,e1)
+       call cross(KS_k(:,modeN),l,e2)
+! 
+!  Make e1 & e2 unit vectors so that we can later make them 
+!  the correct lengths
+! 
+       mkunit=sqrt(e1(1)**2+e1(2)**2+e1(3)**2)
+       e1=e1/mkunit
 !
-!   construct basis for plane having rr normal to it
-!   (bit of code from forcing to construct x', y')
+       mkunit=sqrt(e2(1)**2+e2(2)**2+e2(3)**2)                
+       e2=e2/mkunit
 !
-       if((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
-        ex=0.; ey=1.; ez=0.           
-       else
-        ex=1.; ey=0.; ez=0.
-       endif
-       ee = (/ex, ey, ez/)
-       call cross(k_unit(:),ee,e1)
-       call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to KS_k
-       call cross(k_unit(:),e1,e2)
-       call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to KS_k, e1
+!        energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
+!                            *exp(-0.5*(k/kmax)**2.)
+!  The energy above is how this code has it. i
+!  I've changed the divisor of k.
+       energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
+                       *exp(-0.5*(k/kmax)**2.)
+       energy=1.*energy
+       ps=sqrt(2.*energy*dk)   !/3.0)
+
+       KS_A(:,modeN) = ps*e1
+       KS_B(:,modeN) = ps*e2
 !
-!   make two random unit vectors KS_B and KS_A in the constructed plane
-!
-       KS_A(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
-       KS_B(:,modeN) = cos(beta)*e1  + sin(beta)*e2
-!
-!   define the power spectrum (ps=sqrt(2.*power_spectrum(k)*delta_k/3.))
-!
-!       ps=(k**(initpower/2.))*sqrt(dk*2./3.)
-       ps=sqrt(2.*energy*dk/3.0) !the factor of 2 just after the sqrt may need to be 2./3.
-!
-!   give KS_A and KS_B length ps
-!   
-       KS_A(:,modeN)=ps*KS_A(:,modeN)
-       KS_B(:,modeN)=ps*KS_B(:,modeN)
+    enddo
 !
 !   form RA = RA x k_unit and RB = RB x k_unit 
 !
-       call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
-       call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
+    do modeN=1,KS_modes
+      call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
+      call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
+    enddo
 !
-     enddo
+!
+    endsubroutine random_isotropic_KS_setup_tony
+!***********************************************************************
+    subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
+!
+!   produces random, isotropic field from energy spectrum following the
+!   KS method (Malik and Vassilicos, 1999.)  
+!
+!   more to do; unsatisfactory so far - at least for a steep power-law 
+!   energy spectrum 
+!   
+!   27-may-05/tony: modified from snod's KS hydro initial
+!   03-feb-06/weezy: Attempted rewrite to guarantee periodicity of 
+!                    KS modes. 
+!  
+    use Cdata, only: pi,Lxyz
+    use Sub    
+    use General    
+!  
+    integer :: modeN
+!
+    real, dimension (3) :: k_unit
+    real, dimension (3) :: vec,ee,e1,e2,field
+!    real, dimension (4) :: r
+    real,dimension (6) :: r
+    real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
+    real :: initpower,kmin,kmax
+    real, dimension(KS_modes) :: k,dk,energy,ps
+    real :: theta,phi,alpha,beta
+    real :: ex,ey,ez,norm,kdotx,a,mkunit
+    real :: newthet,newphi  !get rid of this line if there's no change
+
+    allocate(KS_k(3,KS_modes))
+    allocate(KS_A(3,KS_modes))
+    allocate(KS_B(3,KS_modes))
+    allocate(KS_omega(KS_modes))
+!
+    kmin=2.*pi      !/(1.0*Lxyz(1))
+!    kmin=kmin*2.*pi
+    kmax=128.*pi    !nx*pi
+    a=(kmax/kmin)**(1./(KS_modes-1.))
+
+!       
+    do modeN=1,KS_modes  
+!   
+!  pick wavenumber
+!
+!      k=modeN*kmin
+      k=kmin*(a**(modeN-1.))
+!
+!weezy need to investigate if this is still needed
+!weezy !
+!weezy !  calculate dk
+!weezy !
+!weezy       print *,kmin,kmax,k
+!weezy       dk=1.0*kmin
+
+!weezy       if(modeN==1)dk=kmin*(a-1.)/2.
+!weezy       if(modeN.gt.1.and.modeN.lt.KS_modes)dk=(a**(modeN-2.))*kmin*((a**2.) -1.)/2.
+!weezy       if(modeN==KS_modes)dk=(a**(KS_modes -2.))*kmin*(a -1.)/2.
+ 
+!
+!  pick 4 random angles for each mode
+!         
+      call random_number_wrapper(r); 
+      theta=pi*(r(1) - 0.)  
+      phi=pi*(2*r(2) - 0.)  
+      alpha=pi*(2*r(3) - 0.)  
+      beta=pi*(2*r(4) - 0.)
+!
+!  random phase?
+!      call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)  
+!
+!  make a random unit vector by rotating fixed vector to random position
+!  (alternatively make a random transformation matrix for each k)
+!
+      k_unit(1)=sin(theta)*cos(phi)
+      k_unit(2)=sin(theta)*sin(phi)
+      k_unit(3)=cos(theta)
+ 
+      energy=(((k/kmin)**2. +1.)**(-11./6.))*(k**2.) &
+                       *exp(-0.5*(k/kmax)**2.)
+!      energy=(((k/1.)**2. +1.)**(-11./6.))*(k**2.) &
+!                       *exp(-0.5*(k/kmax)**2.)
+!
+!  make a vector KS_k of length k from the unit vector for each mode
+!
+      KS_k(:,modeN)=k*k_unit(:)
+!      KS_omega(modeN)=k**(2./3.)
+      KS_omega(:)=sqrt(energy(:)*(k(:)**3.))
+!
+!  construct basis for plane having rr normal to it
+!  (bit of code from forcing to construct x', y')
+!
+      if((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
+        ex=0.; ey=1.; ez=0.           
+      else
+        ex=1.; ey=0.; ez=0.
+      endif
+      ee = (/ex, ey, ez/)
+!
+      call cross(k_unit(:),ee,e1)
+!  e1: unit vector perp. to KS_k
+      call dot2(e1,norm); e1=e1/sqrt(norm) 
+      call cross(k_unit(:),e1,e2)
+!  e2: unit vector perp. to KS_k, e1
+      call dot2(e2,norm); e2=e2/sqrt(norm) 
+!
+!  make two random unit vectors KS_B and KS_A in the constructed plane
+!
+      KS_A(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
+      KS_B(:,modeN) = cos(beta)*e1  + sin(beta)*e2
+!
+!  define the power spectrum (ps=sqrt(2.*power_spectrum(k)*delta_k/3.))
+!
+!      ps=(k**(initpower/2.))*sqrt(dk*2./3.)
+!  The factor of 2 just after the sqrt may need to be 2./3.
+      ps=sqrt(2.*energy*dk)   !/3.0) 
+!
+!  give KS_A and KS_B length ps
+!   
+      KS_A(:,modeN)=ps*KS_A(:,modeN)
+      KS_B(:,modeN)=ps*KS_B(:,modeN)
+!
+    enddo
+!
+!   form RA = RA x k_unit and RB = RB x k_unit 
+!
+    
+    do modeN=1,KS_modes
+      call cross(KS_A(:,modeN),k_unit(:),KS_A(:,modeN))
+      call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
+    enddo
 !
 !
     endsubroutine random_isotropic_KS_setup
+!***********************************************************************
+    subroutine random_isotropic_KS_setup_test
+!
+!   produces random, isotropic field from energy spectrum following the
+!   KS method (Malik and Vassilicos, 1999.)  
+!   This test case only uses 3 very specific modes (useful for comparison
+!   with Louise's kinematic dynamo code.
+!   
+!   03-feb-06/weezy: modified from random_isotropic_KS_setup
+!  
+    use Cdata, only: pi,Lxyz
+    use Sub    
+    use General    
+!  
+    integer :: modeN
+!
+    real, dimension (3,KS_modes) :: k_unit
+    real, dimension(KS_modes) :: k,dk,energy,ps
+    real, dimension (3) :: vec,ee,e1,e2,field
+!    real, dimension (4) :: r
+    real,dimension (6) :: r
+    real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
+    real :: initpower,kmin,kmax
+    real :: theta,phi,alpha,beta
+    real :: ex,ey,ez,norm,kdotx,a,mkunit
+    real :: newthet,newphi  !get rid of this line if there's no change
+!
+    allocate(KS_k(3,KS_modes))
+    allocate(KS_A(3,KS_modes))
+    allocate(KS_B(3,KS_modes))
+    allocate(KS_omega(KS_modes))
+!
+    initpower=-5./3.
+    kmin=10.88279619
+    kmax=23.50952672
+!
+    KS_k(1,1)=2.00*pi
+    KS_k(2,1)=-2.00*pi
+    KS_k(3,1)=2.00*pi
+!    
+    KS_k(1,2)=-4.00*pi
+    KS_k(2,2)=0.00*pi
+    KS_k(3,2)=2.00*pi
+!    
+    KS_k(1,3)=4.00*pi
+    KS_k(2,3)=2.00*pi
+    KS_k(3,3)=-6.00*pi
+!    
+    k(1)=kmin
+    k(2)=14.04962946
+    k(3)=kmax
+!    
+    do modeN=1,KS_modes
+      k_unit(:,modeN)=KS_k(:,modeN)/k(modeN)
+    end do
+!    
+    kmax=k(KS_modes)
+    kmin=k(1)
+!    
+    do modeN=1,KS_modes
+      if(modeN==1) dk(modeN)=(k(modeN+1)-k(modeN))/2.
+      if(modeN.gt.1.and.modeN.lt.KS_modes) &
+                dk(modeN)=(k(modeN+1)-k(modeN-1))/2.
+      if(modeN==KS_modes) dk(modeN)=(k(modeN)-k(modeN-1))/2.
+    end do
+!    
+    do modeN=1,KS_modes
+       energy(modeN)=((k(modeN)**2 +1.)**(-11./6.))*(k(modeN)**2) &
+                         *exp(-0.5*(k(modeN)/kmax)**2)
+    end do
+!    
+    ps=sqrt(2.*energy*dk)
+!    
+    KS_A(1,1)=1.00/dsqrt(2.00)
+    KS_A(2,1)=-1.00/dsqrt(2.00)
+    KS_A(3,1)=0.00
+!    
+    KS_A(1,2)=1.00/dsqrt(3.00)
+    KS_A(2,2)=1.00/dsqrt(3.00)
+    KS_A(3,2)=-1.00/dsqrt(3.00)
+!    
+    KS_A(1,3)=-1.00/2.00
+    KS_A(2,3)=-1.00/2.00
+    KS_A(3,3)=1.00/dsqrt(2.00)
+!    
+    KS_B(1,3)=1.00/dsqrt(2.00)
+    KS_B(2,3)=-1.00/dsqrt(2.00)
+    KS_B(3,3)=0.00
+!    
+    KS_B(1,1)=1.00/dsqrt(3.00)
+    KS_B(2,1)=1.00/dsqrt(3.00)
+    KS_B(3,1)=-1.00/dsqrt(3.00)
+!    
+    KS_B(1,2)=-1.00/2.00
+    KS_B(2,2)=-1.00/2.00
+    KS_B(3,2)=1.00/dsqrt(2.00)
+!    
+    do modeN=1,KS_modes
+       KS_A(:,modeN)=ps(modeN)*KS_A(:,modeN)
+       KS_B(:,modeN)=ps(modeN)*KS_B(:,modeN)
+    end do
+!
+!   form RA = RA x k_unit and RB = RB x k_unit 
+!
+    
+     do modeN=1,KS_modes
+       call cross(KS_A(:,modeN),k_unit(:,modeN),KS_A(:,modeN))
+       call cross(KS_B(:,modeN),k_unit(:,modeN),KS_B(:,modeN))
+     enddo
+!
+    endsubroutine random_isotropic_KS_setup_test
 !***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !

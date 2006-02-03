@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.267 2006-02-03 06:18:42 brandenb Exp $
+! $Id: magnetic.f90,v 1.268 2006-02-03 15:34:02 weezy Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -182,7 +182,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.267 2006-02-03 06:18:42 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.268 2006-02-03 15:34:02 weezy Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -352,6 +352,7 @@ module Magnetic
       case('rescale'); f(:,:,:,iax:iaz)=amplaa*f(:,:,:,iax:iaz)
       case('mode'); call modev(amplaa,coefaa,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
       case('modeb'); call modeb(amplaa,coefbb,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
+      case('const_lou'); call const_lou(amplaa,f,iaa,xx,yy,zz)
       case('power_randomphase')
          call power_randomphase(amplaa,initpower_aa,cutoff_aa,f,iax,iaz)
       case('random-isotropic-KS')
