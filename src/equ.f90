@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.271 2006-02-03 06:18:42 brandenb Exp $
+! $Id: equ.f90,v 1.272 2006-02-03 18:11:14 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.271 2006-02-03 06:18:42 brandenb Exp $")
+           "$Id: equ.f90,v 1.272 2006-02-03 18:11:14 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -457,6 +457,7 @@ module Equ
 !  Note: cylindrical radius currently only needed for phi-averages.
 !
         call calc_unitvects_sphere()
+        
 !
 !  calculate profile for phi-averages if needed
 !  Note that rcyl_mn is also needed for Couette flow experiments,
@@ -604,7 +605,12 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
               ' : ', lfreeze_varint
-          pfreeze_int  = quintic_step(r_mn,rfreeze_int,wfreezeint,SHIFT=-1.)
+          if (lcylindrical) then
+             pfreeze_int  = quintic_step(rcyl_mn,rfreeze_int,wfreezeint,SHIFT=-1.)
+          else
+             pfreeze_int  = quintic_step(r_mn   ,rfreeze_int,wfreezeint,SHIFT=-1.)
+          endif
+!          
           do iv=1,nvar
             if (lfreeze_varint(iv)) df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
           enddo
@@ -614,7 +620,12 @@ module Equ
           if (headtt) &
               print*, 'pde: freezing variables for r > ', rfreeze_ext, &
               ' : ', lfreeze_varext
-          pfreeze_ext  = 1-quintic_step(r_mn,rfreeze_ext,wfreezeext,SHIFT=1.)
+          if (lcylindrical) then
+             pfreeze_ext  = 1-quintic_step(rcyl_mn,rfreeze_ext,wfreezeext,SHIFT=1.)
+          else
+             pfreeze_ext  = 1-quintic_step(r_mn   ,rfreeze_ext,wfreezeext,SHIFT=1.)
+          endif
+!
           do iv=1,nvar
             if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
           enddo
