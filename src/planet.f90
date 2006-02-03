@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.15 2006-02-03 10:28:17 wlyra Exp $
+! $Id: planet.f90,v 1.16 2006-02-03 18:12:52 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.15 2006-02-03 10:28:17 wlyra Exp $")
+           "$Id: planet.f90,v 1.16 2006-02-03 18:12:52 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -243,7 +243,11 @@ module Planet
 !
 !  Star's gravity field
 !
-      rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2) + tini
+      if (lcylindrical) then
+         rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2)+tini
+      else
+         rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2) + tini
+      endif   
 !      
       if (gc.ne.0) then
          call gravity_star(g0,r0_pot,n_pot,g_star,axs,ays,azs)
@@ -254,7 +258,7 @@ module Planet
       ggs(:,1) = (x(l1:l2)-axs)/rrs*g_star
       ggs(:,2) = (y(  m  )-ays)/rrs*g_star
       ggs(:,3) = (z(  n  )-azs)/rrs*g_star     
-      
+      if (lcylindrical) ggs(:,3) = 0.
 !
 !  Reset gravity as global variable 
 !  In the future, compute only potential and call grav=grad(pot)
@@ -469,7 +473,11 @@ module Planet
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
      if (present(zstar)) then;azs=zstar;else;azs=0.;endif
 !  
-     rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2 + (z(n)-azs)**2) + tini
+        if (lcylindrical) then
+           rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2) + tini
+        else
+           rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2 + (z(n)-azs)**2) + tini
+        endif
 !
      if (n_pot.ne.2) then
         print*,'planet: smoothed gravity used for star but smoothing lenght'
@@ -629,7 +637,11 @@ module Planet
       if (lheader) print*,&
            'planet: setting sound speed as global variable'
 !
-      rrp = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2)
+      if (lcylindrical) then
+         rrp = sqrt(x(l1:l2)**2 + y(m)**2) + tini
+      else
+         rrp = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + tini
+      endif   
 !      
       where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
          
