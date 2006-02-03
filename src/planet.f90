@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.16 2006-02-03 18:12:52 wlyra Exp $
+! $Id: planet.f90,v 1.17 2006-02-03 22:40:43 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.16 2006-02-03 18:12:52 wlyra Exp $")
+           "$Id: planet.f90,v 1.17 2006-02-03 22:40:43 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -620,9 +620,15 @@ module Planet
 ! of temperature with radius (T ~ r-1) is crucial for the
 ! treatment of ad hoc alpha viscosity.
 !
+! The obscure coefficients were calculated with an IDL
+! routine to match a 1/r fall of cs2 with a constant value
+! inside r = 0.4. Have to make it general some other day. 
+!
 ! cs = H * Omega, being H the scale height and (H/r) = cte.
 !
-      use Cdata
+! don't-remember-when/wlad : coded
+! 
+     use Cdata
       use Global, only: set_global
 !
       real, dimension (nx) :: rrp,cs2
@@ -652,7 +658,6 @@ module Planet
               +0.0816006 *rrp**4 
       endwhere
       where (rrp.gt.0.4)
-         !cs = 0.05 * Omega * r
          cs2 = 0.05**2 * g0 / rrp
       endwhere
       where (rrp.lt.0.2) 
