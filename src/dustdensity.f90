@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.146 2006-02-02 21:47:35 ajohan Exp $
+! $Id: dustdensity.f90,v 1.147 2006-02-03 13:40:28 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.146 2006-02-02 21:47:35 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.147 2006-02-03 13:40:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,15 +329,18 @@ module Dustdensity
           enddo; enddo; enddo
         case('gaussian_nd')
           if (lroot) print*, 'init_nd: Gaussian distribution in z'
+          Hrho=1/sqrt(gamma)
+          rho00 =1.0
+          rhod00=eps_dtog*Hrho/Hnd*rho00
           do n=n1,n2
-            f(:,:,n,ind) = eps_dtog/(sqrt(2*pi)*Hnd)*exp(-z(n)**2/(2*Hnd**2))
+            f(:,:,n,ind) = rhod00*exp(-z(n)**2/(2*Hnd**2))
           enddo
         case('gas_stratif_dustdrag')
           if (lroot) print*,'init_nd: extra gas stratification due to dust drag'
 !          Hrho=cs0/nu_epicycle
           Hrho=1/sqrt(gamma)
-          rho00 =1.0/(sqrt(2*pi)*Hrho)
-          rhod00=eps_dtog/(sqrt(2*pi)*Hnd)
+          rho00 =1.0
+          rhod00=eps_dtog*Hrho/Hnd*rho00
           do n=n1,n2
             lnrho_z = alog( &
                 rhod00*Hnd**2/(Hrho**2-Hnd**2)* &
