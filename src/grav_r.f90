@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.80 2005-11-25 18:15:43 wlyra Exp $
+! $Id: grav_r.f90,v 1.81 2006-02-03 18:12:06 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.80 2005-11-25 18:15:43 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.81 2006-02-03 18:12:06 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -98,7 +98,7 @@ module Gravity
       use Global
       use Planet
 !
-      real, dimension (nx,3) :: gg_mn
+      real, dimension (nx,3) :: gg_mn=0.
       real, dimension (nx) :: g_r,rr_mn
 
       logical, save :: first=.true.
@@ -194,7 +194,11 @@ module Gravity
         do n=n1,n2
         do m=m1,m2
 !
-          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
+           if (lcylindrical) then
+              rr_mn=sqrt(x(l1:l2)**2+y(m)**2)+tini
+           else   
+              rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
+           endif
 !
           if (lpade) then
 
@@ -216,14 +220,14 @@ module Gravity
                      *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
 ! 
             else
-               call gravity_star(g0,r0_pot,n_pot,g_r)    
+               call gravity_star(g0,r0_pot,n_pot,g_r)
             endif
-            
          endif
 !
           gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
           gg_mn(:,2) = y(  m  )/rr_mn*g_r
           gg_mn(:,3) = z(  n  )/rr_mn*g_r
+          if (lcylindrical) gg_mn(:,3)=0.
          
           call set_global(gg_mn,m,n,'gg',nx)
 
