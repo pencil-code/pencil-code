@@ -4,19 +4,25 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.17 2005-06-26 17:34:33 eos_merger_tony Exp $',
+  cvsid='$Id: run.in,v 1.18 2006-02-03 14:32:26 nbabkovs Exp $',
   nt=50, it1=10, isave=200, itorder=3,
-  dsnap=20., dvid=0.2,
-  bcx = 'p','p','p', 'p',    'p'
-  bcy = 'p','p','p', 'p',    'p'
-  bcz = 's','s','a','a2','c1:cT'
-  cdtv=0.30
+  dsnap=20., dvid=0.2, slice_position='m'
+  bcx = 'set','set','set', 'set'
+  bcy = 'set','set','set', 'set'
+  bcz = 'set','set','set', 'set'
+  fbcx1(1)=0.,fbcx1(2)=0., fbcx1(3)=0.5, fbcx1(4)=2. 
+  fbcx2(1)=0.,fbcx2(2)=0., fbcx2(3)=-0.5, fbcx2(4)=2. 
+   fbcy1(1)=0.,fbcy1(2)=0., fbcy1(3)=0., fbcy1(4)=2. 
+  fbcy2(1)=0.,fbcy2(2)=0., fbcy2(3)=0., fbcy2(4)=2. 
+   fbcz1(1)=0.5,fbcz1(2)=0., fbcz1(3)=0., fbcz1(4)=2. 
+  fbcz2(1)=-0.5,fbcz2(2)=0., fbcz2(3)=0., fbcz2(4)=2. 
+  cdtv=0.1
   lpencil_check=T
 /
 &eos_run_pars
 /
 &hydro_run_pars
-  Omega=0.1 ! angular velocity
+  Omega=0. ! angular velocity
   theta=0.  ! direction of angular velocity vector (0 : vertical)
 /
 &density_run_pars
@@ -33,7 +39,7 @@
 /
 &viscosity_run_pars
   ivisc='nu-const'
-  nu=4e-3
+  nu=4e-2
 /
 ! Nomenclature for boundary conditions:
 !   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
