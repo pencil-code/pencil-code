@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.142 2006-02-03 18:12:52 wlyra Exp $ 
+! $Id: initcond.f90,v 1.143 2006-02-03 22:49:22 wlyra Exp $ 
 
 module Initcond 
  
@@ -40,6 +40,7 @@ module Initcond
   public :: hawley_etal99a
   public :: robertsflow
   public :: power_law
+  public :: const_lou
   public :: corona_init,mdi_init
 
   interface posnoise            ! Overload the `posnoise' function
@@ -2667,7 +2668,26 @@ module Initcond
       
     endsubroutine mdi_init
 !*********************************************************
+    subroutine const_lou(ampl,f,i,xx,yy,zz)
+!
+!  PLEASE ADD A DESCRIPTION
+!
+!  5-nov-05/weezy: coded
+!
+    use Cdata
+    use General
 
+    real, dimension (mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz) :: xx,yy,zz
+    real :: ampl
+    integer::i
+
+    f(:,:,:,i  )=ampl*cos(2.*pi*yy)/32.*pi
+    f(:,:,:,i+1)=ampl*cos(2.*pi*zz)/32.*pi
+    f(:,:,:,i+2)=ampl*cos(2.*pi*xx)/32.*pi
+
+    endsubroutine const_lou
+!*********************************************************
 endmodule Initcond
 
        
