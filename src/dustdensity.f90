@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.148 2006-02-03 16:15:22 ajohan Exp $
+! $Id: dustdensity.f90,v 1.149 2006-02-04 12:11:14 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.148 2006-02-03 16:15:22 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.149 2006-02-04 12:11:14 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -145,8 +145,11 @@ module Dustdensity
 !
 !  Ensure dust density variables are contiguous with dust velocity
 !
-      if ((iudz(ndustspec)+1) .ne. ind(1)) then
-        call stop_it('register_dustdensity: uud and ind are NOT contiguous in the f-array - as required by copy_bcs_dust')
+      if (ldustvelocity) then
+        if ((iudz(ndustspec)+1)/=ind(1)) then
+          call stop_it('register_dustdensity: uud and ind are NOT '// &
+              'contiguous in the f-array - as required by copy_bcs_dust')
+        endif
       endif
 !
 !  Write files for use with IDL
@@ -329,18 +332,18 @@ module Dustdensity
           enddo; enddo; enddo
         case('gaussian_nd')
           if (lroot) print*, 'init_nd: Gaussian distribution in z'
-          Hrho=1/sqrt(gamma)
-          rho00 =1.0
-          rhod00=eps_dtog*Hrho/Hnd*rho00
+          Hrho   = 1/sqrt(gamma)
+          rho00  = 1.0
+          rhod00 = eps_dtog*Hrho/Hnd*rho00
           do n=n1,n2
             f(:,:,n,ind) = rhod00*exp(-z(n)**2/(2*Hnd**2))
           enddo
         case('gas_stratif_dustdrag')
           if (lroot) print*,'init_nd: extra gas stratification due to dust drag'
 !          Hrho=cs0/nu_epicycle
-          Hrho=1/sqrt(gamma)
-          rho00 =1.0
-          rhod00=eps_dtog*Hrho/Hnd*rho00
+          Hrho   = 1/sqrt(gamma)
+          rho00  = 1.0
+          rhod00 = eps_dtog*Hrho/Hnd*rho00
           do n=n1,n2
             lnrho_z = alog( &
                 rhod00*Hnd**2/(Hrho**2-Hnd**2)* &
@@ -572,10 +575,10 @@ module Dustdensity
         if (lhydro) f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
             1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps+(Omega*tausd(1))**2)/ &
             (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
-        f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
+        if (ldustvelocity) f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
             1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
             (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-        f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
+        if (ldustvelocity) f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
             1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps)/ &
             (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
 
