@@ -1,4 +1,4 @@
-! $Id: dustvelocity_onefluid.f90,v 1.4 2006-02-03 16:16:20 ajohan Exp $
+! $Id: dustvelocity_onefluid.f90,v 1.5 2006-02-04 10:10:31 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !  in the one-fluid limit (valid for vanishing friction time).
@@ -123,7 +123,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity_onefluid.f90,v 1.4 2006-02-03 16:16:20 ajohan Exp $")
+           "$Id: dustvelocity_onefluid.f90,v 1.5 2006-02-04 10:10:31 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -512,7 +512,7 @@ module Dustvelocity
           if (lentropy) then
             df(l1:l2,m,n,iudx(1)-1+j) = df(l1:l2,m,n,iudx(1)-1+j) &
                 - 1/(1+p%epsd(:,1))*p%cs2* &
-                (p%glnrho(:,j)/gamma + p%cp1tilde*p%gss(:,j))
+                (p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
           else
             df(l1:l2,m,n,iudx(1)-1+j) = df(l1:l2,m,n,iudx(1)-1+j) &
                 - 1/(1+p%epsd(:,1))*p%cs2*p%glnrho(:,j)/gamma
