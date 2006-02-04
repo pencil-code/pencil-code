@@ -3,10 +3,10 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.13 2006-02-02 10:52:36 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.14 2006-02-04 03:51:39 wlyra Exp $',
   ip=14,                        ! debugging parameter
-  xyz0  = -2.6,-2.6,-2.6,       ! first corner of box
-  xyz1  =  2.6, 2.6, 2.6,       ! second corner of box
+  xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
+  xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
   lperi =  F  , F  , T,         ! periodic direction?
   !lshift_origin =  F,  F,  F,
 
@@ -14,64 +14,35 @@
   !      velgas, densgas, veldust,densdust
   bcy = 's','s','a','s'!,'s','s','a','s'
 
-  !lnesting=T
-  
-  !lprocz_slowest=F
-
-  !bcz = 's','s','a','s:a2','s:a2'
-  !random_gen='nr_f90',
   r_int=0.4,                   ! radius of interior spherical boundary
   r_ext=2.5,                   ! radius of exterior spherical boundary
   lcylindrical=T
 /
 &eos_init_pars
-  cs0=0.05 ! 0.7 km/s at Jupiter's orbit. 
-           ! in these units, Rj=1,Omega=1.,[v]~13km/s
-  !rho0=1.,
-  !llocal_iso = T
-  rho0 = 1. !1.23 !exp(0.21)
+  cs0=0.05 
+  rho0 = 1.
 /
 &hydro_init_pars
   inituu='keplerian'
-  !if corotational
-  !Omega = 2.51588    !for jupiter 5.2 AU
-  !Omega = 1. 
-  !lcentrifugal_force = T
 /
 &density_init_pars
-  initlnrho='zero' !'solar_nebula'
-  lnrho_const=0.  !0.21
-  wdamp=0. !0.1
-  plaw=0. !0.5
+  initlnrho='zero' 
+  lnrho_const=0.  
   ldensity_nolog=T
 /
 &grav_init_pars
   ipotential='smoothed-newton', 
-  g0=1.,r0_pot=0.1,n_pot=2 !10
-  !lsmooth_local=T
-  !lcompanion=T
-  !gc=0.0001,b=0.03,nc=2,Rx=-1.0 !,ecc=0.5
- 
-  !!Rp = planet distance... 5.2 or 1
-  !!gp is the mass of the planet, G*Mp
-  !!GMjup = g0*0.001 ; Gpl   = 10*GMjup
-  !![x]=1 UA and [u] = 1km/s lead to g0=GM=890
-  !!using [x]= planet distance and [t]=1 orbit, g0=(2pi)**2 =39.48
-  !now I'm using [x]=planet's distance, g0=1., so [t]=Omega-1 and
-  !assuming r=5.2AU and Omega=2pi/11.8yr, [v]=13km/s
+  g0=1.,r0_pot=0.1,n_pot=2
 /
 &particles_init_pars
   initxxp='constant', initvvp='constant'
-  xp0=-1,1e-3
+  xp0=-1,0  
   yp0=0,0
-  !zp0=0,0
   vpx0=0,0
-  vpy0=-1,1e-3
-  !vpz0=0,0
+  vpy0=-1,0
 /
-!&dustvelocity_init_pars
-!  md0=1., deltamd=1., draglaw='epstein_cst_b'
-!/
-!&dustdensity_init_pars
-!  initnd='const_nd', nd_const=1e-3
-!/
+&planet_init_pars
+  llocal_iso=T
+  lcs2_global=T
+/
+

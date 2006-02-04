@@ -3,12 +3,10 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.13 2006-02-02 10:52:36 wlyra Exp $',
-  ip=13,
-  nt=500000, it1=1, isave=50, itorder=3, ialive=1
+  cvsid='$Id: run.in,v 1.14 2006-02-04 03:51:39 wlyra Exp $',
+  ip=14,
+  nt=50, it1=10, isave=100, itorder=3, ialive=1
   cdt=0.4, 
-  !dt=3.5e-3 
-  !dt=2.85E-03
   cdtv=0.8, 
   dtmin=1e-6,
   dsnap=6.283185, dvid=6.283185, d2davg=10. !slice at Tjup/20
@@ -20,12 +18,10 @@
   wfreezeext = 1e-8
 /
 &eos_run_pars
-rho0= 1. !1.23 !exp(lnrho_const)
+rho0= 1. 
 /
 &hydro_run_pars
-  wdamp=0. !0.1
-  !Omega = 2.51588  !for jupiter at 5.2 AU if [x]=1AU
-  !Omega = 1.        !r = 1, g0 = 1
+  wdamp=0. 
   lcalc_turbulence_pars=F
   lfreeze_uint=F,lfreeze_uext=T
 /
@@ -34,11 +30,9 @@ rho0= 1. !1.23 !exp(lnrho_const)
                ! upwinding violates mass conservation!
   lfreeze_lnrhoint=F
   lfreeze_lnrhoext=T
-  lnrho_int= 0. !1.15
-  wdamp = 0.1
-  lnrho_const=0. !0.21
-  plaw=0. !0.5
-  
+  lnrho_int= 0. 
+  lnrho_const=0.
+
   !ammount of hyper-diffusivity needed??? - similar to nu
   !diffrho_hyper3=1E-13, idiff='hyper3'
   !diffrho=1e-2
@@ -47,7 +41,6 @@ rho0= 1. !1.23 !exp(lnrho_const)
 &grav_run_pars
   ipotential='smoothed-newton', 
   g0=1.,r0_pot=0.1,n_pot=2 
-  !lsmooth_local=T
  /
 &viscosity_run_pars
   ivisc='nu-const','nu-shock'
@@ -62,25 +55,17 @@ rho0= 1. !1.23 !exp(lnrho_const)
   lshock_max5=T
 /
 &planet_run_pars
-  !Rx=-1,Ry=0,Rz=0
-  gc=1e-4 !for gc=0, gravity_companion is not called
-          !1e-3 is jupiter mass
-  lramp=F
-  nc=2,b=0.03   !planet's smoothed gravity
-  lwavedamp=F
+  gc=1e-4 
+  lramp=T
+  nc=2,b=0.03
+  lwavedamp=T
   llocal_iso=T
   lcs2_global=T
-  lmigrate=F  
-  lnorm=T      !normalize monitored quantities
+  lmigrate=F
+  lnorm=T
   !I can also set G=M_sun=1, but then sigma has to
   !scaled accordingly. As it is, I prefer to work with
   !sigma=1 and then scale G accordingly to have
   !Mdisk = Int(sigma*ds) = 2e-3 M_sun
-  Gvalue = 0.000952381  !just used if lmigrate=T
-
+  Gvalue = 0.000952381
 /
-!&dustvelocity_run_pars
-!  nud=2e-5, betad=1e-3, ldragforce_gas=T
-!/
-!&dustdensity_run_pars
-!/
