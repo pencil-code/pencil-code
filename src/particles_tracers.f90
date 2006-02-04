@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.11 2006-02-01 14:27:59 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.12 2006-02-04 09:24:49 ajohan Exp $
 !
 !  This module takes care of everything related to tracer particles
 !
@@ -52,7 +52,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.11 2006-02-01 14:27:59 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.12 2006-02-04 09:24:49 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -199,8 +199,8 @@ module Particles
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: fp
-      intent (out) :: f, dfp, ineargrid
+      intent (in) :: fp, f
+      intent (out) :: dfp, ineargrid
 !
 !  Print out header information in first time step.
 !
