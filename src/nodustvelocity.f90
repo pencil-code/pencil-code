@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.27 2005-07-05 16:21:42 mee Exp $
+! $Id: nodustvelocity.f90,v 1.28 2006-02-04 12:10:37 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -10,6 +10,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED uud,divud,sdij
+!
 !***************************************************************
 
 module Dustvelocity
@@ -20,6 +22,17 @@ module Dustvelocity
   implicit none
 
   include 'dustvelocity.h'
+
+  public :: dust_geometry, dimd1, rhods, surfd, mdplus, mdminus
+  public :: ad, scolld, ustcst, tausd1, tausd
+  public :: unit_md, dust_chemistry, mumon, mmon, mi, md
+  character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
+  real, dimension(ndustspec,ndustspec) :: scolld
+  real, dimension(nx,ndustspec) :: tausd1
+  real, dimension(ndustspec) :: md=1.0, mdplus=0.0, mdminus=0.0, surfd=0.0
+  real, dimension(ndustspec) :: mi=0.0, ad=1.0, tausd=0.0
+  real :: dimd1=0.0, rhods=0.0, ustcst=0.0, unit_md=0.0
+  real :: mumon=0.0, mmon=0.0
 
   !namelist /dustvelocity_init_pars/ dummy
   !namelist /dustvelocity_run_pars/  dummy
@@ -60,7 +73,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.27 2005-07-05 16:21:42 mee Exp $")
+           "$Id: nodustvelocity.f90,v 1.28 2006-02-04 12:10:37 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
