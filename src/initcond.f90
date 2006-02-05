@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.144 2006-02-05 01:07:45 wlyra Exp $ 
+! $Id: initcond.f90,v 1.145 2006-02-05 16:12:56 wlyra Exp $ 
 
 module Initcond 
  
@@ -2704,7 +2704,7 @@ module Initcond
       integer :: rmode,zmode
 !      
       rmode = 2
-      kr  = rmode*2*pi/(r_ext-r_int)
+      kr  = rmode*2*pi/r_ext !(r_ext-r_int)
       thetar =  -kr*r_int+pi/2.
 !
       zmode = 2 
@@ -2718,8 +2718,8 @@ module Initcond
             rr_cyl = sqrt(x(l1:l2)**2 + y(m)**2) + epsi
 !
             Aphi = ampl*(kr**(-1)*rr_cyl**(-1)* &
-                 cos(kr*rr_cyl+thetar) + sin(kr*rr_cyl+thetar)) * &
-                 sin(kz*z(n)+thetaz)
+                 cos(kr*rr_cyl+thetar) + sin(kr*rr_cyl+thetar)) !* &
+                 !sin(kz*z(n)+thetaz)
 !
             f(l1:l2,m,n,iax) = - Aphi   * y(  m  )  /rr_cyl
             f(l1:l2,m,n,iay) =   Aphi   * x(l1:l2)  /rr_cyl
