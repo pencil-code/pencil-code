@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.269 2006-02-05 01:07:46 wlyra Exp $
+! $Id: magnetic.f90,v 1.270 2006-02-05 18:44:23 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -182,7 +182,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.269 2006-02-05 01:07:46 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.270 2006-02-05 18:44:23 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -383,12 +383,7 @@ module Magnetic
       case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
-      case('sinrsinz')
-         call sinrsinz(amplaa,f,kx_aa,ky_aa,kz_aa)
-         print*,'magnetic'
-         do ncount=n1,n2
-            print*,sqrt(f(20,20,ncount,iax)**2+f(20,20,ncount,iay)**2)
-         enddo
+      case('sinrsinz'); call sinrsinz(amplaa,f,kx_aa,ky_aa,kz_aa)
       case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('cosxcosy'); call cosx_cosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('sinxsiny'); call sinx_siny_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
