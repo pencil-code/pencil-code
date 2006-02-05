@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.143 2006-02-03 22:49:22 wlyra Exp $ 
+! $Id: initcond.f90,v 1.144 2006-02-05 01:07:45 wlyra Exp $ 
 
 module Initcond 
  
@@ -42,6 +42,7 @@ module Initcond
   public :: power_law
   public :: const_lou
   public :: corona_init,mdi_init
+  public :: sinrsinz
 
   interface posnoise            ! Overload the `posnoise' function
     module procedure posnoise_vect
@@ -2687,6 +2688,47 @@ module Initcond
     f(:,:,:,i+2)=ampl*cos(2.*pi*xx)/32.*pi
 
     endsubroutine const_lou
+!*********************************************************
+    subroutine sinrsinz(ampl,f,kx,ky,kz)
+! 
+! Potential to yield a sinrsinz-type vertical magnetic field 
+!
+! 04-feb-06/wlad+anders : coded
+!      
+      use Cdata
+      use General
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: rr_cyl,Aphi
+      real :: kr,kx,ky,kz,thetaz,thetar,zbox,ampl
+      integer :: rmode,zmode
+!      
+      rmode = 2
+      kr  = rmode*2*pi/(r_ext-r_int)
+      thetar =  -kr*r_int+pi/2.
+!
+      zmode = 2 
+      zbox = Lxyz(3)
+!      
+      kz  = zmode*2*pi/zbox
+      thetaz =  -kz*z(4) 
+!      
+      do m=m1,m2
+         do n=n1,n2
+            rr_cyl = sqrt(x(l1:l2)**2 + y(m)**2) + epsi
+!
+            Aphi = ampl*(kr**(-1)*rr_cyl**(-1)* &
+                 cos(kr*rr_cyl+thetar) + sin(kr*rr_cyl+thetar)) * &
+                 sin(kz*z(n)+thetaz)
+!
+            f(l1:l2,m,n,iax) = - Aphi   * y(  m  )  /rr_cyl
+            f(l1:l2,m,n,iay) =   Aphi   * x(l1:l2)  /rr_cyl
+            f(l1:l2,m,n,iaz) =    0.
+!   
+         enddo
+      enddo
+!
+    endsubroutine sinrsinz
 !*********************************************************
 endmodule Initcond
 
