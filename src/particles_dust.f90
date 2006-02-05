@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.59 2006-02-01 14:31:50 ajohan Exp $
+! $Id: particles_dust.f90,v 1.60 2006-02-05 20:49:31 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.59 2006-02-01 14:31:50 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.60 2006-02-05 20:49:31 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -448,6 +448,7 @@ module Particles
 !
       eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
       v_Kepler   =  1.0/abs(beta_glnrho_global(1))      
+      if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
 !
 !  Place particles according to probability function.
 !
