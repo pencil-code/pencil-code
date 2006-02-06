@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.286 2005-12-06 12:24:38 ajohan Exp $
+! $Id: cdata.f90,v 1.287 2006-02-06 17:46:24 ajohan Exp $
 
 module Cdata
 
@@ -11,7 +11,7 @@ module Cdata
   real, dimension (mx) :: x,dx_1,dx_tilde
   real, dimension (my) :: y,dy_1,dy_tilde
   real, dimension (mz) :: z,dz_1,dz_tilde
-  real, dimension (nx) :: dxyz_2, dxyz_6
+  real, dimension (nx) :: dxyz_2, dxyz_4, dxyz_6
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector

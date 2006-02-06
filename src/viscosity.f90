@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.15 2006-02-03 06:18:42 brandenb Exp $
+! $Id: viscosity.f90,v 1.16 2006-02-06 17:46:25 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -27,7 +27,7 @@ module Viscosity
 
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
-  real :: nu_mol=0., nu_hyper3=0., nu_shock=0.
+  real :: nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
 
   ! dummy logical
   logical :: lvisc_first=.false.
@@ -36,6 +36,7 @@ module Viscosity
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_nu_const=.false.
   logical :: lvisc_nu_shock=.false.
+  logical :: lvisc_hyper2_simplified=.false.
   logical :: lvisc_hyper3_simplified=.false.
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_nu_const=.false.
@@ -47,7 +48,7 @@ module Viscosity
   !namelist /viscosity_init_pars/ dummy1
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, nu_hyper3, ivisc, nu_mol,&
+  namelist /viscosity_run_pars/ nu, nu_hyper2, nu_hyper3, ivisc, nu_mol,&
        C_smag, nu_shock
  
   ! other variables (needs to be consistent with reset list below)
@@ -79,7 +80,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.15 2006-02-03 06:18:42 brandenb Exp $")
+           "$Id: viscosity.f90,v 1.16 2006-02-06 17:46:25 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -108,6 +109,7 @@ module Viscosity
       lvisc_rho_nu_const=.false.
       lvisc_nu_const=.false.
       lvisc_nu_shock=.false.
+      lvisc_hyper2_simplified=.false.
       lvisc_hyper3_simplified=.false.
       lvisc_hyper3_rho_nu_const=.false.
       lvisc_hyper3_nu_const=.false.
@@ -132,6 +134,9 @@ module Viscosity
           if (.not. lshock) &
            call stop_it('initialize_viscosity: shock viscosity'// &
                            ' but module setting SHOCK=noshock')
+        case ('hyper2_simplified', 'hyper4')
+          if (lroot) print*,'viscous force: nu_hyper*del4v'
+          if (nu_hyper2/=0.) lvisc_hyper2_simplified=.true.
         case ('hyper3_simplified', 'hyper6')
           if (lroot) print*,'viscous force: nu_hyper*del6v'
           if (nu_hyper3/=0.) lvisc_hyper3_simplified=.true.
@@ -281,6 +286,7 @@ module Viscosity
           lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_hyper3_nu_const) lpenc_requested(i_del6u)=.true.
+      if (lvisc_hyper2_simplified) lpenc_requested(i_del4u)=.true.
       if (lvisc_rho_nu_const .or. lvisc_hyper3_rho_nu_const .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_rho1)=.true.
@@ -464,7 +470,14 @@ module Viscosity
         if (lfirst.and.ldt) diffus_total=diffus_total+nu
      endif
 !
-
+      if (lvisc_hyper2_simplified) then
+!
+!  viscous force: nu_hyper2*de46v (not momentum-conserving)
+!
+        fvisc=fvisc+nu_hyper2*p%del4u
+        if (lfirst.and.ldt) diffus_total=diffus_total+nu_hyper2*dxyz_4/dxyz_2
+      endif
+!
       if (lvisc_hyper3_simplified) then
 !
 !  viscous force: nu_hyper3*del6v (not momentum-conserving)

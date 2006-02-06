@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.272 2006-02-03 18:11:14 wlyra Exp $
+! $Id: equ.f90,v 1.273 2006-02-06 17:46:25 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.272 2006-02-03 18:11:14 wlyra Exp $")
+           "$Id: equ.f90,v 1.273 2006-02-06 17:46:25 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -499,6 +499,7 @@ module Equ
           dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
         else
           dxyz_2 = dx_1(l1:l2)**2+dy_1(m)**2+dz_1(n)**2
+          dxyz_4 = dx_1(l1:l2)**4+dy_1(m)**4+dz_1(n)**4
           dxyz_6 = dx_1(l1:l2)**6+dy_1(m)**6+dz_1(n)**6
         endif
 !

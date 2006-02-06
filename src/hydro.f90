@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.226 2006-02-03 10:28:58 wlyra Exp $
+! $Id: hydro.f90,v 1.227 2006-02-06 17:46:25 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu
-! PENCILS PROVIDED u2u13,del2u,del6u,graddivu
+! PENCILS PROVIDED u2u13,del2u,del4u,del6u,graddivu
 !
 !***************************************************************
 module Hydro
@@ -157,7 +157,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.226 2006-02-03 10:28:58 wlyra Exp $")
+           "$Id: hydro.f90,v 1.227 2006-02-06 17:46:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -722,9 +722,11 @@ module Hydro
       endif
 ! u2u13
       if (lpencil(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
-! del2u
+! del4u
+      if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
 ! del6u
       if (lpencil(i_del6u)) call del6v(f,iuu,p%del6u)
+! del2u
 ! graddivu
       if (lpencil(i_del2u)) then 
         if (lpencil(i_graddivu)) then 
