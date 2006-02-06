@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.150 2006-02-04 16:14:04 ajohan Exp $
+! $Id: dustdensity.f90,v 1.151 2006-02-06 17:45:55 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.150 2006-02-04 16:14:04 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.151 2006-02-06 17:45:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -499,6 +499,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, eps, lnrho, rho
+      real :: coeff_a, coeff_b, coeff_c, z0, epsz0, z1, epsz1
       integer :: i
 !
 !  Calculate dust "scale height".
@@ -564,9 +565,28 @@ module Dustdensity
         else
           f(l1:l2,m,n,ilnrho)=lnrho
         endif
-
+        
         eps=1/sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)-1
-        if (eps<=0.0) eps=0.00001
+
+!        z0    = 0.06
+!        epsz0 = 0.001
+!        epsz1 = 0.01
+!        z1    = sqrt(Hd**2*(1/(1+epsz1)**2-1/(1+eps1)**2))
+!
+!        if (z(n)<=0.0) then
+!          coeff_a=(epsz1-epsz0)/(z1**2-z0**2+2*z0*(z0-z1))
+!          coeff_b=+2*coeff_a*z0
+!          coeff_c=epsz1-coeff_a*z1**2+coeff_b*z1
+!        else
+!          coeff_a=(epsz1-epsz0)/(z1**2-z0**2-2*z0*(z1-z0))
+!          coeff_b=-2*coeff_a*z0
+!          coeff_c=epsz1-coeff_a*z1**2-coeff_b*z1
+!        endif
+!
+!        if ( (abs(z(n))<=z0) .and. (abs(z(n))>=z1) ) &
+!            eps=coeff_a*z(n)**2+coeff_b*z(n)+coeff_c
+!        if ( (abs(z(n))>=z0) ) eps=epsz0
+        if ( eps<=0.0 ) eps=0.00001
 
         f(l1:l2,m,n,ind(1))=rho*eps
 
