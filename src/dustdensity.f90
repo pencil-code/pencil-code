@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.151 2006-02-06 17:45:55 ajohan Exp $
+! $Id: dustdensity.f90,v 1.152 2006-02-06 22:03:14 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -136,7 +136,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.151 2006-02-06 17:45:55 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.152 2006-02-06 22:03:14 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -498,8 +498,10 @@ module Dustdensity
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, eps, lnrho, rho
-      real :: coeff_a, coeff_b, coeff_c, z0, epsz0, z1, epsz1
+      real, dimension (mz) :: rho, eps, depsdz
+      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho
+      real :: coeff_a, coeff_b, coeff_c, coeff_eta, z0, epsz0, z1, epsz1
+      integer, dimension(1) :: i0
       integer :: i
 !
 !  Calculate dust "scale height".
@@ -558,52 +560,62 @@ module Dustdensity
 !        
         if (lentropy) f(l1:l2,m,n,iss) = (1/gamma-1.0)*lnrho
 
-        rho=exp(lnrho)
+        rho(n)=exp(lnrho)
 
         if (ldensity_nolog) then
-          f(l1:l2,m,n,ilnrho)=rho
+          f(l1:l2,m,n,ilnrho)=rho(n)
         else
           f(l1:l2,m,n,ilnrho)=lnrho
         endif
-        
-        eps=1/sqrt(z(n)**2/Hd**2+1/(1+eps1)**2)-1
-
-!        z0    = 0.06
-!        epsz0 = 0.001
-!        epsz1 = 0.01
-!        z1    = sqrt(Hd**2*(1/(1+epsz1)**2-1/(1+eps1)**2))
-!
-!        if (z(n)<=0.0) then
-!          coeff_a=(epsz1-epsz0)/(z1**2-z0**2+2*z0*(z0-z1))
-!          coeff_b=+2*coeff_a*z0
-!          coeff_c=epsz1-coeff_a*z1**2+coeff_b*z1
-!        else
-!          coeff_a=(epsz1-epsz0)/(z1**2-z0**2-2*z0*(z1-z0))
-!          coeff_b=-2*coeff_a*z0
-!          coeff_c=epsz1-coeff_a*z1**2-coeff_b*z1
-!        endif
-!
-!        if ( (abs(z(n))<=z0) .and. (abs(z(n))>=z1) ) &
-!            eps=coeff_a*z(n)**2+coeff_b*z(n)+coeff_c
-!        if ( (abs(z(n))>=z0) ) eps=epsz0
-        if ( eps<=0.0 ) eps=0.00001
-
-        f(l1:l2,m,n,ind(1))=rho*eps
-
-        if (lhydro) f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
-            1/gamma*cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
-            (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-        if (lhydro) f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps+(Omega*tausd(1))**2)/ &
-            (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
-        if (ldustvelocity) f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
-            (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
-        if (ldustvelocity) f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
-            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps)/ &
-            (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
 
       enddo
+
+      eps=1/sqrt(z**2/Hd**2+1/(1+eps1)**2)-1
+
+      z0=0.023
+      i0=minloc( abs(z-z0) )
+      epsz0=eps(i0(1))
+      epsz1=0.00001
+
+      do n=n1,n2; depsdz(n)=(eps(n+1)-eps(n-1))/(2*dz); enddo
+
+      do imn=1,ny*nz
+        n=nn(imn); m=mm(imn)
+
+        if (z(n)<=0.0) then
+          coeff_eta=-depsdz(i0(1))
+          coeff_c=epsz1
+          coeff_b=(epsz1-epsz0)/coeff_eta+z0
+          coeff_a=(epsz0-epsz1)*(-z0+coeff_b)
+        else
+          coeff_eta=depsdz(i0(1))
+          coeff_c=epsz1
+          coeff_b=(epsz1-epsz0)/coeff_eta-z0
+          coeff_a=(epsz0-epsz1)*(z0+coeff_b)
+        endif
+
+        if ( abs(z(n))>=z0 ) then
+          eps(n)=coeff_c+coeff_a/(z(n)+coeff_b)
+        endif
+!
+        f(l1:l2,m,n,ind(1))=rho(n)*eps(n)
+
+        if (lhydro) f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
+            1/gamma*cs20*beta_glnrho_scaled(1)*eps(n)*tausd(1)/ &
+            (1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2)
+        if (lhydro) f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps(n)+(Omega*tausd(1))**2)/ &
+            (2*Omega*(1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2))
+        if (ldustvelocity) f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
+            1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
+            (1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2)
+        if (ldustvelocity) f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
+            1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps(n))/ &
+            (2*Omega*(1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2))
+
+      enddo
+!
+      print*, eps
 !
     endsubroutine constant_richardson
 !***********************************************************************
