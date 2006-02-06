@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.152 2006-02-06 22:03:14 ajohan Exp $
+! $Id: dustdensity.f90,v 1.153 2006-02-06 22:32:35 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -34,7 +34,7 @@ module Dustdensity
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,Sigmad=1.0
   real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
   real :: amplnd=1.,kx_nd=1.,ky_nd=1.,kz_nd=1.,widthnd=1.,Hnd=1.0,Hepsd=1.0
-  real :: phase_nd=0.0,Ri0=1.0, eps1=0.5
+  real :: phase_nd=0.0,Ri0=1.0, eps1=0.5, z0_smooth=0.0, epsz1_smooth=0.0
   integer :: ind_extra
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
@@ -52,7 +52,8 @@ module Dustdensity
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
-      ldeltaud_thermal, ldeltaud_turbulent, ldustdensity_log, Ri0
+      ldeltaud_thermal, ldeltaud_turbulent, ldustdensity_log, Ri0, &
+      z0_smooth, epsz1_smooth
 
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -136,7 +137,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.152 2006-02-06 22:03:14 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.153 2006-02-06 22:32:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -498,9 +499,9 @@ module Dustdensity
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      real, dimension (mz) :: rho, eps, depsdz
-      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho
-      real :: coeff_a, coeff_b, coeff_c, coeff_eta, z0, epsz0, z1, epsz1
+      real, dimension (mz) :: rho, eps
+      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho, depsdz0
+      real :: coeff_a, coeff_b, coeff_c, coeff_eta, epsz0
       integer, dimension(1) :: i0
       integer :: i
 !
@@ -569,37 +570,43 @@ module Dustdensity
         endif
 
       enddo
-
+!
+!  Dust-to-gas ratio
+!
       eps=1/sqrt(z**2/Hd**2+1/(1+eps1)**2)-1
-
-      z0=0.023
-      i0=minloc( abs(z-z0) )
-      epsz0=eps(i0(1))
-      epsz1=0.00001
-
-      do n=n1,n2; depsdz(n)=(eps(n+1)-eps(n-1))/(2*dz); enddo
+!
+!  Smooth out eps by gluing eps(z)=C+A/(z+B) on at z=+-z0.
+!      
+      epsz0   = 1/sqrt(z0_smooth**2/Hd**2+1/(1+eps1)**2)-1
+      depsdz0 = -z0_smooth/Hd**2/(z0_smooth**2/Hd**2+1/(1+eps1)**2)**1.5
+      if (lroot) then
+        print*, 'constant_richardson: z0, eps(z0) =', z0_smooth, epsz0
+        print*, 'constant_richardson: epsz1_smooth=', epsz1_smooth
+      endif
 
       do imn=1,ny*nz
         n=nn(imn); m=mm(imn)
 
         if (z(n)<=0.0) then
-          coeff_eta=-depsdz(i0(1))
-          coeff_c=epsz1
-          coeff_b=(epsz1-epsz0)/coeff_eta+z0
-          coeff_a=(epsz0-epsz1)*(-z0+coeff_b)
+          coeff_eta=-depsdz0
+          coeff_c=epsz1_smooth
+          coeff_b=(epsz1_smooth-epsz0       )/coeff_eta+z0_smooth
+          coeff_a=(epsz0       -epsz1_smooth)*(-z0_smooth+coeff_b)
         else
-          coeff_eta=depsdz(i0(1))
-          coeff_c=epsz1
-          coeff_b=(epsz1-epsz0)/coeff_eta-z0
-          coeff_a=(epsz0-epsz1)*(z0+coeff_b)
+          coeff_eta=depsdz0
+          coeff_c=epsz1_smooth
+          coeff_b=(epsz1_smooth-epsz0       )/coeff_eta-z0_smooth
+          coeff_a=(epsz0       -epsz1_smooth)*(z0_smooth+coeff_b)
         endif
 
-        if ( abs(z(n))>=z0 ) then
+        if ( abs(z(n))>=z0_smooth ) then
           eps(n)=coeff_c+coeff_a/(z(n)+coeff_b)
         endif
 !
         f(l1:l2,m,n,ind(1))=rho(n)*eps(n)
-
+!
+!  Gas and dust velocity fields.
+!        
         if (lhydro) f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
             1/gamma*cs20*beta_glnrho_scaled(1)*eps(n)*tausd(1)/ &
             (1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2)
@@ -614,8 +621,6 @@ module Dustdensity
             (2*Omega*(1.0+2*eps(n)+eps(n)**2+(Omega*tausd(1))**2))
 
       enddo
-!
-      print*, eps
 !
     endsubroutine constant_richardson
 !***********************************************************************
