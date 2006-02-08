@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.48 2006-02-03 23:28:20 wlyra Exp $
+! $Id: nohydro.f90,v 1.49 2006-02-08 11:45:01 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -77,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.48 2006-02-03 23:28:20 wlyra Exp $")
+           "$Id: nohydro.f90,v 1.49 2006-02-08 11:45:01 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -235,10 +235,6 @@ module Hydro
            endif
         enddo
         if (lpencil(i_divu))  p%divu = 0.
-!weezy Simple test of urms calculation with nohydro
-      p%uu(:,1)=0.0  
-      p%uu(:,2)=0.0
-      p%uu(:,3)=6.0     
       else
 ! uu
 
