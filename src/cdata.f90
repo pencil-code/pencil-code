@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.287 2006-02-06 17:46:24 ajohan Exp $
+! $Id: cdata.f90,v 1.288 2006-02-08 14:31:39 mee Exp $
 
 module Cdata
 
@@ -115,8 +115,8 @@ module Cdata
 ! for optimisation purposes.  To use uncomment the array and
 ! set optimise_ders=.true.
 !
-!ajwm  integer, dimension(mvar+maux,8,3,3) :: der_call_count=0 !DERCOUNT
-!ajwm  logical, parameter :: loptimise_ders=.true.             !DERCOUNT
+!debug  integer, dimension(mvar+maux,8,3,3) :: der_call_count=0 !DERCOUNT
+!debug  logical, parameter :: loptimise_ders=.true.             !DERCOUNT
 !
 !  coordinates of the point where some quantities can be printed
 !  for now, these points only apply to the root processor.
