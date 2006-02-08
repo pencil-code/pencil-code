@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.81 2006-02-03 18:12:06 wlyra Exp $
+! $Id: grav_r.f90,v 1.82 2006-02-08 14:21:46 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.81 2006-02-03 18:12:06 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.82 2006-02-08 14:21:46 mee Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -91,7 +91,6 @@ module Gravity
 !  16-jul-02/wolf: coded
 !  22-nov-02/tony: renamed
 !
-!ajwm - need to figure out how to call this from start.f90
       use Cdata
       use Sub, only: poly, calc_unitvects_sphere
       use Mpicomm
