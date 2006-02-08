@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.33 2005-07-05 16:21:42 mee Exp $
+! $Id: io_mpio.f90,v 1.34 2006-02-08 14:03:42 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -113,7 +113,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.33 2005-07-05 16:21:42 mee Exp $")
+           "$Id: io_mpio.f90,v 1.34 2006-02-08 14:03:42 mee Exp $")
 !
 !  consistency check
 !
@@ -151,8 +151,6 @@ contains
       directory_snap = ''
 !
     endsubroutine register_io
-!
-!ajwm need and initialize_io ???
 !
 !***********************************************************************
     subroutine directory_names()

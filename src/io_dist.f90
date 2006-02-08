@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.87 2005-10-23 04:54:00 dobler Exp $
+! $Id: io_dist.f90,v 1.88 2006-02-08 14:03:42 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -93,11 +93,9 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.87 2005-10-23 04:54:00 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.88 2006-02-08 14:03:42 mee Exp $")
 !
     endsubroutine register_io
-!
-!ajwm need an initialize_io ????
 !
 !***********************************************************************
     subroutine directory_names()
