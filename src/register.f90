@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.157 2005-12-30 08:33:31 ajohan Exp $
+! $Id: register.f90,v 1.158 2006-02-08 14:20:00 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -234,18 +234,12 @@ module Register
          endif
       endif
 
-!ajwm moved to eos_idealgas and magnetic modules (mu01)
-!ajwm in the eos branch
-!  set gamma1, cs20, and lnrho0 (and mu01)
-!  (used currently for non-dimensional equation of state)
-!
 !
 !  run initialization of individual modules
 !
 !      call initialize_io
       call initialize_eos()
       call initialize_prints()
-!ajwm timeavg needs tidying to be similar structure to other modules
       call initialize_timeavg(f) ! initialize time averages
 !
       call initialize_gravity()
@@ -326,9 +320,10 @@ module Register
 !  (b) dt not given in run.in        -> ldt=.true.  -> calculate dt dynamically
 !  Note that ldt will not change unless you RELOAD parameters.
 !
-!ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
-!AB: maybe not, because initialize_modules can also be run from start.f90,
-!AB: which has no knowledge of timestep.f90
+! Why is this here?...
+!   ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
+!   AB   maybe not, because initialize_modules can also be run from start.f90,
+!   AB   which has no knowledge of timestep.f90
 !
       ldt = (dt==0.)            ! need to calculate dt dynamically?
       if (lroot .and. ip<14) then
