@@ -3,6 +3,12 @@ module SurfaceData
   
   implicit none
 
+  logical :: xextent=.false.
+  logical :: yextent=.false.
+  logical :: zextent=.false.
+  integer :: x_ghost=0
+  integer :: y_ghost=0
+  integer :: z_ghost=0
   integer :: npoints=16
   integer :: ndimensions=2
   integer :: nfaces=8
@@ -16,6 +22,7 @@ endmodule
 !***********************************************************************
 program shock_finder2D
 !
+  use Cparam
   use SurfaceData
 !
   implicit none
@@ -24,6 +31,15 @@ program shock_finder2D
   integer :: rotation=0
 !
   call read_surfaceinfo
+
+
+  xextent=(nxgrid/=1)
+  yextent=(nygrid/=1)
+  zextent=(nzgrid/=1)
+
+  if (xextent) x_ghost=3
+  if (yextent) y_ghost=3
+  if (zextent) z_ghost=3
 !
 ! Rotations of a 2D profile:
 !
@@ -290,7 +306,8 @@ subroutine make_calc_externalboundary(unitno)
   character (len=5) :: pistr='',nistr=''
   character (len=5) :: pjstr='',njstr=''
   character (len=5) :: pkstr='',nkstr=''
-
+  
+  write(unitno,"(a)") "!  called: make_calc_externalboundary"
   write(unitno,"(a)") "  subroutine shock_calc_externalboundary(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
@@ -299,12 +316,16 @@ subroutine make_calc_externalboundary(unitno)
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: i,j,k"
   if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
+    write(unitno,"(a)") "!  make_calc_externalboundary: 3D CASE"
     write(unitno,"(a)") "      if (lroot) print*,'shock_calc_body: The compiled in shock profile integral is 2D'"
     write(unitno,"(a)") "      call stop_it('shock_calc_body: This problem is 3D - INCONSITENCY')"
   elseif ((nxgrid/=1).and.(nygrid/=1)) then
+    write(unitno,"(a)") "!  make_calc_externalboundary: 2D CASE (xy)"
     call evaluate_facefactors(unitno,0)
 ! Top/bottom 
+  write(unitno,"(a)") "!  make_calc_externalboundary: ! Top/bottom"
     do j=0,2
+  write(unitno,"(a,i2)") "!  make_calc_externalboundary: ! Top/bottom: j = ",j
       call chn(j,jstr)
       if (j/=0) njstr='-'//trim(jstr)
       if (j/=0) pjstr='+'//trim(jstr)
@@ -318,7 +339,9 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "      enddo"
     enddo
 ! Left/right 
+  write(unitno,"(a)") "!  make_calc_externalboundary: ! Left/right"
     do i=0,2
+  write(unitno,"(a,i2)") "!  make_calc_externalboundary: ! Left/right: i = ",i
       call chn(i,istr)
       if (i/=0) nistr='-'//trim(istr)
       if (i/=0) pistr='+'//trim(istr)
@@ -332,44 +355,48 @@ subroutine make_calc_externalboundary(unitno)
       write(unitno,"(a)") "      enddo"
     enddo
 ! Near Corners 
-  do k=0,2
+  write(unitno,"(a)") "!  make_calc_externalboundary: ! Near Corners"
   do j=0,2
-  call chn(k,kstr)
+  do i=0,2
+  write(unitno,"(a,i2,a,i2)") "!  make_calc_externalboundary: ! Near Corners: j = ",j,", i = ",i
   call chn(j,jstr)
-  if (k/=0) nkstr='-'//trim(kstr)
-  if (k/=0) pkstr='+'//trim(kstr)
+  call chn(i,istr)
   if (j/=0) njstr='-'//trim(jstr)
   if (j/=0) pjstr='+'//trim(jstr)
-  call evaluate_integral(unitno,2,0,0,-j,+3,3-k,+3, &
-      'f(l1,m1'//trim(pjstr)//',1 '//trim(pkstr)//',ishock)', &
-      'l1','m1'//trim(pjstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,3-k,+3, &
-      'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
-      'l1','m2'//trim(njstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,+j,-3,k-3, &
-      'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
-      'l1','m2'//trim(njstr),'mz'//trim(nkstr))
-  call evaluate_integral(unitno,2,0,0,-j,+3,-3,k-3, &
-      'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
-      'l1','m1'//trim(pjstr),'mz'//trim(nkstr))
+  if (i/=0) nistr='-'//trim(istr)
+  if (i/=0) pistr='+'//trim(istr)
+  call evaluate_integral(unitno,2,-i,+3,3-j,+3,0,0, &
+      'f(l1'//trim(pistr)//',1 '//trim(pjstr)//',n1,ishock)', &
+      'l1'//trim(pistr),'1 '//trim(pjstr),'n1')
+  call evaluate_integral(unitno,2,-3,+i,3-j,+3,0,0, &
+      'f(l2'//trim(nistr)//',m1'//trim(pjstr)//',n1,ishock)', &
+      'l2'//trim(nistr),'1 '//trim(pjstr),'n1')
+  call evaluate_integral(unitno,2,-3,+i,-3,j-3,0,0, &
+      'f(l2'//trim(nistr)//',m2'//trim(njstr)//',n1,ishock)', &
+      'l2'//trim(nistr),'my'//trim(njstr),'n1')
+  call evaluate_integral(unitno,2,-i,+3,-3,j-3,0,0, &
+      'f(l1'//trim(pistr)//',m2'//trim(njstr)//',n1,ishock)', &
+      'l1'//trim(pistr),'my'//trim(njstr),'n1')
 
-  call evaluate_integral(unitno,2,0,0,3-j,+3,-k,+3, &
-      'f(l1,m1'//trim(pjstr)//',n2'//trim(pkstr)//',ishock)', &
-      'l1','1 '//trim(pjstr),'n1'//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,j-3,-k,+3, &
-      'f(l1,m2'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
-      'l1','my'//trim(njstr),'n1'//trim(pkstr))
-  call evaluate_integral(unitno,2,0,0,-3,j-3,-3,+k, &
-      'f(l1,m2'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
-      'l1','my'//trim(njstr),'n2'//trim(nkstr))
-  call evaluate_integral(unitno,2,0,0,3-j,+3,-3,+k, &
-      'f(l1,m1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
-      'l1','1 '//trim(pjstr),'n2'//trim(nkstr))
+  call evaluate_integral(unitno,2,3-i,+3,-j,+3,0,0, &
+      'f(l1'//trim(pistr)//',m2'//trim(pjstr)//',n1,ishock)', &
+      '1 '//trim(pistr),'m1'//trim(pjstr),'n1')
+  call evaluate_integral(unitno,2,-3,i-3,-j,+3,0,0, &
+      'f(l2'//trim(nistr)//',m1'//trim(pjstr)//',n1,ishock)', &
+      'mx'//trim(nistr),'m1'//trim(pjstr),'n1')
+  call evaluate_integral(unitno,2,-3,i-3,-3,+j,0,0, &
+      'f(l2'//trim(nistr)//',m2'//trim(njstr)//',n1,ishock)', &
+      'mx'//trim(nistr),'m2'//trim(njstr),'n1')
+  call evaluate_integral(unitno,2,3-i,+3,-3,+j,0,0, &
+      'f(l1'//trim(pistr)//',m2'//trim(njstr)//',n1,ishock)', &
+      '1 '//trim(pistr),'m2'//trim(njstr),'n1')
   enddo
   enddo
 ! Corners 
+  write(unitno,"(a)") "!  make_calc_externalboundary: ! Corners"
     do j=0,2
     do i=0,2
+  write(unitno,"(a,i2,a,i2)") "!  make_calc_externalboundary: ! Corners: j = ",j,", i = ",i
       call chn(i,istr)
       call chn(j,jstr)
       if (i/=0) nistr='-'//trim(istr)
@@ -392,6 +419,7 @@ subroutine make_calc_externalboundary(unitno)
     enddo
 !
   elseif ((nxgrid/=1).and.(nzgrid/=1)) then
+    write(unitno,"(a)") "!  make_calc_externalboundary: 2D CASE (xz)"
     call evaluate_facefactors(unitno,1)
 ! Top/bottom 
     do k=0,2
@@ -466,6 +494,7 @@ subroutine make_calc_externalboundary(unitno)
     enddo
 !
   elseif ((nzgrid/=1).and.(nygrid/=1)) then
+    write(unitno,"(a)") "!  make_calc_externalboundary: 2D CASE (yz)"
     call evaluate_facefactors(unitno,2)
 ! Top/bottom 
     do k=0,2
