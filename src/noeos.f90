@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.18 2005-12-20 19:10:12 mee Exp $
+! $Id: noeos.f90,v 1.19 2006-02-08 14:08:19 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -47,7 +47,6 @@ module EquationOfState
   ! run parameters
   !namelist /eos_run_pars/ dummy
 
-!ajwm  Moved here from Density.f90
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp=.false. 
@@ -80,7 +79,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.18 2005-12-20 19:10:12 mee Exp $')
+           '$Id: noeos.f90,v 1.19 2006-02-08 14:08:19 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.82 2006-02-02 12:29:19 ajohan Exp $
+! $Id: noentropy.f90,v 1.83 2006-02-08 14:08:18 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,12 +55,11 @@ module Entropy
       if (.not. first) call fatal_error('register_entropy','module registration called twice')
       first = .false.
 !
-!ajwm      lentropy = .false.
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.82 2006-02-02 12:29:19 ajohan Exp $")
+           "$Id: noentropy.f90,v 1.83 2006-02-08 14:08:18 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

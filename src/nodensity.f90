@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.40 2005-09-11 09:33:16 ajohan Exp $
+! $Id: nodensity.f90,v 1.41 2006-02-08 14:08:18 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -51,16 +51,12 @@ module Density
                                         'module registration called twice')
       first = .false.
 !
-!ajwm      ldensity = .false.
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.40 2005-09-11 09:33:16 ajohan Exp $")
+           "$Id: nodensity.f90,v 1.41 2006-02-08 14:08:18 mee Exp $")
 !
-!ajwm Necessary? added incase
-!      gamma=1.
-!      gamma1=0.
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f,lstarting)
