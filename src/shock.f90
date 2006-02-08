@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.9 2005-12-15 18:03:59 dobler Exp $
+! $Id: shock.f90,v 1.10 2006-02-08 14:07:13 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -101,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.9 2005-12-15 18:03:59 dobler Exp $")
+           "$Id: shock.f90,v 1.10 2006-02-08 14:07:13 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -355,7 +355,7 @@ module Shock
        f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
      endif
 !
-!ajwm debug only line:-
+!debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_shock_profile_simple
 !!***********************************************************************
@@ -519,11 +519,11 @@ module Shock
         endif
       endif
 !
-!ajwm debug only line:-
+!debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_shock_profile
 !***********************************************************************
-!ajwm Utility routines - poss need moving elsewhere
+!Utility routines - poss need moving elsewhere
     subroutine shock_max5(f,maxf)
 !
 !  return array maxed with by 2 points either way
@@ -669,7 +669,7 @@ module Shock
     endsubroutine shock_max5
 
 !***********************************************************************
-!ajwm Utility routines - poss need moving elsewhere
+!Utility routines - poss need moving elsewhere
     subroutine shock_max3_farray(f,maxf)
 !
 !  return array maxed with by 2 points either way
@@ -740,7 +740,7 @@ module Shock
     endsubroutine shock_max3_farray
 
 !***********************************************************************
-!ajwm Utility routines - poss need moving elsewhere
+!Utility routines - poss need moving elsewhere
     subroutine shock_max3_pencil(f,j,maxf)
 !
 !  return array maxed with by 2 points either way
@@ -1010,49 +1010,50 @@ module Shock
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: df
+      real :: fac
 !
-!ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
-!ajwm Much slower using partial array?
-!      fac=1./(2.*dx)
       df=0.
 !
       if (nxgrid/=1) then
+         fac=1./(2.*dx)
          df(1     ,:,:) =  df(1    ,:,:) &
                            + (  4.*f(2,:,:,iux) &
                               - 3.*f(1,:,:,iux) &
-                              -    f(3,:,:,iux))/(2.*dx) 
+                              -    f(3,:,:,iux))*fac
          df(2:mx-1,:,:) =  df(2:mx-1,:,:) &
-                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) / (2.*dx) 
+                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) * fac
          df(mx    ,:,:) =  df(mx    ,:,:) &
                            + (  3.*f(mx  ,:,:,iux) &
                               - 4.*f(mx-1,:,:,iux) &
-                              +    f(mx-2,:,:,iux))/(2.*dx)
+                              +    f(mx-2,:,:,iux))*fac
       endif
 
       if (nygrid/=1) then
+         fac=1./(2.*dy)
          df(:,1     ,:) = df(:,1     ,:) &
                           + (  4.*f(:,2,:,iuy) &
                              - 3.*f(:,1,:,iuy) &
-                             -    f(:,3,:,iuy))/(2.*dy) 
+                             -    f(:,3,:,iuy))*fac
          df(:,2:my-1,:) = df(:,2:my-1,:) &  
-                          + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))/(2.*dy) 
+                          + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))*fac
          df(:,my    ,:) = df(:,my    ,:) & 
                           + (  3.*f(:,my  ,:,iuy) &
                              - 4.*f(:,my-1,:,iuy) &
-                             +    f(:,my-2,:,iuy))/(2.*dy)
+                             +    f(:,my-2,:,iuy))*fac
       end if
 
       if (nzgrid/=1) then
+         fac=1./(2.*dy)
          df(:,:,1     ) = df(:,:,1     ) &
                           + (  4.*f(:,:,2,iuz) &
                              - 3.*f(:,:,1,iuz) &
-                             -    f(:,:,3,iuz))/(2.*dz) 
+                             -    f(:,:,3,iuz))*fac
          df(:,:,2:mz-1) = df(:,:,2:mz-1) & 
-                          + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))/(2.*dz) 
+                          + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))*fac
          df(:,:,mz    ) = df(:,:,mz    ) &   
                           + (  3.*f(:,:,mz  ,iuz) &
                              - 4.*f(:,:,mz-1,iuz) &
-                             +    f(:,:,mz-2,iuz))/(2.*dz)
+                             +    f(:,:,mz-2,iuz))*fac
       end if
     endsubroutine shock_divu_farray
 !***********************************************************************
@@ -1067,32 +1068,32 @@ module Shock
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx) :: df
+      real :: fac
       integer :: j
 !
-!ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
-!ajwm Much slower using partial array?
-!      fac=1./(2.*dx)
       df=0.
-!
       if (nxgrid/=1) then
+         fac=1./(2.*dx)
          df(2:mx-1) = df(2:mx-1)     &
                + (f(3:mx  ,m     ,n     ,j  ) &
                -  f(1:mx-2,m     ,n     ,j  ) ) &
-               / (2.*dx) 
+               * fac
       endif
 
       if (nygrid/=1) then
+         fac=1./(2.*dy)
          df = df  &  
                + (f(:     ,m+1   ,n     ,j+1)   &
                -  f(:     ,m-1   ,n     ,j+1) ) &
-               / (2.*dy) 
+               * fac
       endif
 
       if (nzgrid/=1) then
+         fac=1./(2.*dz)
          df = df       & 
                + (f(:     ,m     ,n+1   ,j+2)   &
                -  f(:     ,m     ,n-1   ,j+2) ) &
-               / (2.*dz) 
+               * fac
       endif
     endsubroutine shock_divu_pencil
 !***********************************************************************
@@ -1109,12 +1110,9 @@ module Shock
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: df
-      real :: cube, diamond
+      real :: cube, diamond, fac
       integer :: i,j,k
 !
-!ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
-!ajwm Much slower using partial array?
-!      fac=1./(2.*dx)
       df=0.
 !
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
@@ -1132,6 +1130,7 @@ module Shock
         do k=n1,n2
         do j=m1,m2
         do i=l1,l2
+          fac = (-1./18.) / dx
           diamond = ( &
                        f(i  , j, k+3 , iuz)  &
                      + f(i+1, j, k+2 , iuz) + f(i+1, j, k+2 , iux)  &
@@ -1145,13 +1144,14 @@ module Shock
                      - f(i-3, j, k   , iux)  &
                      + f(i-2, j, k+1 , iuz) - f(i-2, j, k+1 , iux)  &
                      + f(i-1, j, k+2 , iuz) - f(i-1, j, k+2 , iux)  &
-                    ) * (-1./18.) / dx
+                    ) * fac
 
+          fac = (1./16.) / dx
           cube    = (  sum(f(i-2:i+2, j, k-2    , iuz)) &
                      - sum(f(i-2:i+2, j, k+2    , iuz)) &
                      + sum(f(i-2    , j, k-2:k+2, iux)) &
                      - sum(f(i+2    , j, k-2:k+2, iux)) &
-                    ) * (1./16.) / dx
+                    ) * fac
 
           if (lwith_extreme_div) then
             if ((diamond .lt. 0.) .and. (diamond .gt. -div_threshold)) then
@@ -1282,9 +1282,6 @@ module Shock
       real :: octagon, fac_diag, fac_straight
       integer :: i,j,k
 !
-!ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
-!ajwm Much slower using partial array?
-!      fac=1./(2.*dx)
       df=0.
 !
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
