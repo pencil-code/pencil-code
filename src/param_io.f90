@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.220 2006-01-20 22:41:03 dobler Exp $ 
+! $Id: param_io.f90,v 1.221 2006-02-08 14:22:24 mee Exp $ 
 
 module Param_IO
 
@@ -291,18 +291,6 @@ module Param_IO
           call print_startpars(FILE=trim(datadir)//'/params.log')
         endif
       endif
-!
-!  set gamma1, cs20, and lnrho0
-!  (At least cs20 needs to be calculated here; in register.f90 is not sufficient!)
-!
-!     gamma1=gamma-1.
-      ! avoid floating overflow if cs0 was not set:
-!ajwm      if (cs20==impossible) then
-!ajwm        cs20=impossible
-!ajwm      else
-!ajwm        cs20=cs0**2
-!ajwm      endif
-!ajwm      lnrho0=alog(rho0)
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries
@@ -942,7 +930,6 @@ module Param_IO
       logical :: lcosmicrayflux = lcosmicrayflux_var
       logical :: lplanet        = lplanet_var
 
-!ajwm           lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,ltestfield,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
