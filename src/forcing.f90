@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.87 2006-02-03 06:18:42 brandenb Exp $
+! $Id: forcing.f90,v 1.88 2006-02-08 14:10:47 mee Exp $
 
 module Forcing
 
@@ -70,7 +70,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.87 2006-02-03 06:18:42 brandenb Exp $")
+           "$Id: forcing.f90,v 1.88 2006-02-08 14:10:47 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -88,12 +88,6 @@ module Forcing
       if (lstarting) then
         if(ip<4) print*,'initialize_forcing: not needed in start'
       else
-!ajwm  Commented as this is now handled by the Persist module
-!ajwm        if (first) then
-!ajwm           if (lroot.and.ip<14) print*, 'initialize_forcing: reading seed file'
-!ajwm           call inpui(trim(directory)//'/seed.dat',seed,nseed)
-!ajwm           call random_seed_wrapper(put=seed(1:nseed))
-!ajwm        endif
 !
 !  check whether we want ordinary hydro forcing or magnetic forcing
 !
