@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.159 2006-01-30 19:43:35 dobler Exp $
+### $Id: Makefile.src,v 1.160 2006-02-08 01:54:29 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -350,11 +350,23 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #FFLAGS=-gm -fast -tp p7 -fastsse -Mvect=sse -O2 # (copson)
 #LDMPI= # (copson)
 ##
-##
-##
 #FC=ifc #(gwdu102)
 #FFLAGS=-O3 -I/opt/scali/include #(gwdu102)  
 #LDMPI=-L/opt/scali/lib -lmpi -lfmpi #(gwdu102)
+##
+## Uppsala cluster - (nut is RA's front node)
+## www.uppmax.uu.se
+#FC=pgf90 #(nut) 
+#MPI_HOME= /opt/scali#(nut)
+#MPI_LDLIBS= -lmpi -lfmpi #(nut) 
+#F90=$(FC) #(nut)
+#F95=$(FC) #(nut)
+#CC=mpicc #(nut)
+#FFLAGS=-D_REENTRANT -I$(MPI_HOME)/include -O3 -tp k8-64 #(nut)
+#CFLAGS=-D_REENTRANT -I$(MPI_HOME)/include -DFUNDERSC=1 -O3 -tp k8-64 #(nut)
+#LDMPI= -L$(MPI_HOME)/lib64 $(MPI_LDLIBS)  #(nut)
+##
+
 
 ## Darwin:
 ## Power Macintosh
