@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.2 2006-02-05 16:07:09 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.3 2006-02-08 14:20:36 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -145,8 +145,6 @@ module Entropy
       if (.not. first) call fatal_error('register_entropy','module registration called twice')
       first = .false.
 !
-!ajwm      lentropy = .true.
-!
       iss = nvar+1             ! index to access entropy
       nvar = nvar+1
 !
@@ -158,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.2 2006-02-05 16:07:09 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.3 2006-02-08 14:20:36 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -622,9 +620,6 @@ module Entropy
           !
           if (.not. ldensity) &
                call fatal_error('isentropic-star','requires density.f90')
-!ajwm          if (initlnrho(1) /= initss(1)) &
-!ajwm               call stop_it('isentropic star requires initlnrho=initss')
-!ajwm Removed since it destroys the dependency tree
           if (lgravr) then
             if (lroot) print*, &
                  'init_lnrho: isentropic star with isothermal atmosphere'
@@ -1116,8 +1111,6 @@ module Entropy
 !
         lnrho=f(l1:l2,m,n,ilnrho)
         lnTT=log(TT)
-!ajwm   Changed getentropy -> eoscalc
-!ajwm   was:    call getentropy(lnrho,lnTT,ss)
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
         f(l1:l2,m,n,iss)=ss
 !
