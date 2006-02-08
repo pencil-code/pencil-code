@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.27 2005-07-01 02:56:08 mee Exp $
+! $Id: deriv.f90,v 1.28 2006-02-08 14:55:09 mee Exp $
 
 module Deriv
   
@@ -12,14 +12,14 @@ module Deriv
   public :: der6_other
   public :: der_upwind1st
 
-!ajwm  integer, parameter :: icount_der   = 1         !DERCOUNT
-!ajwm  integer, parameter :: icount_der2  = 2         !DERCOUNT
-!ajwm  integer, parameter :: icount_der4  = 3         !DERCOUNT
-!ajwm  integer, parameter :: icount_der5  = 4         !DERCOUNT
-!ajwm  integer, parameter :: icount_der6  = 5         !DERCOUNT
-!ajwm  integer, parameter :: icount_derij = 6         !DERCOUNT
-!ajwm  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
-!ajwm  integer, parameter :: icount_der_other = 8     !DERCOUNT
+!debug  integer, parameter :: icount_der   = 1         !DERCOUNT
+!debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
+!debug  integer, parameter :: icount_der4  = 3         !DERCOUNT
+!debug  integer, parameter :: icount_der5  = 4         !DERCOUNT
+!debug  integer, parameter :: icount_der6  = 5         !DERCOUNT
+!debug  integer, parameter :: icount_derij = 6         !DERCOUNT
+!debug  integer, parameter :: icount_der_upwind1st = 7 !DERCOUNT
+!debug  integer, parameter :: icount_der_other = 8     !DERCOUNT
 
   interface der                 ! Overload the der function
     module procedure der_main   ! derivative of an 'mvar' variable
@@ -45,8 +45,8 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: j,k
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
-!ajwm                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_der,j,1) = & !DERCOUNT
+!debug                            der_call_count(k,icount_der,j,1)+1 !DERCOUNT
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -98,8 +98,8 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: j
 !
-!ajwm      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
-!ajwm                          der_call_count(1,icount_der_other,j,1) + 1
+!debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
+!debug                          der_call_count(1,icount_der_other,j,1) + 1
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -150,8 +150,8 @@ module Deriv
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
-!ajwm                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
 !
       if (j==1) then
         if (nxgrid/=1) then
@@ -222,8 +222,8 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
-!ajwm                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
 !
       if (present(ignoredx)) then
         igndx = ignoredx
@@ -301,8 +301,8 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
-!ajwm                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
 !
       if (present(ignoredx)) then
         igndx = ignoredx
@@ -394,8 +394,8 @@ module Deriv
       intent(in)  :: f,j,ignoredx
       intent(out) :: df
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
-!ajwm                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_der6,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der6,j,1) + 1 !DERCOUNT
 !
       if (present(ignoredx)) then
         igndx = ignoredx
@@ -487,8 +487,8 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
-!ajwm                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) then
         call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
@@ -566,8 +566,8 @@ module Deriv
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
-!ajwm                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
+!debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
       if ((i==1.and.j==2).or.(i==2.and.j==1)) then
         if (nxgrid/=1.and.nygrid/=1) then
@@ -667,8 +667,8 @@ module Deriv
       real, dimension (nx) :: df
       integer :: j,k,l
 !
-!ajwm      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
-!ajwm                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
+!debug      if (loptimise_ders) der_call_count(k,icount_der_upwind1st,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der_upwind1st,j,1) + 1 !DERCOUNT
 !
       if (.not. lequidist(j)) then
         call fatal_error('der_upwind1st','NOT IMPLEMENTED for no equidistant grid')
