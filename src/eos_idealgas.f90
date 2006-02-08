@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.28 2006-01-08 14:55:51 bingert Exp $
+! $Id: eos_idealgas.f90,v 1.29 2006-02-08 14:07:39 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -47,7 +47,6 @@ module EquationOfState
 ! real :: cp=impossible, cp1=impossible, mu=impossible
   real :: cp=1., cp1=impossible, mu=impossible
 
-!ajwm  Moved here from Density.f90
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp = .false.
@@ -93,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.28 2006-01-08 14:55:51 bingert Exp $')
+           '$Id: eos_idealgas.f90,v 1.29 2006-02-08 14:07:39 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
