@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.273 2006-02-06 17:46:25 ajohan Exp $
+! $Id: equ.f90,v 1.274 2006-02-08 14:21:24 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.273 2006-02-06 17:46:25 ajohan Exp $")
+           "$Id: equ.f90,v 1.274 2006-02-08 14:21:24 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -688,25 +688,25 @@ module Equ
 !
 !  Display derivative info
 !
-!ajwm   if (loptimise_ders.and.lout) then                         !DERCOUNT
-!ajwm     do iv=1,nvar                                            !DERCOUNT
-!ajwm     do ider=1,8                                             !DERCOUNT
-!ajwm     do j=1,3                                                !DERCOUNT
-!ajwm     do k=1,3                                                !DERCOUNT
-!ajwm       if (der_call_count(iv,ider,j,k) .gt. 1) then          !DERCOUNT
-!ajwm         print*,'DERCOUNT: '//varname(iv)//' derivative ', & !DERCOUNT
-!ajwm                                                 ider,j,k, & !DERCOUNT
-!ajwm                                               ' called ', & !DERCOUNT
-!ajwm                              der_call_count(iv,ider,j,k), & !DERCOUNT
-!ajwm                                                  'times!'   !DERCOUNT
-!ajwm       endif                                                 !DERCOUNT
-!ajwm     enddo                                                   !DERCOUNT
-!ajwm     enddo                                                   !DERCOUNT
-!ajwm     enddo                                                   !DERCOUNT
-!ajwm     enddo                                                   !DERCOUNT
-!ajwm     if (maxval(der_call_count).gt.1) call fatal_error( &        !DERCOUNT
-!ajwm      'pde','ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
-!ajwm   endif
+!debug   if (loptimise_ders.and.lout) then                         !DERCOUNT
+!debug     do iv=1,nvar                                            !DERCOUNT
+!debug     do ider=1,8                                             !DERCOUNT
+!debug     do j=1,3                                                !DERCOUNT
+!debug     do k=1,3                                                !DERCOUNT
+!debug       if (der_call_count(iv,ider,j,k) .gt. 1) then          !DERCOUNT
+!debug         print*,'DERCOUNT: '//varname(iv)//' derivative ', & !DERCOUNT
+!debug                                                 ider,j,k, & !DERCOUNT
+!debug                                               ' called ', & !DERCOUNT
+!debug                              der_call_count(iv,ider,j,k), & !DERCOUNT
+!debug                                                  'times!'   !DERCOUNT
+!debug       endif                                                 !DERCOUNT
+!debug     enddo                                                   !DERCOUNT
+!debug     enddo                                                   !DERCOUNT
+!debug     enddo                                                   !DERCOUNT
+!debug     enddo                                                   !DERCOUNT
+!debug     if (maxval(der_call_count).gt.1) call fatal_error( &        !DERCOUNT
+!debug      'pde','ONE OR MORE DERIVATIVES HAS BEEN DOUBLE CALLED') !DERCOUNT
+!debug   endif
 !
 !  end of loops over m and n
 !
