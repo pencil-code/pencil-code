@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.217 2006-01-02 12:12:46 ajohan Exp $
+! $Id: run.f90,v 1.218 2006-02-08 14:24:02 mee Exp $
 !
 !***********************************************************************
       program run
@@ -66,7 +66,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.217 2006-01-02 12:12:46 ajohan Exp $")
+             "$Id: run.f90,v 1.218 2006-02-08 14:24:02 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -209,10 +209,6 @@
 !
         call choose_pencils()
         call write_pencil_info()
-!
-!ajwm - moved call to run_hooks and renamed run_hooks_grav
-!  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
-!        if (lgravr) call setup_grav()
 !
         call wglobal()
 !
