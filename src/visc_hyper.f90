@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.22 2005-10-01 08:26:59 ajohan Exp $
+! $Id: visc_hyper.f90,v 1.23 2006-02-08 14:12:32 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -71,7 +71,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.22 2005-10-01 08:26:59 ajohan Exp $")
+           "$Id: visc_hyper.f90,v 1.23 2006-02-08 14:12:32 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -320,50 +320,51 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: df
+      real :: fac
 !
-!ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
-!ajwm Much slower using partial array?
-!      fac=1./(2.*dx)
       df=0.
 
 
       if (nxgrid/=1) then
+         fac=1./(2.*dx)
          df(1     ,:,:) =  df(1    ,:,:) &
                            + (  4.*f(2,:,:,iux) &
                               - 3.*f(1,:,:,iux) &
-                              -    f(3,:,:,iux))/(2.*dx)
+                              -    f(3,:,:,iux))*fac
          df(2:mx-1,:,:) =  df(2:mx-1,:,:) &
-                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) / (2.*dx)
+                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) *fac
          df(mx    ,:,:) =  df(mx    ,:,:) &
                            + (  3.*f(mx  ,:,:,iux) &
                               - 4.*f(mx-1,:,:,iux) &
-                              +    f(mx-2,:,:,iux))/(2.*dx)
+                              +    f(mx-2,:,:,iux))*fac
       endif
 
       if (nygrid/=1) then
+         fac=1./(2.*dy)
          df(:,1     ,:) = df(:,1     ,:) &
                           + (  4.*f(:,2,:,iuy) &
                              - 3.*f(:,1,:,iuy) &
-                             -    f(:,3,:,iuy))/(2.*dy)
+                             -    f(:,3,:,iuy))*fac
          df(:,2:my-1,:) = df(:,2:my-1,:) &  
-                          + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))/(2.*dy)
+                          + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))*fac
          df(:,my    ,:) = df(:,my    ,:) &
                           + (  3.*f(:,my  ,:,iuy) &
                              - 4.*f(:,my-1,:,iuy) &
-                             +    f(:,my-2,:,iuy))/(2.*dy)
+                             +    f(:,my-2,:,iuy))*fac
       endif
 
       if (nzgrid/=1) then
+         fac=1./(2.*dz)
          df(:,:,1     ) = df(:,:,1     ) &
                           + (  4.*f(:,:,2,iuz) &
                              - 3.*f(:,:,1,iuz) &
-                             -    f(:,:,3,iuz))/(2.*dz)
+                             -    f(:,:,3,iuz))*fac
          df(:,:,2:mz-1) = df(:,:,2:mz-1) &
-                          + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))/(2.*dz)
+                          + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))*fac
          df(:,:,mz    ) = df(:,:,mz    ) &
                           + (  3.*f(:,:,mz  ,iuz) &
                              - 4.*f(:,:,mz-1,iuz) &
-                             +    f(:,:,mz-2,iuz))/(2.*dz)
+                             +    f(:,:,mz-2,iuz))*fac
       endif
 !      
     endsubroutine shock_divu
