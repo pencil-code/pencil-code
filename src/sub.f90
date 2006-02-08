@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.228 2006-02-02 09:59:51 wlyra Exp $ 
+! $Id: sub.f90,v 1.229 2006-02-08 14:10:14 mee Exp $ 
 
 module Sub 
 
@@ -3466,7 +3466,7 @@ nameloop: do
         enddo nameloop
         if ((nameptr-1) .ge. inptr) then
          envname=trim(strin(inptr:nameptr-1))
-!ajwm  Commented pending a C replacement
+! Commented pending a C replacement
 !         call getenv(trim(envname),envvalue)
 !         call safe_character_assign(strout,trim(strout)//trim(envvalue))
         endif
