@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.150 2005-09-09 00:20:46 dobler Exp $
+! $Id: start.f90,v 1.151 2006-02-08 14:09:27 mee Exp $
 !
 !***********************************************************************
       program start
@@ -89,7 +89,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.150 2005-09-09 00:20:46 dobler Exp $")
+             "$Id: start.f90,v 1.151 2006-02-08 14:09:27 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -332,14 +332,6 @@
 !  Write information about pencils to disc
 !
         call write_pencil_info()
-!
-!  Seed for random number generator to be used in forcing.f90. Have to
-!  have the same on each  processor as forcing is applied in (global)
-!  Beltrami modes.
-!ajwm
-!ajwm        seed(1) = 1812
-!ajwm        call outpui(trim(directory)//'/seed.dat',seed,nseed)
-!ajwm Commented as now handled by Persist module
 !
         call mpifinalize
         if (lroot) print*
