@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.19 2005-07-05 16:21:43 mee Exp $
+! $Id: temperature.f90,v 1.20 2006-02-08 14:11:16 mee Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -93,7 +93,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.19 2005-07-05 16:21:43 mee Exp $")
+           "$Id: temperature.f90,v 1.20 2006-02-08 14:11:16 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -300,7 +300,6 @@ iss=ilnTT  !(need to think how to deal with this...)
       TT1=exp(-lnTT)
       if (headtt) print*,'dlnTT_dt: TT1(1)=',TT1(1)
 !
-!ajwm - lviscosity always true and there is not a noviscosity module
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
 !
 !  Calculate entropy related diagnostics
