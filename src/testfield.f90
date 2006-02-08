@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.22 2006-02-03 06:18:42 brandenb Exp $
+! $Id: testfield.f90,v 1.23 2006-02-08 02:45:49 dobler Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.22 2006-02-03 06:18:42 brandenb Exp $")
+           "$Id: testfield.f90,v 1.23 2006-02-08 02:45:49 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -156,7 +156,7 @@ module Testfield
         write(1,'(a,i1)') 'zextent=',merge(1,0,zextent)
         write(1,'(a,i1)') 'lsoca='  ,merge(1,0,lsoca)
         write(1,'(a,i2)') 'itestfield=',itestfield
-        write(1,'(a,i2)') 'ktestfield=',ktestfield
+        write(1,'(a,f3.0)') 'ktestfield=',ktestfield
         close(1)
       endif
 !
