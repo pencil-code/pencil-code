@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $
+! $Id: cosmicrayflux.f90,v 1.5 2006-02-08 14:05:14 mee Exp $
 
 !  Cosmic Ray Flux
 !  
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $")
+           "$Id: cosmicrayflux.f90,v 1.5 2006-02-08 14:05:14 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -247,9 +247,6 @@ module Cosmicrayflux
 !
       call dot2_mn(p%bb,b2)
 !  with frequency omega_Bz_ext
-!ajwm - possible rescale before and after derivative?
-!      b1=1./amax1(tiny(b2),sqrt(b2))
-!      call multsv_mn(b1*(dxmin/2.)**2,bb,bunit)
       b21=1./max(tiny(b2),b2)
       call multsv_mn(sqrt(b21),p%bb,bunit)
 !                        

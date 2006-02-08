@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.21 2005-10-05 13:09:52 snod Exp $
+! $Id: cosmicray_nolog.f90,v 1.22 2006-02-08 14:05:14 mee Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -102,7 +102,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.21 2005-10-05 13:09:52 snod Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.22 2006-02-08 14:05:14 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -537,9 +537,6 @@ print*,"init_ecr: amplecr = ", amplecr
 !  calculate unit vector of bb
 !,file='../cosmicrays/data/time_series.dat'
       call dot2_mn(bb,b2)
-!ajwm - possible rescale before and after derivative?
-!      b1=1./amax1(tiny(b2),sqrt(b2))
-!      call multsv_mn(b1*(dxmin/2.)**2,bb,bunit)
       b21=1./max(tiny(b2),b2)
       call multsv_mn(sqrt(b21),bb,bunit)
 !
@@ -584,11 +581,6 @@ print*,"init_ecr: amplecr = ", amplecr
 !  by 1/sqrt(1.+dxmin^2*H^2).
 !  and dot H with ecr gradient
 !
-!ajwm - possible rescale before and after derivatives
-!        call dot2_mn(hhh,hhh2)
-!        quenchfactor=1./sqrt(1.+(2./dxmin)**2*hhh2)
-!        call multsv_mn(quenchfactor,hhh,hhh)
-
         if (limiter_cr>0.) then
           call dot2_mn(hhh,hhh2)
           quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)

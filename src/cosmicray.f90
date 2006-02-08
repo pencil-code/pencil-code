@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.35 2005-07-05 16:21:42 mee Exp $
+! $Id: cosmicray.f90,v 1.36 2006-02-08 14:05:14 mee Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -96,7 +96,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.35 2005-07-05 16:21:42 mee Exp $")
+           "$Id: cosmicray.f90,v 1.36 2006-02-08 14:05:14 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -454,7 +454,7 @@ print*,"init_ecr: initecr = ", initecr
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
-      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
+      real, dimension (nx) :: tmp,b2,b1,b21,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
       real, dimension (nx) :: hhh2,quenchfactor
 !
 !  use global Kperp, Kpara ?
@@ -473,10 +473,8 @@ print*,"init_ecr: initecr = ", initecr
 !  calculate unit vector of bb
 !
       call dot2_mn(bb,b2)
-!ajwm - possible rescale before and after derivative?
-!      b1=1./amax1(tiny(b2),sqrt(b2))
-!      call multsv_mn(b1*(dxmin/2.)**2,bb,bunit)
-      b1=1./max(tiny(b2),sqrt(b2))
+      b21=1./max(tiny(b2),b2)
+      b1=sqrt(b21)
       call multsv_mn(b1,bb,bunit)
 !
 !  calculate first H_i (unless we use simplified_cosmicray_tensor)
