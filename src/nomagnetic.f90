@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.64 2005-11-25 18:26:06 dobler Exp $
+! $Id: nomagnetic.f90,v 1.65 2006-02-08 14:02:35 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -9,7 +9,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED bb,bij,jxbr,ss12,b2,gradcurla
+! PENCILS PROVIDED bb,bij,jxbr,ss12,b2
 !
 !***************************************************************
 
@@ -59,7 +59,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.64 2005-11-25 18:26:06 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.65 2006-02-08 14:02:35 mee Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -145,7 +145,6 @@ module Magnetic
 !      
       if (lpencil(i_bb)) p%bb=0.
       if (lpencil(i_b2)) p%b2=0.
-      if (lpencil(i_gradcurla)) p%gradcurla=0.
       if (lpencil(i_jxbr)) p%jxbr=0.
       if (lpencil(i_bij)) p%bij=0.
 !

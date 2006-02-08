@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.271 2006-02-07 03:24:55 wlyra Exp $
+! $Id: magnetic.f90,v 1.272 2006-02-08 14:02:35 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -18,7 +18,7 @@
 ! PENCILS PROVIDED j2,jb,va2,jxb,jxbr,ub,uxb,uxb2,uxj,beta
 ! PENCILS PROVIDED djuidjbi,jo,ujxb,oxu,oxuxb,jxbxb,jxbrxb
 ! PENCILS PROVIDED glnrhoxb,del4a,del6a,oxj,diva,jij,sj,ss12 
-! PENCILS PROVIDED mf_EMF, mf_EMFdotB,gradcurla
+! PENCILS PROVIDED mf_EMF, mf_EMFdotB
 !
 !***************************************************************
 
@@ -182,7 +182,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.271 2006-02-07 03:24:55 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.272 2006-02-08 14:02:35 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -774,10 +774,6 @@ module Magnetic
       endif
 ! b2
       if (lpencil(i_b2)) call dot2_mn(p%bb,p%b2)
-!ajwm should prob combine these next two
-! gradcurla
-      if (lpencil(i_gradcurla)) &
-          call del2v_etc(f,iaa,gradcurl=p%gradcurla)
 ! bij, del2a, graddiva
       if (lpencil(i_bij) .or. lpencil(i_del2a) .or. lpencil(i_graddiva)) &
           call bij_etc(f,iaa,p%bij,p%del2a,p%graddiva)
