@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.43 2005-12-06 19:13:53 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.44 2006-02-09 13:44:15 karlsson Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -43,7 +43,7 @@ module Pscalar
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
-  real :: pscalar_sink=0., Rpscalar_sink=1.
+  real :: pscalar_sink=0., Rpscalar_sink=0.5
   logical :: lpscalar_turb_diff,lpscalar_sink
 
   namelist /pscalar_run_pars/ &
@@ -53,7 +53,7 @@ module Pscalar
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
-  integer :: idiag_Qrhoccm=0
+  integer :: idiag_Qrhoccm=0,idiag_Qpsclm=0
   integer :: idiag_lnccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
   integer :: idiag_ucm=0,idiag_uudcm=0,idiag_Cz2m=0,idiag_Cz4m=0,idiag_Crmsm=0
   integer :: idiag_cc1m=0,idiag_cc2m=0,idiag_cc3m=0,idiag_cc4m=0,idiag_cc5m=0
@@ -97,7 +97,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.43 2005-12-06 19:13:53 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.44 2006-02-09 13:44:15 karlsson Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -268,7 +268,7 @@ module Pscalar
 !
       lpenc_diagnos(i_cc)=.true.
       if (idiag_rhoccm/=0 .or. idiag_Cz2m/=0 .or. idiag_Cz4m/=0 .or. &
-          idiag_Qrhoccm/=0) &
+          idiag_Qrhoccm/=0 .or. idiag_Qpsclm/=0) &
           lpenc_diagnos(i_rho)=.true.
       if (idiag_ucm/=0 .or. idiag_uudcm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_uudcm/=0) lpenc_diagnos(i_ugcc)=.true.
@@ -340,7 +340,7 @@ module Pscalar
     subroutine dlncc_dt(f,df,p)
 !
 !  passive scalar evolution
-!  calculate dc/dt=-uu.gcc + pscaler_diff*[del2cc + glnrho.gcc]
+!  calculate dc/dt=-uu.gcc + pscalar_diff*[del2cc + glnrho.gcc]
 !
 !  20-may-03/axel: coded
 !
@@ -378,8 +378,15 @@ module Pscalar
 !  passive scalar sink
 !
         if (lpscalar_sink) then
+!          if (lagrangian) then
+!            call interp(rsink,usink,ir,iuu,f)
+!            rsink=rsink+usink*dt
+!          else
+!            rsink=0.
+!          endif 
           bump=pscalar_sink* &
-            exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
+          exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
+!          exp(-.5*((x(l1:l2)-rsink(0))**2+(y(m)-rsink(1))**2+(z(n)-rsink(2))**2)/Rpscalar_sink**2) 
           df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-bump*f(l1:l2,m,n,ilncc)
         endif
 !
@@ -423,6 +430,7 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
+        if (idiag_Qpsclm/=0) call sum_mn_name(bump,idiag_Qpsclm)
         if (idiag_Qrhoccm/=0) call sum_mn_name(bump*p%rho*p%cc,idiag_Qrhoccm)
         if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
         if (idiag_ccmax/=0) call max_mn_name(p%cc,idiag_ccmax)
@@ -520,7 +528,7 @@ module Pscalar
 !
       if (lreset) then
         idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_lnccm=0
-        idiag_Qrhoccm=0
+        idiag_Qrhoccm=0; idiag_Qpsclm=0
         idiag_lnccmz=0; 
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
         idiag_cc1m=0; idiag_cc2m=0; idiag_cc3m=0; idiag_cc4m=0; idiag_cc5m=0
@@ -533,6 +541,7 @@ module Pscalar
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'Qpsclm',idiag_Qpsclm)
         call parse_name(iname,cname(iname),cform(iname),'Qrhoccm',idiag_Qrhoccm)
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',idiag_rhoccm)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',idiag_ccmax)
@@ -574,6 +583,7 @@ module Pscalar
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_Qpsclm=',idiag_Qpsclm
         write(3,*) 'i_Qrhoccm=',idiag_Qrhoccm
         write(3,*) 'i_rhoccm=',idiag_rhoccm
         write(3,*) 'i_ccmax=',idiag_ccmax
