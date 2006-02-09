@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.153 2006-02-06 22:32:35 ajohan Exp $
+! $Id: dustdensity.f90,v 1.154 2006-02-09 18:45:19 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -30,11 +30,13 @@ module Dustdensity
 
   integer, parameter :: ndiffd_max=4  
   real, dimension(nx,ndustspec,ndustspec) :: dkern
+  real, dimension(0:5) :: coeff_smooth=0.0
   real :: diffnd=0.0,diffnd_hyper3=0.0,diffmd=0.0,diffmi=0.0
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,Sigmad=1.0
   real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
   real :: amplnd=1.,kx_nd=1.,ky_nd=1.,kz_nd=1.,widthnd=1.,Hnd=1.0,Hepsd=1.0
-  real :: phase_nd=0.0,Ri0=1.0, eps1=0.5, z0_smooth=0.0, epsz1_smooth=0.0
+  real :: phase_nd=0.0,Ri0=1.0, eps1=0.5
+  real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   integer :: ind_extra
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
@@ -53,7 +55,7 @@ module Dustdensity
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
       ldeltaud_thermal, ldeltaud_turbulent, ldustdensity_log, Ri0, &
-      z0_smooth, epsz1_smooth
+      coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth
 
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
@@ -137,7 +139,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.153 2006-02-06 22:32:35 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.154 2006-02-09 18:45:19 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -500,8 +502,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       real, dimension (mz) :: rho, eps
-      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho, depsdz0
-      real :: coeff_a, coeff_b, coeff_c, coeff_eta, epsz0
+      real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho, epsz0
       integer, dimension(1) :: i0
       integer :: i
 !
@@ -575,32 +576,34 @@ module Dustdensity
 !
       eps=1/sqrt(z**2/Hd**2+1/(1+eps1)**2)-1
 !
-!  Smooth out eps by gluing eps(z)=C+A/(z+B) on at z=+-z0.
+!  Smooth out eps by gluing 5th order polynomial at |z|>z and a constant
+!  function at |z|>z1. Coefficients are supplied by the user.
 !      
-      epsz0   = 1/sqrt(z0_smooth**2/Hd**2+1/(1+eps1)**2)-1
-      depsdz0 = -z0_smooth/Hd**2/(z0_smooth**2/Hd**2+1/(1+eps1)**2)**1.5
+      epsz0 = 1/sqrt(z0_smooth**2/Hd**2+1/(1+eps1)**2)-1
+
       if (lroot) then
         print*, 'constant_richardson: z0, eps(z0) =', z0_smooth, epsz0
         print*, 'constant_richardson: epsz1_smooth=', epsz1_smooth
+        print*, 'constant_richardson: coeff_smooth=', coeff_smooth
       endif
 
       do imn=1,ny*nz
         n=nn(imn); m=mm(imn)
 
-        if (z(n)<=0.0) then
-          coeff_eta=-depsdz0
-          coeff_c=epsz1_smooth
-          coeff_b=(epsz1_smooth-epsz0       )/coeff_eta+z0_smooth
-          coeff_a=(epsz0       -epsz1_smooth)*(-z0_smooth+coeff_b)
-        else
-          coeff_eta=depsdz0
-          coeff_c=epsz1_smooth
-          coeff_b=(epsz1_smooth-epsz0       )/coeff_eta-z0_smooth
-          coeff_a=(epsz0       -epsz1_smooth)*(z0_smooth+coeff_b)
-        endif
-
-        if ( abs(z(n))>=z0_smooth ) then
-          eps(n)=coeff_c+coeff_a/(z(n)+coeff_b)
+        if ( abs(z(n))>=z0_smooth) then
+          if (abs(z(n))<z1_smooth) then
+            if (z(n)>=0.0) then
+              eps(n) = coeff_smooth(0)*z(n)**5 + coeff_smooth(1)*z(n)**4 &
+                     + coeff_smooth(2)*z(n)**3 + coeff_smooth(3)*z(n)**2 &
+                     + coeff_smooth(4)*z(n)    + coeff_smooth(5)
+            else
+              eps(n) =-coeff_smooth(0)*z(n)**5 + coeff_smooth(1)*z(n)**4 &
+                     - coeff_smooth(2)*z(n)**3 + coeff_smooth(3)*z(n)**2 &
+                     - coeff_smooth(4)*z(n)    + coeff_smooth(5)
+            endif
+          else
+            eps(n)=epsz1_smooth
+          endif
         endif
 !
         f(l1:l2,m,n,ind(1))=rho(n)*eps(n)
