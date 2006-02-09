@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.274 2006-02-09 12:44:00 ajohan Exp $
+! $Id: magnetic.f90,v 1.275 2006-02-09 12:52:37 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -182,7 +182,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.274 2006-02-09 12:44:00 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.275 2006-02-09 12:52:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -393,7 +393,7 @@ module Magnetic
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
       case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
-      case('Alfven-phi'); call alfven_phi(amplaa,f,iaa,kz_aa)    
+      case('Alfven-phi'); call alfven_phi(amplaa,f,kz_aa)    
       case('piecewise-dipole'); call piecew_dipole_aa (amplaa,inclaa,f,iaa,xx,yy,zz)
       case('tony-nohel')
         f(:,:,:,iay) = amplaa/kz_aa*cos(kz_aa*2.*pi/Lz*zz)
@@ -1892,9 +1892,9 @@ module Magnetic
 !***********************************************************************
     subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,xx,kx)
 !
-!  Alfven wave propagating in the z-direction
-!  ux = cos(kz-ot), for B0z=1 and rho=1.
-!  Ay = sin(kz-ot), ie Bx=-cos(kz-ot)
+!  Alfven wave propagating in the x-direction
+!  ux = +sin(kx-ot), for B0x=1 and rho=1.
+!  Az = -cos(kx-ot), ie By = sin(kx-ot)
 !
 !  satisfies the equations
 !  dlnrho/dt = -ux'
@@ -2637,7 +2637,7 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
-    subroutine alfven_phi(B0,f,iaa,zmode)
+    subroutine alfven_phi(B0,f,zmode)
 !
 !  Alfven wave propagating in the phi-direction
 !
