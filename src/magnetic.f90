@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.273 2006-02-08 17:18:20 wlyra Exp $
+! $Id: magnetic.f90,v 1.274 2006-02-09 12:44:00 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -182,7 +182,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.273 2006-02-08 17:18:20 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.274 2006-02-09 12:44:00 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2665,7 +2665,6 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: Ar,Aphi,Az
       real :: B0,kz,phase,zmode,zsize,zin
-      integer :: iaa
 
       zsize = z(n2)-z(n1) !=Lxyz(3)
       zin = z(n1) 
@@ -2679,7 +2678,7 @@ module Magnetic
             r_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
 !
             Ar   = - cos(kz*z(n) + phase)
-            Aphi = 1./r_mn
+            Aphi = 0.0
             Az   = (kz - B0)*r_mn*sin(kz*z(n) + phase)
 !            
             f(l1:l2,m,n,iaa+0) = (Ar*x(l1:l2) - Aphi*y(  m  ))/r_mn  
