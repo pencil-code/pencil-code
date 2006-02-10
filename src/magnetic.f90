@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.275 2006-02-09 12:52:37 brandenb Exp $
+! $Id: magnetic.f90,v 1.276 2006-02-10 00:53:10 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -182,7 +182,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.275 2006-02-09 12:52:37 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.276 2006-02-10 00:53:10 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2011,6 +2011,47 @@ module Magnetic
 !
     endsubroutine alfvenz_rot_shear
 !***********************************************************************
+    subroutine alfven_phi(B0,f,zmode)
+!
+!  Alfven wave propagating in the phi-direction
+!
+!   Bphi = B0 sin(kz)
+!
+!  When B << k, the routine needs high resolution
+!  to resolve the sines well. 64**3 works fine, but
+!  use 128x128x16 or 256x256x32 at your own risk.
+!
+!  08-feb-06/wlad: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: Ar,Az
+      real :: B0,kz,phase,zmode,zsize,zin
+!
+      zsize = Lxyz(3)
+      zin = xyz0(3)
+!
+      kz    = zmode*2*pi/zsize
+      phase =  -kz*zin +pi/2.
+!
+      do m=m1,m2
+         do n=n1,n2
+!
+            r_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
+!
+            Ar   = - cos(kz*z(n) + phase)
+            Az   = (kz - B0)*r_mn*sin(kz*z(n) + phase)
+!
+            f(l1:l2,m,n,iaa+0) = Ar*x(l1:l2)/r_mn
+            f(l1:l2,m,n,iaa+1) = Ar*y(  m  )/r_mn
+            f(l1:l2,m,n,iaa+2) = Az
+!
+         enddo
+      enddo
+!
+    endsubroutine alfven_phi
+!***********************************************************************
     subroutine fluxrings(f,ivar,xx,yy,zz,profile)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
@@ -2636,58 +2677,5 @@ module Magnetic
       enddo
 !
     endsubroutine potentdiv
-!***********************************************************************
-    subroutine alfven_phi(B0,f,zmode)
-!
-!  Alfven wave propagating in the phi-direction
-!
-!   Bphi = B0 sin(kz)
-!  
-!  Must be used with freezing only, since the
-!  phi component of the vector potential has
-!  a singularity at r=0
-!
-!  If instead of Aphi=1/r one uses a smooth potential
-!
-!   Aphi=r*(r**2+r0**2)**(-1/2), 
-!
-!  the Bz component will be non-zero equal to
-!
-!   Bz = 2*(r**2+r0**2)**(-1/2) - 0.5*r*(r**2+r0**2)^(-3/2)
-!
-!  which is well behaved and possibly useful, although it 
-!  corresponds to a net field through the disk
-!
-!  08-feb-06/wlad: coded
-!     
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: Ar,Aphi,Az
-      real :: B0,kz,phase,zmode,zsize,zin
-
-      zsize = z(n2)-z(n1) !=Lxyz(3)
-      zin = z(n1) 
-
-      kz    = zmode*2*pi/zsize
-      phase =  -kz*zin !+pi/2.
-
-      do m=m1,m2
-         do n=n1,n2
-!
-            r_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
-!
-            Ar   = - cos(kz*z(n) + phase)
-            Aphi = 0.0
-            Az   = (kz - B0)*r_mn*sin(kz*z(n) + phase)
-!            
-            f(l1:l2,m,n,iaa+0) = (Ar*x(l1:l2) - Aphi*y(  m  ))/r_mn  
-            f(l1:l2,m,n,iaa+1) = (Ar*y(  m  ) + Aphi*x(l1:l2))/r_mn
-            f(l1:l2,m,n,iaa+2) = Az
-!            
-         enddo
-      enddo
-!
-    endsubroutine alfven_phi
 !***********************************************************************
 endmodule Magnetic
