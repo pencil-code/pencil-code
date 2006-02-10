@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.29 2006-02-10 17:53:01 ajohan Exp $
+! $Id: deriv.f90,v 1.30 2006-02-10 18:11:09 ajohan Exp $
 
 module Deriv
   
@@ -50,30 +50,30 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./60.)*dx_1(l1:l2)
-          df=fac*(45.*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  -9.*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                     +(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+          fac=(1./60)*dx_1(l1:l2)
+          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  -  9.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  +      (f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./60.)*dy_1(m)
-          df=fac*(45.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  -9.*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                     +(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          fac=(1./60)*dy_1(m)
+          df=fac*(+ 45.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  -  9.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  +      (f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./60.)*dz_1(n)
-          df=fac*(45.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -9.*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                     +(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          fac=(1./60)*dz_1(n)
+          df=fac*(+ 45.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  -  9.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  +      (f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
@@ -103,30 +103,30 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./60.)*dx_1(l1:l2)
-          df=fac*(45.*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
-                  -9.*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
-                     +(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
+          fac=(1./60)*dx_1(l1:l2)
+          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
+                  -  9.0*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
+                  +      (f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./60.)*dy_1(m)
-          df=fac*(45.*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
-                  -9.*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
-                     +(f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
+          fac=(1./60)*dy_1(m)
+          df=fac*(+ 45.0*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
+                  -  9.0*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
+                  +      (f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./60.)*dz_1(n)
-          df=fac*(45.*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
-                  -9.*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
-                     +(f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
+          fac=(1./60)*dz_1(n)
+          df=fac*(+ 45.0*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
+                  -  9.0*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
+                  +      (f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
         else
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
@@ -155,11 +155,11 @@ module Deriv
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=(1./180.)*dx_1(l1:l2)**2
-          df2=fac*(-490.*f(l1  :l2  ,m,n,k) &
-                  +270.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                   -27.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                    +2.*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          fac=(1./180)*dx_1(l1:l2)**2
+          df2=fac*(-490.0*f(l1  :l2  ,m,n,k) &
+                   +270.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                   - 27.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                   +  2.0*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -169,11 +169,11 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=(1./180.)*dy_1(m)**2
-          df2=fac*(-490.*f(l1:l2,m  ,n,k) &
-                  +270.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                   -27.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                    +2.*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          fac=(1./180)*dy_1(m)**2
+          df2=fac*(-490.0*f(l1:l2,m  ,n,k) &
+                   +270.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                   - 27.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                   +  2.0*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dy_tilde(m)*df
@@ -183,11 +183,11 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=(1./180.)*dz_1(n)**2
-          df2=fac*(-490.*f(l1:l2,m,n  ,k) &
-                  +270.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                   -27.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                    +2.*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          fac=(1./180)*dz_1(n)**2
+          df2=fac*(-490.0*f(l1:l2,m,n  ,k) &
+                   +270.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                   - 27.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                   +  2.0*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dz_tilde(n)*df
@@ -199,6 +199,168 @@ module Deriv
 
 !
     endsubroutine der2
+!***********************************************************************
+    subroutine der3(f,k,df,j,ignoredx)
+!
+!  Calculate 3rd derivative of a scalar, get scalar
+!
+!  10-feb-06/anders: adapted from der5
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: df,fac
+      integer :: j,k
+      logical, optional :: ignoredx
+      logical :: igndx
+!
+      intent(in)  :: f,k,j,ignoredx
+      intent(out) :: df
+!
+!debug      if (loptimise_ders) der_call_count(k,icount_der5,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der5,j,1) + 1 !DERCOUNT
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+
+      if (.not. lequidist(j)) &
+          call fatal_error('der3','NOT IMPLEMENTED for no equidistant grid')
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          if (igndx) then
+            fac=(1.0/8)
+          else
+            fac=(1.0/8)*1./dx**3
+          endif
+          df=fac*(- 13.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  +  8.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  -  1.0*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          if (igndx) then
+            fac=(1.0/8)
+          else
+            fac=(1.0/8)*1./dy**3
+          endif
+          df=fac*(- 13.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          if (igndx) then
+            fac=(1.0/8)
+          else
+            fac=(1.0/8)*1./dz**3
+          endif
+          df=fac*(- 13.0*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  +  8.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  -  1.0*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+        else
+          df=0.
+        endif
+      endif
+!
+    endsubroutine der3
+!***********************************************************************
+    subroutine der4(f,k,df,j,ignoredx,upwind)
+!
+!  Calculate 4th derivative of a scalar, get scalar
+!    Used for hyperdiffusion that affects small wave numbers as little as
+!  possible (useful for density).
+!    The optional flag IGNOREDX is useful for numerical purposes, where
+!  you want to affect the Nyquist scale in each direction, independent of
+!  the ratios dx:dy:dz.
+!
+!   8-jul-02/wolf: coded
+!   9-dec-03/nils: adapted from der6
+!  10-feb-06/anders: corrected sign and factor
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: df
+      real :: fac
+      integer :: j,k
+      logical, optional :: ignoredx,upwind
+      logical :: igndx,upwnd
+!
+      intent(in)  :: f,k,j,ignoredx
+      intent(out) :: df
+!
+!debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
+!debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
+!
+      if (.not. lequidist(j)) then
+        call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
+      endif
+
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+      if (present(upwind)) then
+        upwnd = upwind
+        call warning('der4','upwinding not implemented')
+      else
+        upwnd = .false.
+      endif
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          if (igndx) then
+            fac=(1.0/6)
+          else
+            fac=(1.0/6)*1/dx**4
+          endif
+          df=fac*(+ 56.0* f(l1:l2,m,n,k) &
+                  - 39.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  + 12.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  -      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          if (igndx) then
+            fac=(1.0/6)
+          else
+            fac=(1.0/6)*1/dy**4
+          endif
+          df=fac*(+ 56.0* f(l1:l2,m  ,n,k) &
+                  - 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  + 12.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  -      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          if (igndx) then
+            fac=(1.0/6)
+          else
+            fac=(1.0/6)*1/dz*4
+          endif
+          df=fac*(+ 56.0* f(l1:l2,m,n  ,k) &
+                  - 39.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  + 12.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  -      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+        else
+          df=0.
+        endif
+      endif
+!
+    endsubroutine der4
 !***********************************************************************
     subroutine der5(f,k,df,j,ignoredx)
 !
@@ -237,39 +399,39 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else
-            fac=1./dx**5
+            fac=1/dx**5
           endif
-          df=fac*(+2.5*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  -2.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
-                  +0.5*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+          df=fac*(+  2.5*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  -  2.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  +  0.5*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else
-            fac=1./dy**5
+            fac=1/dy**5
           endif
-          df=fac*(+2.5*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  -2.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-                  +0.5*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+          df=fac*(+  2.5*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  -  2.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  +  0.5*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
         else
           df=0.
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else
-            fac=1./dz**5
+            fac=1/dz**5
           endif
-          df=fac*(+2.5*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
-                  -2.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
-                  +0.5*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+          df=fac*(+  2.5*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  -  2.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  +  0.5*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
         else
           df=0.
         endif
@@ -321,32 +483,32 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else if (upwnd) then
-            fac = (1./60.)*dx_1(l1:l2)
+            fac=(1.0/60)*dx_1(l1:l2)
           else
-            fac=1./dx**6
+            fac=1/dx**6
           endif
-          df=fac*(-20.* f(l1:l2,m,n,k) &
-                  +15.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  - 6.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +    (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          df=fac*(- 20.0* f(l1:l2,m,n,k) &
+                  + 15.0*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else if (upwnd) then
-            fac = (1./60.)*dy_1(m)
+            fac=(1.0/60)*dy_1(m)
           else
-            fac=1./dy**6
+            fac=1/dy**6
           endif
-          df=fac*(-20.* f(l1:l2,m  ,n,k) &
-                  +15.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  - 6.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +    (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          df=fac*(- 20.0* f(l1:l2,m  ,n,k) &
+                  + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
         else
           df=0.
         endif
@@ -355,14 +517,14 @@ module Deriv
           if (igndx) then
             fac=1.
           else if (upwnd) then
-            fac = (1./60.)*dz_1(n)
+            fac=(1.0/60)*dz_1(n)
           else
-            fac=1./dz**6
+            fac=1/dz**6
           endif
-          df=fac*(-20.* f(l1:l2,m,n  ,k) &
-                  +15.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  - 6.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  +    (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          df=fac*(- 20.0* f(l1:l2,m,n  ,k) &
+                  + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
         else
           df=0.
         endif
@@ -414,143 +576,54 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else if (upwnd) then
-            fac = (1./60.)*dx_1(l1:l2)
+            fac=(1.0/60)*dx_1(l1:l2)
           else
-            fac=1./dx**6
+            fac=1/dx**6
           endif
-          df=fac*(-20.* f(l1:l2,m,n) &
-                  +15.*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
-                  - 6.*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
-                  +    (f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
+          df=fac*(- 20.0* f(l1:l2,m,n) &
+                  + 15.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
+                  -  6.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
+                  +      (f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
         else
           df=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else if (upwnd) then
-            fac = (1./60.)*dy_1(m)
+            fac=(1.0/60)*dy_1(m)
           else
-            fac=1./dy**6
+            fac=1/dy**6
           endif
-          df=fac*(-20.* f(l1:l2,m  ,n) &
-                  +15.*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                  - 6.*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                  +    (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
+          df=fac*(- 20.0* f(l1:l2,m  ,n) &
+                  + 15.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
+                  -  6.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
+                  +      (f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
         else
           df=0.
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
           if (igndx) then
-            fac=1.
+            fac=1.0
           else if (upwnd) then
-            fac = (1./60.)*dz_1(n)
+            fac=(1.0/60)*dz_1(n)
           else
-            fac=1./dz**6
+            fac=1/dz**6
           endif
-          df=fac*(-20.* f(l1:l2,m,n  ) &
-                  +15.*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                  - 6.*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                  +    (f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
+          df=fac*(- 20.0* f(l1:l2,m,n  ) &
+                  + 15.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
+                  -  6.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
+                  +      (f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
         else
           df=0.
         endif
       endif
 !
     endsubroutine der6_other
-!***********************************************************************
-    subroutine der4(f,k,df,j,ignoredx,upwind)
-!
-!  Calculate 4th derivative of a scalar, get scalar
-!    Used for hyperdiffusion that affects small wave numbers as little as
-!  possible (useful for density).
-!    The optional flag IGNOREDX is useful for numerical purposes, where
-!  you want to affect the Nyquist scale in each direction, independent of
-!  the ratios dx:dy:dz.
-!
-!   8-jul-02/wolf: coded
-!   9-dec-03/nils: adapted from der6
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: df
-      real :: fac
-      integer :: j,k
-      logical, optional :: ignoredx,upwind
-      logical :: igndx,upwnd
-!
-      intent(in)  :: f,k,j,ignoredx
-      intent(out) :: df
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der4,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der4,j,1) + 1 !DERCOUNT
-!
-      if (.not. lequidist(j)) then
-        call fatal_error('der4','NOT IMPLEMENTED for no equidistant grid')
-      endif
-
-      if (present(ignoredx)) then
-        igndx = ignoredx
-      else
-        igndx = .false.
-      endif
-      if (present(upwind)) then
-        upwnd = upwind
-        call warning('der4','upwinding not implemented')
-      else
-        upwnd = .false.
-      endif
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          if (igndx) then
-            fac=1/6.0
-          else
-            fac=1/6.0*1./dx**4
-          endif
-          df=fac*( 56.* f(l1:l2,m,n,k) &
-                  -39.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  +12.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  -    (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
-        else
-          df=0.
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          if (igndx) then
-            fac=1/6.0
-          else
-            fac=1/6.0*1./dy**4
-          endif
-          df=fac*( 56.* f(l1:l2,m  ,n,k) &
-                  -39.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  +12.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  -    (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-        else
-          df=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          if (igndx) then
-            fac=1/6.0
-          else
-            fac=1/6.0*1./dz*4
-          endif
-          df=fac*( 56.* f(l1:l2,m,n  ,k) &
-                  -39.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  +12.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                  -    (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-        else
-          df=0.
-        endif
-      endif
-!
-    endsubroutine der4
 !***********************************************************************
     subroutine derij(f,k,df,i,j)
 !
