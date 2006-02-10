@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.218 2006-02-02 13:13:01 wlyra Exp $
+! $Id: density.f90,v 1.219 2006-02-10 15:19:50 ngrs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -110,7 +110,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.218 2006-02-02 13:13:01 wlyra Exp $")
+           "$Id: density.f90,v 1.219 2006-02-10 15:19:50 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,27 +152,8 @@ module Density
       integer :: i
       logical :: lnothing
 !
-!   make sure all relevant parameters are set for spherical shell problems
-!
-      select case(initlnrho(1))
-        case('geo-kws')
-          if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
-!ajwm Shouldn't be done here they should be set as input parameters in
-!ajwm start.in.  There may be a problem at present with run since these
-!ajwm vales will not get set consistantly.
-!ajwm cs0 and lnrho0 are parameters of the EOS not of density
-!        cs20=gamma
-!        cs0=sqrt(cs20)
-!        cp=5./2.
-!ajwm Routine should really be called initialize_eos eventually
-!ajwm important thing is the parameters of the Equation of State 
-!ajwm have changed so we'd better recalculate everything consistently
-!ajwm but that won't work either since 
-!        call initialize_ionization()
-      endselect
-!
 !  initialize cs2cool to cs20
-!  (currently disabled, because it causes problems with mdarf auto-test)
+!  (currently disabled, because it causes problems with mdwarf auto-test)
 !     cs2cool=cs20
 !
 !
