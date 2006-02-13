@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.154 2006-02-09 18:45:19 ajohan Exp $
+! $Id: dustdensity.f90,v 1.155 2006-02-13 15:01:44 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.154 2006-02-09 18:45:19 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.155 2006-02-13 15:01:44 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -286,7 +286,7 @@ module Dustdensity
 !  7-nov-01/wolf: coded
 ! 28-jun-02/axel: added isothermal
 !
-      use EquationOfState, only: cs0, gamma, gamma1
+      use EquationOfState, only: cs0, cs20, gamma, gamma1, beta_glnrho_scaled
       use Global
       use Gravity
       use Initcond
@@ -295,7 +295,8 @@ module Dustdensity
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-! 
+!
+      real, dimension (nx) :: eps
       real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt=0.
       integer :: i,j,k,l
       logical :: lnothing
@@ -419,6 +420,40 @@ module Dustdensity
             endif
           enddo; enddo
           if (lroot) print*, 'init_nd: Gaussian epsd with epsd =', eps_dtog
+      
+        case('dragforce_equilibrium')
+
+          do m=m1,m2; do n=n1,n2
+            if (ldensity_nolog) then
+              if (ldustdensity_log) then
+                eps=exp(f(l1:l2,m,n,ind(1)))/f(l1:l2,m,n,ilnrho)
+              else
+                eps=f(l1:l2,m,n,ind(1))/f(l1:l2,m,n,ilnrho)
+              endif
+            else
+              if (ldustdensity_log) then
+                eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
+              else
+                eps=f(l1:l2,m,n,ind(1))/exp(f(l1:l2,m,n,ilnrho))
+              endif
+            endif
+!
+!  Gas and dust velocity fields.
+!        
+            if (lhydro) f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - &
+                1/gamma*cs20*beta_glnrho_scaled(1)*eps*tausd(1)/ &
+                (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
+            if (lhydro) f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+                1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps+(Omega*tausd(1))**2)/&
+                (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
+            if (ldustvelocity) f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) + &
+                1/gamma*cs20*beta_glnrho_scaled(1)*tausd(1)/ &
+                (1.0+2*eps+eps**2+(Omega*tausd(1))**2)
+            if (ldustvelocity) f(l1:l2,m,n,iudy(1)) = f(l1:l2,m,n,iudy(1)) + &
+                1/gamma*cs20*beta_glnrho_scaled(1)*(1+eps)/ &
+                (2*Omega*(1.0+2*eps+eps**2+(Omega*tausd(1))**2))
+          enddo; enddo
+
         case('cosine_lnnd')
           do n=n1,n2; do k=1,ndustspec
             f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + exp(nd_const*cos(kz_nd*z(n)))
