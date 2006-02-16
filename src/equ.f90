@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.274 2006-02-08 14:21:24 mee Exp $
+! $Id: equ.f90,v 1.275 2006-02-16 12:51:45 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.274 2006-02-08 14:21:24 mee Exp $")
+           "$Id: equ.f90,v 1.275 2006-02-16 12:51:45 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -402,6 +402,7 @@ module Equ
         call boundconds_y(f)
         call boundconds_z(f)
       endif
+      if (lparticles) call particles_boundconds(f)
 !
 !  set inverse timestep to zero before entering loop over m and n
 !
@@ -520,6 +521,7 @@ module Equ
         if (lchiral)        call calc_pencils_chiral(f,p)
         if (lradiation)     call calc_pencils_radiation(f,p)
         if (lspecial)       call calc_pencils_special(f,p)
+        if (lparticles)     call particles_calc_pencils(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT

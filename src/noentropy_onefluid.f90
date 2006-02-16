@@ -1,4 +1,4 @@
-! $Id: noentropy_onefluid.f90,v 1.1 2006-02-13 15:02:31 ajohan Exp $
+! $Id: noentropy_onefluid.f90,v 1.2 2006-02-16 12:51:45 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy_onefluid.f90,v 1.1 2006-02-13 15:02:31 ajohan Exp $")
+           "$Id: noentropy_onefluid.f90,v 1.2 2006-02-16 12:51:45 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -201,14 +201,14 @@ module Entropy
 ! divud (for dust continuity equation in one fluid approximation)
       if (lpencil(i_divud)) p%divud(:,1)=p%divu
 ! uij5glnrho
-      if (lpencil(i_uij5glnrho)) then
-        eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
-        call grad(f,ind(1),glnrhod)
-        do i=1,3 
-          glnrhotot(:,i)=1/(1+eps)*p%glnrho(:,i)+eps/(1+eps)*glnrhod(:,i)
-        enddo
-        call multmv_mn(p%uij5,glnrhotot,p%uij5glnrho)
-      endif
+!      if (lpencil(i_uij5glnrho)) then
+!        eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
+!        call grad(f,ind(1),glnrhod)
+!        do i=1,3 
+!          glnrhotot(:,i)=1/(1+eps)*p%glnrho(:,i)+eps/(1+eps)*glnrhod(:,i)
+!        enddo
+!        call multmv_mn(p%uij5,glnrhotot,p%uij5glnrho)
+!      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************

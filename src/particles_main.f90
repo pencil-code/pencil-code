@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.16 2006-02-01 17:08:33 wlyra Exp $
+! $Id: particles_main.f90,v 1.17 2006-02-16 12:51:45 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -191,6 +191,54 @@ module Particles_main
 !
     endsubroutine particles_timestep_second
 !***********************************************************************
+    subroutine particles_boundconds(f)
+!
+!  Particle boundary conditions and parallel communication.
+!
+!  16-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!      
+      call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
+!
+!  Map the particles on the grid for later use.
+!
+      call map_nearest_grid(f,fp,ineargrid)
+!
+!  Map particles variables on the grid if requested.
+!      
+      if (ldiagnos .or. lcalc_np)     call map_xxp_grid(f,fp,ineargrid)
+      if (ldiagnos .or. lcalc_vvpsum) call map_vvp_grid(f,fp,ineargrid)
+!
+    endsubroutine particles_boundconds
+!***********************************************************************
+    subroutine particles_pencil_interdep(lpencil_in)
+!
+!  Calculate particle pencils.
+!
+!  15-feb-06/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      call pencil_interdep_particles(lpencil_in)
+!
+    endsubroutine particles_pencil_interdep
+!***********************************************************************
+    subroutine particles_calc_pencils(f,p)
+!
+!  Calculate particle pencils.
+!
+!  14-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      call calc_pencils_particles(f,p)
+!      call calc_pencils_particles_radius(f,p)
+!      call calc_pencils_particles_number(f,p)
+!
+    endsubroutine particles_calc_pencils
+!***********************************************************************
     subroutine particles_pde(f,df)
 !
 !  Dynamical evolution of particle variables.
@@ -201,14 +249,6 @@ module Particles_main
       real, dimension (mx,my,mz,mvar) :: df
 !
       intent (out) :: f, df
-!
-!  Particle boundary conditions and parallel communication.
-!
-      call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
-!
-!  Map the particles on the grid for later use.
-!
-      call map_nearest_grid(f,fp,ineargrid)
 !
 !  Dynamical equations.
 !

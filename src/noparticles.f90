@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.7 2006-02-01 12:59:56 ajohan Exp $
+! $Id: noparticles.f90,v 1.8 2006-02-16 12:51:45 ajohan Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -56,6 +56,32 @@ module Particles
       if (NO_WARN) print*, f, fp
 !
     endsubroutine init_particles
+!***********************************************************************
+    subroutine pencil_interdep_particles(lpencil_in)
+!   
+!  Interdependency among pencils provided by the Particles module
+!  is specified here.
+!         
+!  16-feb-06/anders: dummy
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in
+!
+    endsubroutine pencil_interdep_particles
+!***********************************************************************
+    subroutine calc_pencils_particles(f,p)
+!   
+!  Calculate particle pencils.
+!
+!  16-feb-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      if (NO_WARN) print*, f, p
+!
+    endsubroutine calc_pencils_particles
 !***********************************************************************
     subroutine dxxp_dt(f,fp,dfp)
 !

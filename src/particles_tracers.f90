@@ -1,5 +1,4 @@
-! $Id: particles_tracers.f90,v 1.12 2006-02-04 09:24:49 ajohan Exp $
-!
+! $Id: particles_tracers.f90,v 1.13 2006-02-16 12:51:45 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -8,8 +7,11 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 3
+! MAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_planet=.false.
+!
+! PENCILS PROVIDED rhop,epsd
 !
 !***************************************************************
 module Particles
@@ -23,11 +25,13 @@ module Particles
 
   include 'particles.h'
 
-  real :: xp0=0.0, yp0=0.0, zp0=0.0
-  character (len=labellen) :: initxxp='origin'
+  real :: xp0=0.0, yp0=0.0, zp0=0.0, eps_dtog=0.01
+  logical :: ldragforce_equi_global_eps=.false.
+  character (len=labellen), dimension (ninit) :: initxxp='nothing'
 
   namelist /particles_init_pars/ &
-      initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz
+      initxxp, xp0, yp0, zp0, bcpx, bcpy, bcpz, eps_dtog, &
+      ldragforce_equi_global_eps
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz
@@ -52,7 +56,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.12 2006-02-04 09:24:49 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.13 2006-02-16 12:51:45 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -64,11 +68,22 @@ module Particles
 !
       npvar=npvar+3
 !
+!  Set indices for auxiliary variables
+!
+      inp = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+!
 !  Check that the fp and dfp arrays are big enough.
 !
       if (npvar > mpvar) then
         if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call stop_it('register_particles: npvar > mpvar')
+      endif
+!
+!  Check that we aren't registering too many auxilary variables
+!
+      if (naux > maux) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+            call stop_it('register_particles: naux > maux')
       endif
 !
     endsubroutine register_particles
@@ -85,7 +100,6 @@ module Particles
       logical :: lstarting
 !
       real :: rhom
-      integer, dimension (0:ncpus-1) :: ipar1, ipar2
 !
 !  Distribute particles evenly among processors to begin with.
 !
@@ -103,6 +117,25 @@ module Particles
       xyz1_loc(2)=xyz0(2)+(ipy+1)*Lxyz_loc(2)
       xyz1_loc(3)=xyz0(3)+(ipz+1)*Lxyz_loc(3)
 !
+      if (rhop_tilde==0.0) then
+! For stratification, take into account gas present outside the simulation box.
+        if (lgrav) then
+          rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
+        else
+          rhom=1.0
+        endif
+        rhop_tilde=eps_dtog*rhom/(real(npar)/(nxgrid*nygrid*nzgrid))
+        if (lroot) then
+          print*, 'initialize_particles: '// &
+            'dust-to-gas ratio eps_dtog=', eps_dtog
+          print*, 'initialize_particles: '// &
+            'mass density per particle rhop_tilde=', rhop_tilde
+        endif
+      else
+        if (lroot) print*, 'initialize_particles: '// &
+            'mass density per particle rhop_tilde=', rhop_tilde
+      endif
+!
     endsubroutine initialize_particles
 !***********************************************************************
     subroutine init_particles(f,fp,ineargrid)
@@ -112,6 +145,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use Boundcond
+      use EquationOfState, only: gamma, cs20, beta_glnrho_global
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
       use Sub
@@ -120,57 +154,119 @@ module Particles
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (3) :: uup
-      real :: r, p
-      integer :: k
+      real, dimension (nx) :: eps
+      real :: r, p, cs
+      integer :: j, k
+      logical :: lnothing
 !
-      intent (in) :: f
+      intent (inout) :: f
       intent (out) :: fp
 !
 !  Initial particle position.
 !
-      select case(initxxp)
+      lnothing=.false.
+      do j=1,ninit
 
-      case ('origin')
-        if (lroot) print*, 'init_particles: All particles at origin'
-        fp(1:npar_loc,ixp:izp)=0.
+        select case(initxxp(j))
 
-      case ('constant')
-        if (lroot) &
-            print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
-        fp(1:npar_loc,ixp)=xp0
-        fp(1:npar_loc,iyp)=yp0
-        fp(1:npar_loc,izp)=zp0
+        case ('nothing')
+          if (lroot .and. .not. lnothing) print*, 'init_particles: nothing'
+          lnothing=.true.
 
-      case ('random')
-        if (lroot) print*, 'init_particles: Random particle positions'
-        do k=1,npar_loc
-          if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-          if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-          if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-        enddo
-        if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-        if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
-        if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+        case ('origin')
+          if (lroot) print*, 'init_particles: All particles at origin'
+          fp(1:npar_loc,ixp:izp)=0.
+ 
+        case ('constant')
+          if (lroot) &
+              print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+          fp(1:npar_loc,ixp)=xp0
+          fp(1:npar_loc,iyp)=yp0
+          fp(1:npar_loc,izp)=zp0
+ 
+        case ('random')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+ 
+        case ('gaussian-z')
+          if (lroot) print*, 'init_particles: Gaussian particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            if (nprocz==2) then
+              if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+            else
+              fp(k,izp)=zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+            endif
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+ 
+        case('dragforce_equilibrium')
+!         
+!  Equilibrium between drag forces on dust and gas and other forces
+!  (from Nakagawa, Sekiya, & Hayashi 1986).
+!
+          if (lroot) then
+            print*, 'init_particles: drag equilibrium'
+            print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
+          endif
+!  Calculate average dust-to-gas ratio in box.
+          if (ldensity_nolog) then
+            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+                sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+          else
+            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+                sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))
+          endif
+!
+          if (lroot) &
+              print*, 'init_particles: average dust-to-gas ratio=', eps(1)
+!  Set gas velocity field.
+          do m=m1,m2; do n=n1,n2
+            cs=sqrt(cs20)
+!  Take either global or local dust-to-gas ratio.
+            if (.not. ldragforce_equi_global_eps) then
+              if (ldensity_nolog) then
+                eps = rhop_tilde*f(l1:l2,m,n,inp)/f(l1:l2,m,n,ilnrho)
+              else
+                eps = rhop_tilde*f(l1:l2,m,n,inp)/exp(f(l1:l2,m,n,ilnrho))
+              endif
+            endif
 
-      case ('gaussian-z')
-        if (lroot) print*, 'init_particles: Gaussian particle positions'
-        do k=1,npar_loc
-          if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-          if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-          call random_number_wrapper(r)
-          call random_number_wrapper(p)
-          fp(k,izp)=zp0*sqrt(-2*alog(r))*cos(2*pi*p)
-        enddo
-        if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-        if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+            f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+                1/gamma*beta_glnrho_global(1)/(2*(1.0+eps))*cs
 
-      case default
-        if (lroot) print*, 'init_particles: No such such value for initxxp: ', &
-            trim(initxxp)
-        call stop_it("")
+          enddo; enddo
 
-      endselect
+        case default
+          if (lroot) &
+              print*, 'init_particles: No such such value for initxxp: ', &
+              trim(initxxp(j))
+          call stop_it("")
+
+        endselect
+!
+!  Map particle positions on the grid.
+!
+        call map_nearest_grid(f,fp,ineargrid)
+        call map_xxp_grid(f,fp,ineargrid)
+      enddo
 !      
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
@@ -184,6 +280,39 @@ module Particles
       call boundconds_particles(fp,npar_loc,ipar)
 !
     endsubroutine init_particles
+!***********************************************************************
+    subroutine pencil_interdep_particles(lpencil_in)
+!
+!  Interdependency among pencils provided by the Particles module
+!  is specified here.
+!         
+!  15-feb-06/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_epsd)) then
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_rhop)=.true.
+        lcalc_np=.true.
+      endif
+      if (lpencil_in(i_rhop)) lcalc_np=.true.
+!
+    endsubroutine pencil_interdep_particles
+!***********************************************************************
+    subroutine calc_pencils_particles(f,p)
+!
+!  Calculate particle pencils.
+!
+!  15-feb-06/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+! rhop
+      if (lpencil(i_rhop)) p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
+! epsd
+      if (lpencil(i_epsd)) p%epsd(:,1)=p%rhop/p%rho
+!
+    endsubroutine calc_pencils_particles
 !***********************************************************************
     subroutine dxxp_dt(f,fp,dfp,ineargrid)
 !
@@ -341,6 +470,10 @@ module Particles
         write(3,*) 'ivpx=', ivpx
         write(3,*) 'ivpy=', ivpy
         write(3,*) 'ivpz=', ivpz
+        write(3,*) 'inp=', inp
+        write(3,*) 'ivpxsum=', ivpxsum
+        write(3,*) 'ivpysum=', ivpysum
+        write(3,*) 'ivpzsum=', ivpzsum
       endif
 !
 !  Reset everything in case of reset

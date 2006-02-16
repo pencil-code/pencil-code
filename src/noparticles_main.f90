@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.7 2006-02-01 17:06:11 wlyra Exp $
+! $Id: noparticles_main.f90,v 1.8 2006-02-16 12:51:45 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -128,6 +128,43 @@ module Particles_main
 !  22-aug-05/anders: dummy
 !
     endsubroutine particles_timestep_second
+!***********************************************************************
+    subroutine particles_boundconds(f)
+!
+!  Particle boundary conditions and parallel communication.
+!
+!  16-feb-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!      
+      if (NO_WARN) print*, f
+!
+    endsubroutine particles_boundconds
+!***********************************************************************
+    subroutine particles_pencil_interdep(lpencil_in)
+!
+!  Calculate particle pencils.
+!
+!  16-feb-06/anders: dummy
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in
+!
+    endsubroutine particles_pencil_interdep
+!***********************************************************************
+    subroutine particles_calc_pencils(f,p)
+!
+!  Calculate particle pencils.
+!
+!  16-feb-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      if (NO_WARN) print*, f, p
+!
+    endsubroutine particles_calc_pencils
 !***********************************************************************
     subroutine particles_pde(f,df)
 !

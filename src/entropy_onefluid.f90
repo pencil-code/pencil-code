@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.3 2006-02-08 14:20:36 mee Exp $
+! $Id: entropy_onefluid.f90,v 1.4 2006-02-16 12:51:45 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.3 2006-02-08 14:20:36 mee Exp $")
+           "$Id: entropy_onefluid.f90,v 1.4 2006-02-16 12:51:45 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1571,14 +1571,14 @@ module Entropy
 ! divud (for dust continuity equation in one fluid approximation)
       if (lpencil(i_divud)) p%divud(:,1)=p%divu
 ! uij5glnrho
-      if (lpencil(i_uij5glnrho)) then
-        eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
-        call grad(f,ind(1),glnrhod)
-        do i=1,3
-          glnrhotot(:,i)=1/(1+eps)*p%glnrho(:,i)+eps/(1+eps)*glnrhod(:,i)
-        enddo
-        call multmv_mn(p%uij5,glnrhotot,p%uij5glnrho)
-      endif
+!      if (lpencil(i_uij5glnrho)) then
+!        eps=exp(f(l1:l2,m,n,ind(1)))/exp(f(l1:l2,m,n,ilnrho))
+!        call grad(f,ind(1),glnrhod)
+!        do i=1,3
+!          glnrhotot(:,i)=1/(1+eps)*p%glnrho(:,i)+eps/(1+eps)*glnrhod(:,i)
+!        enddo
+!        call multmv_mn(p%uij5,glnrhotot,p%uij5glnrho)
+!      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************

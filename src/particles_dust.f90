@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.60 2006-02-05 20:49:31 ajohan Exp $
+! $Id: particles_dust.f90,v 1.61 2006-02-16 12:51:45 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.60 2006-02-05 20:49:31 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.61 2006-02-16 12:51:45 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -212,6 +212,13 @@ module Particles
         endif
         call fatal_error('initialize_particles','')
       endif      
+!
+!  Need to map particles on the grid for dragforce on gas.
+!      
+      if (ldragforce_gas) then
+        lcalc_np    =.true.
+        lcalc_vvpsum=.true.
+      endif
 !
 !  Write constants to disc.
 !      
@@ -689,6 +696,32 @@ module Particles
 !
     endsubroutine constant_richardson
 !***********************************************************************
+    subroutine pencil_interdep_particles(lpencil_in)
+!   
+!  Interdependency among pencils provided by the Particles module
+!  is specified here.
+!         
+!  16-feb-06/anders: dummy
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in
+!
+    endsubroutine pencil_interdep_particles
+!***********************************************************************
+    subroutine calc_pencils_particles(f,p)
+!   
+!  Calculate particle pencils.
+!
+!  16-feb-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      if (NO_WARN) print*, f, p
+!
+    endsubroutine calc_pencils_particles
+!***********************************************************************
     subroutine dxxp_dt(f,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle position.
@@ -837,11 +870,6 @@ module Particles
 !  Back-reaction from dust particles on the gas.
 !        
           if (ldragforce_gas) then
-!
-!  Map particle positions and velocities on the grid.
-!
-            call map_xxp_grid(f,fp,ineargrid)
-            call map_vvp_grid(f,fp,ineargrid)
 !
 !  Loop over pencils to avoid global arrays.
 !          
@@ -1001,8 +1029,6 @@ module Particles
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
           enddo
         endif
-!  Map particle positions on the grid.        
-        call map_xxp_grid(f,fp,ineargrid)
         do imn=1,ny*nz
           n=nn(imn); m=mm(imn)
           lfirstpoint=(imn==1)
