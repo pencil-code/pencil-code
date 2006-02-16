@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.158 2006-02-08 14:20:00 mee Exp $
+! $Id: register.f90,v 1.159 2006-02-16 13:05:01 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -457,6 +457,7 @@ module Register
       use Cosmicrayflux, only: pencil_interdep_cosmicrayflux
       use Chiral, only: pencil_interdep_chiral
       use Radiation, only: pencil_interdep_radiation
+      use Particles_main, only: particles_pencil_interdep
 !      
       logical, dimension (npencils) :: lpencil_in
 !
@@ -475,6 +476,7 @@ module Register
       call pencil_interdep_cosmicrayflux(lpencil_in)
       call pencil_interdep_chiral(lpencil_in)
       call pencil_interdep_radiation(lpencil_in)
+      if (lparticles) call particles_pencil_interdep(lpencil_in)
 !    
     endsubroutine pencil_interdep
 !***********************************************************************
