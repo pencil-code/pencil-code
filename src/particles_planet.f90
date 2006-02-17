@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.7 2006-02-01 17:08:33 wlyra Exp $
+! $Id: particles_planet.f90,v 1.8 2006-02-17 08:47:52 ajohan Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -59,7 +59,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.7 2006-02-01 17:08:33 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.8 2006-02-17 08:47:52 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -226,6 +226,32 @@ module Particles
       endselect
 !
     endsubroutine init_particles
+!***********************************************************************
+    subroutine pencil_interdep_particles(lpencil_in)
+!   
+!  Interdependency among pencils provided by the Particles module
+!  is specified here.
+!         
+!  16-feb-06/anders: dummy
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in
+!
+    endsubroutine pencil_interdep_particles
+!***********************************************************************
+    subroutine calc_pencils_particles(f,p)
+!   
+!  Calculate particle pencils.
+!
+!  16-feb-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      if (NO_WARN) print*, f, p
+!
+    endsubroutine calc_pencils_particles
 !***********************************************************************
     subroutine dxxp_dt(f,fp,dfp,ineargrid)
 !
