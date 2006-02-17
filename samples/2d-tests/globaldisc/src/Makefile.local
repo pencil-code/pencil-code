@@ -3,8 +3,8 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   = nompicomm
-GLOBAL    =   global_gg_cs2_nolnrho
+MPICOMM   =   mpicomm_double
+GLOBAL    =   global_gg_bext_cs2
 
 HYDRO     =   hydro
 DENSITY   =   density
@@ -21,3 +21,5 @@ PLANET    =   planet
 
 PARTICLES = particles_planet
 
+FFLAGS_GENERAL=-r8
+CFLAGS_GENERAL=-DDOUBLE_PRECISION
