@@ -1,4 +1,4 @@
- ! $Id: global_gg_cs2_nolnrho.f90,v 1.2 2005-11-21 16:45:28 wlyra Exp $
+ ! $Id: global_gg_cs2_nolnrho.f90,v 1.3 2006-02-17 16:01:40 wlyra Exp $
 
 module Global
 
@@ -211,7 +211,7 @@ module Global
 !
     endsubroutine get_global_vect_point
 !********************************************************************
-    subroutine get_global_scal_point(var,m,n,label)
+    subroutine get_global_scal_point(var,l,m,n,label)
 !
 !  set (m,n)-pencil of the global scalar variable identified by LABEL
 !
