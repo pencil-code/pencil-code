@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.8 2006-02-17 08:47:52 ajohan Exp $
+! $Id: particles_planet.f90,v 1.9 2006-02-17 10:55:31 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -59,7 +59,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.8 2006-02-17 08:47:52 ajohan Exp $")
+           "$Id: particles_planet.f90,v 1.9 2006-02-17 10:55:31 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -381,29 +381,29 @@ module Particles
 !  Add relative velocity and distance as diagnostic variables
 !  Don't understand why I need to fill a whole array
 ! 
-      dist(1:npar) = rsep 
-      vel(1:npar)  = sqrt(fp(1,ivpx)**2 + fp(1,ivpy)**2)    
+      dist(1:npar_loc) = rsep 
+      vel(1:npar_loc)  = sqrt(fp(1,ivpx)**2 + fp(1,ivpy)**2)    
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
-        if (idiag_xpm/=0)  call sum_par_name(fp(1:npar,ixp),idiag_xpm)
-        if (idiag_ypm/=0)  call sum_par_name(fp(1:npar,iyp),idiag_ypm)
-        if (idiag_zpm/=0)  call sum_par_name(fp(1:npar,izp),idiag_zpm)
-        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar,ixp)**2,idiag_xp2m)
-        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar,iyp)**2,idiag_yp2m)
-        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar,izp)**2,idiag_zp2m)
-        if (idiag_vpxm/=0) call sum_par_name(fp(1:npar,ivpx),idiag_vpxm)
-        if (idiag_vpym/=0) call sum_par_name(fp(1:npar,ivpy),idiag_vpym)
-        if (idiag_vpzm/=0) call sum_par_name(fp(1:npar,ivpz),idiag_vpzm)
-        if (idiag_rad/=0)  call sum_par_name(dist(1:npar),idiag_rad)
-        if (idiag_vel/=0)  call sum_par_name(vel(1:npar),idiag_vel)
+        if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
+        if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
+        if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
+        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
+        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
+        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
+        if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
+        if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
+        if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
+        if (idiag_rad/=0)  call sum_par_name(dist(1:npar_loc),idiag_rad)
+        if (idiag_vel/=0)  call sum_par_name(vel(1:npar_loc),idiag_vel)
         if (idiag_vpx2m/=0) &
-            call sum_par_name(fp(1:npar,ivpx)**2,idiag_vpx2m)
+            call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
         if (idiag_vpy2m/=0) &
-            call sum_par_name(fp(1:npar,ivpy)**2,idiag_vpy2m)
+            call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
-            call sum_par_name(fp(1:npar,ivpz)**2,idiag_vpz2m)
+            call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
       endif
 !
       if (lfirstcall) lfirstcall=.false.
