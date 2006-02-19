@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.110 2006-01-30 14:07:07 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.111 2006-02-19 10:25:39 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -37,7 +37,7 @@ module Dustvelocity
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0,mdplus,mdminus,ad,surfd,mi,rhodsad1
-  real, dimension(ndustspec) :: tausd=1.,betad=0.,nud=0.
+  real, dimension(ndustspec) :: tausd=1.,betad=0.,nud=0.,nud_hyper3=0.
   real :: ampluud=0.,ampl_udx=0.0,ampl_udy=0.0,ampl_udz=0.0
   real :: phase_udx=0.0, phase_udy=0.0, phase_udz=0.0
   real :: kx_uud=1.,ky_uud=1.,kz_uud=1.
@@ -67,7 +67,8 @@ module Dustvelocity
   namelist /dustvelocity_run_pars/ &
        nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
        ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, &
-       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd
+       ladvection_dust, lcoriolisforce_dust, beta_dPdr_dust, tausgmin, cdtd, &
+       nud_hyper3
 
   ! other variables (needs to be consistent with reset list below)
   integer, dimension(ndustspec) :: idiag_ud2m=0
@@ -135,7 +136,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.110 2006-01-30 14:07:07 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.111 2006-02-19 10:25:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1031,27 +1032,27 @@ module Dustvelocity
 !
           case('hyper3_simplified')
             if (headtt) print*, 'Viscous force (dust): nud*del6ud'
-            fviscd = fviscd + nud(k)*p%del6ud(:,:,k)
-            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_6
+            fviscd = fviscd + nud_hyper3(k)*p%del6ud(:,:,k)
+            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_hyper3(k)*dxyz_6
 
           case('hyper3_rhod_nud-const')
 !
 !  Viscous force: mud/rhod*del6ud
 !
             if (headtt) print*, 'Viscous force (dust): mud/rhod*del6ud'
-            mudrhod1=(nud(k)*nd0*md0)/p%rhod(:,k)   ! = mud/rhod
+            mudrhod1=(nud_hyper3(k)*nd0*md0)/p%rhod(:,k)   ! = mud/rhod
             do i=1,3
               fviscd(:,i) = fviscd(:,i) + mudrhod1*p%del6ud(:,i,k)
             enddo
-            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_6
+            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_hyper3(k)*dxyz_6
 
           case('hyper3_nud-const')
 !
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
             if (headtt) print*, 'Viscous force (dust): nud*(del6ud+S.glnnd)'
-            fviscd = fviscd + nud(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
-            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud(k)*dxyz_6
+            fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
+            if (lfirst.and.ldt) diffus_nud=diffus_nud+nud_hyper3(k)*dxyz_6
 
           case default
 
