@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.5 2005-07-05 16:21:42 mee Exp $
+! $Id: gravity_simple.f90,v 1.6 2006-02-19 10:25:19 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -62,7 +62,8 @@ module Gravity
   namelist /grav_init_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
        xgrav,ygrav,zgrav,kx_gg,ky_gg,kz_gg,dgravx,nu_epicycle,pot_ratio, &
-       z1,z2,zref,lnrho_bot,lnrho_top,ss_bot,ss_top
+       z1,z2,zref,lnrho_bot,lnrho_top,ss_bot,ss_top, &
+       lgravx_gas,lgravx_dust,lgravy_gas,lgravy_dust,lgravz_gas,lgravz_dust
 
   namelist /grav_run_pars/ &
        gravx_profile,gravy_profile,gravz_profile,gravx,gravy,gravz, &
@@ -95,7 +96,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.5 2005-07-05 16:21:42 mee Exp $")
+           "$Id: gravity_simple.f90,v 1.6 2006-02-19 10:25:19 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
