@@ -1,0 +1,195 @@
+#!/bin/sh
+#                      pc_setupsrc
+#                     -------------
+# Description:
+#   Link files into a local src directory
+#   Also link files from the bin directory ==> should be renamed
+# CVS $Id: pc_setupsrc,v 1.1 2006-02-20 09:10:28 mee Exp $
+# Usage:
+#   setup-src [options] [src-dir]
+#
+# Options:
+#   --pencil-code <dir>   Specify the root path of the Pencil Code directory
+
+IAM=$0
+. $PENCIL_HOME/lib/sh/functions.sh
+
+link_scripts()
+{
+  ## Link csh scripts
+  for script in $scripts
+  do
+    if [ -e $bindir/$script ]; then
+      [ -h ./$script ] && rm -f $script
+      [ ! -e ./$script ] && ln -fs $bindir/$script .
+    else
+      echo "No such file: $bindir/$script"
+    fi 
+  done
+}
+
+link_root_makefile()
+{
+  ## Make a link to a root Makefile to allow make from the run directory
+  [ -h Makefile ] && rm -f Makefile 
+  ln -s $srcdir/Makefile.parent Makefile 
+  echo Linked root Makefile.
+}
+
+make_src_dir()
+{
+  ## src subdirectory
+  if [ ! -d $src ]; then
+    echo "No src directory found: creating new one (`pwd`/src)."
+    mkdir $src
+  fi
+}
+#
+
+link_src_files()
+{
+  #
+  #  LINK all *.f90, *.f, and the Makefile to local src directory
+  #
+  echo "Linking files in $src."
+  cd $src
+  n=0
+  for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
+                $srcdir/.cvsignore $srcdir/*.inc $srcdir/scripts $srcdir/shock_profiles $srcdir/special 
+  do
+    if [ -e $file ]; then
+      if [ ! -e `basename $file` ]; then
+        ln -s $file .
+      else
+        if [ -h `basename $file` ]; then
+          rm -f `basename $file`
+          ln -s $file .
+        else
+          n=`expr $n + 1`
+          existf="$existf`basename $file` "
+        fi
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  file=$srcdir/Makefile.src
+  if [ -e $file ]; then
+    if [ ! -e `basename $file` ]; then
+      ln -s ${file} .
+    else
+      if [ -h `basename $file` ]; then
+        rm -f `basename $file`
+        ln -s ${file} .
+      else
+        n=`expr $n + 1`
+        existf="$existf`basename $file` "
+      fi
+    fi
+  fi
+  echo "Linking files in $src complete."
+}
+
+copy_local_files()
+{
+  #
+  #  COPY all *.local files into local src directory
+  #
+  echo "Creating .local files in $src."
+  n=0
+  for file in $srcdir/*.local
+  do
+    if [ -e $file ]; then
+      if [ ! -e `basename $file` ]; then
+        cp $file .
+      else
+        # echo "`basename $file` already exists"
+        n=`expr $n + 1`
+        existf="$sxistf`basename $file` "
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  echo "Creating .local files in $src complete."
+}
+
+
+print_status()
+{
+  [ $n == 1 ] &&  echo "$existf already exists in $src"
+  [ $n -gt 1 ] && echo "$n files already exist in $src"
+}
+
+
+prepare_for_compile()
+{
+  #
+  #  Generate Makefile
+  #
+  cd $src
+  rm -f Makefile			# for old run directories
+  $srcdir/scripts/adapt-mkfile Makefile.src Makefile
+  rm -f makefile			# for old run directories
+}
+
+scripts="start.csh start_run.csh run.csh getconf.csh"
+pencil_code_path=$PENCIL_HOME
+src=`pwd`/src
+
+while [ $# -gt 0 ]
+do
+  case $1 in
+  -h)
+    usage_from_header $IAM
+    exit 1
+  ;;
+  -?)
+    usage_from_header $IAM
+    exit 1
+  ;;
+  --help)
+    usage_from_header $IAM
+    exit 1
+  ;;
+  --pencil-code)
+    $pencil_code_path=$2
+    pencil_code_option=1
+    shift
+  ;;
+  --)
+    shift
+    break
+  ;;
+  *)
+    if [ $specified_src ]; then
+      echo UNRECOGNISED PARAMETER
+      usage_from_header $IAM
+      exit 1
+    fi
+    src=$1
+  ;;
+  esac
+
+  shift
+done 
+
+
+if [ ! "$pencil_code_path" ]; then
+  echo " You need to provide the path to the Pencil Code, either via the"
+  echo " --pencil-code option or you need to set PENCIL_HOME; "
+  echo " consider sourcing sourceme.{,c}sh"
+  exit 1
+fi
+
+bindir=$pencil_code_path/bin
+srcdir=$pencil_code_path/src
+
+link_scripts
+link_root_makefile
+make_src_dir
+link_src_files
+copy_local_files
+print_status
+prepare_for_compile
+
