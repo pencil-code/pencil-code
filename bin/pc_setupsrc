@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.4 2006-02-20 09:51:12 mee Exp $
+#   $Id: pc_setupsrc,v 1.5 2006-02-20 19:06:32 ajohan Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -184,6 +184,8 @@ fi
 
 bindir=$pencil_home_path/bin
 srcdir=$pencil_home_path/src
+
+echo "Files will be linked to the root code directory '$pencil_home_path'."
 
 remove_broken_links
 link_scripts
