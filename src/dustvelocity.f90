@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.111 2006-02-19 10:25:39 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.112 2006-02-20 09:48:46 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -61,7 +61,8 @@ module Dustvelocity
       rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
       kx_uud, ky_uud, kz_uud, Omega_pseudo, u0_gas_pseudo, &
       dust_chemistry, dust_geometry, tausd, beta_dPdr_dust, coeff, &
-      ldustcoagulation, ldustcondensation, lvshear_dust_global_eps, cdtd
+      ldustcoagulation, ldustcondensation, lvshear_dust_global_eps, cdtd, &
+      ldustvelocity_shorttausd
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
@@ -136,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.111 2006-02-19 10:25:39 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.112 2006-02-20 09:48:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
