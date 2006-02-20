@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.3 2006-02-20 09:40:59 mee Exp $
+#   $Id: pc_setupsrc,v 1.4 2006-02-20 09:51:12 mee Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -57,7 +57,9 @@ link_src_files()
   cd $src
   n=0
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
-                $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts $srcdir/shock_profiles $srcdir/special 
+              $srcdir/Makefile.src $srcdir/Makefile.depend \
+              $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts \
+              $srcdir/shock_profiles $srcdir/special
   do
     if [ -e $file ]; then
       if [ ! -e `basename $file` ]; then
@@ -75,20 +77,6 @@ link_src_files()
       echo "No such file: $file"
     fi
   done
-  file=$srcdir/Makefile.src
-  if [ -e $file ]; then
-    if [ ! -e `basename $file` ]; then
-      ln -s ${file} .
-    else
-      if [ -h `basename $file` ]; then
-        rm -f `basename $file`
-        ln -s ${file} .
-      else
-        n=`expr $n + 1`
-        existf="$existf`basename $file` "
-      fi
-    fi
-  fi
   cd $old_dir
 }
 
@@ -123,6 +111,11 @@ print_status()
   [ $n -gt 1 ] && echo "$n files already existed in $src"
 }
 
+remove_broken_links()
+{
+  ## Remove any broken links...
+  find . $src -type l | perl -lne 'unlink $_ if (-l && ! -e)'
+}
 
 prepare_for_compile()
 {
@@ -192,6 +185,7 @@ fi
 bindir=$pencil_home_path/bin
 srcdir=$pencil_home_path/src
 
+remove_broken_links
 link_scripts
 link_root_makefile
 make_src_dir
