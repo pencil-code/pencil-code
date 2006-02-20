@@ -3,11 +3,13 @@
 #                     -------------
 # Description:
 #   Link files into a local src directory
-#   Also link files from the bin directory ==> should be renamed
-# CVS $Id: pc_setupsrc,v 1.1 2006-02-20 09:10:28 mee Exp $
+#   Also link script files from the bin directory ==> should be renamed
+#
+# CVS:
+#   $Id: pc_setupsrc,v 1.2 2006-02-20 09:23:47 mee Exp $
+#
 # Usage:
 #   setup-src [options] [src-dir]
-#
 # Options:
 #   --pencil-code <dir>   Specify the root path of the Pencil Code directory
 
@@ -16,7 +18,7 @@ IAM=$0
 
 link_scripts()
 {
-  ## Link csh scripts
+  echo "Linking job submission/execution scripts."
   for script in $scripts
   do
     if [ -e $bindir/$script ]; then
@@ -51,11 +53,12 @@ link_src_files()
   #
   #  LINK all *.f90, *.f, and the Makefile to local src directory
   #
-  echo "Linking files in $src."
+  echo "Linking files in '$src'."
+  old_dir=`pwd`
   cd $src
   n=0
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
-                $srcdir/.cvsignore $srcdir/*.inc $srcdir/scripts $srcdir/shock_profiles $srcdir/special 
+                $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts $srcdir/shock_profiles $srcdir/special 
   do
     if [ -e $file ]; then
       if [ ! -e `basename $file` ]; then
@@ -87,7 +90,7 @@ link_src_files()
       fi
     fi
   fi
-  echo "Linking files in $src complete."
+  cd $old_dir
 }
 
 copy_local_files()
@@ -111,14 +114,14 @@ copy_local_files()
       echo "No such file: $file"
     fi
   done
-  echo "Creating .local files in $src complete."
+  cd $old_dir
 }
 
 
 print_status()
 {
-  [ $n == 1 ] &&  echo "$existf already exists in $src"
-  [ $n -gt 1 ] && echo "$n files already exist in $src"
+  [ $n == 1 ] &&  echo "$existf already existed in $src"
+  [ $n -gt 1 ] && echo "$n files already existed in $src"
 }
 
 
@@ -127,6 +130,8 @@ prepare_for_compile()
   #
   #  Generate Makefile
   #
+  echo "Rebuilding Makefile from Makefile.src."
+  old_dir=`pwd`
   cd $src
   rm -f Makefile			# for old run directories
   $srcdir/scripts/adapt-mkfile Makefile.src Makefile
@@ -153,8 +158,7 @@ do
     exit 1
   ;;
   --pencil-code)
-    $pencil_code_path=$2
-    pencil_code_option=1
+    pencil_code_path=$2
     shift
   ;;
   --)
