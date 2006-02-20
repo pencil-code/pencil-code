@@ -6,15 +6,14 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.2 2006-02-20 09:23:47 mee Exp $
+#   $Id: pc_setupsrc,v 1.3 2006-02-20 09:40:59 mee Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
 # Options:
-#   --pencil-code <dir>   Specify the root path of the Pencil Code directory
+#   --pencil-home <dir>   Specify the root path of the Pencil Code directory
 
 IAM=$0
-. $PENCIL_HOME/lib/sh/functions.sh
 
 link_scripts()
 {
@@ -139,26 +138,29 @@ prepare_for_compile()
 }
 
 scripts="start.csh start_run.csh run.csh getconf.csh"
-pencil_code_path=$PENCIL_HOME
+pencil_home_path=$PENCIL_HOME
 src=`pwd`/src
 
 while [ $# -gt 0 ]
 do
   case $1 in
   -h)
+    . $pencil_home_path/lib/sh/functions.sh
     usage_from_header $IAM
     exit 1
   ;;
   -?)
+    . $pencil_home_path/lib/sh/functions.sh
     usage_from_header $IAM
     exit 1
   ;;
   --help)
+    . $pencil_home_path/lib/sh/functions.sh
     usage_from_header $IAM
     exit 1
   ;;
-  --pencil-code)
-    pencil_code_path=$2
+  --pencil-home)
+    pencil_home_path=$2
     shift
   ;;
   --)
@@ -178,16 +180,17 @@ do
   shift
 done 
 
+. $pencil_home_path/lib/sh/functions.sh
 
-if [ ! "$pencil_code_path" ]; then
+if [ ! "$pencil_home_path" ]; then
   echo " You need to provide the path to the Pencil Code, either via the"
-  echo " --pencil-code option or you need to set PENCIL_HOME; "
+  echo " --pencil-home option or you need to set PENCIL_HOME; "
   echo " consider sourcing sourceme.{,c}sh"
   exit 1
 fi
 
-bindir=$pencil_code_path/bin
-srcdir=$pencil_code_path/src
+bindir=$pencil_home_path/bin
+srcdir=$pencil_home_path/src
 
 link_scripts
 link_root_makefile
