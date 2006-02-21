@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.79 2005-10-27 15:07:31 wlyra Exp $
+! $Id: boundcond.f90,v 1.80 2006-02-21 15:33:09 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -230,7 +230,7 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mcom) :: fbcz12
+      real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2
       real :: Ftopbot,FtopbotK
       integer :: j,k,ip_ok
       character (len=bclen), dimension(mcom) :: bc12
@@ -251,6 +251,8 @@ module Boundcond
             topbot='bot'
             bc12=bcz1
             fbcz12=fbcz1
+            fbcz12_1=fbcz1_1
+            fbcz12_2=fbcz1_2
             ip_ok=0
             Ftopbot=Fbot
             FtopbotK=FbotKbot
@@ -258,6 +260,8 @@ module Boundcond
             topbot='top'
             bc12=bcz2
             fbcz12=fbcz2
+            fbcz12_1=fbcz2_1
+            fbcz12_2=fbcz2_2
             ip_ok=nprocz-1
             Ftopbot=Ftop
             FtopbotK=FtopKtop
@@ -327,6 +331,9 @@ module Boundcond
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set
+              case ('stp') 
+ 		!if (j==ilnrho)
+                call bc_step_xz(f,-1,topbot, j, fbcz12_1, fbcz12_2)
               case default
                 write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
                      bc12(j), " for j=", j
@@ -562,6 +569,78 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_step_xz(f,sgn,topbot,j,val1,val2)
+!
+!  Step boundary conditions.
+!
+!  11-feb6/Natalia
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mcom), optional :: val1,val2
+      integer :: sgn,i,j, step_width
+      real :: H_disk_min, L_disk_min
+ 	
+ 	
+        H_disk_min=Lxyz(1)/(nxgrid-1)
+	step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
+
+        L_disk_min=Lxyz(3)/(nzgrid-1)
+	
+
+
+	if (j .EQ. 4) then
+ 	val1=log(val1)
+	val2=log(val2)
+     	endif
+ 
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+
+
+  !   if (L_disk .GE. Lxyz(3))  then
+  !      f(:,:,n1,j)=val1(j)
+  !   else
+          if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
+               f(1:step_width+3,:,n1,j)=val1(j)
+               f(step_width+3+1:mx,:,n1,j)=val2(j)
+          end if
+          if (H_disk .LT. H_disk_min)    f(:,:,n1,j)=val2(j)
+          if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1(j)
+   !  endif
+
+       do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j);
+ enddo
+       
+
+      case('top')               ! top boundary
+
+
+    ! if (L_disk .LT. L_disk_min)  then
+    !    f(:,:,n2,j)=val2(j)
+    !!    else
+          if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
+               f(1:step_width+3,:,n2,j)=val1(j)
+               f(step_width+3+1:mx,:,n2,j)=val2(j)
+          end if
+          if (H_disk .LT. H_disk_min)    f(:,:,n2,j)=val2(j)
+          if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1(j)
+    ! endif
+
+
+          do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+        
+
+      case default
+        print*, "bc_step_z: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_step_xz
 !***********************************************************************
     subroutine bc_van3rd_z(f,topbot,j)
 !

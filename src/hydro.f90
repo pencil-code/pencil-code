@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.227 2006-02-06 17:46:25 ajohan Exp $
+! $Id: hydro.f90,v 1.228 2006-02-21 15:33:09 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -47,17 +47,18 @@ module Hydro
   integer :: N_modes_uu=0
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
+  logical :: leffective_gravity=.false.	
 
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
        inituu, widthuu, radiusuu, urand, &
-       uu_left, uu_right, uu_lower, uu_upper, kx_uu, ky_uu, kz_uu, coefuu, &
-       uy_left, uy_right,uu_const, Omega, initpower, cutoff, &
+       uu_left, uu_right, uu_lower, uu_upper,  kx_uu, ky_uu, kz_uu, coefuu, &
+       uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
        nu_turb0, tau_nuturb, nu_turb1, &
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity
+       ladvection_velocity, leffective_gravity
 
   ! run parameters
   real :: theta=0.
@@ -80,6 +81,8 @@ module Hydro
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity
+
+!, &  leffective_gravity
 
 ! end geodynamo
 
@@ -157,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.227 2006-02-06 17:46:25 ajohan Exp $")
+           "$Id: hydro.f90,v 1.228 2006-02-21 15:33:09 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -533,11 +536,17 @@ module Hydro
 ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
           call vortex_2d(f,xx,yy,b_ell,widthuu,rbound)
 
-        case('sub-Keplerian')
+        case('sub-Kelperian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
           f(:,:,:,iux) = -1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(1)
   
+	case('step_xz')
+	 call velocity_step(f)
+
+       case('kep_disk')
+         call velocity_kep_disk(f,zz)
+
         case default
           !
           !  Catch unknown values
@@ -768,6 +777,7 @@ module Hydro
 !      
       real, dimension (nx) :: pdamp
       real :: c2,s2
+      real :: gr_part, cf_part
       integer :: j
 !
       intent(in) :: f,p
@@ -829,6 +839,22 @@ module Hydro
           endif
         endif
       endif
+!
+! add effective gravity term = Fgrav-Fcentrifugal
+! Natalia
+!
+!
+  	 if (leffective_gravity) then
+            if (headtt) &
+               	print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star
+	df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-& 
+                         Omega**2*R_star**3/z(n)/z(n)  !/sqrt(1.-R_star/y(m))
+	df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+                             p%uu(:,2)*p%uu(:,2)/z(n)                
+!Omega*R_star/y(m)*(1.-2.*p%uu(:,2))
+         endif
+
+
 !
 ! calculate viscous force
 !
@@ -1774,5 +1800,118 @@ module Hydro
 
     endsubroutine calc_turbulence_pars
 !***********************************************************************
+subroutine velocity_step(f)
+!Natalia
+!Initialization of velocity in a case of the step-like distribution
 
+
+ use Cdata
+
+real, dimension (mx,my,mz,mvar+maux) :: f
+  integer :: step_width, step_length
+  real ::  H_disk_min, L_disk_min, hdisk, ldisk
+
+
+
+        hdisk=H_disk 
+        ldisk=L_disk
+
+ 	H_disk_min=Lxyz(1)/(nxgrid-1)
+        L_disk_min=Lxyz(3)/(nzgrid-1)
+
+	if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+	if (H_disk .LT. H_disk_min) hdisk=0.
+
+        if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+	if (L_disk .LT. L_disk_min) ldisk=0.
+
+
+       
+	step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+	step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
+
+
+    if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  then
+        f(:,:,:,iuz)=uu_left
+        f(:,:,:,iuy)=uy_left
+    end if
+   if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
+   if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
+      
+       
+        if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
+            f(:,:,step_length+3+1:mz,iuz)=uu_left
+            f(:,:,step_length+3+1:mz,iuy)=uy_left
+            f(:,:,1:step_length+3,iuy)=uy_right
+        endif
+
+        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+            f(1:step_width+3,:,:,iuz)=uu_left
+            f(1:step_width+3,:,:,iuy)=uy_left
+            f(step_width+3+1:mx,:,:,iuy)=uy_right
+        endif
+
+
+	if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+ 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+              f(1:step_width+3,:,step_length+3+1:mz,iuz)=uu_left
+              f(1:step_width+3,:,step_length+3+1:mz,iuy)=uy_left
+              f(step_width+3+1:mx,:,step_length+3+1:mz,iuy)=uy_right
+              f(:,:,1:step_length+3,iuy)=uy_right
+            end if
+       end if
+
+
+
+endsubroutine  velocity_step
+!***********************************************************************
+subroutine velocity_kep_disk(f, zz)
+!Natalia
+!Initialization of velocity in a case of the step-like distribution
+
+
+ use Cdata
+
+real, dimension (mx,my,mz,mvar+maux) :: f
+real, dimension (mx,my,mz) :: zz
+  integer :: step_length
+  real ::   L_disk_min,  ldisk,   ll
+
+     ll=Lxyz(3)-L_disk
+     ldisk=L_disk
+
+     L_disk_min=Lxyz(3)/(nzgrid-1)
+
+        if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+	if (L_disk .LT. L_disk_min) ldisk=0.
+     
+	step_length=nint((nzgrid-1)*ll/Lxyz(3))
+
+        if (ldisk .LT. L_disk_min) then
+            f(:,:,:,iuz)=uu_left
+            f(:,:,:,iuy)=(zz-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+        endif
+
+        if (ldisk .GE. Lxyz(3)) then
+            f(:,:,:,iuz)=uu_left
+            f(:,:,:,iuy)=R_star*Omega*sqrt(R_star/zz)
+          endif
+
+	
+ 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+           f(:,:,:,iuz)=uu_left
+           f(:,:,step_length+3+1:mz,iuy)=R_star*Omega*sqrt(R_star/zz)
+           f(:,:,1:step_length+3,iuy)=(zz-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+
+          end if
+
+ 
+
+! f(:,:,:,iuy)=f(:,:,:,iuy)+R_star*Omega*sqrt(R_star/zz)
+ !         f(:,:,:,iuz)=uu_left
+
+
+endsubroutine  
+
+!***********************************************************************
 endmodule Hydro

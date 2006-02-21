@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.219 2006-02-10 15:19:50 ngrs Exp $
+! $Id: density.f90,v 1.220 2006-02-21 15:33:09 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -46,6 +46,7 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
+  logical :: sharp=.false., smooth=.false.
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -55,20 +56,20 @@ module Density
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
-       rho_left,rho_right,lnrho_const,cs2bot,cs2top, &
+       rho_left,rho_right, lnrho_const,cs2bot,cs2top, &
        radius_lnrho,eps_planet,                      &
        b_ell,q_ell,hh0,rbound,                       &
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas
+       wdamp,plaw,lcontinuity_gas, sharp, smooth
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw,lcontinuity_gas
+       lnrho_const,plaw,lcontinuity_gas, sharp, smooth
   
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -110,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.219 2006-02-10 15:19:50 ngrs Exp $")
+           "$Id: density.f90,v 1.220 2006-02-21 15:33:09 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,8 +153,27 @@ module Density
       integer :: i
       logical :: lnothing
 !
+!   make sure all relevant parameters are set for spherical shell problems
+!
+      select case(initlnrho(1))
+        case('geo-kws')
+          if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
+!ajwm Shouldn't be done here they should be set as input parameters in
+!ajwm start.in.  There may be a problem at present with run since these
+!ajwm vales will not get set consistantly.
+!ajwm cs0 and lnrho0 are parameters of the EOS not of density
+!        cs20=gamma
+!        cs0=sqrt(cs20)
+!        cp=5./2.
+!ajwm Routine should really be called initialize_eos eventually
+!ajwm important thing is the parameters of the Equation of State 
+!ajwm have changed so we'd better recalculate everything consistently
+!ajwm but that won't work either since 
+!        call initialize_ionization()
+      endselect
+!
 !  initialize cs2cool to cs20
-!  (currently disabled, because it causes problems with mdwarf auto-test)
+!  (currently disabled, because it causes problems with mdarf auto-test)
 !     cs2cool=cs20
 !
 !
@@ -651,6 +671,10 @@ module Density
          if (lroot)  print*,'init_lnrho: initialize initial condition for planet building'
          call power_law(f,xx,yy,zz,lnrho_const,plaw)
 
+     case ('step_xz') 
+           call density_step(f,xx,zz)
+
+
       case default
         !
         !  Catch unknown values
@@ -697,6 +721,10 @@ module Density
         f(:,:,:,ilnrho)=f(:,:,:,ilnrho) &
           +ampllnrho*exp(-(xx**2+yy**2+zz**2)/radius_lnrho**2)
 
+
+
+
+
       case default
 
         write(unit=errormsg,fmt=*) 'init_lnrho: No such value for initlnrho2: ', &
@@ -717,6 +745,94 @@ module Density
       endif
 !
     endsubroutine init_lnrho
+!***********************************************************************
+subroutine density_step(f,xx,zz)
+!Natalia
+!Initialization of density in a case of the step-like distribution
+
+  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz) :: xx, zz, grav_part, grav_part_const, cf_part_const, cf_part1, cf_part2, cf_part3, cf_part
+  integer :: step_width, step_length
+  real :: H_disk_min, L_disk_min, hdisk, ldisk, V_t, ll
+  
+
+        hdisk=H_disk 
+        ldisk=L_disk
+
+ 	H_disk_min=Lxyz(1)/(nxgrid-1)
+        L_disk_min=Lxyz(3)/(nzgrid-1)
+
+        if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+	if (H_disk .LT. H_disk_min) hdisk=0.
+
+        if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+	if (L_disk .LT. L_disk_min) ldisk=0.
+
+	step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+	step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
+
+
+        if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_left)
+	!if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
+        if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
+
+
+        if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
+            f(:,:,1:step_length+3,ilnrho)=log(rho_right)
+            f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)
+        endif
+
+
+   if (sharp) then
+
+        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+            f(1:step_width+3,:,:,ilnrho)=log(rho_left)
+            f(step_width+3+1:mx,:,:,ilnrho)=log(rho_right)
+        endif
+
+
+	if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+ 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+              f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_left)
+             f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_right)
+             f(:,:,1:step_length+3,ilnrho)=log(rho_right)
+            end if
+       end if
+
+   end if 
+
+  if (smooth) then
+     
+    ll=Lxyz(3)-ldisk
+    V_t=cs0/sqrt(gamma)
+  
+
+       if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+            f(:,:,:,ilnrho)=log(rho_left)-(xx/H_disk)**2
+        endif
+
+	if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+ 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+
+    grav_part_const=Omega**2*R_star**3/V_t**2
+    grav_part=grav_part_const/zz-grav_part_const/(R_star+ll)
+    cf_part_const=Omega**2*R_star**3/V_t**2/ll**2/(R_star+ll) 
+    cf_part1=cf_part_const*(zz*zz/2.-(ll+R_star)**2/2.)
+    cf_part2=-2.*cf_part_const*R_star*(zz-ll-R_star)
+    cf_part3=cf_part_const*R_star**2*log(zz/(ll+R_star))
+    cf_part=cf_part1+cf_part2+cf_part3
+
+
+            f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)-(xx/H_disk)**2
+            f(:,:,1:step_length+3,ilnrho)=log(rho_left)-(xx/H_disk)**2 &
+                                         +grav_part+cf_part
+            end if
+       end if
+
+  end if
+
+
+endsubroutine density_step
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,lnrhoint)

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.288 2006-02-08 14:31:39 mee Exp $
+! $Id: cdata.f90,v 1.289 2006-02-21 15:33:09 nbabkovs Exp $
 
 module Cdata
 
@@ -250,8 +250,8 @@ module Cdata
   logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 
   ! possibility to set boundary values
-  real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0.
-  real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0.
+  real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0., fbcz1_1=0., fbcz1_2=0.
+  real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
 
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mcom) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
@@ -261,6 +261,12 @@ module Cdata
                                         ! Register.initialize()
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
   character (len=120) :: cvsid='[No CVS Id given]'
+
+! Natalia (NS)
+
+  real :: H_disk=0.
+  real :: L_disk=0.
+  real :: R_star=0.
 
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg

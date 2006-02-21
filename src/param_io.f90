@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.221 2006-02-08 14:22:24 mee Exp $ 
+! $Id: param_io.f90,v 1.222 2006-02-21 15:33:09 nbabkovs Exp $ 
 
 module Param_IO
 
@@ -63,9 +63,9 @@ module Param_IO
        lprocz_slowest, lcopysnapshots_exp, &
        bcx,bcy,bcz,r_int,r_ext,r_ref, &
        mu0,force_lower_bound,force_upper_bound, &
-       fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
+       fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
-       lcylindrical,init_loops
+       lcylindrical,init_loops, H_disk, L_disk, R_star
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
@@ -81,7 +81,7 @@ module Param_IO
        bcx,bcy,bcz,r_int,r_ext, &
        lfreeze_varint,lfreeze_varext,rfreeze_int,rfreeze_ext,&
        wfreezeint,wfreezeext, &
-       fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
+       fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2,&
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
@@ -91,7 +91,7 @@ module Param_IO
        lpoint,mpoint,npoint, &
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
-       lpencil_check,lpencil_check_diagnos_opti,lpencil_init
+       lpencil_check,lpencil_check_diagnos_opti,lpencil_init, H_disk, L_disk, R_star
   contains
 
 !***********************************************************************
