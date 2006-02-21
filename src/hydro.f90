@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.228 2006-02-21 15:33:09 nbabkovs Exp $
+! $Id: hydro.f90,v 1.229 2006-02-21 18:23:15 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -160,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.228 2006-02-21 15:33:09 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.229 2006-02-21 18:23:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -541,11 +541,11 @@ module Hydro
           f(:,:,:,iux) = -1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(1)
   
-	case('step_xz')
-	 call velocity_step(f)
+        case('step_xz')
+          call velocity_step(f)
 
-       case('kep_disk')
-         call velocity_kep_disk(f,zz)
+        case('kep_disk')
+          call velocity_kep_disk(f,zz)
 
         case default
           !
@@ -843,18 +843,15 @@ module Hydro
 ! add effective gravity term = Fgrav-Fcentrifugal
 ! Natalia
 !
-!
-  	 if (leffective_gravity) then
-            if (headtt) &
-               	print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star
-	df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-& 
-                         Omega**2*R_star**3/z(n)/z(n)  !/sqrt(1.-R_star/y(m))
-	df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-                             p%uu(:,2)*p%uu(:,2)/z(n)                
+      if (leffective_gravity) then
+        if (headtt) &
+          print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-& 
+          Omega**2*R_star**3/z(n)/z(n)  !/sqrt(1.-R_star/y(m))
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+          p%uu(:,2)*p%uu(:,2)/z(n)                
 !Omega*R_star/y(m)*(1.-2.*p%uu(:,2))
-         endif
-
-
+      endif
 !
 ! calculate viscous force
 !
@@ -1865,7 +1862,7 @@ real, dimension (mx,my,mz,mvar+maux) :: f
 
 endsubroutine  velocity_step
 !***********************************************************************
-subroutine velocity_kep_disk(f, zz)
+subroutine velocity_kep_disk(f,zz)
 !Natalia
 !Initialization of velocity in a case of the step-like distribution
 
@@ -1895,15 +1892,14 @@ real, dimension (mx,my,mz) :: zz
         if (ldisk .GE. Lxyz(3)) then
             f(:,:,:,iuz)=uu_left
             f(:,:,:,iuy)=R_star*Omega*sqrt(R_star/zz)
-          endif
-
-	
- 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+        endif
+!
+        if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
            f(:,:,:,iuz)=uu_left
-           f(:,:,step_length+3+1:mz,iuy)=R_star*Omega*sqrt(R_star/zz)
-           f(:,:,1:step_length+3,iuy)=(zz-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+           f(:,:,step_length+3+1:mz,iuy)=R_star*Omega*sqrt(R_star/zz(:,:,step_length+3+1:mz))
+           f(:,:,1:step_length+3,iuy)=(zz(:,:,1:step_length+3)-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
 
-          end if
+        end if
 
  
 

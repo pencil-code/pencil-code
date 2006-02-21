@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.159 2006-02-16 13:05:01 ajohan Exp $
+! $Id: register.f90,v 1.160 2006-02-21 18:23:15 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -277,9 +277,13 @@ module Register
 !  The following is only kept for backwards compatibility with
 !  an old grid.dat.
 !
-      if (lequidist(1)) dx_1=1./dx
-      if (lequidist(2)) dy_1=1./dy
-      if (lequidist(3)) dz_1=1./dz
+!AB:  Removed for now, because
+!AB:  (i) it should be taken care of by grid.f90
+!AB:  (ii) it doesn't take care of 1-D cases with dx=0.
+!
+!     if (lequidist(1)) dx_1=1./dx
+!     if (lequidist(2)) dy_1=1./dy
+!     if (lequidist(3)) dz_1=1./dz
 !
 !  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
 !

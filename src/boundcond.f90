@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.80 2006-02-21 15:33:09 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.81 2006-02-21 18:23:15 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -448,7 +448,7 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
-        if (present(val)) f(l1,:,:,j)=val(j)
+        if (present(val)) f(l1,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
@@ -457,7 +457,7 @@ module Boundcond
         endif
 
       case('top')               ! top boundary
-        if (present(val)) f(l2,:,:,j)=val(j)
+        if (present(val)) f(l2,m1:m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
@@ -497,7 +497,7 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
-        if (present(val)) f(:,m1,:,j)=val(j)
+        if (present(val)) f(l1:l2,m1,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
         else
@@ -506,7 +506,7 @@ module Boundcond
         endif
 
       case('top')               ! top boundary
-        if (present(val)) f(:,m2,:,j)=val(j)
+        if (present(val)) f(l1:l2,m2,n1:n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
         else
@@ -546,7 +546,7 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
-        if (present(val)) f(:,:,n1,j)=val(j)
+        if (present(val)) f(l1:l2,m1:m2,n1,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
         else
@@ -555,7 +555,7 @@ module Boundcond
         endif
 
       case('top')               ! top boundary
-        if (present(val)) f(:,:,n2,j)=val(j)
+        if (present(val)) f(l1:l2,m1:m2,n2,j)=val(j)
         if (relative) then
           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         else
