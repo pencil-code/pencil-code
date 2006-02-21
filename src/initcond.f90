@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.146 2006-02-07 03:23:49 wlyra Exp $ 
+! $Id: initcond.f90,v 1.147 2006-02-21 23:43:47 theine Exp $ 
 
 module Initcond 
  
@@ -2188,6 +2188,9 @@ module Initcond
 !
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
+      real, dimension (nx) :: k2x
+      real, dimension (ny) :: k2y
+      real, dimension (nz) :: k2z
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im
       real :: ampl,initpower,cutoff
@@ -2200,12 +2203,14 @@ module Initcond
 
         if ((initpower.ne.2.).or.(cutoff.ne.0.)) then
 
-          k2=      (spread(spread(cshift &
-            ((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx,2,ny),3,nz))**2.
-          k2= k2 + (spread(spread(cshift &
-            ((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly,1,nx),3,nz))**2.
-          k2= k2 + (spread(spread(cshift &
-            ((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz,1,nx),2,ny))**2.
+          k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx
+          k2 =      (spread(spread(k2x,2,ny),3,nz))**2
+
+          k2y = cshift((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly
+          k2 = k2 + (spread(spread(k2y,1,nx),3,nz))**2
+
+          k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz
+          k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
 
           k2(1,1,1) = 1.  ! Avoid division by zero 
 
@@ -2249,6 +2254,9 @@ module Initcond
 !
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
+      real, dimension (nx) :: k2x
+      real, dimension (ny) :: k2y
+      real, dimension (nz) :: k2z
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im,r
       real :: ampl,initpower,mhalf,cutoff
@@ -2260,12 +2268,14 @@ module Initcond
 !
 !  calculate k^2
 !
-        k2=      (spread(spread(cshift &
-          ((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx,2,ny),3,nz))**2.
-        k2= k2 + (spread(spread(cshift &
-          ((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly,1,nx),3,nz))**2.
-        k2= k2 + (spread(spread(cshift &
-          ((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz,1,nx),2,ny))**2.
+        k2x = cshift((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx
+        k2 =      (spread(spread(k2x,2,ny),3,nz))**2
+
+        k2y = cshift((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly
+        k2 = k2 + (spread(spread(k2y,1,nx),3,nz))**2
+
+        k2z = cshift((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz
+        k2 = k2 + (spread(spread(k2z,1,nx),2,ny))**2
 
         k2(1,1,1) = 1.  ! Avoid division by zero 
 !
