@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.5 2006-02-20 19:06:32 ajohan Exp $
+#   $Id: pc_setupsrc,v 1.6 2006-02-21 23:37:32 theine Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -107,7 +107,7 @@ copy_local_files()
 
 print_status()
 {
-  [ $n == 1 ] &&  echo "$existf already existed in $src"
+  [ $n -eq 1 ] &&  echo "$existf already existed in $src"
   [ $n -gt 1 ] && echo "$n files already existed in $src"
 }
 
