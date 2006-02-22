@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.155 2006-02-13 15:01:44 ajohan Exp $
+! $Id: dustdensity.f90,v 1.156 2006-02-22 09:11:30 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -139,7 +139,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.155 2006-02-13 15:01:44 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.156 2006-02-22 09:11:30 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -456,7 +456,8 @@ module Dustdensity
 
         case('cosine_lnnd')
           do n=n1,n2; do k=1,ndustspec
-            f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + exp(nd_const*cos(kz_nd*z(n)))
+            f(:,:,n,ind(k)) = &
+                f(:,:,n,ind(k)) + nd_const*exp(amplnd*cos(kz_nd*z(n)))
           enddo; enddo
           if (lroot) print*, 'init_nd: Cosine lnnd with nd_const=', nd_const
         case('cosine_nd')
