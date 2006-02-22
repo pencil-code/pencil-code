@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.321 2006-02-21 21:16:40 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.322 2006-02-22 19:34:05 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-02-21 21:16:40 $ $,~ $ $Revision: 1.321 $ $}
+%\date{$ $Date: 2006-02-22 19:34:05 $ $,~ $ $Revision: 1.322 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-02-21 21:16:40 $ $,~ $ $Revision: 1.321 $ $}\\
+  \emph{$ $Date: 2006-02-22 19:34:05 $ $,~ $ $Revision: 1.322 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4890,6 +4890,34 @@ The answer is yes; just go to:
 \part{Programming the Pencil Code}
 
 \section{Adapting the code}
+\subsection{The Pencil Code coding standard}
+As with any code longer than a few lines the appearance and layout
+of the source code is of the uttmost importance.  Well layed out
+code is more easy to read and understand and as such is less prone 
+to errors.
+
+A consistent coding style has evolved in the Pencil Code and we
+ask that those contributing try to be consistent for everybody's 
+benefit.  In particular, it would be appreciated if those committing
+changes to the code via CVS submit code
+
+There are not terribly many rules and using existing code as a template
+is usually the easiest way to proceed.  In short the most important rules are:
+\begin{itemize}
+\item tab characters do not occur anywhere in the code (in fact the use of
+tab character is an extension to the Fortran standard)
+\item code in any delimited block eg. if statments, do loops, subroutines 
+etc. is indented by precisely 2 spaces.
+\item in general all comments are placed on their own lines with the '!' 
+appearing in the first column. 
+\item all subroutine/functions begin with a standard comment block describing
+what they do, when and by whom they were created and when and by whom any
+non-trivial modifications were made.
+\item lines longer that 78 characters must be explicitly wrapped. 
+\end{itemize}
+
+These and other issues are discussed in more depth and with examples in 
+Appendix~\ref{coding-standard}.
 
 \subsection{Adding new output diagnostics}
 
@@ -5025,6 +5053,7 @@ rather big file \file[zaverages.dat]{data/zaverages.dat}.
 % ---------------------------------------------------------------------- %
 
 \subsection{The pencil case}
+\label{pencil-case}
 
 Variables that are derived from the basic physical variables of the code are
 stored in one-dimensional \name{pencils} of length \var{nx}. All the pencils
@@ -5274,7 +5303,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-02-21 21:16:40 $ $,~ $ $Revision: 1.321 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-02-22 19:34:05 $ $,~ $ $Revision: 1.322 $ $}
 
 \section{Timings}
 
@@ -5544,6 +5573,178 @@ in Fig~\ref{cvsstat}.
   \end{center}
 \end{table}
 % ---------------------------------------------------------------------- %
+% ====================================================================== %
+\section{Coding Standard}
+\label{coding-standard}
+
+The numerous elements that make up the Pencil Code are written
+in a consistent style that has evolved since it was first created.
+Many people have contributed their knowledge and experience with
+in this and the result is what we believe is and extremely
+readable and manageable code.
+
+As well as improving the readability of the code, by having some
+naming conventions for example aids greatly in understanding what
+the code does. 
+
+There is a standard for all aspect of the code be it Fortran source,
+shell scripts, Perl scripts, LaTeX source, Makefiles or otherwise.
+Where nothing has been explicitly stated it is recommended that 
+similar existing examples found in the code are used as a template.
+
+\subsection{File naming conventions}
+All files with the exception of the \file{Makefile}s are given
+lowercase filenames. 
+
+Fortran source files all have the `.f90' extension.  Files that
+contain `non-executable code' i.e. declarations that are included into 
+other files are given the extension `.h' and those that are generated 
+dynamically at compile time have a `.inc' extension.
+
+Fortran source code defining a module is placed in files whose names
+begine with the Fortran module name in all lowercase.  Where there
+exist multiple implementations of a specific module the filenames
+are extended using and with an underscore ad a brief name relating
+to what they do.
+
+Text files containing parameters to be read by the code at run time are
+placed in files with the extension `.in'
+
+
+\subsection{Fortran Code}
+Fortarn is not case-sensitive but in almost all instances we prescribe
+some form of capitalization for readability.
+
+In general all Fortran code including keywords, variable names etc. are
+written in lowercase. 
+
+\subsubsection{Indenting and Whitespace}
+Whitespace should be removed from the end of lines.
+
+Blank lines are kept to a minimum, and when occurring in subroutines
+or functions are replaced by a single `!' in the first column.
+
+Tab characters are not used anywhere in the code.  Tab characters are
+not in fact allowed by the Fortran standard and compilers that accept
+them do so as an extension.
+
+All lines are kept to be not more than 78 characters long. Where
+lines are longer they must be explicitly wrapped using the 
+Fortran continuation character `\&'
+
+Code in syntactic blocks such as if--endif, do--enddo, 
+subroutine--endsubroutine etc. is always indented by precisely two spaces.
+The exception to this is that nested loops where only the innermost loop
+contains executable code should be written with an the do--enddo pairs at 
+the same level of indentation.
+
+\begin{itemize}
+\item in general all comments are placed on their own lines with the '!' 
+appearing in the first column. 
+\item all subroutine/functions begin with a standard comment block describing
+what they do, when and by whom they were created and when and by whom any
+non-trivial modifications were made.
+\item lines longer that 78 characters must be explicitly wrapped. 
+\end{itemize}
+
+\subsubsection{Comments}
+Descriptive comments are written on their own lines unless there is a 
+strong reason to do otherwise.  Comments are not normally indented
+and the `!' should appear in the first column followed by two spaces
+and then the text of the comment.
+
+Comments also must not exceed the 78 character line length and should
+be wrapped onto more lines as needed.
+
+Typically comments should appear with a blank commented line above and
+below the wrapped text of the comment.
+
+Comments should be written in sentetences using the usual capitalization 
+and punctuation of English where comment text continues either side of
+actual code much as text is continued around equations in a mathematical
+document. Punctuation at the end of a comment is mostly omitted. 
+
+For example:
+\begin{verbatim}
+      some fortran code
+      some more fortran code
+!
+!  A descriptive comment explaining what the following few lines
+!  of code do.  And so it begins
+!
+      the fortran code being described
+      the fortran code being described
+      ...
+!
+!  then just time for a final detail
+!
+      the final fortran code 
+      the final fortran code
+      ...
+\end{verbatim}
+
+Subroutines and functions are started with a comment block describing
+what they do, when and by whom they were created and when and by whom any
+non-trivial modifications were made.  The layout of this comment block
+is a standard, for example:
+\begin{verbatim}
+!***********************************************************************
+    subroutine initialize_density(f,lstarting)
+!
+!  Perform any post-parameter-read initialization i.e. calculate derived
+!  parameters.
+!
+!  For compatibility with other applications, we keep the possibility
+!  of giving diffrho units of dxmin*cs0, but cs0 is not well defined general
+!
+!  24-nov-02/tony: coded 
+!  31-aug-03/axel: normally, diffrho should be given in absolute units
+!
+\end{verbatim}
+where dates are written in dd-mmm-yy format as shown and names appearing
+after the `/' are either the users cvs login name or, where such exists
+amongst the Pencil Code community, the accepted short form ($\approx 4$ 
+characters) of the authors name.
+
+\subsubsection{Module Names}
+The names of modules are written with initial letter capitalization 
+of each word and the multiple words written consecutively without
+any separator.
+
+\subsubsection{Variable Names}
+Variable are given short but meaning full names and written
+in all lowercase.  Single character names are avoided except
+for commonly used loop indices and the two code data structures
+of the Pencil Code: `f' the main state array and `p' the pencil case
+structure (see \ref{pencil-case}).
+
+Quantities commonly represented by a particular single character
+in mathematics are typically given names formed by repeating the
+character (usually in lowercase) eg. the velocity $u$ becomes `uu', 
+specific entropy $s$ becomes `ss' etc. 
+
+Temperature in variable names is denoted with a capital T so as not to
+be confused with time as represented by a lowercase t.  Note however the
+since Fortran is not case sensitive the variables for example `iTT' and
+`tt' are the same so distinct names must be used. For this reason time is
+usually represented by a single t contrary to the above guideline.
+
+The natural log of a quantity is represented by using adding `ln' to its 
+name, for example log of temperature would be `lnTT'.
+
+There are some standard prefixes used to help identify the type and nature
+of variables they are as follows:
+\begin{itemize}
+\item i -- Denotes integer variables typically used as array indices.
+\item i_ -- Denotes pencil case array indices.
+\item idiag_ -- Denotes diganostic indices.
+\item l -- Denotes logical/boolean flags
+\item cdt -- Denotes timestep constraint parameters.
+\item unit_ -- Denotes conversion code/physics unit conversion parameters.
+\end{itemize}
+
+
+
 
 % ====================================================================== %
 
@@ -8382,7 +8583,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.321 2006-02-21 21:16:40 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.322 2006-02-22 19:34:05 mee Exp $ $}
 
 
 \end{document}
