@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.6 2006-02-21 23:37:32 theine Exp $
+#   $Id: pc_setupsrc,v 1.7 2006-02-22 16:59:49 mee Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -22,7 +22,7 @@ link_scripts()
   do
     if [ -e $bindir/$script ]; then
       [ -h ./$script ] && rm -f $script
-      [ ! -e ./$script ] && ln -fs $bindir/$script .
+      [ ! -e ./$script ] && ln -s $bindir/$script .
     else
       echo "No such file: $bindir/$script"
     fi 
@@ -33,7 +33,7 @@ link_root_makefile()
 {
   ## Make a link to a root Makefile to allow make from the run directory
   [ -h Makefile ] && rm -f Makefile 
-  ln -s $srcdir/Makefile.parent Makefile 
+  [ ! -e Makefile ] && ln -s $srcdir/Makefile.parent Makefile 
   echo Linked root Makefile.
 }
 
@@ -53,7 +53,7 @@ link_src_files()
   #  LINK all *.f90, *.f, and the Makefile to local src directory
   #
   echo "Linking files in '$src'."
-  old_dir=`pwd`
+  old_dir="`pwd`"
   cd $src
   n=0
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
@@ -62,14 +62,14 @@ link_src_files()
               $srcdir/shock_profiles $srcdir/special
   do
     if [ -e $file ]; then
-      if [ ! -e `basename $file` ]; then
+      if [ ! -e "`basename $file`" ]; then
         ln -s $file .
       else
-        if [ -h `basename $file` ]; then
-          rm -f `basename $file`
+        if [ -h "`basename $file`" ]; then
+          rm -f "`basename $file`"
           ln -s $file .
         else
-          n=`expr $n + 1`
+          n="`expr $n + 1`"
           existf="$existf`basename $file` "
         fi
       fi
@@ -90,12 +90,12 @@ copy_local_files()
   for file in $srcdir/*.local
   do
     if [ -e $file ]; then
-      if [ ! -e `basename $file` ]; then
+      if [ ! -e "`basename $file`" ]; then
         cp $file .
       else
         # echo "`basename $file` already exists"
-        n=`expr $n + 1`
-        existf="$sxistf`basename $file` "
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
       fi
     else
       echo "No such file: $file"
@@ -123,7 +123,7 @@ prepare_for_compile()
   #  Generate Makefile
   #
   echo "Rebuilding Makefile from Makefile.src."
-  old_dir=`pwd`
+  old_dir="`pwd`"
   cd $src
   rm -f Makefile			# for old run directories
   $srcdir/scripts/adapt-mkfile Makefile.src Makefile
@@ -132,7 +132,7 @@ prepare_for_compile()
 
 scripts="start.csh start_run.csh run.csh getconf.csh"
 pencil_home_path=$PENCIL_HOME
-src=`pwd`/src
+src="`pwd`/src"
 
 while [ $# -gt 0 ]
 do
