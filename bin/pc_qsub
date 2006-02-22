@@ -8,18 +8,18 @@ jobscript=run.csh
 
 # Check for parameters to pc_qsub
 found=yes
-while [ "$found" == "yes" ]
+while [ "$found" = "yes" ]
 do
-  if [ "$1" == "-s" ]; then
+  if [ "$1" = "-s" ]; then
     jobscript=start.csh
     shift
-  elif [ "$1" == "-sr" ]; then
+  elif [ "$1" = "-sr" ]; then
     jobscript=start_run.csh
     shift
-  elif [ "$1" == "-r" ]; then
+  elif [ "$1" = "-r" ]; then
     jobscript=run.csh
     shift
-  elif [ "$1" == "-help" ]; then
+  elif [ "$1" = "-help" ]; then
     echo "Some help you are."
     exit 1 
   else

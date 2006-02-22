@@ -62,17 +62,17 @@ prepare_scratch_disk()
   # This will be read by the code, if the file exists.
   # Remove file, if not needed, to avoid confusion.
   [ -f $datadir/directory_snap ] && rm $datadir/directory_snap
-  [ "$local_disc" == "yes" ] &&  echo $SCRATCH_DIR >$datadir/directory_snap
+  [ "$local_disc" = "yes" ] &&  echo $SCRATCH_DIR >$datadir/directory_snap
 
 
-  if [ "$local_binary" == "yes" ]; then
+  if [ "$local_binary" = "yes" ]; then
     start_x=$SCRATCH_DIR/start.x
     run_x=$SCRATCH_DIR/run.x
   fi
 
   # Created subdirectories on local scratch disc (start.csh will also create
   # them under $datadir/)
-  if [ "$local_disc" == "yes" ]; then
+  if [ "$local_disc" = "yes" ]; then
     echo "Creating directory structure on scratch disc(s)"
     for host in $nodelist 
     do
@@ -84,7 +84,7 @@ prepare_scratch_disk()
 tidy_scratch_disk()
 {
   # Tidy scratch directories
-  if [ "$local_disc" == "yes" ]; then
+  if [ "$local_disc" = "yes" ]; then
     if [ $remove_scratch_root ]; then
       echo -n "Tidying scratch directory ($SCRATCH_DIR)...   "
       rm -rf $SCRATCH_DIR/*
@@ -151,7 +151,7 @@ prepare_datadir()
 background_remote_top()
 {
   # Copy output from `top' on run host to a file we can read from login server
-  if [ "$remote_top" == "yes" ]; then
+  if [ "$remote_top" = "yes" ]; then
     remote-top &>remote-top.log &
   fi
 }
@@ -287,8 +287,8 @@ distribute_data_to_nodes()
   #
   #  If necessary, distribute var.dat from the server to the various nodes
   #
-  if [ "$local_disc" == "yes" ]; then
-    if [ "$one_local_disc" == "yes" ]; then     # one common local disc 
+  if [ "$local_disc" = "yes" ]; then
+    if [ "$one_local_disc" = "yes" ]; then     # one common local disc 
       echo -n "Distributing data to nodes...  "
       for node in $nodelist
       do
@@ -324,7 +324,7 @@ distribute_data_to_nodes()
 distribute_binary()
 { 
   # If necessary copy executable to $SCRATCH_DIR of master node
-  if [ "$local_binary" == "yes" ]; then
+  if [ "$local_binary" = "yes" ]; then
     echo "ls $1 $SCRATCH_DIR before copying:"
     ls -lt $1 $SCRATCH_DIR
     cp $1 $SCRATCH_DIR
@@ -342,21 +342,21 @@ copy_snapshots ()
   # cluster).
   local debug=no
 
-  if [ "$1" == "-v" ] || [ "$1" == "--verbose" ]; then
+  if [ "$1" = "-v" ] || [ "$1" = "--verbose" ]; then
     debug=yes
     shift
   fi
   
-  #[ "$debug" == "yes" ] && (set verbose;  set echo)
+  #[ "$debug" = "yes" ] && (set verbose;  set echo)
   
   local varfile=$1
-  [ "$debug" == "yes" ] && echo "varfile = <$varfile>"
+  [ "$debug" = "yes" ] && echo "varfile = <$varfile>"
   
   local pwd=`pwd`
   local targetdir=$pwd/data
   local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
   
-  if [ "$debug" == "yes" ]; then
+  if [ "$debug" = "yes" ]; then
     echo "SCRATCH_DIR = <$SCRATCH_DIR>"
     echo "targetdir   = <$targetdir>"
     echo "nodelist    = <$nodelist>"
@@ -366,7 +366,7 @@ copy_snapshots ()
     for node in $nodelist
     do
       echo "---------------------- $node ---------------------------"
-      if [ "$debug" == "yes" ]; then
+      if [ "$debug" = "yes" ]; then
         echo "node=$node"
         printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile :\n"
         $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile"
@@ -386,7 +386,7 @@ copy_snapshots ()
       cmd7="$targetdir/"
       cmd8='$f; done'
       remcmd="$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
-      [ $debug == "yes" ]  && echo "Now running <$SSH $node sh -c $remcmd>"
+      [ $debug = "yes" ]  && echo "Now running <$SSH $node sh -c $remcmd>"
       $SSH $node sh -c "'$remcmd'"
       printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
       $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
@@ -439,7 +439,7 @@ copy_snapshots ()
                 file="$fdir/$f"
                 echo "f     = <$f>"
                 echo "file = <$file>"
-                [ "$debug" == "yes" ] && echo "$SSH $node 'if (-e $file) mv -f $file $targetdir/$d/'"
+                [ "$debug" = "yes" ] && echo "$SSH $node 'if (-e $file) mv -f $file $targetdir/$d/'"
                 $SSH $node "if (-e $file) mv -f $file $targetdir/$d/"
               done
             done
@@ -458,7 +458,7 @@ copy_snapshots ()
     done
   fi
 
-  [ "$debug" == "yes" ] && echo "copy_snapshots: done"
+  [ "$debug" = "yes" ] && echo "copy_snapshots: done"
 }  
 
 #copy_snapshots ()
@@ -469,21 +469,21 @@ copy_snapshots ()
 #  # cluster).
 #  local debug=no
 #
-#  if [ "$1" == "-v" ] || [ "$1" == "--verbose" ]; then
+#  if [ "$1" = "-v" ] || [ "$1" = "--verbose" ]; then
 #    debug=yes
 #    shift
 #  fi
 #  
-#  #[ "$debug" == "yes" ] && (set verbose;  set echo)
+#  #[ "$debug" = "yes" ] && (set verbose;  set echo)
 #  
 #  local varfile=$1
-#  [ "$debug" == "yes" ] && echo "varfile = <$varfile>"
+#  [ "$debug" = "yes" ] && echo "varfile = <$varfile>"
 #  
 #  local pwd=`pwd`
 #  local targetdir=$pwd/data
 ##  local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
 #  
-#  if [ "$debug" == "yes" ]; then
+#  if [ "$debug" = "yes" ]; then
 #    echo "SCRATCH_DIR = <$SCRATCH_DIR>"
 #    echo "targetdir   = <$targetdir>"
 #    echo "nodelist    = <$nodelist>"
@@ -493,7 +493,7 @@ copy_snapshots ()
 #    for node in $nodelist
 #    do
 #      echo "---------------------- $node ---------------------------"
-#      if [ "$debug" == "yes" ]; then
+#      if [ "$debug" = "yes" ]; then
 #        echo "node=$node"
 #        printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile :\n"
 #        $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile" 2>/dev/null
@@ -513,7 +513,7 @@ copy_snapshots ()
 #      cmd7="$targetdir/"
 #      cmd8='$f; done'
 #      remcmd="$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
-#      [ $debug == "yes" ]  && echo "Now running <$SSH $node sh -c $remcmd>"
+#      [ $debug = "yes" ]  && echo "Now running <$SSH $node sh -c $remcmd>"
 #      $SSH $node sh -c "'$remcmd'"
 #      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
 #      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile" 2>/dev/null
@@ -566,7 +566,7 @@ copy_snapshots ()
 #                file="$fdir/$f"
 #                echo "f     = <$f>"
 #                echo "file = <$file>"
-#                [ "$debug" == "yes" ] && echo "$SSH $node 'if (-e $file) mv -f $file $targetdir/$d/'"
+#                [ "$debug" = "yes" ] && echo "$SSH $node 'if (-e $file) mv -f $file $targetdir/$d/'"
 #                $SSH $node "if (-e $file) mv -f $file $targetdir/$d/"
 #              done
 #            done
@@ -588,14 +588,14 @@ copy_snapshots ()
 #
 #  rm -f COPY_IN_PROGRESS
 #
-#  [ "$debug" == "yes" ] && echo "copy_snapshots: done"
+#  [ "$debug" = "yes" ] && echo "copy_snapshots: done"
 #}  
 
 background_copy_snapshots()
 {
   # On machines with local scratch directory, initialize automatic
   # background copying of snapshots back to the data directory.
-  if [ "$local_disc" == "yes" ]; then
+  if [ "$local_disc" = "yes" ]; then
     echo -n "Starting background copy snapshots...  "
     copy_snapshots -v &> copy-snapshots.log &
     bkgnd_copy_snapshots_pid=$!
@@ -607,7 +607,7 @@ final_copy_snapshots()
 {
   # On machines with local scratch disc, copy var.dat back to the data
   # directory
-  if [ "$local_disc" == "yes" ]; then
+  if [ "$local_disc" = "yes" ]; then
     echo -n "Copying final var.dat back from local scratch disk...   "
     copy_snapshots -v var.dat &> copy-snapshots2.log
     copy_snapshots -v dxyz.dat 2>&1 >> copy-snapshots2.log
@@ -620,7 +620,7 @@ final_copy_snapshots()
 unbackground_copy_snapshots()
 {
   # Kill all backgrounded copy-snapshots
-  if [ "$local_disc" == "yes" ]; then
+  if [ "$local_disc" = "yes" ]; then
     echo -n "Stopping backgrounded copy_snapshots...   Waiting...  "
 #    kill $bkgnd_copy_snapshots_pid
     kill -SIGQUIT $bkgnd_copy_snapshots_pid 2>&1 >/dev/null
@@ -646,7 +646,7 @@ check_is_run_directory()
     isrundir=no
   fi
 
-  if [ ! "$isrundir" == "yes" ]; then
+  if [ ! "$isrundir" = "yes" ]; then
     echo "This does not appear to be a run directory! Exiting... "
     exit 1
 #    kill -SIGKILL $$			# full-featured suicide
@@ -751,7 +751,7 @@ echo -n "Determine nodelist... "
 determine_mpi_processor_options()
 {
   ## MPI specific setup
-  if [ "$mpi" == "yes" ]; then
+  if [ "$mpi" = "yes" ]; then
     # Some mpiruns need special options
     if match "$mpirun" "mpirun" ; then
       npops="-np $ncpus"

@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.7 2005-06-26 17:34:17 eos_merger_tony Exp $
+# $Id: pc_config.sh,v 1.8 2006-02-22 17:03:31 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -99,9 +99,9 @@ elif ishost "giga[0-9][0-9].ncl.ac.uk" ; then
   #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc >hostfile
   #  set nodelist = `cat hostfile`
 
-    if [ "$PE" == "mpi2" ]; then
+    if [ "$PE" = "mpi2" ]; then
       nprocpernode=2
-    elif [ "$PE" == "mpi" ]; then
+    elif [ "$PE" = "mpi" ]; then
       nprocpernode=4
     fi
   else
@@ -109,7 +109,7 @@ elif ishost "giga[0-9][0-9].ncl.ac.uk" ; then
   fi
   mpirun=/addon/shared/lam/bin/mpirun
   mpirunops="-O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
-  if [ "$local_disc" == "yes" ]; then
+  if [ "$local_disc" = "yes" ]; then
     export SCRATCH_DIR=/work/$JOB_ID 
     remove_scratch_root=no
   fi
@@ -143,7 +143,7 @@ elif ishost "giga[0-9][0-9]" ; then
   mpirun=/opt/lam/bin/mpirun
   mpirun=/usr/bin/mpirun
   mpirunops="-O -c2c -s n0 -x LD_ASSUME_KERNEL=2.4.1"   #Fix bug in Redhat 9
-  [ "$local_disc" == "yes" ] && export SCRATCH_DIR="/var/tmp"
+  [ "$local_disc" = "yes" ] && export SCRATCH_DIR="/var/tmp"
 
 elif ishost sleipner  || ishost fenris || ishost hugin ishost munin ; then
   mpirun = /usr/bin/mpiexec
@@ -161,7 +161,7 @@ elif ishost sleipner  || ishost fenris || ishost hugin ishost munin ; then
   export LANG=en_US
 
 elif ishost cincinnatus || ishost owen || ishost master || ishost node || ishost ns0 ; then
-  if [ "$mpi" == "yes" ]; then
+  if [ "$mpi" = "yes" ]; then
     # Choose appropriate mpirun version (LAM vs. MPICH)
     if [ `fgrep -c lam_mpi src/start.x` -gt 0 ]; then # lam
       mpirun=/usr/lib/lam/bin/mpirun
@@ -208,11 +208,11 @@ elif ishost "nq[0-9]*" || ishost "ns[0-9]*" ; then
   mpirun=/opt/lam/bin/mpirun
   mpirun=/usr/bin/mpirun
   mpirunops="-O -c2c -s n0 -x LD_ASSUME_KERNEL=2.4.1"  #Fix bug in Redhat 9
-  [ "$local_disc" == "yes" ] && export SCRATCH_DIR="/var/tmp"
+  [ "$local_disc" = "yes" ] && export SCRATCH_DIR="/var/tmp"
 
 elif ishost "s[0-9]*p[0-9]*" || ishost "10_[0-9]*_[0-9]*_[0-9]*" ; then
   echo "Horseshoe cluster"
-  if [ "$mpi" == "yes" ]; then
+  if [ "$mpi" = "yes" ]; then
 #ajwm  NOT SURE IF THIS IS THE CORRECT CONDITION?...
     if [ $RUNNINGMPICH -ne 0 ]; then
       mpirunops="-machinefile $PBS_NODEFILE"
@@ -267,7 +267,7 @@ elif ishost "copson\.st-and\.ac\.uk" || ishost "comp[0-9]*.st-and.ac.uk" ; then
     qsub -pe gm $ncpus -N $2 $1 
   }
    if [ -n "$PE" ]; then                            # Are we running under SGE?   
-    if [ "$PE" == "gm" ]; then                    # Using Myrinet?
+    if [ "$PE" = "gm" ]; then                    # Using Myrinet?
       export SSH=/usr/bin/rsh
       export SCP=/usr/bin/rcp
       cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc >hostfile
@@ -280,7 +280,7 @@ elif ishost "copson\.st-and\.ac\.uk" || ishost "comp[0-9]*.st-and.ac.uk" ; then
       echo '--------------- MPI_HOSTFILE ----------------'
       cat hostfile 
       echo '----------- MPI_HOSTFILE - END --------------'
-    elif [ $PE == score ]; then             # Using SCore?
+    elif [ "$PE" = "score" ]; then             # Using SCore?
       #set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
       #echo '--------------- PE_HOSTFILE ----------------'
       #cat $PE_HOSTFILE
@@ -346,7 +346,7 @@ elif ishost cosmo ; then
 
 else
   echo "Generic setup; hostname is <$hn>"
-  [ "$mpi" == "yes" ] && echo "Use mpirun"
+  [ "$mpi" = "yes" ] && echo "Use mpirun"
   mpirun=mpirun
 fi
 
@@ -374,10 +374,10 @@ export PARENT_PID=$$
 # NODELIST for transport to sub-processes.
 export NODELIST=`echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
-if [ "$debug" == "yes" ]; then show_config; fi
+if [ "$debug" = "yes" ]; then show_config; fi
 
 if match "$0" "pc_config" ; then
-  if [ ! "$debug" == "yes" ]; then show_config; fi
+  if [ ! "$debug" = "yes" ]; then show_config; fi
   echo "----------------------------- pc_config ------------------------------ "
   echo " You have just run the Pencil-Code pre-execution configuration script. "
   echo "                                                                       "

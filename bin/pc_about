@@ -89,7 +89,7 @@ default() {
 }
 
 
-if [ $# == 0 ]; then
+if [ $# -eq 0 ]; then
   default
 else
   while [ "$1" ]
