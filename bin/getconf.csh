@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.159 2006-02-08 01:34:06 wlyra Exp $
+# $Id: getconf.csh,v 1.160 2006-02-23 15:18:13 wlyra Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -668,8 +668,8 @@ else if ($hn =~ rio* || $hn =~ pia*) then
     foreach node ($nodelist)
       echo $SSH $node 'killall start.x run.x'
       $SSH $node 'killall start.x run.x'
-      echo $SSH $node '\rm -rf /var/tmp/ajohan/*'
-      $SSH $node '\rm -rf /var/tmp/ajohan/*'
+      echo $SSH $node '\rm -rf /var/tmp/'$USER'/*'
+      $SSH $node '\rm -rf /var/tmp/$USER/*'
     end
   endif
 
