@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.229 2006-02-21 18:23:15 brandenb Exp $
+! $Id: hydro.f90,v 1.230 2006-02-23 09:31:54 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -160,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.229 2006-02-21 18:23:15 brandenb Exp $")
+           "$Id: hydro.f90,v 1.230 2006-02-23 09:31:54 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -536,7 +536,7 @@ module Hydro
 ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
           call vortex_2d(f,xx,yy,b_ell,widthuu,rbound)
 
-        case('sub-Kelperian')
+        case('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
           f(:,:,:,iux) = -1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(2)
           f(:,:,:,iuy) = 1/(2*Omega)*1/gamma*cs20*beta_glnrho_scaled(1)
