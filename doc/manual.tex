@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.322 2006-02-22 19:34:05 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.323 2006-02-23 06:00:34 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-02-22 19:34:05 $ $,~ $ $Revision: 1.322 $ $}
+%\date{$ $Date: 2006-02-23 06:00:34 $ $,~ $ $Revision: 1.323 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-02-22 19:34:05 $ $,~ $ $Revision: 1.322 $ $}\\
+  \emph{$ $Date: 2006-02-23 06:00:34 $ $,~ $ $Revision: 1.323 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -449,6 +449,8 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 \end{center}
 
 \begin{tabular}{lll}
+  wlyra & \htmladdnormallink{Wladimir Lyra}{http://www.astro.uu.se/~wlyra/} & University of Uppsala\\
+  weezy & \htmladdnormallink{S. Louise Wilkin}{http://www.mas.ncl.ac.uk/~n9405169/} & University of Newcastle\\
   vpariev & \htmladdnormallink{Vladimir Pariev}{http://www.pas.rochester.edu/~vpariev/} & University of Rochester\\
   torkel & \htmladdnormallink{Ulf Torkelsson}{http://fy.chalmers.se/~torkel/} & Chalmers University\\
   theine & \htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.nordita.dk/~theine/} & Nordita and University of Copenhagen\\
@@ -457,14 +459,17 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   pkapyla & \htmladdnormallink{Petri K\"apyl\"a}{http://cc.oulu.fi/~pkapyla/} & Oulu University and Kiepenheuer Institute\\
   nils & \htmladdnormallink{Nils Erland L. Haugen}{http://www.phys.ntnu.no/~nilshau/index2.html} & University of Trondheim\\
   ngrs & \htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html} & University of Newcastle\\
+  nbabkovs & \htmladdnormallink{Natalia Babkovskaia}{http://www.nordita.dk/~nbabkovs/} & Nordita\\
   mee  & \htmladdnormallink{Antony (tOnY) Mee}{http://www.mas.ncl.ac.uk/~n7026413/pencil-code/movies/} & University of Newcastle\\
   mcmillan & \htmladdnormallink{David McMillan}{http://www.mas.ncl.ac.uk/~ndgm5/} & University of Newcastle\\
   mattias & \htmladdnormallink{Mattias Christensson}{http://www.nordita.dk/~mattias/} & formerly at Nordita\\
+  karlsson & \htmladdnormallink{Torgny Karlsson}{http://www.nordita.dk/people/people.php?variant=single\&cn=Torgny+Karlsson} & Nordita\\
   dorch & \htmladdnormallink{Bertil Dorch}{http://www.astro.ku.dk/~dorch/} & University of Copenhagen\\
   dobler & \htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/} & University of Calgary\\
   christer & \htmladdnormallink{Christer Sandin}{http://www.astro.uu.se/~christer/CS_index.html} & University of Uppsala\\
   brandenb & \htmladdnormallink{Axel Brandenburg}{http://www.nordita.dk/~brandenb/} & Nordita\\
   bing & \htmladdnormallink{Sven Bingert}{http://www.kis.uni-freiburg.de/~peter/corona/} & Kiepenheuer Institute\\
+  apichat & \htmladdnormallink{Apichat Neamvonk}{Apichat.Neamvonk@ncl.ac.uk} & University of Newcastle\\
   amjed & \htmladdnormallink{Amjed Mohammed}{http://ehf.uni-oldenburg.de/member.php?nav=staff\&sprache=english\&show=43} & University of Oldenburg\\
   ajohan & \htmladdnormallink{Anders Johansen}{http://www.mpia-hd.mpg.de/homes/johansen/} & Max Planck Institute for Astronomy, Heidelberg\\
 \end{tabular}
@@ -4888,11 +4893,13 @@ The answer is yes; just go to:
 % ====================================================================== %
 
 \part{Programming the Pencil Code}
+\index{Programming style}
+\index{Style}
 
 \section{Adapting the code}
 \subsection{The Pencil Code coding standard}
 As with any code longer than a few lines the appearance and layout
-of the source code is of the uttmost importance.  Well layed out
+of the source code is of the utmost importance.  Well layed out
 code is more easy to read and understand and as such is less prone 
 to errors.
 
@@ -4906,14 +4913,16 @@ is usually the easiest way to proceed.  In short the most important rules are:
 \begin{itemize}
 \item tab characters do not occur anywhere in the code (in fact the use of
 tab character is an extension to the Fortran standard)
-\item code in any delimited block eg. if statments, do loops, subroutines 
-etc. is indented by precisely 2 spaces.
+\item code in any delimited block, e.g. if statements, do loops, subroutines 
+etc., is indented be precisely 2 spaces.
 \item in general all comments are placed on their own lines with the '!' 
 appearing in the first column. 
 \item all subroutine/functions begin with a standard comment block describing
 what they do, when and by whom they were created and when and by whom any
 non-trivial modifications were made.
-\item lines longer that 78 characters must be explicitly wrapped. 
+\item lines longer that 78 characters should be explicitly wrapped, unless
+there is a block of longer lines that can only be read easily when they are
+not wrapped.
 \end{itemize}
 
 These and other issues are discussed in more depth and with examples in 
@@ -5093,7 +5102,7 @@ are done in that time-step.  The pencils are then calculated in the subroutines
 evolution of the physical variables, as this depends very often on derived
 variables in pencils.
 
-The centralised pencil calculation scheme is a guarantee that
+The centralized pencil calculation scheme is a guarantee that
 \begin{itemize}
   \item All pencils are only calculated once
   \item Pencils are always calculated by the proper physics module
@@ -5149,7 +5158,7 @@ Adding a new pencil to the pencil case is trivial but requires a few steps.
   \item Request the new pencil based on the input parameters in any relevant
       physics module
 \end{itemize}
-Remember that the centralised pencilation scheme is partially there to force
+Remember that the centralized pencilation scheme is partially there to force
 the users of the code to think in general terms when implementing new physics.
 Any derived variable can be useful for a number of different physics problems,
 and it is important that a pencil is accessible in a transparent way to all
@@ -5303,7 +5312,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-02-22 19:34:05 $ $,~ $ $Revision: 1.322 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-02-23 06:00:34 $ $,~ $ $Revision: 1.323 $ $}
 
 \section{Timings}
 
@@ -5514,7 +5523,7 @@ The machines we have used can be characterized as follows:
 
 Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
 well-defined sample problems.
-The \name{CVS} \index{CVS} checkin patterns are displayed graphically
+The \name{CVS} \index{CVS} check-in patterns are displayed graphically
 in Fig~\ref{cvsstat}.
 
 % ---------------------------------------------------------------------- %
@@ -5602,7 +5611,7 @@ other files are given the extension `.h' and those that are generated
 dynamically at compile time have a `.inc' extension.
 
 Fortran source code defining a module is placed in files whose names
-begine with the Fortran module name in all lowercase.  Where there
+begin with the Fortran module name in all lowercase.  Where there
 exist multiple implementations of a specific module the filenames
 are extended using and with an underscore ad a brief name relating
 to what they do.
@@ -5612,7 +5621,7 @@ placed in files with the extension `.in'
 
 
 \subsection{Fortran Code}
-Fortarn is not case-sensitive but in almost all instances we prescribe
+Fortran is not case-sensitive but in almost all instances we prescribe
 some form of capitalization for readability.
 
 In general all Fortran code including keywords, variable names etc. are
@@ -5659,7 +5668,7 @@ be wrapped onto more lines as needed.
 Typically comments should appear with a blank commented line above and
 below the wrapped text of the comment.
 
-Comments should be written in sentetences using the usual capitalization 
+Comments should be written in sentences using the usual capitalization 
 and punctuation of English where comment text continues either side of
 actual code much as text is continued around equations in a mathematical
 document. Punctuation at the end of a comment is mostly omitted. 
@@ -5720,7 +5729,7 @@ structure (see \ref{pencil-case}).
 
 Quantities commonly represented by a particular single character
 in mathematics are typically given names formed by repeating the
-character (usually in lowercase) eg. the velocity $u$ becomes `uu', 
+character (usually in lowercase), e.g. the velocity $u$ becomes `uu', 
 specific entropy $s$ becomes `ss' etc. 
 
 Temperature in variable names is denoted with a capital T so as not to
@@ -5737,7 +5746,7 @@ of variables they are as follows:
 \begin{itemize}
 \item i -- Denotes integer variables typically used as array indices.
 \item i_ -- Denotes pencil case array indices.
-\item idiag_ -- Denotes diganostic indices.
+\item idiag_ -- Denotes diagnostic indices.
 \item l -- Denotes logical/boolean flags
 \item cdt -- Denotes timestep constraint parameters.
 \item unit_ -- Denotes conversion code/physics unit conversion parameters.
@@ -6231,6 +6240,7 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
 
 \subsection{Remeshing (regridding)}
 \index{Remeshing}
+\index{Regridding}
 \label{S-remesh}
 [This should be written up in a better way and put somewhere else.
 But currently, remeshing is only available for the Pencil developers
@@ -8583,7 +8593,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.322 2006-02-22 19:34:05 mee Exp $ $}
+$ $Id: manual.tex,v 1.323 2006-02-23 06:00:34 brandenb Exp $ $}
 
 
 \end{document}
