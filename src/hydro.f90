@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.230 2006-02-23 09:31:54 ajohan Exp $
+! $Id: hydro.f90,v 1.231 2006-02-23 14:03:48 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -160,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.230 2006-02-23 09:31:54 ajohan Exp $")
+           "$Id: hydro.f90,v 1.231 2006-02-23 14:03:48 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1797,117 +1797,108 @@ module Hydro
 
     endsubroutine calc_turbulence_pars
 !***********************************************************************
-subroutine velocity_step(f)
+    subroutine velocity_step(f)
 !Natalia
 !Initialization of velocity in a case of the step-like distribution
 
+      use Cdata
 
- use Cdata
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: step_width, step_length
+      real ::  H_disk_min, L_disk_min, hdisk, ldisk
+    
+      hdisk=H_disk 
+      ldisk=L_disk
+    
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      L_disk_min=Lxyz(3)/(nzgrid-1)
 
-real, dimension (mx,my,mz,mvar+maux) :: f
-  integer :: step_width, step_length
-  real ::  H_disk_min, L_disk_min, hdisk, ldisk
+      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+      if (H_disk .LT. H_disk_min) hdisk=0.
 
-
-
-        hdisk=H_disk 
-        ldisk=L_disk
-
- 	H_disk_min=Lxyz(1)/(nxgrid-1)
-        L_disk_min=Lxyz(3)/(nzgrid-1)
-
-	if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
-	if (H_disk .LT. H_disk_min) hdisk=0.
-
-        if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-	if (L_disk .LT. L_disk_min) ldisk=0.
+      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .LT. L_disk_min) ldisk=0.
 
 
        
-	step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
-	step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
+      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
 
 
-    if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  then
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  then
         f(:,:,:,iuz)=uu_left
         f(:,:,:,iuy)=uy_left
-    end if
-   if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
-   if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
+      end if
+
+      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
+      if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
       
        
-        if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
-            f(:,:,step_length+3+1:mz,iuz)=uu_left
-            f(:,:,step_length+3+1:mz,iuy)=uy_left
-            f(:,:,1:step_length+3,iuy)=uy_right
-        endif
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
+        f(:,:,step_length+3+1:mz,iuz)=uu_left
+        f(:,:,step_length+3+1:mz,iuy)=uy_left
+        f(:,:,1:step_length+3,iuy)=uy_right
+      endif
 
-        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
-            f(1:step_width+3,:,:,iuz)=uu_left
-            f(1:step_width+3,:,:,iuy)=uy_left
-            f(step_width+3+1:mx,:,:,iuy)=uy_right
-        endif
-
-
-	if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
- 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-              f(1:step_width+3,:,step_length+3+1:mz,iuz)=uu_left
-              f(1:step_width+3,:,step_length+3+1:mz,iuy)=uy_left
-              f(step_width+3+1:mx,:,step_length+3+1:mz,iuy)=uy_right
-              f(:,:,1:step_length+3,iuy)=uy_right
-            end if
-       end if
+      if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+        f(1:step_width+3,:,:,iuz)=uu_left
+        f(1:step_width+3,:,:,iuy)=uy_left
+        f(step_width+3+1:mx,:,:,iuy)=uy_right
+      endif
 
 
+      if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+        if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+          f(1:step_width+3,:,step_length+3+1:mz,iuz)=uu_left
+          f(1:step_width+3,:,step_length+3+1:mz,iuy)=uy_left
+          f(step_width+3+1:mx,:,step_length+3+1:mz,iuy)=uy_right
+          f(:,:,1:step_length+3,iuy)=uy_right
+        end if
+      end if
 
-endsubroutine  velocity_step
+    endsubroutine  velocity_step
 !***********************************************************************
-subroutine velocity_kep_disk(f,zz)
+    subroutine velocity_kep_disk(f,zz)
 !Natalia
 !Initialization of velocity in a case of the step-like distribution
 
+      use Cdata
 
- use Cdata
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: zz
+      integer :: step_length
+      real ::   L_disk_min,  ldisk,   ll
 
-real, dimension (mx,my,mz,mvar+maux) :: f
-real, dimension (mx,my,mz) :: zz
-  integer :: step_length
-  real ::   L_disk_min,  ldisk,   ll
+      ll=Lxyz(3)-L_disk
+      ldisk=L_disk
 
-     ll=Lxyz(3)-L_disk
-     ldisk=L_disk
+      L_disk_min=Lxyz(3)/(nzgrid-1)
 
-     L_disk_min=Lxyz(3)/(nzgrid-1)
-
-        if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-	if (L_disk .LT. L_disk_min) ldisk=0.
+      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .LT. L_disk_min) ldisk=0.
      
-	step_length=nint((nzgrid-1)*ll/Lxyz(3))
+      step_length=nint((nzgrid-1)*ll/Lxyz(3))
 
-        if (ldisk .LT. L_disk_min) then
-            f(:,:,:,iuz)=uu_left
-            f(:,:,:,iuy)=(zz-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
-        endif
+      if (ldisk .LT. L_disk_min) then
+        f(:,:,:,iuz)=uu_left
+        f(:,:,:,iuy)=(zz-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+      endif
 
-        if (ldisk .GE. Lxyz(3)) then
-            f(:,:,:,iuz)=uu_left
-            f(:,:,:,iuy)=R_star*Omega*sqrt(R_star/zz)
-        endif
+      if (ldisk .GE. Lxyz(3)) then
+        f(:,:,:,iuz)=uu_left
+        f(:,:,:,iuy)=R_star*Omega*sqrt(R_star/zz)
+      endif
 !
-        if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-           f(:,:,:,iuz)=uu_left
-           f(:,:,step_length+3+1:mz,iuy)=R_star*Omega*sqrt(R_star/zz(:,:,step_length+3+1:mz))
-           f(:,:,1:step_length+3,iuy)=(zz(:,:,1:step_length+3)-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+      if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+        f(:,:,:,iuz)=uu_left
+        f(:,:,step_length+3+1:mz,iuy)=R_star*Omega*sqrt(R_star/zz(:,:,step_length+3+1:mz))
+        f(:,:,1:step_length+3,iuy)=(zz(:,:,1:step_length+3)-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+      end if
 
-        end if
+!   f(:,:,:,iuy)=f(:,:,:,iuy)+R_star*Omega*sqrt(R_star/zz)
+!       f(:,:,:,iuz)=uu_left
 
- 
-
-! f(:,:,:,iuy)=f(:,:,:,iuy)+R_star*Omega*sqrt(R_star/zz)
- !         f(:,:,:,iuz)=uu_left
-
-
-endsubroutine  
+    endsubroutine  
 
 !***********************************************************************
 endmodule Hydro

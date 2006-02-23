@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.220 2006-02-21 15:33:09 nbabkovs Exp $
+! $Id: density.f90,v 1.221 2006-02-23 14:03:48 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -94,8 +94,6 @@ module Density
       if (.not. first) call fatal_error('register_density','module registration called twice')
       first = .false.
 !
-!ajwm      ldensity = .true.
-!
       ilnrho = nvar+1           ! indix to access lam
       nvar = nvar+1             ! added 1 variable
 !
@@ -111,7 +109,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.220 2006-02-21 15:33:09 nbabkovs Exp $")
+           "$Id: density.f90,v 1.221 2006-02-23 14:03:48 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -746,93 +744,86 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-subroutine density_step(f,xx,zz)
+    subroutine density_step(f,xx,zz)
 !Natalia
 !Initialization of density in a case of the step-like distribution
 
-  real, dimension (mx,my,mz,mvar+maux) :: f
-  real, dimension (mx,my,mz) :: xx, zz, grav_part, grav_part_const, cf_part_const, cf_part1, cf_part2, cf_part3, cf_part
-  integer :: step_width, step_length
-  real :: H_disk_min, L_disk_min, hdisk, ldisk, V_t, ll
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx, zz, grav_part, grav_part_const, cf_part_const, cf_part1, cf_part2, cf_part3, cf_part
+      integer :: step_width, step_length
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, V_t, ll
   
 
-        hdisk=H_disk 
-        ldisk=L_disk
+      hdisk=H_disk 
+      ldisk=L_disk
 
- 	H_disk_min=Lxyz(1)/(nxgrid-1)
-        L_disk_min=Lxyz(3)/(nzgrid-1)
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      L_disk_min=Lxyz(3)/(nzgrid-1)
 
-        if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
-	if (H_disk .LT. H_disk_min) hdisk=0.
+      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+      if (H_disk .LT. H_disk_min) hdisk=0.
 
-        if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-	if (L_disk .LT. L_disk_min) ldisk=0.
+      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .LT. L_disk_min) ldisk=0.
 
-	step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
-	step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
-
-
-        if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_left)
-	!if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
-        if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
+      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
 
 
-        if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
-            f(:,:,1:step_length+3,ilnrho)=log(rho_right)
-            f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)
-        endif
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_left)
+!if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
+      if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
 
 
-   if (sharp) then
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
+        f(:,:,1:step_length+3,ilnrho)=log(rho_right)
+        f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)
+      endif
 
+
+      if (sharp) then
         if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
-            f(1:step_width+3,:,:,ilnrho)=log(rho_left)
-            f(step_width+3+1:mx,:,:,ilnrho)=log(rho_right)
+          f(1:step_width+3,:,:,ilnrho)=log(rho_left)
+          f(step_width+3+1:mx,:,:,ilnrho)=log(rho_right)
         endif
 
+        if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+          if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+            f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_left)
+            f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_right)
+            f(:,:,1:step_length+3,ilnrho)=log(rho_right)
+          end if
+        end if
+      end if 
 
-	if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
- 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-              f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_left)
-             f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_right)
-             f(:,:,1:step_length+3,ilnrho)=log(rho_right)
-            end if
-       end if
-
-   end if 
-
-  if (smooth) then
-     
-    ll=Lxyz(3)-ldisk
-    V_t=cs0/sqrt(gamma)
+      if (smooth) then
+        ll=Lxyz(3)-ldisk
+        V_t=cs0/sqrt(gamma)
   
-
-       if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
-            f(:,:,:,ilnrho)=log(rho_left)-(xx/H_disk)**2
+        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+          f(:,:,:,ilnrho)=log(rho_left)-(xx/H_disk)**2
         endif
 
-	if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
- 	  if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+        if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+          if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
 
-    grav_part_const=Omega**2*R_star**3/V_t**2
-    grav_part=grav_part_const/zz-grav_part_const/(R_star+ll)
-    cf_part_const=Omega**2*R_star**3/V_t**2/ll**2/(R_star+ll) 
-    cf_part1=cf_part_const*(zz*zz/2.-(ll+R_star)**2/2.)
-    cf_part2=-2.*cf_part_const*R_star*(zz-ll-R_star)
-    cf_part3=cf_part_const*R_star**2*log(zz/(ll+R_star))
-    cf_part=cf_part1+cf_part2+cf_part3
+            grav_part_const=Omega**2*R_star**3/V_t**2
+            grav_part=grav_part_const/zz-grav_part_const/(R_star+ll)
+            cf_part_const=Omega**2*R_star**3/V_t**2/ll**2/(R_star+ll) 
+            cf_part1=cf_part_const*(zz*zz/2.-(ll+R_star)**2/2.)
+            cf_part2=-2.*cf_part_const*R_star*(zz-ll-R_star)
+            cf_part3=cf_part_const*R_star**2*log(zz/(ll+R_star))
+            cf_part=cf_part1+cf_part2+cf_part3
 
 
             f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)-(xx/H_disk)**2
             f(:,:,1:step_length+3,ilnrho)=log(rho_left)-(xx/H_disk)**2 &
-                                         +grav_part+cf_part
-            end if
-       end if
+                                               +grav_part+cf_part
+          end if
+        end if
+      end if
 
-  end if
-
-
-endsubroutine density_step
+    endsubroutine density_step
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,lnrhoint)
