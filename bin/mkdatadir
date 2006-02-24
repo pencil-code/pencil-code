@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.43 2006-02-23 16:49:02 ajohan Exp $
+#  $Id: mkdatadir,v 1.44 2006-02-24 17:37:10 ajohan Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -91,7 +91,7 @@ else if ($hn =~ obelix*) then
 else if ($hn =~ psi24*) then
   set str='s/afs\/ipp-garching\.mpg\.de\/home\/a/u/g'
 else if ($hn =~ rio* || $hn =~ pia*) then
-  set str='s/afs\/ipp\/home\/a/nfs\/mpia2/g'
+  set str='s/afs\/ipp\/home\/[a-z]/nfs\/mpia2/g'
 else if ($hn =~ gwdu102) then
   set str='s/\/usr\/users/\/home\/temp1/g'
 else if ($hn =~ lfc*) then
@@ -99,9 +99,8 @@ else if ($hn =~ lfc*) then
 else
   set str='s/home/var\/tmp/g'
 endif
-echo $str
 #
-sed -e $str .tmp >! .scr
+sed -e "$str" .tmp >! .scr
 if ( -d data ) then
   echo Moving present data directory to: `cat .scr`
   mkdir -p `cat .scr`
