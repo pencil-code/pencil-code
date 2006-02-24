@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.221 2006-02-23 14:03:48 mee Exp $
+! $Id: density.f90,v 1.222 2006-02-24 15:29:38 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -109,7 +109,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.221 2006-02-23 14:03:48 mee Exp $")
+           "$Id: density.f90,v 1.222 2006-02-24 15:29:38 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -751,7 +751,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx, zz, grav_part, grav_part_const, cf_part_const, cf_part1, cf_part2, cf_part3, cf_part
       integer :: step_width, step_length
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, V_t, ll
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, const_gl, ll
   
 
       hdisk=H_disk 
@@ -771,10 +771,10 @@ module Density
 
 
       if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_left)
-!if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
-      if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
-
-
+      
+      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
+   
+    
       if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
         f(:,:,1:step_length+3,ilnrho)=log(rho_right)
         f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)
@@ -797,31 +797,47 @@ module Density
       end if 
 
       if (smooth) then
+
         ll=Lxyz(3)-ldisk
-        V_t=cs0/sqrt(gamma)
+        const_gl=cs0**2!-nu/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
   
-        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+           grav_part_const=Omega**2*R_star**3/const_gl
+           grav_part=grav_part_const/zz-grav_part_const/(R_star+ll)
+  
+           cf_part_const=Omega**2*R_star**3/const_gl/ll**2/(R_star+ll) 
+           cf_part1=cf_part_const*(zz*zz/2.-(ll+R_star)**2/2.)
+           cf_part2=-2.*cf_part_const*R_star*(zz-ll-R_star)
+           cf_part3=cf_part_const*R_star**2*log(zz/(ll+R_star))
+
+           cf_part=cf_part1+cf_part2+cf_part3
+
+
+        if (ldisk .EQ. Lxyz(3)) then
           f(:,:,:,ilnrho)=log(rho_left)-(xx/H_disk)**2
         endif
 
-        if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
-          if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-
-            grav_part_const=Omega**2*R_star**3/V_t**2
-            grav_part=grav_part_const/zz-grav_part_const/(R_star+ll)
-            cf_part_const=Omega**2*R_star**3/V_t**2/ll**2/(R_star+ll) 
-            cf_part1=cf_part_const*(zz*zz/2.-(ll+R_star)**2/2.)
-            cf_part2=-2.*cf_part_const*R_star*(zz-ll-R_star)
-            cf_part3=cf_part_const*R_star**2*log(zz/(ll+R_star))
-            cf_part=cf_part1+cf_part2+cf_part3
+        if (ldisk .EQ. 0.) then
+          f(:,:,:,ilnrho)=log(rho_right)-(xx/H_disk)**2+grav_part+cf_part
+        endif
 
 
-            f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)-(xx/H_disk)**2
-            f(:,:,1:step_length+3,ilnrho)=log(rho_left)-(xx/H_disk)**2 &
-                                               +grav_part+cf_part
-          end if
+        if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+
+
+           f(:,:,step_length+3+1:mz,ilnrho)= &
+               log(rho_left)-(xx(:,:,step_length+3+1:mz)/H_disk)**2
+           f(:,:,1:step_length+3,ilnrho)=&
+               log(rho_left)-(xx(:,:,1:step_length+3)/H_disk)**2 &
+               +grav_part(:,:,1:step_length+3)&
+               +cf_part(:,:,1:step_length+3)
         end if
-      end if
+   
+  end if
+
+          !  f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)-(xx/H_disk)**2
+          !  f(:,:,1:step_length+3,ilnrho)=log(rho_left)-(xx/H_disk)**2 &
+          !                                     +grav_part+cf_part
+     
 
     endsubroutine density_step
 !***********************************************************************

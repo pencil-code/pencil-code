@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.232 2006-02-24 08:29:33 ajohan Exp $
+! $Id: hydro.f90,v 1.233 2006-02-24 15:29:38 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -160,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.232 2006-02-24 08:29:33 ajohan Exp $")
+           "$Id: hydro.f90,v 1.233 2006-02-24 15:29:38 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -850,16 +850,17 @@ module Hydro
         endif
       endif
 !
-! add effective gravity term = Fgrav-Fcentrifugal
+! add effective gravity term = -Fgrav+Fcentrifugal
 ! Natalia
 !
       if (leffective_gravity) then
         if (headtt) &
           print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-& 
-          Omega**2*R_star**3/z(n)/z(n)  !/sqrt(1.-R_star/y(m))
+          Omega**2*R_star**3/z(n)/z(n)
+ !/sqrt(1.-R_star/y(m))
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-          p%uu(:,2)*p%uu(:,2)/z(n)                
+          p%uu(:,2)*p%uu(:,2)/z(n)               
 !Omega*R_star/y(m)*(1.-2.*p%uu(:,2))
       endif
 !
@@ -1900,13 +1901,13 @@ module Hydro
       endif
 !
       if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+
         f(:,:,:,iuz)=uu_left
         f(:,:,step_length+3+1:mz,iuy)=R_star*Omega*sqrt(R_star/zz(:,:,step_length+3+1:mz))
         f(:,:,1:step_length+3,iuy)=(zz(:,:,1:step_length+3)-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
-      end if
+      !  f(:,:,1:step_length+3,iuy)=sqrt(zz(:,:,1:step_length+3)-R_star)/sqrt(ll)*Omega*R_star*sqrt(R_star/(ll+R_star))
 
-!   f(:,:,:,iuy)=f(:,:,:,iuy)+R_star*Omega*sqrt(R_star/zz)
-!       f(:,:,:,iuz)=uu_left
+      end if
 
     endsubroutine  
 
