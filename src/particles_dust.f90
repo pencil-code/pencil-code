@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.62 2006-02-19 10:25:01 ajohan Exp $
+! $Id: particles_dust.f90,v 1.63 2006-02-24 18:25:21 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.62 2006-02-19 10:25:01 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.63 2006-02-24 18:25:21 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -455,15 +455,18 @@ module Particles
 !
       eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
       v_Kepler   =  1.0/abs(beta_glnrho_global(1))      
-      if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
+      particles_per_gridcell=npar/(nxgrid*nygrid*nzgrid)
+      if (lroot) then
+        print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
+        print*, 'streaming: particles_per_gridcell=', particles_per_gridcell
+      endif
 !
 !  Place particles according to probability function.
 !
-      particles_per_gridcell=npar/(nxgrid*nygrid*nzgrid)
       k0=0
       do l=l1,l2; do n=n1,n2
         npar_bin=int(particles_per_gridcell* &
-            (1.0+amplxxp*cos(kx_xxp*x(l))*cos(kx_xxp*z(n))))
+            (1.0+amplxxp*cos(kx_xxp*x(l))*cos(kz_xxp*z(n))))
         if (npar_bin>=2.and.mod(n,2)==0) npar_bin=npar_bin+1
         do k=k0+1,k0+npar_bin
           if (k<=npar_loc) then
@@ -492,12 +495,12 @@ module Particles
         do k=k0+1,npar_loc
           call random_number_wrapper(fp(k,ixp))
           call random_number_wrapper(fp(k,izp))
-          fp(k,ixp)=xyz0(1)+fp(k,ixp)*Lxyz(1)
-          fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+          fp(k,ixp)=xyz0_loc(1)+fp(k,ixp)*Lxyz_loc(1)
+          fp(k,izp)=xyz0_loc(3)+fp(k,izp)*Lxyz_loc(3)
           fp(k,iyp)=0.0
         enddo
-        if (lroot) print '(A,i7,A)', 'streaming: placed ', &
-            npar_loc-k0, ' particles randomly.'
+        print '(A,i7,A,i3,A)', 'streaming: placed ', &
+            npar_loc-k0, ' particles randomly (proc', iproc, ')'
       endif
 !
 !  Set fluid fields.
