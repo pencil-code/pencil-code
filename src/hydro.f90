@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.231 2006-02-23 14:03:48 mee Exp $
+! $Id: hydro.f90,v 1.232 2006-02-24 08:29:33 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu
-! PENCILS PROVIDED u2u13,del2u,del4u,del6u,graddivu
+! PENCILS PROVIDED u2u13,del2u,del4u,del6u,graddivu,del6u_bulk
 !
 !***************************************************************
 module Hydro
@@ -160,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.231 2006-02-23 14:03:48 mee Exp $")
+           "$Id: hydro.f90,v 1.232 2006-02-24 08:29:33 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -664,13 +664,14 @@ module Hydro
 !   08-nov-04/tony: coded
 !
       use Cdata
+      use Deriv
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f       
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gui
-      real, dimension (nx) :: ugui
+      real, dimension (nx) :: ugui, tmp
       integer :: i,j
 !
       intent(in) :: f
@@ -735,6 +736,15 @@ module Hydro
       if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
 ! del6u
       if (lpencil(i_del6u)) call del6v(f,iuu,p%del6u)
+! del6u_bulk
+      if (lpencil(i_del6u_bulk)) then
+        call der6(f,iux,tmp,1)
+        p%del6u_bulk(:,1)=tmp
+        call der6(f,iuy,tmp,2)
+        p%del6u_bulk(:,2)=tmp
+        call der6(f,iuz,tmp,3)
+        p%del6u_bulk(:,3)=tmp
+      endif
 ! del2u
 ! graddivu
       if (lpencil(i_del2u)) then 
