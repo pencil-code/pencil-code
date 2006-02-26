@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.19 2005-12-30 08:11:53 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.20 2006-02-26 05:51:35 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -127,7 +127,7 @@ varcontent[iaatest].idlvar   = 'aatest'
 varcontent[iaatest].idlinit    = 'fltarr(mx,my,mz,3*9)*one'
 varcontent[iaatest].idlvarloc= 'aatest_loc'
 varcontent[iaatest].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3*9)*one'
-varcontent[iaatest].skip  = 26
+varcontent[iaatest].skip  = 26+9
 
 varcontent[ifx].variable = 'Radiation vector ?something? (ff)'
 varcontent[ifx].idlvar   = 'ff'
