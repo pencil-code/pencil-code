@@ -1,4 +1,4 @@
-; $Id: ryaver_alp.pro,v 1.1 2005-06-12 19:21:41 brandenb Exp $
+; $Id: ryaver_alp.pro,v 1.2 2006-02-26 05:53:43 brandenb Exp $
 ;
 ;  reads the yaver.dat file, puts the result into fmxz array
 ;  this routine keeps only the last time
@@ -48,6 +48,11 @@ sx=sin(x) & cx=cos(x)
 sz=sin(z) & cz=cos(z)
 mat=fltarr(nz,2,2) & mat1=fltarr(nz,2,2) & mat(*,0,0)=+sz & mat(*,0,1)=+cz & mat(*,1,0)=+cz & mat(*,1,1)=-sz
 matx=fltarr(nx,2,2) & matx1=fltarr(nx,2,2) & matx(*,0,0)=+sx & matx(*,0,1)=+cx & matx(*,1,0)=+cx & matx(*,1,1)=-sx
+;
+;  mean vorticity
+;
+Wx=+cx#sz
+Wz=-sx#cz
 ;
 ;  invert
 ;
@@ -100,6 +105,35 @@ while not eof(1) do begin
   endfor
   endfor
   ;
+  ; alpha tensor
+  ;
+  alphayy=alpijxz1(*,*,1,1)
+  alpheyy=alpijexz1(*,*,1,1)
+  ;
+  ;  project gamma vector against vorticity
+  ;
+  gammax=.5*(alpijxz1(*,*,2,1)-alpijxz1(*,*,1,2))
+  gammay=.5*(alpijxz1(*,*,0,2)-alpijxz1(*,*,2,0))
+  gammaz=.5*(alpijxz1(*,*,1,0)-alpijxz1(*,*,0,1))
+  gammaW=gammax*Wx+gammaz*Wz
+  ;
+  gammex=.5*(alpijexz1(*,*,2,1)-alpijexz1(*,*,1,2))
+  gammey=.5*(alpijexz1(*,*,0,2)-alpijexz1(*,*,2,0))
+  gammez=.5*(alpijexz1(*,*,1,0)-alpijexz1(*,*,0,1))
+  gammeW=gammex*Wx+gammez*Wz
+  ;
+  ;  project delta vector against vorticity
+  ;
+  etaxx=+.5*etaijkxz1(*,*,0,1,1)
+  etazz=-.5*etaijkxz1(*,*,2,1,0)
+  etayy=.5*(etaijkxz1(*,*,1,2,0)-etaijkxz1(*,*,1,0,1))
+  ;
+  deltax=.25*(etaijkxz1(*,*,2,0,1)-etaijkxz1(*,*,1,1,0)-etaijkxz1(*,*,2,2,0))
+  deltaz=.25*(etaijkxz1(*,*,0,2,0)-etaijkxz1(*,*,0,0,1)-etaijkxz1(*,*,1,1,1))
+  deltaW=deltax*Wx+deltaz*Wz
+  ;
+  ;  total 2-D averages
+  ;
   alpijxz1m=total(total(alpijxz1,1),1)/(nx*nz)
   etaijkxz1m=total(total(etaijkxz1,1),1)/(nx*nz)
   alpijexz1m=total(total(alpijexz1,1),1)/(nx*nz)
@@ -125,11 +159,31 @@ while not eof(1) do begin
     etaijkxz1mt=etaijkxz1m
     alpijexz1mt=alpijexz1m
     tt=t
+    gammeyt=gammey
+    gammeWt=gammeW
+    gammayt=gammay
+    gammaWt=gammaW
+    deltaWt=deltaW
+    etaxxt=etaxx
+    etayyt=etayy
+    etazzt=etazz
+    alphayyt=alphayy
+    alpheyyt=alpheyy
   endif else begin
     alpijxz1mt=[alpijxz1mt,alpijxz1m]
     etaijkxz1mt=[etaijkxz1mt,etaijkxz1m]
     alpijexz1mt=[alpijexz1mt,alpijexz1m]
     tt=[tt,t]
+    gammayt=[gammayt,gammay]
+    gammaWt=[gammaWt,gammaW]
+    gammeyt=[gammeyt,gammey]
+    gammeWt=[gammeWt,gammeW]
+    deltaWt=[deltaWt,deltaW]
+    etaxxt=[etaxxt,etaxx]
+    etayyt=[etayyt,etayy]
+    etazzt=[etazzt,etazz]
+    alphayyt=[alphayyt,alphayy]
+    alpheyyt=[alpheyyt,alpheyy]
   endelse
   icount=icount+1
   ;
@@ -146,4 +200,31 @@ alpijexz1mt=reform(alpijexz1mt,3,icount,3)
 print
 print,'alpijxz1mt,etaijkxz1mt,alpijexz1mt'
 help,alpijxz1mt,etaijkxz1mt,alpijexz1mt
+;
+deltax=.25*(etaijkxz1mt(2,*,0,1)-etaijkxz1mt(2,*,2,0))
+deltaz=.25*(etaijkxz1mt(0,*,2,0)-etaijkxz1mt(0,*,0,1))
+;
+gammayt=reform(gammayt,nx,icount,nz)
+gammaWt=reform(gammaWt,nx,icount,nz)
+gammeyt=reform(gammeyt,nx,icount,nz)
+gammeWt=reform(gammeWt,nx,icount,nz)
+deltaWt=reform(deltaWt,nx,icount,nz)
+etaxxt=reform(etaxxt,nx,icount,nz)
+etayyt=reform(etayyt,nx,icount,nz)
+etazzt=reform(etazzt,nx,icount,nz)
+alphayyt=reform(alphayyt,nx,icount,nz)
+alpheyyt=reform(alpheyyt,nx,icount,nz)
+;
+gammaytm=total(total(gammayt,1),2)/(nx*nz)
+gammaWtm=total(total(gammaWt,1),2)/(nx*nz)
+gammeytm=total(total(gammeyt,1),2)/(nx*nz)
+gammeWtm=total(total(gammeWt,1),2)/(nx*nz)
+deltaWtm=total(total(deltaWt,1),2)/(nx*nz)
+etaxxtm=total(total(etaxxt,1),2)/(nx*nz)
+etayytm=total(total(etayyt,1),2)/(nx*nz)
+etazztm=total(total(etazzt,1),2)/(nx*nz)
+alphayytm=total(total(alphayyt,1),2)/(nx*nz)
+alpheyytm=total(total(alpheyyt,1),2)/(nx*nz)
+;
+save,file='ryaver_alp.sav',tt,gammaytm,gammaWtm,gammeytm,gammeWtm,deltaWtm,etaxxtm,etayytm,etazztm,alphayytm,alpheyytm,alpijxz1mt,etaijkxz1mt,alpijexz1mt
 END
