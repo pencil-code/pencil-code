@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.64 2006-02-24 18:37:01 ajohan Exp $
+! $Id: particles_dust.f90,v 1.65 2006-02-26 16:33:06 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.64 2006-02-24 18:37:01 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.65 2006-02-26 16:33:06 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -446,62 +446,105 @@ module Particles
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      integer, parameter :: nz_inc=10
-      real :: r, p, particles_per_gridcell
       real :: eta_glnrho, v_Kepler
-      integer :: l, k, k0, npar_bin
+      real :: ampl, kx, kz, x0, x1, z0, z1, r, p, xprob, zprob, dxprob, dzprob
+      real, dimension(2) :: fprob
+      real, dimension(2,2) :: dfprob, dfprob_inv
+      integer :: j, k
 !
-!
+!  Define a few disc parameters.
 !
       eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
       v_Kepler   =  1.0/abs(beta_glnrho_global(1))      
-      particles_per_gridcell=npar/(nxgrid*nygrid*nzgrid)
-      if (lroot) then
-        print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
-        print*, 'streaming: particles_per_gridcell=', particles_per_gridcell
-      endif
+      if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
 !
 !  Place particles according to probability function.
 !
-      k0=0
-      do l=l1,l2; do n=n1,n2
-        npar_bin=int(particles_per_gridcell* &
-            (1.0+amplxxp*cos(kx_xxp*x(l))*cos(kz_xxp*z(n))))
-        if (npar_bin>=2.and.mod(n,2)==0) npar_bin=npar_bin+1
-        do k=k0+1,k0+npar_bin
-          if (k<=npar_loc) then
-            call random_number_wrapper(r)
-            call random_number_wrapper(p)
-            fp(k,ixp)=x(l)+(2*r-1.0)*dx/2
-            fp(k,iyp)=0.0
-            fp(k,izp)=z(n)+(2*p-1.0)*dz/2
-            fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
-                ( real(coeff(1))*cos(kx_xxp*x(l)) - &
-                 aimag(coeff(1))*sin(kx_xxp*x(l)))*cos(kz_xxp*z(n))
-            fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
-                ( real(coeff(2))*cos(kx_xxp*x(l)) - &
-                 aimag(coeff(2))*sin(kx_xxp*x(l)))*cos(kz_xxp*z(n))
-            fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
-                (aimag(coeff(3))*cos(kx_xxp*x(l)) + &
-                  real(coeff(3))*sin(kx_xxp*x(l)))*sin(kz_xxp*z(n))
-          endif
+      ampl=0.5*amplxxp  ! Not sure why factor 0.5 is needed here...
+!  Abbreviations      
+      kx=kx_xxp
+      kz=kz_xxp
+      x0=xyz0_loc(1); x1=xyz1_loc(1); z0=xyz0_loc(3); z1=xyz1_loc(3)
+!  Solve
+!    int_{x0}^{x}[n(x,z)]*dx / int_{x0}^{x1}[n(x,z)]*dx = r
+!    int_{z0}^{z}[n(x,z)]*dz / int_{z0}^{z1}[n(x,z)]*dz = p
+!  where r and p are random numbers between 0 and 1.
+      do k=1,npar_loc
+
+        call random_number_wrapper(r)
+        call random_number_wrapper(p)
+
+        fprob = (/ 0.50,0.50 /)
+        xprob = 0.75
+        zprob = 0.75
+
+        j=0
+!  Use Newton-Raphson iteration to invert function.
+        do while ( (abs(fprob(1)) > 0.0001) .or. (abs(fprob(2)) > 0.0001) )
+
+          fprob(1) = &
+              ((xprob-x0)+ampl/kx*(sin(kx*xprob)-sin(kx*x0))*cos(kz*zprob) ) / &
+              ((x1   -x0)+ampl/kx*(sin(kx*x1   )-sin(kx*x0))*cos(kz*zprob) ) &
+              - r
+          fprob(2) = &
+              ((zprob-z0)+ampl/kz*(sin(kz*zprob)-sin(kz*z0))*cos(kx*xprob) ) / &
+              ((z1   -z0)+ampl/kz*(sin(kz*z1   )-sin(kz*z0))*cos(kx*xprob) ) &
+              - p
+
+          dfprob(1,1) = &
+              ( 1.0 + ampl*cos(kx*xprob)*cos(kz*zprob) ) / &
+              ((x1-   x0)+ampl/kx*(sin(kx*x1   )-sin(kx*x0))*cos(kz*zprob) )
+          dfprob(2,2) = &
+              ( 1.0 + ampl*cos(kz*zprob)*cos(kx*xprob) ) / &
+              ((z1-   z0)+ampl/kz*(sin(kz*z1   )-sin(kz*z0))*cos(kx*xprob) )
+
+          dfprob(1,2) = &
+              ( (-1)*ampl*kz/kx*(sin(kx*xprob)-sin(kx*x0))*sin(kz*zprob) ) / &
+              ( (x1-   x0)+ampl/kx*(sin(kx*x1   )-sin(kx*x0))*cos(kz*zprob) ) &
+              + ((xprob-x0)+ampl/kx*(sin(kx*xprob)-sin(kx*x0))*cos(kz*zprob)) &
+              * (-1)*1/ &
+              ((x1-   x0)+ampl/kx*(sin(kx*x1   )-sin(kx*x0))*cos(kz*zprob) )**2&
+              * (-1)*ampl*kz/kx*(sin(kx*x1)   -sin(kx*x0))*sin(kz*zprob)
+          dfprob(2,1) = &
+              ( (-1)*ampl*kx/kz*(sin(kz*zprob)-sin(kz*z0))*sin(kx*xprob) ) / &
+              ( (z1-   z0)+ampl/kz*(sin(kz*z1   )-sin(kz*z0))*cos(kx*xprob) ) &
+              + ((zprob-z0)+ampl/kz*(sin(kz*zprob)-sin(kz*z0))*cos(kx*xprob)) &
+              * (-1)*1/ &
+              ((z1-   z0)+ampl/kz*(sin(kz*z1   )-sin(kz*z0))*cos(kx*xprob) )**2&
+              * (-1)*ampl*kx/kz*(sin(kz*z1)   -sin(kz*z0))*sin(kx*xprob)
+
+          dfprob_inv(1,1) =  dfprob(2,2); dfprob_inv(1,2) = -dfprob(1,2)
+          dfprob_inv(2,1) = -dfprob(2,1); dfprob_inv(2,2) =  dfprob(1,1)
+          dfprob_inv      = dfprob_inv/ &
+              (dfprob(1,1)*dfprob(2,2)-dfprob(1,2)*dfprob(2,1))
+
+          dxprob = -(dfprob_inv(1,1)*fprob(1)+dfprob_inv(1,2)*fprob(2))
+          dzprob = -(dfprob_inv(2,1)*fprob(2)+dfprob_inv(2,2)*fprob(2))
+
+          xprob = xprob+dxprob
+          zprob = zprob+dzprob
+
+          j=j+1
+
         enddo
-        k0=k0+npar_bin
-      enddo; enddo
-!
-!  Particles left out by round off are just placed randomly.
-!      
-      if (k0+1<=npar_loc) then
-        do k=k0+1,npar_loc
-          call random_number_wrapper(fp(k,ixp))
-          call random_number_wrapper(fp(k,izp))
-          fp(k,ixp)=xyz0_loc(1)+fp(k,ixp)*Lxyz_loc(1)
-          fp(k,izp)=xyz0_loc(3)+fp(k,izp)*Lxyz_loc(3)
-          fp(k,iyp)=0.0
-        enddo
-        print '(A,i7,A,i3,A)', 'streaming: placed ', &
-            npar_loc-k0, ' particles randomly (proc', iproc, ')'
-      endif
+
+        if ( mod(k,npar_loc/100)==0) then
+          print '(i7,i3,4f11.7)', k, j, r, p, xprob, zprob
+        endif
+
+        fp(k,ixp)=xprob
+        fp(k,izp)=zprob
+!  Set particle velocity.
+        fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(1))*cos(kx_xxp*xprob) - &
+             aimag(coeff(1))*sin(kx_xxp*xprob))*cos(kz_xxp*zprob)
+        fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(2))*cos(kx_xxp*xprob) - &
+             aimag(coeff(2))*sin(kx_xxp*xprob))*cos(kz_xxp*zprob)
+        fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
+            (aimag(coeff(3))*cos(kx_xxp*xprob) + &
+              real(coeff(3))*sin(kx_xxp*xprob))*sin(kz_xxp*zprob)
+      enddo
 !
 !  Set fluid fields.
 !
