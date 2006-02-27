@@ -12,13 +12,13 @@ fi
 
 exec $perl -x -S $0 "$@"     # -x: start from the following line
 #======================================================================#
-#! /Good_Path/perl -w 
+#! /Good_Path/perl -w
 # line 17
 
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.67 2006-02-20 16:12:40 ajohan Exp $
+# CVS: $Id: auto-test,v 1.68 2006-02-27 23:48:51 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -29,25 +29,26 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # - Remove directory from /var/tmp when encountering Ctl-c
 # - Treat `cvs update' as separate stage that can be `OK' or not
 use strict;
-use constant QUIET=>1;
+use constant QUIET       => 1;
+use constant LOCK_FAILED => 128; # return status if we can't get lock
 use Cwd;
 use POSIX qw(floor);
 use Getopt::Long;
-use vars qw{ %failed $ntests $test_status };
+use vars qw{ %failed $test_status }; # do we really need global vars here?
 use IPC::Open2;
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ :
-my @sampdir = qw( conv-slab cosmicray kin-dynamo geodynamo
-                  helical-MHDturb interlocked-fluxrings mdwarf
-                  interstellar 0d-tests/heating_ionize
-                  0d-tests/heating_noionize conv-slab-noequi
-                  1d-tests/solar-atmosphere 1d-tests/sod_10
-                  2d-tests/Kelvin-Helmholtz-disc
-                  dust-vortex MRI-turbulence_hyper random_uu_particles
-                  chiral-diffusion backwards-compatible testfield meissner
-                  2d-tests/globaldisc
-                );
+my @sampdir = qw( conv-slab cosmicray );
+#                   helical-MHDturb interlocked-fluxrings mdwarf
+#                   interstellar 0d-tests/heating_ionize
+#                   0d-tests/heating_noionize conv-slab-noequi
+#                   1d-tests/solar-atmosphere 1d-tests/sod_10
+#                   2d-tests/Kelvin-Helmholtz-disc
+#                   dust-vortex MRI-turbulence_hyper random_uu_particles
+#                   chiral-diffusion backwards-compatible testfield meissner
+#                   2d-tests/globaldisc
+#                );
 # Test the following subdirs of runs/ :
 #my @runsdir = qw( radiation/solar1d4);
 my @runsdir = qw( );
@@ -56,11 +57,17 @@ my @runsdir = qw( );
 #@sampdir = qw( conv-slab );
 #@runsdir = qw(  );
 
-my $tmpdir = "/var/tmp/pencil-tmp-$$";
+my $ntests      = 0;                 # total number of tests run
+my $failed      = 0;
+my $remove_lock = 0;
+my $failure_message = '';
+my $tmpdir      = "/var/tmp/pencil-tmp-$$";
+my $lockdir     = '/var/tmp';     # put / check for lock file here
+my $lockfile    = "$lockdir/pencil-auto-test.pid";
+my $noheader    = "Couldn't find header line";
+my $headerpat   = '^-*\s*(-+[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
                                                                # for C float
-my $headerpat = '^-*\s*(-+[A-Za-z0-9_]+)+-*\s*$'; # regexp for header line
-my $noheader = "Couldn't find header line";
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
 my (%opts);			# variables written by GetOptions
@@ -90,8 +97,13 @@ Options:
   -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /var/tmp
   -s,  --short             \tPrint short directory names only
   -p,  --postproc=PP       \tApply postprocessor PP to output from make
-  --rsh=RSH-PROG           \tUse the specified program as to get a remote shell
-  --nodelist=NODE1,...     \tUse a forked remote shell to parallelize";
+       --rsh=RSH-PROG      \tUse the specified program as to get a remote shell
+       --nodelist=NODE1,.. \tUse a forked remote shell to parallelize
+       --no-summary        \tDo not summarize at the end
+       --nolock            \tIgnore and don't write lock file
+       --debug             \tPrint lots of debugging output
+";
+
 ## Process command line options
 eval {
     Getopt::Long::config("bundling"); # makes single-letter options case-sensitive
@@ -110,33 +122,35 @@ GetOptions(\%opts,
 	       -j=n --jobs=n
 	       -d   --datadir
 	       -s   --short
-	            --no-summary
 	       -p=s --postproc=s
                     --rsh=s
                     --nodelist=s
+	            --no-summary
+	            --nolock
 	       ));
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.67 2006-02-20 16:12:40 ajohan Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.68 2006-02-27 23:48:51 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
-my $debug     	= (              $opts{'debug'}       || 0    );
-my $clean     	= ($opts{'C'} || $opts{'clean'}       || 0    );
-my $list_only 	= ($opts{'l'} || $opts{'list'}        || 0    );
-my $time      	= ($opts{'t'} || $opts{'time'}        || 0    );
+my $debug       = (              $opts{'debug'}       || 0    );
+my $clean       = ($opts{'C'} || $opts{'clean'}       || 0    );
+my $list_only   = ($opts{'l'} || $opts{'list'}        || 0    );
+my $time        = ($opts{'t'} || $opts{'time'}        || 0    );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || "$ENV{PENCIL_HOME}"
-		   || '');
-my $niceval   	= ($opts{'N'} || $opts{'nice'}        || 0    );
-my $makejobs  	= ($opts{'j'} || $opts{'jobs'}        || 0    );
-my $datadir   	= ($opts{'d'} || $opts{'datadir'}     || 0    );
-my $short     	= ($opts{'s'} || $opts{'short'}       || 0    );
-my $nosummary 	= (              $opts{'no-summary'}  || 0    );
-my $postproc  	= ($opts{'p'} || $opts{'postproc'}    || ''   );
-my $RSH       	= (              $opts{'rsh'}         || 'ssh');
-my $nodelist  	= (              $opts{'nodelist'}    || 0    );
+                   || '');
+my $niceval     = ($opts{'N'} || $opts{'nice'}        || 0    );
+my $makejobs    = ($opts{'j'} || $opts{'jobs'}        || 0    );
+my $datadir     = ($opts{'d'} || $opts{'datadir'}     || 0    );
+my $short       = ($opts{'s'} || $opts{'short'}       || 0    );
+my $postproc    = ($opts{'p'} || $opts{'postproc'}    || ''   );
+my $RSH         = (              $opts{'rsh'}         || 'ssh');
+my $nodelist    = (              $opts{'nodelist'}    || 0    );
+my $nosummary   = (              $opts{'no-summary'}  || 0    );
+my $nolock      = (              $opts{'nolock'}      || 0    );
 
 my @exit_status=('setting up directory','cleaning up','compilation','starting','running','results');
 
@@ -166,7 +180,10 @@ $t_start &&= $t_comp;
 $t_run   &&= $t_start;
 $t_res   &&= $t_run;
 
-# Prepend current directory if does not start with a `/'
+# Check for lock file and write one
+handle_lock_file() or exit(LOCK_FAILED);
+
+# Remember current directory
 my $cwd = `pwd`; chomp($cwd);
 
 # Make sure we are in the top directory and have the right PATH
@@ -181,9 +198,11 @@ $| = 1;
 
 @ARGV = grep { /./ } @ARGV;	# Eliminate empty @ARGV list (needed under
 				# OSF1, no clue why)
+
 if ($list_only) {
     print "Test directories:\n"
 }
+
 if (@ARGV) {			# Process dirs given in cmd line
     @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
     for my $d (@ARGV) {
@@ -191,8 +210,8 @@ if (@ARGV) {			# Process dirs given in cmd line
     }
     if ((scalar @ARGV)==1) {
       if (%failed) {
-        keys %failed;
-        my ($d,$phase) = each %failed;
+        keys %failed;                  # this is a no-op -> remove
+        my ($d,$phase) = each %failed; # ..and this is bizarre
         my $exit_code=1;
         foreach my $status (@exit_status) {
           exit $exit_code if ($phase =~ /$status/ );
@@ -241,6 +260,61 @@ if (@ARGV) {			# Process dirs given in cmd line
     }
 }
 
+# ---------------------------------------------------------------------- #
+sub handle_lock_file {
+# Check for existing lock file and exit (if there is one) or write one.
+
+    return(1) if ($nolock);     # skip it
+
+    my $got_lock = 0;           # need to deserve this first..
+
+    if (-e $lockfile) {         # lock file exists -> get and check pid
+        open(LOCK,"< $lockfile") or die "Cannot read <$lockfile>";
+        my $pid = <LOCK>;
+        close LOCK;
+        $pid =~ s/^\s*([0-9]+)\s*$/$1/
+          or die "$lockfile contains garbage instead of pid: <$pid>\n";
+        my $pid_cmd = `ps -p $pid -o args=`;
+
+        # Who runs with pid from lockfile?
+        if ($pid_cmd =~ /^\S*$/) { # no process for this pid
+            print "Removing stale lock file (no process with pid $pid)\n";
+            unlink $lockfile or die "Cannot unlink <$lockfile>\n";
+            $got_lock = 1;
+        } elsif ($pid_cmd =~ /auto-test\s*$/) { # pid belongs to auto-test
+            print "Failed getting lock (lock file is $lockfile):\n"
+                  . "Another auto-test is running as pid $pid\n"
+                  . "You can use `auto-test --nolock' to ignore the lock file\n";
+            $got_lock = 0;
+        } else {                # pid belongs to other process
+            print "Failed getting lock (lock file is <$lockfile>):\n"
+                  . "Another process runs as pid $pid (this is weird...)\n"
+                  . "You can use `auto-test --nolock' to ignore the lock file\n";
+            $got_lock = 0;
+        }
+    } else {
+        print STDERR "handle_lock_file: Found no lock file\n" if ($debug);
+        $got_lock = 1;
+    }
+
+    # Write our own lock file
+    if ($got_lock) {
+        print STDERR "Writing <$$> to lock file $lockfile\n" if ($debug);
+        open(LOCK, "> $lockfile")
+          or die "Cannot open $lockfile for writing\n";
+        print LOCK "$$\n";
+        close LOCK or die "Cannot close $lockfile\n";
+        $remove_lock = 1;       # clean up lock at END
+    }
+
+    print STDERR "handle_lock_file: \$got_lock = $got_lock\n" if ($debug);
+
+    unless ($got_lock) {
+        $failed++;
+        $failure_message .= "Couldn't get lock file\n";
+    }
+    return ($got_lock);
+}
 # ---------------------------------------------------------------------- #
 sub do_tests_in_parallel {
 # Distribute auto-tests over nodes contained in $nodelist
@@ -700,8 +774,20 @@ sub postprocess {
 
 ## Summarize results
 END {
-    if ( ! ($help || $nosummary || $list_only)) {
+    unless ($help || $nosummary || $list_only) {
 	print "\n" . "-" x 70 . "\n";
+
+        # Print failure header that can be idedntified by pencil-test
+        if ($failed || %failed) {
+            print "### auto-test failed ###\n";
+        }
+
+        # Failed outside individual tests (e.g. other auto-test is running)
+        if ($failed) {
+            print "$failure_message";
+        }
+
+        # Failed during some of the individual tests
 	if (%failed) {
 	    print "Failed ", scalar(keys %failed),
 	      " test(s) out of $ntests:\n";
@@ -709,8 +795,14 @@ END {
 		print "  $dir ($phase)\n";
 	    }
 	} else {
-	    if ($ntests == 1) { print "Test succeeded.\n" }
-	    elsif ($ntests > 1) { print "All $ntests tests succeeded.\n" }
+	    if ($ntests == 1) {
+                print "Test succeeded.\n";
+            } elsif ($ntests > 1) {
+                print "All $ntests tests succeeded.\n";
+            }
+	    elsif (($ntests < 1) && ! $failed) {
+                print "There was no test to run???\n";
+            }
 	}
 	if ($time) {
 	    my @t = times();
@@ -718,6 +810,11 @@ END {
 	          s_to_hms($t[2]) . "u ",
                   s_to_hms($t[3]) . "s\n";
 	}
+    }
+
+    # Remove lock file
+    if ($remove_lock) {
+        unlink $lockfile or warn "Couldn't remove lockfile <$lockfile>\n";
     }
 }
 
