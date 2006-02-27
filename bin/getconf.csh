@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.160 2006-02-23 15:18:13 wlyra Exp $
+# $Id: getconf.csh,v 1.161 2006-02-27 08:29:32 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -605,8 +605,8 @@ else if ($hn =~ opto[1-4]) then
     echo `repeat $ncpus echo $hn` > hosts.list
   else
     set ncpus2=`echo $ncpus-4 | bc`
-    if ($hn =~ opto4) set hn2=opto3
-    if ($hn =~ opto3) set hn2=opto4
+    if ($hn =~ opto4) set hn2=opto4
+    if ($hn =~ opto3) set hn2=opto3
     echo `repeat 4 echo $hn; repeat $ncpus2 echo $hn2` > hosts.list
   endif
   set mpirun = '~/mpich/bin/mpirun'
