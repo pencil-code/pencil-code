@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.147 2006-02-21 23:43:47 theine Exp $ 
+! $Id: initcond.f90,v 1.148 2006-02-28 11:39:40 wlyra Exp $ 
 
 module Initcond 
  
@@ -1399,7 +1399,7 @@ module Initcond
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero
 !
-      print*,'accretion disk initial condition'
+      if (lroot) print*,'accretion disk initial condition'
 
       if (lcylindrical) then
          rrp=sqrt(xx**2+yy**2)+tini
