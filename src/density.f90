@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.222 2006-02-24 15:29:38 nbabkovs Exp $
+! $Id: density.f90,v 1.223 2006-02-28 15:49:28 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -109,7 +109,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.222 2006-02-24 15:29:38 nbabkovs Exp $")
+           "$Id: density.f90,v 1.223 2006-02-28 15:49:28 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -801,16 +801,19 @@ module Density
         ll=Lxyz(3)-ldisk
         const_gl=cs0**2!-nu/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
   
-           grav_part_const=Omega**2*R_star**3/const_gl
-           grav_part=grav_part_const/zz-grav_part_const/(R_star+ll)
+           grav_part_const=M_star/const_gl
+           grav_part=grav_part_const*(1./zz-1./(R_star+ll))
+
+ !print*,grav_part
   
-           cf_part_const=Omega**2*R_star**3/const_gl/ll**2/(R_star+ll) 
+           cf_part_const=M_star/const_gl/ll**2/(R_star+ll) 
            cf_part1=cf_part_const*(zz*zz/2.-(ll+R_star)**2/2.)
            cf_part2=-2.*cf_part_const*R_star*(zz-ll-R_star)
            cf_part3=cf_part_const*R_star**2*log(zz/(ll+R_star))
 
            cf_part=cf_part1+cf_part2+cf_part3
 
+    !  print*, grav_part
 
         if (ldisk .EQ. Lxyz(3)) then
           f(:,:,:,ilnrho)=log(rho_left)-(xx/H_disk)**2
@@ -823,13 +826,15 @@ module Density
 
         if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
 
-
            f(:,:,step_length+3+1:mz,ilnrho)= &
                log(rho_left)-(xx(:,:,step_length+3+1:mz)/H_disk)**2
            f(:,:,1:step_length+3,ilnrho)=&
                log(rho_left)-(xx(:,:,1:step_length+3)/H_disk)**2 &
                +grav_part(:,:,1:step_length+3)&
                +cf_part(:,:,1:step_length+3)
+
+!print*, cf_part(:,:,1:step_length+3)
+
         end if
    
   end if

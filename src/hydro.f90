@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.234 2006-02-28 09:35:24 nbabkovs Exp $
+! $Id: hydro.f90,v 1.235 2006-02-28 15:49:28 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -47,7 +47,7 @@ module Hydro
   integer :: N_modes_uu=0
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
-  logical :: leffective_gravity=.false., lboundary_layer=.false.
+  logical :: leffective_gravity=.false.
 
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -58,7 +58,7 @@ module Hydro
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity, leffective_gravity, lboundary_layer
+       ladvection_velocity, leffective_gravity
 
   ! run parameters
   real :: theta=0.
@@ -159,7 +159,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.234 2006-02-28 09:35:24 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.235 2006-02-28 15:49:28 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -855,18 +855,11 @@ module Hydro
       if (leffective_gravity) then
         if (headtt) &
           print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
-        if (lboundary_layer) then
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
-               2.*M_star/(R_star+Lxyz(3))**3*z(n)
-           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-               p%uu(:,2)*p%uu(:,2)/(R_star+Lxyz(3))**2*z(n)
-       else 
+       
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
                             M_star/z(n)/z(n)
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
                              p%uu(:,2)*p%uu(:,2)/z(n)
-       end if
-
       endif
 !
 ! calculate viscous force
@@ -1897,22 +1890,23 @@ module Hydro
 
       if (ldisk .LT. L_disk_min) then
         f(:,:,:,iuz)=uu_left
-        f(:,:,:,iuy)=(zz-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+        f(:,:,:,iuy)=(zz-R_star)/ll*sqrt(M_star/(ll+R_star))
       endif
 
       if (ldisk .GE. Lxyz(3)) then
         f(:,:,:,iuz)=uu_left
-        f(:,:,:,iuy)=R_star*Omega*sqrt(R_star/zz)
+        f(:,:,:,iuy)=sqrt(M_star/zz)
       endif
 !
       if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
 
         f(:,:,:,iuz)=uu_left
-        f(:,:,step_length+3+1:mz,iuy)=R_star*Omega*sqrt(R_star/zz(:,:,step_length+3+1:mz))
-        f(:,:,1:step_length+3,iuy)=(zz(:,:,1:step_length+3)-R_star)/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
-      !  f(:,:,1:step_length+3,iuy)=sqrt(zz(:,:,1:step_length+3)-R_star)/sqrt(ll)*Omega*R_star*sqrt(R_star/(ll+R_star))
+        f(:,:,step_length+3+1:mz,iuy)=sqrt(M_star/zz(:,:,step_length+3+1:mz))
+        f(:,:,1:step_length+3,iuy)=(zz(:,:,1:step_length+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
 
       end if
+
+
 
     endsubroutine  
 

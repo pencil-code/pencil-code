@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.82 2006-02-28 09:35:24 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.83 2006-02-28 15:49:28 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -582,15 +582,14 @@ module Boundcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mcom), optional :: val1,val2
       integer :: sgn,i,j, step_width
-      real :: H_disk_min, L_disk_min
+      real :: H_disk_min, L_disk_min, ddz
  	
  	
         H_disk_min=Lxyz(1)/(nxgrid-1)
 	step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
 
         L_disk_min=Lxyz(3)/(nzgrid-1)
-	
-
+        ddz=L_disk_min
 
 	if (j .EQ. 4) then
  	val1=log(val1)
@@ -603,9 +602,11 @@ module Boundcond
 
       if (lextrapolate_bot_density .AND. j.EQ.4) then
      
-        f(:,:,n1-1,j)=0.25*(  9*f(:,:,n1,j)- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
-        f(:,:,n1-2,j)=0.05*( 81*f(:,:,n1,j)-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
-        f(:,:,n1-3,j)=0.05*(127*f(:,:,n1,j)-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
+      
+        
+        f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1+4,j))
+        f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1+4,j))
+        f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1+4,j))
 
 
       else
@@ -624,16 +625,31 @@ module Boundcond
       case('top')               ! top boundary
 
       
+  
+      if (ltop_velocity_kep) then
+        if (j.EQ.2) then 
+    !    do i=0,nghost; f(:,:,n2+i,j)=sqrt(M_star/(R_star+Lxyz(3)+ddz*i));enddo
+         f(:,:,n2+i,j)=sqrt(M_star/(R_star+Lxyz(3)))
+         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+        end if 
+        if (j.EQ.1 .OR.j.EQ.3)  then
+        f(:,:,n2,j)=0.
+        do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+        end if
+        if (j.EQ.4) then
+    !    do i=1,nghost; f(:,:,n2+i,j)=val1(j); enddo
+        f(:,:,n2,j)=val1(j)
+         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+        end if
+      else 
           if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
                f(1:step_width+3,:,n2,j)=val1(j)
                f(step_width+3+1:mx,:,n2,j)=val2(j)
           end if
           if (H_disk .LT. H_disk_min)    f(:,:,n2,j)=val2(j)
           if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1(j)
-  
-      if (lderiv_top_velocity .AND. j.LT.4) then
-         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j); enddo
-      else  
+
+ 
           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
       endif 
 

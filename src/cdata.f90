@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.290 2006-02-28 09:35:24 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.291 2006-02-28 15:49:28 nbabkovs Exp $
 
 module Cdata
 
@@ -263,13 +263,13 @@ module Cdata
   character (len=120) :: cvsid='[No CVS Id given]'
 
 ! Natalia (NS)
-
+ 
   real :: H_disk=0.
   real :: L_disk=0.
   real :: R_star=0.
   real :: M_star=0. 
   logical :: lextrapolate_bot_density=.false.
-  logical :: lderiv_top_velocity=.false.
+  logical :: ltop_velocity_kep=.false.
 
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg
