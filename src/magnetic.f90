@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.276 2006-02-10 00:53:10 wlyra Exp $
+! $Id: magnetic.f90,v 1.277 2006-02-28 22:13:16 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -33,7 +33,8 @@ module Magnetic
 
   integer, parameter :: nresi_max=4
 
-  character (len=labellen) :: initaa='zero',initaa2='zero'
+  real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
+  character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing',alpha_profile='nothing'
   ! input parameters
@@ -42,11 +43,9 @@ module Magnetic
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
   real :: radius=.1,epsilonaa=1e-2,widthaa=.5,x0aa=0.,z0aa=0.
   real :: by_left=0.,by_right=0.,bz_left=0.,bz_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
-  real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
   real :: eta_shock=0.
   real :: rhomin_jxb=0.,va2max_jxb=0.
@@ -59,7 +58,6 @@ module Magnetic
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
-  ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresi_eta_const=.false.
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
@@ -79,7 +77,6 @@ module Magnetic
   real :: alpha_effect=0.,alpha_quenching=0.,delta_effect=0.,meanfield_etat=0.
   real :: displacement_gun=0.
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
-  ! dgm: for perturbing magnetic field when reading NON-magnetic snapshot
   real :: pertamplaa=0.
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   character (len=labellen) :: pertaa='zero'
@@ -91,8 +88,8 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa, &
        by_left,by_right,bz_left,bz_right, &
-       initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       kx_aa2,ky_aa2,kz_aa2,inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
+       initaa,amplaa,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
+       inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa
 
@@ -110,7 +107,6 @@ module Magnetic
        meanfield_etat, &
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-!--    initaa,initaa2,amplaa,amplaa2, &
        bthresh,bthresh_per_brms, &
        iresistivity, &
        alphaSSm, &
@@ -182,7 +178,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.276 2006-02-10 00:53:10 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.277 2006-02-28 22:13:16 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -345,102 +341,93 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
       real :: beq2
-      integer :: ncount
+      integer :: j,ncount
 !
-      select case(initaa)
+      do j=1,ninit
 
-      case('zero', '0'); f(:,:,:,iax:iaz) = 0.
-      case('rescale'); f(:,:,:,iax:iaz)=amplaa*f(:,:,:,iax:iaz)
-      case('mode'); call modev(amplaa,coefaa,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
-      case('modeb'); call modeb(amplaa,coefbb,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
-      case('const_lou'); call const_lou(amplaa,f,iaa,xx,yy,zz)
-      case('power_randomphase')
-         call power_randomphase(amplaa,initpower_aa,cutoff_aa,f,iax,iaz)
-      case('random-isotropic-KS')
-         call random_isotropic_KS(amplaa,initpower_aa,cutoff_aa,f,iax,iaz,N_modes_aa)
-      case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)
-      case('gaussian-noise-rprof')
-        tmp=sqrt(xx**2+yy**2+zz**2)
-        call gaunoise_rprof(amplaa,tmp,prof,f,iax,iaz)
-      case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=kx_aa)
-      case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)
-      case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=kz_aa)
-      case('propto-ux'); call wave_uu(amplaa,f,iaa,kx=kx_aa)
-      case('propto-uy'); call wave_uu(amplaa,f,iaa,ky=ky_aa)
-      case('propto-uz'); call wave_uu(amplaa,f,iaa,kz=kz_aa)
-      case('diffrot'); call diffrot(amplaa,f,iay,xx,yy,zz)
-      case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
-      case('hor-fluxlayer'); call hfluxlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
-      case('ver-fluxlayer'); call vfluxlayer(amplaa,f,iaa,xx,yy,zz,x0aa,widthaa)
-      case('mag-support'); call magsupport(amplaa,f,zz,gravz,cs0,rho0)
-      case('arcade-x'); call arcade_x(amplaa,f,iaa,xx,yy,zz,kx_aa,kz_aa)
-      case('halfcos-Bx'); call halfcos_x(amplaa,f,iaa,xx,yy,zz)
-      case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
-      case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
-      case('uniform-Bz'); call uniform_z(amplaa,f,iaa,xx,yy,zz)
-      case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
-      case('vfield2'); call vfield2(amplaa,f,iaa,xx)
-      case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
-      case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
-      case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
-      case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
-      case('cosxcosy'); call cosx_cosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
-      case('sinxsiny'); call sinx_siny_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
-      case('magnetogram'); call mdi_init(f)
-      case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
-      case('crazy', '5'); call crazy(amplaa,f,iaa)
-      case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
-      case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
-      case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
-      case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
-      case('Alfven-phi'); call alfven_phi(amplaa,f,kz_aa)    
-      case('piecewise-dipole'); call piecew_dipole_aa (amplaa,inclaa,f,iaa,xx,yy,zz)
-      case('tony-nohel')
-        f(:,:,:,iay) = amplaa/kz_aa*cos(kz_aa*2.*pi/Lz*zz)
-      case('tony-nohel-yz')
-        f(:,:,:,iay) = amplaa/kx_aa*sin(kx_aa*2.*pi/Lx*xx)
-      case('tony-hel-xy')
-        f(:,:,:,iax) = amplaa/kz_aa*sin(kz_aa*2.*pi/Lz*zz)
-        f(:,:,:,iay) = amplaa/kz_aa*cos(kz_aa*2.*pi/Lz*zz)
-      case('tony-hel-yz')
-        f(:,:,:,iay) = amplaa/kx_aa*sin(kx_aa*2.*pi/Lx*xx)
-        f(:,:,:,iaz) = amplaa/kx_aa*cos(kx_aa*2.*pi/Lx*xx)
-      case('force-free-jet')
-        lB_ext_pot=.true.
-        call force_free_jet(mu_ext_pot,xx,yy,zz)
-      case('Alfven-circ-x')
-        !
-        !  circularly polarised Alfven wave in x direction
-        !
-        if (lroot) print*,'init_aa: circular Alfven wave -> x'
-        f(:,:,:,iay) = amplaa/kx_aa*sin(kx_aa*xx)
-        f(:,:,:,iaz) = amplaa/kx_aa*cos(kx_aa*xx)
-      case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
+         select case(initaa(j))
+         
+         case('nothing'); if(lroot .and. j==1) print*,'init_uu: nothing'
+         case('zero', '0'); f(:,:,:,iax:iaz) = 0.
+         case('rescale'); f(:,:,:,iax:iaz)=amplaa(j)*f(:,:,:,iax:iaz)
+         case('mode'); call modev(amplaa(j),coefaa,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
+         case('modeb'); call modeb(amplaa(j),coefbb,f,iaa,kx_aa(j),ky_aa(j),kz_aa(j),xx,yy,zz)
+         case('const_lou'); call const_lou(amplaa(j),f,iaa,xx,yy,zz)
+         case('power_randomphase')
+            call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
+         case('random-isotropic-KS')
+            call random_isotropic_KS(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz,N_modes_aa)
+         case('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
+         case('gaussian-noise-rprof')
+            tmp=sqrt(xx**2+yy**2+zz**2)
+            call gaunoise_rprof(amplaa(j),tmp,prof,f,iax,iaz)
+         case('Beltrami-x', '11'); call beltrami(amplaa(j),f,iaa,KX=kx_aa(j))
+         case('Beltrami-y', '12'); call beltrami(amplaa(j),f,iaa,KY=ky_aa(j))
+         case('Beltrami-z', '1');  call beltrami(amplaa(j),f,iaa,KZ=kz_aa(j))
+         case('propto-ux'); call wave_uu(amplaa(j),f,iaa,kx=kx_aa(j))
+         case('propto-uy'); call wave_uu(amplaa(j),f,iaa,ky=ky_aa(j))
+         case('propto-uz'); call wave_uu(amplaa(j),f,iaa,kz=kz_aa(j))
+         case('diffrot'); call diffrot(amplaa(j),f,iay,xx,yy,zz)
+         case('hor-tube'); call htube(amplaa(j),f,iax,iaz,xx,yy,zz,radius,epsilonaa)
+         case('hor-fluxlayer'); call hfluxlayer(amplaa(j),f,iaa,xx,yy,zz,z0aa,widthaa)
+         case('ver-fluxlayer'); call vfluxlayer(amplaa(j),f,iaa,xx,yy,zz,x0aa,widthaa)
+         case('mag-support'); call magsupport(amplaa(j),f,zz,gravz,cs0,rho0)
+         case('arcade-x'); call arcade_x(amplaa(j),f,iaa,xx,yy,zz,kx_aa(j),kz_aa(j))
+         case('halfcos-Bx'); call halfcos_x(amplaa(j),f,iaa,xx,yy,zz)
+         case('uniform-Bx'); call uniform_x(amplaa(j),f,iaa,xx,yy,zz)
+         case('uniform-By'); call uniform_y(amplaa(j),f,iaa,xx,yy,zz)
+         case('uniform-Bz'); call uniform_z(amplaa(j),f,iaa,xx,yy,zz)
+         case('Bz(x)', '3'); call vfield(amplaa(j),f,iaa,xx)
+         case('vfield2'); call vfield2(amplaa(j),f,iaa,xx)
+         case('xjump'); call bjump(f,iaa,by_left,by_right,bz_left,bz_right,widthaa,'x')
+         case('fluxrings', '4'); call fluxrings(amplaa(j),f,iaa,xx,yy,zz)
+         case('sinxsinz'); call sinxsinz(amplaa(j),f,iaa,kx_aa(j),ky_aa(j),kz_aa(j))
+         case('sin2xsin2y'); call sin2x_sin2y_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+         case('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+         case('sinxsiny'); call sinx_siny_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+         case('magnetogram'); call mdi_init(f)
+         case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+         case('crazy', '5'); call crazy(amplaa(j),f,iaa)
+         case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
+         case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
+         case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
+         case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
+         case('Alfven-phi'); call alfven_phi(amplaa(j),f,kz_aa(j))    
+         case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
+         case('tony-nohel')
+            f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
+         case('tony-nohel-yz')
+            f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
+         case('tony-hel-xy')
+            f(:,:,:,iax) = amplaa(j)/kz_aa(j)*sin(kz_aa(j)*2.*pi/Lz*zz)
+            f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
+         case('tony-hel-yz')
+            f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*2.*pi/Lx*xx)
+            f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*2.*pi/Lx*xx)
+         case('force-free-jet')
+            lB_ext_pot=.true.
+            call force_free_jet(mu_ext_pot,xx,yy,zz)
+         case('Alfven-circ-x')
+            !
+            !  circularly polarised Alfven wave in x direction
+            !
+            if (lroot) print*,'init_aa: circular Alfven wave -> x'
+            f(:,:,:,iay) = amplaa(j)/kx_aa(j)*sin(kx_aa(j)*xx)
+            f(:,:,:,iaz) = amplaa(j)/kx_aa(j)*cos(kx_aa(j)*xx)
+         case('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
+            
+         case default
+            !
+            !  Catch unknown values
+            !
+            if (lroot) print*, 'init_aa: No such value for initaa: ', trim(initaa(j))
+            call stop_it("")
 
-      case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'init_aa: No such value for initaa: ', trim(initaa)
-        call stop_it("")
-
-      endselect
+         endselect
 !
-!    If not already used in initaa one can still use kx_aa etc. 
-!    to define the wavenumber of the 2nd field. (For old runs!)
+!  End loop over initial conditions
 !
-       if (kx_aa2==impossible) kx_aa2 = kx_aa
-       if (ky_aa2==impossible) ky_aa2 = ky_aa
-       if (kz_aa2==impossible) kz_aa2 = kz_aa
-!
-!  superimpose something else
-!
-      select case(initaa2)
-        case('Beltrami-x'); call beltrami(amplaa2,f,iaa,KX=kx_aa2)
-        case('Beltrami-y'); call beltrami(amplaa2,f,iaa,KY=ky_aa2)
-        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,KZ=kz_aa2)      
-        case('gaussian-noise'); call gaunoise(amplaa2,f,iax,iaz)
-      endselect
+      enddo
 !
 !  allow for pressure equilibrium (for isothermal tube)
 !  assume that ghost zones have already been set.
@@ -2052,7 +2039,7 @@ module Magnetic
 !
     endsubroutine alfven_phi
 !***********************************************************************
-    subroutine fluxrings(f,ivar,xx,yy,zz,profile)
+    subroutine fluxrings(ampl,f,ivar,xx,yy,zz,profile)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -2071,7 +2058,7 @@ module Magnetic
       real, dimension (mx,my,mz,3)    :: tmpv
       real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
       real, dimension(3) :: axis,disp
-      real    :: phi,theta,ct,st,cp,sp
+      real    :: ampl,phi,theta,ct,st,cp,sp
       real    :: fring,Iring,R0,width
       integer :: i,ivar
       character (len=*), optional :: profile
@@ -2114,11 +2101,11 @@ module Magnetic
           zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
           call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
           ! calculate D*tmpv
-          f(:,:,:,ivar  ) = f(:,:,:,ivar  ) + amplaa*( &
+          f(:,:,:,ivar  ) = f(:,:,:,ivar  ) + ampl*( &
                + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
-          f(:,:,:,ivar+1) = f(:,:,:,ivar+1) + amplaa*( &
+          f(:,:,:,ivar+1) = f(:,:,:,ivar+1) + ampl*( &
                + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
-          f(:,:,:,ivar+2) = f(:,:,:,ivar+2) + amplaa*( &
+          f(:,:,:,ivar+2) = f(:,:,:,ivar+2) + ampl*( &
                - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
         enddo
       endif
@@ -2364,6 +2351,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f     
       real, dimension(nx) :: theta_mn,ar,atheta,aphi
       real :: C_int,C_ext,A_int,A_ext
+      integer :: j
 
       do imn=1,ny*nz
         n=nn(imn)
@@ -2371,10 +2359,12 @@ module Magnetic
         call calc_unitvects_sphere()
         theta_mn=acos(z_mn/r_mn)
         phi_mn=atan2(y_mn,x_mn)
+        
+ ! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
 
-! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
-          select case(initaa) 
-            case('geo-benchmark-case1')
+        do j=1,ninit
+           select case(initaa(j)) 
+           case('geo-benchmark-case1')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case1'
               C_int=-( -1./63.*r_int**4 + 11./84.*r_int**3*r_ext            &
                      + 317./1050.*r_int**2*r_ext**2                         &
@@ -2415,47 +2405,48 @@ module Magnetic
               endwhere
   
           ! debug checks -- look at a pencil near the centre...
-          if (ip<=4 .and. imn==(ny+1)*nz/2) then
-            print*,'r_int,r_ext',r_int,r_ext
-            write(*,'(a45,2i6,2f15.7)') &
-                 'geo_benchmark_B: minmax(r_mn), imn, iproc:', &
-                 iproc, imn, minval(r_mn), maxval(r_mn)
-            write(*,'(a45,2i6,2f15.7)') &
-                 'geo_benchmark_B: minmax(theta_mn), imn, iproc:', &
-                 iproc, imn, minval(theta_mn), maxval(theta_mn)
-            write(*,'(a45,2i6,2f15.7)') &
-                 'geo_benchmark_B: minmax(phi_mn), imn, iproc:', &
-                 iproc, imn, minval(phi_mn), maxval(phi_mn)
-            write(*,'(a45,2i6,2f15.7)') &
-                 'geo_benchmark_B: minmax(ar), imn, iproc:', & 
-                 iproc, imn, minval(ar), maxval(ar)
-            write(*,'(a45,2i6,2f15.7)') &
-                 'geo_benchmark_B: minmax(atheta), imn, iproc:', &
-                 iproc, imn, minval(atheta), maxval(atheta)
-            write(*,'(a45,2i6,2f15.7)') &
-                 'geo_benchmark_B: minmax(aphi), imn, iproc:', &
-                 iproc, imn, minval(aphi), maxval(aphi)
-          endif
-
-            case('geo-benchmark-case2')
+              if (ip<=4 .and. imn==(ny+1)*nz/2) then
+                 print*,'r_int,r_ext',r_int,r_ext
+                 write(*,'(a45,2i6,2f15.7)') &
+                      'geo_benchmark_B: minmax(r_mn), imn, iproc:', &
+                      iproc, imn, minval(r_mn), maxval(r_mn)
+                 write(*,'(a45,2i6,2f15.7)') &
+                      'geo_benchmark_B: minmax(theta_mn), imn, iproc:', &
+                      iproc, imn, minval(theta_mn), maxval(theta_mn)
+                 write(*,'(a45,2i6,2f15.7)') &
+                      'geo_benchmark_B: minmax(phi_mn), imn, iproc:', &
+                      iproc, imn, minval(phi_mn), maxval(phi_mn)
+                 write(*,'(a45,2i6,2f15.7)') &
+                      'geo_benchmark_B: minmax(ar), imn, iproc:', & 
+                      iproc, imn, minval(ar), maxval(ar)
+                 write(*,'(a45,2i6,2f15.7)') &
+                      'geo_benchmark_B: minmax(atheta), imn, iproc:', &
+                      iproc, imn, minval(atheta), maxval(atheta)
+                 write(*,'(a45,2i6,2f15.7)') &
+                      'geo_benchmark_B: minmax(aphi), imn, iproc:', &
+                      iproc, imn, minval(aphi), maxval(aphi)
+              endif
+              
+           case('geo-benchmark-case2')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case2 not yet coded.'
 
-            case default
+           case default
               if (lroot .and. imn==1) print*,'geo_benchmark_B: case not defined!'
               call stop_it("")
-          endselect
+           endselect
+        enddo
+        f(l1:l2,m,n,iax)=sin(theta_mn)*cos(phi_mn)*ar + cos(theta_mn)*cos(phi_mn)*atheta - sin(phi_mn)*aphi
+        f(l1:l2,m,n,iay)=sin(theta_mn)*sin(phi_mn)*ar + cos(theta_mn)*sin(phi_mn)*atheta + cos(phi_mn)*aphi
+        f(l1:l2,m,n,iaz)=cos(theta_mn)*ar - sin(theta_mn)*atheta
+     enddo
 
-          f(l1:l2,m,n,iax)=sin(theta_mn)*cos(phi_mn)*ar + cos(theta_mn)*cos(phi_mn)*atheta - sin(phi_mn)*aphi
-          f(l1:l2,m,n,iay)=sin(theta_mn)*sin(phi_mn)*ar + cos(theta_mn)*sin(phi_mn)*atheta + cos(phi_mn)*aphi
-          f(l1:l2,m,n,iaz)=cos(theta_mn)*ar - sin(theta_mn)*atheta
-      enddo
 
-      if (ip<=14) then
+     if (ip<=14) then
         print*,'geo_benchmark_B: minmax(ax) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iax)),maxval(f(l1:l2,m1:m2,n1:n2,iax))
         print*,'geo_benchmark_B: minmax(ay) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iay)),maxval(f(l1:l2,m1:m2,n1:n2,iay))
         print*,'geo_benchmark_B: minmax(az) on iproc:', iproc, minval(f(l1:l2,m1:m2,n1:n2,iaz)),maxval(f(l1:l2,m1:m2,n1:n2,iaz))
-      endif
-
+     endif
+     
     endsubroutine geo_benchmark_B
     
 !***********************************************************************
