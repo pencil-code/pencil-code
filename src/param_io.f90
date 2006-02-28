@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.222 2006-02-21 15:33:09 nbabkovs Exp $ 
+! $Id: param_io.f90,v 1.223 2006-02-28 09:35:24 nbabkovs Exp $ 
 
 module Param_IO
 
@@ -65,7 +65,7 @@ module Param_IO
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
-       lcylindrical,init_loops, H_disk, L_disk, R_star
+       lcylindrical,init_loops, H_disk, L_disk, R_star, M_star, lextrapolate_bot_density,lderiv_top_velocity
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
@@ -91,7 +91,7 @@ module Param_IO
        lpoint,mpoint,npoint, &
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
-       lpencil_check,lpencil_check_diagnos_opti,lpencil_init, H_disk, L_disk, R_star
+       lpencil_check,lpencil_check_diagnos_opti,lpencil_init, H_disk, L_disk, R_star, M_star
   contains
 
 !***********************************************************************

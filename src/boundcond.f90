@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.81 2006-02-21 18:23:15 brandenb Exp $
+! $Id: boundcond.f90,v 1.82 2006-02-28 09:35:24 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -601,39 +601,41 @@ module Boundcond
 
       case('bot')               ! bottom boundary
 
+      if (lextrapolate_bot_density .AND. j.EQ.4) then
+     
+        f(:,:,n1-1,j)=0.25*(  9*f(:,:,n1,j)- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
+        f(:,:,n1-2,j)=0.05*( 81*f(:,:,n1,j)-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
+        f(:,:,n1-3,j)=0.05*(127*f(:,:,n1,j)-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
 
-  !   if (L_disk .GE. Lxyz(3))  then
-  !      f(:,:,n1,j)=val1(j)
-  !   else
-          if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
+
+      else
+    
+      if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
                f(1:step_width+3,:,n1,j)=val1(j)
                f(step_width+3+1:mx,:,n1,j)=val2(j)
           end if
           if (H_disk .LT. H_disk_min)    f(:,:,n1,j)=val2(j)
           if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1(j)
-   !  endif
-
-       do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j);
- enddo
+  
+          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
        
-
+      endif
+ 
       case('top')               ! top boundary
 
-
-    ! if (L_disk .LT. L_disk_min)  then
-    !    f(:,:,n2,j)=val2(j)
-    !!    else
+      
           if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
                f(1:step_width+3,:,n2,j)=val1(j)
                f(step_width+3+1:mx,:,n2,j)=val2(j)
           end if
           if (H_disk .LT. H_disk_min)    f(:,:,n2,j)=val2(j)
           if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1(j)
-    ! endif
-
-
+  
+      if (lderiv_top_velocity .AND. j.LT.4) then
+         do i=1,nghost; f(:,:,n2+i,j)=f(:,:,n2,j); enddo
+      else  
           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
-        
+      endif 
 
       case default
         print*, "bc_step_z: ", topbot, " should be `top' or `bot'"
