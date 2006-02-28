@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.7 2006-02-22 16:59:49 mee Exp $
+#   $Id: pc_setupsrc,v 1.8 2006-02-28 01:42:31 dobler Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -85,12 +85,17 @@ copy_local_files()
   #
   #  COPY all *.local files into local src directory
   #
-  echo "Creating .local files in $src."
+  echo "Creating .local files in $src (if necessary)."
+  old_dir="`pwd`"
+  cd $src
   n=0
   for file in $srcdir/*.local
   do
     if [ -e $file ]; then
       if [ ! -e "`basename $file`" ]; then
+	# Warn user about copying *.local, as these should normally come
+	# with each run directory: 
+	echo "Copying default file $file to src/ -- are you sure this is OK?"
         cp $file .
       else
         # echo "`basename $file` already exists"
@@ -128,6 +133,7 @@ prepare_for_compile()
   rm -f Makefile			# for old run directories
   $srcdir/scripts/adapt-mkfile Makefile.src Makefile
   rm -f makefile			# for old run directories
+  cd $old_dir
 }
 
 scripts="start.csh start_run.csh run.csh getconf.csh"
@@ -192,7 +198,7 @@ link_scripts
 link_root_makefile
 make_src_dir
 link_src_files
-copy_local_files
+#copy_local_files
 print_status
 prepare_for_compile
 
