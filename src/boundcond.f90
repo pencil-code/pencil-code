@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.83 2006-02-28 15:49:28 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.84 2006-03-01 16:37:59 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -577,13 +577,14 @@ module Boundcond
 !  11-feb6/Natalia
 !
       use Cdata
+      use EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mcom), optional :: val1,val2
       integer :: sgn,i,j, step_width
-      real :: H_disk_min, L_disk_min, ddz
- 	
+      real :: H_disk_min, L_disk_min, ddz,lnrho,lnTT,ss
+    !  integer, parameter :: ilnrho_lnTT=4
  	
         H_disk_min=Lxyz(1)/(nxgrid-1)
 	step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
@@ -600,7 +601,7 @@ module Boundcond
 
       case('bot')               ! bottom boundary
 
-      if (lextrapolate_bot_density .AND. j.EQ.4) then
+      if (lextrapolate_bot_density .AND. j.GE.4) then
      
       
         
@@ -641,6 +642,16 @@ module Boundcond
         f(:,:,n2,j)=val1(j)
          do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         end if
+	
+        if (j.EQ.5) then
+         lnrho=f(l2,m2,n2,ilnrho)
+         lnTT=val1(j)
+          !+ other terms for sound speed not equal to cs_0
+         call eoscalc(4,lnrho,lnTT,ss=ss)
+         f(:,:,n2,iss)=ss
+         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+
+         end if
       else 
           if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
                f(1:step_width+3,:,n2,j)=val1(j)
