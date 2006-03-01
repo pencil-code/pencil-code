@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.17 2006-02-03 22:40:43 wlyra Exp $
+! $Id: planet.f90,v 1.18 2006-03-01 23:32:03 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -78,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.17 2006-02-03 22:40:43 wlyra Exp $")
+           "$Id: planet.f90,v 1.18 2006-03-01 23:32:03 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -298,8 +298,6 @@ module Planet
       real :: b,ax,ay,Rc,roche,gtc,r_lim
       integer :: i
 
-      r_lim = 2.5
-
       r = sqrt(x(l1:l2)**2 + y(m)**2)
 
       dist = sqrt((x(l1:l2)-ax)**2 + (y(m)-ay)**2)
@@ -315,7 +313,7 @@ module Planet
       do i=1,nx
 !         
          !external torque, excluding roche lobe
-         if ((r(i).ge.Rc).and.(r(i).le.r_lim).and.(dist(i).ge.roche)) then 
+         if ((r(i).ge.Rc).and.(r(i).le.r_ext).and.(dist(i).ge.roche)) then 
             torqext(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
          endif 
 !     
@@ -386,13 +384,11 @@ module Planet
       integer ider,j,k,i,ii
       real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: r,pdamp,aux0,velx0,vely0
-      real :: tau,r_lim
+      real :: tau
 
       if (headtt) print*,&
            'wave_damping: damping motions for inner and outer boundary'
 
-      r_lim=2.5
-      
       tau = 2*pi/(0.4)**(-1.5)
       r = sqrt(x(l1:l2)**2 + y(m)**2)
      
@@ -430,7 +426,7 @@ module Planet
      
      !outer boundary
      
-     tau = 2*pi/(r_lim)**(-1.5)
+     tau = 2*pi/(2.5)**(-1.5)
      
      !!for 2.1 : 0 , 2.5 : 1
      pdamp = 0.543478*r**2 - 2.3967391  !parabolic function R
