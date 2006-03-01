@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.41 2006-02-02 11:15:01 ajohan Exp $
+! $Id: particles_sub.f90,v 1.42 2006-03-01 23:34:58 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -620,7 +620,7 @@ module Particles_sub
 !***********************************************************************
     subroutine max_par_name(a,iname,lneg)
 !
-!  Successively calculate sum of a, which is supplied at each call.
+!  Successively calculate maximum of a, which is supplied at each call.
 !  Works for particle diagnostics.
 !
 !  28-nov-05/anders: adapted from max_par_name
