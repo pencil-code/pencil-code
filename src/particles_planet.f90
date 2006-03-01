@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.10 2006-03-01 13:54:38 wlyra Exp $
+! $Id: particles_planet.f90,v 1.11 2006-03-01 16:48:30 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -60,7 +60,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.10 2006-03-01 13:54:38 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.11 2006-03-01 16:48:30 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -329,7 +329,7 @@ module Particles
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (mpar_loc) :: sma_planet,sma_star,ecc_planet,ecc_star
-      real, dimension (mpar_loc) :: sma,ecc,rv,rrdot,w2
+      real, dimension (mpar_loc) :: sma,ecc,rv,rrdot,w2,dist,vel
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: re, grav_gas
@@ -366,51 +366,55 @@ module Particles
 !  Move particles due to the gravity of each other
 !
 
-      !print*,iproc
+      if (lroot) then
 
-      ax = fp(1,ixp) ; axs = fp(2,ixp) 
-      ay = fp(1,iyp) ; ays = fp(2,iyp) 
+         !print*,iproc
+
+         ax = fp(1,ixp) ; axs = fp(2,ixp) 
+         ay = fp(1,iyp) ; ays = fp(2,iyp) 
 !
-      rsep = sqrt((ax-axs)**2 + (ay-ays)**2)
-!      
-!  Planet's gravity on star
+         rsep = sqrt((ax-axs)**2 + (ay-ays)**2)
+         !      
+         !  Planet's gravity on star
+         !
+         dfp(2,ivpx) = dfp(2,ivpx) - gc/rsep**3 * (axs-ax)
+         dfp(2,ivpy) = dfp(2,ivpy) - gc/rsep**3 * (ays-ay)
+         !
+         !  Star's gravity on planet
+         !
+         dfp(1,ivpx) = dfp(1,ivpx) - g0/rsep**3 * (ax-axs)
+         dfp(1,ivpy) = dfp(1,ivpy) - g0/rsep**3 * (ay-ays)
+         !
+         !  Some celestial mechanics can't do any harm
+         !
+         !
+         !  r2    = x**2  +  y**2 +  z**2
+         !  rrdot = x*vx  +  y*vy +  z*vz  
+         !  w2    = vx**2 + vy**2 + vz**2     
+         !
+         !  semimajor axis   
+         !    1/a = 2/r - w2      
+         !  
+         !  eccentricity
+         !    e*sinE = rrdot/sqrt(a) ; e*cosE = 1 - r/a
+         !
+         rv    = sqrt(fp(1:2, ixp)**2 + fp(1:2, iyp)**2 + fp(1:2, izp)**2) + epsi
+         rrdot = fp(1:2,ixp)*fp(1:2,ivpx) + fp(1:2,iyp)*fp(1:2,ivpy) + fp(1:2,izp)*fp(1:2,ivpz)
+         w2    = fp(1:2,ivpx)**2 + fp(1:2,ivpy)**2 + fp(1:2,ivpz)**2
+         !
+         sma = (2./rv - w2)**(-1.)
+         ecc = sqrt(rrdot**2/sma + (1 - rv/sma)**2)
+         !
+         sma_planet(1:npar_loc) =  sma(1)
+         sma_star(1:npar_loc)   =  sma(2)
+         !
+         ecc_planet(1:npar_loc) = ecc(1)
+         ecc_star(1:npar_loc)   = ecc(2)
+         !
+         dist(1:npar_loc) = rsep
+         vel(1:npar_loc) = sqrt(fp(1,ivpx)**2 + fp(1,ivpy)**2)
 !
-      dfp(2,ivpx) = dfp(2,ivpx) - gc/rsep**3 * (axs-ax)
-      dfp(2,ivpy) = dfp(2,ivpy) - gc/rsep**3 * (ays-ay)
-!
-!  Star's gravity on planet
-!
-      dfp(1,ivpx) = dfp(1,ivpx) - g0/rsep**3 * (ax-axs)
-      dfp(1,ivpy) = dfp(1,ivpy) - g0/rsep**3 * (ay-ays)
-!
-!  Some celestial mechanics can't do any harm
-!
-!
-!  r2    = x**2  +  y**2 +  z**2
-!  rrdot = x*vx  +  y*vy +  z*vz  
-!  w2    = vx**2 + vy**2 + vz**2     
-!
-!  semimajor axis   
-!    1/a = 2/r - w2      
-!  
-!  eccentricity
-!    e*sinE = rrdot/sqrt(a) ; e*cosE = 1 - r/a
-!
-      rv    = sqrt(fp(1:2, ixp)**2 + fp(1:2, iyp)**2 + fp(1:2, izp)**2) + epsi
-      rrdot = fp(1:2,ixp)*fp(1:2,ivpx) + fp(1:2,iyp)*fp(1:2,ivpy) + fp(1:2,izp)*fp(1:2,ivpz)
-      w2    = fp(1:2,ivpx)**2 + fp(1:2,ivpy)**2 + fp(1:2,ivpz)**2
-!
-      sma = (2./rv - w2)**(-1.)
-      ecc = sqrt(rrdot**2/sma + (1 - rv/sma)**2)
-!
-      sma_planet(1:npar_loc) =  sma(1)
-      sma_star(1:npar_loc)   =  sma(2)
-!
-      ecc_planet(1:npar_loc) = ecc(1)
-      ecc_star(1:npar_loc)   = ecc(2)
-!
-      dist(1:npar_loc) = rsep
-      vel(1:npar_loc) = sqrt(fp(1,ivpx)**2 + fp(1,ivpy)**2)
+      endif
 !
 !  Diagnostic output
 !
