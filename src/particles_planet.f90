@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.11 2006-03-01 16:48:30 wlyra Exp $
+! $Id: particles_planet.f90,v 1.12 2006-03-02 00:19:05 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -27,20 +27,22 @@ module Particles
   real, dimension(npar) :: vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: delta_vp0=1.0, cdtp=0.2
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
+  logical :: lcalc_orbit=.true.
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz
 
   namelist /particles_run_pars/ &
-      bcpx, bcpy, bcpz, dsnap_par_minor, cdtp, linterp_reality_check
+      bcpx, bcpy, bcpz, dsnap_par_minor, cdtp, linterp_reality_check, &
+      lcalc_orbit
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_vel=0, idiag_rad=0
-  integer :: idiag_smap,idiag_eccp,idiag_smas,idiag_eccs
+  integer :: idiag_smap,idiag_eccp,idiag_xstar,idiag_ystar
 
   contains
 
@@ -60,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.11 2006-03-01 16:48:30 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.12 2006-03-02 00:19:05 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -328,8 +330,8 @@ module Particles
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (mpar_loc) :: sma_planet,sma_star,ecc_planet,ecc_star
-      real, dimension (mpar_loc) :: sma,ecc,rv,rrdot,w2,dist,vel
+      real, dimension (mpar_loc) :: sma_planet,ecc_planet,rad,vel,ystar,xstar
+      real ::   sma,ecc,rv,rrdot,w2
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: re, grav_gas
@@ -365,54 +367,57 @@ module Particles
 !
 !  Move particles due to the gravity of each other
 !
-
+      ax = fp(1,ixp) ; axs = fp(2,ixp)  
+      ay = fp(1,iyp) ; ays = fp(2,iyp) 
+!
       if (lroot) then
-
-         !print*,iproc
-
-         ax = fp(1,ixp) ; axs = fp(2,ixp) 
-         ay = fp(1,iyp) ; ays = fp(2,iyp) 
 !
          rsep = sqrt((ax-axs)**2 + (ay-ays)**2)
-         !      
-         !  Planet's gravity on star
-         !
+!      
+!  Planet's gravity on star
+!
          dfp(2,ivpx) = dfp(2,ivpx) - gc/rsep**3 * (axs-ax)
          dfp(2,ivpy) = dfp(2,ivpy) - gc/rsep**3 * (ays-ay)
-         !
-         !  Star's gravity on planet
-         !
+!
+!  Star's gravity on planet
+!
          dfp(1,ivpx) = dfp(1,ivpx) - g0/rsep**3 * (ax-axs)
          dfp(1,ivpy) = dfp(1,ivpy) - g0/rsep**3 * (ay-ays)
-         !
-         !  Some celestial mechanics can't do any harm
-         !
-         !
-         !  r2    = x**2  +  y**2 +  z**2
-         !  rrdot = x*vx  +  y*vy +  z*vz  
-         !  w2    = vx**2 + vy**2 + vz**2     
-         !
-         !  semimajor axis   
-         !    1/a = 2/r - w2      
-         !  
-         !  eccentricity
-         !    e*sinE = rrdot/sqrt(a) ; e*cosE = 1 - r/a
-         !
-         rv    = sqrt(fp(1:2, ixp)**2 + fp(1:2, iyp)**2 + fp(1:2, izp)**2) + epsi
-         rrdot = fp(1:2,ixp)*fp(1:2,ivpx) + fp(1:2,iyp)*fp(1:2,ivpy) + fp(1:2,izp)*fp(1:2,ivpz)
-         w2    = fp(1:2,ivpx)**2 + fp(1:2,ivpy)**2 + fp(1:2,ivpz)**2
-         !
+!
+      endif
+!
+      if (lcalc_orbit) then
+!
+!  Some celestial mechanics can't do any harm
+!
+!  r2    = x**2  +  y**2 +  z**2
+!  rrdot = x*vx  +  y*vy +  z*vz  
+!  w2    = vx**2 + vy**2 + vz**2     
+!
+!  semimajor axis   
+!    1/a = 2/r - w2      
+!  
+!  eccentricity
+!    e*sinE = rrdot/sqrt(a) 
+!    e*cosE = 1 - r/a
+!      
+         rv    = sqrt(ax**2 + ay**2) + epsi
+         rrdot = ax*fp(1,ivpx) + ay*fp(1,ivpy) 
+         w2    = fp(1,ivpx)**2 + fp(1,ivpy)**2 
+!
          sma = (2./rv - w2)**(-1.)
          ecc = sqrt(rrdot**2/sma + (1 - rv/sma)**2)
-         !
-         sma_planet(1:npar_loc) =  sma(1)
-         sma_star(1:npar_loc)   =  sma(2)
-         !
-         ecc_planet(1:npar_loc) = ecc(1)
-         ecc_star(1:npar_loc)   = ecc(2)
-         !
-         dist(1:npar_loc) = rsep
-         vel(1:npar_loc) = sqrt(fp(1,ivpx)**2 + fp(1,ivpy)**2)
+!
+         sma_planet(1:npar_loc) = sma
+         ecc_planet(1:npar_loc) = ecc
+!
+         xstar(1:npar_loc) = fp(2,ixp) 
+         ystar(1:npar_loc) = fp(2,iyp) 
+!
+!  Stellar orbital radius and velocity
+!
+         rad(1:npar_loc) = sqrt(fp(2,ixp)**2+f(2,iyp)**2)
+         vel(1:npar_loc) = sqrt(fp(2,ivpx)**2 + fp(2,ivpy)**2)
 !
       endif
 !
@@ -428,13 +433,14 @@ module Particles
         if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
         if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
         if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
-        if (idiag_rad/=0)  call sum_par_name(dist(1:npar_loc),idiag_rad)
-        if (idiag_vel/=0)  call sum_par_name(vel(1:npar_loc),idiag_vel)
-!
+        
+        if (idiag_rad/=0)   call sum_par_name(rad(1:npar_loc),idiag_rad)
+        if (idiag_vel/=0)   call sum_par_name(vel(1:npar_loc),idiag_vel)
         if (idiag_smap/=0)  call sum_par_name(sma_planet(1:npar_loc),idiag_smap)
         if (idiag_eccp/=0)  call sum_par_name(ecc_planet(1:npar_loc),idiag_eccp)     
-        if (idiag_smas/=0)  call sum_par_name(sma_star(1:npar_loc),idiag_smas)
-        if (idiag_eccs/=0)  call sum_par_name(ecc_star(1:npar_loc),idiag_eccs)
+        if (idiag_xstar/=0) call sum_par_name(xstar(1:npar_loc),idiag_xstar)
+        if (idiag_ystar/=0) call sum_par_name(ystar(1:npar_loc),idiag_ystar)
+        
 !
         if (idiag_vpx2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
@@ -550,8 +556,8 @@ module Particles
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
-        !idiag_rad=0;idiag_vel=0
-        idiag_smap=0; idiag_smas=0; idiag_eccp=0; idiag_eccs=0
+        idiag_rad=0;idiag_vel=0
+        idiag_smap=0; idiag_xstar=0; idiag_eccp=0; idiag_ystar=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -573,9 +579,9 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'rad',idiag_rad)
         call parse_name(iname,cname(iname),cform(iname),'vel',idiag_vel)
         call parse_name(iname,cname(iname),cform(iname),'smap',idiag_smap)
-        call parse_name(iname,cname(iname),cform(iname),'smas',idiag_smas)
+        call parse_name(iname,cname(iname),cform(iname),'xstar',idiag_xstar)
         call parse_name(iname,cname(iname),cform(iname),'eccp',idiag_eccp)
-        call parse_name(iname,cname(iname),cform(iname),'eccs',idiag_eccs)
+        call parse_name(iname,cname(iname),cform(iname),'ystar',idiag_ystar)
       enddo
 !
     endsubroutine rprint_particles
