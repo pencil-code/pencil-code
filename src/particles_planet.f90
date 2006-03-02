@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.12 2006-03-02 00:19:05 wlyra Exp $
+! $Id: particles_planet.f90,v 1.13 2006-03-02 11:50:49 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.12 2006-03-02 00:19:05 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.13 2006-03-02 11:50:49 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -416,7 +416,7 @@ module Particles
 !
 !  Stellar orbital radius and velocity
 !
-         rad(1:npar_loc) = sqrt(fp(2,ixp)**2+f(2,iyp)**2)
+         rad(1:npar_loc) = sqrt(fp(2,ixp)**2  + fp(2,iyp)**2)
          vel(1:npar_loc) = sqrt(fp(2,ivpx)**2 + fp(2,ivpy)**2)
 !
       endif
