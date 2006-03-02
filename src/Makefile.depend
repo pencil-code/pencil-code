@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.10 2006-01-01 15:42:39 ajohan Exp $
+### $Id: Makefile.depend,v 1.11 2006-03-02 23:48:43 dobler Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -30,7 +30,7 @@ cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 $(GRID).o:   $(GRID).f90 cdata.o $(MPICOMM_FIX).o
 general.o:   general.f90 cparam.o cdata.o
-slices.o:    slices.f90 cdata.o sub.o $(EOS).o
+slices.o:    slices.f90 cdata.o sub.o $(EOS).o particles_cdata.o
 deriv.o:     deriv.f90 cdata.o messages.o
 fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
@@ -78,7 +78,7 @@ $(TIMEAVG).o:      timeavg.h        $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICO
 $(POWER).o:        power_spectrum.h $(POWER).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o
 $(STRUCT_FUNC).o:  struct_func.h    $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM_FIX).o general.o
 $(SPECIAL).o:      special.h        $(SPECIAL).f90 cdata.o $(MPICOMM_FIX).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
-$(PLANET).o:       planet.h	    cdata.o sub.o general.o cparam.o $(GLOBAL).o $(MPICOMM_FIX).o
+$(PLANET).o:       planet.h	    cdata.o sub.o general.o cparam.o $(GLOBAL).o $(MPICOMM_FIX).o particles_cdata.o
 
 $(DEBUG).o:        debug_c.c Makefile.src Makefile.local
 #
