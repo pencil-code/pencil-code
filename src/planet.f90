@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.22 2006-03-03 15:06:28 wlyra Exp $
+! $Id: planet.f90,v 1.23 2006-03-03 15:11:22 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.22 2006-03-03 15:06:28 wlyra Exp $")
+           "$Id: planet.f90,v 1.23 2006-03-03 15:11:22 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -367,7 +367,7 @@ module Planet
     subroutine get_ramped_mass(gtc)
 !      
 ! Ramps up the mass of the planet from 0 to gc over
-! n_period orbits. If lramp=.false., will return gc.
+! n_periods orbits. If lramp=.false., will return gc.
 ! Currently just used for the comparison
 ! project. Called by both gravity_companion and dvvp_dt 
 !
@@ -381,9 +381,9 @@ module Planet
 !
       gtc = gc
       if (lramp) then
-         tcut = n_period * 2*pi
+         tcut = n_periods * 2*pi
          if (t .le. tcut) then
-            gtc = gc* (sin(pi/2. * t/tcut)))**2   
+            gtc = gc* (sin(pi/2. * t/tcut))**2   
          endif
       endif      
 !
