@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.20 2006-03-03 00:14:46 wlyra Exp $
+! $Id: planet.f90,v 1.21 2006-03-03 01:26:40 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.20 2006-03-03 00:14:46 wlyra Exp $")
+           "$Id: planet.f90,v 1.21 2006-03-03 01:26:40 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -224,10 +224,10 @@ module Planet
       gtc = gc
       if (lramp) then
           !ramping is for the comparison project
-         if (t .le. 2*pi) then
+         if (t .le. 10*pi) then
             if (lheader) print*,&
                  'gravity_companion: Ramping up the mass of the companion'
-            gtc = gc* (sin(t/4.))**2   !20 = pi/10*Period=2pi
+            gtc = gc* (sin(t/20.))**2   !20 = pi/10*Period=2pi
          endif
       endif
 !

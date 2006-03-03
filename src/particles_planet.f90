@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.13 2006-03-02 11:50:49 wlyra Exp $
+! $Id: particles_planet.f90,v 1.14 2006-03-03 01:26:40 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -62,7 +62,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.13 2006-03-02 11:50:49 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.14 2006-03-03 01:26:40 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -325,7 +325,7 @@ module Particles
       use Mpicomm, only: stop_it
       use Sub
       use Gravity,only: g0,r0_pot,n_pot
-      use Planet, only: gc,b 
+      use Planet, only: gc,b,lramp 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -338,7 +338,7 @@ module Particles
       real :: Omega2,rsep
       integer :: i, k, ix0, iy0, iz0,mg,ng
       logical :: lheader, lfirstcall=.true.
-      real :: ax,ay,axs,ays
+      real :: ax,ay,axs,ays,gtc
 !
       intent (in) :: fp
       intent (out) :: dfp
@@ -374,10 +374,20 @@ module Particles
 !
          rsep = sqrt((ax-axs)**2 + (ay-ays)**2)
 !      
-!  Planet's gravity on star
+!  Planet's gravity on star - must use ramp up as well
+!        
+         gtc = gc
+         if (lramp) then
+            !ramping is for the comparison project                                
+            if (t .le. 10*pi) then
+               if (lheader) print*,&
+                    'particles_planet: ramp up the mass of the companion'
+               gtc = gc* (sin(t/20.))**2   !20 = pi/10*Period=2pi                   
+            endif
+         endif
 !
-         dfp(2,ivpx) = dfp(2,ivpx) - gc/rsep**3 * (axs-ax)
-         dfp(2,ivpy) = dfp(2,ivpy) - gc/rsep**3 * (ays-ay)
+         dfp(2,ivpx) = dfp(2,ivpx) - gtc/rsep**3 * (axs-ax)
+         dfp(2,ivpy) = dfp(2,ivpy) - gtc/rsep**3 * (ays-ay)
 !
 !  Star's gravity on planet
 !
