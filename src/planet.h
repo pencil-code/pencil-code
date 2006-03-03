@@ -8,8 +8,8 @@
   public :: pencil_criteria_planet
   
   public :: gravity_companion,local_isothermal
-  public :: gravity_star,wave_damping !,calc_torque,gravity_companion
+  public :: gravity_star,wave_damping,get_ramped_mass
 
-!public stuff to use "abroad"
-  public :: llocal_iso,gc,b,lwavedamp,lramp
+!logicals to use "abroad"
+  public :: llocal_iso,lwavedamp
   

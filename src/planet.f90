@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.21 2006-03-03 01:26:40 wlyra Exp $
+! $Id: planet.f90,v 1.22 2006-03-03 15:06:28 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -34,11 +34,11 @@ module Planet
 !
 !
 ! things needed for companion
-! real :: Rx=0.,Ry=0.,Rz=0.
 !
-  real :: gc=0.    !location and mass
-  real :: b=0.      !peak radius for potential
-  integer :: nc=2   !exponent of smoothed potential 
+  real :: gc=0.          !location and mass
+  real :: b=0.           !peak radius for potential
+  integer :: nc=2        !exponent of smoothed potential 
+  integer :: n_periods=5 !periods for ramping
   logical :: lramp=.false.
   logical :: lwavedamp=.false.,llocal_iso=.false.
   logical :: lsmoothlocal=.false.,lcs2_global=.false.
@@ -50,7 +50,7 @@ module Planet
 !
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
-       lmigrate,lnorm,Gvalue
+       lmigrate,lnorm,Gvalue,n_periods
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_torqrocheint=0,idiag_torqrocheext=0
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.21 2006-03-03 01:26:40 wlyra Exp $")
+           "$Id: planet.f90,v 1.22 2006-03-03 15:06:28 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -221,15 +221,7 @@ module Planet
 !
 !  Ramp up the mass of the planet for 5 periods
 !
-      gtc = gc
-      if (lramp) then
-          !ramping is for the comparison project
-         if (t .le. 10*pi) then
-            if (lheader) print*,&
-                 'gravity_companion: Ramping up the mass of the companion'
-            gtc = gc* (sin(t/20.))**2   !20 = pi/10*Period=2pi
-         endif
-      endif
+      call get_ramped_mass(gtc)
 !
 !  Planet's gravity field
 !
@@ -371,6 +363,31 @@ module Planet
 !
 !
     endsubroutine local_isothermal
+!***********************************************************
+    subroutine get_ramped_mass(gtc)
+!      
+! Ramps up the mass of the planet from 0 to gc over
+! n_period orbits. If lramp=.false., will return gc.
+! Currently just used for the comparison
+! project. Called by both gravity_companion and dvvp_dt 
+!
+! 03-mar-06/wlad : coded
+!
+      use Cdata
+! 
+      real :: gtc,tcut
+!
+      intent(out) :: gtc
+!
+      gtc = gc
+      if (lramp) then
+         tcut = n_period * 2*pi
+         if (t .le. tcut) then
+            gtc = gc* (sin(pi/2. * t/tcut)))**2   
+         endif
+      endif      
+!
+    endsubroutine get_ramped_mass
 !***********************************************************
     subroutine wave_damping(f,df)
 !
