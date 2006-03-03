@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.84 2006-03-01 16:37:59 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.85 2006-03-03 17:04:27 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -637,10 +637,13 @@ module Boundcond
         f(:,:,n2,j)=0.
         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         end if
+     
         if (j.EQ.4) then
     !    do i=1,nghost; f(:,:,n2+i,j)=val1(j); enddo
-        f(:,:,n2,j)=val1(j)
-         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+         f(:,:,n2,j)=val1(j)
+         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j);    enddo
+
+
         end if
 	
         if (j.EQ.5) then

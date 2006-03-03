@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.223 2006-02-28 15:49:28 nbabkovs Exp $
+! $Id: density.f90,v 1.224 2006-03-03 17:04:27 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -109,7 +109,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.223 2006-02-28 15:49:28 nbabkovs Exp $")
+           "$Id: density.f90,v 1.224 2006-03-03 17:04:27 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -749,9 +749,13 @@ module Density
 !Initialization of density in a case of the step-like distribution
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, zz, grav_part, grav_part_const, cf_part_const, cf_part1, cf_part2, cf_part3, cf_part
+      real, dimension (mx,my,mz) :: xx, zz, d_zz 
+      double precision, dimension (mx,my,mz) :: grav_part, grav_part_const,  &
+                  cf_part_const, cf_part1, cf_part2, cf_part3, cf_part,  &
+                  pr_part_const, pr_part1, pr_part2, pr_part3, pr_part            
       integer :: step_width, step_length
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, const_gl, ll
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll
+     double precision :: const_gl
   
 
       hdisk=H_disk 
@@ -799,20 +803,39 @@ module Density
       if (smooth) then
 
         ll=Lxyz(3)-ldisk
-        const_gl=cs0**2!-nu/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+        const_gl=M_star/R_star/cs0**2!-nu/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
   
-           grav_part_const=M_star/const_gl
-           grav_part=grav_part_const*(1./zz-1./(R_star+ll))
+           !grav_part_const=R_star
+           grav_part=(R_star/zz-R_star/(R_star+ll))*const_gl
 
  !print*,grav_part
+
+     
   
-           cf_part_const=M_star/const_gl/ll**2/(R_star+ll) 
-           cf_part1=cf_part_const*(zz*zz/2.-(ll+R_star)**2/2.)
-           cf_part2=-2.*cf_part_const*R_star*(zz-ll-R_star)
-           cf_part3=cf_part_const*R_star**2*log(zz/(ll+R_star))
+        if (M_star .LE. 10.) then  
 
-           cf_part=cf_part1+cf_part2+cf_part3
+         cf_part_const=R_star**3/ll**2/(R_star+ll)*const_gl 
 
+           cf_part1=((zz/R_star)**2/2.-(ll/R_star+1.)**2/2.)
+           cf_part2=-2.*(zz/R_star-ll/R_star-1.)
+           cf_part3=log(zz/R_star)+log(R_star/(ll+R_star))
+         else 
+          d_zz=zz/(R_star+ll)-1.
+           cf_part1=(1.-2.*R_star+(R_star/(R_star+ll))**2)*d_zz*(1.+ll/R_star)**2
+           cf_part2=0.
+           cf_part3=0.
+         endif   
+
+
+
+           cf_part=cf_part_const*(cf_part1+cf_part3+cf_part2)
+
+
+           pr_part_const=-1./R_star/ll/sqrt(ll+R_star)
+           pr_part1=pr_part_const*0.4*R_star**2.5*((zz/R_star)**2.5-(1.+ll/R_star)**2.5)
+           pr_part2=-pr_part_const*2./3.*R_star**2.5*((zz/R_star)**1.5-(1.+ll/R_star)**1.5)
+           pr_part3=(zz/R_star-1.-ll/R_star)
+           pr_part=(pr_part1+pr_part2+pr_part3)*const_gl
     !  print*, grav_part
 
         if (ldisk .EQ. Lxyz(3)) then
@@ -831,9 +854,12 @@ module Density
            f(:,:,1:step_length+3,ilnrho)=&
                log(rho_left)-(xx(:,:,1:step_length+3)/H_disk)**2 &
                +grav_part(:,:,1:step_length+3)&
+               +pr_part(:,:,1:step_length+3)&
                +cf_part(:,:,1:step_length+3)
 
-!print*, cf_part(:,:,1:step_length+3)
+!print*, cf_part1(10,10,1:7)+cf_part3(10,10,1:7)+cf_part2(10,10,1:7)
+
+!print*, cf_part1(10,10,1:7),cf_part3(10,10,1:7),cf_part2(10,10,1:7)
 
         end if
    

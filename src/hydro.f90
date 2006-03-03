@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.235 2006-02-28 15:49:28 nbabkovs Exp $
+! $Id: hydro.f90,v 1.236 2006-03-03 17:04:27 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -159,7 +159,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.235 2006-02-28 15:49:28 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.236 2006-03-03 17:04:27 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -785,7 +785,7 @@ module Hydro
       type (pencil_case) :: p
 !      
       real, dimension (nx) :: pdamp
-      real :: c2,s2
+      real :: c2,s2, const_for_eff_grav
       real :: gr_part, cf_part
       integer :: j
 !
@@ -855,11 +855,20 @@ module Hydro
       if (leffective_gravity) then
         if (headtt) &
           print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
-       
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
-                            M_star/z(n)/z(n)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-                             p%uu(:,2)*p%uu(:,2)/z(n)
+
+     !     const_for_eff_grav=M_star/R_star**2       
+
+     !     df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+     !                        const_for_eff_grav*(-(R_star/z(n))**2 &
+     !                        +p%uu(:,2)*p%uu(:,2)*R_star**2/M_star*z(n) &
+     !                        -sqrt(z(n)/M_star)*p%uu(:,2)+1.)
+
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+                             M_star/z(n)**2
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+                             p%uu(:,2)*p%uu(:,2)*R_star**2/z(n)
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
+                            sqrt(M_star*z(n))/R_star**2*p%uu(:,2)+M_star/R_star**2
       endif
 !
 ! calculate viscous force
