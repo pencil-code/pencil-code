@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.19 2006-03-02 20:32:33 wlyra Exp $
+! $Id: planet.f90,v 1.20 2006-03-03 00:14:46 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.19 2006-03-02 20:32:33 wlyra Exp $")
+           "$Id: planet.f90,v 1.20 2006-03-03 00:14:46 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -273,16 +273,15 @@ module Planet
 !  Stuff for calc_torque. Should maybe change it to particles_planet
 !
       if (ldiagnos) then
-        if ((idiag_torqint/=0) .or. (idiag_torqext/=0) .or. &
-             (idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) then  
-           call calc_torque(p%rho,gtc,ax,ay,b)
-        endif
-
-        if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
-             .or.(idiag_totmass/=0)) &
-             call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
-     endif
-     lfirstcall=.false.
+         if ((idiag_torqint/=0) .or. (idiag_torqext/=0) &
+              .or.(idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) &  
+              call calc_torque(p%rho,gtc,ax,ay,b)
+         
+         if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
+              .or.(idiag_totmass/=0)) &
+              call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
+      endif
+      lfirstcall=.false.
 !
     endsubroutine gravity_companion
 !***********************************************************************
@@ -293,52 +292,63 @@ module Planet
       use Sub
       use Cdata
 !
-      real, dimension(nx) :: r,torqint,torqext
-      real, dimension(nx) :: torqrocheint,torqrocheext
-      real, dimension(nx) :: dist,rpre,dens
-      real :: b,ax,ay,Rc,roche,gtc,r_lim
+      real, dimension(nx) :: torqint,torqext,torque
+      real, dimension(nx) :: torqint_rc,torqext_rc
+      real, dimension(nx) :: r,re,rpre,dens
+      real :: b,ax,ay,Rc,roche,gtc
+      real :: sumtorqext,sumtorqint
+      real :: sumtorqext_rc,sumtorqint_rc
       integer :: i
 !
-      r = sqrt(x(l1:l2)**2 + y(m)**2)
-!
-      dist = sqrt((x(l1:l2)-ax)**2 + (y(m)-ay)**2)
-      rpre = ax*y(m) - ay*x(l1:l2)
+! Planet's hills radius
 !
       Rc = sqrt(ax**2 + ay**2)
+      roche = Rc*(gtc/3.)**(1./3.) 
 !
-      torqint = 0.   ; torqext=0.
-      torqrocheint=0.; torqrocheext=0.
-!     
-      roche = Rc*(gtc/3.)**(1./3.) !Jupiter roche
+      r  = sqrt(x(l1:l2)**2 + y(m)**2)
+      re = sqrt((x(l1:l2)-ax)**2 + (y(m)-ay)**2)
+      rpre = ax*y(m) - ay*x(l1:l2)
+!
+      torque = dens*rpre*(re**2+b**2)**(-1.5)
+      torque = torque*gtc*dx*dy
+!
+      torqint = 0. ; torqint_rc = 0. 
+      torqext = 0. ; torqext_rc = 0.
+!
+      print*,'dx,dy',dx,dy
+      print*,'Rc,roche,gtc,b,ax,ay,sma',Rc,roche,gtc,b,ax,ay,sqrt(ax**2+ay**2)
 !
       do i=1,nx
 !         
-         !external torque, excluding roche lobe
-         if ((r(i).ge.Rc).and.(r(i).le.r_ext).and.(dist(i).ge.roche)) then 
-            torqext(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
-         endif 
-!     
-         !internal torque, excluding roche lobe
-         if ((r(i).le.Rc).and.(r(i).ge.r_int).and.(dist(i).ge.roche)) then
-            torqint(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
-         endif
+! External torque
 !
-         !external torque, roche lobe
-         if ((r(i).ge.Rc).and.(dist(i).ge.0.5*roche).and.(dist(i).le.roche)) then 
-            torqrocheext(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
-         endif 
-!      
-         !internal torque, roche lobe
-         if ((r(i).le.Rc).and.(dist(i).ge.0.5*roche).and.(dist(i).le.roche)) then 
-            torqrocheint(i) = gtc*dens(i)*rpre(i)*(dist(i)**2+b**2)**(-1.5)*dx*dy
+         if ((r(i).ge.Rc).and.(r(i).le.r_ext)) then
+            if (re(i).ge.roche) then
+               torqext(i)    = torque(i)
+            else
+               torqext_rc(i) = torque(i)
+            endif
+         endif
+!  
+! Internal torque
+!
+         if ((r(i).le.Rc).and.(r(i).ge.r_int)) then
+            if (re(i).ge.roche) then
+               torqint(i)    = torque(i)
+            else
+               torqint_rc(i) = torque(i)
+            endif
          endif
 !
       enddo
 !
-      call sum_mn_name(torqint,idiag_torqint)
-      call sum_mn_name(torqext,idiag_torqext)
-      call sum_mn_name(torqrocheint,idiag_torqrocheint)
-      call sum_mn_name(torqrocheext,idiag_torqrocheext)
+      sumtorqext    = sum(torqext)    ; sumtorqint    = sum(torqint)
+      sumtorqext_rc = sum(torqext_rc) ; sumtorqint_rc = sum(torqint_rc)
+!
+      call surf_mn_name(sumtorqext,idiag_torqext)
+      call surf_mn_name(sumtorqint,idiag_torqint)
+      call surf_mn_name(sumtorqint_rc,idiag_torqrocheint)
+      call surf_mn_name(sumtorqext_rc,idiag_torqrocheext)
 !      
     endsubroutine calc_torque
 !***********************************************************************
