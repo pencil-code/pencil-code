@@ -3,16 +3,16 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.14 2006-02-04 03:51:39 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.15 2006-03-03 16:28:44 wlyra Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
-  lperi =  F  , F  , T,         ! periodic direction?
+  lperi = T  , T  , T,         ! periodic direction?
   !lshift_origin =  F,  F,  F,
 
-  bcx = 's','s','a','s'!,'s','s','a','s'
+  !bcx = 's','s','a','s'!,'s','s','a','s'
   !      velgas, densgas, veldust,densdust
-  bcy = 's','s','a','s'!,'s','s','a','s'
+  !bcy = 's','s','a','s'!,'s','s','a','s'
 
   r_int=0.4,                   ! radius of interior spherical boundary
   r_ext=2.5,                   ! radius of exterior spherical boundary
