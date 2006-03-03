@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.23 2006-03-03 15:11:22 wlyra Exp $
+! $Id: planet.f90,v 1.24 2006-03-03 16:17:03 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.23 2006-03-03 15:11:22 wlyra Exp $")
+           "$Id: planet.f90,v 1.24 2006-03-03 16:17:03 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -306,9 +306,6 @@ module Planet
 !
       torqint = 0. ; torqint_rc = 0. 
       torqext = 0. ; torqext_rc = 0.
-!
-      print*,'dx,dy',dx,dy
-      print*,'Rc,roche,gtc,b,ax,ay,sma',Rc,roche,gtc,b,ax,ay,sqrt(ax**2+ay**2)
 !
       do i=1,nx
 !         
