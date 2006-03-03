@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.16 2006-03-03 15:53:11 wlyra Exp $
+! $Id: particles_planet.f90,v 1.17 2006-03-03 18:12:30 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -63,7 +63,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.16 2006-03-03 15:53:11 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.17 2006-03-03 18:12:30 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -339,7 +339,7 @@ module Particles
       real :: Omega2,rsep
       integer :: i, k, ix0, iy0, iz0,mg,ng
       logical :: lheader, lfirstcall=.true.
-      real :: ax,ay,axs,ays,gtc
+      real :: ax,ay,axs,ays,gtc,gstar
 !
       intent (in) :: fp
       intent (out) :: dfp
@@ -378,14 +378,15 @@ module Particles
 !  Planet's gravity on star - must use ramp up as well
 !        
          call get_ramped_mass(gtc)
+         gstar = g0-gtc
 !
          dfp(2,ivpx) = dfp(2,ivpx) - gtc/rsep**3 * (axs-ax)
          dfp(2,ivpy) = dfp(2,ivpy) - gtc/rsep**3 * (ays-ay)
 !
 !  Star's gravity on planet
 !
-         dfp(1,ivpx) = dfp(1,ivpx) - g0/rsep**3 * (ax-axs)
-         dfp(1,ivpy) = dfp(1,ivpy) - g0/rsep**3 * (ay-ays)
+         dfp(1,ivpx) = dfp(1,ivpx) - gstar/rsep**3 * (ax-axs)
+         dfp(1,ivpy) = dfp(1,ivpy) - gstar/rsep**3 * (ay-ays)
 !
       endif
 !

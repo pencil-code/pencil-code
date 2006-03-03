@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.24 2006-03-03 16:17:03 wlyra Exp $
+! $Id: planet.f90,v 1.25 2006-03-03 18:12:30 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.24 2006-03-03 16:17:03 wlyra Exp $")
+           "$Id: planet.f90,v 1.25 2006-03-03 18:12:30 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -491,7 +491,7 @@ module Planet
      real, dimension (nx) :: rr_mn
      real, optional :: xstar,ystar,zstar !initial position of star
      integer :: i,n_pot
-     real :: g0,axs,ays,azs,r0_pot
+     real :: g0,axs,ays,azs,r0_pot,gtc,gstar
 !
      if (present(xstar)) then;axs=xstar;else;axs=0.;endif
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
@@ -510,7 +510,10 @@ module Planet
         call stop_it('')
      endif
 !
-     g_r=-g0*rr_mn**(n_pot-1) &
+     call get_ramped_mass(gtc)
+     gstar = g0-gtc
+!
+     g_r=-gstar*rr_mn**(n_pot-1) &
           *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
 !   
    endsubroutine gravity_star
