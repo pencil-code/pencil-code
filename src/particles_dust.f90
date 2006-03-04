@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.66 2006-02-26 18:13:01 ajohan Exp $
+! $Id: particles_dust.f90,v 1.67 2006-03-04 10:24:00 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.66 2006-02-26 18:13:01 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.67 2006-03-04 10:24:00 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -460,7 +460,7 @@ module Particles
 !
 !  Place particles according to probability function.
 !
-      ampl=0.5*amplxxp  ! Not sure why factor 0.5 is needed here...
+      ampl=amplxxp  ! Not sure if factor 0.5 is needed here...
 !  Abbreviations      
       kx=kx_xxp
       kz=kz_xxp
@@ -474,9 +474,9 @@ module Particles
         call random_number_wrapper(r)
         call random_number_wrapper(p)
 
-        fprob = (/ 0.50,0.50 /)
-        xprob = 0.75
-        zprob = 0.75
+        fprob = (/ 1.0, 1.0 /)
+        xprob = x(nx/2)
+        zprob = z(nz/2)
 
         j=0
 !  Use Newton-Raphson iteration to invert function.
