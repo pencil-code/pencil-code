@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.67 2006-03-04 10:24:00 ajohan Exp $
+! $Id: particles_dust.f90,v 1.68 2006-03-04 11:28:23 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.67 2006-03-04 10:24:00 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.68 2006-03-04 11:28:23 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -451,6 +451,7 @@ module Particles
       real, dimension(2) :: fprob
       real, dimension(2,2) :: dfprob, dfprob_inv
       integer :: j, k
+      logical :: lmigration_redo_org
 !
 !  Define a few disc parameters.
 !
@@ -460,11 +461,11 @@ module Particles
 !
 !  Place particles according to probability function.
 !
-      ampl=amplxxp  ! Not sure if factor 0.5 is needed here...
+      ampl=0.5*amplxxp  ! Not sure why factor 0.5 is needed here...
 !  Abbreviations      
       kx=kx_xxp
       kz=kz_xxp
-      x0=xyz0_loc(1); x1=xyz1_loc(1); z0=xyz0_loc(3); z1=xyz1_loc(3)
+      x0=xyz0(1); x1=xyz1(1); z0=xyz0(3); z1=xyz1(3)
 !  Solve
 !    int_{x0}^{x}[n(x,z)]*dx / int_{x0}^{x1}[n(x,z)]*dx = r
 !    int_{z0}^{z}[n(x,z)]*dz / int_{z0}^{z1}[n(x,z)]*dz = p
@@ -544,7 +545,16 @@ module Particles
         fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
             (aimag(coeff(3))*cos(kx_xxp*xprob) + &
               real(coeff(3))*sin(kx_xxp*xprob))*sin(kz_xxp*zprob)
+
       enddo
+!
+!  Particles were placed randomly in the entire simulation space, so they need
+!  to be send to the correct processors now.
+!
+      lmigration_redo_org=lmigration_redo
+      lmigration_redo=.true.
+      call redist_particles_procs(fp,npar_loc,ipar)
+      lmigration_redo=lmigration_redo_org
 !
 !  Set fluid fields.
 !
