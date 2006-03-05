@@ -1,6 +1,6 @@
 #!/bin/sh 
 #
-#  $Id: pc_newrun,v 1.3 2005-12-20 19:29:30 mee Exp $
+#  $Id: pc_newrun,v 1.4 2006-03-05 10:02:15 ajohan Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -40,7 +40,14 @@ fi
 #
 parentdir=`pwd`
 echo "Parent directory: " $parentdir
-mkdir $newdir
+if [ -d $newdir ]; then
+  echo "The directory $newdir already exists!"
+  echo "You had better stop and check..."
+  exit
+else
+  mkdir $newdir
+  echo "Created directory $newdir"
+fi
 cd $newdir
 targetdir=`pwd`
 #
