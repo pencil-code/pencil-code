@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.25 2006-03-03 18:12:30 wlyra Exp $
+! $Id: planet.f90,v 1.26 2006-03-06 12:05:22 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.25 2006-03-03 18:12:30 wlyra Exp $")
+           "$Id: planet.f90,v 1.26 2006-03-06 12:05:22 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -194,7 +194,7 @@ module Planet
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,rrc,rrs,g_star
       real :: Omega_inertial,ax,ay,az,gtc
-      real :: axs,ays,azs,g0,r0_pot
+      real :: axs,ays,azs,g0,gp,gs,r0_pot
       integer :: n_pot
       logical :: lheader,lfirstcall=.true.
       type (pencil_case) :: p
@@ -221,13 +221,13 @@ module Planet
 !
 !  Ramp up the mass of the planet for 5 periods
 !
-      call get_ramped_mass(gtc)
+      call get_ramped_mass(gp,gs,g0)
 !
 !  Planet's gravity field
 !
       rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2) + tini
 !           
-      g_companion=-gtc*rrc**(nc-1) &
+      g_companion=-gp*rrc**(nc-1) &
           *(rrc**nc+b**nc)**(-1./nc-1.)
 !
       ggc(:,1) = (x(l1:l2)-ax)/rrc*g_companion 
@@ -242,6 +242,8 @@ module Planet
          rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2) + tini
       endif   
 !      
+!  gravity_star will call the ramped mass from inside again
+!
       if (gc.ne.0) then
          call gravity_star(g0,r0_pot,n_pot,g_star,axs,ays,azs)
       else
@@ -267,17 +269,17 @@ module Planet
       if (ldiagnos) then
          if ((idiag_torqint/=0) .or. (idiag_torqext/=0) &
               .or.(idiag_torqrocheint/=0) .or.(idiag_torqrocheext/=0)) &  
-              call calc_torque(p%rho,gtc,ax,ay,b)
+              call calc_torque(p%rho,gp,ax,ay,b)
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
               .or.(idiag_totmass/=0)) &
-              call calc_monitored(f,axs,ays,ax,ay,g0,gtc,r0_pot,p)
+              call calc_monitored(f,axs,ays,ax,ay,gs,gp,r0_pot,p)
       endif
       lfirstcall=.false.
 !
     endsubroutine gravity_companion
 !***********************************************************************
-    subroutine calc_torque(dens,gtc,ax,ay,b)
+    subroutine calc_torque(dens,gp,ax,ay,b)
 !
 ! 05-nov-05/wlad : coded
 !
@@ -287,7 +289,7 @@ module Planet
       real, dimension(nx) :: torqint,torqext,torque
       real, dimension(nx) :: torqint_rc,torqext_rc
       real, dimension(nx) :: r,re,rpre,dens
-      real :: b,ax,ay,Rc,roche,gtc
+      real :: b,ax,ay,Rc,roche,gp
       real :: sumtorqext,sumtorqint
       real :: sumtorqext_rc,sumtorqint_rc
       integer :: i
@@ -295,14 +297,14 @@ module Planet
 ! Planet's hills radius
 !
       Rc = sqrt(ax**2 + ay**2)
-      roche = Rc*(gtc/3.)**(1./3.) 
+      roche = Rc*(gp/3.)**(1./3.) 
 !
       r  = sqrt(x(l1:l2)**2 + y(m)**2)
       re = sqrt((x(l1:l2)-ax)**2 + (y(m)-ay)**2)
       rpre = ax*y(m) - ay*x(l1:l2)
 !
       torque = dens*rpre*(re**2+b**2)**(-1.5)
-      torque = torque*gtc*dx*dy
+      torque = torque*gp*dx*dy
 !
       torqint = 0. ; torqint_rc = 0. 
       torqext = 0. ; torqext_rc = 0.
@@ -361,7 +363,7 @@ module Planet
 !
     endsubroutine local_isothermal
 !***********************************************************
-    subroutine get_ramped_mass(gtc)
+    subroutine get_ramped_mass(gp,gs,g0)
 !      
 ! Ramps up the mass of the planet from 0 to gc over
 ! n_periods orbits. If lramp=.false., will return gc.
@@ -372,17 +374,20 @@ module Planet
 !
       use Cdata
 ! 
-      real :: gtc,tcut
+      real :: gp,gs,g0,tcut
 !
-      intent(out) :: gtc
+      intent(out) :: gp,gs
 !
-      gtc = gc
+      gp = gc
+!
       if (lramp) then
          tcut = n_periods * 2*pi
          if (t .le. tcut) then
-            gtc = gc* (sin(pi/2. * t/tcut))**2   
+            gp = gc* (sin(pi/2. * t/tcut))**2   
          endif
       endif      
+!
+      gs = g0 - gp
 !
     endsubroutine get_ramped_mass
 !***********************************************************
@@ -491,7 +496,7 @@ module Planet
      real, dimension (nx) :: rr_mn
      real, optional :: xstar,ystar,zstar !initial position of star
      integer :: i,n_pot
-     real :: g0,axs,ays,azs,r0_pot,gtc,gstar
+     real :: g0,axs,ays,azs,r0_pot,gp,gs
 !
      if (present(xstar)) then;axs=xstar;else;axs=0.;endif
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
@@ -510,10 +515,9 @@ module Planet
         call stop_it('')
      endif
 !
-     call get_ramped_mass(gtc)
-     gstar = g0-gtc
+     call get_ramped_mass(gp,gs,g0)
 !
-     g_r=-gstar*rr_mn**(n_pot-1) &
+     g_r=-gs*rr_mn**(n_pot-1) &
           *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
 !   
    endsubroutine gravity_star
@@ -577,7 +581,7 @@ module Planet
 !
    endsubroutine gravity_disk
 !***************************************************************
-   subroutine calc_monitored(f,xs,ys,xp,yp,g0,gp,r0_pot,p)
+   subroutine calc_monitored(f,xs,ys,xp,yp,gs,gp,r0_pot,p)
 
 ! calculate total energy and angular momentum
 ! and output their evolution as monitored variables
@@ -592,7 +596,7 @@ module Planet
      real, dimension(nx) :: angular_momentum
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
      real :: xs,ys,xp,yp  !position of star and planet
-     real :: g0,gp,r0_pot !star's and planet's mass
+     real :: gs,gp,r0_pot !star's and planet's mass
      real :: ang_tot,mass_tot,energy_tot
      integer :: i
      type (pencil_case) :: p
@@ -612,7 +616,7 @@ module Planet
 !     
 ! Potential energy - uses smoothed potential
 !
-     pot_energy = -1.*(g0*(rstar**2+r0_pot**2)**(-1./2) &
+     pot_energy = -1.*(gs*(rstar**2+r0_pot**2)**(-1./2) &
           + gp*(rplanet**2+b**2)**(-1./2))*p%rho
 !     
      total_energy = kin_energy + pot_energy  

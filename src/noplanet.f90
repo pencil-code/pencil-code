@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.10 2006-03-03 15:06:28 wlyra Exp $
+! $Id: noplanet.f90,v 1.11 2006-03-06 12:05:22 wlyra Exp $
 !
 !  Dummy module
 !
@@ -49,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.10 2006-03-03 15:06:28 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.11 2006-03-06 12:05:22 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -195,13 +195,16 @@ module Planet
 !    
     endsubroutine wave_damping
 !***************************************************************
-    subroutine get_ramped_mass(gtc)
+    subroutine get_ramped_mass(gp,gs,g0)
 !
 ! 03-mar-06/wlad :: dummy
 !
       use Mpicomm, only: stop_it
 !     
-      real :: gtc
+      real :: gs,gp,g0
+      intent(inout) :: gs,gp
+!
+      gs=1, ; gp=0.
 !
       call stop_it("noplanet.f90 - get_ramped_mass")
 !
