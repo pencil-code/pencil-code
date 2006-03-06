@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.11 2006-03-06 12:05:22 wlyra Exp $
+! $Id: noplanet.f90,v 1.12 2006-03-06 12:07:16 wlyra Exp $
 !
 !  Dummy module
 !
@@ -49,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.11 2006-03-06 12:05:22 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.12 2006-03-06 12:07:16 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -204,7 +204,7 @@ module Planet
       real :: gs,gp,g0
       intent(inout) :: gs,gp
 !
-      gs=1, ; gp=0.
+      gs=1. ; gp=0.
 !
       call stop_it("noplanet.f90 - get_ramped_mass")
 !
