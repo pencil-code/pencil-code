@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.28 2006-03-07 22:26:46 wlyra Exp $
+! $Id: planet.f90,v 1.29 2006-03-07 23:25:52 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.28 2006-03-07 22:26:46 wlyra Exp $")
+           "$Id: planet.f90,v 1.29 2006-03-07 23:25:52 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -194,7 +194,7 @@ module Planet
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,rrc,rrs,g_star
       real :: Omega_inertial,ax,ay,az,gtc
-      real :: axs,ays,azs,g0,gp,gs,r0_pot
+      real :: axs,ays,azs,g0,gp,gs,r0_pot,mdot,m2dot
       integer :: n_pot
       logical :: lheader,lfirstcall=.true.
       type (pencil_case) :: p
@@ -221,7 +221,7 @@ module Planet
 !
 !  Ramp up the mass of the planet for 5 periods
 !
-      call get_ramped_mass(gp,gs,g0)
+      call get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !
 !  Planet's gravity field
 !
@@ -375,12 +375,13 @@ module Planet
       use Cdata
 ! 
       real :: fgp,gp,gs,g0,tcut
-      real, optional :: mdot,m2dot
+      real :: mdot,m2dot
 !
-      intent(inout) :: gp,gs
+      intent(out) :: gp,gs,mdot,m2dot
 !
       fgp = 0.5*(1 - sqrt(1-4*gc))
       gp = fgp
+
       mdot=0. ; m2dot=0.
 !
       if (lramp) then
@@ -499,7 +500,7 @@ module Planet
      real, dimension (nx) :: rr_mn
      real, optional :: xstar,ystar,zstar !initial position of star
      integer :: i,n_pot
-     real :: g0,axs,ays,azs,r0_pot,gp,gs
+     real :: g0,axs,ays,azs,r0_pot,gp,gs,mdot,m2dot
 !
      if (present(xstar)) then;axs=xstar;else;axs=0.;endif
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
@@ -518,7 +519,7 @@ module Planet
         call stop_it('')
      endif
 !
-     call get_ramped_mass(gp,gs,g0)
+     call get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !
      g_r=-gs*rr_mn**(n_pot-1) &
           *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)

@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.20 2006-03-07 22:26:46 wlyra Exp $
+! $Id: particles_planet.f90,v 1.21 2006-03-07 23:25:52 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -69,7 +69,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.20 2006-03-07 22:26:46 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.21 2006-03-07 23:25:52 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -396,7 +396,7 @@ module Particles
 !
          extra_accx = m2dot*cos(t) - 2*mdot*sin(t)
          extra_accy = m2dot*sin(t) + 2*mdot*cos(t)
-
+!
          dfp(2,ivpx) = dfp(2,ivpx) - gp/rsep**3 * (axs-ax) + extra_accx 
          dfp(2,ivpy) = dfp(2,ivpy) - gp/rsep**3 * (ays-ay) + extra_accy
 !
