@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.19 2006-03-06 20:56:13 wlyra Exp $
+! $Id: particles_planet.f90,v 1.20 2006-03-07 22:26:46 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -69,7 +69,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.19 2006-03-06 20:56:13 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.20 2006-03-07 22:26:46 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -338,7 +338,7 @@ module Particles
       real, dimension (mpar_loc) :: rads,vels,ystar,xstar,radp,velp,radcm,velcm
       real, dimension (mpar_loc) :: velcmx,velcmy,vxstar,vystar
       real, dimension (mpar_loc) :: xplanet,yplanet,vxplanet,vyplanet
-      real :: sma,ecc,rv,rrdot,w2
+      real :: sma,ecc,rv,rrdot,w2,mdot,m2dot,extra_accx,extra_accy
       real :: vx,vy,axr,ayr,vxr,vyr,vxs,vys,mu,tcut,gp_d  
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -392,15 +392,18 @@ module Particles
 !      
 !  Planet's gravity on star - must use ramp up as well
 !        
-         call get_ramped_mass(gp,gs,g0)
+         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !
-         dfp(2,ivpx) = dfp(2,ivpx) - gp/rsep**3 * (axs-ax)
-         dfp(2,ivpy) = dfp(2,ivpy) - gp/rsep**3 * (ays-ay)
+         extra_accx = m2dot*cos(t) - 2*mdot*sin(t)
+         extra_accy = m2dot*sin(t) + 2*mdot*cos(t)
+
+         dfp(2,ivpx) = dfp(2,ivpx) - gp/rsep**3 * (axs-ax) + extra_accx 
+         dfp(2,ivpy) = dfp(2,ivpy) - gp/rsep**3 * (ays-ay) + extra_accy
 !
 !  Star's gravity on planet
 !
-         dfp(1,ivpx) = dfp(1,ivpx) - gs/rsep**3 * (ax-axs)
-         dfp(1,ivpy) = dfp(1,ivpy) - gs/rsep**3 * (ay-ays)
+         dfp(1,ivpx) = dfp(1,ivpx) - gs/rsep**3 * (ax-axs) + extra_accx
+         dfp(1,ivpy) = dfp(1,ivpy) - gs/rsep**3 * (ay-ays) + extra_accy
 !
       endif
 !

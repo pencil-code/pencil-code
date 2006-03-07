@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.27 2006-03-06 20:56:13 wlyra Exp $
+! $Id: planet.f90,v 1.28 2006-03-07 22:26:46 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.27 2006-03-06 20:56:13 wlyra Exp $")
+           "$Id: planet.f90,v 1.28 2006-03-07 22:26:46 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -363,7 +363,7 @@ module Planet
 !
     endsubroutine local_isothermal
 !***********************************************************
-    subroutine get_ramped_mass(gp,gs,g0)
+    subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !      
 ! Ramps up the mass of the planet from 0 to gc over
 ! n_periods orbits. If lramp=.false., will return gc.
@@ -375,18 +375,22 @@ module Planet
       use Cdata
 ! 
       real :: fgp,gp,gs,g0,tcut
+      real, optional :: mdot,m2dot
 !
-      intent(out) :: gp,gs
+      intent(inout) :: gp,gs
 !
-      !gp = gc
-      
       fgp = 0.5*(1 - sqrt(1-4*gc))
       gp = fgp
+      mdot=0. ; m2dot=0.
 !
       if (lramp) then
          tcut = n_periods * 2*pi
          if (t .le. tcut) then
-            gp = fgp* (sin(pi/2. * t/tcut))**2   
+            gp = fgp* (sin(pi/2. * t/tcut))**2
+!            
+            mdot  = 0.5*fgp* pi/tcut      * sin(pi*t/tcut)
+            m2dot = 0.5*fgp*(pi/tcut)**2  * cos(pi*t/tcut)
+!
          endif
       endif      
 !
@@ -410,12 +414,10 @@ module Planet
 !
 !
       use Cdata
-      use Global
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz,mvar) :: df
       integer ider,j,k,i,ii
-      real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: r,pdamp,aux0,velx0,vely0
       real :: tau
 !
@@ -439,15 +441,13 @@ module Planet
          pdamp = 0.
       endwhere
 !      
-      call get_global(gg_mn,m,n,'gg')
-      aux0 = 1./r*sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
-!
 ! aux0 is omega2
 !           
-! aux0 = g0*r**(n_pot-2)*(r**n_pot+r0_pot**n_pot)**(-1./n_pot-1.) 
-! aux is gravity, aux0 is omega**2
+      aux0 = (r**2+0.1**2)**(-1.5) 
 !      
-      velx0 =  -y(  m  ) * sqrt(aux0)   !initial conditions
+! initial conditions
+!
+      velx0 = -y(  m  ) * sqrt(aux0)   
       vely0 =  x(l1:l2) * sqrt(aux0)
 !      
       do i=l1,l2
