@@ -1,17 +1,18 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.12 2005-08-28 13:04:33 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.13 2006-03-07 15:21:31 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
 ;  Author: Anders Johansen
 ;
-function pc_particles_to_density, xxp, x, y, z, vvp=vvp, sigmap=sigmap
+function pc_particles_to_density, xxp, x, y, z, $
+    datadir=datadir, vvp=vvp, sigmap=sigmap
 
 COMMON pc_precision, zero, one
 
 if (n_elements(vvp) ne 0) then begin
   lsigma=1
-  pc_read_param, obj=par, /quiet
+  pc_read_param, obj=par, datadir=datadir, /quiet
   lshear=par.lshear
 endif else begin
   lsigma=0
