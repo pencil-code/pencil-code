@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.32 2005-08-22 12:16:38 ajohan Exp $
+! $Id: timestep.f90,v 1.33 2006-03-07 11:55:02 wlyra Exp $
 
 module Timestep
 
@@ -176,7 +176,7 @@ module Timestep
 
 ! With the lead pipe?
           if (maxval(sqrt(dt1_advec**2+dt1_diffus**2)) < dt1_max_local) then  
-            print *,"  It appears it is not a CFL advection/difussion limit."
+            print *,"  It appears it is not a CFL advection/diffusion limit."
             print*,"  Perhaps another limiter eg. the cooling time" 
           else
             if (maxval(dt1_advec)>maxval(dt1_diffus)) then
