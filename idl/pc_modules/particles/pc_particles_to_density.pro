@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.13 2006-03-07 15:21:31 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.14 2006-03-07 16:07:43 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -18,7 +18,7 @@ endif else begin
   lsigma=0
 endelse
 
-pc_set_precision
+pc_set_precision, datadir=datadir
 if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one
 if (n_elements(y) gt 1) then dy=y[1]-y[0] else dy=1.0*one
 if (n_elements(z) gt 1) then dz=z[1]-z[0] else dz=1.0*one
