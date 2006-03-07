@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.13 2006-03-07 22:26:46 wlyra Exp $
+! $Id: noplanet.f90,v 1.14 2006-03-07 22:31:37 wlyra Exp $
 !
 !  Dummy module
 !
@@ -49,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.13 2006-03-07 22:26:46 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.14 2006-03-07 22:31:37 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -202,7 +202,7 @@ module Planet
       use Mpicomm, only: stop_it
 !     
       real :: gs,gp,g0
-      real (optional) :: mdot,m2dot
+      real, optional :: mdot,m2dot
       intent(inout) :: gs,gp
 !
       gs=1. ; gp=0.
