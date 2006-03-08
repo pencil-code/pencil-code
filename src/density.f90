@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.224 2006-03-03 17:04:27 nbabkovs Exp $
+! $Id: density.f90,v 1.225 2006-03-08 17:27:23 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -109,7 +109,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.224 2006-03-03 17:04:27 nbabkovs Exp $")
+           "$Id: density.f90,v 1.225 2006-03-08 17:27:23 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -750,12 +750,12 @@ module Density
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx, zz, d_zz 
-      double precision, dimension (mx,my,mz) :: grav_part, grav_part_const,  &
+      real, dimension (mx,my,mz) :: grav_part, grav_part_const,  &
                   cf_part_const, cf_part1, cf_part2, cf_part3, cf_part,  &
                   pr_part_const, pr_part1, pr_part2, pr_part3, pr_part            
       integer :: step_width, step_length
       real :: H_disk_min, L_disk_min, hdisk, ldisk, ll
-     double precision :: const_gl
+     real :: const_gl
   
 
       hdisk=H_disk 
@@ -804,37 +804,46 @@ module Density
 
         ll=Lxyz(3)-ldisk
         const_gl=M_star/R_star/cs0**2!-nu/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
+ 
   
-           !grav_part_const=R_star
-           grav_part=(R_star/zz-R_star/(R_star+ll))*const_gl
+        if (L_disk .GE. 0.1*R_star) then  
 
- !print*,grav_part
-
-     
-  
-        if (M_star .LE. 10.) then  
+         grav_part=(R_star/zz-R_star/(R_star+ll))*const_gl
 
          cf_part_const=R_star**3/ll**2/(R_star+ll)*const_gl 
-
            cf_part1=((zz/R_star)**2/2.-(ll/R_star+1.)**2/2.)
            cf_part2=-2.*(zz/R_star-ll/R_star-1.)
            cf_part3=log(zz/R_star)+log(R_star/(ll+R_star))
+
+
+
+         pr_part_const=-1./R_star/ll/sqrt(ll+R_star)
+           pr_part1=pr_part_const*0.4*R_star**2.5*((zz/R_star)**2.5-(1.+ll/R_star)**2.5)
+           pr_part2=-pr_part_const*2./3.*R_star**2.5*((zz/R_star)**1.5-(1.+ll/R_star)**1.5)
+           pr_part3=(zz/R_star-1.-ll/R_star)
+
+
          else 
-          d_zz=zz/(R_star+ll)-1.
-           cf_part1=(1.-2.*R_star+(R_star/(R_star+ll))**2)*d_zz*(1.+ll/R_star)**2
-           cf_part2=0.
-           cf_part3=0.
+          d_zz=zz-(R_star+ll)
+          
+           grav_part=const_gl*(R_star/(R_star+ll)**3*d_zz**2&
+                       +R_star/(R_star+ll)**4*d_zz**3)
+           
+           cf_part_const=const_gl
+           cf_part1=0.
+           cf_part2=R_star/(R_star+ll)/2.*(1.-R_star**2/(ll+R_star)**2)*d_zz**2/ll**2
+           cf_part3=R_star**3/(R_star+ll)**4/ll**2/3.*d_zz**3
+          
+           pr_part1=-d_zz/R_star*(1.+ll/R_star)
+           pr_part2=-(3.-R_star/(ll+R_star))/4./ll/R_star*d_zz**2
+           pr_part3=-d_zz**3/R_star/ll*(1./8./(R_star+ll)+R_star/24./(ll+R_star)**2)
+
          endif   
 
 
 
            cf_part=cf_part_const*(cf_part1+cf_part3+cf_part2)
 
-
-           pr_part_const=-1./R_star/ll/sqrt(ll+R_star)
-           pr_part1=pr_part_const*0.4*R_star**2.5*((zz/R_star)**2.5-(1.+ll/R_star)**2.5)
-           pr_part2=-pr_part_const*2./3.*R_star**2.5*((zz/R_star)**1.5-(1.+ll/R_star)**1.5)
-           pr_part3=(zz/R_star-1.-ll/R_star)
            pr_part=(pr_part1+pr_part2+pr_part3)*const_gl
     !  print*, grav_part
 

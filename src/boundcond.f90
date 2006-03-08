@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.85 2006-03-03 17:04:27 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.86 2006-03-08 17:27:23 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -629,15 +629,22 @@ module Boundcond
   
       if (ltop_velocity_kep) then
         if (j.EQ.2) then 
-    !    do i=0,nghost; f(:,:,n2+i,j)=sqrt(M_star/(R_star+Lxyz(3)+ddz*i));enddo
-         f(:,:,n2+i,j)=sqrt(M_star/(R_star+Lxyz(3)))
+            f(:,:,n2+i,j)=sqrt(M_star/(R_star+Lxyz(3)))
          do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         end if 
-        if (j.EQ.1 .OR.j.EQ.3)  then
+        if (j.EQ.1)  then
         f(:,:,n2,j)=0.
         do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
         end if
-     
+        
+        if (j.EQ.3)  then
+         f(:,:,n2+1,j)=0.25*(  9*f(:,:,n2,j)- 3*f(:,:,n2-1,j)- 5*f(:,:,n2-2,j)+ 3*f(:,:,n2-3,j))
+         f(:,:,n2+2,j)=0.05*( 81*f(:,:,n2,j)-43*f(:,:,n2-1,j)-57*f(:,:,n2-2,j)+39*f(:,:,n2-3,j))
+         f(:,:,n2+3,j)=0.05*(127*f(:,:,n2,j)-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
+        end if 
+
+
+
         if (j.EQ.4) then
     !    do i=1,nghost; f(:,:,n2+i,j)=val1(j); enddo
          f(:,:,n2,j)=val1(j)
