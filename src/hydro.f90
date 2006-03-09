@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.237 2006-03-08 17:27:24 nbabkovs Exp $
+! $Id: hydro.f90,v 1.238 2006-03-09 17:10:59 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -159,7 +159,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.237 2006-03-08 17:27:24 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.238 2006-03-09 17:10:59 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -863,12 +863,15 @@ module Hydro
      !                        +p%uu(:,2)*p%uu(:,2)*R_star**2/M_star*z(n) &
      !                        -sqrt(z(n)/M_star)*p%uu(:,2)+1.)
 
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
                              M_star/z(n)**2
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
                              p%uu(:,2)*p%uu(:,2)/z(n)
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
-                            sqrt(M_star*z(n))/R_star**2*p%uu(:,2)+M_star/R_star**2
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
+                             (sqrt(M_star/z(n))-p%uu(:,2))**2/z(n)
+           
+       ! df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
+       !                     M_star**(1.-1.0/2.)*z(n)**(1.0/2.)/R_star**2*p%uu(:,2)**1.0+M_star/R_star**2
       endif
 !
 ! calculate viscous force

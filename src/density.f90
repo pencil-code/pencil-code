@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.225 2006-03-08 17:27:23 nbabkovs Exp $
+! $Id: density.f90,v 1.226 2006-03-09 17:10:59 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -109,7 +109,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.225 2006-03-08 17:27:23 nbabkovs Exp $")
+           "$Id: density.f90,v 1.226 2006-03-09 17:10:59 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -852,7 +852,7 @@ module Density
         endif
 
         if (ldisk .EQ. 0.) then
-          f(:,:,:,ilnrho)=log(rho_right)-(xx/H_disk)**2+grav_part+cf_part
+          f(:,:,:,ilnrho)=log(rho_right)-(xx/H_disk)**2!+grav_part+cf_part
         endif
 
 
@@ -861,10 +861,10 @@ module Density
            f(:,:,step_length+3+1:mz,ilnrho)= &
                log(rho_left)-(xx(:,:,step_length+3+1:mz)/H_disk)**2
            f(:,:,1:step_length+3,ilnrho)=&
-               log(rho_left)-(xx(:,:,1:step_length+3)/H_disk)**2 &
-               +grav_part(:,:,1:step_length+3)&
-               +pr_part(:,:,1:step_length+3)&
-               +cf_part(:,:,1:step_length+3)
+               log(rho_left)-(xx(:,:,1:step_length+3)/H_disk)**2!&
+               !+grav_part(:,:,1:step_length+3)&
+               !+pr_part(:,:,1:step_length+3)&
+               !+cf_part(:,:,1:step_length+3)
 
 !print*, cf_part1(10,10,1:7)+cf_part3(10,10,1:7)+cf_part2(10,10,1:7)
 
@@ -873,11 +873,6 @@ module Density
         end if
    
   end if
-
-          !  f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)-(xx/H_disk)**2
-          !  f(:,:,1:step_length+3,ilnrho)=log(rho_left)-(xx/H_disk)**2 &
-          !                                     +grav_part+cf_part
-     
 
     endsubroutine density_step
 !***********************************************************************
