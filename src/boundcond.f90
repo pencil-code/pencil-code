@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.87 2006-03-09 17:10:59 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.88 2006-03-11 17:44:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -574,7 +574,7 @@ module Boundcond
 !
 !  Step boundary conditions.
 !
-!  11-feb6/Natalia
+!  11-feb-06/nbabkovs
 !
       use Cdata
       use EquationOfState
@@ -602,11 +602,17 @@ module Boundcond
       case('bot')               ! bottom boundary
 
       if (lextrapolate_bot_density .AND. j.GE.4) then
-     
-             
-        f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1+4,j))
-        f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1+4,j))
-        f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1+4,j))
+      
+      call stop_it("bc_step_xz: SEE COMMENTS IN CODE!!")
+!mee
+!mee Natalia, 
+!mee  n1+4 is always out of range for a run where nz=1 so this
+!mee  also, the dimensions of the fa array are known at compile 
+!mee  time as is n1 so this code will not even compile if nz=1!!
+!mee              
+!mee        f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1+4,j))
+!mee        f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1+4,j))
+!mee        f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1+4,j))
 
 
       else
