@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.226 2006-03-09 17:10:59 nbabkovs Exp $
+! $Id: density.f90,v 1.227 2006-03-11 21:47:01 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -56,7 +56,7 @@ module Density
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
-       rho_left,rho_right, lnrho_const,cs2bot,cs2top, &
+       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top, &
        radius_lnrho,eps_planet,                      &
        b_ell,q_ell,hh0,rbound,                       &
        mpoly,strati_type,beta_glnrho_global,         &
@@ -109,7 +109,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.226 2006-03-09 17:10:59 nbabkovs Exp $")
+           "$Id: density.f90,v 1.227 2006-03-11 21:47:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -347,6 +347,7 @@ module Density
 
       case('zero', '0'); f(:,:,:,ilnrho)=0.
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
+      case('const_rho'); f(:,:,:,ilnrho)=log(rho_const)
       case('constant'); f(:,:,:,ilnrho)=log(rho_left)
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)

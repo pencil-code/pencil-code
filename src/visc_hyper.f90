@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.23 2006-02-08 14:12:32 mee Exp $
+! $Id: visc_hyper.f90,v 1.24 2006-03-11 21:47:01 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -71,7 +71,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.23 2006-02-08 14:12:32 mee Exp $")
+           "$Id: visc_hyper.f90,v 1.24 2006-03-11 21:47:01 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -459,7 +459,7 @@ module Viscosity
         if (headtt.and.lroot) print*,'no viscous force: (nu=0)'
       endif
 !
-! Code to dobbel check epsK
+! Code to double-check epsK
 !
       if (ldiagnos) then
         if (idiag_epsK2/=0) then
