@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.109 2006-03-11 21:47:01 brandenb Exp $
+! $Id: interstellar.f90,v 1.110 2006-03-11 21:56:48 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -276,7 +276,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.109 2006-03-11 21:47:01 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.110 2006-03-11 21:56:48 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -629,7 +629,7 @@ module Interstellar
         where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1)) &
                cool=cool+exp(lncoolH(i)+p%lnrho+p%lnTT*coolB(i))
       enddo
-      cool=(cool+f(l1:l2,m,n,icooling))*0.5
+!      cool=(cool+f(l1:l2,m,n,icooling))*0.5
 !      open(1,file=trim(datadir)//'/cooling.dat',position='append')
 !      do i=1,nx
 !        write(1,'(4e15.8)') exp(p%lnTT(i)), cool(i)/exp(p%lnrho(i)), cool(i), exp(p%lnrho)
