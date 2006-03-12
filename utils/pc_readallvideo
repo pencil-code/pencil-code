@@ -1,0 +1,7 @@
+#!/bin/sh
+cat video.in | sed -e 's/^uu$/ux\nuy\nuz/' | while read variable
+do
+  src/read_videofiles.x << EOF
+$variable
+EOF
+done
