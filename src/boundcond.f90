@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.88 2006-03-11 17:44:31 mee Exp $
+! $Id: boundcond.f90,v 1.89 2006-03-12 14:52:42 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -332,7 +332,7 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set
               case ('stp') 
- 		!if (j==ilnrho)
+                !if (j==ilnrho)
                 call bc_step_xz(f,-1,topbot, j, fbcz12_1, fbcz12_2)
               case default
                 write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
@@ -585,17 +585,17 @@ module Boundcond
       integer :: sgn,i,j, step_width
       real :: H_disk_min, L_disk_min, ddz,lnrho,lnTT,ss
     !  integer, parameter :: ilnrho_lnTT=4
- 	
+
         H_disk_min=Lxyz(1)/(nxgrid-1)
-	step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
+        step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
 
         L_disk_min=Lxyz(3)/(nzgrid-1)
         ddz=L_disk_min
 
-	if (j .EQ. 4) then
- 	val1=log(val1)
-	val2=log(val2)
-     	endif
+        if (j .EQ. 4) then
+        val1=log(val1)
+        val2=log(val2)
+        endif
  
       select case(topbot)
 

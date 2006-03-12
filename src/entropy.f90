@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.369 2006-03-12 14:41:28 brandenb Exp $
+! $Id: entropy.f90,v 1.370 2006-03-12 14:52:42 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.369 2006-03-12 14:41:28 brandenb Exp $")
+           "$Id: entropy.f90,v 1.370 2006-03-12 14:52:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1430,7 +1430,7 @@ module Entropy
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
-      if (idiag_eem) lpenc_diagnos(i_ee)=.true.
+      if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0) &
           lpenc_diagnos(i_ss)=.true.
           lpenc_diagnos(i_rho)=.true.
