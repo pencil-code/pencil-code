@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.29 2006-02-08 14:07:39 mee Exp $
+! $Id: eos_idealgas.f90,v 1.30 2006-03-12 14:41:28 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.29 2006-02-08 14:07:39 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.30 2006-03-12 14:41:28 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -328,7 +328,8 @@ module EquationOfState
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
-      if (gamma1==0.) call fatal_error('temperature_gradient','gamma=1 not allowed w/entropy')
+      if (gamma1==0.) call fatal_error('temperature_gradient', &
+        'gamma=1 not allowed with entropy turned on!')
 !
 !  pretend_lnTT
 !

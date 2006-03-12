@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.368 2006-02-08 14:20:36 mee Exp $
+! $Id: entropy.f90,v 1.369 2006-03-12 14:41:28 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -121,7 +121,7 @@ module Entropy
       tdown, allp,beta_glnrho_global,ladvection_entropy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
+  integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0,idiag_eem=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.368 2006-02-08 14:20:36 mee Exp $")
+           "$Id: entropy.f90,v 1.369 2006-03-12 14:41:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1406,10 +1406,9 @@ module Entropy
         lpenc_requested(i_bij)=.true.
       endif
       if (lheatc_chiconst) then 
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
-        lpenc_requested(i_del2ss)=.true.
       endif
       if (lheatc_tensordiffusion) then 
         lpenc_requested(i_bij)=.true.
@@ -1431,9 +1430,12 @@ module Entropy
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_eem) lpenc_diagnos(i_ee)=.true.
       if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0) &
           lpenc_diagnos(i_ss)=.true.
-      if (idiag_eth/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0) then
+          lpenc_diagnos(i_rho)=.true.
+          lpenc_diagnos(i_ee)=.true.
+      if (idiag_eth/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 ) then
           lpenc_diagnos(i_rho)=.true.
           lpenc_diagnos(i_ee)=.true.
       endif
@@ -1528,11 +1530,14 @@ module Entropy
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! glnTT
       if (lpencil(i_glnTT)) then
-        if (pretend_lnTT) then
-           p%glnTT=p%gss
-        else  
+        !if (pretend_lnTT) then
+        !   p%glnTT=p%gss
+        !else  
+        !AB: note that temperature_gradient does aleady take care
+        !AB: of pretend_lnTT, with one difference: there is has a gamma
+        !AB: factor which, I believe, is correct. Tobi, please confirm!
           call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
-        endif
+        !endif
       endif
 ! ugss
       if (lpencil(i_ugss)) &
@@ -1738,6 +1743,7 @@ module Entropy
         if (idiag_ethdivum/=0) &
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
+        if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
 !
@@ -1762,10 +1768,12 @@ module Entropy
 !  This routine is currently not correct when ionization is used.
 !
 !  29-sep-02/axel: adapted from calc_heatcond_simple
+!  12-mar-06/axel: used p%glnTT and p%del2lnTT, so that general cp work ok
 !
       use Cdata
       use Sub
       use Gravity
+      use EquationOfState, only: cp
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -1776,21 +1784,35 @@ module Entropy
       intent(in) :: f
       intent(out) :: df
 !
-!  check that chi is ok
+!  check that cp and chi are ok
 !
-      if (headtt) print*,'calc_heatcond_constchi: chi=', chi
+      if (headtt) print*,'calc_heatcond_constchi: cp,chi=',cp,chi
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
 !  The variable g2 is reused to calculate glnP.gss a few lines below.
 !
-      glnT = gamma*p%gss + gamma1*p%glnrho
-      glnP = gamma*p%gss + gamma*p%glnrho
-      call dot(glnP,glnT,g2)
-      thdiff = chi * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+!AB: keep the following lines for the record, but they aren't
+!AB: correct for general values of cp.
+!
+!     glnT = gamma*p%gss + gamma1*p%glnrho
+!     glnP = gamma*p%gss + gamma*p%glnrho
+!     call dot(glnP,glnT,g2)
+!     thdiff = chi * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+!     if (chi_t/=0.) then
+!       call dot(glnP,p%gss,g2)
+!       thdiff = thdiff + chi_t*(p%del2ss+g2)
+!     endif
+!
+!  diffusion of the form:
+!  rho*T*Ds/Dt = ... + nab.(rho*cp*chi*gradT)
+!  rho*T*Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
+!
+      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+      thdiff=cp*chi*(p%del2lnTT+g2)
       if (chi_t/=0.) then
-        call dot(glnP,p%gss,g2)
-        thdiff = thdiff + chi_t*(p%del2ss+g2)
+        call dot(p%glnrho+p%glnTT,p%gss,g2)
+        thdiff=thdiff+chi_t*(p%del2ss+g2)
       endif
 !
 !  add heat conduction to entropy equation
@@ -2481,7 +2503,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
+        idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0; idiag_eem=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
@@ -2497,6 +2519,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'yHm',idiag_yHm)
         call parse_name(iname,cname(iname),cform(iname),'yHmax',idiag_yHmax)
@@ -2543,6 +2566,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         write(3,*) 'i_ethdivum=',idiag_ethdivum
         write(3,*) 'i_eth=',idiag_eth
         write(3,*) 'i_ssm=',idiag_ssm
+        write(3,*) 'i_eem=',idiag_eem
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_ssmphi=',idiag_ssmphi
         write(3,*) 'i_fturbz=',idiag_fturbz

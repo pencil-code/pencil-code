@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.111 2006-03-12 05:47:30 brandenb Exp $
+! $Id: interstellar.f90,v 1.112 2006-03-12 14:41:28 brandenb Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -209,6 +209,8 @@ module Interstellar
 !
   integer :: idiag_taucmin=0
   integer :: idiag_Hmax=0
+  integer :: idiag_Lamm=0
+  integer :: idiag_nrhom=0
 !
 ! Heating function, cooling function and mass movement
 ! method selection.
@@ -277,7 +279,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.111 2006-03-12 05:47:30 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.112 2006-03-12 14:41:28 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -484,6 +486,8 @@ module Interstellar
       if (lreset) then
         idiag_taucmin=0
         idiag_Hmax=0
+        idiag_Lamm=0
+        idiag_nrhom=0
 
 !        TT_SN_max=impossible 
 !        rho_SN_min=impossible 
@@ -506,6 +510,8 @@ module Interstellar
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'taucmin',idiag_taucmin)
         call parse_name(iname,cname(iname),cform(iname),'Hmax',idiag_Hmax)
+        call parse_name(iname,cname(iname),cform(iname),'Lamm',idiag_Lamm)
+        call parse_name(iname,cname(iname),cform(iname),'nrhom',idiag_nrhom)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -513,6 +519,8 @@ module Interstellar
       if (lwr) then
         write(3,*) 'i_taucmin=',idiag_taucmin
         write(3,*) 'i_Hmax=',idiag_Hmax
+        write(3,*) 'i_Lamm=',idiag_Lamm
+        write(3,*) 'i_nrhom=',idiag_nrhom
         write(3,*) 'icooling=',icooling
       endif
 !
@@ -564,7 +572,8 @@ module Interstellar
 ! 
 !  All pencils that the Interstellar module depends on are specified here.
 ! 
-!  26-03-05/tony: coded
+!  26-mar-05/tony: coded
+!  11-mar-06/axel: added idiag_nrhom
 !
       use Cdata
 !
@@ -572,6 +581,10 @@ module Interstellar
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_TT1)=.true.
+!
+!  diagnostic pencils
+!
+      if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
@@ -592,9 +605,8 @@ module Interstellar
       use Cdata, only: lroot, headtt, lfirst, ldiagnos, ldt, m, n,  &
                        iss, unit_length, unit_velocity, dt1_max, z, &
                        datadir
-!      use Mpicomm
-      use Sub, only: max_mn_name
-!      use EquationOfState, only: getmu
+!
+      use Sub, only: max_mn_name, sum_mn_name
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -688,14 +700,17 @@ module Interstellar
         heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
       endif
 !
-!
+!  prepare diagnostic output
 !
       if(ldiagnos) then
-!        call getmu(mu)
         if(idiag_Hmax/=0) &
-            call max_mn_name(heat,idiag_Hmax)
+          call max_mn_name(heat,idiag_Hmax)
         if(idiag_taucmin/=0) &
-            call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)  
+          call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)  
+        if(idiag_Lamm/=0) &
+          call sum_mn_name(cool,idiag_Lamm)  
+        if(idiag_nrhom/=0) &
+          call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)  
       endif
 
 ! Limit timestep by the cooling time (having subtracted any heating) 
