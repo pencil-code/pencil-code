@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.110 2006-03-11 21:56:48 mee Exp $
+! $Id: interstellar.f90,v 1.111 2006-03-12 05:47:30 brandenb Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -192,6 +192,7 @@ module Interstellar
 !
   logical :: lSNI=.true., lSNII=.false.
 !
+  logical :: lsmooth_coolingfunc = .false.
   logical :: laverage_SN_heating = .false.
   logical :: lheating_UV         = .true.
 
@@ -232,7 +233,7 @@ module Interstellar
       lSN_velocity, velocity_SN, velocity_width_ratio, &
       uniform_zdist_SNI, ltestSN, mass_movement, &
       lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
-      heatingfunction_scalefactor, &
+      lsmooth_coolingfunc, heatingfunction_scalefactor, &
       width_SN, inner_shell_proportion, outer_shell_proportion, &
       center_SN_x, center_SN_y, center_SN_z, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, lSN_mass, &
@@ -276,7 +277,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.110 2006-03-11 21:56:48 mee Exp $")
+           "$Id: interstellar.f90,v 1.111 2006-03-12 05:47:30 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -629,7 +630,11 @@ module Interstellar
         where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1)) &
                cool=cool+exp(lncoolH(i)+p%lnrho+p%lnTT*coolB(i))
       enddo
-!      cool=(cool+f(l1:l2,m,n,icooling))*0.5
+!
+!  possibility of temporal smoothing of cooling function
+!
+      if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
+!
 !      open(1,file=trim(datadir)//'/cooling.dat',position='append')
 !      do i=1,nx
 !        write(1,'(4e15.8)') exp(p%lnTT(i)), cool(i)/exp(p%lnrho(i)), cool(i), exp(p%lnrho)
