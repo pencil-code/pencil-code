@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.370 2006-03-12 14:52:42 brandenb Exp $
+! $Id: entropy.f90,v 1.371 2006-03-13 10:16:07 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -121,7 +121,8 @@ module Entropy
       tdown, allp,beta_glnrho_global,ladvection_entropy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0,idiag_eem=0
+  integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
+  integer :: idiag_eem=0,idiag_csm=0
   integer :: idiag_ugradpm=0,idiag_ethtot=0,idiag_dtchi=0,idiag_ssmphi=0
   integer :: idiag_yHm=0,idiag_yHmax=0,idiag_TTm=0,idiag_TTmax=0,idiag_TTmin=0
   integer :: idiag_fconvz=0,idiag_dcoolz=0,idiag_fradz=0,idiag_fturbz=0
@@ -156,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.370 2006-03-12 14:52:42 brandenb Exp $")
+           "$Id: entropy.f90,v 1.371 2006-03-13 10:16:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1430,6 +1431,7 @@ module Entropy
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
+      if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ssm/=0 .or. idiag_ssmz/=0 .or. idiag_ssmy/=0.or.idiag_ssmx/=0) &
           lpenc_diagnos(i_ss)=.true.
@@ -1744,6 +1746,7 @@ module Entropy
             call sum_mn_name(p%rho*p%ee*p%divu,idiag_ethdivum)
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
+        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_ugradpm/=0) &
             call sum_mn_name(p%cs2*(p%uglnrho+p%ugss),idiag_ugradpm)
 !
@@ -2503,7 +2506,8 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0; idiag_eem=0
+        idiag_dtc=0; idiag_eth=0; idiag_ethdivum=0; idiag_ssm=0
+        idiag_eem=0; idiag_csm=0
         idiag_ugradpm=0; idiag_ethtot=0; idiag_dtchi=0; idiag_ssmphi=0
         idiag_yHmax=0; idiag_yHm=0; idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0; idiag_fturbz=0
@@ -2520,6 +2524,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
+        call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',idiag_ugradpm)
         call parse_name(iname,cname(iname),cform(iname),'yHm',idiag_yHm)
         call parse_name(iname,cname(iname),cform(iname),'yHmax',idiag_yHmax)
@@ -2567,6 +2572,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
         write(3,*) 'i_eth=',idiag_eth
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_eem=',idiag_eem
+        write(3,*) 'i_csm=',idiag_csm
         write(3,*) 'i_ugradpm=',idiag_ugradpm
         write(3,*) 'i_ssmphi=',idiag_ssmphi
         write(3,*) 'i_fturbz=',idiag_fturbz
