@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.9 2006-03-13 13:38:44 mkorpi Exp $
+#   $Id: pc_setupsrc,v 1.10 2006-03-13 19:55:17 mee Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -118,7 +118,7 @@ print_status()
 remove_broken_links()
 {
   ## Remove any broken links...
-  find . $src -type l | perl -lne 'unlink $_ if (-l && ! -e)'
+  find . $src -type l 2>/dev/null | perl -lne 'unlink $_ if (-l && ! -e)'
 }
 
 prepare_for_compile()
