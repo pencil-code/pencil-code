@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.162 2006-03-13 18:49:02 mkorpi Exp $
+### $Id: Makefile.src,v 1.163 2006-03-13 19:30:53 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -369,6 +369,16 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #CFLAGS=-D_REENTRANT -I$(MPI_HOME)/include -DFUNDERSC=1 -O3 -tp k8-64 #(nut)
 #LDMPI= -L$(MPI_HOME)/lib64 $(MPI_LDLIBS)  #(nut)
 ##
+##
+## CSC cluster - (Espoo, Finland)
+## www.csc.fi
+#FC=mpif90 #(sepeli) 
+#F90=$(FC) #(sepeli)
+#CC=mpicc #(sepeli)
+#FFLAGS=-O2 #(sepeli)
+#CFLAGS=-DFUNDERSC=1 -O3 #(sepeli)
+#LDMPI= #(sepeli)
+##
 
 
 ## Darwin:
@@ -386,13 +396,18 @@ LIBMPISUFFIX=_#(Kolmogorov)
 
 ## SunOS:
 ## Solaris
+#CC=mpcc #(corona[1-2])
 #FC=f90
 #FC=pghpf #(Lomond)
+#FC=mpf90 #(corona[1-2])
 #FFLAGS=-O4
+#FFLAGS=-O3 -dalign -xarch=v9b  #(corona[1-2])
 #FFLAGS= -Msmp -O4  #(Lomond)
 #CFLAGS=-O4 -DFUNDERSC=1
 #CFLAGS=-O4 -DFUNDERSC=0 #(ursa)
+#CFLAGS=-O3 -dalign -xarch=v9b -Wall #(corona[1-2])
 #LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
+#LDMPI=-lmpi  #(corona[1-2])
 #F77=$(FC)
 
 ## UNICOS/mk:
