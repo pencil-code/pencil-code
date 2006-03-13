@@ -8,7 +8,7 @@
 add_update_path()
 {
   while [ $1 ]; do
-    [ -e $1 ] && UPDATE_PATHS="$UPDATE_PATHS $1"
+    [ -f $1 ] || [ -d $1 ] && UPDATE_PATHS="$UPDATE_PATHS $1"
     shift
   done
 }
@@ -16,7 +16,7 @@ add_update_path()
 add_update_path_nonewdir()
 {
   while [ $1 ]; do
-    [ -e $1 ] && UPDATE_PATHS_NONEWDIR="$UPDATE_PATHS_NONEWDIR $1"
+    [ -f $1 ] || [ -d $1 ] && UPDATE_PATHS_NONEWDIR="$UPDATE_PATHS_NONEWDIR $1"
     shift
   done
 }
@@ -30,7 +30,7 @@ if [ ! -d "$PENCIL_HOME/" ]; then
   exit 1 
 fi
 
-while expr "$1" : - >/dev/null; do
+while expr "$1" : '\-' >/dev/null; do
   case $1 in
     -a) 
       include_rundirs=1
