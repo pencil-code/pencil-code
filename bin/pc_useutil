@@ -1,0 +1,25 @@
+#!/bin/sh
+
+usage ()
+{
+  echo Please specify the name of a script in the \$PENCIL_HOME/utils directory.
+  exit 1
+}
+
+[ "$1" ] || usage
+
+util="$1"
+personal_bin="$HOME/bin"
+
+if [ -e "$personal_bin" ]; then
+  cd $personal_bin
+  if [ -e "$PENCIL_HOME/utils/$util" ]; then
+    ln -s $PENCIL_HOME/utils/$util
+    echo "done. (you will need to rehash in csh\!)"
+  else
+    echo Utility \"$util\" not found in \$PENCIL_HOME/utils
+    exit 1
+  fi
+else
+  echo "Cannot fine your personal bin directory\!"
+fi
