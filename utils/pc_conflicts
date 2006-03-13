@@ -1,0 +1,21 @@
+#!/bin/sh
+editor=vi
+[ "$EDITOR" ] && editor=$EDITOR
+
+cd $PENCIL_HOME
+paths="src bin idl lib"
+files=`cvs -q up $paths | grep -e '^C ' | sed -e 's/C \(.*\)/\1/'`
+
+if [ ! "$files" ]; then
+  echo "No conflicts found (checked: $paths)"
+  exit 0
+fi
+
+options=
+if expr match "$editor" "/vi/"; then
+ options="+/====="
+elif expr match "$editor" "/emacs/"; then
+ options=
+fi
+
+$editor $options $files
