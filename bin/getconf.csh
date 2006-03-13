@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.161 2006-02-27 08:29:32 ajohan Exp $
+# $Id: getconf.csh,v 1.162 2006-03-13 19:54:45 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -303,6 +303,15 @@ else if ($hn =~ psi*) then
   set masternode=psi24
   echo "Setting master node to psi24, the only node that is accesible by rsh"
 
+else if ( ($hn =~ sepeli.csc.fi) || ($hn =~ compute-*.local) ) then
+  echo "Sepeli - CSC, Espoo, Finland"
+  set mpirunops = ''
+  set mpirun = 'mpirun'
+  set npops = "-np $ncpus"
+  set local_disc = 1
+  set one_local_disc = 0
+  set local_binary = 0
+  setenv SCRATCH_DIR $TMPDIR
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
   echo "Fire - Bergen"
   set mpirunops = ''
