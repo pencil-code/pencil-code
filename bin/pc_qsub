@@ -1,7 +1,7 @@
 #!/bin/sh
 # Handle queue submission transparently across different machines
 
-source pc_config.sh
+. pc_config.sh
 
 # Run by default
 jobscript=run.csh
@@ -29,7 +29,7 @@ done
 
 # Make a meaningfully named link point to the job script
 # use the last directory name in the path
-jobname=${CWD/*\//}
+#jobname=${CWD/*\//}
 
 queue_submit $jobscript $jobname $@
 

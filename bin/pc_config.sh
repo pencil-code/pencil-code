@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.8 2006-02-22 17:03:31 mee Exp $
+# $Id: pc_config.sh,v 1.9 2006-03-14 11:45:00 mkorpi Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -15,7 +15,7 @@
 #
 
 #source $PENCIL_HOME/bin/pc_functions.sh
-source pc_functions.sh
+. pc_functions.sh
 
 # Check we are actually in a run directory
 check_is_run_directory
@@ -65,7 +65,7 @@ booted_lam=no
 ##-------------------------------------------------------------------------
 
 echo `uname -a`
-hn=$( uname -n )
+hn=`uname -n`
 
 # Get list of nodes; filters lines such that it would also handle
 # machines.XXX files or lam-bhost.der, although this is hardly necessary.
@@ -87,7 +87,7 @@ elif ishost "giga[0-9][0-9].ncl.ac.uk" ; then
   echo "Newcastle e-Science Cluster"
   queue_submit() # Override queue submission shell function
   { 
-    qsub -pe mpi2 $(( (($ncpus+1)/2)*2 )) -N $2 $1 
+    qsub -pe mpi2 `expr \(\( $ncpus + 1 \) / 2 \) * 2`  -N $2 $1 
   }
   export LD_LIBRARY_PATH=/addon/shared/intel/compiler70/ia32/bin:$LD_LIBRARY_PATH
   if [ -n "$PE" ]; then

@@ -107,7 +107,7 @@ determine_datadir()
     datadir=data
   fi
   echo "datadir = $datadir"
-  subdirs=("allprocs" "averages" "idl")
+  subdirs="allprocs averages idl"
   procdirs=`printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"proc";' 'i; }' | bc`
 }
 
@@ -120,13 +120,13 @@ prepare_datadir()
   do
     # Make sure a sufficient number of subdirectories exist
     ddir="$datadir/$dir"
-    if [ ! -e $ddir ]; then
+    if [ ! -d $ddir ]; then
       mkdir $ddir
     else
       # Clean up
       # when used with lnowrite=T, for example, we don't want to remove var.dat:
       list=`/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice* 2>/dev/null`
-      if [ ! -e NOERASE ]; then
+      if [ ! -f NOERASE ]; then
         for rmfile in $list
         do
           if [ $rmfile != $ddir/var.dat ]; then rm -f $rmfile &>/dev/null; fi
@@ -136,8 +136,8 @@ prepare_datadir()
   done
 
   # Clean up previous runs
-  if [ ! -e NOERASE ]; then
-    if [ -e "$datadir/time_series.dat" ] && [ ! -s "$datadir/time_series.dat" ] ; then
+  if [ ! -f NOERASE ]; then
+    if [ -f "$datadir/time_series.dat" ] && [ ! -s "$datadir/time_series.dat" ] ; then
         mv $datadir/time_series.dat $datadir/time_series.`timestr`
     fi
     rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
@@ -230,7 +230,7 @@ check_RERUN()
   # With this method one can only reload a new executable.
   # One cannot change directory, nor are the var.dat files returned to server.
   # See the NEWDIR method below for more options.
-  if [ -e RERUN ]; then 
+  if [ -f RERUN ]; then 
     rm -f RERUN
     echo
     echo "------------------------------------------------------------------------------"
@@ -247,7 +247,7 @@ check_NEWDIR()
 {
   # look for NEWDIR file 
   # if NEWDIR contains a directory name, then continue run in that directory
-  if [ -e NEWDIR ]; then 
+  if [ -f NEWDIR ]; then 
     if [ -s NEWDIR ]; then
       remove_lock
       olddir=$cwd
@@ -302,17 +302,17 @@ distribute_data_to_nodes()
       echo " Done."
     else # one local disc per MPI process (Horseshoe, etc);
       echo -n "Distributing data to nodes...  "
-      local i=0
+      i=0
       for node in $nodelist
       do
-        local j=$nprocpernode
+        j=$nprocpernode
         while [ $j -gt 0 ]
         do
           echo -n "$i "
           $SCP ${remote_data_path}$datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/ 2>/dev/null
           $SCP ${remote_data_path}$datadir/proc$i/timeavg.dat ${node}:$SCRATCH_DIR/proc$i/ 2>/dev/null 
-          i=$(( $i + 1 ))
-          j=$(( $j - 1 ))
+          i=`expr $i + 1`
+          j=`expr $j - 1`
         done
         $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/ 2>/dev/null      
       done
@@ -340,7 +340,7 @@ copy_snapshots ()
   # where the code started).
   # Relies on PBS (and on tcsh) and is needed on Horseshoe (the Odense
   # cluster).
-  local debug=no
+  debug=no
 
   if [ "$1" = "-v" ] || [ "$1" = "--verbose" ]; then
     debug=yes
@@ -349,12 +349,12 @@ copy_snapshots ()
   
   #[ "$debug" = "yes" ] && (set verbose;  set echo)
   
-  local varfile=$1
+  varfile=$1
   [ "$debug" = "yes" ] && echo "varfile = <$varfile>"
   
-  local pwd=`pwd`
-  local targetdir=$pwd/data
-  local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
+  pwd=`pwd`
+  targetdir=$pwd/data
+  nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
   
   if [ "$debug" = "yes" ]; then
     echo "SCRATCH_DIR = <$SCRATCH_DIR>"
@@ -393,19 +393,19 @@ copy_snapshots ()
       echo "--------------------------------------------------------"
     done 
   else				# no explicit file given -- copy VARN, TAVGN
-    if [ -e COPY_IN_PROGRESS ]; then    
+    if [ -f COPY_IN_PROGRESS ]; then    
       echo "ERROR: Copy already in progress! Exiting..."
       return 1
     fi
 
     touch COPY_IN_PROGRESS
-    while [ -e COPY_IN_PROGRESS ];   # loop until killed
+    while [ -f COPY_IN_PROGRESS ];   # loop until killed
     do
       sleep 60 &			# only check every minute
-      local save_sleep_pid=$!
+      save_sleep_pid=$!
       trap "kill $save_sleep_pid; rm -f COPY_IN_PROGRESS" SIGQUIT
       wait $save_sleep_pid
-      [ -e COPY_IN_PROGRESS ] && date >> COPY_IN_PROGRESS
+      [ -f COPY_IN_PROGRESS ] && date >> COPY_IN_PROGRESS
 
       ## Is there something to copy? (It is sufficient to copy once the
       ## files show up for the master process of this job -- might depend on
@@ -417,10 +417,10 @@ copy_snapshots ()
         ## Decide whether to check for file size (old scheme; won't work with
         ## TAVGN unless they have the same size as var.dat), or to use list of
         ## snapshot files (new scheme, will not work with old binaries).
-        if [ -e $SCRATCH_DIR/proc0/varN.list ]     || \
-           [ -e $SCRATCH_DIR/proc0/tavgN.list ]    || \
-           [ -e $SCRATCH_DIR/allprocs/tavgN.list ] || \
-           [ -e $SCRATCH_DIR/allprocs/tavgN.list ];  then
+        if [ -f $SCRATCH_DIR/proc0/varN.list ]     || \
+           [ -f $SCRATCH_DIR/proc0/tavgN.list ]    || \
+           [ -f $SCRATCH_DIR/allprocs/tavgN.list ] || \
+           [ -f $SCRATCH_DIR/allprocs/tavgN.list ];  then
           ## New scheme
           echo "New scheme for copying (based on varN.list)"
           for node in $nodelist
@@ -520,19 +520,19 @@ copy_snapshots ()
 #      echo "--------------------------------------------------------"
 #    done 
 #  else				# no explicit file given -- copy VARN, TAVGN
-#    if [ -e COPY_IN_PROGRESS ]; then    
+#    if [ -f COPY_IN_PROGRESS ]; then    
 #      echo "ERROR: Copy already in progress! Exiting..."
 #      return 1
 #    fi
 #
 #    touch COPY_IN_PROGRESS
-#    while [ -e COPY_IN_PROGRESS ];   # loop until killed
+#    while [ -f COPY_IN_PROGRESS ];   # loop until killed
 #    do
 #      sleep 60 &                    # only check every minute
 #      local save_sleep_pid=$!
 #      trap "kill $save_sleep_pid; rm -f COPY_IN_PROGRESS" SIGQUIT
 #      wait $save_sleep_pid
-#      [ -e COPY_IN_PROGRESS ] && date >> COPY_IN_PROGRESS
+#      [ -f COPY_IN_PROGRESS ] && date >> COPY_IN_PROGRESS
 #
 #      ## Is there something to copy? (It is sufficient to copy once the
 #      ## files show up for the master process of this job -- might depend on
@@ -544,10 +544,10 @@ copy_snapshots ()
 #        ## Decide whether to check for file size (old scheme; won't work with
 #        ## TAVGN unless they have the same size as var.dat), or to use list of
 #        ## snapshot files (new scheme, will not work with old binaries).
-#        if [ -e $SCRATCH_DIR/proc0/varN.list ]     || \
-#           [ -e $SCRATCH_DIR/proc0/tavgN.list ]    || \
-#           [ -e $SCRATCH_DIR/allprocs/tavgN.list ] || \
-#           [ -e $SCRATCH_DIR/allprocs/tavgN.list ];  then
+#        if [ -f $SCRATCH_DIR/proc0/varN.list ]     || \
+#           [ -f $SCRATCH_DIR/proc0/tavgN.list ]    || \
+#           [ -f $SCRATCH_DIR/allprocs/tavgN.list ] || \
+#           [ -f $SCRATCH_DIR/allprocs/tavgN.list ];  then
 #          ## New scheme
 #          echo "New scheme for copying (based on varN.list)"
 #          for node in $nodelist
@@ -634,14 +634,14 @@ unbackground_copy_snapshots()
 #------------------------------------------------------------------------------
 check_is_run_directory()
 {
-  local isrundir=yes
+  isrundir=yes
 
-  if [ ! -e start.in ]; then
+  if [ ! -f start.in ]; then
     echo "ERROR: Cannot find start.in"
     isrundir=no
   fi
 
-  if [ ! -e run.in ]; then
+  if [ ! -f run.in ]; then
     echo "ERROR: Cannot find run.in"
     isrundir=no
   fi
@@ -656,7 +656,7 @@ check_is_run_directory()
 check_not_locked()
 {
   # Prevent code from running twice (and removing files by accident)
-  if [ -e LOCK ]; then
+  if [ -f LOCK ]; then
     echo ""
     echo "getconf.csh: found LOCK file"
     echo "This may indicate that the code is currently running in this directory"
@@ -670,13 +670,13 @@ check_not_locked()
 create_lock()
 {
   # Prevent code from running twice (and removing files by accident)
-  [ ! -e NEVERLOCK ] && touch LOCK
+  [ ! -f NEVERLOCK ] && touch LOCK
 }
 
 remove_lock()
 {
   # Prevent code from running twice (and removing files by accident)
-  [ -e LOCK ] && rm -f LOCK 
+  [ -f LOCK ] && rm -f LOCK 
 }
 
 
@@ -685,7 +685,7 @@ remove_lock()
 #------------------------------------------------------------------------------
 check_sgi_fix()
 {
-  local os=`uname -s`
+  os=`uname -s`
   if match "$os" "IRIX" ; then
     touch SGIFIX
   else
@@ -696,7 +696,7 @@ check_sgi_fix()
 determine_mpi()
 {
   # Are we running the MPI version?
-  if [ -e src/Makefile.local ]; then 
+  if [ -f src/Makefile.local ]; then 
     egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local >/dev/null
     if [ $? -eq 0 ]; then
       mpi=yes
@@ -713,7 +713,7 @@ determine_mpi()
 determine_ncpus()
 {
   # Determine number of CPUS
-  if [ -e src/cparam.local ]; then 
+  if [ -f src/cparam.local ]; then 
     ncpus=`perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
     nprocpernode=1
     echo $ncpus CPUs
@@ -728,14 +728,14 @@ determine_nodelist()
   # Get list of nodes; filters lines such that it would also handle
   # machines.XXX files or lam-bhost.der, although this is hardly necessary.
 echo -n "Determine nodelist... "
-  if [ -e "$PBS_NODEFILE" ]; then
+  if [ -f "$PBS_NODEFILE" ]; then
     echo "PBS job"
     nodelist=`cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
-  elif [ -e "$PE_HOSTFILE" ]; then
+  elif [ -f "$PE_HOSTFILE" ]; then
     echo "SGE Parallel Environment job - $PE"
     nodelist=`cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
   elif [ -n "$JOB_ID" ]; then
-    if [ -e "$HOME/.score/ndfile.$JOB_ID" ]; then
+    if [ -f "$HOME/.score/ndfile.$JOB_ID" ]; then
       echo "Scout job"
       nodelist=`cat $HOME/.score/ndfile.$JOB_ID | grep -v '^#' | sed 's/:[0-9]*//'`
     else
@@ -780,7 +780,7 @@ determine_mpi_processor_options()
 
 check_reference_data()
 {
-  if [ -e reference.out ] && [ -e data/time_series.dat ]; then
+  if [ -f reference.out ] && [ -f data/time_series.dat ]; then
     diff reference.out data/time_series.dat > /dev/null 
     if [ $? -ne 0 ]; then 
       echo "Found reference data: reference.out"
