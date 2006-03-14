@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.163 2006-03-13 19:30:53 mee Exp $
+### $Id: Makefile.src,v 1.164 2006-03-14 10:23:18 mkorpi Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -446,6 +446,9 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #CFLAGS=-O5 -qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
 #FFLAGS=-O5 -qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
 #LDMPI= #(sp[0-1]*)
+#FC=mpxlf90_r #(p690*)
+#CC=mpcc_r #(p690*)
+#FFLAGS=-O3 -qarch=pwr4 -qtune=pwr4 #(p690*)
 ### -bmaxdata:0x7000000
 
 
