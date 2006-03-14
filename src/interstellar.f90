@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.112 2006-03-12 14:41:28 brandenb Exp $
+! $Id: interstellar.f90,v 1.113 2006-03-14 15:18:50 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -279,7 +279,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.112 2006-03-12 14:41:28 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.113 2006-03-14 15:18:50 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -362,7 +362,7 @@ module Interstellar
          if (lroot) print*,'initialize_interstellar: no cooling applied'
          coolT_cgs=tiny(0.D0)
          coolH_cgs=tiny(0.D0)
-         coolB=tiny(0.D0)
+         coolB=tiny(0.)
       end if
 !
 
