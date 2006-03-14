@@ -1,12 +1,12 @@
-! $Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $
+! $Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
 !-----------------------------------------------------------------------
-!   3-sep-02/axel+nils: coded
-!   5-sep-02/axel: loop first over all points, then distribute to k-shells
+!    3-sep-02/axel+nils: coded
+!    5-sep-02/axel: loop first over all points, then distribute to k-shells
 !   23-sep-02/nils: adapted from postproc/src/power_spectrum.f90
-!
+!   14-mar-06/axel: made kx,ky,kz going only in integers. Works only for cubes.
 
 module  power_spectrum
   !
@@ -44,14 +44,15 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
   !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   spectrum=0
   !
@@ -155,14 +156,15 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
   !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   spectrum=0
   !
@@ -264,7 +266,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -274,10 +276,11 @@ module  power_spectrum
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
   !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  initialize power spectrum to zero
   !
@@ -421,7 +424,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -431,10 +434,11 @@ module  power_spectrum
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
   !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
-  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
   !
   !  initialize power spectrum to zero
   !
@@ -533,7 +537,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.50 2006-01-25 20:22:13 ajohan Exp $")
+        "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
