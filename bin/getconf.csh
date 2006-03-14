@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.162 2006-03-13 19:54:45 mee Exp $
+# $Id: getconf.csh,v 1.163 2006-03-14 21:49:28 mkorpi Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -265,6 +265,21 @@ else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin
   setenv SSH rsh
   setenv SCP rcp
   setenv LANG en_US
+
+else if ($hn =~ p690*) then
+  echo "SP1600 - CSC, Espoo, Finland (IBM with AIX UNIX)"
+  set mpirunops = "-euilib us -shared_memory yes"
+  set mpirunops = 
+  set mpirun = poe
+  set local_disc = 0
+  set one_local_disc = 0
+  set local_binary = 0
+#  setenv SSH ssh
+#  setenv SCP scp
+#  setenv LANG en_US
+#  setenv SCRATCH_DIR /scratch/${USER}
+#  set masternode=sp.sp4
+#  echo "Setting master node to sp.sp4, the only node that is accesible by rsh"
 
 else if ($hn =~ sp[0-9]*) then
   echo "SP4 - CINECA, Bologna (IBM with AIX UNIX)"
@@ -729,7 +744,8 @@ if ($mpi) then
     set npops = "-nodes=${nnode}x${nprocpernode}"
   else if ($mpirun =~ *poe*) then
     set nprocpernode = 1
-    set x_ops = "-procs $ncpus"
+    set x_ops = "$mpirunops -procs $ncpus"
+    set mpirunops =
     set npops = ""
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
