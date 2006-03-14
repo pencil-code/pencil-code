@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.277 2006-02-28 22:13:16 wlyra Exp $
+! $Id: magnetic.f90,v 1.278 2006-03-14 17:52:05 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -81,6 +81,7 @@ module Magnetic
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   character (len=labellen) :: pertaa='zero'
   integer :: N_modes_aa=1
+  real :: rmode,zmode
 
   namelist /magnetic_init_pars/ &
        B_ext, &
@@ -91,7 +92,8 @@ module Magnetic
        initaa,amplaa,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
-       ampl_B0,initpower_aa,cutoff_aa,N_modes_aa
+       ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
+       rmode,zmode
 
   ! run parameters
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -178,7 +180,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.277 2006-02-28 22:13:16 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.278 2006-03-14 17:52:05 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -392,7 +394,8 @@ module Magnetic
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
          case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
-         case('Alfven-phi'); call alfven_phi(amplaa(j),f,kz_aa(j))    
+         case('Alfven-phi'); call alfven_phi(amplaa(j),f,zmode)    
+         case('Alfven-phi-rz'); call alfven_phi_rz(amplaa(j),f,rmode,zmode)
          case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
          case('tony-nohel')
             f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
@@ -2038,6 +2041,50 @@ module Magnetic
       enddo
 !
     endsubroutine alfven_phi
+!***********************************************************************
+    subroutine alfven_phi_rz(B0,f,rmode,zmode)
+!
+!  Alfven wave propagating in the phi-direction
+!
+!   Bphi = B0 sin(kr*r) sin(kz*z)
+!
+!  When B << kz, the routine needs high resolution
+!  to resolve the sines well. 64**3 works fine, but
+!  use 128x128x16 or 256x256x32 at your own risk.
+!
+!  08-feb-06/wlad: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: Ar,Az
+      real :: B0,kz,phase_z,zmode,zsize,zin
+      real :: kr,phase_r,rmode,rsize,rin
+!
+      zsize = Lxyz(3)  ; rsize = r_ext-r_int
+      zin   = xyz0(3)  ; rin   = r_int
+!
+      kz    = zmode*2*pi/zsize   ; kr      = rmode*2*pi/rsize
+      phase_z =  -kz*zin +pi/2.  ; phase_r =  -kr*rin +pi/2.
+!
+      do m=m1,m2
+         do n=n1,n2
+!
+            r_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
+!
+            Ar   =              - cos(kz*z(n) + phase_z)*&
+                 sin(kr*r_mn + phase_r)
+            Az   = (kz - B0)/kr * sin(kz*z(n) + phase_z)*&
+                 cos(kr*r_mn + phase_r)
+!
+            f(l1:l2,m,n,iaa+0) = Ar*x(l1:l2)/r_mn
+            f(l1:l2,m,n,iaa+1) = Ar*y(  m  )/r_mn
+            f(l1:l2,m,n,iaa+2) = Az
+!
+         enddo
+      enddo
+!
+    endsubroutine alfven_phi_rz
 !***********************************************************************
     subroutine fluxrings(ampl,f,ivar,xx,yy,zz,profile)
 !
