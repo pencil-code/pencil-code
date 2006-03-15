@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.90 2006-03-15 17:09:05 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.91 2006-03-15 17:11:16 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -601,7 +601,6 @@ module Boundcond
 
       case('bot')               ! bottom boundary
 
-<<<<<<< boundcond.f90
 
       if (j.GE.4) then
         
