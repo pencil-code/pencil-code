@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.29 2006-03-07 23:25:52 wlyra Exp $
+! $Id: planet.f90,v 1.30 2006-03-15 04:04:36 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -44,13 +44,14 @@ module Planet
   logical :: lsmoothlocal=.false.,lcs2_global=.false.
   logical :: lmigrate=.false.,lnorm=.false.
   real :: Gvalue=1. !gravity constant in same unit as density
+  logical :: ldnolog=.true.
 !
   namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
        lcs2_global,llocal_iso
 !
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
-       lmigrate,lnorm,Gvalue,n_periods
+       lmigrate,lnorm,Gvalue,n_periods,ldnolog
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_torqrocheint=0,idiag_torqrocheext=0
@@ -79,7 +80,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.29 2006-03-07 23:25:52 wlyra Exp $")
+           "$Id: planet.f90,v 1.30 2006-03-15 04:04:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,7 +130,8 @@ module Planet
 !
       use Cdata
 !      
-      lpenc_requested(i_lnrho)=.true.     
+      lpenc_requested(i_lnrho)=.true.
+      lpenc_requested(i_rho)=.true.
 !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
@@ -360,7 +362,6 @@ module Planet
 !  
       call get_global(cs2,m,n,'cs2')
 !
-!
     endsubroutine local_isothermal
 !***********************************************************
     subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot)
@@ -420,13 +421,19 @@ module Planet
       real, dimension(mx,my,mz,mvar) :: df
       integer ider,j,k,i,ii
       real, dimension(nx) :: r,pdamp,aux0,velx0,vely0
-      real :: tau
+      real :: tau,lnrho_cte
 !
       if (headtt) print*,&
            'wave_damping: damping motions for inner and outer boundary'
 !
       tau = 2*pi/(0.4)**(-1.5)
       r = sqrt(x(l1:l2)**2 + y(m)**2)
+!
+      if (ldnolog) then
+         lnrho_cte = 1.
+      else
+         lnrho_cte = 0.
+      endif
 !     
 ! for 0.4 : 1 ; 0.5 : 0
 !
@@ -454,7 +461,7 @@ module Planet
       do i=l1,l2
          ii = i-l1+1
          if ((r(ii).le.0.5).and.(r(ii).gt.0.4)) then
-            df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - 1.       )/tau * pdamp(ii) 
+            df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
             df(i,m,n,iux)    = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
             df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
          endif
@@ -481,7 +488,7 @@ module Planet
      do i=l1,l2
         ii = i-l1+1
         if ((r(ii) .ge. 2.1).and.(r(ii).le.2.5)) then
-           df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - 1.       )/tau * pdamp(ii) 
+           df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
            df(i,m,n,iux)    = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
            df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
         endif
