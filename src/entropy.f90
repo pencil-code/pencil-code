@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.372 2006-03-15 08:33:41 mee Exp $
+! $Id: entropy.f90,v 1.373 2006-03-15 09:30:45 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.372 2006-03-15 08:33:41 mee Exp $")
+           "$Id: entropy.f90,v 1.373 2006-03-15 09:30:45 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1522,8 +1522,13 @@ module Entropy
 !      
       intent(in) :: f
       intent(inout) :: p
+!
+!ajwm THiE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
+!ajwm FOR pretend_lnTT since iss actually contain
+!ajwm lnTT/gamma NOT entropy!
 ! ss
       if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
+!
 ! gss
       if (lpencil(i_gss)) call grad(f,iss,p%gss)
 ! pp
@@ -1545,14 +1550,7 @@ module Entropy
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! glnTT
       if (lpencil(i_glnTT)) then
-        !if (pretend_lnTT) then
-        !   p%glnTT=p%gss
-        !else  
-        !AB: note that temperature_gradient does aleady take care
-        !AB: of pretend_lnTT, with one difference: there is has a gamma
-        !AB: factor which, I believe, is correct. Tobi, please confirm!
-          call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
-        !endif
+        call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
       endif
 ! ugss
       if (lpencil(i_ugss)) &
