@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.278 2006-03-14 17:52:05 wlyra Exp $
+! $Id: magnetic.f90,v 1.279 2006-03-15 03:58:21 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -180,7 +180,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.278 2006-03-14 17:52:05 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.279 2006-03-15 03:58:21 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -396,6 +396,7 @@ module Magnetic
          case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('Alfven-phi'); call alfven_phi(amplaa(j),f,zmode)    
          case('Alfven-phi-rz'); call alfven_phi_rz(amplaa(j),f,rmode,zmode)
+         case('Alfven-z-r'); call alfven_z_r(amplaa(j),f,rmode)   
          case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
          case('tony-nohel')
             f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
@@ -2055,6 +2056,7 @@ module Magnetic
 !  08-feb-06/wlad: coded
 !
       use Cdata
+      use Sub, only : calc_phiavg_general
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: Ar,Az
@@ -2070,21 +2072,63 @@ module Magnetic
       do m=m1,m2
          do n=n1,n2
 !
-            r_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
+            call calc_phiavg_general() ! gives us rcyl_mn,phi_mn                                                              !
+            rcyl_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
 !
             Ar   =              - cos(kz*z(n) + phase_z)*&
-                 sin(kr*r_mn + phase_r)
+                 sin(kr*rcyl_mn + phase_r)
             Az   = (kz - B0)/kr * sin(kz*z(n) + phase_z)*&
-                 cos(kr*r_mn + phase_r)
+                 cos(kr*rcyl_mn + phase_r)
 !
-            f(l1:l2,m,n,iaa+0) = Ar*x(l1:l2)/r_mn
-            f(l1:l2,m,n,iaa+1) = Ar*y(  m  )/r_mn
-            f(l1:l2,m,n,iaa+2) = Az
+            f(l1:l2,m,n,iaa+0) = f(l1:l2,m,n,iaa+0)+Ar*x(l1:l2)/rcyl_mn
+            f(l1:l2,m,n,iaa+1) = f(l1:l2,m,n,iaa+1)+Ar*y(  m  )/rcyl_mn
+            f(l1:l2,m,n,iaa+2) = f(l1:l2,m,n,iaa+2)+Az
 !
          enddo
       enddo
 !
     endsubroutine alfven_phi_rz
+!***********************************************************************
+    subroutine alfven_z_r(B0,f,rmode)                          
+!                                                                       
+!  Alfven wave propagating in the z-direction                         
+!                                                                       
+!   Bz = B0 sin(kr*r) 
+!                                                                       
+!  13-mar-06/wlad: coded                                                
+!                                                                       
+      use Cdata                          
+      use Sub, only : calc_phiavg_general
+!                                                                       
+      real, dimension (mx,my,mz,mvar+maux) :: f                         
+      real, dimension (nx) :: Ar,Aphi                                     
+      real :: B0,kz,phase_z,zmode,zsize,zin                             
+      real :: kr,phase_r,rmode,rsize,rin                                
+!                                                                       
+      zsize = Lxyz(3)  ; rsize = r_ext-r_int                            
+      zin   = xyz0(3)  ; rin   = r_int                                  
+!                                                                       
+      kz    = zmode*2*pi/zsize   ; kr      = rmode*2*pi/rsize           
+      phase_z =  -kz*zin +pi/2.  ; phase_r =  -kr*rin +pi/2.            
+!                                                                       
+      do m=m1,m2
+         do n=n1,n2
+!
+            call calc_phiavg_general() ! gives us rcyl_mn,phi_mn         
+!        
+            Ar   = phi_mn*rcyl_mn*kr*B0*cos(kr*rcyl_mn + phase_r)
+!
+            Aphi = B0*sin(kr*rcyl_mn * phase_r)
+!                                                                       
+            f(l1:l2,m,n,iaa+0) = f(l1:l2,m,n,iaa+0) + &
+                 (Ar*x(l1:l2) - Aphi*y(  m  ))/rcyl_mn
+            f(l1:l2,m,n,iaa+1) = f(l1:l2,m,n,iaa+1) + &
+                 (Ar*y(  m  ) + Aphi*x(l1:l2))/rcyl_mn
+!
+         enddo
+      enddo
+!
+    endsubroutine alfven_z_r
 !***********************************************************************
     subroutine fluxrings(ampl,f,ivar,xx,yy,zz,profile)
 !
