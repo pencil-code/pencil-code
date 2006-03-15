@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.16 2005-06-14 09:50:00 ajohan Exp $
+; $Id: pc_read_ts.pro,v 1.17 2006-03-15 15:29:45 ajohan Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2005-06-14 09:50:00 $
-;  $Revision: 1.16 $
+;  $Date: 2006-03-15 15:29:45 $
+;  $Revision: 1.17 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -70,7 +70,7 @@ pro pc_read_ts, $
                 PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
                 N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
                 EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm, TRIMFIRST=TRIMFIRST,  $
-                MOVINGAVERAGE=MOVINGAVERAGE
+                MOVINGAVERAGE=MOVINGAVERAGE, monotone=monotone
 COMPILE_OPT IDL2,HIDDEN
 
 ; If no meaningful parameters are given show some help!
@@ -121,6 +121,7 @@ COMPILE_OPT IDL2,HIDDEN
 
   default, datadir, 'data/'
   default, filename, 'time_series.dat'
+  default, monotone, 0
   default, MOVINGAVERAGE,0
 
   if (strpos(filename,'/') eq -1) then begin
@@ -259,6 +260,21 @@ COMPILE_OPT IDL2,HIDDEN
     endfor
   endif
 ;
+;  Make time monotonous and crop all variables accordingly.
+;  
+  if (monotone) then begin
+    itt=where(full_labels eq 't') & itt = itt[0]
+    if (itt eq -1) then begin
+      print, 'Error while making time monotomous: '+ $
+          'time variable was not found in time series.'
+      print, 'Labels: ', full_labels
+      stop
+    endif
+    ii=monotone_array(reform(full_data[itt,*]))
+  endif else begin
+    ii=indgen(n_elements(full_data[0,*]))
+  endelse
+;
 ;  assemble the data
 ;
   ncols = n_elements(full_labels)
@@ -267,7 +283,7 @@ COMPILE_OPT IDL2,HIDDEN
     if (i eq 0) then pref=' ' else pref=', '
     cmd = cmd + pref + full_labels[i] $
                      + ': reform(full_data[' $
-                     + strtrim(i,2) + ',*])'
+                     + strtrim(i,2) + ',ii])'
   endfor
   cmd = cmd + ' }'
 

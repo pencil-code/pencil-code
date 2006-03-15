@@ -1,9 +1,9 @@
-;; $Id: pc_read_xyaver.pro,v 1.4 2005-10-02 11:22:51 ajohan Exp $
+;; $Id: pc_read_xyaver.pro,v 1.5 2006-03-15 15:29:45 ajohan Exp $
 ;;
 ;;   Read xy-averages from file
 ;;
 pro pc_read_xyaver, object=object, varfile=varfile, datadir=datadir, $
-    quiet=quiet
+    monotone=monotone, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -11,6 +11,7 @@ COMMON pc_precision, zero, one
 ;;
 default, datadir, './data'
 default, varfile, 'xyaverages.dat'
+default, monotone, 0
 default, quiet, 0
 ;;
 ;;  Get necessary dimensions.
@@ -72,11 +73,19 @@ for it=0,nit-1 do begin
   endfor
 endfor
 ;;
+;;  Make time monotonous and crop all variables accordingly.
+;;  
+if (monotone) then begin
+  ii=monotone_array(tt)
+endif else begin
+  ii=indgen(n_elements(tt))
+endelse
+;;
 ;;  Put data in structure.
 ;;
 makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
     arraytostring(varnames,QUOTE="'",/noleader) + "]," + $
-    "tt,"+arraytostring(varnames,/noleader) + ")"
+    "tt[ii],"+arraytostring(varnames+'[*,ii]',/noleader) + ")"
 
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
