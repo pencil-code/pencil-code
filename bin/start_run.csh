@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.39 2005-08-08 12:09:32 ajohan Exp $
+# CVS: $Id: start_run.csh,v 1.40 2006-03-15 02:28:46 dobler Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -30,9 +30,6 @@ endif
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
-
-# Prevent code from running twice (and removing files by accident)
-if (! -e "NEVERLOCK") touch LOCK
 
 #
 #  If we don't have a data subdirectory: stop here (it is too easy to

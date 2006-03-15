@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.163 2006-03-14 21:49:28 mkorpi Exp $
+# $Id: getconf.csh,v 1.164 2006-03-15 02:28:46 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -64,6 +64,8 @@ if (-e "LOCK") then
     kill -TERM $$	  	  # .. but try exiting in civilized manner
   endif  
 endif
+# The LOCK is ours:
+if (! -e "NEVERLOCK") touch LOCK
 
 # Are we running the MPI version?
 #set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile`

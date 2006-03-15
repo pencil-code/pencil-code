@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.82 2005-08-08 12:10:02 ajohan Exp $
+# CVS: $Id: run.csh,v 1.83 2006-03-15 02:28:46 dobler Exp $
 
 #                       run.csh
 #                      ---------
@@ -35,9 +35,6 @@ newdir:
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
-
-# Prevent code from running twice (and removing files by accident)
-if (! -e "NEVERLOCK") touch LOCK
 
 #
 #  If necessary, distribute var.dat from the server to the various nodes
