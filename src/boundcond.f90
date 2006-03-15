@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.89 2006-03-12 14:52:42 brandenb Exp $
+! $Id: boundcond.f90,v 1.90 2006-03-15 17:09:05 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -583,7 +583,7 @@ module Boundcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mcom), optional :: val1,val2
       integer :: sgn,i,j, step_width
-      real :: H_disk_min, L_disk_min, ddz,lnrho,lnTT,ss
+      real :: H_disk_min, L_disk_min, ddz,lnrho,lnTT,ss, n1p4
     !  integer, parameter :: ilnrho_lnTT=4
 
         H_disk_min=Lxyz(1)/(nxgrid-1)
@@ -601,20 +601,52 @@ module Boundcond
 
       case('bot')               ! bottom boundary
 
-      if (lextrapolate_bot_density .AND. j.GE.4) then
+<<<<<<< boundcond.f90
+
+      if (j.GE.4) then
+        
+       if (lextrapolate_bot_density) then
+     
+        n1p4=n1+4
       
-      call stop_it("bc_step_xz: SEE COMMENTS IN CODE!!")
-!mee
-!mee Natalia, 
-!mee  n1+4 is always out of range for a run where nz=1 so this
-!mee  also, the dimensions of the fa array are known at compile 
-!mee  time as is n1 so this code will not even compile if nz=1!!
-!mee              
-!mee        f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1+4,j))
-!mee        f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1+4,j))
-!mee        f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1+4,j))
+        f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+        f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+        f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+
+!
+   
+
+       else
+              
+       !  do i=0,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+1,j)+M_star/(R_star-(i-1)*ddz)**2/cs0**2*ddz; enddo
+    
+       ! do i=0,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+1,j)*(1.+ddz/(R_star-(i-1)*ddz)); enddo
+        
+       ! do i=0,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+2,j)+2.*ddz*f(:,:,n1-i+1,j)/(R_star-(i-1)*ddz); enddo
+
+       !  do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+      !   do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+2,j); enddo
+
+        
+            
+           if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
+               f(1:step_width+3,:,n1,j)=val1(j)
+               f(step_width+3+1:mx,:,n1,j)=val2(j)
+           end if
+     
+          if (H_disk .LT. H_disk_min)    f(:,:,n1,j)=val2(j)
+          if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1(j)
+  
 
 
+
+          do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+1,j)*(1.+ddz/(R_star-(i-1)*ddz)); enddo
+       
+
+      !  do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+    
+   
+       endif
       else
     
       if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
@@ -624,9 +656,15 @@ module Boundcond
           if (H_disk .LT. H_disk_min)    f(:,:,n1,j)=val2(j)
           if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1(j)
   
-          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+        do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
        
-      endif
+     !   if (j.EQ.2 .AND. j.EQ.3 ) then 
+           !   f(:,:,n1,j)=3e-3/f(:,:,n1,4)
+      !    do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+1,j); enddo
+       !  endif 
+
+        
+      endif  
  
       case('top')               ! top boundary
 
@@ -638,12 +676,16 @@ module Boundcond
            do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
          end if
          if (j.EQ.2) then 
-           do i=0,nghost; f(:,:,n2+i,j)=f(:,:,n2+i-1,j)*(1.-1.5*ddz/(R_star+Lxyz(3)+(i-1)*ddz)); enddo
+           !do i=0,nghost; f(:,:,n2+i,j)=f(:,:,n2+i-1,j)*(1.-1.5*ddz/(R_star+Lxyz(3)+(i-1)*ddz)); enddo
+             f(:,:,n2,j)=sqrt(M_star/(R_star+Lxyz(3)))!-0.25*nu/(R_star+Lxyz(3))
+             do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo   
+        
          end if 
          if (j.EQ.3)  then
-           do i=0,nghost; f(:,:,n2+i,j)=-1.5*nu/(R_star+Lxyz(3)+i*ddz); enddo
+           f(:,:,n2,j)=0.!-0.25*nu/(R_star+Lxyz(3))
+           do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo   
          end if 
-        if (j.EQ.4) then
+         if (j.EQ.4) then
            f(:,:,n2,j)=val1(j)
            do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j);    enddo
 
