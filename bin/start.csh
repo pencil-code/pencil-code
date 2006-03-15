@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.63 2005-08-08 12:10:02 ajohan Exp $
+# CVS: $Id: start.csh,v 1.64 2006-03-15 02:31:52 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -133,6 +133,9 @@ if ($local_disc) then
     rm -rf $SCRATCH_DIR
   endif
 endif
+
+# remove LOCK file
+if (-e "LOCK") rm -f LOCK
 
 exit $start_status		# propagate status of mpirun
 
