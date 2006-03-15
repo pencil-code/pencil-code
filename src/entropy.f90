@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.371 2006-03-13 10:16:07 brandenb Exp $
+! $Id: entropy.f90,v 1.372 2006-03-15 08:33:41 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.371 2006-03-13 10:16:07 brandenb Exp $")
+           "$Id: entropy.f90,v 1.372 2006-03-15 08:33:41 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -516,13 +516,15 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
       real, dimension (nx) :: pp,lnrho,ss
+      real, dimension (mx) :: lnTT_convert 
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
       logical :: lnothing=.true.
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-log(gamma1))/gamma
+!mee Rather initialise everything as if entropy then convert it all at the end!
+!mee      if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-log(gamma1))/gamma
       do iinit=1,ninit
 !
 !  if we pretend that ss in in reality g1lnTT, we initialize the background
@@ -811,6 +813,17 @@ module Entropy
 
       endselect
 !
+      if (pretend_lnTT) then
+        pretend_lnTT=.false.
+        do m=1,my     
+        do n=1,mz     
+          call eoscalc(f,mx,lnTT=lnTT_convert)
+          f(:,m,n,iss)=lnTT_convert
+        enddo
+        enddo
+        pretend_lnTT=.true.
+      endif
+
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
