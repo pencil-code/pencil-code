@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.279 2006-03-15 03:58:21 wlyra Exp $
+! $Id: magnetic.f90,v 1.280 2006-03-16 14:25:01 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -180,7 +180,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.279 2006-03-15 03:58:21 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.280 2006-03-16 14:25:01 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -397,6 +397,7 @@ module Magnetic
          case('Alfven-phi'); call alfven_phi(amplaa(j),f,zmode)    
          case('Alfven-phi-rz'); call alfven_phi_rz(amplaa(j),f,rmode,zmode)
          case('Alfven-z-r'); call alfven_z_r(amplaa(j),f,rmode)   
+         case('Alfven-z-ctebeta'); call alfven_z_ctebeta(amplaa(j),f,rmode) 
          case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
          case('tony-nohel')
             f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
@@ -2002,23 +2003,22 @@ module Magnetic
 !
     endsubroutine alfvenz_rot_shear
 !***********************************************************************
-    subroutine alfven_phi(B0,f,zmode)
+    subroutine alfven_phi(beta,f,zmode)
 !
 !  Alfven wave propagating in the phi-direction
 !
 !   Bphi = B0 sin(kz)
-!
-!  When B << k, the routine needs high resolution
-!  to resolve the sines well. 64**3 works fine, but
-!  use 128x128x16 or 256x256x32 at your own risk.
 !
 !  08-feb-06/wlad: coded
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: Ar,Az
-      real :: B0,kz,phase,zmode,zsize,zin
+      real, dimension (nx) :: Az,rs
+      real :: B0,kz,phase,zmode,zsize,zin,beta
+!
+      if (lroot) &
+           print*,'magnetic: Bphi = B0*sin(kz)'
 !
       zsize = Lxyz(3)
       zin = xyz0(3)
@@ -2026,17 +2026,14 @@ module Magnetic
       kz    = zmode*2*pi/zsize
       phase =  -kz*zin +pi/2.
 !
+      B0 = 5e-2/sqrt(beta)
+!
       do m=m1,m2
          do n=n1,n2
 !
-            r_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
+            rs = sqrt(x(l1:l2)**2 + y(m)**2) + tini
 !
-            Ar   = - cos(kz*z(n) + phase)
-            Az   = (kz - B0)*r_mn*sin(kz*z(n) + phase)
-!
-            f(l1:l2,m,n,iaa+0) = Ar*x(l1:l2)/r_mn
-            f(l1:l2,m,n,iaa+1) = Ar*y(  m  )/r_mn
-            f(l1:l2,m,n,iaa+2) = Az
+            f(l1:l2,m,n,iaa+2) = -rs*B0*sin(kz*z(n) + phase)
 !
          enddo
       enddo
@@ -2049,19 +2046,17 @@ module Magnetic
 !
 !   Bphi = B0 sin(kr*r) sin(kz*z)
 !
-!  When B << kz, the routine needs high resolution
-!  to resolve the sines well. 64**3 works fine, but
-!  use 128x128x16 or 256x256x32 at your own risk.
-!
 !  08-feb-06/wlad: coded
 !
       use Cdata
-      use Sub, only : calc_phiavg_general
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: Ar,Az
+      real, dimension (nx) :: Az,rs
       real :: B0,kz,phase_z,zmode,zsize,zin
       real :: kr,phase_r,rmode,rsize,rin
+!
+      if (lroot) & 
+           print*,'magnetic: Bphi = B0*sin(kr*r)*sin(kz*z)' 
 !
       zsize = Lxyz(3)  ; rsize = r_ext-r_int
       zin   = xyz0(3)  ; rin   = r_int
@@ -2072,63 +2067,102 @@ module Magnetic
       do m=m1,m2
          do n=n1,n2
 !
-            call calc_phiavg_general() ! gives us rcyl_mn,phi_mn                                                              !
-            rcyl_mn = sqrt(x(l1:l2)**2 + y(m)**2) + tini
+            rs = sqrt(x(l1:l2)**2 + y(m)**2) + tini
 !
-            Ar   =              - cos(kz*z(n) + phase_z)*&
-                 sin(kr*rcyl_mn + phase_r)
-            Az   = (kz - B0)/kr * sin(kz*z(n) + phase_z)*&
-                 cos(kr*rcyl_mn + phase_r)
-!
-            f(l1:l2,m,n,iaa+0) = f(l1:l2,m,n,iaa+0)+Ar*x(l1:l2)/rcyl_mn
-            f(l1:l2,m,n,iaa+1) = f(l1:l2,m,n,iaa+1)+Ar*y(  m  )/rcyl_mn
-            f(l1:l2,m,n,iaa+2) = f(l1:l2,m,n,iaa+2)+Az
+            f(l1:l2,m,n,iaa+2) = B0/kr * sin(kz*z(n) + phase_z)*&
+                 cos(kr*rs + phase_r)
 !
          enddo
       enddo
 !
     endsubroutine alfven_phi_rz
 !***********************************************************************
-    subroutine alfven_z_r(B0,f,rmode)                          
-!                                                                       
-!  Alfven wave propagating in the z-direction                         
-!                                                                       
-!   Bz = B0 sin(kr*r) 
-!                                                                       
-!  13-mar-06/wlad: coded                                                
-!                                                                       
-      use Cdata                          
+    subroutine alfven_z_r(beta,f,rmode)
+!
+!  Alfven wave propagating in the z-direction
+!
+!   Bz = B0 sin(kr*r)
+!
+!  13-mar-06/wlad: coded
+!
+      use Cdata
       use Sub, only : calc_phiavg_general
-!                                                                       
-      real, dimension (mx,my,mz,mvar+maux) :: f                         
-      real, dimension (nx) :: Ar,Aphi                                     
-      real :: B0,kz,phase_z,zmode,zsize,zin                             
-      real :: kr,phase_r,rmode,rsize,rin                                
-!                                                                       
-      zsize = Lxyz(3)  ; rsize = r_ext-r_int                            
-      zin   = xyz0(3)  ; rin   = r_int                                  
-!                                                                       
-      kz    = zmode*2*pi/zsize   ; kr      = rmode*2*pi/rsize           
-      phase_z =  -kz*zin +pi/2.  ; phase_r =  -kr*rin +pi/2.            
-!                                                                       
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: Aphi,rs
+      real :: B0,kr,phase_r,rmode,rsize,rin,beta
+!
+      if (lroot) &
+           print*,'magnetic: Bz = B0 sin(kr*r)'
+!
+      rsize = r_ext-r_int
+      rin   = r_int
+!
+      kr      = rmode*2*pi/rsize
+      phase_r =  -kr*rin +pi/2.
+!
+      B0 = 0.05/sqrt(beta)
+!
       do m=m1,m2
          do n=n1,n2
 !
-            call calc_phiavg_general() ! gives us rcyl_mn,phi_mn         
-!        
-            Ar   = phi_mn*rcyl_mn*kr*B0*cos(kr*rcyl_mn + phase_r)
+            rs = sqrt(x(l1:l2)**2+y(m)**2) + tini
 !
-            Aphi = B0*sin(kr*rcyl_mn * phase_r)
-!                                                                       
-            f(l1:l2,m,n,iaa+0) = f(l1:l2,m,n,iaa+0) + &
-                 (Ar*x(l1:l2) - Aphi*y(  m  ))/rcyl_mn
-            f(l1:l2,m,n,iaa+1) = f(l1:l2,m,n,iaa+1) + &
-                 (Ar*y(  m  ) + Aphi*x(l1:l2))/rcyl_mn
+            Aphi = B0/kr**2 * (sin(kr*rs + phase_r)+&  
+                 kr*rs*cos(kr*rs + phase_r))
+!
+            f(l1:l2,m,n,iaa+0) = - Aphi*y(  m  )/rs**2
+            f(l1:l2,m,n,iaa+1) = + Aphi*x(l1:l2)/rs**2
 !
          enddo
       enddo
 !
     endsubroutine alfven_z_r
+!***********************************************************************
+    subroutine alfven_z_ctebeta(beta,f,rmode)
+!                                                                       
+!  Alfven wave propagating in the z-direction
+!
+!   Makes alven speed vary together with sound speed
+!   so then plasma beta is constant everywhere
+!
+!   B = B0/r * sin(kr * r)
+!
+!  15-mar-06/wlad: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: Aphi,rs
+      real :: B0,kr,phase_r,rmode,rsize,rin,beta
+!
+      if (lroot) &
+           print*,'magnetic: cte plasma beta' 
+!
+      rsize = r_ext-r_int
+      rin   = r_int
+!
+      kr      = rmode*2*pi/rsize
+      phase_r =  -kr*rin +pi/2.
+!
+! assumes cs0 = 5e-2 and rho0 = 1
+!
+      B0 = 5e-2/sqrt(beta)
+!
+      do m=m1,m2
+         do n=n1,n2
+!
+            rs = sqrt(x(l1:l2)**2+y(m)**2) + tini
+!
+            Aphi = -B0/kr*cos(kr*rs + phase_r)
+!
+            f(l1:l2,m,n,iaa+0) =  - Aphi*y(  m  )/rs**2
+            f(l1:l2,m,n,iaa+1) =    Aphi*x(l1:l2)/rs**2
+!
+         enddo
+      enddo
+!
+    endsubroutine alfven_z_ctebeta
 !***********************************************************************
     subroutine fluxrings(ampl,f,ivar,xx,yy,zz,profile)
 !
