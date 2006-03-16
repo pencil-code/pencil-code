@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.91 2006-03-15 17:11:16 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.92 2006-03-16 12:12:41 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -582,8 +582,8 @@ module Boundcond
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mcom), optional :: val1,val2
-      integer :: sgn,i,j, step_width
-      real :: H_disk_min, L_disk_min, ddz,lnrho,lnTT,ss, n1p4
+      integer :: sgn,i,j, step_width, n1p4
+      real :: H_disk_min, L_disk_min, ddz,lnrho,lnTT,ss
     !  integer, parameter :: ilnrho_lnTT=4
 
         H_disk_min=Lxyz(1)/(nxgrid-1)
