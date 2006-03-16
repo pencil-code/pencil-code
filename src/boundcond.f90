@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.92 2006-03-16 12:12:41 mee Exp $
+! $Id: boundcond.f90,v 1.93 2006-03-16 13:53:43 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -616,18 +616,8 @@ module Boundcond
    
 
        else
-              
-       !  do i=0,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+1,j)+M_star/(R_star-(i-1)*ddz)**2/cs0**2*ddz; enddo
-    
-       ! do i=0,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+1,j)*(1.+ddz/(R_star-(i-1)*ddz)); enddo
-        
-       ! do i=0,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+2,j)+2.*ddz*f(:,:,n1-i+1,j)/(R_star-(i-1)*ddz); enddo
-
-       !  do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
-      !   do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+2,j); enddo
-
-        
-            
+     
+   
            if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
                f(1:step_width+3,:,n1,j)=val1(j)
                f(step_width+3+1:mx,:,n1,j)=val2(j)
@@ -638,11 +628,7 @@ module Boundcond
   
 
 
-
-          do i=1,nghost; f(:,:,n1-i,j)=f(:,:,n1-i+1,j)*(1.+ddz/(R_star-(i-1)*ddz)); enddo
-       
-
-      !  do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+        do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
     
    
        endif

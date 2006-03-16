@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.291 2006-02-28 15:49:28 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.292 2006-03-16 13:53:43 nbabkovs Exp $
 
 module Cdata
 
@@ -208,6 +208,7 @@ module Cdata
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
   logical :: lcylindrical=.false.
+
 !!
 !! The following have been replaces with CPARAM header definitions making them
 !! parameters (ajwm)
@@ -268,8 +269,10 @@ module Cdata
   real :: L_disk=0.
   real :: R_star=0.
   real :: M_star=0. 
+  real :: accretion_flux=0.
   logical :: lextrapolate_bot_density=.false.
   logical :: ltop_velocity_kep=.false.
+  logical :: laccelerat_zone=.false.
 
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg

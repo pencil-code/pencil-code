@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.227 2006-03-11 21:47:01 brandenb Exp $
+! $Id: density.f90,v 1.228 2006-03-16 13:53:43 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -47,6 +47,8 @@ module Density
   logical :: ldiff_hyper3lnrho=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: sharp=.false., smooth=.false.
+  logical :: lmass_source_NS=.false. 
+ 
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
@@ -62,14 +64,15 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas, sharp, smooth
+       wdamp,plaw,lcontinuity_gas, sharp, smooth, lmass_source_NS
+     
 
   namelist /density_run_pars/ &
        cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,   &
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw,lcontinuity_gas, sharp, smooth
+       lnrho_const,plaw,lcontinuity_gas, sharp, smooth, lmass_source_NS
   
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -109,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.227 2006-03-11 21:47:01 brandenb Exp $")
+           "$Id: density.f90,v 1.228 2006-03-16 13:53:43 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -750,14 +753,10 @@ module Density
 !Initialization of density in a case of the step-like distribution
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx, zz, d_zz 
-      real, dimension (mx,my,mz) :: grav_part, grav_part_const,  &
-                  cf_part_const, cf_part1, cf_part2, cf_part3, cf_part,  &
-                  pr_part_const, pr_part1, pr_part2, pr_part3, pr_part            
+      real, dimension (mx,my,mz) :: xx, zz
+
       integer :: step_width, step_length
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll
-     real :: const_gl
-  
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll,  ln_ro_l, ln_ro_r
 
       hdisk=H_disk 
       ldisk=L_disk
@@ -803,77 +802,18 @@ module Density
 
       if (smooth) then
 
+        ln_ro_r=log(rho_right)
+        ln_ro_l=log(rho_left)
+
         ll=Lxyz(3)-ldisk
-        const_gl=M_star/R_star/cs0**2!-nu/ll*Omega*R_star*sqrt(R_star/(ll+R_star))
- 
+       
+         f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
   
-        if (L_disk .GE. 0.1*R_star) then  
-
-         grav_part=(R_star/zz-R_star/(R_star+ll))*const_gl
-
-         cf_part_const=R_star**3/ll**2/(R_star+ll)*const_gl 
-           cf_part1=((zz/R_star)**2/2.-(ll/R_star+1.)**2/2.)
-           cf_part2=-2.*(zz/R_star-ll/R_star-1.)
-           cf_part3=log(zz/R_star)+log(R_star/(ll+R_star))
-
-
-
-         pr_part_const=-1./R_star/ll/sqrt(ll+R_star)
-           pr_part1=pr_part_const*0.4*R_star**2.5*((zz/R_star)**2.5-(1.+ll/R_star)**2.5)
-           pr_part2=-pr_part_const*2./3.*R_star**2.5*((zz/R_star)**1.5-(1.+ll/R_star)**1.5)
-           pr_part3=(zz/R_star-1.-ll/R_star)
-
-
-         else 
-          d_zz=zz-(R_star+ll)
-          
-           grav_part=const_gl*(R_star/(R_star+ll)**3*d_zz**2&
-                       +R_star/(R_star+ll)**4*d_zz**3)
-           
-           cf_part_const=const_gl
-           cf_part1=0.
-           cf_part2=R_star/(R_star+ll)/2.*(1.-R_star**2/(ll+R_star)**2)*d_zz**2/ll**2
-           cf_part3=R_star**3/(R_star+ll)**4/ll**2/3.*d_zz**3
-          
-           pr_part1=-d_zz/R_star*(1.+ll/R_star)
-           pr_part2=-(3.-R_star/(ll+R_star))/4./ll/R_star*d_zz**2
-           pr_part3=-d_zz**3/R_star/ll*(1./8./(R_star+ll)+R_star/24./(ll+R_star)**2)
-
-         endif   
-
-
-
-           cf_part=cf_part_const*(cf_part1+cf_part3+cf_part2)
-
-           pr_part=(pr_part1+pr_part2+pr_part3)*const_gl
-    !  print*, grav_part
-
-        if (ldisk .EQ. Lxyz(3)) then
-          f(:,:,:,ilnrho)=log(rho_left)-(xx/H_disk)**2
-        endif
-
-        if (ldisk .EQ. 0.) then
-          f(:,:,:,ilnrho)=log(rho_right)-(xx/H_disk)**2!+grav_part+cf_part
-        endif
-
-
-        if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-
-           f(:,:,step_length+3+1:mz,ilnrho)= &
-               log(rho_left)-(xx(:,:,step_length+3+1:mz)/H_disk)**2
-           f(:,:,1:step_length+3,ilnrho)=&
-               log(rho_left)-(xx(:,:,1:step_length+3)/H_disk)**2!&
-               !+grav_part(:,:,1:step_length+3)&
-               !+pr_part(:,:,1:step_length+3)&
-               !+cf_part(:,:,1:step_length+3)
-
-!print*, cf_part1(10,10,1:7)+cf_part3(10,10,1:7)+cf_part2(10,10,1:7)
-
-!print*, cf_part1(10,10,1:7),cf_part3(10,10,1:7),cf_part2(10,10,1:7)
-
-        end if
+          if (H_disk.GT.0.)         f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-(xx(:,:,:)/H_disk)**2
+        
+      end if
    
-  end if
+  
 
     endsubroutine density_step
 !***********************************************************************
@@ -1097,6 +1037,9 @@ module Density
            idiag_rhomx/=0 .or. idiag_rho2m/=0 .or. idiag_rhomin/=0 .or. &
            idiag_rhomax/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
+
+      if (laccelerat_zone)  lpenc_requested(i_rho)=.true.
+      if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -1277,11 +1220,14 @@ module Density
 !
       use Special, only: special_calc_density
       use Sub
+    !  use Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       logical :: ljunk=.true.
+      integer :: i
+      real    :: Vz_0,rho_0, tmp
 !      
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho
 !
@@ -1306,6 +1252,10 @@ module Density
 !  mass sources and sinks
 !
       if (lmass_source) call mass_source(f,df)
+!
+!  mass sources and sinks for the boundary layer on NS in 1D approximation
+!
+      if (lmass_source_NS) call mass_source_NS(f,df,p%rho)
 !
 !  Mass diffusion
 !
@@ -1366,6 +1316,37 @@ module Density
           print*,'dlnrho_dt: max(diffus_diffrho) =', maxval(diffus_diffrho)
 !
 !
+!
+! Natalia
+! acceleration zone in a case of a Keplerian disk
+
+      if (laccelerat_zone) then
+          if (n .GE. nzgrid-20 .AND. dt .GT. 0.) then
+           !  do i=l1,l2
+           !  Vz_0=p%uu(i,3)      
+           !   if (abs(Vz_0) .GT.  0.) then 
+           !    rho_0=3e-3/Vz_0                
+            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                          -1./(5.*dt)*(1.-rho_right/p%rho(:))
+                   !-1./(5.*dt)/p%rho(i)*(p%rho(i)-3e-2/Vz_0)
+           !   endif
+         ! enddo
+          endif
+   
+      
+         
+         if (n .LE. 24 .AND. dt .GT. 0.) then
+                
+  
+            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                         -1./p%rho(:)/(5.*dt) &
+            *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+          
+          endif
+           
+     endif
+ 
+    
 !
       if (lspecial) call special_calc_density(f,df,p%uu,p%glnrho,p%divu,p%lnrho)
 !
@@ -1688,5 +1669,52 @@ module Density
 !     df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+f(l1:l2,m,n,iuy)*fext
 !
     endsubroutine mass_source
+!***********************************************************************
+    subroutine mass_source_NS(f,df,rho)
+!
+!  add mass sources and sinks
+!
+!  2006/Natalia
+!
+      use Cdata
+     
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+ !     real, dimension(nx) :: fint,fext,pdamp
+      real  ::  sink_area, V_acc, V_0, rho_0, ksi, integral_rho=0., flux
+      integer :: sink_area_points=30, i
+  
+
+     real, dimension (nx), intent(in) :: rho 
+
+
+       sink_area=Lxyz(3)/(nzgrid-1.)*sink_area_points
+    
+!   V_0=f(4,4,nzgrid-20,iuz)
+ !      rho_0=rho(1)!exp(f(4,4,nzgrid-20,ilnrho))
+        flux=accretion_flux
+   
+ 
+
+      ! V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
+       
+    !   
+    !  ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
+      ksi=1./sink_area
+
+      if ( 25 .GT. n .AND. n .LT. sink_area_points+25) then 
+       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-flux*ksi/rho(:)
+      endif 
+ 
+       if ( n .EQ. 25 .OR. n .EQ. sink_area_points+25) then
+       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
+      endif 
+
+      
+         if (headtt) print*,'dlnrho_dt: mass source*rho = ', flux/sink_area
+    
+
+
+    endsubroutine mass_source_NS
 !***********************************************************************
 endmodule Density

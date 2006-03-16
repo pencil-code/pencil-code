@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.238 2006-03-09 17:10:59 nbabkovs Exp $
+! $Id: hydro.f90,v 1.239 2006-03-16 13:53:43 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -48,6 +48,7 @@ module Hydro
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
   logical :: leffective_gravity=.false.
+
 
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -159,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.238 2006-03-09 17:10:59 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.239 2006-03-16 13:53:43 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -787,7 +788,7 @@ module Hydro
       real, dimension (nx) :: pdamp
       real :: c2,s2, const_for_eff_grav
       real :: gr_part, cf_part
-      integer :: j
+      integer :: j,i
 !
       intent(in) :: f,p
       intent(out) :: df
@@ -856,23 +857,40 @@ module Hydro
         if (headtt) &
           print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
 
-     !     const_for_eff_grav=M_star/R_star**2       
-
-     !     df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-     !                        const_for_eff_grav*(-(R_star/z(n))**2 &
-     !                        +p%uu(:,2)*p%uu(:,2)*R_star**2/M_star*z(n) &
-     !                        -sqrt(z(n)/M_star)*p%uu(:,2)+1.)
-
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
-                             M_star/z(n)**2
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-                             p%uu(:,2)*p%uu(:,2)/z(n)
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+ &
-                             (sqrt(M_star/z(n))-p%uu(:,2))**2/z(n)
-           
-       ! df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
-       !                     M_star**(1.-1.0/2.)*z(n)**(1.0/2.)/R_star**2*p%uu(:,2)**1.0+M_star/R_star**2
+                   M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
       endif
+
+! acceleration zone in a case of a Keplerian disk
+
+      if (laccelerat_zone) then
+          if (n .GE. nzgrid-20  .AND. dt .GT.0.) then
+           
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+                           -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
+    
+         
+           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+                          -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+         endif
+
+         if (n .LE. 24  .AND. dt .GT.0.) then
+           
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+                           -1./(5.*dt)*(p%uu(:,2)-0.)
+    
+         
+           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+                          -1./(5.*dt)*(p%uu(:,3)-0.)
+         endif
+
+
+
+      endif
+
+
+
+
 !
 ! calculate viscous force
 !
