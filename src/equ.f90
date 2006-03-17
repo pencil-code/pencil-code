@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.275 2006-02-16 12:51:45 ajohan Exp $
+! $Id: equ.f90,v 1.276 2006-03-17 23:08:44 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.275 2006-02-16 12:51:45 ajohan Exp $")
+           "$Id: equ.f90,v 1.276 2006-03-17 23:08:44 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -609,9 +609,9 @@ module Equ
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
               ' : ', lfreeze_varint
           if (lcylindrical) then
-             pfreeze_int  = quintic_step(rcyl_mn,rfreeze_int,wfreezeint,SHIFT=-1.)
+             pfreeze_int  = quintic_step(rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           else
-             pfreeze_int  = quintic_step(r_mn   ,rfreeze_int,wfreezeint,SHIFT=-1.)
+             pfreeze_int  = quintic_step(r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           endif
 !          
           do iv=1,nvar
@@ -624,9 +624,9 @@ module Equ
               print*, 'pde: freezing variables for r > ', rfreeze_ext, &
               ' : ', lfreeze_varext
           if (lcylindrical) then
-             pfreeze_ext  = 1-quintic_step(rcyl_mn,rfreeze_ext,wfreezeext,SHIFT=1.)
+             pfreeze_ext  = 1-quintic_step(rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
           else
-             pfreeze_ext  = 1-quintic_step(r_mn   ,rfreeze_ext,wfreezeext,SHIFT=1.)
+             pfreeze_ext  = 1-quintic_step(r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
           endif
 !
           do iv=1,nvar

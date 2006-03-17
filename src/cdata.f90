@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.292 2006-03-16 13:53:43 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.293 2006-03-17 23:08:44 wlyra Exp $
 
 module Cdata
 
@@ -46,8 +46,13 @@ module Cdata
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=0.,dtmin=1.e-6,dtmax=1E37,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
-  real :: r_ref=0., rfreeze_int=-impossible,rfreeze_ext=-impossible
-  real :: wfreezeint=0.,wfreezeext=0.
+  real :: r_ref=0.
+  
+!  parameter for freezing
+  real :: rfreeze_int=-impossible,rfreeze_ext=-impossible
+  real :: wfreeze_int=0.,wfreeze_ext=0.
+  real :: fshift_int=-1.,fshift_ext=1.
+
   real :: ttransient=0.,C_smag=0.17
   real, dimension (2) :: fran1,fran2
 

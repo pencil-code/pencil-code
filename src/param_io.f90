@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.226 2006-03-16 14:26:21 mkorpi Exp $ 
+! $Id: param_io.f90,v 1.227 2006-03-17 23:08:44 wlyra Exp $ 
 
 module Param_IO
 
@@ -81,7 +81,7 @@ module Param_IO
        ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &
        lfreeze_varint,lfreeze_varext,rfreeze_int,rfreeze_ext,&
-       wfreezeint,wfreezeext, &
+       wfreeze_int,wfreeze_ext,fshift_int,fshift_ext,&
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2,&
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
