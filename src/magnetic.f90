@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.280 2006-03-16 14:25:01 wlyra Exp $
+! $Id: magnetic.f90,v 1.281 2006-03-17 14:40:18 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -180,7 +180,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.280 2006-03-16 14:25:01 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.281 2006-03-17 14:40:18 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2003,7 +2003,7 @@ module Magnetic
 !
     endsubroutine alfvenz_rot_shear
 !***********************************************************************
-    subroutine alfven_phi(beta,f,zmode)
+    subroutine alfven_phi(pbeta,f,zmode)
 !
 !  Alfven wave propagating in the phi-direction
 !
@@ -2015,7 +2015,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: Az,rs
-      real :: B0,kz,phase,zmode,zsize,zin,beta
+      real :: B0,kz,phase,zmode,zsize,zin,pbeta
 !
       if (lroot) &
            print*,'magnetic: Bphi = B0*sin(kz)'
@@ -2026,7 +2026,7 @@ module Magnetic
       kz    = zmode*2*pi/zsize
       phase =  -kz*zin +pi/2.
 !
-      B0 = 5e-2/sqrt(beta)
+      B0 = 5e-2/sqrt(pbeta)
 !
       do m=m1,m2
          do n=n1,n2
@@ -2077,7 +2077,7 @@ module Magnetic
 !
     endsubroutine alfven_phi_rz
 !***********************************************************************
-    subroutine alfven_z_r(beta,f,rmode)
+    subroutine alfven_z_r(pbeta,f,rmode)
 !
 !  Alfven wave propagating in the z-direction
 !
@@ -2090,7 +2090,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: Aphi,rs
-      real :: B0,kr,phase_r,rmode,rsize,rin,beta
+      real :: B0,kr,phase_r,rmode,rsize,rin,pbeta
 !
       if (lroot) &
            print*,'magnetic: Bz = B0 sin(kr*r)'
@@ -2101,7 +2101,7 @@ module Magnetic
       kr      = rmode*2*pi/rsize
       phase_r =  -kr*rin +pi/2.
 !
-      B0 = 0.05/sqrt(beta)
+      B0 = 0.05/sqrt(pbeta)
 !
       do m=m1,m2
          do n=n1,n2
@@ -2119,7 +2119,7 @@ module Magnetic
 !
     endsubroutine alfven_z_r
 !***********************************************************************
-    subroutine alfven_z_ctebeta(beta,f,rmode)
+    subroutine alfven_z_ctebeta(pbeta,f,rmode)
 !                                                                       
 !  Alfven wave propagating in the z-direction
 !
@@ -2134,7 +2134,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: Aphi,rs
-      real :: B0,kr,phase_r,rmode,rsize,rin,beta
+      real :: B0,kr,phase_r,rmode,rsize,rin,pbeta
 !
       if (lroot) &
            print*,'magnetic: cte plasma beta' 
@@ -2147,7 +2147,7 @@ module Magnetic
 !
 ! assumes cs0 = 5e-2 and rho0 = 1
 !
-      B0 = 5e-2/sqrt(beta)
+      B0 = 5e-2/sqrt(pbeta)
 !
       do m=m1,m2
          do n=n1,n2
