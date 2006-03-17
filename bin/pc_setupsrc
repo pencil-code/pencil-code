@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.10 2006-03-13 19:55:17 mee Exp $
+#   $Id: pc_setupsrc,v 1.11 2006-03-17 19:24:18 tarek Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -130,8 +130,8 @@ prepare_for_compile()
   old_dir="`pwd`"
   cd $src
   rm -f Makefile			# for old run directories
-  $srcdir/scripts/adapt-mkfile Makefile.src Makefile
   rm -f makefile			# for old run directories
+  $srcdir/scripts/adapt-mkfile Makefile.src Makefile
   cd $old_dir
 }
 
