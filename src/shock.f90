@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.10 2006-02-08 14:07:13 mee Exp $
+! $Id: shock.f90,v 1.11 2006-03-18 09:15:14 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -101,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.10 2006-02-08 14:07:13 mee Exp $")
+           "$Id: shock.f90,v 1.11 2006-03-18 09:15:14 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -1040,10 +1040,10 @@ module Shock
                           + (  3.*f(:,my  ,:,iuy) &
                              - 4.*f(:,my-1,:,iuy) &
                              +    f(:,my-2,:,iuy))*fac
-      end if
+      endif
 
       if (nzgrid/=1) then
-         fac=1./(2.*dy)
+         fac=1./(2.*dz)
          df(:,:,1     ) = df(:,:,1     ) &
                           + (  4.*f(:,:,2,iuz) &
                              - 3.*f(:,:,1,iuz) &
@@ -1054,7 +1054,8 @@ module Shock
                           + (  3.*f(:,:,mz  ,iuz) &
                              - 4.*f(:,:,mz-1,iuz) &
                              +    f(:,:,mz-2,iuz))*fac
-      end if
+      endif
+!      
     endsubroutine shock_divu_farray
 !***********************************************************************
     subroutine shock_divu_pencil(f,j,df)
