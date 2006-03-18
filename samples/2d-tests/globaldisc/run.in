@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.15 2006-03-03 16:28:44 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.16 2006-03-18 00:39:49 wlyra Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -14,8 +14,8 @@
   !tavg = 10.,                   ! time constant for time averaging
   !random_gen='nr_f90',
   !slice_position='e'
-  wfreezeint = 1e-8
-  wfreezeext = 1e-8
+  wfreeze_int = 1e-8
+  wfreeze_ext = 1e-8
 /
 &eos_run_pars
 rho0= 1. 
