@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.42 2006-03-01 23:34:58 wlyra Exp $
+! $Id: particles_sub.f90,v 1.43 2006-03-18 09:38:14 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -356,6 +356,7 @@ module Particles_sub
               print*, '                       (this is time consuming - '// &
                   'consider setting npar_mig'
               print*, '                        higher in cparam.local)'
+              print*, 'npar_mig=', npar_mig
               if (ip<=8) then
                 print*, 'redist_particles_procs: iproc, npar_mig=', &
                     iproc, npar_mig
