@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.165 2006-03-14 21:49:28 mkorpi Exp $
+### $Id: Makefile.src,v 1.166 2006-03-20 22:17:16 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -318,8 +318,11 @@ LIBMPISUFFIX=_#(Kolmogorov)
 ## Hades -- Wlad's laptop
 ##
 #FC=ifort #(hades)
+#MPI_HOME=/home/wlyra/test/lib #(hades)
+#MPI_LDLIBS= -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(hades) 
+#FFLAGS=-I/usr/include/mpi -O3 #(hades)
 #LIBMPISUFFIX=_#(hades)
-#LDMPI=-pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(hades)
+#LDMPI=-L$(MPI_HOME) -pthread $(MPI_LDLIBS) #(hades)
 ##
 ## clx IBM Linux Cluster, Bologna IT
 ##
