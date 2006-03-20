@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.149 2006-03-20 23:01:27 wlyra Exp $ 
+! $Id: initcond.f90,v 1.150 2006-03-20 23:48:55 wlyra Exp $ 
 
 module Initcond 
  
@@ -1426,8 +1426,9 @@ module Initcond
 !
       if (lcounter) then
          r_border = 0.5*(r_ext+r_int)
-         where (rrp .le. r_border)
+         where (rrp .ge. r_border)
             f(:,:,:,iux) = -f(:,:,:,iux)
+            f(:,:,:,iuy) = -f(:,:,:,iuy)
          endwhere
       endif
 !
