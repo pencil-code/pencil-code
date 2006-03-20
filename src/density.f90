@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.228 2006-03-16 13:53:43 nbabkovs Exp $
+! $Id: density.f90,v 1.229 2006-03-20 14:46:27 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.228 2006-03-16 13:53:43 nbabkovs Exp $")
+           "$Id: density.f90,v 1.229 2006-03-20 14:46:27 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1321,17 +1321,18 @@ module Density
 ! acceleration zone in a case of a Keplerian disk
 
       if (laccelerat_zone) then
-          if (n .GE. nzgrid-20 .AND. dt .GT. 0.) then
+       !   if (n .GE. nzgrid-20 .AND. dt .GT. 0.) then
            !  do i=l1,l2
            !  Vz_0=p%uu(i,3)      
            !   if (abs(Vz_0) .GT.  0.) then 
            !    rho_0=3e-3/Vz_0                
-            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                          -1./(5.*dt)*(1.-rho_right/p%rho(:))
+          !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                       !   -1./(5.*dt)*(1.-rho_right/p%rho(:))
+                   !-1./(5.*dt)*(1.-accretion_flux/p%uu(:,3)/p%rho(:))
                    !-1./(5.*dt)/p%rho(i)*(p%rho(i)-3e-2/Vz_0)
            !   endif
          ! enddo
-          endif
+        !  endif
    
       
          
