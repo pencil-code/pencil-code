@@ -3,7 +3,7 @@
 ! Initialisation parameters for MRI turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2006-03-21 22:20:57 tarek Exp $',
+  cvsid='$Id: start.in,v 1.4 2006-03-21 23:06:10 tarek Exp $',
   xyz0  =  -3.14,  -3.14,  -3.14
   Lxyz  =   6.28,   6.28,   6.28
   lperi =      T,      T,      T
@@ -13,18 +13,25 @@
   gamma=1., rho0=1.
 /
 &hydro_init_pars
-  inituu='gaussian-noise', ampluu=1e-4
+  inituu='gaussian-noise', ampluu=1e-3
+  Omega=0.2
 /
 &density_init_pars
   ldensity_nolog=T
 /
+&grav_init_pars
+  gravx_profile='sinusoidal', kx_gg=1.0
+/
 &magnetic_init_pars
-!  initaa='gaussian-noise', amplaa=1e-4
+  initaa='sinxsinz', amplaa=0.2, kz_aa=1.
+/
+&dustvelocity_init_pars
+  inituud='zero', deltamd=1.
+/
+&dustdensity_init_pars
+  initnd='const_nd', nd_const=1.
+  ldustdensity_log=F
 /
 &shear_init_pars
   qshear=1.5
 /
-&forcing_run_pars
-  iforce='helical', force=0.05, relhel=1.,
-/
-
