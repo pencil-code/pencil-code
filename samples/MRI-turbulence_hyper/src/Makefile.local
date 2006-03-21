@@ -13,9 +13,9 @@ MAGNETIC  =   magnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-GRAVITY   =   gravity_simple
-FORCING   = noforcing
+GRAVITY   = nograv
+FORCING   =   forcing
 SHEAR     =   shear
 
-DUSTDENSITY  =   dustdensity
-DUSTVELOCITY =   dustvelocity
+FFT          = fft
+POWER        = power_spectrum
