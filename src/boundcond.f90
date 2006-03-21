@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.94 2006-03-21 11:37:50 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.95 2006-03-21 15:26:33 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -332,7 +332,7 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set
               case ('stp') 
-                !if (j==ilnrho)
+             ! if (j==5)  print*,'fbcz12_1, fbcz12_2',fbcz12_1, fbcz12_2
                 call bc_step_xz(f,-1,topbot, j, fbcz12_1, fbcz12_2)
               case default
                 write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
@@ -581,9 +581,12 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mcom), optional :: val1,val2
+      real, dimension (mcom) :: val1_,val2_ 
+      real, dimension (mcom), intent(in) :: val1,val2
+      real, dimension(nx) :: lnrho,lnTT,ss
       integer :: sgn,i,j, step_width, n1p4
-      real :: H_disk_min, L_disk_min, ddz,lnrho,lnTT,ss
+      real :: H_disk_min, L_disk_min, ddz
+      
     !  integer, parameter :: ilnrho_lnTT=4
 
         H_disk_min=Lxyz(1)/(nxgrid-1)
@@ -592,9 +595,13 @@ module Boundcond
         L_disk_min=Lxyz(3)/(nzgrid-1)
         ddz=L_disk_min
 
-        if (j .EQ. 4) then
-        val1=log(val1)
-        val2=log(val2)
+
+        if (j .EQ. 4 .OR. j.EQ.5) then
+         val1_=log(val1)
+         val2_=log(val2)
+        else
+         val1_=val1
+         val2_=val2
         endif
  
       select case(topbot)
@@ -610,15 +617,23 @@ module Boundcond
         f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 
        else
+
+        if (j.EQ.5) then
+           lnrho=f(l1:l2,m1,n1,ilnrho)
+           lnTT=val1_(j)
+          !+ other terms for sound speed not equal to cs_0
+           call eoscalc(4,lnrho,lnTT,ss=ss)
+          f(l1:l2,m1,n1,iss)=ss
+        else
           if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
-               f(1:step_width+3,:,n1,j)=val1(j)
-               f(step_width+3+1:mx,:,n1,j)=val2(j)
+               f(1:step_width+3,:,n1,j)=val1_(j)
+               f(step_width+3+1:mx,:,n1,j)=val2_(j)
            end if
      
-          if (H_disk .LT. H_disk_min)    f(:,:,n1,j)=val2(j)
-          if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1(j)
-  
-        do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+          if (H_disk .LT. H_disk_min)    f(:,:,n1,j)=val2_(j)
+          if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1_(j)
+        endif
+          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
     
    
        endif
@@ -630,20 +645,21 @@ module Boundcond
        else
 
          if (j.EQ.5) then
-           lnrho=f(l2,m2,n2,ilnrho)
-           lnTT=val1(j)
+           lnrho=f(l1:l2,m2,n2,ilnrho)
+           lnTT=val1_(j)
           !+ other terms for sound speed not equal to cs_0
            call eoscalc(4,lnrho,lnTT,ss=ss)
-           f(:,:,n2,iss)=ss
+           f(l1:l2,m2,n2,iss)=ss
+
          else 
 
             if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
-               f(1:step_width+3,:,n2,j)=val1(j)
-               f(step_width+3+1:mx,:,n2,j)=val2(j)
+               f(1:step_width+3,:,n2,j)=val1_(j)
+               f(step_width+3+1:mx,:,n2,j)=val2_(j)
             end if
        
-            if (H_disk .LT. H_disk_min)    f(:,:,n2,j)=val2(j)
-            if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1(j)
+            if (H_disk .LT. H_disk_min)    f(:,:,n2,j)=val2_(j)
+            if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1_(j)
          endif        
        endif 
 
