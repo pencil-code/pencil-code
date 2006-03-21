@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.281 2006-03-17 14:40:18 wlyra Exp $
+! $Id: magnetic.f90,v 1.282 2006-03-21 17:42:52 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -55,6 +55,7 @@ module Magnetic
   real :: rescale_aa=1.
   real :: ampl_B0=0.,D_smag=0.17,B_ext21
   real :: Omega_ampl=0.
+  real :: rmode=1.,zmode=1.,rm_int=0.,rm_ext=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_jxb=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
@@ -81,7 +82,6 @@ module Magnetic
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   character (len=labellen) :: pertaa='zero'
   integer :: N_modes_aa=1
-  real :: rmode,zmode
 
   namelist /magnetic_init_pars/ &
        B_ext, &
@@ -93,7 +93,7 @@ module Magnetic
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
-       rmode,zmode
+       rmode,zmode,rm_int,rm_ext
 
   ! run parameters
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -180,7 +180,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.281 2006-03-17 14:40:18 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.282 2006-03-21 17:42:52 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2086,17 +2086,17 @@ module Magnetic
 !  13-mar-06/wlad: coded
 !
       use Cdata
-      use Sub, only : calc_phiavg_general
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: Aphi,rs
       real :: B0,kr,phase_r,rmode,rsize,rin,pbeta
+      integer :: i
 !
       if (lroot) &
            print*,'magnetic: Bz = B0 sin(kr*r)'
 !
-      rsize = r_ext-r_int
-      rin   = r_int
+      rsize = rm_ext-rm_int
+      rin   = rm_int
 !
       kr      = rmode*2*pi/rsize
       phase_r =  -kr*rin +pi/2.
@@ -2111,8 +2111,15 @@ module Magnetic
             Aphi = B0/kr**2 * (sin(kr*rs + phase_r)+&  
                  kr*rs*cos(kr*rs + phase_r))
 !
-            f(l1:l2,m,n,iaa+0) = - Aphi*y(  m  )/rs**2
-            f(l1:l2,m,n,iaa+1) = + Aphi*x(l1:l2)/rs**2
+            f(l1:l2,m,n,iaa+0)=0. 
+            f(l1:l2,m,n,iaa+0)=0.
+!
+            do i=l1,l2
+               if ((rs(i).le.rm_ext) .and. (rs(i).ge.rm_int)) then                 
+                  f(i,m,n,iaa+0) = - Aphi(i)*y(m)/rs(i)**2
+                  f(i,m,n,iaa+1) = + Aphi(i)*x(i)/rs(i)**2
+               endif
+            enddo      
 !
          enddo
       enddo
