@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.240 2006-03-20 23:01:27 wlyra Exp $
+! $Id: hydro.f90,v 1.241 2006-03-21 11:37:50 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -160,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.240 2006-03-20 23:01:27 wlyra Exp $")
+           "$Id: hydro.f90,v 1.241 2006-03-21 11:37:50 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -874,6 +874,12 @@ module Hydro
                           -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
          endif
 
+      endif
+
+! deceleration zone in a case of a Keplerian disk
+
+      if (ldecelerat_zone) then
+
          if (n .LE. 24  .AND. dt .GT.0.) then
            
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
@@ -883,8 +889,6 @@ module Hydro
            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
                           -1./(5.*dt)*(p%uu(:,3)-0.)
          endif
-
-
 
       endif
 

@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.293 2006-03-17 23:08:44 wlyra Exp $
+! ! $Id: cdata.f90,v 1.294 2006-03-21 11:37:50 nbabkovs Exp $
 
 module Cdata
 
@@ -278,6 +278,7 @@ module Cdata
   logical :: lextrapolate_bot_density=.false.
   logical :: ltop_velocity_kep=.false.
   logical :: laccelerat_zone=.false.
+  logical :: ldecelerat_zone=.false.
 
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.227 2006-03-17 23:08:44 wlyra Exp $ 
+! $Id: param_io.f90,v 1.228 2006-03-21 11:37:50 nbabkovs Exp $ 
 
 module Param_IO
 
@@ -66,7 +66,7 @@ module Param_IO
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
        lcylindrical,init_loops, H_disk, L_disk, R_star, M_star, accretion_flux, & 
-       lextrapolate_bot_density, ltop_velocity_kep, laccelerat_zone
+       lextrapolate_bot_density, ltop_velocity_kep, laccelerat_zone, ldecelerat_zone
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
