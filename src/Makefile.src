@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.166 2006-03-20 22:17:16 wlyra Exp $
+### $Id: Makefile.src,v 1.167 2006-03-22 17:52:40 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -144,11 +144,11 @@ LIBMPISUFFIX=
 #FC=g95 #(Cincinnatus|cosmo)
 #F77=$(FC) #(Cincinnatus|cosmo)
 #FFLAGS=-O4 -fno-second-underscore -I/usr/lib/mpich/include #(Cincinnatus)
-#FFLAGS=-O4 -I/usr/include/mpi #(cosmo|nl4)
+#FFLAGS=-O4 -I/usr/lib/mpich/include #(cosmo)
+#FFLAGS=-O4 -I/usr/include/mpi #(nl4)
 #CFLAGS=-O3 -DFUNDERSC=1 #(Cincinnatus)
 #CFLAGS=-O3 -DFUNDERSC=2 #(cosmo)
-#LDMPI=-L/usr/lib/mpich/lib -lmpich #(Cincinnatus)
-#LDMPI=-lmpi #(cosmo|nl4)
+#LDMPI=-L/usr/lib/mpich/lib -lmpich #(Cincinnatus|cosmo)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)

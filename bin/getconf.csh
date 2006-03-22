@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.165 2006-03-15 08:54:56 mkorpi Exp $
+# $Id: getconf.csh,v 1.166 2006-03-22 17:52:40 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -597,11 +597,6 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
   if ($local_disc) then
     setenv SCRATCH_DIR /var/tmp
   endif
-
-else if ($hn =~ cosmo) then
-  echo "Cosmo - Tobi's laptop"
-  set mpirun = 'mpiexec'
-  set mpirunops = '-boot'
 
 else if ($hn =~ hades) then
   echo "Hades - Wlad's laptop"
