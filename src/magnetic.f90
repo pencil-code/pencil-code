@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.282 2006-03-21 17:42:52 wlyra Exp $
+! $Id: magnetic.f90,v 1.283 2006-03-22 03:07:42 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -180,7 +180,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.282 2006-03-21 17:42:52 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.283 2006-03-22 03:07:42 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2088,8 +2088,9 @@ module Magnetic
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: Aphi,rs
+      real, dimension (nx) :: Aphi,rs,gaussr
       real :: B0,kr,phase_r,rmode,rsize,rin,pbeta
+      real :: rs0,sig
       integer :: i
 !
       if (lroot) &
@@ -2101,6 +2102,9 @@ module Magnetic
       kr      = rmode*2*pi/rsize
       phase_r =  -kr*rin +pi/2.
 !
+      rs0 = (rm_ext + rm_int)/2.
+      sig = (rs0 - rm_int)/2.
+!
       B0 = 0.05/sqrt(pbeta)
 !
       do m=m1,m2
@@ -2108,18 +2112,13 @@ module Magnetic
 !
             rs = sqrt(x(l1:l2)**2+y(m)**2) + tini
 !
-            Aphi = B0/kr**2 * (sin(kr*rs + phase_r)+&  
-                 kr*rs*cos(kr*rs + phase_r))
+            gaussr = exp(-0.5*((rs-rs0)/sig)**2)
 !
-            f(l1:l2,m,n,iaa+0)=0. 
-            f(l1:l2,m,n,iaa+0)=0.
+            Aphi = B0/(rs*kr**2) * ( sin(kr*rs + phase_r)-&  
+                 kr*rs*cos(kr*rs + phase_r) ) * gaussr
 !
-            do i=l1,l2
-               if ((rs(i).le.rm_ext) .and. (rs(i).ge.rm_int)) then                 
-                  f(i,m,n,iaa+0) = - Aphi(i)*y(m)/rs(i)**2
-                  f(i,m,n,iaa+1) = + Aphi(i)*x(i)/rs(i)**2
-               endif
-            enddo      
+            f(l1:l2,m,n,iaa+0)=- Aphi*y(  m  )/rs
+            f(l1:l2,m,n,iaa+1)=+ Aphi*x(l1:l2)/rs
 !
          enddo
       enddo
