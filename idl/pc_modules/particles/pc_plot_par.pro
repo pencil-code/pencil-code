@@ -1,12 +1,13 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.11 2006-03-08 13:59:53 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.12 2006-03-22 12:02:28 ajohan Exp $
 ;
-pro pc_plot_par, xx, x=x, y=y, z=z, com=com, pos=pos, ps=ps, color=color, $
+pro pc_plot_par, xx, $
+    x=x, y=y, z=z, com=com, shiftx=shiftx, shifty=shifty, shiftz=shiftz, $
+    pos=pos, ps=ps, color=color, $
     filename=filename, imgdir=imgdir, datadir=datadir, quiet=quiet
 
-default, x, 0
-default, y, 0
-default, z, 0
+default, x, 0 & default, y, 0 & default, z, 0
+default, shiftx, 0 & default, shifty, 0 & default, shiftz, 0
 default, com, 0
 default, pos, [0.1,0.1,0.9,0.9]
 default, ps, 0
@@ -29,6 +30,14 @@ endif else begin
   y0=par.xyz0[1] & y1=y0+par.Lxyz[1]
   z0=par.xyz0[2] & z1=z0+par.Lxyz[2]
 endelse
+
+if (shifty ne 0.0) then begin
+  for k=0L,n_elements(xx[*,1])-1 do begin
+    xx[k,1]=xx[k,1]+shifty
+    if (xx[k,1] gt y1) then xx[k,1]=xx[k,1]-(y1-y0)
+    if (xx[k,1] lt y0) then xx[k,1]=xx[k,1]+(y1-y0)
+  endfor
+endif
 
 if (com eq 1) then begin
   x0=x0+mean(xx[*,0]) & x1=x1+mean(xx[*,0])
