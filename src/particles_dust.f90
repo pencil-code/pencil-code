@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.68 2006-03-04 11:28:23 ajohan Exp $
+! $Id: particles_dust.f90,v 1.69 2006-03-23 12:47:33 brandenb Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.68 2006-03-04 11:28:23 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.69 2006-03-23 12:47:33 brandenb Exp $")
 !
 !  Indices for particle position.
 !
@@ -474,10 +474,12 @@ module Particles
 
         call random_number_wrapper(r)
         call random_number_wrapper(p)
-
+!
+!  need to make sure the indices for probing are at least 1
+!
         fprob = (/ 1.0, 1.0 /)
-        xprob = x(nx/2)
-        zprob = z(nz/2)
+        xprob = x(max(1,nx/2))
+        zprob = z(max(1,nz/2))
 
         j=0
 !  Use Newton-Raphson iteration to invert function.

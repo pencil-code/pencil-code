@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.219 2006-02-21 18:23:15 brandenb Exp $
+! $Id: run.f90,v 1.220 2006-03-23 12:47:33 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -66,7 +66,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.219 2006-02-21 18:23:15 brandenb Exp $")
+             "$Id: run.f90,v 1.220 2006-03-23 12:47:33 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -137,7 +137,8 @@
 !  This directory must exist, but may be linked to another disk.
 !  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
-        call rsnap(trim(directory_snap)//'/var.dat',f,mvar_io)
+!--     call rsnap(trim(directory_snap)//'/var.dat',f,mvar_io)
+        call rsnap(trim(directory_snap)//'/var.dat',f,mvar)
         if (lparticles) &
            call particles_read_snapshot(trim(directory_snap)//'/pvar.dat')
 
