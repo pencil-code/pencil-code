@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.50 2006-02-08 14:08:19 mee Exp $
+! $Id: nohydro.f90,v 1.51 2006-03-23 05:55:08 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -76,7 +76,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.50 2006-02-08 14:08:19 mee Exp $")
+           "$Id: nohydro.f90,v 1.51 2006-03-23 05:55:08 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -192,36 +192,54 @@ module Hydro
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt
+      real :: kkx_aa,kky_aa,kkz_aa
       integer :: modeN
 !
       intent(in) :: f
       intent(inout) :: p
+!
+!  introduce new symbol for the first argument of kx_aa, etc, arrays
+!
+      kkx_aa=kx_aa(1)
+      kky_aa=ky_aa(1)
+      kkz_aa=kz_aa(1)
+!
+!  choose from a list of different flow profiles
+!  ABC-flow
+!
       if (kinflow=='ABC') then
 ! uu
         if (lpencil(i_uu)) then
           if (headtt) print*,'ABC flow'
-          p%uu(:,1)=ABC_A*sin(kz_aa*z(n))    +ABC_C*cos(ky_aa*y(m))
-          p%uu(:,2)=ABC_B*sin(kx_aa*x(l1:l2))+ABC_A*cos(kz_aa*z(n))
-          p%uu(:,3)=ABC_C*sin(ky_aa*y(m))    +ABC_B*cos(kx_aa*x(l1:l2))
+          p%uu(:,1)=ABC_A*sin(kkz_aa*z(n))    +ABC_C*cos(kky_aa*y(m))
+          p%uu(:,2)=ABC_B*sin(kkx_aa*x(l1:l2))+ABC_A*cos(kkz_aa*z(n))
+          p%uu(:,3)=ABC_C*sin(kky_aa*y(m))    +ABC_B*cos(kkx_aa*x(l1:l2))
         endif 
 ! divu
         if (lpencil(i_divu)) p%divu=0. 
+!
+!  Gen-Roberts flow (negative helicity)
+!
       elseif (kinflow=='roberts') then
 ! uu
         if (lpencil(i_uu)) then
-          if (headtt) print*,'Glen Roberts flow; kx_aa,ky_aa=',kx_aa,ky_aa
-          p%uu(:,1)=+sin(kx_aa*x(l1:l2))*cos(ky_aa*y(m))
-          p%uu(:,2)=-cos(kx_aa*x(l1:l2))*sin(ky_aa*y(m))
-          p%uu(:,3)=+sin(kx_aa*x(l1:l2))*sin(ky_aa*y(m))*sqrt(2.)
+          if (headtt) print*,'Glen Roberts flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+          p%uu(:,1)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+          p%uu(:,2)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+          p%uu(:,3)=+sin(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))*sqrt(2.)
         endif 
 ! divu
-        if (lpencil(i_divu)) p%divu= (kx_aa-ky_aa)*cos(kx_aa*x(l1:l2))*cos(ky_aa*y(m))
+        if (lpencil(i_divu)) p%divu= (kkx_aa-kky_aa)*cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+!
+!  Gen-Roberts flow (positive helicity)
 !
       elseif (kinflow=='poshel-roberts') then
-        if (headtt) print*,'Pos Helicity Roberts flow; kx_aa,ky_aa=',kx_aa,ky_aa
-        p%uu(:,1)=-cos(kx_aa*x(l1:l2))*sin(ky_aa*y(m))
-        p%uu(:,2)=+sin(kx_aa*x(l1:l2))*cos(ky_aa*y(m))
-        p%uu(:,3)=+cos(kx_aa*x(l1:l2))*cos(ky_aa*y(m))*sqrt(2.)
+        if (headtt) print*,'Pos Helicity Roberts flow; kx_aa,ky_aa=',kkx_aa,kky_aa
+        p%uu(:,1)=-cos(kkx_aa*x(l1:l2))*sin(kky_aa*y(m))
+        p%uu(:,2)=+sin(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))
+        p%uu(:,3)=+cos(kkx_aa*x(l1:l2))*cos(kky_aa*y(m))*sqrt(2.)
+!
+!  KS-flow
 !
       elseif (kinflow=='KS') then
         p%uu=0.
@@ -236,7 +254,6 @@ module Hydro
         if (lpencil(i_divu))  p%divu = 0.
       else
 ! uu
-
         if (lpencil(i_uu)) then
           if (headtt) print*,'uu=0'
           p%uu=0.
