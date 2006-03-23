@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.230 2006-03-21 11:37:50 nbabkovs Exp $
+! $Id: density.f90,v 1.231 2006-03-23 16:43:00 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.230 2006-03-21 11:37:50 nbabkovs Exp $")
+           "$Id: density.f90,v 1.231 2006-03-23 16:43:00 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -807,7 +807,18 @@ module Density
 
         ll=Lxyz(3)-ldisk
        
+    !  if (gamma.EQ.1) then
+
          f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+ 
+    !  else 
+
+   !   f(:,:,:,ilnrho)=log(rho_left+(gamma1*M_star/zz(:,:,:)/cs0**2)**(1./gamma1) &
+   !          *(1.-(zz(:,:,:)/R_star)**(1./gamma1)))
+
+     ! f(:,:,:,ilnrho)=log(rho_left-(gamma1*M_star/R_star/cs0**2)**(1./gamma1) &
+     !        *((R_star/zz(:,:,:))**(1./gamma1)-1))
+   !   end if 
   
           if (H_disk.GT.0.)         f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-(xx(:,:,:)/H_disk)**2
         
@@ -1325,11 +1336,18 @@ module Density
          
          if (n .LE. 24 .AND. dt .GT. 0.) then
                 
-  
+         !  if (gamma.EQ.1.) then
             df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
                          -1./p%rho(:)/(5.*dt) &
             *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+         !  else
+         !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+         !                -1./p%rho(:)/(5.*dt) &
+         !    *(p%rho(:)-rho_left-(gamma1*M_star/z(n)/cs0**2)**(1./gamma1) &
+         !    *(1.-(z(n)/R_star)**(1./gamma1))) 
           
+        ! end if  
+      
           endif
            
      endif  

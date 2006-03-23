@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.241 2006-03-21 11:37:50 nbabkovs Exp $
+! $Id: hydro.f90,v 1.242 2006-03-23 16:43:00 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -160,7 +160,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.241 2006-03-21 11:37:50 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.242 2006-03-23 16:43:00 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1909,8 +1909,11 @@ module Hydro
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: zz
-      integer :: step_length
+      integer :: step_length, decel_zone
       real ::   L_disk_min,  ldisk,   ll
+
+      decel_zone=24
+       
 
       ll=Lxyz(3)-L_disk
       ldisk=L_disk
@@ -1935,8 +1938,20 @@ module Hydro
       if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
 
         f(:,:,:,iuz)=uu_left
+       if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then 
+ 
         f(:,:,step_length+3+1:mz,iuy)=sqrt(M_star/zz(:,:,step_length+3+1:mz))
-        f(:,:,1:step_length+3,iuy)=(zz(:,:,1:step_length+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
+
+        f(:,:,decel_zone+1:step_length+3,iuy)= &
+           (zz(:,:,decel_zone+1:step_length+3)-R_star-(decel_zone-4)*L_disk_min) &
+           /(ll-(decel_zone-4)*L_disk_min)*sqrt(M_star/(ll+R_star))
+        f(:,:,1:decel_zone,iuy)=0.
+
+       else
+         f(:,:,step_length+3+1:mz,iuy)=sqrt(M_star/zz(:,:,step_length+3+1:mz))
+         f(:,:,1:step_length+3,iuy)= &
+           (zz(:,:,1:step_length+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
+       end if
 
       end if
 

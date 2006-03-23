@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.374 2006-03-16 19:40:48 brandenb Exp $
+! $Id: entropy.f90,v 1.375 2006-03-23 16:43:00 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -64,6 +64,7 @@ module Entropy
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
   logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true.
+  logical :: lnstar_entropy=.false. 
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
@@ -103,7 +104,7 @@ module Entropy
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy
+      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy,lnstar_entropy
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -118,7 +119,7 @@ module Entropy
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
-      tdown, allp,beta_glnrho_global,ladvection_entropy
+      tdown, allp,beta_glnrho_global,ladvection_entropy,lnstar_entropy
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -157,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.374 2006-03-16 19:40:48 brandenb Exp $")
+           "$Id: entropy.f90,v 1.375 2006-03-23 16:43:00 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -749,6 +750,10 @@ module Entropy
           !
           if (lroot) print*,'init_ss: benchmark temperature in spherical shell'
           call shell_ss(f)
+
+        case ('step_xz')
+         call entropy_step(f,xx,zz,T0)
+
 
         case default
           !
@@ -1442,6 +1447,15 @@ module Entropy
 !
       if (maxval(abs(beta_glnrho_scaled))/=0.0) lpenc_requested(i_cs2)=.true.
 !
+!Natalia (accretion on a NS)
+
+      if (lnstar_entropy) then
+         lpenc_requested(i_lnTT)=.true.
+         lpenc_requested(i_cs2)=.true.
+         lpenc_requested(i_ss)=.true.
+      endif
+
+
       lpenc_diagnos2d(i_ss)=.true.
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
@@ -1726,6 +1740,22 @@ module Entropy
 !  possibility of entropy relaxation in exterior region
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(f,df)
+
+!Natalia (accretion on NS)
+
+
+     if (ldecelerat_zone) then
+     
+         
+         if (n .LE. 24 .AND. dt .GT. 0.) then
+                
+  
+           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+                         -1./(5.*dt)*(p%ss(:)+f(l1:l2,m,n,ilnrho)*gamma1/gamma)
+          
+          endif
+           
+     endif  
 !
 !  entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
@@ -2862,5 +2892,59 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !   print*,'find rhobot=',rhobot
 !
     endsubroutine strat_MLT
+
+!***************************************************************
+    subroutine entropy_step(f,xx,zz,T0)
+!Natalia
+!Initialization of entropy in a case of the step-like distribution
+ use EquationOfState
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx, zz
+      real, dimension (nx) ::  lnrho, lnTT,ss
+      integer :: step_width, step_length, mi,ni, decel_zone
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, T0
+
+
+      decel_zone=24
+
+      hdisk=H_disk 
+      ldisk=L_disk
+
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      L_disk_min=Lxyz(3)/(nzgrid-1)
+
+      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+      if (H_disk .LT. H_disk_min) hdisk=0.
+
+      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .LT. L_disk_min) ldisk=0.
+
+      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
+
+
+      lnTT=log(T0)
+
+     do ni=n1,n2;
+      do mi=m1,m2;
+        lnrho=f(l1:l2,mi,ni,ilnrho)
+     
+         call eoscalc(4,lnrho,lnTT,ss=ss)
+             
+      !   f(l1:l2,mi,ni,iss)=ss
+
+         f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+
+
+!print*,'IC    ',lnrho(1),exp(lnTT(1)),ss(1)
+       end do 
+     end do   
+       
+  !    f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+  
+
+    endsubroutine entropy_step
+!***********************************************************************
 !***********************************************************************    
 endmodule Entropy
