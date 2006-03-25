@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.69 2006-03-23 12:47:33 brandenb Exp $
+! $Id: particles_dust.f90,v 1.70 2006-03-25 18:29:23 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.69 2006-03-23 12:47:33 brandenb Exp $")
+           "$Id: particles_dust.f90,v 1.70 2006-03-25 18:29:23 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -247,7 +247,7 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
-      real :: r, p, eps, cs
+      real :: r, p, px, py, pz, eps, cs
       integer :: l, k, ix0, iy0, iz0
 !
       intent (out) :: f, fp, ineargrid
@@ -277,6 +277,22 @@ module Particles
         if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
         if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
         if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+
+      case ('np-constant')
+        if (lroot) print*, 'init_particles: Constant number density'
+        k=1
+k_loop: do while (.not. (k>npar_loc))
+          do l=l1,l2; do m=m1,m2; do n=n1,n2
+            if (nxgrid/=1) call random_number_wrapper(px)
+            if (nygrid/=1) call random_number_wrapper(py)
+            if (nzgrid/=1) call random_number_wrapper(pz)
+            fp(k,ixp)=x(l)+(px-0.5)*dx
+            fp(k,iyp)=y(m)+(py-0.5)*dy
+            fp(k,izp)=z(n)+(pz-0.5)*dz
+            k=k+1
+            if (k>npar_loc) exit k_loop
+          enddo; enddo; enddo
+        enddo k_loop
 
       case ('gaussian-z')
         if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -474,9 +490,7 @@ module Particles
 
         call random_number_wrapper(r)
         call random_number_wrapper(p)
-!
-!  need to make sure the indices for probing are at least 1
-!
+
         fprob = (/ 1.0, 1.0 /)
         xprob = x(max(1,nx/2))
         zprob = z(max(1,nz/2))
