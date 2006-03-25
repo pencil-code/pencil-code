@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.114 2006-03-25 09:52:56 brandenb Exp $
+! $Id: interstellar.f90,v 1.115 2006-03-25 23:02:04 brandenb Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -279,7 +279,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.114 2006-03-25 09:52:56 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.115 2006-03-25 23:02:04 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -347,17 +347,23 @@ module Interstellar
 ! cooling_select in interstellar_init_pars added
 !
       if (cooling_select == 'RB') then
-         if (lroot) print*,'initialize_interstellar: default RB cooling function'
-         coolT_cgs=(/ 100.D0,     2000.D0,    8000.D0,    1.D5,    4.D7,     1.D9 /)
+         if (lroot) print*,'initialize_interstellar: default RB cooling fct'
+         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 4.D7, 1.D9 /)
          coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0)   /) / ( m_p_cgs )**2 
          coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.)   /)
       else if (cooling_select == 'SS') then
-         ! These are the SS et al (2002) coefficients multiplied by m_proton**2 to obtain 
-         ! same units as RB above
+         ! These are the SS et al (2002) coefficients multiplied by m_proton**2
+         ! to obtain same units as RB above
          if (lroot) print*,'initialize_interstellar: SS cooling function'
-         coolT_cgs=(/ 10.D0,     141.D0,    313.D0,    6102.D0,    1.D5,     1.D9 /)
-         coolH_cgs=(/ 3.42D16, 9.10D18, 1.11D20, 2.00D8, tiny(0.D0), tiny(0.D0) /) 
-         coolB=(/ 2.12,     1.0,      0.56,     3.67,    -.65 ,      tiny(0.)   /)
+         coolT_cgs=(/   10D0,   141D0,   313D0,  6102D0,      1D5,       1D9 /)
+         coolH_cgs=(/3.42D16, 9.10D18, 1.11D20,  2.00D8, tiny(0D0), tiny(0D0)/)
+         coolB    =(/   2.12,     1.0,    0.56,    3.67,     -.65 , tiny(0.) /)
+      else if (cooling_select == 'SSr') then
+         ! revised to make continuous
+         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
+         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       1D9 /)
+         coolH_cgs=(/3.70D16, 9.46D18, 1.185D20, 2.00D8, 7.96D29, tiny(0D0) /)
+         coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, tiny(0.)  /)
       else if (cooling_select == 'off') then
          if (lroot) print*,'initialize_interstellar: no cooling applied'
          coolT_cgs=tiny(0.D0)
