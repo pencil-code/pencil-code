@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.113 2006-03-14 15:18:50 mee Exp $
+! $Id: interstellar.f90,v 1.114 2006-03-25 09:52:56 brandenb Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -279,7 +279,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.113 2006-03-14 15:18:50 mee Exp $")
+           "$Id: interstellar.f90,v 1.114 2006-03-25 09:52:56 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -620,7 +620,6 @@ module Interstellar
 !  identifier
 !
       if(headtt) print*,'calc_heat_cool_interstellar: ENTER'
-!
 !
 !  define T in K, for calculation of both UV heating and radiative cooling
 !
