@@ -1,0 +1,31 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Convection in vertically stratified atmosphere
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-03-27 17:15:36 ngrs Exp $',
+  ip=15,			! debugging parameter
+  xyz0  = 0.,    0., -1.10,	! first corner of box
+  xyz1  = 2.596, 1., -0.10,	! second corner of box
+  lperi = T , T , F,		! periodic direction?
+  bcz = 's','s','a','a2','cT'
+/
+&eos_init_pars
+  cs0=1.2909944, rho0=1., cp=2.5, gamma=1.6666666
+/
+&hydro_init_pars
+  inituu='gaussian-noise', ampluu=1.34164e-3 ! ampluu = sqrt(20) * 3e-4
+/
+&density_init_pars
+  initlnrho='polytropic_simple', mpoly=1.0,
+/
+&grav_init_pars
+  grav_profile='const', gravz=-20.,
+  zref=-0.10,
+  z1=-1.10, z2=-0.10            ! for pvert.pro
+/
+&entropy_init_pars
+  initss='polytropic_simple'
+  mpoly0=1.                     ! for pvert.pro
+/
