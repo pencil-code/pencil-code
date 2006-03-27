@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.376 2006-03-25 09:52:56 brandenb Exp $
+! $Id: entropy.f90,v 1.377 2006-03-27 14:34:06 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.376 2006-03-25 09:52:56 brandenb Exp $")
+           "$Id: entropy.f90,v 1.377 2006-03-27 14:34:06 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -519,13 +519,22 @@ module Entropy
       real, dimension (nx) :: pp,lnrho,ss
       real, dimension (mx) :: lnTT_convert 
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
-      logical :: lnothing=.true.
+      logical :: lnothing=.true., save_pretend_lnTT
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
 !mee Rather initialise everything as if entropy then convert it all at the end!
 !mee      if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-log(gamma1))/gamma
+
+!
+! If pretend_lnTT is set then turn it off so that initial conditions are
+! correctly generated in terms of entropy, but then restore it later
+! when we convert the data back again.
+!
+      save_pretend_lnTT=pretend_lnTT
+      pretend_lnTT=.false.
+
       do iinit=1,ninit
 !
 !  if we pretend that ss in in reality g1lnTT, we initialize the background
@@ -820,8 +829,7 @@ module Entropy
 !
 !  replace ss by lnTT/gamma when pretend_lnTT is true
 !
-      if (pretend_lnTT) then
-        pretend_lnTT=.false.
+      if (save_pretend_lnTT) then
         do m=1,my
         do n=1,mz
           call eoscalc(f,mx,lnTT=lnTT_convert)
@@ -1540,9 +1548,11 @@ module Entropy
       intent(in) :: f
       intent(inout) :: p
 !
-!ajwm THiE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
-!ajwm FOR pretend_lnTT since iss actually contain
-!ajwm lnTT/gamma NOT entropy!
+! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
+! FOR pretend_lnTT since iss actually contain
+! lnTT/gamma NOT entropy!
+! The code is not wrong however since this is correctly
+! handled by the eos module. 
 ! ss
       if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
 !
