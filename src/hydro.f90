@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.243 2006-03-27 21:26:15 wlyra Exp $
+! $Id: hydro.f90,v 1.244 2006-03-27 22:00:35 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -116,6 +116,7 @@ module Hydro
   integer :: idiag_ekintot=0, idiag_ekin=0
   integer :: idiag_fmassz=0, idiag_fkinz=0
   integer :: idiag_ur2m=0,idiag_up2m=0,idiag_urupm=0
+  integer :: idiag_urm=0,idiag_upm=0,idiag_uzupm=0,idiag_uruzm=0
 
 ! Turbulence parameters
   real :: Hp,cs_ave,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
@@ -161,7 +162,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.243 2006-03-27 21:26:15 wlyra Exp $")
+           "$Id: hydro.f90,v 1.244 2006-03-27 22:00:35 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -780,6 +781,7 @@ module Hydro
                          u2_xy, u2_xy2, u2_xz, u2_yz
       use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
+      use Gravity, only: g0,r0_pot,n_pot
 !ajwm QUICK FIX.... Shouldn't be here!
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1013,10 +1015,15 @@ module Hydro
            call calc_phiavg_general()
            call calc_phiavg_unitvects()
            ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy
-           up=p%uu(:,1)*phix+p%uu(:,2)*phiy
+           up=p%uu(:,1)*phix+p%uu(:,2)*phiy - &
+                rcyl_mn*sqrt(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
+           if (idiag_urm/=0)   call sum_mn_name(ur,idiag_urm)
+           if (idiag_upm/=0)   call sum_mn_name(up,idiag_upm)
            if (idiag_ur2m/=0)  call sum_mn_name(ur**2,idiag_ur2m)
            if (idiag_up2m/=0)  call sum_mn_name(up**2,idiag_up2m)
            if (idiag_urupm/=0) call sum_mn_name(ur*up,idiag_urupm)
+           if (idiag_uzupm/=0) call sum_mn_name(p%uu(:,3)*up,idiag_uzupm)
+           if (idiag_uruzm/=0) call sum_mn_name(ur*p%uu(:,3),idiag_uruzm)
         endif
 
 !
@@ -1446,6 +1453,7 @@ module Hydro
         idiag_ux2my=0; idiag_uy2my=0; idiag_uz2my=0
         idiag_uxuymy=0; idiag_uxuzmy=0; idiag_uyuzmy=0
         idiag_ur2m=0; idiag_up2m=0; idiag_urupm=0
+        idiag_urm=0; idiag_upm=0; idiag_uzupm=0; idiag_uruzm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1506,6 +1514,10 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ur2m',idiag_ur2m)
         call parse_name(iname,cname(iname),cform(iname),'up2m',idiag_up2m)
         call parse_name(iname,cname(iname),cform(iname),'urupm',idiag_urupm)
+        call parse_name(iname,cname(iname),cform(iname),'urm',idiag_urm)
+        call parse_name(iname,cname(iname),cform(iname),'upm',idiag_upm)
+        call parse_name(iname,cname(iname),cform(iname),'uzupm',idiag_uzupm)
+        call parse_name(iname,cname(iname),cform(iname),'uruzm',idiag_uruzm)
       enddo
 !
 !  check for those quantities for which we want xy-averages
