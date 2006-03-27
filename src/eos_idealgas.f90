@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.31 2006-03-25 09:52:56 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.32 2006-03-27 17:05:10 ngrs Exp $
 
 !  Dummy routine for ideal gas
 
@@ -92,7 +92,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.31 2006-03-25 09:52:56 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.32 2006-03-27 17:05:10 ngrs Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -932,11 +932,12 @@ module EquationOfState
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_x: cannot have cs2bot<=0'
-        tmp = 2/gamma*log(cs2bot/cs20)
-        f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
+        ! corrected for cp /= 1 runs
+        tmp = 2/gamma/cp1*log(cs2bot/cs20)
+        f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma/cp1*(f(l1,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
-               - gamma1/gamma*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
+               - gamma1/gamma/cp1*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
         enddo
 !
 !  top boundary
@@ -946,11 +947,12 @@ module EquationOfState
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
-        tmp = 2/gamma*log(cs2top/cs20)
-        f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
+        ! corrected for cp /= 1 runs
+        tmp = 2/gamma/cp1*log(cs2top/cs20)
+        f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma/cp1*(f(l2,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-               - gamma1/gamma*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
+               - gamma1/gamma/cp1*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
         enddo
 
       case default
@@ -992,11 +994,12 @@ module EquationOfState
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_y: cannot have cs2bot<=0'
-        tmp = 2/gamma*log(cs2bot/cs20)
-        f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
+        ! corrected for cp /= 1 runs
+        tmp = 2/gamma/cp1*log(cs2bot/cs20)
+        f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma/cp1*(f(:,m1,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m1-i,:,iss) = -f(:,m1+i,:,iss) + tmp &
-               - gamma1/gamma*(f(:,m1+i,:,ilnrho)+f(:,m1-i,:,ilnrho)-2*lnrho0)
+               - gamma1/gamma/cp1*(f(:,m1+i,:,ilnrho)+f(:,m1-i,:,ilnrho)-2*lnrho0)
         enddo
 !
 !  top boundary
@@ -1006,11 +1009,12 @@ module EquationOfState
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
                      'bc_ss_temp_y: cannot have cs2top<=0'
-        tmp = 2/gamma*log(cs2top/cs20)
-        f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
+        ! corrected for cp /= 1 runs
+        tmp = 2/gamma/cp1*log(cs2top/cs20)
+        f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma/cp1*(f(:,m2,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
-               - gamma1/gamma*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
+               - gamma1/gamma/cp1*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
         enddo
 
       case default
@@ -1052,11 +1056,12 @@ module EquationOfState
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
-        tmp = 2/gamma*log(cs2bot/cs20)
-        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
+        ! corrected for cp /= 1 runs
+        tmp = 2/gamma/cp1*log(cs2bot/cs20)
+        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma/cp1*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-               - gamma1/gamma*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
+               - gamma1/gamma/cp1*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
         enddo
 !
 !  top boundary
@@ -1066,11 +1071,12 @@ module EquationOfState
                    'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2top = ', cs2top, ' <= 0'
-        tmp = 2/gamma*log(cs2top/cs20)
-        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
+        ! corrected for cp /= 1 runs
+        tmp = 2/gamma/cp1*log(cs2top/cs20)
+        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma/cp1*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-               - gamma1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
+               - gamma1/gamma/cp1*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
         enddo
       case default
         call fatal_error('bc_ss_temp_z','invalid argument')

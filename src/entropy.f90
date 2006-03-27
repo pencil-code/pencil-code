@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.377 2006-03-27 14:34:06 mee Exp $
+! $Id: entropy.f90,v 1.378 2006-03-27 17:05:10 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.377 2006-03-27 14:34:06 mee Exp $")
+           "$Id: entropy.f90,v 1.378 2006-03-27 17:05:10 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -301,9 +301,10 @@ module Entropy
           !
           if (Fbot==impossible) then
             if (bcz1(iss)=='c1') then
-              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
+              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1) 
               if (lroot) print*, &
                    'initialize_entropy: Calculated Fbot = ', Fbot
+              
               Kbot=gamma1/gamma*(mpoly+1.)*Fbot
               FbotKbot=gamma/gamma1/(mpoly+1.)
               if (lroot) print*,'initialize_entropy: Calculated Fbot,Kbot=', &
@@ -760,9 +761,14 @@ module Entropy
           if (lroot) print*,'init_ss: benchmark temperature in spherical shell'
           call shell_ss(f)
 
+        case ('polytropic_simple')     
+          !
+          ! vertical temperature profiles for convective layer problem
+          !
+          call layer_ss(f)
+
         case ('step_xz')
          call entropy_step(f,xx,zz,T0)
-
 
         case default
           !
@@ -1175,6 +1181,35 @@ module Entropy
       endselect
 !
     endsubroutine shell_ss_perturb
+!***********************************************************************
+    subroutine layer_ss(f)             
+!
+!  initial state entropy profile used for initss='polytropic_simple',
+!  for `conv_slab' style runs, with a layer of polytropic gas in [z0,z1].
+!  generalised for cp/=1.
+!
+      use Cdata
+      use Gravity, only: gravz
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, cp
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (nx) :: lnrho,lnTT,TT,ss
+      real :: beta1
+!
+      beta1 = gamma/gamma1/cp*gravz/(mpoly+1)  ! gamma1*cp/gamma=R_{*}
+!
+      do m=m1,m2
+      do n=n1,n2
+        z_mn = spread(z(n),1,nx)
+        TT = beta1*z_mn
+        lnrho=f(l1:l2,m,n,ilnrho)
+        lnTT=log(TT)
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        f(l1:l2,m,n,iss)=ss
+      enddo
+      enddo
+!
+    endsubroutine layer_ss
 !***********************************************************************
     subroutine ferriere(f)
 !
@@ -1622,6 +1657,8 @@ module Entropy
 !
       use Cdata
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Global
       use Special, only: special_calc_entropy
@@ -2021,12 +2058,16 @@ module Entropy
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
+!  Corrected for cp /= 1 runs.  Note that as done at present, chix contains
+!   an `unnecessary' cp1 (it's effectively removed in the final calculation 
+!   of thdiff) - but having it present in chix makes the current diffus_chi 
+!   condition for dt_chi sensible.
 !
-      chix = p%rho1*hcond
-      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
+      chix = p%rho1*hcond*p%cp1tilde                    ! chix = K/(cp rho)
+      glnT = gamma*p%gss*spread(p%cp1tilde,2,3) + gamma1*p%glnrho ! grad ln(T)
       glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       call dot(glnT,glnThcond,g2)
-      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+      thdiff = chix/p%cp1tilde * (gamma*p%del2ss*p%cp1tilde + gamma1*p%del2lnrho + g2)  
 !
 !  add heat conduction to entropy equation
 !
@@ -2176,11 +2217,12 @@ module Entropy
           call chit_profile(chit_prof)
           call gradlogchit_profile(glchit_prof)
         endif
-        chix = p%rho1*hcond
-        glnT = gamma*p%gss + gamma1*p%glnrho             ! grad ln(T)
+!       Corrected for cp /= 1
+        chix = p%rho1*hcond*p%cp1tilde
+        glnT = gamma*p%gss*spread(p%cp1tilde,2,3) + gamma1*p%glnrho        ! grad ln(T)
         glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot(glnT,glnThcond,g2)
-        thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+        thdiff = chix * (gamma*p%del2ss*p%cp1tilde + gamma1*p%del2lnrho + g2)
       else
         chix = 0
         thdiff = 0
