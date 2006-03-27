@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.32 2006-03-27 17:05:10 ngrs Exp $
+! $Id: eos_idealgas.f90,v 1.33 2006-03-27 19:32:42 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -45,12 +45,15 @@ module EquationOfState
 
   real :: xHe=0.1
 ! real :: cp=impossible, cp1=impossible, mu=impossible
-  real :: cp=1., cp1=impossible, mu=impossible
+  real :: cp=1., cp1=impossible, cv=impossible, cv1=impossible
+  real :: mu=impossible
 
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp = .false.
-  real :: gamma=5./3., gamma1
+  real :: gamma=5./3.
+  real :: gamma1    ! gamma - 1.
+  real :: gamma11   ! 1. / gamma
   real :: cs2bot=1., cs2top=1. 
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
@@ -92,7 +95,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.32 2006-03-27 17:05:10 ngrs Exp $')
+           '$Id: eos_idealgas.f90,v 1.33 2006-03-27 19:32:42 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -111,6 +114,7 @@ module EquationOfState
 !  (used currently for non-dimensional equation of state)
 !
       gamma1=gamma-1.
+      gamma11=1./gamma
       ! avoid floating overflow if cs0 was not set:
       cs20=cs0**2
       lnrho0=log(rho0)
@@ -123,7 +127,7 @@ module EquationOfState
       else
         ! Avoid setting unit_temperature=0 to avoid floating point exceptions
         if (gamma1 /= 0.) &
-            unit_temperature=unit_velocity**2*gamma1/gamma*mu_tmp/R_cgs
+            unit_temperature=unit_velocity**2*gamma1*gamma11*mu_tmp/R_cgs
         if (lroot) print*,'initialize_eos: unit_temperature=',unit_temperature
       endif
 
@@ -136,6 +140,8 @@ module EquationOfState
       else                      ! gamma==1
         lnTT0=log(cs20/cp)      ! Could the ionizers please check!
       endif
+      cv=cp*gamma11
+      cv1=cp1*gamma
 !   
 !  write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
@@ -218,8 +224,7 @@ module EquationOfState
       real, dimension(nx), intent(out) :: ss,lnTT,yH
 
       call eoscalc_pencil(ilnrho_ee,lnrho,ee,ss=ss,lnTT=lnTT)
- !     ss=(log(ee*gamma*gamma1/cs20)-gamma1*(lnrho-lnrho0))/gamma
- !     lnTT=log(gamma*cp1*ee)
+
       yH=impossible
     end subroutine perturb_energy
 !***********************************************************************
@@ -228,7 +233,7 @@ module EquationOfState
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
 
-      rho = gamma * EE / (TT*cp)
+      rho = EE / (cv * TT)
       if (NO_WARN) print*,yH
 
     end subroutine getdensity
@@ -266,7 +271,7 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        cs2=cs20*exp(gamma*ss)*gamma1
+        cs2=cp*gamma1*exp(gamma*ss)
       else
         cs2=cs20*exp(gamma*cp1*ss+gamma1*(lnrho-lnrho0))
       endif
@@ -304,7 +309,7 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        cs2=cs20*exp(gamma*ss)*gamma1
+        cs2=cp*gamma1*exp(gamma*ss)
       else
         cs2=cs20*exp(gamma*cp1*ss+gamma1*(lnrho-lnrho0))
       endif
@@ -332,7 +337,7 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        glnTT=gamma*gss
+        glnTT=gss
       else
         glnTT=gamma1*glnrho+gamma*cp1*gss
       endif
@@ -359,7 +364,7 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        del2lnTT=gamma*del2ss
+        del2lnTT=del2ss
       else
         del2lnTT=gamma1*del2lnrho+gamma*cp1*del2ss
       endif
@@ -386,7 +391,7 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        hlnTT=gamma*hss
+        hlnTT=hss
       else
         hlnTT=gamma1*hlnrho+gamma*cp1*hss
       endif
@@ -409,7 +414,8 @@ module EquationOfState
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,kapparho
+      real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
+      real, dimension(psize), intent(out), optional :: lnTT
       real, dimension(psize) :: lnTT_
       real, dimension(psize) :: lnrho,ss
 !
@@ -432,13 +438,11 @@ module EquationOfState
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        lnTT_=lnTT0+gamma*ss+log(gamma1)
-        if (present(lnTT)) lnTT=lnTT_
-        !if (present(ee)) ee=cs20*exp(gamma*ss)/gamma1/gamma
-        if (present(ee)) ee=cs20*exp(gamma*ss)/gamma
-        if (present(pp)) pp=cs20*exp(gamma*ss+(lnrho-lnrho0))/gamma
+        if (present(lnTT)) lnTT=ss
+        if (present(ee)) ee=cv*exp(ss)
+        if (present(pp)) pp=cv*gamma1*exp(ss+lnrho)
 !
-!  ss is indeed the entropy (not lnTT/gamma)
+!  ss is indeed the entropy (not lnTT)
 !
       else
         lnTT_=lnTT0+gamma*cp1*ss+gamma1*(lnrho-lnrho0)
@@ -446,9 +450,9 @@ module EquationOfState
             call fatal_error('eoscalc_farray','gamma=1 not allowed w/entropy')
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) &
-            ee=cp/gamma*exp(lnTT_)
+            ee=cv*exp(lnTT_)
         if (present(pp)) &
-            pp=gamma1*cp/gamma*exp(lnTT_+lnrho)
+            pp=cv*gamma1*exp(lnTT_+lnrho)
       endif
 !
       if (present(kapparho)) then
@@ -467,6 +471,8 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
+!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster 
+!                   + more explicit
 !
       use Cdata
 !
@@ -485,28 +491,29 @@ module EquationOfState
         lnrho_=var1
         ss_=var2
         lnTT_=lnTT0+gamma*cp1*ss_+gamma1*(lnrho_-lnrho0)
-        ee_=cs20*exp(gamma*cp1*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
+        ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
+        pp_=cv*gamma1*exp(lnTT_+lnrho)
 
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
-        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
-        lnTT_=log(gamma*cp1*ee_)
-        pp_=ee_*exp(lnrho_)*gamma1
+        ss_=cv*(log(ee_*cv1)-lnTT0-gamma1*(lnrho_-lnrho0))
+        lnTT_=log(cv*ee_)
+        pp_=gamma1*ee_*exp(lnrho_)
 
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-        ss_=(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
+        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
         ee_=pp_*exp(-lnrho_)/gamma1
-        lnTT_=log(gamma*cp1*ee_)
+        lnTT_=log(cv1*ee_)
 
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
-        ss_=(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))*cp/gamma  
-        ee_=exp(lnTT_)*cp/gamma 
+        ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
+        ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
 
       case default 
@@ -531,6 +538,8 @@ module EquationOfState
 !                   now needs to be given as an argument as input
 !   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
 !                   subroutine pressure_gradient
+!   27-mar-06/tony: Introduces cv, cv1, gamma11 to make faster 
+!                   + more explicit
 !
       use Cdata
 !
@@ -549,31 +558,33 @@ module EquationOfState
         lnrho_=var1
         ss_=var2
         lnTT_=lnTT0+gamma*cp1*ss_+gamma1*(lnrho_-lnrho0)
-        ee_=cs20*exp(gamma*cp1*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
+        ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
+        pp_=cv*gamma1*exp(lnTT_+lnrho)
 
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
-        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
-        lnTT_=log(gamma*cp1*ee_)
-        pp_=ee_*exp(lnrho_)*gamma1
+        ss_=cv*(log(ee_*cv1)-lnTT0-gamma1*(lnrho_-lnrho0))
+        lnTT_=log(cv*ee_)
+        pp_=gamma1*ee_*exp(lnrho_)
 
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-        ss_=(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))*cp/gamma
+        ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
         ee_=pp_*exp(-lnrho_)/gamma1
-        lnTT_=log(gamma*cp1*ee_)
+        lnTT_=log(cv1*ee_)
 
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
-        ss_=(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))*cp/gamma  
-        ee_=exp(lnTT_)*cp/gamma 
+        ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
+        ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
+
       case default 
-        call not_implemented('eoscalc_pencil')
+        call not_implemented('eoscalc_point')
       end select
 !
       if (present(lnrho)) lnrho=lnrho_

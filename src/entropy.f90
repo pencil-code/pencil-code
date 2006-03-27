@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.378 2006-03-27 17:05:10 ngrs Exp $
+! $Id: entropy.f90,v 1.379 2006-03-27 19:32:42 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.378 2006-03-27 17:05:10 ngrs Exp $")
+           "$Id: entropy.f90,v 1.379 2006-03-27 19:32:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -839,7 +839,8 @@ module Entropy
         do m=1,my
         do n=1,mz
           call eoscalc(f,mx,lnTT=lnTT_convert)
-          f(:,m,n,iss)=lnTT_convert/gamma
+!
+          f(:,m,n,iss)=lnTT_convert
         enddo
         enddo
         pretend_lnTT=.true.
