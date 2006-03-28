@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.284 2006-03-28 19:12:49 wlyra Exp $
+! $Id: magnetic.f90,v 1.285 2006-03-28 22:02:18 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -82,6 +82,7 @@ module Magnetic
   real :: initpower_aa=0.,cutoff_aa=0.,brms_target=1.,rescaling_fraction=1.
   character (len=labellen) :: pertaa='zero'
   integer :: N_modes_aa=1
+  logical :: lgauss=.false.
 
   namelist /magnetic_init_pars/ &
        B_ext, &
@@ -93,7 +94,7 @@ module Magnetic
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
-       rmode,zmode,rm_int,rm_ext
+       rmode,zmode,rm_int,rm_ext,lgauss
 
   ! run parameters
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -184,7 +185,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.284 2006-03-28 19:12:49 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.285 2006-03-28 22:02:18 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1148,8 +1149,7 @@ module Magnetic
            call calc_phiavg_general()
            call calc_phiavg_unitvects()
            br=p%bb(:,1)*pomx+p%bb(:,2)*pomy
-           bp=p%bb(:,1)*phix+p%bb(:,2)*phiy - &
-                rcyl_mn*sqrt(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
+           bp=p%bb(:,1)*phix+p%bb(:,2)*phiy 
            if (idiag_brm/=0)   call sum_lim_mn_name(br,idiag_brm)
            if (idiag_bpm/=0)   call sum_lim_mn_name(bp,idiag_bpm)
            if (idiag_br2m/=0)  call sum_lim_mn_name(br**2,idiag_br2m)
@@ -2114,7 +2114,7 @@ module Magnetic
 !
     endsubroutine alfven_phi_rz
 !***********************************************************************
-    subroutine alfven_z_r(pbeta,f,rmode,cs20,lgauss)
+    subroutine alfven_z_r(pbeta,f,rmode,cs20)
 !
 !  Alfven wave propagating in the z-direction
 !
@@ -2129,20 +2129,28 @@ module Magnetic
       real :: B0,kr,phase_r,rmode,rsize,rin,pbeta
       real :: rs0,sig,cs20
       integer :: i
-      logical, optional :: lgauss
 !
-      if (lroot) &
+      if (lgauss) then 
+         if (lroot) &
+           print*,'magnetic: Bz = B0 sin(kr*r) in annulus'
+         rsize = rm_ext-rm_int
+         rin   = rm_int
+      else
+         if (lroot) &
            print*,'magnetic: Bz = B0 sin(kr*r)'
-!
-      rsize = r_ext-r_int
-      rin   = r_int
+         rsize = r_ext - r_int
+         rin   = r_int
+      endif
 !
       kr      = rmode*2*pi/rsize
       phase_r =  -kr*rin +pi/2.
-
+!
+!  Peak at the center of the magnetic annulus, 
+!  fading out at 3-sigma from it at the magnetic 
+!  boundary
+!
       rs0 = (rm_ext + rm_int)/2.
-      sig = (rs0 - rm_int)/2.
-               
+      sig = (rs0 - rm_int)/3.              
 !
       B0 = sqrt(cs20/pbeta)
 !
@@ -2151,7 +2159,7 @@ module Magnetic
 !
             rs = sqrt(x(l1:l2)**2+y(m)**2) + tini
 !
-            if (present(lgauss)) then 
+            if (lgauss) then 
                gaussr = exp(-0.5*((rs-rs0)/sig)**2)
             else 
                gaussr = 1.
