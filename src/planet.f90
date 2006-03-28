@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.30 2006-03-15 04:04:36 wlyra Exp $
+! $Id: planet.f90,v 1.31 2006-03-28 19:15:31 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -11,6 +11,8 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED uu_kep
 !
 !***************************************************************
 !
@@ -80,7 +82,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.30 2006-03-15 04:04:36 wlyra Exp $")
+           "$Id: planet.f90,v 1.31 2006-03-28 19:15:31 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,8 +134,31 @@ module Planet
 !      
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho)=.true.
+      lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_u2)=.true.
 !
     endsubroutine pencil_criteria_planet
+!***********************************************************************
+    subroutine calc_pencils_planet(f,p)
+!
+! calculate keplerian velocity as a pencil, so I don't
+! have to recalculate it on other routines from f,g0 and r0_pot
+!
+! 28-mar-06/wlad : coded 
+!
+     use Cdata
+     use Gravity, only : g0,r0_pot
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: rc_mn
+      type (pencil_case) :: p
+!   
+      if (lpencil(i_uu_kep)) then
+         rc_mn = sqrt(x(l1:l2)**2 + y(m)**2)
+         p%uu_kep = rc_mn*sqrt(g0*(rc_mn**2+r0_pot**2)**(-1.5))
+      endif
+!
+    endsubroutine calc_pencils_planet
 !***********************************************************************
     subroutine read_planet_init_pars(unit,iostat)
       integer, intent(in) :: unit
@@ -603,7 +628,7 @@ module Planet
      use Cdata
 ! 
      real, dimension(mx,my,mz,mvar+maux) :: f
-     real, dimension(nx) :: rstar,rplanet,vel2,r,uphi
+     real, dimension(nx) :: rstar,rplanet,r,uphi
      real, dimension(nx) :: angular_momentum
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
      real :: xs,ys,xp,yp  !position of star and planet
@@ -622,8 +647,7 @@ module Planet
 !
 ! Kinetic energy
 !
-     vel2 = f(l1:l2,m,n,iux)**2 + f(l1:l2,m,n,iuy)**2
-     kin_energy = p%rho * vel2/2.
+     kin_energy = p%rho * p%u2/2.
 !     
 ! Potential energy - uses smoothed potential
 !
@@ -641,7 +665,7 @@ module Planet
 ! Angular momentum
 !
      r = sqrt(x(l1:l2)**2 + y(m)**2)+tini !this is correct: baricenter
-     uphi = (-f(l1:l2,m,n,iux)*y(m) + f(l1:l2,m,n,iuy)*x(l1:l2))/r
+     uphi = (-p%uu(:,1)*y(m) + p%uu(:,2)*x(l1:l2))/r
      angular_momentum = p%rho * r * uphi
 !     
 ! integrate it

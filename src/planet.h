@@ -5,7 +5,7 @@
   public :: rprint_planet
   public :: read_planet_init_pars,  write_planet_init_pars
   public :: read_planet_run_pars,  write_planet_run_pars
-  public :: pencil_criteria_planet
+  public :: pencil_criteria_planet,calc_pencils_planet
   
   public :: gravity_companion,local_isothermal
   public :: gravity_star,wave_damping,get_ramped_mass
