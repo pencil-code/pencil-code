@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.31 2006-03-28 19:15:31 wlyra Exp $
+! $Id: planet.f90,v 1.32 2006-03-28 20:21:10 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -82,7 +82,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.31 2006-03-28 19:15:31 wlyra Exp $")
+           "$Id: planet.f90,v 1.32 2006-03-28 20:21:10 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,6 +152,9 @@ module Planet
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(nx) :: rc_mn
       type (pencil_case) :: p
+!
+      intent(in) :: f
+      intent(inout) :: p
 !   
       if (lpencil(i_uu_kep)) then
          rc_mn = sqrt(x(l1:l2)**2 + y(m)**2)
