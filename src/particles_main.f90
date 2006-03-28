@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.17 2006-02-16 12:51:45 ajohan Exp $
+! $Id: particles_main.f90,v 1.18 2006-03-28 19:23:50 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -81,7 +81,7 @@ module Particles_main
 !***********************************************************************
     subroutine particles_init(f)
 !
-!  Set up initial conditios for particle modules.
+!  Set up initial condition for particle modules.
 !
 !  07-jan-05/anders: coded
 !
