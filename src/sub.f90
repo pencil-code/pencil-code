@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.229 2006-02-08 14:10:14 mee Exp $ 
+! $Id: sub.f90,v 1.230 2006-03-28 19:18:14 wlyra Exp $ 
 
 module Sub 
 
@@ -343,8 +343,9 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a,r,aux
-      real :: sumaux,norm
+      real :: sumaux
       integer :: iname,i
+      real, optional :: norm
       logical, optional :: lnorm
 !
 
