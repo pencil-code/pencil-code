@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.283 2006-03-22 03:07:42 wlyra Exp $
+! $Id: magnetic.f90,v 1.284 2006-03-28 19:12:49 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -101,6 +101,7 @@ module Magnetic
   real :: tau_aa_exterior=0.
   real :: alphaSSm=0.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
+  logical :: llarge_scale_Bz=.false.
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -117,7 +118,8 @@ module Magnetic
        reinitalize_aa,rescale_aa,lB_ext_pot, &
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
        pertaa,pertamplaa,D_smag,brms_target,rescaling_fraction, &
-       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext
+       lOmega_effect,Omega_profile,Omega_ampl,lfreeze_aint,lfreeze_aext, &
+       llarge_scale_Bz
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0
@@ -140,6 +142,8 @@ module Magnetic
   integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
   integer :: idiag_uxBrms=0,idiag_Bresrms=0,idiag_Rmrms=0
+  integer :: idiag_brm=0,idiag_bpm=0,idiag_br2m=0,idiag_bp2m=0  
+  integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0 
 
   contains
 
@@ -180,7 +184,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.283 2006-03-22 03:07:42 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.284 2006-03-28 19:12:49 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -396,8 +400,7 @@ module Magnetic
          case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('Alfven-phi'); call alfven_phi(amplaa(j),f,zmode)    
          case('Alfven-phi-rz'); call alfven_phi_rz(amplaa(j),f,rmode,zmode)
-         case('Alfven-z-r'); call alfven_z_r(amplaa(j),f,rmode)   
-         case('Alfven-z-ctebeta'); call alfven_z_ctebeta(amplaa(j),f,rmode) 
+         case('Alfven-z-r'); call alfven_z_r(amplaa(j),f,rmode,cs20)
          case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
          case('tony-nohel')
             f(:,:,:,iay) = amplaa(j)/kz_aa(j)*cos(kz_aa(j)*2.*pi/Lz*zz)
@@ -905,6 +908,7 @@ module Magnetic
       use Special, only: special_calc_magnetic
       use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc,gamma1
+      use Gravity, only: g0,r0_pot,n_pot
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -914,6 +918,7 @@ module Magnetic
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,gshockgai,etaSS
+      real, dimension (nx) :: br,bp
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j
 !
@@ -1028,6 +1033,10 @@ module Magnetic
 !
       df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz) + p%uxb + fres
 !
+!  Subtract contribution from mean background flow
+!
+      if (llarge_scale_Bz) call subtract_mean_lorentz(df,p)
+!
 !  Ambipolar diffusion in the strong coupling approximation
 !
       if (nu_ni/=0.) then
@@ -1132,6 +1141,23 @@ module Magnetic
         if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
 
         if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
+!                                                                                                                                 
+!  cylindrical components of the magnetic field and maxwell stress 
+!    
+        if (lcylindrical) then
+           call calc_phiavg_general()
+           call calc_phiavg_unitvects()
+           br=p%bb(:,1)*pomx+p%bb(:,2)*pomy
+           bp=p%bb(:,1)*phix+p%bb(:,2)*phiy - &
+                rcyl_mn*sqrt(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
+           if (idiag_brm/=0)   call sum_lim_mn_name(br,idiag_brm)
+           if (idiag_bpm/=0)   call sum_lim_mn_name(bp,idiag_bpm)
+           if (idiag_br2m/=0)  call sum_lim_mn_name(br**2,idiag_br2m)
+           if (idiag_bp2m/=0)  call sum_lim_mn_name(bp**2,idiag_bp2m)
+           if (idiag_brbpm/=0) call sum_lim_mn_name(br*bp,idiag_brbpm)
+           if (idiag_bzbpm/=0) call sum_lim_mn_name(p%bb(:,3)*bp,idiag_bzbpm)
+           if (idiag_brbzm/=0) call sum_lim_mn_name(br*p%bb(:,3),idiag_brbzm)
+        endif
 !
 !  this doesn't need to be as frequent (check later)
 !
@@ -1616,6 +1642,9 @@ module Magnetic
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
         idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0;
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
+        idiag_brm=0; idiag_bpm=0; idiag_br2m=0; idiag_bp2m=0; idiag_brbpm=0 
+        idiag_bzbpm=0; idiag_brbzm=0 
+!
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1677,6 +1706,14 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxBrms',idiag_uxBrms)
         call parse_name(iname,cname(iname),cform(iname),'Bresrms',idiag_Bresrms)
         call parse_name(iname,cname(iname),cform(iname),'Rmrms',idiag_Rmrms)
+        call parse_name(iname,cname(iname),cform(iname),'brm',idiag_brm)
+        call parse_name(iname,cname(iname),cform(iname),'bpm',idiag_bpm)
+        call parse_name(iname,cname(iname),cform(iname),'br2m',idiag_br2m)
+        call parse_name(iname,cname(iname),cform(iname),'bp2m',idiag_bp2m)
+        call parse_name(iname,cname(iname),cform(iname),'brbpm',idiag_brbpm)
+        call parse_name(iname,cname(iname),cform(iname),'bzbpm',idiag_bzbpm)
+        call parse_name(iname,cname(iname),cform(iname),'brbzm',idiag_brbzm)
+!
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -2077,7 +2114,7 @@ module Magnetic
 !
     endsubroutine alfven_phi_rz
 !***********************************************************************
-    subroutine alfven_z_r(pbeta,f,rmode)
+    subroutine alfven_z_r(pbeta,f,rmode,cs20,lgauss)
 !
 !  Alfven wave propagating in the z-direction
 !
@@ -2090,85 +2127,46 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: Aphi,rs,gaussr
       real :: B0,kr,phase_r,rmode,rsize,rin,pbeta
-      real :: rs0,sig
+      real :: rs0,sig,cs20
       integer :: i
+      logical, optional :: lgauss
 !
       if (lroot) &
            print*,'magnetic: Bz = B0 sin(kr*r)'
-!
-      rsize = rm_ext-rm_int
-      rin   = rm_int
-!
-      kr      = rmode*2*pi/rsize
-      phase_r =  -kr*rin +pi/2.
-!
-      rs0 = (rm_ext + rm_int)/2.
-      sig = (rs0 - rm_int)/2.
-!
-      B0 = 0.05/sqrt(pbeta)
-!
-      do m=m1,m2
-         do n=n1,n2
-!
-            rs = sqrt(x(l1:l2)**2+y(m)**2) + tini
-!
-            gaussr = exp(-0.5*((rs-rs0)/sig)**2)
-!
-            Aphi = B0/(rs*kr**2) * ( sin(kr*rs + phase_r)-&  
-                 kr*rs*cos(kr*rs + phase_r) ) * gaussr
-!
-            f(l1:l2,m,n,iaa+0)=- Aphi*y(  m  )/rs
-            f(l1:l2,m,n,iaa+1)=+ Aphi*x(l1:l2)/rs
-!
-         enddo
-      enddo
-!
-    endsubroutine alfven_z_r
-!***********************************************************************
-    subroutine alfven_z_ctebeta(pbeta,f,rmode)
-!                                                                       
-!  Alfven wave propagating in the z-direction
-!
-!   Makes alven speed vary together with sound speed
-!   so then plasma beta is constant everywhere
-!
-!   B = B0/r * sin(kr * r)
-!
-!  15-mar-06/wlad: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: Aphi,rs
-      real :: B0,kr,phase_r,rmode,rsize,rin,pbeta
-!
-      if (lroot) &
-           print*,'magnetic: cte plasma beta' 
 !
       rsize = r_ext-r_int
       rin   = r_int
 !
       kr      = rmode*2*pi/rsize
       phase_r =  -kr*rin +pi/2.
+
+      rs0 = (rm_ext + rm_int)/2.
+      sig = (rs0 - rm_int)/2.
+               
 !
-! assumes cs0 = 5e-2 and rho0 = 1
-!
-      B0 = 5e-2/sqrt(pbeta)
+      B0 = sqrt(cs20/pbeta)
 !
       do m=m1,m2
          do n=n1,n2
 !
             rs = sqrt(x(l1:l2)**2+y(m)**2) + tini
 !
-            Aphi = -B0/kr*cos(kr*rs + phase_r)
+            if (present(lgauss)) then 
+               gaussr = exp(-0.5*((rs-rs0)/sig)**2)
+            else 
+               gaussr = 1.
+            endif
 !
-            f(l1:l2,m,n,iaa+0) =  - Aphi*y(  m  )/rs**2
-            f(l1:l2,m,n,iaa+1) =    Aphi*x(l1:l2)/rs**2
+            Aphi = B0/(rs*kr**2) * ( sin(kr*rs + phase_r)-&  
+                 kr*rs*cos(kr*rs + phase_r) ) * gaussr
+!
+            f(l1:l2,m,n,iaa+0)=- Aphi*y(  m  )/rs
+            f(l1:l2,m,n,iaa+1)=  Aphi*x(l1:l2)/rs
 !
          enddo
       enddo
 !
-    endsubroutine alfven_z_ctebeta
+    endsubroutine alfven_z_r
 !***********************************************************************
     subroutine fluxrings(ampl,f,ivar,xx,yy,zz,profile)
 !
@@ -2800,4 +2798,51 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
+    subroutine subtract_mean_lorentz(df,p)
+!
+!  A vertical large scale magnetic field
+!  
+!   Bz=B0sin(kr*r)
+!  
+!  gives rise to a linearly growing component in the 
+!  radial potential
+!
+!   dAr/dt = (uxB)_r = uphi*Bz -> Ar=uphi*Bz*t
+!
+!  which eventually overgrow the solenoidal component of 
+!  the field and crash the simulation. This subroutine 
+!  artificially removed this unwanted component in the 
+!  induction equation. 
+!
+!  Take phi average on the processor
+!
+!
+!  22-mar-06/wlad: coded
+!
+      use Cdata
+      use Gravity, only : r0_pot
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension(nx) :: r_cyl,vphi,Bz_phi,uxb_mean
+      type (pencil_case) :: p
+      integer :: i
+!
+      intent(inout) :: df
+!
+      r_cyl  =  sqrt(x(l1:l2)**2 + y(m)**2) + tini
+!
+! For every pencil, average Bz in two points. This is the cheapest
+! phi-average EVER.
+!
+      do i=1,nx ; Bz_phi(i) = 0.5*(p%bb(i,3) + p%bb(nx-i,3)) ; enddo
+!
+      vphi     =  r_cyl*sqrt((r_cyl**2+r0_pot**2)**(-1.5))
+!
+      uxb_mean = vphi*Bz_phi
+!
+      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - uxb_mean * x(l1:l2)/r_cyl 
+      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - uxb_mean * y(  m  )/r_cyl
+!
+    endsubroutine subtract_mean_lorentz
+!************************************************************************
 endmodule Magnetic
