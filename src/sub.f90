@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.230 2006-03-28 19:18:14 wlyra Exp $ 
+! $Id: sub.f90,v 1.231 2006-03-28 20:25:46 wlyra Exp $ 
 
 module Sub 
 
@@ -343,26 +343,37 @@ module Sub
       use Cdata
 !
       real, dimension (nx) :: a,r,aux
-      real :: sumaux
+      real :: sumaux,dsv
       integer :: iname,i
       real, optional :: norm
       logical, optional :: lnorm
 !
-
+      dsv=dx*dy
+      if (nzgrid/=1) dsv=dx*dy*dz
+!
       if (iname /= 0) then 
 !
         r = sqrt(x(l1:l2)**2+y(m)**2)
         do i=1,nx
            if ((r(i) .le. r_ext) .and. (r(i) .ge. r_int)) then
-              aux(i) = a(i)*dx*dy
+              aux(i) = a(i)*dsv
             else
               aux(i) = 0.
            endif
         enddo
 !
         sumaux = sum(aux)
-        if (present(lnorm)) sumaux = sumaux / norm
-        
+!
+        if (present(lnorm)) then
+!
+! Normalize by the size of the z-box if 3D cylindrical
+!
+           if ((nzgrid/=1).and.(lcylindrical)) then
+              norm = norm*Lxyz(3)
+           endif
+!
+           sumaux = sumaux / norm
+        endif
 !
         call surf_mn_name(sumaux,iname)
 !
