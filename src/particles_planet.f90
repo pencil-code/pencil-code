@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.22 2006-03-13 13:41:58 wlyra Exp $
+! $Id: particles_planet.f90,v 1.23 2006-03-28 21:52:27 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.22 2006-03-13 13:41:58 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.23 2006-03-28 21:52:27 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -325,7 +325,7 @@ module Particles
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Sub
-      use Gravity,only: g0,r0_pot,n_pot
+      use Gravity,only: g0
       use Planet,only: get_ramped_mass
 !
       real, dimension (mx,my,mz,mvar+maux) :: f

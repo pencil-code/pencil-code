@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.32 2006-03-28 20:21:10 wlyra Exp $
+! $Id: planet.f90,v 1.33 2006-03-28 21:52:27 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -82,7 +82,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.32 2006-03-28 20:21:10 wlyra Exp $")
+           "$Id: planet.f90,v 1.33 2006-03-28 21:52:27 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -139,7 +139,7 @@ module Planet
 !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
-    subroutine calc_pencils_planet(f,p)
+    subroutine calc_pencils_planet(f,p,g0,r0_pot)
 !
 ! calculate keplerian velocity as a pencil, so I don't
 ! have to recalculate it on other routines from f,g0 and r0_pot
@@ -147,11 +147,11 @@ module Planet
 ! 28-mar-06/wlad : coded 
 !
      use Cdata
-     use Gravity, only : g0,r0_pot
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(nx) :: rc_mn
       type (pencil_case) :: p
+      real :: g0,r0_pot
 !
       intent(in) :: f
       intent(inout) :: p

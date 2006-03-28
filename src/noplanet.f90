@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.16 2006-03-28 20:21:10 wlyra Exp $
+! $Id: noplanet.f90,v 1.17 2006-03-28 21:52:27 wlyra Exp $
 !
 !  Dummy module
 !
@@ -51,7 +51,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.16 2006-03-28 20:21:10 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.17 2006-03-28 21:52:27 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,7 +129,7 @@ module Planet
       !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
-    subroutine calc_pencils_planet(f,p)
+    subroutine calc_pencils_planet(f,p,g0,r0_pot)
 !
 ! calculate keplerian velocity as a pencil, so I don't
 ! have to recalculate it on other routines from f,g0 and r0_pot
@@ -140,6 +140,7 @@ module Planet
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
+      real :: g0,r0_pot
 !
       intent(in) :: f
       intent(inout) :: p
