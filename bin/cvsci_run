@@ -1,5 +1,5 @@
-#!/bin/csh
-#$Id: cvsci_run,v 1.17 2005-12-22 15:26:06 brandenb Exp $
+#!/bin/csh -x
+#$Id: cvsci_run,v 1.18 2006-03-28 16:09:23 tarek Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material
@@ -7,6 +7,8 @@
 #
 #  if this procedure is called with an argument,
 #  then first go into this directory and continue from there
+#
+#
 #
 if ($#argv == 1) then
   cd $1
@@ -62,6 +64,6 @@ if ( $status ) then
   cvs add src
   cd src
   cvs add *.local
-  cvs ci -m "added new run: `uname -n -s`" src
   cd ..
+  cvs ci -m "added new run: `uname -n -s`" src
 endif
