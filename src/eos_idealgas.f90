@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.33 2006-03-27 19:32:42 mee Exp $
+! $Id: eos_idealgas.f90,v 1.34 2006-03-28 03:14:33 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -95,7 +95,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.33 2006-03-27 19:32:42 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.34 2006-03-28 03:14:33 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -493,7 +493,7 @@ module EquationOfState
         lnTT_=lnTT0+gamma*cp1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
-        pp_=cv*gamma1*exp(lnTT_+lnrho)
+        pp_=cv*gamma1*exp(lnTT_+lnrho_)
 
       case (ilnrho_ee)
         lnrho_=var1
@@ -560,7 +560,7 @@ module EquationOfState
         lnTT_=lnTT0+gamma*cp1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
-        pp_=cv*gamma1*exp(lnTT_+lnrho)
+        pp_=cv*gamma1*exp(lnTT_+lnrho_)
 
       case (ilnrho_ee)
         lnrho_=var1
