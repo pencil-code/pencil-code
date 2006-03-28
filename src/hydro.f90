@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.244 2006-03-27 22:00:35 wlyra Exp $
+! $Id: hydro.f90,v 1.245 2006-03-28 19:23:07 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -162,7 +162,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.244 2006-03-27 22:00:35 wlyra Exp $")
+           "$Id: hydro.f90,v 1.245 2006-03-28 19:23:07 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -597,6 +597,7 @@ module Hydro
       if (ldt) lpenc_requested(i_uu)=.true.
 !
       if (lspecial) lpenc_requested(i_u2)=.true.
+      if (lplanet)  lpenc_requested(i_uu_kep)=.true.
       if (dvid/=0.) then
         lpenc_video(i_oo)=.true.
         lpenc_video(i_o2)=.true.
@@ -781,7 +782,6 @@ module Hydro
                          u2_xy, u2_xy2, u2_xz, u2_yz
       use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
-      use Gravity, only: g0,r0_pot,n_pot
 !ajwm QUICK FIX.... Shouldn't be here!
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1010,20 +1010,22 @@ module Hydro
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) & 
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
-
+!
+!  cylindrical components for global disk
+!  currently works only for n_pot=2  
+!
         if (lcylindrical) then
            call calc_phiavg_general()
            call calc_phiavg_unitvects()
            ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy
-           up=p%uu(:,1)*phix+p%uu(:,2)*phiy - &
-                rcyl_mn*sqrt(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
-           if (idiag_urm/=0)   call sum_mn_name(ur,idiag_urm)
-           if (idiag_upm/=0)   call sum_mn_name(up,idiag_upm)
-           if (idiag_ur2m/=0)  call sum_mn_name(ur**2,idiag_ur2m)
-           if (idiag_up2m/=0)  call sum_mn_name(up**2,idiag_up2m)
-           if (idiag_urupm/=0) call sum_mn_name(ur*up,idiag_urupm)
-           if (idiag_uzupm/=0) call sum_mn_name(p%uu(:,3)*up,idiag_uzupm)
-           if (idiag_uruzm/=0) call sum_mn_name(ur*p%uu(:,3),idiag_uruzm)
+           up=p%uu(:,1)*phix+p%uu(:,2)*phiy - p%uu_kep
+           if (idiag_urm/=0)   call sum_lim_mn_name(ur,idiag_urm)
+           if (idiag_upm/=0)   call sum_lim_mn_name(up,idiag_upm)
+           if (idiag_ur2m/=0)  call sum_lim_mn_name(ur**2,idiag_ur2m)
+           if (idiag_up2m/=0)  call sum_lim_mn_name(up**2,idiag_up2m)
+           if (idiag_urupm/=0) call sum_lim_mn_name(ur*up,idiag_urupm)
+           if (idiag_uzupm/=0) call sum_lim_mn_name(p%uu(:,3)*up,idiag_uzupm)
+           if (idiag_uruzm/=0) call sum_lim_mn_name(ur*p%uu(:,3),idiag_uruzm)
         endif
 
 !
