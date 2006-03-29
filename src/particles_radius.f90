@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.11 2005-11-29 14:58:50 ajohan Exp $
+! $Id: particles_radius.f90,v 1.12 2006-03-29 13:41:46 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -21,14 +21,14 @@ module Particles_radius
 
   include 'particles_radius.h'
 
-  real :: ap0=0.0
+  real :: ap0=0.0, vthresh_sweepup=0.0
   character (len=labellen), dimension(ninit) :: initap='nothing'
 
   namelist /particles_radius_init_pars/ &
-      initap, ap0, rhops
+      initap, ap0, rhops, vthresh_sweepup
 
   namelist /particles_radius_run_pars/ &
-      rhops
+      rhops, vthresh_sweepup
 
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0
@@ -50,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.11 2005-11-29 14:58:50 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.12 2006-03-29 13:41:46 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -155,27 +155,29 @@ module Particles_radius
         uu=f(ix0,iy0,iz0,iux:iuz)
 !  Relative speed.
         deltav=sqrt( (fp(k,ivpx)-uu(1))**2 + (fp(k,ivpy)-uu(2))**2 + (fp(k,ivpz)-uu(3))**2 )
-
-!  Concentration of small grains in the gas.
-        if (.not. lpscalar) then
-          call fatal_error('dap_dt','must have passive scalar module for sweep-up')
-        else
-          cc=f(ix0,iy0,iz0,ilncc)
-          if (.not. lpscalar_nolog) cc=exp(cc)
+!  Allow boulders to sweep up small grains if relative velocity not too high.
+        if (deltav<=vthresh_sweepup) then
+          if (.not. lpscalar) then
+            call fatal_error('dap_dt','must have passive scalar module for sweep-up')
+          else
+            cc=f(ix0,iy0,iz0,ilncc)
+            if (.not. lpscalar_nolog) cc=exp(cc)
 !  Radius increase due to sweep-up          
-          dfp(k,iap) = dfp(k,iap) + 0.25*deltav*cc*rho/rhops
+            dfp(k,iap) = dfp(k,iap) + 0.25*deltav*cc*rho/rhops
 !
 !  Deplete gas of small grains.
 !
-          call get_nptilde(fp,k,np_tilde)
-          if (lpscalar_nolog) then 
-            df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
-                np_tilde*pi*fp(k,iap)**2*deltav*cc
-          else
-            df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
-                np_tilde*pi*fp(k,iap)**2*deltav
+            call get_nptilde(fp,k,np_tilde)
+            if (lpscalar_nolog) then 
+              df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
+                  np_tilde*pi*fp(k,iap)**2*deltav*cc
+            else
+              df(ix0,iy0,iz0,ilncc) = df(ix0,iy0,iz0,ilncc) - &
+                  np_tilde*pi*fp(k,iap)**2*deltav
+            endif
           endif
         endif
+!
         if (ldiagnos) then
           if (idiag_dvp12m/=0) call sum_par_name((/deltav/),idiag_dvp12m)
         endif
