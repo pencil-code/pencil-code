@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.12 2006-03-29 13:41:46 ajohan Exp $
+! $Id: particles_radius.f90,v 1.13 2006-03-29 13:55:32 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -21,7 +21,7 @@ module Particles_radius
 
   include 'particles_radius.h'
 
-  real :: ap0=0.0, vthresh_sweepup=0.0
+  real :: ap0=0.0, vthresh_sweepup=-1.0
   character (len=labellen), dimension(ninit) :: initap='nothing'
 
   namelist /particles_radius_init_pars/ &
@@ -50,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.12 2006-03-29 13:41:46 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.13 2006-03-29 13:55:32 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -156,7 +156,7 @@ module Particles_radius
 !  Relative speed.
         deltav=sqrt( (fp(k,ivpx)-uu(1))**2 + (fp(k,ivpy)-uu(2))**2 + (fp(k,ivpz)-uu(3))**2 )
 !  Allow boulders to sweep up small grains if relative velocity not too high.
-        if (deltav<=vthresh_sweepup) then
+        if (deltav<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
           if (.not. lpscalar) then
             call fatal_error('dap_dt','must have passive scalar module for sweep-up')
           else
