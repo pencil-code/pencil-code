@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.160 2006-02-21 18:23:15 brandenb Exp $
+! $Id: register.f90,v 1.161 2006-03-29 22:34:12 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -704,6 +704,7 @@ module Register
         idiag_t=0; idiag_it=0; idiag_dt=0; idiag_walltime=0
         idiag_timeperstep=0
         idiag_rcylmphi=0; idiag_phimphi=0; idiag_zmphi=0; idiag_rmphi=0
+        idiag_dtv=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -713,6 +714,7 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'t',idiag_t)
         call parse_name(iname,cname(iname),cform(iname),'it',idiag_it)
         call parse_name(iname,cname(iname),cform(iname),'dt',idiag_dt)
+        call parse_name(iname,cname(iname),cform(iname),'dtv',idiag_dtv)
         call parse_name(iname,cname(iname),cform(iname),&
             'walltime',idiag_walltime)
         call parse_name(iname,cname(iname),cform(iname),&
@@ -749,6 +751,7 @@ module Register
         write(3,*) 'i_phimphi=',idiag_phimphi
         write(3,*) 'i_zmphi=',idiag_zmphi
         write(3,*) 'i_rmphi=',idiag_rmphi
+        write(3,*) 'i_dtv=',idiag_dtv
         write(3,*) 'nname=',nname
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.24 2006-02-08 14:24:26 mee Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.25 2006-03-29 22:34:12 mee Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -39,7 +39,6 @@ module Hydro
        Omega,initpower
 
   ! run parameters
-  real :: theta=0.
   real :: tdamp=0.,dampu=0.,wdamp=0.2
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.
@@ -97,7 +96,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.24 2006-02-08 14:24:26 mee Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.25 2006-03-29 22:34:12 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -615,73 +614,88 @@ module Hydro
       real :: umx,umy,umz
       integer :: l,j
 !
+!  For vector output (of oo vectors) we need orms 
+!  on all processors. It suffices to have this for times when lout=.true.,
+!  but we need to broadcast the result to all procs.
+!
+!
+!  calculate orms (this requires that orms is set in print.in)
+!  broadcast result to other processors
+!
+      if (idiag_orms/=0) then
+        if (iproc==0) orms=fname(idiag_orms)
+        call mpibcast_real(orms,1)
+      endif
+
+      if (.not.lroot) return
+!
 !  Magnetic energy in vertically averaged field
 !  The uymxy and uzmxy must have been calculated,
 !  so they are present on the root processor.
 !
-        if (idiag_umx/=0) then
-          if(idiag_uymxy==0.or.idiag_uzmxy==0) then
-            if(first) print*,"calc_mflow:                WARNING"
-            if(first) print*, &
-                    "calc_mflow: NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
-            if(first) print*, &
-                    "calc_mflow:       We proceed, but you'll get umx=0"
-            umx=0.
-          else
-            do l=1,nx
-              uxmx(l)=sum(fnamexy(l,:,:,idiag_uxmxy))/(ny*nprocy)
-              uymx(l)=sum(fnamexy(l,:,:,idiag_uymxy))/(ny*nprocy)
-              uzmx(l)=sum(fnamexy(l,:,:,idiag_uzmxy))/(ny*nprocy)
-            enddo
-            umx=sqrt(sum(uxmx**2+uymx**2+uzmx**2)/nx)
-          endif
-          call save_name(umx,idiag_umx)
+      if (idiag_umx/=0) then
+        if(idiag_uymxy==0.or.idiag_uzmxy==0) then
+          if(first) print*,"calc_mflow:                WARNING"
+          if(first) print*, &
+                  "calc_mflow: NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
+          if(first) print*, &
+                  "calc_mflow:       We proceed, but you'll get umx=0"
+          umx=0.
+        else
+          do l=1,nx
+            uxmx(l)=sum(fnamexy(l,:,:,idiag_uxmxy))/(ny*nprocy)
+            uymx(l)=sum(fnamexy(l,:,:,idiag_uymxy))/(ny*nprocy)
+            uzmx(l)=sum(fnamexy(l,:,:,idiag_uzmxy))/(ny*nprocy)
+          enddo
+          umx=sqrt(sum(uxmx**2+uymx**2+uzmx**2)/nx)
         endif
+        call save_name(umx,idiag_umx)
+      endif
 !
 !  similarly for umy
 !
-        if (idiag_umy/=0) then
-          if(idiag_uxmxy==0.or.idiag_uzmxy==0) then
-            if(first) print*,"calc_mflow:                WARNING"
-            if(first) print*, &
-                    "calc_mflow: NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
-            if(first) print*, &
-                    "calc_mflow:       We proceed, but you'll get umy=0"
-            umy=0.
-          else
-            do j=1,nprocy
-            do m=1,ny
-              uxmy(m,j)=sum(fnamexy(:,m,j,idiag_uxmxy))/nx
-              uymy(m,j)=sum(fnamexy(:,m,j,idiag_uymxy))/nx
-              uzmy(m,j)=sum(fnamexy(:,m,j,idiag_uzmxy))/nx
-            enddo
-            enddo
-            umy=sqrt(sum(uxmy**2+uymy**2+uzmy**2)/(ny*nprocy))
-          endif
-          call save_name(umy,idiag_umy)
+      if (idiag_umy/=0) then
+        if(idiag_uxmxy==0.or.idiag_uzmxy==0) then
+          if(first) print*,"calc_mflow:                WARNING"
+          if(first) print*, &
+                  "calc_mflow: NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
+          if(first) print*, &
+                  "calc_mflow:       We proceed, but you'll get umy=0"
+          umy=0.
+        else
+          do j=1,nprocy
+          do m=1,ny
+            uxmy(m,j)=sum(fnamexy(:,m,j,idiag_uxmxy))/nx
+            uymy(m,j)=sum(fnamexy(:,m,j,idiag_uymxy))/nx
+            uzmy(m,j)=sum(fnamexy(:,m,j,idiag_uzmxy))/nx
+          enddo
+          enddo
+          umy=sqrt(sum(uxmy**2+uymy**2+uzmy**2)/(ny*nprocy))
         endif
+        call save_name(umy,idiag_umy)
+      endif
 !
 !  Magnetic energy in horizontally averaged field
 !  The uxmz and uymz must have been calculated,
 !  so they are present on the root processor.
 !
-        if (idiag_umz/=0) then
-          if(idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
-            if(first) print*,"calc_mflow:               WARNING"
-            if(first) print*, &
-                    "calc_mflow: NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
-            if(first) print*, &
-                    "calc_mflow:       This may be because we renamed zaver.in into xyaver.in"
-            if(first) print*, &
-                    "calc_mflow:       We proceed, but you'll get umz=0"
-            umz=0.
-          else
-            umz=sqrt(sum(fnamez(:,:,idiag_uxmz)**2 &
-                        +fnamez(:,:,idiag_uymz)**2 &
-                        +fnamez(:,:,idiag_uzmz)**2)/(nz*nprocz))
-          endif
-          call save_name(umz,idiag_umz)
+      if (idiag_umz/=0) then
+        if(idiag_uxmz==0.or.idiag_uymz==0.or.idiag_uzmz==0) then
+          if(first) print*,"calc_mflow:               WARNING"
+          if(first) print*, &
+                  "calc_mflow: NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
+          if(first) print*, &
+                  "calc_mflow:       This may be because we renamed zaver.in into xyaver.in"
+          if(first) print*, &
+                  "calc_mflow:       We proceed, but you'll get umz=0"
+          umz=0.
+        else
+          umz=sqrt(sum(fnamez(:,:,idiag_uxmz)**2 &
+                      +fnamez(:,:,idiag_uymz)**2 &
+                      +fnamez(:,:,idiag_uzmz)**2)/(nz*nprocz))
         endif
+        call save_name(umz,idiag_umz)
+      endif
 !
       first = .false.
     endsubroutine calc_mflow

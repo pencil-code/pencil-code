@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.279 2006-03-28 21:52:27 wlyra Exp $
+! $Id: equ.f90,v 1.280 2006-03-29 22:34:12 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.279 2006-03-28 21:52:27 wlyra Exp $")
+           "$Id: equ.f90,v 1.280 2006-03-29 22:34:12 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -749,11 +749,11 @@ module Equ
         if (lwrite_zaverages) call zaverages_xy
         if (lwrite_phiaverages) call phiaverages_rz
       endif
+      if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
 !
 !  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
 !  (Of course, yaverages_xz does not need to be calculated for that.)
 !
-      if (.not.l2davgfirst.and.(idiag_bmx+idiag_bmy)>0) then
         if (lwrite_zaverages) call zaverages_xy
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.51 2006-03-23 05:55:08 brandenb Exp $
+! $Id: nohydro.f90,v 1.52 2006-03-29 22:34:12 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -23,9 +23,6 @@ module Hydro
 
   include 'hydro.h'
 
-  real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
-  real :: nu_turb=0.,nu_turb0=0.,tau_nuturb=0.,nu_turb1=0.
-  logical :: lcalc_turbulence_pars=.false.
   real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
   real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0
@@ -36,13 +33,12 @@ module Hydro
   !namelist /hydro_init_pars/ dummyuu
   !namelist /hydro_run_pars/  dummyuu
 
-  real :: theta=0.
   real :: Hp,cs_ave,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
-  integer :: idiag_dtu=0,idiag_dtv=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
+  integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0
   integer :: idiag_uzmax=0,idiag_orms=0,idiag_omax=0
   integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0,idiag_oumphi=0
@@ -76,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.51 2006-03-23 05:55:08 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.52 2006-03-29 22:34:12 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -721,7 +717,7 @@ module Hydro
 !
       if (lreset) then
         idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
-        idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0; idiag_dtv=0
+        idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0
         idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0;
         idiag_orms=0; idiag_omax=0; idiag_oumphi=0
         idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
@@ -744,7 +740,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'o2m',idiag_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',idiag_oum)
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
-        call parse_name(iname,cname(iname),cform(iname),'dtv',idiag_dtv)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
         call parse_name(iname,cname(iname),cform(iname),'uzrms',idiag_uzrms)
@@ -783,7 +778,6 @@ module Hydro
         write(3,*) 'i_o2m=',idiag_o2m
         write(3,*) 'i_oum=',idiag_oum
         write(3,*) 'i_dtu=',idiag_dtu
-        write(3,*) 'i_dtv=',idiag_dtv
         write(3,*) 'i_urms=',idiag_urms
         write(3,*) 'i_umax=',idiag_umax
         write(3,*) 'i_uzrms=',idiag_uzrms

@@ -15,7 +15,12 @@
   public :: pert_aa, rescaling
 
 !ajwm SHOULDN'T BE SHARED
-  public :: brms, idiag_brms, idiag_bmx, idiag_bmy
+!
+! Used to get parameters into nohydro for kinematic dynamo simualtions!
+!
   public :: ABC_A, KZ_AA, ABC_C, KY_AA, ABC_B, KX_AA
+!
+!ajwm  Are these totally dead now? [29-03-06]
+!
   !public :: eta !(needed for alpm [20-11-04/axel])
   !public :: meanfield_EMFdotB !(needed for alpm [20-11-04/axel])

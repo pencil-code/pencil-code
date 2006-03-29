@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.294 2006-03-21 11:37:50 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.295 2006-03-29 22:34:12 mee Exp $
 
 module Cdata
 
@@ -83,8 +83,12 @@ module Cdata
   real :: UUmax=0.
   real :: x0,y0,z0,Lx,Ly,Lz
   real :: grads0=0.   ! (1/c_p)ds/dz
-  real :: Omega=0.,qshear=0.,Sshear=impossible
+! Rotation parameters (set by Hydro)
+  real :: Omega=0., theta=0.
+! Shear parameters (set by Hydro)
+  real :: qshear=0.,Sshear=impossible
   real :: deltay=0. !(for shear; also used in forcing and output)
+!
   real, dimension(3,1) :: coeff_grid=1.0
   real, dimension(3,2) :: xyz_step,xi_step_frac,xi_step_width=1.5
   real :: zeta_grid0=0.
@@ -166,6 +170,7 @@ module Cdata
   integer :: idiag_t=0,idiag_it=0,idiag_dt=0
   integer :: idiag_walltime=0,idiag_timeperstep=0
   integer :: idiag_rcylmphi=0,idiag_phimphi=0,idiag_zmphi=0,idiag_rmphi=0
+  integer :: idiag_dtv=0
   integer :: idiag_nu_LES=0
 
   !  initialization of various switches; actual settings depends on the
@@ -193,6 +198,7 @@ module Cdata
   logical :: ldiagnos=.false.,lvid=.false.,lwrite_prof=.true.
   logical :: l2davg=.false.,l2davgfirst=.false.
   logical :: lwrite_yaverages=.true.,lwrite_zaverages=.true.,lwrite_phiaverages=.true.
+  logical :: ldiagnos_need_zaverages=.false.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
@@ -279,6 +285,10 @@ module Cdata
   logical :: ltop_velocity_kep=.false.
   logical :: laccelerat_zone=.false.
   logical :: ldecelerat_zone=.false.
+!
+! Anders turbulence parameter stuff
+!
+  logical :: lcalc_turbulence_pars=.false.
 
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg

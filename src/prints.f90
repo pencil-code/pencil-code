@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.78 2006-01-02 12:13:46 ajohan Exp $
+! $Id: prints.f90,v 1.79 2006-03-29 22:34:12 mee Exp $
 
 module Print
 
@@ -94,9 +94,13 @@ public :: write_zaverages
         if (idiag_t/=0)   call save_name(tdiagnos,idiag_t)
         if (idiag_dt/=0)  call save_name(dt,idiag_dt)
         if (idiag_it/=0)  call save_name(1.*(it-1),idiag_it)
-        if (lmagnetic) call calc_mfield
-        if (lhydro)    call calc_mflow
-        if (lpscalar)  call calc_mpscalar
+      endif
+
+      if (lmagnetic) call calc_mfield
+      if (lhydro)    call calc_mflow
+      if (lpscalar)  call calc_mpscalar
+
+      if (lroot) then
 !
 !  whenever itype_name=ilabel_max_dt, scale result by dt (for printing
 !  Courant time). This trick is necessary, because dt is not known at the
@@ -165,26 +169,6 @@ public :: write_zaverages
         close(1)
 !
       endif                     ! (lroot)
-!
-!  For vector output (of bb or oo vectors) we need brms and orms
-!  on all processors. It suffices to have these for times when lout=.true.,
-!  but we need to broadcast the result to all procs.
-!
-!  calculate brms (this requires that brms is set in print.in)
-!  broadcast result to other processors
-!
-      if (idiag_brms/=0) then
-        if (iproc==0) brms=fname(idiag_brms)
-        call mpibcast_real(brms,1)
-      endif
-!
-!  calculate orms (this requires that orms is set in print.in)
-!  broadcast result to other processors
-!
-      if (idiag_orms/=0) then
-        if (iproc==0) orms=fname(idiag_orms)
-        call mpibcast_real(orms,1)
-      endif
 !
 !  calculate mean emf (this requires i_... to be set in xyaver.in)
 !

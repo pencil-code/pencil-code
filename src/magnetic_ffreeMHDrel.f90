@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.34 2005-07-05 16:21:42 mee Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.35 2006-03-29 22:34:12 mee Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -107,7 +107,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.34 2005-07-05 16:21:42 mee Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.35 2006-03-29 22:34:12 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -656,6 +656,11 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',idiag_bzmxy)
       enddo
 !
+! Currently need to force zaverage calculation at every lout step for
+! bmx and bmy.
+!
+      if ((idiag_bmx+idiag_bmy)>0) ldiagnos_need_zaverages=.true.
+!
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
@@ -725,69 +730,83 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       real :: bmx,bmy,bmz
       integer :: l,j
 !
+!  For vector output (of bb vectors) we need brms 
+!  on all processors. It suffices to have this for times when lout=.true.,
+!  but we need to broadcast the result to all procs.
+!
+!  calculate brms (this requires that brms is set in print.in)
+!  broadcast result to other processors
+!
+      if (idiag_brms/=0) then
+        if (iproc==0) brms=fname(idiag_brms)
+        call mpibcast_real(brms,1)
+      endif
+
+      if (.not.lroot) return
+!
 !  Magnetic energy in vertically averaged field
 !  The bymxy and bzmxy must have been calculated,
 !  so they are present on the root processor. 
 !
-        if (idiag_bmx/=0) then
-          if(idiag_bymxy==0.or.idiag_bzmxy==0) then
-            if(first) print*,"calc_mfield:                  WARNING"
-            if(first) print*, &
-                    "calc_mfield: NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
-            if(first) print*, &
-                    "calc_mfield:       We proceed, but you'll get bmx=0"
-            bmx=0.
-          else
-            do l=1,nx
-              bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
-              bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
-            enddo
-            bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
-          endif
-          call save_name(bmx,idiag_bmx)
+      if (idiag_bmx/=0) then
+        if(idiag_bymxy==0.or.idiag_bzmxy==0) then
+          if(first) print*,"calc_mfield:                  WARNING"
+          if(first) print*, &
+                  "calc_mfield: NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
+          if(first) print*, &
+                  "calc_mfield:       We proceed, but you'll get bmx=0"
+          bmx=0.
+        else
+          do l=1,nx
+            bymx(l)=sum(fnamexy(l,:,:,idiag_bymxy))/(ny*nprocy)
+            bzmx(l)=sum(fnamexy(l,:,:,idiag_bzmxy))/(ny*nprocy)
+          enddo
+          bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
         endif
+        call save_name(bmx,idiag_bmx)
+      endif
 !
 !  similarly for bmy
 !
-        if (idiag_bmy/=0) then
-          if(idiag_bxmxy==0.or.idiag_bzmxy==0) then
-            if(first) print*,"calc_mfield:                  WARNING"
-            if(first) print*, &
-                    "calc_mfield: NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
-            if(first) print*, &
-                    "calc_mfield:       We proceed, but you'll get bmy=0"
-            bmy=0.
-          else
-            do j=1,nprocy
-            do m=1,ny
-              bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
-              bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
-            enddo
-            enddo
-            bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
-          endif
-          call save_name(bmy,idiag_bmy)
-        endif 
+      if (idiag_bmy/=0) then
+        if(idiag_bxmxy==0.or.idiag_bzmxy==0) then
+          if(first) print*,"calc_mfield:                  WARNING"
+          if(first) print*, &
+                  "calc_mfield: NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
+          if(first) print*, &
+                  "calc_mfield:       We proceed, but you'll get bmy=0"
+          bmy=0.
+        else
+          do j=1,nprocy
+          do m=1,ny
+            bxmy(m,j)=sum(fnamexy(:,m,j,idiag_bxmxy))/nx
+            bzmy(m,j)=sum(fnamexy(:,m,j,idiag_bzmxy))/nx
+          enddo
+          enddo
+          bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
+        endif
+        call save_name(bmy,idiag_bmy)
+      endif 
 !
 !  Magnetic energy in horizontally averaged field
 !  The bxmz and bymz must have been calculated,
 !  so they are present on the root processor.
 !
-        if (idiag_bmz/=0) then
-          if(idiag_bxmz==0.or.idiag_bymz==0) then
-            if(first) print*,"calc_mfield:                  WARNING"
-            if(first) print*, &
-                    "calc_mfield: NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
-            if(first) print*, &
-                    "calc_mfield:       This may be because we renamed zaver.in into xyaver.in"
-            if(first) print*, &
-                    "calc_mfield:       We proceed, but you'll get bmz=0"
-            bmz=0.
-          else
-            bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2+fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
-          endif
-          call save_name(bmz,idiag_bmz)
+      if (idiag_bmz/=0) then
+        if(idiag_bxmz==0.or.idiag_bymz==0) then
+          if(first) print*,"calc_mfield:                  WARNING"
+          if(first) print*, &
+                  "calc_mfield: NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
+          if(first) print*, &
+                  "calc_mfield:       This may be because we renamed zaver.in into xyaver.in"
+          if(first) print*, &
+                  "calc_mfield:       We proceed, but you'll get bmz=0"
+          bmz=0.
+        else
+          bmz=sqrt(sum(fnamez(:,:,idiag_bxmz)**2+fnamez(:,:,idiag_bymz)**2)/(nz*nprocz))
         endif
+        call save_name(bmz,idiag_bmz)
+      endif
 !
       first = .false.
     endsubroutine calc_mfield
