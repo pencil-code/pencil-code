@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.167 2006-03-22 17:52:40 theine Exp $
+### $Id: Makefile.src,v 1.168 2006-03-29 16:35:52 tarek Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -184,8 +184,8 @@ LIBMPISUFFIX=
 #FC=fort -I/usr/lib/lam/include #(mhd)
 #FC=mpif90 #(Nunatak[0-9])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
-#FC=ifc #(mmtf|nl19)
-#FC=ifort -I/usr/include/lam -L/usr/lib/lam/lib #(mmtf|nl19)
+#FC=ifc #(nl19)
+#FC=ifort -I/usr/include/lam -L/usr/lib/lam/lib #(nl19)
 #FC=/opt/intel/compiler60/ia32/bin/ifc -I/usr/lib/lam/include #(taspd209a)
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
 #LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
@@ -193,7 +193,6 @@ LIBMPISUFFIX=
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
-#FC=f95 #(karbala)
 #FC=pgf90 #(tycho|linux29|monolith)
 #FC=ifort #(erland|bohm|igor|onsager|char)
 #FC=ifort  #(co-login)
@@ -252,7 +251,7 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
 #CFLAGS=-DFUNDERSC=1 #(obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
-#F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern|renton|lanark)
+#F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|morvern|renton|lanark)
 #F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
 #F77=$(FC) -lm  #(tycho|monolith)
 #F77=$(FC) #(erland|bohm|igor|onsager)
@@ -395,6 +394,15 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
 #F90FLAGS=-qsuffix=f=f90 #(Nils)
 #CFLAGS=-O3 -DFUNDERSC=0 #(Nils)
+##
+## Tarek's laptop (PowerBook G4)
+##
+#FC=gfortran #(dendara|lapc|tay21)
+#FC=g95 -fno-second-underscore #(dendara|lapc|tay21)
+##FFLAGS=  -ftrace=full   #(dendara|lapc|tay21)
+#CC= gcc-3.3 -03 #(dendara|lapc|tay21)
+#FFLAGS= -O2 #(dendara|lapc|tay21)
+##LDMPI= -L${HOME}/opt/lib  #(dendara|lapc|tay21)
 
 
 ## SunOS:
