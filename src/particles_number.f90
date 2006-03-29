@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.6 2005-11-29 15:42:35 ajohan Exp $
+! $Id: particles_number.f90,v 1.7 2006-03-29 13:42:33 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -21,7 +21,7 @@ module Particles_number
 
   include 'particles_number.h'
 
-  real :: np_tilde0
+  real :: np_tilde0, vthresh_coagulation=0.0
   integer, dimension (mpar_loc) :: ineighbour
   integer, dimension (mx,my,mz) :: ishepherd
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
@@ -29,10 +29,10 @@ module Particles_number
   integer :: idiag_nptm=0, idiag_dvp22m=0
 
   namelist /particles_number_init_pars/ &
-      initnptilde
+      initnptilde, vthresh_coagulation
 
   namelist /particles_number_run_pars/ &
-      initnptilde
+      initnptilde, vthresh_coagulation
 
   contains
 
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.6 2005-11-29 15:42:35 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.7 2006-03-29 13:42:33 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -176,26 +176,35 @@ module Particles_number
                   (fp(k,ivpz)-fp(j,ivpz))**2 )
 !  Collision cross section.
               sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
-!  Smoluchowski equation for fragmentation.
+!  Smoluchowski equation between two superparticles.
               deltanptilde = -sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
-!  Colliding superparticles lose equal number of internal particles.            
-              dfp(j,inptilde) = dfp(j,inptilde) + deltanptilde
-              dfp(k,inptilde) = dfp(k,inptilde) + deltanptilde
-!  Put fragments in small grains.
-              if (lpscalar_nolog) then
-                rho=f(l,m,n,ilnrho)
-                if (.not. ldensity_nolog) rho=exp(rho)
-                df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
-                    1/rho*4/3.*pi*rhops* &
-                    (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+!  Either coagulation...
+              if (deltavp<=vthresh_coagulation) then
+                dfp(j,inptilde) = dfp(j,inptilde) + 0.5*deltanptilde
+                dfp(k,inptilde) = dfp(k,inptilde) + 0.5*deltanptilde
+                dfp(k,iap) = dfp(k,iap) - &
+                    1/3.*fp(k,iap)/fp(k,inptilde)*(0.5*deltanptilde)
+                dfp(j,iap) = dfp(j,iap) - &
+                    1/3.*fp(j,iap)/fp(j,inptilde)*(0.5*deltanptilde)
+!  ...or fragmentation.
               else
-                rho=f(l,m,n,ilnrho)
-                if (.not. ldensity_nolog) rho=exp(rho)
-                cc=f(l,m,n,ilncc)
-                if (.not. lpscalar_nolog) cc=exp(cc)
-                df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
-                    1/cc*1/rho*4/3.*pi*rhops* &
-                    (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+                dfp(j,inptilde) = dfp(j,inptilde) + deltanptilde
+                dfp(k,inptilde) = dfp(k,inptilde) + deltanptilde
+                if (lpscalar_nolog) then
+                  rho=f(l,m,n,ilnrho)
+                  if (.not. ldensity_nolog) rho=exp(rho)
+                  df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                      1/rho*4/3.*pi*rhops* &
+                      (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+                else
+                  rho=f(l,m,n,ilnrho)
+                  if (.not. ldensity_nolog) rho=exp(rho)
+                  cc=f(l,m,n,ilncc)
+                  if (.not. lpscalar_nolog) cc=exp(cc)
+                  df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                      1/cc*1/rho*4/3.*pi*rhops* &
+                      (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+                endif
               endif
             enddo
             k=ineighbour(k)
