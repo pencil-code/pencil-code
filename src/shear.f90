@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.30 2005-08-25 12:25:11 ajohan Exp $
+! $Id: shear.f90,v 1.31 2006-03-30 00:15:32 mee Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.30 2005-08-25 12:25:11 ajohan Exp $")
+           "$Id: shear.f90,v 1.31 2006-03-30 00:15:32 mee Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -138,9 +138,8 @@ module Shear
 ! 16-aug-02/axel: use now Sshear which is calculated in param_io.f90
 ! 20-aug-02/axel: added magnetic stretching term
 !
-      use Cparam
+      use Cdata
       use Deriv
-      use Hydro, only:theta
 !--   use Testfield, only:ntestfield
       integer, parameter :: ntestfield=36
 !
