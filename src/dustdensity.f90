@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.156 2006-02-22 09:11:30 ajohan Exp $
+! $Id: dustdensity.f90,v 1.157 2006-03-30 09:20:28 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -37,6 +37,7 @@ module Dustdensity
   real :: amplnd=1.,kx_nd=1.,ky_nd=1.,kz_nd=1.,widthnd=1.,Hnd=1.0,Hepsd=1.0
   real :: phase_nd=0.0,Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
+  real :: ul0=0.0,tl0=0.0,teta=0.0,ueta=0.0
   integer :: ind_extra
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
@@ -139,7 +140,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.156 2006-02-22 09:11:30 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.157 2006-03-30 09:20:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1331,14 +1332,17 @@ module Dustdensity
 !
 !  Calculate mass flux of condensing monomers
 !
-      use Hydro, only: ul0,tl0,teta,ueta,tl01,teta1
       use Sub
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: TT1
       real :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu,deltaud_drift2
-      real :: ust
+      real :: ust,tl01,teta1
       integer :: i,j,l
+!
+      tl01=1/tl0
+      teta1=1/teta
+!
       do l=1,nx
         if (lmdvar) md(:) = f(3+l,m,n,imd(:))
         if (lmice)  mi(:) = f(3+l,m,n,imi(:))

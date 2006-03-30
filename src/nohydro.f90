@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.52 2006-03-29 22:34:12 mee Exp $
+! $Id: nohydro.f90,v 1.53 2006-03-30 09:20:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -32,8 +32,6 @@ module Hydro
   integer :: KS_modes = 3
   !namelist /hydro_init_pars/ dummyuu
   !namelist /hydro_run_pars/  dummyuu
-
-  real :: Hp,cs_ave,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
@@ -72,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.52 2006-03-29 22:34:12 mee Exp $")
+           "$Id: nohydro.f90,v 1.53 2006-03-30 09:20:28 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -831,18 +829,6 @@ module Hydro
 !  19-jul-03/axel: adapted from hydro
 !
     endsubroutine calc_mflow
-!***********************************************************************
-    subroutine calc_turbulence_pars(f)
-!
-!  dummy routine
-!
-!  18-may-04/anders: adapted from hydro
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if(NO_WARN) print*,f  !(keep compiler quiet)
-!      
-    endsubroutine calc_turbulence_pars
 !***********************************************************************
 
 endmodule Hydro

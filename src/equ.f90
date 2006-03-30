@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.280 2006-03-29 22:34:12 mee Exp $
+! $Id: equ.f90,v 1.281 2006-03-30 09:20:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.280 2006-03-29 22:34:12 mee Exp $")
+           "$Id: equ.f90,v 1.281 2006-03-30 09:20:28 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -423,10 +423,6 @@ module Equ
       if (lvisc_hyper.or.lvisc_smagorinsky) then
         if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
       endif
-!
-!  Turbulence parameters (alpha, scale height, .., for Anders' accretion disks)
-!
-      if (lcalc_turbulence_pars) call calc_turbulence_pars(f)
 !
 !  Calculate averages for testfield procedure (only when lsoca=.false.)
 !

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.246 2006-03-29 22:34:12 mee Exp $
+! $Id: hydro.f90,v 1.247 2006-03-30 09:20:28 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -20,7 +20,7 @@ module Hydro
 !  Note that Omega is already defined in cdata.
 
   use Cparam
-  use Cdata, only: Omega, nu_turb, huge1, lcalc_turbulence_pars, theta
+  use Cdata, only: Omega, theta, huge1
 !!  use Density
   use Viscosity 
   use Messages
@@ -34,7 +34,6 @@ module Hydro
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
-  real :: nu_turb0=0.,tau_nuturb=0.,nu_turb1=0.
   real :: ampl_ux=0.0, ampl_uy=0.0, ampl_uz=0.0
   real :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
   real, dimension (ninit) :: ampluu=0.0
@@ -55,7 +54,6 @@ module Hydro
        inituu, widthuu, radiusuu, urand, &
        uu_left, uu_right, uu_lower, uu_upper,  kx_uu, ky_uu, kz_uu, coefuu, &
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
-       nu_turb0, tau_nuturb, nu_turb1, &
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
@@ -78,7 +76,7 @@ module Hydro
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot, &
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-       nu_turb0,tau_nuturb,nu_turb1,lcalc_turbulence_pars,lfreeze_uint, &
+       lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity
 
 
@@ -115,9 +113,6 @@ module Hydro
   integer :: idiag_fmassz=0, idiag_fkinz=0
   integer :: idiag_ur2m=0,idiag_up2m=0,idiag_urupm=0
   integer :: idiag_urm=0,idiag_upm=0,idiag_uzupm=0,idiag_uruzm=0
-
-! Turbulence parameters
-  real :: Hp,cs_ave,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
 
   contains
 
@@ -160,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.246 2006-03-29 22:34:12 mee Exp $")
+           "$Id: hydro.f90,v 1.247 2006-03-30 09:20:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1778,112 +1773,6 @@ module Hydro
 !
       first = .false.
     endsubroutine calc_mflow
-!***********************************************************************
-    subroutine calc_turbulence_pars(f)
-!
-!  Calculate turbulence parameters for a disc. 
-!  Currently only works in parallel when nprocy=1
-!
-!  18-may-04/anders: programmed
-!
-      use Cdata
-      use Cparam
-      use Mpicomm
-      use EquationOfState, only: pressure_gradient,eoscalc,ilnrho_ss
-      use Viscosity, only: nu_mol
-
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) ::lnrho,cs2,cp1tilde
-      real, dimension(1) :: cs_sum_allprocs_arr,Hp_arr
-      real :: cs_sum_thisproc,pp0,pp1,pp2
-!
-!  Calculate turbulent viscosity
-!
-      if (tau_nuturb == 0.) then
-        nu_turb = nu_turb0
-      else
-        nu_turb = nu_turb0*exp(-t/tau_nuturb)
-        if (nu_turb < nu_turb1) nu_turb = nu_turb1
-      endif
-!
-!  Calculate average sound speed in disc
-!
-      do m=m1,m2
-        do n=n1,n2
-          if (ldensity_nolog) then
-            lnrho=log(f(l1:l2,m,n,ilnrho))
-          else
-            lnrho=f(l1:l2,m,n,ilnrho)
-          endif
-          call pressure_gradient(f,cs2,cp1tilde)
-          cs_sum_thisproc = cs_sum_thisproc + sum(sqrt(cs2))
-        enddo
-      enddo
-!
-!  Get sum of cs_sum_thisproc_arr on all procs
-!
-      call mpireduce_sum((/ cs_sum_thisproc /),cs_sum_allprocs_arr,1)
-!
-!  Calculate average cs
-!        
-      if (lroot) cs_ave = cs_sum_allprocs_arr(1)/nwgrid
-!
-!  Send to all procs
-!          
-      call mpibcast_real(cs_ave,1)
-!
-!  Need mid-plane pressure for pressure scale height calculation
-!
-      if (iproc == nprocz/2) then
-        if (nprocz == 2*(nprocz/2)) then  ! Even no. of procs in z
-          call eoscalc(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
-              f(lpoint,mpoint,n1,iss),pp=pp0)
-        else                              ! Odd no. of procs in z
-          call eoscalc(ilnrho_ss,f(lpoint,mpoint,npoint,ilnrho),&
-              f(lpoint,mpoint,npoint,iss),pp=pp0)
-        endif
-      endif
-      call mpibcast_real(pp0,1,nprocz/2)
-!
-!  Find pressure scale height and calculate turbulence properties
-!
-      Hp = 0.
-      pp2 = 0.
-      do n=n1,n2
-        pp1 = pp2
-        call eoscalc(ilnrho_ss,f(lpoint,mpoint,n,ilnrho), &
-            f(lpoint,mpoint,n,iss),pp=pp2)
-        if (pp1 > 0.367879*pp0 .and. pp2 <= 0.367879*pp0) then
-!
-!  Interpolate linearly between z1 and z2 (P_1+(P_2-P_1)/dz*Delta z = 1/e*P_0)
-!          
-          Hp = z(n-1) + dz/(pp2-pp1)*(0.367879*pp0-pp1)
-          exit
-        endif
-      enddo
-!
-!  Broadcast scale height to all processors (Hp is 0 except where Hp is found)
-!
-      call mpireduce_sum((/ Hp /),Hp_arr,1)
-      if (lroot) Hp=Hp_arr(1)
-      call mpibcast_real(Hp,1)
-!  Shakury-Sunyaev alpha      
-      alphaSS = nu_turb/(Hp**2*Omega)
-!  Speed of largest scale      
-      ul0  = alphaSS*cs_ave
-!  Eddy turn over time of largest scale      
-      tl0  = Hp/ul0
-!  Energy dissipation rate for Kolmogorov spectrum      
-      eps_diss = nu_turb*(qshear*Omega)**2
-!  Speed of smallest (viscous) scale      
-      ueta = (nu_mol*eps_diss)**0.25
-!  Eddy turn over time of smallest (viscous) scale      
-      teta = (nu_mol/eps_diss)**0.5
-!  Auxiliary      
-      tl01 = 1/tl0
-      teta1 = 1/teta
-
-    endsubroutine calc_turbulence_pars
 !***********************************************************************
     subroutine velocity_step(f)
 !Natalia

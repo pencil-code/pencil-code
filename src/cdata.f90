@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.295 2006-03-29 22:34:12 mee Exp $
+! ! $Id: cdata.f90,v 1.296 2006-03-30 09:20:28 ajohan Exp $
 
 module Cdata
 
@@ -75,7 +75,6 @@ module Cdata
 !ajwm replaced nu, causes error in forcing to resolve
   real :: nu=0.,cmu,cnu2
 !ajwm moved here from hydro to remove dependence of entropy on Hydro
-  real :: nu_turb=0.
   real :: tdiagnos,t2davgfirst
 
 !! not used?  real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
@@ -285,10 +284,6 @@ module Cdata
   logical :: ltop_velocity_kep=.false.
   logical :: laccelerat_zone=.false.
   logical :: ldecelerat_zone=.false.
-!
-! Anders turbulence parameter stuff
-!
-  logical :: lcalc_turbulence_pars=.false.
 
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg

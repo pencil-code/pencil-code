@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.23 2005-07-05 16:21:43 mee Exp $
+! $Id: nohydro_file.f90,v 1.24 2006-03-30 09:20:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -35,8 +35,6 @@ module Hydro
 ! real :: u_out_kep=0.0
 ! real :: orms=0.
 
-! logical :: lcalc_turbulence_pars
-
   contains
 
 !***********************************************************************
@@ -62,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.23 $", &
-           "$Date: 2005-07-05 16:21:43 $")
+           "$Revision: 1.24 $", &
+           "$Date: 2006-03-30 09:20:28 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -256,19 +254,6 @@ module Hydro
 !  19-jul-03/axel: adapted from hydro
 !   
     endsubroutine calc_mflow
-!***********************************************************************
-    subroutine calc_turbulence_pars(f)
-!
-!  Dummy routine
-!
-!   9-jun-05/axel: adapted from hydro.f90
-!
-      use Cparam
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-!
-      if(ip==0) print*,f  !(keep compiler quiet)
-    endsubroutine calc_turbulence_pars
 !***********************************************************************
 
 endmodule Hydro

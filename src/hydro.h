@@ -8,13 +8,9 @@
   public :: init_uu, duu_dt, calc_pencils_hydro
   public :: pencil_criteria_hydro, pencil_interdep_hydro
 
-  public :: calc_mflow, calc_turbulence_pars
+  public :: calc_mflow
 
 !ajwm SHOULDN'T BE EXPORTED
-!
-! Anders's dust density dtuff??
-!
-  public :: ul0,tl0,teta,ueta,tl01,teta1
 !
 ! Keplerian velocity boundary condition parameters
 !    (needed by boundcond.f90)
