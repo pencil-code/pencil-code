@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.286 2006-03-29 22:34:12 mee Exp $
+! $Id: magnetic.f90,v 1.287 2006-03-30 13:52:54 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -185,7 +185,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.286 2006-03-29 22:34:12 mee Exp $")
+           "$Id: magnetic.f90,v 1.287 2006-03-30 13:52:54 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2209,7 +2209,7 @@ module Magnetic
 !  Optional argument `profile' allows to choose a different profile (see
 !  norm_ring())
 !
-      use Cdata
+      use Cdata, only: lroot, epsi
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,3)    :: tmpv
