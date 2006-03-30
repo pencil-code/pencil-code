@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.44 2006-02-09 13:44:15 karlsson Exp $
+! $Id: pscalar_nolog.f90,v 1.45 2006-03-30 12:20:27 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -44,11 +44,11 @@ module Pscalar
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
   real :: pscalar_sink=0., Rpscalar_sink=0.5
-  logical :: lpscalar_turb_diff,lpscalar_sink
+  logical :: lpscalar_sink
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0, &
-       reinitalize_lncc,lpscalar_turb_diff, &
+       reinitalize_lncc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink
 
   ! other variables (needs to be consistent with reset list below)
@@ -97,7 +97,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.44 2006-02-09 13:44:15 karlsson Exp $")
+           "$Id: pscalar_nolog.f90,v 1.45 2006-03-30 12:20:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -392,7 +392,6 @@ module Pscalar
 !
 !  diffusion operator
 !
-        if (lpscalar_turb_diff) pscalar_diff=nu_turb
         if (pscalar_diff/=0.) then
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
           call dot_mn(p%glnrho,p%gcc,diff_op)

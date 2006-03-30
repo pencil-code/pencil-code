@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.4 2006-02-16 12:51:45 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.5 2006-03-30 12:20:27 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.4 2006-02-16 12:51:45 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.5 2006-03-30 12:20:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2353,12 +2353,6 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !       profile_buffer=1.+0.5*(tanh(dheat_buffer1*(z(n)-z(n1)-zheat_buffer)) + tanh(dheat_buffer1*(z(n)-z(n2)-zheat_buffer)))
         heat=heat+profile_buffer*p%ss* &
             (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
-      endif
-!
-!  Parametrized turbulent heating
-!
-      if (lturbulent_heat) then
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*nu_turb*(qshear*Omega)**2
       endif
 !
 !  add to entropy equation

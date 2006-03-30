@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.157 2006-03-30 09:20:28 ajohan Exp $
+! $Id: dustdensity.f90,v 1.158 2006-03-30 12:20:27 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -44,7 +44,6 @@ module Dustdensity
   logical :: ludstickmax=.true.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
   logical :: ldustnulling=.false.,lupw_ndmdmi=.false.
-  logical :: lnd_turb_diff=.false.,lmd_turb_diff=.false.,lmi_turb_diff=.false.
   logical :: ldeltaud_thermal=.true., ldeltaud_turbulent=.true.
   logical :: ldiffusion_dust=.true.
   logical :: lreinit_dustvars_ndneg=.false.
@@ -61,8 +60,7 @@ module Dustdensity
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
-      idiffd, lnd_turb_diff, lmd_turb_diff, lmi_turb_diff, &
-      lreinit_dustvars_ndneg, lupw_ndmdmi
+      idiffd, lreinit_dustvars_ndneg, lupw_ndmdmi
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -140,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.157 2006-03-30 09:20:28 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.158 2006-03-30 12:20:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
