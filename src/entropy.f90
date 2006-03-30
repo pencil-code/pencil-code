@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.380 2006-03-30 12:20:27 ajohan Exp $
+! $Id: entropy.f90,v 1.381 2006-03-30 14:20:09 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.380 2006-03-30 12:20:27 ajohan Exp $")
+           "$Id: entropy.f90,v 1.381 2006-03-30 14:20:09 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1435,18 +1435,14 @@ module Entropy
       if (pretend_lnTT) lpenc_requested(i_divu)=.true.
       if (lheatc_simple) then 
         lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_glnrho)=.true.
-        lpenc_requested(i_gss)=.true.
-        lpenc_requested(i_del2lnrho)=.true.
-        lpenc_requested(i_del2ss)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
       endif
       if (lheatc_Kconst) then 
         if (hcond0/=0) then
           lpenc_requested(i_rho1)=.true.
-          lpenc_requested(i_glnrho)=.true.
-          lpenc_requested(i_gss)=.true.
-          lpenc_requested(i_del2lnrho)=.true.
-          lpenc_requested(i_del2ss)=.true.
+          lpenc_requested(i_glnTT)=.true.
+          lpenc_requested(i_del2lnTT)=.true.
         endif
         if (chi_t/=0) then
           lpenc_requested(i_del2ss)=.true.
@@ -1902,7 +1898,7 @@ module Entropy
 !
 !  diffusion of the form:
 !  rho*T*Ds/Dt = ... + nab.(rho*cp*chi*gradT)
-!  rho*T*Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
+!        Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
 !
       call dot(p%glnrho+p%glnTT,p%glnTT,g2)
       thdiff=cp*chi*(p%del2lnTT+g2)
@@ -2035,14 +2031,16 @@ module Entropy
 !  heat conduction
 !
 !   8-jul-02/axel: adapted from Wolfgang's more complex version
+!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
       use Cdata
       use Sub
+      use EquationOfState, only: cp
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnT,glnThcond !,glhc
+      !real, dimension (nx,3) :: glnT,glnThcond !,glhc
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond
@@ -2059,16 +2057,24 @@ module Entropy
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
-!  Corrected for cp /= 1 runs.  Note that as done at present, chix contains
-!   an `unnecessary' cp1 (it's effectively removed in the final calculation 
-!   of thdiff) - but having it present in chix makes the current diffus_chi 
-!   condition for dt_chi sensible.
 !
-      chix = p%rho1*hcond*p%cp1tilde                    ! chix = K/(cp rho)
-      glnT = gamma*p%gss*spread(p%cp1tilde,2,3) + gamma1*p%glnrho ! grad ln(T)
-      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-      call dot(glnT,glnThcond,g2)
-      thdiff = chix/p%cp1tilde * (gamma*p%del2ss*p%cp1tilde + gamma1*p%del2lnrho + g2)  
+      ! NB: the following left in for the record, but the version below,
+      !     using del2lnTT & glnTT, is simpler
+      !
+      !chix = p%rho1*hcond*p%cp1tilde                    ! chix = K/(cp rho)
+      !glnT = gamma*p%gss*spread(p%cp1tilde,2,3) + gamma1*p%glnrho ! grad ln(T)
+      !glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      !call dot(glnT,glnThcond,g2)
+      !thdiff =  p%rho1*hcond * (gamma*p%del2ss*p%cp1tilde + gamma1*p%del2lnrho + g2)  
+
+      !  diffusion of the form:
+      !  rho*T*Ds/Dt = ... + nab.(K*gradT)
+      !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT)^2]
+      !
+      ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
+      chix = p%rho1*hcond/cp   
+      call dot(p%glnTT,p%glnTT,g2)
+      thdiff = p%rho1*hcond * (p%del2lnTT + g2)  
 !
 !  add heat conduction to entropy equation
 !
@@ -2174,16 +2180,18 @@ module Entropy
 !
 !  17-sep-01/axel: coded
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
+!  30-mar-06/ngrs: simplified calculations using p%glnTT and p%del2lnTT
 !
       use Cdata
       use Sub
       use IO
       use Gravity
+      use EquationOfState, only: cp
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnT,glnThcond,glhc,glnP,glchit_prof
+      real, dimension (nx,3) :: glnThcond,glhc,glnP,glchit_prof !,glnT
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond,chit_prof
@@ -2218,12 +2226,25 @@ module Entropy
           call chit_profile(chit_prof)
           call gradlogchit_profile(glchit_prof)
         endif
-!       Corrected for cp /= 1
-        chix = p%rho1*hcond*p%cp1tilde
-        glnT = gamma*p%gss*spread(p%cp1tilde,2,3) + gamma1*p%glnrho        ! grad ln(T)
-        glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-        call dot(glnT,glnThcond,g2)
-        thdiff = chix * (gamma*p%del2ss*p%cp1tilde + gamma1*p%del2lnrho + g2)
+        !
+        ! NB: the following left in for the record, but the version below,
+        !     using del2lnTT & glnTT, is simpler
+        !
+        !chix = p%rho1*hcond*p%cp1tilde
+        !glnT = gamma*p%gss*spread(p%cp1tilde,2,3) + gamma1*p%glnrho        ! grad ln(T)
+        !glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+        !call dot(glnT,glnThcond,g2)
+        !thdiff = p%rho1*hcond * (gamma*p%del2ss*p%cp1tilde + gamma1*p%del2lnrho + g2)  
+
+        !  diffusion of the form:
+        !  rho*T*Ds/Dt = ... + nab.(K*gradT)
+        !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
+        !
+        ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
+        chix = p%rho1*hcond/cp
+        glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+        call dot(p%glnTT,glnThcond,g2)
+        thdiff = p%rho1*hcond * (p%del2lnTT + g2)  
       else
         chix = 0
         thdiff = 0
@@ -2240,7 +2261,7 @@ module Entropy
 !  Write radiative flux array
 !
       if (ldiagnos) then
-        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond*p%TT*glnT(:,3),idiag_fradz)
+        if (idiag_fradz/=0) call xysum_mn_name_z(-hcond*p%TT*p%glnTT(:,3),idiag_fradz)
         if (idiag_fturbz/=0) call xysum_mn_name_z(-chi_t*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
 !
@@ -2271,7 +2292,7 @@ module Entropy
         if (notanumber(p%del2lnrho)) print*,'calc_heatcond: NaNs in del2lnrho'
         if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
         if (notanumber(1/hcond))   print*,'calc_heatcond: NaNs in 1/hcond'
-        if (notanumber(glnT))      print*,'calc_heatcond: NaNs in glnT'
+        if (notanumber(p%glnTT))      print*,'calc_heatcond: NaNs in glnT'
         if (notanumber(glnThcond)) print*,'calc_heatcond: NaNs in glnThcond'
         if (notanumber(g2))        print*,'calc_heatcond: NaNs in g2'
         if (notanumber(thdiff))    print*,'calc_heatcond: NaNs in thdiff'
@@ -2296,6 +2317,8 @@ module Entropy
 !  check maximum diffusion from thermal diffusion
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss
+!  NB: the absence of a cp factor here is fine, if chix has been 
+!      defined above as chix = K/(rho c_p) = hcond*rho1*cp1 .
 !
       if (lfirst.and.ldt) then
         diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
