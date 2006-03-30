@@ -1,9 +1,9 @@
-; $Id: pc_read_pvar.pro,v 1.18 2006-01-04 12:50:32 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.19 2006-03-30 13:50:27 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
 pro pc_read_pvar, object=object, varfile=varfile, datadir=datadir, $
-    quiet=quiet, qquiet=qquiet
+    npar_max=npar_max, quiet=quiet, qquiet=qquiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -25,6 +25,7 @@ pc_set_precision, dim=dim, /quiet
 ;
 mpvar=pdim.mpvar
 npar=pdim.npar
+default, npar_max, npar
 ncpus=dim.nprocx*dim.nprocy*dim.nprocz
 ;
 ;  Time and grid parameters.
@@ -108,7 +109,7 @@ endfor
 ;
 ;  Define arrays for temporary storage of data.
 ;
-array=fltarr(npar,totalvars)*one
+array=fltarr(npar_max,totalvars)*one
 ipar=lonarr(npar)
 tarr=fltarr(ncpus)*one
 t=zero
@@ -165,7 +166,7 @@ for i=0,ncpus-1 do begin
 ;  Put local processor data into proper place in global data array
 ;        
     for k=0,npar_loc-1 do begin
-      array[ipar_loc[k]-1,*]=array_loc[k,*]
+      if (ipar_loc[k] lt npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
     endfor
 ;
   endif
