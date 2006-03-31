@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.381 2006-03-30 14:20:09 ngrs Exp $
+! $Id: entropy.f90,v 1.382 2006-03-31 13:23:01 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.381 2006-03-30 14:20:09 ngrs Exp $")
+           "$Id: entropy.f90,v 1.382 2006-03-31 13:23:01 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2275,8 +2275,12 @@ module Entropy
             call warning('calc_heatcond',"hcond0 and chi_t combined don't seem to make sense")
           endif
         endif
-        glnP=gamma*(p%gss+p%glnrho)
-        call dot(glnP+glchit_prof,p%gss,g2)
+        ! NB: the cp factor was previously omitted in the following calculation
+        !     of glnP (=glnrho+glnTT) -- but we might as well use glnTT 
+        !     directly now, since that pencil is now calculated.
+        !glnP=gamma*(p%gss/cp+p%glnrho)
+        !call dot(glnP+glchit_prof,p%gss,g2)
+        call dot(p%glnrho+p%glnTT+glchit_prof,p%gss,g2)
         !thdiff=thdiff+chi_t*(p%del2ss+g2)
         thdiff=thdiff+chi_t*chit_prof*(p%del2ss+g2)
       endif
@@ -2317,8 +2321,6 @@ module Entropy
 !  check maximum diffusion from thermal diffusion
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss
-!  NB: the absence of a cp factor here is fine, if chix has been 
-!      defined above as chix = K/(rho c_p) = hcond*rho1*cp1 .
 !
       if (lfirst.and.ldt) then
         diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
@@ -2783,10 +2785,14 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       real, dimension (nx,3) :: glhc
 !
       if (lgravz) then
-        glhc(:,1:2) = 0.
-        glhc(:,3) = (hcond1-1)*der_step(z_mn,z1,-widthss) &
-                    + (hcond2-1)*der_step(z_mn,z2,widthss)
-        glhc(:,3) = hcond0*glhc(:,3)
+        if (lmultilayer) then
+          glhc(:,1:2) = 0.
+          glhc(:,3) = (hcond1-1)*der_step(z_mn,z1,-widthss) &
+                      + (hcond2-1)*der_step(z_mn,z2,widthss)
+          glhc(:,3) = hcond0*glhc(:,3)
+        else
+          glhc = 0.
+        endif
       else
         glhc = 0.
       endif
@@ -2835,9 +2841,13 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       real, dimension (nx,3) :: glchit_prof
 !
       if (lgravz) then
-        glchit_prof(:,1:2) = 0.
-        glchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,z1,-widthss) &
-                         + (chit_prof2-1)*der_step(z_mn,z2,widthss)
+        if (lmultilayer) then
+          glchit_prof(:,1:2) = 0.
+          glchit_prof(:,3) = (chit_prof1-1)*der_step(z_mn,z1,-widthss) &
+                           + (chit_prof2-1)*der_step(z_mn,z2,widthss)
+        else
+          glchit_prof = 0.
+        endif
       else
         glchit_prof = 0.
       endif
