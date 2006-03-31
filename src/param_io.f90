@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.228 2006-03-21 11:37:50 nbabkovs Exp $ 
+! $Id: param_io.f90,v 1.229 2006-03-31 17:10:27 theine Exp $ 
 
 module Param_IO
 
@@ -916,7 +916,7 @@ module Param_IO
            lforcing,lgravz,lgravr,lshear, &
            ldustvelocity,ldustdensity,lradiation_fld,  &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-           leos,lspecial, ltestfield, &
+           leos,leos_temperature_ionization,lspecial, ltestfield, &
            lhydro_var, lentropy_var, ldensity_var, lshock_var, &
            lcosmicray_var, lcosmicrayflux_var, linterstellar_var, &
            lplanet_var,datadir
@@ -936,7 +936,7 @@ module Param_IO
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            lcosmicrayflux,ldustvelocity,ldustdensity,lshock,lradiation_fld, &
            leos_ionization,leos_fixed_ionization,lvisc_hyper,lchiral, &
-           lplanet,leos
+           lplanet,leos,leos_temperature_ionization
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories

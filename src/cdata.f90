@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.296 2006-03-30 09:20:28 ajohan Exp $
+! ! $Id: cdata.f90,v 1.297 2006-03-31 17:10:26 theine Exp $
 
 module Cdata
 
@@ -214,6 +214,7 @@ module Cdata
   logical :: lrescaling=.false.
   logical :: leos=.false., leos_idealgas=.false.
   logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
+  logical :: leos_temperature_ionization=.false.
   logical :: pretend_lnTT=.false.
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
