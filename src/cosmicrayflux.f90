@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.5 2006-02-08 14:05:14 mee Exp $
+! $Id: cosmicrayflux.f90,v 1.6 2006-03-31 17:05:37 mee Exp $
 
 !  Cosmic Ray Flux
 !  
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.5 2006-02-08 14:05:14 mee Exp $")
+           "$Id: cosmicrayflux.f90,v 1.6 2006-03-31 17:05:37 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -214,7 +214,6 @@ module Cosmicrayflux
       use Slices
       use Global, only: get_global
       use IO, only: output_pencil
-!      use Special, only: special_calc_magnetic
       use Mpicomm, only: stop_it
 !      use EquationOfState, only: eoscalc,gamma1
 !
