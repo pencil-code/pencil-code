@@ -1,0 +1,22 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  sample file for 1-D sound wave
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-03-31 17:16:19 theine Exp $'
+  nt=560, it1=20, dt=3., isave=50, itorder=3,
+  dsnap=20., dvid=5e-5,tmax=7e3, dtmin=1e-12
+  lwrite_aux=T
+  lpencil_check=F
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&entropy_run_pars
+  heat_uniform=1.
+  xHe=.1
+/
+&viscosity_run_pars
+  nu=0.0
+/
