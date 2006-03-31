@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.64 2006-03-15 02:31:52 dobler Exp $
+# CVS: $Id: start.csh,v 1.65 2006-03-31 11:01:16 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -40,6 +40,7 @@ if (! -d "$datadir") then
   echo ">>  but that will most likely end up on your NFS file system and be"
   echo ">>  slow"
   echo
+  rm -f LOCK
   exit 0
 endif
 
