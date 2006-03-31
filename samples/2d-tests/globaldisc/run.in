@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.16 2006-03-18 00:39:49 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.17 2006-03-31 03:08:36 wlyra Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -22,7 +22,6 @@ rho0= 1.
 /
 &hydro_run_pars
   wdamp=0. 
-  lcalc_turbulence_pars=F
   lfreeze_uint=T,lfreeze_uext=T
 /
 &density_run_pars
