@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.282 2006-04-01 01:21:15 dobler Exp $
+! $Id: equ.f90,v 1.283 2006-04-01 22:19:49 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.282 2006-04-01 01:21:15 dobler Exp $")
+           "$Id: equ.f90,v 1.283 2006-04-01 22:19:49 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -655,7 +655,7 @@ module Equ
             endif
             if ((ipz == nprocz-1) .and. (n == n2)) then
               do iv=1,nvar
-                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
               enddo
             endif
           endif
