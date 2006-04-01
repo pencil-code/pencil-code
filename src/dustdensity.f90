@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.159 2006-04-01 11:41:57 ajohan Exp $
+! $Id: dustdensity.f90,v 1.160 2006-04-01 14:29:36 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -41,7 +41,7 @@ module Dustdensity
   integer :: ind_extra
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
-  logical :: ludstickmax=.true.
+  logical :: ludstickmax=.false.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
   logical :: ldustnulling=.false.,lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
@@ -64,7 +64,7 @@ module Dustdensity
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
-  integer :: idiag_ssrm=0,idiag_ssrmax=0
+  integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdm=0
   integer, dimension(ndustspec) :: idiag_ndm=0,idiag_ndmin=0,idiag_ndmax=0
   integer, dimension(ndustspec) :: idiag_nd2m=0,idiag_rhodm=0,idiag_epsdrms=0
   integer, dimension(ndustspec) :: idiag_ndmx=0,idiag_rhodmz=0
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.159 2006-04-01 11:41:57 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.160 2006-04-01 14:29:36 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1046,10 +1046,12 @@ module Dustdensity
             df(l1:l2,m,n,imd(k)) + diffmd*p%del2md(:,k)
         if (lmice) df(l1:l2,m,n,imi(k)) = &
             df(l1:l2,m,n,imi(k)) + diffmi*p%del2mi(:,k)
+      enddo
 !
 !  Diagnostic output
 !
-        if (ldiagnos) then
+      if (ldiagnos) then
+        do k=1,ndustspec
           if (idiag_ndm(k)/=0) call sum_mn_name(p%nd(:,k),idiag_ndm(k))
           if (idiag_nd2m(k)/=0) call sum_mn_name(p%nd(:,k)**2,idiag_nd2m(k))
           if (idiag_ndmin(k)/=0) &
@@ -1122,12 +1124,16 @@ module Dustdensity
               call yzsum_mn_name_x(p%nd(:,k),idiag_ndmx(k))
             endif 
           endif
-        endif
+        enddo
+        if (idiag_adm) call sum_mn_name(sum(spread((md/(4/3.*pi))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
+        if (idiag_mdm) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
+      endif
 !
 !  Write md slices for use in Slices 
 !    (the variable md is not accesible to Slices)
 !
-        if (lvid .and. lfirst) then
+      if (lvid .and. lfirst) then
+        do k=1,ndustspec
           if (lmdvar) then
             md_yz(m-m1+1,n-n1+1,k) = f(ix,m,n,imd(k))
             if (m == iy)  md_xz(:,n-n1+1,k)  = f(l1:l2,iy,n,imd(k))
@@ -1139,11 +1145,8 @@ module Dustdensity
             md_xy(:,m-m1+1,k)  = md(k)
             md_xy2(:,m-m1+1,k) = md(k)
           endif
-        endif
-!
-!  End loop over dust layers
-!
-      enddo
+        enddo
+      endif
 !
     endsubroutine dndmd_dt
 !***********************************************************************
@@ -1378,43 +1381,41 @@ module Dustdensity
       integer :: i,j,k,l
 !
       do l=1,nx
-        do i=1,ndustspec
-          do j=i,ndustspec
-            dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
-            if (dndfac/=0.0) then
-              df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac
-              df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac
-              do k=j,ndustspec+1
-                if (p%md(l,i) + p%md(l,j) >= mdminus(k) &
-                    .and. p%md(l,i) + p%md(l,j) < mdplus(k)) then
-                  if (lmdvar) then
-                    df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac
-                    if (p%nd(l,k) == 0.) then
-                      f(3+l,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
-                    else
-                      df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) - &
-                          (p%md(l,i) + p%md(l,j) - p%md(l,k))*1/p%nd(l,k)*dndfac
-                    endif
-                    if (lmice) then
-                      if (p%nd(l,k) == 0.) then
-                        f(3+l,m,n,imi(k)) = p%mi(l,i) + p%mi(l,j)
-                      else
-                        df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) - &
-                            (p%mi(l,i) + p%mi(l,j) - p%mi(l,k))* &
-                            1/p%nd(l,k)*dndfac
-                      endif
-                    endif
-                    exit
+        do i=1,ndustspec; do j=i,ndustspec
+          dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
+          if (dndfac/=0.0) then
+            df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac
+            df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac
+            do k=j,ndustspec+1
+              if (p%md(l,i) + p%md(l,j) >= mdminus(k) &
+                  .and. p%md(l,i) + p%md(l,j) < mdplus(k)) then
+                if (lmdvar) then
+                  df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac
+                  if (p%nd(l,k) == 0.) then
+                    f(3+l,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
                   else
-                    df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - &
-                        dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k)
-                    exit
+                    df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) - &
+                        (p%md(l,i) + p%md(l,j) - p%md(l,k))*1/p%nd(l,k)*dndfac
                   endif
+                  if (lmice) then
+                    if (p%nd(l,k) == 0.) then
+                      f(3+l,m,n,imi(k)) = p%mi(l,i) + p%mi(l,j)
+                    else
+                      df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) - &
+                          (p%mi(l,i) + p%mi(l,j) - p%mi(l,k))* &
+                          1/p%nd(l,k)*dndfac
+                    endif
+                  endif
+                  exit
+                else
+                  df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - &
+                      dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k)
+                  exit
                 endif
-              enddo
-            endif
-          enddo
-        enddo
+              endif
+            enddo
+          endif
+        enddo; enddo
       enddo
 !
     endsubroutine dust_coagulation
@@ -1535,7 +1536,7 @@ module Dustdensity
       if (lreset) then
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
-        idiag_rhodmz=0; idiag_ndmx=0
+        idiag_rhodmz=0; idiag_ndmx=0; idiag_adm=0; idiag_mdm=0
       endif
 
       call chn(ndustspec,sdustspec)
@@ -1590,14 +1591,9 @@ module Dustdensity
         call parse_name(iname,cname(iname),cform(iname),'rhoimt',idiag_rhoimt)
         call parse_name(iname,cname(iname),cform(iname),'ssrm',idiag_ssrm)
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',idiag_ssrmax)
+        call parse_name(iname,cname(iname),cform(iname),'adm',idiag_adm)
+        call parse_name(iname,cname(iname),cform(iname),'mdm',idiag_mdm)
       enddo
-      if (lwr) then
-        if (idiag_ndmt/=0)   write(3,*) 'i_ndmt=',idiag_ndmt
-        if (idiag_rhodmt/=0) write(3,*) 'i_rhodmt=',idiag_rhodmt
-        if (idiag_rhoimt/=0) write(3,*) 'i_rhoimt=',idiag_rhoimt
-        if (idiag_ssrm/=0)   write(3,*) 'i_ssrm=',idiag_ssrm
-        if (idiag_ssrmax/=0) write(3,*) 'i_ssrmax=',idiag_ssrmax
-      endif
 !
 !  Write dust index in short notation
 !      
