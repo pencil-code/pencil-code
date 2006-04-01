@@ -3,8 +3,9 @@
 !  sample file for 1-D sound wave
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-03-31 17:16:19 theine Exp $'
-  nt=560, it1=20, dt=3., isave=50, itorder=3,
+  cvsid='$Id: run.in,v 1.2 2006-04-01 07:36:52 brandenb Exp $'
+  !nt=560, it1=20, dt=3., isave=50, itorder=3,
+  nt=100, it1=20, dt=3., isave=50, itorder=3,
   dsnap=20., dvid=5e-5,tmax=7e3, dtmin=1e-12
   lwrite_aux=T
   lpencil_check=F
