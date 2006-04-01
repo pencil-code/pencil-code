@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.281 2006-03-30 09:20:28 ajohan Exp $
+! $Id: equ.f90,v 1.282 2006-04-01 01:21:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.281 2006-03-30 09:20:28 ajohan Exp $")
+           "$Id: equ.f90,v 1.282 2006-04-01 01:21:15 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -606,13 +606,16 @@ module Equ
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
               ' : ', lfreeze_varint
           if (lcylindrical) then
-             pfreeze_int  = quintic_step(rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+            pfreeze_int = &
+                quintic_step(rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           else
-             pfreeze_int  = quintic_step(r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
+            pfreeze_int = &
+                quintic_step(r_mn   ,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
           endif
 !          
           do iv=1,nvar
-            if (lfreeze_varint(iv)) df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
+            if (lfreeze_varint(iv)) &
+                df(l1:l2,m,n,iv) = pfreeze_int*df(l1:l2,m,n,iv)
           enddo
         endif
 
@@ -621,35 +624,42 @@ module Equ
               print*, 'pde: freezing variables for r > ', rfreeze_ext, &
               ' : ', lfreeze_varext
           if (lcylindrical) then
-             pfreeze_ext  = 1-quintic_step(rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+            pfreeze_ext = &
+                1-quintic_step(rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
           else
-             pfreeze_ext  = 1-quintic_step(r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
+            pfreeze_ext = &
+                1-quintic_step(r_mn   ,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
           endif
 !
           do iv=1,nvar
-            if (lfreeze_varext(iv)) df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
+            if (lfreeze_varext(iv)) &
+                df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
           enddo
         endif
-
-
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'
 !
+!  freezing boundary conditions in z
+!
         if (lfrozen_bcs_z) then ! are there any frozen vars at all?
 !
-! Only need to do this for nonperiodic z direction, on bottommost
-! processor and in bottommost pencils
+! Only need to do this for nonperiodic z direction, on bottom/top-most
+! processor and in bottom/top-most pencils
 !
-          if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
-            do iv=1,nvar
-              if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-!
-!  This can never work [wd]:
-!
-              if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-            enddo
+          if (.not. lperi(3)) then
+            if ((ipz == 0) .and. (n == n1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if ((ipz == nprocz-1) .and. (n == n2)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
           endif
+!
         endif
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
