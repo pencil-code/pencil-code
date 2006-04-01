@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.160 2006-04-01 14:29:36 ajohan Exp $
+! $Id: dustdensity.f90,v 1.161 2006-04-01 22:19:05 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.160 2006-04-01 14:29:36 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.161 2006-04-01 22:19:05 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1125,8 +1125,8 @@ module Dustdensity
             endif 
           endif
         enddo
-        if (idiag_adm) call sum_mn_name(sum(spread((md/(4/3.*pi))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
-        if (idiag_mdm) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
+        if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
+        if (idiag_mdm/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2)/sum(p%nd,2), idiag_mdm)
       endif
 !
 !  Write md slices for use in Slices 
