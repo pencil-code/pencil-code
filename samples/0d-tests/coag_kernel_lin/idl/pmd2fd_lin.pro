@@ -1,4 +1,4 @@
-; $Id: pmd2fd_lin.pro,v 1.4 2005-06-26 17:34:18 eos_merger_tony Exp $
+; $Id: pmd2fd_lin.pro,v 1.5 2006-04-01 11:29:21 ajohan Exp $
 !p.charsize=1.5
 int=0.
 for k=0,ndustspec-1 do begin
@@ -7,7 +7,7 @@ endfor
 
 fd_an = fltarr(ndustspec)
 
-nd00 = par.nd00
+nd00 = par.nd0
 mdave0 = par.mdave0
 eta = par.dkern_cst*int*t
 fr = exp(-eta)

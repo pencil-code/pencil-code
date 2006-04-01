@@ -3,10 +3,14 @@
 ! Initialisation parameters for disc run
 !
 &init_pars
-  ip=20,lwrite_ic=T
-  cvsid='$Id: start.in,v 1.7 2005-06-26 17:34:18 eos_merger_tony Exp $'
-  Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
-  lperi=T,T,T
+  cvsid='$Id: start.in,v 1.8 2006-04-01 11:29:21 ajohan Exp $'
+  Lxyz  = 0.0, 0.0, 0.0
+  xyz0  = 0.0, 0.0, 0.0 
+  lperi =   T,   T,   T
+  ip=20, lwrite_ic=T
+/
+&eos_init_pars
+  gamma=1.0, rho0=1.0, cs0=1.0
 /
 &hydro_init_pars
 /
@@ -14,8 +18,8 @@
 /
 &dustvelocity_init_pars
   md0=1., deltamd=1.1
+  ldustcoagulation=T, ldustcondensation=F
 /
 &dustdensity_init_pars
-  initnd='kernel_lin', nd00=0.01, dkern_cst=1., mdave0=100., 
-  ldustgrowth=F,ldustcoagulation=T
+  initnd='kernel_lin', nd0=0.01, dkern_cst=1.0, mdave0=100.0
 /
