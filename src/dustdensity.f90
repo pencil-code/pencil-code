@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.158 2006-03-30 12:20:27 ajohan Exp $
+! $Id: dustdensity.f90,v 1.159 2006-04-01 11:41:57 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -37,14 +37,14 @@ module Dustdensity
   real :: amplnd=1.,kx_nd=1.,ky_nd=1.,kz_nd=1.,widthnd=1.,Hnd=1.0,Hepsd=1.0
   real :: phase_nd=0.0,Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
-  real :: ul0=0.0,tl0=0.0,teta=0.0,ueta=0.0
+  real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
   integer :: ind_extra
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   logical :: ludstickmax=.true.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
   logical :: ldustnulling=.false.,lupw_ndmdmi=.false.
-  logical :: ldeltaud_thermal=.true., ldeltaud_turbulent=.true.
+  logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
   logical :: ldiffusion_dust=.true.
   logical :: lreinit_dustvars_ndneg=.false.
   logical :: ldiffd_simplified=.false.,ldiffd_dusttogasratio=.false.
@@ -54,13 +54,13 @@ module Dustdensity
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, Hnd, &
       adpeak, amplnd, phase_nd, kx_nd, ky_nd, kz_nd, widthnd, Hepsd, Sigmad, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lupw_ndmdmi, &
-      ldeltaud_thermal, ldeltaud_turbulent, ldustdensity_log, Ri0, &
-      coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth
+      ldeltavd_thermal, ldeltavd_turbulent, ldustdensity_log, Ri0, &
+      coeff_smooth, z0_smooth, z1_smooth, epsz1_smooth, deltavd_imposed
 
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, &
       lcalcdkern, supsatfac, ldustcontinuity, ldustnulling, ludstickmax, &
-      idiffd, lreinit_dustvars_ndneg, lupw_ndmdmi
+      idiffd, lreinit_dustvars_ndneg, lupw_ndmdmi, deltavd_imposed
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.158 2006-03-30 12:20:27 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.159 2006-04-01 11:41:57 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -153,36 +153,6 @@ module Dustdensity
               'contiguous in the f-array - as required by copy_bcs_dust')
         endif
       endif
-!
-!  Write files for use with IDL
-!
-      do k=1,ndustspec
-        call chn(k,sdust)
-        if (ndustspec == 1) sdust = ''
-        if (lroot) then
-          if (maux == 0) then
-            if (nvar < mvar) then
-              write(4,*) ',nd'//trim(sdust)//' $'
-              if (lmdvar) write(4,*) ',md'//trim(sdust)//' $'
-              if (lmice)  write(4,*) ',mi'//trim(sdust)//' $'
-            endif
-            if (nvar == mvar) then
-              write(4,*) ',nd'//trim(sdust)
-              if (lmdvar) write(4,*) ',md'//trim(sdust)
-              if (lmice)  write(4,*) ',mi'//trim(sdust)
-            endif
-          else
-            write(4,*) ',nd'//trim(sdust)//' $'
-            if (lmdvar) write(4,*) ',md'//trim(sdust)//' $'
-            if (lmice)  write(4,*) ',mi'//trim(sdust)//' $'
-          endif
-          write(15,*) 'nd'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
-          if (lmdvar) &
-              write(15,*) 'md'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
-          if (lmice) &
-              write(15,*) 'mi'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
-        endif
-      enddo
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -1328,13 +1298,15 @@ module Dustdensity
 !***********************************************************************
     subroutine coag_kernel(f,TT1)
 !
-!  Calculate mass flux of condensing monomers
+!  Calculate kernel of coagulation equation
+!    collision rate = ni*nj*kernel
 !
       use Sub
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: TT1
-      real :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu,deltaud_drift2
+!      
+      real :: deltavd,deltavd_drift,deltavd_therm,deltavd_turbu,deltavd_drift2
       real :: ust,tl01,teta1
       integer :: i,j,l
 !
@@ -1350,43 +1322,43 @@ module Dustdensity
 !  Relative macroscopic speed
 !            
             call dot2 (f(3+l,m,n,iudx(j):iudz(j)) - &
-                f(3+l,m,n,iudx(i):iudz(i)),deltaud_drift2)
-            deltaud_drift = sqrt(deltaud_drift2)
+                f(3+l,m,n,iudx(i):iudz(i)),deltavd_drift2)
+            deltavd_drift = sqrt(deltavd_drift2)
 !
 !  Relative thermal speed is only important for very light particles
 !            
-            if (ldeltaud_thermal) deltaud_therm = &
+            if (ldeltavd_thermal) deltavd_therm = &
                 sqrt( 8*k_B/(pi*TT1(l))*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
 !
 !  Relative turbulent speed depends on stopping time regimes
 !
-            if (ldeltaud_turbulent) then
+            if (ldeltavd_turbulent) then
               if ( (tausd1(l,i) > tl01 .and. tausd1(l,j) > tl01) .and. &
                    (tausd1(l,i) < teta1 .and. tausd1(l,j) < teta1)) then
-                deltaud_turbu = ul0*3/(tausd1(l,j)/tausd1(l,i)+1.)* &
+                deltavd_turbu = ul0*3/(tausd1(l,j)/tausd1(l,i)+1.)* &
                     (1/(tl0*tausd1(l,j)))**0.5
               elseif (tausd1(l,i) < tl01 .and. tausd1(1,j) > tl01 .or. &
                   tausd1(l,i) > tl01 .and. tausd1(l,j) < tl01) then
-                deltaud_turbu = ul0
+                deltavd_turbu = ul0
               elseif (tausd1(l,i) < tl01 .and. tausd1(l,j) < tl01) then
-                deltaud_turbu = ul0*tl0*0.5*(tausd1(l,j) + tausd1(l,i))
+                deltavd_turbu = ul0*tl0*0.5*(tausd1(l,j) + tausd1(l,i))
               elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
-                deltaud_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
+                deltavd_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
               endif
             endif
 !
 !  Add all speed contributions quadratically
 !            
-            deltaud = sqrt(deltaud_drift**2+deltaud_therm**2+deltaud_turbu**2)
+            deltavd = sqrt(deltavd_drift**2+deltavd_therm**2+deltavd_turbu**2+deltavd_imposed**2)
 !
 !  Stick only when relative speed is below sticking speed
 !
             if (ludstickmax) then
               ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
                   ((md(i)+md(j))/(md(i)*md(j)*unit_md))**(1/2.) 
-              if (deltaud > ust) deltaud = 0.
+              if (deltavd > ust) deltavd = 0.
             endif
-            dkern(l,i,j) = scolld(i,j)*deltaud
+            dkern(l,i,j) = scolld(i,j)*deltavd
             dkern(l,j,i) = dkern(l,i,j)
           enddo
         enddo
@@ -1396,11 +1368,12 @@ module Dustdensity
 !***********************************************************************
     subroutine dust_coagulation(f,df,p)
 !
-!  Dust coagulation due to sticking
+!  Dust coagulation due to collisional sticking.
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df 
       type (pencil_case) :: p
+!      
       real :: dndfac
       integer :: i,j,k,l
 !
@@ -1408,7 +1381,7 @@ module Dustdensity
         do i=1,ndustspec
           do j=i,ndustspec
             dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
-            if (dndfac/=0.) then
+            if (dndfac/=0.0) then
               df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac
               df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac
               do k=j,ndustspec+1
@@ -1567,16 +1540,6 @@ module Dustdensity
 
       call chn(ndustspec,sdustspec)
 !
-!  Define arrays for multiple dust species
-!
-      if (lwr .and. ndustspec/=1) then
-        write(3,*) 'i_ndm=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_ndmin=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_ndmax=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_epsdrms=intarr('//trim(sdustspec)//')'
-      endif
-!
 !  Loop over dust species (for species-dependent diagnostics)
 !
       do k=1,ndustspec
@@ -1614,26 +1577,6 @@ module Dustdensity
           call parse_name(inamex,cnamex(inamex),cformx(inamex), &
               'ndmx'//trim(sdust), idiag_ndmx(k))
         enddo
-!
-!  write column where which variable is stored
-!
-        if (lwr) then
-          call chn(k-1,sdust)
-          sdust = '['//sdust//']'
-          if (ndustspec == 1) sdust=''
-          if (idiag_ndm(k)/=0) &
-              write(3,*) 'i_ndm'//trim(sdust)//'=',idiag_ndm(k)
-          if (idiag_nd2m(k)/=0) &
-              write(3,*) 'i_nd2m'//trim(sdust)//'=',idiag_nd2m(k)
-          if (idiag_ndmin(k)/=0) &
-              write(3,*) 'i_ndmin'//trim(sdust)//'=',idiag_ndmin(k)
-          if (idiag_ndmax(k)/=0) &
-              write(3,*) 'i_ndmax'//trim(sdust)//'=',idiag_ndmax(k)
-          if (idiag_rhodm(k)/=0) &
-              write(3,*) 'i_rhodm'//trim(sdust)//'=',idiag_rhodm(k)
-          if (idiag_epsdrms(k)/=0) &
-              write(3,*) 'i_epsdrms'//trim(sdust)//'=',idiag_epsdrms(k)
-        endif
 !
 !  End loop over dust layers
 !
