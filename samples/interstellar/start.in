@@ -3,13 +3,13 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.8 2006-04-02 03:39:17 mee Exp $'
+  cvsid='$Id: start.in,v 1.9 2006-04-02 19:38:22 mee Exp $'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
-  unit_temperature=49.7129719047606
-  bcz = 's','s','a','a2','sT'
+  unit_temperature=29.8277784018579
   xyz0=-0.0625,-0.0625,-0.125
   xyz1=+0.0625,+0.0625,+0.125
   lperi=T,T,F
+  bcz = 's','s','a','a2','sT'
   lwrite_aux=T
 /
 &eos_init_pars
