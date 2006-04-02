@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.33 2006-03-07 11:55:02 wlyra Exp $
+! $Id: timestep.f90,v 1.34 2006-04-02 03:13:56 mee Exp $
 
 module Timestep
 
@@ -137,7 +137,7 @@ module Timestep
 ! 
       use Cdata
       use Cparam
-      use Mpicomm, only: mpibcast_int
+      use Mpicomm, only: start_serialize, end_serialize
 
       real :: dt_local, dt1_max_local, dt1_max_global
       integer :: l
@@ -155,74 +155,92 @@ module Timestep
 !Note: ALL processors will do this.
 ! Identify the murderer
   
-      turn=0
 ! Procs testify in serial
-      do 
-        if (turn(1)==iproc .and. dt >= dt_local) then
-          print*,"------------------ START OF CONFESSION ----------------------"
-          print*,"  Ok, you got me... I (processor - ", iproc,") did it."
-          print*,"  I handle the calculation for: "
-          if (nxgrid/=1) print*,"   ",x(l1)," < x < ",x(l2)
-          if (nygrid/=1) print*,"   ",y(m1)," < y < ",y(m2)
-          if (nzgrid/=1) print*,"   ",z(n1)," < z < ",z(n2)
+     call start_serialize
+!        if ( dt >= dt_local ) then
+          print*,"------------------ START OF CONFESSION (", iproc, ") ----------------------"
+!          print*,"  Ok, you got me... I (processor - ", iproc,") did it."
+!          print*,"  I handle the calculation for: "
+!          maxadvec=advec_uu+advec_shear+advec_hall+sqrt(advec_cs2+advec_va2)
+!          maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
+!              diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral)
+!          if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
+!            maxadvec=0.
+!            maxdiffus=0.
+!          endif
+!          dt1_advec=maxadvec/cdt
+!          dt1_diffus=maxdiffus/cdtv
+!
+!          if (nxgrid/=1) print*,"   ",x(l1)," < x < ",x(l2)
+!          if (nygrid/=1) print*,"   ",y(m1)," < y < ",y(m2)
+!          if (nzgrid/=1) print*,"   ",z(n1)," < z < ",z(n2)
 
-! In the kitchen?
-          print*,"Can't be more specific about a location(s) than the x grid index (including ghost zone) and coordinate:"
-          do l=1,nx
-            if (dt1_max(l) >= dt1_max_global) then
-               print*,"    f(",l+nghost-1,",?,?,?)"," -> x =",x(l)
-            endif
-          enddo 
+!! In the kitchen?
+!          print*,"Can't be more specific about a location(s) than the x grid index (including ghost zone) and coordinate:"
+!          do l=1,nx
+!            if (dt1_max(l) >= dt1_max_global) then
+!               print*,"    f(",l+nghost-1,",?,?,?)"," -> x =",x(l)
+!            endif
+!          enddo 
 
 ! With the lead pipe?
-          if (maxval(sqrt(dt1_advec**2+dt1_diffus**2)) < dt1_max_local) then  
-            print *,"  It appears it is not a CFL advection/diffusion limit."
-            print*,"  Perhaps another limiter eg. the cooling time" 
-          else
-            if (maxval(dt1_advec)>maxval(dt1_diffus)) then
-              print*,"  It appears the dagger was in the form of an advection term."
-              print*,"   Here's the line up, the big guy is the offender:"
-              if (lhydro) &
-                print*,"     Fluid velocity: maxval(advec_uu)        = ", maxval(advec_uu)
-              if (lshear) &
-                print*,"     Shear velocity: maxval(advec_shear)     = ", maxval(advec_shear)
-              if (lmagnetic) &
-                print*,"     Hall effect:    maxval(advec_hall)      = ", maxval(advec_hall)
-              if (leos) &
-                print*,"     Sound speed:    maxval(sqrt(advec_cs2)) = ", sqrt(maxval(advec_cs2))
-              if (lmagnetic) &
-                print*,"     Alfen speed:    maxval(sqrt(advec_va2)) = ", sqrt(maxval(advec_va2))
-            else
-              print*,"  It appears the dagger was in the form of an diffusion term."
-              print*,"   Here's the line up, the big guy is the offender:"
-              if (lhydro) &
-                print*,"     Fluid viscosity: maxval(diffus_nu)               = ", maxval(diffus_nu)
-              if (lentropy) &
-                print*,"     Thermal diffusion: maxval(diffus_chi)            = ", maxval(diffus_chi)
-              if (lmagnetic) &
-                print*,"     Magnetic diffusion: maxval(diffus_eta)           = ", maxval(diffus_eta)
-              if (ldensity) &
-                print*,"     Mass diffusion: maxval(diffus_diffrho)           = ", maxval(diffus_diffrho)
-              if (lcosmicray) &
-                print*,"     Passive scalar diffusion: maxval(diffus_pscalar) = ", maxval(diffus_pscalar)
-              if (lcosmicray) &
-                print*,"     Cosmic ray diffusion: maxval(diffus_cr)          = ", maxval(diffus_cr)
-              if (ldustvelocity) &
-                print*,"     Dust viscosity: maxval(diffus_nud)               = ", maxval(diffus_nud)
-              if (lchiral) &
-                print*,"     Chirality diffusion: maxval(diffus_chiral)       = ", maxval(diffus_chiral)
-            endif
-  
-            print*,"  Also, cdt (advection), cdtv (diffusion) = ",cdt,cdtv
+!          if (maxval(sqrt(dt1_advec**2+dt1_diffus**2)) < dt1_max_local) then  
+!            print *,"  It appears it is not a CFL advection/diffusion limit."
+!            print*,"  Perhaps another limiter eg. the cooling time" 
+!          else
+!            if (maxval(dt1_advec)>maxval(dt1_diffus)) then
+!              print*,"  It appears the dagger was in the form of an advection term."
+!              print*,"   Here's the line up, the big guy is the offender:"
+!              if (lhydro) &
+!                print*,"     Fluid velocity: maxval(advec_uu)        = ", maxval(advec_uu)
+!              if (lshear) &
+!                print*,"     Shear velocity: maxval(advec_shear)     = ", maxval(advec_shear)
+!              if (lmagnetic) &
+!                print*,"     Hall effect:    maxval(advec_hall)      = ", maxval(advec_hall)
+!              if (leos) &
+!                print*,"     Sound speed:    maxval(sqrt(advec_cs2)) = ", sqrt(maxval(advec_cs2))
+!              if (lmagnetic) &
+!                print*,"     Alfen speed:    maxval(sqrt(advec_va2)) = ", sqrt(maxval(advec_va2))
+!            else
+!              print*,"  It appears the dagger was in the form of an diffusion term."
+!              print*,"   Here's the line up, the big guy is the offender:"
+!              if (lhydro) &
+!                print*,"     Fluid viscosity: maxval(diffus_nu)               = ", maxval(diffus_nu)
+!              if (lentropy) &
+!                print*,"     Thermal diffusion: maxval(diffus_chi)            = ", maxval(diffus_chi)
+!              if (lmagnetic) &
+!                print*,"     Magnetic diffusion: maxval(diffus_eta)           = ", maxval(diffus_eta)
+!              if (ldensity) &
+!                print*,"     Mass diffusion: maxval(diffus_diffrho)           = ", maxval(diffus_diffrho)
+!              if (lcosmicray) &
+!                print*,"     Passive scalar diffusion: maxval(diffus_pscalar) = ", maxval(diffus_pscalar)
+!              if (lcosmicray) &
+!                print*,"     Cosmic ray diffusion: maxval(diffus_cr)          = ", maxval(diffus_cr)
+!              if (ldustvelocity) &
+!                print*,"     Dust viscosity: maxval(diffus_nud)               = ", maxval(diffus_nud)
+!              if (lchiral) &
+!                print*,"     Chirality diffusion: maxval(diffus_chiral)       = ", maxval(diffus_chiral)
+!            endif
+!  
+!            print*,"  Also, cdt (advection), cdtv (diffusion) = ",cdt,cdtv
+            print*,"     Fluid velocity:       maxval(advec_uu)           = ", maxval(advec_uu)/cdt
+            print*,"     Shear velocity:       maxval(advec_shear)        = ", maxval(advec_shear)/cdt
+            print*,"     Hall effect:          maxval(advec_hall)         = ", maxval(advec_hall)/cdt
+            print*,"     Sound speed:          maxval(sqrt(advec_cs2))    = ", sqrt(maxval(advec_cs2))/cdt
+            print*,"     Alfen speed:          maxval(sqrt(advec_va2))    = ", sqrt(maxval(advec_va2))/cdt
+            print*,"     Fluid viscosity:      maxval(diffus_nu)          = ", maxval(diffus_nu)/cdtv
+            print*,"     Thermal diffusion:    maxval(diffus_chi)         = ", maxval(diffus_chi)/cdtv
+            print*,"     Magnetic diffusion:   maxval(diffus_eta)         = ", maxval(diffus_eta)/cdtv
+            print*,"     Mass diffusion:       maxval(diffus_diffrho)     = ", maxval(diffus_diffrho)/cdtv
+            print*,"     Passive scalar diffusion: maxval(diffus_pscalar) = ", maxval(diffus_pscalar)/cdtv
+            print*,"     Cosmic ray diffusion: maxval(diffus_cr)          = ", maxval(diffus_cr)/cdtv
+            print*,"     Dust viscosity:       maxval(diffus_nud)         = ", maxval(diffus_nud)/cdtv
+            print*,"     Chirality diffusion:  maxval(diffus_chiral)      = ", maxval(diffus_chiral)/cdtv
             print*,"------------------- END OF CONFESSION -----------------------"
   
-          endif
-        endif
-! Root says who can testify next 
-        if (lroot) turn=turn+1
-        call mpibcast_int(turn,1)
-        if (turn(1) >= ncpus) exit
-      enddo     
+!          endif
+!        endif
+     call end_serialize
  
     endsubroutine timestep_autopsy
 !***********************************************************************
