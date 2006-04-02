@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.297 2006-03-31 17:10:26 theine Exp $
+! ! $Id: cdata.f90,v 1.298 2006-04-02 02:17:27 dobler Exp $
 
 module Cdata
 
@@ -257,7 +257,9 @@ module Cdata
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
 !  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
                                              ! to the snapshots
-  logical :: lfrozen_bcs_z=.false.
+  logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
+  logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
+  logical, dimension(mcom) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
   logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 

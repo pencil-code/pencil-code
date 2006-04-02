@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.283 2006-04-01 22:19:49 dobler Exp $
+! $Id: equ.f90,v 1.284 2006-04-02 02:17:27 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.283 2006-04-01 22:19:49 dobler Exp $")
+           "$Id: equ.f90,v 1.284 2006-04-02 02:17:27 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -640,6 +640,49 @@ module Equ
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'
 !
+!  freezing boundary conditions in x
+!
+        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
+!
+! Only need to do this for nonperiodic x direction, on left/right-most
+! processor and in left/right--most pencils
+!
+          if (.not. lperi(1)) then
+            if (ipx == 0) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
+              enddo
+            endif
+            if (ipx == nprocx-1) then
+              do iv=1,nvar
+                if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+!
+        endif
+!
+!  freezing boundary conditions in y
+!
+        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
+!
+! Only need to do this for nonperiodic y direction, on bottom/top-most
+! processor and in bottom/top-most pencils
+!
+          if (.not. lperi(2)) then
+            if ((ipy == 0) .and. (m == m1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if ((ipy == nprocy-1) .and. (m == m2)) then
+              do iv=1,nvar
+                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+        endif
+!
 !  freezing boundary conditions in z
 !
         if (lfrozen_bcs_z) then ! are there any frozen vars at all?
@@ -659,7 +702,6 @@ module Equ
               enddo
             endif
           endif
-!
         endif
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively

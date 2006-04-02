@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.95 2006-03-21 15:26:33 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.96 2006-04-02 02:17:27 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -112,6 +112,10 @@ module Boundcond
                   if (j==ie) call bc_ee_outflow_x(f,topbot)
                 case ('db')
                   call bc_db_x(f,topbot,j)
+                case ('f')        ! freeze value
+                  ! tell other modules not to change boundary value
+                  call bc_freeze_var_x(topbot,j)
+                  call bc_sym_x(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
                 case ('1')        ! f=1 (for debugging)
                   call bc_one_x(f,topbot,j)
                 case ('set')      ! set boundary value
@@ -190,6 +194,10 @@ module Boundcond
                 if (j==iss) call bc_ss_temp_y(f,topbot)
               case ('sT')       ! symmetric temp.
                 if (j==iss) call bc_ss_stemp_y(f,topbot)
+              case ('f')        ! freeze value
+                ! tell other modules not to change boundary value
+                call bc_freeze_var_y(topbot,j)
+                call bc_sym_y(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
               case ('1')        ! f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
               case ('set')      ! set boundary value
@@ -1528,6 +1536,52 @@ module Boundcond
       endselect
 !
     endsubroutine bc_one_z
+!***********************************************************************
+    subroutine bc_freeze_var_x(topbot,j)
+!
+!  Tell other modules that variable with slot j is to be frozen in on
+!  given boundary
+!
+      use Cdata
+!
+      integer :: j
+      character (len=3) :: topbot
+!
+      lfrozen_bcs_x = .true.    ! set flag
+
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        lfrozen_bot_var_x(j) = .true.
+      case('top')               ! top boundary
+        lfrozen_top_var_x(j) = .true.
+      case default
+        print*, "bc_freeze_var_x: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+    endsubroutine bc_freeze_var_x
+!***********************************************************************
+    subroutine bc_freeze_var_y(topbot,j)
+!
+!  Tell other modules that variable with slot j is to be frozen in on
+!  given boundary
+!
+      use Cdata
+!
+      integer :: j
+      character (len=3) :: topbot
+!
+      lfrozen_bcs_y = .true.    ! set flag
+
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        lfrozen_bot_var_y(j) = .true.
+      case('top')               ! top boundary
+        lfrozen_top_var_y(j) = .true.
+      case default
+        print*, "bc_freeze_var_y: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+    endsubroutine bc_freeze_var_y
 !***********************************************************************
     subroutine bc_freeze_var_z(topbot,j)
 !
