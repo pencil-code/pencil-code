@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.18 2005-12-20 19:10:12 mee Exp $
+! $Id: eos_ionization.f90,v 1.19 2006-04-02 03:34:12 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -64,10 +64,9 @@ module EquationOfState
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp = .false.
-  real :: gamma=impossible, gamma1=impossible
+  real :: gamma=impossible, gamma1=impossible,gamma11=impossible
   real :: cs2bot=impossible, cs2top=impossible
 !ajwm  Not sure this should exist either...
-  real :: lnTT0
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=0
@@ -112,7 +111,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.18 2005-12-20 19:10:12 mee Exp $")
+           "$Id: eos_ionization.f90,v 1.19 2006-04-02 03:34:12 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -298,31 +297,6 @@ module EquationOfState
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy(lnrho,ee,ss,lnTT,yH)
-!
-!  DOCUMENT ME!
-!
-      real, dimension(nx) ,intent(in) :: lnrho,ee
-      real, dimension(nx) ,intent(out) :: ss,lnTT,yH
-      real, dimension(nx) :: TT
-      real :: temp
-
-      temp=0.5*min(ee(1)/ee_ion,1.0)
-
-      do l=1,nx 
-        temp=min(temp,(1-2*epsilon(yHacc))*ee(l)/ee_ion)
-        call rtsafe(ilnrho_ee,lnrho(l),ee(l),yHmin,yHmax*min(ee(l)/ee_ion,1.0),temp)
-        yH(l)=temp
-      enddo
-
-      TT=(ee-yH*ee_ion)/(1.5*(1.+yH+xHe)*ss_ion)
-      lnTT=log(TT)
-      ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
-                 -yH*(2*log(yH)-lnrho_e-lnrho_p) &
-                 -(1.-yH)*(log(1-yH+epsi)-lnrho_H)-xHe_term)
-
-    end subroutine perturb_energy
-!***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 !
 !  DOCUMENT ME!
@@ -499,6 +473,16 @@ module EquationOfState
       enddo
 !
     endsubroutine temperature_hessian
+!***********************************************************************
+    subroutine eosperturb(f,psize,ee,pp)
+      
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(in), optional :: ee,pp
+
+      call not_implemented("eosperturb")
+
+    end subroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
 !

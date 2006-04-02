@@ -5,7 +5,7 @@
   public :: eoscalc,pressure_gradient,temperature_gradient
   public :: temperature_laplacian
   public :: ilnrho_ss, ilnrho_lnTT, ilnrho_pp, ilnrho_ee
-  public :: perturb_energy
+  public :: eosperturb
   public :: get_soundspeed
   public :: getmu
   public :: getdensity
@@ -30,8 +30,8 @@
   public :: isothermal_entropy,isothermal_lnrho_ss
 
 !ajwm SHOULDN'T BE PUBLIC
-  public :: cs0,cs20,lnrho0,rho0,lcalc_cp,lnTT0
-  public :: gamma,gamma1,cs2top,cs2bot,cp !!,cp1
+  public :: cs0,cs20,lnrho0,rho0
+  public :: gamma,gamma1,gamma11,cs2top,cs2bot !!,cp1
   public :: beta_glnrho_global, beta_glnrho_scaled
   public :: cs2cool
   public :: mpoly, mpoly0, mpoly1, mpoly2

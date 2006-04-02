@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.284 2006-04-02 02:17:27 dobler Exp $
+! $Id: equ.f90,v 1.285 2006-04-02 03:34:12 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.284 2006-04-02 02:17:27 dobler Exp $")
+           "$Id: equ.f90,v 1.285 2006-04-02 03:34:12 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -482,12 +482,14 @@ module Equ
 !  advective and diffusive timestep for that module.
 !  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
 !  
-        advec_uu=0.; advec_shear=0.; advec_hall=0.
-        advec_cs2=0.; advec_va2=0.; advec_uud=0;
-        diffus_pscalar=0.
-        diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
-        diffus_eta=0.; diffus_nu=0.; diffus_chi=0.
-        diffus_nud=0.; diffus_diffnd=0.
+        if (lfirst) then
+          advec_uu=0.; advec_shear=0.; advec_hall=0.
+          advec_cs2=0.; advec_va2=0.; advec_uud=0;
+          diffus_pscalar=0.
+          diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
+          diffus_eta=0.; diffus_nu=0.; diffus_chi=0.
+          diffus_nud=0.; diffus_diffnd=0.
+        endif
 !
 !  The following is only kept for backwards compatibility.
 !  Will be deleted in the future.

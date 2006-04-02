@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.161 2006-03-29 22:34:12 mee Exp $
+! $Id: register.f90,v 1.162 2006-04-02 03:34:12 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -200,11 +200,11 @@ module Register
           //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
         k_B=k_B_cgs/(unit_energy/unit_temperature)
+        sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
         m_p=m_p_cgs/unit_mass
         m_e=m_e_cgs/unit_mass
         eV=eV_cgs/unit_energy
         sigmaH_=sigmaH_cgs/unit_length**2
-        sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
       elseif (unit_system=='SI') then
         if(lroot.and.leos_ionization) print*,&
@@ -226,6 +226,24 @@ module Register
       chiH=13.6*eV
       chiH_=0.75*eV        
 !
+!  run initialization of individual modules
+!   allow initialize_eos to go early so that it may change the unit temperature.
+!     IFF it does it must then be careful not to use any of the consants above
+!     that depend upon unit_temperature without extreme care!
+!
+!      call initialize_io
+      call initialize_eos()
+!
+!  recalculate anything that depends upon unit_temperature
+!
+      if (unit_system=='cgs') then
+        k_B=k_B_cgs/(unit_energy/unit_temperature)
+        sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
+      elseif (unit_system=='SI') then
+        k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
+        sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
+      endif
+!
 !  print parameters in code units, but only when used
 !
       if (lroot.and.ip<14) then
@@ -235,10 +253,8 @@ module Register
       endif
 
 !
-!  run initialization of individual modules
+!  run rest of initialization of individual modules
 !
-!      call initialize_io
-      call initialize_eos()
       call initialize_prints()
       call initialize_timeavg(f) ! initialize time averages
 !

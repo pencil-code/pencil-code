@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.247 2006-03-30 09:20:28 ajohan Exp $
+! $Id: hydro.f90,v 1.248 2006-04-02 03:34:12 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -155,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.247 2006-03-30 09:20:28 ajohan Exp $")
+           "$Id: hydro.f90,v 1.248 2006-04-02 03:34:12 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -894,7 +894,7 @@ module Hydro
 !
 ! calculate viscous force
 !
-      if (lviscosity) call calc_viscous_force(f,df,p)
+      if (lviscosity) call calc_viscous_force(df,p)
 !
 !  ``uu/dx'' for timestep
 !
@@ -934,7 +934,7 @@ module Hydro
 !
 !  interface for your personal subroutines calls
 !
-      if (lspecial) call special_calc_hydro(f,df,p%uu,p%glnrho,p%divu,p%rho1,p%u2,p%uij)
+      if (lspecial) call special_calc_hydro(df,p)
 !
 !  write slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).

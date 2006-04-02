@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.382 2006-03-31 13:23:01 ngrs Exp $
+! $Id: entropy.f90,v 1.383 2006-04-02 03:34:11 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.382 2006-03-31 13:23:01 ngrs Exp $")
+           "$Id: entropy.f90,v 1.383 2006-04-02 03:34:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -191,7 +191,7 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz,g0
-      use EquationOfState, only: cs0, lnTT0, get_soundspeed, &
+      use EquationOfState, only: cs0, get_soundspeed, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2
 !AB: Tony, what's the plan; should these entries all be declared at the
@@ -342,16 +342,13 @@ module Entropy
         case('geo-kws','geo-benchmark')
           if (lroot) then
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
-            if (abs(exp(lnTT0)-T0) > epsi) then
-              print*,'initialize_entropy: T0 is not consistent with cs20; using cs20'
-              T0=exp(lnTT0)
-            endif
           endif
 !
 !         temperatures at shell boundaries
           beta1=g0/(mpoly+1)
           TT_ext=T0
-          TT_int=1+beta1*(1/r_int-1)
+          TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
+          print*,'initialize_entropy: TT_int, TT_ext=',TT_int,TT_ext
 !         TT_ext=gamma/gamma1*T0
 !         TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
 !         set up cooling parameters for spherical shell in terms of
@@ -538,10 +535,6 @@ module Entropy
 
       do iinit=1,ninit
 !
-!  if we pretend that ss in in reality g1lnTT, we initialize the background
-!  of lnTT/gamma such that it corresponds to ss=0.
-!
-
 !
       if (initss(iinit)/='nothing') then
 !
@@ -833,7 +826,7 @@ module Entropy
 
       endselect
 !
-!  replace ss by lnTT/gamma when pretend_lnTT is true
+!  replace ss by lnTT when pretend_lnTT is true
 !
       if (save_pretend_lnTT) then
         do m=1,my
@@ -1141,7 +1134,7 @@ module Entropy
         call shell_ss_perturb(pert_TT)
 !
         where (r_mn >= r_ext) TT = TT_ext
-        where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)+pert_TT
+        where (r_mn < r_ext .AND. r_mn > r_int) TT = TT_ext*(1.+beta1*(r_ext/r_mn-1))+pert_TT
 !       where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
 !       goes with alternate scaling in initialize_entropy
         where (r_mn <= r_int) TT = TT_int
@@ -1191,13 +1184,13 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, cp
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss
       real :: beta1
 !
-      beta1 = gamma/gamma1/cp*gravz/(mpoly+1)  ! gamma1*cp/gamma=R_{*}
+      beta1 = gamma/gamma1*gravz/(mpoly+1)  ! gamma1*cp/gamma=R_{*}
 !
       do m=m1,m2
       do n=n1,n2
@@ -1224,7 +1217,7 @@ module Entropy
 !   but abandoned as overcomplicated to adapt for nprocz /= 0.]
 !
       use Mpicomm, only: mpibcast_real
-      use EquationOfState, only: eoscalc, ilnrho_pp, pressure_gradient, getmu
+      use EquationOfState, only: eoscalc, ilnrho_pp, pressure_gradient, getmu,rho0, eosperturb
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension(nx) :: absz
@@ -1270,17 +1263,17 @@ module Entropy
       absz=abs(z(n))
       do m=m1,m2 
 !  cold gas profile n_c (eq 6)
-        n_c=0.340*(0.859*exp(-(z(n)/kpc/0.127)**2) +         &
-                   0.047*exp(-(z(n)/kpc/0.318)**2) +         &
-                   0.094*exp(-absz/kpc/0.403))     
+        n_c=0.340*(0.859*exp(-(z(n)/(0.127*kpc))**2) +         &
+                   0.047*exp(-(z(n)/(0.318*kpc))**2) +         &
+                   0.094*exp(-absz/(0.403*kpc)))     
 !  warm gas profile n_w (eq 7)
-        n_w=0.226*(0.456*exp(-(z(n)/kpc/0.127)**2) +  &
-                   0.403*exp(-(z(n)/kpc/0.318)**2) +  &
-                   0.141*exp(-absz/kpc/0.403))
+        n_w=0.226*(0.456*exp(-(z(n)/(0.127*kpc))**2) +  &
+                   0.403*exp(-(z(n)/(0.318*kpc))**2) +  &
+                   0.141*exp(-absz/(0.403*kpc)))
 !  ionized gas profile n_i (eq 9)
-        n_i=0.0237*exp(-absz/kpc) + 0.0013* exp(-absz*kpc/0.150)
+        n_i=0.0237*exp(-absz/kpc) + 0.0013* exp(-absz/(0.150*kpc))
 !  hot gas profile n_h (eq 13)
-        n_h=0.00048*exp(-absz/kpc/1.5)         
+        n_h=0.00048*exp(-absz/(1.5*kpc))         
 !  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
         !rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)*rhoscale
         rho=real((n_c+n_w+n_i+n_h)*rhoscale)
@@ -1290,14 +1283,13 @@ module Entropy
 !  define entropy via pressure, assuming fixed T for each component
         if (lentropy) then
 !  thermal pressure (eq 15)
-          pp=k_B*unit_length**3 * &
-             (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
+          pp=real(k_B*unit_length**3 * &
+             (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
 !           
-          call eoscalc(ilnrho_pp,lnrho,pp,ss=ss,yH=yH,lnTT=lnTT) 
+          call eosperturb(f,nx,pp=pp) 
+!          call eoscalc(f,nx,yH=yH,lnTT=lnTT) 
           if (n==n1) call pressure_gradient(lnrho(1),ss(1),cs2bot,cp1tilde)
           if (n==n2) call pressure_gradient(lnrho(1),ss(1),cs2top,cp1tilde)
-!
-          f(l1:l2,m,n,iss)=ss
 !        
           fmpi1=(/ cs2bot /)
           call mpibcast_real(fmpi1,1,0)
@@ -1411,11 +1403,13 @@ module Entropy
         lpenc_requested(i_cp1tilde)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_gss)=.true.
+        if (leos_idealgas) lpenc_requested(i_glnTT)=.true.
       endif
       if (ladvection_entropy) lpenc_requested(i_ugss)=.true.
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1tilde)=.true.
         lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_rho1)=.true.
       endif
       if (tauheat_buffer>0.0) then
         lpenc_requested(i_ss)=.true.
@@ -1473,6 +1467,8 @@ module Entropy
       endif
       if (lheatc_tensordiffusion) then 
         lpenc_requested(i_bij)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_hlnTT)=.true. 
       endif
       if (lheatc_shock) then 
         lpenc_requested(i_glnrho)=.true.
@@ -1581,8 +1577,7 @@ module Entropy
       intent(inout) :: p
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
-! FOR pretend_lnTT since iss actually contain
-! lnTT/gamma NOT entropy!
+! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
 ! The code is not wrong however since this is correctly
 ! handled by the eos module. 
 ! ss
@@ -1633,12 +1628,8 @@ module Entropy
       endif
 ! hlnTT
       if (lpencil(i_hlnTT)) then
-         if (pretend_lnTT) then
-           p%hlnTT=p%hss
-         else
-           call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
-         endif
-       endif
+        call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
+      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************
@@ -1653,9 +1644,7 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Cdata
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
-
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma11
       use Sub
       use Global
       use Special, only: special_calc_entropy
@@ -1699,16 +1688,19 @@ module Entropy
 !  .false. allows suppressing pressure term for test purposes)
 !
         if (lpressuregradient_gas) then
-          do j=1,3
-            ju=j+iuu-1
-            if (pretend_lnTT) then
+          if (leos_idealgas) then
+            do j=1,3
+              ju=j+iuu-1
               df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
-                  p%cs2*(p%glnrho(:,j)/gamma + p%cp1tilde*p%gss(:,j))
-            else
+                  p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
+           enddo
+          else
+            do j=1,3
+              ju=j+iuu-1
               df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
                   p%cs2*(p%glnrho(:,j) + p%cp1tilde*p%gss(:,j))
-            endif
-           enddo
+            enddo
+          endif
         endif
 !
 !  velocity damping in the coronal heating zone
@@ -1728,9 +1720,9 @@ module Entropy
 !
       if (ladvection_entropy) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
 !
-!  if pretend_lnTT=.true., we pretend that ss is actually lnTT/gamma
+!  if pretend_lnTT=.true., we pretend that ss is actually lnTT
 !
-      if (pretend_lnTT) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-p%divu*gamma1/gamma
+      if (pretend_lnTT) df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-p%divu*p%ss
 !
 !  Add pressure force from global density gradient.
 !  
@@ -1744,27 +1736,27 @@ module Entropy
 !
 !  Calculate viscous contribution to entropy
 !
-      if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
 !
 !  thermal conduction
 !
-      if (lheatc_Kconst) call calc_heatcond(f,df,p)
-      if (lheatc_simple) call calc_heatcond_simple(f,df,p)
-      if (lheatc_chiconst) call calc_heatcond_constchi(f,df,p)
+      if (lheatc_Kconst) call calc_heatcond(df,p)
+      if (lheatc_simple) call calc_heatcond_simple(df,p)
+      if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_tensordiffusion) then
         vKpara(:) = Kgpara
         vKperp(:) = Kgperp
         call tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,rhs,llog=.true.)
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs*p%rho1
       endif
-      if (lheatc_spitzer) call calc_heatcond_spitzer(f,df,p)
+      if (lheatc_spitzer) call calc_heatcond_spitzer(df,p)
       if (lheatc_corona) then
-        call calc_heatcond_spitzer(f,df,p)
-        call newton_cool(f,df,p)
-        call calc_heat_cool_RTV(f,df,p)     
+        call calc_heatcond_spitzer(df,p)
+        call newton_cool(df,p)
+        call calc_heat_cool_RTV(df,p)     
       endif
-      if (lheatc_shock) call calc_heatcond_shock(f,df,p)
-      if (lheatc_hyper3ss) call calc_heatcond_hyper3(f,df,p)
+      if (lheatc_shock) call calc_heatcond_shock(df,p)
+      if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
 !
 !  heating/cooling
 !
@@ -1775,7 +1767,7 @@ module Entropy
           (heat_uniform /= 0) .or. &
           (cool_ext /= 0 .AND. cool_int /= 0) .or. &
           (lturbulent_heat)) &
-          call calc_heat_cool(f,df,p,Hmax)
+          call calc_heat_cool(df,p,Hmax)
 !
 !  interstellar radiative cooling and UV heating
 !
@@ -1784,7 +1776,7 @@ module Entropy
 !
 !  possibility of entropy relaxation in exterior region
 !
-      if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(f,df)
+      if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(df,p)
 
 !Natalia (accretion on NS)
 
@@ -1793,8 +1785,7 @@ module Entropy
      
          
          if (n .LE. 24 .AND. dt .GT. 0.) then
-                
-  
+                  
            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                          -1./(5.*dt)*(p%ss(:)+f(l1:l2,m,n,ilnrho)*gamma1/gamma)
           
@@ -1805,7 +1796,7 @@ module Entropy
 !  entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
-      if (lspecial) call special_calc_entropy(f,df,p%uu,p%glnrho,p%divu,p%rho1,p%lnrho,p%cs2,p%TT1)
+      if (lspecial) call special_calc_entropy(df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
@@ -1851,7 +1842,7 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_heatcond_constchi(f,df,p)
+    subroutine calc_heatcond_constchi(df,p)
 !
 !  Heat conduction for constant value of chi=K/(rho*cp)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
@@ -1865,20 +1856,17 @@ module Entropy
       use Cdata
       use Sub
       use Gravity
-      use EquationOfState, only: cp
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: glnT,glnP
       real, dimension (nx) :: thdiff,g2
 !
-      intent(in) :: f
       intent(out) :: df
 !
-!  check that cp and chi are ok
+!  check that chi is ok
 !
-      if (headtt) print*,'calc_heatcond_constchi: cp,chi=',cp,chi
+      if (headtt) print*,'calc_heatcond_constchi: chi=',chi
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -1900,11 +1888,20 @@ module Entropy
 !  rho*T*Ds/Dt = ... + nab.(rho*cp*chi*gradT)
 !        Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
 !
-      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
-      thdiff=cp*chi*(p%del2lnTT+g2)
-      if (chi_t/=0.) then
-        call dot(p%glnrho+p%glnTT,p%gss,g2)
-        thdiff=thdiff+chi_t*(p%del2ss+g2)
+      if (pretend_lnTT) then
+        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+        thdiff=gamma*chi*(p%del2lnTT+g2)
+        if (chi_t/=0.) then
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+          thdiff=thdiff+chi_t*(p%del2ss+g2)
+        endif
+      else
+        call dot(p%glnrho+p%glnTT,p%glnTT,g2)
+        thdiff=chi*(p%del2lnTT+g2)
+        if (chi_t/=0.) then
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+          thdiff=thdiff+chi_t*(p%del2ss+g2)
+        endif
       endif
 !
 !  add heat conduction to entropy equation
@@ -1917,7 +1914,11 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
+        if (leos_idealgas) then 
+          diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
+        else
+          diffus_chi=max(diffus_chi,(chi+chi_t)*dxyz_2)
+        endif
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -1925,7 +1926,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
-    subroutine calc_heatcond_hyper3(f,df,p)
+    subroutine calc_heatcond_hyper3(df,p)
 !
 !  Naive hyperdiffusivity of entropy.
 !
@@ -1934,13 +1935,11 @@ module Entropy
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
       real, dimension (nx) :: thdiff
 !
-      intent(in) :: f
       intent(out) :: df
 !
 !  check that chi_hyper3 is ok
@@ -1959,7 +1958,7 @@ module Entropy
 !  check maximum diffusion from thermal diffusion
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,chi*dxyz_6)
+        diffus_chi=max(diffus_chi,chi_hyper3*dxyz_4)
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -1967,7 +1966,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_hyper3
 !***********************************************************************
-    subroutine calc_heatcond_shock(f,df,p)
+    subroutine calc_heatcond_shock(df,p)
 !
 !  Adds in shock entropy diffusion. There is potential for
 !  recycling some quantities from previous calculations.
@@ -1982,13 +1981,13 @@ module Entropy
       use Cdata
       use Sub
       use Gravity
+      use EquationOfState, only: gamma
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,g2,gshockgss
+      real, dimension (nx) :: thdiff,g2,gshockglnTT
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(out) :: df
 !
 !  check that chi is ok
@@ -1998,15 +1997,27 @@ module Entropy
 !  calculate terms for shock diffusion
 !  Ds/Dt = ... + chi_shock*[del2ss + (glnchi_shock+glnpp).gss]
 !
-      call dot(p%gshock,p%gss,gshockgss)
-      call dot(p%glnTT+p%glnrho,p%gss,g2)
+      call dot(p%gshock,p%glnTT,gshockglnTT)
+      call dot(p%glnrho+p%glnTT,p%glnTT,g2)
 !
 !  shock entropy diffusivity
 !  Write: chi_shock = chi_shock0*shock, and gshock=grad(shock), so
 !  Ds/Dt = ... + chi_shock0*[shock*(del2ss+glnpp.gss) + gshock.gss]
 !
       if (headtt) print*,'calc_heatcond_shock: use shock diffusion'
-      thdiff=(chi_shock*p%shock+chi_t)*(p%del2ss+g2)+chi_shock*gshockgss
+      if (pretend_lnTT) then
+        thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
+        if (chi_t/=0.) then
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+          thdiff=thdiff+chi_t*(p%del2ss+g2)
+        endif
+      else
+        thdiff=chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
+        if (chi_t/=0.) then
+          call dot(p%glnrho+p%glnTT,p%gss,g2)
+          thdiff=thdiff+chi_t*(p%del2ss+g2)
+        endif
+      endif
 !
 !  add heat conduction to entropy equation
 !
@@ -2018,7 +2029,11 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,(chi_t+chi_shock*p%shock)*dxyz_2)
+        if (leos_idealgas) then
+          diffus_chi=max(diffus_chi,(chi_t+gamma*chi_shock*p%shock)*dxyz_2)
+        else
+          diffus_chi=max(diffus_chi,(chi_t+chi_shock*p%shock)*dxyz_2)
+        endif
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
@@ -2026,7 +2041,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_shock
 !***********************************************************************
-    subroutine calc_heatcond_simple(f,df,p)
+    subroutine calc_heatcond_simple(df,p)
 !
 !  heat conduction
 !
@@ -2035,9 +2050,7 @@ module Entropy
 !
       use Cdata
       use Sub
-      use EquationOfState, only: cp
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       !real, dimension (nx,3) :: glnT,glnThcond !,glhc
@@ -2045,7 +2058,7 @@ module Entropy
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(out) :: df
 !
 !  This particular version assumes a simple polytrope, so mpoly is known
@@ -2072,7 +2085,7 @@ module Entropy
       !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT)^2]
       !
       ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
-      chix = p%rho1*hcond/cp   
+      chix = p%rho1*hcond   
       call dot(p%glnTT,p%glnTT,g2)
       thdiff = p%rho1*hcond * (p%del2lnTT + g2)  
 !
@@ -2094,7 +2107,7 @@ module Entropy
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
-    subroutine calc_heatcond_spitzer(f,df,p)
+    subroutine calc_heatcond_spitzer(df,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
 !  to magnetic field lines     
@@ -2107,7 +2120,6 @@ module Entropy
       use Sub
       use Io
 !       
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp
       real, dimension (nx,3) :: tmpv1,tmpv2,tmpv3
@@ -2116,9 +2128,12 @@ module Entropy
       integer ::i,j
       type (pencil_case) :: p
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(out) :: df
 !
+      if (pretend_lnTT) call fatal_error("calc_heatcond_spitzer","not implemented when pretend_lnTT = T")
+!
+!ajwm this should be p%TT
       TT = exp(p%lnTT)
 !        
 !     Calculate variable diffusion coefficients along pencils
@@ -2174,7 +2189,7 @@ module Entropy
 !      
     endsubroutine calc_heatcond_spitzer
 !***********************************************************************
-    subroutine calc_heatcond(f,df,p)
+    subroutine calc_heatcond(df,p)
 !
 !  heat conduction
 !
@@ -2186,9 +2201,7 @@ module Entropy
       use Sub
       use IO
       use Gravity
-      use EquationOfState, only: cp
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: glnThcond,glhc,glnP,glchit_prof !,glnT
@@ -2199,8 +2212,10 @@ module Entropy
 !
       save :: z_prev,hcond,glhc
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(out) :: df
+!
+      if (pretend_lnTT) call fatal_error("calc_heatcond","not implemented when pretend_lnTT = T")
 !
 !  Heat conduction / entropy diffusion
 !
@@ -2241,7 +2256,7 @@ module Entropy
         !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
         !
         ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
-        chix = p%rho1*hcond/cp
+        chix = p%rho1*hcond
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         thdiff = p%rho1*hcond * (p%del2lnTT + g2)  
@@ -2331,7 +2346,7 @@ module Entropy
 !
     endsubroutine calc_heatcond
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,p,Hmax)
+    subroutine calc_heat_cool(df,p,Hmax)
 !
 !  add combined heating and cooling
 !
@@ -2341,7 +2356,6 @@ module Entropy
       use Sub
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax
@@ -2349,8 +2363,10 @@ module Entropy
       real, dimension (nx) :: heat,prof,theta_profile
       real :: ssref,zbot,ztop,profile_buffer,xi,profile_cor
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(out) :: df
+!
+      if (pretend_lnTT) call fatal_error("calc_heat_cool","not implemented when pretend_lnTT = T")
 !
 !  identifier
 !
@@ -2433,7 +2449,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
                                      ! in a more time-step neutral manner
           heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool/p%rho1
         case ('entropy')        ! cooling to reference entropy (currently =0)
-          heat = heat - cool*prof*(f(l1:l2,m,n,iss)-0.)
+          heat = heat - cool*prof*(p%ss-0.)
 ! dgm
         case ('shell')          !  heating/cooling at shell boundaries
           heat=0.                            ! default
@@ -2503,7 +2519,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
-    subroutine calc_heat_cool_RTV(f,df,p)
+    subroutine calc_heat_cool_RTV(df,p)
 !
 !    calculate cool term:  C = ne*ni*Q(T) 
 !    with ne*ni = 1.2*np^2 = 1.2*rho^2/(1.4*mp)^2
@@ -2514,15 +2530,16 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
       use IO
 !     
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lncool,lnneni,rtv_cool,lnTT_SI
       integer :: i,imax
       real :: unit_temp,unit_Q
       type (pencil_case) :: p
 !
-      intent(in) :: f,p
+      intent(in) :: p
       intent(out) :: df
+!
+      if (pretend_lnTT) call fatal_error("calc_heat_cool_RTV","not implemented when pretend_lnTT = T")
 !
 !     All is in SI units and has to be rescaled to PENCIL units
 !
@@ -2578,7 +2595,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
-    subroutine calc_tau_ss_exterior(f,df)
+    subroutine calc_tau_ss_exterior(df,p)
 !
 !  entropy relaxation to zero on time scale tau_ss_exterior within
 !  exterior region. For the time being this means z > zgrav.
@@ -2588,17 +2605,19 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       use Cdata
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
       real :: scl
 !
-      intent(in) :: f
+      intent(in) :: p
       intent(out) :: df
+!
+      if (pretend_lnTT) call fatal_error("calc_tau_ss_exterior","not implemented when pretend_lnTT = T")
 !
       if (headtt) print*,'calc_tau_ss_exterior: tau=',tau_ss_exterior
       if (z(n)>zgrav) then
         scl=1./tau_ss_exterior
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-scl*f(l1:l2,m,n,iss)
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-scl*p%ss
       endif
 !
     endsubroutine calc_tau_ss_exterior
@@ -2854,7 +2873,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
     endsubroutine gradlogchit_profile
 !***********************************************************************
-    subroutine newton_cool(f,df,p)
+    subroutine newton_cool(df,p)
 !
 !  Keeps the temperature in the lower chromosphere and the upper corona
 !  at a constant level using newton cooling
@@ -2863,12 +2882,13 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
       use EquationOfState, only: rho0
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnTT,lnrho,newton
       real :: lnTTor,xil,unit_temp
       real :: p0,p1,p2,p3,p4
       type (pencil_case) :: p
+!
+      if (pretend_lnTT) call fatal_error("newton_cool","not implemented when pretend_lnTT = T")
 !    
 !     Initial temperature profile is given in ln(T) over z in Mm
 !     It is independent of grid and unit system

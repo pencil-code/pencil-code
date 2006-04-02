@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.229 2006-03-31 17:10:27 theine Exp $ 
+! $Id: param_io.f90,v 1.230 2006-04-02 03:34:12 mee Exp $ 
 
 module Param_IO
 
@@ -59,7 +59,7 @@ module Param_IO
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
        random_gen,nfilter,lserial_io, &
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
-       lwrite_aux,lcalc_cp,pretend_lnTT, &
+       lwrite_aux,pretend_lnTT, &
        lprocz_slowest, lcopysnapshots_exp, &
        bcx,bcy,bcz,r_int,r_ext,r_ref, &
        mu0,force_lower_bound,force_upper_bound, &
@@ -85,7 +85,7 @@ module Param_IO
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2,&
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
-       lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
+       lwrite_aux,onedall,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
        save_lastsnap, &
        force_lower_bound,force_upper_bound,twod, &
        border_frac,border_frac_x,border_frac_y,border_frac_z, &

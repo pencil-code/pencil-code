@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.19 2006-02-08 14:08:19 mee Exp $
+! $Id: noeos.f90,v 1.20 2006-04-02 03:34:12 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -37,8 +37,6 @@ module EquationOfState
 
   ! secondary parameters calculated in initialize
 
-  real :: lnTT0 
-
   real :: cp=impossible, cp1=impossible
 
   ! input parameters
@@ -50,7 +48,7 @@ module EquationOfState
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp=.false. 
-  real :: gamma=5./3., gamma1=2./3.
+  real :: gamma=5./3., gamma1=2./3.,gamma11=3./5.
   real :: cs2bot=1., cs2top=1. 
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
@@ -79,7 +77,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.19 2006-02-08 14:08:19 mee Exp $')
+           '$Id: noeos.f90,v 1.20 2006-04-02 03:34:12 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -88,6 +86,7 @@ module EquationOfState
 !  dummy
 !
       gamma1=gamma-1.
+      gamma11=1./gamma
 !      cs20=0.          ! to avoid wrong results with samples/testfield
 ! wd: commented out as it creates more problems than it solves
 !
@@ -133,14 +132,6 @@ module EquationOfState
     if(NO_WARN) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioncalc
-!***********************************************************************
-    subroutine perturb_energy(lnrho,ee,ss,lnTT,yH)
-      real, dimension(nx), intent(in) :: lnrho,ee
-      real, dimension(nx), intent(out) :: ss,lnTT,yH
-
-      call eoscalc_pencil(ilnrho_ee,lnrho,ee,ss=ss,lnTT=lnTT)
-      yH=impossible
-    end subroutine perturb_energy
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
       
@@ -259,6 +250,16 @@ module EquationOfState
       if (NO_WARN) print*,f,hlnrho,hss !(keep compiler quiet)
 !
     endsubroutine temperature_hessian
+!***********************************************************************
+    subroutine eosperturb(f,psize,ee,pp)
+      
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(in), optional :: ee,pp
+
+      call not_implemented("eosperturb")
+
+    end subroutine eosperturb
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,kapparho)
 !

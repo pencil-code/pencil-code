@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.115 2006-03-25 23:02:04 brandenb Exp $
+! $Id: interstellar.f90,v 1.116 2006-04-02 03:34:12 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -279,7 +279,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.115 2006-03-25 23:02:04 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.116 2006-04-02 03:34:12 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -610,9 +610,10 @@ module Interstellar
 !
       use Cdata, only: lroot, headtt, lfirst, ldiagnos, ldt, m, n,  &
                        iss, unit_length, unit_velocity, dt1_max, z, &
-                       datadir
+                       datadir, pretend_lnTT
 !
       use Sub, only: max_mn_name, sum_mn_name
+      use EquationOfState, only: gamma, gamma11
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -731,7 +732,11 @@ module Interstellar
 !  so therefore we now need to multiply by TT1.
 !
        f(l1:l2,m,n,icooling)=cool
-       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%TT1*(heat-cool)
+       if (pretend_lnTT) then
+         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%TT1*(heat-cool)*gamma
+       else
+         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%TT1*(heat-cool)
+       endif
 !      
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
@@ -829,7 +834,7 @@ module Interstellar
 !
 !  Check for SNII, via self-regulating scheme.
 !
-    use Cdata, only: dx, dy, dz, t, ilnrho, iss, headtt, lroot
+    use Cdata, only: dx, dy, dz, t, ilnrho, headtt, lroot
     use General, only: random_number_wrapper
     use Mpicomm, only: mpireduce_sum, mpibcast_real
     use EquationOfState, only: eoscalc
@@ -856,8 +861,6 @@ module Interstellar
     do n=n1,n2
       do m=m1,m2
         rho(1:nx)=exp(f(l1:l2,m,n,ilnrho))
-        ss(1:nx)=f(l1:l2,m,n,iss)
-
         call eoscalc(f,nx,yH=yH,lnTT=lnTT)
         TT=exp(lnTT)
 
@@ -1098,10 +1101,10 @@ module Interstellar
 !  As a result, the SN position is *not* independent of ncpus (or of nprocy 
 !  and nprocz).  (It is repeatable given fixed nprocy/z though.)
 !
-    use Cdata, only: lroot, iproc, ilnrho, iss
+    use Cdata, only: lroot, iproc, ilnrho
     use General, only: random_number_wrapper
 !    use Mpicomm
-    use EquationOfState, only: eoscalc,ilnrho_ss
+    use EquationOfState, only: eoscalc
 !
     real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
     real, intent(in) , dimension(ncpus) :: cloud_mass_byproc
@@ -1109,7 +1112,7 @@ module Interstellar
     real, dimension(0:ncpus) :: cum_prob_byproc
     real, dimension(1) :: franSN
     real :: cloud_mass,cum_mass,cum_prob_onproc
-    real :: lnrho,rho,ss,lnTT,TT,yH
+    real, dimension(nx) :: lnrho,rho,ss,lnTT,TT,yH
     integer :: icpu,l,m,n
 !
 !
@@ -1156,24 +1159,23 @@ module Interstellar
       cum_mass=0.0
 find_SN: do n=n1,n2
       do m=m1,m2
-      do l=l1,l2
         lnrho=f(l,m,n,ilnrho)
         rho=exp(lnrho)
-        ss=f(l,m,n,iss)
-        call eoscalc(ilnrho_ss,lnrho,ss,yH=yH,lnTT=lnTT)
+        call eoscalc(f,nx,yH=yH,lnTT=lnTT)
         TT=exp(lnTT)
-        if (rho >= cloud_rho .and. TT <= cloud_TT) then
-          cum_mass=cum_mass+rho
-          cum_prob_onproc=cum_mass/cloud_mass
-          if (franSN(1) <= cum_prob_onproc) then
-            l_SN=l; m_SN=m; n_SN=n
-            if (lroot.and.ip<14) &
-              print*,'position_SN_bycloudmass: cum_mass,cum_prob_onproc,franSN(1)=', &
-                               cum_mass,cum_prob_onproc,franSN(1)
-            exit find_SN
+        do l=1,nx
+          if (rho(l) >= cloud_rho .and. TT(l) <= cloud_TT) then
+            cum_mass=cum_mass+rho(l)
+            cum_prob_onproc=cum_mass/cloud_mass
+            if (franSN(1) <= cum_prob_onproc) then
+              l_SN=l+l1-1; m_SN=m; n_SN=n
+              if (lroot.and.ip<14) &
+                print*,'position_SN_bycloudmass: cum_mass,cum_prob_onproc,franSN(1)=', &
+                                 cum_mass,cum_prob_onproc,franSN(1)
+              exit find_SN
+            endif
           endif
-        endif
-      enddo
+        enddo
       enddo
       enddo find_SN
     endif
@@ -1282,11 +1284,12 @@ find_SN: do n=n1,n2
 !   27-aug-2003/tony: coded
 !    
     use Cdata
-    use EquationOfState, only: eoscalc,ilnrho_ss
+    use EquationOfState, only: eoscalc,ilnrho_lnTT
     use Mpicomm, only: mpibcast_int, mpibcast_real
 !      
     real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
 !    
+    real, dimension(nx) :: lnTT
     real, dimension(5) :: fmpi5
     integer, dimension(4) :: impi4
 !
@@ -1307,18 +1310,21 @@ find_SN: do n=n1,n2
       !lnrho_SN=alog(sum(exp(f(l_SN:l_SN+1,m_SN:m_SN+1,n_SN:n_SN+1,ilnrho)))/4.)
       !ss_SN=sum(f(l_SN:l_SN+1,m_SN:m_SN+1,n_SN:n_SN+1,iss))/4.
       lnrho_SN=f(l_SN,m_SN,n_SN,ilnrho)
-      ss_SN=f(l_SN,m_SN,n_SN,iss)
+      m=m_SN
+      n=n_SN
+      call eoscalc(f,nx,lnTT=lnTT)
+      lnTT_SN=lnTT(l_SN-l1+1)
       x_SN=0.; y_SN=0.; z_SN=0.
       if (nxgrid/=1) x_SN=x(l_SN)+dx/2.
       if (nygrid/=1) y_SN=y(m_SN)+dy/2.
       if (nzgrid/=1) z_SN=z(n_SN)+dz/2.
     print*, &
- 'share_SN_parameters: (MY SNe) iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN,TT_SN = ' &
-          ,iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN,TT_SN
+ 'share_SN_parameters: (MY SNe) iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,lnTT_SN = ' &
+          ,iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,lnTT_SN
     else
       ! Better initialise these to something on the other processors
       lnrho_SN=0.
-      ss_SN=0.
+      lnTT_SN=0.
       x_SN=0.
       y_SN=0.
       z_SN=0.
@@ -1326,16 +1332,16 @@ find_SN: do n=n1,n2
 !
 !  Broadcast to all processors.
 !
-    fmpi5=(/ x_SN, y_SN, z_SN, lnrho_SN, ss_SN /)
+    fmpi5=(/ x_SN, y_SN, z_SN, lnrho_SN, lnTT_SN /)
     call mpibcast_real(fmpi5,5,iproc_SN)
 !
     x_SN=fmpi5(1); y_SN=fmpi5(2); z_SN=fmpi5(3); 
-    lnrho_SN=fmpi5(4); ss_SN=fmpi5(5)
+    lnrho_SN=fmpi5(4); lnTT_SN=fmpi5(5)
 !
     rho_SN=exp(lnrho_SN);
 !
-    call eoscalc(ilnrho_ss,lnrho_SN,ss_SN, &
-                    yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
+    call eoscalc(ilnrho_lnTT,lnrho_SN,lnTT_SN, &
+                    yH=yH_SN,ss=ss_SN,ee=ee_SN)
     TT_SN=exp(lnTT_SN)
 !
     if (lroot.and.ip<54) print*, &
@@ -1353,10 +1359,10 @@ find_SN: do n=n1,n2
       !  20-may-03/tony: pencil formulation and broken into subroutines
       !
       use Cdata, only: lroot,dx,dy,dz,dimensionality, &
-                       ilnrho,iss,iecr,ilntt,iyh, &
+                       ilnrho,iecr,ilntt,iyh, &
                        iuu, iux, iuy, iuz, &
                        it,t,datadir,m,n, pi
-      use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, perturb_energy
+      use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb
       use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double, mpireduce_sum_double
 !      use Sub, only: update_snaptime
 !      use Slices, only: tvid, nvid
@@ -1371,14 +1377,14 @@ find_SN: do n=n1,n2
       double precision :: cavity_depth, r_cavity
       double precision :: EEtot_SN=0.
 !,EE2_SN=0.
-      real :: rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new
+      real :: rho_SN_new,lnrho_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new
       real :: TT_SN_new,dv
 !      
       double precision, dimension(nx) :: deltarho, deltaEE
       double precision, dimension(nx,3) :: deltauu
       real, dimension(1) :: fmpi1, fmpi1_tmp
       double precision, dimension(2) :: dmpi2, dmpi2_tmp
-      real, dimension(nx) ::  lnrho, ss, yH, lnTT, TT, rho_old, ee_old
+      real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old
       real, dimension(nx,3) :: uu
       character (len=4) :: ch
 !
@@ -1488,7 +1494,7 @@ find_SN: do n=n1,n2
       ee_SN_new = (ee_SN+frac_eth*c_SN/(rho_SN+cmass_SN))
       if (lroot) print*,'explode_SN: rho_SN_new,ee_SN_new=',rho_SN+cmass_SN,ee_SN_new
       call eoscalc(ilnrho_ee,real(log(rho_SN+cmass_SN)),ee_SN_new, &
-                              ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
+                              lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
 
       if(lroot.and.ip<32) print*, &
@@ -1542,7 +1548,7 @@ find_SN: do n=n1,n2
            ee_SN_new=(ee_SN*rho_SN+frac_eth*c_SN)/rho_SN_new
 
            call eoscalc(ilnrho_ee,lnrho_SN_new,ee_SN_new, &
-                                 ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
+                                 lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 
            if(lroot.and.ip<32) print*, &
@@ -1576,7 +1582,6 @@ find_SN: do n=n1,n2
             ! Get the old energy
             lnrho=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho) 
-            ss=f(l1:l2,m,n,iss)
             deltarho=0.
 
             call eoscalc(f,nx,yH=yH,lnTT=lnTT,ee=ee_old)
@@ -1621,22 +1626,20 @@ find_SN: do n=n1,n2
 !  lnrho=log(rho_min)
 !    where (rho_old(1:nx)+deltarho(1:nx) .gt. rho_min) lnrho=log(rho_old(1:nx)+deltarho(1:nx))
   
-            call perturb_energy(lnrho,real((ee_old*rho_old+deltaEE*frac_eth) &
-                                                    /exp(lnrho)),ss,lnTT,yH)
             TT=exp(lnTT)
 
             if (lcosmicray.and.lSN_ecr) then 
               f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + (deltaEE * frac_ecr) 
             endif
-            call eoscalc(ilnrho_ee,lnrho,real(ee_old+(deltaEE/rho_old)),ss=ss, &
-                                                           lnTT=lnTT,yH=yH)
 !
 !  Save changes to f-array
 !
+            f(l1:l2,m,n,ilnrho)=lnrho
             if (lSN_eth) then
-              f(l1:l2,m,n,ilnrho)=lnrho
-              f(l1:l2,m,n,iss)=ss
+              call eosperturb(f,nx,ee=real((ee_old*rho_old+deltaEE*frac_eth) &
+                                                    /exp(lnrho)))
             endif
+            call eoscalc(f,nx,lnTT=lnTT,yH=yH)
             lnTT=log(TT)
             if (ilnTT.ne.0) f(l1:l2,m,n,ilnTT)=lnTT
             if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH

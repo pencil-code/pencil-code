@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.5 2006-03-30 12:20:27 ajohan Exp $
+! $Id: entropy_onefluid.f90,v 1.6 2006-04-02 03:34:11 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.5 2006-03-30 12:20:27 ajohan Exp $")
+           "$Id: entropy_onefluid.f90,v 1.6 2006-04-02 03:34:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -189,7 +189,7 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz,g0
-      use EquationOfState, only: cs0, lnTT0, get_soundspeed, &
+      use EquationOfState, only: cs0, get_soundspeed, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2
 !AB: Tony, what's the plan; should these entries all be declared at the
@@ -337,18 +337,11 @@ module Entropy
 !
       select case(initss(1))
         case('geo-kws','geo-benchmark')
-          if (lroot) then
-            print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
-            if (abs(exp(lnTT0)-T0) > epsi) then
-              print*,'initialize_entropy: T0 is not consistent with cs20; using cs20'
-              T0=exp(lnTT0)
-            endif
-          endif
 !
 !         temperatures at shell boundaries
           beta1=g0/(mpoly+1)
           TT_ext=T0
-          TT_int=1+beta1*(1/r_int-1)
+          TT_int=TT_ext*(1.+beta1*(1/r_int-1))
 !         TT_ext=gamma/gamma1*T0
 !         TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
 !         set up cooling parameters for spherical shell in terms of
@@ -1104,13 +1097,14 @@ module Entropy
         call shell_ss_perturb(pert_TT)
 !
         where (r_mn >= r_ext) TT = TT_ext
-        where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)+pert_TT
+        where (r_mn < r_ext .AND. r_mn > r_int) TT = TT_ext*(1.+beta1*(1/r_mn-1))+pert_TT
 !       where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
 !       goes with alternate scaling in initialize_entropy
         where (r_mn <= r_int) TT = TT_int
 !
         lnrho=f(l1:l2,m,n,ilnrho)
         lnTT=log(TT)
+!ajwm Should be changed to an eosperturb call
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
         f(l1:l2,m,n,iss)=ss
 !
@@ -1672,7 +1666,7 @@ module Entropy
 !
 !  Calculate viscous contribution to entropy
 !
-      if (lviscosity) call calc_viscous_heat(f,df,p,Hmax)
+      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
 !
 !  thermal conduction
 !
@@ -1717,7 +1711,7 @@ module Entropy
 !  entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
-      if (lspecial) call special_calc_entropy(f,df,p%uu,p%glnrho,p%divu,p%rho1,p%lnrho,p%cs2,p%TT1)
+      if (lspecial) call special_calc_entropy(df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.

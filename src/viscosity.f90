@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.17 2006-02-24 08:29:33 ajohan Exp $
+! $Id: viscosity.f90,v 1.18 2006-04-02 03:34:12 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -81,7 +81,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.17 2006-02-24 08:29:33 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.18 2006-04-02 03:34:12 mee Exp $")
 
       ivisc(1)='nu-const'
 
@@ -369,7 +369,7 @@ module Viscosity
 !
     endsubroutine calc_viscosity
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,p,Hmax)
+    subroutine calc_viscous_heat(df,p,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -379,7 +379,6 @@ module Viscosity
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
@@ -409,11 +408,11 @@ module Viscosity
 !      
       if (lfirst .and. ldt) Hmax=Hmax+heat
 !
-      if(NO_WARN) print*,f,p  !(keep compiler quiet)
+      if(NO_WARN) print*,p  !(keep compiler quiet)
 !        
     endsubroutine calc_viscous_heat
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,p)
+    subroutine calc_viscous_force(df,p)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -425,7 +424,6 @@ module Viscosity
       use Sub
       use Global, only: get_global
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
@@ -434,7 +432,7 @@ module Viscosity
       real, dimension (nx) :: ufvisc,rufvisc,murho1,nu_smag, diffus_total,rr_mn
       integer :: i,j
 !
-      intent (in) :: f,p
+      intent (in) :: p
       intent (inout) :: df
 !
 !  viscosity operator

@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.1 2006-03-31 17:10:27 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.2 2006-04-02 03:34:12 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -36,8 +36,6 @@ module EquationOfState
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
 
   ! secondary parameters calculated in initialize
-
-  real :: lnTT0 
 
   real :: cp=impossible, cp1=impossible
 
@@ -80,7 +78,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.1 2006-03-31 17:10:27 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.2 2006-04-02 03:34:12 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

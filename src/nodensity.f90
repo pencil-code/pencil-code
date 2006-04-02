@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.41 2006-02-08 14:08:18 mee Exp $
+! $Id: nodensity.f90,v 1.42 2006-04-02 03:34:12 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -17,7 +17,7 @@ module Density
 
   use Cparam
   use Messages
-  use EquationOfState, only: cs0,cs20,lnrho0,rho0,lcalc_cp, &
+  use EquationOfState, only: cs0,cs20,lnrho0,rho0, &
                              gamma,gamma1,cs2top,cs2bot
 
   implicit none
@@ -55,7 +55,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.41 2006-02-08 14:08:18 mee Exp $")
+           "$Id: nodensity.f90,v 1.42 2006-04-02 03:34:12 mee Exp $")
 !
     endsubroutine register_density
 !***********************************************************************

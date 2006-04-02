@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.5 2006-02-03 16:13:17 ajohan Exp $
+! $Id: noviscosity.f90,v 1.6 2006-04-02 03:34:12 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.5 2006-02-03 16:13:17 ajohan Exp $")
+           "$Id: noviscosity.f90,v 1.6 2006-04-02 03:34:12 mee Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -170,7 +170,7 @@ module Viscosity
 !
     endsubroutine calc_viscosity
 !!***********************************************************************
-    subroutine calc_viscous_heat(f,df,p,Hmax)
+    subroutine calc_viscous_heat(df,p,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -178,19 +178,18 @@ module Viscosity
 !
       use Cdata
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
       real, dimension (nx) :: Hmax
 !
-      intent(in) :: f,df,p,Hmax
+      intent(in) :: df,p,Hmax
 !
-      if(NO_WARN) print*,f,df,p,Hmax  !(keep compiler quiet)
+      if(NO_WARN) print*,df,p,Hmax  !(keep compiler quiet)
 !
     endsubroutine calc_viscous_heat
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,p)
+    subroutine calc_viscous_force(df,p)
 !    
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -198,15 +197,14 @@ module Viscosity
 !
       use Cdata
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
       integer :: i
 !
-      intent (in) :: f,df,p
+      intent (in) :: df,p
 !
-      if(NO_WARN) print*,f,df,p  !(keep compiler quiet)
+      if(NO_WARN) print*,df,p  !(keep compiler quiet)
 !        
     end subroutine calc_viscous_force
 !***********************************************************************

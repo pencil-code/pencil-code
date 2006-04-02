@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.12 2005-09-30 08:14:43 ajohan Exp $
+! $Id: nospecial.f90,v 1.13 2006-04-02 03:34:12 mee Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.12 2005-09-30 08:14:43 ajohan Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.13 2006-04-02 03:34:12 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.12 2005-09-30 08:14:43 ajohan Exp $")
+           "$Id: nospecial.f90,v 1.13 2006-04-02 03:34:12 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -345,7 +345,7 @@ module Special
 
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_calc_density(f,df,uu,glnrho,divu,lnrho)
+    subroutine special_calc_density(df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -357,9 +357,8 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (nx), intent(in) :: uu,glnrho,divu,lnrho 
+      type (pencil_case), intent(in) :: p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -371,11 +370,11 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,uu,glnrho,divu,lnrho
+      if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_density
 !***********************************************************************
-    subroutine special_calc_hydro(f,df,uu,glnrho,divu,rho1,u2,uij)
+    subroutine special_calc_hydro(df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -387,9 +386,8 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (nx), intent(in) :: uu,glnrho,divu,rho1,u2,uij 
+      type (pencil_case), intent(in) :: p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -403,11 +401,11 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,uu,glnrho,divu,rho1,u2,uij
+      if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(f,df,uu,rho1,TT1,uij)
+    subroutine special_calc_magnetic(df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -419,9 +417,8 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (nx), intent(in) :: uu,rho1,TT1,uij 
+      type (pencil_case), intent(in) :: p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -435,11 +432,11 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,uu,TT1,uij,rho1
+      if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
-    subroutine special_calc_entropy(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+    subroutine special_calc_entropy(df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -451,9 +448,8 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (nx), intent(in) :: uu,glnrho,divu,rho1,lnrho,cs2,TT1 
+      type (pencil_case), intent(in) :: p
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -465,7 +461,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1
+      if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_entropy
 !***********************************************************************
