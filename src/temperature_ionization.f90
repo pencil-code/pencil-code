@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.1 2006-03-31 17:10:27 theine Exp $
+! $Id: temperature_ionization.f90,v 1.2 2006-04-02 18:29:53 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED glnTT,uglnTT,TT1,yH,mu,pp,cv1,ee,ss
+! PENCILS PROVIDED glnTT,uglnTT,TT1,yH,mu,pp,cv1,cp1,ee,ss
 ! PENCILS PROVIDED dlnppdlnTT,dlnppdlnrho,glnpp,cs2,Ma2
 !
 !***************************************************************
@@ -32,9 +32,9 @@ module Entropy
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
   real :: TT_ion,Rgas,rho_H,rho_e,rho_He
   real :: xHe=0.0,mu_0=0.0
-  real :: heat_uniform=0.0
+  real :: heat_uniform=0.0,Kconst=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
-  logical :: lupw_lnTT,lcalc_heat_cool
+  logical :: lupw_lnTT,lcalc_heat_cool=.false.,lheatc_simple=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
@@ -51,12 +51,13 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      xHe,heat_uniform
+      xHe,heat_uniform,Kconst
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
     integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
-    integer :: idiag_eth=0,idiag_ssm=0,idiag_cv=0
+    integer :: idiag_eth=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
+    integer :: idiag_dtchi=0,idiag_dtc
 
   contains
 
@@ -84,7 +85,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.1 2006-03-31 17:10:27 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.2 2006-04-02 18:29:53 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -147,6 +148,10 @@ module Entropy
 !  Check whether we want heating/cooling
 !
       lcalc_heat_cool = (heat_uniform/=0.0)
+!
+!  Check whether we want heat conduction
+!
+      lheatc_simple = (Kconst/=0.0)
 
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
 !        
@@ -283,6 +288,8 @@ module Entropy
 
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
 
+      if (lheatc_simple) lpenc_requested(i_cp1)=.true.
+
 !
 !  Diagnostics
 !
@@ -298,6 +305,12 @@ module Entropy
       endif
       if (idiag_ssm/=0) lpenc_diagnos(i_ss)=.true.
       if (idiag_cv/=0) lpenc_diagnos(i_cv1)=.true.
+      if (idiag_cp/=0) lpenc_diagnos(i_cp1)=.true.
+      if (idiag_dtchi/=0) then
+        lpenc_diagnos(i_rho1)=.true.
+        lpenc_diagnos(i_cv1)=.true.
+      endif
+      if (idiag_dtchi/=0) lpenc_diagnos(i_cs2)=.true.
 
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -432,9 +445,18 @@ module Entropy
 !  Inverse specific heat at constant volume (i.e. density)
 !
       if (lpencil(i_cv1)) then
-        tmp1 = p%yH * (1-p%yH) / ( (2-p%yH) * (1+p%yH+xHe) )
-        tmp2 = 1.5+TT_ion*p%TT1
-        p%cv1= (p%mu/Rgas) / (1.5 + tmp1*tmp2**2)
+        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+        tmp2 = 1.5 + TT_ion*p%TT1
+        p%cv1 = (p%mu/Rgas)/(1.5 + tmp1*tmp2**2)
+      endif
+
+!
+!  Inverse specific heat at constant pressure
+!
+      if (lpencil(i_cp1)) then
+        tmp1 = p%yH*(1-p%yH)/(2 + xHe*(2-p%yH))
+        tmp2 = 2.5+TT_ion*p%TT1
+        p%cp1 = (p%mu/Rgas)/(2.5 + tmp1*tmp2**2)
       endif
 
 !
@@ -514,7 +536,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar), intent (out) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: heat,Hmax
+      real, dimension (nx) :: visc_heat,Hmax
       integer :: j
 !
 !  Identify module and boundary conditions
@@ -547,20 +569,20 @@ module Entropy
       endif
 !
 !  Calculate viscous contribution to temperature
+!  (visc_heat has units of energy/mass)
 !
-!  (Commented out, as calc_viscous_heat will need to be adjusted for this)
-!
-      !if (lviscosity) then
-      !  call calc_viscous_heat(f,df,p,heat,Hmax)
-      !  df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*heat
-      !endif
+      if (lviscosity) then
+        call calc_viscous_heat(df,p,visc_heat,Hmax)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*visc_heat
+      endif
 !
 !  Various heating/cooling mechanisms
 !
-      if (lcalc_heat_cool) then
-        call calc_heat_cool(f,df,p,heat,Hmax)
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%rho1*p%cv1*p%TT1*heat
-      endif
+      if (lcalc_heat_cool) call calc_heat_cool(f,df,p)
+!
+!  Thermal conduction
+!
+      if (lheatc_simple) call calc_heatcond_simple(f,df,p)
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
@@ -581,17 +603,59 @@ module Entropy
         if (idiag_eth/=0) call sum_mn_name(p%ee/p%rho1,idiag_eth)
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
         if (idiag_cv/=0) call sum_mn_name(1/p%cv1,idiag_cv)
+        if (idiag_cp/=0) call sum_mn_name(1/p%cp1,idiag_cp)
+        if (idiag_dtc/=0) then
+          call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        endif
       endif
 
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,p,heat,Hmax)
+    subroutine calc_heatcond_simple(f,df,p)
+
+      use Sub, only: max_mn_name,dot,del2
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx) :: heat,Hmax
+      real, dimension (nx) :: chi,gamma,glnTT2,del2lnTT
+!
+!  Thermal diffusivity
+!
+      chi = Kconst*p%rho1*p%cp1
+!
+!  ``gamma''
+!
+      gamma = p%cv1/p%cp1
+!
+!  glnTT2 and del2lnTT
+!
+      call dot(p%glnTT,p%glnTT,glnTT2)
+      call del2(f,iss,del2lnTT)
+!
+!  Add heat conduction to RHS of temperature equation
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + gamma*chi*(glnTT2 + del2lnTT)
+!
+!  check maximum diffusion from thermal diffusion
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=max(diffus_chi,chi*dxyz_2)
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+
+    end subroutine calc_heatcond_simple
+!***********************************************************************
+    subroutine calc_heat_cool(f,df,p)
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+
+      real, dimension (nx) :: heat
 !
 !  Initialize
 !
@@ -601,9 +665,9 @@ module Entropy
 !
       if (heat_uniform/=0.0) heat = heat+heat_uniform
 !
-!  For the timestep
+!  Add to RHS of temperature equation
 !
-      if (lfirst.and.ldt) Hmax = Hmax + p%rho1*heat
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%rho1*p%cv1*p%TT1*heat
 
     endsubroutine calc_heat_cool
 !***********************************************************************
@@ -628,7 +692,8 @@ module Entropy
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
-        idiag_eth=0; idiag_ssm=0; idiag_cv=0
+        idiag_eth=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
+        idiag_dtchi=0; idiag_dtc=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -643,6 +708,9 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'eth',idiag_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'cv',idiag_cv)
+        call parse_name(iname,cname(iname),cform(iname),'cp',idiag_cp)
+        call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
+        call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
       enddo
 !
 !  write column where which variable is stored
@@ -661,6 +729,9 @@ module Entropy
         write(3,*) 'i_eth=',idiag_eth
         write(3,*) 'i_ssm=',idiag_ssm
         write(3,*) 'i_cv=',idiag_cv
+        write(3,*) 'i_cp=',idiag_cp
+        write(3,*) 'i_dtchi=',idiag_dtchi
+        write(3,*) 'i_dtc=',idiag_dtc
       endif
 !
     endsubroutine rprint_entropy

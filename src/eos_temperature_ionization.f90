@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.2 2006-04-02 03:34:12 mee Exp $
+! $Id: eos_temperature_ionization.f90,v 1.3 2006-04-02 18:29:53 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -48,7 +48,7 @@ module EquationOfState
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
   logical :: lcalc_cp=.false. 
-  real :: gamma=5./3., gamma1=2./3.
+  real :: gamma=5./3., gamma1=2./3., gamma11=3./5.
   real :: cs2bot=1., cs2top=1. 
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
@@ -78,7 +78,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.2 2006-04-02 03:34:12 mee Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.3 2006-04-02 18:29:53 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -133,13 +133,15 @@ module EquationOfState
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy(lnrho,ee,ss,lnTT,yH)
-      real, dimension(nx), intent(in) :: lnrho,ee
-      real, dimension(nx), intent(out) :: ss,lnTT,yH
+    subroutine eosperturb(f,psize,ee,pp)
 
-      call eoscalc_pencil(ilnrho_ee,lnrho,ee,ss=ss,lnTT=lnTT)
-      yH=impossible
-    end subroutine perturb_energy
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(in), optional :: ee,pp
+
+      call not_implemented("eosperturb")
+
+    end subroutine eosperturb
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
       
