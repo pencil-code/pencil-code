@@ -82,25 +82,25 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       pc_check_math,location='pc_eoscalc - ideal gas constants from code'
  
       pc_units,obj=units,param=param,dim=dim
-      if (param.mu eq impossible) then begin
-        mu_tmp=1.+2.97153*xHe
-      endif else begin
-        mu_tmp=param.mu
-      endelse
-      pc_check_math,location='pc_eoscalc - calc mu from composition'
+;      if (param.mu eq impossible) then begin
+;        mu_tmp=1.+2.97153*xHe
+;      endif else begin
+;        mu_tmp=param.mu
+;      endelse
+;      pc_check_math,location='pc_eoscalc - calc mu from composition'
 
       cs20=param.cs0^2
       lnrho0=alog(param.rho0)
       gamma=param.gamma
       gamma1=gamma-1.     
-      R_cgs=8.3144D7
+;      R_cgs=8.3144D7
 
       cp=1.
-      if (param.lcalc_cp) then begin
-        ;cp=k_B/(param.mu*m_H)
-        cp=float(R_cgs*gamma/(gamma1*mu_tmp)/units.velocity^2)
-        pc_check_math,location='pc_eoscalc - cp given lcalc_cp '
-      endif
+;      if (param.lcalc_cp) then begin
+;        ;cp=k_B/(param.mu*m_H)
+;        cp=float(R_cgs*gamma/(gamma1*mu_tmp)/units.velocity^2)
+;        pc_check_math,location='pc_eoscalc - cp given lcalc_cp '
+;      endif
       cp1=1./cp
       if (gamma ne 1.) then begin
         lnTT0=alog(cs20/(cp * (gamma-1)))
