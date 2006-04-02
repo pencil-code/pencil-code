@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.35 2006-04-02 03:34:12 mee Exp $
+! $Id: eos_idealgas.f90,v 1.36 2006-04-02 21:38:50 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -93,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.35 2006-04-02 03:34:12 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.36 2006-04-02 21:38:50 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -106,7 +106,7 @@ module EquationOfState
 !***********************************************************************
     subroutine initialize_eos()
 !
-      real :: mu_tmp
+      real :: mu_tmp, save_unit_temperature
 !
 !  set gamma1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
@@ -119,15 +119,23 @@ module EquationOfState
 !
 !
       ! Avoid setting unit_temperature=0 to avoid floating point exceptions
+      save_unit_temperature=unit_temperature
       if (gamma1 /= 0.) then
         if (mu /= impossible .or. xHe /= impossible) then
+          if (lroot) print*,'initialize_eos: Calculating unit_temperature based on mu or xHe'
           call getmu(mu_tmp)
-          unit_temperature=unit_velocity**2*gamma1*mu_tmp/R_cgs
+          unit_temperature=unit_velocity**2*gamma1*mu_tmp/R_cgs*gamma11
         endif
       endif
-      if (cp_cgs /= 0.) &
-          unit_temperature=unit_velocity**2*gamma/cp_cgs
+      if (cp_cgs /= 0.) then
+          if (lroot) print*,'initialize_eos: Calculating unit_temperature based on cp_cgs'
+          unit_temperature=unit_velocity**2/cp_cgs
+      endif
       if (lroot) print*,'initialize_eos: unit_temperature=',unit_temperature
+      if (abs(save_unit_temperature-unit_temperature) > 100*epsi) then
+        call fatal_error("initialize_eos", &
+               "unit_temperature specified does not match that calculated!")
+      endif
 !
 ! Need to recalculate some constants
 !
