@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.383 2006-04-02 03:34:11 mee Exp $
+! $Id: entropy.f90,v 1.384 2006-04-02 16:00:45 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.383 2006-04-02 03:34:11 mee Exp $")
+           "$Id: entropy.f90,v 1.384 2006-04-02 16:00:45 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1653,7 +1653,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: rhs,Hmax=0.
+      real, dimension (nx) :: rhs,visc_heat,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
       real :: zbot,ztop,xi,profile_cor
       integer :: j,ju
@@ -1735,8 +1735,12 @@ module Entropy
       endif
 !
 !  Calculate viscous contribution to entropy
+!  (visc_heat has units energy/mass)
 !
-      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
+      if (lviscosity) then
+        call calc_viscous_heat(df,p,visc_heat,Hmax)
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*visc_heat
+      endif
 !
 !  thermal conduction
 !
