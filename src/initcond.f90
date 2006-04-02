@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.150 2006-03-20 23:48:55 wlyra Exp $ 
+! $Id: initcond.f90,v 1.151 2006-04-02 03:10:08 mee Exp $ 
 
 module Initcond 
  
@@ -1003,7 +1003,7 @@ module Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, parameter :: ntotal=nz*nprocz,mtotal=nz*nprocz+2*nghost
-      real, dimension (mtotal) :: lnrho0,lnTT0,ss0
+      real, dimension (mtotal) :: lnrho0,ss0
       real :: tmp,var1,var2
       logical :: exist
       integer :: stat
