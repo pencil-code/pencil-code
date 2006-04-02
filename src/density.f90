@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.232 2006-04-02 03:34:11 mee Exp $
+! $Id: density.f90,v 1.233 2006-04-02 03:51:09 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.232 2006-04-02 03:34:11 mee Exp $")
+           "$Id: density.f90,v 1.233 2006-04-02 03:51:09 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -154,25 +154,6 @@ module Density
       integer :: i
       logical :: lnothing
 !
-!   make sure all relevant parameters are set for spherical shell problems
-!
-      select case(initlnrho(1))
-        case('geo-kws')
-          if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
-!ajwm Shouldn't be done here they should be set as input parameters in
-!ajwm start.in.  There may be a problem at present with run since these
-!ajwm vales will not get set consistantly.
-!ajwm cs0 and lnrho0 are parameters of the EOS not of density
-!        cs20=gamma
-!        cs0=sqrt(cs20)
-!        cp=5./2.
-!ajwm Routine should really be called initialize_eos eventually
-!ajwm important thing is the parameters of the Equation of State 
-!ajwm have changed so we'd better recalculate everything consistently
-!ajwm but that won't work either since 
-!        call initialize_ionization()
-      endselect
-!
 !  initialize cs2cool to cs20
 !  (currently disabled, because it causes problems with mdarf auto-test)
 !     cs2cool=cs20
@@ -180,7 +161,7 @@ module Density
 !
       if(diffrho==0.) then
 !
-!  FIXME: This will not work with RELOAD if cdiffrho is changed in run.in
+!  Made to work by adding diffrho + cdiffrho to the rprint reset list.
 !
         diffrho=cdiffrho*dxmin*cs0
       endif
@@ -1406,6 +1387,8 @@ module Density
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rhomy=0; idiag_rhomx=0
+        cdiffrho=0.
+        diffrho=0.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
