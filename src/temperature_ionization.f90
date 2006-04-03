@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.2 2006-04-02 18:29:53 theine Exp $
+! $Id: temperature_ionization.f90,v 1.3 2006-04-03 13:14:33 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -31,10 +31,11 @@ module Entropy
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
   real :: TT_ion,Rgas,rho_H,rho_e,rho_He
-  real :: xHe=0.0,mu_0=0.0
+  real :: xHe=0.1,mu_0=0.0
   real :: heat_uniform=0.0,Kconst=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT,lcalc_heat_cool=.false.,lheatc_simple=.false.
+  logical :: lcalc_yH=.true.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
@@ -46,18 +47,18 @@ module Entropy
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
-      kx_lnTT,ky_lnTT,kz_lnTT,xHe
+      kx_lnTT,ky_lnTT,kz_lnTT,xHe,lcalc_yH
 
   ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      xHe,heat_uniform,Kconst
+      heat_uniform,Kconst,xHe,lcalc_yH
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
     integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
     integer :: idiag_eth=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
-    integer :: idiag_dtchi=0,idiag_dtc
+    integer :: idiag_dtchi=0,idiag_dtc=0
 
   contains
 
@@ -85,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.2 2006-04-02 18:29:53 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.3 2006-04-03 13:14:33 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -423,12 +424,16 @@ module Entropy
 !  Ionization fraction
 !
       if (lpencil(i_yH)) then
-        where (TT_ion*p%TT1 < -log(tiny(TT_ion)))
-          rhs = rho_e*p%rho1*(p%TT1*TT_ion)**(-1.5)*exp(-TT_ion*p%TT1)
-        elsewhere
-          rhs = 0
-        endwhere
-        p%yH = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
+        if (lcalc_yH) then
+          where (TT_ion*p%TT1 < -log(tiny(TT_ion)))
+            rhs = rho_e*p%rho1*(p%TT1*TT_ion)**(-1.5)*exp(-TT_ion*p%TT1)
+            p%yH = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
+          elsewhere
+            p%yH = 0
+          endwhere
+        else
+          p%yH = 0
+        endif
       endif
 
 !
