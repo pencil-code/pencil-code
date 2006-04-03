@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.151 2006-04-02 03:10:08 mee Exp $ 
+! $Id: initcond.f90,v 1.152 2006-04-03 18:25:14 theine Exp $ 
 
 module Initcond 
  
@@ -1003,7 +1003,7 @@ module Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, parameter :: ntotal=nz*nprocz,mtotal=nz*nprocz+2*nghost
-      real, dimension (mtotal) :: lnrho0,ss0
+      real, dimension (mtotal) :: lnrho0,ss0,lnTT0
       real :: tmp,var1,var2
       logical :: exist
       integer :: stat
@@ -1045,9 +1045,13 @@ module Initcond
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
             if (ip<5) print*,"stratification: ",tmp,var1,var2
-            call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
             lnrho0(n)=var1
-            ss0(n)=tmp
+            if (ltemperature) then
+              lnTT0(n)=var2
+            else
+              call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
+              ss0(n)=tmp
+            endif
           else
             exit
           endif
@@ -1061,18 +1065,32 @@ module Initcond
   !  without ghost zones
   !
       case (ntotal+1)
-        do n=n1,n2
-          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
-          f(:,:,n,iss)=ss0(ipz*nz+n-nghost)
-        enddo
+        if (ltemperature) then
+          do n=n1,n2
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
+            f(:,:,n,ilnTT)=lnTT0(ipz*nz+n-nghost)
+          enddo
+        else
+          do n=n1,n2
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
+            f(:,:,n,iss)=ss0(ipz*nz+n-nghost)
+          enddo
+        endif
   !
   !  with ghost zones
   !
       case (mtotal+1)
-        do n=1,mz
-          f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
-          f(:,:,n,iss)=ss0(ipz*nz+n)
-        enddo
+        if (ltemperature) then
+          do n=1,mz
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+            f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
+          enddo
+        else
+          do n=1,mz
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+            f(:,:,n,iss)=ss0(ipz*nz+n)
+          enddo
+        endif
 
       case default
         if (lroot) then
