@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.384 2006-04-02 16:00:45 theine Exp $
+! $Id: entropy.f90,v 1.385 2006-04-03 11:32:38 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -158,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.384 2006-04-02 16:00:45 theine Exp $")
+           "$Id: entropy.f90,v 1.385 2006-04-03 11:32:38 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2394,22 +2394,22 @@ module Entropy
 !AB: Wolfgang, the last part of above comment seems wrong; 
 !AB: We do divide by rho and T. But what about the heating profile?
 !
-        ! heating profile, normalised, so volume integral = 1
+! heating profile, normalised, so volume integral = 1
         prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
              /(sqrt(pi/2.)*wheat*Lx*Ly)
         heat = luminosity*prof
-        ! smoothly switch on heating if required
+! smoothly switch on heating if required
         if ((ttransient > 0) .and. (t < ttransient)) then
           heat = heat * t*(2*ttransient-t)/ttransient**2
         endif
-        ! cooling profile; maximum = 1
 !AB: is ssref used anywhere?
         ssref = ss0 + (-log(gamma) + log(cs20))/gamma + grads0*ztop
 !
 !  allow for different cooling profile functions
 !  The gaussian default is rather broad and disturbs the entire interior
 !
-if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,z2,wcool
+        if (headtt) print*, 'cooling_profile: cooling_profile,z2,wcool=', &
+            cooling_profile, z2, wcool
         select case(cooling_profile)
         case ('gaussian')
           prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
