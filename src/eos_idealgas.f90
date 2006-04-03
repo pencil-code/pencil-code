@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.36 2006-04-02 21:38:50 mee Exp $
+! $Id: eos_idealgas.f90,v 1.37 2006-04-03 20:28:11 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -43,8 +43,8 @@ module EquationOfState
 !
   real :: lnTT0=impossible
 
-  real :: xHe=impossible   !0.1
-  real :: mu=impossible
+  real :: xHe=0.   !0.1
+  real :: mu=0.
 
   real :: cs0=1., rho0=1.
   real :: cs20=1., lnrho0=0.
@@ -93,7 +93,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.36 2006-04-02 21:38:50 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.37 2006-04-03 20:28:11 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -121,7 +121,7 @@ module EquationOfState
       ! Avoid setting unit_temperature=0 to avoid floating point exceptions
       save_unit_temperature=unit_temperature
       if (gamma1 /= 0.) then
-        if (mu /= impossible .or. xHe /= impossible) then
+        if (mu /= 0. .or. xHe /= 0.) then
           if (lroot) print*,'initialize_eos: Calculating unit_temperature based on mu or xHe'
           call getmu(mu_tmp)
           unit_temperature=unit_velocity**2*gamma1*mu_tmp/R_cgs*gamma11
@@ -132,10 +132,10 @@ module EquationOfState
           unit_temperature=unit_velocity**2/cp_cgs
       endif
       if (lroot) print*,'initialize_eos: unit_temperature=',unit_temperature
-      if (abs(save_unit_temperature-unit_temperature) > 100*epsi) then
-        call fatal_error("initialize_eos", &
-               "unit_temperature specified does not match that calculated!")
-      endif
+!      if (abs(save_unit_temperature-unit_temperature) > 100*epsi) then
+!        call fatal_error("initialize_eos", &
+!               "unit_temperature specified does not match that calculated!")
+!      endif
 !
 ! Need to recalculate some constants
 !
@@ -183,7 +183,7 @@ module EquationOfState
 !  mu_He = 4.0026 / 1.0079  (molar masses from a Periodic Table)
 !        = 3.97
 !
-      if (mu == impossible) then 
+      if (mu == 0.) then 
         mu_tmp=1.+2.97153*xHe
       else
         mu_tmp=mu
