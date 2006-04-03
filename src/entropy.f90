@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.385 2006-04-03 11:32:38 ajohan Exp $
+! $Id: entropy.f90,v 1.386 2006-04-03 18:47:11 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lentropy = .true.
+! CPARAM logical, parameter :: ltemperature = .false.
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -158,7 +159,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.385 2006-04-03 11:32:38 ajohan Exp $")
+           "$Id: entropy.f90,v 1.386 2006-04-03 18:47:11 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
