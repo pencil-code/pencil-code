@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.9 2006-04-03 18:55:01 theine Exp $
+! $Id: temperature_ionization.f90,v 1.10 2006-04-03 19:13:16 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -61,6 +61,7 @@ module Entropy
     integer :: idiag_eth=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
     integer :: idiag_dtchi=0,idiag_dtc=0
     integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
+    integer :: idiag_mum=0
 
   contains
 
@@ -88,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.9 2006-04-03 18:55:01 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.10 2006-04-03 19:13:16 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -321,6 +322,7 @@ module Entropy
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
+      if (idiag_mum/=0) lpenc_diagnos(i_mu)=.true.
 
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -644,6 +646,7 @@ module Entropy
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
+        if (idiag_mum/=0) call sum_mn_name(p%mu,idiag_mum)
         endif
       endif
 
@@ -732,6 +735,7 @@ module Entropy
         idiag_eth=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
         idiag_eem=0; idiag_ppm=0; idiag_csm=0
+        idiag_mum=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -752,6 +756,7 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
         call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
         call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
+        call parse_name(iname,cname(iname),cform(iname),'mum',idiag_mum)
       enddo
 !
 !  write column where which variable is stored
@@ -776,6 +781,7 @@ module Entropy
         write(3,*) 'i_eem=',idiag_eem
         write(3,*) 'i_ppm=',idiag_ppm
         write(3,*) 'i_csm=',idiag_csm
+        write(3,*) 'i_mum=',idiag_mum
       endif
 !
     endsubroutine rprint_entropy
