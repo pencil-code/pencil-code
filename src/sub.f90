@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.231 2006-03-28 20:25:46 wlyra Exp $ 
+! $Id: sub.f90,v 1.232 2006-04-03 22:40:21 dobler Exp $ 
 
 module Sub 
 
@@ -2490,7 +2490,7 @@ module Sub
           ff(:,:,2:mz-1) = (gg(:,:,1:mz-2) + 2*gg(:,:,2:mz-1) + gg(:,:,3:mz))/4.
         case default
           print*,'Bad call to smooth_1d, idir = ', idir, ' should be 1,2 or 3'
-          STOP
+          STOP 1                ! Return nonzero exit status
         endselect
       enddo
 !

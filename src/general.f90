@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.44 2005-08-10 20:06:41 wlyra Exp $
+! $Id: general.f90,v 1.45 2006-04-03 22:40:21 dobler Exp $
 
 module General
 
@@ -202,7 +202,7 @@ module General
         enddo
       case default
         if (lroot) print*, 'No such random number generator: ', random_gen
-        STOP
+        STOP 1                ! Return nonzero exit status
 
      endselect
 !
@@ -232,7 +232,7 @@ module General
         enddo; enddo; enddo
       case default
         if (lroot) print*, 'No such random number generator: ', random_gen
-        STOP
+        STOP 1                ! Return nonzero exit status
 
       endselect
 !
