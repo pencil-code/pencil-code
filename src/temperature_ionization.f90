@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.7 2006-04-03 17:37:17 brandenb Exp $
+! $Id: temperature_ionization.f90,v 1.8 2006-04-03 17:49:28 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -88,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.7 2006-04-03 17:37:17 brandenb Exp $")
+           "$Id: temperature_ionization.f90,v 1.8 2006-04-03 17:49:28 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -317,7 +317,8 @@ module Entropy
         lpenc_diagnos(i_rho1)=.true.
         lpenc_diagnos(i_cv1)=.true.
       endif
-      if (idiag_dtchi/=0 .or. idiag_csm) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_dtchi/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
 
