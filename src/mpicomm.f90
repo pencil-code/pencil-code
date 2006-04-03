@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.152 2006-01-26 12:25:21 ajohan Exp $
+! $Id: mpicomm.f90,v 1.153 2006-04-03 21:38:44 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1683,7 +1683,7 @@ module Mpicomm
 !  29-jun-05/tony: coded
 !
       call mpifinalize
-      STOP
+      STOP 1                    ! Return nonzero exit status
     endsubroutine die_gracefully
 !***********************************************************************
     subroutine stop_it(msg)

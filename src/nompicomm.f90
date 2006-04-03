@@ -674,7 +674,7 @@ module Mpicomm
 !  29-jun-05/tony: coded
 !
       call mpifinalize
-      STOP
+      STOP 1                    ! Return nonzero exit status
     endsubroutine die_gracefully
 !***********************************************************************
     subroutine stop_it(msg)
