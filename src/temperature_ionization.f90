@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.6 2006-04-03 17:20:58 theine Exp $
+! $Id: temperature_ionization.f90,v 1.7 2006-04-03 17:37:17 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED glnTT,del2lnTT,uglnTT,TT1,yH,mu,pp,cv1,cp1,ee,ss
+! PENCILS PROVIDED glnTT,del2lnTT,uglnTT,lnTT,TT1,yH,mu,pp,cv1,cp1,ee,ss
 ! PENCILS PROVIDED dlnppdlnTT,dlnppdlnrho,glnpp,cs2,Ma2
 !
 !***************************************************************
@@ -22,6 +22,7 @@ module Entropy
   use Cparam
   use Cdata
   use Messages
+  use Interstellar
 
   implicit none
 
@@ -59,6 +60,7 @@ module Entropy
     integer :: idiag_yHmax=0,idiag_yHmin=0,idiag_yHm=0
     integer :: idiag_eth=0,idiag_ssm=0,idiag_cv=0,idiag_cp=0
     integer :: idiag_dtchi=0,idiag_dtc=0
+    integer :: idiag_eem=0,idiag_ppm=0,idiag_csm=0
 
   contains
 
@@ -86,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.6 2006-04-03 17:20:58 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.7 2006-04-03 17:37:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -232,7 +234,7 @@ module Entropy
         case('xjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'x')
         case('yjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'y')
         case('zjump'); call jump(f,ilnTT,lnTT_left,lnTT_right,widthlnTT,'z')
-
+!
         case default
           !
           !  Catch unknown values
@@ -268,6 +270,10 @@ module Entropy
       if (ldensity) then
         lpenc_requested(i_pp)=.true.
         lpenc_requested(i_dlnppdlnTT)=.true.
+      endif
+
+      if (linterstellar) then
+        lpenc_requested(i_lnTT)=.true.
       endif
 
       if (lpressuregradient_gas) then
@@ -311,7 +317,9 @@ module Entropy
         lpenc_diagnos(i_rho1)=.true.
         lpenc_diagnos(i_cv1)=.true.
       endif
-      if (idiag_dtchi/=0) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_dtchi/=0 .or. idiag_csm) lpenc_diagnos(i_cs2)=.true.
+      if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
+      if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
 
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -402,8 +410,9 @@ module Entropy
       integer :: i
 
 !
-!  Temperature gradient
+!  Logarithmic temperature and its gradient
 !
+      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
       if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
 
 !
@@ -603,6 +612,11 @@ module Entropy
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
 
 !
+!  Interstellar radiative cooling and UV heating
+!
+      if (linterstellar) &
+          call calc_heat_cool_interstellar(f,df,p,Hmax)
+!
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
       if (ldensity) then
@@ -626,6 +640,9 @@ module Entropy
         if (idiag_cp/=0) call sum_mn_name(1/p%cp1,idiag_cp)
         if (idiag_dtc/=0) then
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
+        if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
+        if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         endif
       endif
 
@@ -713,6 +730,7 @@ module Entropy
         idiag_yHmax=0; idiag_yHmin=0; idiag_yHm=0
         idiag_eth=0; idiag_ssm=0; idiag_cv=0; idiag_cp=0
         idiag_dtchi=0; idiag_dtc=0
+        idiag_eem=0; idiag_ppm=0; idiag_csm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -730,6 +748,9 @@ module Entropy
         call parse_name(iname,cname(iname),cform(iname),'cp',idiag_cp)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
+        call parse_name(iname,cname(iname),cform(iname),'eem',idiag_eem)
+        call parse_name(iname,cname(iname),cform(iname),'ppm',idiag_ppm)
+        call parse_name(iname,cname(iname),cform(iname),'csm',idiag_csm)
       enddo
 !
 !  write column where which variable is stored
@@ -750,6 +771,9 @@ module Entropy
         write(3,*) 'i_cp=',idiag_cp
         write(3,*) 'i_dtchi=',idiag_dtchi
         write(3,*) 'i_dtc=',idiag_dtc
+        write(3,*) 'i_eem=',idiag_eem
+        write(3,*) 'i_ppm=',idiag_ppm
+        write(3,*) 'i_csm=',idiag_csm
       endif
 !
     endsubroutine rprint_entropy
