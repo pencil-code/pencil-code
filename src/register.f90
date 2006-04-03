@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.162 2006-04-02 03:34:12 mee Exp $
+! $Id: register.f90,v 1.163 2006-04-03 23:54:41 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -201,6 +201,7 @@ module Register
         hbar=hbar_cgs/(unit_energy*unit_time)
         k_B=k_B_cgs/(unit_energy/unit_temperature)
         sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
+        m_u=m_u_cgs/unit_mass
         m_p=m_p_cgs/unit_mass
         m_e=m_e_cgs/unit_mass
         eV=eV_cgs/unit_energy
@@ -211,6 +212,7 @@ module Register
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
+        m_u=m_u_cgs*1e-3/unit_mass
         m_p=m_p_cgs*1e-3/unit_mass
         m_e=m_e_cgs*1e-3/unit_mass
         eV=eV_cgs*1e-7/unit_energy

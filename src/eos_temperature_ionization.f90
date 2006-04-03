@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.4 2006-04-03 13:14:33 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.5 2006-04-03 23:54:40 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -48,7 +48,8 @@ module EquationOfState
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp=.false. 
-  real :: gamma=impossible, gamma1=impossible, gamma11=impossible
+!  real :: gamma=impossible, gamma1=impossible, gamma11=impossible
+  real :: gamma=5./3., gamma1=impossible, gamma11=impossible
   real :: cs2bot=impossible, cs2top=impossible 
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
@@ -78,7 +79,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.4 2006-04-03 13:14:33 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.5 2006-04-03 23:54:40 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************

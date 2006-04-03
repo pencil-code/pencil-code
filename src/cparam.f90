@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.41 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: cparam.f90,v 1.42 2006-04-03 23:54:40 brandenb Exp $
 
 module Cparam
 
@@ -88,6 +88,7 @@ module Cparam
   double precision, parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
   double precision, parameter :: R_cgs=8.3144D7            ! [erg/mol/K]
   double precision, parameter :: k_B_cgs=1.3806503d-16     ! [erg/K]
+  double precision, parameter :: m_u_cgs=1.66053886d-24    ! [g]
   double precision, parameter :: m_p_cgs=1.67262158d-24    ! [g]
   double precision, parameter :: m_e_cgs=9.10938188d-28    ! [g]
   double precision, parameter :: m_H_cgs=m_e_cgs+m_p_cgs   ! [g]

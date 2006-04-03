@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.116 2006-04-02 03:34:12 mee Exp $
+! $Id: interstellar.f90,v 1.117 2006-04-03 23:54:40 brandenb Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -279,7 +279,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.116 2006-04-02 03:34:12 mee Exp $")
+           "$Id: interstellar.f90,v 1.117 2006-04-03 23:54:40 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -607,9 +607,10 @@ module Interstellar
 !
 !  19-nov-02/graeme: adapted from calc_heat_cool
 !  10-aug-03/axel: TT is used as input
+!   3-apr-06/axel: add ltemperature switch
 !
       use Cdata, only: lroot, headtt, lfirst, ldiagnos, ldt, m, n,  &
-                       iss, unit_length, unit_velocity, dt1_max, z, &
+                       iss, ilnTT, unit_length, unit_velocity, dt1_max, z, &
                        datadir, pretend_lnTT
 !
       use Sub, only: max_mn_name, sum_mn_name
@@ -724,6 +725,7 @@ module Interstellar
 
     if (lfirst.and.ldt) then
       dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
+!print*,'dt1_max(1),p%ee(1)=',dt1_max(1),p%ee(1)
             !cdt_tauc*(heat)/ee)
       Hmax=Hmax+heat
     endif
@@ -732,7 +734,9 @@ module Interstellar
 !  so therefore we now need to multiply by TT1.
 !
        f(l1:l2,m,n,icooling)=cool
-       if (pretend_lnTT) then
+       if (ltemperature) then
+         df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%TT1*(heat-cool)*gamma
+       elseif (pretend_lnTT) then
          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%TT1*(heat-cool)*gamma
        else
          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%TT1*(heat-cool)
@@ -1641,7 +1645,7 @@ find_SN: do n=n1,n2
             endif
             call eoscalc(f,nx,lnTT=lnTT,yH=yH)
             lnTT=log(TT)
-            if (ilnTT.ne.0) f(l1:l2,m,n,ilnTT)=lnTT
+            if (lentropy.and.ilnTT.ne.0) f(l1:l2,m,n,ilnTT)=lnTT
             if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
 !
        enddo

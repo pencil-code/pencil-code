@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.10 2006-04-03 19:13:16 brandenb Exp $
+! $Id: temperature_ionization.f90,v 1.11 2006-04-03 23:54:41 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.10 2006-04-03 19:13:16 brandenb Exp $")
+           "$Id: temperature_ionization.f90,v 1.11 2006-04-03 23:54:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -134,7 +134,8 @@ module Entropy
 !  Useful constants for ionization
 !
       TT_ion = chiH/k_B
-      Rgas = k_B/m_H
+      Rgas = k_B/m_H  !(Tobi, this doesn't agree with the literature...)
+      !Rgas = k_B/m_u
       mu_0 = (1 + 4*xHe)
       rho_H = mu_0*m_H*((m_H/hbar)*(chiH/hbar)/(2*pi))**(1.5)
       rho_e = mu_0*m_H*((m_e/hbar)*(chiH/hbar)/(2*pi))**(1.5)
@@ -275,6 +276,8 @@ module Entropy
 
       if (linterstellar) then
         lpenc_requested(i_lnTT)=.true.
+        lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_ee)=.true.
       endif
 
       if (lpressuregradient_gas) then
@@ -517,8 +520,10 @@ module Entropy
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 !
 !  Energy per unit mass
+!AB: Tobi, is this correct?
 !
       if (lpencil(i_ee)) p%ee = 1.5*Rgas/(p%mu*p%TT1) + p%yH*(Rgas/mu_0)*TT_ion
+      !if (lpencil(i_ee)) p%ee = 1.5*Rgas/(p%mu*p%TT1) !+ p%yH*(Rgas/mu_0)*TT_ion
 !
 !  Entropy per unit mass
 !  The contributions from each particle species contain the mixing entropy
@@ -643,11 +648,11 @@ module Entropy
         if (idiag_cp/=0) call sum_mn_name(1/p%cp1,idiag_cp)
         if (idiag_dtc/=0) then
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
+        endif
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_mum/=0) call sum_mn_name(p%mu,idiag_mum)
-        endif
       endif
 
     endsubroutine dss_dt

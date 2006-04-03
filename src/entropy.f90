@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.386 2006-04-03 18:47:11 theine Exp $
+! $Id: entropy.f90,v 1.387 2006-04-03 23:54:40 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -159,7 +159,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.386 2006-04-03 18:47:11 theine Exp $")
+           "$Id: entropy.f90,v 1.387 2006-04-03 23:54:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1657,6 +1657,7 @@ module Entropy
       real, dimension (nx) :: rhs,visc_heat,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
       real :: zbot,ztop,xi,profile_cor
+      real :: uT
       integer :: j,ju
 !
       intent(inout)  :: f,p
@@ -1817,9 +1818,11 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
-        if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
-        if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
+        !uT=unit_temperature !(define shorthand to avoid long lines below)
+        uT=1. !(AB: for the time being; to keep compatible with auto-test
+        if (idiag_TTmax/=0) call max_mn_name(p%TT*uT,idiag_TTmax)
+        if (idiag_TTmin/=0) call max_mn_name(-p%TT*uT,idiag_TTmin,lneg=.true.)
+        if (idiag_TTm/=0) call sum_mn_name(p%TT*uT,idiag_TTm)
         if (idiag_yHmax/=0) call max_mn_name(p%yH,idiag_yHmax)
         if (idiag_yHm/=0) call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_dtc/=0) &
