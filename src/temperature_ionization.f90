@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.4 2006-04-03 16:07:07 theine Exp $
+! $Id: temperature_ionization.f90,v 1.5 2006-04-03 16:32:06 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED glnTT,uglnTT,TT1,yH,mu,pp,cv1,cp1,ee,ss
+! PENCILS PROVIDED glnTT,del2lnTT,uglnTT,TT1,yH,mu,pp,cv1,cp1,ee,ss
 ! PENCILS PROVIDED dlnppdlnTT,dlnppdlnrho,glnpp,cs2,Ma2
 !
 !***************************************************************
@@ -31,17 +31,17 @@ module Entropy
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
   real :: TT_ion,Rgas,rho_H,rho_e,rho_He
-  real :: xHe=0.1,mu_0=0.0
+  real :: xHe=0.1,mu_0=0.0,chi=0.0
   real :: heat_uniform=0.0,Kconst=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
-  logical :: lupw_lnTT,lcalc_heat_cool=.false.,lheatc_simple=.false.
+  logical :: lupw_lnTT,lcalc_heat_cool=.false.,lheatc_chiconst=.false.
   logical :: lcalc_yH=.true.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
   ! Delete (or use) me asap!
-  real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop,chi
-  logical :: lmultilayer,lheatc_chiconst
+  real :: hcond0,hcond1,Fbot,FbotKbot,Ftop,Kbot,FtopKtop
+  logical :: lmultilayer
 
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -52,7 +52,7 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      heat_uniform,Kconst,xHe,lcalc_yH
+      heat_uniform,xHe,chi,lcalc_yH
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -86,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.4 2006-04-03 16:07:07 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.5 2006-04-03 16:32:06 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,7 +152,7 @@ module Entropy
 !
 !  Check whether we want heat conduction
 !
-      lheatc_simple = (Kconst/=0.0)
+      lheatc_chiconst = (chi/=0.0)
 
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
 !        
@@ -289,7 +289,7 @@ module Entropy
 
       if (ladvection_temperature) lpenc_requested(i_uglnTT)=.true.
 
-      if (lheatc_simple) lpenc_requested(i_cp1)=.true.
+      if (lheatc_chiconst) lpenc_requested(i_del2lnTT)=.true.
 
 !
 !  Diagnostics
@@ -393,7 +393,7 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Sub, only: grad,u_dot_gradf
+      use Sub, only: grad,del2,u_dot_gradf
 
       real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
       type (pencil_case), intent (inout) :: p
@@ -405,6 +405,11 @@ module Entropy
 !  Temperature gradient
 !
       if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+
+!
+!  Temperature laplacian
+!
+      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
 
 !
 !  Temperature advection
@@ -543,20 +548,24 @@ module Entropy
 !
       real, dimension (nx) :: visc_heat,Hmax
       integer :: j
+
 !
 !  Identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('lnTT',ilnTT)
+
 !
 !  Calculate cs2 in a separate routine
 !
       if (headtt) print*,'dss_dt: cs2 =', p%cs2(1)
+
 !
 !  ``cs2/dx^2'' for timestep
 !
       if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
       if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
+
 !
 !  Pressure term in momentum equation (setting lpressuregradient_gas to
 !  .false. allows suppressing pressure term for test purposes)
@@ -566,12 +575,14 @@ module Entropy
           df(l1:l2,m,n,iuu+j) = df(l1:l2,m,n,iuu+j) - p%pp*p%rho1*p%glnpp(:,j+1)
         enddo
       endif
+
 !
 !  Advection term
 !
       if (ladvection_temperature) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%uglnTT
       endif
+
 !
 !  Calculate viscous contribution to temperature
 !  (visc_heat has units of energy/mass)
@@ -580,14 +591,17 @@ module Entropy
         call calc_viscous_heat(df,p,visc_heat,Hmax)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*visc_heat
       endif
+
 !
 !  Various heating/cooling mechanisms
 !
       if (lcalc_heat_cool) call calc_heat_cool(f,df,p)
+
 !
 !  Thermal conduction
 !
-      if (lheatc_simple) call calc_heatcond_simple(f,df,p)
+      if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
+
 !
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
@@ -595,6 +609,7 @@ module Entropy
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
           p%pp*p%rho1*p%cv1*p%TT1*p%dlnppdlnTT*df(l1:l2,m,n,ilnrho)
       endif
+
 !
 !  Calculate temperature related diagnostics
 !
@@ -616,43 +631,42 @@ module Entropy
 
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_heatcond_simple(f,df,p)
+    subroutine calc_heatcond_constchi(df,p)
 
       use Sub, only: max_mn_name,dot,del2
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
-      real, dimension (nx) :: chi,gamma,glnTT2,del2lnTT
+      real, dimension (nx) :: g2
+      real :: gamma0
+
 !
-!  Thermal diffusivity
+!  g2
 !
-      chi = Kconst*p%rho1*p%cp1
+      call dot(p%glnTT+p%glnrho,p%glnTT,g2)
+
 !
-!  ``gamma''
+!  gamma0 is the ratio cp/cv for yH=0 or yH=1
 !
-      gamma = p%cv1/p%cp1
-!
-!  glnTT2 and del2lnTT
-!
-      call dot(p%glnTT,p%glnTT,glnTT2)
-      call del2(f,ilnTT,del2lnTT)
+      gamma0 = 5.0/3.0
+
 !
 !  Add heat conduction to RHS of temperature equation
 !
-      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(glnTT2 + del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma0*chi*(g2 + p%del2lnTT)
+
 !
 !  check maximum diffusion from thermal diffusion
 !
       if (lfirst.and.ldt) then
-        diffus_chi=max(diffus_chi,chi*dxyz_2)
+        diffus_chi=max(diffus_chi,gamma0*chi*dxyz_2)
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif
       endif
 
-    end subroutine calc_heatcond_simple
+    end subroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine calc_heat_cool(f,df,p)
 
