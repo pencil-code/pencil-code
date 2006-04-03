@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.3 2006-04-03 13:14:33 theine Exp $
+! $Id: temperature_ionization.f90,v 1.4 2006-04-03 16:07:07 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -86,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.3 2006-04-03 13:14:33 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.4 2006-04-03 16:07:07 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -637,11 +637,11 @@ module Entropy
 !  glnTT2 and del2lnTT
 !
       call dot(p%glnTT,p%glnTT,glnTT2)
-      call del2(f,iss,del2lnTT)
+      call del2(f,ilnTT,del2lnTT)
 !
 !  Add heat conduction to RHS of temperature equation
 !
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + gamma*chi*(glnTT2 + del2lnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + gamma*chi*(glnTT2 + del2lnTT)
 !
 !  check maximum diffusion from thermal diffusion
 !
@@ -723,7 +723,6 @@ module Entropy
       if (lwr) then
         write(3,*) 'nname=',nname
         write(3,*) 'ilnTT=',ilnTT
-        write(3,*) 'iss=',iss
         write(3,*) 'iyH=',iyH
         write(3,*) 'i_TTmax=',idiag_TTmax
         write(3,*) 'i_TTmin=',idiag_TTmin
