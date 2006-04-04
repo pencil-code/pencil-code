@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.38 2006-04-04 16:21:46 mee Exp $
+! $Id: eos_idealgas.f90,v 1.39 2006-04-04 16:51:54 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.38 2006-04-04 16:21:46 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.39 2006-04-04 16:51:54 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -191,13 +191,13 @@ module EquationOfState
       integer :: this_var=0
       integer, save :: ieosvar=0
       integer, save :: ieosvar_selected=0
-      integer, parameter :: ieosvar_lnrho = 1
-      integer, parameter :: ieosvar_rho   = 2
-      integer, parameter :: ieosvar_ss    = 4
-      integer, parameter :: ieosvar_lnTT  = 8
-      integer, parameter :: ieosvar_TT    = 16
-      integer, parameter :: ieosvar_cs2   = 32
-      integer, parameter :: ieosvar_pp    = 64
+      integer, parameter :: ieosvar_lnrho = 2**0
+      integer, parameter :: ieosvar_rho   = 2**1
+      integer, parameter :: ieosvar_ss    = 2**2
+      integer, parameter :: ieosvar_lnTT  = 2**3
+      integer, parameter :: ieosvar_TT    = 2**4
+      integer, parameter :: ieosvar_cs2   = 2**5
+      integer, parameter :: ieosvar_pp    = 2**6
 !
       if (ieosvar.ge.2) &
         call fatal_error("select_eos_variable", &
