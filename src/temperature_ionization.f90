@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.11 2006-04-03 23:54:41 brandenb Exp $
+! $Id: temperature_ionization.f90,v 1.12 2006-04-04 13:41:31 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -89,7 +89,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.11 2006-04-03 23:54:41 brandenb Exp $")
+           "$Id: temperature_ionization.f90,v 1.12 2006-04-04 13:41:31 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -563,7 +563,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar), intent (out) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: visc_heat,Hmax
+      real, dimension (nx) :: Hmax
       integer :: j
 
 !
@@ -602,12 +602,8 @@ module Entropy
 
 !
 !  Calculate viscous contribution to temperature
-!  (visc_heat has units of energy/mass)
 !
-      if (lviscosity) then
-        call calc_viscous_heat(df,p,visc_heat,Hmax)
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*visc_heat
-      endif
+      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
 
 !
 !  Various heating/cooling mechanisms

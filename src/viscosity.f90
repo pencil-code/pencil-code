@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.19 2006-04-02 16:00:46 theine Exp $
+! $Id: viscosity.f90,v 1.20 2006-04-04 13:41:31 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -81,7 +81,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.19 2006-04-02 16:00:46 theine Exp $")
+           "$Id: viscosity.f90,v 1.20 2006-04-04 13:41:31 theine Exp $")
 
       ivisc(1)='nu-const'
 
@@ -369,15 +369,11 @@ module Viscosity
 !
     endsubroutine calc_viscosity
 !***********************************************************************
-    subroutine calc_viscous_heat(df,p,visc_heat,Hmax)
+    subroutine calc_viscous_heat(df,p,Hmax)
 !
 !  calculate viscous heating term for right hand side of entropy equation
-!  (visc_heat has units of energy/mass)
 !
 !  20-nov-02/tony: coded
-!  01-apr-06/tobi: added visc_heat to the list of arguments, to be added to the
-!                  RHS of the temperature/entropy equation in the respective
-!                  modules
 !
       use Cdata
       use Mpicomm
@@ -386,9 +382,9 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx) :: visc_heat,Hmax
+      real, dimension (nx) :: heat,Hmax
 !
-      visc_heat=0.
+      heat=0.
 
       if (lvisc_simplified) then
         if (headtt) print*,"no viscous heating: ivisc(x)='simplified'"
@@ -396,20 +392,33 @@ module Viscosity
 !
       if (lvisc_rho_nu_const) then
         if (headtt) print*,"viscous heating: ivisc(x)='rho_nu-const'"
-        visc_heat = visc_heat + 2*nu*p%sij2*p%rho1
+        heat = heat + 2*nu*p%sij2*p%rho1
       endif
 !
       if (lvisc_nu_const) then
         if (headtt) print*,"viscous heating: ivisc(x)='nu_const'"
-        visc_heat = visc_heat +2*nu*p%sij2
+        heat = heat +2*nu*p%sij2
       endif
 !
       if (lvisc_nu_shock) then
         if (headtt) print*,"viscous heating: ivisc(x)='nu_shock'"
-        visc_heat = visc_heat + nu_shock*p%shock*p%divu**2
+        heat = heat + nu_shock*p%shock*p%divu**2
+      endif
+!
+!  Add viscous heat (which has units of energy/mass) to the RHS
+!  of the entropy ...
+!
+      if (lentropy) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*heat
+      endif
+!
+!  ... or temperature equation.
+!
+      if (ltemperature) then
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*heat
       endif
 !      
-      if (lfirst .and. ldt) Hmax=Hmax+visc_heat
+      if (lfirst .and. ldt) Hmax=Hmax+heat
 !
       if(NO_WARN) print*,p  !(keep compiler quiet)
 !        
