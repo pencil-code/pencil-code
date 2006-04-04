@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.53 2006-03-30 09:20:28 ajohan Exp $
+! $Id: nohydro.f90,v 1.54 2006-04-04 16:21:47 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.53 2006-03-30 09:20:28 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.54 2006-04-04 16:21:47 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -167,6 +167,19 @@ module Hydro
 !
       logical, dimension (npencils) :: lpencil_in
 !
+!ajwm May be overkill... Perhaps only needed for certain kinflow?
+      if (lpencil_in(i_uglnrho)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_glnrho)=.true.
+      endif
+      if (lpencil_in(i_ugrho)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_grho)=.true.
+      endif
+      if (lpencil_in(i_uij5glnrho)) then
+        lpencil_in(i_uij5)=.true.
+        lpencil_in(i_glnrho)=.true.
+      endif
       if (lpencil_in(i_u2)) lpencil_in(i_uu)=.true.
 !
     endsubroutine pencil_interdep_hydro

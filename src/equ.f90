@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.286 2006-04-04 15:04:26 snod Exp $
+! $Id: equ.f90,v 1.287 2006-04-04 16:21:46 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.286 2006-04-04 15:04:26 snod Exp $")
+           "$Id: equ.f90,v 1.287 2006-04-04 16:21:46 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -504,9 +504,11 @@ module Equ
 !
 !  Calculate pencils for the pencil_case
 !
-        if (lshock)         call calc_pencils_shock(f,p)
+      call initialize_pencils(p,impossible)
                             call calc_pencils_hydro(f,p)
                             call calc_pencils_density(f,p)
+                            call calc_pencils_eos(f,p)
+        if (lshock)         call calc_pencils_shock(f,p)
         if (lviscosity)     call calc_pencils_viscosity(f,p)
                             call calc_pencils_entropy(f,p)
                             call calc_pencils_magnetic(f,p)

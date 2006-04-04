@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.85 2006-04-04 13:19:20 theine Exp $
+! $Id: noentropy.f90,v 1.86 2006-04-04 16:21:46 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.85 2006-04-04 13:19:20 theine Exp $")
+           "$Id: noentropy.f90,v 1.86 2006-04-04 16:21:46 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -71,12 +71,26 @@ module Entropy
 !
 !  24-nov-02/tony: coded 
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, cs0
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
+                                 cs0, select_eos_variable
+      use Planet, only: llocal_iso
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !
       if (ip == 0) print*,f,lstarting ! keep compiler quiet
+!
+! Tell the equation of state that we're here and what f variable we use
+!
+    !  if (lpretend_lnTT) then
+    !    call select_eos_vars('ss',-1) !isentropic
+    !  else 
+    !  endif
+      if (llocal_iso) then
+        call select_eos_variable('cs2',-2) !special local isothermal
+      else 
+        call select_eos_variable('ss',-1) !isentropic => polytropic
+      endif
 !
 !  For global density gradient beta=H/r*dlnrho/dlnr, calculate actual
 !  gradient dlnrho/dr = beta/H
@@ -155,7 +169,6 @@ module Entropy
 !
       use Cdata
       use EquationOfState, only: gamma,gamma1,cs20,lnrho0
-      use Planet, only:llocal_iso,local_isothermal
 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -164,34 +177,8 @@ module Entropy
 !
       intent(in) :: f
       intent(inout) :: p
-! cs2
-
-      if (lpencil(i_cs2)) then
-        if (gamma==1.) then
-           p%cs2=cs20 
-        else
-!
-           if (llocal_iso) then
-              call local_isothermal(cs20,tmp)              
-              p%cs2=tmp
-           else   
-              p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
-           endif
-!
-        endif
-     endif
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
-! pp
-      if (lpencil(i_pp)) p%pp=1/gamma*p%cs2*p%rho
-! TT1
-      if (lpencil(i_TT1)) then
-        if (gamma==1. .or. cs20==0) then
-          p%TT1=0.
-        else
-          p%TT1=gamma1/p%cs2
-        endif
-      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************

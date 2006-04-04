@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.42 2006-04-02 03:34:12 mee Exp $
+! $Id: nodensity.f90,v 1.43 2006-04-04 16:21:46 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -8,8 +8,8 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED rho,lnrho,rho1,glnrho,uglnrho,sglnrho,del2lnrho,hlnrho
-! PENCILS PROVIDED uij5glnrho
+! PENCILS PROVIDED rho,lnrho,rho1,glnrho,del2lnrho,hlnrho,grho
+! PENCILS PROVIDED uij5glnrho,uglnrho,ugrho,sglnrho
 !
 !***************************************************************
 
@@ -55,7 +55,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.42 2006-04-02 03:34:12 mee Exp $")
+           "$Id: nodensity.f90,v 1.43 2006-04-04 16:21:46 mee Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -66,10 +66,16 @@ module Density
 !
 !  24-nov-02/tony: coded 
 !
-  use Cdata, only: lentropy
+      use Cdata, only: lentropy
+      use EquationOfState, only: select_eos_variable
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
+!
+! Tell the equation of state that we're here and we don't have a
+! variable => isochoric (constant density)
+!
+      call select_eos_variable('lnrho',-1)
 !
       if (ip == 0) print*,f,lstarting ! keep compiler quiet
     endsubroutine initialize_density
@@ -105,7 +111,7 @@ module Density
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+      if(NO_WARN) print*,lpencil_in(1)
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -129,14 +135,18 @@ module Density
       if (lpencil(i_rho1)) p%rho1=1./rho0
 ! glnrho
       if (lpencil(i_glnrho)) p%glnrho=0.
-! uglnrho
-      if (lpencil(i_uglnrho)) p%uglnrho=0.
+! grho
+      if (lpencil(i_grho)) p%grho=0.
 ! hlnrho
       if (lpencil(i_hlnrho)) p%hlnrho=0.
+! sglnrho
+      if (lpencil(i_sglnrho)) p%sglnrho=0.
+! uglnrho
+      if (lpencil(i_uglnrho)) p%uglnrho=0.
+! ugrho
+      if (lpencil(i_ugrho)) p%ugrho=0.
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.
-!     
-      if(NO_WARN) print*,f(1,1,1,1)   !(keep compiler quiet)
 !
     endsubroutine calc_pencils_density
 !***********************************************************************

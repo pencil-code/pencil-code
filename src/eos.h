@@ -15,7 +15,12 @@
   public :: rprint_eos
   public :: read_eos_init_pars, write_eos_init_pars
   public :: read_eos_run_pars,  write_eos_run_pars
+
+  public :: select_eos_variable
                                                                                                        
+  public :: pencil_criteria_eos, pencil_interdep_eos
+  public :: calc_pencils_eos
+
   public :: ioncalc, ioninit
   public :: temperature_hessian
 

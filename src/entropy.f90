@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.389 2006-04-04 13:41:30 theine Exp $
+! $Id: entropy.f90,v 1.390 2006-04-04 16:21:46 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,8 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1,Ma2
-! PENCILS PROVIDED ugss,yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
+! PENCILS PROVIDED ugss,Ma2
 !
 !***************************************************************
 module Entropy
@@ -159,7 +158,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.389 2006-04-04 13:41:30 theine Exp $")
+           "$Id: entropy.f90,v 1.390 2006-04-04 16:21:46 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -194,7 +193,8 @@ module Entropy
       use Gravity, only: gravz,g0
       use EquationOfState, only: cs0, get_soundspeed, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
-                                 mpoly, mpoly0, mpoly1, mpoly2
+                                 mpoly, mpoly0, mpoly1, mpoly2, &
+                                 select_eos_variable
 !AB: Tony, what's the plan; should these entries all be declared at the
 !AB: beginning of the module (as is done now already), or should we do it
 !AB: again in each routine?
@@ -210,6 +210,14 @@ module Entropy
 !
       if (.not. leos) then
         call fatal_error('initialize_entropy','EOS=noeos but entropy requires an EQUATION OF STATE for the fluid')
+      endif
+!
+! Tell the equation of state that we're here and what f variable we use
+!
+      if (pretend_lnTT) then
+        call select_eos_variable('lnTT',iss)
+      else 
+        call select_eos_variable('ss',iss)
       endif
 !
 !  radiative diffusion: initialize flux etc
@@ -1528,36 +1536,14 @@ module Entropy
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_del2lnTT)) then
-        lpencil_in(i_del2lnrho)=.true.
-        lpencil_in(i_del2ss)=.true.
-      endif
-      if (lpencil_in(i_glnTT)) then
-        lpencil_in(i_glnrho)=.true.
-        lpencil_in(i_gss)=.true.
-      endif
-      if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
-      if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
       if (lpencil_in(i_ugss)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gss)=.true.
       endif
-      if (pretend_lnTT .and. lpencil_in(i_glnTT)) lpencil_in(i_gss)=.true.
       if (lpencil_in(i_Ma2)) then
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
       endif
-      if (lpencil_in(i_hlnTT)) then
-        if (pretend_lnTT) then
-          lpencil_in(i_hss)=.true.
-        else
-          lpencil_in(i_hlnrho)=.true.
-          lpencil_in(i_hss)=.true.
-        endif
-      endif
-!  The pencils cs2 and cp1tilde come in a bundle, so enough to request one.
-      if (lpencil_in(i_cs2) .and. lpencil_in(i_cp1tilde)) &
-          lpencil_in(i_cp1tilde)=.false.
 !
     endsubroutine pencil_interdep_entropy
 !***********************************************************************
@@ -1577,60 +1563,11 @@ module Entropy
       intent(in) :: f
       intent(inout) :: p
 !
-! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
-! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
-! The code is not wrong however since this is correctly
-! handled by the eos module. 
-! ss
-      if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
-!
-! gss
-      if (lpencil(i_gss)) call grad(f,iss,p%gss)
-! pp
-      if (lpencil(i_pp)) call eoscalc(f,nx,pp=p%pp)
-! ee
-      if (lpencil(i_ee)) call eoscalc(f,nx,ee=p%ee)
-! lnTT
-      if (lpencil(i_lnTT)) call eoscalc(f,nx,lnTT=p%lnTT)
-! yH
-      if (lpencil(i_yH)) call eoscalc(f,nx,yH=p%yH)
-! TT
-      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-! TT1        
-      if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
-! cs2 and cp1tilde
-      if (lpencil(i_cs2) .or. lpencil(i_cp1tilde)) &
-          call pressure_gradient(f,p%cs2,p%cp1tilde)
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
-! glnTT
-      if (lpencil(i_glnTT)) then
-        call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
-      endif
 ! ugss
       if (lpencil(i_ugss)) &
           call u_dot_gradf(f,iss,p%gss,p%uu,p%ugss,UPWIND=lupw_ss)
-!ajwm Should probably combine the following two somehow.
-! hss
-      if (lpencil(i_hss)) then
-        call g2ij(f,iss,p%hss)
-      endif
-! del2ss
-      if (lpencil(i_del2ss)) then
-        call del2(f,iss,p%del2ss)
-      endif
-! del2lnTT
-      if (lpencil(i_del2lnTT)) then
-          call temperature_laplacian(f,p%del2lnrho,p%del2ss,p%del2lnTT)
-      endif
-! del6ss
-      if (lpencil(i_del6ss)) then
-        call del6(f,iss,p%del6ss)
-      endif
-! hlnTT
-      if (lpencil(i_hlnTT)) then
-        call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
-      endif
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************

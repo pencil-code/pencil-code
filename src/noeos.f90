@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.20 2006-04-02 03:34:12 mee Exp $
+! $Id: noeos.f90,v 1.21 2006-04-04 16:21:47 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -8,6 +8,9 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT
 !
 !***************************************************************
 
@@ -77,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.20 2006-04-02 03:34:12 mee Exp $')
+           '$Id: noeos.f90,v 1.21 2006-04-04 16:21:47 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -91,6 +94,19 @@ module EquationOfState
 ! wd: commented out as it creates more problems than it solves
 !
     endsubroutine initialize_eos
+!*******************************************************************
+    subroutine select_eos_variable(variable,findex)
+!
+!  Calculate average particle mass in the gas relative to
+!
+!   02-apr-06/tony: implemented
+!
+      character (len=*), intent(in) :: variable
+      integer, intent(in) :: findex
+!
+      if (NO_WARN) print*,variable,findex
+!
+    endsubroutine select_eos_variable
 !*******************************************************************
     subroutine getmu(mu)
 !
@@ -116,6 +132,47 @@ module EquationOfState
       if (NO_WARN) print*,lreset,present(lwrite)  !(keep compiler quiet)
 !   
     endsubroutine rprint_eos
+!***********************************************************************
+    subroutine pencil_criteria_eos()
+! 
+!  All pencils that the EquationOfState module depends on are specified here.
+! 
+!  02-04-06/tony: coded
+!
+!  DUMMY ROUTINE
+!
+    endsubroutine pencil_criteria_eos
+!***********************************************************************
+    subroutine pencil_interdep_eos(lpencil_in)
+!       
+!  Interdependency among pencils from the Entropy module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*,lpencil_in
+!
+    endsubroutine pencil_interdep_eos
+!***********************************************************************
+    subroutine calc_pencils_eos(f,p)
+!       
+!  Calculate Entropy pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  02-04-06/tony: coded
+!
+      use Sub
+!      
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f
+      intent(inout) :: p
+!
+      if (NO_WARN) print*,f,p
+!
+    endsubroutine calc_pencils_eos
 !***********************************************************************
     subroutine ioninit(f)
 !   

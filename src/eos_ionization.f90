@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.19 2006-04-02 03:34:12 mee Exp $
+! $Id: eos_ionization.f90,v 1.20 2006-04-04 16:21:46 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -9,6 +9,9 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 2
+!
+! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
+! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT
 !
 !***************************************************************
 
@@ -111,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.19 2006-04-02 03:34:12 mee Exp $")
+           "$Id: eos_ionization.f90,v 1.20 2006-04-04 16:21:46 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -210,6 +213,101 @@ module EquationOfState
 !
     endsubroutine initialize_eos
 !*******************************************************************
+    subroutine select_eos_variable(variable,findex)
+!
+!  Calculate average particle mass in the gas relative to
+!
+!   02-apr-06/tony: implemented
+!
+      character (len=*), intent(in) :: variable
+      integer, intent(in) :: findex
+!
+      if (NO_WARN) print*,variable,findex
+!  DUMMY ideagas version below
+!!      integer :: this_var=0
+!!      integer, save :: ieosvar=0
+!!      integer, save :: ieosvar_selected=0
+!!      integer, parameter :: ieosvar_lnrho = 1
+!!      integer, parameter :: ieosvar_rho   = 2
+!!      integer, parameter :: ieosvar_ss    = 4
+!!      integer, parameter :: ieosvar_lnTT  = 8
+!!      integer, parameter :: ieosvar_TT    = 16
+!!      integer, parameter :: ieosvar_cs2   = 32
+!!      integer, parameter :: ieosvar_pp    = 64
+!!!
+!!      if (ieosvar.ge.2) &
+!!        call fatal_error("select_eos_variable", &
+!!             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
+!!
+!!      ieosvar=ieosvar+1
+!!
+!!!      select case (variable)
+!!      if (variable=='ss') then
+!!          this_var=ieosvar_ss
+!!          if (findex.lt.0) then
+!!            leos_isentropic=.true.
+!!          endif
+!!      elseif (variable=='cs2') then
+!!          this_var=ieosvar_cs2
+!!          if (findex==-2) then
+!!            leos_localisothermal=.true.
+!!          elseif (findex.lt.0) then
+!!            leos_isothermal=.true.
+!!          endif
+!!      elseif (variable=='lnTT') then
+!!          this_var=ieosvar_lnTT
+!!          if (findex.lt.0) then
+!!            leos_isothermal=.true.
+!!          endif
+!!      elseif (variable=='lnrho') then
+!!          this_var=ieosvar_lnrho
+!!          if (findex.lt.0) then
+!!            leos_isochoric=.true.
+!!          endif
+!!      elseif (variable=='rho') then
+!!          this_var=ieosvar_rho
+!!          if (findex.lt.0) then
+!!            leos_isochoric=.true.
+!!          endif
+!!      elseif (variable=='pp') then
+!!          this_var=ieosvar_pp
+!!          if (findex.lt.0) then
+!!            leos_isobaric=.true.
+!!          endif
+!!      else
+!!        call fatal_error("select_eos_variable", &
+!!             "unknown thermodynamic variable")
+!!      endif
+!!      if (ieosvar==1) then
+!!        ieosvar1=findex
+!!        ieosvar_selected=ieosvar_selected+this_var
+!!        return
+!!      endif 
+!!!
+!!! Ensure the indexes are in the correct order.
+!!!
+!!      if (this_var.lt.ieosvar_selected) then
+!!        ieosvar2=ieosvar1
+!!        ieosvar1=findex
+!!      else
+!!        ieosvar2=findex
+!!      endif
+!!      ieosvar_selected=ieosvar_selected+this_var
+!!      select case (ieosvar_selected)
+!!        case (ieosvar_lnrho+ieosvar_ss)
+!!          ieosvars=ilnrho_ss 
+!!        case (ieosvar_lnrho+ieosvar_lnTT)
+!!          ieosvars=ilnrho_lnTT 
+!!        case (ieosvar_lnrho+ieosvar_cs2)
+!!          ieosvars=ilnrho_cs2 
+!!        case default
+!!          print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
+!!          call fatal_error("select_eos_variable", &
+!!             "This thermodynamic variable combination is not implemented: ")
+!!      endselect
+!
+    endsubroutine select_eos_variable
+!*******************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
 !  Writes iyH and ilnTT to index.pro file
@@ -225,6 +323,109 @@ module EquationOfState
       if(NO_WARN) print*,lreset  !(to keep compiler quiet)
 !        
     endsubroutine rprint_eos
+!***********************************************************************
+    subroutine pencil_criteria_eos()
+! 
+!  All pencils that the EquationOfState module depends on are specified here.
+! 
+!  02-04-06/tony: coded
+!
+!  EOS is a pencil provider but evolves nothing so it is unlokely that
+!  it will require any pencils for it's own use.
+!
+    endsubroutine pencil_criteria_eos
+!***********************************************************************
+    subroutine pencil_interdep_eos(lpencil_in)
+!       
+!  Interdependency among pencils from the Entropy module is specified here.
+!
+!  20-11-04/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_del2lnTT)) then
+        lpencil_in(i_del2lnrho)=.true.
+        lpencil_in(i_del2ss)=.true.
+      endif
+      if (lpencil_in(i_glnTT)) then
+        lpencil_in(i_glnrho)=.true.
+        lpencil_in(i_gss)=.true.
+      endif
+      if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+      if (lpencil_in(i_TT1)) lpencil_in(i_lnTT)=.true.
+
+      if (lpencil_in(i_hlnTT)) then
+        lpencil_in(i_hss)=.true.
+        if (.not.pretend_lnTT) lpencil_in(i_hlnrho)=.true.
+      endif
+!
+    endsubroutine pencil_interdep_eos
+!***********************************************************************
+    subroutine calc_pencils_eos(f,p)
+!       
+!  Calculate Entropy pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  02-04-06/tony: coded
+!
+      use Sub
+!      
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!      
+      intent(in) :: f
+      intent(inout) :: p
+!
+! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG 
+! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
+! The code is not wrong however since this is correctly
+! handled by the eos module. 
+! ss
+      if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
+!
+! gss
+      if (lpencil(i_gss)) call grad(f,iss,p%gss)
+! pp
+      if (lpencil(i_pp)) call eoscalc(f,nx,pp=p%pp)
+! ee
+      if (lpencil(i_ee)) call eoscalc(f,nx,ee=p%ee)
+! lnTT
+      if (lpencil(i_lnTT)) call eoscalc(f,nx,lnTT=p%lnTT)
+! yH
+      if (lpencil(i_yH)) call eoscalc(f,nx,yH=p%yH)
+! TT
+      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+! TT1        
+      if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
+! cs2 and cp1tilde
+      if (lpencil(i_cs2) .or. lpencil(i_cp1tilde)) &
+          call pressure_gradient(f,p%cs2,p%cp1tilde)
+! glnTT
+      if (lpencil(i_glnTT)) then
+        call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
+      endif
+! hss
+      if (lpencil(i_hss)) then
+        call g2ij(f,iss,p%hss)
+      endif
+! del2ss
+      if (lpencil(i_del2ss)) then
+        call del2(f,iss,p%del2ss)
+      endif
+! del2lnTT
+      if (lpencil(i_del2lnTT)) then
+          call temperature_laplacian(f,p%del2lnrho,p%del2ss,p%del2lnTT)
+      endif
+! del6ss
+      if (lpencil(i_del6ss)) then
+        call del6(f,iss,p%del6ss)
+      endif
+! hlnTT
+      if (lpencil(i_hlnTT)) then
+        call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
+      endif
+!
+    endsubroutine calc_pencils_eos
 !*******************************************************************
     subroutine getmu(mu)
 !
@@ -768,6 +969,7 @@ module EquationOfState
       lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
                          +yH*(2*log(yH)-lnrho_e-lnrho_p) &
                          +xHe_term)*fractions1+lnrho-2.5)
+print*,maxval(lnTT_)
       TT1_=exp(-lnTT_)
       f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
       dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
