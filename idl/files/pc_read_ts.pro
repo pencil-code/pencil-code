@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.17 2006-03-15 15:29:45 ajohan Exp $
+; $Id: pc_read_ts.pro,v 1.18 2006-04-04 09:24:33 ajohan Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2006-03-15 15:29:45 $
-;  $Revision: 1.17 $
+;  $Date: 2006-04-04 09:24:33 $
+;  $Revision: 1.18 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -272,7 +272,7 @@ COMPILE_OPT IDL2,HIDDEN
     endif
     ii=monotone_array(reform(full_data[itt,*]))
   endif else begin
-    ii=indgen(n_elements(full_data[0,*]))
+    ii=indgen(n_elements(full_data[0,*]),/long)
   endelse
 ;
 ;  assemble the data
