@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.16 2006-04-04 16:21:46 mee Exp $
+! $Id: eos_fixed_ionization.f90,v 1.17 2006-04-04 18:53:20 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.16 2006-04-04 16:21:46 mee Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.17 2006-04-04 18:53:20 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -825,33 +825,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 
       write(unit,NML=eos_run_pars)
     endsubroutine write_eos_run_pars
-!***********************************************************************
-    subroutine scale_height_xy(radz0,nrad,f,H_xy)
-!
-!  calculate characteristic scale height for exponential boundary
-!  condition in the radiation module
-!
-      use Gravity
-!
-      integer, intent(in) :: radz0,nrad
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,radz0), intent(out) :: H_xy
-      real, dimension(mx,my,radz0) :: lnrho_xy,ss_xy,TT_xy
-!
-      if (nrad>0) then
-        lnrho_xy=f(:,:,n1-radz0:n1-1,ilnrho)
-        ss_xy=f(:,:,n1-radz0:n1-1,iss)
-      endif
-!
-      if (nrad<0) then
-        lnrho_xy=f(:,:,n2+1:n2+radz0,ilnrho)
-        ss_xy=f(:,:,n2+1:n2+radz0,iss)
-      endif
-!
-      TT_xy=exp(lnTTss*ss_xy+lnTTlnrho*lnrho_xy+lnTT0)
-      H_xy=(1.+yH0+xHe-xH2)*ss_ion*TT_xy/gravz
-!
-    endsubroutine scale_height_xy
 !***********************************************************************
     subroutine get_soundspeed(TT,cs2)
 !

@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.39 2006-04-04 16:51:54 theine Exp $
+! $Id: eos_idealgas.f90,v 1.40 2006-04-04 18:53:20 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.39 2006-04-04 16:51:54 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.40 2006-04-04 18:53:20 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1075,24 +1075,6 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine scale_height_xy(radz0,nrad,f,H_xy)
-!
-!  calculate characteristic scale height for exponential boundary
-!  condition in the radiation module
-!
-!  31-mar-04/tony: dummy created
-!
-
-      integer, intent(in) :: radz0,nrad
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,radz0), intent(out) :: H_xy
-!
-      call not_implemented('scale_height_xy')
-      H_xy=0.
-      if (NO_WARN) print*,f,radz0,nrad
-!
-    endsubroutine scale_height_xy
-!!***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !
 !  Calculate sound speed for given temperature

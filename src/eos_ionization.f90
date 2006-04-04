@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.20 2006-04-04 16:21:46 mee Exp $
+! $Id: eos_ionization.f90,v 1.21 2006-04-04 18:53:20 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.20 2006-04-04 16:21:46 mee Exp $")
+           "$Id: eos_ionization.f90,v 1.21 2006-04-04 18:53:20 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1132,32 +1132,6 @@ print*,maxval(lnTT_)
       df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
 !
     endsubroutine saha
-!***********************************************************************
-    subroutine scale_height_xy(radz0,nrad,f,H_xy)
-!
-!  calculate characteristic scale height for exponential boundary
-!  condition in the radiation module
-!
-      use Gravity
-!
-      integer, intent(in) :: radz0,nrad
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,radz0), intent(out) :: H_xy
-      real, dimension(mx,my,radz0) :: yH_xy,lnTT_xy
-!
-      if (nrad>0) then
-        yH_xy=f(:,:,n1-radz0:n1-1,iyH)
-        lnTT_xy=f(:,:,n1-radz0:n1-1,ilnTT)
-      endif
-!
-      if (nrad<0) then
-        yH_xy=f(:,:,n2+1:n2+radz0,iyH)
-        lnTT_xy=f(:,:,n2+1:n2+radz0,ilnTT)
-      endif
-!
-      H_xy=(1.+yH_xy+xHe)*ss_ion*exp(lnTT_xy)/gravz
-!
-    endsubroutine scale_height_xy
 !***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !

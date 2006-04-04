@@ -24,8 +24,6 @@
   public :: ioncalc, ioninit
   public :: temperature_hessian
 
-! For radiation calculations
-  public :: scale_height_xy
 ! Boundary conditions
   public :: bc_ss_flux,bc_ss_temp_old,bc_ss_energy
   public :: bc_ss_temp_x,bc_ss_temp_y,bc_ss_temp_z,bc_ss_temp2_z

@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.5 2006-04-03 23:54:40 brandenb Exp $
+! $Id: eos_temperature_ionization.f90,v 1.6 2006-04-04 18:53:20 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -35,15 +35,13 @@ module EquationOfState
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
 
-  ! secondary parameters calculated in initialize
-
-  !real :: xHe=0.1,lcalc_yH=.true.
+  real :: xHe=0.1,lcalc_yH=.true.
 
   ! input parameters
-  !namelist /eos_init_pars/ xHe,lcalc_yH
+  namelist /eos_init_pars/ xHe,lcalc_yH
 
   ! run parameters
-  !namelist /eos_run_pars/ xHe,lcalc_yH
+  namelist /eos_run_pars/ xHe,lcalc_yH
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -51,10 +49,12 @@ module EquationOfState
 !  real :: gamma=impossible, gamma1=impossible, gamma11=impossible
   real :: gamma=5./3., gamma1=impossible, gamma11=impossible
   real :: cs2bot=impossible, cs2top=impossible 
-  real :: cs2cool=0.
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  integer :: isothtop=1
-  real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
+  real :: cs2cool=impossible
+  real :: mpoly=impossible, mpoly0=impossible
+  real :: mpoly1=impossible, mpoly2=impossible
+  integer :: isothtop=0
+  real, dimension (3) :: beta_glnrho_global=impossible
+  real, dimension (3) :: beta_glnrho_scaled=impossible
 
   contains
 
@@ -73,25 +73,56 @@ module EquationOfState
       leos=.true.
       leos_temperature_ionization=.true.
 !
-      iyH = 0
-      ilnTT = 0
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.5 2006-04-03 23:54:40 brandenb Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.6 2006-04-04 18:53:20 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
     subroutine initialize_eos()
 !
-!  dummy
-!
-      gamma1=gamma-1.
-!      cs20=0.          ! to avoid wrong results with samples/testfield
-! wd: commented out as it creates more problems than it solves
+!  dummy (but to be changed)
 !
     endsubroutine initialize_eos
+!*******************************************************************
+    subroutine select_eos_variable(variable,findex)
+!
+!  dummy (but to be changed)
+!
+      character (len=*), intent(in) :: variable
+      integer, intent(in) :: findex
+
+      if (NO_WARN) print *,variable,findex
+
+    endsubroutine select_eos_variable
+!***********************************************************************
+    subroutine pencil_criteria_eos()
+!
+!  dummy (but to be changed)
+!
+    endsubroutine pencil_criteria_eos
+!***********************************************************************
+    subroutine pencil_interdep_eos(lpencil_in)
+!
+!  dummy (but to be changed)
+!
+      logical, dimension(npencils) :: lpencil_in
+
+      if (NO_WARN) print *,lpencil_in
+
+    endsubroutine pencil_interdep_eos
+!*******************************************************************
+    subroutine calc_pencils_eos(f,p)
+!
+!  dummy (but to be changed)
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+
+      if (NO_WARN) print *,f,p
+
+    endsubroutine calc_pencils_eos
 !*******************************************************************
     subroutine getmu(mu)
 !
@@ -154,17 +185,6 @@ module EquationOfState
       if (NO_WARN) print*,yH,EE,TT  !(keep compiler quiet)
 
     end subroutine getdensity
-!***********************************************************************
-    subroutine isothermal_density_ion(pot,tmp)
-!
-      real, dimension (nx), intent(in) :: pot
-      real, dimension (nx), intent(out) :: tmp
-!
-      tmp=0.
-      call fatal_error('isothermal_density_ion','SHOULD NOT BE CALLED WITH NOEOS')
-      if (NO_WARN) print*,pot  !(keep compiler quiet)
-!
-    end subroutine isothermal_density_ion
 !***********************************************************************
     subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
@@ -337,23 +357,6 @@ module EquationOfState
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine scale_height_xy(radz0,nrad,f,H_xy)
-!
-!  calculate characteristic scale height for exponential boundary
-!  condition in the radiation module
-!
-!  31-mar-04/tony: dummy created
-!
-      integer, intent(in) :: radz0,nrad
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,radz0), intent(out) :: H_xy
-!
-      call not_implemented('scale_height_xy')
-      H_xy=0.
-      if (NO_WARN) print*,f,radz0,nrad
-!
-    endsubroutine scale_height_xy
-!!***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !
 !  Calculate sound speed for given temperature
