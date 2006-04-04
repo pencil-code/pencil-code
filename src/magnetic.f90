@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.288 2006-04-02 03:34:12 mee Exp $
+! $Id: magnetic.f90,v 1.289 2006-04-04 13:44:56 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -185,7 +185,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.288 2006-04-02 03:34:12 mee Exp $")
+           "$Id: magnetic.f90,v 1.289 2006-04-04 13:44:56 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -516,10 +516,12 @@ module Magnetic
       if (lresi_hyper2) lpenc_requested(i_del4a)=.true.
       if (lresi_hyper3) lpenc_requested(i_del6a)=.true.
       if (lspherical) lpenc_requested(i_graddiva)=.true.
-      if (lentropy .or. lresi_smagorinsky) &
-          lpenc_requested(i_j2)=.true.
-      if (lentropy .or. ldt) lpenc_requested(i_rho1)=.true.
-      if (lentropy) lpenc_requested(i_TT1)=.true.
+      if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
+        lpenc_requested(i_j2)=.true.
+      endif
+      if (lentropy .or. ltemperature .or. ldt) lpenc_requested(i_rho1)=.true.
+      if (lentropy .or. ltemperature) lpenc_requested(i_TT1)=.true.
+      if (ltemperature) lpenc_requested(i_cv1)=.true.
       if (nu_ni/=0.) lpenc_requested(i_va2)=.true.
       if (hall_term/=0.) lpenc_requested(i_jxb)=.true.
       if ((lhydro .and. llorentzforce) .or. nu_ni/=0.) &
@@ -941,10 +943,14 @@ module Magnetic
         if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
       endif
 !
-!  add eta mu_0 j2/rho to entropy equation
+!  add eta mu_0 j2/rho to entropy or temperature equation
 !
       if (lentropy) then
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta*mu0)*p%j2*p%rho1*p%TT1
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+eta*mu0*p%j2*p%rho1*p%TT1
+      endif
+
+      if (ltemperature) then
+        df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+eta*mu0*p%j2*p%rho1*p%cv1*p%TT1
       endif
 !
 !  Restivivity term
