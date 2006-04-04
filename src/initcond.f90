@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.152 2006-04-03 18:25:14 theine Exp $ 
+! $Id: initcond.f90,v 1.153 2006-04-04 13:41:57 theine Exp $ 
 
 module Initcond 
  
@@ -1033,8 +1033,8 @@ module Initcond
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
             if (ip<5) print*,"stratification: ",tmp,var1,var2
-            lnrho0(n)=var1
-            ss0(n)=var2
+            if (ldensity) lnrho0(n)=var1
+            if (lentropy) ss0(n)=var2
           else
             exit
           endif
@@ -1045,10 +1045,9 @@ module Initcond
           read(19,*,iostat=stat) tmp,var1,var2
           if (stat>=0) then
             if (ip<5) print*,"stratification: ",tmp,var1,var2
-            lnrho0(n)=var1
-            if (ltemperature) then
-              lnTT0(n)=var2
-            else
+            if (ldensity) lnrho0(n)=var1
+            if (ltemperature) lnTT0(n)=var2
+            if (lentropy) then
               call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
               ss0(n)=tmp
             endif
@@ -1065,30 +1064,32 @@ module Initcond
   !  without ghost zones
   !
       case (ntotal+1)
+        if (lentropy) then
+          do n=n1,n2
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
+            f(:,:,n,iss)=ss0(ipz*nz+n-nghost)
+          enddo
+        endif
         if (ltemperature) then
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+n-nghost)
-          enddo
-        else
-          do n=n1,n2
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-nghost)
-            f(:,:,n,iss)=ss0(ipz*nz+n-nghost)
           enddo
         endif
   !
   !  with ghost zones
   !
       case (mtotal+1)
+        if (lentropy) then
+          do n=1,mz
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+            f(:,:,n,iss)=ss0(ipz*nz+n)
+          enddo
+        endif
         if (ltemperature) then
           do n=1,mz
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
-          enddo
-        else
-          do n=1,mz
-            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
-            f(:,:,n,iss)=ss0(ipz*nz+n)
           enddo
         endif
 
