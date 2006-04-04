@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.11 2006-03-17 19:24:18 tarek Exp $
+#   $Id: pc_setupsrc,v 1.12 2006-04-04 20:54:27 mee Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -18,15 +18,17 @@ IAM=$0
 link_scripts()
 {
   echo "Linking job submission/execution scripts."
+  to_link=
   for script in $scripts
   do
     if [ -f $bindir/$script ]; then
       [ -h ./$script ] && rm -f $script
-      [ ! -f ./$script ] && ln -s $bindir/$script .
+      [ ! -f ./$script ] && to_link="$to_link $bindir/$script" 
     else
       echo "No such file: $bindir/$script"
     fi 
   done
+  [ "$to_link" ] && ln -s $to_link .
 }
 
 link_root_makefile()
@@ -56,6 +58,7 @@ link_src_files()
   old_dir="`pwd`"
   cd $src
   n=0
+  to_link=
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
               $srcdir/Makefile.src $srcdir/Makefile.depend \
               $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts \
@@ -64,18 +67,21 @@ link_src_files()
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
         rm -f "`basename $file`"
-        ln -s $file .
+	to_link="$to_link $file"
+        #ln -s $file .
       elif [ -f "`basename $file`" ] \
         || [ -d "`basename $file`" ]; then
         n="`expr $n + 1`"
         existf="$existf`basename $file` "
       else
-        ln -s $file .
+	to_link="$to_link $file"
+        #ln -s $file .
       fi
     else
       echo "No such file: $file"
     fi
   done
+  [ "$to_link" ] && ln -s $to_link .
   cd $old_dir
 }
 
@@ -88,6 +94,7 @@ copy_local_files()
   old_dir="`pwd`"
   cd $src
   n=0
+  to_copy=
   for file in $srcdir/*.local
   do
     if [ -f $file ]; then
@@ -95,7 +102,8 @@ copy_local_files()
 	# Warn user about copying *.local, as these should normally come
 	# with each run directory: 
 	echo "Copying default file $file to src/ -- are you sure this is OK?"
-        cp $file .
+	to_copy="$to_copy $file"
+        #cp $file .
       else
         # echo "`basename $file` already exists"
         n="`expr $n + 1`"
@@ -105,6 +113,7 @@ copy_local_files()
       echo "No such file: $file"
     fi
   done
+  [ "$to_copy" ] && cp $to_copy .
   cd $old_dir
 }
 
@@ -137,6 +146,7 @@ prepare_for_compile()
 
 scripts="start.csh start_run.csh run.csh getconf.csh"
 pencil_home_path=$PENCIL_HOME
+echo Using $pencil_home_path
 src="`pwd`/src"
 
 while [ $# -gt 0 ]
