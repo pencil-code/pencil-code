@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.387 2006-04-03 23:54:40 brandenb Exp $
+! $Id: entropy.f90,v 1.388 2006-04-04 13:19:20 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1,Ma2
-! PENCILS PROVIDED ugss,yH,hss,hlnTT,del2ss,del6ss,del2lnTT
+! PENCILS PROVIDED ugss,yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
 module Entropy
@@ -159,7 +159,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.387 2006-04-03 23:54:40 brandenb Exp $")
+           "$Id: entropy.f90,v 1.388 2006-04-04 13:19:20 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
