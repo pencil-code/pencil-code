@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.7 2006-03-29 13:42:33 ajohan Exp $
+! $Id: particles_number.f90,v 1.8 2006-04-04 09:47:00 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.7 2006-03-29 13:42:33 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.8 2006-04-04 09:47:00 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -178,7 +178,7 @@ module Particles_number
               sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
 !  Smoluchowski equation between two superparticles.
               deltanptilde = -sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
-!  Either coagulation...
+!  Either coagulation...    [warning: this coagulation scheme is a bit cheaty]
               if (deltavp<=vthresh_coagulation) then
                 dfp(j,inptilde) = dfp(j,inptilde) + 0.5*deltanptilde
                 dfp(k,inptilde) = dfp(k,inptilde) + 0.5*deltanptilde
