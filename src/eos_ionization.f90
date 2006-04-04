@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.21 2006-04-04 18:53:20 theine Exp $
+! $Id: eos_ionization.f90,v 1.22 2006-04-04 19:06:13 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -11,7 +11,7 @@
 ! MAUX CONTRIBUTION 2
 !
 ! PENCILS PROVIDED ss,gss,ee,pp,lnTT,cs2,cp1tilde,glnTT,TT,TT1
-! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT
+! PENCILS PROVIDED yH,hss,hlnTT,del2ss,del6ss,del2lnTT,cv1
 !
 !***************************************************************
 
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.21 2006-04-04 18:53:20 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.22 2006-04-04 19:06:13 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
