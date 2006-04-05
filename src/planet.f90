@@ -1,4 +1,4 @@
-no! $Id: planet.f90,v 1.35 2006-04-05 16:10:14 wlyra Exp $
+! $Id: planet.f90,v 1.36 2006-04-05 16:50:06 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -82,7 +82,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.35 2006-04-05 16:10:14 wlyra Exp $")
+           "$Id: planet.f90,v 1.36 2006-04-05 16:50:06 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
