@@ -9,6 +9,7 @@
   
   public :: gravity_companion,local_isothermal
   public :: gravity_star,wave_damping,get_ramped_mass
+  public :: time_average
 
 !logicals to use "abroad"
   public :: llocal_iso,lwavedamp

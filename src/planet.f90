@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.33 2006-03-28 21:52:27 wlyra Exp $
+! $Id: planet.f90,v 1.34 2006-04-05 14:35:18 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -46,14 +46,14 @@ module Planet
   logical :: lsmoothlocal=.false.,lcs2_global=.false.
   logical :: lmigrate=.false.,lnorm=.false.
   real :: Gvalue=1. !gravity constant in same unit as density
-  logical :: ldnolog=.true.
+  logical :: ldnolog=.true.,lcs2_thick=.false.
 !
   namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
-       lcs2_global,llocal_iso
+       lcs2_global,llocal_iso,lcs2_thick
 !
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
-       lmigrate,lnorm,Gvalue,n_periods,ldnolog
+       lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_torqrocheint=0,idiag_torqrocheext=0
@@ -82,7 +82,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.33 2006-03-28 21:52:27 wlyra Exp $")
+           "$Id: planet.f90,v 1.34 2006-04-05 14:35:18 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -136,6 +136,7 @@ module Planet
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_uu)=.true.
       lpenc_requested(i_u2)=.true.
+      lpenc_requested(i_bb)=.true.
 !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
@@ -701,10 +702,10 @@ module Planet
 ! 25-nov-05/wlad : coded
 ! 
      use Cdata
-      use Global, only: set_global
+     use Global, only: set_global
 !
       real, dimension (nx) :: rrp,cs2
-      real :: g0=1.
+      real :: g0=1.,r0_pot=0.2
       logical :: lheader,lfirstcall=.true.
 !
 !     It is better to set cs2 as a global variable than to recalculate it
@@ -721,28 +722,119 @@ module Planet
          rrp = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + tini
       endif   
 !      
-      where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
+      if (lcs2_thick) then 
+!
+! This is for H=cs/Omega = 0.16 (Lz/2)
+!
+         if (lheader) &
+              print*,'set soundspeed: constant H=',Lxyz(3)/2.
+!
+         cs2 = g0**2 * (rrp**2 + r0_pot**2)**(-1.5) &
+              *(Lxyz(3)/2.)**2
+      else
+!
+! This one is for Mach Number = 20 everywhere 
+!
+         if (lheader) &
+              print*,'set soundspeed: Mach=20 all over'
+!
+         where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
          
-         cs2 = 0.00749375        & 
-              +0.00679450*rrp    &
-              -0.0149310 *rrp**2 &
-              -0.0580586 *rrp**3 &
-              +0.0816006 *rrp**4 
-      endwhere
+            cs2 = 0.00749375        & 
+                 +0.00679450*rrp    &
+                 -0.0149310 *rrp**2 &
+                 -0.0580586 *rrp**3 &
+                 +0.0816006 *rrp**4 
+         endwhere
 !
-      where (rrp.gt.0.4)
-         cs2 = 0.05**2 * g0 / rrp
-      endwhere
+         where (rrp.gt.0.4)
+            cs2 = 0.05**2 * g0 / rrp
+         endwhere
 !
-      where (rrp.lt.0.2) 
-         cs2 = 0.008
-      endwhere
+         where (rrp.lt.0.2) 
+            cs2 = 0.008
+         endwhere
+
+      endif
 !    
       call set_global(cs2,m,n,'cs2',nx)
 !       
       lfirstcall=.false.
 !
     endsubroutine set_soundspeed
+!***************************************************************
+    subroutine time_average(p)
+!
+! Calculates the time-average of phi-variables. This routine is 
+! called from equ.f90 every first iteration of the runge kutta 
+! time step.  It stores the values of the velocity and of the 
+! magnetic field (from the pencils) onto global variables. 
+!
+! The moving average is retroactive, in the sense that what it 
+! performs is an average of the variable read now and the sum
+! of all values previously read. 
+!
+! <f>_t = 0.5*sum(f)_t!=tnow + 0.5*f(now)
+!
+! In the end, the result is
+!
+!        t
+! <f> = SUM 0.5**(t-i) * f(i) 
+!        i
+!
+! It is equivalent to a moving average in which the bigger weigth is
+! given to the value read now. 
+! 
+!
+! 02-03-06/wlad : coded
+!
+      use Global, only: get_global,set_global
+!
+      type (pencil_case) :: p
+      real, dimension(nx,3) :: bavg,uavg
+!
+! Call in the first step of runge kutta's scheme only
+!
+      if (lfirst) then
+!
+! No averaging in the first time step
+!
+         if (it.eq.1) then
+!
+            
+            if (lmagnetic) bavg = p%bb
+            if (lhydro) uavg = p%uu
+!
+         else
+!
+! Average the value stored now in the pencil
+! and the sum of the values from the previous steps
+!
+! magnetic field
+!
+            if (lmagnetic) then
+               call get_global(bavg,m,n,'bbs')
+               bavg = 0.5*(bavg + p%bb)
+            endif
+!
+! velocity field
+!
+            if (lhydro) then
+               call get_global(uavg,m,n,'uus')
+               uavg = 0.5*(uavg + p%uu)
+            endif
+!
+         endif
+!
+! Store the new average onto a global variable, to be read on
+! the next time step here again.
+!
+         if (lmagnetic) call set_global(bavg,m,n,'bbs',nx)
+         if (lhydro)    call set_global(uavg,m,n,'uus',nx)
+!
+      endif
+!
+    endsubroutine time_average
 !***************************************************************
     subroutine rprint_planet(lreset,lwrite)
 !

@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.288 2006-04-05 12:27:17 mee Exp $
+! $Id: equ.f90,v 1.289 2006-04-05 14:35:18 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.288 2006-04-05 12:27:17 mee Exp $")
+           "$Id: equ.f90,v 1.289 2006-04-05 14:35:18 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -454,7 +454,6 @@ module Equ
 !  Note: cylindrical radius currently only needed for phi-averages.
 !
         call calc_unitvects_sphere()
-        
 !
 !  calculate profile for phi-averages if needed
 !  Note that rcyl_mn is also needed for Couette flow experiments,
@@ -526,6 +525,10 @@ module Equ
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
 !  --------------------------------------------------------
+!
+!  Time average of phi-variables
+!
+        if (lplanet) call time_average(p)
 !
 !  hydro, density, and entropy evolution
 !
