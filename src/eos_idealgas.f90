@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.40 2006-04-04 18:53:20 theine Exp $
+! $Id: eos_idealgas.f90,v 1.41 2006-04-05 16:48:55 wlyra Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.40 2006-04-04 18:53:20 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.41 2006-04-05 16:48:55 wlyra Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -259,25 +259,25 @@ module EquationOfState
       ieosvar_selected=ieosvar_selected+this_var
       select case (ieosvar_selected)
         case (ieosvar_lnrho+ieosvar_ss)
-          print*,"select_eos_variable: Using lnrho and ss" 
+          if (lroot) print*,"select_eos_variable: Using lnrho and ss" 
           ieosvars=ilnrho_ss 
         case (ieosvar_rho+ieosvar_ss)
-          print*,"select_eos_variable: Using rho and ss" 
+          if (lroot) print*,"select_eos_variable: Using rho and ss" 
           ieosvars=irho_ss 
         case (ieosvar_lnrho+ieosvar_lnTT)
-          print*,"select_eos_variable: Using lnrho and lnTT" 
+          if (lroot) print*,"select_eos_variable: Using lnrho and lnTT" 
           ieosvars=ilnrho_lnTT 
         case (ieosvar_rho+ieosvar_lnTT)
-          print*,"select_eos_variable: Using rho and lnTT" 
+          if (lroot) print*,"select_eos_variable: Using rho and lnTT" 
           ieosvars=irho_lnTT 
         case (ieosvar_lnrho+ieosvar_cs2)
-          print*,"select_eos_variable: Using lnrho and cs2" 
+          if (lroot) print*,"select_eos_variable: Using lnrho and cs2" 
           ieosvars=ilnrho_cs2
         case (ieosvar_rho+ieosvar_cs2)
-          print*,"select_eos_variable: Using rho and cs2" 
+          if (lroot) print*,"select_eos_variable: Using rho and cs2",iproc 
           ieosvars=irho_cs2 
         case default
-          print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
+          if (lroot) print*,"select_eos_variable: Thermodynamic variable combination, ieosvar_selected= ",ieosvar_selected
           call fatal_error("select_eos_variable", &
              "This thermodynamic variable combination is not implemented: ")
       endselect
