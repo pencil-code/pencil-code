@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.7 2006-04-05 11:28:35 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.8 2006-04-05 13:57:39 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -88,7 +88,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.7 2006-04-05 11:28:35 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.8 2006-04-05 13:57:39 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -161,7 +161,6 @@ module EquationOfState
       logical, dimension(npencils) :: lpencil_in
 
       if (lpencil_in(i_cs2)) then
-        lpencil_in(i_pp)=.true.
         lpencil_in(i_rho1)=.true.
         lpencil_in(i_cv1)=.true.
         lpencil_in(i_TT1)=.true.
@@ -194,9 +193,14 @@ module EquationOfState
       endif
 
       if (lpencil_in(i_pp)) then
+        lpencil_in(i_mu1)=.true.
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_TT)=.true.
+      endif
+
+      if (lpencil_in(i_yH).and.not(lconst_yH)) then
         lpencil_in(i_rho1)=.true.
         lpencil_in(i_TT1)=.true.
-        lpencil_in(i_mu1)=.true.
       endif
 
       if (lpencil_in(i_dppdlnTT)) then
@@ -214,7 +218,7 @@ module EquationOfState
 
       if (lpencil_in(i_ee)) then
         lpencil_in(i_mu1)=.true.
-        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_TT)=.true.
         lpencil_in(i_yH)=.true.
       endif
 
@@ -240,7 +244,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 
-      real, dimension (nx) :: rhs,tmp,tmp1,tmp2
+      real, dimension (nx) :: rhs,yH_term,tmp,sqrtrhs
       integer :: i
 
       if (NO_WARN) print *,f,p
@@ -266,8 +270,9 @@ module EquationOfState
           p%yH = yH_const
         else
           where (TT_ion*p%TT1 < -log(tiny(TT_ion)))
-            rhs = exp(lnrho_e)*p%rho1*(p%TT1*TT_ion)**(-1.5)*exp(-TT_ion*p%TT1)
-            p%yH = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
+            rhs = rho_e*p%rho1*(p%TT1*TT_ion)**(-1.5)*exp(-TT_ion*p%TT1)
+            sqrtrhs = sqrt(rhs)
+            p%yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
           elsewhere
             p%yH = 0
           endwhere
@@ -282,15 +287,21 @@ module EquationOfState
 !
 !  Pressure
 !
-      if (lpencil(i_pp)) p%pp = Rgas*p%mu1/(p%rho1*p%TT1)
+      if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
+
+!
+!  Common term involving the ionization fraction
+!
+      if (lpencil(i_cv).or.lpencil(i_dppdlnTT).or.lpencil(i_dppdlnrho)) then
+        yH_term = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+      endif
 
 !
 !  Specific heat at constant volume (i.e. density)
 !
       if (lpencil(i_cv)) then
-        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
-        tmp2 = 1.5 + TT_ion*p%TT1
-        p%cv = Rgas*p%mu1*(1.5 + tmp1*tmp2**2)
+        tmp = 1.5 + TT_ion*p%TT1
+        p%cv = Rgas*p%mu1*(1.5 + yH_term*tmp**2)
       endif
 
       if (lpencil(i_cv1)) p%cv1=1/p%cv
@@ -299,9 +310,8 @@ module EquationOfState
 !  Specific heat at constant pressure
 !
       if (lpencil(i_cp)) then
-        tmp1 = p%yH*(1-p%yH)/(2 + xHe*(2-p%yH))
-        tmp2 = 2.5+TT_ion*p%TT1
-        p%cp = Rgas*p%mu1*(2.5 + tmp1*tmp2**2)
+        tmp = 2.5+TT_ion*p%TT1
+        p%cp = Rgas*p%mu1*(2.5 + yH_term*tmp**2)
       endif
 
       if (lpencil(i_cp1)) p%cp1=1/p%cp
@@ -310,14 +320,11 @@ module EquationOfState
 !  Coefficients for the pressure gradient
 !
       if (lpencil(i_dppdlnTT)) then
-        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
-        tmp2 = 1.5+TT_ion*p%TT1
-        p%dppdlnTT = p%pp*(1 + tmp1*tmp2)
+        tmp = 1.5+TT_ion*p%TT1
+        p%dppdlnTT = p%pp*(1 + yH_term*tmp)
       endif
-      if (lpencil(i_dppdlnrho)) then
-        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
-        p%dppdlnrho = p%pp*(1 - tmp1)
-      endif
+
+      if (lpencil(i_dppdlnrho)) p%dppdlnrho = p%pp*(1 - yH_term)
 
 !
 !  Logarithmic pressure gradient
@@ -340,7 +347,7 @@ module EquationOfState
 !  Energy per unit mass
 !AB: Tobi, is this correct?
 !
-      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1/p%TT1 + p%yH*Rgas*mu1_0*TT_ion
+      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT + p%yH*Rgas*mu1_0*TT_ion
 
 !
 !  Entropy per unit mass
