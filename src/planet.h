@@ -7,7 +7,7 @@
   public :: read_planet_run_pars,  write_planet_run_pars
   public :: pencil_criteria_planet,calc_pencils_planet
   
-  public :: gravity_companion,local_isothermal
+  public :: gravity_companion
   public :: gravity_star,wave_damping,get_ramped_mass
   public :: time_average
 

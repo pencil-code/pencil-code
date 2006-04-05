@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.18 2006-04-05 14:35:18 wlyra Exp $
+! $Id: noplanet.f90,v 1.19 2006-04-05 16:10:14 wlyra Exp $
 !
 !  Dummy module
 !
@@ -51,7 +51,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.18 2006-04-05 14:35:18 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.19 2006-04-05 16:10:14 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -171,20 +171,6 @@ module Planet
       integer, intent(in) :: unit
       if (NO_WARN) print*,unit
     endsubroutine calc_torque
-!**********************************************************************
-    subroutine local_isothermal(cs20,corr)
-!
-!8-nov-05/wlad : dummy  
-!
-      use Mpicomm, only: stop_it
-      use Cdata
-!
-      real, intent(in)  :: cs20
-      real, dimension (nx) :: corr
-!
-      call stop_it("noplanet.f90 - local_isothermal")
-!
-    endsubroutine local_isothermal
 !**********************************************************************
    subroutine gravity_star(gs,r0_pot,n_pot,g_r,xstar,ystar)
 !

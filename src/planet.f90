@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.34 2006-04-05 14:35:18 wlyra Exp $
+no! $Id: planet.f90,v 1.35 2006-04-05 16:10:14 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -82,7 +82,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.34 2006-04-05 14:35:18 wlyra Exp $")
+           "$Id: planet.f90,v 1.35 2006-04-05 16:10:14 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -374,25 +374,6 @@ module Planet
 !      
     endsubroutine calc_torque
 !***********************************************************************
-    subroutine local_isothermal(cs20,cs2)
-!
-!22-aug-05/wlad: coded
-!08-nov-05/wlad: moved here (previously in the EoS module)
-!25-nov-05/wlad: changed to be just a call of a global variable
-!
-      use Cdata
-      use Global, only: get_global
-!
-      real, intent(in)  :: cs20
-      real, dimension (nx), intent(out) :: cs2
-!
-      if (headtt) print*,&
-           'planet: local isothermal equation of state for accretion disk'
-!  
-      call get_global(cs2,m,n,'cs2')
-!
-    endsubroutine local_isothermal
-!***********************************************************
     subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !      
 ! Ramps up the mass of the planet from 0 to gc over
