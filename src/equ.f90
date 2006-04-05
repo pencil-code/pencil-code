@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.289 2006-04-05 14:35:18 wlyra Exp $
+! $Id: equ.f90,v 1.290 2006-04-05 16:31:27 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -355,7 +355,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.289 2006-04-05 14:35:18 wlyra Exp $")
+           "$Id: equ.f90,v 1.290 2006-04-05 16:31:27 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -588,7 +588,9 @@ module Equ
 !
 !  Add radiative cooling (for ray method)
 !
-        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df,p)
+        if (lradiation_ray.and.(lentropy.or.ltemperature)) then
+          call radiative_cooling(f,df,p)
+        endif
 !
 !  Add shear if present
 !

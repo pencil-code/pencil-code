@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.33 2005-10-12 13:55:28 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.34 2006-04-05 16:31:27 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -141,7 +141,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.33 2005-10-12 13:55:28 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.34 2006-04-05 16:31:27 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -897,23 +897,31 @@ module Radiation
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: pQrad,pQrad2,pkapparho
+      real, dimension (nx) :: cooling,Qrad2
 !
-      pQrad=f(l1:l2,m,n,iQrad)
-      pkapparho=kapparho(l1:l2,m,n)
+      cooling=4*pi*kapparho(l1:l2,m,n)*f(l1:l2,m,n,iQrad)
 !
 !  Add radiative cooling
 !
       if (lcooling) then
-        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+4*pi*pkapparho*p%rho1*p%TT1*pQrad
+        if (lentropy) then
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+p%rho1*p%TT1*cooling
+        endif
+        if (ltemperature) then
+          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%rho1*p%cv1*p%TT1*cooling
+        endif
       endif
 !
 !  diagnostics
 !
       if (ldiagnos) then
-        pQrad2=f(l1:l2,m,n,iQrad)**2
-        if(idiag_Qradrms/=0) call sum_mn_name(pQrad2,idiag_Qradrms,lsqrt=.true.)
-        if(idiag_Qradmax/=0) call max_mn_name(pQrad2,idiag_Qradmax,lsqrt=.true.)
+        Qrad2=f(l1:l2,m,n,iQrad)**2
+        if (idiag_Qradrms/=0) then
+          call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
+        endif
+        if (idiag_Qradmax/=0) then
+          call max_mn_name(Qrad2,idiag_Qradmax,lsqrt=.true.)
+        endif
       endif
 !
     endsubroutine radiative_cooling
@@ -930,8 +938,8 @@ module Radiation
       use IO, only: output
 
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx) :: lnTT
       logical, save :: lfirst=.true.
+      real, dimension(mx) :: lnTT
 
       select case (source_function_type)
 
@@ -1060,8 +1068,18 @@ module Radiation
 !  21-11-04/anders: coded
 !
       if (lcooling) then
-        lpenc_requested(i_TT1)=.true.
-        lpenc_requested(i_rho1)=.true.
+
+        if (lentropy) then
+          lpenc_requested(i_TT1)=.true.
+          lpenc_requested(i_rho1)=.true.
+        endif
+
+        if (ltemperature) then
+          lpenc_requested(i_TT1)=.true.
+          lpenc_requested(i_rho1)=.true.
+          lpenc_requested(i_cv1)=.true.
+        endif
+
       endif
 !
     endsubroutine pencil_criteria_radiation
