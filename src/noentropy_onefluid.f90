@@ -1,4 +1,4 @@
-! $Id: noentropy_onefluid.f90,v 1.2 2006-02-16 12:51:45 ajohan Exp $
+! $Id: noentropy_onefluid.f90,v 1.3 2006-04-05 16:10:39 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy_onefluid.f90,v 1.2 2006-02-16 12:51:45 ajohan Exp $")
+           "$Id: noentropy_onefluid.f90,v 1.3 2006-04-05 16:10:39 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -155,7 +155,6 @@ module Entropy
 !
       use Cdata
       use EquationOfState, only: gamma,gamma1,cs20,lnrho0
-      use Planet, only:llocal_iso,local_isothermal
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -174,14 +173,7 @@ module Entropy
         if (gamma==1.) then
            p%cs2=cs20 
         else
-!
-           if (llocal_iso) then
-              call local_isothermal(cs20,tmp)              
-              p%cs2=tmp
-           else   
-              p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
-           endif
-!
+           p%cs2=cs20*exp(gamma1*(p%lnrho-lnrho0))
         endif
      endif
 ! Ma2
