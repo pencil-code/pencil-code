@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.34 2006-04-02 03:13:56 mee Exp $
+! $Id: timestep.f90,v 1.35 2006-04-05 14:14:32 wlyra Exp $
 
 module Timestep
 
@@ -94,12 +94,11 @@ module Timestep
         if (lfirst.and.ldt) then 
           dt1_local=maxval(dt1_max(1:nx))
 
+
           !Timestep growth limiter
           if (real(ddt) .gt. 0.) dt1_local=max(dt1_local(1),dt1_last)
-
           call mpireduce_max(dt1_local,dt1,1)
           if (lroot) dt=1.0/dt1(1)
-
           !Timestep growth limiter
           if (ddt/=0.) dt1_last=dt1_local(1)/ddt
           call mpibcast_real(dt,1)
@@ -123,6 +122,7 @@ module Timestep
 !  Increase time
 !
         t=t+dt_beta(itsub)*ds
+
 !
       enddo
 !
@@ -200,7 +200,7 @@ module Timestep
 !              if (leos) &
 !                print*,"     Sound speed:    maxval(sqrt(advec_cs2)) = ", sqrt(maxval(advec_cs2))
 !              if (lmagnetic) &
-!                print*,"     Alfen speed:    maxval(sqrt(advec_va2)) = ", sqrt(maxval(advec_va2))
+!                print*,"     Alfven speed:    maxval(sqrt(advec_va2)) = ", sqrt(maxval(advec_va2))
 !            else
 !              print*,"  It appears the dagger was in the form of an diffusion term."
 !              print*,"   Here's the line up, the big guy is the offender:"
@@ -227,7 +227,7 @@ module Timestep
             print*,"     Shear velocity:       maxval(advec_shear)        = ", maxval(advec_shear)/cdt
             print*,"     Hall effect:          maxval(advec_hall)         = ", maxval(advec_hall)/cdt
             print*,"     Sound speed:          maxval(sqrt(advec_cs2))    = ", sqrt(maxval(advec_cs2))/cdt
-            print*,"     Alfen speed:          maxval(sqrt(advec_va2))    = ", sqrt(maxval(advec_va2))/cdt
+            print*,"     Alfven speed:          maxval(sqrt(advec_va2))    = ", sqrt(maxval(advec_va2))/cdt
             print*,"     Fluid viscosity:      maxval(diffus_nu)          = ", maxval(diffus_nu)/cdtv
             print*,"     Thermal diffusion:    maxval(diffus_chi)         = ", maxval(diffus_chi)/cdtv
             print*,"     Magnetic diffusion:   maxval(diffus_eta)         = ", maxval(diffus_eta)/cdtv
