@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.168 2006-03-29 16:35:52 tarek Exp $
+### $Id: Makefile.src,v 1.169 2006-04-05 02:08:01 mkorpi Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -416,7 +416,7 @@ LIBMPISUFFIX=_#(Kolmogorov)
 #FFLAGS= -Msmp -O4  #(Lomond)
 #CFLAGS=-O4 -DFUNDERSC=1
 #CFLAGS=-O4 -DFUNDERSC=0 #(ursa)
-#CFLAGS=-O3 -dalign -xarch=v9b -Wall #(corona[1-2])
+#CFLAGS=-O3 -dalign -xarch=v9b -DFUNDERSC=1 #(corona[1-2])
 #LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
 #LDMPI=-lmpi  #(corona[1-2])
 #F77=$(FC)
