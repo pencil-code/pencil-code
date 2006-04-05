@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.96 2006-04-02 02:17:27 dobler Exp $
+! $Id: boundcond.f90,v 1.97 2006-04-05 14:39:39 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -881,7 +881,7 @@ module Boundcond
 !***********************************************************************
     subroutine bcy_extrap_2_1(f,topbot,j)
 !
-!  Extrapolation boundary condition for x.
+!  Extrapolation boundary condition for y.
 !  Correct for polynomials up to 2nd order, determined 1 further degree
 !  of freedom by minimizing L2 norm of coefficient vector.
 !
