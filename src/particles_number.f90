@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.8 2006-04-04 09:47:00 ajohan Exp $
+! $Id: particles_number.f90,v 1.9 2006-04-05 10:35:59 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -21,7 +21,7 @@ module Particles_number
 
   include 'particles_number.h'
 
-  real :: np_tilde0, vthresh_coagulation=0.0
+  real :: np_tilde0, vthresh_coagulation=0.0, deltavp22_floor=0.0
   integer, dimension (mpar_loc) :: ineighbour
   integer, dimension (mx,my,mz) :: ishepherd
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
@@ -29,10 +29,10 @@ module Particles_number
   integer :: idiag_nptm=0, idiag_dvp22m=0
 
   namelist /particles_number_init_pars/ &
-      initnptilde, vthresh_coagulation
+      initnptilde, vthresh_coagulation, deltavp22_floor
 
   namelist /particles_number_run_pars/ &
-      initnptilde, vthresh_coagulation
+      initnptilde, vthresh_coagulation, deltavp22_floor
 
   contains
 
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.8 2006-04-04 09:47:00 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.9 2006-04-05 10:35:59 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -174,6 +174,8 @@ module Particles_number
                   (fp(k,ivpx)-fp(j,ivpx))**2 + &
                   (fp(k,ivpy)-fp(j,ivpy))**2 + &
                   (fp(k,ivpz)-fp(j,ivpz))**2 )
+              if (deltavp22_floor/=0.0) &
+                  deltavp=sqrt(deltavp**2+deltavp22_floor**2)
 !  Collision cross section.
               sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
 !  Smoluchowski equation between two superparticles.
