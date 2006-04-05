@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.8 2006-04-05 13:57:39 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.9 2006-04-05 15:31:59 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -46,14 +46,14 @@ module EquationOfState
   real :: rho_H,rho_e,rho_e_,rho_He
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_He
 
-  real :: xHe=0.1,yH_const=0.0
+  real :: xHe=0.1,yH_const=0.0,yMetals=0.0
   logical :: lconst_yH=.false.
 
   ! input parameters
-  namelist /eos_init_pars/ xHe,lconst_yH,yH_const
+  namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals
 
   ! run parameters
-  namelist /eos_run_pars/ xHe,lconst_yH,yH_const
+  namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -88,7 +88,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.8 2006-04-05 13:57:39 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.9 2006-04-05 15:31:59 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -115,7 +115,7 @@ module EquationOfState
       lnrho_He = log(rho_He)
       rho_e_ = (1/mu1_0)*m_H*((m_e/hbar)*(chiH_/hbar)/(2*pi))**(1.5)
       lnrho_e_ = log(rho_e_)
-      kappa0 = sigmaH_*mu1_0/m_H/4.0
+      kappa0 = sigmaH_*mu1_0/(4*m_H)
 !
 !  write scale non-free constants to file; to be read by idl
 !
@@ -198,7 +198,7 @@ module EquationOfState
         lpencil_in(i_TT)=.true.
       endif
 
-      if (lpencil_in(i_yH).and.not(lconst_yH)) then
+      if (lpencil_in(i_yH).and..not.lconst_yH) then
         lpencil_in(i_rho1)=.true.
         lpencil_in(i_TT1)=.true.
       endif
@@ -539,7 +539,7 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
 
-      real, dimension(psize) :: lnrho_,lnTT_
+      real, dimension(psize) :: lnrho_,lnTT_,yH_
       real, dimension(psize) :: rho1,TT1,rhs,tmp
 
       select case (psize)
@@ -567,30 +567,32 @@ module EquationOfState
         rho1 = exp(-lnrho_)
         TT1 = exp(-lnTT_)
         if (lconst_yH) then
-          yH = yH_const
+          yH_ = yH_const
         else
           where (TT_ion*TT1 < -log(tiny(TT_ion)))
             rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
-            yH = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
+            yH_ = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
           elsewhere
-            yH = 0
+            yH_ = 0
           endwhere
         endif
       endif
 
+      if (present(yH)) yH = yH_
+
       if (present(mu1).or.present(ss).or.present(ee).or.present(pp)) then
-        mu1 = mu1_0*(1 + yH + xHe)
+        mu1 = mu1_0*(1 + yH_ + xHe)
       endif
 
-      if (present(ee)) ee = 1.5*Rgas*mu1/TT1 + yH*Rgas*mu1_0*TT_ion
+      if (present(ee)) ee = 1.5*Rgas*mu1/TT1 + yH_*Rgas*mu1_0*TT_ion
 
       if (present(pp)) pp = Rgas*mu1/(rho1*TT1)
 
       if (present(ss)) then
         tmp = 2.5 - 1.5*(lnTT_ion-lnTT_)
         ss = tmp + lnrho_H - lnrho_
-        where (yH > 0)
-          ss = ss + yH*(tmp + lnrho_e - lnrho - log(yH))
+        where (yH_ > 0)
+          ss = ss + yH_*(tmp + lnrho_e - lnrho - log(yH_))
         endwhere
         if (xHe > 0) then
           ss = ss + xHe*(tmp + lnrho_He - lnrho - log(xHe))
@@ -598,7 +600,10 @@ module EquationOfState
         ss = Rgas*mu1_0*ss
       endif
 
-      if (present(kapparho)) kapparho=0
+      if (present(kapparho)) then
+        kapparho = (yH_+yMetals)*(1-yH_)*kappa0* &
+                   exp(2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1)
+      endif
 
     endsubroutine eoscalc_farray
 !***********************************************************************
