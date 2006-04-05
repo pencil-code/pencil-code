@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.12 2006-04-04 13:41:31 theine Exp $
+! $Id: temperature_ionization.f90,v 1.13 2006-04-05 11:28:35 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -13,8 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED glnTT,del2lnTT,uglnTT,lnTT,TT1,yH,mu,pp,cv1,cp1,ee,ss
-! PENCILS PROVIDED dlnppdlnTT,dlnppdlnrho,glnpp,cs2,Ma2
+! PENCILS PROVIDED Ma2,uglnTT
 !
 !***************************************************************
 module Entropy
@@ -31,12 +30,10 @@ module Entropy
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
-  real :: TT_ion,Rgas,rho_H,rho_e,rho_He
-  real :: xHe=0.1,mu_0=0.0,chi=0.0
-  real :: heat_uniform=0.0,yH_const=0.0
+  real :: chi=0.0
+  real :: heat_uniform=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT,lcalc_heat_cool=.false.,lheatc_chiconst=.false.
-  logical :: lconst_yH=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=4) :: iinit_str
 
@@ -48,12 +45,12 @@ module Entropy
   namelist /entropy_init_pars/ &
       initlnTT,radius_lnTT,ampl_lnTT,widthlnTT, &
       lnTT_left,lnTT_right,lnTT_const,TT_const, &
-      kx_lnTT,ky_lnTT,kz_lnTT,xHe,lconst_yH,yH_const
+      kx_lnTT,ky_lnTT,kz_lnTT
 
   ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      heat_uniform,xHe,chi,lconst_yH,yH_const
+      heat_uniform,chi
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -89,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.12 2006-04-04 13:41:31 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.13 2006-04-05 11:28:35 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,25 +126,6 @@ module Entropy
         call fatal_error('initialize_entropy','EOS/=noeos but'//&
                          'temperature_ionization already include'//&
                          'an EQUATION OF STATE for the fluid')
-      endif
-!
-!  Useful constants for ionization
-!
-      TT_ion = chiH/k_B
-      Rgas = k_B/m_H  !(Tobi, this doesn't agree with the literature...)
-      !Rgas = k_B/m_u
-      mu_0 = (1 + 4*xHe)
-      rho_H = mu_0*m_H*((m_H/hbar)*(chiH/hbar)/(2*pi))**(1.5)
-      rho_e = mu_0*m_H*((m_e/hbar)*(chiH/hbar)/(2*pi))**(1.5)
-      rho_He = mu_0*m_H*((4*m_H/hbar)*(chiH/hbar)/(2*pi))**(1.5)
-!
-!  Turn off pressure gradient term and advection for 0-D runs.
-!
-      if (nxgrid*nygrid*nzgrid==1) then
-        lpressuregradient_gas=.false.
-        ladvection_temperature=.false.
-        print*, 'initialize_entropy: 0-D run, turned off pressure gradient term'
-        print*, 'initialize_entropy: 0-D run, turned off advection of entropy'
       endif
 !
 !  Check whether we want heating/cooling
@@ -270,8 +248,10 @@ module Entropy
       if (ldt) lpenc_requested(i_cs2)=.true.
 
       if (ldensity) then
-        lpenc_requested(i_pp)=.true.
-        lpenc_requested(i_dlnppdlnTT)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_cv1)=.true.
+        lpenc_requested(i_TT1)=.true.
+        lpenc_requested(i_dppdlnTT)=.true.
       endif
 
       if (linterstellar) then
@@ -281,9 +261,7 @@ module Entropy
       endif
 
       if (lpressuregradient_gas) then
-        lpenc_requested(i_pp)=.true.
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_glnpp)=.true.
+        lpenc_requested(i_rho1gpp)=.true.
       endif
 
       if (lviscosity) then
@@ -304,9 +282,9 @@ module Entropy
 !
 !  Diagnostics
 !
-      if (idiag_TTmax/=0) lpenc_diagnos(i_TT1)=.true.
-      if (idiag_TTmin/=0) lpenc_diagnos(i_TT1)=.true.
-      if (idiag_TTm/=0) lpenc_diagnos(i_TT1)=.true.
+      if (idiag_TTmax/=0) lpenc_diagnos(i_TT)=.true.
+      if (idiag_TTmin/=0) lpenc_diagnos(i_TT)=.true.
+      if (idiag_TTm/=0) lpenc_diagnos(i_TT)=.true.
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)=.true.
       if (idiag_yHm/=0) lpenc_diagnos(i_yH)=.true.
@@ -315,8 +293,8 @@ module Entropy
         lpenc_diagnos(i_ee)=.true.
       endif
       if (idiag_ssm/=0) lpenc_diagnos(i_ss)=.true.
-      if (idiag_cv/=0) lpenc_diagnos(i_cv1)=.true.
-      if (idiag_cp/=0) lpenc_diagnos(i_cp1)=.true.
+      if (idiag_cv/=0) lpenc_diagnos(i_cv)=.true.
+      if (idiag_cp/=0) lpenc_diagnos(i_cp)=.true.
       if (idiag_dtchi/=0) then
         lpenc_diagnos(i_rho1)=.true.
         lpenc_diagnos(i_cv1)=.true.
@@ -325,7 +303,7 @@ module Entropy
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ppm/=0) lpenc_diagnos(i_pp)=.true.
-      if (idiag_mum/=0) lpenc_diagnos(i_mu)=.true.
+      if (idiag_mum/=0) lpenc_diagnos(i_mu1)=.true.
 
     endsubroutine pencil_criteria_entropy
 !***********************************************************************
@@ -342,60 +320,8 @@ module Entropy
         lpencil_in(i_cs2)=.true.
       endif
 
-      if (lpencil_in(i_cs2)) then
-        lpencil_in(i_pp)=.true.
-        lpencil_in(i_rho1)=.true.
-        lpencil_in(i_cv1)=.true.
-        lpencil_in(i_TT1)=.true.
-        lpencil_in(i_dlnppdlnrho)=.true.
-        lpencil_in(i_dlnppdlnTT)=.true.
-      endif
-
-      if (lpencil_in(i_glnpp)) then
-        lpencil_in(i_dlnppdlnrho)=.true.
-        lpencil_in(i_glnrho)=.true.
-        lpencil_in(i_dlnppdlnTT)=.true.
+      if (lpencil_in(i_uglnTT)) then
         lpencil_in(i_glnTT)=.true.
-      endif
-
-      if (lpencil_in(i_cv1)) then
-        lpencil_in(i_yH)=.true.
-        lpencil_in(i_TT1)=.true.
-        lpencil_in(i_mu)=.true.
-      endif
-
-      if (lpencil_in(i_pp)) then
-        lpencil_in(i_rho1)=.true.
-        lpencil_in(i_TT1)=.true.
-        lpencil_in(i_mu)=.true.
-      endif
-
-      if (lpencil_in(i_dlnppdlnTT)) then
-        lpencil_in(i_yH)=.true.
-        lpencil_in(i_TT1)=.true.
-      endif
-
-      if (lpencil_in(i_yH)) then
-        lpencil_in(i_rho1)=.true.
-        lpencil_in(i_TT1)=.true.
-      endif
-
-      if (lpencil_in(i_mu)) lpencil_in(i_yH)=.true.
-
-      if (lpencil_in(i_dlnppdlnrho)) lpencil_in(i_yH)=.true.
-
-      if (lpencil_in(i_uglnTT)) lpencil_in(i_glnTT)=.true.
-
-      if (lpencil_in(i_ee)) then
-        lpencil_in(i_mu)=.true.
-        lpencil_in(i_TT1)=.true.
-        lpencil_in(i_yH)=.true.
-      endif
-
-      if (lpencil_in(i_ss)) then
-        lpencil_in(i_yH)=.true.
-        lpencil_in(i_rho1)=.true.
-        lpencil_in(i_TT1)=.true.
       endif
 
     endsubroutine pencil_interdep_entropy
@@ -407,141 +333,22 @@ module Entropy
 !
 !  20-11-04/anders: coded
 !
-      use Sub, only: grad,del2,u_dot_gradf
+      use Sub, only: u_dot_gradf
 
       real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
       type (pencil_case), intent (inout) :: p
-
-      real, dimension (nx) :: tmp,tmp1,tmp2,rhs
-      integer :: i
-
-!
-!  Logarithmic temperature and its gradient
-!
-      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
-      if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
-
-!
-!  Temperature laplacian
-!
-      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
-
-!
-!  Temperature advection
-!
-      if (lpencil(i_uglnTT)) then
-        call u_dot_gradf(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
-      endif
-
-!
-!  Inverse temperature
-!
-      if (lpencil(i_TT1)) then
-        p%TT1=exp(-f(l1:l2,m,n,ilnTT))
-      endif
-
-!
-!  Ionization fraction
-!
-      if (lpencil(i_yH)) then
-        if (lconst_yH) then
-          p%yH = yH_const
-        else
-          where (TT_ion*p%TT1 < -log(tiny(TT_ion)))
-            rhs = rho_e*p%rho1*(p%TT1*TT_ion)**(-1.5)*exp(-TT_ion*p%TT1)
-            p%yH = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
-          elsewhere
-            p%yH = 0
-          endwhere
-        endif
-      endif
-
-!
-!  Mean molecular weight
-!
-      if (lpencil(i_mu)) p%mu = mu_0/(1 + p%yH + xHe)
-
-!
-!  Pressure
-!
-      if (lpencil(i_pp)) p%pp = Rgas/(p%mu*p%rho1*p%TT1)
-
-!
-!  Inverse specific heat at constant volume (i.e. density)
-!
-      if (lpencil(i_cv1)) then
-        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
-        tmp2 = 1.5 + TT_ion*p%TT1
-        p%cv1 = (p%mu/Rgas)/(1.5 + tmp1*tmp2**2)
-      endif
-
-!
-!  Inverse specific heat at constant pressure
-!
-      if (lpencil(i_cp1)) then
-        tmp1 = p%yH*(1-p%yH)/(2 + xHe*(2-p%yH))
-        tmp2 = 2.5+TT_ion*p%TT1
-        p%cp1 = (p%mu/Rgas)/(2.5 + tmp1*tmp2**2)
-      endif
-
-!
-!  Coefficients for the pressure gradient
-!
-      if (lpencil(i_dlnppdlnTT)) then
-        tmp1 = p%yH * (1-p%yH) / ( (2-p%yH) * (1+p%yH+xHe) )
-        tmp2 = 1.5+TT_ion*p%TT1
-        p%dlnppdlnTT = 1 + tmp1*tmp2
-      endif
-      if (lpencil(i_dlnppdlnrho)) then
-        tmp1 = p%yH * (1-p%yH) / ( (2-p%yH) * (1+p%yH+xHe) )
-        p%dlnppdlnrho = 1 - tmp1
-      endif
-
-!
-!  Logarithmic pressure gradient
-!
-      if (lpencil(i_glnpp)) then
-        do i=1,3
-          p%glnpp(:,i) = p%dlnppdlnrho*p%glnrho(:,i) + p%dlnppdlnTT*p%glnTT(:,i)
-        enddo
-      endif
-
-!
-!  Sound speed
-!
-      if (lpencil(i_cs2)) then
-        p%cs2 = p%pp*p%rho1*(p%pp*p%rho1*p%cv1*p%TT1*(p%dlnppdlnTT)**2 &
-                              + p%dlnppdlnrho)
-      endif
 
 !
 !  Mach Speed
 !
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
+
 !
-!  Energy per unit mass
-!AB: Tobi, is this correct?
+!  Temperature advection
+!  (Needs to be here because of lupw_lnTT)
 !
-      if (lpencil(i_ee)) p%ee = 1.5*Rgas/(p%mu*p%TT1) + p%yH*(Rgas/mu_0)*TT_ion
-      !if (lpencil(i_ee)) p%ee = 1.5*Rgas/(p%mu*p%TT1) !+ p%yH*(Rgas/mu_0)*TT_ion
-!
-!  Entropy per unit mass
-!  The contributions from each particle species contain the mixing entropy
-!
-      if (lpencil(i_ss)) then
-        tmp = 2.5 - 1.5*log(TT_ion*p%TT1)
-        ! Hydrogen
-        p%ss = tmp + log(rho_H*p%rho1)
-        ! Electrons
-        where (p%yH > 0)
-          p%ss = p%ss + p%yH*(tmp + log(rho_e*p%rho1) - log(p%yH))
-        endwhere
-        ! Helium
-        if (xHe > 0) then
-          p%ss = p%ss + xHe*(tmp + log(rho_He*p%rho1) - log(xHe))
-        endif
-        ! Overall factor
-        p%ss = (Rgas/mu_0)*p%ss
+      if (lpencil(i_uglnTT)) then
+        call u_dot_gradf(f,ilnTT,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_lnTT)
       endif
 
     endsubroutine calc_pencils_entropy
@@ -589,7 +396,7 @@ module Entropy
 !
       if (lhydro.and.lpressuregradient_gas) then
         do j=0,2
-          df(l1:l2,m,n,iuu+j) = df(l1:l2,m,n,iuu+j) - p%pp*p%rho1*p%glnpp(:,j+1)
+          df(l1:l2,m,n,iuu+j) = df(l1:l2,m,n,iuu+j) - p%rho1gpp(:,j+1)
         enddo
       endif
 
@@ -625,30 +432,30 @@ module Entropy
 !
       if (ldensity) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + &
-          p%pp*p%rho1*p%cv1*p%TT1*p%dlnppdlnTT*df(l1:l2,m,n,ilnrho)
+          p%rho1*p%cv1*p%TT1*p%dppdlnTT*df(l1:l2,m,n,ilnrho)
       endif
 
 !
 !  Calculate temperature related diagnostics
 !
       if (ldiagnos) then
-        if (idiag_TTmax/=0) call max_mn_name(1/p%TT1,idiag_TTmax)
-        if (idiag_TTmin/=0) call max_mn_name(-1/p%TT1,idiag_TTmin,lneg=.true.)
-        if (idiag_TTm/=0) call sum_mn_name(1/p%TT1,idiag_TTm)
+        if (idiag_TTmax/=0) call max_mn_name(p%TT,idiag_TTmax)
+        if (idiag_TTmin/=0) call max_mn_name(-p%TT,idiag_TTmin,lneg=.true.)
+        if (idiag_TTm/=0) call sum_mn_name(p%TT,idiag_TTm)
         if (idiag_yHmax/=0) call max_mn_name(p%yH,idiag_yHmax)
         if (idiag_yHmin/=0) call max_mn_name(-p%yH,idiag_yHmin,lneg=.true.)
         if (idiag_yHm/=0) call sum_mn_name(p%yH,idiag_yHm)
         if (idiag_eth/=0) call sum_mn_name(p%ee/p%rho1,idiag_eth)
         if (idiag_ssm/=0) call sum_mn_name(p%ss,idiag_ssm)
-        if (idiag_cv/=0) call sum_mn_name(1/p%cv1,idiag_cv)
-        if (idiag_cp/=0) call sum_mn_name(1/p%cp1,idiag_cp)
+        if (idiag_cv/=0) call sum_mn_name(p%cv,idiag_cv)
+        if (idiag_cp/=0) call sum_mn_name(p%cp,idiag_cp)
         if (idiag_dtc/=0) then
           call max_mn_name(sqrt(advec_cs2)/cdt,idiag_dtc,l_dt=.true.)
         endif
         if (idiag_eem/=0) call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0) call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_csm/=0) call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
-        if (idiag_mum/=0) call sum_mn_name(p%mu,idiag_mum)
+        if (idiag_mum/=0) call sum_mn_name(1/p%mu1,idiag_mum)
       endif
 
     endsubroutine dss_dt

@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.6 2006-04-04 18:53:20 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.7 2006-04-05 11:28:35 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -8,6 +8,10 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+!
+! PENCILS PROVIDED ss,ee,pp,lnTT,cs2,glnTT,TT,TT1
+! PENCILS PROVIDED yH,del2lnTT,cv,cv1,cp,cp1,mu1
+! PENCILS PROVIDED glnTT,dppdlnTT,dppdlnrho,rho1gpp
 !
 !***************************************************************
 
@@ -32,16 +36,24 @@ module EquationOfState
     module procedure pressure_gradient_point   ! explicit lnrho, ss
   end interface
 
-! integers specifying which independent variables to use in eoscalc
+  ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
 
-  real :: xHe=0.1,lcalc_yH=.true.
+  !  secondary parameters calculated in initialize
+  real :: mu1_0,Rgas
+  real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
+  real :: ss_ion,kappa0
+  real :: rho_H,rho_e,rho_e_,rho_He
+  real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_He
+
+  real :: xHe=0.1,yH_const=0.0
+  logical :: lconst_yH=.false.
 
   ! input parameters
-  namelist /eos_init_pars/ xHe,lcalc_yH
+  namelist /eos_init_pars/ xHe,lconst_yH,yH_const
 
   ! run parameters
-  namelist /eos_run_pars/ xHe,lcalc_yH
+  namelist /eos_run_pars/ xHe,lconst_yH,yH_const
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -76,14 +88,53 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.6 2006-04-04 18:53:20 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.7 2006-04-05 11:28:35 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
     subroutine initialize_eos()
 !
-!  dummy (but to be changed)
+!  called by run.f90 after reading parameters, but before the time loop
 !
+      if (lroot) print*,'initialize_eos: ENTER'
+!
+!  Useful constants for ionization
+!
+      mu1_0 = 1/(1 + 4*xHe)
+      Rgas = k_B/m_H  !(Tobi, this doesn't agree with the literature...)
+      !Rgas = k_B/m_u
+      TT_ion = chiH/k_B
+      lnTT_ion = log(TT_ion)
+      TT_ion_ = chiH_/k_B
+      lnTT_ion_ = log(chiH_/k_B)
+      rho_H = (1/mu1_0)*m_H*((m_H/hbar)*(chiH/hbar)/(2*pi))**(1.5)
+      lnrho_H = log(rho_H)
+      rho_e = (1/mu1_0)*m_H*((m_e/hbar)*(chiH/hbar)/(2*pi))**(1.5)
+      lnrho_e = log(rho_e)
+      rho_He = (1/mu1_0)*m_H*((4*m_H/hbar)*(chiH/hbar)/(2*pi))**(1.5)
+      lnrho_He = log(rho_He)
+      rho_e_ = (1/mu1_0)*m_H*((m_e/hbar)*(chiH_/hbar)/(2*pi))**(1.5)
+      lnrho_e_ = log(rho_e_)
+      kappa0 = sigmaH_*mu1_0/m_H/4.0
+!
+!  write scale non-free constants to file; to be read by idl
+!
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro')
+        write (1,*) 'mu1_0=',mu1_0
+        write (1,*) 'Rgas=',Rgas
+        write (1,*) 'TT_ion=',TT_ion
+        write (1,*) 'lnTT_ion=',lnTT_ion
+        write (1,*) 'TT_ion_=',TT_ion_
+        write (1,*) 'lnTT_ion_=',lnTT_ion_
+        write (1,*) 'lnrho_H=',lnrho_H
+        write (1,*) 'lnrho_e=',lnrho_e
+        write (1,*) 'lnrho_He=',lnrho_He
+        write (1,*) 'lnrho_e_=',lnrho_e_
+        write (1,*) 'kappa0=',kappa0
+        close (1)
+      endif
+
     endsubroutine initialize_eos
 !*******************************************************************
     subroutine select_eos_variable(variable,findex)
@@ -109,6 +160,73 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 
+      if (lpencil_in(i_cs2)) then
+        lpencil_in(i_pp)=.true.
+        lpencil_in(i_rho1)=.true.
+        lpencil_in(i_cv1)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_dppdlnrho)=.true.
+        lpencil_in(i_dppdlnTT)=.true.
+      endif
+
+      if (lpencil_in(i_rho1gpp)) then
+        lpencil_in(i_rho1)=.true.
+        lpencil_in(i_dppdlnrho)=.true.
+        lpencil_in(i_glnrho)=.true.
+        lpencil_in(i_dppdlnTT)=.true.
+        lpencil_in(i_glnTT)=.true.
+      endif
+
+      if (lpencil_in(i_cv1)) lpencil_in(i_cv)=.true.
+
+      if (lpencil_in(i_cv)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_mu1)=.true.
+      endif
+
+      if (lpencil_in(i_cp1)) lpencil_in(i_cp)=.true.
+
+      if (lpencil_in(i_cp)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_mu1)=.true.
+      endif
+
+      if (lpencil_in(i_pp)) then
+        lpencil_in(i_rho1)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_mu1)=.true.
+      endif
+
+      if (lpencil_in(i_dppdlnTT)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_pp)=.true.
+      endif
+
+      if (lpencil_in(i_dppdlnrho)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_pp)=.true.
+      endif
+
+      if (lpencil_in(i_mu1)) lpencil_in(i_yH)=.true.
+
+      if (lpencil_in(i_ee)) then
+        lpencil_in(i_mu1)=.true.
+        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_yH)=.true.
+      endif
+
+      if (lpencil_in(i_ss)) then
+        lpencil_in(i_yH)=.true.
+        lpencil_in(i_lnrho)=.true.
+        lpencil_in(i_lnTT)=.true.
+      endif
+
+      if (lpencil_in(i_TT)) lpencil_in(i_lnTT)=.true.
+      if (lpencil_in(i_TT1)) lpencil_in(i_TT)=.true.
+
       if (NO_WARN) print *,lpencil_in
 
     endsubroutine pencil_interdep_eos
@@ -117,10 +235,128 @@ module EquationOfState
 !
 !  dummy (but to be changed)
 !
+      use Sub, only: grad,del2
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 
+      real, dimension (nx) :: rhs,tmp,tmp1,tmp2
+      integer :: i
+
       if (NO_WARN) print *,f,p
+
+!
+!  Temperature
+!
+      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+      if (lpencil(i_TT1)) p%TT1=1/p%TT
+
+!
+!  Temperature laplacian and gradient
+!
+      if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+
+!
+!  Ionization fraction
+!
+      if (lpencil(i_yH)) then
+        if (lconst_yH) then
+          p%yH = yH_const
+        else
+          where (TT_ion*p%TT1 < -log(tiny(TT_ion)))
+            rhs = exp(lnrho_e)*p%rho1*(p%TT1*TT_ion)**(-1.5)*exp(-TT_ion*p%TT1)
+            p%yH = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
+          elsewhere
+            p%yH = 0
+          endwhere
+        endif
+      endif
+
+!
+!  Mean molecular weight
+!
+      if (lpencil(i_mu1)) p%mu1 = mu1_0*(1 + p%yH + xHe)
+
+!
+!  Pressure
+!
+      if (lpencil(i_pp)) p%pp = Rgas*p%mu1/(p%rho1*p%TT1)
+
+!
+!  Specific heat at constant volume (i.e. density)
+!
+      if (lpencil(i_cv)) then
+        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+        tmp2 = 1.5 + TT_ion*p%TT1
+        p%cv = Rgas*p%mu1*(1.5 + tmp1*tmp2**2)
+      endif
+
+      if (lpencil(i_cv1)) p%cv1=1/p%cv
+
+!
+!  Specific heat at constant pressure
+!
+      if (lpencil(i_cp)) then
+        tmp1 = p%yH*(1-p%yH)/(2 + xHe*(2-p%yH))
+        tmp2 = 2.5+TT_ion*p%TT1
+        p%cp = Rgas*p%mu1*(2.5 + tmp1*tmp2**2)
+      endif
+
+      if (lpencil(i_cp1)) p%cp1=1/p%cp
+
+!
+!  Coefficients for the pressure gradient
+!
+      if (lpencil(i_dppdlnTT)) then
+        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+        tmp2 = 1.5+TT_ion*p%TT1
+        p%dppdlnTT = p%pp*(1 + tmp1*tmp2)
+      endif
+      if (lpencil(i_dppdlnrho)) then
+        tmp1 = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+        p%dppdlnrho = p%pp*(1 - tmp1)
+      endif
+
+!
+!  Logarithmic pressure gradient
+!
+      if (lpencil(i_rho1gpp)) then
+        do i=1,3
+          p%rho1gpp(:,i)=p%rho1*(p%dppdlnrho*p%glnrho(:,i) + &
+                                 p%dppdlnTT*p%glnTT(:,i))
+        enddo
+      endif
+
+!
+!  Sound speed
+!
+      if (lpencil(i_cs2)) then
+        p%cs2 = p%rho1*(p%rho1*p%cv1*p%TT1*(p%dppdlnTT)**2 + p%dppdlnrho)
+      endif
+
+!
+!  Energy per unit mass
+!AB: Tobi, is this correct?
+!
+      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1/p%TT1 + p%yH*Rgas*mu1_0*TT_ion
+
+!
+!  Entropy per unit mass
+!  The contributions from each particle species contain the mixing entropy
+!
+      if (lpencil(i_ss)) then
+        tmp = 2.5 - 1.5*(lnTT_ion-p%lnTT)
+        p%ss = tmp + lnrho_H - p%lnrho
+        where (p%yH > 0)
+          p%ss = p%ss + p%yH*(tmp + lnrho_e - p%lnrho - log(p%yH))
+        endwhere
+        if (xHe > 0) then
+          p%ss = p%ss + xHe*(tmp + lnrho_He - p%lnrho - log(xHe))
+        endif
+        p%ss = Rgas*mu1_0*p%ss
+      endif
 
     endsubroutine calc_pencils_eos
 !*******************************************************************
@@ -282,25 +518,81 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
-!   02-apr-04/tony: implemented dummy
+!   04-apr-06/tobi: Adapted for this EOS module
 !
+      use Mpicomm, only: stop_it
+
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,kapparho
-!
-      call fatal_error('temperature_gradient','SHOULD NOT BE CALLED WITH NOEOS')
+      real, dimension(psize), intent(out), optional :: lnrho,ss
+      real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
 
-      lnTT=0. 
-      yH=0.
-      ee=0.
-      pp=0.
-      kapparho=0.
-      if (NO_WARN) print*,f  !(keep compiler quiet)
-!
+      real, dimension(psize) :: lnrho_,lnTT_
+      real, dimension(psize) :: rho1,TT1,rhs,tmp
+
+      select case (psize)
+
+      case (nx)
+        lnrho_=f(l1:l2,m,n,ilnrho)
+        lnTT_=f(l1:l2,m,n,ilnTT)
+
+      case (mx)
+        lnrho_=f(:,m,n,ilnrho)
+        lnTT_=f(:,m,n,ilnTT)
+
+      case default
+        call stop_it("eoscalc: no such pencil size")
+
+      end select
+
+
+      if (present(lnrho)) lnrho=lnrho_
+
+      if (present(lnTT)) lnTT=lnTT_
+
+      if (present(yH).or.present(ss).or.present(ee).or.present(pp).or. &
+          present(mu1).or.present(kapparho)) then
+        rho1 = exp(-lnrho_)
+        TT1 = exp(-lnTT_)
+        if (lconst_yH) then
+          yH = yH_const
+        else
+          where (TT_ion*TT1 < -log(tiny(TT_ion)))
+            rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+            yH = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
+          elsewhere
+            yH = 0
+          endwhere
+        endif
+      endif
+
+      if (present(mu1).or.present(ss).or.present(ee).or.present(pp)) then
+        mu1 = mu1_0*(1 + yH + xHe)
+      endif
+
+      if (present(ee)) ee = 1.5*Rgas*mu1/TT1 + yH*Rgas*mu1_0*TT_ion
+
+      if (present(pp)) pp = Rgas*mu1/(rho1*TT1)
+
+      if (present(ss)) then
+        tmp = 2.5 - 1.5*(lnTT_ion-lnTT_)
+        ss = tmp + lnrho_H - lnrho_
+        where (yH > 0)
+          ss = ss + yH*(tmp + lnrho_e - lnrho - log(yH))
+        endwhere
+        if (xHe > 0) then
+          ss = ss + xHe*(tmp + lnrho_He - lnrho - log(xHe))
+        endif
+        ss = Rgas*mu1_0*ss
+      endif
+
+      if (present(kapparho)) kapparho=0
+
     endsubroutine eoscalc_farray
 !***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
