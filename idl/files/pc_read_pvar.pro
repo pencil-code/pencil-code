@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.19 2006-03-30 13:50:27 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.20 2006-04-06 08:29:59 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -164,9 +164,9 @@ for i=0,ncpus-1 do begin
     readu, file, array_loc
 ;
 ;  Put local processor data into proper place in global data array
-;        
+;
     for k=0,npar_loc-1 do begin
-      if (ipar_loc[k] lt npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
+      if (ipar_loc[k] le npar_max) then array[ipar_loc[k]-1,*]=array_loc[k,*]
     endfor
 ;
   endif
