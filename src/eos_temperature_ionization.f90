@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.10 2006-04-06 09:30:42 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.11 2006-04-06 09:44:40 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -88,7 +88,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.10 2006-04-06 09:30:42 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.11 2006-04-06 09:44:40 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -545,6 +545,14 @@ module EquationOfState
       select case (psize)
 
       case (nx)
+        lnrho_=f(l1:l2,m,n,ilnrho)
+        lnTT_=f(l1:l2,m,n,ilnTT)
+
+      case (nx+2)
+        lnrho_=f(l1:l2,m,n,ilnrho)
+        lnTT_=f(l1:l2,m,n,ilnTT)
+
+      case (nx+4)
         lnrho_=f(l1:l2,m,n,ilnrho)
         lnTT_=f(l1:l2,m,n,ilnTT)
 
