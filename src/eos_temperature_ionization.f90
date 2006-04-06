@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.12 2006-04-06 10:55:03 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.13 2006-04-06 14:02:12 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -88,7 +88,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.12 2006-04-06 10:55:03 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.13 2006-04-06 14:02:12 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -99,23 +99,23 @@ module EquationOfState
       if (lroot) print*,'initialize_eos: ENTER'
 !
 !  Useful constants for ionization
+!  (Here we assume m_H = m_p = m_u, m_He = 4*m_u, and m_e << m_u)
 !
       mu1_0 = 1/(1 + 4*xHe)
-      Rgas = k_B/m_H  !(Tobi, this doesn't agree with the literature...)
-      !Rgas = k_B/m_u
+      Rgas = k_B/m_u
       TT_ion = chiH/k_B
       lnTT_ion = log(TT_ion)
       TT_ion_ = chiH_/k_B
-      lnTT_ion_ = log(chiH_/k_B)
-      rho_H = (1/mu1_0)*m_H*((m_H/hbar)*(chiH/hbar)/(2*pi))**(1.5)
+      lnTT_ion_ = log(TT_ion_)
+      rho_H = (1/mu1_0)*m_u*((m_u/hbar)*(chiH/hbar)/(2*pi))**(1.5)
       lnrho_H = log(rho_H)
-      rho_e = (1/mu1_0)*m_H*((m_e/hbar)*(chiH/hbar)/(2*pi))**(1.5)
+      rho_e = (1/mu1_0)*m_u*((m_e/hbar)*(chiH/hbar)/(2*pi))**(1.5)
       lnrho_e = log(rho_e)
-      rho_He = (1/mu1_0)*m_H*((4*m_H/hbar)*(chiH/hbar)/(2*pi))**(1.5)
+      rho_He = (1/mu1_0)*m_u*((4*m_u/hbar)*(chiH/hbar)/(2*pi))**(1.5)
       lnrho_He = log(rho_He)
-      rho_e_ = (1/mu1_0)*m_H*((m_e/hbar)*(chiH_/hbar)/(2*pi))**(1.5)
+      rho_e_ = (1/mu1_0)*m_u*((m_e/hbar)*(chiH_/hbar)/(2*pi))**(1.5)
       lnrho_e_ = log(rho_e_)
-      kappa0 = sigmaH_*mu1_0/(4*m_H)
+      kappa0 = sigmaH_*mu1_0/(4*m_u)
 !
 !  write scale non-free constants to file; to be read by idl
 !
