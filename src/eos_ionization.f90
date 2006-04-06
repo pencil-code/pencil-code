@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.23 2006-04-05 11:02:22 theine Exp $
+! $Id: eos_ionization.f90,v 1.24 2006-04-06 09:44:09 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.23 2006-04-05 11:02:22 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.24 2006-04-06 09:44:09 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -709,6 +709,18 @@ module EquationOfState
       select case (psize)
 
       case (nx)
+        lnrho_=f(l1:l2,m,n,ilnrho)
+        ss_=f(l1:l2,m,n,iss)
+        yH_=f(l1:l2,m,n,iyH)
+        lnTT_=f(l1:l2,m,n,ilnTT)
+
+      case (nx+2)
+        lnrho_=f(l1:l2,m,n,ilnrho)
+        ss_=f(l1:l2,m,n,iss)
+        yH_=f(l1:l2,m,n,iyH)
+        lnTT_=f(l1:l2,m,n,ilnTT)
+
+      case (nx+4)
         lnrho_=f(l1:l2,m,n,ilnrho)
         ss_=f(l1:l2,m,n,iss)
         yH_=f(l1:l2,m,n,iyH)
