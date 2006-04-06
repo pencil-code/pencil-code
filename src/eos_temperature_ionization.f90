@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.9 2006-04-05 15:31:59 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.10 2006-04-06 09:30:42 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -88,7 +88,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.9 2006-04-05 15:31:59 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.10 2006-04-06 09:30:42 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -540,7 +540,7 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
 
       real, dimension(psize) :: lnrho_,lnTT_,yH_
-      real, dimension(psize) :: rho1,TT1,rhs,tmp
+      real, dimension(psize) :: rho1,TT1,rhs,sqrtrhs,tmp
 
       select case (psize)
 
@@ -571,7 +571,8 @@ module EquationOfState
         else
           where (TT_ion*TT1 < -log(tiny(TT_ion)))
             rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
-            yH_ = 2*sqrt(rhs)/(sqrt(rhs)+sqrt(4+rhs))
+            sqrtrhs = sqrt(rhs)
+            yH_ = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
           elsewhere
             yH_ = 0
           endwhere
