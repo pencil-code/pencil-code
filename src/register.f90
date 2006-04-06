@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.164 2006-04-04 16:21:47 mee Exp $
+! $Id: register.f90,v 1.165 2006-04-06 18:57:57 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -202,8 +202,6 @@ module Register
         k_B=k_B_cgs/(unit_energy/unit_temperature)
         sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
         m_u=m_u_cgs/unit_mass
-        m_p=m_p_cgs/unit_mass
-        m_e=m_e_cgs/unit_mass
         eV=eV_cgs/unit_energy
         sigmaH_=sigmaH_cgs/unit_length**2
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
@@ -213,8 +211,6 @@ module Register
         hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         m_u=m_u_cgs*1e-3/unit_mass
-        m_p=m_p_cgs*1e-3/unit_mass
-        m_e=m_e_cgs*1e-3/unit_mass
         eV=eV_cgs*1e-7/unit_energy
         sigmaH_=sigmaH_cgs*1e-4/unit_length**2
         sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
@@ -223,8 +219,11 @@ module Register
 !
 !  calculate additional constants
 !
-      m_H=m_p+m_e
-      m_He=3.97153*m_H
+      m_e=5.4857990945d-4*m_u
+      m_p=1.00727646688d0*m_u
+      m_H=1.00794*m_u
+      m_He=4.002602*m_u
+      Rgas=k_B/m_u
       chiH=13.6*eV
       chiH_=0.75*eV        
 !

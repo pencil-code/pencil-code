@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.41 2006-04-05 16:48:55 wlyra Exp $
+! $Id: eos_idealgas.f90,v 1.42 2006-04-06 18:57:57 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.41 2006-04-05 16:48:55 wlyra Exp $')
+           '$Id: eos_idealgas.f90,v 1.42 2006-04-06 18:57:57 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -118,6 +118,8 @@ module EquationOfState
     subroutine initialize_eos()
 !
       real :: mu_tmp, save_unit_temperature
+      double precision, parameter :: R_cgs=8.3144D7
+      !double precision, parameter :: R_cgs=k_B_cgs/m_u_cgs
 !
 !  set gamma1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)

@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.299 2006-04-03 23:54:40 brandenb Exp $
+! ! $Id: cdata.f90,v 1.300 2006-04-06 18:57:57 theine Exp $
 
 module Cdata
 
@@ -65,7 +65,7 @@ module Cdata
   ! Derived units
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   
-  double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV,hbar, &
+  double precision :: k_B,m_u,m_p,m_e,m_H,m_He,Rgas,eV,hbar, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
 
   ! magnetic permeability

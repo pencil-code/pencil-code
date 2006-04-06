@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.169 2006-04-05 02:08:01 mkorpi Exp $
+### $Id: Makefile.src,v 1.170 2006-04-06 18:57:57 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -512,7 +512,7 @@ PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
 
-default: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
+default: start_buildtime Makefile cparam.inc code stop_buildtime
 
 pacx: pacx-makefile cparam.inc code
 

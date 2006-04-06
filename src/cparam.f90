@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.43 2006-04-06 14:01:50 theine Exp $
+! $Id: cparam.f90,v 1.44 2006-04-06 18:57:57 theine Exp $
 
 module Cparam
 
@@ -88,10 +88,6 @@ module Cparam
   double precision, parameter :: hbar_cgs=1.054571596d-27  ! [erg*s]
   double precision, parameter :: k_B_cgs=1.3806505d-16     ! [erg/K]
   double precision, parameter :: m_u_cgs=1.66053886d-24    ! [g]
-  ! Better express R_cgs as a derive quantity (i.e. don't define here...)
-  ! (Not done yet since it breaks the interstellar test)
-  !double precision, parameter :: R_cgs=k_B_cgs/m_u_cgs     ! [erg/K]
-  double precision, parameter :: R_cgs=8.3144D7     ! [erg/K]
   ! It would be better to specify the following masses in units of m_u:
   double precision, parameter :: m_p_cgs=1.67262158d-24    ! [g]
   double precision, parameter :: m_e_cgs=9.10938188d-28    ! [g]
