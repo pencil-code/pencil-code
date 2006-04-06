@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.34 2006-04-05 16:31:27 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.35 2006-04-06 11:13:14 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -141,7 +141,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.34 2006-04-05 16:31:27 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.35 2006-04-06 11:13:14 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -944,8 +944,8 @@ module Radiation
       select case (source_function_type)
 
       case ('LTE')
-        do n=1,mz
-        do m=1,my
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
           Srad(:,m,n)=arad*exp(4*lnTT)
         enddo
@@ -999,16 +999,16 @@ module Radiation
       select case (opacity_type)
 
       case ('Hminus')
-        do m=1,my
-        do n=1,mz
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
           call eoscalc(f,mx,kapparho=tmp)
           kapparho(:,m,n)=tmp
         enddo
         enddo
 
       case ('kappa_cst')
-        do m=1,my
-        do n=1,mz
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
           kapparho(:,m,n)=kappa_cst*exp(lnrho)
         enddo
