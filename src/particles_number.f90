@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.9 2006-04-05 10:35:59 ajohan Exp $
+! $Id: particles_number.f90,v 1.10 2006-04-06 12:06:29 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.9 2006-04-05 10:35:59 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.10 2006-04-06 12:06:29 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -161,13 +161,14 @@ module Particles_number
             print*, 'dnptilde_dt: x(l), y(m), z(n)  =', x(l), y(m), z(n)
           endif
 !  Only continue of the shepherd particle has a neighbour.
-          do while (ineighbour(k)/=0)
+          do while (k/=0)
             j=k
 !  Consider neighbours one at a time.
             do while (ineighbour(j)/=0)
               j=ineighbour(j)
               if (ip<=6.and.lroot) then
-                print*, 'dnptilde_dt: fragmentation between ', k, 'and', j
+                print*, &
+                    'dnptilde_dt: collisions between particle ', k, 'and', j
               endif
 !  Collision speed.
               deltavp=sqrt( &
@@ -207,8 +208,31 @@ module Particles_number
                       1/cc*1/rho*4/3.*pi*rhops* &
                       (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
                 endif
-              endif
+              endif  ! fragmentation or coagulation
             enddo
+!  Subgrid model of collisions within a superparticle.
+            if (deltavp22_floor/=0.0) then
+              if (ip<=6.and.lroot) then
+                print*, 'dnptilde_dt: collisions within particle ', k
+              endif
+              deltavp=deltavp22_floor
+              sigma_jk=pi*(fp(k,iap)+fp(k,iap))**2
+              deltanptilde = -sigma_jk*fp(k,inptilde)*fp(k,inptilde)*deltavp
+              dfp(k,inptilde) = dfp(k,inptilde) + deltanptilde
+              if (lpscalar_nolog) then
+                rho=f(l,m,n,ilnrho)
+                if (.not. ldensity_nolog) rho=exp(rho)
+                df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                    1/rho*4/3.*pi*rhops*fp(k,iap)**3*deltanptilde
+              else
+                rho=f(l,m,n,ilnrho)
+                if (.not. ldensity_nolog) rho=exp(rho)
+                cc=f(l,m,n,ilncc)
+                if (.not. lpscalar_nolog) cc=exp(cc)
+                df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                    1/cc*1/rho*4/3.*pi*rhops*fp(k,iap)**3*deltanptilde
+              endif
+            endif  ! subgrid model
             k=ineighbour(k)
           enddo
 !  "if (k>0) then"
