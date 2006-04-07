@@ -1,4 +1,4 @@
- ! $Id: global_avgs.f90,v 1.1 2006-04-05 14:38:32 wlyra Exp $
+ ! $Id: global_avgs.f90,v 1.2 2006-04-07 15:29:16 wlyra Exp $
 
 module Global
 
@@ -16,8 +16,8 @@ module Global
   endinterface
 
   interface set_global_point
-    module procedure set_global_vect_point
     module procedure set_global_scal_point
+    module procedure set_global_vect_point
   endinterface
 
   interface get_global
@@ -26,20 +26,20 @@ module Global
   endinterface
 
   interface get_global_point
-    module procedure get_global_vect_point
-    module procedure get_global_scal_point
+     module procedure get_global_vect_point
+     module procedure get_global_scal_point
   endinterface
-
+!
 !
   real, dimension (mx,my,mz,3) :: gg
-  real, dimension (mx,my,mz) :: rho,nd,cs2
+  real, dimension (mx,my,mz) :: rho,cs2
   real, dimension (mx,my,mz,3) :: bbs
   real, dimension (mx,my,mz,3) :: uus
 !
   contains
 
 !***********************************************************************
-    subroutine register_global()
+   subroutine register_global()
 !
 !  Register Global module.
 !
@@ -71,20 +71,20 @@ module Global
       endif
 !
       select case(label)
-
+!
       case ('gg')
-        gg(l1:l2,m,n,1:3) = var
-
+         gg(l1:l2,m,n,1:3) = var
+!
       case ('bbs')
-        bbs(l1:l2,m,n,1:3) = var
-
+         bbs(l1:l2,m,n,1:3) = var
+!
       case ('uus')
-        uus(l1:l2,m,n,1:3) = var
-
+         uus(l1:l2,m,n,1:3) = var
+!
       case default
-        if (lroot) print*, 'set_global_vect: No such value for label', trim(label)
-        call stop_it('set_global_vect')
-
+         if (lroot) print*, 'set_global_vect: No such value for label', trim(label)
+         call stop_it('set_global_vect')
+!
       endselect
 !
     endsubroutine set_global_vect
@@ -101,64 +101,29 @@ module Global
       character (len=*) ::label
 !
       select case(label)
-
+!
       case ('rho')
-        if (length==nx) then
-          rho(l1:l2,m,n) = var
-        elseif (length==mx) then
-          rho(:,m,n) = var
-        endif
+         if (length==nx) then
+            rho(l1:l2,m,n) = var
+         elseif (length==mx) then
+            rho(:,m,n) = var
+         endif
 
-      case ('nd')
-        if (length==nx) then
-          nd(l1:l2,m,n) = var
-        elseif (length==mx) then
-          nd(:,m,n) = var
-        endif
-     case ('cs2')
-        if (length==nx) then
-           cs2(l1:l2,m,n) = var
-        elseif (length==mx) then
-           cs2(:,m,n) = var
-        endif
-
-
+      case ('cs2')
+         if (length==nx) then
+            cs2(l1:l2,m,n) = var
+         elseif (length==mx) then
+            cs2(:,m,n) = var
+         endif
+!
       case default
-        if (lroot) &
-            print*, 'set_global_scal: No such value for label', trim(label)
-        call stop_it('set_global_scal')
-
+         if (lroot) &
+              print*, 'set_global_scal: No such value for label', trim(label)
+         call stop_it('set_global_scal')
+!
       endselect
 !
     endsubroutine set_global_scal
-!***********************************************************************
-    subroutine set_global_vect_point(var,l,m,n,label)
-!   
-!  set point of global vector variable identified by LABEL
-!
-!  20-jun-05/anders: dummy
-!
-      real, dimension(3) :: var
-      integer :: l,m,n
-      character (len=*) :: label
-!
-      if (NO_WARN) print*, l, var(1), m, n, label ! keep compiler quiet
-!
-    endsubroutine set_global_vect_point
-!***********************************************************************
-    subroutine set_global_scal_point(var,l,m,n,label)
-!
-!  set point of global scalar variable identified by LABEL
-!
-!  20-jun-05/anders: dummy
-!
-      real :: var
-      integer :: l,m,n
-      character (len=*) :: label
-!
-      if (NO_WARN) print*, l, var, m, n, label ! keep compiler quiet
-!
-    endsubroutine set_global_scal_point
 !***********************************************************************
     subroutine reset_global(label)
 !
@@ -183,69 +148,23 @@ module Global
       character (len=*) ::label
 !
       select case(label)
-
+!
       case ('gg')
         var = gg(l1:l2,m,n,1:3)
-
+!
       case ('bbs')
         var = bbs(l1:l2,m,n,1:3)
-
+!
       case ('uus')
         var = uus(l1:l2,m,n,1:3)
-
+!
       case default
         if (lroot) print*, 'get_global_vect: No such value for label', trim(label)
         call stop_it('get_global_vect')
-
+!
       endselect
 !
     endsubroutine get_global_vect
-!***********************************************************************
-    subroutine get_global_vect_point(var,l,m,n,label)
-!
-!  Get (l,m,n)-point of the global vector variable identified by LABEL.
-!
-!  15-sep-05/anders: adapted
-!
-      real, dimension(3) :: var
-      integer :: l,m,n
-      character (len=*) ::label
-!
-      select case(label)
-
-      case ('gg')
-        var = gg(l,m,n,1:3)
-
-      case ('bbs')
-        var = bbs(l,m,n,1:3)
-
-      case ('uus')
-        var = uus(l,m,n,1:3)
-
-      case default
-        if (lroot) print*, &
-            'get_global_vect_point: No such value for label', trim(label)
-        call stop_it('get_global_vect_point')
-
-      endselect
-!
-    endsubroutine get_global_vect_point
-!********************************************************************
-    subroutine get_global_scal_point(var,l,m,n,label)
-!
-!  set (m,n)-pencil of the global scalar variable identified by LABEL
-!
-!  13-jun-05/anders: adapted
-!
-      real, dimension(nx) :: var
-      integer :: l,m,n
-      character (len=*) ::label
-!
-      
-      if (NO_WARN) print*, l,var, m, n, label ! keep compiler quiet
-
-!
-    endsubroutine get_global_scal_point
 !***********************************************************************
    subroutine get_global_scal(var,m,n,label)
 !
@@ -258,25 +177,119 @@ module Global
       character (len=*) ::label
 !
       select case(label)
-
+!
       case ('rho')
-        var = rho(l1:l2,m,n)
-
-      case ('nd')
-        var = nd(l1:l2,m,n)
-
-     case ('cs2')
-        var = cs2(l1:l2,m,n)
-
+         var = rho(l1:l2,m,n)
+!
+      case ('cs2')
+         var = cs2(l1:l2,m,n)
+!
       case default
-        if (lroot) print*, 'get_global_scal: No such value for label', trim(label)
-        call stop_it('get_global_scal')
-
+         if (lroot) print*, 'get_global_scal: No such value for label', trim(label)
+         call stop_it('get_global_scal')
+!
       endselect
 !
     endsubroutine get_global_scal
 !***********************************************************************
-
+    subroutine set_global_scal_point(var,l,m,n,label)
+!
+!  set point value of the global scalar variable identified by LABEL
+!
+!  20-jun-05/anders: adapted
+!
+      real :: var
+      integer :: l,m,n
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('cs2')
+         cs2(l,m,n) = cs2(l,m,n) + var
+!
+      case ('rho')
+         rho(l,m,n) = rho(l,m,n) + var
+!
+      case default
+         if (lroot) print*, &
+              'set_global_scal_point: No such value for label=', trim(label)
+         call stop_it('set_global_scal_point')
+!
+      endselect
+!
+    endsubroutine set_global_scal_point
+!***********************************************************************
+    subroutine set_global_vect_point(var,l,m,n,label)
+!
+!  set point of global vector variable identified by LABEL
+!
+!  20-jun-05/anders: dummy
+!
+      real, dimension(3) :: var
+      integer :: l,m,n
+      character (len=*) :: label
+!
+      if (NO_WARN) print*, l, var(1), m, n, label ! keep compiler quiet
+!
+    endsubroutine set_global_vect_point
+!***********************************************************************
+    subroutine get_global_scal_point(var,l,m,n,label)
+!
+!  Get (l,m,n)-point of the global scalar variable identified by LABEL
+!
+!  15-sep-05/anders: adapted
+!
+      real :: var
+      integer :: l,m,n
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('cs2')
+         var = cs2(l,m,n)
+!
+      case ('rho')
+         var = rho(l,m,n)
+!
+      case default
+        if (lroot) print*, &
+            'get_global_scal_point: No such value for label', trim(label)
+        call stop_it('get_global_scal_point')
+!
+      endselect
+!
+    endsubroutine get_global_scal_point
+!***********************************************************************
+    subroutine get_global_vect_point(var,l,m,n,label)
+!
+!  Get (l,m,n)-point of the global vector variable identified by LABEL.
+!
+!  15-sep-05/anders: adapted
+!
+      real, dimension(3) :: var
+      integer :: l,m,n
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('gg')
+        var = gg(l,m,n,1:3)
+!
+      case ('uus')
+        var = uus(l,m,n,1:3)
+!
+      case ('bbs')
+        var = bbs(l,m,n,1:3)
+!
+      case default
+        if (lroot) print*, &
+            'get_global_vect_point: No such value for label', trim(label)
+        call stop_it('get_global_vect_point')
+!
+      endselect
+!
+    endsubroutine get_global_vect_point
+!*********************************************************************
     subroutine global_derivs(m,n,label,der6)
 !
 !  take any derivative of global scalar variable.
@@ -290,18 +303,15 @@ module Global
       character (len=*) ::label
 !
       select case(label)
-
+!
       case ('rho')
         if (present(der6)) call del6_other(rho,der6)
-
-      case ('nd')
-        if (present(der6)) call del6_other(nd,der6)
-
+!
       case default
         if (lroot) &
             print*, 'global_derivs: No such value for label', trim(label)
         call stop_it('global_derivs')
-
+!
       endselect
 !
     endsubroutine global_derivs
@@ -316,7 +326,6 @@ module Global
       use Io, only: output
 !
       call output(trim(directory)//'/rho.dat',rho,1)
-      call output(trim(directory)//'/nd.dat',nd,1)
       call output(trim(directory)//'/cs2.dat',cs2,1)
       call output(trim(directory)//'/gg.dat'  ,gg  ,3)
       call output(trim(directory)//'/bbs.dat'  ,bbs  ,3)
@@ -330,6 +339,15 @@ module Global
 !
 !  10-jan-02/wolf: coded
 !
+      use Cdata, only: directory
+      use Io, only: input
+!
+      call input(trim(directory)//'/rho.dat',rho,1,0)
+      call input(trim(directory)//'/cs2.dat',cs2,1,0)
+      call input(trim(directory)//'/gg.dat'  ,gg  ,3,0)
+      call input(trim(directory)//'/bbs.dat'  ,bbs  ,3,0)
+      call input(trim(directory)//'/uus.dat'  ,uus  ,3,0)
+
     endsubroutine rglobal
 !***********************************************************************
 
