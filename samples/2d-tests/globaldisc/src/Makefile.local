@@ -4,7 +4,7 @@
 ###
 
 MPICOMM   =   mpicomm_double
-GLOBAL    =   global_gg_bext_cs2
+GLOBAL    =   global_avgs
 
 HYDRO     =   hydro
 DENSITY   =   density
