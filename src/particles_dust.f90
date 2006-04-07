@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.70 2006-03-25 18:29:23 ajohan Exp $
+! $Id: particles_dust.f90,v 1.71 2006-04-07 11:09:42 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -81,7 +81,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.70 2006-03-25 18:29:23 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.71 2006-04-07 11:09:42 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1248,7 +1248,7 @@ k_loop: do while (.not. (k>npar_loc))
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
         idiag_rhoptilm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
         idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0; idiag_epspmz=0
-        idiag_npmy=0; idiag_nparmax=0; idiag_mpt=0
+        idiag_npmy=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
