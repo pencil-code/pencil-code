@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.13 2006-02-16 12:51:45 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.14 2006-04-07 11:09:18 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -38,6 +38,7 @@ module Particles
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
+  integer :: idiag_nparmax=0
 
   contains
 
@@ -56,7 +57,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.13 2006-02-16 12:51:45 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.14 2006-04-07 11:09:18 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -320,6 +321,8 @@ module Particles
 !
 !  02-jan-05/anders: coded
 !
+      use Sub
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -366,6 +369,7 @@ module Particles
         if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
         if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
         if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
+        if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
       endif
 !
     endsubroutine dxxp_dt
@@ -481,6 +485,7 @@ module Particles
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
+        idiag_nparmax=0; idiag_nmigmax=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -493,6 +498,8 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
         call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
+        call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
+        call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
       enddo
 !
     endsubroutine rprint_particles
