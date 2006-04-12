@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =   mpicomm
+MPICOMM   = nompicomm
 GLOBAL    = noglobal
 
 HYDRO     =   hydro

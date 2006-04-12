@@ -3,7 +3,7 @@
 !  velocity field.
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2005-08-29 14:30:33 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.5 2006-04-12 11:02:25 ajohan Exp $',
   nt=50, it1=10, cdt=0.4, cdtv=0.80, isave=100, itorder=3
   dsnap=10.0, dvid=0.5, ip=20
   lpencil_check=T
@@ -15,8 +15,9 @@
 &density_run_pars
 /
 &viscosity_run_pars
-  nu=1e-3
+  nu=1.0e-4, ivisc='nu-const'
 /
 &particles_run_pars
   tausp=0.1, cdtp=0.2
+  ldragforce_gas=T
 /
