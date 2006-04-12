@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.43 2006-04-04 16:21:46 mee Exp $
+! $Id: nodensity.f90,v 1.44 2006-04-12 05:18:18 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -9,7 +9,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED rho,lnrho,rho1,glnrho,del2lnrho,hlnrho,grho
-! PENCILS PROVIDED uij5glnrho,uglnrho,ugrho,sglnrho
+! PENCILS PROVIDED del6lnrho,uij5glnrho,uglnrho,ugrho,sglnrho
 !
 !***************************************************************
 
@@ -55,7 +55,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.43 2006-04-04 16:21:46 mee Exp $")
+           "$Id: nodensity.f90,v 1.44 2006-04-12 05:18:18 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -137,6 +137,8 @@ module Density
       if (lpencil(i_glnrho)) p%glnrho=0.
 ! grho
       if (lpencil(i_grho)) p%grho=0.
+! del6lnrho
+      if (lpencil(i_del6lnrho)) p%del6lnrho=0.
 ! hlnrho
       if (lpencil(i_hlnrho)) p%hlnrho=0.
 ! sglnrho
