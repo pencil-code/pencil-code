@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.18 2006-03-28 19:23:50 wlyra Exp $
+! $Id: particles_main.f90,v 1.19 2006-04-12 12:06:39 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -201,14 +201,13 @@ module Particles_main
 !      
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
 !
-!  Map the particles on the grid for later use.
+!  Map the particle positions on the grid for later use.
 !
       call map_nearest_grid(f,fp,ineargrid)
 !
-!  Map particles variables on the grid if requested.
+!  Map particle density on the grid if requested.
 !      
       if (ldiagnos .or. lcalc_np)     call map_xxp_grid(f,fp,ineargrid)
-      if (ldiagnos .or. lcalc_vvpsum) call map_vvp_grid(f,fp,ineargrid)
 !
     endsubroutine particles_boundconds
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.14 2006-04-07 11:09:18 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.15 2006-04-12 12:06:39 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -57,7 +57,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.14 2006-04-07 11:09:18 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.15 2006-04-12 12:06:39 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -475,9 +475,6 @@ module Particles
         write(3,*) 'ivpy=', ivpy
         write(3,*) 'ivpz=', ivpz
         write(3,*) 'inp=', inp
-        write(3,*) 'ivpxsum=', ivpxsum
-        write(3,*) 'ivpysum=', ivpysum
-        write(3,*) 'ivpzsum=', ivpzsum
       endif
 !
 !  Reset everything in case of reset

@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.43 2006-03-18 09:38:14 ajohan Exp $
+! $Id: particles_sub.f90,v 1.44 2006-04-12 12:06:39 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -16,7 +16,7 @@ module Particles_sub
   public :: redist_particles_procs, dist_particles_evenly_procs
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: interpolate_3d_1st
-  public :: map_nearest_grid, map_xxp_grid, map_vvp_grid
+  public :: map_nearest_grid, map_xxp_grid
   public :: find_closest_gridpoint
 
   contains
@@ -889,37 +889,6 @@ module Particles_sub
       endif
 !
     endsubroutine map_xxp_grid
-!***********************************************************************
-    subroutine map_vvp_grid(f,fp,ineargrid)
-!
-!  Calculate the sum of particle velocities in each grid cell.
-!
-!  27-nov-05/anders: coded
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      integer :: k, ix0, iy0, iz0
-!
-      intent(in)  :: fp, ineargrid
-      intent(out) :: f
-!
-!  Sum of particles velocities in each grid cell.
-!
-      if (ivpxsum/=0) then
-        f(l1:l2,m1:m2,n1:n2,ivpxsum:ivpzsum)=0.0
-        do k=1,npar_loc
-          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-          f(ix0,iy0,iz0,ivpxsum:ivpzsum) = &
-              f(ix0,iy0,iz0,ivpxsum:ivpzsum) + fp(k,ivpx:ivpz)
-        enddo
-      endif
-!
-    endsubroutine map_vvp_grid
 !***********************************************************************
     subroutine find_closest_gridpoint(xxp,ix0,iy0,iz0)
 !

@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.51 2005-10-13 12:27:39 ajohan Exp $
+! $Id: slices.f90,v 1.52 2006-04-12 12:06:39 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -356,36 +356,6 @@ module Slices
           call wslice(path//'np.xz',np_xz,y(iy),nx,nz)
           call wslice(path//'np.xy',np_xy,z(iz),nx,ny)
           call wslice(path//'np.Xy',np_xy2,z(iz2),nx,ny)
-!
-!  Particle velocity field (auxiliary variable)
-!
-        case ('vvp')
-          np_yz=f(ix,m1:m2,n1:n2,inp)
-          np_xz=f(l1:l2,iy,n1:n2,inp)
-          np_xy=f(l1:l2,m1:m2,iz,inp)
-          np_xy2=f(l1:l2,m1:m2,iz2,inp)
-          vvp_yz=f(ix,m1:m2,n1:n2,ivpxsum:ivpzsum)
-          vvp_xz=f(l1:l2,iy,n1:n2,ivpxsum:ivpzsum)
-          vvp_xy=f(l1:l2,m1:m2,iz,ivpxsum:ivpzsum)
-          vvp_xy2=f(l1:l2,m1:m2,iz2,ivpxsum:ivpzsum)
-          do i=1,3
-            where (np_yz/=0.0)  vvp_yz(:,:,i) =vvp_yz(:,:,i) /np_yz(:,:)
-            where (np_xz/=0.0)  vvp_xz(:,:,i) =vvp_xz(:,:,i) /np_xz(:,:)
-            where (np_xy/=0.0)  vvp_xy(:,:,i) =vvp_xy(:,:,i) /np_xy(:,:)
-            where (np_xy2/=0.0) vvp_xy2(:,:,i)=vvp_xy2(:,:,i)/np_xy2(:,:)
-          enddo
-          call wslice(path//'vpx.yz',vvp_yz(:,:,1),x(ix),ny,nz)
-          call wslice(path//'vpy.yz',vvp_yz(:,:,2),x(ix),ny,nz)
-          call wslice(path//'vpz.yz',vvp_yz(:,:,3),x(ix),ny,nz)
-          call wslice(path//'vpx.xz',vvp_xz(:,:,1),y(iy),nx,nz)
-          call wslice(path//'vpy.xz',vvp_xz(:,:,2),y(iy),nx,nz)
-          call wslice(path//'vpz.xz',vvp_xz(:,:,3),y(iy),nx,nz)
-          call wslice(path//'vpx.xy',vvp_xy(:,:,1),z(iz),nx,ny)
-          call wslice(path//'vpy.xy',vvp_xy(:,:,2),z(iz),nx,ny)
-          call wslice(path//'vpz.xy',vvp_xy(:,:,3),z(iz),nx,ny)
-          call wslice(path//'vpx.Xy',vvp_xy2(:,:,1),z(iz2),nx,ny)
-          call wslice(path//'vpy.Xy',vvp_xy2(:,:,2),z(iz2),nx,ny)
-          call wslice(path//'vpz.Xy',vvp_xy2(:,:,3),z(iz2),nx,ny)
 !
 !  Divergence of velocity (derived variable)
 !
