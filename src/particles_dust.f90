@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.72 2006-04-12 12:06:39 ajohan Exp $
+! $Id: particles_dust.f90,v 1.73 2006-04-12 15:00:24 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -35,8 +35,10 @@ module Particles
   real :: kx_vvp=0.0, ky_vvp=0.0, kz_vvp=0.0, amplvvp=0.0
   complex, dimension (7) :: coeff=(0.0,0.0)
   integer :: it_dustburst=0
-  logical :: ldragforce_gas=.false., lpar_spec=.false.
+  logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
+  logical :: lpar_spec=.false.
   logical :: ldragforce_equi_global_eps=.false.
+  logical, parameter :: ldraglaw_epstein=.true.
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
   character (len=labellen) :: gravx_profile='zero',  gravz_profile='zero'
 
@@ -50,7 +52,8 @@ module Particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas, rhop_tilde, eps_dtog, cdtp, lpar_spec, &
+      ldragforce_gas_par, ldragforce_dust_par, &
+      rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       it_dustburst, lmigration_redo
@@ -81,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.72 2006-04-12 12:06:39 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.73 2006-04-12 15:00:24 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -194,7 +197,7 @@ module Particles
 !
 !  Gas density is needed for back-reaction friction force.
 !
-      if (ldragforce_gas .and. .not. ldensity) then
+      if (ldragforce_gas_par .and. .not. ldensity) then
         if (lroot) then
           print*, 'initialize_particles: friction force on gas only works '
           print*, '                      together with gas density module!'
@@ -204,7 +207,7 @@ module Particles
 !
 !  Need to map particles on the grid for dragforce on gas.
 !      
-      if (ldragforce_gas) lcalc_np=.true.
+      if (ldragforce_gas_par) lcalc_np=.true.
 !
 !  Write constants to disc.
 !      
@@ -873,7 +876,7 @@ k_loop: do while (.not. (k>npar_loc))
       real, dimension (nx) :: np, tausg1, rho
       real, dimension (3) :: uup, dragforce
       real :: Omega2, np_tilde
-      real :: np_point, eps_point, rho_point
+      real :: np_point, eps_point, rho_point, tausp1_point
       integer :: i, k, ix0, iy0, iz0
       logical :: lheader, lfirstcall=.true.
 !
@@ -904,16 +907,17 @@ k_loop: do while (.not. (k>npar_loc))
 !
 !  Add drag force if stopping time is not infinite.
 !
-      if (tausp1/=0.) then
+      if (ldragforce_dust_par) then
         if (lheader) print*,'dvvp_dt: Add drag force; tausp=', tausp
         do k=1,npar_loc
+          call get_frictiontime(f,fp,ineargrid,k,tausp1_point)
 !  Use interpolation to calculate gas velocity at position of particles.
           call interpolate_3d_1st( &
               f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
-          dragforce = -tausp1*(fp(k,ivpx:ivpz)-uup)
+          dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !  Back-reaction friction force from particles on gas (conserves momentum).
-          if (ldragforce_gas) then
+          if (ldragforce_gas_par) then
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             rho_point=f(ix0,iy0,iz0,ilnrho)
             if (.not. ldensity_nolog) rho_point=exp(rho_point)
@@ -922,23 +926,23 @@ k_loop: do while (.not. (k>npar_loc))
           endif
         enddo
 !  Contribution of friction force to time-step.
-        if (ldragforce_gas) then
+        if (ldragforce_gas_par) then
           if (lfirst.and.ldt) then
             do imn=1,ny*nz
               n=nn(imn); m=mm(imn)
               np=f(l1:l2,m,n,inp)
               rho=f(l1:l2,m,n,ilnrho)
               if (.not. ldensity_nolog) rho=exp(rho)
-              tausg1 = rhop_tilde*np*tausp1/rho
-              dt1_max=max(dt1_max,(tausp1+tausg1)/cdtp)
+              tausg1 = rhop_tilde*np*tausp1_point/rho
+              dt1_max=max(dt1_max,(tausp1_point+tausg1)/cdtp)
               if (ldiagnos.and.idiag_dtdragp/=0) &
-                  call max_mn_name((tausp1+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
+                  call max_mn_name((tausp1_point+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
             enddo
           endif
         else
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1/cdtp)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1_point/cdtp)
           if (ldiagnos.and.idiag_dtdragp/=0) &
-              call max_mn_name(spread(tausp1/cdtp,1,nx),idiag_dtdragp,l_dt=.true.)
+              call max_mn_name(spread(tausp1_point/cdtp,1,nx),idiag_dtdragp,l_dt=.true.)
         endif
       endif
 !
@@ -1056,6 +1060,27 @@ k_loop: do while (.not. (k>npar_loc))
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dvvp_dt
+!***********************************************************************
+    subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_point)
+!
+!  Calculate the friction time.
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      real :: tausp1_point
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: k
+!
+      if (ldraglaw_epstein) then
+        if (iap/=0) then
+          tausp1_point=1/(fp(k,iap)*rhops)
+        else
+          tausp1_point=tausp1
+        endif
+      endif
+!
+    endsubroutine get_frictiontime
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    
