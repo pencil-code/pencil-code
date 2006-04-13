@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.44 2006-04-12 12:06:39 ajohan Exp $
+! $Id: particles_sub.f90,v 1.45 2006-04-13 18:03:59 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -351,18 +351,19 @@ module Particles_sub
               print '(a,i3,a,i3,a)', &
                   'redist_particles_procs: too many particles migrating '// &
                   'from proc ', iproc, ' to proc ', iproc_rec
-              print*, '                       need at least one more '// &
-                  'migration iteration!'
-              print*, '                       (this is time consuming - '// &
-                  'consider setting npar_mig'
-              print*, '                        higher in cparam.local)'
-              print*, 'npar_mig=', npar_mig
+              print*, '                       (npar_mig=', npar_mig, ')'
               if (ip<=8) then
                 print*, 'redist_particles_procs: iproc, npar_mig=', &
                     iproc, npar_mig
                 print*, 'redist_particles_procs: nmig=', nmig(iproc,:)
               endif
               if (lmigration_redo) then
+                print*, '                       Going to do one more '// &
+                    'migration iteration!'
+                print*, '                       (this is time consuming - '// &
+                    'consider setting npar_mig'
+                print*, '                        higher in cparam.local)'
+                nmig(iproc,iproc_rec)=nmig(iproc,iproc_rec)-1
                 lredo=.true.
                 exit
               else
