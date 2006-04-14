@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.73 2006-04-12 15:00:24 ajohan Exp $
+! $Id: particles_dust.f90,v 1.74 2006-04-14 11:02:18 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.73 2006-04-12 15:00:24 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.74 2006-04-14 11:02:18 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -303,6 +303,9 @@ k_loop: do while (.not. (k>npar_loc))
       case ('streaming')
         call streaming(fp,f)
 
+      case ('streaming_coldstart')
+        call streaming_coldstart(fp,f)
+
       case ('constant-Ri')
         call constant_richardson(fp,f)
 
@@ -435,11 +438,98 @@ k_loop: do while (.not. (k>npar_loc))
 !
     endsubroutine init_particles
 !***********************************************************************
+    subroutine streaming_coldstart(fp,f)
+!
+!  Mode that is unstable to the streaming instability of Youdin & Goodman (2005)
+!
+!  14-apr-06/anders: coded
+!
+      use EquationOfState, only: gamma, beta_glnrho_global
+      use General, only: random_number_wrapper
+!      
+      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      real :: eta_glnrho, v_Kepler, amplnp, dxp, dzp
+      integer :: i, i1, i2, j, k, npar_loc_x, npar_loc_z
+!
+!  Define a few disc parameters.
+!
+      eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
+      v_Kepler   =  1.0/abs(beta_glnrho_global(1))      
+      if (lroot) print*, 'streaming: eta, vK=', eta_glnrho, v_Kepler
+!
+!  Place particles equidistantly.
+!
+      npar_loc_x=sqrt(npar_loc/(Lxyz_loc(3)/Lxyz_loc(1)))
+      npar_loc_z=npar_loc/npar_loc_x
+      dxp=Lxyz_loc(1)/npar_loc_x
+      dzp=Lxyz_loc(3)/npar_loc_z
+      do i=1,npar_loc_x
+        i1=(i-1)*npar_loc_z+1; i2=i*npar_loc_z
+        fp(i1:i2,ixp)=mod(i*dxp,Lxyz(1))+dxp/2
+        do j=i1,i2
+          fp(j,izp)=xyz0_loc(3)+dzp/2+(j-i1)*dzp
+        enddo
+      enddo
+!
+!  Shift particle locations slightly so that wanted mode appears.
+!
+      amplnp=0.5*amplxxp  ! Not sure why factor 0.5 is needed here...
+      do k=1,npar_loc
+        fp(k,ixp) = fp(k,ixp) - &
+            amplnp/(kx_xxp**2+kz_xxp**2)* &
+            (kx_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))+ &
+             kx_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
+        fp(k,izp) = fp(k,izp) - &
+            amplnp/(kx_xxp**2+kz_xxp**2)* &
+            (kz_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))- &
+             kz_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
+      enddo
+!  Set particle velocity.
+      do k=1,npar_loc
+        fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(1))*cos(kx_xxp*fp(k,ixp)) - &
+             aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+        fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(2))*cos(kx_xxp*fp(k,ixp)) - &
+             aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
+        fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
+            (aimag(coeff(3))*cos(kx_xxp*fp(k,ixp)) + &
+              real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
+      enddo
+!
+!  Set fluid fields.
+!
+      do m=m1,m2; do n=n1,n2
+        f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
+            (eta_glnrho*v_Kepler)**2*amplxxp* &
+            ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
+             aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+!                
+        f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
+            eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
+             aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+!                
+        f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
+            eta_glnrho*v_Kepler*amplxxp* &
+            ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
+             aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
+!
+        f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
+            eta_glnrho*v_Kepler*(-amplxxp)* &
+            (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
+              real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
+      enddo; enddo
+!
+    endsubroutine streaming_coldstart
+!***********************************************************************
     subroutine streaming(fp,f)
 !
 !  Mode that is unstable to the streaming instability of Youdin & Goodman (2005)
 !
-!  30-jan-05/anders: coded
+!  30-jan-06/anders: coded
 !
       use EquationOfState, only: gamma, beta_glnrho_global
       use General, only: random_number_wrapper
