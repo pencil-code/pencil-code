@@ -1,9 +1,9 @@
 ;
-;  $Id: pc_plot_par.pro,v 1.12 2006-03-22 12:02:28 ajohan Exp $
+;  $Id: pc_plot_par.pro,v 1.13 2006-04-14 10:09:55 ajohan Exp $
 ;
 pro pc_plot_par, xx, $
     x=x, y=y, z=z, com=com, shiftx=shiftx, shifty=shifty, shiftz=shiftz, $
-    pos=pos, ps=ps, color=color, $
+    pos=pos, ps=ps, color=color, drawgrid=drawgrid, $
     filename=filename, imgdir=imgdir, datadir=datadir, quiet=quiet
 
 default, x, 0 & default, y, 0 & default, z, 0
@@ -12,16 +12,17 @@ default, com, 0
 default, pos, [0.1,0.1,0.9,0.9]
 default, ps, 0
 default, color, 0
+default, drawgrid, 0
 default, filename, 'particles.eps'
 default, imgdir, '.'
 default, datadir, './data/'
 default, quiet, 0
 
-if (n_elements(x) ne 1) then begin
+if (n_elements(x) ne 1 or n_elements(y) ne 1 or n_elements(z) ne 1) then begin
   nx=n_elements(x) & ny=n_elements(y) & nz=n_elements(z)
   x0=x[0] & x1=x[nx-1]
   y0=y[0] & y1=y[ny-1]
-  z0=z[0] & z1=x[nz-1]
+  z0=z[0] & z1=z[nz-1]
 endif else begin
   pc_read_dim, obj=dim, datadir=datadir, /quiet
   pc_read_param, obj=par, datadir=datadir, /quiet
@@ -99,6 +100,12 @@ endif else if ( (nx ne 1) and (ny eq 1) and (nz ne 1) ) then begin
   
   plot, xx[*,0], xrange=[x0,x1], yrange=[z0,z1], /nodata
   plots, xx[*,0], xx[*,2], psym=3
+  if (drawgrid) then begin
+    oplot, [x[nx/2]  ,x[nx/2]]  , [z[0]     ,z[nz-1]]
+    oplot, [x[nx/2+1],x[nx/2+1]], [z[0]     ,z[nz-1]]
+    oplot, [x[0]     ,x[nx-1]]  , [z[nz/2]  ,z[nz/2]]
+    oplot, [x[0]     ,x[nx-1]]  , [z[nz/2+1],z[nz/2+1]]
+  endif
 
 endif else if ( (nx eq 1) and (ny ne 1) and (nz ne 1) ) then begin
   
