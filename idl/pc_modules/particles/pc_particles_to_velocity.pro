@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_velocity.pro,v 1.1 2006-04-14 10:46:18 ajohan Exp $
+;  $Id: pc_particles_to_velocity.pro,v 1.2 2006-04-15 07:53:44 ajohan Exp $
 ;
 ;  Convert individual particle velocities to a velocity field.
 ;
@@ -43,8 +43,6 @@ for k=0L,npar-1 do begin
   np[ix,iy,iz]=np[ix,iy,iz]+1.0*one
 
 endfor
-
-help, np, vvpsum, uup
 
 for l=0,nx-1 do begin & for m=0,ny-1 do begin & for n=0,nz-1 do begin
   if (np[l,m,n] ne 0.0) then uup[l,m,n,*]=vvpsum[l,m,n,*]/np[l,m,n]
