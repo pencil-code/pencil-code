@@ -1,5 +1,0 @@
-# Use double precision to get closer to the results we get on 32-bit
-# machines / with ifc
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
-MPICOMM=mpicomm_double
