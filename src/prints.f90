@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.79 2006-03-29 22:34:12 mee Exp $
+! $Id: prints.f90,v 1.80 2006-04-16 15:29:58 ajohan Exp $
 
 module Print
 
@@ -81,7 +81,7 @@ public :: write_zaverages
       use General, only: safe_character_append
 !
       logical,save :: first=.true.
-      character (len=320) :: fform,legend,line
+      character (len=640) :: fform,legend,line
       character (len=1) :: comma=','
       integer :: iname,index_d,index_a
 !
