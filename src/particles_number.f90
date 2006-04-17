@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.10 2006-04-06 12:06:29 ajohan Exp $
+! $Id: particles_number.f90,v 1.11 2006-04-17 15:29:09 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -26,7 +26,7 @@ module Particles_number
   integer, dimension (mx,my,mz) :: ishepherd
   character (len=labellen), dimension(ninit) :: initnptilde='nothing'
 
-  integer :: idiag_nptm=0, idiag_dvp22m=0
+  integer :: idiag_nptm=0, idiag_dvp22m=0, idiag_dvp22mwcdot=0
 
   namelist /particles_number_init_pars/ &
       initnptilde, vthresh_coagulation, deltavp22_floor
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.10 2006-04-06 12:06:29 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.11 2006-04-17 15:29:09 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -123,13 +123,14 @@ module Particles_number
 !  24-oct-05/anders: coded
 !
       use Messages, only: fatal_error
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: deltavp, sigma_jk, deltanptilde, cc, rho
+      real :: deltavp, sigma_jk, cdot, cc, rho
       integer :: j, k, l, m, n
       logical :: lheader, lfirstcall=.true.
 !
@@ -179,36 +180,41 @@ module Particles_number
                   deltavp=sqrt(deltavp**2+deltavp22_floor**2)
 !  Collision cross section.
               sigma_jk=pi*(fp(j,iap)+fp(k,iap))**2
-!  Smoluchowski equation between two superparticles.
-              deltanptilde = -sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
+!  Collision rate between two superparticles.
+              cdot = sigma_jk*fp(j,inptilde)*fp(k,inptilde)*deltavp
 !  Either coagulation...    [warning: this coagulation scheme is a bit cheaty]
               if (deltavp<=vthresh_coagulation) then
-                dfp(j,inptilde) = dfp(j,inptilde) + 0.5*deltanptilde
-                dfp(k,inptilde) = dfp(k,inptilde) + 0.5*deltanptilde
-                dfp(k,iap) = dfp(k,iap) - &
-                    1/3.*fp(k,iap)/fp(k,inptilde)*(0.5*deltanptilde)
-                dfp(j,iap) = dfp(j,iap) - &
-                    1/3.*fp(j,iap)/fp(j,inptilde)*(0.5*deltanptilde)
+                dfp(j,inptilde) = dfp(j,inptilde) - 0.5*cdot
+                dfp(k,inptilde) = dfp(k,inptilde) - 0.5*cdot
+                dfp(k,iap) = dfp(k,iap) + &
+                    1/3.*fp(k,iap)/fp(k,inptilde)*(0.5*cdot)
+                dfp(j,iap) = dfp(j,iap) + &
+                    1/3.*fp(j,iap)/fp(j,inptilde)*(0.5*cdot)
 !  ...or fragmentation.
               else
-                dfp(j,inptilde) = dfp(j,inptilde) + deltanptilde
-                dfp(k,inptilde) = dfp(k,inptilde) + deltanptilde
+                dfp(j,inptilde) = dfp(j,inptilde) - cdot
+                dfp(k,inptilde) = dfp(k,inptilde) - cdot
                 if (lpscalar_nolog) then
                   rho=f(l,m,n,ilnrho)
                   if (.not. ldensity_nolog) rho=exp(rho)
-                  df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                  df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
                       1/rho*4/3.*pi*rhops* &
-                      (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+                      (fp(j,iap)**3+fp(k,iap)**3)*cdot
                 else
                   rho=f(l,m,n,ilnrho)
                   if (.not. ldensity_nolog) rho=exp(rho)
                   cc=f(l,m,n,ilncc)
                   if (.not. lpscalar_nolog) cc=exp(cc)
-                  df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
+                  df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
                       1/cc*1/rho*4/3.*pi*rhops* &
-                      (fp(j,iap)**3+fp(k,iap)**3)*deltanptilde
+                      (fp(j,iap)**3+fp(k,iap)**3)*cdot
                 endif
               endif  ! fragmentation or coagulation
+!  Collision diagnostics.              
+              if (ldiagnos) then
+                if (idiag_dvp22mwcdot/=0) &
+                    call sum_weighted_name((/deltavp/),(/cdot/),idiag_dvp22m)
+              endif
             enddo
 !  Subgrid model of collisions within a superparticle.
             if (deltavp22_floor/=0.0) then
@@ -217,20 +223,20 @@ module Particles_number
               endif
               deltavp=deltavp22_floor
               sigma_jk=pi*(fp(k,iap)+fp(k,iap))**2
-              deltanptilde = -sigma_jk*fp(k,inptilde)*fp(k,inptilde)*deltavp
-              dfp(k,inptilde) = dfp(k,inptilde) + deltanptilde
+              cdot = sigma_jk*fp(k,inptilde)*fp(k,inptilde)*deltavp
+              dfp(k,inptilde) = dfp(k,inptilde) - cdot
               if (lpscalar_nolog) then
                 rho=f(l,m,n,ilnrho)
                 if (.not. ldensity_nolog) rho=exp(rho)
-                df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
-                    1/rho*4/3.*pi*rhops*fp(k,iap)**3*deltanptilde
+                df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                    1/rho*4/3.*pi*rhops*fp(k,iap)**3*cdot
               else
                 rho=f(l,m,n,ilnrho)
                 if (.not. ldensity_nolog) rho=exp(rho)
                 cc=f(l,m,n,ilncc)
                 if (.not. lpscalar_nolog) cc=exp(cc)
-                df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
-                    1/cc*1/rho*4/3.*pi*rhops*fp(k,iap)**3*deltanptilde
+                df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
+                    1/cc*1/rho*4/3.*pi*rhops*fp(k,iap)**3*cdot
               endif
             endif  ! subgrid model
             k=ineighbour(k)
@@ -373,7 +379,7 @@ module Particles_number
 !  Reset everything in case of reset
 !
       if (lreset) then
-        idiag_nptm=0; idiag_dvp22m=0
+        idiag_nptm=0; idiag_dvp22m=0; idiag_dvp22mwcdot=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -383,6 +389,7 @@ module Particles_number
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nptm',idiag_nptm)
         call parse_name(iname,cname(iname),cform(iname),'dvp22m',idiag_dvp22m)
+        call parse_name(iname,cname(iname),cform(iname),'dvp22mwcdot',idiag_dvp22mwcdot)
       enddo
 !
     endsubroutine rprint_particles_number
