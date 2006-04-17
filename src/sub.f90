@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.232 2006-04-03 22:40:21 dobler Exp $ 
+! $Id: sub.f90,v 1.233 2006-04-17 14:33:05 ajohan Exp $ 
 
 module Sub 
 
@@ -44,7 +44,7 @@ module Sub
   public :: parse_shell
   public :: expand_cname
   public :: parse_name, save_name, max_name
-  public :: max_mn_name,sum_mn_name,integrate_mn_name
+  public :: max_mn_name,sum_mn_name,integrate_mn_name,sum_weighted_name
   public :: surf_mn_name,sum_lim_mn_name
   public :: xysum_mn_name_z, xzsum_mn_name_y, yzsum_mn_name_x
   public :: ysum_mn_name_xz, zsum_mn_name_xy, phisum_mn_name_rz
@@ -330,6 +330,46 @@ module Sub
       endif
 !
     endsubroutine sum_mn_name
+!***********************************************************************
+    subroutine sum_weighted_name(a,weight,iname,lsqrt)
+!
+!  Succesively calculate the weighted sum of a. The result is divided by the
+!  total weight in the diagnostics subroutine.
+!
+!  17-apr-06/anders : coded
+!
+      use Cdata
+!
+      real, dimension (:) :: a, weight
+      integer :: iname
+      logical, optional :: lsqrt
+!
+      integer, save :: it_save=-1, itsub_save=-1      
+!
+      if (iname/=0) then 
+!
+        if (it/=it_save .or. itsub/=itsub_save) then
+          fname(iname)=0.0
+          fweight(iname)=0.0
+          it_save=it
+          itsub_save=itsub
+        endif
+!
+        fname(iname)  =fname(iname)  +sum(weight*a)
+        fweight(iname)=fweight(iname)+sum(weight)
+        print*, iproc, it, itsub, fname(iname), fweight(iname)
+!
+!  Set corresponding entry in itype_name
+!
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_sum_weighted_sqrt
+        else
+          itype_name(iname)=ilabel_sum_weighted
+        endif
+!
+      endif
+!
+    endsubroutine sum_weighted_name
 !***********************************************************************
     subroutine sum_lim_mn_name(a,iname,norm,lnorm)
 !

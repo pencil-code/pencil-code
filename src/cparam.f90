@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.45 2006-04-06 19:02:11 theine Exp $
+! $Id: cparam.f90,v 1.46 2006-04-17 14:33:05 ajohan Exp $
 
 module Cparam
 
@@ -82,6 +82,7 @@ module Cparam
   integer, parameter :: ilabel_max_reciprocal=-5
   integer, parameter :: ilabel_integrate=3,ilabel_surf=4
   integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6
+  integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
 !
 ! physical constants, taken from:
 ! http://physics.nist.gov/cuu/Constants/index.html

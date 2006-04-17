@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.290 2006-04-05 16:31:27 theine Exp $
+! $Id: equ.f90,v 1.291 2006-04-17 14:33:05 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -46,7 +46,7 @@ module Equ
 !
       fmax_tmp(1)=UUmax
       call mpireduce_max(fmax_tmp,fmax,1)
-      if(lroot) UUmax=fmax(1)
+      if (lroot) UUmax=fmax(1)
 !
       endsubroutine collect_UUmax
 !***********************************************************************
@@ -60,22 +60,29 @@ module Equ
       use Cdata
       use Sub
 !
-      integer :: iname,imax_count,isum_count,nmax_count,nsum_count
+      real, dimension (mname) :: fmax_tmp, fsum_tmp, fmax, fsum, fweight_tmp
       real :: dv
-      real, dimension (mname) :: fmax_tmp,fsum_tmp,fmax,fsum
+      integer :: iname,imax_count,isum_count,nmax_count,nsum_count
+      logical :: lweight_comm
 !
 !  go through all print names, and sort into communicators
 !  corresponding to their type
 !
       imax_count=0
       isum_count=0
+      lweight_comm=.false.
       do iname=1,nname
-        if(itype_name(iname)<0) then
+        if (itype_name(iname)<0) then
           imax_count=imax_count+1
           fmax_tmp(imax_count)=fname(iname)
-        elseif(itype_name(iname)>0) then
+        elseif (itype_name(iname)>0) then
           isum_count=isum_count+1
           fsum_tmp(isum_count)=fname(iname)
+          if (itype_name(iname)==ilabel_sum_weighted .or. &
+              itype_name(iname)==ilabel_sum_weighted_sqrt) then
+            fweight_tmp(isum_count)=fweight(iname)
+            lweight_comm=.true.
+          endif
         endif
       enddo
       nmax_count=imax_count
@@ -85,53 +92,54 @@ module Equ
 !
       call mpireduce_max(fmax_tmp,fmax,nmax_count)
       call mpireduce_sum(fsum_tmp,fsum,nsum_count)
-!
-
-
+      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)
 !
 !  the result is present only on the root processor
 !
-      if(lroot) then
-!        fsum=fsum/(nw*ncpus)
+      if (lroot) then
 !
 !  sort back into original array
-!  need to take square root if |itype|=2
-!  (in current version, don't need itype=2 anymore)
 !
          imax_count=0
          isum_count=0
          do iname=1,nname
-           if(itype_name(iname)<0) then ! max
+           if (itype_name(iname)<0) then ! max
              imax_count=imax_count+1
 
-             if(itype_name(iname)==ilabel_max)            &
+             if (itype_name(iname)==ilabel_max)            &
                  fname(iname)=fmax(imax_count)
 
-             if(itype_name(iname)==ilabel_max_sqrt)       &
+             if (itype_name(iname)==ilabel_max_sqrt)       &
                  fname(iname)=sqrt(fmax(imax_count))
 
-             if(itype_name(iname)==ilabel_max_dt)         &
+             if (itype_name(iname)==ilabel_max_dt)         &
                  fname(iname)=fmax(imax_count)
 
-             if(itype_name(iname)==ilabel_max_neg)        &
+             if (itype_name(iname)==ilabel_max_neg)        &
                  fname(iname)=-fmax(imax_count)
 
-             if(itype_name(iname)==ilabel_max_reciprocal) &
+             if (itype_name(iname)==ilabel_max_reciprocal) &
                  fname(iname)=1./fmax(imax_count)
 
-           elseif(itype_name(iname)>0) then ! sum
+           elseif (itype_name(iname)>0) then ! sum
              isum_count=isum_count+1
 
-             if(itype_name(iname)==ilabel_sum)            &
+             if (itype_name(iname)==ilabel_sum)            &
                  fname(iname)=fsum(isum_count)/(nw*ncpus)
 
-             if(itype_name(iname)==ilabel_sum_sqrt)       &
+             if (itype_name(iname)==ilabel_sum_sqrt)       &
                  fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
 
-             if(itype_name(iname)==ilabel_sum_par)        &
+             if (itype_name(iname)==ilabel_sum_weighted)   &
+                 fname(iname)=fsum(isum_count)/fweight(isum_count)
+
+             if (itype_name(iname)==ilabel_sum_weighted_sqrt) &
+                 fname(iname)=sqrt(fsum(isum_count)/fweight(iname))
+
+             if (itype_name(iname)==ilabel_sum_par)        &
                  fname(iname)=fsum(isum_count)/npar
 
-             if(itype_name(iname)==ilabel_integrate) then
+             if (itype_name(iname)==ilabel_integrate) then
                dv=1.
                if (nxgrid/=1) dv=dv*dx
                if (nygrid/=1) dv=dv*dy
@@ -139,13 +147,11 @@ module Equ
                fname(iname)=fsum(isum_count)*dv
               endif
 
-              if(itype_name(iname)==ilabel_surf)          &
+              if (itype_name(iname)==ilabel_surf)          & 
                   fname(iname)=fsum(isum_count)
            endif
 
          enddo
-         !nmax_count=imax_count
-         !nsum_count=isum_count
 !
       endif
 !
@@ -246,7 +252,7 @@ module Equ
 !
       if (nnamexz>0) then
         call mpireduce_sum(fnamexz,fsumxz,nnamexz*nx*nz*nprocz)
-        if(lroot) &
+        if (lroot) &
             fnamexz(:,:,:,1:nnamez)=fsumxz(:,:,:,1:nnamez)/(ny*nprocy)
       endif
 !
@@ -272,7 +278,7 @@ module Equ
 !
       if (nnamexy>0) then
         call mpireduce_sum(fnamexy,fsumxy,nnamexy*nx*ny*nprocy)
-        if(lroot) &
+        if (lroot) &
             fnamexy(:,:,:,1:nnamexy)=fsumxy(:,:,:,1:nnamexy)/(nz*nprocz)
       endif
 !
@@ -298,9 +304,9 @@ module Equ
 !  the result is only present on the root processor
 !  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1)
 !
-      if(nnamerz>0) then
+      if (nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,mnamerz*nrcyl*(nz+1)*nprocz)
-        if(lroot) then
+        if (lroot) then
           do i=1,nnamerz
             fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)
           enddo
@@ -355,7 +361,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.290 2006-04-05 16:31:27 theine Exp $")
+           "$Id: equ.f90,v 1.291 2006-04-17 14:33:05 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -831,7 +837,7 @@ module Equ
 !
       open(1,file=trim(directory)//'/imn_arrays.dat')
       do imn=1,ny*nz
-        if(necessary(imn)) write(1,'(a)') '----necessary=.true.----'
+        if (necessary(imn)) write(1,'(a)') '----necessary=.true.----'
         write(1,'(4i6)') imn,mm(imn),nn(imn)
       enddo
       close(1)

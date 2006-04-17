@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.301 2006-04-06 19:02:11 theine Exp $
+! ! $Id: cdata.f90,v 1.302 2006-04-17 14:33:05 ajohan Exp $
 
 module Cdata
 
@@ -147,7 +147,7 @@ module Cdata
   integer, parameter :: mnamez=30,mnamey=30,mnamex=30
   integer, parameter :: mnamexy=6,mnamexz=40
   integer, dimension (mname) :: itype_name
-  real, dimension (mname) :: fname
+  real, dimension (mname) :: fname, fweight
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (ny,nprocy,mnamey) :: fnamey
   real, dimension (nx,mnamex) :: fnamex
