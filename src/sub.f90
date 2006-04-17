@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.233 2006-04-17 14:33:05 ajohan Exp $ 
+! $Id: sub.f90,v 1.234 2006-04-17 15:50:18 ajohan Exp $ 
 
 module Sub 
 
@@ -344,7 +344,7 @@ module Sub
       integer :: iname
       logical, optional :: lsqrt
 !
-      integer, save :: it_save=-1, itsub_save=-1      
+      integer, save :: it_save=-1, itsub_save=-1
 !
       if (iname/=0) then 
 !
@@ -357,7 +357,6 @@ module Sub
 !
         fname(iname)  =fname(iname)  +sum(weight*a)
         fweight(iname)=fweight(iname)+sum(weight)
-        print*, iproc, it, itsub, fname(iname), fweight(iname)
 !
 !  Set corresponding entry in itype_name
 !
