@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.291 2006-04-17 14:33:05 ajohan Exp $
+! $Id: equ.f90,v 1.292 2006-04-17 15:59:17 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -130,12 +130,6 @@ module Equ
              if (itype_name(iname)==ilabel_sum_sqrt)       &
                  fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
 
-             if (itype_name(iname)==ilabel_sum_weighted)   &
-                 fname(iname)=fsum(isum_count)/fweight(isum_count)
-
-             if (itype_name(iname)==ilabel_sum_weighted_sqrt) &
-                 fname(iname)=sqrt(fsum(isum_count)/fweight(iname))
-
              if (itype_name(iname)==ilabel_sum_par)        &
                  fname(iname)=fsum(isum_count)/npar
 
@@ -149,6 +143,23 @@ module Equ
 
               if (itype_name(iname)==ilabel_surf)          & 
                   fname(iname)=fsum(isum_count)
+
+             if (itype_name(iname)==ilabel_sum_weighted) then
+               if (fweight(isum_count)/=0.0) then
+                 fname(iname)=fsum(isum_count)/fweight(isum_count)
+               else
+                 fname(iname)=0.0
+               endif
+             endif
+
+             if (itype_name(iname)==ilabel_sum_weighted_sqrt) then
+               if (fweight(isum_count)/=0.0) then
+                 fname(iname)=sqrt(fsum(isum_count)/fweight(isum_count))
+               else
+                 fname(iname)=0.0
+               endif
+             endif
+
            endif
 
          enddo
@@ -361,7 +372,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.291 2006-04-17 14:33:05 ajohan Exp $")
+           "$Id: equ.f90,v 1.292 2006-04-17 15:59:17 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
