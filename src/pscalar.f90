@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.59 2005-11-29 19:16:34 ajohan Exp $
+! $Id: pscalar.f90,v 1.60 2006-04-17 15:27:28 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -35,15 +35,15 @@ module Pscalar
   logical :: lupw_lncc=.false.
 
   namelist /pscalar_init_pars/ &
-       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc
+      initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
+      radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const,lupw_lncc
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
 
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0
+      pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lupw_lncc
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
@@ -85,7 +85,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.59 2005-11-29 19:16:34 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.60 2006-04-17 15:27:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
