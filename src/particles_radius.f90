@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.14 2006-04-05 10:35:59 ajohan Exp $
+! $Id: particles_radius.f90,v 1.15 2006-04-17 15:28:34 ajohan Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -31,7 +31,7 @@ module Particles_radius
       rhops, vthresh_sweepup, deltavp12_floor
 
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
-  integer :: idiag_dvp12m=0
+  integer :: idiag_dvp12m=0, idiag_dvp12mwcdot=0
 
   contains
 
@@ -50,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.14 2006-04-05 10:35:59 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.15 2006-04-17 15:28:34 ajohan Exp $")
 !
 !  Index for particle radius.
 !
@@ -123,6 +123,7 @@ module Particles_radius
 !
       use Messages, only: fatal_error
       use Particles_number
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -185,6 +186,9 @@ module Particles_radius
 !
         if (ldiagnos) then
           if (idiag_dvp12m/=0) call sum_par_name((/deltavp/),idiag_dvp12m)
+          if (idiag_dvp12mwcdot/=0) &
+              call sum_weighted_name((/deltavp/), &
+              (/cc*np_tilde*fp(k,iap)**2*deltavp/),idiag_dvp12mwcdot)
         endif
       enddo
 !
@@ -274,7 +278,7 @@ module Particles_radius
 !
       if (lreset) then
         idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
-        idiag_dvp12m=0
+        idiag_dvp12m=0; idiag_dvp12mwcdot=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -287,6 +291,7 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
         call parse_name(iname,cname(iname),cform(iname),'apmax',idiag_apmax)
         call parse_name(iname,cname(iname),cform(iname),'dvp12m',idiag_dvp12m)
+        call parse_name(iname,cname(iname),cform(iname),'dvp12mwcdot',idiag_dvp12mwcdot)
       enddo
 !
     endsubroutine rprint_particles_radius
