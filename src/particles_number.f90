@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.11 2006-04-17 15:29:09 ajohan Exp $
+! $Id: particles_number.f90,v 1.12 2006-04-17 15:55:03 ajohan Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.11 2006-04-17 15:29:09 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.12 2006-04-17 15:55:03 ajohan Exp $")
 !
 !  Index for particle internal number.
 !
@@ -212,8 +212,7 @@ module Particles_number
               endif  ! fragmentation or coagulation
 !  Collision diagnostics.              
               if (ldiagnos) then
-                if (idiag_dvp22mwcdot/=0) &
-                    call sum_weighted_name((/deltavp/),(/cdot/),idiag_dvp22m)
+                if (idiag_dvp22mwcdot/=0) call sum_weighted_name((/deltavp/),(/cdot/),idiag_dvp22mwcdot)
               endif
             enddo
 !  Subgrid model of collisions within a superparticle.
