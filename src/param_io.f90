@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.230 2006-04-02 03:34:12 mee Exp $ 
+! $Id: param_io.f90,v 1.231 2006-04-18 18:31:54 ajohan Exp $ 
 
 module Param_IO
 
@@ -54,7 +54,6 @@ module Param_IO
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lshift_origin, &
        coord_system,lequidist,coeff_grid,zeta_grid0,grid_func,xyz_star, &
-       xyz_step,xi_step_frac,xi_step_width, &
        lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
        random_gen,nfilter,lserial_io, &
