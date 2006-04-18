@@ -4,14 +4,14 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-04-18 10:59:29 theine Exp $'
+  cvsid='$Id: run.in,v 1.2 2006-04-18 17:50:18 theine Exp $'
   nt=250,it1=50,isave=1000,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
-  bcz = 's','s','a','a2','a2:s'
+  bcz = 's','s','a','a2','a2'
   lmaxadvec_sum=T
   lwrite_aux=T
   ip=14
-  lpencil_check=F
+  lpencil_check=T
 /
 &eos_run_pars
   xHe=0.1
@@ -26,7 +26,6 @@
   gravz_profile='const', gravz=-2.75    ! constant gravity in the z-direction
 /
 &entropy_run_pars
-  chi=0.01
   lupw_lnTT=T                             ! avoid wiggles
 /
 

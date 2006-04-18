@@ -15,7 +15,7 @@ ENTROPY   =   entropy
 MAGNETIC  = nomagnetic
 RADIATION =   radiation_ray
 EOS       =   eos_ionization
-SHOCK     =   shock
+SHOCK     = noshock
 PSCALAR   = nopscalar
 
 GRAVITY   =   gravity_simple

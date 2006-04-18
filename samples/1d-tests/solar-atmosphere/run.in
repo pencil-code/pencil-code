@@ -4,33 +4,28 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.7 2005-09-23 11:58:30 ajohan Exp $'
+  cvsid='$Id: run.in,v 1.8 2006-04-18 17:50:18 theine Exp $'
   nt=250,it1=50,isave=1000,itorder=3
   cdt=0.4,cdtv=0.2,dtmin=1e-6
   bcz = 's','s','a','a2','a2'
   lmaxadvec_sum=T
   lwrite_aux=T
   ip=14
-  lpencil_check=F
+  lpencil_check=T
 /
 &eos_run_pars
-  yMetals=1e-4                          ! fixed electron contribution by metals
+  xHe=0.1
 /
 
 &hydro_run_pars
 /
 &density_run_pars
-  idiff='shock'
-  diffrho_shock=0.5                     ! density (shock-) diffusion
   lupw_lnrho=T                          ! avoid wiggles
 /
 &grav_run_pars
   gravz_profile='const', gravz=-2.75    ! constant gravity in the z-direction
 /
 &entropy_run_pars
-  iheatcond='shock'
-  chi_t=0.001,chi_shock=0.5             ! entropy (shock-) diffusion
-  tau_cor=0.05,z_cor=0.0,TT_cor=5000.0  ! coronal heating
   lupw_ss=T                             ! avoid wiggles
 /
 &radiation_run_pars
@@ -39,10 +34,6 @@
 /
 
 &viscosity_run_pars
-  ivisc='nu-const','nu-shock'
-  nu=0.001,nu_shock=2.0                 ! (shock-) viscosity
-/
-&shock_run_pars
-  lshock_first=F
-  lshock_max5=T
+  ivisc='nu-const'
+  nu=0.01
 /

@@ -4,14 +4,14 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.6 2005-08-08 15:43:28 theine Exp $'
+  cvsid='$Id: start.in,v 1.7 2006-04-18 17:50:18 theine Exp $'
 
   unit_length=1e8               !
   unit_velocity=1e6             ! unit system (relative to cgs)
   unit_density=1e-7             !
 
-  xyz0  = -3.0, -3.0, -2.5      ! first corner of box
-  Lxyz  =  6.0,  6.0,  3.5      ! box size
+  xyz0  = -3.0, -3.0, -2.61196  ! first corner of box
+  Lxyz  =  6.0,  6.0,  3.20542  ! box size
   lperi =  T ,   T ,   F        ! periodic direction?
   bcz = 's','s','a','a2','a2'   ! boundary conditions
 
@@ -20,23 +20,21 @@
 /
 
 &eos_init_pars
-  yMetals=1e-4                       ! fixed electron contribution by metals
 /
 
 &hydro_init_pars
 /
 
 &density_init_pars
+  initlnrho='stratification'
+  strati_type='lnrho_lnTT'
 /
 
 &grav_init_pars
-  lnrho_bot=5.6                      ! density at bottom
   gravz_profile='const', gravz=-2.75 ! constant gravity in the z-direction
 /
 
 &entropy_init_pars
-  ss_const=0.00168                   ! constant entropy
-  initss='hydrostatic-isentropic'    ! determines initial density profile
 /
 
 &radiation_init_pars
