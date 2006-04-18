@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.25 2006-04-06 10:55:03 theine Exp $
+! $Id: eos_ionization.f90,v 1.26 2006-04-18 16:08:12 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.25 2006-04-06 10:55:03 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.26 2006-04-18 16:08:12 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -760,7 +760,8 @@ module EquationOfState
       real, dimension(nx), intent(out), optional :: lnrho,ss
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp
-      real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_,fractions
+      real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_
+      real, dimension(nx) :: fractions,rhs,sqrtrhs
       integer :: i
 !
       select case (ivars)
@@ -780,6 +781,20 @@ module EquationOfState
         rho_=exp(lnrho_)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=fractions*rho_*TT_*ss_ion
+
+      case (ilnrho_lnTT)
+        lnrho_=var1
+        lnTT_=var2
+        TT1_=exp(-lnTT_)
+        rhs=exp(lnrho_e-lnrho_+1.5*(lnTT_-lnTT_ion)-TT_ion*TT1_)
+        sqrtrhs=sqrt(rhs)
+        yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+        fractions=(1+yH_+xHe)
+        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+                   -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                   -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+        pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
 
       case (ilnrho_ee)
         lnrho_=var1
@@ -815,7 +830,7 @@ module EquationOfState
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
 
       case default
-        call stop_it("eoscalc_point: I don't get what the independent variables are.")
+        call stop_it("eoscalc_pencil: I don't get what the independent variables are.")
 
       end select
 
@@ -846,7 +861,8 @@ module EquationOfState
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
-      real :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_,fractions
+      real :: lnrho_,ss_,yH_,lnTT_,TT_,TT1_,rho_,ee_,pp_
+      real :: fractions,rhs,sqrtrhs
 !
       select case (ivars)
 
@@ -863,6 +879,20 @@ module EquationOfState
         rho_=exp(lnrho_)
         ee_=1.5*(1+yH_+xHe)*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*rho_*TT_*ss_ion
+
+      case (ilnrho_lnTT)
+        lnrho_=var1
+        lnTT_=var2
+        TT1_=exp(-lnTT_)
+        rhs=exp(lnrho_e-lnrho_+1.5*(lnTT_-lnTT_ion)-TT_ion*TT1_)
+        sqrtrhs=sqrt(rhs)
+        yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+        fractions=(1+yH_+xHe)
+        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+                   -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                   -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
+        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+        pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
 
       case (ilnrho_ee)
         lnrho_=var1
