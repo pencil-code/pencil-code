@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.74 2006-04-14 11:02:18 ajohan Exp $
+! $Id: particles_dust.f90,v 1.75 2006-04-18 18:32:22 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -45,7 +45,7 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, &
-      gravz_profile, gravz, kz_gg, rhop_tilde, eps_dtog, nu_epicycle, &
+      rhop_tilde, eps_dtog, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.74 2006-04-14 11:02:18 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.75 2006-04-18 18:32:22 ajohan Exp $")
 !
 !  Indices for particle position.
 !
