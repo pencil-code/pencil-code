@@ -1,0 +1,41 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-04-18 10:59:29 theine Exp $'
+  nt=250,it1=50,isave=1000,itorder=3
+  cdt=0.4,cdtv=0.2,dtmin=1e-6
+  bcz = 's','s','a','a2','a2:s'
+  lmaxadvec_sum=T
+  lwrite_aux=T
+  ip=14
+  lpencil_check=F
+/
+&eos_run_pars
+  xHe=0.1
+/
+
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T                          ! avoid wiggles
+/
+&grav_run_pars
+  gravz_profile='const', gravz=-2.75    ! constant gravity in the z-direction
+/
+&entropy_run_pars
+  chi=0.01
+  lupw_lnTT=T                             ! avoid wiggles
+/
+
+&radiation_run_pars
+  radx=0,rady=0,radz=1,rad2max=1        ! use only vertical rays
+  bc_rad='0:0','0:0','S:0'              ! incoming intensity at boundaries
+/
+
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=0.01
+/

@@ -1,0 +1,43 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-04-18 10:59:29 theine Exp $'
+
+  unit_length=1e8               !
+  unit_velocity=1e6             ! unit system (relative to cgs)
+  unit_density=1e-7             !
+
+  xyz0  = -3.0, -3.0, -2.61196  ! first corner of box
+  Lxyz  =  6.0,  6.0,  3.20542  ! box size
+  lperi =  T ,   T ,   F        ! periodic direction?
+  bcz = 's','s','a','a2','a2'   ! boundary conditions
+
+  lwrite_aux=T                  ! write out auxiliary variables
+  ip=14                         ! debugging parameter
+/
+
+&eos_init_pars
+/
+
+&hydro_init_pars
+/
+
+&density_init_pars
+  initlnrho='stratification'
+  strati_type='lnrho_lnTT'
+/
+
+&grav_init_pars
+  gravz_profile='const', gravz=-2.75 ! constant gravity in the z-direction
+/
+
+&entropy_init_pars
+/
+
+&radiation_init_pars
+  radx=0,rady=0,radz=1,rad2max=1     ! use only vertical rays
+  bc_rad='0:0','0:0','S:0'           ! incoming intensity at boundaries
+/
