@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.232 2006-04-19 12:13:38 nbabkovs Exp $ 
+! $Id: param_io.f90,v 1.233 2006-04-19 16:43:12 theine Exp $ 
 
 module Param_IO
 
@@ -91,7 +91,9 @@ module Param_IO
        lpoint,mpoint,npoint, &
        lrescaling, lcylindrical, &
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
-       lpencil_check,lpencil_check_diagnos_opti,lpencil_init, H_disk, L_disk, R_star, M_star, T_star, accretion_flux, lnstar_entropy,lnstar_T_const
+       lpencil_check,lpencil_check_diagnos_opti,lpencil_init, H_disk, &
+       L_disk, R_star, M_star, T_star, accretion_flux, lnstar_entropy, &
+       lnstar_T_const
   contains
 
 !***********************************************************************
