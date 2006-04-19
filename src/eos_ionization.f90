@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.26 2006-04-18 16:08:12 theine Exp $
+! $Id: eos_ionization.f90,v 1.27 2006-04-19 16:11:37 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -43,7 +43,7 @@ module EquationOfState
   !  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
-  real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
   integer :: l
 
   ! namelist parameters
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.26 2006-04-18 16:08:12 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.27 2006-04-19 16:11:37 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -163,7 +163,6 @@ module EquationOfState
       lnTT_ion_=log(chiH_/k_B)
       lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
-      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
       ss_ion=k_B/m_H/mu1yHxHe
@@ -185,8 +184,8 @@ module EquationOfState
         print*,'initialize_eos: yHmin,yHmax,yMetals=',yHmin,yHmax,yMetals
         print*,'initialize_eos: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
-        print*,'initialize_eos: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
-                lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
+        print*,'initialize_eos: lnrho_e,lnrho_H,lnrho_He,lnrho_e_=', &
+                lnrho_e,lnrho_H,lnrho_He,lnrho_e_
       endif
 !
 !  write scale non-free constants to file; to be read by idl
@@ -199,7 +198,7 @@ module EquationOfState
         write (1,*) 'lnTT_ion_=',lnTT_ion_
         write (1,*) 'lnrho_e=',lnrho_e
         write (1,*) 'lnrho_H=',lnrho_H
-        write (1,*) 'lnrho_p=',lnrho_p
+        write (1,*) 'lnrho_p=',lnrho_H
         write (1,*) 'lnrho_He=',lnrho_He
         write (1,*) 'lnrho_e_=',lnrho_e_
         write (1,*) 'ss_ion=',ss_ion
@@ -490,7 +489,7 @@ module EquationOfState
         call rtsafe_pencil(lnrho,ss,yH)
         f(:,m,n,iyH)=yH
         lnTT=(ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
-              +yH*(2*log(yH)-lnrho_e-lnrho_p)+xHe_term)/(1+yH+xHe)
+              +yH*(2*log(yH)-lnrho_e-lnrho_H)+xHe_term)/(1+yH+xHe)
         lnTT=(2.0/3.0)*(lnTT+lnrho-2.5)+lnTT_ion
         f(:,m,n,ilnTT)=lnTT
       enddo
@@ -534,7 +533,7 @@ module EquationOfState
       fractions1=1/fractions
 !
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH+epsi)-2*log(yH)
-      dlnTTdy=(2*(lnrho_H-lnrho_p-R-TT_ion*TT1)-3)/3*fractions1
+      dlnTTdy=(2*(-R-TT_ion*TT1)-3)/3*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH+epsi)-2/yH
       temp=(dlnTTdy+fractions1)/dRdy
       dlnPPdlnrho=(5-2*TT_ion*TT1*temp)/3
@@ -566,12 +565,12 @@ module EquationOfState
       fractions=(1+yH+xHe)
       fractions1=1/fractions
       lnTT=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
-                       +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                       +yH*(2*log(yH)-lnrho_e-lnrho_H) &
                        +xHe_term)/fractions+lnrho-2.5)+lnTT_ion
       TT1=exp(-lnTT)
 !
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH+epsi)-2*log(yH)
-      dlnTTdy=(2*(lnrho_H-lnrho_p-R-TT_ion*TT1)-3)/3*fractions1
+      dlnTTdy=(2*(-R-TT_ion*TT1)-3)/3*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH+epsi)-2/yH
       temp=(dlnTTdy+fractions1)/dRdy
       dlnPPdlnrho=(5-2*TT_ion*TT1*temp)/3
@@ -606,7 +605,7 @@ module EquationOfState
       fractions1=1/(1+yH+xHe)
 !
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH+epsi)-2*log(yH)
-      dlnTTdy=((2.0/3.0)*(lnrho_H-lnrho_p-R-TT_ion*TT1)-1)*fractions1
+      dlnTTdy=((2.0/3.0)*(-R-TT_ion*TT1)-1)*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH+epsi)-2/yH
       dlnTTdydRdy=dlnTTdy/dRdy
       dlnTTdlnrho=(2.0/3.0)*(1-TT_ion*TT1*dlnTTdydRdy)
@@ -662,7 +661,7 @@ module EquationOfState
       fractions1=1/(1+yH+xHe)
 !
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH+epsi)-2*log(yH)
-      dlnTTdy=((2.0/3.0)*(lnrho_H-lnrho_p-R-TT_ion*TT1)-1)*fractions1
+      dlnTTdy=((2.0/3.0)*(-R-TT_ion*TT1)-1)*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH+epsi)-2/yH
       dlnTTdydRdy=dlnTTdy/dRdy
       dlnTTdlnrho=(2.0/3.0)*(1-TT_ion*TT1*dlnTTdydRdy)
@@ -775,7 +774,7 @@ module EquationOfState
         enddo
         fractions=(1+yH_+xHe)
         lnTT_=(2.0/3.0)*((ss_/ss_ion+(1-yH_)*(log(1-yH_+epsi)-lnrho_H) &
-                          +yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                          +yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                           +xHe_term)/fractions+lnrho_-2.5)+lnTT_ion
         TT_=exp(lnTT_)
         rho_=exp(lnrho_)
@@ -791,7 +790,7 @@ module EquationOfState
         yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
         fractions=(1+yH_+xHe)
         ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
@@ -809,7 +808,7 @@ module EquationOfState
         lnTT_=log(TT_)
         rho_=exp(lnrho_)
         ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                    -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                    -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         pp_=fractions*rho_*TT_*ss_ion
 
@@ -825,7 +824,7 @@ module EquationOfState
         TT_=pp_/(fractions*ss_ion*rho_)
         lnTT_=log(TT_)
         ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
 
@@ -872,7 +871,7 @@ module EquationOfState
         yH_=0.5*yHmax
         call rtsafe(ilnrho_ss,lnrho_,ss_,yHmin,yHmax,yH_)
         lnTT_=(ss_/ss_ion+(1-yH_)*(log(1-yH_+epsi)-lnrho_H) &
-              +yH_*(2*log(yH_)-lnrho_e-lnrho_p)+xHe_term)/(1+yH_+xHe)
+              +yH_*(2*log(yH_)-lnrho_e-lnrho_H)+xHe_term)/(1+yH_+xHe)
         lnTT_=(2.0/3.0)*(lnTT_+lnrho_-2.5)+lnTT_ion
 
         TT_=exp(lnTT_)
@@ -889,7 +888,7 @@ module EquationOfState
         yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
         fractions=(1+yH_+xHe)
         ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
@@ -904,7 +903,7 @@ module EquationOfState
         lnTT_=log(TT_)
         rho_=exp(lnrho_)
         ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                    -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                    -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                     -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         pp_=fractions*rho_*TT_*ss_ion
 
@@ -918,7 +917,7 @@ module EquationOfState
         TT_=pp_/(fractions*ss_ion*rho_)
         lnTT_=log(TT_)
         ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
-                   -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                   -yH_*(2*log(yH_)-lnrho_e-lnrho_H) &
                    -(1-yH_)*(log(1-yH_+epsi)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
 
@@ -997,11 +996,11 @@ module EquationOfState
 !
       fractions1=1/(1+yH+xHe)
       lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
-                         +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                         +yH*(2*log(yH)-lnrho_e-lnrho_H) &
                          +xHe_term)*fractions1+lnrho-2.5)
       TT1_=exp(-lnTT_)
       f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
-      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
+      dlnTT_=((2.0/3.0)*(-f-TT1_)-1)*fractions1
 ! wd: Need to add epsi at the end, as otherwise (yH-yHlow)*df  will
 ! wd: eventually yield an overflow.
 ! wd: Something like  sqrt(tini)  would probably also do instead of epsi,
@@ -1034,11 +1033,11 @@ module EquationOfState
         where (abs(dyH)>yHacc*yH)
           fractions1=1/(1+yH+xHe)
           lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
-                             +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                             +yH*(2*log(yH)-lnrho_e-lnrho_H) &
                              +xHe_term)*fractions1+lnrho-2.5)
           TT1_=exp(-lnTT_)
           f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
-          dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
+          dlnTT_=((2.0/3.0)*(-f-TT1_)-1)*fractions1
           df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
           where (f<0)
             yHhigh=yH
@@ -1134,7 +1133,7 @@ module EquationOfState
         lnrho=var1
         ss=var2
         lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
-                         +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                         +yH*(2*log(yH)-lnrho_e-lnrho_H) &
                          +xHe_term)*fractions1+lnrho-2.5)
       case (ilnrho_ee)
         lnrho=var1
@@ -1157,7 +1156,7 @@ module EquationOfState
 !
       TT1_=exp(-lnTT_)
       f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH+epsi)-2*log(yH)
-      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
+      dlnTT_=((2.0/3.0)*(-f-TT1_)-1)*fractions1
       df=dlnTT_*(1.5+TT1_)-1/(1-yH+epsi)-2/yH
 !
     endsubroutine saha
@@ -1212,7 +1211,7 @@ module EquationOfState
         yH=2*sqrtK/(sqrtK+sqrt(4+K))
 !
         where (yH>0)
-          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_H)
         elsewhere
           yH_term=0
         endwhere
@@ -1552,7 +1551,7 @@ module EquationOfState
         yH=2*sqrtK/(sqrtK+sqrt(4+K))
 !
         where (yH>0)
-          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_H)
         elsewhere
           yH_term=0
         endwhere
@@ -1585,7 +1584,7 @@ module EquationOfState
         yH=2*sqrtK/(sqrtK+sqrt(4+K))
 !
         where (yH>0)
-          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+          yH_term=yH*(2*log(yH)-lnrho_e-lnrho_H)
         elsewhere
           yH_term=0
         endwhere
