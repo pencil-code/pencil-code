@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.302 2006-04-17 14:33:05 ajohan Exp $
+! ! $Id: cdata.f90,v 1.303 2006-04-19 14:11:55 nbabkovs Exp $
 
 module Cdata
 
@@ -66,7 +66,7 @@ module Cdata
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   
   double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV,hbar, &
-                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es
+                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es, c_light
 
   ! magnetic permeability
   real :: mu0=1., mu01=0.
@@ -282,12 +282,14 @@ module Cdata
   real :: L_disk=0.
   real :: R_star=0.
   real :: M_star=0. 
+  real :: T_star=0.
   real :: accretion_flux=0.
   logical :: lextrapolate_bot_density=.false.
   logical :: ltop_velocity_kep=.false.
   logical :: laccelerat_zone=.false.
   logical :: ldecelerat_zone=.false.
-
+  logical :: lnstar_T_const=.false.
+  logical :: lnstar_entropy=.false.
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg
 

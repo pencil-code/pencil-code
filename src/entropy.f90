@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.390 2006-04-04 16:21:46 mee Exp $
+! $Id: entropy.f90,v 1.391 2006-04-19 14:11:55 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -58,14 +58,13 @@ module Entropy
   real :: deltaT_poleq=0.
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
-  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
+  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.,lheatc_diffusion=.false.
   logical :: lheatc_tensordiffusion=.false.,lheatc_spitzer=.false.
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
-  logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true.
-  logical :: lnstar_entropy=.false. 
-  character (len=labellen), dimension(ninit) :: initss='nothing'
+  logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true., lviscosity_heat=.true.
+   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
@@ -104,8 +103,7 @@ module Entropy
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy,lnstar_entropy
-
+      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, lviscosity_heat
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss, &
@@ -119,7 +117,7 @@ module Entropy
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
-      tdown, allp,beta_glnrho_global,ladvection_entropy,lnstar_entropy
+      tdown, allp,beta_glnrho_global,ladvection_entropy, lviscosity_heat
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -158,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.390 2006-04-04 16:21:46 mee Exp $")
+           "$Id: entropy.f90,v 1.391 2006-04-19 14:11:55 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -429,6 +427,9 @@ module Entropy
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
+        case('diffusion')
+          lheatc_diffusion=.true.
+          if (lroot) print*, 'heat conduction: diffusion of radiation'
         case default
           if (lroot) then
             write(unit=errormsg,fmt=*)  &
@@ -770,7 +771,7 @@ module Entropy
           call layer_ss(f)
 
         case ('step_xz')
-         call entropy_step(f,xx,zz,T0)
+         call entropy_step(f,xx,zz,T_star)
 
         case default
           !
@@ -1494,10 +1495,21 @@ module Entropy
 !
 !Natalia (accretion on a NS)
 
-      if (lnstar_entropy) then
-         lpenc_requested(i_lnTT)=.true.
+       if (lnstar_entropy) then
+         lpenc_requested(i_TT)=.true.
+          lpenc_requested(i_lnTT)=.true.
          lpenc_requested(i_cs2)=.true.
          lpenc_requested(i_ss)=.true.
+         lpenc_requested(i_rho)=.true.
+      endif
+   
+     if (lheatc_diffusion) then 
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_del2lnrho)=.true.
+        lpenc_requested(i_del2ss)=.true.
       endif
 
 
@@ -1582,7 +1594,7 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Cdata
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma11
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma11, cs0
       use Sub
       use Global
       use Special, only: special_calc_entropy
@@ -1594,7 +1606,7 @@ module Entropy
       real, dimension (nx) :: rhs,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
       real :: zbot,ztop,xi,profile_cor
-      real :: uT
+      real :: uT, TT_cs0
       integer :: j,ju
 !
       intent(inout)  :: f,p
@@ -1675,7 +1687,9 @@ module Entropy
 !
 !  Calculate viscous contribution to entropy
 !
-      if (lviscosity) call calc_viscous_heat(df,p,Hmax)
+      if (lviscosity) then
+         if (lviscosity_heat)   call calc_viscous_heat(df,p,Hmax)
+      endif
 !
 !  thermal conduction
 !
@@ -1696,6 +1710,8 @@ module Entropy
       endif
       if (lheatc_shock) call calc_heatcond_shock(df,p)
       if (lheatc_hyper3ss) call calc_heatcond_hyper3(df,p)
+      if (lheatc_diffusion) call calc_heatcond_diffusion(f,df,p)
+!
 !
 !  heating/cooling
 !
@@ -1720,18 +1736,96 @@ module Entropy
 !Natalia (accretion on NS)
 
 
-     if (ldecelerat_zone) then
-     
-         
-         if (n .LE. 24 .AND. dt .GT. 0.) then
-                  
-           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-                         -1./(5.*dt)*(p%ss(:)+f(l1:l2,m,n,ilnrho)*gamma1/gamma)
-          
-          endif
-           
-     endif  
 !
+    if (lnstar_entropy) then
+   
+     TT_cs0=cs0**2/gamma1
+  
+       if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
+    !   if ( dt .GT. 0..AND. n .LT. nzgrid-20) then
+  
+        if (lnstar_T_const) then
+    
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-TT_cs0)/TT_cs0
+        !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+        !   -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/p%TT(:)
+
+
+        else
+          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          !   -1./(2.*dt)*(p%TT(:)-T_star)/p%TT(:)
+        endif
+  
+        
+    !      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+    !         -1./(2.*dt)*(f(l1:l2,m,n,iss)-lnTT0/gamma)/p%rho(:)/T0
+  
+       endif 
+
+      if (ldecelerat_zone) then
+    
+         if ( dt .GT. 0..AND. n .LE. 24 ) then
+          if (lnstar_T_const) then
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)   /TT_cs0    
+          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)/p%rho(:)/TT_cs0
+          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          ! -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+
+          else
+            
+         !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !  -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
+ 
+       !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+       !    -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star
+        !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)/p%rho(:)/T_star
+   
+     !       print*,df(l1,m,n,iss), p%rho(1)
+            
+          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          !  -1./(10.*dt)*(f(l1:l2,m,n,iss)/cp-lnTT0/gamma)
+         !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma/cp+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T0
+             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+            -1./(5.*dt)*(p%TT(:)-T_star)/T_star
+          endif
+        end if  
+
+
+    !     endif 
+     endif  
+   
+     if (laccelerat_zone) then
+         if (n .GE. nzgrid-20  .AND. dt .GT.0.) then
+           
+          if (lnstar_T_const) then   
+            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+          else  
+              df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+
+
+     !       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+     !       -1./(5.*dt)*(p%TT(:)/(cs0**2/(gamma1*cp))-1.)
+       
+
+
+          !df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+            !-1./(10.*dt)*(f(l1:l2,m,n,iss)-log(cs0**2/(gamma1*cp))/gamma)
+          ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          ! -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma/cp+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/(cs0**2/(gamma1*cp))
+
+          endif
+      
+         endif 
+
+     endif  
+    endif
+
 !  entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
@@ -2047,7 +2141,70 @@ module Entropy
       endif
 !
     endsubroutine calc_heatcond_simple
-!***********************************************************************
+!**********************************************************************************************************************************
+    subroutine calc_heatcond_diffusion(f,df,p)
+!
+!  heat conduction
+!
+!   12-apr-06/axel: adapted from Wolfgang's more complex version
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: glnT,glnThcond !,glhc
+      real, dimension (nx) :: chix
+      real, dimension (nx) :: thdiff,g2
+      real, dimension (nx) :: hcond
+!
+      intent(in) :: f,p
+      intent(out) :: df
+
+      hcond=Kbot
+ 
+!
+!  Heat conduction
+!
+      chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
+      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
+      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      call dot(glnT,glnThcond,g2)
+      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+
+
+!  add heat conduction to entropy equation
+!
+
+   !   if (n .GT. 24 ) then
+ 
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+        if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+
+    
+     
+
+    !  endif
+
+             df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(l1:l2,3) 
+
+            if (headtt) print*,'calc_radiation_pressure: added to z-component'
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chix*del2ss
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        if (ldiagnos.and.idiag_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        endif
+      endif
+!
+    endsubroutine calc_heatcond_diffusion
+!*******************************************************************************************
+
     subroutine calc_heatcond_spitzer(df,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
@@ -2939,7 +3096,8 @@ module Entropy
     endsubroutine strat_MLT
 
 !***************************************************************
-    subroutine entropy_step(f,xx,zz,T0)
+!***************************************************************
+    subroutine entropy_step(f,xx,zz,Tstar)
 !Natalia
 !Initialization of entropy in a case of the step-like distribution
  use EquationOfState
@@ -2948,7 +3106,7 @@ module Entropy
       real, dimension (mx,my,mz) :: xx, zz
       real, dimension (nx) ::  lnrho, lnTT,ss
       integer :: step_width, step_length, mi,ni, decel_zone
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, T0
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, Tstar
 
 
       decel_zone=24
@@ -2969,25 +3127,30 @@ module Entropy
       step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
 
 
-      lnTT=log(T0)
+      lnTT=log(T_star)!  log(T0)
 
-     do ni=n1,n2;
-      do mi=m1,m2;
-        lnrho=f(l1:l2,mi,ni,ilnrho)
+      print*,'T_star=',T_star
+      do ni=n1,n2;
+       do mi=m1,m2;
+      !  lnrho=f(l1:l2,mi,ni,ilnrho)
      
-         call eoscalc(4,lnrho,lnTT,ss=ss)
-             
-      !   f(l1:l2,mi,ni,iss)=ss
+      !   call eoscalc(4,lnrho,lnTT,ss=ss)
+   !     if (ni .LE.24)     then
+         f(l1:l2,mi,ni,iss)=-gamma1/gamma*f(l1:l2,mi,ni,ilnrho)
+   !     else
+   !         f(l1:l2,mi,ni,iss)=ss  
+   !     endif 
+     !    f(l1:l2,mi,ni,iss)=0.
 
-         f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+     !    f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
 
-
-!print*,'IC    ',lnrho(1),exp(lnTT(1)),ss(1)
+!print*,'IC    ', f(l1:l2,mi,ni,iss),f(l1:l2,mi,ni,ilnrho)
        end do 
      end do   
-       
-  !    f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
-  
+
+     !   f(l1:l2,:,:,iss)=lnTT0/gamma
+
+       ! f(:,:,:,iss)=(zz(:,:,:)-R_star)/Lxyz(3)*(lnTT0-lnTT0/10.)/gamma+lnTT0/10./gamma
 
     endsubroutine entropy_step
 !***********************************************************************

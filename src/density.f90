@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.235 2006-04-04 16:21:46 mee Exp $
+! $Id: density.f90,v 1.236 2006-04-19 14:11:55 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.235 2006-04-04 16:21:46 mee Exp $")
+           "$Id: density.f90,v 1.236 2006-04-19 14:11:55 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1321,27 +1321,31 @@ module Density
 ! Natalia
 ! deceleration zone in a case of a Keplerian disk
 
-      if (ldecelerat_zone) then
+       if (ldecelerat_zone) then
      
          
          if (n .LE. 24 .AND. dt .GT. 0.) then
-                
-         !  if (gamma.EQ.1.) then
-            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+       
+            if (lnstar_entropy) then          
+              if (lnstar_T_const) then
+               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                -1./p%rho(:)/(5.*dt) &
+                *(p%rho(:)-rho_left*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
+               else            
+               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                -1./p%rho(:)/(5.*dt) &
+                *(p%rho(:)-rho_left*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
+            endif    
+
+            else
+               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
                          -1./p%rho(:)/(5.*dt) &
-            *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
-         !  else
-         !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-         !                -1./p%rho(:)/(5.*dt) &
-         !    *(p%rho(:)-rho_left-(gamma1*M_star/z(n)/cs0**2)**(1./gamma1) &
-         !    *(1.-(z(n)/R_star)**(1./gamma1))) 
-          
-        ! end if  
+                 *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+            endif
       
           endif
            
      endif  
- 
     
 !
       if (lspecial) call special_calc_density(df,p)
@@ -1680,7 +1684,7 @@ module Density
       real, dimension (mx,my,mz,mvar) :: df
  !     real, dimension(nx) :: fint,fext,pdamp
       real  ::  sink_area, V_acc, V_0, rho_0, ksi, integral_rho=0., flux
-      integer :: sink_area_points=30, i
+      integer :: sink_area_points=100, i
   
 
      real, dimension (nx), intent(in) :: rho 

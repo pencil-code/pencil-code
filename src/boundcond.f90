@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.97 2006-04-05 14:39:39 wlyra Exp $
+! $Id: boundcond.f90,v 1.98 2006-04-19 14:11:55 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -628,7 +628,11 @@ module Boundcond
 
         if (j.EQ.5) then
            lnrho=f(l1:l2,m1,n1,ilnrho)
-           lnTT=val1_(j)
+          if (lnstar_T_const) then 
+           lnTT=log(cs0**2/(gamma1))
+          else     
+           lnTT=log(T_star)
+          endif
           !+ other terms for sound speed not equal to cs_0
            call eoscalc(4,lnrho,lnTT,ss=ss)
           f(l1:l2,m1,n1,iss)=ss
@@ -654,7 +658,7 @@ module Boundcond
 
          if (j.EQ.5) then
            lnrho=f(l1:l2,m2,n2,ilnrho)
-           lnTT=val1_(j)
+           lnTT=log(cs0**2/(gamma1))
           !+ other terms for sound speed not equal to cs_0
            call eoscalc(4,lnrho,lnTT,ss=ss)
            f(l1:l2,m2,n2,iss)=ss
