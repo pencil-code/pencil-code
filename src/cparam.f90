@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.46 2006-04-17 14:33:05 ajohan Exp $
+! $Id: cparam.f90,v 1.47 2006-04-19 11:56:14 ajohan Exp $
 
 module Cparam
 
@@ -20,6 +20,7 @@ module Cparam
   integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz
 
   include 'cparam.inc'
+
   include 'cparam_pencils.inc'
 !
 !  derived and fixed parameters
