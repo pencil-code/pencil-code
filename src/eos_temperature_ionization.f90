@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.15 2006-04-06 19:02:11 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.16 2006-04-19 16:27:56 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -88,7 +88,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.15 2006-04-06 19:02:11 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.16 2006-04-19 16:27:56 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -355,11 +355,19 @@ module EquationOfState
 !
       if (lpencil(i_ss)) then
         tmp = 2.5 - 1.5*(lnTT_ion-p%lnTT)
-        p%ss = tmp + lnrho_H - p%lnrho
         where (p%yH > 0)
+          ! Neutral Hydrogen
+          p%ss = (1-p%yH)*(tmp + lnrho_H - p%lnrho - log(1-p%yH))
+          ! Protons
+          p%ss = p%ss + p%yH*(tmp + lnrho_H - p%lnrho - log(p%yH))
+          ! Electrons
           p%ss = p%ss + p%yH*(tmp + lnrho_e - p%lnrho - log(p%yH))
+        elsewhere
+          ! Neutral Hydrogen
+          p%ss = tmp + lnrho_H - p%lnrho
         endwhere
         if (xHe > 0) then
+          ! Helium
           p%ss = p%ss + xHe*(tmp + lnrho_He - p%lnrho - log(xHe))
         endif
         p%ss = Rgas*mu1_0*p%ss
