@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.45 2006-04-13 18:03:59 ajohan Exp $
+! $Id: particles_sub.f90,v 1.46 2006-04-20 10:56:45 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -32,8 +32,6 @@ module Particles_sub
       character (len=*) :: filename
       integer, dimension (mpar_loc) :: ipar
       integer :: npar_loc
-! 
-      integer :: k
 !
       intent (in) :: filename
       intent (out) :: fp,npar_loc,ipar
@@ -72,8 +70,6 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension(mpar_loc) :: ipar
       integer :: npar_loc
-!
-      integer :: k
 !
       intent (in) :: filename, npar_loc, ipar
 !
@@ -297,7 +293,7 @@ module Particles_sub
       integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
       logical :: lredo, lredo_all
 !
-      intent (out) :: fp, npar_loc, ipar, dfp
+      intent (inout) :: fp, npar_loc, ipar, dfp
 !
 !  Possible to iterate untill all particles have migrated.
 !
