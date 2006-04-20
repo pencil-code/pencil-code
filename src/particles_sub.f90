@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.48 2006-04-20 14:10:37 ajohan Exp $
+! $Id: particles_sub.f90,v 1.49 2006-04-20 14:17:34 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -938,8 +938,6 @@ module Particles_sub
       intent(out) :: f
 !
       npar_imn=0
-      k1_imn=0
-      k2_imn=0
 !
 !  Calculate the number of particles in each grid cell.
 !
@@ -951,7 +949,9 @@ module Particles_sub
           npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
         enddo
       endif
-
+!
+!  Calculate beginning and ending particle index for each pencil.
+!
       if (npar_imn(1)/=0) then
         k1_imn(1)=1
         k2_imn(1)=k1_imn(1) + npar_imn(1) - 1
@@ -961,6 +961,9 @@ module Particles_sub
         if (npar_imn(imn)/=0) then
           k1_imn(imn)=k2_imn(imn-1) + 1
           k2_imn(imn)=k1_imn(imn)   + npar_imn(imn) - 1
+        else
+          k1_imn(imn)=0
+          k2_imn(imn)=0
         endif
       enddo
 !
