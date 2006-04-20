@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.49 2006-04-20 14:17:34 ajohan Exp $
+! $Id: particles_sub.f90,v 1.50 2006-04-20 14:29:03 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -872,7 +872,7 @@ module Particles_sub
 !
       integer :: ilmn_par_tmp, ipark_sorted_tmp
       integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
-      integer :: j, k, ix0, iy0, iz0, ncount
+      integer :: j, k, ix0, iy0, iz0, ncount=0
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
@@ -905,7 +905,7 @@ module Particles_sub
         endif
 
       enddo
-      
+
       if (ip<=8) print*, 'sort_particles_imn: iproc, ncount=', iproc, ncount
 !
 !  Finally sort the particle variables after the sorting key.
@@ -915,6 +915,7 @@ module Particles_sub
         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
+        ncount=0
       endif
 !
     endsubroutine sort_particles_imn
