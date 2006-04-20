@@ -5,10 +5,11 @@
   public :: particles_initialize_modules, particles_init
   public :: particles_boundconds
   public :: particles_timestep_first, particles_timestep_second
-  public :: particles_pencil_interdep, particles_calc_pencils
+  public :: particles_pencil_criteria, particles_pencil_interdep
+  public :: particles_calc_pencils
   public :: particles_read_snapshot
   public :: particles_write_snapshot,particles_write_dsnapshot
-  public :: particles_pde, particles_write_pdim
+  public :: particles_pde, particles_pde_pencil, particles_write_pdim
   public :: read_particles_init_pars_wrap
   public :: write_particles_init_pars_wrap
   public :: read_particles_run_pars_wrap

@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.47 2006-04-20 13:37:26 ajohan Exp $
+! $Id: particles_sub.f90,v 1.48 2006-04-20 14:10:37 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -937,15 +937,32 @@ module Particles_sub
       intent(in)  :: fp, ineargrid
       intent(out) :: f
 !
-!  Number of particles in each grid cell.
+      npar_imn=0
+      k1_imn=0
+      k2_imn=0
+!
+!  Calculate the number of particles in each grid cell.
 !
       if (inp/=0) then
         f(l1:l2,m1:m2,n1:n2,inp)=0.0
         do k=1,npar_loc
           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
+          npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
         enddo
       endif
+
+      if (npar_imn(1)/=0) then
+        k1_imn(1)=1
+        k2_imn(1)=k1_imn(1) + npar_imn(1) - 1
+      endif
+
+      do imn=2,ny*nz
+        if (npar_imn(imn)/=0) then
+          k1_imn(imn)=k2_imn(imn-1) + 1
+          k2_imn(imn)=k1_imn(imn)   + npar_imn(imn) - 1
+        endif
+      enddo
 !
     endsubroutine map_xxp_grid
 !***********************************************************************

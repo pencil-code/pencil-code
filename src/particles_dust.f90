@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.76 2006-04-20 13:37:26 ajohan Exp $
+! $Id: particles_dust.f90,v 1.77 2006-04-20 14:10:37 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.76 2006-04-20 13:37:26 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.77 2006-04-20 14:10:37 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -845,6 +845,18 @@ k_loop: do while (.not. (k>npar_loc))
 !
     endsubroutine constant_richardson
 !***********************************************************************
+    subroutine pencil_criteria_particles()
+! 
+!  All pencils that the Particles module depends on are specified here.
+! 
+!  20-04-06/anders: coded
+!
+      use Cdata
+!
+      if (ldragforce_gas_par) lpenc_requested(i_rho1)=.true.
+!
+    endsubroutine pencil_criteria_particles
+!***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
 !   
 !  Interdependency among pencils provided by the Particles module
@@ -947,6 +959,85 @@ k_loop: do while (.not. (k>npar_loc))
 !
     endsubroutine dxxp_dt
 !***********************************************************************
+    subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+! 
+!  Evolution of dust particle velocity.
+!
+!  29-dec-04/anders: coded
+!
+      use Cdata
+      use EquationOfState, only: cs20, gamma
+      use Mpicomm, only: stop_it
+      use Particles_number, only: get_nptilde
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (nx) :: np, tausg1
+      real, dimension (3) :: uup, dragforce
+      real :: np_point, eps_point, rho_point, tausp1_point
+      integer :: k, l
+!
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: df, dfp
+! 
+!  Add drag force if stopping time is not infinite.
+! 
+      if (ldragforce_dust_par) then
+        if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
+        if (npar_imn(imn)/=0) then
+          do k=k1_imn(imn),k2_imn(imn)
+            call get_frictiontime(f,fp,ineargrid,k,tausp1_point)
+!  Use interpolation to calculate gas velocity at position of particles.
+            call interpolate_3d_1st( &
+                f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+            dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+!  Back-reaction friction force from particles on gas (conserves momentum).
+            if (ldragforce_gas_par) then
+              l=ineargrid(k,1)
+              df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                  rhop_tilde*p%rho1(l-3)*dragforce
+            endif
+          enddo
+!  Contribution of friction force to time-step.
+          if (lfirst.and.ldt) then
+            if (ldragforce_gas_par) then
+              tausg1 = rhop_tilde*f(l1:l2,m,n,inp)*p%rho1*tausp1_point
+            endif
+            dt1_max=max(dt1_max,(tausp1_point+tausg1)/cdtp)
+          endif
+        endif
+      endif
+!
+!  Diagnostic output
+!
+      if (ldiagnos) then
+        np=f(l1:l2,m,n,inp)
+        if (idiag_npm/=0)     call sum_mn_name(np,idiag_npm)
+        if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
+        if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
+        if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
+        if (idiag_rhopmax/=0) call max_mn_name(rhop_tilde*np,idiag_rhopmax)
+        if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
+        if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
+        if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
+        if (idiag_rhopmx/=0) &
+            call yzsum_mn_name_x(rhop_tilde*np,idiag_rhopmx)
+        if (idiag_epspmx/=0) &
+            call yzsum_mn_name_x(rhop_tilde*np*p%rho1,idiag_epspmx)
+        if (idiag_epspmz/=0) &
+            call xysum_mn_name_z(rhop_tilde*np*p%rho1,idiag_epspmz)
+        if (ldiagnos.and.idiag_dtdragp/=0) &
+            call max_mn_name((tausp1_point+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
+      endif
+!
+    endsubroutine dvvp_dt_pencil
+!***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
@@ -995,47 +1086,6 @@ k_loop: do while (.not. (k>npar_loc))
 !          
         if (lshear) dfp(1:npar_loc,ivpy) = &
             dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
-      endif
-!
-!  Add drag force if stopping time is not infinite.
-!
-      if (ldragforce_dust_par) then
-        if (lheader) print*,'dvvp_dt: Add drag force; tausp=', tausp
-        do k=1,npar_loc
-          call get_frictiontime(f,fp,ineargrid,k,tausp1_point)
-!  Use interpolation to calculate gas velocity at position of particles.
-          call interpolate_3d_1st( &
-              f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
-          dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
-          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
-!  Back-reaction friction force from particles on gas (conserves momentum).
-          if (ldragforce_gas_par) then
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            rho_point=f(ix0,iy0,iz0,ilnrho)
-            if (.not. ldensity_nolog) rho_point=exp(rho_point)
-            df(ix0,iy0,iz0,iux:iuz) = df(ix0,iy0,iz0,iux:iuz) - &
-                rhop_tilde/rho_point*dragforce
-          endif
-        enddo
-!  Contribution of friction force to time-step.
-        if (ldragforce_gas_par) then
-          if (lfirst.and.ldt) then
-            do imn=1,ny*nz
-              n=nn(imn); m=mm(imn)
-              np=f(l1:l2,m,n,inp)
-              rho=f(l1:l2,m,n,ilnrho)
-              if (.not. ldensity_nolog) rho=exp(rho)
-              tausg1 = rhop_tilde*np*tausp1_point/rho
-              dt1_max=max(dt1_max,(tausp1_point+tausg1)/cdtp)
-              if (ldiagnos.and.idiag_dtdragp/=0) &
-                  call max_mn_name((tausp1_point+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
-            enddo
-          endif
-        else
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tausp1_point/cdtp)
-          if (ldiagnos.and.idiag_dtdragp/=0) &
-              call max_mn_name(spread(tausp1_point/cdtp,1,nx),idiag_dtdragp,l_dt=.true.)
-        endif
       endif
 !
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha

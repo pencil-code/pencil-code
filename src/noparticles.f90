@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.8 2006-02-16 12:51:45 ajohan Exp $
+! $Id: noparticles.f90,v 1.9 2006-04-20 14:10:37 ajohan Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -57,6 +57,14 @@ module Particles
 !
     endsubroutine init_particles
 !***********************************************************************
+    subroutine pencil_criteria_particles()
+!   
+!  All pencils that the Particles module depends on are specified here.
+!         
+!  20-apr-06/anders: dummy
+!
+    endsubroutine pencil_criteria_particles
+!***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
 !   
 !  Interdependency among pencils provided by the Particles module
@@ -95,6 +103,22 @@ module Particles
       if (NO_WARN) print*, f, fp, dfp
 !
     endsubroutine dxxp_dt
+!***********************************************************************
+    subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!
+!  Evolution of dust particle velocity.
+!
+!  20-apr-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+!
+    endsubroutine dvvp_dt_pencil
 !***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !

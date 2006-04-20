@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.20 2006-04-20 13:37:26 ajohan Exp $
+! $Id: particles_main.f90,v 1.21 2006-04-20 14:10:37 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -212,6 +212,16 @@ module Particles_main
 !
     endsubroutine particles_boundconds
 !***********************************************************************
+    subroutine particles_pencil_criteria()
+!
+!  Request pencils for particles.
+!
+!  20-apr-06/anders: coded
+!
+      call pencil_criteria_particles()
+!
+    endsubroutine particles_pencil_criteria
+!***********************************************************************
     subroutine particles_pencil_interdep(lpencil_in)
 !
 !  Calculate particle pencils.
@@ -238,6 +248,28 @@ module Particles_main
 !      call calc_pencils_particles_number(f,p)
 !
     endsubroutine particles_calc_pencils
+!***********************************************************************
+    subroutine particles_pde_pencil(f,df,p)
+!
+!  Dynamical evolution of particle variables.
+!
+!  20-apr-06/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      intent (in) :: p
+      intent (inout) :: f, df
+!
+!  Dynamical equations.
+!
+!      call dxxp_dt(f,fp,dfp,ineargrid)
+      call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!      if (lparticles_radius) call dap_dt(f,df,fp,dfp,ineargrid)
+!      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)
+!
+    endsubroutine particles_pde_pencil
 !***********************************************************************
     subroutine particles_pde(f,df)
 !

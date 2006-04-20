@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.167 2006-04-19 14:11:55 nbabkovs Exp $
+! $Id: register.f90,v 1.168 2006-04-20 14:10:37 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -418,6 +418,7 @@ module Register
 !
 !  20-11-04/anders: coded
 !
+      use Cdata
       use EquationOfState, only: pencil_criteria_eos
       use Hydro, only: pencil_criteria_hydro
       use Density, only: pencil_criteria_density
@@ -436,6 +437,7 @@ module Register
       use Radiation, only: pencil_criteria_radiation
       use Interstellar, only: pencil_criteria_interstellar
       use Planet, only: pencil_criteria_planet
+      use Particles_main, only: particles_pencil_criteria
 !
       call pencil_criteria_density()
       call pencil_criteria_eos()
@@ -455,6 +457,7 @@ module Register
       call pencil_criteria_chiral()
       call pencil_criteria_radiation()
       call pencil_criteria_planet()
+      if (lparticles) call particles_pencil_criteria()
 !    
     endsubroutine pencil_criteria
 !***********************************************************************
