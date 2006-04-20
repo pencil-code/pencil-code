@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.50 2006-04-20 14:29:03 ajohan Exp $
+! $Id: particles_sub.f90,v 1.51 2006-04-20 15:03:17 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -857,7 +857,7 @@ module Particles_sub
 !
     endsubroutine map_nearest_grid
 !***********************************************************************
-    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp)
+    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp,lrunningsort)
 !
 !  Sort the particles so that they appear in the same order as the (m,n) loop.
 !
@@ -869,8 +869,11 @@ module Particles_sub
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
+      logical, optional :: lrunningsort
 !
-      integer :: ilmn_par_tmp, ipark_sorted_tmp
+      real, dimension (mpvar) :: fp_tmp, dfp_tmp
+      integer, dimension (3) :: ineargrid_tmp
+      integer :: ilmn_par_tmp, ipark_sorted_tmp, ipar_tmp
       integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
       integer :: j, k, ix0, iy0, iz0, ncount=0
 !
@@ -895,28 +898,49 @@ module Particles_sub
         enddo
 
         if (j/=k) then
+          ncount=ncount+k-j
+!
           ilmn_par_tmp=ilmn_par(k)
           ilmn_par(j+1:k)=ilmn_par(j:k-1)
           ilmn_par(j)=ilmn_par_tmp
           ipark_sorted_tmp=ipark_sorted(k)
           ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
           ipark_sorted(j)=ipark_sorted_tmp
-          ncount=ncount+k-j
+!  Sort particle data on the fly (practical for almost ordered arrays).
+          if (present(lrunningsort)) then
+            fp_tmp=fp(k,:)
+            fp(j+1:k,:)=fp(j:k-1,:)
+            fp(j,:)=fp_tmp
+!
+            if (present(dfp)) then
+              dfp_tmp=dfp(k,:)
+              dfp(j+1:k,:)=dfp(j:k-1,:)
+              dfp(j,:)=dfp_tmp
+            endif
+!
+            ineargrid_tmp=ineargrid(k,:)
+            ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
+            ineargrid(j,:)=ineargrid_tmp
+!
+            ipar_tmp=ipar(k)
+            ipar(j+1:k)=ipar(j:k-1)
+            ipar(j)=ipar_tmp
+!
+          endif
         endif
 
       enddo
-
-      if (ip<=8) print*, 'sort_particles_imn: iproc, ncount=', iproc, ncount
-!
-!  Finally sort the particle variables after the sorting key.
-!        
-      if (ncount/=0) then
+!  Sort particle data in one big rearrangement (if the arrays are very out
+!  of order as typically is the case at the first sort).
+      if (.not. present(lrunningsort) .and. ncount/=0) then
         fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
         ncount=0
       endif
+!
+      if (ip<=8) print*, 'sort_particles_imn: iproc, ncount=', iproc, ncount
 !
     endsubroutine sort_particles_imn
 !***********************************************************************
