@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.391 2006-04-19 14:11:55 nbabkovs Exp $
+! $Id: entropy.f90,v 1.392 2006-04-20 08:29:32 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.391 2006-04-19 14:11:55 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.392 2006-04-20 08:29:32 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2187,9 +2187,10 @@ module Entropy
 
     !  endif
 
-             df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(l1:l2,3) 
+     df(l1:l2,m,n,iuz) = &
+         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
 
-            if (headtt) print*,'calc_radiation_pressure: added to z-component'
+     if (headtt) print*,'calc_radiation_pressure: added to z-component'
 !
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
