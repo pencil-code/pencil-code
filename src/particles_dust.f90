@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.75 2006-04-18 18:32:22 ajohan Exp $
+! $Id: particles_dust.f90,v 1.76 2006-04-20 13:37:26 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.75 2006-04-18 18:32:22 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.76 2006-04-20 13:37:26 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -435,6 +435,8 @@ k_loop: do while (.not. (k>npar_loc))
         call stop_it("")
 
       endselect
+!
+      call sort_particles_imn(fp,ineargrid,ipar)
 !
     endsubroutine init_particles
 !***********************************************************************

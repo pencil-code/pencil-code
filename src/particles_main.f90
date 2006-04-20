@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.19 2006-04-12 12:06:39 ajohan Exp $
+! $Id: particles_main.f90,v 1.20 2006-04-20 13:37:26 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -204,6 +204,7 @@ module Particles_main
 !  Map the particle positions on the grid for later use.
 !
       call map_nearest_grid(f,fp,ineargrid)
+      call sort_particles_imn(fp,ineargrid,ipar,dfp)
 !
 !  Map particle density on the grid if requested.
 !      

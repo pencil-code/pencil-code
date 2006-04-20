@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.46 2006-04-20 10:56:45 ajohan Exp $
+! $Id: particles_sub.f90,v 1.47 2006-04-20 13:37:26 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -16,7 +16,7 @@ module Particles_sub
   public :: redist_particles_procs, dist_particles_evenly_procs
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: interpolate_3d_1st
-  public :: map_nearest_grid, map_xxp_grid
+  public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: find_closest_gridpoint
 
   contains
@@ -829,7 +829,7 @@ module Particles_sub
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, save :: dx1, dy1, dz1
-      integer :: k, ix0, iy0, iz0
+      integer :: j, k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
       intent(in)  :: f, fp
@@ -856,6 +856,68 @@ module Particles_sub
       enddo
 !
     endsubroutine map_nearest_grid
+!***********************************************************************
+    subroutine sort_particles_imn(fp,ineargrid,ipar,dfp)
+!
+!  Sort the particles so that they appear in the same order as the (m,n) loop.
+!
+!  20-apr-06/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+!
+      integer :: ilmn_par_tmp, ipark_sorted_tmp
+      integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
+      integer :: j, k, ix0, iy0, iz0, ncount
+!
+      intent(inout)  :: fp, ineargrid, ipar, dfp
+!
+!  Calculate integer value to sort after.
+!
+      do k=1,npar_loc
+        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+        ilmn_par(k)=(imn_array(iy0,iz0)-1)*ny*nz+ix0
+        ipark_sorted(k)=k
+      enddo
+!
+!  Calculate sorting key using the algorithm straight insertion (NR).
+!
+      do k=2,npar_loc
+
+        j=k
+
+        do while ( (j>1) .and. (ilmn_par(k)<ilmn_par(j-1)) )
+          j=j-1
+        enddo
+
+        if (j/=k) then
+          ilmn_par_tmp=ilmn_par(k)
+          ilmn_par(j+1:k)=ilmn_par(j:k-1)
+          ilmn_par(j)=ilmn_par_tmp
+          ipark_sorted_tmp=ipark_sorted(k)
+          ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
+          ipark_sorted(j)=ipark_sorted_tmp
+          ncount=ncount+k-j
+        endif
+
+      enddo
+      
+      if (ip<=8) print*, 'sort_particles_imn: iproc, ncount=', iproc, ncount
+!
+!  Finally sort the particle variables after the sorting key.
+!        
+      if (ncount/=0) then
+        fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
+        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
+        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+        ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
+      endif
+!
+    endsubroutine sort_particles_imn
 !***********************************************************************
     subroutine map_xxp_grid(f,fp,ineargrid)
 !
