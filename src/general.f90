@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.45 2006-04-03 22:40:21 dobler Exp $
+! $Id: general.f90,v 1.46 2006-04-20 13:33:27 ajohan Exp $
 
 module General
 
@@ -54,7 +54,7 @@ module General
 !  the moment when all communication must be completed.
 !
       use Cparam
-      use Cdata, only: mm,nn,necessary,lroot
+      use Cdata, only: mm,nn,imn_array,necessary,lroot
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -64,6 +64,7 @@ module General
         do m=m1i+2,m2i-2
           mm(imn)=m
           nn(imn)=n
+          imn_array(m,n)=imn
           imn=imn+1
         enddo
       enddo
@@ -75,6 +76,7 @@ module General
         do m=m1i+2,m2i-2
           mm(imn)=m
           nn(imn)=n
+          imn_array(m,n)=imn
           imn=imn+1
         enddo
       enddo
@@ -85,6 +87,7 @@ module General
         do m=m1i+2,m2i-2
           mm(imn)=m
           nn(imn)=n
+          imn_array(m,n)=imn
           imn=imn+1
         enddo
       enddo
@@ -103,11 +106,13 @@ module General
         do m=m1,min_m1i_m2
           mm(imn)=m
           nn(imn)=n
+          imn_array(m,n)=imn
           imn=imn+1
         enddo
         do m=max_m2i_m1,m2
           mm(imn)=m
           nn(imn)=n
+          imn_array(m,n)=imn
           imn=imn+1
         enddo
       enddo

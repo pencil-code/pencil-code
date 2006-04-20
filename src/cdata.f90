@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.303 2006-04-19 14:11:55 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.304 2006-04-20 13:33:27 ajohan Exp $
 
 module Cdata
 
@@ -136,6 +136,7 @@ module Cdata
   integer :: imn,m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
+  integer, dimension (my,mz) :: imn_array
   logical :: lprocz_slowest=.true.
 !
 !  in this section are all the things related to printing
