@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.23 2006-03-28 21:52:27 wlyra Exp $
+! $Id: particles_planet.f90,v 1.24 2006-04-21 12:57:23 ajohan Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.23 2006-03-28 21:52:27 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.24 2006-04-21 12:57:23 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -234,6 +234,14 @@ module Particles
 !
     endsubroutine init_particles
 !***********************************************************************
+    subroutine pencil_criteria_particles()
+! 
+!  All pencils that the Particles module depends on are specified here.
+! 
+!  20-04-06/anders: coded
+! 
+    endsubroutine pencil_criteria_particles
+!***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
 !   
 !  Interdependency among pencils provided by the Particles module
@@ -313,6 +321,22 @@ module Particles
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dxxp_dt
+!***********************************************************************
+    subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+! 
+!  Evolution of dust particle velocity.
+!
+!  20-apr-06/anders: dummy
+! 
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!   
+      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+!
+    endsubroutine dvvp_dt_pencil
 !***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
