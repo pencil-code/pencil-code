@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2006-04-02 03:39:17 mee Exp $',
+  cvsid='$Id: start.in,v 1.4 2006-04-21 14:45:02 ngrs Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -1.1,-1.1,-1.1,       ! first corner of box
   xyz1  =  1.1, 1.1, 1.1,       ! second corner of box
@@ -16,26 +16,41 @@
   r_int=0.5,                    ! radius of interior spherical boundary
   r_ext=1.0,                    ! radius of exterior spherical boundary
 /
+!
+! NB: relative to the original cp=2.5 sample, all entropies are now scaled 
+!     by the factor 1/2.5, and all time units by the factor sqrt(2.5).
+!     velocities, diffusivities, etc. are all scaled accordingly.
+! (I've also changed initial conditions, etc., so that both versions evolve 
+!  in parallel -- compare reference.out with revision 1.11, for the cp=2.5
+!  version (with all columns scaled approriately).)
+!
 &eos_init_pars
-!  cs0=1.29099444873581,
-!  cs0=1.12580  ! Calculated to have the same entropy scaling as in old version
+!  cs0=1.290994    ! cp=2.5 version used cs0^2=gamma
+   cs0=0.816497    ! cp=1   version uses cs0^2=gamma/(2.5)
+
 !  rho0=1.,     ! This is the default
-  cp_cgs=2.5,
+!  cp_cgs=1.0,  ! Now explicitly rescaled for cp=1 
+                ! (cp_cgs isn't used here, anyway)
 /
 &hydro_init_pars
   inituu='zero'
-  urand=0.05,
+  !urand=0.05,      ! cp=2.5 version used urand=0.05
+  urand=0.0316228   ! cp=1   version uses urand=0.05/sqrt(2.5)
 /
 &density_init_pars
   initlnrho='geo-kws',
   mpoly=1.
 /
 &grav_init_pars
-  ipotential='geo-kws', g0=3.0, r0_pot=.5
+  ipotential='geo-kws', r0_pot=.5
+  !g0=3.0             ! cp=2.5 version used g0=3.0
+  g0=1.2              ! cp=1   version uses g0=3.0/2.5
 /
 &entropy_init_pars
-  initss='geo-kws',T0=2.5 ! ~ 1. where c_p=2.5
+  initss='geo-kws', T0=1.0  ! with other scalings, both versions us T0=1
 /
 &magnetic_init_pars
-  initaa='gaussian-noise', amplaa=1e-6
+  initaa='gaussian-noise'
+  !amplaa=1e-6        ! cp=2.5 version used amplaa=1e-6
+  amplaa=6.32456e-07  ! cp=1   version uses amplaa=1e-6/sqrt(2.5)
 /

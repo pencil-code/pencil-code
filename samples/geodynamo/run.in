@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2005-12-06 13:36:19 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.5 2006-04-21 14:45:02 ngrs Exp $',
   ip=13,
   nt=20, it1=4, isave=500, itorder=3, ialive=1
   cdt=0.4, cdtv=0.3, dtmin=1e-6,
@@ -14,30 +14,50 @@
   slice_position='e'
   lpencil_check=T
 /
+!
+! NB: relative to the original cp=2.5 sample, all entropies are now scaled
+!     by the factor 1/2.5, and all time units by the factor sqrt(2.5).
+!     velocities, diffusivities, etc. are all scaled accordingly.
+! (I've also changed initial conditions, etc., so that both versions evolve 
+!  in parallel -- compare reference.out with revision 1.11, for the cp=2.5
+!  version (with all columns scaled approriately).)
+!
 &eos_run_pars
 /
 &hydro_run_pars
   dampu=0., tdamp=0.,
-  dampuext=100, dampuint=100, wdamp=0.01,
-  Omega=1., theta=0. ! amount and direction of angular velocity
-  othresh_per_orms=3.
+  wdamp=0.01,
+  !dampuext=100, dampuint=100         ! cp=2.5 version used dampu=100
+  dampuext=63.2456, dampuint=63.2456  ! cp=1   version uses dampu=100/sqrt(2.5)
+  theta=0.,
+  !Omega=1.                           ! cp=2.5 version used Omega=1.
+  Omega=0.632456,                     ! cp=1   version uses Omega=1./sqrt(2.5)
+  !othresh_per_orms=3.                ! cp=2.5 version used othresh=3.0
+  othresh_per_orms=1.89737            ! cp=1   version uses othresh=3.0/sqrt(2.5)
 /
-! end geodynamo
 &density_run_pars
 /
 &grav_run_pars
-  ipotential='geo-kws', g0=3.0, r0_pot=.5
+  ipotential='geo-kws', r0_pot=.5
+  !g0=3.0                             !cp=2.5 version used g0=3.0
+  g0=1.2                              !cp=1   version uses g0=3.0/2.5
 /
 &entropy_run_pars
-  iheatcond='K-const', hcond0=2e-4,
-  cooltype='shell', cool_ext=100, cool_int=100, wcool=0.01, 
+  iheatcond='K-const'
+  cooltype='shell', wcool=0.01
+  !hcond0=2e-4,                       !cp=2.5 version used K=2e-4
+  hcond0=5.05964e-05                  !cp=1   version uses K=2e-4/2.5^(1.5)
+  !cool_ext=100, cool_int=100         !cp=2.5 version used cool=100
+  cool_ext=25.2982, cool_int=25.2982  !cp=1   version uses cool=100/2.5^(1.5)
 /
 &magnetic_run_pars
-  iresistivity='shell',
-  eta=1.4e-4, eta_int=1.4e-4, eta_ext=1.4e-3, wresistivity=0.01
-  eta=6e-5, eta_int=6e-5, eta_ext=7e-4, wresistivity=0.01
-  bthresh_per_brms=3.
+  iresistivity='shell', wresistivity=0.01
+  !eta=6e-5, eta_int=6e-5, eta_ext=7e-4                   !cp=2.5 version used eta=6e-5, etc.
+  eta=3.79473e-5, eta_int=3.79473e-5, eta_ext=4.42719e-4  !cp=1   version uses eta=6e-5/sqrt(2.5)
+  !bthresh_per_brms=3.                                    !cp=2.5 version used bthresh=3.
+  bthresh_per_brms=1.89737                                !cp=1   version uses bthresh=3./sqrt(2.5)
 /
 &viscosity_run_pars
-  nu=1e-4
+  !nu=1e-4                  !cp=2.5 version used nu=1e-4
+  nu=6.32455e-5             !cp=1.0 version uses nu=1e-4/sqrt(2.5)
 /
