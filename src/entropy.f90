@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.392 2006-04-20 08:29:32 ajohan Exp $
+! $Id: entropy.f90,v 1.393 2006-04-21 14:43:32 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.392 2006-04-20 08:29:32 ajohan Exp $")
+           "$Id: entropy.f90,v 1.393 2006-04-21 14:43:32 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -352,12 +352,13 @@ module Entropy
           endif
 !
 !         temperatures at shell boundaries
-          beta1=g0/(mpoly+1)
+          beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
           TT_ext=T0
           TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
-          print*,'initialize_entropy: TT_int, TT_ext=',TT_int,TT_ext
-!         TT_ext=gamma/gamma1*T0
-!         TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
+          if (lroot) then
+            print*,'initialize_entropy: g0,mpoly,beta1',g0,mpoly,beta1
+            print*,'initialize_entropy: TT_int, TT_ext=',TT_int,TT_ext
+          endif
 !         set up cooling parameters for spherical shell in terms of
 !         sound speeds
           call get_soundspeed(log(TT_ext),cs2_ext)
@@ -1135,7 +1136,7 @@ module Entropy
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
       real :: beta1
 !
-      beta1 = g0/(mpoly+1)
+      beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
@@ -1145,8 +1146,6 @@ module Entropy
 !
         where (r_mn >= r_ext) TT = TT_ext
         where (r_mn < r_ext .AND. r_mn > r_int) TT = TT_ext*(1.+beta1*(r_ext/r_mn-1))+pert_TT
-!       where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
-!       goes with alternate scaling in initialize_entropy
         where (r_mn <= r_int) TT = TT_int
 !
         lnrho=f(l1:l2,m,n,ilnrho)

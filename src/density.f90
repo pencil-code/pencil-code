@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.236 2006-04-19 14:11:55 nbabkovs Exp $
+! $Id: density.f90,v 1.237 2006-04-21 14:43:33 ngrs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.236 2006-04-19 14:11:55 nbabkovs Exp $")
+           "$Id: density.f90,v 1.237 2006-04-21 14:43:33 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -934,10 +934,10 @@ module Density
       real, dimension (nx) :: pot
       real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
 !
-      beta1 = g0/(mpoly+1)
+      beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
 !
 !     densities at shell boundaries
-      lnrho_int=lnrho0+mpoly*log(1+beta1*(1/r_int-1))
+      lnrho_int=lnrho0+mpoly*log(1+beta1*(r_ext/r_int-1.))
       lnrho_ext=lnrho0
 !
       do imn=1,ny*nz
@@ -947,7 +947,7 @@ module Density
         call calc_unitvects_sphere()
 !
         ! in the fluid shell
-        where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(1/r_mn-1))
+        where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*log(1+beta1*(r_ext/r_mn-1.))
         ! outside the fluid shell
         if (initlnrho(1)=='geo-kws') then
           where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
