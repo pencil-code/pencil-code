@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.52 2006-04-21 08:06:15 ajohan Exp $
+! $Id: particles_sub.f90,v 1.53 2006-04-21 17:33:27 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -874,13 +874,20 @@ module Particles_sub
       integer, dimension (3) :: ineargrid_tmp
       integer :: ilmn_par_tmp, ipark_sorted_tmp, ipar_tmp
       integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
-      integer :: j, k, ix0, iy0, iz0
+      integer :: j, k, ix0, iy0, iz0, ih, isorttype
       integer, save :: ncount=-1
+      integer, parameter :: nshellsort=21
+      integer, dimension (nshellsort), parameter :: &
+          hshellsort=(/ 14057, 9371, 6247, 4177, 2777, 1861, 1237, 823, 557, &
+                        367, 251, 163, 109, 73, 37, 19, 11, 7, 5, 3, 1 /)
       logical :: lrunningsort
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
-      if ( (ncount>npar_loc) .or. (ncount==-1) ) then
+!  Make sorting on the fly if the last sort had fewer moves than particles.
+!
+      isorttype=2
+      if ( isorttype==2 .or. ( (ncount>npar_loc) .or. (ncount==-1) ) ) then
         lrunningsort=.false.
       else
         lrunningsort=.true.
@@ -895,49 +902,95 @@ module Particles_sub
         ipark_sorted(k)=k
       enddo
 !
-!  Calculate sorting key using the algorithm straight insertion (NR).
+!  Sort using either straight insertion (1) or shell sorting (2).
 !
-      do k=2,npar_loc
-
-        j=k
-
-        do while ( (j>1) .and. (ilmn_par(k)<ilmn_par(j-1)) )
-          j=j-1
-        enddo
-
-        if (j/=k) then
-          ncount=ncount+k-j
+      select case (isorttype)
+!  Straight insertion.
+      case (1)
+        do k=2,npar_loc
+ 
+          j=k
+ 
+          do while ( (j>1) .and. (ilmn_par(k)<ilmn_par(j-1)) )
+            j=j-1
+          enddo
+ 
+          if (j/=k) then
+            ncount=ncount+k-j
 !
-          ilmn_par_tmp=ilmn_par(k)
-          ilmn_par(j+1:k)=ilmn_par(j:k-1)
-          ilmn_par(j)=ilmn_par_tmp
-          ipark_sorted_tmp=ipark_sorted(k)
-          ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
-          ipark_sorted(j)=ipark_sorted_tmp
+            ilmn_par_tmp=ilmn_par(k)
+            ilmn_par(j+1:k)=ilmn_par(j:k-1)
+            ilmn_par(j)=ilmn_par_tmp
+            ipark_sorted_tmp=ipark_sorted(k)
+            ipark_sorted(j+1:k)=ipark_sorted(j:k-1)
+            ipark_sorted(j)=ipark_sorted_tmp
 !  Sort particle data on the fly (practical for almost ordered arrays).
-          if (lrunningsort) then
-            fp_tmp=fp(k,:)
-            fp(j+1:k,:)=fp(j:k-1,:)
-            fp(j,:)=fp_tmp
+            if (lrunningsort) then
+              fp_tmp=fp(k,:)
+              fp(j+1:k,:)=fp(j:k-1,:)
+              fp(j,:)=fp_tmp
 !
-            if (present(dfp)) then
-              dfp_tmp=dfp(k,:)
-              dfp(j+1:k,:)=dfp(j:k-1,:)
-              dfp(j,:)=dfp_tmp
+              if (present(dfp)) then
+                dfp_tmp=dfp(k,:)
+                dfp(j+1:k,:)=dfp(j:k-1,:)
+                dfp(j,:)=dfp_tmp
+              endif
+!
+              ineargrid_tmp=ineargrid(k,:)
+              ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
+              ineargrid(j,:)=ineargrid_tmp
+!
+              ipar_tmp=ipar(k)
+              ipar(j+1:k)=ipar(j:k-1)
+              ipar(j)=ipar_tmp
+!
             endif
-!
-            ineargrid_tmp=ineargrid(k,:)
-            ineargrid(j+1:k,:)=ineargrid(j:k-1,:)
-            ineargrid(j,:)=ineargrid_tmp
-!
-            ipar_tmp=ipar(k)
-            ipar(j+1:k)=ipar(j:k-1)
-            ipar(j)=ipar_tmp
-!
           endif
-        endif
+        enddo
+!  Shell sort.
+      case (2)
 
-      enddo
+        do ih=1,21
+          do k=1+hshellsort(ih),npar_loc
+            ilmn_par_tmp=ilmn_par(k)
+            ipark_sorted_tmp=ipark_sorted(k)
+            j=k
+            do while (ilmn_par(j-hshellsort(ih)) > ilmn_par_tmp)
+              if (lrunningsort .and. j==k) then
+                fp_tmp=fp(k,:)
+                if (present(dfp)) dfp_tmp=dfp(k,:)
+                ineargrid_tmp=ineargrid(k,:)
+                ipar_tmp=ipar(k)
+              endif
+              ncount=ncount+1
+              ilmn_par(j)=ilmn_par(j-hshellsort(ih))
+              ilmn_par(j-hshellsort(ih))=ilmn_par_tmp
+              ipark_sorted(j)=ipark_sorted(j-hshellsort(ih))
+              ipark_sorted(j-hshellsort(ih))=ipark_sorted_tmp
+!  Sort particle data on the fly (practical for almost ordered arrays).
+              if (lrunningsort) then
+                fp(j,:)=fp(j-hshellsort(ih),:)
+                fp(j-hshellsort(ih),:)=fp_tmp
+!
+                if (present(dfp)) then
+                  dfp(j,:)=dfp(j-hshellsort(ih),:)
+                  dfp(j-hshellsort(ih),:)=dfp_tmp
+                endif
+!
+                ineargrid(j,:)=ineargrid(j-hshellsort(ih),:)
+                ineargrid(j-hshellsort(ih),:)=ineargrid_tmp
+!
+                ipar(j)=ipar(j-hshellsort(ih))
+                ipar(j-hshellsort(ih))=ipar_tmp
+!
+              endif
+              j=j-hshellsort(ih)
+              if (j-hshellsort(ih)<1) exit
+            enddo
+          enddo
+       enddo
+
+       endselect
 !  Sort particle data in one big rearrangement (if the arrays are very out
 !  of order as typically is the case at the first sort).
       if ( (.not. lrunningsort) .and. (ncount/=0) ) then
