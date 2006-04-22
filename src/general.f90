@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.46 2006-04-20 13:33:27 ajohan Exp $
+! $Id: general.f90,v 1.47 2006-04-22 17:03:44 ajohan Exp $
 
 module General
 
@@ -59,38 +59,52 @@ module General
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
 !
-      imn=1
-      do n=n1i+2,n2i-2
-        do m=m1i+2,m2i-2
-          mm(imn)=m
-          nn(imn)=n
-          imn_array(m,n)=imn
-          imn=imn+1
+!  For non-parallel runs simply go through m and n from bottom left to to right.
+!
+      if (ncpus==1) then
+        imn=1
+        necessary(1)=.true.
+        do n=n1,n2
+          do m=m1,m2
+            mm(imn)=m
+            nn(imn)=n
+            imn_array(m,n)=imn
+            imn=imn+1
+          enddo
         enddo
-      enddo
-      necessary(imn)=.true.
+      else
+        imn=1
+        do n=n1i+2,n2i-2
+          do m=m1i+2,m2i-2
+            mm(imn)=m
+            nn(imn)=n
+            imn_array(m,n)=imn
+            imn=imn+1
+          enddo
+        enddo
+        necessary(imn)=.true.
 !
 !  do the upper stripe in the n-direction
 !
-      do n=max(n2i-1,n1+1),n2
-        do m=m1i+2,m2i-2
-          mm(imn)=m
-          nn(imn)=n
-          imn_array(m,n)=imn
-          imn=imn+1
+        do n=max(n2i-1,n1+1),n2
+          do m=m1i+2,m2i-2
+            mm(imn)=m
+            nn(imn)=n
+            imn_array(m,n)=imn
+            imn=imn+1
+          enddo
         enddo
-      enddo
 !
 !  lower stripe in the n-direction
 !
-      do n=n1,min(n1i+1,n2)
-        do m=m1i+2,m2i-2
-          mm(imn)=m
-          nn(imn)=n
-          imn_array(m,n)=imn
-          imn=imn+1
+        do n=n1,min(n1i+1,n2)
+          do m=m1i+2,m2i-2
+            mm(imn)=m
+            nn(imn)=n
+            imn_array(m,n)=imn
+            imn=imn+1
+          enddo
         enddo
-      enddo
 !
 !  left and right hand boxes
 !  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
@@ -99,23 +113,24 @@ module General
 !  ALSO: need to make sure the second loop starts not before the
 !  first one ends; therefore max_m2i_m1+1=max(m2i,min_m1i_m2+1).
 !
-      min_m1i_m2=min(m1i+1,m2)
-      max_m2i_m1=max(m2i-1,min_m1i_m2+1)
+        min_m1i_m2=min(m1i+1,m2)
+        max_m2i_m1=max(m2i-1,min_m1i_m2+1)
 !
-      do n=n1,n2
-        do m=m1,min_m1i_m2
-          mm(imn)=m
-          nn(imn)=n
-          imn_array(m,n)=imn
-          imn=imn+1
+        do n=n1,n2
+          do m=m1,min_m1i_m2
+            mm(imn)=m
+            nn(imn)=n
+            imn_array(m,n)=imn
+            imn=imn+1
+          enddo
+          do m=max_m2i_m1,m2
+            mm(imn)=m
+            nn(imn)=n
+            imn_array(m,n)=imn
+            imn=imn+1
+          enddo
         enddo
-        do m=max_m2i_m1,m2
-          mm(imn)=m
-          nn(imn)=n
-          imn_array(m,n)=imn
-          imn=imn+1
-        enddo
-      enddo
+      endif
 !
 !  Debugging output to be analysed with $PENCIL_HOME/utils/check-mm-nn.
 !  Uncommenting manually, since we can't use ip here (as it is not yet
