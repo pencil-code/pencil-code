@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.53 2006-04-21 17:33:27 ajohan Exp $
+! $Id: particles_sub.f90,v 1.54 2006-04-22 09:46:21 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -864,6 +864,7 @@ module Particles_sub
 !  20-apr-06/anders: coded
 !
       use Cdata
+      use General, only: safe_character_assign
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -874,22 +875,25 @@ module Particles_sub
       integer, dimension (3) :: ineargrid_tmp
       integer :: ilmn_par_tmp, ipark_sorted_tmp, ipar_tmp
       integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
-      integer :: j, k, ix0, iy0, iz0, ih, isorttype
-      integer, save :: ncount=-1
+      integer :: j, k, ix0, iy0, iz0, ih, lun
+      integer, save :: ncount=-1, isorttype=2
       integer, parameter :: nshellsort=21
       integer, dimension (nshellsort), parameter :: &
           hshellsort=(/ 14057, 9371, 6247, 4177, 2777, 1861, 1237, 823, 557, &
                         367, 251, 163, 109, 73, 37, 19, 11, 7, 5, 3, 1 /)
-      logical :: lrunningsort
+      logical, save :: lrunningsort
+      character (len=fnlen) :: filename
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
-!  Make sorting on the fly if the last sort had fewer moves than particles.
+!  Choose sort algorithm depending on amount of array movement in last sort.
 !
-      isorttype=2
-      if ( isorttype==2 .or. ( (ncount>npar_loc) .or. (ncount==-1) ) ) then
+      if (isorttype==1 .and. ncount>npar_loc) then
+        isorttype=2
         lrunningsort=.false.
-      else
+      endif
+      if (isorttype==2 .and. ncount<npar_loc/10 .and. ncount>0) then
+        isorttype=1
         lrunningsort=.true.
       endif
       ncount=0
@@ -956,34 +960,11 @@ module Particles_sub
             ipark_sorted_tmp=ipark_sorted(k)
             j=k
             do while (ilmn_par(j-hshellsort(ih)) > ilmn_par_tmp)
-              if (lrunningsort .and. j==k) then
-                fp_tmp=fp(k,:)
-                if (present(dfp)) dfp_tmp=dfp(k,:)
-                ineargrid_tmp=ineargrid(k,:)
-                ipar_tmp=ipar(k)
-              endif
               ncount=ncount+1
               ilmn_par(j)=ilmn_par(j-hshellsort(ih))
               ilmn_par(j-hshellsort(ih))=ilmn_par_tmp
               ipark_sorted(j)=ipark_sorted(j-hshellsort(ih))
               ipark_sorted(j-hshellsort(ih))=ipark_sorted_tmp
-!  Sort particle data on the fly (practical for almost ordered arrays).
-              if (lrunningsort) then
-                fp(j,:)=fp(j-hshellsort(ih),:)
-                fp(j-hshellsort(ih),:)=fp_tmp
-!
-                if (present(dfp)) then
-                  dfp(j,:)=dfp(j-hshellsort(ih),:)
-                  dfp(j-hshellsort(ih),:)=dfp_tmp
-                endif
-!
-                ineargrid(j,:)=ineargrid(j-hshellsort(ih),:)
-                ineargrid(j-hshellsort(ih),:)=ineargrid_tmp
-!
-                ipar(j)=ipar(j-hshellsort(ih))
-                ipar(j-hshellsort(ih))=ipar_tmp
-!
-              endif
               j=j-hshellsort(ih)
               if (j-hshellsort(ih)<1) exit
             enddo
@@ -1000,8 +981,20 @@ module Particles_sub
         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
       endif
 !
-      if (ip<=8) print*, 'sort_particles_imn: iproc, ncount, lrunningsort=', &
-          iproc, ncount, lrunningsort
+!  Write some info on the sorting to a file.
+!
+      if (ldiagnos) then
+        call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
+        lun=1
+        open(lun,file=trim(filename),action='write',position='append')
+        write(lun,'(A15,f7.3)') '------------ t=', t
+        write(lun,'(A40,4i9)')  'iproc, ncount, isorttype, lrunningsort=', &
+            iproc, ncount, isorttype, lrunningsort
+        close (lun)
+      endif
+      if (ip<=8) print '(A,i4,i8,i4,i4)', &
+          'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
+          iproc, ncount, isorttype, lrunningsort
 !
     endsubroutine sort_particles_imn
 !***********************************************************************
