@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.54 2006-04-22 09:46:21 ajohan Exp $
+! $Id: particles_sub.f90,v 1.55 2006-04-22 16:09:11 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -988,11 +988,11 @@ module Particles_sub
         lun=1
         open(lun,file=trim(filename),action='write',position='append')
         write(lun,'(A15,f7.3)') '------------ t=', t
-        write(lun,'(A40,4i9)')  'iproc, ncount, isorttype, lrunningsort=', &
+        write(lun,'(A40,3i9,l9)')  'iproc, ncount, isorttype, lrunningsort=', &
             iproc, ncount, isorttype, lrunningsort
         close (lun)
       endif
-      if (ip<=8) print '(A,i4,i8,i4,i4)', &
+      if (ip<=8) print '(A,i4,i8,i4,l4)', &
           'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
           iproc, ncount, isorttype, lrunningsort
 !
