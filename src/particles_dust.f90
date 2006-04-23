@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.77 2006-04-20 14:10:37 ajohan Exp $
+! $Id: particles_dust.f90,v 1.78 2006-04-23 09:59:17 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.77 2006-04-20 14:10:37 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.78 2006-04-23 09:59:17 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1010,6 +1010,8 @@ k_loop: do while (.not. (k>npar_loc))
               tausg1 = rhop_tilde*f(l1:l2,m,n,inp)*p%rho1*tausp1_point
             endif
             dt1_max=max(dt1_max,(tausp1_point+tausg1)/cdtp)
+            if (ldiagnos.and.idiag_dtdragp/=0) &
+                call max_mn_name((tausp1_point+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
           endif
         endif
       endif
@@ -1032,8 +1034,6 @@ k_loop: do while (.not. (k>npar_loc))
             call yzsum_mn_name_x(rhop_tilde*np*p%rho1,idiag_epspmx)
         if (idiag_epspmz/=0) &
             call xysum_mn_name_z(rhop_tilde*np*p%rho1,idiag_epspmz)
-        if (ldiagnos.and.idiag_dtdragp/=0) &
-            call max_mn_name((tausp1_point+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
       endif
 !
     endsubroutine dvvp_dt_pencil
@@ -1170,33 +1170,6 @@ k_loop: do while (.not. (k>npar_loc))
                 (/4/3.*pi*rhops*fp(k,iap)**3*np_tilde/),idiag_mpt)
           enddo
         endif
-        do imn=1,ny*nz
-          n=nn(imn); m=mm(imn)
-          lfirstpoint=(imn==1)
-          llastpoint=(imn==(ny*nz))
-          np=f(l1:l2,m,n,inp)
-          if (idiag_npm/=0)     call sum_mn_name(np,idiag_npm)
-          if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
-          if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
-          if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
-          if (idiag_rhopmax/=0) call max_mn_name(rhop_tilde*np,idiag_rhopmax)
-          if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
-          if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
-          if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
-          if (idiag_rhopmx/=0) &
-              call yzsum_mn_name_x(rhop_tilde*np,idiag_rhopmx)
-          if (idiag_epspmx/=0.or.idiag_epspmz/=0) then
-            if (ldensity_nolog) then
-              rho=f(l1:l2,m,n,ilnrho)
-            else
-              rho=exp(f(l1:l2,m,n,ilnrho))
-            endif
-            if (idiag_epspmx/=0) &
-                call yzsum_mn_name_x(rhop_tilde*np/rho,idiag_epspmx)
-            if (idiag_epspmz/=0) &
-                call xysum_mn_name_z(rhop_tilde*np/rho,idiag_epspmz)
-          endif
-        enddo
       endif
 !
       if (lfirstcall) lfirstcall=.false.
