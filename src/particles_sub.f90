@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.56 2006-04-23 09:17:26 ajohan Exp $
+! $Id: particles_sub.f90,v 1.57 2006-04-23 14:01:27 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -915,8 +915,9 @@ module Particles_sub
  
           j=k
  
-          do while ( (j>1) .and. (ilmn_par(k)<ilmn_par(j-1)) )
+          do while ( ilmn_par(k)<ilmn_par(j-1) )
             j=j-1
+            if (j==1) exit
           enddo
  
           if (j/=k) then
