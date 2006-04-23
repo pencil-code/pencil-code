@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.55 2006-04-22 16:09:11 ajohan Exp $
+! $Id: particles_sub.f90,v 1.56 2006-04-23 09:17:26 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1031,18 +1031,12 @@ module Particles_sub
 !
 !  Calculate beginning and ending particle index for each pencil.
 !
-      if (npar_imn(1)/=0) then
-        k1_imn(1)=1
-        k2_imn(1)=k1_imn(1) + npar_imn(1) - 1
-      endif
-
-      do imn=2,ny*nz
+      k=0
+      do imn=1,ny*nz
         if (npar_imn(imn)/=0) then
-          k1_imn(imn)=k2_imn(imn-1) + 1
-          k2_imn(imn)=k1_imn(imn)   + npar_imn(imn) - 1
-        else
-          k1_imn(imn)=0
-          k2_imn(imn)=0
+          k1_imn(imn)=k + 1
+          k2_imn(imn)=k1_imn(imn) + npar_imn(imn) - 1
+          k=k+npar_imn(imn)
         endif
       enddo
 !
