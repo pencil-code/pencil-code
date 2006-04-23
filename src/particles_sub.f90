@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.57 2006-04-23 14:01:27 ajohan Exp $
+! $Id: particles_sub.f90,v 1.58 2006-04-23 18:35:02 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1038,6 +1038,9 @@ module Particles_sub
           k1_imn(imn)=k + 1
           k2_imn(imn)=k1_imn(imn) + npar_imn(imn) - 1
           k=k+npar_imn(imn)
+        else
+          k1_imn(imn)=0
+          k2_imn(imn)=0
         endif
       enddo
 !
