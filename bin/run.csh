@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.83 2006-03-15 02:28:46 dobler Exp $
+# CVS: $Id: run.csh,v 1.84 2006-04-23 17:41:11 theine Exp $
 
 #                       run.csh
 #                      ---------
@@ -23,6 +23,11 @@ endif
 # Work in submit directory (SUPER-UX's nqs):
 if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
+endif
+
+# Work in submit directory (IBM Loadleveler):
+if ($?LOADL_STEP_INITDIR) then
+  cd $LOADL_STEP_INITDIR
 endif
 
 # ====================================================================== #
@@ -60,12 +65,18 @@ if ($local_disc) then
         set k = `expr $nprocpernode \* $i + $j`
         if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
         $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
-        if ($lparticles) $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
+        if ($lparticles) then
+          $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
+        endif
         echo "$SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/"
-        $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
+        if (-e $datadir/proc$k/timeavg.dat) then
+          $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
+        endif
         set j=`expr $j + 1`
       end
-      if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
+      if (-e $datadir/allprocs/dxyz.dat) then
+        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
+      endif
     end
   endif
 endif

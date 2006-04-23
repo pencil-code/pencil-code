@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.167 2006-04-22 08:18:34 ajohan Exp $
+# $Id: getconf.csh,v 1.168 2006-04-23 17:41:11 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -135,6 +135,17 @@ endif
 if ($?PBS_NODEFILE) then
   if ($debug) echo "PBS job"
   set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
+else if ($?LOADL_PROCESSOR_LIST) then
+  set nodelist = ""
+  set lastproc = ""
+  foreach proc ($LOADL_PROCESSOR_LIST)
+    if ("$proc" != "$lastproc") then
+      set nodelist = "$nodelist $proc"
+    endif
+    set lastproc = "$proc"
+  end
+  unset proc
+  unset lastproc
 else if ($?PE_HOSTFILE) then
   if ($debug) echo "SGE Parallel Environment job - $PE"
   set nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
@@ -295,6 +306,19 @@ else if ($hn =~ sp[0-9]*) then
   setenv SCRATCH_DIR /scratch/${USER}
 #  set masternode=sp.sp4
   echo "Setting master node to sp.sp4, the only node that is accesible by rsh"
+
+else if ($hn =~ node*.steno.dcsc.ku.dk) then
+  echo "DCSC cluster - Copenhagen (Denmark)"
+  setenv SCRATCH_DIR /scratch/$LOADL_STEP_ID
+  set hostfile = "$LOADL_STEP_INITDIR/hostfile"
+  echo $LOADL_PROCESSOR_LIST | tr ' ' '\n' > $hostfile
+  set mpirunops      = "-hostfile $hostfile"
+  set mpirun         = "/usr/local/topspin/mpi/mpich/bin/mpirun_ssh"
+  set local_disc     = 1
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary   = 0
+  set nprocpernode   = 4
 
 else if ($hn =~ node[0-9]*) then
   echo "CLX - CINECA, Bologna (IBM Linux Cluster)"
@@ -822,8 +846,11 @@ if ($local_disc) then
   else
     echo "Creating directory structure on local scratch disc(s)"
   endif
+  #set command = \'"if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs"\'
   foreach host ($nodelist)
     $SSH $host "if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
+    #TH: Not everybody uses csh!
+    #$SSH $host /bin/csh -c $command
   end
 endif
 

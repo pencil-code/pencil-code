@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.65 2006-03-31 11:01:16 dobler Exp $
+# CVS: $Id: start.csh,v 1.66 2006-04-23 17:41:11 theine Exp $
 
 #                       start.csh
 #                      -----------
@@ -22,6 +22,11 @@ endif
 # Work in submit directory (SUPER-UX's nqs):
 if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
+endif
+
+# Work in submit directory (IBM Loadleveler):
+if ($?LOADL_STEP_INITDIR) then
+  cd $LOADL_STEP_INITDIR
 endif
 
 # Common setup for start.csh, run.csh, start_run.csh:
@@ -100,7 +105,7 @@ if (! -e NOERASE) then
   if ($lcopysnapshots_exp) rm -f $datadir/move-me.list $datadir/moved-files.list >& /dev/null
 endif
 
-# If local disk is used, copy executable to $SCRATCH_DIR of master node
+# If local_binary is used, copy executable to $SCRATCH_DIR of master node
 if ($local_binary) then
   echo "Copying start.x to $SCRATCH_DIR"
   cp src/start.x $SCRATCH_DIR
