@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.58 2006-04-23 18:35:02 ajohan Exp $
+! $Id: particles_sub.f90,v 1.59 2006-04-24 08:39:20 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -17,7 +17,7 @@ module Particles_sub
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
   public :: interpolate_3d_1st
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
-  public :: find_closest_gridpoint
+  public :: particle_pencil_index, find_closest_gridpoint
 
   contains
 
@@ -1017,8 +1017,6 @@ module Particles_sub
       intent(in)  :: fp, ineargrid
       intent(out) :: f
 !
-      npar_imn=0
-!
 !  Calculate the number of particles in each grid cell.
 !
       if (inp/=0) then
@@ -1026,9 +1024,35 @@ module Particles_sub
         do k=1,npar_loc
           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
-          npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
         enddo
       endif
+!
+    endsubroutine map_xxp_grid
+!***********************************************************************
+    subroutine particle_pencil_index(fp,ineargrid)
+!
+!  Calculate the beginning and ending index of particles in a pencil.
+!
+!  24-apr-06/anders: coded
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      integer :: k, ix0, iy0, iz0
+!
+      intent(in)  :: fp, ineargrid
+!
+      npar_imn=0
+!
+!  Calculate the number of particles in each pencil.
+!
+      do k=1,npar_loc
+        ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+        npar_imn(imn_array(iy0,iz0))=npar_imn(imn_array(iy0,iz0))+1
+      enddo
 !
 !  Calculate beginning and ending particle index for each pencil.
 !
@@ -1044,7 +1068,7 @@ module Particles_sub
         endif
       enddo
 !
-    endsubroutine map_xxp_grid
+    endsubroutine particle_pencil_index
 !***********************************************************************
     subroutine find_closest_gridpoint(xxp,ix0,iy0,iz0)
 !
