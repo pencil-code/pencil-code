@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.79 2006-04-24 09:22:30 ajohan Exp $
+! $Id: particles_dust.f90,v 1.80 2006-04-24 17:46:10 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.79 2006-04-24 09:22:30 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.80 2006-04-24 17:46:10 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -587,14 +587,14 @@ k_loop: do while (.not. (k>npar_loc))
         fp(k,izp)=zprob*Lxyz(3)+xyz0(3)
 !  Set particle velocity.
         fp(k,ivpx) = fp(k,ivpx) + eta_glnrho*v_Kepler*amplxxp* &
-            ( real(coeff(1))*cos(kx_xxp*xprob) - &
-             aimag(coeff(1))*sin(kx_xxp*xprob))*cos(kz_xxp*zprob)
+            ( real(coeff(1))*cos(kx_xxp*fp(k,ixp)) - &
+             aimag(coeff(1))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpy) = fp(k,ivpy) + eta_glnrho*v_Kepler*amplxxp* &
-            ( real(coeff(2))*cos(kx_xxp*xprob) - &
-             aimag(coeff(2))*sin(kx_xxp*xprob))*cos(kz_xxp*zprob)
+            ( real(coeff(2))*cos(kx_xxp*fp(k,ixp)) - &
+             aimag(coeff(2))*sin(kx_xxp*fp(k,ixp)))*cos(kz_xxp*fp(k,izp))
         fp(k,ivpz) = fp(k,ivpz) + eta_glnrho*v_Kepler*(-amplxxp)* &
-            (aimag(coeff(3))*cos(kx_xxp*xprob) + &
-              real(coeff(3))*sin(kx_xxp*xprob))*sin(kz_xxp*zprob)
+            (aimag(coeff(3))*cos(kx_xxp*fp(k,ixp)) + &
+              real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
 
       enddo
 !
