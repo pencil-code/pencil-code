@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.59 2006-04-24 08:39:20 ajohan Exp $
+! $Id: particles_sub.f90,v 1.60 2006-04-24 08:40:04 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -984,7 +984,7 @@ module Particles_sub
 !
 !  Write some info on the sorting to a file.
 !
-      if (ldiagnos) then
+      if (lroot.and.ldiagnos) then
         call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
         lun=1
         open(lun,file=trim(filename),action='write',position='append')
