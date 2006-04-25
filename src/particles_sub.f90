@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.62 2006-04-25 13:39:30 ajohan Exp $
+! $Id: particles_sub.f90,v 1.63 2006-04-25 16:32:15 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -865,6 +865,7 @@ module Particles_sub
 !
       use Cdata
       use General, only: safe_character_assign
+      use Messages, only: fatal_error
 !
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -992,7 +993,13 @@ module Particles_sub
 !      
 !  Sort particle data according to sorting index.
 !
-      if ( (isorttype==1 .and. .not. lrunningsort) .and. (ncount/=0) ) then
+      if (lrunningsort .and. isorttype/=1) then
+        if (lroot) print*, 'sort_particles_imn: lrunningsort is only '// &
+            'allowed for straight insertion sort.'
+        call fatal_error('sort_particles_imn','')
+      endif
+!
+      if ( (.not. lrunningsort) .and. (ncount/=0) ) then
         fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
