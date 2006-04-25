@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.393 2006-04-21 14:43:32 ngrs Exp $
+! $Id: entropy.f90,v 1.394 2006-04-25 14:49:56 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.393 2006-04-21 14:43:32 ngrs Exp $")
+           "$Id: entropy.f90,v 1.394 2006-04-25 14:49:56 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1739,7 +1739,7 @@ module Entropy
     if (lnstar_entropy) then
    
      TT_cs0=cs0**2/gamma1
-  
+ 
        if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
     !   if ( dt .GT. 0..AND. n .LT. nzgrid-20) then
   
@@ -1753,8 +1753,14 @@ module Entropy
         else
           !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
           !   -1./(2.*dt)*(p%TT(:)-T_star)/p%TT(:)
+        !  if (p%TT(1) .GT. (T_star*0.3)) then
+        !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-T_star*0.3)/(T_star*0.3)
+         !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !   -1./(dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)/p%rho(:)/T_star
+      !     print*, p%TT(1)
+         ! endif
         endif
-  
+ 
         
     !      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
     !         -1./(2.*dt)*(f(l1:l2,m,n,iss)-lnTT0/gamma)/p%rho(:)/T0
@@ -1766,7 +1772,7 @@ module Entropy
          if ( dt .GT. 0..AND. n .LE. 24 ) then
           if (lnstar_T_const) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)   /TT_cs0    
+           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0    
           !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
           ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)/p%rho(:)/TT_cs0
           !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
@@ -1774,8 +1780,8 @@ module Entropy
 
           else
             
-         !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-         !  -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
+      !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+      !     -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
  
        !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
        !    -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star
@@ -1784,12 +1790,12 @@ module Entropy
    
      !       print*,df(l1,m,n,iss), p%rho(1)
             
-          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          !  -1./(10.*dt)*(f(l1:l2,m,n,iss)/cp-lnTT0/gamma)
+       !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+       !     -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)
          !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
          !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma/cp+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T0
              df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-            -1./(5.*dt)*(p%TT(:)-T_star)/T_star
+            -1./(5.*dt)*(p%TT(:)-T_star)*2./(p%TT(:)+T_star)
           endif
         end if  
 
@@ -2144,7 +2150,7 @@ module Entropy
     subroutine calc_heatcond_diffusion(f,df,p)
 !
 !  heat conduction
-!
+!  Natalia (NS)
 !   12-apr-06/axel: adapted from Wolfgang's more complex version
 !
       use Cdata
@@ -2155,8 +2161,9 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnT,glnThcond !,glhc
       real, dimension (nx) :: chix
-      real, dimension (nx) :: thdiff,g2
+      real, dimension (nx) :: thdiff,g2,thdiff_1D
       real, dimension (nx) :: hcond
+      real ::  zz
 !
       intent(in) :: f,p
       intent(out) :: df
@@ -2172,21 +2179,23 @@ module Entropy
       call dot(glnT,glnThcond,g2)
       thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
 
+!   cooling in 1D case 
+!
+      zz=(R_star+Lxyz(3)/(nzgrid-1.)*(n-3))
+
+      thdiff_1D =-16./3.*sigmaSB/kappa_es*p%TT**4 &
+                 *p%rho1/zz**2*160000.!*f(l1:l2,m,n,iuy)**2/p%cs2(:)
+      
 
 !  add heat conduction to entropy equation
 !
 
-   !   if (n .GT. 24 ) then
- 
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff + thdiff_1D 
         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
 
-    
-     
+!print*, thdiff, thdiff_1D 
 
-    !  endif
-
-     df(l1:l2,m,n,iuz) = &
+        df(l1:l2,m,n,iuz) = &
          df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
 
      if (headtt) print*,'calc_radiation_pressure: added to z-component'

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.98 2006-04-19 14:11:55 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.99 2006-04-25 14:49:56 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -635,7 +635,11 @@ module Boundcond
           endif
           !+ other terms for sound speed not equal to cs_0
            call eoscalc(4,lnrho,lnTT,ss=ss)
-          f(l1:l2,m1,n1,iss)=ss
+          f(l1:l2,m1,n1,iss)=ss 
+      !  print*, 'boundary entropy ', ss
+         !ss=exp(ss-(-log(cs0**2/(gamma1))-gamma1*lnrho)/gamma)
+         !   ss=exp(log(cs0**2/(gamma1))+gamma*ss+gamma1*lnrho)
+         !print*, 'boundary entropy ', ss
         else
           if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
                f(1:step_width+3,:,n1,j)=val1_(j)
