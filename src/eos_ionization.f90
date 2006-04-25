@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.27 2006-04-19 16:11:37 theine Exp $
+! $Id: eos_ionization.f90,v 1.28 2006-04-25 12:50:36 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.27 2006-04-19 16:11:37 theine Exp $")
+           "$Id: eos_ionization.f90,v 1.28 2006-04-25 12:50:36 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -882,7 +882,8 @@ module EquationOfState
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
-        TT1_=exp(-lnTT_)
+        TT_=exp(lnTT_)
+        TT1_=1/TT_
         rhs=exp(lnrho_e-lnrho_+1.5*(lnTT_-lnTT_ion)-TT_ion*TT1_)
         sqrtrhs=sqrt(rhs)
         yH_=2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
