@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.81 2006-04-25 12:32:52 ajohan Exp $
+! $Id: particles_dust.f90,v 1.82 2006-04-25 16:59:28 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.81 2006-04-25 12:32:52 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.82 2006-04-25 16:59:28 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -846,87 +846,27 @@ k_loop: do while (.not. (k>npar_loc))
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
-    subroutine dxxp_dt(f,fp,dfp,ineargrid)
+    subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of dust particle position.
+!  Evolution of particle position (called from main pencil loop).
 !
-!  02-jan-05/anders: coded
+!  25-apr-06/anders: dummy
 !
-      use General, only: random_number_wrapper, random_seed_wrapper
-!      
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: ran_xp, ran_yp, ran_zp
-      integer, dimension (mseed) :: iseed_org
-      integer :: k
-      logical :: lheader, lfirstcall=.true.
+      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
 !
-      intent (inout) :: f, fp, dfp, ineargrid
-!
-!  Print out header information in first time step.
-!
-      lheader=lfirstcall .and. lroot
-!
-!  Identify module and boundary conditions.
-!
-      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
-      if (lheader) then
-        print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
-        print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
-        print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
-      endif
-!
-      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
-          'position equal to particle velocity.'
-!
-!  The rate of change of a particle's position is the particle's velocity.
-!
-      if (nxgrid/=1) &
-          dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-      if (nygrid/=1) &
-          dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
-      if (nzgrid/=1) &
-          dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
-!
-!  With shear there is an extra term due to the background shear flow.
-!
-      if (lshear.and.nygrid/=1) dfp(1:npar_loc,iyp) = &
-          dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
-!
-!  Displace all dust particles a random distance of around the size of
-!  a grid cell.
-!
-      if (it_dustburst/=0 .and. it==it_dustburst) then      
-        if (lroot.and.itsub==1) print*, 'dxxp_dt: dust burst!'
-        if (itsub==1) call random_seed_wrapper(get=iseed_org)
-        call random_seed_wrapper(put=iseed_org)  ! get same number for all itsub
-        do k=1,npar_loc
-          if (nxgrid/=1) then
-            call random_number_wrapper(ran_xp)
-            dfp(k,ixp) = dfp(k,ixp) + dx/dt*(2*ran_xp-1.0)
-          endif
-          if (nygrid/=1) then
-            call random_number_wrapper(ran_yp)
-            dfp(k,iyp) = dfp(k,iyp) + dy/dt*(2*ran_yp-1.0)
-          endif
-          if (nzgrid/=1) then
-            call random_number_wrapper(ran_zp)
-            dfp(k,izp) = dfp(k,izp) + dz/dt*(2*ran_zp-1.0)
-          endif
-        enddo
-      endif
-!
-      if (lfirstcall) lfirstcall=.false.
-!
-    endsubroutine dxxp_dt
+    endsubroutine dxxp_dt_pencil
 !***********************************************************************
     subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 ! 
-!  Evolution of dust particle velocity.
+!  Evolution of dust particle velocity (called from main pencil loop).
 !
-!  29-dec-04/anders: coded
+!  25-apr-06/anders: coded
 !
       use Cdata
       use EquationOfState, only: cs20, gamma
@@ -1001,6 +941,84 @@ k_loop: do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
+    subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
+!
+!  Evolution of dust particle position.
+!
+!  02-jan-05/anders: coded
+!
+      use General, only: random_number_wrapper, random_seed_wrapper
+!      
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real :: ran_xp, ran_yp, ran_zp
+      integer, dimension (mseed) :: iseed_org
+      integer :: k
+      logical :: lheader, lfirstcall=.true.
+!
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: df, dfp
+!
+!  Print out header information in first time step.
+!
+      lheader=lfirstcall .and. lroot
+!
+!  Identify module and boundary conditions.
+!
+      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
+      if (lheader) then
+        print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
+        print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
+        print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
+      endif
+!
+      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
+          'position equal to particle velocity.'
+!
+!  The rate of change of a particle's position is the particle's velocity.
+!
+      if (nxgrid/=1) &
+          dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+      if (nygrid/=1) &
+          dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
+      if (nzgrid/=1) &
+          dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
+!
+!  With shear there is an extra term due to the background shear flow.
+!
+      if (lshear.and.nygrid/=1) dfp(1:npar_loc,iyp) = &
+          dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
+!
+!  Displace all dust particles a random distance of around the size of
+!  a grid cell.
+!
+      if (it_dustburst/=0 .and. it==it_dustburst) then      
+        if (lroot.and.itsub==1) print*, 'dxxp_dt: dust burst!'
+        if (itsub==1) call random_seed_wrapper(get=iseed_org)
+        call random_seed_wrapper(put=iseed_org)  ! get same number for all itsub
+        do k=1,npar_loc
+          if (nxgrid/=1) then
+            call random_number_wrapper(ran_xp)
+            dfp(k,ixp) = dfp(k,ixp) + dx/dt*(2*ran_xp-1.0)
+          endif
+          if (nygrid/=1) then
+            call random_number_wrapper(ran_yp)
+            dfp(k,iyp) = dfp(k,iyp) + dy/dt*(2*ran_yp-1.0)
+          endif
+          if (nzgrid/=1) then
+            call random_number_wrapper(ran_zp)
+            dfp(k,izp) = dfp(k,izp) + dz/dt*(2*ran_zp-1.0)
+          endif
+        enddo
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+    endsubroutine dxxp_dt
+!***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
@@ -1018,24 +1036,16 @@ k_loop: do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx,3) :: uupsum
-      real, dimension (nx) :: np, tausg1, rho
-      real, dimension (3) :: uup, dragforce
       real :: Omega2, np_tilde
-      real :: np_point, eps_point, rho_point, tausp1_point
-      integer :: i, k, ix0, iy0, iz0
+      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: ineargrid
-      intent (inout) :: f, df, fp, dfp
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: df, dfp
 !
 !  Print out header information in first time step.
 !
       lheader=lfirstcall .and. lroot
-!
-!  Identify module.
-!
-      if (lheader) print*,'dvvp_dt: Calculate dvvp_dt'
 !
 !  Add Coriolis force from rotating coordinate frame.
 !

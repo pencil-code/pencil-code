@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.25 2006-04-25 12:32:52 ajohan Exp $
+! $Id: particles_main.f90,v 1.26 2006-04-25 16:59:29 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -264,7 +264,7 @@ module Particles_main
 !
 !  Dynamical equations.
 !
-!      call dxxp_dt(f,fp,dfp,ineargrid)
+      call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
       call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !      if (lparticles_radius) call dap_dt(f,df,fp,dfp,ineargrid)
 !      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)
@@ -284,7 +284,7 @@ module Particles_main
 !
 !  Dynamical equations.
 !
-      call dxxp_dt(f,fp,dfp,ineargrid)
+      call dxxp_dt(f,df,fp,dfp,ineargrid)
       call dvvp_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius) call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)

@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.16 2006-04-20 14:10:37 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.17 2006-04-25 16:59:29 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -57,7 +57,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.16 2006-04-20 14:10:37 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.17 2006-04-25 16:59:29 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -323,7 +323,69 @@ module Particles
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
-    subroutine dxxp_dt(f,fp,dfp,ineargrid)
+    subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!
+!  Evolution of tracer particle position (called from main pencil loop).
+!
+!  25-apr-06/anders: coded
+!
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (3) :: uu
+      integer :: k
+!
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: df, dfp
+!
+!  Identify module and boundary conditions.
+!
+      if (headtt) print*,'dxxp_dt: Calculate dxxp_dt'
+      if (headtt) then
+        print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
+        print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
+        print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
+      endif
+!
+      if (headtt) print*, 'dxxp_dt: Set rate of change of particle '// &
+          'position equal to gas velocity.'
+!
+!  Interpolate gas velocity to position of particles. 
+!  Then set particle velocity equal to the local gas velocity.
+!
+      if (npar_imn(imn)/=0) then
+        do k=k1_imn(imn),k2_imn(imn)
+          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
+          if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
+          if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
+          if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
+        enddo
+      endif
+!
+    endsubroutine dxxp_dt_pencil
+!***********************************************************************
+    subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!
+!  Evolution of dust particle velocity (called from main pencil loop).
+!
+!  20-apr-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+!
+    endsubroutine dvvp_dt_pencil
+!***********************************************************************
+    subroutine dxxp_dt(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of tracer particle position.
 !
@@ -332,41 +394,12 @@ module Particles
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (3) :: uu
-      integer :: k
-      logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: fp, f
-      intent (out) :: dfp, ineargrid
-!
-!  Print out header information in first time step.
-!
-      lheader=(headt .and. lfirst .and. lroot) .or. ldebug
-!
-!  Identify module and boundary conditions.
-!
-      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
-      if (lheader) then
-        print*, 'dxxp_dt: Particles boundary condition bcpx=', bcpx
-        print*, 'dxxp_dt: Particles boundary condition bcpy=', bcpy
-        print*, 'dxxp_dt: Particles boundary condition bcpz=', bcpz
-      endif
-!
-      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
-          'position equal to gas velocity.'
-!
-!  Interpolate gas velocity to position of particles. 
-!  Then set particle velocity equal to the local gas velocity.
-!
-      do k=1,npar_loc
-        call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uu,ineargrid(k,:))
-        if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
-        if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
-        if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
-      enddo
+      intent (in) :: f, fp, ineargrid
+      intent (inout) :: dfp, df
 !
 !  Diagnostic output
 !
@@ -381,22 +414,6 @@ module Particles
       endif
 !
     endsubroutine dxxp_dt
-!***********************************************************************
-    subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Evolution of dust particle velocity.
-!
-!  20-apr-06/anders: dummy
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
-!
-    endsubroutine dvvp_dt_pencil
 !***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
 !
