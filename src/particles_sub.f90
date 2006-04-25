@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.60 2006-04-24 08:40:04 ajohan Exp $
+! $Id: particles_sub.f90,v 1.61 2006-04-25 12:32:52 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -873,26 +873,32 @@ module Particles_sub
 !
       real, dimension (mpvar) :: fp_tmp, dfp_tmp
       integer, dimension (3) :: ineargrid_tmp
+      integer, dimension (ny*nz) :: kk
       integer :: ilmn_par_tmp, ipark_sorted_tmp, ipar_tmp
       integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
       integer :: j, k, ix0, iy0, iz0, ih, lun
-      integer, save :: ncount=-1, isorttype=2
+      integer, save :: ncount=-1, isorttype=3
       integer, parameter :: nshellsort=21
       integer, dimension (nshellsort), parameter :: &
           hshellsort=(/ 14057, 9371, 6247, 4177, 2777, 1861, 1237, 823, 557, &
                         367, 251, 163, 109, 73, 37, 19, 11, 7, 5, 3, 1 /)
-      logical, save :: lrunningsort
+      logical, save :: lrunningsort=.false.
       character (len=fnlen) :: filename
 !
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
-!  Choose sort algorithm depending on amount of array movement in last sort.
+!  Determine beginning and ending index of particles in pencil (m,n).
 !
-      if (isorttype==1 .and. ncount>npar_loc) then
-        isorttype=2
+      call particle_pencil_index(fp,ineargrid)
+!
+!  Choose sort algorithm.
+!  WARNING - choosing the wrong one might make the code unnecessarily slow.
+!
+      if ( lstart .or. &
+          (lshear .and. Omega/=0.0) .and. (nxgrid>1 .and. nygrid>1) ) then
+        isorttype=3
         lrunningsort=.false.
-      endif
-      if (isorttype==2 .and. ncount<npar_loc/10 .and. ncount>0) then
+      else
         isorttype=1
         lrunningsort=.true.
       endif
@@ -902,11 +908,12 @@ module Particles_sub
 !
       do k=1,npar_loc
         ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-        ilmn_par(k)=(imn_array(iy0,iz0)-1)*ny*nz+ix0
+        ilmn_par(k)=imn_array(iy0,iz0)!-1)*ny*nz+ix0
         ipark_sorted(k)=k
       enddo
 !
-!  Sort using either straight insertion (1) or shell sorting (2).
+!  Sort using either straight insertion (1), shell sorting (2) or counting
+!  sort (3).
 !
       select case (isorttype)
 !  Straight insertion.
@@ -970,19 +977,29 @@ module Particles_sub
               if (j-hshellsort(ih)<1) exit
             enddo
           enddo
-       enddo
+        enddo
+!  Counting sort.
+      case(3)
+       
+        kk=k1_imn
+        do k=1,npar_loc
+          ipark_sorted(kk(ilmn_par(k)))=k
+          kk(ilmn_par(k))=kk(ilmn_par(k))+1
+        enddo
+        ncount=50000
 
-       endselect
-!  Sort particle data in one big rearrangement (if the arrays are very out
-!  of order as typically is the case at the first sort).
-      if ( (.not. lrunningsort) .and. (ncount/=0) ) then
+      endselect
+!      
+!  Sort particle data according to sorting index.
+!
+      if ( (isorttype==1 .and. .not. lrunningsort) .and. (ncount/=0) ) then
         fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
       endif
 !
-!  Write some info on the sorting to a file.
+!  Write some info about the sorting to a file.
 !
       if (lroot.and.ldiagnos) then
         call safe_character_assign(filename,trim(datadir)//'/sort_particles.dat')
@@ -993,6 +1010,7 @@ module Particles_sub
             iproc, ncount, isorttype, lrunningsort
         close (lun)
       endif
+!
       if (ip<=8) print '(A,i4,i8,i4,l4)', &
           'sort_particles_imn: iproc, ncount, isorttype, lrunningsort=', &
           iproc, ncount, isorttype, lrunningsort
