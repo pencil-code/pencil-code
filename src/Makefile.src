@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.173 2006-04-22 08:15:56 ajohan Exp $
+### $Id: Makefile.src,v 1.174 2006-04-25 12:51:37 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -144,7 +144,7 @@ LIBMPISUFFIX=
 #FC=g95 #(Cincinnatus|cosmo)
 #F77=$(FC) #(Cincinnatus|cosmo)
 #FFLAGS=-O4 -fno-second-underscore -I/usr/lib/mpich/include #(Cincinnatus)
-#FFLAGS=-O4 -I/usr/lib/mpich/include #(cosmo)
+#FFLAGS=-O4 -freal=nan -finteger=-2147483648 -fbounds-check -ftrace=full -Wall -Wno=140,141,109,112,137 -I/usr/lib/mpich/include #(cosmo)
 #FFLAGS=-O4 -I/usr/include/mpi #(nl4)
 #CFLAGS=-O3 -DFUNDERSC=1 #(Cincinnatus)
 #CFLAGS=-O3 -DFUNDERSC=2 #(cosmo)
