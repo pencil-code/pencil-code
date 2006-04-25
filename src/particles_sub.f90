@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.61 2006-04-25 12:32:52 ajohan Exp $
+! $Id: particles_sub.f90,v 1.62 2006-04-25 13:39:30 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -986,7 +986,7 @@ module Particles_sub
           ipark_sorted(kk(ilmn_par(k)))=k
           kk(ilmn_par(k))=kk(ilmn_par(k))+1
         enddo
-        ncount=50000
+        ncount=npar_loc
 
       endselect
 !      
