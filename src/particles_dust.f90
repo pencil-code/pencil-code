@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.82 2006-04-25 16:59:28 ajohan Exp $
+! $Id: particles_dust.f90,v 1.83 2006-04-27 15:04:16 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.82 2006-04-25 16:59:28 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.83 2006-04-27 15:04:16 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -481,16 +481,21 @@ k_loop: do while (.not. (k>npar_loc))
 !
 !  Shift particle locations slightly so that wanted mode appears.
 !
-      amplnp=0.5*amplxxp  ! Not sure why factor 0.5 is needed here...
       do k=1,npar_loc
         fp(k,ixp) = fp(k,ixp) - &
-            amplnp/(kx_xxp**2+kz_xxp**2)* &
+            amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
             (kx_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))+ &
              kx_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
         fp(k,izp) = fp(k,izp) - &
-            amplnp/(kx_xxp**2+kz_xxp**2)* &
+            amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
             (kz_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))- &
              kz_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
+        fp(k,ixp) = fp(k,ixp) + &
+            kx_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+            sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+        fp(k,izp) = fp(k,izp) + &
+            kz_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+            sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
       enddo
 !  Set particle velocity.
       do k=1,npar_loc
