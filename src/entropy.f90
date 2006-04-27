@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.394 2006-04-25 14:49:56 nbabkovs Exp $
+! $Id: entropy.f90,v 1.395 2006-04-27 10:12:27 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.394 2006-04-25 14:49:56 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.395 2006-04-27 10:12:27 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1810,8 +1810,8 @@ module Entropy
             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
            -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
           else  
-              df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+         !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !  -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
 
 
      !       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
@@ -1821,8 +1821,8 @@ module Entropy
 
           !df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
             !-1./(10.*dt)*(f(l1:l2,m,n,iss)-log(cs0**2/(gamma1*cp))/gamma)
-          ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          ! -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma/cp+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/(cs0**2/(gamma1*cp))
+           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
 
           endif
       
@@ -2189,6 +2189,7 @@ module Entropy
 
 !  add heat conduction to entropy equation
 !
+   if (n .LT. nzgrid-20) then
 
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff + thdiff_1D 
         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
@@ -2197,6 +2198,7 @@ module Entropy
 
         df(l1:l2,m,n,iuz) = &
          df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
+   endif
 
      if (headtt) print*,'calc_radiation_pressure: added to z-component'
 !

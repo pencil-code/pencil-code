@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.251 2006-04-25 14:49:56 nbabkovs Exp $
+! $Id: hydro.f90,v 1.252 2006-04-27 10:12:27 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -155,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.251 2006-04-25 14:49:56 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.252 2006-04-27 10:12:27 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -862,13 +862,24 @@ module Hydro
 
       if (laccelerat_zone) then
           if (n .GE. nzgrid-20  .AND. dt .GT.0.) then
-           
+           if (lnstar_entropy) then
+            
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                            -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
     
-         
-           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+         !  if (lnstar_T_const) then
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
                           -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+        !   endif
+          else
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+                           -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
+    
+    
+              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+                          -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+    
+          endif 
          endif
 
       endif

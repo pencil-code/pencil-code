@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.238 2006-04-25 14:49:56 nbabkovs Exp $
+! $Id: density.f90,v 1.239 2006-04-27 10:12:27 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.238 2006-04-25 14:49:56 nbabkovs Exp $")
+           "$Id: density.f90,v 1.239 2006-04-27 10:12:27 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1321,9 +1321,27 @@ module Density
 ! Natalia
 ! deceleration zone in a case of a Keplerian disk
 
-       if (ldecelerat_zone) then
+       if (laccelerat_zone) then
      
          
+         if (n .GE. nzgrid-20 .AND. dt .GT. 0.) then
+       
+            if (lnstar_entropy) then          
+              if (lnstar_T_const) then
+              else            
+             ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+             ! -1./(5.*dt) &
+             !   *(p%rho(:)*abs(f(l1:l2,m,n,iuz))/accretion_flux-1.)
+          !     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+          !    -1./(5.*dt) &
+          !      *(p%rho(:)-rho_right)/p%rho(:)!rho_right
+              endif    
+            endif
+           
+         endif 
+
+       if (ldecelerat_zone) then
+        
          if (n .LE. 24 .AND. dt .GT. 0.) then
        
             if (lnstar_entropy) then          
@@ -1349,9 +1367,11 @@ module Density
             endif
       
           endif
+       endif
            
      endif  
-    
+
+
 !
       if (lspecial) call special_calc_density(df,p)
 !
