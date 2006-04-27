@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.395 2006-04-27 10:12:27 nbabkovs Exp $
+! $Id: entropy.f90,v 1.396 2006-04-27 17:17:34 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.395 2006-04-27 10:12:27 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.396 2006-04-27 17:17:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1296,7 +1296,18 @@ module Entropy
              (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h))
 !           
           call eosperturb(f,nx,pp=pp) 
-!          call eoscalc(f,nx,yH=yH,lnTT=lnTT) 
+!          call eoscalc(f,nx,yH=yH,lnTT=lnTT)
+
+!
+!  FIXME:
+!    In file entropy.f90:1238
+!
+!      real, dimension(nx) :: rho,pp,lnrho,ss,lnTT,yH
+!                                          1
+!    Warning (113): Variable 'ss' at (1) is used but not set
+
+call error('ferriere', 'Using uninitialized ss(1)')
+
           if (n==n1) call pressure_gradient(lnrho(1),ss(1),cs2bot,cp1tilde)
           if (n==n2) call pressure_gradient(lnrho(1),ss(1),cs2top,cp1tilde)
 !        
