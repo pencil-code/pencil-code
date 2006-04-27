@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.168 2006-04-23 17:41:11 theine Exp $
+# $Id: getconf.csh,v 1.169 2006-04-27 13:59:55 mkorpi Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -79,7 +79,7 @@ echo "$ncpus CPUs"
 set start_x = "src/start.x"
 set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
-set mpirun = 'mpirun'
+set mpirun = 'mprun'
 
 
 # Check if experimental copy-snapshots is used
@@ -361,6 +361,17 @@ else if ($hn =~ compute-*.local) then
   set one_local_disc = 0
   set local_binary = 0
 #  setenv SCRATCH_DIR $TMPDIR
+
+else if ($hn =~ corona*) then
+  echo "Corona SunFire - CSC, Espoo, Finland"
+  # generic fgrep -c fails
+  set mpi = 1
+  set tmpi = `fgrep -c 'nompicomm' src/Makefile.local`
+  if ($tmpi == 1) set mpi = 0 
+  set mpirun = 'mprun'
+  set npops = "-np $ncpus"
+  set mpirunops = ""
+
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
   echo "Fire - Bergen"
   set mpirunops = ''
