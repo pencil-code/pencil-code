@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.99 2006-04-25 14:49:56 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.100 2006-04-27 19:50:00 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -102,6 +102,8 @@ module Boundcond
                   call bc_sym_x(f,-1,topbot,j)
                 case ('a2')       ! antisymmetry relative to boundary value
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                case ('v')        ! vanishing third derivative
+                  call bc_van_x(f,topbot,j)
                 case ('cT')       ! constant temp.
                   if (j==iss) call bc_ss_temp_x(f,topbot)
                 case ('sT')       ! symmetric temp.
@@ -190,6 +192,8 @@ module Boundcond
                 call bc_sym_y(f,-1,topbot,j)
               case ('a2')       ! antisymmetry relative to boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.)
+              case ('v')        ! vanishing third derivative
+                call bc_van_y(f,topbot,j)
               case ('cT')       ! constant temp.
                 if (j==iss) call bc_ss_temp_y(f,topbot)
               case ('sT')       ! symmetric temp.
@@ -289,6 +293,8 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
               case ('a3')       ! a2 - wiggles
                 call bc_asym3(f,topbot,j)
+              case ('v')        ! vanishing third derivative
+                call bc_van_z(f,topbot,j)
               case ('v3')       ! vanishing third derivative
                 call bc_van3rd_z(f,topbot,j)
               case ('1s')       ! one-sided
@@ -577,6 +583,102 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_van_x(f,topbot,j)
+!
+!  Vanishing boundary conditions.
+!  (TODO: clarify what this means)
+!
+!  26-apr-06/tobi: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i,j
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          do i=1,nghost
+            f(:,:,l1-i,j)=((nghost+1-i)*f(:,:,l1,j))/(nghost+1)
+          enddo
+
+      case('top')               ! top boundary
+          do i=1,nghost
+            f(:,:,l2+i,j)=((nghost+1-i)*f(:,:,l2,j))/(nghost+1)
+          enddo
+
+      case default
+        print*, "bc_van_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_van_x
+!***********************************************************************
+    subroutine bc_van_y(f,topbot,j)
+!
+!  Vanishing boundary conditions.
+!  (TODO: clarify what this means)
+!
+!  26-apr-06/tobi: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i,j
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          do i=1,nghost
+            f(:,:,m1-i,j)=((nghost+1-i)*f(:,:,m1,j))/(nghost+1)
+          enddo
+
+      case('top')               ! top boundary
+          do i=1,nghost
+            f(:,:,m2+i,j)=((nghost+1-i)*f(:,:,m2,j))/(nghost+1)
+          enddo
+
+      case default
+        print*, "bc_van_y: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_van_y
+!***********************************************************************
+    subroutine bc_van_z(f,topbot,j)
+!
+!  Vanishing boundary conditions.
+!  (TODO: clarify what this means)
+!
+!  26-apr-06/tobi: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i,j
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          do i=1,nghost
+            f(:,:,n1-i,j)=((nghost+1-i)*f(:,:,n1,j))/(nghost+1)
+          enddo
+
+      case('top')               ! top boundary
+          do i=1,nghost
+            f(:,:,n2+i,j)=((nghost+1-i)*f(:,:,n2,j))/(nghost+1)
+          enddo
+
+      case default
+        print*, "bc_van_z: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_van_z
 !***********************************************************************
     subroutine bc_step_xz(f,sgn,topbot,j,val1,val2)
 !
