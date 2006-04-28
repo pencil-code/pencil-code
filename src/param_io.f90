@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.233 2006-04-19 16:43:12 theine Exp $ 
+! $Id: param_io.f90,v 1.234 2006-04-28 18:15:32 brandenb Exp $ 
 
 module Param_IO
 
@@ -71,7 +71,7 @@ module Param_IO
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
        dtmax, &
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
-       ro_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
+       ro_spec,TT_spec,ss_spec,cc_spec,cr_spec,isaveglobal, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
        kinflow,random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &

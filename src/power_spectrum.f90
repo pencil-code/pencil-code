@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.52 2006-04-28 18:15:32 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -44,7 +44,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.52 2006-04-28 18:15:32 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -156,7 +156,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.52 2006-04-28 18:15:32 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -266,7 +266,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.52 2006-04-28 18:15:32 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -424,7 +424,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.52 2006-04-28 18:15:32 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -450,6 +450,9 @@ module  power_spectrum
   !
   if (sp=='ro') then
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+    a_im=0.
+  elseif (sp=='TT') then
+    a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnTT))
     a_im=0.
   elseif (sp=='ss') then
     a_re=f(l1:l2,m1:m2,n1:n2,iss)
@@ -537,7 +540,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.51 2006-03-14 14:57:15 brandenb Exp $")
+        "$Id: power_spectrum.f90,v 1.52 2006-04-28 18:15:32 brandenb Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero

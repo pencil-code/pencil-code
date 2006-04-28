@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.3 2006-01-01 15:42:39 ajohan Exp $
+! $Id: snapshot.f90,v 1.4 2006-04-28 18:15:32 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -212,6 +212,7 @@ contains
         if (ab_spec)  call powerhel(a,'mag')
         if (ou_spec)  call powerhel(a,'kin')
         if (ro_spec)  call powerscl(a,'ro')
+        if (TT_spec)  call powerscl(a,'TT')
         if (ss_spec)  call powerscl(a,'ss')
         if (cc_spec)  call powerscl(a,'cc')
         if (cr_spec)  call powerscl(a,'cr')
