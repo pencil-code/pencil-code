@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.45 2006-03-30 12:20:27 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.46 2006-04-28 20:35:02 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -41,13 +41,13 @@ module Pscalar
        radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const
 
   ! run parameters
-  real :: pscalar_diff=0.,tensor_pscalar_diff=0.
+  real :: pscalar_diff=0.,tensor_pscalar_diff=0.,soret_diff=0.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
   real :: pscalar_sink=0., Rpscalar_sink=0.5
   logical :: lpscalar_sink
 
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0, &
+       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
        reinitalize_lncc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink
 
@@ -97,7 +97,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.45 2006-03-30 12:20:27 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.46 2006-04-28 20:35:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -260,6 +260,11 @@ module Pscalar
         lpenc_requested(i_gcc)=.true.
         lpenc_requested(i_glnrho)=.true.
       endif
+      if (soret_diff/=0.) then
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_del2lnTT)=.true.
+      endif
       do i=1,3
         if (gradC0(i)/=0.) lpenc_requested(i_uu)=.true.
       enddo
@@ -350,7 +355,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx) :: diff_op,bump
+      real, dimension (nx) :: diff_op,diff_op2,bump
       integer :: j
 !
       intent(in)  :: f
@@ -397,6 +402,15 @@ module Pscalar
           call dot_mn(p%glnrho,p%gcc,diff_op)
           diff_op=diff_op+p%del2cc
           df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + pscalar_diff*diff_op
+        endif
+!
+!  Soret diffusion
+!
+        if (soret_diff/=0.) then
+          if (headtt) print*,'dlncc_dt: soret_diff=',soret_diff
+          call dot2_mn(p%glnTT,diff_op2)
+          diff_op2=p%TT*(diff_op2+p%del2lnTT)
+          df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + soret_diff*diff_op2
         endif
 !
 !  add diffusion of imposed constant gradient of c

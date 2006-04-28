@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.100 2006-04-27 19:50:00 theine Exp $
+! $Id: boundcond.f90,v 1.101 2006-04-28 20:35:02 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -601,12 +601,12 @@ module Boundcond
 
       case('bot')               ! bottom boundary
           do i=1,nghost
-            f(:,:,l1-i,j)=((nghost+1-i)*f(:,:,l1,j))/(nghost+1)
+            f(:,:,n1-i,j)=((nghost+1-i)*f(:,:,n1,j))/(nghost+1)
           enddo
 
       case('top')               ! top boundary
           do i=1,nghost
-            f(:,:,l2+i,j)=((nghost+1-i)*f(:,:,l2,j))/(nghost+1)
+            f(:,:,n2+i,j)=((nghost+1-i)*f(:,:,n2,j))/(nghost+1)
           enddo
 
       case default
