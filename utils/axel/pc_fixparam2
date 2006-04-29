@@ -1,0 +1,10 @@
+#!/bin/csh
+#
+#$Id: pc_fixparam2,v 1.1 2006-04-29 08:40:18 brandenb Exp $
+#
+#  temporary fix to make data/param2.nml readible
+#
+cat data/param2.nml >.tmp
+sed -e "s/'COOL=/',COOL=/" .tmp >! data/param2.nml
+rm -f .tmp
+
