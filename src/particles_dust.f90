@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.83 2006-04-27 15:04:16 ajohan Exp $
+! $Id: particles_dust.f90,v 1.84 2006-04-29 15:28:01 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.83 2006-04-27 15:04:16 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.84 2006-04-29 15:28:01 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -459,6 +459,19 @@ k_loop: do while (.not. (k>npar_loc))
       real :: eta_glnrho, v_Kepler, amplnp, dxp, dzp
       integer :: i, i1, i2, j, k, npar_loc_x, npar_loc_z
 !
+!  The number of particles per grid cell must be a quadratic number.
+!
+      if ( sqrt(npar/real(nwgrid))/=int(sqrt(npar/real(nwgrid))) .or. &
+           sqrt(npar_loc/real(nw))/=int(sqrt(npar_loc/real(nw))) ) then
+        if (lroot) then
+          print*, 'streaming_coldstart: the number of particles per grid must'
+          print*, '                     be a quadratic number!'
+        endif
+        print*, '                     iproc, npar/nw, npar_loc/nwgrid=', &
+            iproc, npar/real(nwgrid), npar_loc/real(nw)
+        call fatal_error('streaming_coldstart','')
+      endif
+!
 !  Define a few disc parameters.
 !
       eta_glnrho = -0.5*1/gamma*abs(beta_glnrho_global(1))*beta_glnrho_global(1)
@@ -473,7 +486,7 @@ k_loop: do while (.not. (k>npar_loc))
       dzp=Lxyz_loc(3)/npar_loc_z
       do i=1,npar_loc_x
         i1=(i-1)*npar_loc_z+1; i2=i*npar_loc_z
-        fp(i1:i2,ixp)=mod(i*dxp,Lxyz(1))+dxp/2
+        fp(i1:i2,ixp)=mod(i*dxp,Lxyz_loc(1))+dxp/2
         do j=i1,i2
           fp(j,izp)=xyz0_loc(3)+dzp/2+(j-i1)*dzp
         enddo
