@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.46 2006-04-28 20:35:02 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.47 2006-04-30 18:19:08 dintrans Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -97,7 +97,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.46 2006-04-28 20:35:02 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.47 2006-04-30 18:19:08 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -261,6 +261,7 @@ module Pscalar
         lpenc_requested(i_glnrho)=.true.
       endif
       if (soret_diff/=0.) then
+        lpenc_requested(i_cc)=.true.
         lpenc_requested(i_TT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -409,7 +410,7 @@ module Pscalar
         if (soret_diff/=0.) then
           if (headtt) print*,'dlncc_dt: soret_diff=',soret_diff
           call dot2_mn(p%glnTT,diff_op2)
-          diff_op2=p%TT*(diff_op2+p%del2lnTT)
+          diff_op2=p%cc*(1.-p%cc)*p%TT*(diff_op2+p%del2lnTT)
           df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + soret_diff*diff_op2
         endif
 !

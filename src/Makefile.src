@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.174 2006-04-25 12:51:37 theine Exp $
+### $Id: Makefile.src,v 1.175 2006-04-30 18:19:08 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -235,12 +235,12 @@ LIBMPISUFFIX=
 ##FCCLEANER=2>&1 | cleanf95 #(Kolmogorov)
 ##FC=ifc -e90 #(Kolmogorov)  
 ##CC=gcc -m32 #(Kolmogorov)
-#FC=ifort -stand f90 #(Kolmogorov)
-#FFLAGS=-O3 #(Kolmogorov)
-##CC=gcc #(Kolmogorov)
-##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov)
-#LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov)
-LIBMPISUFFIX=_#(Kolmogorov)
+#FC=ifort -stand f90 #(Kolmogorov|ulysse|shal)
+#FFLAGS=-O3 #(Kolmogorov|ulysse|shal)
+##CC=gcc #(Kolmogorov|ulysse|shal)
+##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|ulysse|shal)
+#LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov|ulysse|shal)
+#LIBMPISUFFIX=_#(Kolmogorov|shal)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl11)
 #LDMPI=-L/opt/mpich/lib #(nw43)
 #LDMPI=-L/usr/local/mpich/lib #(pcponty)
