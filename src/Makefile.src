@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.175 2006-04-30 18:19:08 dintrans Exp $
+### $Id: Makefile.src,v 1.176 2006-05-01 16:13:21 tarek Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -261,6 +261,11 @@ LIBMPISUFFIX=
 #LDMPI=-lmpi #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CC=icc #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CFLAGS=-O3 -ipo -DFUNDERSC=1 #(lws.Stanford.EDU|lws2.Stanford.EDU)
+#FC=ifort #(damtp)
+#FFLAGS=  #(damtp)
+#CFLAGS=-O3  -DFUNDERSC=1 #(damtp)
+#LDMPI=-I/usr/include -pthread  -llamf77mpi -lmpi -llam -lutil #(damtp)
+
 ##
 ## Axel on Horseshoe (ifc 9.0)
 ##
