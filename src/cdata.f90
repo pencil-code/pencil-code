@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.305 2006-04-28 18:15:32 brandenb Exp $
+! ! $Id: cdata.f90,v 1.306 2006-05-01 09:05:01 brandenb Exp $
 
 module Cdata
 
@@ -106,7 +106,7 @@ module Cdata
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
   integer :: nt=1000000,it1=10
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
-  integer :: ilncc=0,ialpm=0
+  integer :: icc=0,ilncc=0,ialpm=0
   integer :: iXX_chiral=0,iYY_chiral=0
   integer :: iproc,ipx,ipy,ipz,root=0
   integer :: mvar_io=0,dimensionality

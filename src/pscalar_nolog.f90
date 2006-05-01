@@ -1,9 +1,7 @@
-! $Id: pscalar_nolog.f90,v 1.47 2006-04-30 18:19:08 dintrans Exp $
+! $Id: pscalar_nolog.f90,v 1.48 2006-05-01 09:05:02 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
-!  Solves for c, not lnc. Keep ilncc and other names involving "ln"
-!  and pretend they are *generic* names. A better generic name
-!  might be "pscalar", so ipscalar instead of ilncc.
+!  Solves for c, not lnc.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -26,19 +24,32 @@ module Pscalar
 
   include 'pscalar.h'
 
-  character (len=labellen) :: initlncc='zero', initlncc2='zero'
+  ! keep old name for backward compatibility
+  character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
+
+  character (len=labellen) :: initcc='zero', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
-  logical :: nopscalar=.false.,reinitalize_lncc=.false.
+  logical :: nopscalar=.false.,reinitalize_cc=.false.
+  logical :: reinitalize_lncc=.false.
+
+  ! keep old name for backward compatibility
+  real :: ampllncc=impossible, widthlncc=impossible, lncc_min
+  real :: ampllncc2=impossible,radius_lncc=impossible
+  real :: kx_lncc=impossible,ky_lncc=impossible,kz_lncc=impossible
+  real :: epsilon_lncc=impossible
 
   ! input parameters
-  real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
-  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.
-  real :: epsilon_lncc=0., cc_const=1.
+  real :: amplcc=.1, widthcc=.5, cc_min=0.
+  real :: amplcc2=0.,kx_cc=1.,ky_cc=1.,kz_cc=1.,radius_cc=0.
+  real :: epsilon_cc=0., cc_const=1.
   real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /pscalar_init_pars/ &
+       initcc,initcc2,amplcc,amplcc2,kx_cc,ky_cc,kz_cc, &
+       radius_cc,epsilon_cc,widthcc,cc_min,cc_const, &
+       ! keep old names
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const
+       radius_lncc,epsilon_lncc,widthlncc
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.,soret_diff=0.
@@ -48,13 +59,14 @@ module Pscalar
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,soret_diff, &
-       reinitalize_lncc, &
+       reinitalize_lncc, &  !(keep old name)
+       reinitalize_cc, &
        lpscalar_sink,pscalar_sink,Rpscalar_sink
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_lnccm=0
+  integer :: idiag_rhoccm=0,idiag_ccmax=0,idiag_ccmin=0.,idiag_ccm=0
   integer :: idiag_Qrhoccm=0,idiag_Qpsclm=0
-  integer :: idiag_lnccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
+  integer :: idiag_ccmz=0,idiag_gcc5m=0,idiag_gcc10m=0
   integer :: idiag_ucm=0,idiag_uudcm=0,idiag_Cz2m=0,idiag_Cz4m=0,idiag_Crmsm=0
   integer :: idiag_cc1m=0,idiag_cc2m=0,idiag_cc3m=0,idiag_cc4m=0,idiag_cc5m=0
   integer :: idiag_cc6m=0,idiag_cc7m=0,idiag_cc8m=0,idiag_cc9m=0,idiag_cc10m=0
@@ -67,7 +79,7 @@ module Pscalar
     subroutine register_pscalar()
 !
 !  Initialise variables which should know that we solve for passive
-!  scalar: ilncc; increase nvar accordingly
+!  scalar: icc; increase nvar accordingly
 !
 !  6-jul-02/axel: coded
 !
@@ -77,31 +89,32 @@ module Pscalar
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_lncc called twice')
+      if (.not. first) call stop_it('register_cc called twice')
       first = .false.
 !
       lpscalar = .true.
       lpscalar_nolog = .true.
-      ilncc = nvar+1            ! index to access lncc
+      ilncc = 0                 ! needed for idl
+      icc = nvar+1              ! index to access cc
       nvar = nvar+1             ! added 1 variable
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_lncc:  nvar = ', nvar
-        print*, 'ilncc = ', ilncc
+        print*, 'Register_cc:  nvar = ', nvar
+        print*, 'icc = ', icc
       endif
 !
 !  Put variable names in array
 !
-      varname(ilncc) = 'cc'
+      varname(icc) = 'cc'
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.47 2006-04-30 18:19:08 dintrans Exp $")
+           "$Id: pscalar_nolog.f90,v 1.48 2006-05-01 09:05:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_lncc: nvar > mvar')
+        call stop_it('Register_cc: nvar > mvar')
       endif
 !
     endsubroutine register_pscalar
@@ -113,15 +126,15 @@ module Pscalar
 !  one may want to reinitialize it to its initial distribution.
 !
 !  24-nov-02/tony: coded
-!  20-may-03/axel: reinitalize_lncc added
+!  20-may-03/axel: reinitalize_cc added
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if (reinitalize_lncc) then
-        f(:,:,:,ilncc)=0.
+      if (reinitalize_cc) then
+        f(:,:,:,icc)=0.
         call init_lncc_simple(f)
       endif
 !
@@ -143,43 +156,54 @@ module Pscalar
 !
 !  identify module
 !
-      if (lroot) print*,'init_lncc_simple; initlncc=',initlncc
+      if (lroot) print*,'init_lncc_simple; initcc=',initcc
 !
-      select case(initlncc)
-        case('zero'); f(:,:,:,ilncc)=0.
-        case('constant'); f(:,:,:,ilncc)=cc_const
-        case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
-        case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
-        case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
-        case('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
-        case('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
-        case('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
-        case('parabola-x'); call parabola(ampllncc,f,ilncc,kx=kx_lncc)
-        case('parabola-y'); call parabola(ampllncc,f,ilncc,ky=ky_lncc)
-        case('parabola-z'); call parabola(ampllncc,f,ilncc,kz=kz_lncc)
-        case('gaussian-noise'); call gaunoise(ampllncc,f,ilncc,ilncc)
-        case('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
-        case('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
-        case('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
-        case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
-        case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
-        case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
-        case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampllncc,f,ilncc,kx_lncc,ky_lncc,kz_lncc)
-        case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
+      ! for the time being, keep old name for backward compatibility
+      if (initlncc/='impossible') initcc=initlncc
+      if (initlncc2/='impossible') initcc2=initlncc2
+      if (ampllncc/=impossible) amplcc=ampllncc
+      if (ampllncc2/=impossible) amplcc2=ampllncc2
+      if (kx_lncc/=impossible) kx_cc=kx_lncc
+      if (ky_lncc/=impossible) ky_cc=ky_lncc
+      if (kz_lncc/=impossible) kz_cc=kz_lncc
+      if (radius_lncc/=impossible) radius_cc=radius_lncc
+      if (epsilon_lncc/=impossible) epsilon_cc=epsilon_lncc
+      if (widthlncc/=impossible) widthcc=widthlncc
+!
+      select case(initcc)
+        case('zero'); f(:,:,:,icc)=0.
+        case('constant'); f(:,:,:,icc)=cc_const
+        case('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
+        case('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
+        case('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)
+        case('gaussian-x'); call gaussian(amplcc,f,icc,kx=kx_cc)
+        case('gaussian-y'); call gaussian(amplcc,f,icc,ky=ky_cc)
+        case('gaussian-z'); call gaussian(amplcc,f,icc,kz=kz_cc)
+        case('parabola-x'); call parabola(amplcc,f,icc,kx=kx_cc)
+        case('parabola-y'); call parabola(amplcc,f,icc,ky=ky_cc)
+        case('parabola-z'); call parabola(amplcc,f,icc,kz=kz_cc)
+        case('gaussian-noise'); call gaunoise(amplcc,f,icc,icc)
+        case('wave-x'); call wave(amplcc,f,icc,kx=kx_cc)
+        case('wave-y'); call wave(amplcc,f,icc,ky=ky_cc)
+        case('wave-z'); call wave(amplcc,f,icc,kz=kz_cc)
+        case('propto-ux'); call wave_uu(amplcc,f,icc,kx=kx_cc)
+        case('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
+        case('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
+        case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
+        case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
 !
 !  superimpose something else
 !
-      select case(initlncc2)
-        case('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
+      select case(initcc2)
+        case('wave-x'); call wave(amplcc2,f,icc,ky=5.)
       endselect
 !
 !  add floor value if cc_min is set
 !
       if (cc_min/=0.) then
-        lncc_min=log(cc_min)
         if (lroot) print*,'set floor value for cc; cc_min=',cc_min
-        f(:,:,:,ilncc)=max(lncc_min,f(:,:,:,ilncc))
+        f(:,:,:,icc)=max(cc_min,f(:,:,:,icc))
       endif
 !
     endsubroutine init_lncc_simple
@@ -199,48 +223,59 @@ module Pscalar
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
-      select case(initlncc)
-        case('zero'); f(:,:,:,ilncc)=0.
-        case('constant'); f(:,:,:,ilncc)=cc_const
-        case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
-        case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
-        case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
-        case('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
-        case('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
-        case('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
-        case('parabola-x'); call parabola(ampllncc,f,ilncc,kx=kx_lncc)
-        case('parabola-y'); call parabola(ampllncc,f,ilncc,ky=ky_lncc)
-        case('parabola-z'); call parabola(ampllncc,f,ilncc,kz=kz_lncc)
-        case('gaussian-noise'); call gaunoise(ampllncc,f,ilncc,ilncc)
-        case('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
-        case('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
-        case('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
-        case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
-        case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
-        case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
-        case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampllncc,f,ilncc,kx_lncc,ky_lncc,kz_lncc)
-        case('sound-wave'); f(:,:,:,ilncc)=-ampllncc*cos(kx_lncc*xx)
+      ! for the time being, keep old name for backward compatibility
+      if (initlncc/='impossible') initcc=initlncc
+      if (initlncc2/='impossible') initcc2=initlncc2
+      if (ampllncc/=impossible) amplcc=ampllncc
+      if (ampllncc2/=impossible) amplcc2=ampllncc2
+      if (kx_lncc/=impossible) kx_cc=kx_lncc
+      if (ky_lncc/=impossible) ky_cc=ky_lncc
+      if (kz_lncc/=impossible) kz_cc=kz_lncc
+      if (radius_lncc/=impossible) radius_cc=radius_lncc
+      if (epsilon_lncc/=impossible) epsilon_cc=epsilon_lncc
+      if (widthlncc/=impossible) widthcc=widthlncc
+!
+      select case(initcc)
+        case('zero'); f(:,:,:,icc)=0.
+        case('constant'); f(:,:,:,icc)=cc_const
+        case('hat-x'); call hat(amplcc,f,icc,widthcc,kx=kx_cc)
+        case('hat-y'); call hat(amplcc,f,icc,widthcc,ky=ky_cc)
+        case('hat-z'); call hat(amplcc,f,icc,widthcc,kz=kz_cc)
+        case('gaussian-x'); call gaussian(amplcc,f,icc,kx=kx_cc)
+        case('gaussian-y'); call gaussian(amplcc,f,icc,ky=ky_cc)
+        case('gaussian-z'); call gaussian(amplcc,f,icc,kz=kz_cc)
+        case('parabola-x'); call parabola(amplcc,f,icc,kx=kx_cc)
+        case('parabola-y'); call parabola(amplcc,f,icc,ky=ky_cc)
+        case('parabola-z'); call parabola(amplcc,f,icc,kz=kz_cc)
+        case('gaussian-noise'); call gaunoise(amplcc,f,icc,icc)
+        case('wave-x'); call wave(amplcc,f,icc,kx=kx_cc)
+        case('wave-y'); call wave(amplcc,f,icc,ky=ky_cc)
+        case('wave-z'); call wave(amplcc,f,icc,kz=kz_cc)
+        case('propto-ux'); call wave_uu(amplcc,f,icc,kx=kx_cc)
+        case('propto-uy'); call wave_uu(amplcc,f,icc,ky=ky_cc)
+        case('propto-uz'); call wave_uu(amplcc,f,icc,kz=kz_cc)
+        case('cosx_cosy_cosz'); call cosx_cosy_cosz(amplcc,f,icc,kx_cc,ky_cc,kz_cc)
+        case('sound-wave'); f(:,:,:,icc)=-amplcc*cos(kx_cc*xx)
         case('tang-discont-z')
-           print*,'init_lncc: widthlncc=',widthlncc
-        prof=.5*(1.+tanh(zz/widthlncc))
-        f(:,:,:,ilncc)=-1.+2.*prof
-        case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
-        case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
+           print*,'init_lncc: widthcc=',widthcc
+        prof=.5*(1.+tanh(zz/widthcc))
+        f(:,:,:,icc)=-1.+2.*prof
+        case('hor-tube'); call htube2(amplcc,f,icc,icc,xx,yy,zz,radius_cc,epsilon_cc)
+        case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
 
 !
 !  superimpose something else
 !
-      select case(initlncc2)
-        case('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
+      select case(initcc2)
+        case('wave-x'); call wave(amplcc2,f,icc,ky=5.)
       endselect
 !
 !  add floor value if cc_min is set
 !
       if (cc_min/=0.) then
-        lncc_min=log(cc_min)
         if (lroot) print*,'set floor value for cc; cc_min=',cc_min
-        f(:,:,:,ilncc)=max(lncc_min,f(:,:,:,ilncc))
+        f(:,:,:,icc)=max(cc_min,f(:,:,:,icc))
       endif
 !
       if (NO_WARN) print*,xx,yy,zz !(prevent compiler warnings)
@@ -325,11 +360,11 @@ module Pscalar
       intent(in) :: f
       intent(inout) :: p
 ! cc
-      if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,ilncc)
+      if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc)
 ! cc1
       if (lpencil(i_cc1)) p%cc1=1/p%cc
 ! gcc
-      if (lpencil(i_gcc)) call grad(f,ilncc,p%gcc)
+      if (lpencil(i_gcc)) call grad(f,icc,p%gcc)
 ! ugcc
       if (lpencil(i_ugcc)) call dot_mn(p%uu,p%gcc,p%ugcc)
 ! gcc2
@@ -337,9 +372,9 @@ module Pscalar
 ! gcc1
       if (lpencil(i_gcc1)) p%gcc1=sqrt(p%gcc2)
 ! del2cc
-      if (lpencil(i_del2cc)) call del2(f,ilncc,p%del2cc)
+      if (lpencil(i_del2cc)) call del2(f,icc,p%del2cc)
 ! hcc
-      if (lpencil(i_hcc)) call g2ij(f,ilncc,p%hcc)
+      if (lpencil(i_hcc)) call g2ij(f,icc,p%hcc)
 !      
     endsubroutine calc_pencils_pscalar
 !***********************************************************************
@@ -365,11 +400,11 @@ module Pscalar
 !  identify module and boundary conditions
 !
       if (nopscalar) then
-        if (headtt.or.ldebug) print*,'not SOLVED: dcc_dt'
+        if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
       else
-        if (headtt.or.ldebug) print*,'SOLVE dcc_dt'
+        if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
       endif
-      if (headtt) call identify_bcs('cc',ilncc)
+      if (headtt) call identify_bcs('cc',icc)
 !
 !  gradient of passive scalar
 !  allow for possibility to turn off passive scalar
@@ -379,7 +414,7 @@ module Pscalar
 !
 !  passive scalar equation
 !
-        df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - p%ugcc
+        df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) - p%ugcc
 !
 !  passive scalar sink
 !
@@ -393,7 +428,7 @@ module Pscalar
           bump=pscalar_sink* &
           exp(-.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
 !          exp(-.5*((x(l1:l2)-rsink(0))**2+(y(m)-rsink(1))**2+(z(n)-rsink(2))**2)/Rpscalar_sink**2) 
-          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-bump*f(l1:l2,m,n,ilncc)
+          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-bump*f(l1:l2,m,n,icc)
         endif
 !
 !  diffusion operator
@@ -402,7 +437,7 @@ module Pscalar
           if (headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
           call dot_mn(p%glnrho,p%gcc,diff_op)
           diff_op=diff_op+p%del2cc
-          df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + pscalar_diff*diff_op
+          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + pscalar_diff*diff_op
         endif
 !
 !  Soret diffusion
@@ -411,7 +446,7 @@ module Pscalar
           if (headtt) print*,'dlncc_dt: soret_diff=',soret_diff
           call dot2_mn(p%glnTT,diff_op2)
           diff_op2=p%cc*(1.-p%cc)*p%TT*(diff_op2+p%del2lnTT)
-          df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) + soret_diff*diff_op2
+          df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) + soret_diff*diff_op2
         endif
 !
 !  add diffusion of imposed constant gradient of c
@@ -420,7 +455,7 @@ module Pscalar
 !
         do j=1,3
           if (gradC0(j)/=0.) then
-            df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - gradC0(j)*p%uu(:,j)
+            df(l1:l2,m,n,icc) = df(l1:l2,m,n,icc) - gradC0(j)*p%uu(:,j)
           endif
         enddo
 !
@@ -441,7 +476,7 @@ module Pscalar
 !  diagnostics
 !
 !  output for double and triple correlators (assume z-gradient of cc)
-!  <u_k u_j d_j c> = <u_k c uu.gradlncc>
+!  <u_k u_j d_j c> = <u_k c uu.gradcc>
 !
       if (ldiagnos) then
         if (idiag_Qpsclm/=0) call sum_mn_name(bump,idiag_Qpsclm)
@@ -449,7 +484,7 @@ module Pscalar
         if (idiag_rhoccm/=0) call sum_mn_name(p%rho*p%cc,idiag_rhoccm)
         if (idiag_ccmax/=0) call max_mn_name(p%cc,idiag_ccmax)
         if (idiag_ccmin/=0) call max_mn_name(-p%cc,idiag_ccmin,lneg=.true.)
-        if (idiag_lnccmz/=0) call xysum_mn_name_z(p%cc,idiag_lnccmz)
+        if (idiag_ccmz/=0) call xysum_mn_name_z(p%cc,idiag_ccmz)
         if (idiag_ucm/=0) call sum_mn_name(p%uu(:,3)*p%cc,idiag_ucm)
         if (idiag_uudcm/=0) call sum_mn_name(p%uu(:,3)*p%ugcc,idiag_uudcm)
         if (idiag_Cz2m/=0) call sum_mn_name(p%rho*p%cc*z(n)**2,idiag_Cz2m)
@@ -541,9 +576,9 @@ module Pscalar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_lnccm=0
+        idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_ccm=0
         idiag_Qrhoccm=0; idiag_Qpsclm=0
-        idiag_lnccmz=0; 
+        idiag_ccmz=0; 
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0; idiag_Crmsm=0
         idiag_cc1m=0; idiag_cc2m=0; idiag_cc3m=0; idiag_cc4m=0; idiag_cc5m=0
         idiag_cc6m=0; idiag_cc7m=0; idiag_cc8m=0; idiag_cc9m=0; idiag_cc10m=0
@@ -560,7 +595,7 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',idiag_rhoccm)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',idiag_ccmax)
         call parse_name(iname,cname(iname),cform(iname),'ccmin',idiag_ccmin)
-        call parse_name(iname,cname(iname),cform(iname),'lnccm',idiag_lnccm)
+        call parse_name(iname,cname(iname),cform(iname),'ccm',idiag_ccm)
         call parse_name(iname,cname(iname),cform(iname),'ucm',idiag_ucm)
         call parse_name(iname,cname(iname),cform(iname),'uudcm',idiag_uudcm)
         call parse_name(iname,cname(iname),cform(iname),'Cz2m',idiag_Cz2m)
@@ -591,7 +626,7 @@ module Pscalar
 !  check for those quantities for which we want xy-averages
 !
       do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'lnccmz',idiag_lnccmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ccmz',idiag_ccmz)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -602,10 +637,10 @@ module Pscalar
         write(3,*) 'i_rhoccm=',idiag_rhoccm
         write(3,*) 'i_ccmax=',idiag_ccmax
         write(3,*) 'i_ccmin=',idiag_ccmin
-        write(3,*) 'i_lnccm=',idiag_lnccm
+        write(3,*) 'i_ccm=',idiag_ccm
         write(3,*) 'i_ucm=',idiag_ucm
         write(3,*) 'i_uudcm=',idiag_uudcm
-        write(3,*) 'i_lnccmz=',idiag_lnccmz
+        write(3,*) 'i_ccmz=',idiag_ccmz
         write(3,*) 'i_Cz2m=',idiag_Cz2m
         write(3,*) 'i_Cz4m=',idiag_Cz4m
         write(3,*) 'i_Crmsm=',idiag_Crmsm
@@ -630,6 +665,7 @@ module Pscalar
         write(3,*) 'i_gcc9m=',idiag_gcc9m
         write(3,*) 'i_gcc10m=',idiag_gcc10m
         write(3,*) 'ilncc=',ilncc
+        write(3,*) 'icc=',icc
       endif
 !
     endsubroutine rprint_pscalar
@@ -644,22 +680,22 @@ module Pscalar
       use Sub
 !
       logical,save :: first=.true.
-      real :: lnccm
+      real :: ccm
 !
 !  Magnetic energy in horizontally averaged field
 !  The bxmz and bymz must have been calculated,
 !  so they are present on the root processor.
 !
-      if (idiag_lnccm/=0) then
-        if (idiag_lnccmz==0) then
+      if (idiag_ccm/=0) then
+        if (idiag_ccmz==0) then
           if (first) print*
-          if (first) print*,"NOTE: to get lnccm, lnccmz must also be set in xyaver"
-          if (first) print*,"      We proceed, but you'll get lnccm=0"
-          lnccm=0.
+          if (first) print*,"NOTE: to get ccm, ccmz must also be set in xyaver"
+          if (first) print*,"      We proceed, but you'll get ccm=0"
+          ccm=0.
         else
-          lnccm=sqrt(sum(fnamez(:,:,idiag_lnccmz)**2)/(nz*nprocz))
+          ccm=sqrt(sum(fnamez(:,:,idiag_ccmz)**2)/(nz*nprocz))
         endif
-        call save_name(lnccm,idiag_lnccm)
+        call save_name(ccm,idiag_ccm)
       endif
 !
     endsubroutine calc_mpscalar
@@ -709,9 +745,9 @@ module Pscalar
       enddo
       enddo
 !
-!  and add result to the dlncc/dt equation
+!  and add result to the dcc/dt equation
 !
-      df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+tensor_pscalar_diff*tmp
+      df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)+tensor_pscalar_diff*tmp
 !
       first=.false.
     endsubroutine tensor_diff
