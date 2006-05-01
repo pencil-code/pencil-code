@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   cleanf95
 # Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   10-Oct-2002
-# CVS: $Id: cleanf95,v 1.2 2005-06-26 17:34:15 eos_merger_tony Exp $
+# CVS: $Id: cleanf95,v 1.3 2006-05-01 18:27:52 dobler Exp $
 # Description:
 #   Read standard input (piped from Intel Fortran compiler with 2>&1 | i.e.
 #   from STDERR).
@@ -28,7 +28,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   make |& cleanf95 [--intel|--hitachi]     # (csh)
 #   make 2>&1 | cleanf95 [--intel|--hitachi] # (sh)
 
-    use strict;
+use strict;
 use Getopt::Long;
 
 my $compiler='intel';		# default
@@ -50,7 +50,7 @@ GetOptions(\%opts,
               ));
 
 die usage() if ($opts{h} || $opts{help});
-$compiler = 'hitachi' if ($opts{hitachi}); 
+$compiler = 'hitachi' if ($opts{hitachi});
 my $debug = ($opts{debug} || 0);
 my $first = 1;
 
@@ -116,6 +116,10 @@ sub ship_out {
     shorten($line);
     chomp($line);		# just in case
     return if ($line =~ /^\s*$/);
+    if ($line eq "PENCIL COMPILATION ERROR") {
+	print STDERR "cleanf95: error during compilation -- stopping\n";
+	exit(-1);
+    }
     print STDERR "$line\n";
 }
 # ---------------------------------------------------------------------- #
