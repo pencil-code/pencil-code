@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =   mpicomm_double
+MPICOMM   =   nompicomm
 GLOBAL    =   global_avgs
 
 HYDRO     =   hydro
@@ -20,6 +20,3 @@ SHOCK     =   shock
 PLANET    =   planet
 
 PARTICLES = particles_planet
-
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
