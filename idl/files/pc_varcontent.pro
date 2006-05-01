@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.20 2006-02-26 05:51:35 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.21 2006-05-01 09:08:27 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -141,6 +141,12 @@ varcontent[ie].idlvar   = 'ee'
 varcontent[ie].idlinit    = INIT_SCALAR
 varcontent[ie].idlvarloc= 'ee_loc'
 varcontent[ie].idlinitloc = INIT_SCALAR_LOC
+
+varcontent[icc].variable = 'Passive scalar (cc)'
+varcontent[icc].idlvar   = 'cc'
+varcontent[icc].idlinit    = INIT_SCALAR
+varcontent[icc].idlvarloc= 'cc_loc'
+varcontent[icc].idlinitloc = INIT_SCALAR_LOC
 
 varcontent[ilncc].variable = 'Log passive scalar (lncc)'
 varcontent[ilncc].idlvar   = 'lncc'
