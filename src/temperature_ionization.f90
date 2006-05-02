@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.13 2006-04-05 11:28:35 theine Exp $
+! $Id: temperature_ionization.f90,v 1.14 2006-05-02 19:20:56 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -30,8 +30,9 @@ module Entropy
   real :: radius_lnTT=0.1,ampl_lnTT=0.,widthlnTT=2*epsi
   real :: lnTT_left=1.0,lnTT_right=1.0,lnTT_const=0.0,TT_const=1.0
   real :: kx_lnTT=1.0,ky_lnTT=1.0,kz_lnTT=1.0
-  real :: chi=0.0
-  real :: heat_uniform=0.0
+  real :: chi=0.0,heat_uniform=0.0
+  real :: zbot=0.0,ztop=0.0
+  real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   logical :: lpressuregradient_gas=.true.,ladvection_temperature=.true.
   logical :: lupw_lnTT,lcalc_heat_cool=.false.,lheatc_chiconst=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
@@ -50,7 +51,7 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
       lupw_lnTT,lpressuregradient_gas,ladvection_temperature, &
-      heat_uniform,chi
+      heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor
 
   ! other variables (needs to be consistent with reset list below)
     integer :: idiag_TTmax=0,idiag_TTmin=0,idiag_TTm=0
@@ -86,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.13 2006-04-05 11:28:35 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.14 2006-05-02 19:20:56 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,6 +132,12 @@ module Entropy
 !  Check whether we want heating/cooling
 !
       lcalc_heat_cool = (heat_uniform/=0.0)
+!
+!  Define bottom and top z positions
+!  (TH: This should really be global variables IMHO)
+!
+      zbot = xyz0(3)
+      ztop = xyz0(3) + Lxyz(3)
 !
 !  Check whether we want heat conduction
 !
@@ -364,13 +371,15 @@ module Entropy
 !   2-feb-03/axel: added possibility of ionization
 !
       use Viscosity, only: calc_viscous_heat
-      use Sub, only: max_mn_name,sum_mn_name,identify_bcs
+      use Sub, only: max_mn_name,sum_mn_name,identify_bcs,quintic_step
 !
       real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (out) :: df
       type (pencil_case) :: p
 !
+      real, dimension (nx,3) :: damp
       real, dimension (nx) :: Hmax
+      real :: prof
       integer :: j
 
 !
@@ -395,11 +404,16 @@ module Entropy
 !  .false. allows suppressing pressure term for test purposes)
 !
       if (lhydro.and.lpressuregradient_gas) then
-        do j=0,2
-          df(l1:l2,m,n,iuu+j) = df(l1:l2,m,n,iuu+j) - p%rho1gpp(:,j+1)
-        enddo
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%rho1gpp
       endif
-
+!
+!  velocity damping in the coronal heating zone
+!
+      if (lhydro.and.tau_damp_cor>0) then
+        prof = quintic_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
+        damp = prof*f(l1:l2,m,n,iux:iuz)/tau_damp_cor
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - damp
+      endif
 !
 !  Advection term
 !
@@ -499,11 +513,14 @@ module Entropy
 !***********************************************************************
     subroutine calc_heat_cool(f,df,p)
 
+      use Sub, only: quintic_step
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
       real, dimension (nx) :: heat
+      real :: profile_cor
 !
 !  Initialize
 !
@@ -512,6 +529,15 @@ module Entropy
 !  Add spatially uniform heating (usually as a test)
 !
       if (heat_uniform/=0.0) heat = heat+heat_uniform
+!
+!  add "coronal" heating (to simulate a hot corona)
+!  assume a linearly increasing reference profile
+!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
+!
+      if (tau_heat_cor>0) then
+        profile_cor = quintic_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
+        heat = heat + profile_cor*(log(TT_cor)-p%lnTT)/tau_heat_cor
+      endif
 !
 !  Add to RHS of temperature equation
 !
