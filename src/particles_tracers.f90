@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.17 2006-04-25 16:59:29 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.18 2006-05-02 09:40:47 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -57,7 +57,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.17 2006-04-25 16:59:29 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.18 2006-05-02 09:40:47 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -263,22 +263,27 @@ module Particles
 
         endselect
 !
-!  Map particle positions on the grid.
-!
-        call map_nearest_grid(f,fp,ineargrid)
-        call map_xxp_grid(f,fp,ineargrid)
       enddo
 !      
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
 !
-      if (nxgrid==1) fp(1:npar_loc,ixp)=x(nghost+1)
-      if (nygrid==1) fp(1:npar_loc,iyp)=y(nghost+1)
-      if (nzgrid==1) fp(1:npar_loc,izp)=z(nghost+1)
+      if (nxgrid==1) fp(1:npar_loc,ixp)=x(l1)
+      if (nygrid==1) fp(1:npar_loc,iyp)=y(m1)
+      if (nzgrid==1) fp(1:npar_loc,izp)=z(n1)
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
       call boundconds_particles(fp,npar_loc,ipar)
+!
+!  Map particle positions on the grid.
+!
+      call map_nearest_grid(f,fp,ineargrid)
+      call map_xxp_grid(f,fp,ineargrid)
+!
+!  Sort particles so that they can be accessed contiguously in the memory.
+!
+      call sort_particles_imn(fp,ineargrid,ipar)
 !
     endsubroutine init_particles
 !***********************************************************************
