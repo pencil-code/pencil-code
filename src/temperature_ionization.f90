@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.14 2006-05-02 19:20:56 theine Exp $
+! $Id: temperature_ionization.f90,v 1.15 2006-05-02 21:01:32 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -87,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.14 2006-05-02 19:20:56 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.15 2006-05-02 21:01:32 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,7 +131,7 @@ module Entropy
 !
 !  Check whether we want heating/cooling
 !
-      lcalc_heat_cool = (heat_uniform/=0.0)
+      lcalc_heat_cool = (heat_uniform/=0.0.or.tau_heat_cor>0)
 !
 !  Define bottom and top z positions
 !  (TH: This should really be global variables IMHO)
@@ -520,7 +520,7 @@ module Entropy
       type (pencil_case) :: p
 
       real, dimension (nx) :: heat
-      real :: profile_cor
+      real :: prof
 !
 !  Initialize
 !
@@ -535,8 +535,8 @@ module Entropy
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
       if (tau_heat_cor>0) then
-        profile_cor = quintic_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
-        heat = heat + profile_cor*(log(TT_cor)-p%lnTT)/tau_heat_cor
+        prof = quintic_step(z(n),(ztop+zcor)/2,(ztop-zcor)/2)
+        heat = heat + prof*(log(TT_cor)-p%lnTT)/tau_heat_cor
       endif
 !
 !  Add to RHS of temperature equation
