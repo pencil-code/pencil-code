@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.36 2006-04-05 16:50:06 wlyra Exp $
+! $Id: planet.f90,v 1.37 2006-05-02 14:11:58 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -82,7 +82,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.36 2006-04-05 16:50:06 wlyra Exp $")
+           "$Id: planet.f90,v 1.37 2006-05-02 14:11:58 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -320,7 +320,7 @@ module Planet
       real, dimension(nx) :: torqint,torqext,torque
       real, dimension(nx) :: torqint_rc,torqext_rc
       real, dimension(nx) :: r,re,rpre,dens
-      real :: b,ax,ay,Rc,roche,gp
+      real :: b,ax,ay,Rc,roche,gp,norm
       real :: sumtorqext,sumtorqint
       real :: sumtorqext_rc,sumtorqint_rc
       integer :: i
@@ -335,15 +335,22 @@ module Planet
       rpre = ax*y(m) - ay*x(l1:l2)
 !
       torque = dens*rpre*(re**2+b**2)**(-1.5)
-      torque = torque*gp*dx*dy
 !
       torqint = 0. ; torqint_rc = 0. 
       torqext = 0. ; torqext_rc = 0.
 !
       do i=1,nx
+!
+! Avoid underflow - turn small pos torque to epsi
+!                 - and small neg torque to -epsi
+!
+         if ((torque(i).gt.0).and.(torque(i).le.epsi)) &
+              torque(i) = epsi
+         if ((torque(i).lt.0).and.(torque(i).ge.-epsi)) &
+              torque(i) = -epsi
 !         
 ! External torque
-!
+!         
          if ((r(i).ge.Rc).and.(r(i).le.r_ext)) then
             if (re(i).ge.roche) then
                torqext(i)    = torque(i)
@@ -364,8 +371,10 @@ module Planet
 !
       enddo
 !
-      sumtorqext    = sum(torqext)    ; sumtorqint    = sum(torqint)
-      sumtorqext_rc = sum(torqext_rc) ; sumtorqint_rc = sum(torqint_rc)
+      norm=dx*dy*gp
+!
+      sumtorqext    = norm*sum(torqext)    ; sumtorqint    = norm*sum(torqint)
+      sumtorqext_rc = norm*sum(torqext_rc) ; sumtorqint_rc = norm*sum(torqint_rc)
 !
       call surf_mn_name(sumtorqext,idiag_torqext)
       call surf_mn_name(sumtorqint,idiag_torqint)
