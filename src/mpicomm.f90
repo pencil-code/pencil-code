@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.153 2006-04-03 21:38:44 dobler Exp $
+! $Id: mpicomm.f90,v 1.154 2006-05-03 17:05:23 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -40,11 +40,11 @@
 !                        m1:m2
 !    boundary points (which become ghost points for adjacent processors):
 !                        m1:m1i  and  m2i:m2
-!    inner points for periodic bc (where 7-point derivatives are affected
-!    by ghost information alone):
+!    inner points for periodic bc (i.e. points where 7-point derivatives are
+!    unaffected by ghost information):
 !                        m1i+1:m2i-1
-!    inner points for general bc (where 7-point derivatives are affected
-!    by ghost information plus boundcond for m1,m2):
+!    inner points for general bc (i.e. points where 7-point derivatives are
+!    unaffected by ghost information plus boundcond for m1,m2):
 !                        m1i+2:m2i-2
 
 module Mpicomm
