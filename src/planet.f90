@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.38 2006-05-02 17:16:44 wlyra Exp $
+! $Id: planet.f90,v 1.39 2006-05-03 11:40:22 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -55,8 +55,7 @@ module Planet
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
        lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick
 ! 
-  integer :: idiag_torqintpos=0,idiag_torqextpos=0
-  integer :: idiag_torqintneg=0,idiag_torqextneg=0
+  integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_totenergy=0,idiag_totangmom=0
   integer :: idiag_totmass=0
 !
@@ -82,7 +81,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.38 2006-05-02 17:16:44 wlyra Exp $")
+           "$Id: planet.f90,v 1.39 2006-05-03 11:40:22 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -298,8 +297,7 @@ module Planet
 !  Stuff for calc_torque. Should maybe change it to particles_planet
 !
       if (ldiagnos) then
-         if ((idiag_torqintpos/=0) .or. (idiag_torqextpos/=0) &
-              .or.(idiag_torqintneg/=0) .or.(idiag_torqextneg/=0)) &  
+         if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
               call calc_torque(p%rho,gp,ax,ay,b)
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
@@ -319,8 +317,7 @@ module Planet
       use Sub
       use Cdata
 !
-      real, dimension(nx) :: torqint_pos,torqext_pos,torque
-      real, dimension(nx) :: torqint_neg,torqext_neg
+      real, dimension(nx) :: torque,torqint,torqext
       real, dimension(nx) :: r,re,rpre,dens
       real :: b,ax,ay,Rc,roche,gp
       integer :: i
@@ -336,41 +333,28 @@ module Planet
 !
       torque = gp*dens*rpre*(re**2+b**2)**(-1.5)
 !
-      torqext_pos=0. ; torqext_neg=0. 
-      torqint_pos=0. ; torqext_neg=0.
+      torqext=0. 
+      torqint=0.
 !
       do i=1,nx
+!
+! Exclude material from inside the Roche Lobe
+!         
+         if (re(i).ge.roche) then         
 !         
 ! External torque
 !         
-         if ((r(i).ge.Rc).and.(r(i).le.r_ext)) then
-            if (re(i).ge.roche) then
-               if (torque(i).ge.0.) then
-                  torqext_pos(i) = torque(i)
-               else
-                  torqext_neg(i) = torque(i)
-               endif
-            endif
-         endif
+            if (r(i).ge.Rc) torqext(i) = torque(i)
 !  
 ! Internal torque
 !
-         if ((r(i).le.Rc).and.(r(i).ge.r_int)) then
-            if (re(i).ge.roche) then
-               if (torque(i).ge.0.) then
-                  torqint_pos(i) = torque(i)
-               else
-                  torqint_neg(i) = torque(i)
-               endif
-            endif
-         endif
+            if (r(i).le.Rc) torqint(i) = torque(i)
 !
+         endif
       enddo
 !
-      call sum_lim_mn_name(torqext_pos,idiag_torqextpos)
-      call sum_lim_mn_name(torqint_pos,idiag_torqintpos)
-      call sum_lim_mn_name(torqint_neg,idiag_torqintneg)
-      call sum_lim_mn_name(torqext_neg,idiag_torqextneg)
+      call sum_lim_mn_name(torqext,idiag_torqext)
+      call sum_lim_mn_name(torqint,idiag_torqint)
 !      
     endsubroutine calc_torque
 !***********************************************************************
@@ -837,10 +821,8 @@ module Planet
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-         idiag_torqintpos=0
-         idiag_torqextpos=0
-         idiag_torqintneg=0
-         idiag_torqextneg=0
+         idiag_torqint=0
+         idiag_torqext=0
          idiag_totenergy=0
          idiag_totangmom=0
          idiag_totmass=0
@@ -851,13 +833,9 @@ module Planet
       if(lroot.and.ip<14) print*,'rprint_gravity: run through parse list'
       do iname=1,nname
          call parse_name(iname,cname(iname),cform(iname),&
-              'torqintpos',idiag_torqintpos)
+              'torqint',idiag_torqint)
          call parse_name(iname,cname(iname),cform(iname),&
-              'torqextpos',idiag_torqextpos)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqintneg',idiag_torqintneg)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqextneg',idiag_torqextneg)
+              'torqext',idiag_torqext)
          call parse_name(iname,cname(iname),cform(iname),&
               'totenergy',idiag_totenergy)
          call parse_name(iname,cname(iname),cform(iname),&
@@ -870,10 +848,8 @@ module Planet
 !  idl needs this even if everything is zero
 !
       if (lwr) then
-        write(3,*) 'i_torqintpos=',idiag_torqintpos
-        write(3,*) 'i_torqextpos=',idiag_torqextpos
-        write(3,*) 'i_torqintneg=',idiag_torqintneg
-        write(3,*) 'i_torqextneg=',idiag_torqextneg
+        write(3,*) 'i_torqint=',idiag_torqint
+        write(3,*) 'i_torqext=',idiag_torqext
         write(3,*) 'i_totenergy=',idiag_totenergy
         write(3,*) 'i_totangmom=',idiag_totangmom
         write(3,*) 'i_totmass=',idiag_totmass
