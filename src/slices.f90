@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.52 2006-04-12 12:06:39 ajohan Exp $
+! $Id: slices.f90,v 1.53 2006-05-04 05:23:12 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -15,7 +15,7 @@ module Slices
 !  Variables for xy slices start here
 !  Code variables
   real, public, dimension (nx,ny,3) :: uu_xy,aa_xy,uud_xy,vvp_xy
-  real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,lncc_xy
+  real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,cc_xy,lncc_xy
   real, public, dimension (nx,ny) :: XX_chiral_xy,YY_chiral_xy
   real, public, dimension (nx,ny) :: nd_xy
   real, public, dimension (nx,ny,ndustspec) :: md_xy
@@ -30,7 +30,7 @@ module Slices
 !  Variables for xy2 slices start here
 !  Code variables
   real, public, dimension (nx,ny,3) :: uu_xy2,aa_xy2,uud_xy2,vvp_xy2
-  real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,lncc_xy2
+  real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,cc_xy2,lncc_xy2
   real, public, dimension (nx,ny) :: XX_chiral_xy2,YY_chiral_xy2
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
@@ -45,7 +45,8 @@ module Slices
 !  Variables for xz slices start here
 !  Code variables
   real, public, dimension (nx,nz,3) :: uu_xz,aa_xz,uud_xz,vvp_xz
-  real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,lncc_xz,XX_chiral_xz,YY_chiral_xz
+  real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,cc_xz,lncc_xz
+  real, public, dimension (nx,nz) :: XX_chiral_xz,YY_chiral_xz
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
 !  Auxiliary variables  
@@ -59,7 +60,8 @@ module Slices
 !  Variables for yz slices start here
 !  Code variables
   real, public, dimension (ny,nz,3) :: uu_yz,aa_yz,uud_yz,vvp_yz
-  real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,lncc_yz,XX_chiral_yz,YY_chiral_yz
+  real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,cc_yz,lncc_yz
+  real, public, dimension (ny,nz) :: XX_chiral_yz,YY_chiral_yz
   real, public, dimension (ny,nz) :: nd_yz
   real, public, dimension (ny,nz,ndustspec) :: md_yz
 !  Auxiliary variables  
@@ -206,15 +208,35 @@ module Slices
 !
 !  Passive scalar (code variable)
 !
+        case ('cc')
+          if (icc==0) then
+            if (lroot) print*,'slices: cannot write cc slice; icc=0'
+          else
+            cc_yz=f(ix,m1:m2,n1:n2,icc)
+            cc_xz=f(l1:l2,iy,n1:n2,icc)
+            cc_xy=f(l1:l2,m1:m2,iz,icc)
+            cc_xy2=f(l1:l2,m1:m2,iz2,icc)
+            call wslice(path//'cc.yz',cc_yz,x(ix),ny,nz)
+            call wslice(path//'cc.xz',cc_xz,y(iy),nx,nz)
+            call wslice(path//'cc.xy',cc_xy,z(iz),nx,ny)
+            call wslice(path//'cc.Xy',cc_xy2,z(iz2),nx,ny)
+          endif
+!
+!  Passive scalar (code variable)
+!
         case ('lncc')
-          lncc_yz=f(ix,m1:m2,n1:n2,ilncc)
-          lncc_xz=f(l1:l2,iy,n1:n2,ilncc)
-          lncc_xy=f(l1:l2,m1:m2,iz,ilncc)
-          lncc_xy2=f(l1:l2,m1:m2,iz2,ilncc)
-          call wslice(path//'lncc.yz',lncc_yz,x(ix),ny,nz)
-          call wslice(path//'lncc.xz',lncc_xz,y(iy),nx,nz)
-          call wslice(path//'lncc.xy',lncc_xy,z(iz),nx,ny)
-          call wslice(path//'lncc.Xy',lncc_xy2,z(iz2),nx,ny)
+          if (ilncc==0) then
+            if (lroot) print*,'slices: cannot write lncc slice; ilncc=0'
+          else
+            lncc_yz=f(ix,m1:m2,n1:n2,ilncc)
+            lncc_xz=f(l1:l2,iy,n1:n2,ilncc)
+            lncc_xy=f(l1:l2,m1:m2,iz,ilncc)
+            lncc_xy2=f(l1:l2,m1:m2,iz2,ilncc)
+            call wslice(path//'lncc.yz',lncc_yz,x(ix),ny,nz)
+            call wslice(path//'lncc.xz',lncc_xz,y(iy),nx,nz)
+            call wslice(path//'lncc.xy',lncc_xy,z(iz),nx,ny)
+            call wslice(path//'lncc.Xy',lncc_xy2,z(iz2),nx,ny)
+          endif
 !
 !  Chirality fields: XX (code variable)
 !
