@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.48 2006-05-01 09:05:02 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.49 2006-05-04 14:43:40 dintrans Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -110,7 +110,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.48 2006-05-01 09:05:02 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.49 2006-05-04 14:43:40 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -261,6 +261,7 @@ module Pscalar
         prof=.5*(1.+tanh(zz/widthcc))
         f(:,:,:,icc)=-1.+2.*prof
         case('hor-tube'); call htube2(amplcc,f,icc,icc,xx,yy,zz,radius_cc,epsilon_cc)
+        case('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
         case default; call stop_it('init_lncc: bad initcc='//trim(initcc))
       endselect
 

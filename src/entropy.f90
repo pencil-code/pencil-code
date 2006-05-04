@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.396 2006-04-27 17:17:34 dobler Exp $
+! $Id: entropy.f90,v 1.397 2006-05-04 14:43:40 dintrans Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -156,7 +156,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.396 2006-04-27 17:17:34 dobler Exp $")
+           "$Id: entropy.f90,v 1.397 2006-05-04 14:43:40 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -230,6 +230,12 @@ module Entropy
           Kbot = 0.
         else                    ! Kbot = possible
           hcond0 = Kbot
+        endif
+!   04-mai-2006/boris: hcond0 given by mixinglength_flux in the MLT case
+        if (mixinglength_flux /= 0.) then
+          hcond0=-mixinglength_flux/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
+          Kbot=hcond0
+          lmultilayer=.true.
         endif
       else                      ! hcond0 = possible
         if (Kbot == impossible) then
@@ -342,6 +348,15 @@ module Entropy
 !
         endif
       endif
+!
+!
+!     if (mixinglength_flux /= 0.) then
+!        Fbot=mixinglength_flux
+!        hcond0=-Fbot/(gamma/(gamma-1.)*gravz/(mpoly0+1.))
+!        Kbot=gamma1/gamma*(mpoly+1.)*Fbot
+!        FbotKbot=gamma/gamma1/(mpoly+1.)
+!        print*,'calculated hcond0 from mixinglength_flux: ',hcond0,Fbot
+!     endif
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
@@ -572,7 +587,15 @@ module Entropy
         case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
         case('hor-fluxtube'); call htube(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
-        case('mixinglength'); call mixinglength(cs2cool,mixinglength_flux,f)
+
+        case('mixinglength')
+           call mixinglength(cs2cool,mixinglength_flux,f)
+           if (ampl_ss/=0.) then
+            print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
+            tmp=xx**2+yy**2+(zz-0.5*(z1+z2))**2
+            f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
+            hcond0=-gamma/(gamma-1)*gravz/(mpoly0+1)/mixinglength_flux
+           endif
 
         case('sedov') 
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
@@ -884,6 +907,7 @@ module Entropy
         beta1 = 0.
         tmp = ssint - gamma1*gravz*(zz-zint)/cs2int
         ssint = -gamma1*gravz*(zbot-zint)/cs2int ! ss at layer interface
+        if (headt) print*,'ssint=',ssint
       else
         beta1 = gamma*gravz/(mpoly+1)
         tmp = 1 + beta1*(zz-zint)/cs2int
@@ -3045,9 +3069,8 @@ call error('ferriere', 'Using uninitialized ss(1)')
     subroutine strat_MLT (rhotop, cs2top, mixinglength_flux, lnrhom, &
                      ssm, cs2m, rhobot)
 !
-!  DOCUMENT ME!
-!
-! 17-Nov-2005/bdintrans: coded
+! 04-mai-2006/boris: called by 'mixinglength' to iterate the MLT
+! equations until rho=1 at the bottom of convection zone (z=z1)
 !
       use Cdata
       use Gravity, only: z1,z2,gravz
@@ -3102,7 +3125,7 @@ call error('ferriere', 'Using uninitialized ss(1)')
 !  find the value of rhobot
 !
       do iz=1,nzgrid
-        if (zz(iz)<z1) exit     ! wd: Shouldn't this be (zz(iz)>=z1) ?
+        if (zz(iz)<z1) exit
       enddo
 !     stop 'find rhobot: didnt find bottom value of z'
       nbot1=iz-1
