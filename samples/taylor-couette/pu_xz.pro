@@ -1,4 +1,4 @@
-;  $Id: pu_xz.pro,v 1.2 2005-06-26 17:34:41 eos_merger_tony Exp $
+;  $Id: pu_xz.pro,v 1.3 2006-05-04 15:04:54 brandenb Exp $
 ;
 ;  one should see 2 nice pairs of Taylor vortices after t=50
 ;
@@ -12,14 +12,14 @@ uz=means(reform(uu(l1:l2,m:m+1,n1:n2,2)),2)
 contour,uy,xxx,zzz,/fil,nlev=30
 vel_a,ux,uz,xxx,zzz,nvec=1000,/over,len=.02
 ;
-oplot,-par2.r_int*[1,1],[par.xyz0(0),par.xyz1(0)],thick=5
-oplot,+par2.r_int*[1,1],[par.xyz0(0),par.xyz1(0)],thick=5
-oplot,-par2.r_int*[1,1],[par.xyz0(0),par.xyz1(0)],thick=4,col=0,li=2
-oplot,+par2.r_int*[1,1],[par.xyz0(0),par.xyz1(0)],thick=4,col=0,li=2
+oplot,-par2.r_int*[1,1],[par.xyz0(0),par.xyz1(2)],thick=5
+oplot,+par2.r_int*[1,1],[par.xyz0(0),par.xyz1(2)],thick=5
+oplot,-par2.r_int*[1,1],[par.xyz0(0),par.xyz1(2)],thick=4,col=0,li=2
+oplot,+par2.r_int*[1,1],[par.xyz0(0),par.xyz1(2)],thick=4,col=0,li=2
 ;
-oplot,-par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(0)],thick=5
-oplot,+par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(0)],thick=5
-oplot,-par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(0)],thick=4,col=0,li=2
-oplot,+par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(0)],thick=4,col=0,li=2
+oplot,-par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(2)],thick=5
+oplot,+par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(2)],thick=5
+oplot,-par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(2)],thick=4,col=0,li=2
+oplot,+par2.r_ext*[1,1],[par.xyz0(0),par.xyz1(2)],thick=4,col=0,li=2
 ;
 END
