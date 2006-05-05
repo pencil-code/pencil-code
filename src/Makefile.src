@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.177 2006-05-05 02:41:10 brandenb Exp $
+### $Id: Makefile.src,v 1.178 2006-05-05 11:11:29 ngrs Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -176,9 +176,6 @@ LIBMPISUFFIX=
 #FC=/people/disk2/brandenb/bin/ifort -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=~dobler/opt/intel/compiler70/ia32/bin/ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 ##FC=ifort -I/usr/local/lib/LAM/include #(fe[0-9])
-#FC=f95 -I/usr/lib/lam/include -mismatch #(velma)
-#FC=f95 -I/usr/lib/lam/include -mismatch #(morvern|renton|lanark)      
-#FC=ifc -I/usr/lib/lam/include #(morvern|renton|lanark)
 #FC=fort -I/usr/lib/lam/include #(mhd)
 #FC=mpif90 #(Nunatak[0-9])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
@@ -208,7 +205,6 @@ LIBMPISUFFIX=
 #FFLAGS= -fast -O5 -notransform_loops -tune ev6 -arch ev6 #(mhd)
 ##AB: next line uncommented on Tobi's advice
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
-#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(morvern|renton|lanark|velma)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
 #LDMPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]*)
 #LDMPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(lynx)
@@ -249,8 +245,7 @@ LIBMPISUFFIX=
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
 #CFLAGS=-DFUNDERSC=1 #(obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
-#F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|morvern|renton|lanark)
-#F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
+#F77=$(FC) -dusty #(nl3|Mephisto|Aladdin)
 #F77=$(FC) -lm  #(tycho|monolith)
 #F77=$(FC) #(erland|bohm|igor|onsager)
 #F77=$(FC) #(Owen|Master|nw17|nl11)
@@ -294,6 +289,14 @@ LIBMPISUFFIX=
 ##
 ##FC=gfortran #(natalia)
 #FC=ifort #(natalia)
+##
+## renton & morvern (ngrs's desktop & laptop)
+##
+#FC=ifort #(renton|morvern)
+#FFLAGS=-O3 -I/usr/lib/lam/include #(renton|morvern)
+#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(renton|morvern)
+#F77FLAGS=-w90 #(renton|morvern)
+#LIBMPISUFFIX=_#(renton|morvern)
 ##
 ## barilko Apichat Neamvonk's desktop
 ##
