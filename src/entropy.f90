@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.400 2006-05-05 11:41:47 theine Exp $
+! $Id: entropy.f90,v 1.401 2006-05-05 12:06:49 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.400 2006-05-05 11:41:47 theine Exp $")
+           "$Id: entropy.f90,v 1.401 2006-05-05 12:06:49 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2183,7 +2183,7 @@ call error('ferriere', 'Using uninitialized ss(1)')
 !  Natalia (NS)
 !   12-apr-06/axel: adapted from Wolfgang's more complex version
 !
-      use Sub, only: max_mn_name
+      use Sub, only: max_mn_name,dot
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
