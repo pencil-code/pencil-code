@@ -1,35 +1,76 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.14 2006-03-07 16:07:43 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.15 2006-05-05 10:54:08 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
 ;  Author: Anders Johansen
 ;
-function pc_particles_to_density, xxp, x, y, z, $
+function pc_particles_to_density, xxp, x, y, z, fine=fine, $
     datadir=datadir, vvp=vvp, sigmap=sigmap
 
 COMMON pc_precision, zero, one
 
-if (n_elements(vvp) ne 0) then begin
-  lsigma=1
-  pc_read_param, obj=par, datadir=datadir, /quiet
-  lshear=par.lshear
-endif else begin
-  lsigma=0
-endelse
-
 pc_set_precision, datadir=datadir
-if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one
-if (n_elements(y) gt 1) then dy=y[1]-y[0] else dy=1.0*one
-if (n_elements(z) gt 1) then dz=z[1]-z[0] else dz=1.0*one
-dx1=1.0D/dx & dy1=1.0D/dy & dz1=1.0D/dz
+pc_read_param, obj=par, datadir=datadir, /quiet
 
 npar=0L
-
 npar=n_elements(xxp[*,0])
 nx=n_elements(x)
 ny=n_elements(y)
 nz=n_elements(z)
+
+if (nx gt 1) then dx=x[1]-x[0] else dx=1.0*one
+if (ny gt 1) then dy=y[1]-y[0] else dy=1.0*one
+if (nz gt 1) then dz=z[1]-z[0] else dz=1.0*one
+dx1=1.0D/dx & dy1=1.0D/dy & dz1=1.0D/dz
+
+x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
+x1=par.xyz1[0] & y1=par.xyz1[1] & z1=par.xyz1[2]
+
+default, fine, 1
+
+if (fine gt 1) then begin
+;
+  if (nx gt 1) then begin
+    nx=fine*nx
+    dx=dx/fine
+    x=fltarr(nx)
+    x[0]=x0+dx/2
+    for i=1,nx-1 do begin
+      x[i]=x[0]+i*dx
+    endfor
+  endif
+;
+  if (ny gt 1) then begin
+    ny=fine*ny
+    dy=dy/fine
+    y=fltarr(ny)
+    y[0]=y0+dy/2
+    for i=1,ny-1 do begin
+      y[i]=y[0]+i*dy
+    endfor
+  endif
+;
+  if (nz gt 1) then begin
+    nz=fine*nz
+    dz=dz/fine
+    z=fltarr(nz)
+    z[0]=z0+dz/2
+    for i=1,nz-1 do begin
+      z[i]=z[0]+i*dz
+    endfor
+  endif
+;
+  dx1=1.0D/dx & dy1=1.0D/dy & dz1=1.0D/dz
+;
+endif
+
+if (n_elements(vvp) ne 0) then begin
+  lsigma=1
+  lshear=par.lshear
+endif else begin
+  lsigma=0
+endelse
 
 np=fltarr(nx,ny,nz)*one
 
