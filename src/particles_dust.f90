@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.84 2006-04-29 15:28:01 ajohan Exp $
+! $Id: particles_dust.f90,v 1.85 2006-05-05 07:31:17 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.84 2006-04-29 15:28:01 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.85 2006-05-05 07:31:17 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -898,7 +898,7 @@ k_loop: do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: np, tausg1
+      real, dimension (nx) :: np, tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
       real :: np_point, eps_point, rho_point, tausp1_point
       integer :: k, l
@@ -928,11 +928,14 @@ k_loop: do while (.not. (k>npar_loc))
 !  Contribution of friction force to time-step.
           if (lfirst.and.ldt) then
             if (ldragforce_gas_par) then
-              tausg1 = rhop_tilde*f(l1:l2,m,n,inp)*p%rho1*tausp1_point
+              tausg1  =rhop_tilde*f(l1:l2,m,n,inp)*p%rho1*tausp1_point
+              dt1_drag=(tausp1_point+tausg1)/cdtp
+            else
+              dt1_drag=tausp1_point/cdtp
             endif
-            dt1_max=max(dt1_max,(tausp1_point+tausg1)/cdtp)
+            dt1_max=max(dt1_max,dt1_drag)
             if (ldiagnos.and.idiag_dtdragp/=0) &
-                call max_mn_name((tausp1_point+tausg1)/cdtp,idiag_dtdragp,l_dt=.true.)
+                call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
           endif
         endif
       endif
