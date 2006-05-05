@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.398 2006-05-05 05:19:25 dobler Exp $
+! $Id: entropy.f90,v 1.399 2006-05-05 09:36:29 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -58,7 +58,8 @@ module Entropy
   real :: deltaT_poleq=0.
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
-  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.,lheatc_diffusion=.false.
+  logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
+  logical :: l1D_cooling=.false.,lheatc_diffusion=.false.
   logical :: lheatc_tensordiffusion=.false.,lheatc_spitzer=.false.
   logical :: lheatc_corona=.false.
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
@@ -103,7 +104,7 @@ module Entropy
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, lviscosity_heat
+      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, lviscosity_heat, l1D_cooling
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss, &
@@ -117,7 +118,7 @@ module Entropy
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
-      tdown, allp,beta_glnrho_global,ladvection_entropy, lviscosity_heat
+      tdown, allp,beta_glnrho_global,ladvection_entropy, lviscosity_heat, l1D_cooling
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -156,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.398 2006-05-05 05:19:25 dobler Exp $")
+           "$Id: entropy.f90,v 1.399 2006-05-05 09:36:29 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1642,7 +1643,7 @@ call error('ferriere', 'Using uninitialized ss(1)')
       real, dimension (nx) :: rhs,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
       real :: zbot,ztop,xi,profile_cor
-      real :: uT, TT_cs0
+      real :: uT, TT_cs0, const_tmp
       integer :: j,ju
 !
       intent(inout)  :: f,p
@@ -1788,20 +1789,10 @@ call error('ferriere', 'Using uninitialized ss(1)')
 
 
         else
-          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          !   -1./(2.*dt)*(p%TT(:)-T_star)/p%TT(:)
-        !  if (p%TT(1) .GT. (T_star*0.3)) then
-        !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-T_star*0.3)/(T_star*0.3)
-         !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-         !   -1./(dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)/p%rho(:)/T_star
-      !     print*, p%TT(1)
-         ! endif
+       
         endif
  
-        
-    !      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-    !         -1./(2.*dt)*(f(l1:l2,m,n,iss)-lnTT0/gamma)/p%rho(:)/T0
-  
+    
        endif 
 
       if (ldecelerat_zone) then
@@ -1816,23 +1807,27 @@ call error('ferriere', 'Using uninitialized ss(1)')
           ! -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
 
           else
-            
+          !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          ! -1./(5.*dt)*(p%TT(:)-T_star)/T_star
+            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star 
+
+  
+
+         !   const_tmp=M_star/sigmaSB*c_light*3./4.
+
+        !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+       !     -1./(5.*dt)*(p%TT(:)-(T_star**4+const_tmp*p%rho(:)*(1./z(n)-1./R_star))**0.25)/p%TT(:)
+
       !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
       !     -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
  
-       !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-       !    -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star
-        !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
          !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)/p%rho(:)/T_star
    
-     !       print*,df(l1,m,n,iss), p%rho(1)
-            
-       !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-       !     -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)
-         !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-         !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma/cp+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T0
-             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-            -1./(5.*dt)*(p%TT(:)-T_star)*2./(p%TT(:)+T_star)
+    
+        !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+        ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-f(l1:l2,m,n-1,iss))/p%rho(:)/p%TT(:)
           endif
         end if  
 
@@ -1847,19 +1842,17 @@ call error('ferriere', 'Using uninitialized ss(1)')
             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
            -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
           else  
-         !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-         !  -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
 
 
      !       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
      !       -1./(5.*dt)*(p%TT(:)/(cs0**2/(gamma1*cp))-1.)
        
-
-
           !df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
             !-1./(10.*dt)*(f(l1:l2,m,n,iss)-log(cs0**2/(gamma1*cp))/gamma)
-           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
+      !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+      !     -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
 
           endif
       
@@ -2200,7 +2193,7 @@ call error('ferriere', 'Using uninitialized ss(1)')
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2,thdiff_1D
       real, dimension (nx) :: hcond
-      real ::  zz
+      real ::  beta
 !
       intent(in) :: f,p
       intent(out) :: df
@@ -2218,24 +2211,33 @@ call error('ferriere', 'Using uninitialized ss(1)')
 
 !   cooling in 1D case 
 !
-      zz=(R_star+Lxyz(3)/(nzgrid-1.)*(n-3))
+    if (l1D_cooling) then
+
+      beta=1e8    !(R_star+Lxyz(3)/(nzgrid-1.)*(n-3))
 
       thdiff_1D =-16./3.*sigmaSB/kappa_es*p%TT**4 &
-                 *p%rho1/zz**2*160000.!*f(l1:l2,m,n,iuy)**2/p%cs2(:)
-      
+                 *p%rho1*1e8     !*f(l1:l2,m,n,iuy)**2/p%cs2(:)
+      if (n .GT. 24) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+        if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
+       endif
+    endif 
+ 
+
+
 
 !  add heat conduction to entropy equation
 !
-   if (n .LT. nzgrid-20) then
-
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff + thdiff_1D 
+   !if (n .LT. nzgrid-20) then
+       if (n .GT. 24) then
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
-
+       endif
 !print*, thdiff, thdiff_1D 
 
         df(l1:l2,m,n,iuz) = &
          df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
-   endif
+   !endif
 
      if (headtt) print*,'calc_radiation_pressure: added to z-component'
 !
@@ -3153,7 +3155,7 @@ call error('ferriere', 'Using uninitialized ss(1)')
       real, dimension (mx,my,mz) :: xx, zz
       real, dimension (nx) ::  lnrho, lnTT,ss
       integer :: step_width, step_length, mi,ni, decel_zone
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, Tstar
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, Tstar, const_tmp
 
 
       decel_zone=24
@@ -3179,25 +3181,30 @@ call error('ferriere', 'Using uninitialized ss(1)')
       print*,'T_star=',T_star
       do ni=n1,n2;
        do mi=m1,m2;
-      !  lnrho=f(l1:l2,mi,ni,ilnrho)
-     
-      !   call eoscalc(4,lnrho,lnTT,ss=ss)
-   !     if (ni .LE.24)     then
-         f(l1:l2,mi,ni,iss)=-gamma1/gamma*f(l1:l2,mi,ni,ilnrho)
-   !     else
-   !         f(l1:l2,mi,ni,iss)=ss  
-   !     endif 
-     !    f(l1:l2,mi,ni,iss)=0.
+     if (lnstar_T_const) then
+       f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+      else
+      ! lnrho=f(l1:l2,mi,ni,ilnrho)
+      ! const_tmp=M_star/sigmaSB*c_light*3./4.
 
-     !    f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+      ! lnTT=0.25*log(T_star**4+const_tmp*exp(f(l1:l2,mi,ni,ilnrho))*(1./zz(l1:l2,mi,ni)-1./R_star))
+    
+     !  call eoscalc(4,lnrho,lnTT,ss=ss)
+  
+     !  f(l1:l2,mi,ni,iss)=ss  
+        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+     endif
 
-!print*,'IC    ', f(l1:l2,mi,ni,iss),f(l1:l2,mi,ni,ilnrho)
+!print*,'IC    ', f(l1:l2,mi,ni,iss),f(l1:l2,mi,ni,ilnrho),lnTT(1)
+!print*,T_star**4+const_tmp*exp(f(l1:l2,mi,ni,ilnrho))*(1./zz(l1:l2,mi,ni)-1./R_star)
+
+ !print*, lnTT,ni
        end do 
      end do   
 
      !   f(l1:l2,:,:,iss)=lnTT0/gamma
 
-       ! f(:,:,:,iss)=(zz(:,:,:)-R_star)/Lxyz(3)*(lnTT0-lnTT0/10.)/gamma+lnTT0/10./gamma
+    !    f(:,:,:,iss)=(zz(:,:,:)-R_star)/Lxyz(3)*(lnTT0-lnTT0/10.)/gamma+lnTT0/10./gamma
 
     endsubroutine entropy_step
 !***********************************************************************

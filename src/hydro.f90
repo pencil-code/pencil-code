@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.252 2006-04-27 10:12:27 nbabkovs Exp $
+! $Id: hydro.f90,v 1.253 2006-05-05 09:36:29 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -155,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.252 2006-04-27 10:12:27 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.253 2006-05-05 09:36:29 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -889,19 +889,16 @@ module Hydro
 
       if (ldecelerat_zone) then
  
-
-
-
          if (n .LE. 24  .AND. dt .GT.0.) then
          if (lnstar_entropy) then  
         ! if (lnstar_T_const) then
            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                           -1./(5.*dt)*(p%uu(:,2)-0.)
-    
-         
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                         -1./(5.*dt)*(p%uu(:,3)-0.)
-        !endif  
+            !          -1./(5.*dt)*(p%uu(:,2)-f(l1:l2,m,n-1,iuy))
+             -1./(5.*dt)*(p%uu(:,2)-0.)   
+                 
+           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+           -1./(5.*dt)*(p%uu(:,3)-0.)   
+        ! endif  
          else 
            
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&

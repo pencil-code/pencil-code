@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.240 2006-05-05 05:19:25 dobler Exp $
+! $Id: density.f90,v 1.241 2006-05-05 09:36:29 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.240 2006-05-05 05:19:25 dobler Exp $")
+           "$Id: density.f90,v 1.241 2006-05-05 09:36:29 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1352,14 +1352,17 @@ module Density
                 -1./p%rho(:)/(5.*dt) &
                 *(p%rho(:)-rho_left*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
                else            
-            !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-            !    -1./p%rho(:)/(5.*dt) &
-            !    *(p%rho(:)-rho_left*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
-                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-               -1./p%rho(:)/(5.*dt) &
-                *(p%rho(:)-rho_left)
-               ! *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*gamma*(1.-R_star/z(n))))
-                          
+
+                 df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                         -1./p%rho(:)/(5.*dt) &
+                 *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+              ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+              !  -1./p%rho(:)/(5.*dt) &
+              !  *(p%rho(:)-rho_left*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
+              
+             ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+             ! -1./(5.*dt)*(p%rho(:)-rho_left)/p%rho(:)
+          
             endif    
 
             else
