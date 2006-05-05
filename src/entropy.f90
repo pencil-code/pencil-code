@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.399 2006-05-05 09:36:29 nbabkovs Exp $
+! $Id: entropy.f90,v 1.400 2006-05-05 11:41:47 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.399 2006-05-05 09:36:29 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.400 2006-05-05 11:41:47 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2176,15 +2176,14 @@ call error('ferriere', 'Using uninitialized ss(1)')
       endif
 !
     endsubroutine calc_heatcond_simple
-!**********************************************************************************************************************************
+!***********************************************************************
     subroutine calc_heatcond_diffusion(f,df,p)
 !
 !  heat conduction
 !  Natalia (NS)
 !   12-apr-06/axel: adapted from Wolfgang's more complex version
 !
-      use Cdata
-      use Sub
+      use Sub, only: max_mn_name
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
@@ -2253,8 +2252,7 @@ call error('ferriere', 'Using uninitialized ss(1)')
       endif
 !
     endsubroutine calc_heatcond_diffusion
-!*******************************************************************************************
-
+!***********************************************************************
     subroutine calc_heatcond_spitzer(df,p)
 !
 !  Calculates heat conduction parallel and perpendicular (isotropic)
