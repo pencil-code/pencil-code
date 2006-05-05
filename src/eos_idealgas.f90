@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.43 2006-04-06 19:02:11 theine Exp $
+! $Id: eos_idealgas.f90,v 1.44 2006-05-05 05:19:25 dobler Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.43 2006-04-06 19:02:11 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.44 2006-05-05 05:19:25 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -147,11 +147,10 @@ module EquationOfState
 !        call fatal_error("initialize_eos", &
 !               "unit_temperature specified does not match that calculated!")
 !      endif
+
 !
 ! Need to recalculate some constants
 !
-
-
       if (gamma1 /= 0.) then
         lnTT0=log(cs20/gamma1)
       else                      ! gamma==1

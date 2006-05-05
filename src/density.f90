@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.239 2006-04-27 10:12:27 nbabkovs Exp $
+! $Id: density.f90,v 1.240 2006-05-05 05:19:25 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.239 2006-04-27 10:12:27 nbabkovs Exp $")
+           "$Id: density.f90,v 1.240 2006-05-05 05:19:25 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -146,7 +146,7 @@ module Density
 !
 !
 
-      use CData, only: lfreeze_varext,lfreeze_varint,ilnrho
+      use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrho
       use EquationOfState, only: select_eos_variable
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -232,14 +232,16 @@ module Density
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
-      if (ldensity_nolog) then
-        call select_eos_variable('rho',ilnrho)
-      else 
-        call select_eos_variable('lnrho',ilnrho)
+      if (.not. lreloading) then ! already in place when reloading
+        if (ldensity_nolog) then
+          call select_eos_variable('rho',ilnrho)
+        else 
+          call select_eos_variable('lnrho',ilnrho)
+        endif
       endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
-!        
+!
     endsubroutine initialize_density
 !***********************************************************************
     subroutine read_density_init_pars(unit,iostat)

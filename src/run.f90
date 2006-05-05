@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.221 2006-04-20 13:34:27 ajohan Exp $
+! $Id: run.f90,v 1.222 2006-05-05 05:19:25 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
         type (pencil_case) :: p
         double precision :: time1,time2
         integer :: count, ierr
-        logical :: stop=.false.,timeover=.false.,reload=.false.
+        logical :: stop=.false.,timeover=.false.
         logical :: lreinit_file=.false., exist=.false.
         real :: wall_clock_time=0., time_per_step=0.
         double precision :: time_last_diagnostic, time_this_diagnostic
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.221 2006-04-20 13:34:27 ajohan Exp $")
+             "$Id: run.f90,v 1.222 2006-05-05 05:19:25 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -183,7 +183,7 @@
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-        call initialize_modules(f,lstarting=.false.)
+        call initialize_modules(f,LSTARTING=.false.)
 !
 !  initialize ionization array
 !
@@ -193,7 +193,7 @@
 !
         if (lparticles) then
           call particles_rprint_list(.false.)
-          call particles_initialize_modules(lstarting=.false.)
+          call particles_initialize_modules(LSTARTING=.false.)
         endif
 !
 !  Write data to file for IDL
@@ -283,23 +283,23 @@
 !
 !  Re-read parameters if file `RELOAD' exists; then remove the file
 !
-            if (lroot) inquire(FILE="RELOAD", EXIST=reload)
-            call mpibcast_logical(reload, 1)
-            if (reload) then
+            if (lroot) inquire(FILE="RELOAD", EXIST=lreloading)
+            call mpibcast_logical(lreloading, 1)
+            if (lreloading) then
               if (lroot) write(0,*) 'Found RELOAD file -- reloading parameters'
 !  Re-read configuration
               dt=0.
               call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
               call rprint_list(LRESET=.true.) !(Re-read output list)
-              call initialize_modules(f,lstarting=.false.)
+              call initialize_modules(f,LSTARTING=.false.)
               if (lparticles) then
                 call particles_rprint_list(.false.)
-                call particles_initialize_modules(lstarting=.false.)
+                call particles_initialize_modules(LSTARTING=.false.)
               endif
               call choose_pencils()
               call wparam2()
               if (lroot) call remove_file("RELOAD")
-              reload = .false.
+              lreloading = .false.
             endif
 !
 !  Reinit variables found in `REINIT' file; then remove the file. Currently

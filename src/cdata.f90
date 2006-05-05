@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.306 2006-05-01 09:05:01 brandenb Exp $
+! ! $Id: cdata.f90,v 1.307 2006-05-05 05:19:25 dobler Exp $
 
 module Cdata
 
@@ -177,7 +177,7 @@ module Cdata
   !  modules that are linked in (see Makefile.local) and can, in some cases,
   !  be reset also via appropriate namelist entries.
 
-  logical :: lstart=.false., lrun=.false.
+  logical :: lstart=.false., lrun=.false., lreloading=.false.
 !
 !
 ! Module flags
