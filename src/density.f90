@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.243 2006-05-08 14:10:46 nbabkovs Exp $
+! $Id: density.f90,v 1.244 2006-05-08 17:47:46 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.243 2006-05-08 14:10:46 nbabkovs Exp $")
+           "$Id: density.f90,v 1.244 2006-05-08 17:47:46 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1716,38 +1716,43 @@ module Density
  !     real, dimension(nx) :: fint,fext,pdamp
       real  ::  sink_area, V_acc, V_0, rho_0, ksi, integral_rho=0., flux
       integer :: sink_area_points=100, i
-  
-
-     real, dimension (nx), intent(in) :: rho 
-
+      integer :: idxz  
+      real, dimension (nx), intent(in) :: rho 
 
        sink_area=Lxyz(3)/(nzgrid-1.)*sink_area_points
-    
-  V_0=f(4,4,nzgrid-30,iuz)
-      rho_0=exp(f(4,4,nzgrid-30,ilnrho))
-        flux=accretion_flux
+
+       !
+       ! No clue what this index is good for, but nzgrid-30 is not a
+       ! valid index for e.g. 2-d runs, so sanitize it to avoid
+       ! `Array reference at (1) is out of bounds' with g95 -Wall
+       !
+       idxz = min(nzgrid-30,n2)
+
+       V_0=f(4,4,idxz,iuz)
+       rho_0=exp(f(4,4,idxz,ilnrho))
+       flux=accretion_flux
    
-        flux=V_0*rho_0     
+       flux=V_0*rho_0     
 
       ! V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
        
-    !   
-    !  ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
-      ksi=1./sink_area
+      !   
+      !  ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
+       ksi=1./sink_area
 
-      if ( 25 .GT. n .AND. n .LT. sink_area_points+25) then 
-       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-flux*ksi/rho(:)
-      endif 
+       if ( 25 .GT. n .AND. n .LT. sink_area_points+25) then 
+         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-flux*ksi/rho(:)
+       endif
  
        if ( n .EQ. 25 .OR. n .EQ. sink_area_points+25) then
-       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
-      endif 
+         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
+       endif
 
       
-         if (headtt) print*,'dlnrho_dt: mass source*rho = ', flux/sink_area
+       if (headtt) print*,'dlnrho_dt: mass source*rho = ', flux/sink_area
     
 
 
-    endsubroutine mass_source_NS
+     endsubroutine mass_source_NS
 !***********************************************************************
 endmodule Density
