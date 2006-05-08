@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.402 2006-05-07 20:25:46 mee Exp $
+! $Id: entropy.f90,v 1.403 2006-05-08 14:10:46 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.402 2006-05-07 20:25:46 mee Exp $")
+           "$Id: entropy.f90,v 1.403 2006-05-08 14:10:46 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1811,7 +1811,7 @@ module Entropy
           !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
           ! -1./(5.*dt)*(p%TT(:)-T_star)/T_star
             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star 
+           -1./(1.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star 
 
   
 
@@ -2213,10 +2213,10 @@ module Entropy
 !
     if (l1D_cooling) then
 
-      beta=1e8    !(R_star+Lxyz(3)/(nzgrid-1.)*(n-3))
+      beta=1e6   !(R_star+Lxyz(3)/(nzgrid-1.)*(n-3))
 
       thdiff_1D =-16./3.*sigmaSB/kappa_es*p%TT**4 &
-                 *p%rho1*1e8     !*f(l1:l2,m,n,iuy)**2/p%cs2(:)
+                 *p%rho1*beta     !*f(l1:l2,m,n,iuy)**2/p%cs2(:)
       if (n .GT. 24) then
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
         if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'

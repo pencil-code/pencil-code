@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.242 2006-05-05 10:38:24 ngrs Exp $
+! $Id: density.f90,v 1.243 2006-05-08 14:10:46 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.242 2006-05-05 10:38:24 ngrs Exp $")
+           "$Id: density.f90,v 1.243 2006-05-08 14:10:46 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1354,15 +1354,15 @@ module Density
                 *(p%rho(:)-rho_left*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
                else            
 
-                 df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                         -1./p%rho(:)/(5.*dt) &
-                 *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+              !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+              !           -1./p%rho(:)/(5.*dt) &
+              !   *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
               ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
               !  -1./p%rho(:)/(5.*dt) &
               !  *(p%rho(:)-rho_left*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
               
-             ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-             ! -1./(5.*dt)*(p%rho(:)-rho_left)/p%rho(:)
+           !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+           !   -1./(5.*dt)*(p%rho(:)-rho_left)/p%rho(:)
           
             endif    
 
@@ -1723,11 +1723,11 @@ module Density
 
        sink_area=Lxyz(3)/(nzgrid-1.)*sink_area_points
     
-!   V_0=f(4,4,nzgrid-20,iuz)
- !      rho_0=rho(1)!exp(f(4,4,nzgrid-20,ilnrho))
+  V_0=f(4,4,nzgrid-30,iuz)
+      rho_0=exp(f(4,4,nzgrid-30,ilnrho))
         flux=accretion_flux
    
- 
+        flux=V_0*rho_0     
 
       ! V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
        
