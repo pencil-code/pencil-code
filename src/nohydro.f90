@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.54 2006-04-04 16:21:47 mee Exp $
+! $Id: nohydro.f90,v 1.55 2006-05-09 00:32:33 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.54 2006-04-04 16:21:47 mee Exp $")
+           "$Id: nohydro.f90,v 1.55 2006-05-09 00:32:33 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -576,6 +576,13 @@ module Hydro
 !
 !      ps=(k**(initpower/2.))*sqrt(dk*2./3.)
 !  The factor of 2 just after the sqrt may need to be 2./3.
+
+!
+!  With the `weezey' stuff above commented out, dk is currently used, but
+!  never set, so we better abort
+!
+      call error('random_isotropic_KS_setup', 'Using uninitialized dk')
+
       ps=sqrt(2.*energy*dk)   !/3.0) 
 !
 !  give KS_A and KS_B length ps
