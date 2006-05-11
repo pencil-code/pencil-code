@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.151 2006-02-08 14:09:27 mee Exp $
+! $Id: start.f90,v 1.152 2006-05-11 15:03:09 theine Exp $
 !
 !***********************************************************************
       program start
@@ -89,7 +89,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.151 2006-02-08 14:09:27 mee Exp $")
+             "$Id: start.f90,v 1.152 2006-05-11 15:03:09 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -257,6 +257,7 @@
 !  check whether we want ionization
 !
         if(leos_ionization) call ioninit(f)
+        if(leos_temperature_ionization) call ioncalc(f)
         if(lradiation_ray) call radtransfer(f)
 !
 !  filter initial velocity

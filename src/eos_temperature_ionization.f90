@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.16 2006-04-19 16:27:56 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.17 2006-05-11 15:03:09 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -7,7 +7,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED ss,ee,pp,lnTT,cs2,glnTT,TT,TT1
 ! PENCILS PROVIDED yH,del2lnTT,cv,cv1,cp,cp1,mu1
@@ -75,7 +75,7 @@ module EquationOfState
 !
 !  14-jun-03/axel: adapted from register_eos
 !
-      use Sub
+      use Mpicomm, only: stop_it
 !
       logical, save :: first=.true.
 !
@@ -85,10 +85,39 @@ module EquationOfState
       leos=.true.
       leos_temperature_ionization=.true.
 !
+!  set indices for auxiliary variables
+!
+      iyH   = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+
+      if ((ip<=8) .and. lroot) then
+        print*, 'register_eos: ionization nvar = ', nvar
+        print*, 'register_eos: iyH = ', iyH
+      endif
+!
+!  Put variable names in array
+!
+      varname(iyH)   = 'yH'
+!
+!  Check we aren't registering too many auxiliary variables
+!
+      if (naux > maux) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+        call stop_it('register_eos: naux > maux')
+      endif
+!
+!  Writing files for use with IDL
+!
+      if (naux < maux)  aux_var(aux_count)=',yH $'
+      if (naux == maux) aux_var(aux_count)=',yH'
+      aux_count=aux_count+1
+      if (lroot) then
+        write(15,*) 'yH = fltarr(mx,my,mz)*one'
+      endif
+!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.16 2006-04-19 16:27:56 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.17 2006-05-11 15:03:09 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -198,11 +227,6 @@ module EquationOfState
         lpencil_in(i_TT)=.true.
       endif
 
-      if (lpencil_in(i_yH).and..not.lconst_yH) then
-        lpencil_in(i_rho1)=.true.
-        lpencil_in(i_TT1)=.true.
-      endif
-
       if (lpencil_in(i_dppdlnTT)) then
         lpencil_in(i_yH)=.true.
         lpencil_in(i_TT1)=.true.
@@ -265,19 +289,7 @@ module EquationOfState
 !
 !  Ionization fraction
 !
-      if (lpencil(i_yH)) then
-        if (lconst_yH) then
-          p%yH = yH_const
-        else
-          where (TT_ion*p%TT1 < -log(tiny(TT_ion)))
-            rhs = rho_e*p%rho1*(p%TT1*TT_ion)**(-1.5)*exp(-TT_ion*p%TT1)
-            sqrtrhs = sqrt(rhs)
-            p%yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
-          elsewhere
-            p%yH = 0
-          endwhere
-        endif
-      endif
+      if (lpencil(i_yH)) p%yH = f(l1:l2,m,n,iyH)
 
 !
 !  Mean molecular weight
@@ -354,21 +366,16 @@ module EquationOfState
 !  The contributions from each particle species contain the mixing entropy
 !
       if (lpencil(i_ss)) then
-        tmp = 2.5 - 1.5*(lnTT_ion-p%lnTT)
-        where (p%yH > 0)
-          ! Neutral Hydrogen
-          p%ss = (1-p%yH)*(tmp + lnrho_H - p%lnrho - log(1-p%yH))
-          ! Protons
-          p%ss = p%ss + p%yH*(tmp + lnrho_H - p%lnrho - log(p%yH))
-          ! Electrons
-          p%ss = p%ss + p%yH*(tmp + lnrho_e - p%lnrho - log(p%yH))
-        elsewhere
-          ! Neutral Hydrogen
-          p%ss = tmp + lnrho_H - p%lnrho
+        tmp = 2.5 - 1.5*(lnTT_ion-p%lnTT) - p%lnrho
+        where (p%yH < 1) ! Neutral Hydrogen
+          p%ss = (1-p%yH)*(tmp + lnrho_H - log(1-p%yH))
         endwhere
-        if (xHe > 0) then
-          ! Helium
-          p%ss = p%ss + xHe*(tmp + lnrho_He - p%lnrho - log(xHe))
+        where (p%yH > 0) ! Electrons and ionized Hydrogen
+          p%ss = p%ss + p%yH*(tmp + lnrho_H - log(p%yH))
+          p%ss = p%ss + p%yH*(tmp + lnrho_e - log(p%yH))
+        endwhere
+        if (xHe > 0) then ! Helium
+          p%ss = p%ss + xHe*(tmp + lnrho_He - log(xHe))
         endif
         p%ss = Rgas*mu1_0*p%ss
       endif
@@ -409,10 +416,32 @@ module EquationOfState
     endsubroutine ioninit
 !***********************************************************************
     subroutine ioncalc(f)
-!
-    real, dimension (mx,my,mz,mvar+maux) :: f
-!
-    if(NO_WARN) print*,f  !(keep compiler quiet)
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+
+      real, dimension (mx) :: yH,rho1,TT1,rhs,sqrtrhs
+
+      do n=1,mz
+      do m=1,my
+
+        if (lconst_yH) then
+          yH = yH_const
+        else
+          rho1 = exp(-f(:,m,n,ilnrho))
+          TT1 = exp(-f(:,m,n,ilnTT))
+          where (TT_ion*TT1 < -log(tiny(TT_ion)))
+            rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+            sqrtrhs = sqrt(rhs)
+            yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+          elsewhere
+            yH = 0
+          endwhere
+        endif
+
+        f(:,m,n,iyH) = yH
+
+      enddo
+      enddo
 !
     endsubroutine ioncalc
 !***********************************************************************
@@ -548,17 +577,19 @@ module EquationOfState
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
 
       real, dimension(psize) :: lnrho_,lnTT_,yH_
-      real, dimension(psize) :: rho1,TT1,rhs,sqrtrhs,tmp
+      real, dimension(psize) :: TT1,tmp
 
       select case (psize)
 
       case (nx)
         lnrho_=f(l1:l2,m,n,ilnrho)
         lnTT_=f(l1:l2,m,n,ilnTT)
+        yH_=f(l1:l2,m,n,iyH)
 
       case (mx)
         lnrho_=f(:,m,n,ilnrho)
         lnTT_=f(:,m,n,ilnTT)
+        yH_=f(:,m,n,iyH)
 
       case default
         call stop_it("eoscalc: no such pencil size")
@@ -570,46 +601,33 @@ module EquationOfState
 
       if (present(lnTT)) lnTT=lnTT_
 
-      if (present(yH).or.present(ss).or.present(ee).or.present(pp).or. &
-          present(mu1).or.present(kapparho)) then
-        rho1 = exp(-lnrho_)
-        TT1 = exp(-lnTT_)
-        if (lconst_yH) then
-          yH_ = yH_const
-        else
-          where (TT_ion*TT1 < -log(tiny(TT_ion)))
-            rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
-            sqrtrhs = sqrt(rhs)
-            yH_ = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
-          elsewhere
-            yH_ = 0
-          endwhere
-        endif
-      endif
-
       if (present(yH)) yH = yH_
 
       if (present(mu1).or.present(ss).or.present(ee).or.present(pp)) then
         mu1 = mu1_0*(1 + yH_ + xHe)
       endif
 
-      if (present(ee)) ee = 1.5*Rgas*mu1/TT1 + yH_*Rgas*mu1_0*TT_ion
+      if (present(ee)) ee = 1.5*Rgas*mu1*exp(lnTT_) + yH_*Rgas*mu1_0*TT_ion
 
-      if (present(pp)) pp = Rgas*mu1/(rho1*TT1)
+      if (present(pp)) pp = Rgas*mu1*exp(lnrho_+lnTT_)
 
       if (present(ss)) then
-        tmp = 2.5 - 1.5*(lnTT_ion-lnTT_)
-        ss = tmp + lnrho_H - lnrho_
-        where (yH_ > 0)
-          ss = ss + yH_*(tmp + lnrho_e - lnrho - log(yH_))
+        tmp = 2.5 - 1.5*(lnTT_ion-lnTT_) - lnrho_
+        where (yH_ < 1) ! Neutral Hydrogen
+          ss = (1-yH_)*(tmp + lnrho_H - log(1-yH_))
         endwhere
-        if (xHe > 0) then
-          ss = ss + xHe*(tmp + lnrho_He - lnrho - log(xHe))
+        where (yH_ > 0) ! Electrons and ionized Hydrogen
+          ss = ss + yH_*(tmp + lnrho_H - log(yH_))
+          ss = ss + yH_*(tmp + lnrho_e - log(yH_))
+        endwhere
+        if (xHe > 0) then ! Helium
+          ss = ss + xHe*(tmp + lnrho_He - log(xHe))
         endif
         ss = Rgas*mu1_0*ss
       endif
 
       if (present(kapparho)) then
+        TT1 = exp(-lnTT_)
         kapparho = (yH_+yMetals)*(1-yH_)*kappa0* &
                    exp(2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1)
       endif
@@ -1546,5 +1564,14 @@ module EquationOfState
     endselect
 
     end subroutine bc_ss_energy
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z(f,topbot)
+
+      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (mx,my) :: yH
+
+    end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************
 endmodule EquationOfState

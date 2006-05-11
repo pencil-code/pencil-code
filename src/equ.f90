@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.293 2006-04-20 14:10:37 ajohan Exp $
+! $Id: equ.f90,v 1.294 2006-05-11 15:03:09 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -372,7 +372,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.293 2006-04-20 14:10:37 ajohan Exp $")
+           "$Id: equ.f90,v 1.294 2006-05-11 15:03:09 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -434,7 +434,7 @@ module Equ
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
 !
-      if (leos_ionization) call ioncalc(f)
+      if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
       if (lradiation_ray)  call radtransfer(f)
       if (lshock)          call calc_shock_profile_simple(f)
       if (lvisc_hyper.or.lvisc_smagorinsky) then
