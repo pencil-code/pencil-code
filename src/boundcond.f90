@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.102 2006-04-29 05:33:46 brandenb Exp $
+! $Id: boundcond.f90,v 1.103 2006-05-11 17:29:14 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -342,6 +342,8 @@ module Boundcond
                  call bc_force_z(f,+1,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
+              case ('hs') ! hydrostatic boundary
+                if (j==ilnrho) call bc_lnrho_hydrostatic_z(f,topbot)
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set

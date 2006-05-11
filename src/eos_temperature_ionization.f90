@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.17 2006-05-11 15:03:09 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.18 2006-05-11 17:29:14 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.17 2006-05-11 15:03:09 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.18 2006-05-11 17:29:14 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1566,11 +1566,83 @@ module EquationOfState
     end subroutine bc_ss_energy
 !***********************************************************************
     subroutine bc_lnrho_hydrostatic_z(f,topbot)
+!
+!  Boundary condition for density.
+!
+!  This sets
+!    \partial_{z} \ln\rho
+!  such that
+!    \partial_{z} p = \rho g_{z},
+!  i.e. it enforces hydrostatic equlibrium at the boundary.
+!
+!  Currently this is only correct if
+!    \partial_{z} lnT = 0
+!  at the boundary.
+!
+!
+!  11-May-2006/tobi: coded
+!
+      use Gravity, only: gravz
 
       real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (mx,my) :: yH
+      real, dimension (mx,my) :: yH,lnTT,mu1,rho1pp,dlnppdlnrho,dlnrhodz
+      integer :: i
+
+      select case (topbot)
+
+!
+!  Bottom boundary
+!
+      case ('bot')
+
+        if (bcz1(ilnTT)/='s') then
+          call fatal_error("bc_lnrho_hydrostatic_z", &
+                           "This boundary consdition for density is"// &
+                           "currently only correct for bcz1(ilnTT)='s'")
+        endif
+
+        lnTT = f(:,:,n1,ilnTT)
+        yH = f(:,:,n1,iyH)
+
+        mu1 = mu1_0*(1 + yH + xHe)
+        rho1pp = Rgas*mu1*exp(lnTT)
+        dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
+
+        dlnrhodz = gravz*rho1pp/dlnppdlnrho
+
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+        enddo
+
+!
+!  Top boundary
+!
+      case ('top')
+
+        if (bcz2(ilnTT)/='s') then
+          call fatal_error("bc_lnrho_hydrostatic_z", &
+                           "This boundary consdition for density is"//&
+                           "currently only correct for bcz2(ilnTT)='s'")
+        endif
+
+        lnTT = f(:,:,n2,ilnTT)
+        yH = f(:,:,n2,iyH)
+
+        mu1 = mu1_0*(1 + yH + xHe)
+        rho1pp = Rgas*mu1*exp(lnTT)
+        dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
+
+        dlnrhodz = gravz*rho1pp/dlnppdlnrho
+
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+        enddo
+
+      case default
+
+      endselect
 
     end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************
