@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.35 2006-04-06 11:13:14 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.36 2006-05-11 18:30:41 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -141,7 +141,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.35 2006-04-06 11:13:14 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.36 2006-05-11 18:30:41 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -497,6 +497,9 @@ module Radiation
 
         n=nnstop
         nsteps=(n+nrad-nnstart)/nrad
+
+        lsteps=huge(lsteps)
+        msteps=huge(msteps)
 
         do l=ll1,ll2
         do m=mm1,mm2
