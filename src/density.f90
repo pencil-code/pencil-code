@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.244 2006-05-08 17:47:46 dobler Exp $
+! $Id: density.f90,v 1.245 2006-05-12 11:59:30 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -31,7 +31,7 @@ module Density
 
   include 'density.h'
 
-  real :: ampllnrho=0.,widthlnrho=.1,rho_left=1.,rho_right=1.
+  real :: ampllnrho=0.,widthlnrho=.1,rho_left=1.,rho_right=1., rho_up=1.
   real :: cdiffrho=0.,diffrho=0.,diffrho_hyper3=0.,diffrho_shock=0.
   real :: lnrho_const=0., rho_const=1.
   real :: amplrho=0, phase_lnrho=0.0
@@ -58,7 +58,7 @@ module Density
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
-       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top, &
+       rho_left,rho_right,rho_up,lnrho_const,rho_const,cs2bot,cs2top, &
        radius_lnrho,eps_planet,                      &
        b_ell,q_ell,hh0,rbound,                       &
        mpoly,strati_type,beta_glnrho_global,         &
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.244 2006-05-08 17:47:46 dobler Exp $")
+           "$Id: density.f90,v 1.245 2006-05-12 11:59:30 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -748,7 +748,7 @@ module Density
       real, dimension (mx,my,mz) :: xx, zz
 
       integer :: step_width, step_length
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll,  ln_ro_l, ln_ro_r
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll,  ln_ro_l, ln_ro_r, ln_ro_u
 
       hdisk=H_disk 
       ldisk=L_disk
@@ -796,23 +796,26 @@ module Density
 
         ln_ro_r=log(rho_right)
         ln_ro_l=log(rho_left)
+        ln_ro_u=log(rho_up)
 
         ll=Lxyz(3)-ldisk
        
-    !  if (gamma.EQ.1) then
+      if (nzgrid .GT. 1) then 
 
          f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
  
-    !  else 
+     !     if (H_disk.GT.0.)       f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-(xx(:,:,:)/H_disk)**2
 
-   !   f(:,:,:,ilnrho)=log(rho_left+(gamma1*M_star/zz(:,:,:)/cs0**2)**(1./gamma1) &
-   !          *(1.-(zz(:,:,:)/R_star)**(1./gamma1)))
+       if (H_disk.GT.0.)  f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
+      else
 
-     ! f(:,:,:,ilnrho)=log(rho_left-(gamma1*M_star/R_star/cs0**2)**(1./gamma1) &
-     !        *((R_star/zz(:,:,:))**(1./gamma1)-1))
-   !   end if 
-  
-          if (H_disk.GT.0.)         f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-(xx(:,:,:)/H_disk)**2
+      if (H_disk.GT.0.)  f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
+      !  if (H_disk.GT.0.) f(:,:,:,ilnrho)=ln_ro_u
+   !f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_l-ln_ro_r)+ln_ro_r!ln_ro_u!+((xx(:,:,:)/H_disk)**2-1.)
+
+ ! if (H_disk.GT.0.)  !f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_u*2.)+ln_ro_u*2.
+ 
+      endif 
         
       end if
    
@@ -1230,7 +1233,7 @@ module Density
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       logical :: ljunk=.true.
-      integer :: i
+      integer :: i, l_sz
       real    :: Vz_0,rho_0, tmp
 !      
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho
@@ -1376,6 +1379,26 @@ module Density
        endif
            
      endif  
+
+! surface zone in a case of a Keplerian disk
+
+      if (lsurface_zone) then
+          if ( dt .GT.0.) then
+            l_sz=l2-20
+
+          !   df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
+          !       -1./(5.*dt)*(1.-rho_up/exp(f(l_sz:l2,m,n,ilnrho)))
+
+           
+          ! do i=l_sz,l2   
+          !   df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+          !         -1./(5.*dt)*(f(i-1,m,n,ilnrho)-f(i,m,n,ilnrho))
+          ! enddo
+         endif
+      endif
+
+
+
 
 
 !

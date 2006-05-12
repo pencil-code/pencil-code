@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.307 2006-05-05 05:19:25 dobler Exp $
+! ! $Id: cdata.f90,v 1.308 2006-05-12 11:59:30 nbabkovs Exp $
 
 module Cdata
 
@@ -289,6 +289,7 @@ module Cdata
   logical :: ltop_velocity_kep=.false.
   logical :: laccelerat_zone=.false.
   logical :: ldecelerat_zone=.false.
+  logical :: lsurface_zone=.false.
   logical :: lnstar_T_const=.false.
   logical :: lnstar_entropy=.false.
 ! A buffer in which to construct an error message

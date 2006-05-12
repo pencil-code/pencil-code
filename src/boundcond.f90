@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.103 2006-05-11 17:29:14 theine Exp $
+! $Id: boundcond.f90,v 1.104 2006-05-12 11:59:30 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -126,6 +126,8 @@ module Boundcond
                   call bcx_extrap_2_1(f,topbot,j)
                 case ('e2')       ! extrapolation
                   call bcx_extrap_2_2(f,topbot,j)
+                case ('stp') 
+                  call bc_BL_x(f,-1,topbot, j,REL=.true., val=fbcx12)
                 case ('')         ! do nothing; assume that everything is set
                 case default
                   write(unit=errormsg,fmt='(A,A4,A,I3)') &
@@ -349,7 +351,7 @@ module Boundcond
               case ('')         ! do nothing; assume that everything is set
               case ('stp') 
              ! if (j==5)  print*,'fbcz12_1, fbcz12_2',fbcz12_1, fbcz12_2
-                call bc_step_xz(f,-1,topbot, j, fbcz12_1, fbcz12_2)
+                call bc_BL_z(f,-1,topbot, j, fbcz12_1, fbcz12_2)
               case default
                 write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
                      bc12(j), " for j=", j
@@ -682,7 +684,62 @@ module Boundcond
 !
     endsubroutine bc_van_z
 !***********************************************************************
-    subroutine bc_step_xz(f,sgn,topbot,j,val1,val2)
+ 
+    subroutine bc_BL_x(f,sgn,topbot,j,rel,val)
+!
+! Natalia
+!  11-may-06
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mcom), optional :: val
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')  
+
+             ! bottom boundary
+
+     if (j .EQ. 1) then 
+         f(l1,:,:,j) = 0.
+         do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+     else
+        do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
+     endif
+          !   f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
+
+      case('top')               ! top boundary
+
+       !if (j .LE. 0) then
+       if (j .EQ. 1) then
+          f(l2,m1:m2,n1:n2,j)=val(j)
+        
+          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+      
+
+       else        
+
+        f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
+        f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
+        f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
+
+       endif
+       
+      case default
+        print*, "bc_BL_x: ", topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_BL_x
+ !***********************************************************************
+    subroutine bc_BL_z(f,sgn,topbot,j,val1,val2)
 !
 !  Step boundary conditions.
 !
@@ -793,7 +850,7 @@ module Boundcond
 
       endselect
 !
-    endsubroutine bc_step_xz
+    endsubroutine bc_BL_z
 !***********************************************************************
     subroutine bc_van3rd_z(f,topbot,j)
 !

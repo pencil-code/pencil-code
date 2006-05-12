@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.254 2006-05-08 14:10:46 nbabkovs Exp $
+! $Id: hydro.f90,v 1.255 2006-05-12 11:59:31 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -155,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.254 2006-05-08 14:10:46 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.255 2006-05-12 11:59:31 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -785,7 +785,7 @@ module Hydro
       real, dimension (nx) :: pdamp,ur,up
       real :: c2,s2, const_for_eff_grav
       real :: gr_part, cf_part
-      integer :: j,i
+      integer :: j,i,l_sz
 !
       intent(in) :: f,p
       intent(out) :: df
@@ -914,7 +914,42 @@ module Hydro
 
       endif
 
+! surface zone in a case of a Keplerian disk
 
+      if (lsurface_zone) then
+          if ( dt .GT.0.) then
+                         
+         l_sz=l2-10
+               
+           do j=l_sz,l2   
+           !  df(j,m,n,iux)=df(j,m,n,iux)&
+           !        -1./(3.*dt)*(-f(j-1,m,n,iux)+f(j,m,n,iux))
+           !   df(j,m,n,iux)=df(j,m,n,iux)&
+           !        -1./(10.*dt)*(f(j,m,n,iux)-f(j+1,m,n,iux))
+           enddo
+
+             df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
+                   -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
+     
+         
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+                  -1./(5.*dt)*(f(l1:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
+     
+
+
+         !   df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
+         !          -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
+    
+          !  df(l1:l1+20,m,n,iuy)=df(l1:l1+20,m,n,iuy)&
+          !        -1./(5.*dt)*(f(l1:l1+20,m,n,iuy)-sqrt(M_star/xyz0(3)))
+     
+ 
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+                   -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
+        
+         endif
+
+      endif
 
 
 !
