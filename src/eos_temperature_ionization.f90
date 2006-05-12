@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.19 2006-05-12 10:37:35 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.20 2006-05-12 14:04:23 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.19 2006-05-12 10:37:35 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.20 2006-05-12 14:04:23 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -421,12 +421,15 @@ module EquationOfState
 
       real, dimension (mx) :: yH,rho1,TT1,rhs,sqrtrhs
 
-      do n=1,mz
-      do m=1,my
+      if (lconst_yH) then
+      
+        f(:,m,n,iyH) = yH_const
 
-        if (lconst_yH) then
-          yH = yH_const
-        else
+      else
+
+        do n=1,mz
+        do m=1,my
+
           rho1 = exp(-f(:,m,n,ilnrho))
           TT1 = exp(-f(:,m,n,ilnTT))
           where (TT_ion*TT1 < -log(tiny(TT_ion)))
@@ -436,13 +439,14 @@ module EquationOfState
           elsewhere
             yH = 0
           endwhere
-        endif
 
-        f(:,m,n,iyH) = yH
+          f(:,m,n,iyH) = yH
 
-      enddo
-      enddo
-!
+        enddo
+        enddo
+
+      endif
+
     endsubroutine ioncalc
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp)
