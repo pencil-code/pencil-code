@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.222 2006-05-05 05:19:25 dobler Exp $
+! $Id: run.f90,v 1.223 2006-05-12 10:37:35 theine Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.222 2006-05-05 05:19:25 dobler Exp $")
+             "$Id: run.f90,v 1.223 2006-05-12 10:37:35 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -188,6 +188,7 @@
 !  initialize ionization array
 !
         if (leos_ionization) call ioninit(f)
+        if (leos_temperature_ionization) call ioncalc(f)
 !
 !  Prepare particles.
 !

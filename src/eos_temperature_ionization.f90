@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.18 2006-05-11 17:29:14 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.19 2006-05-12 10:37:35 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.18 2006-05-11 17:29:14 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.19 2006-05-12 10:37:35 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1587,7 +1587,9 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (mx,my) :: yH,lnTT,mu1,rho1pp,dlnppdlnrho,dlnrhodz
+      real, dimension (mx,my) :: rho1,TT1
+      real, dimension (mx,my) :: rhs,sqrtrhs,yH
+      real, dimension (mx,my) :: mu1,rho1pp,dlnppdlnrho,dlnrhodz
       integer :: i
 
       select case (topbot)
@@ -1599,18 +1601,22 @@ module EquationOfState
 
         if (bcz1(ilnTT)/='s') then
           call fatal_error("bc_lnrho_hydrostatic_z", &
-                           "This boundary consdition for density is"// &
+                           "This boundary condition for density is"// &
                            "currently only correct for bcz1(ilnTT)='s'")
         endif
 
-        lnTT = f(:,:,n1,ilnTT)
-        yH = f(:,:,n1,iyH)
+        rho1 = exp(-f(:,:,n1,ilnrho))
+        TT1 = exp(-f(:,:,n1,ilnTT))
+
+        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        sqrtrhs = sqrt(rhs)
+        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
         mu1 = mu1_0*(1 + yH + xHe)
-        rho1pp = Rgas*mu1*exp(lnTT)
+        rho1pp = Rgas*mu1/TT1
         dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
 
-        dlnrhodz = gravz*rho1pp/dlnppdlnrho
+        dlnrhodz = gravz/(rho1pp*dlnppdlnrho)
 
         do i=1,nghost
           f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
@@ -1623,18 +1629,22 @@ module EquationOfState
 
         if (bcz2(ilnTT)/='s') then
           call fatal_error("bc_lnrho_hydrostatic_z", &
-                           "This boundary consdition for density is"//&
+                           "This boundary condition for density is"//&
                            "currently only correct for bcz2(ilnTT)='s'")
         endif
 
-        lnTT = f(:,:,n2,ilnTT)
-        yH = f(:,:,n2,iyH)
+        rho1 = exp(-f(:,:,n2,ilnrho))
+        TT1 = exp(-f(:,:,n2,ilnTT))
+
+        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        sqrtrhs = sqrt(rhs)
+        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
         mu1 = mu1_0*(1 + yH + xHe)
-        rho1pp = Rgas*mu1*exp(lnTT)
+        rho1pp = Rgas*mu1/TT1
         dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
 
-        dlnrhodz = gravz*rho1pp/dlnppdlnrho
+        dlnrhodz = gravz/(rho1pp*dlnppdlnrho)
 
         do i=1,nghost
           f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
