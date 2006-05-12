@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.168 2006-04-20 14:10:37 ajohan Exp $
+! $Id: register.f90,v 1.169 2006-05-12 14:37:03 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -228,7 +228,7 @@ module Register
       m_H=m_p+m_e
       m_He=3.97153*m_H
       chiH=13.6*eV
-      chiH_=0.75*eV        
+      chiH_=0.754*eV        
 !
 !  run initialization of individual modules
 !   allow initialize_eos to go early so that it may change the unit temperature.
