@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.20 2006-05-12 14:04:23 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.21 2006-05-14 16:35:28 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.20 2006-05-12 14:04:23 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.21 2006-05-14 16:35:28 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -268,7 +268,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 
-      real, dimension (nx) :: rhs,yH_term,tmp,sqrtrhs
+      real, dimension (nx) :: rhs,yH_term_cv,yH_term_cp,tmp,sqrtrhs
       integer :: i
 
       if (NO_WARN) print *,f,p
@@ -302,10 +302,14 @@ module EquationOfState
       if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
 
 !
-!  Common term involving the ionization fraction
+!  Common terms involving the ionization fraction
 !
       if (lpencil(i_cv).or.lpencil(i_dppdlnTT).or.lpencil(i_dppdlnrho)) then
-        yH_term = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+        yH_term_cv = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+      endif
+
+      if (lpencil(i_cp)) then
+        yH_term_cp = p%yH*(1-p%yH)/(2+xHe*(2-p%yH))
       endif
 
 !
@@ -313,7 +317,7 @@ module EquationOfState
 !
       if (lpencil(i_cv)) then
         tmp = 1.5 + TT_ion*p%TT1
-        p%cv = Rgas*p%mu1*(1.5 + yH_term*tmp**2)
+        p%cv = Rgas*p%mu1*(1.5 + yH_term_cv*tmp**2)
       endif
 
       if (lpencil(i_cv1)) p%cv1=1/p%cv
@@ -323,7 +327,7 @@ module EquationOfState
 !
       if (lpencil(i_cp)) then
         tmp = 2.5+TT_ion*p%TT1
-        p%cp = Rgas*p%mu1*(2.5 + yH_term*tmp**2)
+        p%cp = Rgas*p%mu1*(2.5 + yH_term_cp*tmp**2)
       endif
 
       if (lpencil(i_cp1)) p%cp1=1/p%cp
@@ -333,10 +337,10 @@ module EquationOfState
 !
       if (lpencil(i_dppdlnTT)) then
         tmp = 1.5+TT_ion*p%TT1
-        p%dppdlnTT = p%pp*(1 + yH_term*tmp)
+        p%dppdlnTT = p%pp*(1 + yH_term_cv*tmp)
       endif
 
-      if (lpencil(i_dppdlnrho)) p%dppdlnrho = p%pp*(1 - yH_term)
+      if (lpencil(i_dppdlnrho)) p%dppdlnrho = p%pp*(1 - yH_term_cv)
 
 !
 !  Logarithmic pressure gradient
