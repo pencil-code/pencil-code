@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.104 2006-05-12 11:59:30 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.105 2006-05-14 18:38:42 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -587,6 +587,96 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_set_der_x(f,topbot,j,val)
+!
+!  Sets the derivative on the boundary to a given value
+!
+!  14-may-2006/tobi: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      integer, intent (in) :: j
+      real, intent (in) :: val
+
+      integer :: i
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j) - 2*i*dx*val; enddo
+
+      case('top')               ! top boundary
+        do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j) + 2*i*dx*val; enddo
+
+      case default
+        call warning('bc_set_der_x',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_der_x
+!***********************************************************************
+    subroutine bc_set_der_y(f,topbot,j,val)
+!
+!  Sets the derivative on the boundary to a given value
+!
+!  14-may-2006/tobi: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      integer, intent (in) :: j
+      real, intent (in) :: val
+
+      integer :: i
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j) - 2*i*dy*val; enddo
+
+      case('top')               ! top boundary
+        do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j) + 2*i*dy*val; enddo
+
+      case default
+        call warning('bc_set_der_y',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_der_y
+!***********************************************************************
+    subroutine bc_set_der_z(f,topbot,j,val)
+!
+!  Sets the derivative on the boundary to a given value
+!
+!  14-may-2006/tobi: coded
+!
+      use Cdata
+!
+      character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      integer, intent (in) :: j
+      real, intent (in) :: val
+
+      integer :: i
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j) - 2*i*dz*val; enddo
+
+      case('top')               ! top boundary
+        do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j) + 2*i*dz*val; enddo
+
+      case default
+        call warning('bc_set_der_z',topbot//" should be `top' or `bot'")
+
+      endselect
+!
+    endsubroutine bc_set_der_z
 !***********************************************************************
     subroutine bc_van_x(f,topbot,j)
 !
