@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.87 2006-05-15 01:23:52 ajohan Exp $
+! $Id: particles_dust.f90,v 1.88 2006-05-15 14:22:41 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -83,7 +83,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.87 2006-05-15 01:23:52 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.88 2006-05-15 14:22:41 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -935,7 +935,7 @@ k_loop: do while (.not. (k>npar_loc))
       real, dimension (nx) :: np, tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
       real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, area
-      integer :: k, l, ix0, iy0, iz0, ix, iy, iz
+      integer :: k, l, ix0, iy0, iz0, ixx, iyy, izz
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
@@ -959,13 +959,13 @@ k_loop: do while (.not. (k>npar_loc))
                 if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ix0=ix0-1
                 if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iy0=iy0-1
                 if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) iz0=iz0-1
-                do ix=ix0,ix0+1; do iy=iy0,iy0+1; do iz=iz0,iz0+1
-                  area=( 1.0-abs(fp(k,ixp)-x(ix))*dx_1(ix) )* &
-                       ( 1.0-abs(fp(k,iyp)-y(iy))*dy_1(iy) )* &
-                       ( 1.0-abs(fp(k,izp)-z(iz))*dz_1(iz) )
-                  rho1_point=f(ix,iy,iz,ilnrho)
+                do ixx=ix0,ix0+1; do iyy=iy0,iy0+1; do izz=iz0,iz0+1
+                  area=( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )* &
+                       ( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )* &
+                       ( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                  rho1_point=f(ixx,iyy,izz,ilnrho)
                   if (.not. ldensity_nolog) rho1_point=exp(rho1_point)
-                  df(ix,iy,iz,iux:iuz)=df(ix,iy,iz,iux:iuz) - &
+                  df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                       rhop_tilde*rho1_point*dragforce*area
                 enddo; enddo; enddo
               else ! No smoothing.
