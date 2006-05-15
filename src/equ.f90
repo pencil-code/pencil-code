@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.296 2006-05-15 21:29:03 brandenb Exp $
+! $Id: equ.f90,v 1.297 2006-05-15 21:30:50 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -338,6 +338,7 @@ module Equ
       use Global
       use Hydro
       use Gravity
+      use Selfgravity
       use Entropy
       use Magnetic
       use Testfield
@@ -372,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.296 2006-05-15 21:29:03 brandenb Exp $")
+           "$Id: equ.f90,v 1.297 2006-05-15 21:30:50 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -389,6 +390,12 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray
+!
+!  Calculate the potential of the self gravity. Must be done before
+!  communication in order to be able to take the gradient of the potential
+!  later.
+!
+      call calc_selfpotential(f)
 !
 !  Check for dust grain mass interval overflows
 !  (should consider having possibility for all modules to fiddle with the
@@ -528,6 +535,7 @@ module Equ
                             call calc_pencils_entropy(f,p)
                             call calc_pencils_magnetic(f,p)
         if (lgrav)          call calc_pencils_gravity(f,p)
+        if (lselfgravity)   call calc_pencils_selfgravity(f,p)
         if (lpscalar)       call calc_pencils_pscalar(f,p)
         if (ldustvelocity)  call calc_pencils_dustvelocity(f,p)
         if (ldustdensity)   call calc_pencils_dustdensity(f,p)
@@ -571,17 +579,16 @@ module Equ
         call dndmd_dt(f,df,p)
 !
 !  Add gravity, if present
-!  Shouldn't we call this one in hydro itself?
-!  WD: there is some virtue in calling all of the dXX_dt in equ.f90
-!  AB: but it is not really a new dXX_dt, because XX=uu.
-!  AJ: it should go into the duu_dt and duud_dt subs
-!      duu_dt_grav now also takes care of dust velocity
-
+!
         if (lgrav) then
           if (lhydro.or.ldustvelocity) then 
              call duu_dt_grav(f,df,p)             
           endif
         endif
+!
+!  Self-gravity
+!
+        if (lselfgravity) call duu_dt_selfgrav(f,df,p)
 !
 !  cosmic ray energy density
 !

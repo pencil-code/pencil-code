@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.169 2006-05-12 14:37:03 theine Exp $
+! $Id: register.f90,v 1.170 2006-05-15 21:30:50 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -34,6 +34,7 @@ module Register
       use EquationOfState, only: register_eos
       use Shock,           only: register_shock
       use Gravity,         only: register_gravity
+      use Selfgravity,     only: register_selfgravity
       use Hydro,           only: register_hydro
       use Density,         only: register_density
       use Forcing,         only: register_forcing
@@ -85,6 +86,7 @@ module Register
       call register_viscosity
       call register_hydro
       call register_gravity
+      call register_selfgravity
       call register_density
       call register_forcing
       call register_entropy
@@ -152,8 +154,6 @@ module Register
       use Sub, only: remove_zprof
       use Param_IO
       use Print
-!      use Hydro
-!      use Density
       use Timeavg,         only: initialize_timeavg
       use EquationOfState, only: initialize_eos
       use CosmicrayFlux,   only: initialize_cosmicrayflux
@@ -161,6 +161,7 @@ module Register
       use Density,         only: initialize_density
       use Shock,           only: initialize_shock
       use Gravity,         only: initialize_gravity
+      use Selfgravity,     only: initialize_selfgravity
       use Forcing,         only: initialize_forcing
       use Entropy,         only: initialize_entropy
       use Magnetic,        only: initialize_magnetic
@@ -176,7 +177,6 @@ module Register
       use Viscosity,       only: initialize_viscosity
       use Special,         only: initialize_special
       use Planet,          only: initialize_planet
-!     use Timestep,        only: border_profiles
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -263,6 +263,7 @@ module Register
       call initialize_timeavg(f) ! initialize time averages
 !
       call initialize_gravity()
+      call initialize_selfgravity()
       call initialize_density(f,lstarting)
       call initialize_hydro(f,lstarting)
       call initialize_forcing(lstarting)   ! get random seed from file, ..
@@ -426,6 +427,7 @@ module Register
       use Viscosity, only: pencil_criteria_viscosity
       use Entropy, only: pencil_criteria_entropy
       use Gravity, only: pencil_criteria_gravity
+      use Selfgravity, only: pencil_criteria_selfgravity
       use Pscalar, only: pencil_criteria_pscalar
       use Dustvelocity, only: pencil_criteria_dustvelocity
       use Dustdensity, only: pencil_criteria_dustdensity
@@ -446,6 +448,7 @@ module Register
       call pencil_criteria_viscosity()
       call pencil_criteria_entropy()
       call pencil_criteria_gravity()
+      call pencil_criteria_selfgravity()
       call pencil_criteria_pscalar()
       call pencil_criteria_interstellar()
       call pencil_criteria_dustvelocity()
@@ -478,6 +481,7 @@ module Register
       use Viscosity, only: pencil_interdep_viscosity
       use Entropy, only: pencil_interdep_entropy
       use Gravity, only: pencil_interdep_gravity
+      use Selfgravity, only: pencil_interdep_selfgravity
       use Magnetic, only: pencil_interdep_magnetic
       use Testfield, only: pencil_interdep_testfield
       use Pscalar, only: pencil_interdep_pscalar
@@ -498,6 +502,7 @@ module Register
       call pencil_interdep_viscosity(lpencil_in)
       call pencil_interdep_entropy(lpencil_in)
       call pencil_interdep_gravity(lpencil_in)
+      call pencil_interdep_selfgravity(lpencil_in)
       call pencil_interdep_dustvelocity(lpencil_in)
       call pencil_interdep_dustdensity(lpencil_in)
       call pencil_interdep_pscalar(lpencil_in)
@@ -535,6 +540,7 @@ module Register
       use CosmicRay,       only: rprint_cosmicray
       use CosmicRayFlux,   only: rprint_cosmicrayflux
       use Gravity,         only: rprint_gravity
+      use Selfgravity,     only: rprint_selfgravity
       use Special,         only: rprint_special
       use Shock,           only: rprint_shock
       use Viscosity,       only: rprint_viscosity
@@ -699,6 +705,7 @@ module Register
       call rprint_cosmicray    (lreset,LWRITE=lroot)
       call rprint_cosmicrayflux(lreset,LWRITE=lroot)
       call rprint_gravity      (lreset,LWRITE=lroot)
+      call rprint_selfgravity  (lreset,LWRITE=lroot)
       call rprint_special      (lreset,LWRITE=lroot)
       call rprint_shock        (lreset,LWRITE=lroot)
       call rprint_viscosity    (lreset,LWRITE=lroot)

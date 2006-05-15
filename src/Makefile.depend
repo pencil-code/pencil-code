@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.12 2006-03-03 18:08:48 wlyra Exp $
+### $Id: Makefile.depend,v 1.13 2006-05-15 21:30:50 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -57,6 +57,8 @@ shock.o:           shock.h          shock.f90 shock_profile.inc cdata.o cparam.o
 noshock.o:         shock.h          noshock.f90 cdata.o cparam.o sub.o 
 $(SHEAR).o:        shear.h          $(SHEAR).f90 $(MPICOMM_FIX).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:      gravity.h        $(GRAVITY).f90 cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o $(PLANET).o
+$(SELFGRAVITY).o:      selfgravity.h cdata.o sub.o $(POISSON).o
+$(POISSON).o:          poisson.h cdata.o sub.o
 $(FORCING).o:      forcing.h        $(FORCING).f90 cdata.o $(MPICOMM_FIX).o sub.o $(HYDRO).o
 $(ENTROPY).o:      entropy.h        $(ENTROPY).f90 cdata.o messages.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o $(PLANET).o
 $(MAGNETIC).o:     magnetic.h       $(MAGNETIC).f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o

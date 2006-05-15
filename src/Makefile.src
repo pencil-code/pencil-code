@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.180 2006-05-15 21:29:02 brandenb Exp $
+### $Id: Makefile.src,v 1.181 2006-05-15 21:30:50 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -39,6 +39,7 @@ SHOCK        = noshock
 TESTFIELD    = notestfield
 
 GRAVITY      = nograv
+SELFGRAVITY  = noselfgravity
 FORCING      = noforcing
 SHEAR        = noshear
 TIMEAVG      = notimeavg
@@ -54,6 +55,8 @@ PLANET           =  noplanet
 
 SHOCK_PROFILE = shock_profiles/octagon2D
 SHOCK_FINDER  = shock_finder
+
+POISSON      = nopoisson
 
 ## This allows us to switch to double precision in Makefile.local
 # FFLAGS_GENERAL=-r8
@@ -508,15 +511,15 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 ## Abbreviations
 
 technical=cparam.o cdata.o particles_cdata.o messages.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
-physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o  $(TESTFIELD).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o $(PLANET).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o $(PLANET).o
 comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o $(MPICOMM_FIX).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 start_deps_f90=$(comm_deps) $(GRID).o
 start_deps=$(start_deps_f90) $(DEBUG).o
 run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
 shock_finder_deps=cparam.o
-start_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM_FIX).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f $(GRID).f90 $(PLANET).f90 start.f90
-run_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM_FIX).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(GRAVITY).f90 $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).f90 equ.f90 timestep.f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f $(PLANET).f90 run.f90
+start_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM_FIX).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).o $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f $(GRID).f90 $(PLANET).f90 start.f90
+run_fast_deps=cparam.f90 cdata.f90 general.f90 $(FFT).f90 $(MPICOMM_FIX).f90 deriv.f90 sub.f90 $(PARTICLES_SUB).f90 $(INITCOND_SPEC).f90 $(DEBUG).o $(IO).f90 $(GLOBAL).f90 $(POISSON).o $(GRAVITY).f90 $(SELFGRAVITY).o $(EOS).f90 slices.f90 initcond.f90 $(SPECIAL).f90 $(DENSITY).f90 $(VISCOSITY).f90 $(SHOCK).f90 $(MAGNETIC).f90 $(COSMICRAY).f90 $(COSMICRAYFLUX).f90 $(HYDRO).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(RADIATION).f90 boundcond.f90 filter.f90 $(FORCING).f90 $(SHEAR).f90 $(PSCALAR).f90 $(CHIRAL).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(PARTICLES).f90 equ.f90 timestep.f90 $(TIMEAVG).f90 param_io.f90 prints.f90 register.f90 $(POWER).f90 $(STRUCT_FUNC).f90 snapshot.f90 $(FFTPACK).f $(PLANET).f90 run.f90
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 shock_finder=$(SHOCK_FINDER).o $(shock_finder_deps)

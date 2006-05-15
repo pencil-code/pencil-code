@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.310 2006-05-15 21:29:02 brandenb Exp $
+! ! $Id: cdata.f90,v 1.311 2006-05-15 21:30:50 ajohan Exp $
 
 module Cdata
 
@@ -97,7 +97,7 @@ module Cdata
   integer :: nseed=0
   integer :: nvar,naux,naux_com
   integer :: iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,iss=0
-  integer :: igg=0,igx=0,igy=0,igz=0
+  integer :: igg=0,igx=0,igy=0,igz=0,ipotself=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0
