@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.86 2006-05-15 01:21:30 ajohan Exp $
+! $Id: particles_dust.f90,v 1.87 2006-05-15 01:23:52 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -34,7 +34,6 @@ module Particles
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
   real :: kx_vvp=0.0, ky_vvp=0.0, kz_vvp=0.0, amplvvp=0.0
   complex, dimension (7) :: coeff=(0.0,0.0)
-  integer :: it_dustburst=0
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false., lsmooth_dragforce=.false.
   logical :: ldragforce_equi_global_eps=.false.
@@ -56,7 +55,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
-      it_dustburst, lmigration_redo
+      lmigration_redo
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -84,7 +83,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.86 2006-05-15 01:21:30 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.87 2006-05-15 01:23:52 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1063,29 +1062,6 @@ k_loop: do while (.not. (k>npar_loc))
 !
       if (lshear.and.nygrid/=1) dfp(1:npar_loc,iyp) = &
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
-!
-!  Displace all dust particles a random distance of around the size of
-!  a grid cell.
-!
-      if (it_dustburst/=0 .and. it==it_dustburst) then      
-        if (lroot.and.itsub==1) print*, 'dxxp_dt: dust burst!'
-        if (itsub==1) call random_seed_wrapper(get=iseed_org)
-        call random_seed_wrapper(put=iseed_org)  ! get same number for all itsub
-        do k=1,npar_loc
-          if (nxgrid/=1) then
-            call random_number_wrapper(ran_xp)
-            dfp(k,ixp) = dfp(k,ixp) + dx/dt*(2*ran_xp-1.0)
-          endif
-          if (nygrid/=1) then
-            call random_number_wrapper(ran_yp)
-            dfp(k,iyp) = dfp(k,iyp) + dy/dt*(2*ran_yp-1.0)
-          endif
-          if (nzgrid/=1) then
-            call random_number_wrapper(ran_zp)
-            dfp(k,izp) = dfp(k,izp) + dz/dt*(2*ran_zp-1.0)
-          endif
-        enddo
-      endif
 !
       if (lfirstcall) lfirstcall=.false.
 !
