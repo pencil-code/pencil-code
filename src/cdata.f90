@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.308 2006-05-12 11:59:30 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.309 2006-05-15 01:21:29 ajohan Exp $
 
 module Cdata
 
@@ -314,5 +314,7 @@ module Cdata
   integer :: nreinit=0
   character (len=5), dimension(10) :: reinit_vars=''
   real :: b_ell=1., rbound=1.
+
+  logical :: lfold_df=.false.
 
 endmodule Cdata

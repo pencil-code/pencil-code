@@ -14,7 +14,7 @@
   public :: mpibcast_double
   public :: mpibcast_int, mpibcast_char
 
-  public :: mpiwtime, mpiwtick
+  public :: mpiwtime, mpiwtick, fold_df
 
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry

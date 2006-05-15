@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.154 2006-05-03 17:05:23 dobler Exp $
+! $Id: mpicomm.f90,v 1.155 2006-05-15 01:21:29 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1875,6 +1875,20 @@ module Mpicomm
       call mpibarrier()
 !
     endsubroutine transp
+!***********************************************************************
+    subroutine fold_df(df)
+!
+!  Fold first ghost zone of df into main part of df.
+!
+!  15-may-2006/anders: dummy
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      if (NO_WARN) print*, df
+!
+    endsubroutine fold_df
 !***********************************************************************
     subroutine transform(a1,a2,a3,b1,b2,b3)
 !

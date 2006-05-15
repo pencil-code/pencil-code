@@ -747,6 +747,33 @@ module Mpicomm
 !
     endsubroutine transp
 !***********************************************************************
+    subroutine fold_df(df)
+!
+!  Fold first ghost zone of df into main part of df.
+!
+!  15-may-2006/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz) + &
+          df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)
+      df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz) + &
+          df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)
+!
+      df(l1-1:l2+1,m1,n1-1:n2+1,iux:iuz)=df(l1-1:l2+1,m1,n1-1:n2+1,iux:iuz) + &
+          df(l1-1:l2+1,m2+1,n1-1:n2+1,iux:iuz)
+      df(l1-1:l2+1,m2,n1-1:n2+1,iux:iuz)=df(l1-1:l2+1,m2,n1-1:n2+1,iux:iuz) + &
+          df(l1-1:l2+1,m1-1,n1-1:n2+1,iux:iuz)
+!
+      df(l1,m1-1:m2+1,n1-1:n2+1,iux:iuz)=df(l1,m1-1:m2+1,n1-1:n2+1,iux:iuz) + &
+          df(l2+1,m1-1:m2+1,n1-1:n2+1,iux:iuz) 
+      df(l2,m1-1:m2+1,n1-1:n2+1,iux:iuz)=df(l2,m1-1:m2+1,n1-1:n2+1,iux:iuz) + &
+          df(l1-1,m1-1:m2+1,n1-1:n2+1,iux:iuz) 
+!
+    endsubroutine fold_df
+!***********************************************************************
 subroutine transform(a1,a2,a3,b1,b2,b3)
 !
 !  Subroutine to do fourier transform

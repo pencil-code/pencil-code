@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.85 2006-05-05 07:31:17 ajohan Exp $
+! $Id: particles_dust.f90,v 1.86 2006-05-15 01:21:30 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -36,7 +36,7 @@ module Particles
   complex, dimension (7) :: coeff=(0.0,0.0)
   integer :: it_dustburst=0
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
-  logical :: lpar_spec=.false.
+  logical :: lpar_spec=.false., lsmooth_dragforce=.false.
   logical :: ldragforce_equi_global_eps=.false.
   logical, parameter :: ldraglaw_epstein=.true.
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
@@ -45,14 +45,14 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, &
-      rhop_tilde, eps_dtog, nu_epicycle, &
+      rhop_tilde, eps_dtog, nu_epicycle, lsmooth_dragforce, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, &
+      ldragforce_gas_par, ldragforce_dust_par, lsmooth_dragforce, &
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
@@ -84,7 +84,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.85 2006-05-05 07:31:17 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.86 2006-05-15 01:21:30 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -209,6 +209,11 @@ module Particles
 !      
       if (ldragforce_gas_par) lcalc_np=.true.
 !
+!  When drag force is smoothed, df is also set in the first ghost zone. This 
+!  region needs to be folded back into the df array after pde is finished,
+!
+      if (lsmooth_dragforce) lfold_df=.true.
+!
 !  Write constants to disc.
 !      
       if (lroot) then
@@ -237,6 +242,7 @@ module Particles
 !
       real, dimension (3) :: uup
       real :: r, p, px, py, pz, eps, cs
+      real :: npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       integer :: l, k, ix0, iy0, iz0
 !
       intent (out) :: f, fp, ineargrid
@@ -282,6 +288,35 @@ k_loop: do while (.not. (k>npar_loc))
             if (k>npar_loc) exit k_loop
           enddo; enddo; enddo
         enddo k_loop
+
+      case ('equidistant')
+        if (lroot) print*, 'init_particles: Particles placed equidistantly'
+!  Number of particles in each direction.          
+        npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**(1/3.)
+        npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**(1/3.)
+        npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**(1/3.)
+!  Distance between particles in each direction.
+        dx_par=Lxyz_loc(1)/npar_loc_x
+        dy_par=Lxyz_loc(2)/npar_loc_y
+        dz_par=Lxyz_loc(3)/npar_loc_z
+
+        fp(1,ixp) = xyz0_loc(1)+dx_par/2
+        fp(1,iyp) = xyz0_loc(2)+dy_par/2
+        fp(1,izp) = xyz0_loc(3)+dz_par/2
+!  Place particles iteratively, making sure that they are always in the box.        
+        do k=2,npar_loc
+          fp(k,ixp)=fp(k-1,ixp)+dx_par
+          fp(k,iyp)=fp(k-1,iyp)
+          fp(k,izp)=fp(k-1,izp)
+          if (fp(k,ixp)>xyz1_loc(1)) then
+            fp(k,ixp)=fp(1,ixp)
+            fp(k,iyp)=fp(k,iyp)+dy_par
+          endif
+          if (fp(k,iyp)>xyz1_loc(2)) then
+            fp(k,iyp)=fp(1,iyp)
+            fp(k,izp)=fp(k,izp)+dz_par
+          endif
+        enddo
 
       case ('gaussian-z')
         if (lroot) print*, 'init_particles: Gaussian particle positions'
@@ -900,8 +935,8 @@ k_loop: do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: np, tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
-      real :: np_point, eps_point, rho_point, tausp1_point
-      integer :: k, l
+      real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, area
+      integer :: k, l, ix0, iy0, iz0, ix, iy, iz
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
@@ -919,10 +954,26 @@ k_loop: do while (.not. (k>npar_loc))
             dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !  Back-reaction friction force from particles on gas (conserves momentum).
-            if (ldragforce_gas_par) then
-              l=ineargrid(k,1)
-              df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                  rhop_tilde*p%rho1(l-3)*dragforce
+            if (ldragforce_gas_par) then  ! Smooth back-reaction drag force.
+              if (lsmooth_dragforce) then
+                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+                if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ix0=ix0-1
+                if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iy0=iy0-1
+                if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) iz0=iz0-1
+                do ix=ix0,ix0+1; do iy=iy0,iy0+1; do iz=iz0,iz0+1
+                  area=( 1.0-abs(fp(k,ixp)-x(ix))*dx_1(ix) )* &
+                       ( 1.0-abs(fp(k,iyp)-y(iy))*dy_1(iy) )* &
+                       ( 1.0-abs(fp(k,izp)-z(iz))*dz_1(iz) )
+                  rho1_point=f(ix,iy,iz,ilnrho)
+                  if (.not. ldensity_nolog) rho1_point=exp(rho1_point)
+                  df(ix,iy,iz,iux:iuz)=df(ix,iy,iz,iux:iuz) - &
+                      rhop_tilde*rho1_point*dragforce*area
+                enddo; enddo; enddo
+              else ! No smoothing.
+                l=ineargrid(k,1)
+                df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                    rhop_tilde*p%rho1(l-nghost)*dragforce
+              endif
             endif
           enddo
 !  Contribution of friction force to time-step.
