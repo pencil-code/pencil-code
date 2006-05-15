@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.106 2006-05-15 22:00:06 theine Exp $
+! $Id: boundcond.f90,v 1.107 2006-05-15 22:27:04 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -19,8 +19,6 @@ module Boundcond
   
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
-  public :: bc_sym_x, bc_sym_y, bc_sym_z
-  public :: bc_set_der_x, bc_set_der_y, bc_set_der_z
   public :: update_ghosts
 
   contains
