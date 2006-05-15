@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.178 2006-05-05 11:11:29 ngrs Exp $
+### $Id: Makefile.src,v 1.179 2006-05-15 19:08:43 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -385,6 +385,15 @@ LIBMPISUFFIX=
 #FFLAGS=-O2 #(sepeli)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sepeli)
 #LDMPI= #(sepeli)
+##
+##
+## DCSC cluster - (Copenhagen, not Odense!)
+## www.dcsc.ku.dk
+#FC=pgf90 #(fend0[1-3]) 
+#CC=pgcc #(fend0[1-3])
+#FFLAGS=-fastsse -I/usr/local/topspin/mpi/mpich/include #(fend0[1-3])
+#CFLAGS=-fastsse -DFUNDERSC=1 #(fend0[1-3])
+#LDMPI=-L/usr/local/topspin/mpi/mpich/lib64 -lmpich -lpthread -lmpich_p #(fend0[1-3])
 ##
 
 
