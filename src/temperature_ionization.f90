@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.16 2006-05-08 17:33:18 theine Exp $
+! $Id: temperature_ionization.f90,v 1.17 2006-05-15 21:29:03 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -87,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.16 2006-05-08 17:33:18 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.17 2006-05-15 21:29:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -476,7 +476,11 @@ module Entropy
     endsubroutine dss_dt
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
-
+!
+!  calculate chi*grad(rho*T*glnTT)/(rho*TT)
+!           =chi*(g2.glnTT+g2lnTT),
+!  where g2=glnrho+glnTT
+!
       use Sub, only: max_mn_name,dot,del2
 
       real, dimension (mx,my,mz,mvar) :: df

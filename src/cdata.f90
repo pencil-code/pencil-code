@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.309 2006-05-15 01:21:29 ajohan Exp $
+! ! $Id: cdata.f90,v 1.310 2006-05-15 21:29:02 brandenb Exp $
 
 module Cdata
 
@@ -66,7 +66,7 @@ module Cdata
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   
   double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV,hbar, &
-                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es, c_light
+                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es,c_light
 
   ! magnetic permeability
   real :: mu0=1., mu01=0.
@@ -104,6 +104,7 @@ module Cdata
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper=0
   integer :: iecr=0,ismagorinsky
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
+  integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
   integer :: nt=1000000,it1=10
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
   integer :: icc=0,ilncc=0,ialpm=0

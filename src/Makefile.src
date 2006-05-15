@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.179 2006-05-15 19:08:43 theine Exp $
+### $Id: Makefile.src,v 1.180 2006-05-15 21:29:02 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -280,9 +280,15 @@ LIBMPISUFFIX=
 ##
 ## Axel's laptop (nl6, 2.0 GHz)
 ##
+#FC=g95 #(nl6)
+#FFLAGS=-freal=nan -finteger=-2147483648 -fbounds-check -ftrace=full -Wall -Wno=140,141,109,112,137 -I/usr/include/lam #(nl6)
+#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#CFLAGS=-DFUNDERSC=2 #(nl6)
+##
 #FC=ifort #(nl6)
 #FFLAGS=-O3 -I/usr/include/lam #(nl6)
 #LDMPI=-I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77FLAGS=-w90 #(nl6)
 ##
 ## Natalia's laptop (Natalia, 1.8 GHz)

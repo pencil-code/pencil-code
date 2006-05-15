@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.39 2005-07-05 16:21:43 mee Exp $
+! $Id: radiation.f90,v 1.40 2006-05-15 21:29:03 brandenb Exp $
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
@@ -99,7 +99,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.39 2005-07-05 16:21:43 mee Exp $")
+           "$Id: radiation.f90,v 1.40 2006-05-15 21:29:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -148,6 +148,22 @@ module Radiation
       if(NO_WARN) print*,f,df,p !(keep compiler quiet)
 !
     endsubroutine radiative_cooling
+!***********************************************************************
+    subroutine radiative_pressure(f,df,p)
+! 
+!  dummy routine
+! 
+!  25-mar-03/axel+tobi: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      if(NO_WARN) print*,f,df,p !(keep compiler quiet)
+!
+    endsubroutine radiative_pressure
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !

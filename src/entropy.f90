@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.404 2006-05-12 11:59:30 nbabkovs Exp $
+! $Id: entropy.f90,v 1.405 2006-05-15 21:29:02 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.404 2006-05-12 11:59:30 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.405 2006-05-15 21:29:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1683,6 +1683,14 @@ module Entropy
               df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) - &
                   p%cs2*(p%glnrho(:,j) + p%glnTT(:,j))*gamma11
            enddo
+!
+!  TH: The following would work if one uncomments the intrinsic operator
+!  extensions in sub.f90. Please Test.
+!
+!          df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - &
+!                                  p%cs2*(p%glnrho + p%glnTT)*gamma11
+!
+
           else
             do j=1,3
               ju=j+iuu-1
