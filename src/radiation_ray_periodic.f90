@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.36 2006-05-11 18:30:41 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.37 2006-05-15 22:57:22 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -141,7 +141,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.36 2006-05-11 18:30:41 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.37 2006-05-15 22:57:22 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1253,5 +1253,12 @@ module Radiation
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************
+    subroutine radiative_pressure(f,df,p)
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+
+    endsubroutine radiative_pressure
 
 endmodule Radiation
