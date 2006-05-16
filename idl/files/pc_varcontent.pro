@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.21 2006-05-01 09:08:27 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.22 2006-05-16 16:14:54 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -297,6 +297,12 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[ivpxsum].idlvarloc  = 'vvpsum_loc'
   varcontent[ivpxsum].idlinitloc = INIT_3VECTOR_LOC
   varcontent[ivpxsum].skip       = 2
+
+  varcontent[ipotself].variable   = 'Self gravity potential'
+  varcontent[ipotself].idlvar     = 'potself'
+  varcontent[ipotself].idlinit    = INIT_SCALAR
+  varcontent[ipotself].idlvarloc  = 'potself_loc'
+  varcontent[ipotself].idlinitloc = INIT_SCALAR_LOC
 endif
 
 ; ZERO out default 'should never be used' definition
