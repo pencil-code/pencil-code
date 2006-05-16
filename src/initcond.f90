@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.153 2006-04-04 13:41:57 theine Exp $ 
+! $Id: initcond.f90,v 1.154 2006-05-16 18:16:07 joishi Exp $ 
 
 module Initcond 
  
@@ -1820,26 +1820,35 @@ module Initcond
       if (ip==1) print*,yy,zz
     endsubroutine uniform_z
 !***********************************************************************
-    subroutine vfield(ampl,f,i,xx)
+    subroutine vfield(ampl,f,i,xx,kx)
 !
 !  Vertical field, for potential field test
 !
 !  14-jun-02/axel: coded
+!  02-aug-2005/joishi: allowed for arbitrary kx
 !
       integer :: i
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx
-      real :: ampl,kx
+      real :: ampl
+      real,optional :: kx
+      real :: k
 !
+      if (present(kx)) then 
+         k = kx 
+      else 
+         k = 2*pi/Lx
+      endif
+
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'vfield: set variable to zero; i=',i
       else
-        kx=2*pi/Lx
+!        kx=2*pi/Lx
         print*,'vfield: implement x-dependent vertical field'
         if ((ip<=8).and.lroot) print*,'vfield: x-dependent vertical field'
         f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=ampl*sin(kx*xx)
+        f(:,:,:,i+1)=ampl*sin(k*xx)
         f(:,:,:,i+2)=0.
       endif
 !
