@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.22 2006-05-16 00:19:47 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.23 2006-05-16 22:04:15 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.22 2006-05-16 00:19:47 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.23 2006-05-16 22:04:15 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1578,18 +1578,19 @@ module EquationOfState
 !
 !  Boundary condition for density.
 !
-!  This sets
-!    \partial_{z} \ln\rho
-!  such that
-!    \partial_{z} p = \rho g_{z},
-!  i.e. it enforces hydrostatic equlibrium at the boundary.
+!  We make both the lower and the upper boundary hydrostatic.
+!    rho1*(dpp/dz) = gravz
 !
-!  Currently this is only correct if
-!    \partial_{z} lnT = 0
-!  at the boundary.
+!  Additionally, we make the lower boundary isentropic
+!    (dss/dz) = 0
+!  and the upper boundary isothermal
+!    (dlnTT/dz) = 0
+!
+!  At the moment, this is probably only useful for solar surface convection.
 !
 !
 !  11-May-2006/tobi: coded
+!  16-May-2006/tobi: isentropic lower boundary
 !
       use Gravity, only: gravz
 
@@ -1598,7 +1599,12 @@ module EquationOfState
 
       real, dimension (mx,my) :: rho1,TT1
       real, dimension (mx,my) :: rhs,sqrtrhs,yH
-      real, dimension (mx,my) :: mu1,rho1pp,dlnppdlnrho,dlnrhodz
+      real, dimension (mx,my) :: mu1,rho1pp
+      real, dimension (mx,my) :: yH_term_cv,yH_term_cp
+      real, dimension (mx,my) :: TT_term_cv,TT_term_cp
+      real, dimension (mx,my) :: dlnppdlnTT,dlnppdlnrho
+      real, dimension (mx,my) :: dlnrhodz,dlnTTdz
+      real, dimension (mx,my) :: cv,cp,cs2,nabla_ad
       integer :: i
 
       select case (topbot)
@@ -1608,27 +1614,77 @@ module EquationOfState
 !
       case ('bot')
 
-        if (bcz1(ilnTT)/='s') then
+        if (bcz1(ilnTT)/='') then
           call fatal_error("bc_lnrho_hydrostatic_z", &
-                           "This boundary condition for density is"// &
-                           "currently only correct for bcz1(ilnTT)='s'")
+                           "This boundary condition for density also sets"// &
+                           "temperature. We therfore require bcz1(ilnTT)=''")
         endif
 
         rho1 = exp(-f(:,:,n1,ilnrho))
         TT1 = exp(-f(:,:,n1,ilnTT))
 
+!
+!  Hydrogen ionization fraction
+!
         rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
         sqrtrhs = sqrt(rhs)
         yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
+!
+!  Inverse mean molecular weight
+!
         mu1 = mu1_0*(1 + yH + xHe)
+
+!
+!  Pressure over density
+!
         rho1pp = Rgas*mu1/TT1
-        dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
 
-        dlnrhodz = gravz/(rho1pp*dlnppdlnrho)
+!
+!  Abreviations
+!
+        yH_term_cv = yH*(1-yH)/((2-yH)*(1+yH+xHe))
+        TT_term_cv = 1.5 + TT_ion*TT1
 
+        yH_term_cp = yH*(1-yH)/(2+xHe*(2-yH))
+        TT_term_cp = 2.5 + TT_ion*TT1
+
+!
+!  Specific heats
+!  The following is really mu*cv/Rgas and mu*cp/Rgas respectively
+!
+        cv = 1.5 + yH_term_cv*TT_term_cv**2
+        cp = 2.5 + yH_term_cp*TT_term_cp**2
+
+!
+!  Pressure derivatives
+!
+        dlnppdlnTT = 1 + yH_term_cv*TT_term_cv
+        dlnppdlnrho = 1 - yH_term_cv
+
+!
+!  Speed of sound
+!
+        cs2 = rho1pp*(dlnppdlnTT**2/cv + dlnppdlnrho)
+
+!
+!  Adiabatic pressure gradient
+!  The following is really rho*nabla_ad/pp
+!
+        nabla_ad = (1+yH_term_cp*TT_term_cp)/(cp*rho1pp)
+
+!
+!  z-derivatives of density and temperature on the boundary
+!
+        dlnrhodz = gravz/cs2
+        dlnTTdz = nabla_ad*gravz
+
+!
+!  Fill ghost zones accordingly
+!
         do i=1,nghost
           f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+          f(:,:,n1-i,ilnTT)  = f(:,:,n1+i,ilnTT)  - 2*i*dz*dlnTTdz
         enddo
 
 !
@@ -1636,27 +1692,48 @@ module EquationOfState
 !
       case ('top')
 
-        if (bcz2(ilnTT)/='s') then
+        if (bcz2(ilnTT)/='') then
           call fatal_error("bc_lnrho_hydrostatic_z", &
-                           "This boundary condition for density is"//&
-                           "currently only correct for bcz2(ilnTT)='s'")
+                           "This boundary condition for density also sets"// &
+                           "temperature. We therfore require bcz2(ilnTT)=''")
         endif
 
         rho1 = exp(-f(:,:,n2,ilnrho))
         TT1 = exp(-f(:,:,n2,ilnTT))
 
+!
+!  Hydrogen ionization fraction
+!
         rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
         sqrtrhs = sqrt(rhs)
         yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
+!
+!  Inverse mean molecular weight
+!
         mu1 = mu1_0*(1 + yH + xHe)
+
+!
+!  Pressure over density
+!
         rho1pp = Rgas*mu1/TT1
+
+!
+!  Pressure derivative
+!
         dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
 
+!
+!  z-derivatives of density on the boundary
+!
         dlnrhodz = gravz/(rho1pp*dlnppdlnrho)
 
+!
+!  Fill ghost zones accordingly
+!
         do i=1,nghost
           f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+          f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT) + 2*i*dz*dlnrhodz
         enddo
 
       case default
