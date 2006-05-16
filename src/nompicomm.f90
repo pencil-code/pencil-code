@@ -846,9 +846,13 @@ subroutine transform_cosq(a_re,direction)
   logical :: lforward=.true.
   integer,optional :: direction
   integer :: l,m,n
-
+!
   if (present(direction)) then
-    if (direction.eq.-1) lforward=.false.
+    if (direction.eq.-1) then
+      lforward=.false.
+    else
+      lforward=.true.
+    endif
   endif
 !
   if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
@@ -919,9 +923,13 @@ subroutine transform_fftpack(a_re,a_im,direction)
   logical :: lforward=.true.
   integer,optional :: direction
   integer :: l,m,n
-
+!
   if (present(direction)) then
-    if (direction.eq.-1) lforward=.false.
+    if (direction.eq.-1) then
+      lforward=.false.
+    else
+      lforward=.true.
+    endif
   endif
 !
   if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
@@ -994,9 +1002,13 @@ subroutine transform_fftpack_2d(a_re,a_im,direction)
   logical :: lforward=.true.
   integer,optional :: direction
   integer :: l,m,n
-
+!
   if (present(direction)) then
-    if (direction.eq.-1) lforward=.false.
+    if (direction.eq.-1) then
+      lforward=.false.
+    else
+      lforward=.true.
+    endif
   endif
 !
   if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
