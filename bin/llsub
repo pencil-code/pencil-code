@@ -2,7 +2,7 @@
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: llsub,v 1.2 2006-05-16 23:14:33 theine Exp $
+# CVS:    $Id: llsub,v 1.3 2006-05-16 23:40:10 theine Exp $
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its
@@ -24,6 +24,7 @@ Options:
   -t,  --tasks            \tNumber of tasks per node
   -q,  --queue            \tCluster queue
   -w,  --walltime         \tMaximum wall clock time
+  -o,  --output           \tPipe the resulting script to standard output
 ";
 
 # Default values
@@ -33,15 +34,21 @@ my $ncpus = 4;
 my $tasks = 4;
 my $queue = 'parallel_2gb';
 my $walltime = '00:30:00';
+my $output = 0;
+my $pipe = "llsubmit |";
 
 # Get command line options
-GetOptions('help' => \$help,
-	   'ncpus=i' => \$ncpus,
-           'tasks=i' => \$tasks,
+GetOptions('help'       => \$help,
+	   'ncpus=i'    => \$ncpus,
+           'tasks=i'    => \$tasks,
            'queue=s'    => \$queue,
-           'walltime=s' => \$walltime);
+           'walltime=s' => \$walltime,
+           'output'       => \$output);
 
 die $usage if (@ARGV == 0 or $help);
+
+# Check whether we want to pipe to standard output
+$pipe = "| cat" if ($output);
 
 # tasks stands for "cpus per node" and ncpus should be a multiple thereof
 my $message = "ncpus (-n) should be a multiple of tasks (-t)\n";
@@ -80,8 +87,8 @@ foreach $script (@ARGV) {
   close (SCRIPT);
 }
 
-# Pass everything to llsubmit
-open (LLSUBMIT, "| llsubmit -");
-print LLSUBMIT $header;
-print LLSUBMIT $text;
-close (LLSUBMIT);
+# Pass everything to llsubmit (or standard output)
+open (PIPE, $pipe);
+print PIPE $header;
+print PIPE $text;
+close (PIPE);
