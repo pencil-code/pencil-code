@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.45 2006-05-11 17:29:14 theine Exp $
+! $Id: eos_idealgas.f90,v 1.46 2006-05-16 18:44:20 ajohan Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.45 2006-05-11 17:29:14 theine Exp $')
+           '$Id: eos_idealgas.f90,v 1.46 2006-05-16 18:44:20 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -198,9 +198,9 @@ module EquationOfState
       integer, parameter :: ieosvar_cs2   = 2**5
       integer, parameter :: ieosvar_pp    = 2**6
 !
-      if (ieosvar.ge.2) &
-        call fatal_error("select_eos_variable", &
-             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
+!!      if (ieosvar.ge.2) &
+!!        call fatal_error("select_eos_variable", &
+!!             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
 
       ieosvar=ieosvar+1
 
