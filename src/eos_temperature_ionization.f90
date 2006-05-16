@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.21 2006-05-14 16:35:28 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.22 2006-05-16 00:19:47 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -42,7 +42,7 @@ module EquationOfState
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
-  real :: ss_ion,kappa0
+  real :: ss_ion,kappa0,pp_ion
   real :: rho_H,rho_e,rho_e_,rho_He
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_He
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.21 2006-05-14 16:35:28 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.22 2006-05-16 00:19:47 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -145,6 +145,7 @@ module EquationOfState
       rho_e_ = (1/mu1_0)*m_u*((m_e/hbar)*(chiH_/hbar)/(2*pi))**(1.5)
       lnrho_e_ = log(rho_e_)
       kappa0 = sigmaH_*mu1_0/(4*m_u)
+      pp_ion = Rgas*mu1_0*rho_e*TT_ion
 !
 !  write scale non-free constants to file; to be read by idl
 !
@@ -1663,5 +1664,265 @@ module EquationOfState
       endselect
 
     end subroutine bc_lnrho_hydrostatic_z
+!***********************************************************************
+    subroutine bc_lnrho_stellar_atmosphere_z(f,topbot)
+!
+!  Boundary condition for (density and temperature)
+!
+!  This sets
+!    \partial_{z} \ln\rho
+!  such that
+!    \partial_{z} p = \rho g_{z},
+!  i.e. it enforces hydrostatic equlibrium at the boundary.
+!
+!  Currently this is only correct if
+!    \partial_{z} lnT = 0
+!  at the boundary.
+!
+!
+!  11-May-2006/tobi: coded
+!
+      use Gravity, only: gravz
+
+      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (mx,my) :: uz
+      real, dimension (mx,my) :: lnrho,rho,lnTT,TT
+      real, dimension (mx,my) :: rhs,sqrtrhs,yH
+      real, dimension (mx,my) :: mu1
+      real, dimension (mx,my) :: yH_term,Phi_H,nabla_ad
+      real, dimension (mx,my) :: lnpp,pp
+      real, dimension (mx,my) :: dlnTTdz
+      real, dimension (mx,my) :: rhs1,c1,bc
+      real, dimension (mx,my) :: rho1pp,dlnppdlnrho,dlnrhodz
+      real, dimension (mx,my,nghost) :: lnpp_ghosts
+      real :: rho_bot
+
+      integer, dimension (0:nghost) :: coeff
+      integer, dimension (nx) :: ll
+      integer, dimension (ny) :: mm
+      integer :: i,j
+
+      logical, dimension (mx,my) :: upflow,downflow
+
+!
+!  Make sure that there are no boundary conditions for temperature
+!  specified in init_pars or run_pars
+!
+      if (bcz1(ilnTT)/=''.or.bcz2(ilnTT)/='') then
+        call fatal_error("bc_lnrho_hydrostatic_z", &
+                         "This boundary condition for density also sets"// &
+                         "temperature, so please set bcz=''")
+      endif
+
+      select case (topbot)
+
+!
+!  Bottom boundary
+!
+      case ('bot')
+!
+!  Handy index arrays
+!
+        ll = (/(i,i=l1,l2)/) 
+        mm = (/(j,j=m1,m2)/) 
+
+!
+!  Coefficients for `one-sided' z-derivatives, which don't require information
+!  from the ghost zones because it is assumed that bcz1='a2'
+!
+!  From
+!    f(n1-i) = 2*f(n1) - f(n1+i)
+!  it follows that
+!    60*dz*df(n1) = -74*f(n1) + 90*f(n1+1) - 18*f(n1+2) + 2*f(n1+3)
+!
+        coeff = (/-74,90,-18,2/)/(60*dz)
+
+!
+!  z-component of velocity on the lower boundary
+!
+        uz = f(:,:,n1,iuz)
+
+!
+!  Get variables on the boundary
+!
+        lnrho = f(:,:,n1,ilnrho)
+        rho = exp(lnrho)
+        lnTT = f(:,:,n1,ilnTT)
+        TT = exp(lnTT)
+!
+!  Ionization fraction on the boundary
+!
+        rhs = (rho_e/rho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+        sqrtrhs = sqrt(rhs)
+        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+!
+!  Mean molecular weight on the boundary
+!
+        mu1 = mu1_0*(1 + yH + xHe)
+
+!
+!  Adiabatic pressure gradient on the boundary
+!  (We need this to ensure isentropic flow on the boundary)
+!
+        yH_term = yH*(1-yH)/(2+xHe*(2-yH))
+        Phi_H = 2.5 + TT_ion/TT
+        nabla_ad=(1+yH_term*Phi_H)/(2.5+yH_term*Phi_H**2)
+
+!
+!  Logarithmic pressure on the boundary
+!
+        lnpp = log(Rgas*mu1) + lnrho + lnTT
+
+!
+!  Initialize pressure in the ghost zones
+!  (to be anti-symmetricall extrapolated)
+!
+        do i=1,nghost; lnpp_ghosts(:,:,n1-i) = 2*lnpp; enddo
+
+!
+!  Initialize z-derivative of temperature on the boundary
+!
+        dlnTTdz = nabla_ad*coeff(0)*lnpp
+
+!
+!  Loop over the first few active zones
+!
+        do i=1,nghost
+
+!
+!  Get variables in the active zones
+!
+          lnrho = f(:,:,n1+i,ilnrho)
+          rho = exp(lnrho)
+          lnTT = f(:,:,n1+i,ilnTT)
+          TT = exp(lnTT)
+
+!
+!  Ionization fraction in the active zones
+!
+          rhs = (rho_e/rho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+          sqrtrhs = sqrt(rhs)
+          yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+
+!
+!  Mean molecular weight in the active zones
+!
+          mu1 = mu1_0*(1 + yH + xHe)
+
+!
+!  Pressure in the active zones
+!
+          lnpp = log(Rgas*mu1) + lnrho + lnTT
+
+!
+!  z-derivative of temperature on the boundary
+!  dlnTTdz = nabla_ad*dlnppdz
+!
+          dlnTTdz = dlnTTdz + nabla_ad*coeff(i)*lnpp
+
+!
+!  Store pressure in ghost zones
+!  (anti-symmetrically extrapolated)
+!
+          lnpp_ghosts(:,:,n1-i) = lnpp_ghosts(:,:,n1-i) - lnpp
+
+        enddo
+!
+!  Set temperature derivative on the boundary
+!
+        do i=1,nghost
+          f(:,:,n1-i,ilnTT) = f(:,:,n1+i,ilnTT) - 2*i*dz*dlnTTdz
+        enddo
+!
+!  Compute density in the ghost zones from temperature and pressure
+!
+        do i=1,nghost
+
+          lnTT = f(:,:,i,ilnTT)
+          TT = exp(lnTT)
+          lnpp = lnpp_ghosts(:,:,i)
+          pp = exp(lnpp)
+
+!
+!  Compute ionization fraction from temperature and pressure
+!
+!  yH**2/((1-yH)*(1+yH+xHe)) = rhs
+!  rhs = (pp_ion/pp)*(TT/TT_ion)**2.5*exp(-TT_ion/TT)
+!  yH**2 + 2*b*yH - c = 0
+!  b = 0.5*rhs*xHe/(rhs+1)
+!  c = rhs*(xHe+1)/(rhs+1)
+!  bc = b*c
+!  c1 = 1/c
+!
+          rhs1 = (pp/pp_ion)*(TT_ion/TT)**2.5*exp(TT_ion/TT)
+          c1 = (rhs1+1)/(xHe+1)
+          bc = 0.5*xHe/(xHe+1)
+          yH = 1/(bc+sqrt(bc**2+c1))
+
+!
+!  Mean molecular weight
+!
+          mu1 = mu1_0*(1 + yH + xHe)
+
+!
+!  Density at last
+!
+          f(:,:,i,ilnrho) = lnpp - lnTT - alog(Rgas*mu1)
+
+        enddo
+
+
+!
+!  Top boundary
+!
+      case ('top')
+
+!
+!  Get variables from f-array
+!
+        lnrho = f(:,:,n2,ilnrho)
+        rho = exp(lnrho)
+        lnTT = f(:,:,n2,ilnTT)
+        TT = exp(lnTT)
+
+!
+!  Ionization fraction
+!
+        rhs = (rho_e/rho)*(TT_ion/TT)**1.5*exp(-TT_ion/TT)
+        sqrtrhs = sqrt(rhs)
+        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+
+!
+!  Mean molecular weight
+!
+        mu1 = mu1_0*(1 + yH + xHe)
+
+!
+!  Set the z-derivative of density such that there is hydrostatic equilibrium
+!  on the boundary.
+!
+        rho1pp = Rgas*mu1*TT
+        dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
+
+        dlnrhodz = gravz/(rho1pp*dlnppdlnrho)
+
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+        enddo
+
+!
+!  Set the z-derivative of temperature to zero
+!
+        do i=1,nghost
+          f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT)
+        enddo
+
+      case default
+
+      endselect
+
+    end subroutine bc_lnrho_stellar_atmosphere_z
 !***********************************************************************
 endmodule EquationOfState
