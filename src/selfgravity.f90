@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.1 2006-05-15 21:30:50 ajohan Exp $
+! $Id: selfgravity.f90,v 1.2 2006-05-16 16:12:40 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -63,7 +63,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.1 2006-05-15 21:30:50 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.2 2006-05-16 16:12:40 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -217,7 +217,7 @@ module Selfgravity
 !  reads and registers print parameters relevant for gravity advance
 !  dummy routine
 !
-!  12-jun-04/axel: adapted from grav_z
+!  16-may-06/anders+jeff: adapted
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -226,7 +226,13 @@ module Selfgravity
       if (present(lwrite)) lwr=lwrite
 !
       if(NO_WARN) print*, lreset  !(to keep compiler quiet)
-!        
+!
+!  write column where which variable is stored
+!
+      if (lwr) then
+        write(3,*) 'ipotself=', ipotself
+      endif
+!
     endsubroutine rprint_selfgravity
 !***********************************************************************
 

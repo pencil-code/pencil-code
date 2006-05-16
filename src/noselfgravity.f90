@@ -1,4 +1,4 @@
-! $Id: noselfgravity.f90,v 1.1 2006-05-15 21:30:50 ajohan Exp $
+! $Id: noselfgravity.f90,v 1.2 2006-05-16 16:12:40 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -152,13 +152,22 @@ module Selfgravity
 !  reads and registers print parameters relevant for gravity advance
 !  dummy routine
 !
-!  12-jun-04/axel: adapted from grav_z
+!  16-may-06/anders+jeff: adapted
 !
-      logical :: lreset
+      logical :: lreset, lwr
       logical, optional :: lwrite
 !
-      if (NO_WARN) print*, lreset, lwrite !(to keep compiler quiet)
-!        
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+      if (NO_WARN) print*, lreset !(to keep compiler quiet)
+!
+!  write column where which variable is stored
+!
+      if (lwr) then
+        write(3,*) 'ipotself=0'
+      endif
+!
     endsubroutine rprint_selfgravity
 !***********************************************************************
 
