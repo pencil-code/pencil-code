@@ -2,7 +2,7 @@
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: llsub,v 1.1 2006-04-23 17:41:11 theine Exp $
+# CVS:    $Id: llsub,v 1.2 2006-05-16 23:14:33 theine Exp $
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its
@@ -68,12 +68,14 @@ my $header =
 
 # Read submit scripts and remove all comments
 # (Comments easily interfere with Loadleveler directives)
+# For now, also remove exit statements so that passing
+# both start.csh and run.csh to llsub actually works
 my $text;
 my $script;
 foreach $script (@ARGV) {
   open (SCRIPT,$script) or die "Couldn't open $script\n";
   while ( <SCRIPT> ) {
-    $text = $text . $_ unless ($_ =~ '^#');
+    $text = $text . $_ unless ($_ =~ '^#' or $_ =~ '^exit');
   }
   close (SCRIPT);
 }
