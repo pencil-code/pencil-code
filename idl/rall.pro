@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.44 2006-05-17 17:22:41 theine Exp $
+;;;  $Id: rall.pro,v 1.45 2006-05-17 17:26:16 theine Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -191,13 +191,13 @@ datadir=datatopdir+'/proc0'
 ;  reset boundary values and nx,ny,nz for (full) physical domain (not
 ;  sub-domain)
 ;
-l1=3 & l2=mx-4 & l12=l1+indgen(nx)
-m1=3 & m2=my-4 & m12=m1+indgen(ny)
-n1=3 & n2=mz-4 & n12=n1+indgen(nz)
-;
 nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
+;
+l1=3 & l2=mx-4 & l12=l1+indgen(nx)
+m1=3 & m2=my-4 & m12=m1+indgen(ny)
+n1=3 & n2=mz-4 & n12=n1+indgen(nz)
 ;
 ;  fix z3=ztop which was local top in start.pro
 ;
