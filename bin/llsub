@@ -2,7 +2,7 @@
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: llsub,v 1.4 2006-05-17 22:45:49 theine Exp $
+# CVS:    $Id: llsub,v 1.5 2006-05-17 22:47:57 theine Exp $
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its
@@ -35,7 +35,7 @@ my $tasks = 4;
 my $queue = 'parallel_2gb';
 my $walltime = '00:30:00';
 my $output = 0;
-my $pipe = "| llsubmit";
+my $pipe = "| llsubmit -";
 
 # Get command line options
 GetOptions('help'       => \$help,
