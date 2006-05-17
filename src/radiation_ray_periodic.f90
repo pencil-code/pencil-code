@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.37 2006-05-15 22:57:22 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.38 2006-05-17 17:13:16 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 4
 !
 !***************************************************************
 
@@ -38,6 +38,7 @@ module Radiation
   endtype Qpoint
 
   real, dimension (mx,my,mz) :: Srad,kapparho,tau,Qrad,Qrad0
+  real, dimension (mx,my,mz,3) :: Frad
   type (Qbound), dimension (my,mz), target :: Qbc_yz
   type (Qbound), dimension (mx,mz), target :: Qbc_zx
   type (Qbound), dimension (mx,my), target :: Qbc_xy
@@ -50,6 +51,7 @@ module Radiation
   character (len=bclen) :: bc_ray_x,bc_ray_y,bc_ray_z
   integer, parameter :: maxdir=26
   integer, dimension (maxdir,3) :: dir
+  real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight,mu
   real :: arad
   real :: dtau_thresh_min,dtau_thresh_max
@@ -76,6 +78,7 @@ module Radiation
 !
   logical :: lcooling=.true.,lrad_debug=.false.
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
+  logical :: lradpressure=.false.,lradflux=.false.
 
   character :: lrad_str,mrad_str,nrad_str
   character(len=3) :: raydir_str
@@ -85,13 +88,14 @@ module Radiation
   real :: DFF_new=0.  !(dum)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
+  integer :: idiag_Fradzm=0
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision
+       lintrinsic,lcommunicate,lrevision,lradflux
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -99,7 +103,7 @@ module Radiation
        Srad_const,amplSrad,radius_Srad, &
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,lcooling
+       lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure
 
   contains
 
@@ -110,7 +114,8 @@ module Radiation
 !
 !  24-mar-03/axel+tobi: coded
 !
-      use Cdata, only: iQrad,nvar,naux,aux_var,naux_com,aux_count,lroot,varname
+      use Cdata, only: nvar,naux,aux_var,naux_com,aux_count,lroot,varname
+      use Cdata, only: iQrad,iFrad,iFradx,iFrady,iFradz
       use Cdata, only: lradiation,lradiation_ray
       use Mpicomm, only: stop_it
 !
@@ -128,20 +133,28 @@ module Radiation
 !  Set indices for auxiliary variables
 !
       iQrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      iFrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
+      iFradx = iFrad
+      iFrady = iFrad+1
+      iFradz = iFrad+2
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_radiation: radiation naux = ', naux
         print*, 'iQrad = ', iQrad
+        print*, 'iFrad = ', iFrad
       endif
 !
 !  Put variable name in array
 !
       varname(iQrad) = 'Qrad'
+      varname(iFradx) = 'Fradx'
+      varname(iFrady) = 'Frady'
+      varname(iFradz) = 'Fradz'
 !
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.37 2006-05-15 22:57:22 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.38 2006-05-17 17:13:16 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -152,10 +165,15 @@ module Radiation
 !
 !  Writing files for use with IDL
 !
-      if (naux < maux) aux_var(aux_count)=',Qrad $'
-      if (naux == maux) aux_var(aux_count)=',Qrad'
+      aux_var(aux_count)=',Qrad $'
       aux_count=aux_count+1
-      if (lroot) write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
+      if (naux < maux) aux_var(aux_count)=',Frad $'
+      if (naux == maux) aux_var(aux_count)=',Frad'
+      aux_count=aux_count+3
+      if (lroot) then
+        write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
+        write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
+      endif
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -171,6 +189,8 @@ module Radiation
       use Cdata, only: dx,dy,dz
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
+
+      real :: radlength
 !
 !  Check that the number of rays does not exceed maximum
 !
@@ -194,7 +214,22 @@ module Radiation
           dir(idir,2)=mrad
           dir(idir,3)=nrad
 
-          mu(idir)=nrad*dz/sqrt((lrad*dx)**2+(mrad*dy)**2+(nrad*dz)**2)
+!
+!  Ray length from one grid point to the next one
+!
+          radlength=sqrt((lrad*dx)**2+(mrad*dy)**2+(nrad*dz)**2)
+
+!
+!  mu = cos(theta)
+!
+          mu(idir)=nrad*dz/radlength
+
+!
+!  define unit vector
+!
+          unit_vec(idir,1)=lrad*dx/radlength
+          unit_vec(idir,2)=mrad*dy/radlength
+          unit_vec(idir,3)=nrad*dz/radlength
 
           idir=idir+1
 
@@ -246,9 +281,10 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,iQrad
+      use Cdata, only: ldebug,headt,iQrad,iFradx,iFradz
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
+      integer :: j,k
 !
 !  Identifier
 !
@@ -262,6 +298,10 @@ module Radiation
 !  Initialize heating rate
 !
       f(:,:,:,iQrad)=0
+!
+!  Initialize radiative flux
+!
+      if (lradflux) f(:,:,:,iFradx:iFradz)=0
 !
 !  loop over rays
 !
@@ -281,8 +321,19 @@ module Radiation
         endif
 
         if (lrevision) call Qrevision
-
+!
+!  calculate heating rate
+!
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
+!
+!  calculate radiative flux
+!
+        if (lradflux) then
+          do j=1,3
+            k=iFradx+(j-1)
+            f(:,:,:,k)=f(:,:,:,k)+weight(idir)*unit_vec(idir,j)*(Qrad+Srad)
+          enddo
+        endif
 
       enddo
 
@@ -889,13 +940,12 @@ module Radiation
 !***********************************************************************
     subroutine radiative_cooling(f,df,p)
 !
-!  calculate source function
+!  Add radiative cooling to entropy/temperature equation
 !
 !  25-mar-03/axel+tobi: coded
 !
       use Cdata
       use Sub
-      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -928,6 +978,44 @@ module Radiation
       endif
 !
     endsubroutine radiative_cooling
+!***********************************************************************
+    subroutine radiative_pressure(f,df,p)
+!
+!  Add radiative pressure to equation of motion
+!
+!  17-may-06/axel: coded
+!
+      use Cdata
+      use Sub
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: radpressure
+      integer :: j,k
+!
+      if (lradflux) then
+        do j=1,3
+          k=iFradx+(j-1)
+          radpressure(:,j)=p%rho1*kapparho(l1:l2,m,n)*f(l1:l2,m,n,k)
+        enddo
+!
+!  Add radiative radpressure
+!
+        if (lradpressure) then
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
+        endif
+!
+!  diagnostics
+!
+        if (ldiagnos) then
+          if (idiag_Fradzm/=0) then
+            call sum_mn_name(f(l1:l2,m,n,iFradz),idiag_Fradzm)
+          endif
+        endif
+      endif
+
+    endsubroutine radiative_pressure
 !***********************************************************************
     subroutine source_function(f)
 !
@@ -1194,7 +1282,7 @@ module Radiation
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Qradrms=0; idiag_Qradmax=0
+        idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1202,6 +1290,7 @@ module Radiation
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'Qradrms',idiag_Qradrms)
         call parse_name(iname,cname(iname),cform(iname),'Qradmax',idiag_Qradmax)
+        call parse_name(iname,cname(iname),cform(iname),'Fradzm',idiag_Fradzm)
       enddo
 !
 !  write column where which radiative variable is stored
@@ -1215,12 +1304,17 @@ module Radiation
         write(3,*) 'i_Egas_max=',idiag_Egas_max
         write(3,*) 'i_Qradrms=',idiag_Qradrms
         write(3,*) 'i_Qradmax=',idiag_Qradmax
+        write(3,*) 'i_Fradzm=',idiag_Fradzm
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
         write(3,*) 'ifx=',ifx
         write(3,*) 'ify=',ify
         write(3,*) 'ifz=',ifz
         write(3,*) 'iQrad=',iQrad
+        write(3,*) 'iFrad=',iFrad
+        write(3,*) 'iFradx=',iFradx
+        write(3,*) 'iFrady=',iFrady
+        write(3,*) 'iFradz=',iFradz
       endif
 !   
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
@@ -1253,12 +1347,4 @@ module Radiation
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************
-    subroutine radiative_pressure(f,df,p)
-
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-
-    endsubroutine radiative_pressure
-
 endmodule Radiation

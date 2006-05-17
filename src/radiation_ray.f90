@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.85 2006-05-15 21:29:03 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.86 2006-05-17 17:13:16 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -59,7 +59,7 @@ module Radiation
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
   logical :: lcooling=.true.,lrad_debug=.false.
-  logical :: lradpressure=.false.,lradpressure_calc=.false.
+  logical :: lradpressure=.false.,lradflux=.false.
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
 
   character :: lrad_str,mrad_str,nrad_str
@@ -85,7 +85,7 @@ module Radiation
        Srad_const,amplSrad,radius_Srad, &
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,lcooling,lradpressure,lradpressure_calc
+       lintrinsic,lcommunicate,lrevision,lcooling,lradpressure,lradflux
 
   contains
 
@@ -129,12 +129,14 @@ module Radiation
 !  Put variable name in array
 !
       varname(iQrad) = 'Qrad'
-      varname(iFrad) = 'Frad'
+      varname(iFradx) = 'Fradx'
+      varname(iFrady) = 'Frady'
+      varname(iFradz) = 'Fradz'
 !
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.85 2006-05-15 21:29:03 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.86 2006-05-17 17:13:16 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -145,16 +147,15 @@ module Radiation
 !
 !  Writing files for use with IDL
 !
-!     if (naux < maux) aux_var(aux_count)=',Qrad $'
-!     if (naux == maux) aux_var(aux_count)=',Qrad'
-!
-!AB: is this ok like this?? Tobi, please check!!
-!
-      if (naux < maux) aux_var(aux_count)=',Qrad ,Frad $'
-      if (naux == maux) aux_var(aux_count)=',Qrad ,Frad'
-      aux_count=aux_count+4
-      if (lroot) write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
-      if (lroot) write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
+      aux_var(aux_count)=',Qrad $'
+      aux_count=aux_count+1
+      if (naux < maux) aux_var(aux_count)=',Frad $'
+      if (naux == maux) aux_var(aux_count)=',Frad'
+      aux_count=aux_count+3
+      if (lroot) then
+        write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
+        write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
+      endif
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -170,8 +171,8 @@ module Radiation
       use Cdata, only: dx,dy,dz
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
-!
-      real :: radlength1
+
+      real :: radlength
 !
 !  Check that the number of rays does not exceed maximum
 !
@@ -195,14 +196,22 @@ module Radiation
           dir(idir,2)=mrad
           dir(idir,3)=nrad
 
-          radlength1=1./sqrt((lrad*dx)**2+(mrad*dy)**2+(nrad*dz)**2)
-          mu(idir)=nrad*dz*radlength1
+!
+!  Ray length from one grid point to the next one
+!
+          radlength=sqrt((lrad*dx)**2+(mrad*dy)**2+(nrad*dz)**2)
+
+!
+!  mu = cos(theta)
+!
+          mu(idir)=nrad*dz/radlength
+
 !
 !  define unit vector
 !
-          unit_vec(idir,1)=dir(idir,1)*dx*radlength1
-          unit_vec(idir,2)=dir(idir,2)*dy*radlength1
-          unit_vec(idir,3)=dir(idir,3)*dz*radlength1
+          unit_vec(idir,1)=lrad*dx/radlength
+          unit_vec(idir,2)=mrad*dy/radlength
+          unit_vec(idir,3)=nrad*dz/radlength
 
           idir=idir+1
 
@@ -271,7 +280,10 @@ module Radiation
 !  Initialize heating rate
 !
       f(:,:,:,iQrad)=0
-      f(:,:,:,iFradx:iFradz)=0
+!
+!  Initialize radiative flux
+!
+      if (lradflux) f(:,:,:,iFradx:iFradz)=0
 !
 !  loop over rays
 !
@@ -284,12 +296,14 @@ module Radiation
         if (lcommunicate) call Qcommunicate
 
         if (lrevision) call Qrevision
-
+!
+!  calculate heating rate
+!
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !
 !  calculate radiative flux
 !
-        if (lradpressure_calc) then
+        if (lradflux) then
           do j=1,3
             k=iFradx+(j-1)
             f(:,:,:,k)=f(:,:,:,k)+weight(idir)*unit_vec(idir,j)*(Qrad+Srad)
@@ -677,13 +691,12 @@ module Radiation
 !***********************************************************************
     subroutine radiative_cooling(f,df,p)
 !
-!  calculate source function
+!  Add radiative cooling to entropy/temperature equation
 !
 !  25-mar-03/axel+tobi: coded
 !
       use Cdata
       use Sub
-      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -719,13 +732,12 @@ module Radiation
 !***********************************************************************
     subroutine radiative_pressure(f,df,p)
 !
-!  calculate source function
+!  Add radiative pressure to equation of motion
 !
-!  25-mar-03/axel+tobi: coded
+!  17-may-06/axel: coded
 !
       use Cdata
       use Sub
-      use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -733,7 +745,7 @@ module Radiation
       real, dimension (nx,3) :: radpressure
       integer :: j,k
 !
-      if (lradpressure_calc) then
+      if (lradflux) then
         do j=1,3
           k=iFradx+(j-1)
           radpressure(:,j)=p%rho1*kapparho(l1:l2,m,n)*f(l1:l2,m,n,k)
@@ -742,7 +754,7 @@ module Radiation
 !  Add radiative radpressure
 !
         if (lradpressure) then
-          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure(:,:)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+radpressure
         endif
 !
 !  diagnostics
@@ -1021,8 +1033,7 @@ module Radiation
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Qradrms=0; idiag_Qradmax=0
-        idiag_Fradzm=0
+        idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1052,6 +1063,9 @@ module Radiation
         write(3,*) 'ifz=',ifz
         write(3,*) 'iQrad=',iQrad
         write(3,*) 'iFrad=',iFrad
+        write(3,*) 'iFradx=',iFradx
+        write(3,*) 'iFrady=',iFrady
+        write(3,*) 'iFradz=',iFradz
       endif
 !   
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
