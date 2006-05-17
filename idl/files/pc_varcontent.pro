@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.22 2006-05-16 16:14:54 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.23 2006-05-17 17:11:10 theine Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -248,23 +248,18 @@ end
 ; THEN DO maux VARIABLES 
 ; ** ONLY IF THEY HAVE BEEN SAVED **
 if (param.lwrite_aux ne 0) then begin
-  varcontent[iQrad].variable = 'Radiation (Qrad)'
+  varcontent[iQrad].variable = 'Radiative heating rate (Qrad)'
   varcontent[iQrad].idlvar   = 'Qrad'
   varcontent[iQrad].idlinit    = INIT_SCALAR
   varcontent[iQrad].idlvarloc= 'Qrad_loc'
   varcontent[iQrad].idlinitloc = INIT_SCALAR_LOC
-  
-  ;varcontent[iSrad].variable = 'Radiation (Srad)'
-  ;varcontent[iSrad].idlvar   = 'Srad'
-  ;varcontent[iSrad].idlinit    = INIT_SCALAR
-  ;varcontent[iSrad].idlvarloc= 'Srad_loc'
-  ;varcontent[iSrad].idlinitloc = INIT_SCALAR_LOC
-  
-  ;varcontent[ikappa].variable = 'Radiation (kappa)'
-  ;varcontent[ikappa].idlvar   = 'kappa'
-  ;varcontent[ikappa].idlinit    = INIT_SCALAR
-  ;varcontent[ikappa].idlvarloc= 'kappa_loc'
-  ;varcontent[ikappa].idlinitloc = INIT_SCALAR_LOC
+
+  varcontent[iFrad].variable = 'Radiative flux (Frad)'
+  varcontent[iFrad].idlvar   = 'Frad'
+  varcontent[iFrad].idlinit    = INIT_3VECTOR
+  varcontent[iFrad].idlvarloc= 'Frad_loc'
+  varcontent[iFrad].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iFrad].skip  = 2
 
   varcontent[iyH].variable   = 'Hydrogen ionization fraction (yH)'
   varcontent[iyH].idlvar     = 'yH'
