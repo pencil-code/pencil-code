@@ -1,10 +1,11 @@
-! $Id: messages.f90,v 1.5 2005-10-02 12:30:57 ajohan Exp $
+! $Id: messages.f90,v 1.6 2006-05-17 21:10:33 ajohan Exp $
 !
 !  This module takes care of messages.
 !
 module Messages
 
-  use Mpicomm, only: stop_it, die_gracefully
+  use Cdata
+  use Mpicomm
 
   implicit none
 
@@ -14,6 +15,7 @@ module Messages
   public :: initialize_messages
   public :: information, warning, error
   public :: fatal_error, not_implemented
+  public :: fatal_error_local, fatal_error_local_collect
   public :: life_support_on, life_support_off
 !
   integer, public, parameter :: iterm_DEFAULT   = 0
@@ -44,7 +46,7 @@ module Messages
 !
   integer :: warnings=0
   integer :: errors=0
-  integer :: fatal_errors=0
+  integer :: fatal_errors=0, fatal_errors_total=0
 !
   logical :: ldie_onwarning=.false.
   logical :: ldie_onerror=.true.
@@ -106,6 +108,54 @@ module Messages
       endif
 !
     endsubroutine fatal_error
+!***********************************************************************
+    subroutine fatal_error_local(location,message)
+!
+!  Register a fatal error happening at one processor. The code will die
+!  at the end of the time-step.
+!
+!  17-may-2006/anders: coded
+!
+      character(len=*) :: location
+      character(len=*) :: message
+!
+      if (.not.llife_support) then
+        fatal_errors=fatal_errors+1
+!  
+        call terminal_highlight_fatal_error()
+        write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
+        call terminal_defaultcolor()
+        write (*,*) trim(message)//" occured at "//trim(location)
+!
+      endif
+!
+    endsubroutine fatal_error_local
+!***********************************************************************
+    subroutine fatal_error_local_collect()
+!
+!  Collect fatal errors from processors and die if there are any.
+!
+!  17-may-2006/anders: coded
+!
+      if (.not.llife_support) then
+        call mpireduce_sum_int(fatal_errors,fatal_errors_total,1)
+        call mpibcast_int(fatal_errors_total,1)
+!  
+        if (fatal_errors_total/=0) then
+          if (lroot) then
+            print*, 'DYING - there was ', fatal_errors_total, ' errors.'
+            print*, 'This is probably due to one or more fatal errors that'
+            print*, 'have occured only on a single processor.'
+          endif
+          if (ldie_onfatalerror) call die_gracefully
+        endif
+!
+        fatal_errors=0
+        fatal_errors_total=0
+!
+      endif
+!
+    endsubroutine fatal_error_local_collect
 !***********************************************************************
     subroutine error(location,message)
 !

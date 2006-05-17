@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.223 2006-05-12 10:37:35 theine Exp $
+! $Id: run.f90,v 1.224 2006-05-17 21:10:33 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.223 2006-05-12 10:37:35 theine Exp $")
+             "$Id: run.f90,v 1.224 2006-05-17 21:10:33 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -494,6 +494,11 @@
             save_lastsnap=.false.
             exit Time_loop
           endif
+!
+!  Fatal errors sometimes occur only on a specific processor. In that case all
+!  processors must be informed about the problem before the code can stop.
+!
+          call fatal_error_local_collect()
 !
           it=it+1
           headt=.false.

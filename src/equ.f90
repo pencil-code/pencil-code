@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.297 2006-05-15 21:30:50 ajohan Exp $
+! $Id: equ.f90,v 1.298 2006-05-17 21:10:33 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.297 2006-05-15 21:30:50 ajohan Exp $")
+           "$Id: equ.f90,v 1.298 2006-05-17 21:10:33 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -798,6 +798,13 @@ module Equ
 !
         headtt=.false.
      enddo
+!
+!  Check for NaNs in the advection time-step.
+!
+     if (notanumber(dt1_advec)) then
+       print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
+       call fatal_error_local('pde','')
+     endif
 !        
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !       
