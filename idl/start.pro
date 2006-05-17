@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.74 2005-10-24 08:19:11 dobler Exp $
+;;; $Id: start.pro,v 1.75 2006-05-17 17:29:25 theine Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -173,6 +173,7 @@ if (cpar gt 0) then begin
   unit_temperature=par.unit_temperature
   ;
   default, STRUCT=par, ['leos_ionization','leos_fixed_ionization'],  0L
+  default, STRUCT=par, ['leos_temperature_ionization'],  0L
   default, STRUCT=par, 'lequidist', [-1L, -1L, -1L]
   lequidist = par.lequidist
   lhydro    = par.lhydro
@@ -183,6 +184,7 @@ if (cpar gt 0) then begin
   lmagnetic = par.lmagnetic
   lradiation= par.lradiation
   leos_ionization=par.leos_ionization
+  leos_temperature_ionization=par.leos_temperature_ionization
   leos_fixed_ionization=par.leos_fixed_ionization
   ;lvisc_shock=par.lvisc_shock
   ;lvisc_hyper3=par.lvisc_hyper3
@@ -216,10 +218,10 @@ if (cpar gt 0) then begin
   endelse
   ;
   if (ldensity) then begin
-    if (not leos_ionization) then begin
-    cs0=par.cs0 & rho0=par.rho0
-    gamma=par.gamma & gamma1=gamma-1.
-    cs20 = cs0^2 & lnrho0 = alog(rho0)
+    if (not (leos_ionization or leos_temperature_ionization)) then begin
+      cs0=par.cs0 & rho0=par.rho0
+      gamma=par.gamma & gamma1=gamma-1.
+      cs20 = cs0^2 & lnrho0 = alog(rho0)
     endif
   endif
   ;
