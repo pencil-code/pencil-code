@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.234 2006-04-17 15:50:18 ajohan Exp $ 
+! $Id: sub.f90,v 1.235 2006-05-18 18:54:26 ajohan Exp $ 
 
 module Sub 
 
@@ -2372,9 +2372,10 @@ module Sub
 !  (otherwise slices are written just to catch up with tt.)
 !
       if (tt >= tout) then
-        do while (tt >= tout)
+! 18-05-2006/anders: commented out this to avoid potential freezing.
+!        do while (tt >= tout)
           tout=tout+abs(dtout)
-        enddo
+!        enddo
         nout=nout+1
         lout=.true.
 !
