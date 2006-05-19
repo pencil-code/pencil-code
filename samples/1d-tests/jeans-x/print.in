@@ -1,4 +1,4 @@
 it(i8)
 t(f8.2)
-uxmax(f10.4)
+umax(f10.4)
 rhomax(f10.4)
