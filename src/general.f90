@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.48 2006-05-19 20:42:20 joishi Exp $
+! $Id: general.f90,v 1.49 2006-05-19 20:44:07 ajohan Exp $
 
 module General
 
@@ -916,18 +916,19 @@ module General
 !*****************************************************************************
     function complex_phase(z)
 !
-!  takes complex number and returns  Theta where
+!  takes complex number and returns Theta where
 !  z = A*exp(i*theta)
 !
 !  17-may-06/anders+jeff: coded 
-
+!
+      use Cdata, only: pi
+!
       real :: c,re,im,complex_phase
       complex :: z
-      
+!      
       c=abs(z)
       re=real(z)
       im=aimag(z)
-
 ! I
   if ( (re .ge. 0.0) .and. (im .ge. 0.0) ) complex_phase =      asin(im/c)
 ! II
@@ -936,8 +937,7 @@ module General
   if ( (re .lt. 0.0) .and. (im .lt. 0.0) ) complex_phase =   pi-asin(im/c)
 ! IV 
   if ( (re .ge. 0.0) .and. (im .lt. 0.0) ) complex_phase = 2*pi+asin(im/c)
-
-
-
+!
    endfunction complex_phase
+!*****************************************************************************
 endmodule General
