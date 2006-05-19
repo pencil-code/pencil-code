@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.86 2006-05-17 17:13:16 theine Exp $
+! $Id: radiation_ray.f90,v 1.87 2006-05-19 11:56:17 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -136,7 +136,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.86 2006-05-17 17:13:16 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.87 2006-05-19 11:56:17 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -241,7 +241,7 @@ module Radiation
 !
 !  Calculate weights
 !
-      if (ndir>0) weight=1.0/ndir
+      if (ndir>0) weight=4*pi/ndir
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',ndir
 !
@@ -703,7 +703,7 @@ module Radiation
       type (pencil_case) :: p
       real, dimension (nx) :: cooling,Qrad2
 !
-      cooling=4*pi*kapparho(l1:l2,m,n)*f(l1:l2,m,n,iQrad)
+      cooling=kapparho(l1:l2,m,n)*f(l1:l2,m,n,iQrad)
 !
 !  Add radiative cooling
 !
