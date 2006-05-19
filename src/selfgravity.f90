@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.2 2006-05-16 16:12:40 ajohan Exp $
+! $Id: selfgravity.f90,v 1.3 2006-05-19 20:40:03 joishi Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -63,7 +63,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.2 2006-05-16 16:12:40 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.3 2006-05-19 20:40:03 joishi Exp $")
 !
 !  Put variable name in array
 !
@@ -89,6 +89,9 @@ module Selfgravity
 !  All pencils that the Selfgravity module depends on are specified here.
 ! 
 !  15-may-06/anders+jeff: adapted
+!
+      lpenc_requested(i_gpotself)=.true.
+
 !
     endsubroutine pencil_criteria_selfgravity
 !***********************************************************************
@@ -151,10 +154,11 @@ module Selfgravity
 !
       intent(in) :: f,p
       intent(out) :: df
+
 !
 !  Add self gravity acceleration on the gas.
 !
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%gpotself
+      if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
 !
       if (NO_WARN) print*, f, p !(keep compiler quiet)
 !        
@@ -235,5 +239,6 @@ module Selfgravity
 !
     endsubroutine rprint_selfgravity
 !***********************************************************************
+
 
 endmodule Selfgravity

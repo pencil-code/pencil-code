@@ -1,4 +1,4 @@
-! $Id: noselfgravity.f90,v 1.2 2006-05-16 16:12:40 ajohan Exp $
+! $Id: noselfgravity.f90,v 1.3 2006-05-19 20:40:03 joishi Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -18,6 +18,8 @@ module Selfgravity
   implicit none
 
   include 'selfgravity.h'
+
+  real :: rhs_const=0.
 
   contains
 
