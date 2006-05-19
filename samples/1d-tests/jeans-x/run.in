@@ -3,8 +3,8 @@
 !  Runtime parameters for shocktube problem
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2006-05-19 22:12:48 ajohan Exp $'
-  nt=1000, it1=2, cdt=0.4, cdtv=0.4, isave=1000, itorder=3,
+  cvsid='$Id: run.in,v 1.2 2006-05-19 22:22:56 ajohan Exp $'
+  nt=100, it1=5, cdt=0.4, cdtv=0.4, isave=1000, itorder=3,
   dsnap=1.0, dvid=0.1
   lpencil_check=T
 /
