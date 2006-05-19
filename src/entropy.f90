@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.405 2006-05-15 21:29:02 brandenb Exp $
+! $Id: entropy.f90,v 1.406 2006-05-19 10:01:35 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.405 2006-05-15 21:29:02 brandenb Exp $")
+           "$Id: entropy.f90,v 1.406 2006-05-19 10:01:35 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1786,6 +1786,7 @@ module Entropy
     if (lnstar_entropy) then
    
      TT_cs0=cs0**2/gamma1
+   !  print*,'  TT_cs0     ',TT_cs0
  
        if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
     !   if ( dt .GT. 0..AND. n .LT. nzgrid-20) then
@@ -2258,7 +2259,7 @@ module Entropy
 !
     if (l1D_cooling) then
 
-      beta=1e5   !(R_star+Lxyz(3)/(nzgrid-1.)*(n-3))
+      beta=1e7!(R_star+Lxyz(3)/(nzgrid-1.)*(n-3))
 
       thdiff_1D =-16./3.*sigmaSB/kappa_es*p%TT**4 &
                  *p%rho1*beta!*(xyz0(3))**(-2)*f(l1:l2,m,n,iuy)**2/p%cs2(:)

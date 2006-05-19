@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.255 2006-05-12 11:59:31 nbabkovs Exp $
+! $Id: hydro.f90,v 1.256 2006-05-19 10:01:35 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -155,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.255 2006-05-12 11:59:31 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.256 2006-05-19 10:01:35 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1913,6 +1913,7 @@ module Hydro
       ll=Lxyz(3)-L_disk
       ldisk=L_disk
 
+   if (nzgrid .GT. 1) then
       L_disk_min=Lxyz(3)/(nzgrid-1)
 
       if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
@@ -1949,7 +1950,11 @@ module Hydro
        end if
 
       end if
-
+   else
+    f(:,:,:,iux)=uu_left
+    f(:,:,:,iuz)=uu_left
+    f(:,:,:,iuy)=sqrt(M_star/xyz0(3))
+   endif
 
 
     endsubroutine  
