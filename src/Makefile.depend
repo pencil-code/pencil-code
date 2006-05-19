@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.13 2006-05-15 21:30:50 ajohan Exp $
+### $Id: Makefile.depend,v 1.14 2006-05-19 20:42:20 joishi Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -64,7 +64,7 @@ $(ENTROPY).o:      entropy.h        $(ENTROPY).f90 cdata.o messages.o $(MPICOMM_
 $(MAGNETIC).o:     magnetic.h       $(MAGNETIC).f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
 $(RADIATION).o:    radiation.h      $(RADIATION).f90 cdata.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(EOS).o
 $(HYDRO).o:        hydro.h          $(HYDRO).f90 cdata.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
-$(DENSITY).o:      density.h        $(DENSITY).f90 cdata.o messages.o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(EOS).o
+$(DENSITY).o:      density.h        $(DENSITY).f90 cdata.o messages.o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SELFGRAVITY).o $(SPECIAL).o $(EOS).o
 $(COSMICRAY).o:    cosmicray.h      $(COSMICRAY).f90 cdata.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC).o
 $(COSMICRAYFLUX).o:    cosmicrayflux.h      $(COSMICRAYFLUX).f90 cdata.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC).o $(COSMICRAY).o
 $(PSCALAR).o:      pscalar.h        $(PSCALAR).f90 cdata.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC).o

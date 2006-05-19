@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.246 2006-05-19 10:01:35 nbabkovs Exp $
+! $Id: density.f90,v 1.247 2006-05-19 20:42:20 joishi Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.246 2006-05-19 10:01:35 nbabkovs Exp $")
+           "$Id: density.f90,v 1.247 2006-05-19 20:42:20 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -293,10 +293,11 @@ module Density
 ! 28-jun-02/axel: added isothermal
 ! 15-oct-03/dave: added spherical shell (kws)
 !
-      use General, only: chn
+      use General, only: chn,complex_phase
       use Global
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
                           lnumerical_equilibrium
+      use Selfgravity,only: rhs_const
       use Initcond
       use Initcond_spec
       use IO
@@ -307,9 +308,11 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
-      real :: pot_ext,lnrho_ext,cs2_ext,tmp1
+      real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop
       logical :: lnothing
+      complex :: omega_jeans
+
 !
 !  define bottom and top height
 !
@@ -668,7 +671,40 @@ module Density
      case ('step_xz') 
            call density_step(f,xx,zz)
 
+     case('jeans-wave-x')
+! soundwave + self gravity
+        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 - rhs_const*rho0,0.))/(rho0*kx_lnrho)
+        print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+          real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
+        f(:,:,:,ilnrho) = lnrho_const + & 
+          ampllnrho*sin(kx_lnrho*xx)
+        f(:,:,:,iux) = f(:,:,:,iux) &
+             + abs(omega_jeans*ampllnrho) * & 
+             sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
+
+     case('jeans-wave-oblique')
+! soundwave + self gravity
+        k_j2 = kx_lnrho**2 + ky_lnrho**2 + kz_lnrho**2
+        omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_const*rho0,0.))/(rho0*sqrt(k_j2))
+        print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+          real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
+
+        f(:,:,:,ilnrho) = lnrho_const + & 
+          ampllnrho*sin(kx_lnrho*xx + ky_lnrho*yy + kz_lnrho*zz)
+        if (kx_lnrho .ne. 0) &
+             f(:,:,:,iux) = f(:,:,:,iux) &
+             + abs(omega_jeans*ampllnrho) * & 
+             sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
+        if (ky_lnrho .ne. 0) &
+             f(:,:,:,iuy) = f(:,:,:,iuy) &
+             + abs(omega_jeans*ampllnrho) * & 
+             sin(ky_lnrho*yy+complex_phase(omega_jeans*ampllnrho))
+        if (kz_lnrho .ne. 0) & 
+             f(:,:,:,iuz) = f(:,:,:,iuz) &
+             + abs(omega_jeans*ampllnrho) * & 
+             sin(kz_lnrho*zz+complex_phase(omega_jeans*ampllnrho))
+        
       case default
         !
         !  Catch unknown values

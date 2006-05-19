@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.47 2006-04-22 17:03:44 ajohan Exp $
+! $Id: general.f90,v 1.48 2006-05-19 20:42:20 joishi Exp $
 
 module General
 
@@ -20,7 +20,7 @@ module General
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
 
-  public :: spline
+  public :: spline,complex_phase
 
   include 'record_types.h'
 
@@ -913,5 +913,31 @@ module General
       enddo
 !           
     endsubroutine spline
-!**********************************************************************************
+!*****************************************************************************
+    function complex_phase(z)
+!
+!  takes complex number and returns  Theta where
+!  z = A*exp(i*theta)
+!
+!  17-may-06/anders+jeff: coded 
+
+      real :: c,re,im,complex_phase
+      complex :: z
+      
+      c=abs(z)
+      re=real(z)
+      im=aimag(z)
+
+! I
+  if ( (re .ge. 0.0) .and. (im .ge. 0.0) ) complex_phase =      asin(im/c)
+! II
+  if ( (re .lt. 0.0) .and. (im .ge. 0.0) ) complex_phase =   pi-asin(im/c)
+! III
+  if ( (re .lt. 0.0) .and. (im .lt. 0.0) ) complex_phase =   pi-asin(im/c)
+! IV 
+  if ( (re .ge. 0.0) .and. (im .lt. 0.0) ) complex_phase = 2*pi+asin(im/c)
+
+
+
+   endfunction complex_phase
 endmodule General
