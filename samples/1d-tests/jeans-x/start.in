@@ -3,7 +3,7 @@
 ! Initialisation parameters for shocktube problem
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-05-19 22:12:48 ajohan Exp $'
+  cvsid='$Id: start.in,v 1.2 2006-05-19 22:23:12 ajohan Exp $'
   xyz0  = -6.28, -6.28, -6.28   ! first corner of box
   xyz1  =  6.28,  6.28,  6.28   ! box size
   lperi =     T,     T,     T   ! periodic direction?
@@ -14,7 +14,7 @@
 &hydro_init_pars
 /
 &density_init_pars
-  initlnrho='jeans-wave-x', kx_lnrho=0.5
+  initlnrho='jeans-wave-x', kx_lnrho=0.5, ampllnrho=0.001
 /
 &selfgravity_init_par
   rhs_selfg=1.0
