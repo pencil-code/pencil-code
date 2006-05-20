@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.24 2006-05-17 21:47:56 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.25 2006-05-20 18:17:37 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.24 2006-05-17 21:47:56 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.25 2006-05-20 18:17:37 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -713,34 +713,48 @@ module EquationOfState
     end subroutine get_soundspeed
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)
+
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-!
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-!
+
+      if (present(iostat)) then
+        read (unit,NML=eos_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read (unit,NML=eos_init_pars,ERR=99)
+      endif
+
+99    return
+
     endsubroutine read_eos_init_pars
 !***********************************************************************
     subroutine write_eos_init_pars(unit)
+
       integer, intent(in) :: unit
-!
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-!
+
+      write (unit,NML=eos_init_pars)
+
     endsubroutine write_eos_init_pars
 !***********************************************************************
     subroutine read_eos_run_pars(unit,iostat)
+
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-!
-      if (present(iostat).and.NO_WARN) print*,iostat
-      if (NO_WARN) print*,unit !(keep compiler quiet)
-!
+
+      if (present(iostat)) then
+        read (unit,NML=eos_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read (unit,NML=eos_run_pars,ERR=99)
+      endif
+
+99    return
+
     endsubroutine read_eos_run_pars
 !***********************************************************************
     subroutine write_eos_run_pars(unit)
+
       integer, intent(in) :: unit
 
-      if (NO_WARN) print*,unit !(keep compiler quiet)
+      write (unit,NML=eos_run_pars)
 
     endsubroutine write_eos_run_pars
 !***********************************************************************
