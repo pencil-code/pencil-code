@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.155 2006-05-15 01:21:29 ajohan Exp $
+! $Id: mpicomm.f90,v 1.156 2006-05-21 15:37:34 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -60,6 +60,8 @@ module Mpicomm
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
     module procedure mpirecv_real_arr2
+    module procedure mpirecv_real_arr3
+    module procedure mpirecv_real_arr4
   endinterface
 
   interface mpirecv_int
@@ -71,6 +73,8 @@ module Mpicomm
     module procedure mpisend_real_scl
     module procedure mpisend_real_arr
     module procedure mpisend_real_arr2
+    module procedure mpisend_real_arr3
+    module procedure mpisend_real_arr4
   endinterface
 
   interface mpisend_int
@@ -1186,6 +1190,44 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
+    subroutine mpirecv_real_arr3(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive real array(:,:,:) from other processor.
+!
+!  20-may-06/anders: adapted
+!
+      integer, dimension(3) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2), &
+                      nbcast_array(3)) :: bcast_array
+      integer :: proc_src, tag_id, nbcast
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+     nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)
+!
+      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
+          tag_id, MPI_COMM_WORLD, stat, ierr)
+!
+    endsubroutine mpirecv_real_arr3
+!***********************************************************************
+    subroutine mpirecv_real_arr4(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive real array(:,:,:,:) from other processor.
+!
+!  20-may-06/anders: adapted
+!
+      integer, dimension(4) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2), &
+                      nbcast_array(3),nbcast_array(4)) :: bcast_array
+      integer :: proc_src, tag_id, nbcast
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
+!
+      call MPI_RECV(bcast_array, nbcast, MPI_REAL, proc_src, &
+          tag_id, MPI_COMM_WORLD, stat, ierr)
+!
+    endsubroutine mpirecv_real_arr4
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,nbcast_array,proc_src,tag_id)
 !
 !  Receive integer scalar from other processor.
@@ -1264,6 +1306,42 @@ module Mpicomm
           tag_id, MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpisend_real_arr2
+!***********************************************************************
+    subroutine mpisend_real_arr3(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Receive real array(:,:,:) from other processor.
+!
+!  20-may-06/anders: adapted
+!
+      integer, dimension(3) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2), &
+                      nbcast_array(3)) :: bcast_array
+      integer :: proc_rec, tag_id, nbcast
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)
+!
+      call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
+          tag_id, MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpisend_real_arr3
+!***********************************************************************
+    subroutine mpisend_real_arr4(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Receive real array(:,:,:,:) from other processor.
+!
+!  20-may-06/anders: adapted
+!
+      integer, dimension(4) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2), &
+                      nbcast_array(3),nbcast_array(4)) :: bcast_array
+      integer :: proc_rec, tag_id, nbcast
+!
+      nbcast=nbcast_array(1)*nbcast_array(2)*nbcast_array(3)*nbcast_array(4)
+!
+      call MPI_SEND(bcast_array, nbcast, MPI_REAL, proc_rec, &
+          tag_id, MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpisend_real_arr4
 !***********************************************************************
     subroutine mpisend_int_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
@@ -1880,13 +1958,76 @@ module Mpicomm
 !
 !  Fold first ghost zone of df into main part of df.
 !
-!  15-may-2006/anders: dummy
+!  20-may-2006/anders: coded
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: df
-!
-      if (NO_WARN) print*, df
+      real, dimension (nx+2,ny+2,1,3) :: df_tmp_xy
+      real, dimension (nx+2,1,nz+2,3) :: df_tmp_xz
+      integer :: iproc_rcv
+!  The first ghost zone in the z-direction is folded (the corners will find
+!  their proper positions after folding in x and y as well).
+      if (nprocz==1) then
+        df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)+ &
+            df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)
+        df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)+ &
+            df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)
+      else
+        do iproc_rcv=0,ncpus-1
+          if (iproc==iproc_rcv) then
+            call mpirecv_real(df_tmp_xy, &
+                (/nx+2,ny+2,1,3/), zlneigh, 10000)
+          elseif (iproc_rcv==zuneigh) then
+            call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,iux:iuz), &
+                (/nx+2,ny+2,1,3/), zuneigh, 10000)
+          endif
+          if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n1:n1,iux:iuz)= &
+              df(l1-1:l2+1,m1-1:m2+1,n1:n1,iux:iuz) + df_tmp_xy
+          if (iproc==iproc_rcv) then
+            call mpirecv_real(df_tmp_xy, &
+                (/nx+2,ny+2,1,3/), zuneigh, 10001)
+          elseif (iproc_rcv==zlneigh) then
+            call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,iux:iuz), &
+                (/nx+2,ny+2,1,3/), zlneigh, 10001)
+          endif
+          if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n2:n2,iux:iuz)= &
+              df(l1-1:l2+1,m1-1:m2+1,n2:n2,iux:iuz) + df_tmp_xy
+        enddo
+      endif
+! Then y.
+      if (nprocy==1) then
+        df(l1-1:l2+1,m1,n1-1:n2+1,iux:iuz)=df(l1-1:l2+1,m1,n1-1:n2+1,iux:iuz)+ &
+            df(l1-1:l2+1,m2+1,n1-1:n2+1,iux:iuz)
+        df(l1-1:l2+1,m2,n1-1:n2+1,iux:iuz)=df(l1-1:l2+1,m2,n1-1:n2+1,iux:iuz)+ &
+            df(l1-1:l2+1,m1-1,n1-1:n2+1,iux:iuz)
+      else
+        do iproc_rcv=0,ncpus-1
+          if (iproc==iproc_rcv) then
+            call mpirecv_real(df_tmp_xz, &
+                (/nx+2,1,nz+2,3/), ylneigh, 10002)
+          elseif (iproc_rcv==yuneigh) then
+            call mpisend_real(df(l1-1:l2+1,m2+1:m2+1,n1-1:n2+1,iux:iuz), &
+                (/nx+2,1,nz+2,3/), yuneigh, 10002)
+          endif
+          if (iproc==iproc_rcv) df(l1-1:l2+1,m1:m1,n1-1:n2+1,iux:iuz)= &
+              df(l1-1:l2+1,m1:m1,n1-1:n2+1,iux:iuz) + df_tmp_xz
+          if (iproc==iproc_rcv) then
+            call mpirecv_real(df_tmp_xz, &
+                (/nx+2,1,nz+2,3/), ylneigh, 10003)
+          elseif (iproc_rcv==ylneigh) then
+            call mpisend_real(df(l1-1:l2+1,m1-1:m1-1,n1-1:n2+1,iux:iuz), &
+                (/nx+2,1,nz+2,3/), yuneigh, 10003)
+          endif
+          if (iproc==iproc_rcv) df(l1-1:l2+1,m2:m2,n1-1:n2+1,iux:iuz)= &
+              df(l1-1:l2+1,m2:m2,n1-1:n2+1,iux:iuz) + df_tmp_xz
+        enddo
+      endif
+! Then x (always at the same processor).
+      df(l1,m1-1:m2+1,n1-1:n2+1,iux:iuz)=df(l1,m1-1:m2+1,n1-1:n2+1,iux:iuz) + &
+          df(l2+1,m1-1:m2+1,n1-1:n2+1,iux:iuz)
+      df(l2,m1-1:m2+1,n1-1:n2+1,iux:iuz)=df(l2,m1-1:m2+1,n1-1:n2+1,iux:iuz) + &
+          df(l1-1,m1-1:m2+1,n1-1:n2+1,iux:iuz)
 !
     endsubroutine fold_df
 !***********************************************************************
