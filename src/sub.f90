@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.235 2006-05-18 18:54:26 ajohan Exp $ 
+! $Id: sub.f90,v 1.236 2006-05-22 16:52:31 wlyra Exp $ 
 
 module Sub 
 
@@ -395,7 +395,7 @@ module Sub
         r = sqrt(x(l1:l2)**2+y(m)**2)
         do i=1,nx
            if ((r(i) .le. r_ext) .and. (r(i) .ge. r_int)) then
-              aux(i) = a(i)*dsv
+              aux(i) = a(i) 
             else
               aux(i) = 0.
            endif
@@ -414,6 +414,7 @@ module Sub
            sumaux = sumaux / norm
         endif
 !
+        sumaux = sumaux * dsv
         call surf_mn_name(sumaux,iname)
 !
       endif
