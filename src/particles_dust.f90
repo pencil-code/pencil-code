@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.88 2006-05-15 14:22:41 ajohan Exp $
+! $Id: particles_dust.f90,v 1.89 2006-05-22 23:37:15 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -83,7 +83,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.88 2006-05-15 14:22:41 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.89 2006-05-22 23:37:15 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -935,7 +935,7 @@ k_loop: do while (.not. (k>npar_loc))
       real, dimension (nx) :: np, tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
       real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, area
-      integer :: k, l, ix0, iy0, iz0, ixx, iyy, izz
+      integer :: k, l, ix0, iy0, iz0, ix1, iy1, iz1, ixx, iyy, izz
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
@@ -959,14 +959,21 @@ k_loop: do while (.not. (k>npar_loc))
                 if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ix0=ix0-1
                 if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iy0=iy0-1
                 if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) iz0=iz0-1
-                do ixx=ix0,ix0+1; do iyy=iy0,iy0+1; do izz=iz0,iz0+1
-                  area=( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )* &
-                       ( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )* &
-                       ( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-                  rho1_point=f(ixx,iyy,izz,ilnrho)
-                  if (.not. ldensity_nolog) rho1_point=exp(rho1_point)
+                ix1=ix0; if (nxgrid/=1) ix1=ix0+1
+                iy1=iy0; if (nygrid/=1) iy1=iy0+1
+                iz1=iz0; if (nzgrid/=1) iz1=iz0+1
+                do ixx=ix0,ix1; do iyy=iy0,iy1; do izz=iz0,iz1
+                  area=1.0
+                  if (nxgrid/=1) &
+                      area=area*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                  if (nygrid/=1) &
+                      area=area*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                  if (nzgrid/=1) &
+                      area=area*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                  rho_point=f(ixx,iyy,izz,ilnrho)
+                  if (.not. ldensity_nolog) rho_point=exp(rho_point)
                   df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                      rhop_tilde*rho1_point*dragforce*area
+                      rhop_tilde*1/rho_point*dragforce*area
                 enddo; enddo; enddo
               else ! No smoothing.
                 l=ineargrid(k,1)
