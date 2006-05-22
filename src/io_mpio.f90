@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.34 2006-02-08 14:03:42 mee Exp $
+! $Id: io_mpio.f90,v 1.35 2006-05-22 16:51:22 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -28,6 +28,7 @@ module Io
   interface output              ! Overload the `output' function
     module procedure output_vect
     module procedure output_scal
+    module procedure output_vect_coarse
   endinterface
 
   interface output_pencil        ! Overload the `output_pencil' function
@@ -113,7 +114,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.34 2006-02-08 14:03:42 mee Exp $")
+           "$Id: io_mpio.f90,v 1.35 2006-05-22 16:51:22 wlyra Exp $")
 !
 !  consistency check
 !
@@ -228,6 +229,55 @@ contains
 !
     endsubroutine commit_io_type_vect
 !***********************************************************************
+    subroutine commit_io_type_vect_1D(nr,nv)
+!
+!  For a new value of nv, commit MPI types needed for output_vect(). If
+!  called with the same value of nv as the previous time, do nothing.
+!  20-sep-02/wolf: coded
+!
+!      use Cdata
+!
+      integer :: nr,nv
+      integer, dimension(2) :: globalsize_v,localsize_v,memsize_v
+      integer, dimension(2) :: start_index_v,mem_start_index_v
+      integer,save :: lastnv=-1 ! value of nv at previous call
+!
+      if (nv /= lastnv) then
+        if (lastnv > 0) then
+          ! free old types, so we can re-use them
+          call MPI_TYPE_FREE(io_filetype_v, ierr)
+          call MPI_TYPE_FREE(io_memtype_v, ierr)
+        endif
+        globalsize_v=(/nr,nv/)
+        localsize_v =(/nr,nv/)
+        memsize_v   =(/nr,nv/)
+!
+!  global indices of first element of iproc's data in the file
+!
+        start_index_v(1) = ipx*nr
+        start_index_v(2) = 0
+!
+!  construct the new datatype `io_filetype_n'
+!
+        call MPI_TYPE_CREATE_SUBARRAY(2, &
+                 globalsize_v, localsize_v, start_index_v, &
+                 MPI_ORDER_FORTRAN, MPI_REAL, &
+                 io_filetype_v, ierr)
+        call MPI_TYPE_COMMIT(io_filetype_v,ierr)
+!
+!  create a derived datatype describing the data layout in memory
+!  (i.e. including the ghost zones)
+!
+        mem_start_index_v(1:2) = 0 
+        call MPI_TYPE_CREATE_SUBARRAY(2, &
+                 memsize_v, localsize_v, mem_start_index_v, &
+                 MPI_ORDER_FORTRAN, MPI_REAL, &
+                 io_memtype_v, ierr)
+        call MPI_TYPE_COMMIT(io_memtype_v,ierr)
+      endif
+!
+    endsubroutine commit_io_type_vect_1D
+!*********************************************************************** 
     subroutine input(file,a,nv,mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
@@ -258,9 +308,41 @@ contains
 !
       call MPI_FILE_READ_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
       call MPI_FILE_CLOSE(fhandle, ierr)
-      
 !
     endsubroutine input
+!***********************************************************************
+    subroutine input_coarse(file,a,nv,mode,nr)
+!
+!  read snapshot file, possibly with mesh and time (if mode=1)
+!  22-may-06/wlad: adapted from input
+!
+      use Cdata
+      use Mpicomm, only: lroot,stop_it
+!
+      character (len=*) :: file
+      integer :: nv,mode,i,nr
+      real, dimension (nr,nv) :: a
+!
+      if (ip<=8) print*,'input: nr,nv=',nr,nv
+      if (.not. io_initialized) &
+           call stop_it("input: Need to call init_io first")
+!
+      call commit_io_type_vect_1D(nr,nv)
+!
+!  open file and set view (specify which file positions we can access)
+!
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+               MPI_MODE_RDONLY, &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
+               "native", MPI_INFO_NULL, ierr)
+!
+!  read data
+!
+      call MPI_FILE_READ_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
+      call MPI_FILE_CLOSE(fhandle, ierr)
+!
+    endsubroutine input_coarse
 !***********************************************************************
     subroutine output_vect(file,a,nv)
 !
@@ -303,6 +385,47 @@ contains
 !
     endsubroutine output_vect
 !***********************************************************************
+    subroutine output_vect_coarse(file,a,nv,nr)
+!
+!  Write snapshot file; currently without ghost zones and grid.
+!  Looks like we need to commit the MPI type anew each time we are called,
+!  since nv may vary.
+!
+!  22-may-05/wlad: adapted from output_vect
+!
+      use Cdata
+      use Mpicomm, only: lroot,stop_it
+!
+      integer :: nv,nr
+      real, dimension (nr,nv) :: a
+      character (len=*) :: file
+!
+      if ((ip<=8) .and. lroot) print*,'output_vect: nv =', nv
+      if (.not. io_initialized) &
+           call stop_it("output_vect: Need to call init_io first")
+!
+      call commit_io_type_vect_1D(nr,nv) ! will free old type if new one is needed
+      !
+      !  open file and set view (specify which file positions we can access)
+      !
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+               ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
+               "native", MPI_INFO_NULL, ierr)
+      !
+      !  write data
+      !
+      call MPI_FILE_WRITE_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
+      call MPI_FILE_CLOSE(fhandle, ierr)
+      !
+      !  write meta data (to make var.dat as identical as possible to
+      !  what a single-processor job would write with io_dist.f90)
+      !
+      call write_record_info_1D(file, nr,nv)
+!
+    endsubroutine output_vect_coarse
+!*********************************************************************** 
     subroutine output_scal(file,a,nv)
 !
 !  Write snapshot file; currently without ghost zones and grid
@@ -459,6 +582,48 @@ contains
       call MPI_FILE_CLOSE(fhandle,ierr)
 !
     endsubroutine write_record_info
+!***********************************************************************
+    subroutine write_record_info_1D(file,nr,nv)
+!
+! 1D adaptation of write_record_info
+! needed to read global coarse averages
+!
+! 22-may-06/wlad : adapted from write_record_info
+!      
+      use Cdata
+      use Mpicomm, only: lroot,stop_it
+!
+      integer :: nr,nv,reclen
+      integer(kind=MPI_OFFSET_KIND) :: fpos
+      character (len=*) :: file
+!
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, & ! MPI_FILE_OPEN is collective
+           ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+           MPI_INFO_NULL, fhandle, ierr)
+      if (lroot) then           ! only root writes
+        !
+        ! record markers for (already written) data block
+        !
+        fpos = 0                ! open-record marker
+        reclen = nr*nv*2
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        fpos = fpos + reclen+2  ! close-record marker
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        !
+        ! time in a new record
+        !
+        fpos = fpos + 2
+        reclen = 2
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+        fpos = fpos + 2
+        call MPI_FILE_WRITE_AT(fhandle,fpos,t,1,MPI_REAL,status,ierr)
+        fpos = fpos + 2
+        call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
+      endif
+      !
+      call MPI_FILE_CLOSE(fhandle,ierr)
+      !
+    endsubroutine write_record_info_1D
 !***********************************************************************
     subroutine commit_gridio_types(nglobal,nlocal,mlocal,ipvar,filetype,memtype)
 !
