@@ -1,4 +1,4 @@
- ! $Id: global_avgs.f90,v 1.2 2006-04-07 15:29:16 wlyra Exp $
+ ! $Id: global_avgs.f90,v 1.3 2006-05-22 16:48:00 wlyra Exp $
 
 module Global
 
@@ -13,6 +13,7 @@ module Global
   interface set_global
     module procedure set_global_vect
     module procedure set_global_scal
+    module procedure set_global_coarse
   endinterface
 
   interface set_global_point
@@ -23,6 +24,7 @@ module Global
   interface get_global
     module procedure get_global_vect
     module procedure get_global_scal
+    module procedure get_global_coarse
   endinterface
 
   interface get_global_point
@@ -36,6 +38,8 @@ module Global
   real, dimension (mx,my,mz,3) :: bbs
   real, dimension (mx,my,mz,3) :: uus
 !
+  real, dimension (10,3) :: bavg_coarse,uavg_coarse  
+!  
   contains
 
 !***********************************************************************
@@ -125,6 +129,32 @@ module Global
 !
     endsubroutine set_global_scal
 !***********************************************************************
+    subroutine set_global_coarse(var,label,length)
+!
+!  set global variable identified by LABEL
+!
+!  13-jun-05/anders: adapted
+!
+      integer :: length
+      real, dimension(length,3) :: var
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('uavg')
+         uavg_coarse(1:length,1:3) = var
+      case ('bavg')
+         bavg_coarse(1:length,1:3) = var
+!
+      case default
+         if (lroot) &
+              print*, 'set_global_scal: No such value for label', trim(label)
+         call stop_it('set_global_scal')
+!
+      endselect
+!
+    endsubroutine set_global_coarse
+!**********************************************************************
     subroutine reset_global(label)
 !
 !  reset global variable identified by LABEL
@@ -192,6 +222,32 @@ module Global
 !
     endsubroutine get_global_scal
 !***********************************************************************
+    subroutine get_global_coarse(var,label,length)
+!                                                                               
+!  Get (m,n)-pencil of the global vector variable identified by LABEL.          
+!                                                                               
+!  18-jul-02/wolf coded                                                         
+!                             
+      integer :: length
+      real, dimension(length,3) :: var
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('uavg')
+        var = uavg_coarse
+!
+      case ('bavg')
+        var = bavg_coarse
+!
+      case default
+        if (lroot) print*, 'get_global_vect: No such value for label', trim(label)
+        call stop_it('get_global_vect')
+!
+      endselect
+!
+    endsubroutine get_global_coarse
+!********************************************************************
     subroutine set_global_scal_point(var,l,m,n,label)
 !
 !  set point value of the global scalar variable identified by LABEL
@@ -330,6 +386,8 @@ module Global
       call output(trim(directory)//'/gg.dat'  ,gg  ,3)
       call output(trim(directory)//'/bbs.dat'  ,bbs  ,3)
       call output(trim(directory)//'/uus.dat'  ,uus  ,3)
+      call output(trim(directory)//'/uavg_coarse.dat'  ,uavg_coarse  ,3,10)
+      call output(trim(directory)//'/bavg_coarse.dat'  ,bavg_coarse  ,3,10)
 !
     endsubroutine wglobal
 !***********************************************************************
@@ -340,13 +398,15 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use Io, only: input
+      use Io, only: input,input_coarse
 !
       call input(trim(directory)//'/rho.dat',rho,1,0)
       call input(trim(directory)//'/cs2.dat',cs2,1,0)
       call input(trim(directory)//'/gg.dat'  ,gg  ,3,0)
       call input(trim(directory)//'/bbs.dat'  ,bbs  ,3,0)
       call input(trim(directory)//'/uus.dat'  ,uus  ,3,0)
+      call input_coarse(trim(directory)//'/uavg_coarse.dat'  ,uavg_coarse  ,3,0,10)
+      call input_coarse(trim(directory)//'/bavg_coarse.dat'  ,bavg_coarse  ,3,0,10)
 
     endsubroutine rglobal
 !***********************************************************************
