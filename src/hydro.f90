@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.256 2006-05-19 10:01:35 nbabkovs Exp $
+! $Id: hydro.f90,v 1.257 2006-05-22 11:14:14 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -155,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.256 2006-05-19 10:01:35 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.257 2006-05-22 11:14:14 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -919,7 +919,7 @@ module Hydro
       if (lsurface_zone) then
           if ( dt .GT.0.) then
                          
-         l_sz=l2-10
+         l_sz=l2-5
                
            do j=l_sz,l2   
            !  df(j,m,n,iux)=df(j,m,n,iux)&
@@ -928,24 +928,33 @@ module Hydro
            !        -1./(10.*dt)*(f(j,m,n,iux)-f(j+1,m,n,iux))
            enddo
 
+        if (lnstar_1D) then
+
              df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
                    -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
      
          
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                   -1./(5.*dt)*(f(l1:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
-     
 
-
-         !   df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
-         !          -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
-    
-          !  df(l1:l1+20,m,n,iuy)=df(l1:l1+20,m,n,iuy)&
-          !        -1./(5.*dt)*(f(l1:l1+20,m,n,iuy)-sqrt(M_star/xyz0(3)))
-     
- 
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                   -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
+             -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
+
+         else
+
+         !    df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
+         !          -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
+     
+         
+         !   df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
+         !         -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/z(n)))
+
+         !   df(l_sz:l2,m,n,iuz)=df(l_sz:l2,m,n,iuz)&
+         !    -1./(5.*dt)*(f(l_sz:l2,m,n,iuz)+accretion_flux/p%rho(:))
+ 
+     
+         endif 
+    
         
          endif
 

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.235 2006-05-12 11:59:31 nbabkovs Exp $ 
+! $Id: param_io.f90,v 1.236 2006-05-22 11:14:14 nbabkovs Exp $ 
 
 module Param_IO
 
@@ -65,7 +65,7 @@ module Param_IO
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
        lcylindrical,init_loops, H_disk, L_disk, R_star, M_star, T_star, accretion_flux, & 
-       lextrapolate_bot_density, ltop_velocity_kep, laccelerat_zone, ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const
+       lextrapolate_bot_density, ltop_velocity_kep, laccelerat_zone, ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const, lnstar_1D
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,ddt,cdtv,cdts,cdtr,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, max_walltime, &
@@ -93,7 +93,7 @@ module Param_IO
        ipencil_swap,lpencil_requested_swap,lpencil_diagnos_swap, &
        lpencil_check,lpencil_check_diagnos_opti,lpencil_init, H_disk, &
        L_disk, R_star, M_star, T_star, accretion_flux, lnstar_entropy, &
-       lnstar_T_const
+       lnstar_T_const,lnstar_1D
   contains
 
 !***********************************************************************

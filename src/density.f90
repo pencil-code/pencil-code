@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.247 2006-05-19 20:42:20 joishi Exp $
+! $Id: density.f90,v 1.248 2006-05-22 11:14:13 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.247 2006-05-19 20:42:20 joishi Exp $")
+           "$Id: density.f90,v 1.248 2006-05-22 11:14:13 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -842,12 +842,17 @@ module Density
  
      !     if (H_disk.GT.0.)       f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-(xx(:,:,:)/H_disk)**2
 
-       if (H_disk.GT.0.)  f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
+       if (H_disk.GT.0.)  f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+(1.-(xx(:,:,:)/H_disk)**2)
       else
 
-      if (H_disk.GT.0.)  f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
-      !  if (H_disk.GT.0.) f(:,:,:,ilnrho)=ln_ro_u
-   !f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_l-ln_ro_r)+ln_ro_r!ln_ro_u!+((xx(:,:,:)/H_disk)**2-1.)
+   !   if (H_disk.GT.0.)  f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
+    
+
+     !   if (H_disk.GT.0.)
+   
+    f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_l)+ln_ro_l
+
+  !ln_ro_u!+((xx(:,:,:)/H_disk)**2-1.)
 
  ! if (H_disk.GT.0.)  !f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_u*2.)+ln_ro_u*2.
  
@@ -1420,7 +1425,7 @@ module Density
 
       if (lsurface_zone) then
           if ( dt .GT.0.) then
-            l_sz=l2-20
+            l_sz=l2-5
 
           !   df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
           !       -1./(5.*dt)*(1.-rho_up/exp(f(l_sz:l2,m,n,ilnrho)))

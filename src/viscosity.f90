@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.21 2006-04-06 18:57:57 theine Exp $
+! $Id: viscosity.f90,v 1.22 2006-05-22 11:14:14 nbabkovs Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -81,7 +81,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.21 2006-04-06 18:57:57 theine Exp $")
+           "$Id: viscosity.f90,v 1.22 2006-05-22 11:14:14 nbabkovs Exp $")
 
       ivisc(1)='nu-const'
 
@@ -409,7 +409,7 @@ module Viscosity
 !  of the entropy ...
 !
       if (lentropy) then
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*heat
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*heat
       endif
 !
 !  ... or temperature equation.
