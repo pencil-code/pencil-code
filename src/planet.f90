@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.39 2006-05-03 11:40:22 wlyra Exp $
+! $Id: planet.f90,v 1.40 2006-05-22 16:47:19 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -47,17 +47,18 @@ module Planet
   logical :: lmigrate=.false.,lnorm=.false.
   real :: Gvalue=1. !gravity constant in same unit as density
   logical :: ldnolog=.true.,lcs2_thick=.false.
+  integer :: nr=10
 !
   namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
        lcs2_global,llocal_iso,lcs2_thick
 !
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
-       lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick
+       lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick,nr
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_totenergy=0,idiag_totangmom=0
-  integer :: idiag_totmass=0
+  integer :: idiag_totmass2=0
 !
   contains
 !
@@ -66,7 +67,6 @@ module Planet
 !
 !  06-nov-05/wlad: coded
 !
-      use Cdata, only: ip,nvar,lroot !,mvar,nvar
       use Mpicomm, only: stop_it
 !
       logical, save :: first=.true.
@@ -81,7 +81,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.39 2006-05-03 11:40:22 wlyra Exp $")
+           "$Id: planet.f90,v 1.40 2006-05-22 16:47:19 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,8 +129,6 @@ module Planet
 ! 
 !  06-nov-05/wlad: coded
 !
-      use Cdata
-!      
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_uu)=.true.
@@ -145,8 +143,6 @@ module Planet
 ! have to recalculate it on other routines from f,g0 and r0_pot
 !
 ! 28-mar-06/wlad : coded 
-!
-     use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(nx) :: rc_mn
@@ -212,7 +208,6 @@ module Planet
 !  21-nov-05/wlad+anders: changed orbital elements approach to
 !                         particles' positions and velocities   
 !
-      use Cdata
       use Sub
       use Global
       use Particles_Cdata
@@ -231,7 +226,7 @@ module Planet
 !
 !  Position of the particles
 !  1 is planet, 2 is star
-!      
+!
       ax = fp(1,ixp) ; axs = fp(2,ixp) 
       ay = fp(1,iyp) ; ays = fp(2,iyp) 
       az = fp(1,izp) ; azs = fp(2,izp) 
@@ -251,18 +246,22 @@ module Planet
 !
 !  Ramp up the mass of the planet for 5 periods
 !
-      call get_ramped_mass(gp,gs,g0,mdot,m2dot)
+      ggc=0.
+      if (gc.ne.0) then 
+         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !
 !  Planet's gravity field
 !
-      rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2) + tini
+         rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2) + tini
 !           
-      g_companion=-gp*rrc**(nc-1) &
-          *(rrc**nc+b**nc)**(-1./nc-1.)
+         g_companion=-gp*rrc**(nc-1) &
+              *(rrc**nc+b**nc)**(-1./nc-1.)
 !
-      ggc(:,1) = (x(l1:l2)-ax)/rrc*g_companion 
-      ggc(:,2) = (y(  m  )-ay)/rrc*g_companion
-      ggc(:,3) = (z(  n  )-az)/rrc*g_companion
+         ggc(:,1) = (x(l1:l2)-ax)/rrc*g_companion 
+         ggc(:,2) = (y(  m  )-ay)/rrc*g_companion
+         ggc(:,3) = (z(  n  )-az)/rrc*g_companion
+!
+      endif
 !
 !  Star's gravity field
 !
@@ -270,7 +269,7 @@ module Planet
          rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2)+tini
       else
          rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2) + tini
-      endif   
+      endif
 !      
 !  gravity_star will call the ramped mass from inside again
 !
@@ -301,7 +300,7 @@ module Planet
               call calc_torque(p%rho,gp,ax,ay,b)
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
-              .or.(idiag_totmass/=0)) &
+              .or.idiag_totmass2/=0) &
               call calc_monitored(f,axs,ays,ax,ay,gs,gp,r0_pot,p)
       endif
       lfirstcall=.false.
@@ -311,11 +310,8 @@ module Planet
     subroutine calc_torque(dens,gp,ax,ay,b)
 !
 ! 05-nov-05/wlad : coded
-! 02-may-06/wlad : split torques in negative and positive 
-!                  contributions to avoid underflow
 !
       use Sub
-      use Cdata
 !
       real, dimension(nx) :: torque,torqint,torqext
       real, dimension(nx) :: r,re,rpre,dens
@@ -325,7 +321,7 @@ module Planet
 ! Planet's hills radius
 !
       Rc = sqrt(ax**2 + ay**2)
-      roche = Rc*(gp/3.)**(1./3.) 
+      roche = Rc*(gp/3.)**(1./3.)
 !
       r  = sqrt(x(l1:l2)**2 + y(m)**2)
       re = sqrt((x(l1:l2)-ax)**2 + (y(m)-ay)**2)
@@ -333,19 +329,19 @@ module Planet
 !
       torque = gp*dens*rpre*(re**2+b**2)**(-1.5)
 !
-      torqext=0. 
+      torqext=0.
       torqint=0.
 !
       do i=1,nx
 !
 ! Exclude material from inside the Roche Lobe
-!         
-         if (re(i).ge.roche) then         
-!         
+!
+         if (re(i).ge.roche) then
+!
 ! External torque
-!         
+!
             if (r(i).ge.Rc) torqext(i) = torque(i)
-!  
+!
 ! Internal torque
 !
             if (r(i).le.Rc) torqint(i) = torque(i)
@@ -355,7 +351,7 @@ module Planet
 !
       call sum_lim_mn_name(torqext,idiag_torqext)
       call sum_lim_mn_name(torqint,idiag_torqint)
-!      
+!
     endsubroutine calc_torque
 !***********************************************************************
     subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot)
@@ -367,8 +363,6 @@ module Planet
 !
 ! 03-mar-06/wlad : coded
 !
-      use Cdata
-! 
       real :: fgp,gp,gs,g0,tcut
       real :: mdot,m2dot
 !
@@ -408,8 +402,6 @@ module Planet
 ! physical zone. But it does not stop the material completely
 ! in the outer boundary of the freezing ring.
 !
-!
-      use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -458,6 +450,12 @@ module Planet
             df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
             df(i,m,n,iux)    = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
             df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
+            if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
+            if (lmagnetic) then
+               df(i,m,n,iax)    = df(i,m,n,iax)    - (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
+               df(i,m,n,iay)    = df(i,m,n,iay)    - (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
+               if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
+            endif
          endif
       enddo
 !     
@@ -485,6 +483,12 @@ module Planet
            df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
            df(i,m,n,iux)    = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
            df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
+           if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
+           if (lmagnetic) then
+              df(i,m,n,iax)    = df(i,m,n,iax)    - (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
+              df(i,m,n,iay)    = df(i,m,n,iay)    - (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
+              if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
+           endif
         endif
      enddo
 !
@@ -494,7 +498,6 @@ module Planet
 !
 ! 08-nov-05/wlad : coded
 !
-     use Cdata
      use Mpicomm, only : stop_it
 !
      real, dimension (nx), intent(out) :: g_r
@@ -594,7 +597,6 @@ module Planet
 ! 10-nov-05/wlad   : coded
 !
      use Sub
-     use Cdata
 ! 
      real, dimension(mx,my,mz,mvar+maux) :: f
      real, dimension(nx) :: rstar,rplanet,r,uphi
@@ -602,7 +604,7 @@ module Planet
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
      real :: xs,ys,xp,yp  !position of star and planet
      real :: gs,gp,r0_pot !star's and planet's mass
-     real :: ang_tot,mass_tot,energy_tot
+     real :: ang_tot,energy_tot,totmass
      integer :: i
      type (pencil_case) :: p
 !
@@ -643,11 +645,10 @@ module Planet
      call sum_lim_mn_name(angular_momentum,idiag_totangmom, &
           ang_tot,lnorm)
 !
-! Total mass
+! total mass
 !
-     mass_tot= pi*(r_ext**2 - r_int**2)
-     call sum_lim_mn_name(p%rho,idiag_totmass, &
-          mass_tot,lnorm)
+     totmass=pi*(r_ext**2 - r_int**2)
+     call sum_lim_mn_name(p%rho,idiag_totmass2,totmass,lnorm)
 !
    endsubroutine calc_monitored
 !***************************************************************
@@ -666,7 +667,6 @@ module Planet
 !
 ! 25-nov-05/wlad : coded
 ! 
-     use Cdata
      use Global, only: set_global
 !
       real, dimension (nx) :: rrp,cs2
@@ -689,7 +689,7 @@ module Planet
 !      
       if (lcs2_thick) then 
 !
-! This is for H=cs/Omega = 0.16 (Lz/2)
+! This is for H=cs/Omega = Lz/2
 !
          if (lheader) &
               print*,'set soundspeed: constant H=',Lxyz(3)/2.
@@ -728,78 +728,270 @@ module Planet
 !
     endsubroutine set_soundspeed
 !***************************************************************
-    subroutine time_average(p)
-!
-! Calculates the time-average of phi-variables. This routine is 
-! called from equ.f90 every first iteration of the runge kutta 
-! time step.  It stores the values of the velocity and of the 
-! magnetic field (from the pencils) onto global variables. 
-!
-! The moving average is retroactive, in the sense that what it 
-! performs is an average of the variable read now and the sum
-! of all values previously read. 
-!
-! <f>_t = 0.5*sum(f)_t!=tnow + 0.5*f(now)
-!
-! In the end, the result is
-!
-!        t
-! <f> = SUM 0.5**(t-i) * f(i) 
-!        i
-!
-! It is equivalent to a moving average in which the bigger weigth is
-! given to the value read now. 
-! 
-!
-! 02-03-06/wlad : coded
-!
-      use Global, only: get_global,set_global
+    subroutine planet_phiavg(p)
 !
       type (pencil_case) :: p
+      !real, dimension(nx,3) :: bavg,uavg
+!
+! get the previous average to use in this timestep
+!
+      call get_old_average(p) 
+!
+! calculate the new average to use in next timestep
+!
+      call set_new_average(p)
+!
+    endsubroutine planet_phiavg
+!*******************************************************************
+    subroutine get_old_average(p)
+!
+      use Sub, only: calc_phiavg_general,calc_phiavg_unitvects
+      use Global, only: set_global,get_global
+      use Mpicomm, only: stop_it
+!
       real, dimension(nx,3) :: bavg,uavg
+      real, dimension(nr,3) :: bavg_coarse,uavg_coarse
+      real, dimension(nx) :: rcyl
+      real :: rloop_1,rloop_int,rloop_ext,rmid,rmid_1,rmid_2
+      real :: dudr,dbdr,dr,step,upu,upb,dwr,u0,b0 
+      integer :: i,ir,aux
+      type (pencil_case) :: p
 !
-! Call in the first step of runge kutta's scheme only
+! Get the unit vectors
 !
-      if (lfirst) then
+      rcyl = sqrt(x(l1:l2)**2 + y(m)**2)
 !
-! No averaging in the first time step
+      call calc_phiavg_general()
+      call calc_phiavg_unitvects()
 !
-         if (it.eq.1) then
+! in the first time step, there is no average yet 
+! use the pencil value then. The same will be used
+! for r_int and r_ext 
 !
-            
-            if (lmagnetic) bavg = p%bb
-            if (lhydro) uavg = p%uu
+      if (lmagnetic) then
+         bavg(:,1)=p%bb(:,1)*pomx+p%bb(:,2)*pomy 
+         bavg(:,2)=p%bb(:,1)*phix+p%bb(:,2)*phiy 
+         bavg(:,3)=p%bb(:,3)                    
+      endif
 !
-         else
+      uavg(:,1)=p%uu(:,1)*pomx+p%uu(:,2)*pomy
+      uavg(:,2)=p%uu(:,1)*phix+p%uu(:,2)*phiy
+      uavg(:,3)=p%uu(:,3)
+!         
+      if (it.ne.1) then
 !
-! Average the value stored now in the pencil
-! and the sum of the values from the previous steps
+! get the arrays of 10 points calculated in set_new_average
+! in the previous time-step
 !
-! magnetic field
+         call get_global(uavg_coarse,'uavg',nr)
+         if (lmagnetic) call get_global(bavg_coarse,'bavg',nr)
 !
-            if (lmagnetic) then
-               call get_global(bavg,m,n,'bbs')
-               bavg = 0.5*(bavg + p%bb)
-            endif
+! expand it onto the pencil with linear interpolation
 !
-! velocity field
+         step = (r_ext - r_int)/nr
 !
-            if (lhydro) then
-               call get_global(uavg,m,n,'uus')
-               uavg = 0.5*(uavg + p%uu)
-            endif
+!for ir=0,nr-1 do begin
+!    rloop_int = r_int + ir*step
+!    rloop_ext = r_int + (ir+1)*step
+!    rmid(ir) = 0.5*(rloop_int + rloop_ext)
+!endfor
+
 !
-         endif
+! with spline it works perfectly
 !
-! Store the new average onto a global variable, to be read on
-! the next time step here again.
+! z = spline(rmid,avg_coarse,rcyl)
+
+         do i=1,nx
 !
-         if (lmagnetic) call set_global(bavg,m,n,'bbs',nx)
-         if (lhydro)    call set_global(uavg,m,n,'uus',nx)
+! this retrives ir, from 1 to nr
+!
+            ir = floor((rcyl(i)-r_int)/step) + 1 
+            rloop_int = r_int + (ir-1)*step
+            rloop_ext = r_int + ir*step
+            rmid = 0.5*(rloop_int + rloop_ext)
+            rmid_1 = rmid + step
+
+            !print*,rcyl(i),rloop_int,rloop_ext,rmid,rmid_1,&
+            !     uavg_coarse(ir+1,2) - uavg_coarse(ir,2)
+
+            if ((rcyl(i) .gt. r_int).and.(rcyl(i) .le. r_ext)) then 
+!
+! gives problem for ir=10 because ir+1 will be out of bounds
+!
+               do aux=1,3
+                  if (ir .ne. 10) then 
+                     dwr = rmid_1 - rmid
+                     dr = rcyl(i) - rmid
+!
+                     upu = uavg_coarse(ir+1,aux) - uavg_coarse(ir,aux)
+                     dudr = upu/dwr
+                     u0 = uavg_coarse(ir,aux)
+                     uavg(i,aux) = u0 + dudr*dr
+!                     
+                     if (lmagnetic) then
+                        upb = bavg_coarse(ir+1,aux) - bavg_coarse(ir,aux)
+                        dbdr = upb/dwr
+                        b0 = bavg_coarse(ir,aux)
+                        bavg(i,aux) = b0 + dbdr*dr
+                     endif   
+!
+                  endif
+!
+! so do it backward for ir=10
+!
+                  if (ir .eq. 10) then 
+                     rmid_2 = rmid-step
+                     dwr = rmid - rmid_2
+                     dr = rcyl(i) - rmid
+!
+                     upu = uavg_coarse(ir,aux) - uavg_coarse(ir-1,aux)
+                     dudr = upu/dwr
+                     u0 = uavg_coarse(ir,aux)
+                     uavg(i,aux) = u0 + dudr*dr
+!
+                     if (lmagnetic) then
+                        upb = bavg_coarse(ir,aux) - bavg_coarse(ir-1,aux)
+                        dbdr = upb/dwr
+                        b0 = bavg_coarse(ir,aux)
+                        bavg(i,aux) = b0 + dbdr*dr
+                     endif
+!
+                  endif
+               enddo
+            endif  !end if r_int r_ext
+!
+! close pencil loop
+!
+         enddo
+!
+! end (it.ne.1)
 !
       endif
 !
-    endsubroutine time_average
+! Store the average onto a global variable, to be read on THIS
+! timestep
+!
+      if (lmagnetic) call set_global(bavg,m,n,'bbs',nx)
+      call set_global(uavg,m,n,'uus',nx)
+!
+    endsubroutine get_old_average
+!*******************************************************************
+    subroutine set_new_average(p)
+!
+      use Sub, only: calc_phiavg_general,calc_phiavg_unitvects
+      use Global, only: set_global
+      use Mpicomm 
+!
+      real, dimension(nr,3) :: bavg_coarse,uavg_coarse
+      real, dimension(nr) :: s_uphi,s_urad,s_uzed
+      real, dimension(nr) :: s_bphi,s_brad,s_bzed
+      real, dimension(nr) :: up_sum,ur_sum,uz_sum
+      real, dimension(nr) :: bp_sum,br_sum,bz_sum
+      real, dimension(nx) :: uphi,urad,uzed
+      real, dimension(nx) :: bphi,brad,bzed
+      integer, dimension(nr) :: k,ktot
+      real :: step,rloop_int,rloop_ext
+      integer :: ir,i
+      type (pencil_case) :: p
+!
+      call calc_phiavg_general()
+      call calc_phiavg_unitvects()
+!
+      urad=p%uu(:,1)*pomx+p%uu(:,2)*pomy 
+      uphi=p%uu(:,1)*phix+p%uu(:,2)*phiy 
+      uzed=p%uu(:,3) 
+      if (lmagnetic) then
+         brad=p%bb(:,1)*pomx+p%bb(:,2)*pomy
+         bphi=p%bb(:,1)*phix+p%bb(:,2)*phiy
+         bzed=p%bb(:,3)
+      endif
+!
+! number of radial zones
+!
+      step=(r_ext - r_int)/nr
+!
+! each zone has its limits rloop_int and rloop_ext
+!
+      s_uphi=0. ; s_urad=0. ; s_uzed=0.
+      if (lmagnetic) then 
+         s_bphi=0. ; s_brad=0. ; s_bzed=0.
+      endif
+      k=0
+!
+      do ir=1,nr
+         rloop_int = r_int + (ir-1)*step
+         rloop_ext = r_int + ir*step
+         do i=l1,l2
+            if ((rcyl_mn(i).le.rloop_ext).and.(rcyl_mn(i).ge.rloop_int)) then
+!
+               s_uphi(ir) = s_uphi(ir) + uphi(i)
+               s_urad(ir) = s_urad(ir) + urad(i)
+               s_uzed(ir) = s_uzed(ir) + uzed(i)
+!               
+               if (lmagnetic) then
+                  s_bphi(ir) = s_bphi(ir) + bphi(i)
+                  s_brad(ir) = s_brad(ir) + brad(i)
+                  s_bzed(ir) = s_bzed(ir) + bzed(i)
+               endif
+!             
+               k(ir)=k(ir)+1
+!
+            endif
+         enddo
+      enddo
+!
+! go filling the sums and the counter
+!
+      call mpireduce_sum(s_urad,ur_sum,nr)
+      call mpireduce_sum(s_uphi,up_sum,nr)
+      call mpireduce_sum(s_uzed,uz_sum,nr)
+! 
+      if (lmagnetic) then
+         call mpireduce_sum(s_brad,br_sum,nr)
+         call mpireduce_sum(s_bphi,bp_sum,nr)
+         call mpireduce_sum(s_bzed,bz_sum,nr)
+      endif
+!
+      call mpireduce_sum_int(k,ktot,nr)
+!
+! Broadcast the values
+!
+      call mpibcast_real(ur_sum,nr)
+      call mpibcast_real(up_sum,nr)
+      call mpibcast_real(uz_sum,nr)
+!         
+      if (lmagnetic) then
+         call mpibcast_real(br_sum,nr)
+         call mpibcast_real(bp_sum,nr)
+         call mpibcast_real(bz_sum,nr)
+      endif
+!
+      call mpibcast_int(ktot,nr)
+!
+! In the last point the sums are finalized. 
+!
+      if (llastpoint) then
+!
+         uavg_coarse(:,1)=ur_sum/ktot
+         uavg_coarse(:,2)=up_sum/ktot
+         uavg_coarse(:,3)=uz_sum/ktot
+!
+         if (lmagnetic) then
+            bavg_coarse(:,1)=br_sum/ktot
+            bavg_coarse(:,2)=bp_sum/ktot
+            bavg_coarse(:,3)=bz_sum/ktot
+         endif
+!
+! set the averages as global variable to use in the next timestep
+! ps. these variables are raw and should be interpolated 
+! to the whole radial grid later to yield better results
+!
+         call set_global(uavg_coarse,'uavg',nr)
+         if (lmagnetic) call set_global(bavg_coarse,'bavg',nr)
+!
+       endif  
+!       
+     endsubroutine set_new_average
 !***************************************************************
     subroutine rprint_planet(lreset,lwrite)
 !
@@ -807,7 +999,6 @@ module Planet
 !
 !  06-nov-05/wlad: coded
 !
-      use Cdata
       use Sub
 !
       integer :: iname
@@ -825,7 +1016,7 @@ module Planet
          idiag_torqext=0
          idiag_totenergy=0
          idiag_totangmom=0
-         idiag_totmass=0
+         idiag_totmass2=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -841,7 +1032,7 @@ module Planet
          call parse_name(iname,cname(iname),cform(iname),&
               'totangmom',idiag_totangmom)
          call parse_name(iname,cname(iname),cform(iname),&
-              'totmass',idiag_totmass)
+              'totmass2',idiag_totmass2)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -852,7 +1043,7 @@ module Planet
         write(3,*) 'i_torqext=',idiag_torqext
         write(3,*) 'i_totenergy=',idiag_totenergy
         write(3,*) 'i_totangmom=',idiag_totangmom
-        write(3,*) 'i_totmass=',idiag_totmass
+        write(3,*),'i_totmass2=',idiag_totmass2
       endif
 !
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)

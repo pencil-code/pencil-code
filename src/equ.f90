@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.298 2006-05-17 21:10:33 ajohan Exp $
+! $Id: equ.f90,v 1.299 2006-05-22 16:47:19 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.298 2006-05-17 21:10:33 ajohan Exp $")
+           "$Id: equ.f90,v 1.299 2006-05-22 16:47:19 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -551,9 +551,11 @@ module Equ
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
 !  --------------------------------------------------------
 !
-!  Time average of phi-variables
+!  Average of phi-variables to remove mean flow
+!  and calculate stresses
 !
-        if (lplanet) call time_average(p)
+        if ((lplanet).and.(lfirst)) &
+             call planet_phiavg(p)
 !
 !  hydro, density, and entropy evolution
 !

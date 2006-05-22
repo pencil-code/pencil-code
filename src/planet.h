@@ -9,7 +9,7 @@
   
   public :: gravity_companion
   public :: gravity_star,wave_damping,get_ramped_mass
-  public :: time_average
+  public :: planet_phiavg
 
 !logicals to use "abroad"
   public :: llocal_iso,lwavedamp

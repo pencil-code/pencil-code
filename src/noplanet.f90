@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.19 2006-04-05 16:10:14 wlyra Exp $
+! $Id: noplanet.f90,v 1.20 2006-05-22 16:47:20 wlyra Exp $
 !
 !  Dummy module
 !
@@ -51,7 +51,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.19 2006-04-05 16:10:14 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.20 2006-05-22 16:47:20 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -203,13 +203,13 @@ module Planet
 !    
     endsubroutine wave_damping
 !***************************************************************
-    subroutine time_average(p)
+    subroutine planet_phiavg(p)
 !
 ! 02-03-06/wlad : dummy
 !
       type (pencil_case) :: p
 !
-    endsubroutine time_average
+    endsubroutine planet_phiavg
 !***************************************************************
     subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !
