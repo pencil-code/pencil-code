@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.257 2006-05-22 11:14:14 nbabkovs Exp $
+! $Id: hydro.f90,v 1.258 2006-05-22 16:50:35 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -111,9 +111,10 @@ module Hydro
   integer :: idiag_duxdzma=0,idiag_duydzma=0
   integer :: idiag_ekintot=0, idiag_ekin=0
   integer :: idiag_fmassz=0, idiag_fkinz=0
-  integer :: idiag_ur2m=0,idiag_up2m=0,idiag_urupm=0
-  integer :: idiag_urm=0,idiag_upm=0,idiag_uzupm=0,idiag_uruzm=0
-
+  integer :: idiag_ur2m=0,idiag_up2m=0,idiag_uzz2m=0
+  integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0
+  integer :: idiag_uzupm=0,idiag_uruzm=0,idiag_urupm=0
+  integer :: idiag_totmass=0
   contains
 
 !***********************************************************************
@@ -155,7 +156,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.257 2006-05-22 11:14:14 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.258 2006-05-22 16:50:35 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -776,13 +777,15 @@ module Hydro
                          u2_xy, u2_xy2, u2_xz, u2_yz
       use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
+      use Global, only: get_global
 !ajwm QUICK FIX.... Shouldn't be here!
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx) :: pdamp,ur,up
+      real, dimension (nx,3) :: uus
+      real, dimension (nx) :: pdamp,ur,up,uz
       real :: c2,s2, const_for_eff_grav
       real :: gr_part, cf_part
       integer :: j,i,l_sz
@@ -1073,6 +1076,7 @@ module Hydro
         if (idiag_ekin/=0)  call sum_mn_name(.5*p%rho*p%u2,idiag_ekin)
         if (idiag_ekintot/=0) & 
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
+        if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass)
 !
 !  cylindrical components for global disk
 !  currently works only for n_pot=2  
@@ -1080,15 +1084,24 @@ module Hydro
         if (lcylindrical) then
            call calc_phiavg_general()
            call calc_phiavg_unitvects()
-           ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy
-           up=p%uu(:,1)*phix+p%uu(:,2)*phiy - p%uu_kep
-           if (idiag_urm/=0)   call sum_lim_mn_name(ur,idiag_urm)
-           if (idiag_upm/=0)   call sum_lim_mn_name(up,idiag_upm)
-           if (idiag_ur2m/=0)  call sum_lim_mn_name(ur**2,idiag_ur2m)
-           if (idiag_up2m/=0)  call sum_lim_mn_name(up**2,idiag_up2m)
-           if (idiag_urupm/=0) call sum_lim_mn_name(ur*up,idiag_urupm)
-           if (idiag_uzupm/=0) call sum_lim_mn_name(p%uu(:,3)*up,idiag_uzupm)
-           if (idiag_uruzm/=0) call sum_lim_mn_name(ur*p%uu(:,3),idiag_uruzm)
+!
+! from the planet phi-average
+!           
+           call get_global(uus,m,n,'uus')
+!
+           ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy - uus(:,1)
+           up=p%uu(:,1)*phix+p%uu(:,2)*phiy - uus(:,2) 
+           uz=p%uu(:,3) - uus(:,3)
+!
+           if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm)
+           if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm)
+           if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm)
+           if (idiag_ur2m/=0)   call sum_lim_mn_name(ur**2,idiag_ur2m)
+           if (idiag_up2m/=0)   call sum_lim_mn_name(up**2,idiag_up2m)
+           if (idiag_uzz2m/=0)  call sum_lim_mn_name(uz**2,idiag_uzz2m)
+           if (idiag_urupm/=0)  call sum_lim_mn_name(ur*up,idiag_urupm)
+           if (idiag_uzupm/=0)  call sum_lim_mn_name(uz*up,idiag_uzupm)
+           if (idiag_uruzm/=0)  call sum_lim_mn_name(ur*uz,idiag_uruzm)
         endif
 
 !
@@ -1517,8 +1530,10 @@ module Hydro
         idiag_uxmy=0; idiag_uymy=0; idiag_uzmy=0
         idiag_ux2my=0; idiag_uy2my=0; idiag_uz2my=0
         idiag_uxuymy=0; idiag_uxuzmy=0; idiag_uyuzmy=0
-        idiag_ur2m=0; idiag_up2m=0; idiag_urupm=0
-        idiag_urm=0; idiag_upm=0; idiag_uzupm=0; idiag_uruzm=0
+        idiag_ur2m=0; idiag_up2m=0; idiag_uzz2m=0
+        idiag_urm=0; idiag_upm=0; idiag_uzzm=0
+        idiag_uzupm=0; idiag_uruzm=0; idiag_urupm=0
+        idiag_totmass=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1577,11 +1592,14 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'duydzma',idiag_duydzma)
         call parse_name(iname,cname(iname),cform(iname),'ur2m',idiag_ur2m)
         call parse_name(iname,cname(iname),cform(iname),'up2m',idiag_up2m)
+        call parse_name(iname,cname(iname),cform(iname),'uzz2m',idiag_uzz2m)
         call parse_name(iname,cname(iname),cform(iname),'urupm',idiag_urupm)
         call parse_name(iname,cname(iname),cform(iname),'urm',idiag_urm)
         call parse_name(iname,cname(iname),cform(iname),'upm',idiag_upm)
+        call parse_name(iname,cname(iname),cform(iname),'uzzm',idiag_uzzm)
         call parse_name(iname,cname(iname),cform(iname),'uzupm',idiag_uzupm)
         call parse_name(iname,cname(iname),cform(iname),'uruzm',idiag_uruzm)
+        call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1729,9 +1747,14 @@ module Hydro
         write(3,*) 'i_fextm=',idiag_fextm
         write(3,*) 'i_duxdzma=',idiag_duxdzma
         write(3,*) 'i_duydzma=',idiag_duydzma
+        write(3,*) 'i_urm=',idiag_urm
+        write(3,*) 'i_upm=',idiag_upm
+        write(3,*) 'i_uzzm=',idiag_uzzm
         write(3,*) 'i_ur2m=',idiag_ur2m
         write(3,*) 'i_up2m=',idiag_up2m
+        write(3,*) 'i_uzz2m=',idiag_uzz2m
         write(3,*) 'i_urupm=',idiag_urupm
+        write(3,*) 'totmass=',idiag_totmass
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
