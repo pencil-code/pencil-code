@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.39 2006-05-19 11:56:17 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.40 2006-05-22 23:22:57 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -154,7 +154,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.39 2006-05-19 11:56:17 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.40 2006-05-22 23:22:57 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1079,6 +1079,7 @@ module Radiation
 !  03-apr-04/tobi: coded
 !
       use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,pi,dx,dy,dz,pi,directory_snap
+      use Cdata, only: kappa_es
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
@@ -1094,6 +1095,14 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,kapparho=tmp)
           kapparho(:,m,n)=tmp
+        enddo
+        enddo
+
+      case ('kappa_es')
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho)
+          kapparho(:,m,n)=kappa_es*exp(lnrho)
         enddo
         enddo
 

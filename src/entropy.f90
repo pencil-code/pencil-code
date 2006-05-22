@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.407 2006-05-22 11:14:13 nbabkovs Exp $
+! $Id: entropy.f90,v 1.408 2006-05-22 23:22:57 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.407 2006-05-22 11:14:13 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.408 2006-05-22 23:22:57 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2244,6 +2244,9 @@ module Entropy
       glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
       glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       call dot(glnT,glnThcond,g2)
+!
+!AB:  derivs of chix missing??
+!
       thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
 
 
@@ -2305,6 +2308,7 @@ module Entropy
       if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
     endif 
  
+!AB: shouldn't we use all 3 components here?
         df(l1:l2,m,n,iuz) = &
          df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
 
