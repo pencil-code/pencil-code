@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.89 2006-05-22 23:37:15 ajohan Exp $
+! $Id: particles_dust.f90,v 1.90 2006-05-23 14:58:48 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -83,7 +83,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.89 2006-05-22 23:37:15 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.90 2006-05-23 14:58:48 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -970,10 +970,15 @@ k_loop: do while (.not. (k>npar_loc))
                       area=area*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
                   if (nzgrid/=1) &
                       area=area*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-                  rho_point=f(ixx,iyy,izz,ilnrho)
-                  if (.not. ldensity_nolog) rho_point=exp(rho_point)
+                  if (ixx<l1 .or. ixx>l2) then
+                    rho_point=f(ixx,iyy,izz,ilnrho)
+                    if (.not. ldensity_nolog) rho_point=exp(rho_point)
+                    rho1_point=1/rho_point
+                  else ! Save some calculation time when inside pencil.
+                    rho1_point=p%rho1(ixx-nghost)
+                  endif
                   df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                      rhop_tilde*1/rho_point*dragforce*area
+                      rhop_tilde*1/rho1_point*dragforce*area
                 enddo; enddo; enddo
               else ! No smoothing.
                 l=ineargrid(k,1)
