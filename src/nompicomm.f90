@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.113 2006-05-16 20:40:55 joishi Exp $
+! $Id: nompicomm.f90,v 1.114 2006-05-23 14:29:34 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -757,20 +757,32 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: df
 !
-      df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz) + &
-          df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)
-      df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz) + &
-          df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)
+      if (nzgrid/=1) then
+        df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz) +&
+            df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)
+        df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz) +&
+            df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)
+        df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)=0.0
+        df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)=0.0
+      endif
 !
-      df(l1-1:l2+1,m1,n1-1:n2+1,iux:iuz)=df(l1-1:l2+1,m1,n1-1:n2+1,iux:iuz) + &
-          df(l1-1:l2+1,m2+1,n1-1:n2+1,iux:iuz)
-      df(l1-1:l2+1,m2,n1-1:n2+1,iux:iuz)=df(l1-1:l2+1,m2,n1-1:n2+1,iux:iuz) + &
-          df(l1-1:l2+1,m1-1,n1-1:n2+1,iux:iuz)
+      if (nygrid/=1) then
+        df(l1-1:l2+1,m1,n1:n2,iux:iuz)=df(l1-1:l2+1,m1,n1:n2,iux:iuz) + &
+            df(l1-1:l2+1,m2+1,n1:n2,iux:iuz)
+        df(l1-1:l2+1,m2,n1:n2,iux:iuz)=df(l1-1:l2+1,m2,n1:n2,iux:iuz) + &
+            df(l1-1:l2+1,m1-1,n1:n2,iux:iuz)
+        df(l1-1:l2+1,m1-1,n1:n2,iux:iuz)=0.0
+        df(l1-1:l2+1,m2+1,n1:n2,iux:iuz)=0.0
+      endif
 !
-      df(l1,m1-1:m2+1,n1-1:n2+1,iux:iuz)=df(l1,m1-1:m2+1,n1-1:n2+1,iux:iuz) + &
-          df(l2+1,m1-1:m2+1,n1-1:n2+1,iux:iuz) 
-      df(l2,m1-1:m2+1,n1-1:n2+1,iux:iuz)=df(l2,m1-1:m2+1,n1-1:n2+1,iux:iuz) + &
-          df(l1-1,m1-1:m2+1,n1-1:n2+1,iux:iuz) 
+      if (nxgrid/=1) then
+        df(l1,m1:m2,n1:n2,iux:iuz)=df(l1,m1:m2,n1:n2,iux:iuz) + &
+            df(l2+1,m1:m2,n1:n2,iux:iuz) 
+        df(l2,m1:m2,n1:n2,iux:iuz)=df(l2,m1:m2,n1:n2,iux:iuz) + &
+            df(l1-1,m1:m2,n1:n2,iux:iuz) 
+        df(l1-1,m1:m2,n1:n2,iux:iuz)=0.0
+        df(l2+1,m1:m2,n1:n2,iux:iuz)=0.0
+      endif
 !
     endsubroutine fold_df
 !***********************************************************************
