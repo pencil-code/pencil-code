@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.41 2006-05-23 05:14:29 dobler Exp $
+! $Id: planet.f90,v 1.42 2006-05-23 15:03:52 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -47,6 +47,7 @@ module Planet
   logical :: lmigrate=.false.,lnorm=.false.
   real :: Gvalue=1. !gravity constant in same unit as density
   logical :: ldnolog=.true.,lcs2_thick=.false.
+  logical :: lcalc_turb=.false.
   integer :: nr=10
 !
   namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
@@ -54,7 +55,8 @@ module Planet
 !
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
-       lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick,nr
+       lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick,nr,&
+       lcalc_turb
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_totenergy=0,idiag_totangmom=0
@@ -81,7 +83,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.41 2006-05-23 05:14:29 dobler Exp $")
+           "$Id: planet.f90,v 1.42 2006-05-23 15:03:52 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -731,15 +733,18 @@ module Planet
     subroutine planet_phiavg(p)
 !
       type (pencil_case) :: p
-      !real, dimension(nx,3) :: bavg,uavg
+!
+      if (lcalc_turb) then
 !
 ! get the previous average to use in this timestep
 !
-      call get_old_average(p) 
+         call get_old_average(p) 
 !
 ! calculate the new average to use in next timestep
 !
-      call set_new_average(p)
+         call set_new_average(p)
+!
+      endif
 !
     endsubroutine planet_phiavg
 !*******************************************************************
@@ -780,7 +785,7 @@ module Planet
 !         
       if (it /= 1) then
 !
-! get the arrays of 10 points calculated in set_new_average
+! get the arrays of nr points calculated in set_new_average
 ! in the previous time-step
 !
          call get_global(uavg_coarse,'uavg',nr)
@@ -790,17 +795,6 @@ module Planet
 !
          step = (r_ext - r_int)/nr
 !
-!for ir=0,nr-1 do begin
-!    rloop_int = r_int + ir*step
-!    rloop_ext = r_int + (ir+1)*step
-!    rmid(ir) = 0.5*(rloop_int + rloop_ext)
-!endfor
-
-!
-! with spline it works perfectly
-!
-! z = spline(rmid,avg_coarse,rcyl)
-
          do i=1,nx
 !
 ! this retrives ir, from 1 to nr
@@ -811,15 +805,12 @@ module Planet
             rmid = 0.5*(rloop_int + rloop_ext)
             rmid_1 = rmid + step
 
-            !print*,rcyl(i),rloop_int,rloop_ext,rmid,rmid_1,&
-            !     uavg_coarse(ir+1,2) - uavg_coarse(ir,2)
-
             if ((rcyl(i) .gt. r_int).and.(rcyl(i) .le. r_ext)) then 
 !
-! gives problem for ir=10 because ir+1 will be out of bounds
+! gives problem for ir=nr because ir+1 will be out of bounds
 !
                do aux=1,3
-                  if (ir .ne. 10) then 
+                  if (ir /= nr) then 
                      dwr = rmid_1 - rmid
                      dr = rcyl(i) - rmid
 !
@@ -837,9 +828,9 @@ module Planet
 !
                   endif
 !
-! so do it backward for ir=10
+! so do it backward for ir=nr
 !
-                  if (ir == 10) then 
+                  if (ir == nr) then 
                      rmid_2 = rmid-step
                      dwr = rmid - rmid_2
                      dr = rcyl(i) - rmid
