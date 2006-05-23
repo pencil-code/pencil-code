@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.40 2006-05-22 16:47:19 wlyra Exp $
+! $Id: planet.f90,v 1.41 2006-05-23 05:14:29 dobler Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -81,7 +81,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.40 2006-05-22 16:47:19 wlyra Exp $")
+           "$Id: planet.f90,v 1.41 2006-05-23 05:14:29 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -778,7 +778,7 @@ module Planet
       uavg(:,2)=p%uu(:,1)*phix+p%uu(:,2)*phiy
       uavg(:,3)=p%uu(:,3)
 !         
-      if (it.ne.1) then
+      if (it /= 1) then
 !
 ! get the arrays of 10 points calculated in set_new_average
 ! in the previous time-step
@@ -839,7 +839,7 @@ module Planet
 !
 ! so do it backward for ir=10
 !
-                  if (ir .eq. 10) then 
+                  if (ir == 10) then 
                      rmid_2 = rmid-step
                      dwr = rmid - rmid_2
                      dr = rcyl(i) - rmid
@@ -921,7 +921,7 @@ module Planet
       do ir=1,nr
          rloop_int = r_int + (ir-1)*step
          rloop_ext = r_int + ir*step
-         do i=l1,l2
+         do i=1,nx
             if ((rcyl_mn(i).le.rloop_ext).and.(rcyl_mn(i).ge.rloop_int)) then
 !
                s_uphi(ir) = s_uphi(ir) + uphi(i)
@@ -972,6 +972,16 @@ module Planet
 !
       if (llastpoint) then
 !
+
+!
+! TEMPORARY EMERGENCY BRAKE
+!
+        if (any(ktot == 0)) &
+            call error("set_new_average","Wlad, please fix me: ktot=0") 
+!
+! END OF TEMPORARY EMERGENCY BRAKE
+!
+
          uavg_coarse(:,1)=ur_sum/ktot
          uavg_coarse(:,2)=up_sum/ktot
          uavg_coarse(:,3)=uz_sum/ktot
