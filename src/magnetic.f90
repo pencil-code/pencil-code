@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.290 2006-05-22 16:49:53 wlyra Exp $
+! $Id: magnetic.f90,v 1.291 2006-05-23 14:59:36 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -186,7 +186,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.290 2006-05-22 16:49:53 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.291 2006-05-23 14:59:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -340,7 +340,7 @@ module Magnetic
       use Cdata
       use Mpicomm
       use EquationOfState
-      use Gravity, only: gravz,g0,r0_pot
+      use Gravity, only: gravz
       use Sub
       use Initcond
 !
@@ -906,22 +906,19 @@ module Magnetic
       use Cdata
       use Sub
       use Slices
-      use Global, only: get_global
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
       use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc,gamma1
-      use Gravity, only: g0,r0_pot,n_pot
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: geta,uxDxuxb,fres,bbs
+      real, dimension (nx,3) :: geta,uxDxuxb,fres
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,gshockgai,etaSS
-      real, dimension (nx) :: br,bp,bz
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j
 !
@@ -1148,29 +1145,13 @@ module Magnetic
         if (idiag_bybzm/=0) call sum_mn_name(p%bbb(:,2)*p%bbb(:,3),idiag_bybzm)
 
         if (idiag_djuidjbim/=0) call sum_mn_name(p%djuidjbi,idiag_djuidjbim)
-!                                                                                                                                 
+!
 !  cylindrical components of the magnetic field and maxwell stress 
-!    
-        if (lcylindrical) then
-           call calc_phiavg_general()
-           call calc_phiavg_unitvects()
 !
-           call get_global(bbs,m,n,'bbs')
-!
-           br=p%bb(:,1)*pomx+p%bb(:,2)*pomy - bbs(:,1)
-           bp=p%bb(:,1)*phix+p%bb(:,2)*phiy - bbs(:,2)
-           bz=p%bb(:,3) - bbs(:,3)
-!
-           if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm)
-           if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm)
-           if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm)
-           if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m)
-           if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m)
-           if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m)
-           if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm)
-           if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm)
-           if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm)
-        endif
+        if (idiag_brm/=0 .or. idiag_bpm/=0 .or. idiag_bzm/=0 .or. &
+            idiag_br2m/=0 .or. idiag_bp2m/=0 .or. idiag_bzz2m/=0 .or. &
+            idiag_brbpm/=0 .or. idiag_bzbpm/=0 .or. idiag_brbzm/=0) &
+            call calc_mag_stress(p)
 !
 !  this doesn't need to be as frequent (check later)
 !
@@ -1351,6 +1332,42 @@ module Magnetic
       endif
 !
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine calc_mag_stress(p)
+!
+      use Cdata
+      use Sub
+      use Global, only: get_global
+!
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: bbs
+      real, dimension (nx) :: br,bp,bz
+!
+      if (lcylindrical) then
+!
+         call calc_phiavg_general()
+         call calc_phiavg_unitvects()
+!
+! from the planet phi-average
+!
+         call get_global(bbs,m,n,'bbs')
+!
+         br=p%bb(:,1)*pomx+p%bb(:,2)*pomy - bbs(:,1)
+         bp=p%bb(:,1)*phix+p%bb(:,2)*phiy - bbs(:,2)
+         bz=p%bb(:,3) - bbs(:,3)
+!
+         if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm)
+         if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm)
+         if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm)
+         if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m)
+         if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m)
+         if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m)
+         if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm)
+         if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm)
+         if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm)
+      endif
+!
+    endsubroutine calc_mag_stress
 !***********************************************************************
     subroutine eta_shell(eta_mn,geta)
 !

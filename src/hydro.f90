@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.258 2006-05-22 16:50:35 wlyra Exp $
+! $Id: hydro.f90,v 1.259 2006-05-23 14:59:36 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -156,7 +156,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.258 2006-05-22 16:50:35 wlyra Exp $")
+           "$Id: hydro.f90,v 1.259 2006-05-23 14:59:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -784,8 +784,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: uus
-      real, dimension (nx) :: pdamp,ur,up,uz
+      real, dimension (nx) :: pdamp
       real :: c2,s2, const_for_eff_grav
       real :: gr_part, cf_part
       integer :: j,i,l_sz
@@ -1078,32 +1077,12 @@ module Hydro
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
         if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass)
 !
-!  cylindrical components for global disk
-!  currently works only for n_pot=2  
+!  cylindrical stresses for global disk
 !
-        if (lcylindrical) then
-           call calc_phiavg_general()
-           call calc_phiavg_unitvects()
-!
-! from the planet phi-average
-!           
-           call get_global(uus,m,n,'uus')
-!
-           ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy - uus(:,1)
-           up=p%uu(:,1)*phix+p%uu(:,2)*phiy - uus(:,2) 
-           uz=p%uu(:,3) - uus(:,3)
-!
-           if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm)
-           if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm)
-           if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm)
-           if (idiag_ur2m/=0)   call sum_lim_mn_name(ur**2,idiag_ur2m)
-           if (idiag_up2m/=0)   call sum_lim_mn_name(up**2,idiag_up2m)
-           if (idiag_uzz2m/=0)  call sum_lim_mn_name(uz**2,idiag_uzz2m)
-           if (idiag_urupm/=0)  call sum_lim_mn_name(ur*up,idiag_urupm)
-           if (idiag_uzupm/=0)  call sum_lim_mn_name(uz*up,idiag_uzupm)
-           if (idiag_uruzm/=0)  call sum_lim_mn_name(ur*uz,idiag_uruzm)
-        endif
-
+        if (idiag_urm/=0 .or. idiag_upm/=0 .or. idiag_uzzm/=0 &
+           .or. idiag_ur2m/=0 .or. idiag_up2m/=0 .or. idiag_uzz2m/=0 &
+           .or. idiag_urupm/=0 .or. idiag_uzupm/=0 .or. idiag_uruzm/=0) &
+           call calc_hydro_stress(p)
 !
 !  kinetic field components at one point (=pt)
 !
@@ -1185,6 +1164,42 @@ module Hydro
       endif
 !
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine calc_hydro_stress(p)
+!
+      use Cdata
+      use Sub
+      use Global, only: get_global
+!
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: uus
+      real, dimension (nx) :: ur,up,uz
+!
+      if (lcylindrical) then
+!
+         call calc_phiavg_general()
+         call calc_phiavg_unitvects()
+!
+! from the planet phi-average
+!
+         call get_global(uus,m,n,'uus')
+!
+         ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy - uus(:,1)
+         up=p%uu(:,1)*phix+p%uu(:,2)*phiy - uus(:,2)
+         uz=p%uu(:,3) - uus(:,3)
+!
+         if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm)
+         if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm)
+         if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm)
+         if (idiag_ur2m/=0)   call sum_lim_mn_name(ur**2,idiag_ur2m)
+         if (idiag_up2m/=0)   call sum_lim_mn_name(up**2,idiag_up2m)
+         if (idiag_uzz2m/=0)  call sum_lim_mn_name(uz**2,idiag_uzz2m)
+         if (idiag_urupm/=0)  call sum_lim_mn_name(ur*up,idiag_urupm)
+         if (idiag_uzupm/=0)  call sum_lim_mn_name(uz*up,idiag_uzupm)
+         if (idiag_uruzm/=0)  call sum_lim_mn_name(ur*uz,idiag_uruzm)
+      endif
+!
+    endsubroutine calc_hydro_stress
 !***********************************************************************
     subroutine calc_othresh()
 !
