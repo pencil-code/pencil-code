@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.47 2006-04-24 16:57:12 theine Exp $
+#  $Id: mkdatadir,v 1.48 2006-05-24 13:24:56 easy Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -102,6 +102,8 @@ else if ($hn =~ gwdu102) then
   set str='s/\/usr\/users/\/home\/temp1/g'
 else if ($hn =~ lfc*) then
   set str='s/\/home/\/nfs\/d12/g'
+else if ($hn =~ easymac) then
+  set str='s/Users/var\/tmp/g'
 else
   set str='s/home/var\/tmp/g'
 endif
