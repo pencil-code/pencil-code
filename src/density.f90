@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.248 2006-05-22 11:14:13 nbabkovs Exp $
+! $Id: density.f90,v 1.249 2006-05-24 14:10:36 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.248 2006-05-22 11:14:13 nbabkovs Exp $")
+           "$Id: density.f90,v 1.249 2006-05-24 14:10:36 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -781,9 +781,10 @@ module Density
 !Initialization of density in a case of the step-like distribution
 
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (my,mz) :: lnrho_2d
       real, dimension (mx,my,mz) :: xx, zz
 
-      integer :: step_width, step_length
+      integer :: step_width, step_length,i
       real :: H_disk_min, L_disk_min, hdisk, ldisk, ll,  ln_ro_l, ln_ro_r, ln_ro_u
 
       hdisk=H_disk 
@@ -828,37 +829,60 @@ module Density
         end if
       end if 
 
-      if (smooth) then
+     if (smooth) then
 
         ln_ro_r=log(rho_right)
         ln_ro_l=log(rho_left)
         ln_ro_u=log(rho_up)
 
         ll=Lxyz(3)-ldisk
-       
-      if (nzgrid .GT. 1) then 
 
-         f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
- 
-     !     if (H_disk.GT.0.)       f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-(xx(:,:,:)/H_disk)**2
-
-       if (H_disk.GT.0.)  f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+(1.-(xx(:,:,:)/H_disk)**2)
-      else
-
-   !   if (H_disk.GT.0.)  f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
-    
-
-     !   if (H_disk.GT.0.)
+      if (nxgrid .GT. 1 .AND. nzgrid .GT. 1 ) then
    
-    f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_l)+ln_ro_l
+     !  lnrho_2d(:,:)=(zz(l1,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
 
-  !ln_ro_u!+((xx(:,:,:)/H_disk)**2-1.)
+     !  do i=1,l1
+     !   f(i,:,:,ilnrho)=lnrho_2d(:,:)
+     !  enddo 
+  
+     !  do i=l1+1,mx
+     !   f(i,:,:,ilnrho)=(xx(i,:,:)-xx(l1,:,:))/Lxyz(1)*(ln_ro_l-lnrho_2d(:,:))+ln_ro_l 
+     !  enddo        
 
- ! if (H_disk.GT.0.)  !f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_u*2.)+ln_ro_u*2.
- 
-      endif 
-        
-      end if
+     !  do i=1,H_disk_point+4
+     !   f(i,:,:,ilnrho)=ln_ro_r
+     !  enddo 
+  
+     !  do i=H_disk_point+5,mx
+     !    f(i,:,:,ilnrho)=ln_ro_u 
+     !  enddo    
+
+
+      !if (H_disk.GT.0.) f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+(1.-(xx(:,:,:)/H_disk)**2)
+      !  if (H_disk.GT.0.) 
+      !f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
+       
+       do i=1,H_disk_point+4
+        f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
+       enddo 
+  
+       do i=H_disk_point+5,mx
+         f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
+      enddo    
+
+      else 
+   
+         if (nzgrid .GT. 1) then 
+
+           f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+
+         else
+
+         if (H_disk.GT.0.) f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
+
+         endif 
+      endif     
+    end if
    
   
 
@@ -1274,7 +1298,7 @@ module Density
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       logical :: ljunk=.true.
-      integer :: i, l_sz
+      integer :: i, l_sz, tmp_int
       real    :: Vz_0,rho_0, tmp
 !      
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho
@@ -1368,12 +1392,16 @@ module Density
 ! Natalia
 ! deceleration zone in a case of a Keplerian disk
 
+ 
+
        if (laccelerat_zone) then
      
          
-         if (n .GE. nzgrid-20 .AND. dt .GT. 0.) then
+         if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
        
-            if (lnstar_entropy) then          
+            if (lnstar_entropy) then   
+             
+             if (nxgrid .LE. 1) then       
               if (lnstar_T_const) then
               else            
              ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
@@ -1383,13 +1411,34 @@ module Density
           !    -1./(5.*dt) &
           !      *(p%rho(:)-rho_right)/p%rho(:)!rho_right
               endif    
-            endif
+
+             else
+             df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+              -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
+      
+          !   tmp_int=10
+          !    df(l1:tmp_int,m,n,ilnrho)=df(l1:tmp_int,m,n,ilnrho) &
+          !          -1./(5.*dt)*(f(l1:tmp_int,m,n,ilnrho)-log(rho_right))
+
+          !   df(tmp_int+1:l2,m,n,ilnrho)=df(tmp_int+1:l2,m,n,ilnrho) &
+          !         -1./(5.*dt)*(f(tmp_int+1:l2,m,n,ilnrho)-log(rho_up))
+
+           !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+           !    -1./(5.*dt)*(p%rho(:)-rho_up*exp(1.-(x(l1:l2)/H_disk)**2))/p%rho(:)
+
+         !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+         ! -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-log(rho_up)+(1.-(x(l1:l2)/H_disk)**2))
+
+             endif 
+           endif
            
+
+
          endif 
 
        if (ldecelerat_zone) then
         
-         if (n .LE. 24 .AND. dt .GT. 0.) then
+         if (n .LE. ac_dc_size+4 .AND. dt .GT. 0.) then
        
             if (lnstar_entropy) then          
               if (lnstar_T_const) then

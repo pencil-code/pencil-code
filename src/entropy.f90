@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.408 2006-05-22 23:22:57 brandenb Exp $
+! $Id: entropy.f90,v 1.409 2006-05-24 14:10:36 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.408 2006-05-22 23:22:57 brandenb Exp $")
+           "$Id: entropy.f90,v 1.409 2006-05-24 14:10:36 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1805,9 +1805,10 @@ module Entropy
     
        endif 
 
+
       if (ldecelerat_zone) then
     
-         if ( dt .GT. 0..AND. n .LE. 24 ) then
+         if ( dt .GT. 0..AND. n .LE. ac_dc_size+4 ) then
           if (lnstar_T_const) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
            -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0    
@@ -1846,14 +1847,23 @@ module Entropy
      endif  
    
      if (laccelerat_zone) then
-         if (n .GE. nzgrid-20  .AND. dt .GT.0.) then
-           
-          if (lnstar_T_const) then   
-            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
-          else  
-             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+         if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
+                   
+          if (nxgrid .LE.1) then
+              if (lnstar_T_const) then   
+                 df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+                 -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+              else  
+
+              !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+              !   -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+             !   df(l1:H_disk_point+4,m,n,iss)=df(l1:H_disk_point+4,m,n,iss) &
+             !   -1./(5.*dt)*(p%TT(1:H_disk_point)-TT_cs0)/TT_cs0
+               ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+               !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)
+    !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+    !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
+      
 
 
      !       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
@@ -1862,11 +1872,13 @@ module Entropy
           !df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
             !-1./(10.*dt)*(f(l1:l2,m,n,iss)-log(cs0**2/(gamma1*cp))/gamma)
       !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-      !     -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
+     !     -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
+              endif
+         else
+         endif     
+ 
 
-          endif
-      
-         endif 
+     endif 
 
      endif  
     endif
@@ -2253,15 +2265,19 @@ module Entropy
    !  add heat conduction to entropy equation
     !
      if (lheat_conduct) then
-        if (laccelerat_zone) then
-           if (n .GT. 24) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+        if (ldecelerat_zone) then
+          if (nxgrid .LE. 1) then
+           if (n .GT. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+          else
+           if (n .GT. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+          endif
          if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
         else
          df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
          if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
         endif
      endif 
-
+! 
 
 
 !   cooling in 1D case 
@@ -2276,8 +2292,8 @@ module Entropy
       l_sz=l2-10
       l_sz_1=nxgrid-10 
 
-      if (laccelerat_zone) then
-        if (n .GT. 24)   df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+      if (ldecelerat_zone) then
+        if (n .GT. ac_dc_size+4)   df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
         if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
       else
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
@@ -3234,7 +3250,7 @@ module Entropy
       real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, Tstar, const_tmp, TT_cs0
 
 
-      decel_zone=24
+      decel_zone=ac_dc_size+4
 
       hdisk=H_disk 
       ldisk=L_disk

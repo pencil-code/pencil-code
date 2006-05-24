@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.312 2006-05-22 11:14:13 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.313 2006-05-24 14:10:36 nbabkovs Exp $
 
 module Cdata
 
@@ -294,6 +294,8 @@ module Cdata
   logical :: lnstar_T_const=.false.
   logical :: lnstar_entropy=.false.
   logical :: lnstar_1D=.false.
+  integer :: ac_dc_size=5
+  integer :: H_disk_point=10
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg
 

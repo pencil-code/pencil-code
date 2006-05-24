@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.107 2006-05-15 22:27:04 theine Exp $
+! $Id: boundcond.f90,v 1.108 2006-05-24 14:10:36 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -807,7 +807,7 @@ module Boundcond
 
       case('top')               ! top boundary
 
-       !if (j .LE. 0) then
+     if (nxgrid .LE. 1) then
        if (j .EQ. 1) then
           f(l2,m1:m2,n1:n2,j)=val(j)
         
@@ -821,7 +821,14 @@ module Boundcond
         f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
 
        endif
-       
+
+     else
+        f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
+        f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
+        f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
+     endif
+
+  
       case default
         print*, "bc_BL_x: ", topbot, " should be `top' or `bot'"
 
@@ -843,13 +850,14 @@ module Boundcond
       real, dimension (mcom) :: val1_,val2_ 
       real, dimension (mcom), intent(in) :: val1,val2
       real, dimension(nx) :: lnrho,lnTT,ss
-      integer :: sgn,i,j, step_width, n1p4
-      real :: H_disk_min, L_disk_min, ddz
+      integer :: sgn,i,j, step_width, n1p4,n2m4, i_tmp
+      real :: H_disk_min, L_disk_min, ddz, ddx
       
     !  integer, parameter :: ilnrho_lnTT=4
 
         H_disk_min=Lxyz(1)/(nxgrid-1)
         step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
+        ddx=H_disk_min
 
         L_disk_min=Lxyz(3)/(nzgrid-1)
         ddz=L_disk_min
@@ -910,16 +918,15 @@ module Boundcond
        if (ltop_velocity_kep .AND. j.EQ.2) then 
           f(:,:,n2,j)=sqrt(M_star/(R_star+Lxyz(3)))
        else
-
+        
+       if (nxgrid .LE.1) then
          if (j.EQ.5) then
            lnrho=f(l1:l2,m2,n2,ilnrho)
            lnTT=log(cs0**2/(gamma1))
-          !+ other terms for sound speed not equal to cs_0
            call eoscalc(4,lnrho,lnTT,ss=ss)
            f(l1:l2,m2,n2,iss)=ss
 
          else 
-
             if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
                f(1:step_width+3,:,n2,j)=val1_(j)
                f(step_width+3+1:mx,:,n2,j)=val2_(j)
@@ -928,6 +935,35 @@ module Boundcond
             if (H_disk .LT. H_disk_min)    f(:,:,n2,j)=val2_(j)
             if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1_(j)
          endif        
+       else
+    
+        !    if (j.EQ.4) then
+          !    f(1:H_disk_point+4,:,n2,j)=val1_(j)
+          !    f(H_disk_point+5:mx,:,n2,j)=val2_(j)
+
+        !    do i=1,H_disk_point+4
+        !       f(i,:,n2,ilnrho)=log(5.)+(1.-(ddx*i/H_disk)**2)
+        !    enddo 
+  
+        !    do i=H_disk_point+5,mx
+        !       f(i,:,n2,ilnrho)=f(H_disk_point+4,:,n2,ilnrho)
+        !   enddo    
+
+
+
+        !    else 
+              n2m4=n2-4
+              i_tmp=H_disk_point+5
+
+              f(i_tmp:mx,:,n2+1,j)=0.2   *(  9*f(i_tmp:mx,:,n2,j)                 -  4*f(i_tmp:mx,:,n2-2,j)- 3*f(i_tmp:mx,:,n2-3,j)+ 3*f(i_tmp:mx,:,n2m4,j))
+              f(i_tmp:mx,:,n2+2,j)=0.2   *( 15*f(i_tmp:mx,:,n2,j)- 2*f(i_tmp:mx,:,n2-1,j)-  9*f(i_tmp:mx,:,n2-2,j)- 6*f(i_tmp:mx,:,n2-3,j)+ 7*f(i_tmp:mx,:,n2m4,j))
+              f(i_tmp:mx,:,n2+3,j)=1./35.*(157*f(i_tmp:mx,:,n2,j)-33*f(i_tmp:mx,:,n2-1,j)-108*f(i_tmp:mx,:,n2-2,j)-68*f(i_tmp:mx,:,n2-3,j)+87*f(i_tmp:mx,:,n2m4,j))
+         !  endif
+    
+       endif
+     
+
+
        endif 
 
       do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo

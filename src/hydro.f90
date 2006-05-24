@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.259 2006-05-23 14:59:36 wlyra Exp $
+! $Id: hydro.f90,v 1.260 2006-05-24 14:10:36 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -156,7 +156,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.259 2006-05-23 14:59:36 wlyra Exp $")
+           "$Id: hydro.f90,v 1.260 2006-05-24 14:10:36 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -861,28 +861,34 @@ module Hydro
       endif
 
 ! acceleration zone in a case of a Keplerian disk
+   
 
       if (laccelerat_zone) then
-          if (n .GE. nzgrid-20  .AND. dt .GT.0.) then
-           if (lnstar_entropy) then
-            
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                           -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
-    
-         !  if (lnstar_T_const) then
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                          -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
-        !   endif
-          else
-              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                           -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
-    
-    
-              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                          -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
-    
-          endif 
-         endif
+       if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
+                 
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+                  -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
+       
+       
+       if (nxgrid .LE. 1) then  
+       
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+                  -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+       else
+       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
+       !   df(l1:H_disk_point+4,m,n,iuy)=df(l1:H_disk_point+4,m,n,iuy)&
+       !           -1./(5.*dt)*(p%uu(1:H_disk_point,2)-sqrt(M_star/z(n)))
+
+         df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
+          -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
+      !   df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
+      !    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
+      
+       !   df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+       !  -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+      
+        endif 
+       endif
 
       endif
 
@@ -891,7 +897,7 @@ module Hydro
 
       if (ldecelerat_zone) then
  
-         if (n .LE. 24  .AND. dt .GT.0.) then
+         if (n .LE. ac_dc_size+4  .AND. dt .GT.0.) then
          if (lnstar_entropy) then  
         ! if (lnstar_T_const) then
            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
@@ -1954,7 +1960,7 @@ module Hydro
       integer :: step_length, decel_zone
       real ::   L_disk_min,  ldisk,   ll
 
-      decel_zone=24
+      decel_zone=ac_dc_size+4
        
 
       ll=Lxyz(3)-L_disk
