@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.152 2006-05-11 15:03:09 theine Exp $
+! $Id: start.f90,v 1.153 2006-05-26 17:37:54 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -40,6 +40,7 @@
         use Dustdensity,  only: init_nd
         use Dustvelocity, only: init_uud
 
+        use Selfgravity,  only: calc_selfpotential
         use Radiation,    only: init_rad, radtransfer
         use Particles_main
 !
@@ -89,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.152 2006-05-11 15:03:09 theine Exp $")
+             "$Id: start.f90,v 1.153 2006-05-26 17:37:54 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -280,6 +281,10 @@
           call particles_initialize_modules(lstarting=.true.)
           call particles_init(f)
         endif
+!
+!  Calculate the potential of the self-gravity (mostly for debugging).
+!
+        call calc_selfpotential(f)
 !
 !  Set random seed independent of processor
 !
