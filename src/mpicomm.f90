@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.157 2006-05-23 14:58:02 ajohan Exp $
+! $Id: mpicomm.f90,v 1.158 2006-05-26 14:46:45 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2254,6 +2254,66 @@ module Mpicomm
 !
     endsubroutine transform_fftpack_2d
 !***********************************************************************
+    subroutine transform_fftpack_1d(a_re,a_im)
+!
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data.
+!  This version works currently only when nxgrid=nygrid=nzgrid!
+!  The length of the work arrays for ffts is therefore always nx.
+!
+!  06-feb-03/nils: adapted from transform_fftpack
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      complex, dimension(nx) :: ax
+      real, dimension(4*nx+15) :: wsavex
+      integer :: m,n
+!
+!  check whether nxgrid=nygrid=nzgrid
+!
+      if ( (nygrid/=1.and.nygrid/=nxgrid) .or. &
+           (nzgrid/=1.and.nzgrid/=nxgrid) ) then
+        if (lroot) &
+            print*, 'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
+        call stop_it("transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!")
+      endif
+!
+!  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
+!
+      call cffti(nx,wsavex)
+!
+      if (lroot .and. ip<10) print*,'transform_fftpack_1d: doing FFTpack in x'
+      do n=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        call cfftf(nx,ax,wsavex)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
+!
+!  Normalize
+!
+      a_re=a_re/nxgrid
+      a_im=a_im/nxgrid
+      if (lroot .and. ip<10) print*,'transform_fftpack_1d: fft has finished'
+!
+    endsubroutine transform_fftpack_1d
+!***********************************************************************
+    subroutine transform_fftpack_shear(a_re,a_im,dummy)
+!
+!  Subroutine to do Fourier transform in shearing coordinates.
+!  The routine overwrites the input data.
+!
+!  26-may-06/anders: dummy
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      integer, optional :: dummy
+!
+      if (lroot) print*, 'transform_fftpack_shear: not implemented in parallel'
+      call fatal_error('transform_fftpack_shear','')
+!
+      if (NO_WARN) print*, a_re, a_im, dummy !(keep compiler quiet)
+!
+    endsubroutine transform_fftpack_shear
+!***********************************************************************
     subroutine transform_nr(a_re,a_im)
 !
 !  Subroutine to do Fourier transform using Numerical Recipes routine.
@@ -2311,48 +2371,5 @@ module Mpicomm
       if (lroot .and. ip<10) print*,'transform_nr: fft has finished'
 !
     endsubroutine transform_nr
-!***********************************************************************
-    subroutine transform_fftpack_1d(a_re,a_im)
-!
-!  Subroutine to do Fourier transform
-!  The routine overwrites the input data.
-!  This version works currently only when nxgrid=nygrid=nzgrid!
-!  The length of the work arrays for ffts is therefore always nx.
-!
-!  06-feb-03/nils: adapted from transform_fftpack
-!
-      real, dimension(nx,ny,nz) :: a_re,a_im
-      complex, dimension(nx) :: ax
-      real, dimension(4*nx+15) :: wsavex
-      integer :: m,n
-!
-!  check whether nxgrid=nygrid=nzgrid
-!
-      if ( (nygrid/=1.and.nygrid/=nxgrid) .or. &
-           (nzgrid/=1.and.nzgrid/=nxgrid) ) then
-        if (lroot) &
-            print*, 'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
-        call stop_it("transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!")
-      endif
-!
-!  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
-!
-      call cffti(nx,wsavex)
-!
-      if (lroot .and. ip<10) print*,'transform_fftpack_1d: doing FFTpack in x'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-        call cfftf(nx,ax,wsavex)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
-      enddo; enddo
-!
-!  Normalize
-!
-      a_re=a_re/nxgrid
-      a_im=a_im/nxgrid
-      if (lroot .and. ip<10) print*,'transform_fftpack_1d: fft has finished'
-!
-    endsubroutine transform_fftpack_1d
 !***********************************************************************
 endmodule Mpicomm

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.114 2006-05-23 14:29:34 ajohan Exp $
+! $Id: nompicomm.f90,v 1.115 2006-05-26 14:46:45 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -786,7 +786,7 @@ module Mpicomm
 !
     endsubroutine fold_df
 !***********************************************************************
-subroutine transform(a1,a2,a3,b1,b2,b3)
+    subroutine transform(a1,a2,a3,b1,b2,b3)
 !
 !  Subroutine to do fourier transform
 !  The routine overwrites the input data
@@ -794,275 +794,373 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
 !  03-nov-02/nils: coded
 !  05-nov-02/axel: added normalization factor
 !
-  real,dimension(nx,ny,nz) :: a1,a2,a3,b1,b2,b3
+      real,dimension(nx,ny,nz) :: a1,a2,a3,b1,b2,b3
 !
-  if(lroot .AND. ip<10) print*,'doing fft of x-component'
-  ! Doing the x field
-  call fft(a1,b1, nx*ny*nz, nx, nx      ,-1) ! x-direction
-  call fft(a1,b1, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
-  call fft(a1,b1, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
-  
-  ! Doing the y field
-  if(lroot .AND. ip<10) print*,'doing fft of y-component'
-  call fft(a2,b2, nx*ny*nz, nx, nx      ,-1) ! x-direction
-  call fft(a2,b2, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
-  call fft(a2,b2, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
-  
-  ! Doing the z field
-  if(lroot .AND. ip<10) print*,'doing fft of z-component'
-  call fft(a3,b3, nx*ny*nz, nx, nx      ,-1) ! x-direction
-  call fft(a3,b3, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
-  call fft(a3,b3, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
-
-  ! Normalize
-  a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
-  b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
-
-end subroutine transform
+      if (lroot .and. ip<10) print*, 'doing fft of x-component'
+! Doing the x field
+      call fft(a1,b1, nx*ny*nz, nx, nx      ,-1) ! x-direction
+      call fft(a1,b1, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
+      call fft(a1,b1, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
+! Doing the y field
+      if (lroot .and. ip<10) print*, 'doing fft of y-component'
+      call fft(a2,b2, nx*ny*nz, nx, nx      ,-1) ! x-direction
+      call fft(a2,b2, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
+      call fft(a2,b2, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
+! Doing the z field
+      if (lroot .and. ip<10) print*, 'doing fft of z-component'
+      call fft(a3,b3, nx*ny*nz, nx, nx      ,-1) ! x-direction
+      call fft(a3,b3, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
+      call fft(a3,b3, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
+! Normalize
+      a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
+      b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
+!
+    endsubroutine transform
 !***********************************************************************
-subroutine transform_i(a_re,a_im)
+    subroutine transform_i(a_re,a_im)
 !
 !  Subroutine to do fourier transform
 !  The routine overwrites the input data
 !
 !  22-oct-02/axel+tarek: adapted from transform
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
+      real,dimension(nx,ny,nz) :: a_re,a_im
 !
-  if(lroot .AND. ip<10) print*,'doing three FFTs'
-  call fft(a_re,a_im, nx*ny*nz, nx, nx      ,-1)
-  call fft(a_re,a_im, nx*ny*nz, ny, nx*ny   ,-1)
-  call fft(a_re,a_im, nx*ny*nz, nz, nx*ny*nz,-1)
+      if (lroot .and. ip<10) print*, 'doing three FFTs'
+      call fft(a_re,a_im, nx*ny*nz, nx, nx      ,-1)
+      call fft(a_re,a_im, nx*ny*nz, ny, nx*ny   ,-1)
+      call fft(a_re,a_im, nx*ny*nz, nz, nx*ny*nz,-1)
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
+      a_re=a_re/nwgrid
+      a_im=a_im/nwgrid
 !
-end subroutine transform_i
+    endsubroutine transform_i
 !***********************************************************************
-subroutine transform_cosq(a_re,direction)
+    subroutine transform_cosq(a_re,direction)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data
 !
 !  13-aug-03/axel: adapted from transform_fftpack
 !
-  real,dimension(nx,ny,nz) :: a_re
-  real,dimension(nx) :: ax
-  real,dimension(ny) :: ay
-  real,dimension(nz) :: az
-  real,dimension(4*nx+15) :: wsavex
-  real,dimension(4*ny+15) :: wsavey
-  real,dimension(4*nz+15) :: wsavez
-  logical :: lforward=.true.
-  integer,optional :: direction
-  integer :: l,m,n
+      real,dimension(nx,ny,nz) :: a_re
+      real,dimension(nx) :: ax
+      real,dimension(ny) :: ay
+      real,dimension(nz) :: az
+      real,dimension(4*nx+15) :: wsavex
+      real,dimension(4*ny+15) :: wsavey
+      real,dimension(4*nz+15) :: wsavez
+      logical :: lforward=.true.
+      integer,optional :: direction
+      integer :: l,m,n
 !
-  if (present(direction)) then
-    if (direction.eq.-1) then
-      lforward=.false.
-    else
-      lforward=.true.
-    endif
-  endif
+      if (present(direction)) then
+        if (direction.eq.-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
-  call cosqi(nx,wsavex)
-  do m=1,ny
-  do n=1,nz
-    ax=a_re(:,m,n)
-    if (lforward) then 
-        call cosqf(nx,ax,wsavex)
-    else 
-        call cosqb(nx,ax,wsavex)
-    endif
-    a_re(:,m,n)=ax
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in x, direction =',direction
+      call cosqi(nx,wsavex)
+      do m=1,ny; do n=1,nz
+        ax=a_re(:,m,n)
+        if (lforward) then 
+          call cosqf(nx,ax,wsavex)
+        else 
+          call cosqb(nx,ax,wsavex)
+        endif
+        a_re(:,m,n)=ax
+      enddo; enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in y, direction =',direction
-  call cosqi(ny,wsavey)
-  do l=1,nx
-  do n=1,nz
-    ay=a_re(l,:,n)
-    if (lforward) then 
-        call cosqf(ny,ay,wsavey)
-    else 
-        call cosqb(ny,ay,wsavey)
-    endif
-    a_re(l,:,n)=ay
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in y, direction =',direction
+      call cosqi(ny,wsavey)
+      do l=1,nx; do n=1,nz
+        ay=a_re(l,:,n)
+        if (lforward) then 
+          call cosqf(ny,ay,wsavey)
+        else 
+          call cosqb(ny,ay,wsavey)
+        endif
+        a_re(l,:,n)=ay
+      enddo; enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in z, direction =',direction
-  call cosqi(nz,wsavez)
-  do l=1,nx
-  do m=1,ny
-    az=a_re(l,m,:)
-    if (lforward) then 
-       call cosqf(nz,az,wsavez)
-    else 
-       call cosqb(nz,az,wsavez)
-    endif
-    a_re(l,m,:)=az
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction =',direction
+      call cosqi(nz,wsavez)
+      do l=1,nx; do m=1,ny
+        az=a_re(l,m,:)
+        if (lforward) then 
+          call cosqf(nz,az,wsavez)
+        else 
+          call cosqb(nz,az,wsavez)
+        endif
+        a_re(l,m,:)=az
+      enddo; enddo
 !
 !  Normalize
 !
-
-  if (lforward) then 
-    a_re=a_re/nwgrid
-  endif
+      if (lforward) then 
+        a_re=a_re/nwgrid
+      endif
 !
-end subroutine transform_cosq
+    endsubroutine transform_cosq
 !***********************************************************************
-subroutine transform_fftpack(a_re,a_im,direction)
+    subroutine transform_fftpack(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data
 !
 !  27-oct-02/axel: adapted from transform_i, for fftpack
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  complex,dimension(ny) :: ay
-  complex,dimension(nz) :: az
-  real,dimension(4*nx+15) :: wsavex
-  real,dimension(4*ny+15) :: wsavey
-  real,dimension(4*nz+15) :: wsavez
-  logical :: lforward=.true.
-  integer,optional :: direction
-  integer :: l,m,n
+      real,dimension(nx,ny,nz) :: a_re,a_im
+      complex,dimension(nx) :: ax
+      complex,dimension(ny) :: ay
+      complex,dimension(nz) :: az
+      real,dimension(4*nx+15) :: wsavex
+      real,dimension(4*ny+15) :: wsavey
+      real,dimension(4*nz+15) :: wsavez
+      logical :: lforward=.true.
+      integer,optional :: direction
+      integer :: l,m,n
 !
-  if (present(direction)) then
-    if (direction.eq.-1) then
-      lforward=.false.
-    else
-      lforward=.true.
-    endif
-  endif
+      if (present(direction)) then
+        if (direction.eq.-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
-  call cffti(nx,wsavex)
-  do m=1,ny
-  do n=1,nz
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    if (lforward) then 
-        call cfftf(nx,ax,wsavex)
-    else 
-        call cfftb(nx,ax,wsavex)
-    endif
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in x, direction =',direction
+      call cffti(nx,wsavex)
+      do m=1,ny; do n=1,nz
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        if (lforward) then 
+          call cfftf(nx,ax,wsavex)
+        else 
+          call cfftb(nx,ax,wsavex)
+        endif
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in y, direction =',direction
-  call cffti(ny,wsavey)
-  do l=1,nx
-  do n=1,nz
-    ay=cmplx(a_re(l,:,n),a_im(l,:,n))
-    if (lforward) then 
-        call cfftf(ny,ay,wsavey)
-    else 
-        call cfftb(ny,ay,wsavey)
-    endif
-    a_re(l,:,n)=real(ay)
-    a_im(l,:,n)=aimag(ay)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in y, direction =',direction
+      call cffti(ny,wsavey)
+      do l=1,nx; do n=1,nz
+        ay=cmplx(a_re(l,:,n),a_im(l,:,n))
+        if (lforward) then 
+            call cfftf(ny,ay,wsavey)
+        else 
+            call cfftb(ny,ay,wsavey)
+        endif
+        a_re(l,:,n)=real(ay)
+        a_im(l,:,n)=aimag(ay)
+      enddo; enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in z, direction =',direction
-  call cffti(nz,wsavez)
-  do l=1,nx
-  do m=1,ny
-    az=cmplx(a_re(l,m,:),a_im(l,m,:))
-    if (lforward) then 
-       call cfftf(nz,az,wsavez)
-    else 
-       call cfftb(nz,az,wsavez)
-    endif
-    a_re(l,m,:)=real(az)
-    a_im(l,m,:)=aimag(az)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction =',direction
+      call cffti(nz,wsavez)
+      do l=1,nx; do m=1,ny
+        az=cmplx(a_re(l,m,:),a_im(l,m,:))
+        if (lforward) then 
+          call cfftf(nz,az,wsavez)
+        else 
+          call cfftb(nz,az,wsavez)
+        endif
+        a_re(l,m,:)=real(az)
+        a_im(l,m,:)=aimag(az)
+      enddo; enddo
 !
 !  Normalize
 !
-
-  if (lforward) then 
-    a_re=a_re/nwgrid
-    a_im=a_im/nwgrid
-  endif
+      if (lforward) then 
+        a_re=a_re/nwgrid
+        a_im=a_im/nwgrid
+      endif
 !
-end subroutine transform_fftpack
+    endsubroutine transform_fftpack
 !***********************************************************************
-subroutine transform_fftpack_2d(a_re,a_im,direction)
+    subroutine transform_fftpack_2d(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data
 !
 !  27-oct-02/axel: adapted from transform_i, for fftpack
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  complex,dimension(nz) :: az
-  real,dimension(4*nx+15) :: wsavex
-  real,dimension(4*nz+15) :: wsavez
-  logical :: lforward=.true.
-  integer,optional :: direction
-  integer :: l,m,n
+      real,dimension(nx,ny,nz) :: a_re,a_im
+      complex,dimension(nx) :: ax
+      complex,dimension(nz) :: az
+      real,dimension(4*nx+15) :: wsavex
+      real,dimension(4*nz+15) :: wsavez
+      logical :: lforward=.true.
+      integer,optional :: direction
+      integer :: l,m,n
 !
-  if (present(direction)) then
-    if (direction.eq.-1) then
-      lforward=.false.
-    else
-      lforward=.true.
-    endif
-  endif
+      if (present(direction)) then
+        if (direction.eq.-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
-  call cffti(nx,wsavex)
-  do m=1,ny
-  do n=1,nz
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    if (lforward) then 
-        call cfftf(nx,ax,wsavex)
-    else 
-        call cfftb(nx,ax,wsavex)
-    endif
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in x, direction =',direction
+      call cffti(nx,wsavex)
+      do m=1,ny; do n=1,nz
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        if (lforward) then 
+          call cfftf(nx,ax,wsavex)
+        else 
+          call cfftb(nx,ax,wsavex)
+        endif
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in z, direction =',direction
-  call cffti(nz,wsavez)
-  do l=1,nx
-  do m=1,ny
-    az=cmplx(a_re(l,m,:),a_im(l,m,:))
-    if (lforward) then 
-       call cfftf(nz,az,wsavez)
-    else 
-       call cfftb(nz,az,wsavez)
-    endif
-    a_re(l,m,:)=real(az)
-    a_im(l,m,:)=aimag(az)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction =',direction
+      call cffti(nz,wsavez)
+      do l=1,nx; do m=1,ny
+        az=cmplx(a_re(l,m,:),a_im(l,m,:))
+        if (lforward) then 
+          call cfftf(nz,az,wsavez)
+        else 
+          call cfftb(nz,az,wsavez)
+        endif
+        a_re(l,m,:)=real(az)
+        a_im(l,m,:)=aimag(az)
+      enddo; enddo
 !
 !  Normalize
 !
-  if (lforward) then 
-    a_re=a_re/nwgrid
-    a_im=a_im/nwgrid
-  endif
+      if (lforward) then 
+        a_re=a_re/nwgrid
+        a_im=a_im/nwgrid
+      endif
 !
-end subroutine transform_fftpack_2d
+    endsubroutine transform_fftpack_2d
 !***********************************************************************
-subroutine transform_nr(a_re,a_im)
+    subroutine transform_fftpack_1d(a_re,a_im)
+!
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data
+!
+!  06-feb-03/nils: adapted from transform_fftpack
+!
+      real,dimension(nx,ny,nz) :: a_re,a_im
+      complex,dimension(nx) :: ax
+      real,dimension(4*nx+15) :: wsavex
+      integer :: m,n
+!
+      if (lroot .and. ip<10) print*, 'doing FFTpack in x'
+      call cffti(nx,wsavex)
+      do m=1,ny; do n=1,nz
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        call cfftf(nx,ax,wsavex)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
+!
+!  Normalize
+!
+      a_re=a_re/nxgrid
+      a_im=a_im/nxgrid
+!
+    endsubroutine transform_fftpack_1d
+!***********************************************************************
+    subroutine transform_fftpack_shear(a_re,a_im,direction)
+!
+!  Subroutine to do Fourier transform in shearing coordinates.
+!  The routine overwrites the input data
+!
+!  25-may-06/anders: adapted from transform_fftpack
+!
+      use Cdata, only: pi, Lx, Ly, x, deltay
+!
+      real,dimension(nx,ny,nz) :: a_re,a_im
+      complex,dimension(nx) :: ax
+      complex,dimension(ny) :: ay
+      complex,dimension(nz) :: az
+      real,dimension(4*nx+15) :: wsavex
+      real,dimension(4*ny+15) :: wsavey
+      real,dimension(4*nz+15) :: wsavez
+      logical :: lforward=.true.
+      integer,optional :: direction
+      integer :: l,m,n
+!
+      if (present(direction)) then
+        if (direction.eq.-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
+!
+      if (lforward) then
+        if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction =', direction
+        call cffti(ny,wsavey)
+        do l=1,nx; do n=1,nz
+          ay=cmplx(a_re(l,:,n),a_im(l,:,n))
+          call cfftf(ny,ay,wsavey)
+! Shift y coordinate so that x-direction is periodic.      
+          ay=ay*exp(cmplx(0,-2*pi/Ly*deltay*(-x(l)/(Lx/2))))
+          a_re(l,:,n)=real(ay)
+          a_im(l,:,n)=aimag(ay)
+        enddo; enddo
+!
+        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction =', direction
+        call cffti(nx,wsavex)
+        do m=1,ny; do n=1,nz
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+      else
+        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction =', direction
+        call cffti(nx,wsavex)
+        do m=1,ny; do n=1,nz
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nx,ax,wsavex)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+!
+        if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction =', direction
+        call cffti(ny,wsavey)
+        do l=1,nx; do n=1,nz
+! Shift y coordinate back.
+          ay=ay*exp(cmplx(0, 2*pi/Ly*deltay*(-x(l)/(Lx/2))))
+          call cfftb(ny,ay,wsavey)
+          a_re(l,:,n)=real(ay)
+          a_im(l,:,n)=aimag(ay)
+        enddo; enddo
+      endif
+!
+      if (lroot.and.ip<10) print*, 'doing FFTpack in z, direction =', direction
+      call cffti(nz,wsavez)
+      do l=1,nx; do m=1,ny
+        az=cmplx(a_re(l,m,:),a_im(l,m,:))
+        if (lforward) then 
+          call cfftf(nz,az,wsavez)
+        else 
+          call cfftb(nz,az,wsavez)
+        endif
+        a_re(l,m,:)=real(az)
+        a_im(l,m,:)=aimag(az)
+      enddo; enddo
+!
+!  Normalize
+!
+      if (lforward) then 
+        a_re=a_re/nwgrid
+        a_im=a_im/nwgrid
+      endif
+!
+    endsubroutine transform_fftpack_shear
+!***********************************************************************
+    subroutine transform_nr(a_re,a_im)
 !
 !  Subroutine to do Fourier transform using Numerical Recipes routine.
 !  Note that this routine requires that nx, ny, and nz are powers of 2.
@@ -1070,82 +1168,46 @@ subroutine transform_nr(a_re,a_im)
 !
 !  30-oct-02/axel: adapted from transform_fftpack for Numerical Recipes
 !
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  complex,dimension(ny) :: ay
-  complex,dimension(nz) :: az
-  integer :: l,m,n
+      real,dimension(nx,ny,nz) :: a_re,a_im
+      complex,dimension(nx) :: ax
+      complex,dimension(ny) :: ay
+      complex,dimension(nz) :: az
+      integer :: l,m,n
 !
 !  This Fourier transform would work, but it's very slow!
 !  Even the compilation is very slow, so we better get rid of it!  
 !
-  call stop_it("fft_nr currently disabled!")
+      call stop_it("fft_nr currently disabled!")
 !
-  if(lroot .AND. ip<10) print*,'doing FFT_nr in x'
-  do m=1,ny
-  do n=1,nz
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    !call four1(ax,nx,-1)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFT_nr in x'
+      do m=1,ny; do n=1,nz
+        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+        !call four1(ax,nx,-1)
+        a_re(:,m,n)=real(ax)
+        a_im(:,m,n)=aimag(ax)
+      enddo; enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFT_nr in y'
-  do l=1,nx
-  do n=1,nz
-    ay=cmplx(a_re(l,:,n),a_im(l,:,n))
-    !call four1(ay,ny,-1)
-    a_re(l,:,n)=real(ay)
-    a_im(l,:,n)=aimag(ay)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFT_nr in y'
+      do l=1,nx; do n=1,nz
+        ay=cmplx(a_re(l,:,n),a_im(l,:,n))
+        !call four1(ay,ny,-1)
+        a_re(l,:,n)=real(ay)
+        a_im(l,:,n)=aimag(ay)
+      enddo; enddo
 !
-  if(lroot .AND. ip<10) print*,'doing FFT_nr in z'
-  do l=1,nx
-  do m=1,ny
-    az=cmplx(a_re(l,m,:),a_im(l,m,:))
-    !call four1(az,nz,-1)
-    a_re(l,m,:)=real(az)
-    a_im(l,m,:)=aimag(az)
-  enddo
-  enddo
+      if (lroot .and. ip<10) print*, 'doing FFT_nr in z'
+      do l=1,nx; do m=1,ny
+        az=cmplx(a_re(l,m,:),a_im(l,m,:))
+        !call four1(az,nz,-1)
+        a_re(l,m,:)=real(az)
+        a_im(l,m,:)=aimag(az)
+      enddo; enddo
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
+      a_re=a_re/nwgrid
+      a_im=a_im/nwgrid
 !
-end subroutine transform_nr
-!***********************************************************************
-subroutine transform_fftpack_1d(a_re,a_im)
-!
-!  Subroutine to do Fourier transform
-!  The routine overwrites the input data
-!
-!  06-feb-03/nils: adapted from transform_fftpack
-!
-  real,dimension(nx,ny,nz) :: a_re,a_im
-  complex,dimension(nx) :: ax
-  real,dimension(4*nx+15) :: wsavex
-  integer :: m,n
-!
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
-  call cffti(nx,wsavex)
-  do m=1,ny
-  do n=1,nz
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call cfftf(nx,ax,wsavex)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
-!
-!  Normalize
-!
-  a_re=a_re/nxgrid
-  a_im=a_im/nxgrid
-!
-end subroutine transform_fftpack_1d
+    endsubroutine transform_nr
 !***********************************************************************
 endmodule Mpicomm

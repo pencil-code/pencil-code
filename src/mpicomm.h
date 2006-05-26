@@ -23,7 +23,8 @@
   public :: initiate_isendrcv_uu, finalize_isendrcv_uu
 
   public :: transp
-  public :: transform_fftpack,transform_fftpack_1d, transform_fftpack_2d 
+  public :: transform_fftpack,transform_fftpack_2d, transform_fftpack_1d 
+  public :: transform_fftpack_shear
   public :: transform_nr, transform_i
 
 ! Radiation ray routines
