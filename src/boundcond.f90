@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.108 2006-05-24 14:10:36 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.109 2006-05-26 06:47:45 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -12,11 +12,11 @@ module Boundcond
 
   use Mpicomm
   use Messages
- 
+
   implicit none
 
   private
-  
+
   public :: boundconds, boundconds_x, boundconds_y, boundconds_z
   public :: bc_per_x, bc_per_y, bc_per_z
   public :: update_ghosts
@@ -81,7 +81,7 @@ module Boundcond
           if (ip<12.and.headtt) print*, &
                'boundconds_x: use shearing sheet boundary condition'
           call initiate_shearing(f)
-          if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalize_shearing(f)
+          if (nprocy>1 .or. (.not. lmpicomm)) call finalize_shearing(f)
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then
@@ -774,7 +774,7 @@ module Boundcond
 !
     endsubroutine bc_van_z
 !***********************************************************************
- 
+
     subroutine bc_BL_x(f,sgn,topbot,j,rel,val)
 !
 ! Natalia
@@ -797,7 +797,7 @@ module Boundcond
 
              ! bottom boundary
 
-     if (j .EQ. 1) then 
+     if (j == 1) then 
          f(l1,:,:,j) = 0.
          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
      else
@@ -807,28 +807,21 @@ module Boundcond
 
       case('top')               ! top boundary
 
-     if (nxgrid .LE. 1) then
-       if (j .EQ. 1) then
+     if (nxgrid <= 1) then
+       if (j == 1) then
           f(l2,m1:m2,n1:n2,j)=val(j)
-        
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
-      
-
-       else        
-
+       else
         f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
         f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
         f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
-
        endif
-
      else
         f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
         f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
         f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
      endif
 
-  
       case default
         print*, "bc_BL_x: ", topbot, " should be `top' or `bot'"
 
@@ -852,124 +845,120 @@ module Boundcond
       real, dimension(nx) :: lnrho,lnTT,ss
       integer :: sgn,i,j, step_width, n1p4,n2m4, i_tmp
       real :: H_disk_min, L_disk_min, ddz, ddx
-      
     !  integer, parameter :: ilnrho_lnTT=4
 
-        H_disk_min=Lxyz(1)/(nxgrid-1)
-        step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
-        ddx=H_disk_min
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
+      ddx=H_disk_min
 
-        L_disk_min=Lxyz(3)/(nzgrid-1)
-        ddz=L_disk_min
+      L_disk_min=Lxyz(3)/(nzgrid-1)
+      ddz=L_disk_min
 
+      if (j == 4 .or. j==5) then
+        val1_=log(val1)
+        val2_=log(val2)
+      else
+        val1_=val1
+        val2_=val2
+      endif
 
-        if (j .EQ. 4 .OR. j.EQ.5) then
-         val1_=log(val1)
-         val2_=log(val2)
-        else
-         val1_=val1
-         val2_=val2
-        endif
- 
       select case(topbot)
 
       case('bot')               ! bottom boundary
-        
-       if (lextrapolate_bot_density .AND. j.GE.4) then
-     
-        n1p4=n1+4
-      
-        f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
-        f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
-        f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 
-       else
+        if (lextrapolate_bot_density .and. j>=4) then
 
-        if (j.EQ.5) then
-           lnrho=f(l1:l2,m1,n1,ilnrho)
-          if (lnstar_T_const) then 
-           lnTT=log(cs0**2/(gamma1))
-          else     
-           lnTT=log(T_star)
-          endif
-          !+ other terms for sound speed not equal to cs_0
-           call eoscalc(4,lnrho,lnTT,ss=ss)
-          f(l1:l2,m1,n1,iss)=ss 
-      !  print*, 'boundary entropy ', ss
-         !ss=exp(ss-(-log(cs0**2/(gamma1))-gamma1*lnrho)/gamma)
-         !   ss=exp(log(cs0**2/(gamma1))+gamma*ss+gamma1*lnrho)
-         !print*, 'boundary entropy ', ss
+          n1p4=n1+4
+
+          f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+          f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+          f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+
         else
-          if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
-               f(1:step_width+3,:,n1,j)=val1_(j)
-               f(step_width+3+1:mx,:,n1,j)=val2_(j)
-           end if
-     
-          if (H_disk .LT. H_disk_min)    f(:,:,n1,j)=val2_(j)
-          if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1_(j)
-        endif
+
+          if (j==5) then
+            lnrho=f(l1:l2,m1,n1,ilnrho)
+            if (lnstar_T_const) then 
+              lnTT=log(cs0**2/(gamma1))
+            else     
+              lnTT=log(T_star)
+            endif
+            !+ other terms for sound speed not equal to cs_0
+            call eoscalc(4,lnrho,lnTT,ss=ss)
+            f(l1:l2,m1,n1,iss)=ss 
+            !  print*, 'boundary entropy ', ss
+            !ss=exp(ss-(-log(cs0**2/(gamma1))-gamma1*lnrho)/gamma)
+            !   ss=exp(log(cs0**2/(gamma1))+gamma*ss+gamma1*lnrho)
+            !print*, 'boundary entropy ', ss
+          else
+            if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
+              f(1:step_width+3,:,n1,j)=val1_(j)
+              f(step_width+3+1:mx,:,n1,j)=val2_(j)
+            endif
+            if (H_disk < H_disk_min)    f(:,:,n1,j)=val2_(j)
+            if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1_(j)
+          endif
           do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
-    
-   
-       endif
-      
+        endif
+
       case('top')               ! top boundary
 
-       if (ltop_velocity_kep .AND. j.EQ.2) then 
+        if (ltop_velocity_kep .and. j==2) then 
           f(:,:,n2,j)=sqrt(M_star/(R_star+Lxyz(3)))
-       else
-        
-       if (nxgrid .LE.1) then
-         if (j.EQ.5) then
-           lnrho=f(l1:l2,m2,n2,ilnrho)
-           lnTT=log(cs0**2/(gamma1))
-           call eoscalc(4,lnrho,lnTT,ss=ss)
-           f(l1:l2,m2,n2,iss)=ss
+        else
 
-         else 
-            if (H_disk .GE. H_disk_min .AND. H_disk .LE. Lxyz(1)-H_disk_min) then
-               f(1:step_width+3,:,n2,j)=val1_(j)
-               f(step_width+3+1:mx,:,n2,j)=val2_(j)
-            end if
-       
-            if (H_disk .LT. H_disk_min)    f(:,:,n2,j)=val2_(j)
-            if (H_disk .GT. Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1_(j)
-         endif        
-       else
-    
-        !    if (j.EQ.4) then
-          !    f(1:H_disk_point+4,:,n2,j)=val1_(j)
-          !    f(H_disk_point+5:mx,:,n2,j)=val2_(j)
+          if (nxgrid <= 1) then
+            if (j==5) then
+              lnrho=f(l1:l2,m2,n2,ilnrho)
+              lnTT=log(cs0**2/(gamma1))
+              call eoscalc(4,lnrho,lnTT,ss=ss)
+              f(l1:l2,m2,n2,iss)=ss
+            else 
+              if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
+                f(1:step_width+3,:,n2,j)=val1_(j)
+                f(step_width+3+1:mx,:,n2,j)=val2_(j)
+              endif
+              if (H_disk < H_disk_min)    f(:,:,n2,j)=val2_(j)
+              if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1_(j)
+            endif
+          else
 
-        !    do i=1,H_disk_point+4
-        !       f(i,:,n2,ilnrho)=log(5.)+(1.-(ddx*i/H_disk)**2)
-        !    enddo 
-  
-        !    do i=H_disk_point+5,mx
-        !       f(i,:,n2,ilnrho)=f(H_disk_point+4,:,n2,ilnrho)
-        !   enddo    
+            !    if (j==4) then
+            !    f(1:H_disk_point+4,:,n2,j)=val1_(j)
+            !    f(H_disk_point+5:mx,:,n2,j)=val2_(j)
 
+            !    do i=1,H_disk_point+4
+            !       f(i,:,n2,ilnrho)=log(5.)+(1.-(ddx*i/H_disk)**2)
+            !    enddo 
 
+            !    do i=H_disk_point+5,mx
+            !       f(i,:,n2,ilnrho)=f(H_disk_point+4,:,n2,ilnrho)
+            !   enddo    
 
-        !    else 
-              n2m4=n2-4
-              i_tmp=H_disk_point+5
+            !    else 
+            n2m4=n2-4
+            i_tmp=H_disk_point+5
 
-              f(i_tmp:mx,:,n2+1,j)=0.2   *(  9*f(i_tmp:mx,:,n2,j)                 -  4*f(i_tmp:mx,:,n2-2,j)- 3*f(i_tmp:mx,:,n2-3,j)+ 3*f(i_tmp:mx,:,n2m4,j))
-              f(i_tmp:mx,:,n2+2,j)=0.2   *( 15*f(i_tmp:mx,:,n2,j)- 2*f(i_tmp:mx,:,n2-1,j)-  9*f(i_tmp:mx,:,n2-2,j)- 6*f(i_tmp:mx,:,n2-3,j)+ 7*f(i_tmp:mx,:,n2m4,j))
-              f(i_tmp:mx,:,n2+3,j)=1./35.*(157*f(i_tmp:mx,:,n2,j)-33*f(i_tmp:mx,:,n2-1,j)-108*f(i_tmp:mx,:,n2-2,j)-68*f(i_tmp:mx,:,n2-3,j)+87*f(i_tmp:mx,:,n2m4,j))
-         !  endif
-    
-       endif
-     
+            f(i_tmp:mx,:,n2+1,j)=0.2   *(   9*f(i_tmp:mx,:,n2  ,j) &
+                                         -  4*f(i_tmp:mx,:,n2-2,j) &
+                                         -  3*f(i_tmp:mx,:,n2-3,j) &
+                                         +  3*f(i_tmp:mx,:,n2m4,j))
+            f(i_tmp:mx,:,n2+2,j)=0.2   *(  15*f(i_tmp:mx,:,n2  ,j) &
+                                        -   2*f(i_tmp:mx,:,n2-1,j) &
+                                        -   9*f(i_tmp:mx,:,n2-2,j) &
+                                        -   6*f(i_tmp:mx,:,n2-3,j) &
+                                        +   7*f(i_tmp:mx,:,n2m4,j))
+            f(i_tmp:mx,:,n2+3,j)=1./35.*( 157*f(i_tmp:mx,:,n2  ,j) &
+                                         - 33*f(i_tmp:mx,:,n2-1,j) &
+                                         -108*f(i_tmp:mx,:,n2-2,j) &
+                                         - 68*f(i_tmp:mx,:,n2-3,j) &
+                                         + 87*f(i_tmp:mx,:,n2m4,j))
+            !  endif
 
+          endif
+        endif
 
-       endif 
-
-      do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
-
-
-  
+        do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
 
       case default
         print*, "bc_step_z: ", topbot, " should be `top' or `bot'"
@@ -1154,7 +1143,6 @@ module Boundcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: j
 !
-
       select case(topbot)
 
       case('bot')               ! bottom boundary
@@ -1355,7 +1343,6 @@ module Boundcond
 !         f(:,:,n2+2,j)=- 8*f(:,:,n2-1,j)+3*f(:,:,n2-2,j)
 !         f(:,:,n2+3,j)=-15*f(:,:,n2-1,j)+6*f(:,:,n2-2,j)
 
-
 !! Nyquist-filtering
       case('bot')               ! bottom boundary
         f(:,:,n1  ,j)=0.        ! set bdry value=0 (indep of initcond)
@@ -1368,7 +1355,6 @@ module Boundcond
         f(:,:,n2+1,j)=(1/11.)*(-17*f(:,:,n2-1,j)- 9*f(:,:,n2-2,j)+ 8*f(:,:,n2-3,j))
         f(:,:,n2+2,j)=      2*(- 2*f(:,:,n2-1,j)-   f(:,:,n2-2,j)+   f(:,:,n2-3,j))
         f(:,:,n2+3,j)=(3/11.)*(-27*f(:,:,n2-1,j)-13*f(:,:,n2-2,j)+14*f(:,:,n2-3,j))
-
 
 ! !! Nyquist-transparent
 !       case('bot')               ! bottom boundary
@@ -1938,7 +1924,7 @@ module Boundcond
 !
 !     Read the time table
 !
-       if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat .ne. -2) then
+       if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat /= -2) then
 !         
           inquire(IOLENGTH=lend) tl
           close (10)
@@ -1946,11 +1932,11 @@ module Boundcond
 !
           iostat = 0
           i=0
-          do while (iostat .eq. 0)
+          do while (iostat == 0)
             i=i+1
             read (10,rec=i,iostat=iostat) tl          
             read (10,rec=i+1,iostat=iostat) tr
-            if (iostat .ne. 0) then
+            if (iostat /= 0) then
               i=1
               delta_t = t*unit_time                  ! EOF is reached => read again
               read (10,rec=i,iostat=iostat) tl          
@@ -1967,7 +1953,7 @@ module Boundcond
           open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nx*ny*nprocy,access='direct')
           read (10,rec=(2*i-1)) uxl
           read (10,rec=2*i)     uyl
-         
+
           read (10,rec=2*i+1)   uxr 
           read (10,rec=2*i+2)   uyr
           close (10)       
@@ -1975,7 +1961,7 @@ module Boundcond
 !      
 !   simple linear interploation between timesteps
 !       
-       if (tr .ne. tl) then
+       if (tr /= tl) then
           uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
           uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl       
        endif     
@@ -1988,7 +1974,7 @@ module Boundcond
           f(l1:l2,m1:m2,j,iux) = uxd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
           f(l1:l2,m1:m2,j,iuy) = uyd(:,ipy*ny:(ipy+1)*ny) / 100./unit_velocity 
        enddo
-       
+
      endsubroutine uu_driver
 !***********************************************************************
 endmodule Boundcond
