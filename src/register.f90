@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.170 2006-05-15 21:30:50 ajohan Exp $
+! $Id: register.f90,v 1.171 2006-05-26 16:28:38 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -546,6 +546,7 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use Planet,          only: rprint_planet
+      use Mpicomm
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamexy,inamexz,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat,iname_tmp
@@ -577,16 +578,21 @@ module Register
         isubstract=0
         open(1,file='video.in')
         do inamev=1,mnamev
-          read(1,*,end=98,iostat=io_stat) ix_,iy_,iz_,iz2_
-          if (io_stat/=0) then
-            backspace(1)
-            read(1,*,end=98) cnamev(inamev-isubstract)
-          else
-            ix=ix_; iy=iy_; iz=iz_; iz2=iz2_
-            isubstract=isubstract+1
-          endif
+! AJ: commented out following part (should probably be deleted):
+!          read(1,*,end=98,iostat=io_stat) ix_,iy_,iz_,iz2_
+!          if (io_stat/=0) then
+!            backspace(1)
+!            read(1,*,end=98) cnamev(inamev-isubstract)
+!            print*, cnamev(inamev-isubstract)
+!          else
+!            ix=ix_; iy=iy_; iz=iz_; iz2=iz2_
+!            isubstract=isubstract+1
+!          endif
+          read(1,*,end=98) cnamev(inamev)
         enddo
-98      nnamev=inamev-1-isubstract
+!98      nnamev=inamev-1-isubstract
+!        close(1)
+98      nnamev=inamev-1
         close(1)
       endif
       if (lroot.and.ip<14) print*,'rprint_list: ix,iy,iz,iz2=',ix,iy,iz,iz2
