@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.158 2006-05-26 14:46:45 ajohan Exp $
+! $Id: mpicomm.f90,v 1.159 2006-05-26 14:50:49 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2308,7 +2308,7 @@ module Mpicomm
       integer, optional :: dummy
 !
       if (lroot) print*, 'transform_fftpack_shear: not implemented in parallel'
-      call fatal_error('transform_fftpack_shear','')
+      call stop_it('transform_fftpack_shear')
 !
       if (NO_WARN) print*, a_re, a_im, dummy !(keep compiler quiet)
 !
