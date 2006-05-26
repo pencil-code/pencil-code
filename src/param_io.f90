@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.237 2006-05-23 04:40:12 dobler Exp $ 
+! $Id: param_io.f90,v 1.238 2006-05-26 15:23:36 ajohan Exp $ 
 
 module Param_IO
 
@@ -26,6 +26,7 @@ module Param_IO
   use EquationOfState
   use Forcing
   use Gravity
+  use Selfgravity
   use Interstellar
   use Shear
   use Timeavg
@@ -202,6 +203,10 @@ module Param_IO
       if (ierr.ne.0) call sample_startpars('grav_init_pars',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
+      call read_selfgravity_init_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_startpars('selfgrav_init_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
       call read_entropy_init_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_startpars('entropy_init_pars',ierr)
 
@@ -329,6 +334,7 @@ module Param_IO
         if (ldensity      )  print*,'&density_init_pars        /'
         ! no input parameters for forcing
         if (lgrav         )  print*,'&grav_init_pars           /'
+        if (lselfgravity  )  print*,'&selfgrav_init_pars       /'
         if (lentropy      )  print*,'&entropy_init_pars        /'
         if (lmagnetic     )  print*,'&magnetic_init_pars       /'
         if (ltestfield    )  print*,'&testfield_init_pars      /'
@@ -389,6 +395,7 @@ module Param_IO
         call write_density_init_pars(unit)
         call write_forcing_init_pars(unit)
         call write_gravity_init_pars(unit)
+        call write_selfgravity_init_pars(unit)
         call write_entropy_init_pars(unit)
         call write_magnetic_init_pars(unit)
         call write_testfield_init_pars(unit)
@@ -478,6 +485,10 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       call read_gravity_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('grav_run_pars',ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
+      call read_selfgravity_run_pars(1,IOSTAT=ierr)
+      if (ierr.ne.0) call sample_runpars('selfgrav_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
       call read_entropy_run_pars(1,IOSTAT=ierr)
@@ -798,6 +809,7 @@ module Param_IO
         call write_hydro_run_pars(unit)
         call write_forcing_run_pars(unit)
         call write_gravity_run_pars(unit)
+        call write_selfgravity_run_pars(unit)
         call write_entropy_run_pars(unit)
         call write_magnetic_run_pars(unit)
         call write_testfield_run_pars(unit)
@@ -956,6 +968,7 @@ module Param_IO
         call write_density_init_pars(1)
         call write_forcing_init_pars(1)
         call write_gravity_init_pars(1)
+        call write_selfgravity_init_pars(1)
         call write_entropy_init_pars(1)
         call write_magnetic_init_pars(1)
         call write_testfield_init_pars(1)
@@ -995,6 +1008,7 @@ module Param_IO
         call read_density_init_pars(1)
         call read_forcing_init_pars(1)
         call read_gravity_init_pars(1)
+        call read_selfgravity_init_pars(1)
         call read_entropy_init_pars(1)
         call read_magnetic_init_pars(1)
         call read_testfield_init_pars(1)
@@ -1036,6 +1050,7 @@ module Param_IO
         call write_density_run_pars(1)
         call write_forcing_run_pars(1)
         call write_gravity_run_pars(1)
+        call write_selfgravity_run_pars(1)
         call write_entropy_run_pars(1)
         call write_magnetic_run_pars(1)
         call write_testfield_run_pars(1)
