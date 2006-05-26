@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.171 2006-05-26 16:28:38 ajohan Exp $
+! $Id: register.f90,v 1.172 2006-05-26 17:00:19 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -550,7 +550,6 @@ module Register
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamexy,inamexz,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat,iname_tmp
-      integer :: isubstract
       logical :: lreset,exist
       character (LEN=30) :: cname_tmp
 !
@@ -575,23 +574,10 @@ module Register
       inquire(file='video.in',exist=exist)
       if (exist .and. dvid/=0.0) then
         lwrite_slices=.true.
-        isubstract=0
         open(1,file='video.in')
         do inamev=1,mnamev
-! AJ: commented out following part (should probably be deleted):
-!          read(1,*,end=98,iostat=io_stat) ix_,iy_,iz_,iz2_
-!          if (io_stat/=0) then
-!            backspace(1)
-!            read(1,*,end=98) cnamev(inamev-isubstract)
-!            print*, cnamev(inamev-isubstract)
-!          else
-!            ix=ix_; iy=iy_; iz=iz_; iz2=iz2_
-!            isubstract=isubstract+1
-!          endif
           read(1,*,end=98) cnamev(inamev)
         enddo
-!98      nnamev=inamev-1-isubstract
-!        close(1)
 98      nnamev=inamev-1
         close(1)
       endif
