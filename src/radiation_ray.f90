@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.91 2006-05-27 07:34:44 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.92 2006-05-27 12:34:17 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
   real :: DFF_new=0.  !(dum)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
-  integer :: idiag_Fradzm=0,idiag_Sradm
+  integer :: idiag_Fradzm=0,idiag_Sradm=0
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -162,7 +162,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.91 2006-05-27 07:34:44 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.92 2006-05-27 12:34:17 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
