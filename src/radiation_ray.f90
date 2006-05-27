@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.90 2006-05-22 23:22:57 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.91 2006-05-27 07:34:44 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
   integer, parameter :: maxdir=26
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir,3) :: unit_vec
-  real, dimension (maxdir) :: weight,mu
+  real, dimension (maxdir) :: weight,weightn,mu
   real :: arad
   real :: dtau_thresh_min,dtau_thresh_max
   integer :: lrad,mrad,nrad,rad2
@@ -76,6 +76,7 @@ module Radiation
   real :: kx_Srad=0.0,ky_Srad=0.0,kz_Srad=0.0
   real :: kapparho_const=1.0,amplkapparho=1.0,radius_kapparho=1.0
   real :: kx_kapparho=0.0,ky_kapparho=0.0,kz_kapparho=0.0
+  real :: Frad_boundary_ref=0.0
 !
 !  Default values for one pair of vertical rays
 !
@@ -93,14 +94,15 @@ module Radiation
   real :: DFF_new=0.  !(dum)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
-  integer :: idiag_Fradzm=0
+  integer :: idiag_Fradzm=0,idiag_Sradm
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        TT_top,TT_bot,tau_top,tau_bot,source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad, &
        kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,lradflux
+       lintrinsic,lcommunicate,lrevision,lradflux, &
+       Frad_boundary_ref
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -108,7 +110,8 @@ module Radiation
        Srad_const,amplSrad,radius_Srad, &
        kx_Srad,ky_Srad,kz_Srad,kx_kapparho,ky_kapparho,kz_kapparho, &
        kapparho_const,amplkapparho,radius_kapparho, &
-       lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure
+       lintrinsic,lcommunicate,lrevision,lcooling,lradflux,lradpressure, &
+       Frad_boundary_ref
 
   contains
 
@@ -159,7 +162,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.90 2006-05-22 23:22:57 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.91 2006-05-27 07:34:44 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -279,12 +282,19 @@ module Radiation
       dtau_thresh_max=-log(tiny(dtau_thresh_max))
 !
 !  Calculate arad for LTE source function
+!  Note that this arad is *not* the usual radiation-density constant.
 !
       arad=SigmaSB/pi
+      if (lroot) print*,'initialize_radiation: arad=',arad
 !
 !  Calculate weights
 !
       if (ndir>0) weight=4*pi/ndir
+!
+!  Calculate weights for weighed integrals involving one unit vector nhat
+!
+      weightn=weight
+      if (ndir==2) weightn=weightn/3.
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',ndir
 !
@@ -350,7 +360,7 @@ module Radiation
         if (lradflux) then
           do j=1,3
             k=iFradx+(j-1)
-            f(:,:,:,k)=f(:,:,:,k)+weight(idir)*unit_vec(idir,j)*(Qrad+Srad)
+            f(:,:,:,k)=f(:,:,:,k)+weightn(idir)*unit_vec(idir,j)*(Qrad+Srad)
           enddo
         endif
 
@@ -981,6 +991,7 @@ module Radiation
 !  Sets the physical boundary condition on yz plane
 !
 !  6-jul-03/axel+tobi: coded
+!  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
       use Mpicomm, only: stop_it
 !
@@ -999,6 +1010,18 @@ module Radiation
         Qrad0_yz=0
       endif
 !
+!  Set intensity equal to S-F
+!
+      if (bc_ray_z=='S-F') then
+        Qrad0_yz=-Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
+!  Set intensity equal to S+F
+!
+      if (bc_ray_z=='S+F') then
+        Qrad0_yz=+Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
     endsubroutine radboundary_yz_set
 !***********************************************************************
     subroutine radboundary_zx_set(Qrad0_zx)
@@ -1006,6 +1029,7 @@ module Radiation
 !  Sets the physical boundary condition on zx plane
 !
 !  6-jul-03/axel+tobi: coded
+!  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
       use Mpicomm, only: stop_it
 !
@@ -1024,6 +1048,18 @@ module Radiation
         Qrad0_zx=0
       endif
 !
+!  Set intensity equal to S-F
+!
+      if (bc_ray_z=='S-F') then
+        Qrad0_zx=-Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
+!  Set intensity equal to S+F
+!
+      if (bc_ray_z=='S+F') then
+        Qrad0_zx=+Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
     endsubroutine radboundary_zx_set
 !***********************************************************************
     subroutine radboundary_xy_set(Qrad0_xy)
@@ -1031,6 +1067,7 @@ module Radiation
 !  Sets the physical boundary condition on xy plane
 !
 !  6-jul-03/axel+tobi: coded
+!  26-may-06/axel: added S+F and S-F to model interior more accurately
 !
       use Mpicomm, only: stop_it
 !
@@ -1055,6 +1092,18 @@ module Radiation
 !
       if (bc_ray_z=='S') then
         Qrad0_xy=0
+      endif
+!
+!  Set intensity equal to S-F
+!
+      if (bc_ray_z=='S-F') then
+        Qrad0_xy=-Frad_boundary_ref/(2.*weightn(idir))
+      endif
+!
+!  Set intensity equal to S+F
+!
+      if (bc_ray_z=='S+F') then
+        Qrad0_xy=+Frad_boundary_ref/(2.*weightn(idir))
       endif
 !
     endsubroutine radboundary_xy_set
@@ -1090,6 +1139,7 @@ module Radiation
 !
       if (ldiagnos) then
         Qrad2=f(l1:l2,m,n,iQrad)**2
+        if (idiag_Sradm/=0) call sum_mn_name(Srad(l1:l2,m,n),idiag_Sradm)
         if (idiag_Qradrms/=0) then
           call sum_mn_name(Qrad2,idiag_Qradrms,lsqrt=.true.)
         endif
@@ -1118,7 +1168,7 @@ module Radiation
       if (lradflux) then
         do j=1,3
           k=iFradx+(j-1)
-          radpressure(:,j)=p%rho1*kapparho(l1:l2,m,n)*f(l1:l2,m,n,k)
+          radpressure(:,j)=p%rho1*kapparho(l1:l2,m,n)*f(l1:l2,m,n,k)/c_light
         enddo
 !
 !  Add radiative radpressure
@@ -1412,7 +1462,7 @@ module Radiation
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0
+        idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_Sradm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1421,6 +1471,7 @@ module Radiation
         call parse_name(iname,cname(iname),cform(iname),'Qradrms',idiag_Qradrms)
         call parse_name(iname,cname(iname),cform(iname),'Qradmax',idiag_Qradmax)
         call parse_name(iname,cname(iname),cform(iname),'Fradzm',idiag_Fradzm)
+        call parse_name(iname,cname(iname),cform(iname),'Sradm',idiag_Sradm)
       enddo
 !
 !  write column where which radiative variable is stored
@@ -1435,6 +1486,7 @@ module Radiation
         write(3,*) 'i_Qradrms=',idiag_Qradrms
         write(3,*) 'i_Qradmax=',idiag_Qradmax
         write(3,*) 'i_Fradzm=',idiag_Fradzm
+        write(3,*) 'i_Sradm=',idiag_Sradm
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
         write(3,*) 'ifx=',ifx
