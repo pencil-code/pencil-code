@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.115 2006-05-26 14:46:45 ajohan Exp $
+! $Id: nompicomm.f90,v 1.116 2006-05-27 00:11:04 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -1085,10 +1085,12 @@ module Mpicomm
       real,dimension(4*nx+15) :: wsavex
       real,dimension(4*ny+15) :: wsavey
       real,dimension(4*nz+15) :: wsavez
+      real :: deltay_x
       logical :: lforward=.true.
       integer,optional :: direction
       integer :: l,m,n
 !
+      deltay=0.66
       if (present(direction)) then
         if (direction.eq.-1) then
           lforward=.false.
@@ -1098,18 +1100,19 @@ module Mpicomm
       endif
 !
       if (lforward) then
-        if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction =', direction
+        if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction=',direction
         call cffti(ny,wsavey)
         do l=1,nx; do n=1,nz
           ay=cmplx(a_re(l,:,n),a_im(l,:,n))
           call cfftf(ny,ay,wsavey)
 ! Shift y coordinate so that x-direction is periodic.      
-          ay=ay*exp(cmplx(0,-2*pi/Ly*deltay*(-x(l)/(Lx/2))))
+          deltay_x=deltay/2*(x(l+nghost)/(-Lx/2))
+          ay(2:ny)=ay(2:ny)*exp(cmplx(0.0,-2*pi/Ly*deltay_x))
           a_re(l,:,n)=real(ay)
           a_im(l,:,n)=aimag(ay)
         enddo; enddo
 !
-        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction =', direction
+        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
         call cffti(nx,wsavex)
         do m=1,ny; do n=1,nz
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1118,27 +1121,29 @@ module Mpicomm
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
       else
-        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction =', direction
+        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
         call cffti(nx,wsavex)
         do m=1,ny; do n=1,nz
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-          call cfftf(nx,ax,wsavex)
+          call cfftb(nx,ax,wsavex)
           a_re(:,m,n)=real(ax)
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
 !
-        if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction =', direction
+        if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction=',direction
         call cffti(ny,wsavey)
         do l=1,nx; do n=1,nz
+          ay=cmplx(a_re(l,:,n),a_im(l,:,n))
 ! Shift y coordinate back.
-          ay=ay*exp(cmplx(0, 2*pi/Ly*deltay*(-x(l)/(Lx/2))))
+          deltay_x=deltay/2*(x(l+nghost)/(-Lx/2))
+          ay(2:ny)=ay(2:ny)*exp(cmplx(0.0, 2*pi/Ly*deltay_x))
           call cfftb(ny,ay,wsavey)
           a_re(l,:,n)=real(ay)
           a_im(l,:,n)=aimag(ay)
         enddo; enddo
       endif
 !
-      if (lroot.and.ip<10) print*, 'doing FFTpack in z, direction =', direction
+      if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction=',direction
       call cffti(nz,wsavez)
       do l=1,nx; do m=1,ny
         az=cmplx(a_re(l,m,:),a_im(l,m,:))
@@ -1153,7 +1158,7 @@ module Mpicomm
 !
 !  Normalize
 !
-      if (lforward) then 
+      if (lforward) then
         a_re=a_re/nwgrid
         a_im=a_im/nwgrid
       endif
