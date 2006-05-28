@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.26 2006-05-28 17:54:06 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.27 2006-05-28 18:37:52 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.26 2006-05-28 17:54:06 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.27 2006-05-28 18:37:52 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1676,7 +1676,7 @@ module EquationOfState
 !
 !  Boundary condition for density and temperature
 !
-        if (bcz1(ilnTT)/='StS'.or.bcz1(ilnTT)/='hs'.or.bcz1(ilnTT)/='') then
+        if (bcz1(ilnTT)/='StS'.and.bcz1(ilnTT)/='hs'.and.bcz1(ilnTT)/='') then
           call fatal_error("bc_stellar_surface", &
                            "This boundary condition for density also sets"// &
                            "temperature. We therfore require bcz1(ilnTT)=''")
@@ -1793,7 +1793,7 @@ module EquationOfState
 !
 !  Boundary condition for density and temperature
 !
-        if (bcz2(ilnTT)/='StS'.or.bcz2(ilnTT)/='hs'.or.bcz2(ilnTT)/='') then
+        if (bcz2(ilnTT)/='StS'.and.bcz2(ilnTT)/='hs'.and.bcz2(ilnTT)/='') then
           call fatal_error("bc_stellar_surface", &
                            "This boundary condition for density also sets"// &
                            "temperature. We therfore require bcz2(ilnTT)=''")
