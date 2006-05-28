@@ -1,4 +1,4 @@
-! $Id: special_sample.f90,v 1.10 2006-04-02 03:34:12 mee Exp $
+! $Id: special_sample.f90,v 1.11 2006-05-28 20:24:45 brandenb Exp $
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.10 2006-04-02 03:34:12 mee Exp $")
+           "$Id: special_sample.f90,v 1.11 2006-05-28 20:24:45 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -369,7 +369,7 @@ module Special
 
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(f,df,p)
+    subroutine special_calc_magnetic(df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
