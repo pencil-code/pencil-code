@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.109 2006-05-26 06:47:45 dobler Exp $
+! $Id: boundcond.f90,v 1.110 2006-05-28 17:54:06 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -344,8 +344,10 @@ module Boundcond
                  call bc_force_z(f,+1,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
-              case ('hs') ! hydrostatic boundary
-                if (j==ilnrho) call bc_lnrho_hydrostatic_z(f,topbot)
+              case ('hs','StS') ! solar surface boundary conditions
+                ! TH: 'hs' has only been kept for backwards compatibility --
+                ! TH: can probably be deleted
+                if (j==ilnrho) call bc_stellar_surface(f,topbot)
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set

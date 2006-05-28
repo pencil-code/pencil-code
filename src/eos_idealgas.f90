@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.46 2006-05-16 18:44:20 ajohan Exp $
+! $Id: eos_idealgas.f90,v 1.47 2006-05-28 17:54:06 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.46 2006-05-16 18:44:20 ajohan Exp $')
+           '$Id: eos_idealgas.f90,v 1.47 2006-05-28 17:54:06 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1988,16 +1988,16 @@ module EquationOfState
 
     end subroutine bc_ss_energy
 !***********************************************************************
-    subroutine bc_lnrho_hydrostatic_z(f,topbot)
+    subroutine bc_stellar_surface(f,topbot)
 !
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_IDEALGAS")
+      call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f(1,1,1,1),topbot
 !
-    end subroutine bc_lnrho_hydrostatic_z
+    end subroutine bc_stellar_surface
 !***********************************************************************
 endmodule EquationOfState
