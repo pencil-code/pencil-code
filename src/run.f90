@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.224 2006-05-17 21:10:33 ajohan Exp $
+! $Id: run.f90,v 1.225 2006-05-28 01:37:56 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.224 2006-05-17 21:10:33 ajohan Exp $")
+             "$Id: run.f90,v 1.225 2006-05-28 01:37:56 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -80,6 +80,26 @@
 !
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
+!
+!  populate wavenumber arrays for fft.
+!
+        if (nxgrid/=1) then
+          kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+        else
+          kx_fft=0.0
+        endif
+!
+        if (nygrid/=1) then
+          ky_fft=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
+        else
+          ky_fft=0.0
+        endif
+!
+        if (nzgrid/=1) then
+          kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+        else
+          kz_fft=0.0
+        endif
 !
 !  read parameters and output parameter list
 !

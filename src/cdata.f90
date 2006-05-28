@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.313 2006-05-24 14:10:36 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.314 2006-05-28 01:37:55 ajohan Exp $
 
 module Cdata
 
@@ -15,7 +15,9 @@ module Cdata
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector
-  real, dimension (nx) :: maxdss,maxdlnrho
+  real, dimension (nxgrid) :: kx_fft
+  real, dimension (nygrid) :: ky_fft
+  real, dimension (nzgrid) :: kz_fft
 
 !  coordinate system (alternatives: spherical, cylindric)
   character (len=9) :: coord_system='cartesian'

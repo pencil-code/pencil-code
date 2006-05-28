@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.153 2006-05-26 17:37:54 ajohan Exp $
+! $Id: start.f90,v 1.154 2006-05-28 01:37:57 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -90,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.153 2006-05-26 17:37:54 ajohan Exp $")
+             "$Id: start.f90,v 1.154 2006-05-28 01:37:57 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -203,15 +203,35 @@
 !
 !  write .general file for data explorer
 !
-          if (lroot) call write_dx_general( &
-                            trim(datadir)//'/var.general', &
-                            x0-nghost*dx, y0-nghost*dy, z0-nghost*dz)
+        if (lroot) call write_dx_general( &
+                          trim(datadir)//'/var.general', &
+                          x0-nghost*dx, y0-nghost*dy, z0-nghost*dz)
 !
 !  as full arrays
 !
         xx=spread(spread(x,2,my),3,mz)
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
+!
+!  populate wavenumber arrays for fft.
+!
+        if (nxgrid/=1) then
+          kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+        else
+          kx_fft=0.0
+        endif
+!
+        if (nygrid/=1) then
+          ky_fft=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
+        else
+          ky_fft=0.0
+        endif
+!
+        if (nzgrid/=1) then
+          kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+        else
+          kz_fft=0.0
+        endif
 !
 !  Parameter dependent initialization of module variables and final
 !  pre-timestepping setup (must be done before need_XXXX can be used, for

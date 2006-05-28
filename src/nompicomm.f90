@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.116 2006-05-27 00:11:04 ajohan Exp $
+! $Id: nompicomm.f90,v 1.117 2006-05-28 01:37:55 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -1076,7 +1076,7 @@ module Mpicomm
 !
 !  25-may-06/anders: adapted from transform_fftpack
 !
-      use Cdata, only: pi, Lx, Ly, x, deltay
+      use Cdata, only: pi, Lx, Ly, x, deltay, kx_fft, ky_fft, kz_fft
 !
       real,dimension(nx,ny,nz) :: a_re,a_im
       complex,dimension(nx) :: ax
@@ -1090,7 +1090,7 @@ module Mpicomm
       integer,optional :: direction
       integer :: l,m,n
 !
-      deltay=0.66
+!      deltay=0.66
       if (present(direction)) then
         if (direction.eq.-1) then
           lforward=.false.
@@ -1105,9 +1105,10 @@ module Mpicomm
         do l=1,nx; do n=1,nz
           ay=cmplx(a_re(l,:,n),a_im(l,:,n))
           call cfftf(ny,ay,wsavey)
-! Shift y coordinate so that x-direction is periodic.      
+!  Shift y-coordinate so that x-direction is periodic. This is best done in
+!  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
           deltay_x=deltay/2*(x(l+nghost)/(-Lx/2))
-          ay(2:ny)=ay(2:ny)*exp(cmplx(0.0,-2*pi/Ly*deltay_x))
+          ay(2:ny)=ay(2:ny)*exp(cmplx(0.0, ky_fft(2:ny)*deltay_x))
           a_re(l,:,n)=real(ay)
           a_im(l,:,n)=aimag(ay)
         enddo; enddo
@@ -1134,9 +1135,9 @@ module Mpicomm
         call cffti(ny,wsavey)
         do l=1,nx; do n=1,nz
           ay=cmplx(a_re(l,:,n),a_im(l,:,n))
-! Shift y coordinate back.
+!  Shift y-coordinate back to regular frame (see above).
           deltay_x=deltay/2*(x(l+nghost)/(-Lx/2))
-          ay(2:ny)=ay(2:ny)*exp(cmplx(0.0, 2*pi/Ly*deltay_x))
+          ay(2:ny)=ay(2:ny)*exp(cmplx(0.0,-ky_fft(2:ny)*deltay_x))
           call cfftb(ny,ay,wsavey)
           a_re(l,:,n)=real(ay)
           a_im(l,:,n)=aimag(ay)
