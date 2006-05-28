@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.236 2006-05-22 16:52:31 wlyra Exp $ 
+! $Id: sub.f90,v 1.237 2006-05-28 14:00:12 theine Exp $ 
 
 module Sub 
 
@@ -1051,11 +1051,9 @@ module Sub
 !
       use Cdata
 !
-      real, dimension (nx,3,3) :: aij
-      real, dimension (nx,3) :: b,a
-!
-      intent(in) :: aij,a
-      intent(out) :: b
+      real, dimension (nx,3,3), intent (in) :: aij
+      real, dimension (nx,3), intent (in), optional :: a
+      real, dimension (nx,3), intent (out) :: b
 !
       b(:,1)=aij(:,3,2)-aij(:,2,3)
       b(:,2)=aij(:,1,3)-aij(:,3,1)
@@ -1064,7 +1062,7 @@ module Sub
 !  adjustments for spherical corrdinate system
 !  (WORKS CURRENTLY ONLY FOR 1-D IN THE RADIAL DIRECTION)
 !
-      if (lspherical) then
+      if (lspherical.and.present(a)) then
         b(:,2)=b(:,2)-r1_mn*a(:,3)
         b(:,3)=b(:,3)+r1_mn*a(:,2)
       endif
@@ -1848,15 +1846,15 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      integer, intent (in) :: iref
+      real, dimension (nx,3,3), intent (out) :: bij
+      real, dimension (nx,3), intent (out), optional :: del2,graddiv
+
       real, dimension (nx,3,3,3) :: d2A
-      real, dimension (nx,3,3) :: bij
-      real, dimension (nx,3) :: del2,graddiv
       real, dimension (nx) :: tmp
-      integer :: iref,iref1,i,j
+      integer :: iref1,i,j
 !
-      intent(in) :: f,iref
-      intent(out) :: bij,del2,graddiv
 !
 !  reference point of argument
 !
@@ -1874,13 +1872,18 @@ module Sub
         call derij(f,iref1+i,tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
       enddo
 !
-!  calculate del2_i = A_i,jj, graddiv_i = A_j,ji, and b_i,j = eps_ikl A_l,jk
+!  calculate b_i,j = eps_ikl A_l,jk, as well as optionally,
+!  del2_i = A_i,jj and graddiv_i = A_j,ji
 !
-      del2(:,:) = d2A(:,1,1,:) + d2A(:,2,2,:) + d2A(:,3,3,:)
-      graddiv(:,:) = d2A(:,:,1,1) + d2A(:,:,2,2) + d2A(:,:,3,3)
       bij(:,1,:) = d2A(:,:,2,3) - d2A(:,3,:,2)
       bij(:,2,:) = d2A(:,:,3,1) - d2A(:,1,:,3)
       bij(:,3,:) = d2A(:,:,1,2) - d2A(:,2,:,1)
+      if (present(del2)) then
+        del2(:,:) = d2A(:,1,1,:) + d2A(:,2,2,:) + d2A(:,3,3,:)
+      endif
+      if (present(graddiv)) then
+        graddiv(:,:) = d2A(:,:,1,1) + d2A(:,:,2,2) + d2A(:,:,3,3)
+      endif
 !
     endsubroutine bij_etc
 !***********************************************************************
