@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.291 2006-05-23 14:59:36 wlyra Exp $
+! $Id: magnetic.f90,v 1.292 2006-05-28 14:18:19 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -24,6 +24,7 @@
 
 module Magnetic
 
+  use Cdata
   use Cparam
   use Messages
 
@@ -70,7 +71,6 @@ module Magnetic
   logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
   logical :: reinitalize_aa=.false.
   logical :: lB_ext_pot=.false.
-  logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lmeanfield_theory=.false.,lOmega_effect=.false.
   logical :: lmeanfield_noalpm=.false.
@@ -83,6 +83,7 @@ module Magnetic
   character (len=labellen) :: pertaa='zero'
   integer :: N_modes_aa=1
   logical :: lgauss=.false.
+  logical :: lee_ext=.false.
 
   namelist /magnetic_init_pars/ &
        B_ext, &
@@ -186,7 +187,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.291 2006-05-23 14:59:36 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.292 2006-05-28 14:18:19 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -706,7 +707,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f       
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext!,jj_ext
+      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
       real, dimension (nx) :: rho1_jxb,alpha_total
       real, dimension (nx) :: alpha_tmp
       real :: B2_ext,c,s
@@ -780,12 +781,9 @@ module Magnetic
       if (lpencil(i_jj)) then
         call curl_mn(p%bij,p%jj,p%bb)
         p%jj=mu01*p%jj
-        if (ljj_ext) then
-!  external current (currently for spheromak experiments)
-          call get_global(ee_ext,m,n,'ee_ext')
-          !call get_global(jj_ext,m,n,'jj_ext')
-          !jj=jj+jj_ext
-          p%jj=p%jj-ee_ext*displacement_gun
+        if (ljj_ext) then !add external current
+          call get_global(jj_ext,m,n,'jj_ext')
+          p%jj=p%jj-jj_ext
         endif
       endif
 !  in spherical geometry, del2a is best written as graddiva-jj.
