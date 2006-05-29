@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.112 2006-02-20 09:48:46 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.113 2006-05-29 18:03:42 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.112 2006-02-20 09:48:46 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.113 2006-05-29 18:03:42 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -645,7 +645,7 @@ module Dustvelocity
                 eps*ampluud*cos(kz_uud*z(n))*cos(kx_uud*x(l1:l2))
 !                
             f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
-                (eta_glnrho*v_Kepler)**2*ampluud* &
+                ampluud* &
                 ( real(coeff(7))*cos(kx_uud*x(l1:l2)) - &
                  aimag(coeff(7))*sin(kx_uud*x(l1:l2)))*cos(kz_uud*z(n))
 !                

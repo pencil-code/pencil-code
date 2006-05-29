@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.90 2006-05-23 14:58:48 ajohan Exp $
+! $Id: particles_dust.f90,v 1.91 2006-05-29 18:03:42 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -83,7 +83,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.90 2006-05-23 14:58:48 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.91 2006-05-29 18:03:42 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -561,7 +561,7 @@ k_loop: do while (.not. (k>npar_loc))
 !
       do m=m1,m2; do n=n1,n2
         f(l1:l2,m,n,ilnrho) = f(l1:l2,m,n,ilnrho) + &
-            (eta_glnrho*v_Kepler)**2*amplxxp* &
+            amplxxp* &
             ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !                
