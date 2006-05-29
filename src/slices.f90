@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.55 2006-05-29 15:06:00 theine Exp $
+! $Id: slices.f90,v 1.56 2006-05-29 19:06:19 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -9,6 +9,8 @@ module Slices
   implicit none
 
   private
+
+  integer :: ix_loc,iy_loc,iz_loc,iz2_loc
 
   public :: wvid, wslice, wvid_prepare, setup_slices
 
@@ -149,66 +151,66 @@ module Slices
 !  Velocity field (code variable)
 !
         case ('uu')
-          uu_yz=f(ix,m1:m2,n1:n2,iux:iuz)
-          uu_xz=f(l1:l2,iy,n1:n2,iux:iuz)
-          uu_xy=f(l1:l2,m1:m2,iz,iux:iuz)
-          uu_xy2=f(l1:l2,m1:m2,iz2,iux:iuz)
-          call wslice(path//'ux.yz',uu_yz(:,:,1),x(ix),ny,nz)
-          call wslice(path//'uy.yz',uu_yz(:,:,2),x(ix),ny,nz)
-          call wslice(path//'uz.yz',uu_yz(:,:,3),x(ix),ny,nz)
-          call wslice(path//'ux.xz',uu_xz(:,:,1),y(iy),nx,nz)
-          call wslice(path//'uy.xz',uu_xz(:,:,2),y(iy),nx,nz)
-          call wslice(path//'uz.xz',uu_xz(:,:,3),y(iy),nx,nz)
-          call wslice(path//'ux.xy',uu_xy(:,:,1),z(iz),nx,ny)
-          call wslice(path//'uy.xy',uu_xy(:,:,2),z(iz),nx,ny)
-          call wslice(path//'uz.xy',uu_xy(:,:,3),z(iz),nx,ny)
-          call wslice(path//'ux.Xy',uu_xy2(:,:,1),z(iz2),nx,ny)
-          call wslice(path//'uy.Xy',uu_xy2(:,:,2),z(iz2),nx,ny)
-          call wslice(path//'uz.Xy',uu_xy2(:,:,3),z(iz2),nx,ny)
+          uu_yz=f(ix_loc,m1:m2,n1:n2,iux:iuz)
+          uu_xz=f(l1:l2,iy_loc,n1:n2,iux:iuz)
+          uu_xy=f(l1:l2,m1:m2,iz_loc,iux:iuz)
+          uu_xy2=f(l1:l2,m1:m2,iz2_loc,iux:iuz)
+          call wslice(path//'ux.yz',uu_yz(:,:,1),x(ix_loc),ny,nz)
+          call wslice(path//'uy.yz',uu_yz(:,:,2),x(ix_loc),ny,nz)
+          call wslice(path//'uz.yz',uu_yz(:,:,3),x(ix_loc),ny,nz)
+          call wslice(path//'ux.xz',uu_xz(:,:,1),y(iy_loc),nx,nz)
+          call wslice(path//'uy.xz',uu_xz(:,:,2),y(iy_loc),nx,nz)
+          call wslice(path//'uz.xz',uu_xz(:,:,3),y(iy_loc),nx,nz)
+          call wslice(path//'ux.xy',uu_xy(:,:,1),z(iz_loc),nx,ny)
+          call wslice(path//'uy.xy',uu_xy(:,:,2),z(iz_loc),nx,ny)
+          call wslice(path//'uz.xy',uu_xy(:,:,3),z(iz_loc),nx,ny)
+          call wslice(path//'ux.Xy',uu_xy2(:,:,1),z(iz2_loc),nx,ny)
+          call wslice(path//'uy.Xy',uu_xy2(:,:,2),z(iz2_loc),nx,ny)
+          call wslice(path//'uz.Xy',uu_xy2(:,:,3),z(iz2_loc),nx,ny)
 !
 !  Logarithmic density (code variable)
 !
         case ('lnrho')
-          lnrho_yz=f(ix,m1:m2,n1:n2,ilnrho)
-          lnrho_xz=f(l1:l2,iy,n1:n2,ilnrho)
-          lnrho_xy=f(l1:l2,m1:m2,iz,ilnrho)
-          lnrho_xy2=f(l1:l2,m1:m2,iz2,ilnrho)
-          call wslice(path//'lnrho.yz',lnrho_yz,x(ix),ny,nz)
-          call wslice(path//'lnrho.xz',lnrho_xz,y(iy),nx,nz)
-          call wslice(path//'lnrho.xy',lnrho_xy,z(iz),nx,ny)
-          call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2),nx,ny)
+          lnrho_yz=f(ix_loc,m1:m2,n1:n2,ilnrho)
+          lnrho_xz=f(l1:l2,iy_loc,n1:n2,ilnrho)
+          lnrho_xy=f(l1:l2,m1:m2,iz_loc,ilnrho)
+          lnrho_xy2=f(l1:l2,m1:m2,iz2_loc,ilnrho)
+          call wslice(path//'lnrho.yz',lnrho_yz,x(ix_loc),ny,nz)
+          call wslice(path//'lnrho.xz',lnrho_xz,y(iy_loc),nx,nz)
+          call wslice(path//'lnrho.xy',lnrho_xy,z(iz_loc),nx,ny)
+          call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2_loc),nx,ny)
 ! 
 !  Entropy (code variable)
 !
         case ('ss')
-          ss_yz=f(ix,m1:m2,n1:n2,iss)
-          ss_xz=f(l1:l2,iy,n1:n2,iss)
-          ss_xy=f(l1:l2,m1:m2,iz,iss)
-          ss_xy2=f(l1:l2,m1:m2,iz2,iss)
-          call wslice(path//'ss.yz',ss_yz,x(ix),ny,nz)
-          call wslice(path//'ss.xz',ss_xz,y(iy),nx,nz)
-          call wslice(path//'ss.xy',ss_xy,z(iz),nx,ny)
-          call wslice(path//'ss.Xy',ss_xy2,z(iz2),nx,ny)
+          ss_yz=f(ix_loc,m1:m2,n1:n2,iss)
+          ss_xz=f(l1:l2,iy_loc,n1:n2,iss)
+          ss_xy=f(l1:l2,m1:m2,iz_loc,iss)
+          ss_xy2=f(l1:l2,m1:m2,iz2_loc,iss)
+          call wslice(path//'ss.yz',ss_yz,x(ix_loc),ny,nz)
+          call wslice(path//'ss.xz',ss_xz,y(iy_loc),nx,nz)
+          call wslice(path//'ss.xy',ss_xy,z(iz_loc),nx,ny)
+          call wslice(path//'ss.Xy',ss_xy2,z(iz2_loc),nx,ny)
 !
 !  Magnetic vector potential (code variable)
 !
         case ('aa')
-          aa_yz=f(ix,m1:m2,n1:n2,iax:iaz)
-          aa_xz=f(l1:l2,iy,n1:n2,iax:iaz)
-          aa_xy=f(l1:l2,m1:m2,iz,iax:iaz)
-          aa_xy2=f(l1:l2,m1:m2,iz2,iax:iaz)
-          call wslice(path//'ax.yz',aa_yz(:,:,1),x(ix),ny,nz)
-          call wslice(path//'ay.yz',aa_yz(:,:,2),x(ix),ny,nz)
-          call wslice(path//'az.yz',aa_yz(:,:,3),x(ix),ny,nz)
-          call wslice(path//'ax.xz',aa_xz(:,:,1),y(iy),nx,nz)
-          call wslice(path//'ay.xz',aa_xz(:,:,2),y(iy),nx,nz)
-          call wslice(path//'az.xz',aa_xz(:,:,3),y(iy),nx,nz)
-          call wslice(path//'ax.xy',aa_xy(:,:,1),z(iz),nx,ny)
-          call wslice(path//'ay.xy',aa_xy(:,:,2),z(iz),nx,ny)
-          call wslice(path//'az.xy',aa_xy(:,:,3),z(iz),nx,ny)
-          call wslice(path//'ax.Xy',aa_xy2(:,:,1),z(iz2),nx,ny)
-          call wslice(path//'ay.Xy',aa_xy2(:,:,2),z(iz2),nx,ny)
-          call wslice(path//'az.Xy',aa_xy2(:,:,3),z(iz2),nx,ny)
+          aa_yz=f(ix_loc,m1:m2,n1:n2,iax:iaz)
+          aa_xz=f(l1:l2,iy_loc,n1:n2,iax:iaz)
+          aa_xy=f(l1:l2,m1:m2,iz_loc,iax:iaz)
+          aa_xy2=f(l1:l2,m1:m2,iz2_loc,iax:iaz)
+          call wslice(path//'ax.yz',aa_yz(:,:,1),x(ix_loc),ny,nz)
+          call wslice(path//'ay.yz',aa_yz(:,:,2),x(ix_loc),ny,nz)
+          call wslice(path//'az.yz',aa_yz(:,:,3),x(ix_loc),ny,nz)
+          call wslice(path//'ax.xz',aa_xz(:,:,1),y(iy_loc),nx,nz)
+          call wslice(path//'ay.xz',aa_xz(:,:,2),y(iy_loc),nx,nz)
+          call wslice(path//'az.xz',aa_xz(:,:,3),y(iy_loc),nx,nz)
+          call wslice(path//'ax.xy',aa_xy(:,:,1),z(iz_loc),nx,ny)
+          call wslice(path//'ay.xy',aa_xy(:,:,2),z(iz_loc),nx,ny)
+          call wslice(path//'az.xy',aa_xy(:,:,3),z(iz_loc),nx,ny)
+          call wslice(path//'ax.Xy',aa_xy2(:,:,1),z(iz2_loc),nx,ny)
+          call wslice(path//'ay.Xy',aa_xy2(:,:,2),z(iz2_loc),nx,ny)
+          call wslice(path//'az.Xy',aa_xy2(:,:,3),z(iz2_loc),nx,ny)
 !
 !  Passive scalar (code variable)
 !
@@ -216,14 +218,14 @@ module Slices
           if (icc==0) then
             if (lroot) print*,'slices: cannot write cc slice; icc=0'
           else
-            cc_yz=f(ix,m1:m2,n1:n2,icc)
-            cc_xz=f(l1:l2,iy,n1:n2,icc)
-            cc_xy=f(l1:l2,m1:m2,iz,icc)
-            cc_xy2=f(l1:l2,m1:m2,iz2,icc)
-            call wslice(path//'cc.yz',cc_yz,x(ix),ny,nz)
-            call wslice(path//'cc.xz',cc_xz,y(iy),nx,nz)
-            call wslice(path//'cc.xy',cc_xy,z(iz),nx,ny)
-            call wslice(path//'cc.Xy',cc_xy2,z(iz2),nx,ny)
+            cc_yz=f(ix_loc,m1:m2,n1:n2,icc)
+            cc_xz=f(l1:l2,iy_loc,n1:n2,icc)
+            cc_xy=f(l1:l2,m1:m2,iz_loc,icc)
+            cc_xy2=f(l1:l2,m1:m2,iz2_loc,icc)
+            call wslice(path//'cc.yz',cc_yz,x(ix_loc),ny,nz)
+            call wslice(path//'cc.xz',cc_xz,y(iy_loc),nx,nz)
+            call wslice(path//'cc.xy',cc_xy,z(iz_loc),nx,ny)
+            call wslice(path//'cc.Xy',cc_xy2,z(iz2_loc),nx,ny)
           endif
 !
 !  Passive scalar (code variable)
@@ -232,39 +234,39 @@ module Slices
           if (ilncc==0) then
             if (lroot) print*,'slices: cannot write lncc slice; ilncc=0'
           else
-            lncc_yz=f(ix,m1:m2,n1:n2,ilncc)
-            lncc_xz=f(l1:l2,iy,n1:n2,ilncc)
-            lncc_xy=f(l1:l2,m1:m2,iz,ilncc)
-            lncc_xy2=f(l1:l2,m1:m2,iz2,ilncc)
-            call wslice(path//'lncc.yz',lncc_yz,x(ix),ny,nz)
-            call wslice(path//'lncc.xz',lncc_xz,y(iy),nx,nz)
-            call wslice(path//'lncc.xy',lncc_xy,z(iz),nx,ny)
-            call wslice(path//'lncc.Xy',lncc_xy2,z(iz2),nx,ny)
+            lncc_yz=f(ix_loc,m1:m2,n1:n2,ilncc)
+            lncc_xz=f(l1:l2,iy_loc,n1:n2,ilncc)
+            lncc_xy=f(l1:l2,m1:m2,iz_loc,ilncc)
+            lncc_xy2=f(l1:l2,m1:m2,iz2_loc,ilncc)
+            call wslice(path//'lncc.yz',lncc_yz,x(ix_loc),ny,nz)
+            call wslice(path//'lncc.xz',lncc_xz,y(iy_loc),nx,nz)
+            call wslice(path//'lncc.xy',lncc_xy,z(iz_loc),nx,ny)
+            call wslice(path//'lncc.Xy',lncc_xy2,z(iz2_loc),nx,ny)
           endif
 !
 !  Chirality fields: XX (code variable)
 !
         case ('XX_chiral')
-          XX_chiral_yz=f(ix,m1:m2,n1:n2,iXX_chiral)
-          XX_chiral_xz=f(l1:l2,iy,n1:n2,iXX_chiral)
-          XX_chiral_xy=f(l1:l2,m1:m2,iz,iXX_chiral)
-          XX_chiral_xy2=f(l1:l2,m1:m2,iz2,iXX_chiral)
-          call wslice(path//'XX_chiral.yz',XX_chiral_yz,x(ix),ny,nz)
-          call wslice(path//'XX_chiral.xz',XX_chiral_xz,y(iy),nx,nz)
-          call wslice(path//'XX_chiral.xy',XX_chiral_xy,z(iz),nx,ny)
-          call wslice(path//'XX_chiral.Xy',XX_chiral_xy2,z(iz2),nx,ny)
+          XX_chiral_yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)
+          XX_chiral_xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)
+          XX_chiral_xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)
+          XX_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
+          call wslice(path//'XX_chiral.yz',XX_chiral_yz,x(ix_loc),ny,nz)
+          call wslice(path//'XX_chiral.xz',XX_chiral_xz,y(iy_loc),nx,nz)
+          call wslice(path//'XX_chiral.xy',XX_chiral_xy,z(iz_loc),nx,ny)
+          call wslice(path//'XX_chiral.Xy',XX_chiral_xy2,z(iz2_loc),nx,ny)
 !
 !  Chirality fields: YY (code variable)
 !
         case ('YY_chiral')
-          YY_chiral_yz=f(ix,m1:m2,n1:n2,iYY_chiral)
-          YY_chiral_xz=f(l1:l2,iy,n1:n2,iYY_chiral)
-          YY_chiral_xy=f(l1:l2,m1:m2,iz,iYY_chiral)
-          YY_chiral_xy2=f(l1:l2,m1:m2,iz2,iYY_chiral)
-          call wslice(path//'YY_chiral.yz',YY_chiral_yz,x(ix),ny,nz)
-          call wslice(path//'YY_chiral.xz',YY_chiral_xz,y(iy),nx,nz)
-          call wslice(path//'YY_chiral.xy',YY_chiral_xy,z(iz),nx,ny)
-          call wslice(path//'YY_chiral.Xy',YY_chiral_xy2,z(iz2),nx,ny)
+          YY_chiral_yz=f(ix_loc,m1:m2,n1:n2,iYY_chiral)
+          YY_chiral_xz=f(l1:l2,iy_loc,n1:n2,iYY_chiral)
+          YY_chiral_xy=f(l1:l2,m1:m2,iz_loc,iYY_chiral)
+          YY_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
+          call wslice(path//'YY_chiral.yz',YY_chiral_yz,x(ix_loc),ny,nz)
+          call wslice(path//'YY_chiral.xz',YY_chiral_xz,y(iy_loc),nx,nz)
+          call wslice(path//'YY_chiral.xy',YY_chiral_xy,z(iz_loc),nx,ny)
+          call wslice(path//'YY_chiral.Xy',YY_chiral_xy2,z(iz2_loc),nx,ny)
 !
 !  Dust velocity (code variable)
 !
@@ -272,34 +274,34 @@ module Slices
           do k=1,ndustspec
             call chn(k,sdust)
             if (k == 1) sdust = ''
-            uud_yz=f(ix,m1:m2,n1:n2,iudx(k):iudz(k))
-            uud_xz=f(l1:l2,iy,n1:n2,iudx(k):iudz(k))
-            uud_xy=f(l1:l2,m1:m2,iz,iudx(k):iudz(k))
-            uud_xy2=f(l1:l2,m1:m2,iz2,iudx(k):iudz(k))
+            uud_yz=f(ix_loc,m1:m2,n1:n2,iudx(k):iudz(k))
+            uud_xz=f(l1:l2,iy_loc,n1:n2,iudx(k):iudz(k))
+            uud_xy=f(l1:l2,m1:m2,iz_loc,iudx(k):iudz(k))
+            uud_xy2=f(l1:l2,m1:m2,iz2_loc,iudx(k):iudz(k))
             call wslice(path//'udx'//trim(sdust)//'.yz', &
-                uud_yz(:,:,1),x(ix),ny,nz)
+                uud_yz(:,:,1),x(ix_loc),ny,nz)
             call wslice(path//'udy'//trim(sdust)//'.yz', &
-                uud_yz(:,:,2),x(ix),ny,nz)
+                uud_yz(:,:,2),x(ix_loc),ny,nz)
             call wslice(path//'udz'//trim(sdust)//'.yz', &
-                uud_yz(:,:,3),x(ix),ny,nz)
+                uud_yz(:,:,3),x(ix_loc),ny,nz)
             call wslice(path//'udx'//trim(sdust)//'.xz', &
-                uud_xz(:,:,1),y(iy),nx,nz)
+                uud_xz(:,:,1),y(iy_loc),nx,nz)
             call wslice(path//'udy'//trim(sdust)//'.xz', &
-                uud_xz(:,:,2),y(iy),nx,nz)
+                uud_xz(:,:,2),y(iy_loc),nx,nz)
             call wslice(path//'udz'//trim(sdust)//'.xz', &
-                uud_xz(:,:,3),y(iy),nx,nz)
+                uud_xz(:,:,3),y(iy_loc),nx,nz)
             call wslice(path//'udx'//trim(sdust)//'.xy', &
-                uud_xy(:,:,1),z(iz),nx,ny)
+                uud_xy(:,:,1),z(iz_loc),nx,ny)
             call wslice(path//'udy'//trim(sdust)//'.xy', &
-                uud_xy(:,:,2),z(iz),nx,ny)
+                uud_xy(:,:,2),z(iz_loc),nx,ny)
             call wslice(path//'udz'//trim(sdust)//'.xy', &
-                uud_xy(:,:,3),z(iz),nx,ny)
+                uud_xy(:,:,3),z(iz_loc),nx,ny)
             call wslice(path//'udx'//trim(sdust)//'.Xy', &
-                uud_xy2(:,:,1),z(iz2),nx,ny)
+                uud_xy2(:,:,1),z(iz2_loc),nx,ny)
             call wslice(path//'udy'//trim(sdust)//'.Xy', &
-                uud_xy2(:,:,2),z(iz2),nx,ny)
+                uud_xy2(:,:,2),z(iz2_loc),nx,ny)
             call wslice(path//'udz'//trim(sdust)//'.Xy', &
-                uud_xy2(:,:,3),z(iz2),nx,ny)
+                uud_xy2(:,:,3),z(iz2_loc),nx,ny)
           enddo
 !
 !  Dust density (code variable)
@@ -309,14 +311,14 @@ module Slices
             call chn(k,sdust)
             if (k == 1) sdust = ''
             if (ldustdensity) then
-              nd_yz=f(ix,m1:m2,n1:n2,ind(k))
-              nd_xz=f(l1:l2,iy,n1:n2,ind(k))
-              nd_xy=f(l1:l2,m1:m2,iz,ind(k))
-              nd_xy2=f(l1:l2,m1:m2,iz2,ind(k))
-              call wslice(path//'nd'//trim(sdust)//'.yz',nd_yz,x(ix),ny,nz)
-              call wslice(path//'nd'//trim(sdust)//'.xz',nd_xz,y(iy),nx,nz)
-              call wslice(path//'nd'//trim(sdust)//'.xy',nd_xy,z(iz),nx,ny)
-              call wslice(path//'nd'//trim(sdust)//'.Xy',nd_xy2,z(iz2),nx,ny)
+              nd_yz=f(ix_loc,m1:m2,n1:n2,ind(k))
+              nd_xz=f(l1:l2,iy_loc,n1:n2,ind(k))
+              nd_xy=f(l1:l2,m1:m2,iz_loc,ind(k))
+              nd_xy2=f(l1:l2,m1:m2,iz2_loc,ind(k))
+              call wslice(path//'nd'//trim(sdust)//'.yz',nd_yz,x(ix_loc),ny,nz)
+              call wslice(path//'nd'//trim(sdust)//'.xz',nd_xz,y(iy_loc),nx,nz)
+              call wslice(path//'nd'//trim(sdust)//'.xy',nd_xy,z(iz_loc),nx,ny)
+              call wslice(path//'nd'//trim(sdust)//'.Xy',nd_xy2,z(iz2_loc),nx,ny)
             else
               if (lroot) call warning('WVID', &
                   "Can't use 'nd' slices with nodustdensity")
@@ -326,219 +328,219 @@ module Slices
 !  Degree of ionization (auxiliary variable)
 !
         case ('yH')
-          yH_yz=f(ix,m1:m2,n1:n2,iyH)
-          yH_xz=f(l1:l2,iy,n1:n2,iyH)
-          yH_xy=f(l1:l2,m1:m2,iz,iyH)
-          yH_xy2=f(l1:l2,m1:m2,iz2,iyH)
-          call wslice(path//'yH.yz',yH_yz,x(ix),ny,nz)
-          call wslice(path//'yH.xz',yH_xz,y(iy),nx,nz)
-          call wslice(path//'yH.xy',yH_xy,z(iz),nx,ny)
-          call wslice(path//'yH.Xy',yH_xy2,z(iz2),nx,ny)
+          yH_yz=f(ix_loc,m1:m2,n1:n2,iyH)
+          yH_xz=f(l1:l2,iy_loc,n1:n2,iyH)
+          yH_xy=f(l1:l2,m1:m2,iz_loc,iyH)
+          yH_xy2=f(l1:l2,m1:m2,iz2_loc,iyH)
+          call wslice(path//'yH.yz',yH_yz,x(ix_loc),ny,nz)
+          call wslice(path//'yH.xz',yH_xz,y(iy_loc),nx,nz)
+          call wslice(path//'yH.xy',yH_xy,z(iz_loc),nx,ny)
+          call wslice(path//'yH.Xy',yH_xy2,z(iz2_loc),nx,ny)
 !
 !  Shock viscosity (auxiliary variable)
 !
         case ('shock')
-          shock_yz=f(ix,m1:m2,n1:n2,ishock)
-          shock_xz=f(l1:l2,iy,n1:n2,ishock)
-          shock_xy=f(l1:l2,m1:m2,iz,ishock)
-          shock_xy2=f(l1:l2,m1:m2,iz2,ishock)
-          call wslice(path//'shock.yz',shock_yz,x(ix),ny,nz)
-          call wslice(path//'shock.xz',shock_xz,y(iy),nx,nz)
-          call wslice(path//'shock.xy',shock_xy,z(iz),nx,ny)
-          call wslice(path//'shock.Xy',shock_xy2,z(iz2),nx,ny)
+          shock_yz=f(ix_loc,m1:m2,n1:n2,ishock)
+          shock_xz=f(l1:l2,iy_loc,n1:n2,ishock)
+          shock_xy=f(l1:l2,m1:m2,iz_loc,ishock)
+          shock_xy2=f(l1:l2,m1:m2,iz2_loc,ishock)
+          call wslice(path//'shock.yz',shock_yz,x(ix_loc),ny,nz)
+          call wslice(path//'shock.xz',shock_xz,y(iy_loc),nx,nz)
+          call wslice(path//'shock.xy',shock_xy,z(iz_loc),nx,ny)
+          call wslice(path//'shock.Xy',shock_xy2,z(iz2_loc),nx,ny)
 !
 !  Heating rate (auxiliary variable)
 !
         case ('Qrad')
-          Qrad_yz=f(ix,m1:m2,n1:n2,iQrad)
-          Qrad_xz=f(l1:l2,iy,n1:n2,iQrad)
-          Qrad_xy=f(l1:l2,m1:m2,iz,iQrad)
-          Qrad_xy2=f(l1:l2,m1:m2,iz2,iQrad)
-          call wslice(path//'Qrad.yz',Qrad_yz,x(ix),ny,nz)
-          call wslice(path//'Qrad.xz',Qrad_xz,y(iy),nx,nz)
-          call wslice(path//'Qrad.xy',Qrad_xy,z(iz),nx,ny)
-          call wslice(path//'Qrad.Xy',Qrad_xy2,z(iz2),nx,ny)
+          Qrad_yz=f(ix_loc,m1:m2,n1:n2,iQrad)
+          Qrad_xz=f(l1:l2,iy_loc,n1:n2,iQrad)
+          Qrad_xy=f(l1:l2,m1:m2,iz_loc,iQrad)
+          Qrad_xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
+          call wslice(path//'Qrad.yz',Qrad_yz,x(ix_loc),ny,nz)
+          call wslice(path//'Qrad.xz',Qrad_xz,y(iy_loc),nx,nz)
+          call wslice(path//'Qrad.xy',Qrad_xy,z(iz_loc),nx,ny)
+          call wslice(path//'Qrad.Xy',Qrad_xy2,z(iz2_loc),nx,ny)
 !
 !  Radiative Flux (auxiliary variable)
 !
         case ('Frad')
-          Frad_yz=f(ix,m1:m2,n1:n2,iFradx:iFradz)
-          Frad_xz=f(l1:l2,iy,n1:n2,iFradx:iFradz)
-          Frad_xy=f(l1:l2,m1:m2,iz,iFradx:iFradz)
-          Frad_xy2=f(l1:l2,m1:m2,iz2,iFradx:iFradz)
-          call wslice(path//'Fradx.yz',Frad_yz(:,:,1),x(ix),ny,nz)
-          call wslice(path//'Frady.yz',Frad_yz(:,:,2),x(ix),ny,nz)
-          call wslice(path//'Fradz.yz',Frad_yz(:,:,3),x(ix),ny,nz)
-          call wslice(path//'Fradx.xz',Frad_xz(:,:,1),y(iy),nx,nz)
-          call wslice(path//'Frady.xz',Frad_xz(:,:,2),y(iy),nx,nz)
-          call wslice(path//'Fradz.xz',Frad_xz(:,:,3),y(iy),nx,nz)
-          call wslice(path//'Fradx.xy',Frad_xy(:,:,1),z(iz),nx,ny)
-          call wslice(path//'Frady.xy',Frad_xy(:,:,2),z(iz),nx,ny)
-          call wslice(path//'Fradz.xy',Frad_xy(:,:,3),z(iz),nx,ny)
-          call wslice(path//'Fradx.Xy',Frad_xy2(:,:,1),z(iz2),nx,ny)
-          call wslice(path//'Frady.Xy',Frad_xy2(:,:,2),z(iz2),nx,ny)
-          call wslice(path//'Fradz.Xy',Frad_xy2(:,:,3),z(iz2),nx,ny)
+          Frad_yz=f(ix_loc,m1:m2,n1:n2,iFradx:iFradz)
+          Frad_xz=f(l1:l2,iy_loc,n1:n2,iFradx:iFradz)
+          Frad_xy=f(l1:l2,m1:m2,iz_loc,iFradx:iFradz)
+          Frad_xy2=f(l1:l2,m1:m2,iz2_loc,iFradx:iFradz)
+          call wslice(path//'Fradx.yz',Frad_yz(:,:,1),x(ix_loc),ny,nz)
+          call wslice(path//'Frady.yz',Frad_yz(:,:,2),x(ix_loc),ny,nz)
+          call wslice(path//'Fradz.yz',Frad_yz(:,:,3),x(ix_loc),ny,nz)
+          call wslice(path//'Fradx.xz',Frad_xz(:,:,1),y(iy_loc),nx,nz)
+          call wslice(path//'Frady.xz',Frad_xz(:,:,2),y(iy_loc),nx,nz)
+          call wslice(path//'Fradz.xz',Frad_xz(:,:,3),y(iy_loc),nx,nz)
+          call wslice(path//'Fradx.xy',Frad_xy(:,:,1),z(iz_loc),nx,ny)
+          call wslice(path//'Frady.xy',Frad_xy(:,:,2),z(iz_loc),nx,ny)
+          call wslice(path//'Fradz.xy',Frad_xy(:,:,3),z(iz_loc),nx,ny)
+          call wslice(path//'Fradx.Xy',Frad_xy2(:,:,1),z(iz2_loc),nx,ny)
+          call wslice(path//'Frady.Xy',Frad_xy2(:,:,2),z(iz2_loc),nx,ny)
+          call wslice(path//'Fradz.Xy',Frad_xy2(:,:,3),z(iz2_loc),nx,ny)
 !
 !  Cosmic ray energy density (auxiliary variable)
 !
         case ('ecr')
-          ecr_yz=f(ix,m1:m2,n1:n2,iecr)
-          ecr_xz=f(l1:l2,iy,n1:n2,iecr)
-          ecr_xy=f(l1:l2,m1:m2,iz,iecr)
-          ecr_xy2=f(l1:l2,m1:m2,iz2,iecr)
-          call wslice(path//'ecr.yz',ecr_yz,x(ix),ny,nz)
-          call wslice(path//'ecr.xz',ecr_xz,y(iy),nx,nz)
-          call wslice(path//'ecr.xy',ecr_xy,z(iz),nx,ny)
-          call wslice(path//'ecr.Xy',ecr_xy2,z(iz2),nx,ny)
+          ecr_yz=f(ix_loc,m1:m2,n1:n2,iecr)
+          ecr_xz=f(l1:l2,iy_loc,n1:n2,iecr)
+          ecr_xy=f(l1:l2,m1:m2,iz_loc,iecr)
+          ecr_xy2=f(l1:l2,m1:m2,iz2_loc,iecr)
+          call wslice(path//'ecr.yz',ecr_yz,x(ix_loc),ny,nz)
+          call wslice(path//'ecr.xz',ecr_xz,y(iy_loc),nx,nz)
+          call wslice(path//'ecr.xy',ecr_xy,z(iz_loc),nx,ny)
+          call wslice(path//'ecr.Xy',ecr_xy2,z(iz2_loc),nx,ny)
 !
 !  Dust number density (auxiliary variable)
 !
         case ('np')
-          np_yz=f(ix,m1:m2,n1:n2,inp)
-          np_xz=f(l1:l2,iy,n1:n2,inp)
-          np_xy=f(l1:l2,m1:m2,iz,inp)
-          np_xy2=f(l1:l2,m1:m2,iz2,inp)
-          call wslice(path//'np.yz',np_yz,x(ix),ny,nz)
-          call wslice(path//'np.xz',np_xz,y(iy),nx,nz)
-          call wslice(path//'np.xy',np_xy,z(iz),nx,ny)
-          call wslice(path//'np.Xy',np_xy2,z(iz2),nx,ny)
+          np_yz=f(ix_loc,m1:m2,n1:n2,inp)
+          np_xz=f(l1:l2,iy_loc,n1:n2,inp)
+          np_xy=f(l1:l2,m1:m2,iz_loc,inp)
+          np_xy2=f(l1:l2,m1:m2,iz2_loc,inp)
+          call wslice(path//'np.yz',np_yz,x(ix_loc),ny,nz)
+          call wslice(path//'np.xz',np_xz,y(iy_loc),nx,nz)
+          call wslice(path//'np.xy',np_xy,z(iz_loc),nx,ny)
+          call wslice(path//'np.Xy',np_xy2,z(iz2_loc),nx,ny)
 !
 !  Divergence of velocity (derived variable)
 !
         case ('divu')
-          call wslice(path//'divu.yz',divu_yz,x(ix),ny,nz)
-          call wslice(path//'divu.xz',divu_xz,y(iy),nx,nz)
-          call wslice(path//'divu.xy',divu_xy,z(iz),nx,ny)
-          call wslice(path//'divu.Xy',divu_xy2,z(iz2),nx,ny)
+          call wslice(path//'divu.yz',divu_yz,x(ix_loc),ny,nz)
+          call wslice(path//'divu.xz',divu_xz,y(iy_loc),nx,nz)
+          call wslice(path//'divu.xy',divu_xy,z(iz_loc),nx,ny)
+          call wslice(path//'divu.Xy',divu_xy2,z(iz2_loc),nx,ny)
 !
 !  Velocity squared (derived variable)
 !
         case ('u2')
-          call wslice(path//'u2.yz',u2_yz,x(ix),ny,nz)
-          call wslice(path//'u2.xz',u2_xz,y(iy),nx,nz)
-          call wslice(path//'u2.xy',u2_xy,z(iz),nx,ny)
-          call wslice(path//'u2.Xy',u2_xy2,z(iz2),nx,ny)
+          call wslice(path//'u2.yz',u2_yz,x(ix_loc),ny,nz)
+          call wslice(path//'u2.xz',u2_xz,y(iy_loc),nx,nz)
+          call wslice(path//'u2.xy',u2_xy,z(iz_loc),nx,ny)
+          call wslice(path//'u2.Xy',u2_xy2,z(iz2_loc),nx,ny)
 !
 !  Vorticity (derived variable)
 !
         case ('oo')
-          call wslice(path//'ox.yz',oo_yz(:,:,1),x(ix),ny,nz)
-          call wslice(path//'oy.yz',oo_yz(:,:,2),x(ix),ny,nz)
-          call wslice(path//'oz.yz',oo_yz(:,:,3),x(ix),ny,nz)
-          call wslice(path//'ox.xz',oo_xz(:,:,1),y(iy),nx,nz)
-          call wslice(path//'oy.xz',oo_xz(:,:,2),y(iy),nx,nz)
-          call wslice(path//'oz.xz',oo_xz(:,:,3),y(iy),nx,nz)
-          call wslice(path//'ox.xy',oo_xy(:,:,1),z(iz),nx,ny)
-          call wslice(path//'oy.xy',oo_xy(:,:,2),z(iz),nx,ny)
-          call wslice(path//'oz.xy',oo_xy(:,:,3),z(iz),nx,ny)
-          call wslice(path//'ox.Xy',oo_xy2(:,:,1),z(iz2),nx,ny)
-          call wslice(path//'oy.Xy',oo_xy2(:,:,2),z(iz2),nx,ny)
-          call wslice(path//'oz.Xy',oo_xy2(:,:,3),z(iz2),nx,ny)
+          call wslice(path//'ox.yz',oo_yz(:,:,1),x(ix_loc),ny,nz)
+          call wslice(path//'oy.yz',oo_yz(:,:,2),x(ix_loc),ny,nz)
+          call wslice(path//'oz.yz',oo_yz(:,:,3),x(ix_loc),ny,nz)
+          call wslice(path//'ox.xz',oo_xz(:,:,1),y(iy_loc),nx,nz)
+          call wslice(path//'oy.xz',oo_xz(:,:,2),y(iy_loc),nx,nz)
+          call wslice(path//'oz.xz',oo_xz(:,:,3),y(iy_loc),nx,nz)
+          call wslice(path//'ox.xy',oo_xy(:,:,1),z(iz_loc),nx,ny)
+          call wslice(path//'oy.xy',oo_xy(:,:,2),z(iz_loc),nx,ny)
+          call wslice(path//'oz.xy',oo_xy(:,:,3),z(iz_loc),nx,ny)
+          call wslice(path//'ox.Xy',oo_xy2(:,:,1),z(iz2_loc),nx,ny)
+          call wslice(path//'oy.Xy',oo_xy2(:,:,2),z(iz2_loc),nx,ny)
+          call wslice(path//'oz.Xy',oo_xy2(:,:,3),z(iz2_loc),nx,ny)
 !
 !  Vorticity squared (derived variable)
 !
         case ('o2')
-          call wslice(path//'o2.yz',o2_yz,x(ix),ny,nz)
-          call wslice(path//'o2.xz',o2_xz,y(iy),nx,nz)
-          call wslice(path//'o2.xy',o2_xy,z(iz),nx,ny)
-          call wslice(path//'o2.Xy',o2_xy2,z(iz2),nx,ny)
+          call wslice(path//'o2.yz',o2_yz,x(ix_loc),ny,nz)
+          call wslice(path//'o2.xz',o2_xz,y(iy_loc),nx,nz)
+          call wslice(path//'o2.xy',o2_xy,z(iz_loc),nx,ny)
+          call wslice(path//'o2.Xy',o2_xy2,z(iz2_loc),nx,ny)
 !
 !  Temperature (derived variable, sometimes code variable)
 !
         case ('lnTT')
           if (ilnTT .ne. 0) then        
-            lnTT_yz=f(ix,m1:m2,n1:n2,ilnTT)
-            lnTT_xz=f(l1:l2,iy,n1:n2,ilnTT)
-            lnTT_xy=f(l1:l2,m1:m2,iz,ilnTT)
-            lnTT_xy2=f(l1:l2,m1:m2,iz2,ilnTT)
+            lnTT_yz=f(ix_loc,m1:m2,n1:n2,ilnTT)
+            lnTT_xz=f(l1:l2,iy_loc,n1:n2,ilnTT)
+            lnTT_xy=f(l1:l2,m1:m2,iz_loc,ilnTT)
+            lnTT_xy2=f(l1:l2,m1:m2,iz2_loc,ilnTT)
           else
             do m=m1,m2; do n=n1,n2
-              call eoscalc(ilnrho_ss,f(ix,m,n,ilnrho),f(ix,m,n,iss),lnTT=tmpval)
+              call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),lnTT=tmpval)
               lnTT_yz(m-m1+1,n-n1+1)=tmpval
             enddo; enddo
             do l=l1,l2; do n=n1,n2
-              call eoscalc(ilnrho_ss,f(l,iy,n,ilnrho),f(l,iy,n,iss),lnTT=tmpval)
+              call eoscalc(ilnrho_ss,f(l,iy_loc,n,ilnrho),f(l,iy_loc,n,iss),lnTT=tmpval)
               lnTT_xz(l-l1+1,n-n1+1)=tmpval
             enddo; enddo
             do l=l1,l2; do m=m1,m2
-              call eoscalc(ilnrho_ss,f(l,m,iz,ilnrho),f(l,m,iz,iss),lnTT=tmpval)
+              call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),lnTT=tmpval)
               lnTT_xy(l-l1+1,m-m1+1)=tmpval
-              call eoscalc(ilnrho_ss,f(l,m,iz2,ilnrho),f(l,m,iz2,iss), &
+              call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss), &
                   lnTT=tmpval)
               lnTT_xy2(l-l1+1,m-m1+1)=tmpval
             enddo; enddo
           endif
-          call wslice(path//'lnTT.yz',lnTT_yz,x(ix),ny,nz)
-          call wslice(path//'lnTT.xz',lnTT_xz,y(iy),nx,nz)
-          call wslice(path//'lnTT.xy',lnTT_xy,z(iz),nx,ny)
-          call wslice(path//'lnTT.Xy',lnTT_xy2,z(iz2),nx,ny)
+          call wslice(path//'lnTT.yz',lnTT_yz,x(ix_loc),ny,nz)
+          call wslice(path//'lnTT.xz',lnTT_xz,y(iy_loc),nx,nz)
+          call wslice(path//'lnTT.xy',lnTT_xy,z(iz_loc),nx,ny)
+          call wslice(path//'lnTT.Xy',lnTT_xy2,z(iz2_loc),nx,ny)
 !
 !  Pressure (derived variable)
 !
         case ('pp')
           do m=m1,m2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(ix,m,n,ilnrho),f(ix,m,n,iss),pp=tmpval)
+            call eoscalc(ilnrho_ss,f(ix_loc,m,n,ilnrho),f(ix_loc,m,n,iss),pp=tmpval)
             pp_yz(m-m1+1,n-n1+1)=tmpval
           enddo; enddo
           do l=l1,l2; do n=n1,n2
-            call eoscalc(ilnrho_ss,f(l,iy,n,ilnrho),f(l,iy,n,iss),pp=tmpval)
+            call eoscalc(ilnrho_ss,f(l,iy_loc,n,ilnrho),f(l,iy_loc,n,iss),pp=tmpval)
             pp_xz(l-l1+1,n-n1+1)=tmpval
           enddo; enddo
           do l=l1,l2; do m=m1,m2
-            call eoscalc(ilnrho_ss,f(l,m,iz,ilnrho),f(l,m,iz,iss),pp=tmpval)
+            call eoscalc(ilnrho_ss,f(l,m,iz_loc,ilnrho),f(l,m,iz_loc,iss),pp=tmpval)
             pp_xy(l-l1+1,m-m1+1)=tmpval
-            call eoscalc(ilnrho_ss,f(l,m,iz2,ilnrho),f(l,m,iz2,iss), &
+            call eoscalc(ilnrho_ss,f(l,m,iz2_loc,ilnrho),f(l,m,iz2_loc,iss), &
                 pp=tmpval)
             pp_xy2(l-l1+1,m-m1+1)=tmpval
           enddo; enddo
-          call wslice(path//'pp.yz',pp_yz,x(ix),ny,nz)
-          call wslice(path//'pp.xz',pp_xz,y(iy),nx,nz)
-          call wslice(path//'pp.xy',pp_xy,z(iz),nx,ny)
-          call wslice(path//'pp.Xy',pp_xy2,z(iz2),nx,ny)
+          call wslice(path//'pp.yz',pp_yz,x(ix_loc),ny,nz)
+          call wslice(path//'pp.xz',pp_xz,y(iy_loc),nx,nz)
+          call wslice(path//'pp.xy',pp_xy,z(iz_loc),nx,ny)
+          call wslice(path//'pp.Xy',pp_xy2,z(iz2_loc),nx,ny)
 !
 !  Magnetic field (derived variable)
 !
         case ('bb')
-          call wslice(path//'bx.yz',bb_yz(:,:,1),x(ix),ny,nz)
-          call wslice(path//'by.yz',bb_yz(:,:,2),x(ix),ny,nz)
-          call wslice(path//'bz.yz',bb_yz(:,:,3),x(ix),ny,nz)
-          call wslice(path//'bx.xz',bb_xz(:,:,1),y(iy),nx,nz)
-          call wslice(path//'by.xz',bb_xz(:,:,2),y(iy),nx,nz)
-          call wslice(path//'bz.xz',bb_xz(:,:,3),y(iy),nx,nz)
-          call wslice(path//'bx.xy',bb_xy(:,:,1),z(iz),nx,ny)
-          call wslice(path//'by.xy',bb_xy(:,:,2),z(iz),nx,ny)
-          call wslice(path//'bz.xy',bb_xy(:,:,3),z(iz),nx,ny)
-          call wslice(path//'bx.Xy',bb_xy2(:,:,1),z(iz2),nx,ny)
-          call wslice(path//'by.Xy',bb_xy2(:,:,2),z(iz2),nx,ny)
-          call wslice(path//'bz.Xy',bb_xy2(:,:,3),z(iz2),nx,ny)
+          call wslice(path//'bx.yz',bb_yz(:,:,1),x(ix_loc),ny,nz)
+          call wslice(path//'by.yz',bb_yz(:,:,2),x(ix_loc),ny,nz)
+          call wslice(path//'bz.yz',bb_yz(:,:,3),x(ix_loc),ny,nz)
+          call wslice(path//'bx.xz',bb_xz(:,:,1),y(iy_loc),nx,nz)
+          call wslice(path//'by.xz',bb_xz(:,:,2),y(iy_loc),nx,nz)
+          call wslice(path//'bz.xz',bb_xz(:,:,3),y(iy_loc),nx,nz)
+          call wslice(path//'bx.xy',bb_xy(:,:,1),z(iz_loc),nx,ny)
+          call wslice(path//'by.xy',bb_xy(:,:,2),z(iz_loc),nx,ny)
+          call wslice(path//'bz.xy',bb_xy(:,:,3),z(iz_loc),nx,ny)
+          call wslice(path//'bx.Xy',bb_xy2(:,:,1),z(iz2_loc),nx,ny)
+          call wslice(path//'by.Xy',bb_xy2(:,:,2),z(iz2_loc),nx,ny)
+          call wslice(path//'bz.Xy',bb_xy2(:,:,3),z(iz2_loc),nx,ny)
 !
 !  Magnetic field squared (derived variable)
 !
         case ('b2')
-          call wslice(path//'b2.yz',b2_yz,x(ix),ny,nz)
-          call wslice(path//'b2.xz',b2_xz,y(iy),nx,nz)
-          call wslice(path//'b2.xy',b2_xy,z(iz),nx,ny)
-          call wslice(path//'b2.Xy',b2_xy2,z(iz2),nx,ny)
+          call wslice(path//'b2.yz',b2_yz,x(ix_loc),ny,nz)
+          call wslice(path//'b2.xz',b2_xz,y(iy_loc),nx,nz)
+          call wslice(path//'b2.xy',b2_xy,z(iz_loc),nx,ny)
+          call wslice(path//'b2.Xy',b2_xy2,z(iz2_loc),nx,ny)
 !
 !  Current density (derived variable)
 !
         case ('jb')
-          call wslice(path//'jb.yz',jb_yz,x(ix),ny,nz)
-          call wslice(path//'jb.xz',jb_xz,y(iy),nx,nz)
-          call wslice(path//'jb.xy',jb_xy,z(iz),nx,ny)
-          call wslice(path//'jb.Xy',jb_xy2,z(iz2),nx,ny)
+          call wslice(path//'jb.yz',jb_yz,x(ix_loc),ny,nz)
+          call wslice(path//'jb.xz',jb_xz,y(iy_loc),nx,nz)
+          call wslice(path//'jb.xy',jb_xy,z(iz_loc),nx,ny)
+          call wslice(path//'jb.Xy',jb_xy2,z(iz2_loc),nx,ny)
 !
 !  chirality fields: DQ (derived variable)
 !
         case ('DQ_chiral')
-          XX_chiral_yz=f(ix,m1:m2,n1:n2,iXX_chiral)
-          XX_chiral_xz=f(l1:l2,iy,n1:n2,iXX_chiral)
-          XX_chiral_xy=f(l1:l2,m1:m2,iz,iXX_chiral)
-          XX_chiral_xy2=f(l1:l2,m1:m2,iz2,iXX_chiral)
-          YY_chiral_yz=f(ix,m1:m2,n1:n2,iYY_chiral)
-          YY_chiral_xz=f(l1:l2,iy,n1:n2,iYY_chiral)
-          YY_chiral_xy=f(l1:l2,m1:m2,iz,iYY_chiral)
-          YY_chiral_xy2=f(l1:l2,m1:m2,iz2,iYY_chiral)
+          XX_chiral_yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)
+          XX_chiral_xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)
+          XX_chiral_xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)
+          XX_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
+          YY_chiral_yz=f(ix_loc,m1:m2,n1:n2,iYY_chiral)
+          YY_chiral_xz=f(l1:l2,iy_loc,n1:n2,iYY_chiral)
+          YY_chiral_xy=f(l1:l2,m1:m2,iz_loc,iYY_chiral)
+          YY_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
           QQ_chiral_yz=XX_chiral_yz-YY_chiral_yz
           QQ_chiral_xz=XX_chiral_xz-YY_chiral_xz
           QQ_chiral_xy=XX_chiral_xy-YY_chiral_xy
@@ -548,10 +550,10 @@ module Slices
           DQ_chiral_xy=QQ_chiral_xy*(1.-QQ_chiral_xy**2)/(1.+QQ_chiral_xy**2)
           DQ_chiral_xy2=&
               QQ_chiral_xy2*(1.-QQ_chiral_xy2**2)/(1.+QQ_chiral_xy2**2)
-          call wslice(path//'DQ_chiral.yz',DQ_chiral_yz,x(ix),ny,nz)
-          call wslice(path//'DQ_chiral.xz',DQ_chiral_xz,y(iy),nx,nz)
-          call wslice(path//'DQ_chiral.xy',DQ_chiral_xy,z(iz),nx,ny)
-          call wslice(path//'DQ_chiral.Xy',DQ_chiral_xy2,z(iz2),nx,ny)
+          call wslice(path//'DQ_chiral.yz',DQ_chiral_yz,x(ix_loc),ny,nz)
+          call wslice(path//'DQ_chiral.xz',DQ_chiral_xz,y(iy_loc),nx,nz)
+          call wslice(path//'DQ_chiral.xy',DQ_chiral_xy,z(iz_loc),nx,ny)
+          call wslice(path//'DQ_chiral.Xy',DQ_chiral_xy2,z(iz2_loc),nx,ny)
 !
 !  Dust-to-gas mass ratio (derived variable)
 !
@@ -560,30 +562,30 @@ module Slices
             call chn(k,sdust)
             if (k == 1) sdust = ''
             if (ldustdensity_log) then
-              nd_yz=exp(f(ix,m1:m2,n1:n2,ind(k)))
-              nd_xz=exp(f(l1:l2,iy,n1:n2,ind(k)))
-              nd_xy=exp(f(l1:l2,m1:m2,iz,ind(k)))
-              nd_xy2=exp(f(l1:l2,m1:m2,iz2,ind(k)))
+              nd_yz=exp(f(ix_loc,m1:m2,n1:n2,ind(k)))
+              nd_xz=exp(f(l1:l2,iy_loc,n1:n2,ind(k)))
+              nd_xy=exp(f(l1:l2,m1:m2,iz_loc,ind(k)))
+              nd_xy2=exp(f(l1:l2,m1:m2,iz2_loc,ind(k)))
             else
-              nd_yz=f(ix,m1:m2,n1:n2,ind(k))
-              nd_xz=f(l1:l2,iy,n1:n2,ind(k))
-              nd_xy=f(l1:l2,m1:m2,iz,ind(k))
-              nd_xy2=f(l1:l2,m1:m2,iz2,ind(k))
+              nd_yz=f(ix_loc,m1:m2,n1:n2,ind(k))
+              nd_xz=f(l1:l2,iy_loc,n1:n2,ind(k))
+              nd_xy=f(l1:l2,m1:m2,iz_loc,ind(k))
+              nd_xy2=f(l1:l2,m1:m2,iz2_loc,ind(k))
             endif
-            epsd_yz=md_yz(:,:,k)*nd_yz/exp(f(ix,m1:m2,n1:n2,ilnrho))
-            epsd_xz=md_xz(:,:,k)*nd_xz/exp(f(l1:l2,iy,n1:n2,ilnrho))
-            epsd_xy=md_xy(:,:,k)*nd_xy/exp(f(l1:l2,m1:m2,iz,ilnrho))
-            epsd_xy2=md_xy2(:,:,k)*nd_xy2/exp(f(l1:l2,m1:m2,iz2,ilnrho))
-            call wslice(path//'epsd'//trim(sdust)//'.yz',epsd_yz,x(ix),ny,nz)
-            call wslice(path//'epsd'//trim(sdust)//'.xz',epsd_xz,y(iy),nx,nz)
-            call wslice(path//'epsd'//trim(sdust)//'.xy',epsd_xy,z(iz),nx,ny)
-            call wslice(path//'epsd'//trim(sdust)//'.Xy',epsd_xy2,z(iz2),nx,ny)
+            epsd_yz=md_yz(:,:,k)*nd_yz/exp(f(ix_loc,m1:m2,n1:n2,ilnrho))
+            epsd_xz=md_xz(:,:,k)*nd_xz/exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
+            epsd_xy=md_xy(:,:,k)*nd_xy/exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
+            epsd_xy2=md_xy2(:,:,k)*nd_xy2/exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
+            call wslice(path//'epsd'//trim(sdust)//'.yz',epsd_yz,x(ix_loc),ny,nz)
+            call wslice(path//'epsd'//trim(sdust)//'.xz',epsd_xz,y(iy_loc),nx,nz)
+            call wslice(path//'epsd'//trim(sdust)//'.xy',epsd_xy,z(iz_loc),nx,ny)
+            call wslice(path//'epsd'//trim(sdust)//'.Xy',epsd_xy2,z(iz2_loc),nx,ny)
           enddo
 !
 !  Surface intensity (derived variable)
 !
         case ('Isurf')
-          call wslice(path//'Isurf.xy',Isurf_xy,z(iz2),nx,ny)
+          call wslice(path//'Isurf.xy',Isurf_xy,z(iz2_loc),nx,ny)
 !
 !  Catch unknown values
 !
@@ -639,16 +641,14 @@ module Slices
 !
       use Cdata
       use Messages, only: fatal_error
+
 !
 !  set slice position. The default for slice_position is 'p' for periphery,
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
       if (slice_position=='p' .or. slice_position=='S') then
-        if (ix<0)  ix=l1
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
+        ix_loc=l1; iy_loc=m1; iz_loc=n1; iz2_loc=n2
         lwrite_slice_xy2=(ipz==nprocz-1)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==0)
@@ -657,13 +657,13 @@ module Slices
 !  slice position when the first meshpoint in z is the equator (sphere)
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
+!  TH: The text above does not properly describe the code below.
+!  TH: A certain processor layout is implied here
+!
       elseif (slice_position=='m') then
-        if (ix<0)  ix=(l1+l2)/2
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
-        if(nprocy==1) then; iy=(m1+m2)/2; endif
-        if(nprocz==1) then; iz=(n1+n2)/2; iz2=(iz+n2)/2; endif
+        ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
+        if(nprocy==1) then; iy_loc=(m1+m2)/2; endif
+        if(nprocz==1) then; iz_loc=(n1+n2)/2; iz2_loc=(iz+n2)/2; endif
         lwrite_slice_xy2=(ipz==nprocz/2)
         lwrite_slice_xy=(ipz==nprocz/2)
         lwrite_slice_xz=(ipy==nprocy/2)
@@ -672,13 +672,12 @@ module Slices
 !  slice position when the first meshpoint in z is the equator (sphere)
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
+!  TH: A certain processor layout is implied here
+!
       elseif (slice_position=='e') then
-        if (ix<0)  ix=(l1+l2)/2
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
-        if(nprocy==1) then; iy=(m1+m2)/2; endif
-        if(nprocz==1) then; iz2=(iz+n2)/2; endif
+        ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
+        if(nprocy==1) then; iy_loc=(m1+m2)/2; endif
+        if(nprocz==1) then; iz2_loc=(iz+n2)/2; endif
         lwrite_slice_xy2=(ipz==nprocz/4)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==nprocy/2)
@@ -687,24 +686,20 @@ module Slices
 !  slice position when the first meshpoint in z is the equator (sphere)
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
+!  TH: The text above does not properly describe the code below.
+!  TH: A certain processor layout is implied here
+!
       elseif (slice_position=='c') then
-        if (ix<0)  ix=(l1+l2)/2
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
+        ix_loc=(l1+l2)/2; iy_loc=m1; iz_loc=n1; iz2_loc=n2
         lwrite_slice_xy2=(ipz==nprocz-1)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==0)
         lwrite_slice_yz=.true.
 !
 !  periphery of the box, but the other way around
-!  For one z-processor, iz remains n1, but iz2 is set to the middle.
 !
       elseif (slice_position=='q') then
-        if (ix<0)  ix=l2
-        if (iy<0)  iy=m2
-        if (iz<0)  iz=n2
-        if (iz2<0) iz2=n1
+        ix_loc=l2; iy_loc=m2; iz_loc=n2; iz2_loc=n1
         lwrite_slice_xy2=(ipz==0)
         lwrite_slice_xy=(ipz==nprocz-1)
         lwrite_slice_xz=(ipy==nprocy-1)
@@ -716,6 +711,45 @@ module Slices
         endif
       endif
 !
+!  Overwrite slice postions if any ix,iy,iz,iz2 is greater then Zero
+!
+      if (ix>0) then
+        ix_loc=ix-ipx*nx
+        if (ix_loc>=l1.and.ix_loc<=l2) then
+          lwrite_slice_yz=.true.
+        else
+          lwrite_slice_yz=.false.
+        endif
+      endif
+
+      if (iy>0) then
+        iy_loc=iy-ipy*ny
+        if (iy_loc>=m1.and.iy_loc<=m2) then
+          lwrite_slice_xz=.true.
+        else
+          lwrite_slice_xz=.false.
+        endif
+      endif
+
+      if (iz>0) then
+        iz_loc=iz-ipz*nz
+        if (iz_loc>=n1.and.iz_loc<=n2) then
+          lwrite_slice_xy=.true.
+        else
+          lwrite_slice_xy=.false.
+        endif
+      endif
+
+      if (iz2>0) then
+        iz2_loc=iz2-ipz*nz
+        if (iz2_loc>=n1.and.iz2_loc<=n2) then
+          lwrite_slice_xy2=.true.
+        else
+          lwrite_slice_xy2=.false.
+        endif
+      endif
+
+!
 !  write slice position to a file (for convenient post-processing)
 !
       if (lroot) then
@@ -724,12 +758,18 @@ module Slices
         close(1)
       endif
 !  
-!  make sure ix,iy,iz,iz2 are not outside the boundaries
+!  make sure ix_loc,iy_loc,iz_loc,iz2_loc are not outside the boundaries
 !
-      ix=min(ix,l2); iy=min(iy,m2); iz=min(iz,n2); iz2=min(iz2,n2)
-      ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1); iz2=max(iz2,n1)
-      if (lroot) write(*,'(1x,a,4i4)') &
-        'read_runpars: slice position (video files) ix,iy,iz,iz2 =',ix,iy,iz,iz2
+      ix_loc=min(ix_loc,l2); iy_loc=min(iy_loc,m2)
+      ix_loc=max(ix_loc,l1); iy_loc=max(iy_loc,m1)
+      iz_loc=min(iz_loc,n2); iz2_loc=min(iz2_loc,n2)
+      iz_loc=max(iz_loc,n1); iz2_loc=max(iz2_loc,n1)
+
+      if (lroot) then
+        write (*,*)'read_runpars: slice_position = '//slice_position
+        write (*,'(1x,a,4i4)') &
+          'read_runpars: ix,iy,iz,iz2 (video files) =',ix,iy,iz,iz2
+      endif
 
     endsubroutine setup_slices
 !***********************************************************************
