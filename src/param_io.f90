@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.238 2006-05-26 15:23:36 ajohan Exp $ 
+! $Id: param_io.f90,v 1.239 2006-05-29 15:05:59 theine Exp $ 
 
 module Param_IO
 
@@ -433,6 +433,7 @@ module Param_IO
       use Mpicomm, only: stop_it
       use Sub, only: parse_bc
       use Dustvelocity, only: copy_bcs_dust
+      use Slices, only: setup_slices
 !
       integer :: ierr
       logical, optional :: print,file
@@ -601,96 +602,10 @@ module Param_IO
         endif
       endif
 !
-!  set slice position. The default for slice_position is 'p' for periphery,
-!  although setting ix, iy, iz, iz2 by hand will overwrite this.
-!  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
+!  Determine slice positions and whether slices are to be written on this
+!  processor.
 !
-      if (slice_position=='p' .or. slice_position=='S') then
-        if (ix<0)  ix=l1
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
-        lwrite_slice_xy2=(ipz==nprocz-1)
-        lwrite_slice_xy=(ipz==0)
-        lwrite_slice_xz=(ipy==0)
-        lwrite_slice_yz=.true.
-!
-!  slice position when the first meshpoint in z is the equator (sphere)
-!  For one z-processor, iz remains n1, but iz2 is set to the middle.
-!
-      elseif (slice_position=='m') then
-        if (ix<0)  ix=(l1+l2)/2
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
-        if(nprocy==1) then; iy=(m1+m2)/2; endif
-        if(nprocz==1) then; iz=(n1+n2)/2; iz2=(iz+n2)/2; endif
-        lwrite_slice_xy2=(ipz==nprocz/2)
-        lwrite_slice_xy=(ipz==nprocz/2)
-        lwrite_slice_xz=(ipy==nprocy/2)
-        lwrite_slice_yz=.true.
-!
-!  slice position when the first meshpoint in z is the equator (sphere)
-!  For one z-processor, iz remains n1, but iz2 is set to the middle.
-!
-      elseif (slice_position=='e') then
-        if (ix<0)  ix=(l1+l2)/2
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
-        if(nprocy==1) then; iy=(m1+m2)/2; endif
-        if(nprocz==1) then; iz2=(iz+n2)/2; endif
-        lwrite_slice_xy2=(ipz==nprocz/4)
-        lwrite_slice_xy=(ipz==0)
-        lwrite_slice_xz=(ipy==nprocy/2)
-        lwrite_slice_yz=.true.
-!
-!  slice position when the first meshpoint in z is the equator (sphere)
-!  For one z-processor, iz remains n1, but iz2 is set to the middle.
-!
-      elseif (slice_position=='c') then
-        if (ix<0)  ix=(l1+l2)/2
-        if (iy<0)  iy=m1
-        if (iz<0)  iz=n1
-        if (iz2<0) iz2=n2
-        lwrite_slice_xy2=(ipz==nprocz-1)
-        lwrite_slice_xy=(ipz==0)
-        lwrite_slice_xz=(ipy==0)
-        lwrite_slice_yz=.true.
-!
-!  periphery of the box, but the other way around
-!  For one z-processor, iz remains n1, but iz2 is set to the middle.
-!
-      elseif (slice_position=='q') then
-        if (ix<0)  ix=l2
-        if (iy<0)  iy=m2
-        if (iz<0)  iz=n2
-        if (iz2<0) iz2=n1
-        lwrite_slice_xy2=(ipz==0)
-        lwrite_slice_xy=(ipz==nprocz-1)
-        lwrite_slice_xz=(ipy==nprocy-1)
-        lwrite_slice_yz=.true.
-      else
-        if (lroot) print*, &
-             "READ_RUN_PARS: No such value for slice_position: '" &
-             // slice_position //"'"
-        call stop_it("")
-      endif
-!
-!  write slice position to a file (for convenient post-processing)
-!
-      if (lroot) then
-        open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown')
-        write(1,'(a)') slice_position
-        close(1)
-      endif
-!  
-!  make sure ix,iy,iz,iz2 are not outside the boundaries
-!
-      ix=min(ix,l2); iy=min(iy,m2); iz=min(iz,n2); iz2=min(iz2,n2)
-      ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1); iz2=max(iz2,n1)
-      if (lroot) write(*,'(1x,a,4i4)') &
-        'read_runpars: slice position (video files) ix,iy,iz,iz2 =',ix,iy,iz,iz2
+      call setup_slices()
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries

@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.54 2006-05-26 11:59:17 theine Exp $
+! $Id: slices.f90,v 1.55 2006-05-29 15:06:00 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -10,7 +10,7 @@ module Slices
 
   private
 
-  public :: wvid, wslice, wvid_prepare
+  public :: wvid, wslice, wvid_prepare, setup_slices
 
 !  Variables for xy slices start here
 !  Code variables
@@ -629,6 +629,109 @@ module Slices
       endif
 !
     endsubroutine wslice
+!***********************************************************************
+    subroutine setup_slices()
+!
+!  Determine slice positions and whether slices are to be written on this
+!  processor.
+!
+!  29-may-06/tobi: wrapped code from param_io.f90 into this subroutine
+!
+      use Cdata
+      use Messages, only: fatal_error
+!
+!  set slice position. The default for slice_position is 'p' for periphery,
+!  although setting ix, iy, iz, iz2 by hand will overwrite this.
+!  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
+!
+      if (slice_position=='p' .or. slice_position=='S') then
+        if (ix<0)  ix=l1
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
+        lwrite_slice_xy2=(ipz==nprocz-1)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==0)
+        lwrite_slice_yz=.true.
+!
+!  slice position when the first meshpoint in z is the equator (sphere)
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='m') then
+        if (ix<0)  ix=(l1+l2)/2
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
+        if(nprocy==1) then; iy=(m1+m2)/2; endif
+        if(nprocz==1) then; iz=(n1+n2)/2; iz2=(iz+n2)/2; endif
+        lwrite_slice_xy2=(ipz==nprocz/2)
+        lwrite_slice_xy=(ipz==nprocz/2)
+        lwrite_slice_xz=(ipy==nprocy/2)
+        lwrite_slice_yz=.true.
+!
+!  slice position when the first meshpoint in z is the equator (sphere)
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='e') then
+        if (ix<0)  ix=(l1+l2)/2
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
+        if(nprocy==1) then; iy=(m1+m2)/2; endif
+        if(nprocz==1) then; iz2=(iz+n2)/2; endif
+        lwrite_slice_xy2=(ipz==nprocz/4)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==nprocy/2)
+        lwrite_slice_yz=.true.
+!
+!  slice position when the first meshpoint in z is the equator (sphere)
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='c') then
+        if (ix<0)  ix=(l1+l2)/2
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
+        lwrite_slice_xy2=(ipz==nprocz-1)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==0)
+        lwrite_slice_yz=.true.
+!
+!  periphery of the box, but the other way around
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='q') then
+        if (ix<0)  ix=l2
+        if (iy<0)  iy=m2
+        if (iz<0)  iz=n2
+        if (iz2<0) iz2=n1
+        lwrite_slice_xy2=(ipz==0)
+        lwrite_slice_xy=(ipz==nprocz-1)
+        lwrite_slice_xz=(ipy==nprocy-1)
+        lwrite_slice_yz=.true.
+      else
+        if (lroot) then
+          call fatal_error('setup_slices', &
+                           'No such value for slice_position: '//slice_position)
+        endif
+      endif
+!
+!  write slice position to a file (for convenient post-processing)
+!
+      if (lroot) then
+        open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown')
+        write(1,'(a)') slice_position
+        close(1)
+      endif
+!  
+!  make sure ix,iy,iz,iz2 are not outside the boundaries
+!
+      ix=min(ix,l2); iy=min(iy,m2); iz=min(iz,n2); iz2=min(iz2,n2)
+      ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1); iz2=max(iz2,n1)
+      if (lroot) write(*,'(1x,a,4i4)') &
+        'read_runpars: slice position (video files) ix,iy,iz,iz2 =',ix,iy,iz,iz2
+
+    endsubroutine setup_slices
 !***********************************************************************
 
 endmodule Slices
