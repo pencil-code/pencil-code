@@ -6,7 +6,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
                contourplot=contourplot,color=color,sqroot=sqroot
 ;
-; $Id: rvid_plane.pro,v 1.19 2006-01-26 12:24:39 ajohan Exp $
+; $Id: rvid_plane.pro,v 1.20 2006-05-29 17:35:43 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -42,6 +42,19 @@ default,color,1
 default,pixelsize,1
 default,ximg,1
 default,yimg,1
+;
+; Construct location of slice_var.plane files 
+;
+default, datatopdir, 'data'
+;  by default, look in data/, assuming we have run read_videofiles.x before:
+datadir = 'data'
+if (n_elements(proc) le 0) then begin
+  ;  change datadir when only data/proc0 exists
+  spawn, '\ls -d data/proc*', lsproc
+  if (n_elements(lsproc) eq 1) then datadir=datatopdir+'/proc0'
+endif else begin
+  datadir=datatopdir+'/'+proc
+endelse
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
