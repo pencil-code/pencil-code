@@ -1,0 +1,21 @@
+!                     -*-f90-*-   (for emacs)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-05-29 08:40:15 brandenb Exp $'
+  bcx='s:a','a:s','a:s','s'
+  bcz='s:a','s:a','a:s','s'
+  xyz0=-1.57080,-3.14159,-0.00000
+  xyz1=+0.00000,+3.14159,+1.57080
+  lperi=F,T,F
+/
+&eos_init_pars
+  gamma=1.
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-3
+/
+&special_init_pars
+  initalpm='constant', amplalpm=0.
+/

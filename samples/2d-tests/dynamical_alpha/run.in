@@ -1,0 +1,21 @@
+!
+!  mean field dynamo with dynamical quenching
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-05-29 08:40:15 brandenb Exp $'
+  nt=51, it1=10, cdt=0.4, cdtv=0.30, isave=50, itorder=3
+  dsnap=.2, dvid=.5, ialive=1
+/
+&eos_run_pars
+/
+&magnetic_run_pars
+  lmeanfield_theory=T
+  meanfield_etat=1.
+  eta=.01, alpha_effect=3., alpha_quenching=0., llorentzforce=F
+  lOmega_effect=T
+  Omega_profile='(0,cosx*cosz,0)', Omega_ampl=1e3
+/
+&special_run_pars
+  etat_alpm=1., kf_alpm=5., Rm_alpm=100.
+  Omega_profile='(0,cosx*cosz,0)', Omega_ampl=1e0
+/
