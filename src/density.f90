@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.249 2006-05-24 14:10:36 nbabkovs Exp $
+! $Id: density.f90,v 1.250 2006-05-29 10:14:39 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.249 2006-05-24 14:10:36 nbabkovs Exp $")
+           "$Id: density.f90,v 1.250 2006-05-29 10:14:39 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1404,31 +1404,29 @@ module Density
              if (nxgrid .LE. 1) then       
               if (lnstar_T_const) then
               else            
-             ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-             ! -1./(5.*dt) &
-             !   *(p%rho(:)*abs(f(l1:l2,m,n,iuz))/accretion_flux-1.)
-          !     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-          !    -1./(5.*dt) &
-          !      *(p%rho(:)-rho_right)/p%rho(:)!rho_right
               endif    
 
              else
-             df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
-              -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
+
+         ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n-1,ilnrho))
+
+
+         !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
+        
+        df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+          -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+          -log(rho_up)-(1.-(x(1:H_disk_point)/H_disk)**2))
+
+         df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+        -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-log(rho_up))
+
+        ! df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+        ! -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
+
       
-          !   tmp_int=10
-          !    df(l1:tmp_int,m,n,ilnrho)=df(l1:tmp_int,m,n,ilnrho) &
-          !          -1./(5.*dt)*(f(l1:tmp_int,m,n,ilnrho)-log(rho_right))
-
-          !   df(tmp_int+1:l2,m,n,ilnrho)=df(tmp_int+1:l2,m,n,ilnrho) &
-          !         -1./(5.*dt)*(f(tmp_int+1:l2,m,n,ilnrho)-log(rho_up))
-
-           !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-           !    -1./(5.*dt)*(p%rho(:)-rho_up*exp(1.-(x(l1:l2)/H_disk)**2))/p%rho(:)
-
-         !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-         ! -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-log(rho_up)+(1.-(x(l1:l2)/H_disk)**2))
-
+      
              endif 
            endif
            

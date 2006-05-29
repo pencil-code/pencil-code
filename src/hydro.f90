@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.260 2006-05-24 14:10:36 nbabkovs Exp $
+! $Id: hydro.f90,v 1.261 2006-05-29 10:14:39 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -156,7 +156,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.260 2006-05-24 14:10:36 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.261 2006-05-29 10:14:39 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -861,32 +861,32 @@ module Hydro
       endif
 
 ! acceleration zone in a case of a Keplerian disk
-   
+
 
       if (laccelerat_zone) then
        if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
-                 
+
          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                  -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
-       
+             -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
        
        if (nxgrid .LE. 1) then  
-       
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                  -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+           -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
        else
-       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
-       !   df(l1:H_disk_point+4,m,n,iuy)=df(l1:H_disk_point+4,m,n,iuy)&
-       !           -1./(5.*dt)*(p%uu(1:H_disk_point,2)-sqrt(M_star/z(n)))
+         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+         -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
 
-         df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
-          -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
-      !   df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
-      !    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
-      
-       !   df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-       !  -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
-      
+         !  df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
+         !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,iuz)-f(l1:H_disk_point+4,m,n-1,iuz))
+
+         !df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
+         !   -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
+
+     
+         !   df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
+         !    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
+ 
         endif 
        endif
 

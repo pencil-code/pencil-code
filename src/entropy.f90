@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.409 2006-05-24 14:10:36 nbabkovs Exp $
+! $Id: entropy.f90,v 1.410 2006-05-29 10:14:39 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.409 2006-05-24 14:10:36 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.410 2006-05-29 10:14:39 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1789,9 +1789,8 @@ module Entropy
    !  print*,'  TT_cs0     ',TT_cs0
  
        if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
-    !   if ( dt .GT. 0..AND. n .LT. nzgrid-20) then
-  
-        if (lnstar_T_const) then
+   
+         if (lnstar_T_const) then
     
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-TT_cs0)/TT_cs0
            !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
@@ -1823,22 +1822,12 @@ module Entropy
             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
            -1./(1.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star 
 
-  
-
-         !   const_tmp=M_star/sigmaSB*c_light*3./4.
-
-          !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          !      -1./(5.*dt)*(p%TT(:)-(T_star**4+const_tmp*p%rho(:)*(1./z(n)-1./R_star))**0.25)/p%TT(:)
-
           !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-         !     -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
+          !     -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
  
           !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
           !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)/p%rho(:)/T_star
    
-    
-         !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-         ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-f(l1:l2,m,n-1,iss))/p%rho(:)/p%TT(:)
           endif
         end if  
 
@@ -1857,22 +1846,14 @@ module Entropy
 
               !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
               !   -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
-             !   df(l1:H_disk_point+4,m,n,iss)=df(l1:H_disk_point+4,m,n,iss) &
-             !   -1./(5.*dt)*(p%TT(1:H_disk_point)-TT_cs0)/TT_cs0
+              !    df(l1:H_disk_point+4,m,n,iss)=df(l1:H_disk_point+4,m,n,iss) &
+               !   -1./(5.*dt)*(p%TT(1:H_disk_point)-TT_cs0)/TT_cs0
                ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)
-    !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-    !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
+              ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+              ! -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n-1,ilnrho))/p%rho(:)/TT_cs0
       
 
-
-     !       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-     !       -1./(5.*dt)*(p%TT(:)/(cs0**2/(gamma1*cp))-1.)
-       
-          !df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-            !-1./(10.*dt)*(f(l1:l2,m,n,iss)-log(cs0**2/(gamma1*cp))/gamma)
-      !     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-     !     -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0
               endif
          else
          endif     
