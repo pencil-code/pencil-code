@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.63 2006-04-25 16:32:15 ajohan Exp $
+! $Id: particles_sub.f90,v 1.64 2006-05-29 21:17:41 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -787,11 +787,11 @@ module Particles_sub
 !  Do a reality check on the interpolation scheme.
 !
       if (linterp_reality_check) then
-        do i=0,ii1-ii0+1
+        do i=1,ii1-ii0+1
           if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
             print*, 'interpolate_3d_1st: interpolated value is LARGER than'
             print*, 'interpolate_3d_1st: all values at the corner ponts!'
-            print*, 'interpolate_3d_1st: xxp=', xxp
+            print*, 'interpolate_3d_1st: ipar, xxp=', ipar, xxp
             print*, 'interpolate_3d_1st: x0, y0, z0=', &
                 x(ix0), y(iy0), z(iz0)
             print*, 'interpolate_3d_1st: i, gp(i)=', i, gp(i)
