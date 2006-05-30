@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.159 2006-05-26 14:50:49 ajohan Exp $
+! $Id: mpicomm.f90,v 1.160 2006-05-30 18:47:58 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2117,7 +2117,7 @@ module Mpicomm
 !
     endsubroutine transform_i
 !***********************************************************************
-    subroutine transform_fftpack(a_re,a_im,dummy)
+    subroutine transform_fftpack(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data.
@@ -2130,59 +2130,125 @@ module Mpicomm
       complex,dimension(nx) :: ax
       real,dimension(4*nx+15) :: wsavex
       integer :: m,n
-      integer,optional :: dummy
+      integer,optional :: direction
+      logical :: lforward=.true.
+!
+      if (present(direction)) then
+        if (direction==-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
 !
 !  need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid
 !
       call cffti(nx,wsavex)
 !
-      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in x'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-        call cfftf(nx,ax,wsavex)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
-      enddo; enddo
-!
-!  Power in y-direction.
-!      
-      if (nygrid/=1) then
-        if (nygrid/=nxgrid) then
-          if (lroot) &
-              print*, 'transform_fftpack: must have nygrid=nxgrid!'
-          call stop_it('transform_fftpack')
-        endif
-        call transp(a_re,'y')
-        call transp(a_im,'y')
-!
-!  The length of the array in the y-direction is nx.
-!
-        if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
+      if (lforward) then
+        if (lroot .and. ip<10) print*, 'transform_fftpack: doing FFTpack in x'
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nx,ax,wsavex)
           a_re(:,m,n)=real(ax)
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
-      endif
+!
+!  Power in y-direction.
+!      
+        if (nygrid/=1) then
+          if (nygrid/=nxgrid) then
+            if (lroot) print*, 'transform_fftpack: must have nygrid=nxgrid!'
+            call stop_it('transform_fftpack')
+          endif
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+!
+!  The length of the array in the y-direction is nx.
+!
+          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
+          do n=1,nz; do m=1,ny
+            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+            call cfftf(nx,ax,wsavex)
+            a_re(:,m,n)=real(ax)
+            a_im(:,m,n)=aimag(ax)
+          enddo; enddo
+        endif
 !
 !  Power in z-direction.
 !      
-      if (nzgrid/=1) then
-        if (nzgrid/=nxgrid) then
-          if (lroot) &
-              print*, 'transform_fftpack: must have nzgrid=nxgrid!'
-          call stop_it('transform_fftpack')
-        endif
-        call transp(a_re,'z')
-        call transp(a_im,'z')
+        if (nzgrid/=1) then
+          if (nzgrid/=nxgrid) then
+            if (lroot) &
+                print*, 'transform_fftpack: must have nzgrid=nxgrid!'
+            call stop_it('transform_fftpack')
+          endif
+          call transp(a_re,'z')
+          call transp(a_im,'z')
 !
 !  The length of the array in the z-direction is also nx.
 !
-        if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+          do n=1,nz; do m=1,ny
+            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+            call cfftf(nx,ax,wsavex)
+            a_re(:,m,n)=real(ax)
+            a_im(:,m,n)=aimag(ax)
+          enddo; enddo
+        endif
+      else
+!
+!  Transform from k-space to real space. Works on arrays that have been put in
+!  (z,x,y)-order by the parallel Fourier transform.
+!
+        if (nzgrid/=1) then
+!
+!  Power in z-direction.
+!      
+          if (nzgrid/=nxgrid) then
+            if (lroot) print*, 'transform_fftpack: must have nzgrid=nxgrid!'
+            call stop_it('transform_fftpack')
+          endif
+!
+          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+          do n=1,nz; do m=1,ny
+            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+            call cfftb(nx,ax,wsavex)
+            a_re(:,m,n)=real(ax)
+            a_im(:,m,n)=aimag(ax)
+          enddo; enddo
+        endif
+!
+!  Power in y-direction. Must transpose to go from (z,x,y) to (y,x,z).
+!
+        if (nygrid/=1) then
+          if (nygrid/=nxgrid) then
+            if (lroot) print*, 'transform_fftpack: must have nygrid=nxgrid!'
+            call stop_it('transform_fftpack')
+          endif
+!
+          if (nzgrid/=1) then
+            call transp(a_re,'z')
+            call transp(a_im,'z')
+          endif
+!
+          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
+          do n=1,nz; do m=1,ny
+            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+            call cfftb(nx,ax,wsavex)
+            a_re(:,m,n)=real(ax)
+            a_im(:,m,n)=aimag(ax)
+          enddo; enddo
+        endif
+!
+!  Power in x-direction. Transpose to go from (y,x,z) to (x,y,z).
+!      
+        if (lroot .and. ip<10) print*, 'transform_fftpack: doing FFTpack in x'
+        call transp(a_re,'y')
+        call transp(a_im,'y')
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-          call cfftf(nx,ax,wsavex)
+          call cfftb(nx,ax,wsavex)
           a_re(:,m,n)=real(ax)
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
@@ -2190,11 +2256,12 @@ module Mpicomm
 !
 !  Normalize
 !
-      a_re=a_re/nwgrid
-      a_im=a_im/nwgrid
-      if (lroot .and. ip<10) print*,'transform_fftpack: fft has finished'
+      if (lforward) then
+        a_re=a_re/nwgrid
+        a_im=a_im/nwgrid
+      endif
 !
-      if (NO_WARN) print*,dummy  !(keep compiler quiet)
+      if (lroot .and. ip<10) print*,'transform_fftpack: fft has finished'
 !
     endsubroutine transform_fftpack
 !***********************************************************************
