@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.4 2006-05-28 01:37:56 ajohan Exp $
+! $Id: poisson.f90,v 1.5 2006-05-30 18:48:49 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -44,7 +44,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.4 2006-05-28 01:37:56 ajohan Exp $")
+        "$Id: poisson.f90,v 1.5 2006-05-30 18:48:49 ajohan Exp $")
 !
 !  set up right-hand-side of Poisson equation
 !
@@ -88,9 +88,9 @@ module Poisson
                     ky_fft(iky)**2 + kz_fft(ikz)**2)
           else
             a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
-                (kx_fft(ikx)**2 + ky_fft(iky)**2 + kz_fft(ikz)**2)
+                (kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2)
             b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
-                (kx_fft(ikx)**2 + ky_fft(iky)**2 + kz_fft(ikz)**2)
+                (kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2)
           endif
         endif
       enddo; enddo; enddo
