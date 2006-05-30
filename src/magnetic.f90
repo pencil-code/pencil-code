@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.292 2006-05-28 14:18:19 theine Exp $
+! $Id: magnetic.f90,v 1.293 2006-05-30 23:44:43 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -187,7 +187,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.292 2006-05-28 14:18:19 theine Exp $")
+           "$Id: magnetic.f90,v 1.293 2006-05-30 23:44:43 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1312,19 +1312,19 @@ module Magnetic
 !
       if (lvid.and.lfirst) then
         do j=1,3
-          bb_yz(m-m1+1,n-n1+1,j)=p%bb(ix-l1+1,j)
-          if (m==iy)  bb_xz(:,n-n1+1,j)=p%bb(:,j)
-          if (n==iz)  bb_xy(:,m-m1+1,j)=p%bb(:,j)
-          if (n==iz2) bb_xy2(:,m-m1+1,j)=p%bb(:,j)
+          bb_yz(m-m1+1,n-n1+1,j)=p%bb(ix_loc-l1+1,j)
+          if (m==iy_loc)  bb_xz(:,n-n1+1,j)=p%bb(:,j)
+          if (n==iz_loc)  bb_xy(:,m-m1+1,j)=p%bb(:,j)
+          if (n==iz2_loc) bb_xy2(:,m-m1+1,j)=p%bb(:,j)
         enddo
-        b2_yz(m-m1+1,n-n1+1)=p%b2(ix-l1+1)
-        if (m==iy)  b2_xz(:,n-n1+1)=p%b2
-        if (n==iz)  b2_xy(:,m-m1+1)=p%b2
-        if (n==iz2) b2_xy2(:,m-m1+1)=p%b2
-        jb_yz(m-m1+1,n-n1+1)=p%jb(ix-l1+1)
-        if (m==iy)  jb_xz(:,n-n1+1)=p%jb
-        if (n==iz)  jb_xy(:,m-m1+1)=p%jb
-        if (n==iz2) jb_xy2(:,m-m1+1)=p%jb
+        b2_yz(m-m1+1,n-n1+1)=p%b2(ix_loc-l1+1)
+        if (m==iy_loc)  b2_xz(:,n-n1+1)=p%b2
+        if (n==iz_loc)  b2_xy(:,m-m1+1)=p%b2
+        if (n==iz2_loc) b2_xy2(:,m-m1+1)=p%b2
+        jb_yz(m-m1+1,n-n1+1)=p%jb(ix_loc-l1+1)
+        if (m==iy_loc)  jb_xz(:,n-n1+1)=p%jb
+        if (n==iz_loc)  jb_xy(:,m-m1+1)=p%jb
+        if (n==iz2_loc) jb_xy2(:,m-m1+1)=p%jb
         if (bthresh_per_brms/=0) call calc_bthresh
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
       endif

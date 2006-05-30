@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.261 2006-05-29 10:14:39 nbabkovs Exp $
+! $Id: hydro.f90,v 1.262 2006-05-30 23:44:42 theine Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -156,7 +156,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.261 2006-05-29 10:14:39 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.262 2006-05-30 23:44:42 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1019,24 +1019,24 @@ module Hydro
 !  Note: ix is the index with respect to array with ghost zones.
 !
       if(lvid.and.lfirst) then
-        divu_yz(m-m1+1,n-n1+1)=p%divu(ix-l1+1)
-        if (m.eq.iy)  divu_xz(:,n-n1+1)=p%divu
-        if (n.eq.iz)  divu_xy(:,m-m1+1)=p%divu
-        if (n.eq.iz2) divu_xy2(:,m-m1+1)=p%divu
+        divu_yz(m-m1+1,n-n1+1)=p%divu(ix_loc-l1+1)
+        if (m.eq.iy_loc)  divu_xz(:,n-n1+1)=p%divu
+        if (n.eq.iz_loc)  divu_xy(:,m-m1+1)=p%divu
+        if (n.eq.iz2_loc) divu_xy2(:,m-m1+1)=p%divu
         do j=1,3
-          oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix-l1+1,j)
-          if (m==iy)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
-          if (n==iz)  oo_xy(:,m-m1+1,j)=p%oo(:,j)
-          if (n==iz2) oo_xy2(:,m-m1+1,j)=p%oo(:,j)
+          oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
+          if (m==iy_loc)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
+          if (n==iz_loc)  oo_xy(:,m-m1+1,j)=p%oo(:,j)
+          if (n==iz2_loc) oo_xy2(:,m-m1+1,j)=p%oo(:,j)
         enddo
-        u2_yz(m-m1+1,n-n1+1)=p%u2(ix-l1+1)
-        if (m==iy)  u2_xz(:,n-n1+1)=p%u2
-        if (n==iz)  u2_xy(:,m-m1+1)=p%u2
-        if (n==iz2) u2_xy2(:,m-m1+1)=p%u2
-        o2_yz(m-m1+1,n-n1+1)=p%o2(ix-l1+1)
-        if (m==iy)  o2_xz(:,n-n1+1)=p%o2
-        if (n==iz)  o2_xy(:,m-m1+1)=p%o2
-        if (n==iz2) o2_xy2(:,m-m1+1)=p%o2
+        u2_yz(m-m1+1,n-n1+1)=p%u2(ix_loc-l1+1)
+        if (m==iy_loc)  u2_xz(:,n-n1+1)=p%u2
+        if (n==iz_loc)  u2_xy(:,m-m1+1)=p%u2
+        if (n==iz2_loc) u2_xy2(:,m-m1+1)=p%u2
+        o2_yz(m-m1+1,n-n1+1)=p%o2(ix_loc-l1+1)
+        if (m==iy_loc)  o2_xz(:,n-n1+1)=p%o2
+        if (n==iz_loc)  o2_xy(:,m-m1+1)=p%o2
+        if (n==iz2_loc) o2_xy2(:,m-m1+1)=p%o2
         if(othresh_per_orms/=0) call calc_othresh
         call vecout(41,trim(directory)//'/ovec',p%oo,othresh,novec)
       endif

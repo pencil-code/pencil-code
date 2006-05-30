@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.163 2006-04-04 16:19:16 ajohan Exp $
+! $Id: dustdensity.f90,v 1.164 2006-05-30 23:44:42 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.163 2006-04-04 16:19:16 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.164 2006-05-30 23:44:42 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1135,10 +1135,10 @@ module Dustdensity
       if (lvid .and. lfirst) then
         do k=1,ndustspec
           if (lmdvar) then
-            md_yz(m-m1+1,n-n1+1,k) = f(ix,m,n,imd(k))
-            if (m == iy)  md_xz(:,n-n1+1,k)  = f(l1:l2,iy,n,imd(k))
-            if (n == iz)  md_xy(:,m-m1+1,k)  = f(l1:l2,m,iz,imd(k))
-            if (n == iz2) md_xy2(:,m-m1+1,k) = f(l1:l2,m,iz2,imd(k))
+            md_yz(m-m1+1,n-n1+1,k) = f(ix_loc,m,n,imd(k))
+            if (m == iy_loc)  md_xz(:,n-n1+1,k)  = f(l1:l2,iy_loc,n,imd(k))
+            if (n == iz_loc)  md_xy(:,m-m1+1,k)  = f(l1:l2,m,iz_loc,imd(k))
+            if (n == iz2_loc) md_xy2(:,m-m1+1,k) = f(l1:l2,m,iz2_loc,imd(k))
           else
             md_yz(m-m1+1,n-n1+1,k) = md(k)
             md_xz(:,n-n1+1,k)  = md(k)

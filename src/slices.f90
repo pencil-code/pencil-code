@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.56 2006-05-29 19:06:19 theine Exp $
+! $Id: slices.f90,v 1.57 2006-05-30 23:44:42 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -9,8 +9,6 @@ module Slices
   implicit none
 
   private
-
-  integer :: ix_loc,iy_loc,iz_loc,iz2_loc
 
   public :: wvid, wslice, wvid_prepare, setup_slices
 
