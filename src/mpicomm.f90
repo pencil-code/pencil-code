@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.160 2006-05-30 18:47:58 ajohan Exp $
+! $Id: mpicomm.f90,v 1.161 2006-05-30 19:33:53 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2244,8 +2244,13 @@ module Mpicomm
 !  Power in x-direction. Transpose to go from (y,x,z) to (x,y,z).
 !      
         if (lroot .and. ip<10) print*, 'transform_fftpack: doing FFTpack in x'
-        call transp(a_re,'y')
-        call transp(a_im,'y')
+        if (nygrid==1) then
+          call transp(a_re,'z')
+          call transp(a_im,'z')
+        else
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+        endif
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nx,ax,wsavex)
