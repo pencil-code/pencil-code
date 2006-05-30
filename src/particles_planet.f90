@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.25 2006-04-25 16:59:29 ajohan Exp $
+! $Id: particles_planet.f90,v 1.26 2006-05-30 15:02:44 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.25 2006-04-25 16:59:29 ajohan Exp $")
+           "$Id: particles_planet.f90,v 1.26 2006-05-30 15:02:44 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -132,12 +132,15 @@ module Particles
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
       use Sub
+      use Gravity, only: g0
+      use Planet,  only: get_ramped_mass
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
+      real :: gp,gs,mdot,m2dot,gp_init
       real :: r, p
       integer :: k
 !
@@ -151,13 +154,29 @@ module Particles
       case ('origin')
         if (lroot) print*, 'init_particles: All particles at origin'
         fp(1:npar,ixp:izp)=0.
+        
+      case('constant') 
+         if (lroot) &
+              print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+         fp(1:npar_loc,ixp)=xp0
+         fp(1:npar_loc,iyp)=yp0
+         fp(1:npar_loc,izp)=zp0
 
-      case ('constant')
-        if (lroot) &
-            print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
-        fp(1:npar_loc,ixp)=xp0
-        fp(1:npar_loc,iyp)=yp0
-        fp(1:npar_loc,izp)=zp0
+      case ('fixed-cm')
+!
+! center of mass fixed on center of grid
+!
+         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
+         fp(npar_loc,ixp)=gp 
+         fp(npar_loc,iyp)=0.
+         fp(npar_loc,izp)=0.
+!
+         fp(1,ixp) = -gs 
+         fp(1,iyp) = 0.
+         fp(1,izp) = 0. 
+!
+         if (lroot) &
+              print*, 'init_particles: All particles at x=', fp(1,ixp), fp(npar_loc,ixp)
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle positions'
@@ -199,11 +218,24 @@ module Particles
         fp(1:npar_loc,ivpx:ivpz)=0.
 
       case ('constant')
-        if (lroot) print*, 'init_particles: Constant particle velocity'
-        if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
-        fp(1:npar_loc,ivpx)=vpx0
-        fp(1:npar_loc,ivpy)=vpy0
-        fp(1:npar_loc,ivpz)=vpz0
+         if (lroot) print*, 'init_particles: Constant particle velocity'
+         if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+         fp(1:npar_loc,ivpx)=vpx0
+         fp(1:npar_loc,ivpy)=vpy0
+         fp(1:npar_loc,ivpz)=vpz0
+
+      case ('fixed-cm')
+         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
+         fp(npar_loc,ivpx)=0.
+         fp(npar_loc,ivpy)=gp
+         fp(npar_loc,ivpz)=0.
+!
+         fp(1,ivpx) = 0.
+         fp(1,ivpy) = -gs
+         fp(1,ivpz) = 0.
+!
+         if (lroot) &
+              print*, 'init_particles: All particles at vy=', fp(1,ivpy), fp(npar_loc,ivpy)
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle velocities; '// &

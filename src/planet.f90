@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.43 2006-05-29 08:06:18 brandenb Exp $
+! $Id: planet.f90,v 1.44 2006-05-30 15:02:44 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -51,7 +51,7 @@ module Planet
   integer :: nr=10
 !
   namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
-       lcs2_global,llocal_iso,lcs2_thick
+       lcs2_global,llocal_iso,lcs2_thick,lramp
 !
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
@@ -83,7 +83,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.43 2006-05-29 08:06:18 brandenb Exp $")
+           "$Id: planet.f90,v 1.44 2006-05-30 15:02:44 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -356,7 +356,7 @@ module Planet
 !
     endsubroutine calc_torque
 !***********************************************************************
-    subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot)
+    subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot) 
 !      
 ! Ramps up the mass of the planet from 0 to gc over
 ! n_periods orbits. If lramp=.false., will return gc.
@@ -367,12 +367,11 @@ module Planet
 !
       real :: fgp,gp,gs,g0,tcut
       real :: mdot,m2dot
-!
       intent(out) :: gp,gs,mdot,m2dot
 !
       fgp = 0.5*(1 - sqrt(1-4*gc))
       gp = fgp
-
+!
       mdot=0. ; m2dot=0.
 !
       if (lramp) then
@@ -983,9 +982,7 @@ module Planet
             bavg_coarse(:,3)=bz_sum/ktot
          endif
 !
-! set the averages as global variable to use in the next timestep
-! ps. these variables are raw and should be interpolated 
-! to the whole radial grid later to yield better results
+! set the averages as global variables to use in the next timestep
 !
          call set_global(uavg_coarse,'uavg',nr)
          if (lmagnetic) call set_global(bavg_coarse,'bavg',nr)
