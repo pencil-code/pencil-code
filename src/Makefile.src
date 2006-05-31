@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.183 2006-05-31 09:53:46 easy Exp $
+### $Id: Makefile.src,v 1.184 2006-05-31 14:45:39 pkapyla Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -428,6 +428,13 @@ LIBMPISUFFIX=
 #CC= gcc-3.3 -03 #(dendara|lapc|tay21)
 #FFLAGS= -O2 #(dendara|lapc|tay21)
 ##LDMPI= -L${HOME}/opt/lib  #(dendara|lapc|tay21)
+##
+## Petri's laptop (PowerBook G4)
+##
+#FC=g95 #(Chandrasekhar|sunpci1)
+#CC=gcc-3.3 #(Chandrasekhar|sunpci1)
+#FFLAGS=-O3 #(Chandrasekhar|sunpci1)
+#CFLAGS=-O3 -DFUNDERSC=2 #(Chandrasekhar|sunpci1)
 
 
 ## SunOS:
