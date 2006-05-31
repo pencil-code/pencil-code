@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.182 2006-05-15 23:21:07 theine Exp $
+### $Id: Makefile.src,v 1.183 2006-05-31 09:53:46 easy Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -408,15 +408,17 @@ LIBMPISUFFIX=
 
 ## Darwin:
 ## Power Macintosh
-#FC=f95
+#FC=g95
 #F77=$(FC)
-#FFLAGS=-O3 
+#FFLAGS=-O3
+#CFLAGS=-DFUNDERSC=2
 #LDMPI=
 #FC=xlf90 #(Nils)
 #F77=xlf  #(Nils)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
 #F90FLAGS=-qsuffix=f=f90 #(Nils)
 #CFLAGS=-O3 -DFUNDERSC=0 #(Nils)
+#LDMPI=-lSystemStubs #(easymac)
 ##
 ## Tarek's laptop (PowerBook G4)
 ##
