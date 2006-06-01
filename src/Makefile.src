@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.184 2006-05-31 14:45:39 pkapyla Exp $
+### $Id: Makefile.src,v 1.185 2006-06-01 10:27:51 mkorpi Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -171,9 +171,9 @@ LIBMPISUFFIX=
 ##FC=mpif95n #(rio*|pia*)
 ##FFLAGS=-mismatch -O3 -I/afs/ipp/amd64_sles9/soft/mvapich-0.9.7/nag/include #(rio*|pia*)
 #FC=mpif95i -v 8.1 #(rio*|pia*)
-#FC=g95 -fno-second-underscore #(moria)
-#FFLAGS= #(moria)
-#LDMPI= #(moria)
+#FC=g95 -fno-second-underscore #(moria|balrog|sky*)
+#FFLAGS= #(moria|balrog|sky*)
+#LDMPI= #(moria|balrog|sky*)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/usr/local/bin/ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/people/disk2/brandenb/bin/ifort -I/usr/local/lib/LAM/include #(fe[0-9])
