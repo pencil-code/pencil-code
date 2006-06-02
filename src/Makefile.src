@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.185 2006-06-01 10:27:51 mkorpi Exp $
+### $Id: Makefile.src,v 1.186 2006-06-02 08:30:13 pkapyla Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -188,6 +188,10 @@ LIBMPISUFFIX=
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
 #LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #LIBMPISUFFIX=_#(taspd209a)
+#FC=/opt/intel/compiler70/ia32/bin/ifc -I/usr/local/share/lam-mpi/include #(frontend)
+#FFLAGS=-O3 -L/opt/intel/compiler70/bin/lib #(frontend)
+#MPICOMM=mpicomm_ #(frontend)
+#LDMPI=-L/usr/local/share/lam-mpi/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lbproc -ldl -lpthread #(frontend) 
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
