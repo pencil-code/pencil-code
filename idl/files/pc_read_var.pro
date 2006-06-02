@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.33 2006-01-04 12:50:32 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.34 2006-06-02 19:10:17 joishi Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-01-04 12:50:32 $
-;  $Revision: 1.33 $
+;  $Date: 2006-06-02 19:10:17 $
+;  $Revision: 1.34 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -16,7 +16,8 @@ pro pc_read_var, t=t,                                            $
             nameobject=nameobject,                               $
             dim=dim,param=param,                                 $
             datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,     $
-            STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP
+            STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,   $
+            SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
@@ -72,7 +73,7 @@ default,varfile,'var.dat'
 
 ; Call pc_read_grid to make sure any derivative stuff is correctly set in the common block
 ; Don't need the data fro anything though
-  pc_read_grid,dim=dim,datadir=datadir,param=param,/QUIET 
+  pc_read_grid,dim=dim,datadir=datadir,param=param,/QUIET,SWAP_ENDIAN=SWAP_ENDIAN
 
   if (n_elements(proc) eq 1) then begin
     procdim=dim
@@ -202,7 +203,7 @@ for i=0,ncpus-1 do begin
 
 
   close,file
-  openr,file, filename, /F77
+  openr,file, filename, /F77,SWAP_ENDIAN=SWAP_ENDIAN
     if not keyword_set(ASSOCIATE) then begin
       if (execute('readu,file'+res) ne 1) then $
              message, 'Error reading: ' + 'readu,'+str(file)+res

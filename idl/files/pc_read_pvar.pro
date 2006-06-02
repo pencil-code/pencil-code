@@ -1,9 +1,9 @@
-; $Id: pc_read_pvar.pro,v 1.20 2006-04-06 08:29:59 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.21 2006-06-02 19:10:17 joishi Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
 pro pc_read_pvar, object=object, varfile=varfile, datadir=datadir, $
-    npar_max=npar_max, quiet=quiet, qquiet=qquiet
+    npar_max=npar_max, quiet=quiet, qquiet=qquiet,SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
@@ -138,7 +138,7 @@ for i=0,ncpus-1 do begin
 ;
   get_lun, file
   close, file
-  openr, file, filename, /F77
+  openr, file, filename, /F77,SWAP_ENDIAN=SWAN_ENDIAN
 ;
 ;  Read the number of particles at the local processor together with their
 ;  global index numbers.

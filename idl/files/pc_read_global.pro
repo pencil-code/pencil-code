@@ -1,10 +1,11 @@
 ;
-; $Id: pc_read_global.pro,v 1.4 2005-10-24 08:19:11 dobler Exp $
+; $Id: pc_read_global.pro,v 1.5 2006-06-02 19:10:17 joishi Exp $
 ;
 ;   Read global variable from file.
 ;  
 pro pc_read_global, gvar, varfile=varfile, datadir=datadir, $
-    dim=dim, param=param, TRIMALL=TRIMALL, QUIET=QUIET
+    dim=dim, param=param, TRIMALL=TRIMALL, QUIET=QUIET,     $
+    SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
@@ -99,7 +100,7 @@ for i=0,ncpus-1 do begin
   endif
 ;
   close, file
-  openr, file, filename, /F77
+  openr, file, filename, /F77,SWAP_ENDIAN=SWAP_ENDIAN
 
   if (execute('readu, file, '+varname) ne 1) then $
       message, 'Error reading: ' + 'readu, file, '+varname

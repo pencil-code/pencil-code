@@ -1,10 +1,10 @@
-; $Id: pc_read_var_ts.pro,v 1.3 2004-05-05 17:10:31 mee Exp $
+; $Id: pc_read_var_ts.pro,v 1.4 2006-06-02 19:10:17 joishi Exp $
 ;
 ;   Get time series for various parameters from data snapshots
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2004-05-05 17:10:31 $
-;  $Revision: 1.3 $
+;  $Date: 2006-06-02 19:10:17 $
+;  $Revision: 1.4 $
 ;
 ;  10-oct-03/anders: coded (coding layout adapted from Tony)
 ;  13-oct-03/anders: renamed from pc_get_ts.pro
@@ -12,7 +12,7 @@
 pro pc_read_var_ts,t_arr=t_arr,array=array, $
                    snap_start=snap_start,snap_end=snap_end, $
                    datadir=datadir,proc=proc,type=type, $
-                   HELP=HELP,QUIET=QUIET
+                   HELP=HELP,QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
@@ -71,15 +71,15 @@ for nsnap=snap_start,snap_end do begin
   varfile='VAR'+strcompress(nsnap,/remove_all)
   if (type eq 'udxmean') then begin
     pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
-                QUIET=QUIET
+                QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
     array(nsnap-snap_start)=mean(uud(*,*,*,0))
   end else if (type eq 'udymean') then begin
     pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
-                QUIET=QUIET
+                QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
     array(nsnap-snap_start)=mean(uud(*,*,*,1))
   end else if (type eq 'udmean') then begin
     pc_read_var,t=t,uud=uud,varfile=varfile,datadir=datadir,proc=proc, $
-                QUIET=QUIET
+                QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
     array(nsnap-snap_start)= $
         mean(sqrt(uud(*,*,*,0)^2+uud(*,*,*,1)^2+uud(*,*,*,2)^2))
   end

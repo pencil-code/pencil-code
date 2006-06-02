@@ -1,17 +1,18 @@
-; $Id: pc_read_grid.pro,v 1.13 2005-10-24 08:19:11 dobler Exp $
+; $Id: pc_read_grid.pro,v 1.14 2006-06-02 19:10:17 joishi Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-10-24 08:19:11 $
-;  $Revision: 1.13 $
+;  $Date: 2006-06-02 19:10:17 $
+;  $Revision: 1.14 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
 pro pc_read_grid,object=object, dim=dim, param=param, $
                  TRIMXYZ=TRIMXYZ, $
-                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP, $
+                 SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
@@ -137,7 +138,7 @@ for i=0,ncpus-1 do begin
 
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
 
-  openr,file,filename,/F77
+  openr,file,filename,/F77,SWAP_ENDIAN=SWAP_ENDIAN
     
   if n_elements(proc) ne 0 then begin
       readu,file, t,x,y,z
