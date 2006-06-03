@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.225 2006-05-28 01:37:56 ajohan Exp $
+! $Id: run.f90,v 1.226 2006-06-03 03:46:17 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.225 2006-05-28 01:37:56 ajohan Exp $")
+             "$Id: run.f90,v 1.226 2006-06-03 03:46:17 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -422,9 +422,8 @@
 !
           if (ltavg) call update_timeavgs(f,dt)
 !
-!  Advance shear parameter, add forcing, and/or do rescaling (if applicable)
+!  Add forcing and/or do rescaling (if applicable)
 !
-          if (lshear) call advance_shear()
           if (lforcing) call addforce(f)
           if (lrescaling) call rescaling(f)
 !

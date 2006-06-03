@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.35 2006-04-05 14:14:32 wlyra Exp $
+! $Id: timestep.f90,v 1.36 2006-06-03 03:46:17 ajohan Exp $
 
 module Timestep
 
@@ -33,6 +33,7 @@ module Timestep
       use Cdata
       use Equ
       use Particles_main
+      use Shear, only: advance_shear
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -119,10 +120,13 @@ module Timestep
 !
         if (lparticles) call particles_timestep_second()
 !
+!  Advance deltay of the shear
+!
+        if (lshear) call advance_shear(dt_beta(itsub)*ds)
+!
 !  Increase time
 !
         t=t+dt_beta(itsub)*ds
-
 !
       enddo
 !

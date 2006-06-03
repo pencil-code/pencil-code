@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.9 2005-07-05 16:21:43 mee Exp $
+! $Id: noshear.f90,v 1.10 2006-06-03 03:46:17 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -39,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.9 2005-07-05 16:21:43 mee Exp $")
+           "$Id: noshear.f90,v 1.10 2006-06-03 03:46:17 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -98,17 +98,21 @@ module Shear
       if(NO_WARN) print*,f,df !(to keep compiler quiet)
     endsubroutine shearing
 !***********************************************************************
-    subroutine advance_shear
+    subroutine advance_shear(dt_shear)
 !
 !  Dummy routine: deltay remains unchanged
 !
 ! 18-aug-02/axel: incorporated from nompicomm.f90
+!
+      real :: dt_shear
 !
       use Cdata
 !
 !  print identifier
 !
       if (headtt.or.ldebug) print*,'advance_shear: deltay=const=',deltay
+!
+      if (NO_WARN) print*, dt_shear
 !
     endsubroutine advance_shear
 !***********************************************************************

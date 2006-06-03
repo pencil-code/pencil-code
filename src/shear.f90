@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.31 2006-03-30 00:15:32 mee Exp $
+! $Id: shear.f90,v 1.32 2006-06-03 03:46:17 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.31 2006-03-30 00:15:32 mee Exp $")
+           "$Id: shear.f90,v 1.32 2006-06-03 03:46:17 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -232,7 +232,7 @@ module Shear
 !
     end subroutine shearing
 !***********************************************************************
-    subroutine advance_shear
+    subroutine advance_shear(dt_shear)
 !
 !  advance shear distance, deltay, using dt. Using t instead introduces
 !  significant errors when nt = t/dt exceeds ~100,000 steps.
@@ -243,6 +243,8 @@ module Shear
       use Cdata
       use Mpicomm, only: stop_it
 !
+      real :: dt_shear
+!
 !  Works currently only when Sshear is not positive
 !
       if (Sshear>0.) then
@@ -252,7 +254,7 @@ module Shear
 !
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
 !
-      deltay=deltay-Sshear*Lx*dt
+      deltay=deltay-Sshear*Lx*dt_shear
       deltay=deltay-int(deltay/Ly)*Ly
 !
 !  print identifier
