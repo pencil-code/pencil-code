@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.300 2006-05-31 09:53:46 easy Exp $
+! $Id: equ.f90,v 1.301 2006-06-03 21:37:59 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.300 2006-05-31 09:53:46 easy Exp $")
+           "$Id: equ.f90,v 1.301 2006-06-03 21:37:59 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -402,7 +402,7 @@ module Equ
 !   f array before boundary conditions are sent)
 !
       if (ldustdensity .and. ldustnulling) call null_dust_vars(f)
-      if (ldustdensity .and. lmdvar .and. itsub == 1) call redist_mdbins(f)
+      if (ldustdensity .and. lmdvar .and. itsub==1) call redist_mdbins(f)
 !
 ! Prepare x-ghost zones required before f-array communication AND shock calculation
 !
@@ -411,7 +411,14 @@ module Equ
 !  Initiate shock profile calculation and use asynchronous to handle
 !  communication along processor/periodic boundaries.
 !
-      if (lshock)          call calc_shock_profile(f)
+      if (lshock) then
+        if (early_finalize) then
+          if (lroot) &
+              print*, 'pde: early_finalize does not work properly with shock!'
+          call fatal_error('pde','')
+        endif
+        call calc_shock_profile(f)
+      endif
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -426,6 +433,10 @@ module Equ
         call boundconds_y(f)
         call boundconds_z(f)
       endif
+!
+!  Apply global boundary conditions to particle positions and communiate
+!  migrating particles between the processors.
+!
       if (lparticles) call particles_boundconds(f)
 !
 !  set inverse timestep to zero before entering loop over m and n
@@ -443,7 +454,7 @@ module Equ
 !
       if (leos_ionization.or.leos_temperature_ionization) call ioncalc(f)
       if (lradiation_ray)  call radtransfer(f)
-      if (lshock)          call calc_shock_profile_simple(f)
+      if (lshock) call calc_shock_profile_simple(f)
       if (lvisc_hyper.or.lvisc_smagorinsky) then
         if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
       endif

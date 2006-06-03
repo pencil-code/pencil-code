@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.12 2006-06-03 20:51:12 ajohan Exp $
+! $Id: shock.f90,v 1.13 2006-06-03 21:37:59 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -101,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.12 2006-06-03 20:51:12 ajohan Exp $")
+           "$Id: shock.f90,v 1.13 2006-06-03 21:37:59 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -429,18 +429,14 @@ module Shock
             f(:,m,n,ishock)=penc
           enddo; enddo
 !
-!  Set periodic x-boundaries in smooth(max3(shock))
-!          
-          if (nxgrid/=1) then 
-            call bc_per_x(f,'top',ishock)
-            call bc_per_x(f,'bot',ishock)
-          endif
-!  End communication of uu ghost zones.
-          call finalize_isendrcv_bdry(f,iux,iuz)
-          call boundconds_y(f)
-          call boundconds_z(f)
+!  End communication of uu ghost zones and set global boundary conditions.
 !
-! Divu over external region
+          call finalize_isendrcv_bdry(f,iux,iuz)
+          call boundconds_x(f,iux,iuz)
+          call boundconds_y(f,iux,iuz)
+          call boundconds_z(f,iux,iuz)
+!
+!  Divu over external region
 !
           do n=2,mz-1; do jj=1,3
             m=1+jj
@@ -459,7 +455,7 @@ module Shock
             f(:,m,n,ishock)=max(-penc,0.)
           enddo; enddo
 !
-! Max over external region
+!  Max over external region
 !
           do n=3,mz-2; do jj=2,4
             m=1+jj
@@ -478,7 +474,7 @@ module Shock
             tmp(:,m,n)=penc
           enddo; enddo
 !
-! Smooth over external region
+!  Smooth over external region
 !
           do n=4,mz-3; do jj=3,5
             m=1+jj
@@ -512,9 +508,14 @@ module Shock
 !            f(:,m,n,ishock)=penc
 !          enddo; enddo
 !
-!  Set global x-boundaries.
+!  Set boundary conditions on shock viscosity in the x-direction. The two other
+!  directions are taken care of laster by pde (early_finalize does not work
+!  properly with shock).
 !
-          call boundconds_x(f)
+          call boundconds_x(f,ishock,ishock)
+!
+!  Scale with dxmin**2.
+!
           f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
         endif
       endif
