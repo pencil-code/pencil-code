@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.161 2006-05-30 19:33:53 ajohan Exp $
+! $Id: mpicomm.f90,v 1.162 2006-06-03 20:51:12 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -115,37 +115,11 @@ module Mpicomm
   include 'mpif.h'
 
 !
-  integer, parameter :: nbufx_gh=my*mz*nghost*mcom ! For shear
-  integer, parameter :: nbufy=mx*nz*nghost*mcom
-  integer, parameter :: nbufz=mx*ny*nghost*mcom
-  integer, parameter :: nbufyz=mx*nghost*nghost*mcom
-! For shock transmission
-  integer, parameter :: nshkbufy=mx*nz*nghost
-  integer, parameter :: nshkbufz=mx*ny*nghost
-  integer, parameter :: nshkbufyz=mx*nghost*nghost
-! For shock transmission
-  integer, parameter :: nvelbufy=mx*nz*nghost*3
-  integer, parameter :: nvelbufz=mx*ny*nghost*3
-  integer, parameter :: nvelbufyz=mx*nghost*nghost*3
-!
-!
 ! For f-array processor boundaries
   real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (mx,nghost,nghost,mcom) :: llbufi,lubufi,uubufi,ulbufi
   real, dimension (mx,nghost,nghost,mcom) :: llbufo,lubufo,uubufo,ulbufo
-!
-! For Shock profile contributions
-  real, dimension (mx,nghost,nz) :: lshkbufyi,ushkbufyi,lshkbufyo,ushkbufyo
-  real, dimension (mx,ny,nghost) :: lshkbufzi,ushkbufzi,lshkbufzo,ushkbufzo
-  real, dimension (mx,nghost,nghost) :: llshkbufi,lushkbufi,uushkbufi,ulshkbufi
-  real, dimension (mx,nghost,nghost) :: llshkbufo,lushkbufo,uushkbufo,ulshkbufo
-!
-! For premature velocity comms contributions
-  real, dimension (mx,nghost,nz,3) :: lvelbufyi,uvelbufyi,lvelbufyo,uvelbufyo
-  real, dimension (mx,ny,nghost,3) :: lvelbufzi,uvelbufzi,lvelbufzo,uvelbufzo
-  real, dimension (mx,nghost,nghost,3) :: llvelbufi,luvelbufi,uuvelbufi,ulvelbufi
-  real, dimension (mx,nghost,nghost,3) :: llvelbufo,luvelbufo,uuvelbufo,ulvelbufo
 !
   real, dimension (nghost,my,mz,mcom) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
@@ -157,12 +131,6 @@ module Mpicomm
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
-!  mpi tags for shock profile
-  integer :: shk_tolowy=90,shk_touppy=91,shk_tolowz=92,shk_touppz=93 ! msg. tags
-  integer :: shk_TOll=94,shk_TOul=95,shk_TOuu=96,shk_TOlu=97 ! msg. tags for corners
-!  mpi tags for early velocity comms
-  integer :: vel_tolowy=100,vel_touppy=101,vel_tolowz=102,vel_touppz=103 ! msg. tags
-  integer :: vel_TOll=104,vel_TOul=105,vel_TOuu=106,vel_TOlu=107 ! msg. tags for corners
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
 !  in order to have unique tags for each boundary and each direction
@@ -183,37 +151,14 @@ module Mpicomm
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
              irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
-! for shock profile
-  integer :: isend_rq_shktolowy,isend_rq_shktouppy,irecv_rq_shkfromlowy,irecv_rq_shkfromuppy
-  integer :: isend_rq_shktolowz,isend_rq_shktouppz,irecv_rq_shkfromlowz,irecv_rq_shkfromuppz
-  integer :: isend_rq_shkTOll,isend_rq_shkTOul,isend_rq_shkTOuu,isend_rq_shkTOlu  !(corners)
-  integer :: irecv_rq_shkFRuu,irecv_rq_shkFRlu,irecv_rq_shkFRll,irecv_rq_shkFRul  !(corners)
-! for early velocity comms
-  integer :: isend_rq_veltolowy,isend_rq_veltouppy,irecv_rq_velfromlowy,irecv_rq_velfromuppy
-  integer :: isend_rq_veltolowz,isend_rq_veltouppz,irecv_rq_velfromlowz,irecv_rq_velfromuppz
-  integer :: isend_rq_velTOll,isend_rq_velTOul,isend_rq_velTOuu,isend_rq_velTOlu  !(corners)
-  integer :: irecv_rq_velFRuu,irecv_rq_velFRlu,irecv_rq_velFRll,irecv_rq_velFRul  !(corners)
 
-  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
-  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
-                                         isend_stat_Tuu,isend_stat_Tlu
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
-                                         irecv_stat_Fll,irecv_stat_Ful
-! for shock profile
-  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_shktl,isend_stat_shktu
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_shkfl,irecv_stat_shkfu
-  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_shkTll,isend_stat_shkTul, &
-                                         isend_stat_shkTuu,isend_stat_shkTlu
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_shkFuu,irecv_stat_shkFlu, &
-                                         irecv_stat_shkFll,irecv_stat_shkFul
-! for early velocity comms
-  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_veltl,isend_stat_veltu
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_velfl,irecv_stat_velfu
-  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_velTll,isend_stat_velTul, &
-                                         isend_stat_velTuu,isend_stat_velTlu
-  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_velFuu,irecv_stat_velFlu, &
-                                         irecv_stat_velFll,irecv_stat_velFul
+  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
+  integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
+  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
+                                          isend_stat_Tuu,isend_stat_Tlu
+  integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
+                                          irecv_stat_Fll,irecv_stat_Ful
+
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
@@ -333,7 +278,7 @@ module Mpicomm
 !
     endsubroutine mpicomm_init
 !***********************************************************************
-    subroutine initiate_isendrcv_bdry(f)
+    subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
 !  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
@@ -342,6 +287,13 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !  So far no distribution over x
 !
@@ -350,40 +302,59 @@ module Mpicomm
 !  Periodic boundary conditions in y
 !
       if (nprocy>1) then
-        lbufyo(:,:,:,1:mcom)=f(:,m1:m1i,n1:n2,1:mcom)  !!(lower y-zone)
-        ubufyo(:,:,:,1:mcom)=f(:,m2i:m2,n1:n2,1:mcom)  !!(upper y-zone)
-        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
-        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
-        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
-        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy,MPI_COMM_WORLD,isend_rq_touppy,ierr)
+        lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2) !!(lower y-zone)
+        ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
+        nbufy=mx*nz*nghost*(ivar2-ivar1+1)
+        call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD, &
+            irecv_rq_fromuppy,ierr)
+        call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy,MPI_COMM_WORLD, &
+            irecv_rq_fromlowy,ierr)
+        call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD, &
+            isend_rq_tolowy,ierr)
+        call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy,MPI_COMM_WORLD, &
+            isend_rq_touppy,ierr)
       endif
 !
 !  Periodic boundary conditions in z
 !
       if (nprocz>1) then
-        lbufzo(:,:,:,1:mcom)=f(:,m1:m2,n1:n1i,1:mcom)  !!(lower z-zone)
-        ubufzo(:,:,:,1:mcom)=f(:,m1:m2,n2i:n2,1:mcom)  !!(upper z-zone)
-        call MPI_IRECV(ubufzi,nbufz,MPI_REAL,zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
-        call MPI_IRECV(lbufzi,nbufz,MPI_REAL,zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
-        call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
-        call MPI_ISEND(ubufzo,nbufz,MPI_REAL,zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
+        lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !!(lower z-zone)
+        ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !!(upper z-zone)
+        nbufz=mx*ny*nghost*(ivar2-ivar1+1)
+        call MPI_IRECV(ubufzi,nbufz,MPI_REAL,zuneigh,tolowz,MPI_COMM_WORLD, &
+            irecv_rq_fromuppz,ierr)
+        call MPI_IRECV(lbufzi,nbufz,MPI_REAL,zlneigh,touppz,MPI_COMM_WORLD, &
+            irecv_rq_fromlowz,ierr)
+        call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD, &
+            isend_rq_tolowz,ierr)
+        call MPI_ISEND(ubufzo,nbufz,MPI_REAL,zuneigh,touppz,MPI_COMM_WORLD, &
+            isend_rq_touppz,ierr)
       endif
 !
 !  The four corners (in counter-clockwise order)
 !
       if (nprocy>1.and.nprocz>1) then
-        llbufo(:,:,:,1:mcom)=f(:,m1:m1i,n1:n1i,1:mcom)
-        ulbufo(:,:,:,1:mcom)=f(:,m2i:m2,n1:n1i,1:mcom)
-        uubufo(:,:,:,1:mcom)=f(:,m2i:m2,n2i:n2,1:mcom)
-        lubufo(:,:,:,1:mcom)=f(:,m1:m1i,n2i:n2,1:mcom)
-        call MPI_IRECV(uubufi,nbufyz,MPI_REAL,uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,ierr)
-        call MPI_IRECV(lubufi,nbufyz,MPI_REAL,lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,ierr)
-        call MPI_IRECV(llbufi,nbufyz,MPI_REAL,llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,ierr)
-        call MPI_IRECV(ulbufi,nbufyz,MPI_REAL,ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,ierr)
-        call MPI_ISEND(llbufo,nbufyz,MPI_REAL,llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,ierr)
-        call MPI_ISEND(ulbufo,nbufyz,MPI_REAL,ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,ierr)
-        call MPI_ISEND(uubufo,nbufyz,MPI_REAL,uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,ierr)
-        call MPI_ISEND(lubufo,nbufyz,MPI_REAL,lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,ierr)
+        llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
+        ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
+        uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
+        lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
+        nbufyz=mx*nghost*nghost*(ivar2-ivar1+1)
+        call MPI_IRECV(uubufi,nbufyz,MPI_REAL,uucorn,TOll,MPI_COMM_WORLD, &
+            irecv_rq_FRuu,ierr)
+        call MPI_IRECV(lubufi,nbufyz,MPI_REAL,lucorn,TOul,MPI_COMM_WORLD, &
+            irecv_rq_FRlu,ierr)
+        call MPI_IRECV(llbufi,nbufyz,MPI_REAL,llcorn,TOuu,MPI_COMM_WORLD, &
+            irecv_rq_FRll,ierr)
+        call MPI_IRECV(ulbufi,nbufyz,MPI_REAL,ulcorn,TOlu,MPI_COMM_WORLD, &
+            irecv_rq_FRul,ierr)
+        call MPI_ISEND(llbufo,nbufyz,MPI_REAL,llcorn,TOll,MPI_COMM_WORLD, &
+            isend_rq_TOll,ierr)
+        call MPI_ISEND(ulbufo,nbufyz,MPI_REAL,ulcorn,TOul,MPI_COMM_WORLD, &
+            isend_rq_TOul,ierr)
+        call MPI_ISEND(uubufo,nbufyz,MPI_REAL,uucorn,TOuu,MPI_COMM_WORLD, &
+            isend_rq_TOuu,ierr)
+        call MPI_ISEND(lubufo,nbufyz,MPI_REAL,lucorn,TOlu,MPI_COMM_WORLD, &
+            isend_rq_TOlu,ierr)
       endif
 !
 !  communication sample
@@ -394,7 +365,7 @@ module Mpicomm
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
-    subroutine finalize_isendrcv_bdry(f)
+    subroutine finalize_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
       use Cdata, only: bcy1,bcy2,bcz1,bcz2
 !
@@ -406,7 +377,13 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: j
+      integer, optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, j, nbufy, nbufz, nbufyz
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !  1. wait until data received
 !  2. set ghost zones
@@ -417,11 +394,11 @@ module Mpicomm
       if (nprocy>1) then
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
-        do j=1,mcom
-          if (ipy /= 0 .OR. bcy1(j)=='p') then
+        do j=ivar1,ivar2
+          if (ipy/=0 .or. bcy1(j)=='p') then
             f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+          if (ipy/=nprocy-1 .or. bcy2(j)=='p') then
             f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -434,11 +411,11 @@ module Mpicomm
       if (nprocz>1) then
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
-        do j=1,mcom
-          if (ipz /= 0 .OR. bcz1(j)=='p') then
+        do j=ivar1,ivar2
+          if (ipz/=0 .or. bcz1(j)=='p') then
             f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
           endif
-          if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
+          if (ipz/=nprocz-1 .or. bcz2(j)=='p') then
             f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
@@ -453,20 +430,20 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,ierr)
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
-        do j=1,mcom
-          if (ipz /= 0 .OR. bcz1(j)=='p') then
-            if (ipy /= 0 .OR. bcy1(j)=='p') then
+        do j=ivar1,ivar2
+          if (ipz/=0 .or. bcz1(j)=='p') then
+            if (ipy/=0 .or. bcy1(j)=='p') then
               f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
             endif
-            if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+            if (ipy/=nprocy-1 .or. bcy2(j)=='p') then
               f(:,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
             endif
           endif
-          if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
-            if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+          if (ipz/=nprocz-1 .or. bcz2(j)=='p') then
+            if (ipy/=nprocy-1 .or. bcy2(j)=='p') then
               f(:,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
             endif
-            if (ipy /= 0 .OR. bcy1(j)=='p') then
+            if (ipy/=0 .or. bcy1(j)=='p') then
               f(:, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
             endif
           endif
@@ -488,9 +465,10 @@ module Mpicomm
 !  which could be mistaken for an earlier time
 !
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
-   subroutine initiate_shearing(f)
+   subroutine initiate_shearing(f,ivar1_opt,ivar2_opt)
 !
 !  Subroutine for shearing sheet boundary conditions
 !
@@ -499,85 +477,101 @@ module Mpicomm
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
       double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
-      integer :: ystep
+      integer :: ivar1, ivar2, ystep, nbufx_gh
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt      
 !
 !  Sixth order interpolation along the y-direction
 !
       deltay_dy=deltay/dy
       displs=int(deltay_dy)
       if (nprocy==1) then
-         frak=deltay_dy-displs
-         c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-         c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-         c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-         c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-         c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-         c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-         f(1:l1-1,m1:m2,:,1:mcom) = &
-              c1*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs+2,2) &
-             +c2*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs+1,2) &
-             +c3*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs  ,2) &
-             +c4*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs-1,2) &
-             +c5*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs-2,2) &
-             +c6*cshift(f(l2i:l2,m1:m2,:,1:mcom),-displs-3,2)
-         f(l2+1:mx,m1:m2,:,1:mcom)= &
-              c1*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs-2,2) &
-             +c2*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs-1,2) &
-             +c3*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs  ,2) &
-             +c4*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs+1,2) &
-             +c5*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs+2,2) &
-             +c6*cshift(f(l1:l1i,m1:m2,:,1:mcom), displs+3,2)
+        frak=deltay_dy-displs
+        c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+        c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+        c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+        c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+        c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+        c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+        f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
+             c1*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+2,2) &
+            +c2*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+1,2) &
+            +c3*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs  ,2) &
+            +c4*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-1,2) &
+            +c5*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-2,2) &
+            +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)
+        f(l2+1:mx,m1:m2,:,ivar1:ivar2) = &
+             c1*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-2,2) &
+            +c2*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-1,2) &
+            +c3*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs  ,2) &
+            +c4*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+1,2) &
+            +c5*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+2,2) &
+            +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2)
       else
 !
 !  With more than one CPU in the y-direction it will become necessary to
 !  interpolate over data from two different CPUs.  Likewise two different
 !  CPUs will require data from this CPU.
 !
-         ystep = displs/ny
-         nextya = ipz*nprocy+modulo(ipy-ystep,nprocy)
-         lastya = ipz*nprocy+modulo(ipy-ystep-1,nprocy)
-         lastyb = ipz*nprocy+modulo(ipy+ystep,nprocy)
-         nextyb = ipz*nprocy+modulo(ipy+ystep+1,nprocy)
-         fao(:,:,:,1:mcom) = f(l1:l1i,:,:,1:mcom)
-         fbo(:,:,:,1:mcom) = f(l2i:l2,:,:,1:mcom)
-         if (lastya/=iproc) then
-            call MPI_ISEND(fao,nbufx_gh,MPI_REAL,lastya,tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
-         endif
-         if (nextyb==iproc) then
-            fbhi=fao
-         else
-            call MPI_IRECV(fbhi,nbufx_gh,MPI_REAL,nextyb,tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,ierr)
-         endif
-         if (nextya/=iproc) then
-            call MPI_ISEND(fao,nbufx_gh,MPI_REAL,nextya,tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,ierr)
-         endif
-         if (lastyb==iproc) then
-            fblo=fao
-         else
-            call MPI_IRECV(fblo,nbufx_gh,MPI_REAL,lastyb,tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,ierr)
-         endif
-         if (lastyb/=iproc) then
-            call MPI_ISEND(fbo,nbufx_gh,MPI_REAL,lastyb,tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,ierr)
-         endif
-         if (nextya==iproc) then
-            fahi=fbo
-         else
-            call MPI_IRECV(fahi,nbufx_gh,MPI_REAL,nextya,tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,ierr)
-         endif
-         if (nextyb/=iproc) then
-            call MPI_ISEND(fbo,nbufx_gh,MPI_REAL,nextyb,tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,ierr)
-         endif
-         if (lastya==iproc) then
-            falo=fbo
-         else
-            call MPI_IRECV(falo,nbufx_gh,MPI_REAL,lastya,tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,ierr)
-         endif
+        ystep = displs/ny
+        nextya = ipz*nprocy+modulo(ipy-ystep,nprocy)
+        lastya = ipz*nprocy+modulo(ipy-ystep-1,nprocy)
+        lastyb = ipz*nprocy+modulo(ipy+ystep,nprocy)
+        nextyb = ipz*nprocy+modulo(ipy+ystep+1,nprocy)
+        fao(:,:,:,ivar1:ivar2) = f(l1:l1i,:,:,ivar1:ivar2)
+        fbo(:,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
+        nbufx_gh=my*mz*nghost*(ivar2-ivar1+1)
+        if (lastya/=iproc) then
+          call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
+              tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
+        endif
+        if (nextyb==iproc) then
+          fbhi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
+        else
+          call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
+              tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,ierr)
+        endif
+        if (nextya/=iproc) then
+          call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
+              tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,ierr)
+        endif
+        if (lastyb==iproc) then
+          fblo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
+        else
+          call MPI_IRECV(fblo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
+              tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,ierr)
+        endif
+        if (lastyb/=iproc) then
+          call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
+              tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,ierr)
+        endif
+        if (nextya==iproc) then
+          fahi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
+        else
+          call MPI_IRECV(fahi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
+              tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,ierr)
+        endif
+        if (nextyb/=iproc) then
+          call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
+              tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,ierr)
+        endif
+        if (lastya==iproc) then
+          falo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
+        else
+          call MPI_IRECV(falo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
+              tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,ierr)
+        endif
       endif
+!
     endsubroutine initiate_shearing
 !***********************************************************************
-    subroutine finalize_shearing(f)
+    subroutine finalize_shearing(f,ivar1_opt,ivar2_opt)
 !
 !  Subroutine for shearing sheet boundary conditions
 !
@@ -586,394 +580,81 @@ module Mpicomm
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
       real, dimension (nghost,2*my-2*nghost,mz,mcom) :: fa, fb
-      integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fal, irecv_stat_fan, irecv_stat_fbl, irecv_stat_fbn
-      integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla, isend_stat_tnb, isend_stat_tlb
-      integer :: m2long,i
+      integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fal, irecv_stat_fan
+      integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fbl, irecv_stat_fbn
+      integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla
+      integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tnb, isend_stat_tlb
+      integer :: ivar1, ivar2, m2long, i
       double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt      
 !
 !  Sliding periodic boundary conditions in x
 !  ulf:02-mar-02
 !
 ! need to wait till all communication has been recived
 !
-         if (lastyb/=iproc) call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,ierr)
-         if (nextyb/=iproc) call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,ierr)
-         if (lastya/=iproc) call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,ierr)
-         if (nextya/=iproc) call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,ierr)
+      if (lastyb/=iproc) call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,ierr)
+      if (nextyb/=iproc) call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,ierr)
+      if (lastya/=iproc) call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,ierr)
+      if (nextya/=iproc) call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,ierr)
 !
 ! reading communicated information into f
 !
-         deltay_dy=deltay/dy
-         m2long = 2*my-3*nghost
-         fa(:,1:m2,:,:) = falo(:,1:m2,:,:)
-         fa(:,m2+1:2*my-2*nghost,:,:) = fahi(:,m1:my,:,:)
-         fb(:,1:m2,:,:) = fblo(:,1:m2,:,:)
-         fb(:,m2+1:2*my-2*nghost,:,:) = fbhi(:,m1:my,:,:)
-         displs = modulo(int(deltay_dy),ny)
-         frak = deltay_dy - int(deltay_dy)
-         c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-         c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-         c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-         c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-         c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-         c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-         f(1:l1-1,m1:m2,:,1:mcom) &
-              =c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,1:mcom) &
-              +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,1:mcom) &
-              +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,1:mcom) &
-              +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,1:mcom) &
-              +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,1:mcom) &
-              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,1:mcom)
-         f(l2+1:mx,m1:m2,:,1:mcom) &
-              =c1*fb(:,m1+displs-2:m2+displs-2,:,1:mcom) &
-              +c2*fb(:,m1+displs-1:m2+displs-1,:,1:mcom) &
-              +c3*fb(:,m1+displs  :m2+displs  ,:,1:mcom) &
-              +c4*fb(:,m1+displs+1:m2+displs+1,:,1:mcom) &
-              +c5*fb(:,m1+displs+2:m2+displs+2,:,1:mcom) &
-              +c6*fb(:,m1+displs+3:m2+displs+3,:,1:mcom)
+      deltay_dy=deltay/dy
+      m2long = 2*my-3*nghost
+      fa(:,1:m2,:,ivar1:ivar2) = falo(:,1:m2,:,ivar1:ivar2)
+      fa(:,m2+1:2*my-2*nghost,:,ivar1:ivar2) = fahi(:,m1:my,:,ivar1:ivar2)
+      fb(:,1:m2,:,ivar1:ivar2) = fblo(:,1:m2,:,ivar1:ivar2)
+      fb(:,m2+1:2*my-2*nghost,:,ivar1:ivar2) = fbhi(:,m1:my,:,ivar1:ivar2)
+      displs = modulo(int(deltay_dy),ny)
+      frak = deltay_dy - int(deltay_dy)
+      c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+      c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+      c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+      c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+      c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+      c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+      f(1:l1-1,m1:m2,:,ivar1:ivar2) = &
+           c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,ivar1:ivar2) &
+          +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,ivar1:ivar2) &
+          +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,ivar1:ivar2) &
+          +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,ivar1:ivar2) &
+          +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,ivar1:ivar2) &
+          +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,ivar1:ivar2)
+      f(l2+1:mx,m1:m2,:,ivar1:ivar2)= &
+           c1*fb(:,m1+displs-2:m2+displs-2,:,ivar1:ivar2) &
+          +c2*fb(:,m1+displs-1:m2+displs-1,:,ivar1:ivar2) &
+          +c3*fb(:,m1+displs  :m2+displs  ,:,ivar1:ivar2) &
+          +c4*fb(:,m1+displs+1:m2+displs+1,:,ivar1:ivar2) &
+          +c5*fb(:,m1+displs+2:m2+displs+2,:,ivar1:ivar2) &
+          +c6*fb(:,m1+displs+3:m2+displs+3,:,ivar1:ivar2)
 !
 !  Filling also the x-y corners in order to avoid only zeros at these corners.
 !  One should acctually have communicated with an extra processor in order to
 !  fill these corners with the right values, but this does not seem to be
 !  necessary.
 !
-         do i=1,nghost
-            f(1:l1-1 ,i   ,:,1:mcom)=f(1:l1-1 ,m1+nghost-i,:,1:mcom)
-            f(1:l1-1 ,m2+i,:,1:mcom)=f(1:l1-1 ,m2-i+1     ,:,1:mcom)
-            f(l2+1:mx,i   ,:,1:mcom)=f(l2+1:mx,m1+nghost-i,:,1:mcom)
-            f(l2+1:mx,m2+i,:,1:mcom)=f(l2+1:mx,m2-i+1     ,:,1:mcom)
-         enddo
+      do i=1,nghost
+        f(1:l1-1 ,i   ,:,ivar1:ivar2)=f(1:l1-1 ,m1+nghost-i,:,ivar1:ivar2)
+        f(1:l1-1 ,m2+i,:,ivar1:ivar2)=f(1:l1-1 ,m2-i+1     ,:,ivar1:ivar2)
+        f(l2+1:mx,i   ,:,ivar1:ivar2)=f(l2+1:mx,m1+nghost-i,:,ivar1:ivar2)
+        f(l2+1:mx,m2+i,:,ivar1:ivar2)=f(l2+1:mx,m2-i+1     ,:,ivar1:ivar2)
+      enddo
 !
 !  need to wait till buffer is empty before re-using it again
 !
-         if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,ierr)
-         if (lastyb/=iproc) call MPI_WAIT(isend_rq_tolastyb,isend_stat_tlb,ierr)
-         if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
-         if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
-!
-       endsubroutine finalize_shearing
-!***********************************************************************
-    subroutine initiate_isendrcv_scalar(f,j)
-!
-!  Isend and Irecv boundary values. Called in the beginning of pde.
-!  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
-!  leftneigh and rghtneigh are initialized by mpicomm_init
-!
-!  21-may-02/axel: communication of corners added
-!
-      use CData
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: j
-!
-!  So far no distribution over x
-!
-      !(We may never do this after having seen all the trouble involved!!)
-!
-!  Periodic boundary conditions in y
-!
-      if (nprocy>1) then
-!
-! y-Boundary contributions...
-!
-        lshkbufyo(:,:,:)=f(:,1:m1-1 ,n1:n2,j)  !!(lower y-zone)
-        ushkbufyo(:,:,:)=f(:,m2+1:my,n1:n2,j)  !!(upper y-zone)
-        call MPI_IRECV(ushkbufyi,nshkbufy,MPI_REAL,yuneigh,shk_tolowy,MPI_COMM_WORLD,irecv_rq_shkfromuppy,ierr)
-        call MPI_IRECV(lshkbufyi,nshkbufy,MPI_REAL,ylneigh,shk_touppy,MPI_COMM_WORLD,irecv_rq_shkfromlowy,ierr)
-        call MPI_ISEND(lshkbufyo,nshkbufy,MPI_REAL,ylneigh,shk_tolowy,MPI_COMM_WORLD,isend_rq_shktolowy,ierr)
-        call MPI_ISEND(ushkbufyo,nshkbufy,MPI_REAL,yuneigh,shk_touppy,MPI_COMM_WORLD,isend_rq_shktouppy,ierr)
-      endif
-!
-!  Periodic boundary conditions in z
-!
-      if (nprocz>1) then
-!
-! z-Boundary contributions...
-!
-        lshkbufzo(:,:,:)=f(:,m1:m2,1:n1-1 ,j)  !!(lower z-zone)
-        ushkbufzo(:,:,:)=f(:,m1:m2,n2+1:mz,j)  !!(upper z-zone)
-        call MPI_IRECV(ushkbufzi,nshkbufz,MPI_REAL,zuneigh,shk_tolowz,MPI_COMM_WORLD,irecv_rq_shkfromuppz,ierr)
-        call MPI_IRECV(lshkbufzi,nshkbufz,MPI_REAL,zlneigh,shk_touppz,MPI_COMM_WORLD,irecv_rq_shkfromlowz,ierr)
-        call MPI_ISEND(lshkbufzo,nshkbufz,MPI_REAL,zlneigh,shk_tolowz,MPI_COMM_WORLD,isend_rq_shktolowz,ierr)
-        call MPI_ISEND(ushkbufzo,nshkbufz,MPI_REAL,zuneigh,shk_touppz,MPI_COMM_WORLD,isend_rq_shktouppz,ierr)
-      endif
-!
-!  The four corners (in counter-clockwise order)
-!
-      if (nprocy>1.and.nprocz>1) then
-!
-! Calculate corner contributions...
-!
-        llshkbufo(:,:,:)=f(:, 1:nghost, 1:nghost ,j)
-        ulshkbufo(:,:,:)=f(:, m2+1:my , 1:nghost,j)
-        uushkbufo(:,:,:)=f(:, m2+1:my , n2+1:mz,j)
-        lushkbufo(:,:,:)=f(:, 1:nghost, n2+1:mz,j)
-        call MPI_IRECV(uushkbufi,nshkbufyz,MPI_REAL,uucorn,shk_TOll,MPI_COMM_WORLD,irecv_rq_shkFRuu,ierr)
-        call MPI_IRECV(lushkbufi,nshkbufyz,MPI_REAL,lucorn,shk_TOul,MPI_COMM_WORLD,irecv_rq_shkFRlu,ierr)
-        call MPI_IRECV(llshkbufi,nshkbufyz,MPI_REAL,llcorn,shk_TOuu,MPI_COMM_WORLD,irecv_rq_shkFRll,ierr)
-        call MPI_IRECV(ulshkbufi,nshkbufyz,MPI_REAL,ulcorn,shk_TOlu,MPI_COMM_WORLD,irecv_rq_shkFRul,ierr)
-        call MPI_ISEND(llshkbufo,nshkbufyz,MPI_REAL,llcorn,shk_TOll,MPI_COMM_WORLD,isend_rq_shkTOll,ierr)
-        call MPI_ISEND(ulshkbufo,nshkbufyz,MPI_REAL,ulcorn,shk_TOul,MPI_COMM_WORLD,isend_rq_shkTOul,ierr)
-        call MPI_ISEND(uushkbufo,nshkbufyz,MPI_REAL,uucorn,shk_TOuu,MPI_COMM_WORLD,isend_rq_shkTOuu,ierr)
-        call MPI_ISEND(lushkbufo,nshkbufyz,MPI_REAL,lucorn,shk_TOlu,MPI_COMM_WORLD,isend_rq_shkTOlu,ierr)
-      endif
-!
-!  communication sample
-!  (commented out, because compiler does like this for 0-D runs)
-!
-!     if (ip<7.and.ipy==0.and.ipz==3) &
-!       print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
-!
-    endsubroutine initiate_isendrcv_scalar
-!***********************************************************************
-    subroutine finalize_isendrcv_scalar(f,j)
-!
-      use Cdata, only: bcy1,bcy2,bcz1,bcz2,lperi
-!
-!  Make sure the communications initiated with initiate_isendrcv_bdry are
-!  finished and insert the just received boundary values.
-!   Receive requests do not need to (and on OSF1 cannot) be explicitly
-!  freed, since MPI_Wait takes care of this.
-!
-!  21-may-02/axel: communication of corners added
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: j
-!
-!  1. wait until data received
-!  2. set ghost zones
-!  3. wait until send completed, will be overwritten in next time step
-!
-!  Communication in y (includes periodic bc)
-!
-      if (nprocy>1) then
-        call MPI_WAIT(irecv_rq_shkfromuppy,irecv_stat_shkfu,ierr)
-        call MPI_WAIT(irecv_rq_shkfromlowy,irecv_stat_shkfl,ierr)
-        if (ipy /= 0 .OR. lperi(2)) then
-          f(:, m1:m1i,n1:n2,j)=f(:,m1:m1i,n1:n2,j)+lshkbufyi  !!(set lower buffer)
-        endif
-        if (ipy /= nprocy-1 .OR. lperi(2)) then 
-          f(:,m2i:m2,n1:n2,j)=f(:,m2i:m2,n1:n2,j)+ushkbufyi  !!(set upper buffer)
-        endif
-        call MPI_WAIT(isend_rq_shktolowy,isend_stat_shktl,ierr)
-        call MPI_WAIT(isend_rq_shktouppy,isend_stat_shktu,ierr)
-      endif
-!
-!  Communication in z (includes periodic bc)
-!
-      if (nprocz>1) then
-        call MPI_WAIT(irecv_rq_shkfromuppz,irecv_stat_shkfu,ierr)
-        call MPI_WAIT(irecv_rq_shkfromlowz,irecv_stat_shkfl,ierr)
-        if (ipz /= 0 .OR. lperi(3)) then 
-           f(:,m1:m2,n1:n1i,j)=f(:,m1:m2,n1:n1i,j)+lshkbufzi  !!(set lower buffer)
-        endif
-        if (ipz /= nprocz-1 .OR. lperi(3)) then 
-           f(:,m1:m2,n2i:n2,j)=f(:,m1:m2,n2i:n2,j)+ushkbufzi  !!(set upper buffer)
-        endif
-        call MPI_WAIT(isend_rq_shktolowz,isend_stat_shktl,ierr)
-        call MPI_WAIT(isend_rq_shktouppz,isend_stat_shktu,ierr)
-      endif
-!
-!  The four yz-corners (in counter-clockwise order)
-!
-      if (nprocy>1.and.nprocz>1) then
-        call MPI_WAIT(irecv_rq_shkFRuu,irecv_stat_shkFuu,ierr)
-        call MPI_WAIT(irecv_rq_shkFRlu,irecv_stat_shkFlu,ierr)
-        call MPI_WAIT(irecv_rq_shkFRll,irecv_stat_shkFll,ierr)
-        call MPI_WAIT(irecv_rq_shkFRul,irecv_stat_shkFul,ierr)
-        if (ipz /= 0 .OR. lperi(3)) then 
-           if (ipy /= 0 .OR. lperi(2)) then 
-              f(:, m1:m1i, n1:n1i,j)=f(:, m1:m1i, n1:n1i,j)+llshkbufi  !!(set ll corner)
-           endif
-           if (ipy /= nprocy-1 .OR. lperi(2)) then
-              f(:, m2i:m2, n1:n1i,j)=f(:, m2i:m2, n1:n1i,j)+ulshkbufi  !!(set ul corner)
-           endif
-        endif
-        if (ipz /= nprocz-1 .OR. lperi(3)) then 
-           if (ipy /= nprocy-1 .OR. lperi(2)) then 
-              f(:, m2i:m2, n2i:n2,j)=f(:, m2i:m2, n2i:n2,j)+uushkbufi  !!(set uu corner)
-           endif
-           if (ipy /= 0 .OR. lperi(2)) then
-              f(:, m1:m1i, n2i:n2,j)=f(:, m1:m1i, n2i:n2,j)+lushkbufi  !!(set lu corner)
-           endif
-        endif
-        call MPI_WAIT(isend_rq_shkTOll,isend_stat_shkTll,ierr)
-        call MPI_WAIT(isend_rq_shkTOul,isend_stat_shkTul,ierr)
-        call MPI_WAIT(isend_rq_shkTOuu,isend_stat_shkTuu,ierr)
-        call MPI_WAIT(isend_rq_shkTOlu,isend_stat_shkTlu,ierr)
-      endif
-!
-!  communication sample
-!  (commented out, because compiler does like this for 0-D runs)
-!
-!     if (ip<7.and.ipy==3.and.ipz==0) &
-!       print*,'finalize_isendrcv_bdry: MPICOMM recv ul: ', &
-!                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
-!
-!  make sure the other precessors don't carry on sending new data
-!  which could be mistaken for an earlier time
-!
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-    endsubroutine finalize_isendrcv_scalar
-!***********************************************************************
-    subroutine initiate_isendrcv_uu(f)
-!
-!  Isend and Irecv boundary values. Called in the beginning of pde.
-!  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
-!  leftneigh and rghtneigh are initialized by mpicomm_init
-!
-!  21-may-02/axel: communication of corners added
-!
-      use CData
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-!  So far no distribution over x
-!
-      !(We may never do this after having seen all the trouble involved!!)
-!
-!  Periodic boundary conditions in y
-!
-      if (nprocy>1) then
-        lvelbufyo(:,:,:,:)=f(:,m1:m1i,n1:n2,iux:iuz)  !!(lower y-zone)
-        uvelbufyo(:,:,:,:)=f(:,m2i:m2,n1:n2,iux:iuz)  !!(upper y-zone)
-        call MPI_IRECV(uvelbufyi,nvelbufy,MPI_REAL,yuneigh,vel_tolowy,MPI_COMM_WORLD,irecv_rq_velfromuppy,ierr)
-        call MPI_IRECV(lvelbufyi,nvelbufy,MPI_REAL,ylneigh,vel_touppy,MPI_COMM_WORLD,irecv_rq_velfromlowy,ierr)
-        call MPI_ISEND(lvelbufyo,nvelbufy,MPI_REAL,ylneigh,vel_tolowy,MPI_COMM_WORLD,isend_rq_veltolowy,ierr)
-        call MPI_ISEND(uvelbufyo,nvelbufy,MPI_REAL,yuneigh,vel_touppy,MPI_COMM_WORLD,isend_rq_veltouppy,ierr)
-      endif
-!
-!  Periodic boundary conditions in z
-!
-      if (nprocz>1) then
-        lvelbufzo(:,:,:,:)=f(:,m1:m2,n1:n1i,iux:iuz)  !!(lower z-zone)
-        uvelbufzo(:,:,:,:)=f(:,m1:m2,n2i:n2,iux:iuz)  !!(upper z-zone)
-        call MPI_IRECV(uvelbufzi,nvelbufz,MPI_REAL,zuneigh,vel_tolowz,MPI_COMM_WORLD,irecv_rq_velfromuppz,ierr)
-        call MPI_IRECV(lvelbufzi,nvelbufz,MPI_REAL,zlneigh,vel_touppz,MPI_COMM_WORLD,irecv_rq_velfromlowz,ierr)
-        call MPI_ISEND(lvelbufzo,nvelbufz,MPI_REAL,zlneigh,vel_tolowz,MPI_COMM_WORLD,isend_rq_veltolowz,ierr)
-        call MPI_ISEND(uvelbufzo,nvelbufz,MPI_REAL,zuneigh,vel_touppz,MPI_COMM_WORLD,isend_rq_veltouppz,ierr)
-      endif
-!
-!  The four corners (in counter-clockwise order)
-!
-      if (nprocy>1.and.nprocz>1) then
-        llvelbufo(:,:,:,:)=f(:,m1:m1i,n1:n1i,iux:iuz)
-        ulvelbufo(:,:,:,:)=f(:,m2i:m2,n1:n1i,iux:iuz)
-        uuvelbufo(:,:,:,:)=f(:,m2i:m2,n2i:n2,iux:iuz)
-        luvelbufo(:,:,:,:)=f(:,m1:m1i,n2i:n2,iux:iuz)
-        call MPI_IRECV(uuvelbufi,nvelbufyz,MPI_REAL,uucorn,vel_TOll,MPI_COMM_WORLD,irecv_rq_velFRuu,ierr)
-        call MPI_IRECV(luvelbufi,nvelbufyz,MPI_REAL,lucorn,vel_TOul,MPI_COMM_WORLD,irecv_rq_velFRlu,ierr)
-        call MPI_IRECV(llvelbufi,nvelbufyz,MPI_REAL,llcorn,vel_TOuu,MPI_COMM_WORLD,irecv_rq_velFRll,ierr)
-        call MPI_IRECV(ulvelbufi,nvelbufyz,MPI_REAL,ulcorn,vel_TOlu,MPI_COMM_WORLD,irecv_rq_velFRul,ierr)
-        call MPI_ISEND(llvelbufo,nvelbufyz,MPI_REAL,llcorn,vel_TOll,MPI_COMM_WORLD,isend_rq_velTOll,ierr)
-        call MPI_ISEND(ulvelbufo,nvelbufyz,MPI_REAL,ulcorn,vel_TOul,MPI_COMM_WORLD,isend_rq_velTOul,ierr)
-        call MPI_ISEND(uuvelbufo,nvelbufyz,MPI_REAL,uucorn,vel_TOuu,MPI_COMM_WORLD,isend_rq_velTOuu,ierr)
-        call MPI_ISEND(luvelbufo,nvelbufyz,MPI_REAL,lucorn,vel_TOlu,MPI_COMM_WORLD,isend_rq_velTOlu,ierr)
-      endif
-!
-!  communication sample
-!  (commented out, because compiler does like this for 0-D runs)
-!
-!     if (ip<7.and.ipy==0.and.ipz==3) &
-!       print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
-!
-    endsubroutine initiate_isendrcv_uu
-!***********************************************************************
-    subroutine finalize_isendrcv_uu(f)
-!
-      use Cdata
-!
-!  Make sure the communications initiated with initiate_isendrcv_bdry are
-!  finished and insert the just received boundary values.
-!   Receive requests do not need to (and on OSF1 cannot) be explicitly
-!  freed, since MPI_Wait takes care of this.
-!
-!  21-may-02/axel: communication of corners added
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: j
-!
-!  1. wait until data received
-!  2. set ghost zones
-!  3. wait until send completed, will be overwritten in next time step
-!
-!  Communication in y (includes periodic bc)
-!
-      if (nprocy>1) then
-        call MPI_WAIT(irecv_rq_velfromuppy,irecv_stat_velfu,ierr)
-        call MPI_WAIT(irecv_rq_velfromlowy,irecv_stat_velfl,ierr)
-        do j=iux,iuz
-           if (ipy /= 0 .OR. bcy1(j)=='p') then
-              f(:, 1:m1-1,n1:n2,j)=lvelbufyi(:,:,:,j-iux+1)  !!(set lower buffer)
-           endif
-           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-              f(:,m2+1:my,n1:n2,j)=uvelbufyi(:,:,:,j-iux+1)  !!(set upper buffer)
-           endif
-        enddo
-        call MPI_WAIT(isend_rq_veltolowy,isend_stat_veltl,ierr)
-        call MPI_WAIT(isend_rq_veltouppy,isend_stat_veltu,ierr)
-      endif
-!
-!  Communication in z (includes periodic bc)
-!
-      if (nprocz>1) then
-        call MPI_WAIT(irecv_rq_velfromuppz,irecv_stat_velfu,ierr)
-        call MPI_WAIT(irecv_rq_velfromlowz,irecv_stat_velfl,ierr)
-        do j=iux,iuz
-           if (ipz /= 0 .OR. bcz1(j)=='p') then
-              f(:,m1:m2, 1:n1-1,j)=lvelbufzi(:,:,:,j-iux+1)  !!(set lower buffer)
-           endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
-              f(:,m1:m2,n2+1:mz,j)=uvelbufzi(:,:,:,j-iux+1)  !!(set upper buffer)
-           endif
-        enddo
-        call MPI_WAIT(isend_rq_veltolowz,isend_stat_veltl,ierr)
-        call MPI_WAIT(isend_rq_veltouppz,isend_stat_veltu,ierr)
-      endif
-!
-!  The four yz-corners (in counter-clockwise order)
-!
-      if (nprocy>1.and.nprocz>1) then
-        call MPI_WAIT(irecv_rq_velFRuu,irecv_stat_velFuu,ierr)
-        call MPI_WAIT(irecv_rq_velFRlu,irecv_stat_velFlu,ierr)
-        call MPI_WAIT(irecv_rq_velFRll,irecv_stat_velFll,ierr)
-        call MPI_WAIT(irecv_rq_velFRul,irecv_stat_velFul,ierr)
-        do j=iux,iuz
-           if (ipz /= 0 .OR. bcz1(j)=='p') then
-              if (ipy /= 0 .OR. bcy1(j)=='p') then
-                 f(:, 1:m1-1, 1:n1-1,j)=llvelbufi(:,:,:,j-iux+1)  !!(set ll corner)
-              endif
-              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-                 f(:,m2+1:my, 1:n1-1,j)=ulvelbufi(:,:,:,j-iux+1)  !!(set ul corner)
-              endif
-           endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
-              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-                 f(:,m2+1:my,n2+1:mz,j)=uuvelbufi(:,:,:,j-iux+1)  !!(set uu corner)
-              endif
-              if (ipy /= 0 .OR. bcy1(j)=='p') then
-                 f(:, 1:m1-1,n2+1:mz,j)=luvelbufi(:,:,:,j-iux+1)  !!(set lu corner)
-              endif
-           endif
-        enddo
-        call MPI_WAIT(isend_rq_velTOll,isend_stat_velTll,ierr)
-        call MPI_WAIT(isend_rq_velTOul,isend_stat_velTul,ierr)
-        call MPI_WAIT(isend_rq_velTOuu,isend_stat_velTuu,ierr)
-        call MPI_WAIT(isend_rq_velTOlu,isend_stat_velTlu,ierr)
-      endif
-!
-!  communication sample
-!  (commented out, because compiler does like this for 0-D runs)
-!
-!     if (ip<7.and.ipy==3.and.ipz==0) &
-!       print*,'finalize_isendrcv_bdry: MPICOMM recv ul: ', &
-!                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
-!
-!  make sure the other precessors don't carry on sending new data
-!  which could be mistaken for an earlier time
-!
-      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-    endsubroutine finalize_isendrcv_uu
+      if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,ierr)
+      if (lastyb/=iproc) call MPI_WAIT(isend_rq_tolastyb,isend_stat_tlb,ierr)
+      if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
+      if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
+!
+    endsubroutine finalize_shearing
 !***********************************************************************
     subroutine radboundary_zx_recv(mrad,idir,Qrecv_zx)
 !

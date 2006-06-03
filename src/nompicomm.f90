@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.118 2006-06-03 15:10:59 ajohan Exp $
+! $Id: nompicomm.f90,v 1.119 2006-06-03 20:51:12 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -107,103 +107,63 @@ module Mpicomm
 !
     endsubroutine mpicomm_init
 !***********************************************************************
-    subroutine initiate_isendrcv_bdry(f)
-!
-      use Cdata
+    subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
 !  for one processor, use periodic boundary conditions
 !  but in this dummy routine this is done in finalize_isendrcv_bdry
 !
+      use Cdata
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
 !
       if (NO_WARN) print*,f       !(keep compiler quiet)
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
-    subroutine finalize_isendrcv_bdry(f)
-!
-      use Cparam
+    subroutine finalize_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
 !  apply boundary conditions
 !
+      use Cparam
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
 !
       if (NO_WARN) print*,f       !(keep compiler quiet)
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
-    subroutine initiate_isendrcv_scalar(f,j)
-!
-      use Cdata
-!
-!  for one processor, use periodic boundary conditions
-!  but in this dummy routine this is done in finalize_isendrcv_bdry
+    subroutine initiate_shearing(f,ivar1_opt,ivar2_opt)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: j
-!
-      if (NO_WARN) print*,f,j       !(keep compiler quiet)
-!
-    endsubroutine initiate_isendrcv_scalar
-!***********************************************************************
-    subroutine finalize_isendrcv_uu(f)
-!
-      use Cparam
-!
-!  apply boundary conditions
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (NO_WARN) print*,f       !(keep compiler quiet)
-    endsubroutine finalize_isendrcv_uu
-!***********************************************************************
-    subroutine initiate_isendrcv_uu(f)
-!
-      use Cdata
-!
-!  for one processor, use periodic boundary conditions
-!  but in this dummy routine this is done in finalize_isendrcv_bdry
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (NO_WARN) print*,f       !(keep compiler quiet)
-!
-    endsubroutine initiate_isendrcv_uu
-!***********************************************************************
-    subroutine finalize_isendrcv_scalar(f,j)
-!
-      use Cparam
-!
-!  apply boundary conditions
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: j
-!
-      if (NO_WARN) print*,f,j       !(keep compiler quiet)
-    endsubroutine finalize_isendrcv_scalar
-!***********************************************************************
-    subroutine initiate_shearing(f)
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
 !    
       if (NO_WARN) print*,f       !(keep compiler quiet)
+!
     endsubroutine initiate_shearing
 !***********************************************************************
-    subroutine finalize_shearing(f)
-!
-  use Cdata
+    subroutine finalize_shearing(f,ivar1_opt,ivar2_opt)
 !
 !  for one processor, use periodic boundary conditions
 !  but in this dummy routine this is done in finalize_isendrcv_bdry
 !
+      use Cdata
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
       double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
-      integer :: displs
+      integer :: ivar1, ivar2, displs
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !  Periodic boundary conditions in x, with shearing sheat
 !
       if (nygrid==1) then !If 2D
-        f( 1:l1-1,:,:,1:mvar) = f(l2i:l2,:,:,1:mvar)
-        f(l2+1:mx,:,:,1:mvar) = f(l1:l1i,:,:,1:mvar)
+        f( 1:l1-1,:,:,ivar1:ivar2) = f(l2i:l2,:,:,ivar1:ivar2)
+        f(l2+1:mx,:,:,ivar1:ivar2) = f(l1:l1i,:,:,ivar1:ivar2)
       else
         deltay_dy=deltay/dy
         displs=int(deltay_dy)
@@ -214,21 +174,22 @@ module Mpicomm
         c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
         c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
         c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-        f( 1:l1-1,m1:m2,:,1:mvar) = &
-             c1*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs+2,2) &
-            +c2*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs+1,2) &
-            +c3*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs  ,2) &
-            +c4*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-1,2) &
-            +c5*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-2,2) &
-            +c6*cshift(f(l2i:l2,m1:m2,:,1:mvar),-displs-3,2)  
-        f(l2+1:mx,m1:m2,:,1:mvar) = &
-             c1*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs-2,2) &
-            +c2*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs-1,2) &
-            +c3*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs  ,2) &
-            +c4*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs+1,2) &
-            +c5*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs+2,2) &
-            +c6*cshift(f(l1:l1i,m1:m2,:,1:mvar), displs+3,2) 
+        f( 1:l1-1,m1:m2,:,ivar1:ivar2) = &
+             c1*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+2,2) &
+            +c2*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs+1,2) &
+            +c3*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs  ,2) &
+            +c4*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-1,2) &
+            +c5*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-2,2) &
+            +c6*cshift(f(l2i:l2,m1:m2,:,ivar1:ivar2),-displs-3,2)  
+        f(l2+1:mx,m1:m2,:,ivar1:ivar2) = &
+             c1*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-2,2) &
+            +c2*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs-1,2) &
+            +c3*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs  ,2) &
+            +c4*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+1,2) &
+            +c5*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+2,2) &
+            +c6*cshift(f(l1:l1i,m1:m2,:,ivar1:ivar2), displs+3,2) 
       endif
+!
     endsubroutine finalize_shearing
 !***********************************************************************
     subroutine radboundary_zx_recv(mrad,idir,Qrecv_zx)

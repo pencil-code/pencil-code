@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.110 2006-05-28 17:54:06 theine Exp $
+! $Id: boundcond.f90,v 1.111 2006-06-03 20:51:12 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -24,7 +24,7 @@ module Boundcond
   contains
 
 !***********************************************************************
-    subroutine boundconds(f)
+    subroutine boundconds(f,ivar1_opt,ivar2_opt)
 !
 !  Apply boundary conditions in all three directions.
 !  Note that we _must_ call boundconds_{x,y,z} in this order, or edges and
@@ -35,14 +35,21 @@ module Boundcond
       use Cparam
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
 !
-      call boundconds_x(f)      ! Do not change this order.
-      call boundconds_y(f)
-      call boundconds_z(f)      
+      integer :: ivar1, ivar2
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
+!
+      call boundconds_x(f,ivar1,ivar2)      ! Do not change this order.
+      call boundconds_y(f,ivar1,ivar2)
+      call boundconds_z(f,ivar1,ivar2)      
 !
     endsubroutine boundconds
 !***********************************************************************
-    subroutine boundconds_x(f)
+    subroutine boundconds_x(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x except for periodic part handled by communication.
 !  boundconds_x() needs to be called before communicating (because we
@@ -60,28 +67,33 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
       real, dimension (mcom) :: fbcx12
-      integer :: j,k,ip_ok
+      integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
 !
-      if(ldebug) print*,'boundconds_x: ENTER: boundconds_x'
+      if (ldebug) print*, 'boundconds_x: ENTER: boundconds_x'
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
       select case(nxgrid)
 !
       case(1)
-        if(headtt) print*,'boundconds_x: no x-boundary'
+        if (headtt) print*, 'boundconds_x: no x-boundary'
 !
-!  Boundary conditions in x
-!  shearing sheet boundary condition (default)
-!  can still use other boundary conditions (even with shear)
+!  Boundary conditions in x.
 !
       case default
         if (bcx1(1)=='she') then
           if (ip<12.and.headtt) print*, &
                'boundconds_x: use shearing sheet boundary condition'
-          call initiate_shearing(f)
-          if (nprocy>1 .or. (.not. lmpicomm)) call finalize_shearing(f)
+          call initiate_shearing(f,ivar1,ivar2)
+          if (nprocy>1 .or. (.not. lmpicomm)) &
+              call finalize_shearing(f,ivar1,ivar2)
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then
@@ -89,10 +101,10 @@ module Boundcond
             else
               topbot='top'; bc12=bcx2; fbcx12=fbcx2; ip_ok=nprocx-1
             endif
-            !
-            do j=1,mcom
+!
+            do j=ivar1,ivar2
               if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
-              if (ipx == ip_ok) then
+              if (ipx==ip_ok) then
                 select case(bc12(j))
                 case ('p')        ! periodic
                   call bc_per_x(f,topbot,j)
@@ -143,7 +155,7 @@ module Boundcond
 !
     endsubroutine boundconds_x
 !***********************************************************************
-    subroutine boundconds_y(f)
+    subroutine boundconds_y(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x except for periodic part handled by communication.
 !  boundconds_x() needs to be called before communicating (because we
@@ -160,17 +172,23 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
       real, dimension (mcom) :: fbcy12
-      integer :: j,k,ip_ok
+      integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
 !
-      if(ldebug) print*,'boundconds_y: ENTER: boundconds_y'
+      if (ldebug) print*,'boundconds_y: ENTER: boundconds_y'
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
       select case(nygrid)
 !
       case(1)
-        if(headtt) print*,'boundconds_y: no y-boundary'
+        if (headtt) print*,'boundconds_y: no y-boundary'
 !
 !  Boundary conditions in y
 !
@@ -181,10 +199,10 @@ module Boundcond
           else
             topbot='top'; bc12=bcy2; fbcy12=fbcy2; ip_ok=nprocy-1
           endif
-          !
-          do j=1,mcom 
+!
+          do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
-            if (ipy == ip_ok) then
+            if (ipy==ip_ok) then
               select case(bc12(j))
               case ('p')        ! periodic
                 call bc_per_y(f,topbot,j)
@@ -225,7 +243,7 @@ module Boundcond
 !
     endsubroutine boundconds_y
 !***********************************************************************
-    subroutine boundconds_z(f)
+    subroutine boundconds_z(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x except for periodic part handled by communication.
 !  boundconds_x() needs to be called before communicating (because we
@@ -244,18 +262,24 @@ module Boundcond
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
       real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2
       real :: Ftopbot,FtopbotK
-      integer :: j,k,ip_ok
+      integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
 !
-      if(ldebug) print*,'boundconds_z: ENTER: boundconds_z'
+      if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
+!
+      ivar1=1; ivar2=mcom
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
       select case(nzgrid)
 !
       case(1)
-        if(headtt) print*,'boundconds_z: no z-boundary'
+        if (headtt) print*,'boundconds_z: no z-boundary'
 !
 !  Boundary conditions in z
 !
@@ -280,10 +304,10 @@ module Boundcond
             Ftopbot=Ftop
             FtopbotK=FtopKtop
           endif
-          !
-          do j=1,mcom
+!
+          do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
-            if (ipz == ip_ok) then
+            if (ipz==ip_ok) then
               select case(bc12(j))
               case ('p')        ! periodic
                 call bc_per_z(f,topbot,j)
@@ -1945,7 +1969,7 @@ module Boundcond
               read (10,rec=i+1,iostat=iostat) tr
               iostat=-1
             else
-              if(t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t)  iostat=-1 ! correct time step is reached
+              if (t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t)  iostat=-1 ! correct time step is reached
             endif
           enddo
           close (10)

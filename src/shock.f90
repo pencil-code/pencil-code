@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.11 2006-03-18 09:15:14 ajohan Exp $
+! $Id: shock.f90,v 1.12 2006-06-03 20:51:12 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -101,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.11 2006-03-18 09:15:14 ajohan Exp $")
+           "$Id: shock.f90,v 1.12 2006-06-03 20:51:12 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -386,7 +386,7 @@ module Shock
 ! Initiate asyncronous communication of contributions to other processors 
 !
           if (nxgrid/=1) call bcshock_per_x(f)
-          call initiate_isendrcv_scalar(f,ishock)
+          call initiate_isendrcv_bdry(f,ishock,ishock)
 !
 ! Calculate all local shock profile contributions
 !
@@ -395,7 +395,7 @@ module Shock
 !
 ! Finalize all shock profile communications
 !
-          call finalize_isendrcv_scalar(f,ishock)
+          call finalize_isendrcv_bdry(f,ishock,ishock)
           if (nygrid/=1) call bcshock_per_y(f)
           if (nzgrid/=1) call bcshock_per_z(f)
 !FIX ME
@@ -405,7 +405,7 @@ module Shock
          !f(:,:,:,ishock) = tmp * dxmin**2 
         elseif (lcommunicate_uu) then
 !  Communicate uu ghost zones
-          call initiate_isendrcv_uu(f)
+          call initiate_isendrcv_bdry(f,iux,iuz)
           f(:,:,:,ishock)=0.
 !
 !  Divu over internal region
@@ -423,7 +423,7 @@ module Shock
           enddo; enddo
 !
 !  Smooth over internal region
-!          
+!
           do n=n1+3,n2-3; do m=m1+3,m2-3
             call shock_smooth(tmp,penc) 
             f(:,m,n,ishock)=penc
@@ -436,7 +436,7 @@ module Shock
             call bc_per_x(f,'bot',ishock)
           endif
 !  End communication of uu ghost zones.
-          call finalize_isendrcv_uu(f)
+          call finalize_isendrcv_bdry(f,iux,iuz)
           call boundconds_y(f)
           call boundconds_z(f)
 !

@@ -19,8 +19,6 @@
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   public :: initiate_shearing, finalize_shearing
-  public :: initiate_isendrcv_scalar, finalize_isendrcv_scalar
-  public :: initiate_isendrcv_uu, finalize_isendrcv_uu
 
   public :: transp
   public :: transform_fftpack,transform_fftpack_2d, transform_fftpack_1d 
