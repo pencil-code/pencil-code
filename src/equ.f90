@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.301 2006-06-03 21:37:59 ajohan Exp $
+! $Id: equ.f90,v 1.302 2006-06-04 19:21:07 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.301 2006-06-03 21:37:59 ajohan Exp $")
+           "$Id: equ.f90,v 1.302 2006-06-04 19:21:07 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -411,14 +411,7 @@ module Equ
 !  Initiate shock profile calculation and use asynchronous to handle
 !  communication along processor/periodic boundaries.
 !
-      if (lshock) then
-        if (early_finalize) then
-          if (lroot) &
-              print*, 'pde: early_finalize does not work properly with shock!'
-          call fatal_error('pde','')
-        endif
-        call calc_shock_profile(f)
-      endif
+      if (lshock) call calc_shock_profile(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
