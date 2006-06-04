@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.10 2005-07-25 08:54:27 brandenb Exp $
+; $Id: pc_read_param.pro,v 1.11 2006-06-04 18:47:52 ajohan Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2005-07-25 08:54:27 $
-;  $Revision: 1.10 $
+;  $Date: 2006-06-04 18:47:52 $
+;  $Revision: 1.11 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -82,6 +82,7 @@ if (found gt 0) then begin
     ;; Write content of param.nml to temporary file:
     spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m '+filename+'> ' $
          + tmpfile , result
+    spawn, "sed -i -e 's/,$/, \$/g' param.pro", result
     ;; Compile that file. Should be easy, but is incredibly awkward, as
     ;; there is no way in IDL to compile a given file at run-time
     ;; outside the command line:
