@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.91 2006-05-29 18:03:42 ajohan Exp $
+! $Id: particles_dust.f90,v 1.92 2006-06-04 22:10:55 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -33,6 +33,10 @@ module Particles
   real :: Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
   real :: kx_vvp=0.0, ky_vvp=0.0, kz_vvp=0.0, amplvvp=0.0
+  real :: kx_vpx=0.0, kx_vpy=0.0, kx_vpz=0.0
+  real :: ky_vpx=0.0, ky_vpy=0.0, ky_vpz=0.0
+  real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
+  real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false., lsmooth_dragforce=.false.
@@ -47,7 +51,9 @@ module Particles
       rhop_tilde, eps_dtog, nu_epicycle, lsmooth_dragforce, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
-      kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp
+      kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
+      kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
+      phase_vpx, phase_vpy, phase_vpz
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -83,7 +89,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.91 2006-05-29 18:03:42 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.92 2006-06-04 22:10:55 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -241,7 +247,7 @@ module Particles
 !
       real, dimension (3) :: uup
       real :: r, p, px, py, pz, eps, cs
-      real :: npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
+      real :: fac, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       integer :: l, k, ix0, iy0, iz0
 !
       intent (out) :: f, fp, ineargrid
@@ -268,9 +274,12 @@ module Particles
           if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
           if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
         enddo
-        if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-        if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
-        if (nzgrid/=1) fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+        if (nxgrid/=1) &
+            fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+        if (nygrid/=1) &
+            fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+        if (nzgrid/=1) &
+            fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
 
       case ('np-constant')
         if (lroot) print*, 'init_particles: Constant number density'
@@ -291,27 +300,34 @@ k_loop: do while (.not. (k>npar_loc))
       case ('equidistant')
         if (lroot) print*, 'init_particles: Particles placed equidistantly'
 !  Number of particles in each direction.          
-        npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**(1/3.)
-        npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**(1/3.)
-        npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**(1/3.)
-!  Distance between particles in each direction.
-        dx_par=Lxyz_loc(1)/npar_loc_x
-        dy_par=Lxyz_loc(2)/npar_loc_y
-        dz_par=Lxyz_loc(3)/npar_loc_z
-
-        fp(1,ixp) = xyz0_loc(1)+dx_par/2
-        fp(1,iyp) = xyz0_loc(2)+dy_par/2
-        fp(1,izp) = xyz0_loc(3)+dz_par/2
-!  Place particles iteratively, making sure that they are always in the box.        
+        fac=1.0/dimensionality
+        dx_par=0.0; dy_par=0.0; dz_par=0.0
+        fp(1,ixp)=x(l1); fp(1,iyp)=y(m1); fp(1,izp)=z(n1)
+        if (nxgrid/=1) then
+          npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**fac
+          dx_par=Lxyz_loc(1)/npar_loc_x
+          fp(1,ixp) = xyz0_loc(1)+dx_par/2
+        endif
+        if (nygrid/=1) then
+          npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**fac
+          dy_par=Lxyz_loc(2)/npar_loc_y
+          fp(1,iyp) = xyz0_loc(2)+dy_par/2
+        endif
+        if (nzgrid/=1) then
+          npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**fac
+          dz_par=Lxyz_loc(3)/npar_loc_z
+          fp(1,izp) = xyz0_loc(3)+dz_par/2
+        endif
+!  Place particles iteratively, making sure that they are always in the box.
         do k=2,npar_loc
           fp(k,ixp)=fp(k-1,ixp)+dx_par
           fp(k,iyp)=fp(k-1,iyp)
           fp(k,izp)=fp(k-1,izp)
-          if (fp(k,ixp)>xyz1_loc(1)) then
+          if (fp(k,ixp)>xyz1_loc(1) .or. nxgrid==1) then
             fp(k,ixp)=fp(1,ixp)
             fp(k,iyp)=fp(k,iyp)+dy_par
           endif
-          if (fp(k,iyp)>xyz1_loc(2)) then
+          if (fp(k,iyp)>xyz1_loc(2) .or. nygrid==1) then
             fp(k,iyp)=fp(1,iyp)
             fp(k,izp)=fp(k,izp)+dz_par
           endif
@@ -382,6 +398,24 @@ k_loop: do while (.not. (k>npar_loc))
         fp(1:npar_loc,ivpx)=vpx0
         fp(1:npar_loc,ivpy)=vpy0
         fp(1:npar_loc,ivpz)=vpz0
+
+      case ('sinwave-phase')
+        if (lroot) print*, 'init_particles: sinwave-phase'
+        if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+        do k=1,npar_loc
+          fp(k,ivpx)=fp(k,ivpx)+vpx0*sin(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
+          fp(k,ivpy)=fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
+          fp(k,ivpz)=fp(k,ivpz)+vpz0*sin(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
+        enddo
+
+      case ('coswave-phase')
+        if (lroot) print*, 'init_particles: coswave-phase'
+        if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+        do k=1,npar_loc
+          fp(k,ivpx)=fp(k,ivpx)+vpx0*cos(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
+          fp(k,ivpy)=fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
+          fp(k,ivpz)=fp(k,ivpz)+vpz0*cos(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
+        enddo
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle velocities; '// &
