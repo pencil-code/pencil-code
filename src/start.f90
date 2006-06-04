@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.154 2006-05-28 01:37:57 ajohan Exp $
+! $Id: start.f90,v 1.155 2006-06-04 22:11:31 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -90,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.154 2006-05-28 01:37:57 ajohan Exp $")
+             "$Id: start.f90,v 1.155 2006-06-04 22:11:31 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -166,6 +166,10 @@
 !
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
+!
+!  Calculate dimensionality of the run.
+!
+        dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
 !
 !  check consistency
 !
