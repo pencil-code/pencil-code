@@ -1,0 +1,17 @@
+#!/bin/csh
+#$Id: pc_mkproctree,v 1.1 2006-06-05 13:00:39 brandenb Exp $
+#
+#  Makes a processor directory tree
+#
+#  Usage (need to be in data dir!):
+#    mkproc-tree 128
+#  generates 128 proc directories. Can be used for storing old slice data.
+#
+set subdirs = `printf "%s%s%s\n" "for(i=0;i<$1;i++){" '"proc";' 'i; }' | bc`
+foreach dir ($subdirs)
+  # Make sure a sufficient number of subdirectories exist
+  echo mkdir $dir
+  if (! -e $dir) then
+    mkdir $dir
+  endif
+end
