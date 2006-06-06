@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.11 2006-06-04 18:47:52 ajohan Exp $
+; $Id: pc_read_param.pro,v 1.12 2006-06-06 12:16:51 mee Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-06-04 18:47:52 $
-;  $Revision: 1.11 $
+;  $Date: 2006-06-06 12:16:51 $
+;  $Revision: 1.12 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -82,7 +82,9 @@ if (found gt 0) then begin
     ;; Write content of param.nml to temporary file:
     spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m '+filename+'> ' $
          + tmpfile , result
-    spawn, "sed -i -e 's/,$/, \$/g' param.pro", result
+    ;; The following (to add continuation characters to lines ending in
+    ;; commas should probably be fixed properly in Namelist.pm
+    spawn, "perl -pi -e 's/,[ \t]*$/, \$/mg' param.pro", result
     ;; Compile that file. Should be easy, but is incredibly awkward, as
     ;; there is no way in IDL to compile a given file at run-time
     ;; outside the command line:
