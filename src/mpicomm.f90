@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.162 2006-06-03 20:51:12 ajohan Exp $
+! $Id: mpicomm.f90,v 1.163 2006-06-06 02:44:25 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1822,7 +1822,7 @@ module Mpicomm
         endif
       endif
 !
-!  need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid
+!  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid
 !
       call cffti(nx,wsavex)
 !
@@ -1835,7 +1835,7 @@ module Mpicomm
           a_im(:,m,n)=aimag(ax)
         enddo; enddo
 !
-!  Power in y-direction.
+!  Transform y-direction.
 !      
         if (nygrid/=1) then
           if (nygrid/=nxgrid) then
@@ -1856,7 +1856,7 @@ module Mpicomm
           enddo; enddo
         endif
 !
-!  Power in z-direction.
+!  Transform z-direction.
 !      
         if (nzgrid/=1) then
           if (nzgrid/=nxgrid) then
@@ -1884,7 +1884,7 @@ module Mpicomm
 !
         if (nzgrid/=1) then
 !
-!  Power in z-direction.
+!  Transform z-direction back.
 !      
           if (nzgrid/=nxgrid) then
             if (lroot) print*, 'transform_fftpack: must have nzgrid=nxgrid!'
@@ -1900,7 +1900,7 @@ module Mpicomm
           enddo; enddo
         endif
 !
-!  Power in y-direction. Must transpose to go from (z,x,y) to (y,x,z).
+!  Transform y-direction back. Must transpose to go from (z,x,y) to (y,x,z).
 !
         if (nygrid/=1) then
           if (nygrid/=nxgrid) then
@@ -1922,8 +1922,8 @@ module Mpicomm
           enddo; enddo
         endif
 !
-!  Power in x-direction. Transpose to go from (y,x,z) to (x,y,z).
-!      
+!  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
+!
         if (lroot .and. ip<10) print*, 'transform_fftpack: doing FFTpack in x'
         if (nygrid==1) then
           call transp(a_re,'z')
@@ -2050,20 +2050,174 @@ module Mpicomm
 !
     endsubroutine transform_fftpack_1d
 !***********************************************************************
-    subroutine transform_fftpack_shear(a_re,a_im,dummy)
+    subroutine transform_fftpack_shear(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
-!  The routine overwrites the input data.
+!  The routine overwrites the input data
 !
-!  26-may-06/anders: dummy
+!  The transform from real space to Fourier space goes as follows:
 !
-      real, dimension(nx,ny,nz) :: a_re,a_im
-      integer, optional :: dummy
+!  (x,y,z)
+!     |
+!  (y,x,z) - (ky,x,z) - (ky',x,z)
+!                            |
+!                       (x,ky',z) - (kx,ky',z)
+!                                        |
+!                                   (z,ky',kx) - (kz,ky',kx)
 !
-      if (lroot) print*, 'transform_fftpack_shear: not implemented in parallel'
-      call stop_it('transform_fftpack_shear')
+!  Vertical lines refer to a transposition operation, horizontal lines to any
+!  other operation. Here ky' refers to a coordinate frame where y has been
+!  transformed so that the x-direction is purely periodic (not shear periodic).
+!  The transformation from Fourier space to real space takes place like sketched
+!  in the diagram, only in the opposite direction (starting lower right).
 !
-      if (NO_WARN) print*, a_re, a_im, dummy !(keep compiler quiet)
+!  For 2-D runs two cases of degeneracy have to be taken into account:
+!  (- refers to a missing direction).
+!
+!  (x,y,-)
+!     |
+!  (y,x,-) - (ky,x,-) - (ky',x,-)
+!                            |
+!                       (x, ky',-) - (kx,ky',-)
+!
+!  (x,-,z) - (kx,-,z)
+!                |
+!            (z,-,kx) - (kz,-,kx)
+!
+!  25-may-06/anders: adapted from transform_fftpack
+!
+      use Cdata, only: pi, Lx, x0, x, deltay, ky_fft
+!
+      real, dimension (nx,ny,nz) :: a_re,a_im
+      integer, optional :: direction
+!
+      complex, dimension (nxgrid) :: ax
+      complex, dimension (nxgrid) :: ay
+      complex, dimension (nxgrid) :: az
+      real, dimension (4*nxgrid+15) :: wsave
+      real :: deltay_x
+      integer :: l,m,n
+      logical :: lforward=.true.
+!
+      if (present(direction)) then
+        if (direction==-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
+!
+!  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
+!
+      call cffti(nxgrid,wsave)
+!
+      if (lforward) then
+!
+!  Transform y-direction. Must start with y, because x is not periodic (yet).
+!
+        if (nygrid/=1) then
+          if (lroot.and.ip<10) &
+              print*, 'doing FFTpack in y, direction=',direction
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+          do n=1,nz; do l=1,ny
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+            call cfftf(nygrid,ay,wsave)
+!  Shift y-coordinate so that x-direction is periodic. This is best done in
+!  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
+            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+            ay(2:nygrid)=ay(2:nygrid)*exp(cmplx(0.0, ky_fft(2:nygrid)*deltay_x))
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
+          enddo; enddo
+        endif
+!
+!  Transform x-direction.
+!
+        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
+        if (nygrid/=1) then
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+        endif
+        do m=1,ny; do n=1,nz
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftf(nxgrid,ax,wsave)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+!
+!  Transform z-direction.
+!
+        if (nzgrid/=1) then
+          if (lroot.and.ip<10) &
+              print*, 'doing FFTpack in z, direction=',direction
+          call transp(a_re,'z')
+          call transp(a_im,'z')
+          do l=1,nz; do m=1,ny
+            az=cmplx(a_re(:,m,l),a_im(:,m,l))
+            call cfftf(nzgrid,az,wsave)
+            a_re(:,m,l)=real(az)
+            a_im(:,m,l)=aimag(az)
+          enddo; enddo
+        endif
+      else
+!
+!  Transform z-direction back.
+!
+        if (nzgrid/=1) then
+          if (lroot.and.ip<10) &
+              print*, 'doing FFTpack in z, direction=',direction
+          do l=1,nz; do m=1,ny
+            az=cmplx(a_re(:,m,l),a_im(:,m,l))
+            call cfftb(nzgrid,az,wsave)
+            a_re(:,m,l)=real(az)
+            a_im(:,m,l)=aimag(az)
+          enddo; enddo
+        endif
+!
+!  Transform x-direction back.
+!
+        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
+        if (nzgrid/=1) then
+          call transp(a_re,'z')
+          call transp(a_im,'z')
+        endif
+        do m=1,ny; do n=1,nz
+          ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          call cfftb(nxgrid,ax,wsave)
+          a_re(:,m,n)=real(ax)
+          a_im(:,m,n)=aimag(ax)
+        enddo; enddo
+!
+!  Transform y-direction back. Would be more practical to end with the
+!  x-direction, but the transformation from y' to y means that we must transform
+!  the y-direction last.
+!
+        if (nygrid/=1) then
+          call transp(a_re,'y')
+          call transp(a_im,'y')
+          if (lroot.and.ip<10) &
+              print*, 'doing FFTpack in y, direction=',direction
+          do l=1,ny; do n=1,nz
+            ay=cmplx(a_re(:,l,n),a_im(:,l,n))
+!  Shift y-coordinate back to regular frame (see above).
+            deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
+            ay(2:nygrid)=ay(2:nygrid)*exp(cmplx(0.0,-ky_fft(2:nygrid)*deltay_x))
+            call cfftb(nygrid,ay,wsave)
+            a_re(:,l,n)=real(ay)
+            a_im(:,l,n)=aimag(ay)
+          enddo; enddo
+          call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
+          call transp(a_im,'y')
+        endif
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/nwgrid
+        a_im=a_im/nwgrid
+      endif
 !
     endsubroutine transform_fftpack_shear
 !***********************************************************************

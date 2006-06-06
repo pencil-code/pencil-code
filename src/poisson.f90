@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.5 2006-05-30 18:48:49 ajohan Exp $
+! $Id: poisson.f90,v 1.6 2006-06-06 02:44:25 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -44,7 +44,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.5 2006-05-30 18:48:49 ajohan Exp $")
+        "$Id: poisson.f90,v 1.6 2006-06-06 02:44:25 ajohan Exp $")
 !
 !  set up right-hand-side of Poisson equation
 !
@@ -74,19 +74,31 @@ module Poisson
 !
 !  Take into account that the Fourier transform has been done in shearing
 !  coordinates, and that the kx of each Fourier mode is different in the normal
-!  frame (where we are now). The connection between kx0 (in the shearing frame)
-!  and the actual kx is
+!  frame. The connection between kx0 (in the shearing frame) and the actual kx
+!  is
 !    kx = kx0 + qshear*Omega*t*ky
 !  Writing deltay/2 = qshear*Omega*Lx/2*t, one gets the expression
 !    kx = kx0 + deltay/Lx*ky
+!  The parallel Fourier transform returns the array in a tranposed state, so
+!  must be able to identify the x-direction in order to take shear into account.
+!  (see the subroutine transform_fftpack_shear in mpicomm.f90 for details).
 !
-            a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
-                ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky))**2 + &
-                   ky_fft(iky)**2 + kz_fft(ikz)**2 )
-            b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
-                ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky))**2 + &
-                    ky_fft(iky)**2 + kz_fft(ikz)**2)
-          else
+            if (lmpicomm.and.nzgrid>1) then ! Order (kz,ky',kx)
+              a1(ikz,iky,ikx) = -a1(ikz,iky,ikx) / &
+                  ( (kx_fft(ikx+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikz)**2 )
+              b1(ikz,iky,ikx) = -b1(ikz,iky,ikx) / &
+                  ( (kx_fft(ikx+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikz)**2)
+            else                            ! Order (kx,ky',kz)
+              a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
+                  ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2 )
+              b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
+                  ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2 )
+            endif
+          else ! The order of the array is not important here, because no shear!
             a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
                 (kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2)
             b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
@@ -100,6 +112,8 @@ module Poisson
       else
         call transform_fftpack(a1,b1,-1)
       endif
+!
+!  The real part is the potential.
 !
       f(l1:l2,m1:m2,n1:n2,ipoisson) = a1
 !
