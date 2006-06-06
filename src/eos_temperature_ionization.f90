@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.27 2006-05-28 18:37:52 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.28 2006-06-06 20:05:51 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.27 2006-05-28 18:37:52 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.28 2006-06-06 20:05:51 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -191,11 +191,10 @@ module EquationOfState
       logical, dimension(npencils) :: lpencil_in
 
       if (lpencil_in(i_cs2)) then
-        lpencil_in(i_rho1)=.true.
         lpencil_in(i_cv1)=.true.
-        lpencil_in(i_TT1)=.true.
+        lpencil_in(i_cp)=.true.
+        lpencil_in(i_rho1)=.true.
         lpencil_in(i_dppdlnrho)=.true.
-        lpencil_in(i_dppdlnTT)=.true.
       endif
 
       if (lpencil_in(i_rho1gpp)) then
@@ -356,9 +355,7 @@ module EquationOfState
 !
 !  Sound speed
 !
-      if (lpencil(i_cs2)) then
-        p%cs2 = p%rho1*(p%rho1*p%cv1*p%TT1*(p%dppdlnTT)**2 + p%dppdlnrho)
-      endif
+      if (lpencil(i_cs2)) p%cs2 = p%cv1*p%cp*p%rho1*p%dppdlnrho
 
 !
 !  Energy per unit mass
