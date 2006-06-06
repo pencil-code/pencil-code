@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.251 2006-06-06 09:31:24 nbabkovs Exp $
+! $Id: density.f90,v 1.252 2006-06-06 14:51:53 joishi Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.251 2006-06-06 09:31:24 nbabkovs Exp $")
+           "$Id: density.f90,v 1.252 2006-06-06 14:51:53 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -704,7 +704,23 @@ module Density
              f(:,:,:,iuz) = f(:,:,:,iuz) &
              + abs(omega_jeans*ampllnrho) * & 
              sin(kz_lnrho*zz+complex_phase(omega_jeans*ampllnrho))
-        
+
+     case('toomre-wave-x')
+! soundwave + self gravity + (differential) rotation
+        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 + Omega**2 - rhs_const*rho0,0.))/(rho0*kx_lnrho)
+
+        print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
+          real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
+
+        f(:,:,:,ilnrho) = lnrho_const + & 
+          ampllnrho*sin(kx_lnrho*xx)
+        f(:,:,:,iux) = f(:,:,:,iux) &
+             + abs(omega_jeans*ampllnrho) * & 
+             sin(kx_lnrho*xx+complex_phase(omega_jeans*ampllnrho))
+        f(:,:,:,iuy) = f(:,:,:,iuy) &
+             + abs(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))) * & 
+             sin(kx_lnrho*xx+complex_phase(ampllnrho*cmplx(0,-0.5*Omega/(kx_lnrho*rho0))))
+
       case default
         !
         !  Catch unknown values
