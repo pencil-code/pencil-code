@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.32 2006-06-03 03:46:17 ajohan Exp $
+! $Id: shear.f90,v 1.33 2006-06-06 02:31:04 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -22,10 +22,10 @@ module Shear
   include 'shear.h'
 
   namelist /shear_init_pars/ &
-       qshear,Sshear,eps_vshear
+       qshear,Sshear,deltay,eps_vshear
 
   namelist /shear_run_pars/ &
-       qshear,Sshear,eps_vshear
+       qshear,Sshear,deltay,eps_vshear
 
   integer :: idiag_dtshear=0
 
@@ -50,7 +50,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.32 2006-06-03 03:46:17 ajohan Exp $")
+           "$Id: shear.f90,v 1.33 2006-06-06 02:31:04 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
