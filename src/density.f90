@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.250 2006-05-29 10:14:39 nbabkovs Exp $
+! $Id: density.f90,v 1.251 2006-06-06 09:31:24 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.250 2006-05-29 10:14:39 nbabkovs Exp $")
+           "$Id: density.f90,v 1.251 2006-06-06 09:31:24 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1471,17 +1471,21 @@ module Density
 ! surface zone in a case of a Keplerian disk
 
       if (lsurface_zone) then
+
+
           if ( dt .GT.0.) then
             l_sz=l2-5
 
-          !   df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
+          !  df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
           !       -1./(5.*dt)*(1.-rho_up/exp(f(l_sz:l2,m,n,ilnrho)))
 
            
-          ! do i=l_sz,l2   
-          !   df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-          !         -1./(5.*dt)*(f(i-1,m,n,ilnrho)-f(i,m,n,ilnrho))
-          ! enddo
+           do i=l_sz,l2   
+             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+                   -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
+           enddo
+
+
          endif
       endif
 

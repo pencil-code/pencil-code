@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.262 2006-05-30 23:44:42 theine Exp $
+! $Id: hydro.f90,v 1.263 2006-06-06 09:31:24 nbabkovs Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -156,7 +156,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.262 2006-05-30 23:44:42 theine Exp $")
+           "$Id: hydro.f90,v 1.263 2006-06-06 09:31:24 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -950,8 +950,15 @@ module Hydro
 
          else
 
-         !    df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
-         !          -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
+           do j=l_sz,l2   
+             df(j,m,n,iux)=df(j,m,n,iux)&
+                  -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
+         
+           enddo
+
+
+           !  df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
+           !        -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
      
          
          !   df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
