@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.25 2006-05-15 21:30:50 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.26 2006-06-07 19:13:15 theine Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -127,16 +127,18 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'del2a'        => ', dimension (nx,3)',
                   'del4a'        => ', dimension (nx,3)',
                   'del6a'        => ', dimension (nx,3)',
+                  'delta'        => ', dimension (nx)',
                   'divgg'        => ', dimension (nx)',
                   'diva'         => ', dimension (nx)',
                   'divg2'        => ', dimension (nx)',
                   'divu'         => ', dimension (nx)',
                   'divud'        => ', dimension (nx,ndustspec)',
                   'djuidjbi'     => ', dimension (nx)',
-                  'dppdlnTT'     => ', dimension (nx)',
-                  'dppdlnrho'    => ', dimension (nx)',
                   'ecr'          => ', dimension (nx)',
                   'ee'           => ', dimension (nx)',
+                  'gamma'        => ', dimension (nx)',
+                  'gamma1'       => ', dimension (nx)',
+                  'gamma11'      => ', dimension (nx)',
                   'gcc'          => ', dimension (nx,3)',
                   'gcc1'         => ', dimension (nx,3)',
                   'gcc2'         => ', dimension (nx,3)',
@@ -185,6 +187,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'mf_EMFdotB'   => ', dimension (nx)',
                   'mi'           => ', dimension (nx,ndustspec)',
                   'mu1'          => ', dimension (nx)',
+                  'nabla_ad'     => ', dimension (nx)',
                   'nd'           => ', dimension (nx,ndustspec)',
                   'oo'           => ', dimension (nx,3)',
                   'o2'           => ', dimension (nx)',
