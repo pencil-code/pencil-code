@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.163 2006-06-06 02:44:25 ajohan Exp $
+! $Id: mpicomm.f90,v 1.164 2006-06-07 21:14:34 joishi Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2099,6 +2099,17 @@ module Mpicomm
       integer :: l,m,n
       logical :: lforward=.true.
 !
+!  if nxgrid/=nygrid/=nzgrid, stop.
+
+      if (nygrid/=nxgrid .and. nygrid /= 1) then
+        print*,'transpose_fftpack_shear: need to have nygrid=nxgrid if nygrid /=1.'
+        call stop_it('Inconsistency: nygrid/=nxgrid')
+      endif
+      if (nzgrid/=nxgrid .and. nzgrid /= 1) then
+        print*,'transpose_fftpack_shear: need to have nzgrid=nxgrid if nzgrid /=1.'
+        call stop_it('Inconsistency: nzgrid/=nxgrid')
+      endif
+!
       if (present(direction)) then
         if (direction==-1) then
           lforward=.false.
@@ -2122,11 +2133,11 @@ module Mpicomm
           call transp(a_im,'y')
           do n=1,nz; do l=1,ny
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
-            call cfftf(nygrid,ay,wsave)
+            call cfftf(nxgrid,ay,wsave)
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
 !  k-space, by multiplying the complex amplitude by exp[i*ky*deltay(x)].
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
-            ay(2:nygrid)=ay(2:nygrid)*exp(cmplx(0.0, ky_fft(2:nygrid)*deltay_x))
+            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0, ky_fft(2:nxgrid)*deltay_x))
             a_re(:,l,n)=real(ay)
             a_im(:,l,n)=aimag(ay)
           enddo; enddo
@@ -2155,7 +2166,7 @@ module Mpicomm
           call transp(a_im,'z')
           do l=1,nz; do m=1,ny
             az=cmplx(a_re(:,m,l),a_im(:,m,l))
-            call cfftf(nzgrid,az,wsave)
+            call cfftf(nxgrid,az,wsave)
             a_re(:,m,l)=real(az)
             a_im(:,m,l)=aimag(az)
           enddo; enddo
@@ -2169,7 +2180,7 @@ module Mpicomm
               print*, 'doing FFTpack in z, direction=',direction
           do l=1,nz; do m=1,ny
             az=cmplx(a_re(:,m,l),a_im(:,m,l))
-            call cfftb(nzgrid,az,wsave)
+            call cfftb(nxgrid,az,wsave)
             a_re(:,m,l)=real(az)
             a_im(:,m,l)=aimag(az)
           enddo; enddo
@@ -2202,8 +2213,8 @@ module Mpicomm
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
             deltay_x=-deltay*(x(l+nghost+ipy*ny)-(x0+Lx/2))/Lx
-            ay(2:nygrid)=ay(2:nygrid)*exp(cmplx(0.0,-ky_fft(2:nygrid)*deltay_x))
-            call cfftb(nygrid,ay,wsave)
+            ay(2:nxgrid)=ay(2:nxgrid)*exp(cmplx(0.0,-ky_fft(2:nxgrid)*deltay_x))
+            call cfftb(nxgrid,ay,wsave)
             a_re(:,l,n)=real(ay)
             a_im(:,l,n)=aimag(ay)
           enddo; enddo
