@@ -1,4 +1,6 @@
 it(f8.0)
 t(f9.3)
 dt(e10.3)
-rhomax(e17.6)
+rhomax(f10.6)
+urms(e10.3)
+umax(e10.3)
