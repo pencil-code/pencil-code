@@ -1,0 +1,28 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Initialisation parameters for dust particles moving in a random
+!  velocity field.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-06-07 03:25:50 ajohan Exp $',
+  lperi =    T,    T,    T
+  ip=20, lwrite_ic=T, lwrite_aux=T
+/
+&eos_init_pars
+/
+&hydro_init_pars
+  inituu='sinwave-phase'
+  kx_uu=-1.0, ky_uu=1.0, kz_uu=0.0, phase_uy=0.0, ampl_uy=1.0e-3
+  Omega=1.0
+/
+&density_init_pars
+  initlnrho='sinwave-phase'
+  kx_lnrho=-1.0, ky_lnrho=1.0, kz_lnrho=0.0, phase_lnrho=0.0, ampllnrho=1.0e-3
+  ldensity_nolog=T
+/
+&selfgrav_init_pars
+  rhs_const=1.25664
+/
+&shear_init_pars
+  qshear=1.5
+/

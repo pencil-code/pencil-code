@@ -1,0 +1,24 @@
+!
+!  Initialisation parameters for dust particles moving in a random 
+!  velocity field.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-06-07 03:25:50 ajohan Exp $',
+  nt=50, it1=5, cdt=0.4, cdtv=0.80, isave=100, itorder=3
+  dsnap=0.667, dvid=0.05, ip=20
+  lpencil_check=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  idiff='normal', diffrho=1.0e-3
+/
+&selfgrav_run_pars
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+  ivisc='simplified', nu=1.0e-3
+/
