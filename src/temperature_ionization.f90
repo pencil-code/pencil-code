@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.17 2006-05-15 21:29:03 brandenb Exp $
+! $Id: temperature_ionization.f90,v 1.18 2006-06-07 19:15:29 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -87,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.17 2006-05-15 21:29:03 brandenb Exp $")
+           "$Id: temperature_ionization.f90,v 1.18 2006-06-07 19:15:29 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -255,10 +255,8 @@ module Entropy
       if (ldt) lpenc_requested(i_cs2)=.true.
 
       if (ldensity) then
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_cv1)=.true.
-        lpenc_requested(i_TT1)=.true.
-        lpenc_requested(i_dppdlnTT)=.true.
+        lpenc_requested(i_gamma1)=.true.
+        lpenc_requested(i_delta)=.true.
         lpenc_requested(i_divu)=.true.
       endif
 
@@ -446,8 +444,7 @@ module Entropy
 !  Need to add left-hand-side of the continuity equation (see manual)
 !
       if (ldensity) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - &
-          p%rho1*p%cv1*p%TT1*p%dppdlnTT*p%divu
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - p%gamma1*p%divu/p%delta
       endif
 
 !

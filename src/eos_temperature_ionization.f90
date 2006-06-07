@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.28 2006-06-06 20:05:51 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.29 2006-06-07 19:15:29 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -9,9 +9,9 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
 !
-! PENCILS PROVIDED ss,ee,pp,lnTT,cs2,glnTT,TT,TT1
-! PENCILS PROVIDED yH,del2lnTT,cv,cv1,cp,cp1,mu1
-! PENCILS PROVIDED glnTT,dppdlnTT,dppdlnrho,rho1gpp
+! PENCILS PROVIDED ss,ee,pp,lnTT,cs2,nabla_ad,glnTT,TT,TT1
+! PENCILS PROVIDED yH,del2lnTT,cv,cv1,cp,cp1,gamma,gamma1,gamma11,mu1
+! PENCILS PROVIDED glnTT,rho1gpp,delta
 !
 !***************************************************************
 
@@ -117,7 +117,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.28 2006-06-06 20:05:51 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.29 2006-06-07 19:15:29 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -191,18 +191,35 @@ module EquationOfState
       logical, dimension(npencils) :: lpencil_in
 
       if (lpencil_in(i_cs2)) then
-        lpencil_in(i_cv1)=.true.
-        lpencil_in(i_cp)=.true.
+        lpencil_in(i_gamma)=.true.
         lpencil_in(i_rho1)=.true.
-        lpencil_in(i_dppdlnrho)=.true.
+        lpencil_in(i_pp)=.true.
       endif
 
       if (lpencil_in(i_rho1gpp)) then
-        lpencil_in(i_rho1)=.true.
-        lpencil_in(i_dppdlnrho)=.true.
+        lpencil_in(i_gamma11)=.true.
+        lpencil_in(i_cs2)=.true.
         lpencil_in(i_glnrho)=.true.
-        lpencil_in(i_dppdlnTT)=.true.
+        lpencil_in(i_delta)=.true.
         lpencil_in(i_glnTT)=.true.
+      endif
+
+      if (lpencil_in(i_nabla_ad)) then
+        lpencil_in(i_mu1)=.true.
+        lpencil_in(i_delta)=.true.
+        lpencil_in(i_cp1)=.true.
+      endif
+
+      if (lpencil_in(i_gamma1)) lpencil_in(i_gamma)=.true.
+
+      if (lpencil_in(i_gamma)) then
+        lpencil_in(i_cp)=.true.
+        lpencil_in(i_cv1)=.true.
+      endif
+
+      if (lpencil_in(i_gamma11)) then
+        lpencil_in(i_cv)=.true.
+        lpencil_in(i_cp1)=.true.
       endif
 
       if (lpencil_in(i_cv1)) lpencil_in(i_cv)=.true.
@@ -225,17 +242,6 @@ module EquationOfState
         lpencil_in(i_mu1)=.true.
         lpencil_in(i_rho)=.true.
         lpencil_in(i_TT)=.true.
-      endif
-
-      if (lpencil_in(i_dppdlnTT)) then
-        lpencil_in(i_yH)=.true.
-        lpencil_in(i_TT1)=.true.
-        lpencil_in(i_pp)=.true.
-      endif
-
-      if (lpencil_in(i_dppdlnrho)) then
-        lpencil_in(i_yH)=.true.
-        lpencil_in(i_pp)=.true.
       endif
 
       if (lpencil_in(i_mu1)) lpencil_in(i_yH)=.true.
@@ -268,7 +274,10 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 
-      real, dimension (nx) :: rhs,yH_term_cv,yH_term_cp,tmp,sqrtrhs
+      real, dimension (nx) :: rhs,sqrtrhs
+      real, dimension (nx) :: yH_term_cv,TT_term_cv
+      real, dimension (nx) :: yH_term_cp,TT_term_cp
+      real, dimension (nx) :: tmp
       integer :: i
 
       if (NO_WARN) print *,f,p
@@ -304,58 +313,58 @@ module EquationOfState
 !
 !  Common terms involving the ionization fraction
 !
-      if (lpencil(i_cv).or.lpencil(i_dppdlnTT).or.lpencil(i_dppdlnrho)) then
+      if (lpencil(i_cv)) then
         yH_term_cv = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
+        TT_term_cv = 1.5 + p%TT1*TT_ion
       endif
 
-      if (lpencil(i_cp)) then
+      if (lpencil(i_cp).or.lpencil(i_delta)) then
         yH_term_cp = p%yH*(1-p%yH)/(2+xHe*(2-p%yH))
+        TT_term_cp = 2.5 + p%TT1*TT_ion
       endif
 
 !
 !  Specific heat at constant volume (i.e. density)
 !
-      if (lpencil(i_cv)) then
-        tmp = 1.5 + TT_ion*p%TT1
-        p%cv = Rgas*p%mu1*(1.5 + yH_term_cv*tmp**2)
-      endif
-
+      if (lpencil(i_cv)) p%cv = Rgas*p%mu1*(1.5 + yH_term_cv*TT_term_cv**2)
       if (lpencil(i_cv1)) p%cv1=1/p%cv
 
 !
 !  Specific heat at constant pressure
 !
-      if (lpencil(i_cp)) then
-        tmp = 2.5+TT_ion*p%TT1
-        p%cp = Rgas*p%mu1*(2.5 + yH_term_cp*tmp**2)
-      endif
-
-      if (lpencil(i_cp1)) p%cp1=1/p%cp
+      if (lpencil(i_cp)) p%cp = Rgas*p%mu1*(2.5 + yH_term_cp*TT_term_cp**2)
+      if (lpencil(i_cp1)) p%cp1 = 1/p%cp
 
 !
-!  Coefficients for the pressure gradient
+!  Polytropic index
 !
-      if (lpencil(i_dppdlnTT)) then
-        tmp = 1.5+TT_ion*p%TT1
-        p%dppdlnTT = p%pp*(1 + yH_term_cv*tmp)
-      endif
+      if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
+      if (lpencil(i_gamma11)) p%gamma11 = p%cv*p%cp1
+      if (lpencil(i_gamma1)) p%gamma1 = p%gamma - 1
 
-      if (lpencil(i_dppdlnrho)) p%dppdlnrho = p%pp*(1 - yH_term_cv)
+!
+!  For the definition of delta, see Kippenhahn & Weigert
+!
+      if (lpencil(i_delta)) p%delta = 1 + yH_term_cp*TT_term_cp
+
+!
+!  Sound speed
+!
+      if (lpencil(i_cs2)) p%cs2 = p%gamma*p%rho1*p%pp*yH_term_cv/yH_term_cp
+
+!
+!  Adiabatic temperature gradient
+!
+      if (lpencil(i_nabla_ad)) p%nabla_ad = Rgas*p%mu1*p%delta*p%cp1
 
 !
 !  Logarithmic pressure gradient
 !
       if (lpencil(i_rho1gpp)) then
         do i=1,3
-          p%rho1gpp(:,i)=p%rho1*(p%dppdlnrho*p%glnrho(:,i) + &
-                                 p%dppdlnTT*p%glnTT(:,i))
+          p%rho1gpp(:,i) = p%gamma11*p%cs2*(p%glnrho(:,i)+p%delta*p%glnTT(:,i))
         enddo
       endif
-
-!
-!  Sound speed
-!
-      if (lpencil(i_cs2)) p%cs2 = p%cv1*p%cp*p%rho1*p%dppdlnrho
 
 !
 !  Energy per unit mass
