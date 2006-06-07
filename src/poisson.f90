@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.6 2006-06-06 02:44:25 ajohan Exp $
+! $Id: poisson.f90,v 1.7 2006-06-07 03:02:24 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -44,7 +44,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.6 2006-06-06 02:44:25 ajohan Exp $")
+        "$Id: poisson.f90,v 1.7 2006-06-07 03:02:24 ajohan Exp $")
 !
 !  set up right-hand-side of Poisson equation
 !
@@ -84,12 +84,12 @@ module Poisson
 !  (see the subroutine transform_fftpack_shear in mpicomm.f90 for details).
 !
             if (lmpicomm.and.nzgrid>1) then ! Order (kz,ky',kx)
-              a1(ikz,iky,ikx) = -a1(ikz,iky,ikx) / &
-                  ( (kx_fft(ikx+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikz)**2 )
-              b1(ikz,iky,ikx) = -b1(ikz,iky,ikx) / &
-                  ( (kx_fft(ikx+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikz)**2)
+              a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
+                  ( (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2 )
+              b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
+                  ( (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2)
             else                            ! Order (kx,ky',kz)
               a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
                   ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
