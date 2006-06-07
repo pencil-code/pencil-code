@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.317 2006-06-07 13:57:40 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.318 2006-06-07 22:08:07 theine Exp $
 
 module Cdata
 
@@ -280,9 +280,6 @@ module Cdata
                                         ! Register.initialize()
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
   character (len=120) :: cvsid='[No CVS Id given]'
-
-  ! logicals for global variable mechanism
-  logical :: lbb_ext=.false.,ljj_ext=.false.
 
 ! Natalia (NS)
  

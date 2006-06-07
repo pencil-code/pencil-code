@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.293 2006-05-30 23:44:43 theine Exp $
+! $Id: magnetic.f90,v 1.294 2006-06-07 22:08:07 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
   character (len=labellen) :: pertaa='zero'
   integer :: N_modes_aa=1
   logical :: lgauss=.false.
-  logical :: lee_ext=.false.
+  logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
 
   namelist /magnetic_init_pars/ &
        B_ext, &
@@ -187,7 +187,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.293 2006-05-30 23:44:43 theine Exp $")
+           "$Id: magnetic.f90,v 1.294 2006-06-07 22:08:07 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
