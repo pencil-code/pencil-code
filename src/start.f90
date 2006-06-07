@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.155 2006-06-04 22:11:31 ajohan Exp $
+! $Id: start.f90,v 1.156 2006-06-07 02:42:04 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -90,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.155 2006-06-04 22:11:31 ajohan Exp $")
+             "$Id: start.f90,v 1.156 2006-06-07 02:42:04 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -247,7 +247,7 @@
 !  alternatively: read existing snapshot and overwrite only some fields
 !  by the various procedures below.
 !
-        if(lread_oldsnap) then
+        if (lread_oldsnap) then
           call rsnap(trim(directory_snap)//'/var.dat',f, mvar)
 !
 !  default: everything zero
@@ -281,20 +281,20 @@
 !
 !  check whether we want ionization
 !
-        if(leos_ionization) call ioninit(f)
-        if(leos_temperature_ionization) call ioncalc(f)
-        if(lradiation_ray) call radtransfer(f)
+        if (leos_ionization) call ioninit(f)
+        if (leos_temperature_ionization) call ioncalc(f)
+        if (lradiation_ray) call radtransfer(f)
 !
 !  filter initial velocity
 !  NOTE: this procedure is currently not very efficient,
 !  because for all variables boundary conditions and communication
 !  are done again and again for each variable.
 !
-        if(nfilter/=0) then
+        if (nfilter/=0) then
           do ifilter=1,nfilter
             call rmwig(f,df,iux,iuz,awig)
           enddo
-          if(lroot) print*,'DONE: filter initial velocity, nfilter=',nfilter
+          if (lroot) print*,'DONE: filter initial velocity, nfilter=',nfilter
         endif
 !
 !  Prepare particles.
