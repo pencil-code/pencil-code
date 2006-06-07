@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.29 2006-06-07 19:15:29 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.30 2006-06-07 22:16:56 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -49,11 +49,17 @@ module EquationOfState
   real :: xHe=0.1,yH_const=0.0,yMetals=0.0
   logical :: lconst_yH=.false.
 
+  real, dimension(3) :: B_ext=(/0.,0.,0./)
+  integer :: va2power_jxb=5
+  real :: rhomin_jxb=-1.,va2max_jxb=-1.
+
   ! input parameters
-  namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals
+  namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals, &
+                           B_ext
 
   ! run parameters
-  namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals
+  namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals, &
+                          B_ext,va2power_jxb,rhomin_jxb,va2max_jxb
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -117,7 +123,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.29 2006-06-07 19:15:29 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.30 2006-06-07 22:16:56 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1620,7 +1626,7 @@ module EquationOfState
       character (len=3), intent (in) :: topbot
 
       real, dimension (mx,my) :: geff
-      real, dimension (mx,my) :: jxb_z
+      real, dimension (mx,my) :: rho1_jxb,jxb_z,va2
       real, dimension (mx,my) :: rho1,TT1
       real, dimension (mx,my) :: rhs,sqrtrhs,yH
       real, dimension (mx,my) :: mu1,rho1pp
@@ -1661,16 +1667,9 @@ module EquationOfState
           do m=m1,m2
             call gij(f,iaa,aij,1)
             call curl_mn(aij,bb)
-            if (lbb_ext) then
-              call get_global(bb_ext,m,n,'bb_ext')
-              bb = bb + bb_ext
-            endif
+            do j=1,3; bb(:,j)=bb(:,j)+B_ext(j); enddo
             call bij_etc(f,iaa,bij)
             call curl_mn(bij,jj)
-            if (ljj_ext) then
-              call get_global(jj_ext,m,n,'jj_ext')
-              jj = jj + jj_ext
-            endif
             call cross_mn(jj,bb,tmp)
             jxb_z(l1:l2,m) = tmp(:,3)
           enddo
@@ -1778,21 +1777,23 @@ module EquationOfState
           do m=m1,m2
             call gij(f,iaa,aij,1)
             call curl_mn(aij,bb)
-            if (lbb_ext) then
-              call get_global(bb_ext,m,n,'bb_ext')
-              bb = bb + bb_ext
+            do j=1,3; bb(:,j)=bb(:,j)+B_ext(j); enddo
+            if (va2max_jxb>0) then
+              va2(l1:l2,m)=rho1(l1:l2,m)*(bb(:,1)**2+bb(:,2)**2+bb(:,3)**2)
             endif
             call bij_etc(f,iaa,bij)
             call curl_mn(bij,jj)
-            if (ljj_ext) then
-              call get_global(jj_ext,m,n,'jj_ext')
-              jj = jj + jj_ext
-            endif
             call cross_mn(jj,bb,tmp)
             jxb_z(l1:l2,m) = tmp(:,3)
           enddo
 
-          geff = geff + rho1*jxb_z
+          rho1_jxb = rho1
+          if (rhomin_jxb>0) rho1_jxb = min(rho1_jxb,1/rhomin_jxb)
+          if (va2max_jxb>0) then
+            rho1_jxb = rho1_jxb/(1+(va2/va2max_jxb)**va2power_jxb)
+          endif
+          
+          geff = geff + rho1_jxb*jxb_z
 
         endif
 
