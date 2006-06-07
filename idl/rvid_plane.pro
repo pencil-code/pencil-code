@@ -4,9 +4,9 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
-               contourplot=contourplot,color=color,sqroot=sqroot
+               contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit
 ;
-; $Id: rvid_plane.pro,v 1.20 2006-05-29 17:35:43 ajohan Exp $
+; $Id: rvid_plane.pro,v 1.21 2006-06-07 18:21:53 joishi Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -30,6 +30,7 @@ default,nrepeat,0
 default,njump,0
 default,tmin,0.
 default,tmax,1e38
+default,tunit,1
 default,iplane,0
 default,wait,.03
 default,r_int,0.5
@@ -338,7 +339,7 @@ while not eof(1) do begin
         endelse
         ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
         xyouts, 0.05, 0.9, /normal, $
-            '!8t!6='+string(t,fo="(f6.1)"), color=color, size=0.5*zoom
+            '!8t!6='+string(t/tunit,fo="(f6.1)"), color=color, size=0.5*zoom
         if keyword_set(png) then begin
           istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
           image = tvrd()
