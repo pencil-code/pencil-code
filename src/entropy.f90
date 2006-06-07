@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.410 2006-05-29 10:14:39 nbabkovs Exp $
+! $Id: entropy.f90,v 1.411 2006-06-07 13:57:40 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.410 2006-05-29 10:14:39 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.411 2006-06-07 13:57:40 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1869,10 +1869,18 @@ module Entropy
             l_sz=l2-5
             l_sz_1=nxgrid-5
 
+          if (lnstar_1D) then   
             df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
             -1./(5.*dt)*(f(l_sz:l2,m,n,iss)-log(TT_cs0)/gamma) &
             /p%rho(l_sz_1:nxgrid)/p%TT(l_sz_1:nxgrid)  
+          else
 
+            do j=l_sz,l2   
+             df(j,m,n,iss)=df(j,m,n,iss)&
+               -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
+            enddo 
+
+          endif
 
       !        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
       !       -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0

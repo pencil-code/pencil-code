@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.112 2006-06-06 09:31:24 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.113 2006-06-07 13:57:40 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -847,7 +847,7 @@ module Boundcond
       !  f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
       !  f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
 
-      do i=1,nghost; f(l1-i,:,:,j)=f(l1+i,:,:,j); enddo
+      do i=1,nghost; f(l1+i,:,:,j)=f(l1-i,:,:,j); enddo
 
 
      endif
