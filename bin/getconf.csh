@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.169 2006-04-27 13:59:55 mkorpi Exp $
+# $Id: getconf.csh,v 1.170 2006-06-07 02:40:04 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -677,6 +677,13 @@ else if ($hn =~ opto[1-4]) then
   set mpirunops = '-machinefile hosts.list'
   setenv SSH rsh
   setenv SCP rcp
+  setenv SCRATCH_DIR /var/tmp/$USER
+
+else if ($hn =~ swift) then
+  echo "swift laptop (Anders)"
+  set mpirun = mpiexec
+  setenv SSH ssh
+  setenv SCP scp
   setenv SCRATCH_DIR /var/tmp/$USER
 
 else if ($hn =~ lfc*) then
