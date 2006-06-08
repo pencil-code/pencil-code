@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.30 2006-06-07 22:16:56 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.31 2006-06-08 00:54:11 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -52,13 +52,15 @@ module EquationOfState
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   integer :: va2power_jxb=5
   real :: rhomin_jxb=-1.,va2max_jxb=-1.
+  real :: pp_bot=0.
+  real :: ss_bot=0.
 
   ! input parameters
-  namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals, &
+  namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,pp_bot,ss_bot, &
                            B_ext
 
   ! run parameters
-  namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals, &
+  namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,pp_bot,ss_bot, &
                           B_ext,va2power_jxb,rhomin_jxb,va2max_jxb
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
@@ -123,7 +125,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.30 2006-06-07 22:16:56 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.31 2006-06-08 00:54:11 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1636,7 +1638,7 @@ module EquationOfState
       real, dimension (mx,my) :: dlnrhodz,dlnTTdz
       real, dimension (mx,my) :: cv,cp,cs2,nabla_ad
       real, dimension (nx,3,3) :: aij,bij
-      real, dimension (nx,3) :: jj,jj_ext,bb,bb_ext,tmp
+      real, dimension (nx,3) :: jj,bb,tmp
       integer :: i,j
 
       select case (topbot)
@@ -1846,5 +1848,238 @@ module EquationOfState
       endselect
 
     end subroutine bc_stellar_surface
+!***********************************************************************
+    subroutine bc_stellar_surface_2(f,topbot)
+!
+!  Boundary condition for density.
+!
+!  We make both the lower and the upper boundary hydrostatic.
+!    rho1*(dpp/dz) = gravz
+!
+!  Additionally, we make the lower boundary isentropic
+!    (dss/dz) = 0
+!  and the upper boundary isothermal
+!    (dlnTT/dz) = 0
+!
+!  At the moment, this is probably only useful for solar surface convection.
+!
+!
+!  11-May-2006/tobi: coded
+!  16-May-2006/tobi: isentropic lower boundary
+!
+      use Gravity, only: gravz
+      use Sub, only: curl_mn,cross_mn,gij,bij_etc
+      use Global, only: get_global
+
+      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (mx,my) :: geff
+      real, dimension (mx,my) :: rho1_jxb,jxb_z,va2
+      real, dimension (mx,my) :: lnrho,lnTT,rho1,TT1,uz
+      real, dimension (mx,my) :: rhs,sqrtrhs,yH
+      real, dimension (mx,my) :: mu1,rho1pp
+      real, dimension (mx,my) :: yH_term_cv,yH_term_cp
+      real, dimension (mx,my) :: TT_term_cv,TT_term_cp
+      real, dimension (mx,my) :: dlnppdlnTT,dlnppdlnrho
+      real, dimension (mx,my) :: dlnrhodz,dlnTTdz,dlnppdz,dssdz
+      real, dimension (mx,my) :: cv,cp,cs2,nabla_ad,alpha,delta,gamma
+      real, dimension (mx,my) :: lnpp,ss,tmp
+      real, dimension (nx,3,3) :: aij,bij
+      real, dimension (nx,3) :: jj,bb,temp
+      integer, dimension (3) :: coeffs
+      integer :: i,j,k
+
+      select case (topbot)
+
+!
+!  Bottom boundary
+!
+      case ('bot')
+
+        coeffs = (/+90,-18,+2/)
+
+        uz = f(:,:,n1,iuz)
+
+        ! Initialize derivatives
+        dlnppdz  = -74*alog(pp_bot)
+        dssdz    = -74*ss_bot
+
+        do k=1,nghost
+
+          lnrho = f(:,:,n1+k,ilnrho)
+          lnTT = f(:,:,n1+k,ilnTT)
+          rho1 = exp(-lnrho)
+          TT1 = exp(-lnTT)
+
+          ! Hydrogen ionization fraction
+          rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+          sqrtrhs = sqrt(rhs)
+          yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+
+          ! Mean molecular weight
+          mu1 = mu1_0*(1 + yH + xHe)
+
+          ! Logarithmic pressure
+          lnpp = alog(Rgas*mu1) + lnrho + lnTT
+          dlnppdz = dlnppdz + coeffs(k)*lnpp
+
+          ! Entropy in upflow regions
+          where (uz > 0)
+            tmp = 2.5 - 1.5*(lnTT_ion-lnTT) - lnrho
+            where (yH < 1) ! Neutral Hydrogen
+              ss = (1-yH)*(tmp + lnrho_H - log(1-yH))
+            endwhere
+            where (yH > 0) ! Electrons and ionized Hydrogen
+              ss = ss + yH*(tmp + lnrho_H - log(yH))
+              ss = ss + yH*(tmp + lnrho_e - log(yH))
+            endwhere
+            ! Don't use this with no Helium!
+            !if (xHe > 0) then ! Helium
+              ss = ss + xHe*(tmp + lnrho_He - log(xHe))
+            !endif
+            ss = Rgas*mu1_0*ss
+            dssdz = dssdz + coeffs(k)*ss
+          endwhere
+
+        enddo
+
+        lnrho = f(:,:,n1,ilnrho)
+        lnTT = f(:,:,n1,ilnTT)
+        rho1 = exp(-lnrho)
+        TT1 = exp(-lnTT)
+
+        ! Hydrogen ionization fraction
+        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        sqrtrhs = sqrt(rhs)
+        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+
+        mu1 = mu1_0*(1 + yH + xHe)
+
+        yH_term_cv = yH*(1-yH)/((2-yH)*(1+yH+xHe))
+        TT_term_cv = 1.5 + TT1*TT_ion
+        yH_term_cp = yH*(1-yH)/(2+xHe*(2-yH))
+        TT_term_cp = 2.5 + TT1*TT_ion
+
+        alpha = yH_term_cp/yH_term_cv
+        delta = 1 + yH_term_cp*TT_term_cp
+        cp = 2.5 + yH_term_cp*TT_term_cp**2
+        gamma = cp/(1.5 + yH_term_cv*TT_term_cv**2)
+        nabla_ad = delta/cp
+        where (uz > 0) cp = Rgas*mu1*cp
+
+        where (uz <= 0)
+          dlnrhodz = (alpha/gamma)*dlnppdz
+          dlnTTdz = nabla_ad*dlnppdz
+        endwhere
+        where (uz > 0)
+          dlnrhodz = (alpha/gamma)*dlnppdz - delta*(dssdz/cp)
+          dlnTTdz = nabla_ad*dlnppdz + dssdz/cp
+        endwhere
+
+!
+!  Fill ghost zones accordingly
+!
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+          f(:,:,n1-i,ilnTT)  = f(:,:,n1+i,ilnTT)  - 2*i*dz*dlnTTdz
+        enddo
+
+!
+!  Top boundary
+!
+      case ('top')
+
+!
+!  Get variables from f-array
+!
+        rho1 = exp(-f(:,:,n2,ilnrho))
+        TT1 = exp(-f(:,:,n2,ilnTT))
+
+!
+!  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
+!
+        geff = gravz
+
+!
+!  Compute z-derivative of the lorentz force on the boundary
+!  and add to the `effective' gravitational acceleration.
+!
+        if (lmagnetic) then
+
+             n=n2
+          do m=m1,m2
+            call gij(f,iaa,aij,1)
+            call curl_mn(aij,bb)
+            do j=1,3; bb(:,j)=bb(:,j)+B_ext(j); enddo
+            if (va2max_jxb>0) then
+              va2(l1:l2,m)=rho1(l1:l2,m)*(bb(:,1)**2+bb(:,2)**2+bb(:,3)**2)
+            endif
+            call bij_etc(f,iaa,bij)
+            call curl_mn(bij,jj)
+            call cross_mn(jj,bb,temp)
+            jxb_z(l1:l2,m) = temp(:,3)
+          enddo
+
+          rho1_jxb = rho1
+          if (rhomin_jxb>0) rho1_jxb = min(rho1_jxb,1/rhomin_jxb)
+          if (va2max_jxb>0) then
+            rho1_jxb = rho1_jxb/(1+(va2/va2max_jxb)**va2power_jxb)
+          endif
+          
+          geff = geff + rho1_jxb*jxb_z
+
+        endif
+
+!
+!  Boundary condition for density and temperature
+!
+        if (bcz2(ilnTT)/='StS') then
+          call fatal_error("bc_stellar_surface_2", &
+                           "This boundary condition for density also sets "// &
+                           "temperature. We therfore require "// &
+                           "bcz2(ilnTT)='StS2'")
+        endif
+
+!
+!  Hydrogen ionization fraction
+!
+        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        sqrtrhs = sqrt(rhs)
+        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+
+!
+!  Inverse mean molecular weight
+!
+        mu1 = mu1_0*(1 + yH + xHe)
+
+!
+!  Pressure over density
+!
+        rho1pp = Rgas*mu1/TT1
+
+!
+!  Pressure derivative
+!
+        dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
+
+!
+!  z-derivatives of density on the boundary
+!
+        dlnrhodz = geff/(rho1pp*dlnppdlnrho)
+
+!
+!  Fill ghost zones accordingly
+!
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+          f(:,:,n2+i,ilnTT) = f(:,:,n2-i,ilnTT)
+        enddo
+
+      case default
+
+      endselect
+
+    end subroutine bc_stellar_surface_2
 !***********************************************************************
 endmodule EquationOfState
