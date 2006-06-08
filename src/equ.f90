@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.302 2006-06-04 19:21:07 theine Exp $
+! $Id: equ.f90,v 1.303 2006-06-08 20:24:20 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.302 2006-06-04 19:21:07 theine Exp $")
+           "$Id: equ.f90,v 1.303 2006-06-08 20:24:20 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -424,7 +424,7 @@ module Equ
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
         call boundconds_y(f)
-        call boundconds_z(f)
+        call boundconds_z(f,df=df)
       endif
 !
 !  Apply global boundary conditions to particle positions and communiate
@@ -473,7 +473,7 @@ module Equ
         if (.not.early_finalize.and.necessary(imn)) then
           call finalize_isendrcv_bdry(f)
           call boundconds_y(f)
-          call boundconds_z(f)
+          call boundconds_z(f,df=df)
         endif
 !
 !  coordinates are needed frequently

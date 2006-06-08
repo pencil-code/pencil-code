@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.113 2006-06-07 13:57:40 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.114 2006-06-08 20:24:20 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -243,7 +243,7 @@ module Boundcond
 !
     endsubroutine boundconds_y
 !***********************************************************************
-    subroutine boundconds_z(f,ivar1_opt,ivar2_opt)
+    subroutine boundconds_z(f,ivar1_opt,ivar2_opt,df)
 !
 !  Boundary conditions in x except for periodic part handled by communication.
 !  boundconds_x() needs to be called before communicating (because we
@@ -263,6 +263,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, optional :: ivar1_opt, ivar2_opt
+      real, dimension (mx,my,mz,mvar), optional :: df
 !
       real, dimension (mcom) :: fbcz12, fbcz12_1, fbcz12_2
       real :: Ftopbot,FtopbotK
@@ -368,10 +369,16 @@ module Boundcond
                  call bc_force_z(f,+1,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
-              case ('hs','StS') ! solar surface boundary conditions
-                ! TH: 'hs' has only been kept for backwards compatibility --
-                ! TH: can probably be deleted
+              case ('StS') ! solar surface boundary conditions
                 if (j==ilnrho) call bc_stellar_surface(f,topbot)
+              case ('StS2') ! solar surface boundary conditions
+                if (j==ilnrho) then
+                  if (present(df)) then
+                    call bc_stellar_surface_2(f,topbot,df)
+                  else
+                    call bc_stellar_surface_2(f,topbot)
+                  endif
+                endif
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set

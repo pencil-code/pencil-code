@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.32 2006-06-08 01:09:12 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.33 2006-06-08 20:24:20 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -46,22 +46,24 @@ module EquationOfState
   real :: rho_H,rho_e,rho_e_,rho_He
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_He
 
-  real :: xHe=0.1,yH_const=0.0,yMetals=0.0
+  real :: xHe=0.1,yH_const=0.0,yMetals=0.0,tau_StS2=1.0
   logical :: lconst_yH=.false.
 
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   integer :: va2power_jxb=5
   real :: rhomin_jxb=-1.,va2max_jxb=-1.
-  real :: pp_bot=0.
+  real :: lnpp_bot=0.
   real :: ss_bot=0.
 
   ! input parameters
-  namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,pp_bot,ss_bot, &
-                           B_ext
+  namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
+                           B_ext, &
+                           tau_StS2
 
   ! run parameters
-  namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,pp_bot,ss_bot, &
-                          B_ext,va2power_jxb,rhomin_jxb,va2max_jxb
+  namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
+                          B_ext,va2power_jxb,rhomin_jxb,va2max_jxb, &
+                          tau_StS2
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -125,7 +127,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.32 2006-06-08 01:09:12 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.33 2006-06-08 20:24:20 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1849,7 +1851,7 @@ module EquationOfState
 
     end subroutine bc_stellar_surface
 !***********************************************************************
-    subroutine bc_stellar_surface_2(f,topbot)
+    subroutine bc_stellar_surface_2(f,topbot,df)
 !
 !  Boundary condition for density.
 !
@@ -1873,6 +1875,7 @@ module EquationOfState
 
       real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
       character (len=3), intent (in) :: topbot
+      real, dimension (mx,my,mz,mvar), optional :: df
 
       real, dimension (mx,my) :: geff
       real, dimension (mx,my) :: rho1_jxb,jxb_z,va2
@@ -1881,8 +1884,9 @@ module EquationOfState
       real, dimension (mx,my) :: mu1,rho1pp
       real, dimension (mx,my) :: yH_term_cv,yH_term_cp
       real, dimension (mx,my) :: TT_term_cv,TT_term_cp
-      real, dimension (mx,my) :: dlnppdlnTT,dlnppdlnrho
+      real, dimension (mx,my) :: dlnppdlnrho
       real, dimension (mx,my) :: dlnrhodz,dlnTTdz,dlnppdz,dssdz
+      real, dimension (mx,my) :: dlnpp,dss
       real, dimension (mx,my) :: cv,cp,cs2,nabla_ad,alpha,delta,gamma
       real, dimension (mx,my) :: lnpp,ss,tmp
       real, dimension (nx,3,3) :: aij,bij
@@ -1897,17 +1901,79 @@ module EquationOfState
 !
       case ('bot')
 
-        ! Coefficients for `one-sided' derivatives
-        ! (anti-symmetric extrapolation with respect to the boundary
-        ! value is implied)
-        coeffs = (/+90,-18,+2/)
+        lnrho = f(:,:,n1,ilnrho)
+        lnTT = f(:,:,n1,ilnTT)
+        rho1 = exp(-lnrho)
+        TT1 = exp(-lnTT)
+
+        ! Hydrogen ionization fraction
+        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        sqrtrhs = sqrt(rhs)
+        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
+
+        ! Mean molecular weight
+        mu1 = mu1_0*(1 + yH + xHe)
+
+        ! Pressure
+        rho1pp = Rgas*mu1/TT1
+        lnpp = alog(rho1pp) + lnrho
+        lnpp_bot = sum(lnpp(l1:l2,m1:m2))/(nx*ny)
+        dlnpp = lnpp - lnpp_bot
+
+        ! Entropy
+        tmp = 2.5 - 1.5*(lnTT_ion-lnTT) - lnrho
+        where (yH < 1) ! Neutral Hydrogen
+          ss = (1-yH)*(tmp + lnrho_H - log(1-yH))
+        endwhere
+        where (yH > 0) ! Electrons and ionized Hydrogen
+          ss = ss + yH*(tmp + lnrho_H - log(yH))
+          ss = ss + yH*(tmp + lnrho_e - log(yH))
+        endwhere
+        ! Don't use this without Helium!
+        !if (xHe > 0) then ! Helium
+          ss = ss + xHe*(tmp + lnrho_He - log(xHe))
+        !endif
+        ss = Rgas*mu1_0*ss
+        ss_bot = maxval(ss(l1:l2,m1:m2))
+        dss = ss - ss_bot
+
+        ! Useful definitions
+        yH_term_cv = yH*(1-yH)/((2-yH)*(1+yH+xHe))
+        TT_term_cv = 1.5 + TT1*TT_ion
+        yH_term_cp = yH*(1-yH)/(2+xHe*(2-yH))
+        TT_term_cp = 2.5 + TT1*TT_ion
+
+        ! For alpha and delta, see Kippenhahn & Weigert
+        alpha = yH_term_cp/yH_term_cv
+        delta = 1 + yH_term_cp*TT_term_cp
+        cp = 2.5 + yH_term_cp*TT_term_cp**2
+        gamma = cp/(1.5 + yH_term_cv*TT_term_cv**2)
+        cs2 = gamma*rho1pp*yH_term_cv/yH_term_cp
+        nabla_ad = delta/cp
+        cp = Rgas*mu1*cp
 
         ! z-components of velocity at the bottom
         uz = f(:,:,n1,iuz)
 
+        if (present(df)) then
+          ! Add cancellation terms to rhs of the continuity and energy equation
+          df(:,:,n1,ilnrho) = df(:,:,n1,ilnrho) - (dlnpp/tau_StS2)*rho1pp/cs2
+          df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dlnpp/tau_StS2)*nabla_ad
+          where (uz > 0)
+            df(:,:,n1,ilnrho) = df(:,:,n1,ilnrho) &
+                              + (dss/tau_StS2)/(Rgas*mu1*nabla_ad)
+            df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dss/tau_StS2)/cp
+          endwhere
+        endif
+
+        ! Coefficients for `one-sided' derivatives
+        ! (anti-symmetric extrapolation with respect to the boundary
+        ! value is implied)
+        coeffs = (/+90,-18,+2/)*(1./60)*dz_1(n1)
+
         ! Initialize derivatives
-        dlnppdz  = -74*alog(pp_bot)
-        dssdz    = -74*ss_bot
+        dlnppdz              = -74*(1./60)*dz_1(n1)*lnpp_bot
+        where (uz > 0) dssdz = -74*(1./60)*dz_1(n1)*ss_bot
 
         ! Loop over the first few active zones in order to compute
         ! the z-derivative of pressure and entropy on the boundary
@@ -1949,33 +2015,6 @@ module EquationOfState
           endwhere
 
         enddo
-
-        lnrho = f(:,:,n1,ilnrho)
-        lnTT = f(:,:,n1,ilnTT)
-        rho1 = exp(-lnrho)
-        TT1 = exp(-lnTT)
-
-        ! Hydrogen ionization fraction
-        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
-        sqrtrhs = sqrt(rhs)
-        yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
-
-        ! Mean molecular weight
-        mu1 = mu1_0*(1 + yH + xHe)
-
-        ! Useful definitions
-        yH_term_cv = yH*(1-yH)/((2-yH)*(1+yH+xHe))
-        TT_term_cv = 1.5 + TT1*TT_ion
-        yH_term_cp = yH*(1-yH)/(2+xHe*(2-yH))
-        TT_term_cp = 2.5 + TT1*TT_ion
-
-        ! For alpha and delta, see Kippenhahn & Weigert
-        alpha = yH_term_cp/yH_term_cv
-        delta = 1 + yH_term_cp*TT_term_cp
-        cp = 2.5 + yH_term_cp*TT_term_cp**2
-        gamma = cp/(1.5 + yH_term_cv*TT_term_cv**2)
-        nabla_ad = delta/cp
-        where (uz > 0) cp = Rgas*mu1*cp
 
         ! Ensure ientropic outflow, set pressure to pp_bot
         where (uz <= 0)
