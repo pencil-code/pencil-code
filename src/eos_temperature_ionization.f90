@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.31 2006-06-08 00:54:11 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.32 2006-06-08 01:09:12 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -125,7 +125,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.31 2006-06-08 00:54:11 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.32 2006-06-08 01:09:12 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1897,14 +1897,20 @@ module EquationOfState
 !
       case ('bot')
 
+        ! Coefficients for `one-sided' derivatives
+        ! (anti-symmetric extrapolation with respect to the boundary
+        ! value is implied)
         coeffs = (/+90,-18,+2/)
 
+        ! z-components of velocity at the bottom
         uz = f(:,:,n1,iuz)
 
         ! Initialize derivatives
         dlnppdz  = -74*alog(pp_bot)
         dssdz    = -74*ss_bot
 
+        ! Loop over the first few active zones in order to compute
+        ! the z-derivative of pressure and entropy on the boundary
         do k=1,nghost
 
           lnrho = f(:,:,n1+k,ilnrho)
@@ -1954,13 +1960,16 @@ module EquationOfState
         sqrtrhs = sqrt(rhs)
         yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
+        ! Mean molecular weight
         mu1 = mu1_0*(1 + yH + xHe)
 
+        ! Useful definitions
         yH_term_cv = yH*(1-yH)/((2-yH)*(1+yH+xHe))
         TT_term_cv = 1.5 + TT1*TT_ion
         yH_term_cp = yH*(1-yH)/(2+xHe*(2-yH))
         TT_term_cp = 2.5 + TT1*TT_ion
 
+        ! For alpha and delta, see Kippenhahn & Weigert
         alpha = yH_term_cp/yH_term_cv
         delta = 1 + yH_term_cp*TT_term_cp
         cp = 2.5 + yH_term_cp*TT_term_cp**2
@@ -1968,10 +1977,14 @@ module EquationOfState
         nabla_ad = delta/cp
         where (uz > 0) cp = Rgas*mu1*cp
 
+        ! Ensure ientropic outflow, set pressure to pp_bot
         where (uz <= 0)
           dlnrhodz = (alpha/gamma)*dlnppdz
           dlnTTdz = nabla_ad*dlnppdz
         endwhere
+
+        ! Set the entropy for incoming material to ss_bot,
+        ! set pressure to pp_bot
         where (uz > 0)
           dlnrhodz = (alpha/gamma)*dlnppdz - delta*(dssdz/cp)
           dlnTTdz = nabla_ad*dlnppdz + dssdz/cp
