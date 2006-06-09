@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.21 2006-06-08 23:16:38 theine Exp $
+! $Id: eos_fixed_ionization.f90,v 1.22 2006-06-09 10:51:06 brandenb Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.21 2006-06-08 23:16:38 theine Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.22 2006-06-09 10:51:06 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1158,15 +1158,16 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     end subroutine bc_stellar_surface
 !***********************************************************************
-    subroutine bc_stellar_surface_2(f,topbot)
+    subroutine bc_stellar_surface_2(f,topbot,df)
 !
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar), optional :: df
 !
       call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f(1,1,1,1),df(1,1,1,1),topbot
 !
     end subroutine bc_stellar_surface_2
 !***********************************************************************
