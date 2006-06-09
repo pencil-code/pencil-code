@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.33 2006-06-08 20:24:20 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.34 2006-06-09 21:40:18 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -127,7 +127,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.33 2006-06-08 20:24:20 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.34 2006-06-09 21:40:18 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -287,7 +287,7 @@ module EquationOfState
       real, dimension (nx) :: rhs,sqrtrhs
       real, dimension (nx) :: yH_term_cv,TT_term_cv
       real, dimension (nx) :: yH_term_cp,TT_term_cp
-      real, dimension (nx) :: tmp
+      real, dimension (nx) :: alpha1,tmp
       integer :: i
 
       if (NO_WARN) print *,f,p
@@ -360,7 +360,10 @@ module EquationOfState
 !
 !  Sound speed
 !
-      if (lpencil(i_cs2)) p%cs2 = p%gamma*p%rho1*p%pp*yH_term_cv/yH_term_cp
+      if (lpencil(i_cs2)) then
+        alpha1 = (2+xHe*(2-p%yH))/((2-p%yH)*(1+p%yH+xHe))
+        p%cs2 = p%gamma*p%rho1*p%pp*alpha1
+      endif
 
 !
 !  Adiabatic temperature gradient
