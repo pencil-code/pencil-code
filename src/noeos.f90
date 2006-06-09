@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.24 2006-05-28 17:54:06 theine Exp $
+! $Id: noeos.f90,v 1.25 2006-06-09 15:20:20 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.24 2006-05-28 17:54:06 theine Exp $')
+           '$Id: noeos.f90,v 1.25 2006-06-09 15:20:20 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1281,5 +1281,18 @@ module EquationOfState
       if (NO_WARN) print*,f(1,1,1,1),topbot
 !
     end subroutine bc_stellar_surface
+!***********************************************************************
+    subroutine bc_stellar_surface_2(f,topbot,df)
+! 
+      use Mpicomm, only: stop_it
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar), optional :: df
+!
+      call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
+      if (NO_WARN) print*,f(1,1,1,1),df(1,1,1,1),topbot
+! 
+    end subroutine bc_stellar_surface_2
 !***********************************************************************
 endmodule EquationOfState
