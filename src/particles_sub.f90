@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.65 2006-06-10 03:17:58 ajohan Exp $
+! $Id: particles_sub.f90,v 1.66 2006-06-10 16:04:34 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -15,7 +15,7 @@ module Particles_sub
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
-  public :: interpolate_linear, interpolate_quadratic
+  public :: interpolate_linear, interpolate_linear_smooth, interpolate_quadratic
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index, find_closest_gridpoint
 
@@ -809,6 +809,104 @@ module Particles_sub
       endif
 !
     endsubroutine interpolate_linear
+!***********************************************************************
+    subroutine interpolate_linear_smooth(f,ii0,ii1,xxp,gp,inear,ipar)
+!
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
+!  using first order formula 
+!
+!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
+!
+!  The interpolated value is then averaged over the entire particle swarm,
+!  i.e. a volume of constant density centred on the particle and with the size
+!  of a grid cell.
+!
+!  10-jun-06/anders: coded
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (3) :: xxp
+      integer, dimension (3) :: inear
+      integer :: ii0, ii1
+      real, dimension (ii1-ii0+1) :: gp
+      integer, optional :: ipar
+!
+      real, dimension (ii1-ii0+1) :: g0, g1, g2, g3, g4, g5, g6, g7, g8
+      real :: dxp0, dyp0, dzp0
+      integer :: i, ix0, iy0, iz0
+      logical :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ii0
+      intent(out) :: gp
+!
+!  Not implemented in y-direction.
+!
+      if (nygrid/=1) then
+        if (lroot) print*, 'interpolate_linear_smooth: not implemented in y'
+        call fatal_error('interpolate_linear_smooth','')
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to nearest grid
+!  point and normalize with the cell size.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
+      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
+      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
+!
+!  Interpolation formula.
+!
+      gp= (3.0-4*dxp0**2)*(3.0-4*dzp0**2)*f(ix0,iy0,iz0,ii0:ii1)/16 + &
+          (3.0-4*dxp0**2)/32*( f(ix0  ,iy0,iz0+1,ii0:ii1)*(1+2*dzp0)**2 +   &
+                               f(ix0  ,iy0,iz0-1,ii0:ii1)*(1-2*dzp0)**2 ) + &
+          (3.0-4*dzp0**2)/32*( f(ix0+1,iy0,iz0  ,ii0:ii1)*(1+2*dxp0)**2 +   &
+                               f(ix0-1,iy0,iz0  ,ii0:ii1)*(1-2*dxp0)**2 ) + &
+          (1.0+2*dxp0)**2/64*( f(ix0+1,iy0,iz0+1,ii0:ii1)*(1+2*dzp0)**2 +   &
+                               f(ix0+1,iy0,iz0-1,ii0:ii1)*(1-2*dzp0)**2 ) + &
+          (1.0-2*dxp0)**2/64*( f(ix0-1,iy0,iz0+1,ii0:ii1)*(1+2*dzp0)**2 +   &
+                               f(ix0-1,iy0,iz0-1,ii0:ii1)*(1-2*dzp0)**2 )
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (linterp_reality_check) then
+        g0=f(ix0  ,iy0,iz0,ii0:ii1)
+        g1=f(ix0  ,iy0,iz0+1,ii0:ii1)
+        g2=f(ix0  ,iy0,iz0-1,ii0:ii1)
+        g3=f(ix0+1,iy0,iz0  ,ii0:ii1)
+        g4=f(ix0-1,iy0,iz0  ,ii0:ii1)
+        g5=f(ix0+1,iy0,iz0+1,ii0:ii1)
+        g6=f(ix0-1,iy0,iz0-1,ii0:ii1)
+        g7=f(ix0-1,iy0,iz0+1,ii0:ii1)
+        g8=f(ix0-1,iy0,iz0-1,ii0:ii1)
+        do i=1,ii1-ii0+1
+          if (gp(i)>max(g0(i),g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'interpolate_linear_smooth: interpolated value is LARGER    than'
+            print*, 'interpolate_linear_smooth: all values at the corner ponts!'
+            print*, 'interpolate_linear_smooth: ipar, xxp=', ipar, xxp
+            print*, 'interpolate_linear_smooth: x0, y0, z0=', &
+                x(ix0), y(iy0), z(iz0)
+            print*, 'interpolate_linear_smooth: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear_smooth: g0...g8=', &
+                g0(i), g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+          if (gp(i)<min(g0(i),g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'interpolate_linear_smooth: interpolated value is smaller   than'
+            print*, 'interpolate_linear_smooth: all values at the corner ponts!'
+            print*, 'interpolate_linear_smooth: xxp=', xxp
+            print*, 'interpolate_linear_smooth: x0, y0, z0=', &
+                x(ix0), y(iy0), z(iz0)
+            print*, 'interpolate_linear_smooth: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear_smooth: g0...g8=', &
+                g0(i), g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+        enddo
+      endif
+!
+    endsubroutine interpolate_linear_smooth
 !***********************************************************************
     subroutine interpolate_quadratic(f,ii0,ii1,xxp,gp,inear,ipar)
 !

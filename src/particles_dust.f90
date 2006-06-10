@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.93 2006-06-10 03:17:57 ajohan Exp $
+! $Id: particles_dust.f90,v 1.94 2006-06-10 16:04:34 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -39,7 +39,8 @@ module Particles
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
-  logical :: lpar_spec=.false., lsmooth_dragforce=.false.
+  logical :: lpar_spec=.false.
+  logical :: lsmooth_dragforce=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical, parameter :: ldraglaw_epstein=.true.
@@ -48,8 +49,8 @@ module Particles
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
-      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, &
-      rhop_tilde, eps_dtog, nu_epicycle, lsmooth_dragforce, &
+      bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
+      eps_dtog, nu_epicycle, lsmooth_dragforce, lsmooth_dragforce_gas, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
@@ -58,7 +59,8 @@ module Particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, lsmooth_dragforce, &
+      ldragforce_gas_par, ldragforce_dust_par, &
+      lsmooth_dragforce, lsmooth_dragforce_gas, &
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
@@ -90,7 +92,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.93 2006-06-10 03:17:57 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.94 2006-06-10 16:04:34 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -218,7 +220,7 @@ module Particles
 !  When drag force is smoothed, df is also set in the first ghost zone. This 
 !  region needs to be folded back into the df array after pde is finished,
 !
-      if (lsmooth_dragforce) lfold_df=.true.
+      if (lsmooth_dragforce_gas) lfold_df=.true.
 !
 !  Write constants to disc.
 !      
@@ -987,14 +989,19 @@ k_loop: do while (.not. (k>npar_loc))
               call interpolate_quadratic( &
                   f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
             else
-              call interpolate_linear( &
-                  f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+              if (lsmooth_dragforce) then
+                call interpolate_linear_smooth( &
+                    f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+              else
+                call interpolate_linear( &
+                    f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+              endif
             endif
             dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !  Back-reaction friction force from particles on gas (conserves momentum).
             if (ldragforce_gas_par) then  ! Smooth back-reaction drag force.
-              if (lsmooth_dragforce) then
+              if (lsmooth_dragforce_gas) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ix0=ix0-1
                 if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iy0=iy0-1
