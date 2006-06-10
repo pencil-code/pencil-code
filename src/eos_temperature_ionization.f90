@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.35 2006-06-10 12:04:29 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.36 2006-06-10 20:10:28 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -127,7 +127,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.35 2006-06-10 12:04:29 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.36 2006-06-10 20:10:28 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1927,7 +1927,7 @@ module EquationOfState
         ! Pressure
         rho1pp = Rgas*mu1/TT1
         lnpp = alog(rho1pp) + lnrho
-        lnpp_bot = sum(lnpp(l1:l2,m1:m2))/(nx*ny)
+        !lnpp_bot = sum(lnpp(l1:l2,m1:m2))/(nx*ny)
         dlnpp = lnpp - lnpp_bot
 
         ! Entropy
@@ -1944,7 +1944,7 @@ module EquationOfState
           ss = ss + xHe*(tmp + lnrho_He - log(xHe))
         !endif
         ss = Rgas*mu1_0*ss
-        ss_bot = maxval(ss(l1:l2,m1:m2))
+        !ss_bot = maxval(ss(l1:l2,m1:m2))
         dss = ss - ss_bot
 
         ! Useful definitions
