@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.66 2006-06-10 16:04:34 ajohan Exp $
+! $Id: particles_sub.f90,v 1.67 2006-06-10 16:13:32 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -824,7 +824,7 @@ module Particles_sub
 !  10-jun-06/anders: coded
 !
       use Cdata
-      use Mpicomm, only: stop_it
+      use Messages, only: fatal_error
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (3) :: xxp
