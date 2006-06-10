@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.93 2006-06-09 22:03:41 theine Exp $
+! $Id: radiation_ray.f90,v 1.94 2006-06-10 00:06:46 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
   real :: DFF_new=0.  !(dum)
   integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
   integer :: idiag_Egas_rms=0,idiag_Egas_max=0,idiag_Qradrms=0,idiag_Qradmax=0
-  integer :: idiag_Fradzm=0,idiag_Sradm=0,idiag_TTeff=0
+  integer :: idiag_Fradzm=0,idiag_Sradm=0,idiag_xyFradzm=0
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
@@ -162,7 +162,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.93 2006-06-09 22:03:41 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.94 2006-06-10 00:06:46 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1163,7 +1163,6 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: radpressure
-      real, dimension (nx) :: TTeff
       integer :: j,k
 !
       if (lradflux) then
@@ -1184,9 +1183,8 @@ module Radiation
           if (idiag_Fradzm/=0) then
             call sum_mn_name(f(l1:l2,m,n,iFradz),idiag_Fradzm)
           endif
-          if (idiag_TTeff/=0) then
-            TTeff=(f(l1:l2,m,n2,iFradz)/sigmaSB)**0.25
-            call sum_mn_name(TTeff,idiag_TTeff)
+          if (idiag_xyFradzm/=0) then
+            call xysum_mn_name_z(f(l1:l2,m,n,iFradz),idiag_xyFradzm)
           endif
         endif
       endif
@@ -1456,7 +1454,7 @@ module Radiation
       use Cdata
       use Sub
 !  
-      integer :: iname
+      integer :: iname,inamez
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1468,7 +1466,7 @@ module Radiation
 !
       if (lreset) then
         idiag_Qradrms=0; idiag_Qradmax=0; idiag_Fradzm=0; idiag_Sradm=0
-        idiag_TTeff=0
+        idiag_xyFradzm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -1477,8 +1475,13 @@ module Radiation
         call parse_name(iname,cname(iname),cform(iname),'Qradrms',idiag_Qradrms)
         call parse_name(iname,cname(iname),cform(iname),'Qradmax',idiag_Qradmax)
         call parse_name(iname,cname(iname),cform(iname),'Fradzm',idiag_Fradzm)
-        call parse_name(iname,cname(iname),cform(iname),'TTeff',idiag_TTeff)
         call parse_name(iname,cname(iname),cform(iname),'Sradm',idiag_Sradm)
+      enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'xyFradzm',idiag_xyFradzm)
       enddo
 !
 !  write column where which radiative variable is stored
@@ -1493,7 +1496,7 @@ module Radiation
         write(3,*) 'i_Qradrms=',idiag_Qradrms
         write(3,*) 'i_Qradmax=',idiag_Qradmax
         write(3,*) 'i_Fradzm=',idiag_Fradzm
-        write(3,*) 'i_TTeff=',idiag_TTeff
+        write(3,*) 'i_xyFradzm=',idiag_xyFradzm
         write(3,*) 'i_Sradm=',idiag_Sradm
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
