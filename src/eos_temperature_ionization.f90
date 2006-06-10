@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.34 2006-06-09 21:40:18 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.35 2006-06-10 12:04:29 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -46,7 +46,7 @@ module EquationOfState
   real :: rho_H,rho_e,rho_e_,rho_He
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_He
 
-  real :: xHe=0.1,yH_const=0.0,yMetals=0.0,tau_StS2=1.0
+  real :: xHe=0.1,yH_const=0.0,yMetals=0.0,tau_relax=1.0
   logical :: lconst_yH=.false.
 
   real, dimension(3) :: B_ext=(/0.,0.,0./)
@@ -58,12 +58,12 @@ module EquationOfState
   ! input parameters
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                            B_ext, &
-                           tau_StS2
+                           tau_relax
 
   ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
                           B_ext,va2power_jxb,rhomin_jxb,va2max_jxb, &
-                          tau_StS2
+                          tau_relax
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
   real :: cs20=impossible, lnrho0=impossible
@@ -127,7 +127,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.34 2006-06-09 21:40:18 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.35 2006-06-10 12:04:29 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1904,6 +1904,13 @@ module EquationOfState
 !
       case ('bot')
 
+        if (bcz1(ilnTT)/='sun') then
+          call fatal_error("bc_stellar_surface_2", &
+                           "This boundary condition for density also sets "// &
+                           "temperature. We therfore require "// &
+                           "bcz1(ilnTT)='sun'")
+        endif
+
         lnrho = f(:,:,n1,ilnrho)
         lnTT = f(:,:,n1,ilnTT)
         rho1 = exp(-lnrho)
@@ -1960,12 +1967,12 @@ module EquationOfState
 
         if (present(df)) then
           ! Add cancellation terms to rhs of the continuity and energy equation
-          df(:,:,n1,ilnrho) = df(:,:,n1,ilnrho) - (dlnpp/tau_StS2)*rho1pp/cs2
-          df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dlnpp/tau_StS2)*nabla_ad
+          df(:,:,n1,ilnrho) = df(:,:,n1,ilnrho) - (dlnpp/tau_relax)*rho1pp/cs2
+          df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dlnpp/tau_relax)*nabla_ad
           where (uz > 0)
             df(:,:,n1,ilnrho) = df(:,:,n1,ilnrho) &
-                              + (dss/tau_StS2)/(Rgas*mu1*nabla_ad)
-            df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dss/tau_StS2)/cp
+                              + (dss/tau_relax)/(Rgas*mu1*nabla_ad)
+            df(:,:,n1,ilnTT)  = df(:,:,n1,ilnTT) - (dss/tau_relax)/cp
           endwhere
         endif
 
@@ -2089,11 +2096,11 @@ module EquationOfState
 !
 !  Boundary condition for density and temperature
 !
-        if (bcz2(ilnTT)/='StS') then
+        if (bcz2(ilnTT)/='sun') then
           call fatal_error("bc_stellar_surface_2", &
                            "This boundary condition for density also sets "// &
                            "temperature. We therfore require "// &
-                           "bcz2(ilnTT)='StS2'")
+                           "bcz2(ilnTT)='sun'")
         endif
 
 !

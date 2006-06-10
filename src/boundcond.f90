@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.114 2006-06-08 20:24:20 theine Exp $
+! $Id: boundcond.f90,v 1.115 2006-06-10 12:04:29 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -371,7 +371,7 @@ module Boundcond
                 call bc_one_z(f,topbot,j)
               case ('StS') ! solar surface boundary conditions
                 if (j==ilnrho) call bc_stellar_surface(f,topbot)
-              case ('StS2') ! solar surface boundary conditions
+              case ('sun') ! solar surface boundary conditions
                 if (j==ilnrho) then
                   if (present(df)) then
                     call bc_stellar_surface_2(f,topbot,df)
