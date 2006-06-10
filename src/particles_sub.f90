@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.64 2006-05-29 21:17:41 ajohan Exp $
+! $Id: particles_sub.f90,v 1.65 2006-06-10 03:17:58 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -15,7 +15,7 @@ module Particles_sub
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
-  public :: interpolate_3d_1st
+  public :: interpolate_linear, interpolate_quadratic
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index, find_closest_gridpoint
 
@@ -686,10 +686,10 @@ module Particles_sub
 !
     endsubroutine integrate_par_name
 !***********************************************************************
-    subroutine interpolate_3d_1st(f,ii0,ii1,xxp,gp,inear,ipar)
+    subroutine interpolate_linear(f,ii0,ii1,xxp,gp,inear,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
-!  using first order formula 
+!  using the linear interpolation formula
 !
 !    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
 !
@@ -732,7 +732,7 @@ module Particles_sub
           (z(iz0)<=xxp(3) .and. z(iz0+1)>=xxp(3) .or. nzgrid==1)) then
         ! Everything okay
       else
-        print*, 'interpolate_3d_1st: Interpolation point does not ' // &
+        print*, 'interpolate_linear: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
         if (present(ipar)) print*, 'ipar= ', ipar
@@ -743,7 +743,7 @@ module Particles_sub
         print*, 'xp, xp0, xp1 = ', xxp(1), x(ix0), x(ix0+1)
         print*, 'yp, yp0, yp1 = ', xxp(2), y(iy0), y(iy0+1)
         print*, 'zp, zp0, zp1 = ', xxp(3), z(iz0), z(iz0+1)
-        call stop_it('interpolate_3d_1st')
+        call stop_it('interpolate_linear')
       endif
 !
 !  Redefine the interpolation point in coordinates relative to lowest corner.
@@ -755,65 +755,180 @@ module Particles_sub
 !  Calculate derived grid spacing variables in the first call to this sub.
 !      
       if (lfirstcall) then
+        dx1=1/dx;  dy1=1/dy;  dz1=1/dz
+        dxdy1=1/(dx*dy);  dxdz1=1/(dx*dz);  dydz1=1/(dy*dz)
         dxdydz1=1/(dx*dy*dz)
-        dxdy1=1/(dx*dy)
-        dxdz1=1/(dx*dz)
-        dydz1=1/(dy*dz)
-        dx1=1/dx
-        dy1=1/dy
-        dz1=1/dz
         lfirstcall=.false.
       endif
 !
 !  Function values at all corners.
 !
-      g1=f(ix0+1,iy0+1,iz0+1,ii0:ii1)
-      g2=f(ix0  ,iy0+1,iz0+1,ii0:ii1)
-      g3=f(ix0+1,iy0  ,iz0+1,ii0:ii1)
+      g1=f(ix0  ,iy0  ,iz0  ,ii0:ii1)
+      g2=f(ix0+1,iy0  ,iz0  ,ii0:ii1)
+      g3=f(ix0  ,iy0+1,iz0  ,ii0:ii1)
       g4=f(ix0+1,iy0+1,iz0  ,ii0:ii1)
       g5=f(ix0  ,iy0  ,iz0+1,ii0:ii1)
-      g6=f(ix0  ,iy0+1,iz0  ,ii0:ii1)
-      g7=f(ix0+1,iy0  ,iz0  ,ii0:ii1)
-      g8=f(ix0  ,iy0  ,iz0  ,ii0:ii1)
+      g6=f(ix0+1,iy0  ,iz0+1,ii0:ii1)
+      g7=f(ix0  ,iy0+1,iz0+1,ii0:ii1)
+      g8=f(ix0+1,iy0+1,iz0+1,ii0:ii1)
 !
 !  Interpolation formula.
 !
-      gp = xp0*yp0*zp0*dxdydz1*(g1-g2-g3-g4+g5+g6+g7-g8) &
-          + xp0*yp0*dxdy1*(g4-g6-g7+g8) &
-          + xp0*zp0*dxdz1*(g3-g5-g7+g8) &
-          + yp0*zp0*dydz1*(g2-g5-g6+g8) &
-          + xp0*dx1*(g7-g8) + yp0*dy1*(g6-g8) + zp0*dz1*(g5-g8) + g8
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
+          xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
+          yp0*zp0*dydz1*(g1-g3-g5+g7) + &
+          xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
 !
 !  Do a reality check on the interpolation scheme.
 !
       if (linterp_reality_check) then
         do i=1,ii1-ii0+1
           if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_3d_1st: interpolated value is LARGER than'
-            print*, 'interpolate_3d_1st: all values at the corner ponts!'
-            print*, 'interpolate_3d_1st: ipar, xxp=', ipar, xxp
-            print*, 'interpolate_3d_1st: x0, y0, z0=', &
+            print*, 'interpolate_linear: interpolated value is LARGER than'
+            print*, 'interpolate_linear: a values at the corner points!'
+            print*, 'interpolate_linear: ipar, xxp=', ipar, xxp
+            print*, 'interpolate_linear: x0, y0, z0=', &
                 x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_3d_1st: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_3d_1st: g1...g8=', &
+            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
             print*, '------------------'
           endif
           if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_3d_1st: interpolated value is smaller than'
-            print*, 'interpolate_3d_1st: all values at the corner ponts!'
-            print*, 'interpolate_3d_1st: xxp=', xxp
-            print*, 'interpolate_3d_1st: x0, y0, z0=', &
+            print*, 'interpolate_linear: interpolated value is smaller than'
+            print*, 'interpolate_linear: a values at the corner points!'
+            print*, 'interpolate_linear: xxp=', xxp
+            print*, 'interpolate_linear: x0, y0, z0=', &
                 x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_3d_1st: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_3d_1st: g1...g8=', &
+            print*, 'interpolate_linear: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear: g1...g8=', &
                 g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
             print*, '------------------'
           endif
         enddo
       endif
 !
-    endsubroutine interpolate_3d_1st
+    endsubroutine interpolate_linear
+!***********************************************************************
+    subroutine interpolate_quadratic(f,ii0,ii1,xxp,gp,inear,ipar)
+!
+!  Quadratic interpolation of g to arbitrary (xp, yp, zp) coordinate
+!  using the biquadratic interpolation function
+!
+!    g(x,y,z) = (1+x+x^2)*(1+z+z^2)
+!
+!  The coefficients (9, one for each unique term) are determined by the 9
+!  grid points surrounding the interpolation point.
+!
+!  The interpolation matrix M is defined through the relation
+!    M#c = g
+!  Here c are the coefficients and g is the value of the function at the grid
+!  points. An equidistant grid has the following value of M:
+!
+!    invmat(:,1)=(/ 0.00, 0.00, 0.00, 0.00, 1.00, 0.00, 0.00, 0.00, 0.00/)
+!    invmat(:,2)=(/ 0.00, 0.00, 0.00,-0.50, 0.00, 0.50, 0.00, 0.00, 0.00/)
+!    invmat(:,3)=(/ 0.00, 0.00, 0.00, 0.50,-1.00, 0.50, 0.00, 0.00, 0.00/)
+!    invmat(:,4)=(/ 0.00,-0.50, 0.00, 0.00, 0.00, 0.00, 0.00, 0.50, 0.00/)
+!    invmat(:,5)=(/ 0.00, 0.50, 0.00, 0.00,-1.00, 0.00, 0.00, 0.50, 0.00/)
+!    invmat(:,6)=(/ 0.25, 0.00,-0.25, 0.00, 0.00, 0.00,-0.25, 0.00, 0.25/)
+!    invmat(:,7)=(/-0.25, 0.50,-0.25, 0.00, 0.00, 0.00, 0.25,-0.50, 0.25/)
+!    invmat(:,8)=(/-0.25, 0.00, 0.25, 0.50, 0.00,-0.50,-0.25, 0.00, 0.25/)
+!    invmat(:,9)=(/ 0.25,-0.50, 0.25,-0.50, 1.00,-0.50, 0.25,-0.50, 0.25/)
+!
+!    invmat(:,1)=invmat(:,1)
+!    invmat(:,2)=invmat(:,2)/dx
+!    invmat(:,3)=invmat(:,3)/dx**2
+!    invmat(:,4)=invmat(:,4)/dz
+!    invmat(:,5)=invmat(:,5)/dz**2
+!    invmat(:,6)=invmat(:,6)/(dx*dz)
+!    invmat(:,7)=invmat(:,7)/(dx**2*dz)
+!    invmat(:,8)=invmat(:,8)/(dx*dz**2)
+!    invmat(:,9)=invmat(:,9)/(dx**2*dz**2)
+!
+!  Space coordinates are defined such that the nearest grid point is at (0,0).
+!  The grid points are counted from lower left:
+!
+!    7  8  9
+!    4  5  6
+!    1  2  3
+!
+!  The nearest grid point has index number 5.
+!
+!  09-jun-06/anders: coded
+!
+      use Cdata
+      use Messages, only: fatal_error
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (3) :: xxp
+      integer, dimension (3) :: inear
+      integer :: ii0, ii1
+      real, dimension (ii1-ii0+1) :: gp
+      integer, optional :: ipar
+!
+      real, dimension (9,ii1-ii0+1) :: cc
+      real, dimension (ii1-ii0+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
+      real :: dxp, dzp
+      real, save :: dx1, dx2, dz1, dz2, dx1dz1, dx2dz1, dx1dz2, dx2dz2
+      integer :: i, j, ix0, iy0, iz0
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ii0
+      intent(out) :: gp
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+!
+!  Not implemented in y-direction yet (but is easy to generalise).
+!
+      if (nygrid/=1) then
+        if (lroot) print*, 'interpolate_quadratic: not implemented in y'
+        call fatal_error('interpolate_quadratic','')
+      endif
+!
+!  A few values that only need to be calcultad once.
+!
+      if (lfirstcall) then
+        dx1=1/dx; dx2=1/dx**2
+        dz1=1/dz; dz2=1/dz**2
+        dx1dz1=1/(dx*dz)
+        dx2dz1=1/(dx**2*dz); dx1dz2=1/(dx*dz**2); dx2dz2=1/(dx**2*dz**2)
+        lfirstcall=.false.
+      endif
+!
+!  Define function values at the grid points.
+!
+      g1=f(ix0-1,iy0,iz0-1,ii0:ii1)
+      g2=f(ix0  ,iy0,iz0-1,ii0:ii1)
+      g3=f(ix0+1,iy0,iz0-1,ii0:ii1)
+      g4=f(ix0-1,iy0,iz0  ,ii0:ii1)
+      g5=f(ix0  ,iy0,iz0  ,ii0:ii1)
+      g6=f(ix0+1,iy0,iz0  ,ii0:ii1)
+      g7=f(ix0-1,iy0,iz0+1,ii0:ii1)
+      g8=f(ix0  ,iy0,iz0+1,ii0:ii1)
+      g9=f(ix0+1,iy0,iz0+1,ii0:ii1)
+!
+!  Calculate the coefficients of the interpolation formula (see introduction).
+!
+      cc(1,:)=                                g5
+      cc(2,:)=dx1   *0.5 *(             -g4     +  g6           )
+      cc(3,:)=dx2   *0.5 *(              g4-2*g5+  g6           )
+      cc(4,:)=dz1   *0.5 *(     -g2                     +  g8   )
+      cc(5,:)=dz2   *0.5 *(      g2        -2*g5        +  g8   )
+      cc(6,:)=dx1dz1*0.25*( g1     -g3               -g7     +g9)
+      cc(7,:)=dx2dz1*0.25*(-g1+2*g2-g3               +g7-2*g8+g9)
+      cc(8,:)=dx1dz2*0.25*(-g1     +g3+2*g4     -2*g6-g7     +g9)
+      cc(9,:)=dx2dz2*0.25*( g1-2*g2+g3-2*g4+4*g5-2*g6+g7-2*g8+g9)
+!
+!  Calculate the value of the interpolation function at the point (dxp,dzp).
+!
+      dxp=xxp(1)-x(ix0)
+      dzp=xxp(3)-z(iz0)
+!
+      gp = cc(1,:)            + cc(2,:)*dxp        + cc(3,:)*dxp**2        + &
+           cc(4,:)*dzp        + cc(5,:)*dzp**2     + cc(6,:)*dxp*dzp       + &
+           cc(7,:)*dxp**2*dzp + cc(8,:)*dxp*dzp**2 + cc(9,:)*dxp**2*dzp**2
+!
+    endsubroutine interpolate_quadratic
 !***********************************************************************
     subroutine map_nearest_grid(f,fp,ineargrid)
 !

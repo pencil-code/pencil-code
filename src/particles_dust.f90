@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.92 2006-06-04 22:10:55 ajohan Exp $
+! $Id: particles_dust.f90,v 1.93 2006-06-10 03:17:57 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -41,6 +41,7 @@ module Particles
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false., lsmooth_dragforce=.false.
   logical :: ldragforce_equi_global_eps=.false.
+  logical :: lquadratic_interpolation=.false.
   logical, parameter :: ldraglaw_epstein=.true.
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
   character (len=labellen) :: gravx_profile='zero',  gravz_profile='zero'
@@ -53,7 +54,7 @@ module Particles
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
-      phase_vpx, phase_vpy, phase_vpz
+      phase_vpx, phase_vpy, phase_vpz, lquadratic_interpolation
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -61,7 +62,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
-      lmigration_redo
+      lmigration_redo, lquadratic_interpolation
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -89,7 +90,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.92 2006-06-04 22:10:55 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.93 2006-06-10 03:17:57 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -433,7 +434,7 @@ k_loop: do while (.not. (k>npar_loc))
         if (lroot) &
             print*, 'init_particles: Particle velocity equal to gas velocity'
         do k=1,npar_loc
-          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
+          call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
           fp(k,ivpx:ivpz) = uup
         enddo
 
@@ -982,8 +983,13 @@ k_loop: do while (.not. (k>npar_loc))
           do k=k1_imn(imn),k2_imn(imn)
             call get_frictiontime(f,fp,ineargrid,k,tausp1_point)
 !  Use interpolation to calculate gas velocity at position of particles.
-            call interpolate_3d_1st( &
-                f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+            if (lquadratic_interpolation) then
+              call interpolate_quadratic( &
+                  f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+            else
+              call interpolate_linear( &
+                  f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+            endif
             dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !  Back-reaction friction force from particles on gas (conserves momentum).

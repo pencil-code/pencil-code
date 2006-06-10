@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.26 2006-05-30 15:02:44 wlyra Exp $
+! $Id: particles_planet.f90,v 1.27 2006-06-10 03:17:57 ajohan Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.26 2006-05-30 15:02:44 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.27 2006-06-10 03:17:57 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -253,7 +253,7 @@ module Particles
         if (lroot) &
             print*, 'init_particles: Particle velocity equal to gas velocity'
         do k=1,npar_loc
-          call interpolate_3d_1st(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
+          call interpolate_quadratic(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
           fp(k,ivpx:ivpz) = uup
         enddo
 
