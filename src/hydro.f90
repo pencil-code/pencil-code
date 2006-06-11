@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.264 2006-06-07 13:57:40 nbabkovs Exp $
+! $Id: hydro.f90,v 1.265 2006-06-11 09:51:41 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -156,7 +156,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.264 2006-06-07 13:57:40 nbabkovs Exp $")
+           "$Id: hydro.f90,v 1.265 2006-06-11 09:51:41 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1332,22 +1332,6 @@ module Hydro
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_ruym1*ruym/rho
 !
     endsubroutine damp_ruym
-! !***********************************************************************
-!     function step(x,x0,width)
-! !
-! !  Smooth unit step function centred at x0; implemented as tanh profile
-! !  23-jan-02/wolf: coded
-! !  09-feb-05/tony: copied here to prevent compiler error with intel 7.1
-! !
-!       use Cdata, only: epsi
-! !
-!       real, dimension(:) :: x
-!       real, dimension(size(x,1)) :: step
-!       real :: x0,width
-
-!         step = 0.5*(1+tanh((x-x0)/(width+epsi)))
-! !
-!       endfunction step
 !***********************************************************************
     subroutine udamping(f,df)
 !
