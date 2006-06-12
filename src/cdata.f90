@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.318 2006-06-07 22:08:07 theine Exp $
+! ! $Id: cdata.f90,v 1.319 2006-06-12 22:52:19 joishi Exp $
 
 module Cdata
 
@@ -18,6 +18,7 @@ module Cdata
   real, dimension (nxgrid) :: kx_fft
   real, dimension (nygrid) :: ky_fft
   real, dimension (nzgrid) :: kz_fft
+  real :: kx_ny,ky_ny,kz_ny
 
 !  coordinate system (alternatives: spherical, cylindric)
   character (len=9) :: coord_system='cartesian'

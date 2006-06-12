@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.156 2006-06-07 02:42:04 ajohan Exp $
+! $Id: start.f90,v 1.157 2006-06-12 22:52:19 joishi Exp $
 !
 !***********************************************************************
       program start
@@ -90,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.156 2006-06-07 02:42:04 ajohan Exp $")
+             "$Id: start.f90,v 1.157 2006-06-12 22:52:19 joishi Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -217,24 +217,30 @@
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
 !
-!  populate wavenumber arrays for fft.
+!  populate wavenumber arrays for fft and calculate nyquist wavenumber
 !
         if (nxgrid/=1) then
           kx_fft=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+          kx_ny = nxgrid/2 * 2*pi/Lx
         else
           kx_fft=0.0
+          kx_ny = 0.0
         endif
 !
         if (nygrid/=1) then
           ky_fft=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
+          ky_ny = nygrid/2 * 2*pi/Ly
         else
           ky_fft=0.0
+          ky_ny = 0.0
         endif
 !
         if (nzgrid/=1) then
           kz_fft=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+          ky_ny = nzgrid/2 * 2*pi/Lz
         else
           kz_fft=0.0
+          kz_ny = 0.0
         endif
 !
 !  Parameter dependent initialization of module variables and final
