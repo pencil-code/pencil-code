@@ -3,10 +3,11 @@
 ! Initialisation parameters for shocktube problem
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2006-06-12 14:44:25 ajohan Exp $'
+  cvsid='$Id: start.in,v 1.4 2006-06-12 14:45:45 ajohan Exp $'
   xyz0  = -6.28, -6.28, -6.28   ! first corner of box
   xyz1  =  6.28,  6.28,  6.28   ! box size
   lperi =     T,     T,     T   ! periodic direction?
+  lwrite_ic=T, lwrite_aux=T
 /
 &eos_init_pars
   gamma=1.0, rho0=1.0, cs0=1.0
