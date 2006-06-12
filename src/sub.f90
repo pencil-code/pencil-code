@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.237 2006-05-28 14:00:12 theine Exp $ 
+! $Id: sub.f90,v 1.238 2006-06-12 22:43:14 theine Exp $ 
 
 module Sub 
 
@@ -13,6 +13,7 @@ module Sub
   public :: poly, notanumber
   public :: blob, vecout
   public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step
+  public :: sine_step
   public :: hypergeometric2F1
   public :: gamma_function
 
@@ -176,6 +177,12 @@ module Sub
     module procedure quintic_der_step_pt
     module procedure quintic_der_step_mn
     module procedure quintic_der_step_global
+  endinterface
+
+  interface sine_step
+    module procedure sine_step_pt
+    module procedure sine_step_mn
+    module procedure sine_step_global
   endinterface
 !!
 !!  extended intrinsic operators to do some scalar/vector pencil arithmetic
@@ -3124,6 +3131,81 @@ module Sub
                                   * width1
 !
       endfunction quintic_der_step_global
+!***********************************************************************
+      function sine_step_pt(x,x0,width,shift)
+!
+!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w]. 
+!  Optional argument SHIFT shifts center:
+!  for shift=1. the interval is [x0    ,x0+2*w],
+!  for shift=-1. it is          [x0-2*w,x0    ].
+!  Maximum slope is 15/8=1.875 times that of a linear profile.
+!
+!  This version is for scalar args.
+!
+!  13-jun-06/tobi: Adapted from cubic_step
+!
+        use Cdata, only: tini,pi
+!
+        real :: x
+        real :: sine_step_pt,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        sine_step_pt = 0.5*(1+sin(0.5*pi*xi))
+!
+      endfunction sine_step_pt
+!***********************************************************************
+      function sine_step_mn(x,x0,width,shift)
+!
+!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w].
+! 
+!  Version for 1d arg (in particular pencils).
+!
+!  13-jun-06/tobi: Adapted from cubic_step
+!
+        use Cdata, only: tini,pi
+!
+        real, dimension(:) :: x
+        real, dimension(size(x,1)) :: sine_step_mn,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        sine_step_mn = 0.5*(1+sin(0.5*pi*xi))
+!
+      endfunction sine_step_mn
+!***********************************************************************
+      function sine_step_global(x,x0,width,shift)
+!
+!  Smooth unit step function with sine (smooth) transition over [x0-w,x0+w]. 
+!
+!  Version for 3d-array arg.
+!
+!  13-jun-06/tobi: Adapted from cubic_step
+!
+        use Cdata, only: mx,my,mz,tini,pi
+!
+        real, dimension(mx,my,mz) :: x,sine_step_global,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) then; relshift=shift; else; relshift=0.; endif
+        xi = (x-x0)/(width+tini) - relshift
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        sine_step_global = 0.5*(1+sin(0.5*pi*xi))
+!
+      endfunction sine_step_global
 !***********************************************************************
       function notanumber_0(f)
 !
