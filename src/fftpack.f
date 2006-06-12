@@ -903,7 +903,7 @@ C
       END
       SUBROUTINE PASSB2 (IDO,L1,CC,CH,WA1)
       DIMENSION       CC(IDO,2,L1)           ,CH(IDO,L1,2)           ,
-     1                WA1(1)
+     1                WA1(*)
       IF (IDO .GT. 2) GO TO 102
       DO 101 K=1,L1
          CH(1,K,1) = CC(1,1,K)+CC(1,2,K)
