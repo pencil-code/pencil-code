@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.49 2006-06-09 10:51:06 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.50 2006-06-13 10:30:36 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -63,7 +63,7 @@ module EquationOfState
   real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
   integer :: isothtop=0
 
-  integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1
+  integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
 
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.49 2006-06-09 10:51:06 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.50 2006-06-13 10:30:36 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -128,6 +128,10 @@ module EquationOfState
       cs20=cs0**2
       lnrho0=log(rho0)
 !
+! Initialize variable selection code (needed for RELOADing)
+!
+      ieosvars=-1
+      ieosvar_count=0
 !
       ! Avoid setting unit_temperature=0 to avoid floating point exceptions
       save_unit_temperature=unit_temperature
@@ -188,7 +192,6 @@ module EquationOfState
       character (len=*), intent(in) :: variable
       integer, intent(in) :: findex
       integer :: this_var=0
-      integer, save :: ieosvar=0
       integer, save :: ieosvar_selected=0
       integer, parameter :: ieosvar_lnrho = 2**0
       integer, parameter :: ieosvar_rho   = 2**1
@@ -198,11 +201,13 @@ module EquationOfState
       integer, parameter :: ieosvar_cs2   = 2**5
       integer, parameter :: ieosvar_pp    = 2**6
 !
-!!      if (ieosvar.ge.2) &
-!!        call fatal_error("select_eos_variable", &
-!!             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
+      if (ieosvar_count.eq.0) ieosvar_selected=0
+!
+      if (ieosvar_count.ge.2) &
+        call fatal_error("select_eos_variable", &
+             "2 thermodynamic quantities have already been defined while attempting to add a 3rd: ") !//variable)
 
-      ieosvar=ieosvar+1
+      ieosvar_count=ieosvar_count+1
 
 !      select case (variable)
       if (variable=='ss') then
@@ -241,7 +246,7 @@ module EquationOfState
         call fatal_error("select_eos_variable", &
              "unknown thermodynamic variable")
       endif
-      if (ieosvar==1) then
+      if (ieosvar_count==1) then
         ieosvar1=findex
         ieosvar_selected=ieosvar_selected+this_var
         return
