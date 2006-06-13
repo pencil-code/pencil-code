@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.67 2006-06-10 16:13:32 ajohan Exp $
+! $Id: particles_sub.f90,v 1.68 2006-06-13 11:53:21 mee Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -462,7 +462,7 @@ module Particles_sub
 !  Sum up processors that have not had place to let all migrating particles go.
 !
         if (lmigration_redo) then   !  5-10% slowdown of code
-          call mpireduce_or(lredo, lredo_all, 1)
+          call mpireduce_or(lredo, lredo_all)
           call mpibcast_logical(lredo_all, 1)
         else
           lredo_all=.false.

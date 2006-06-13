@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.6 2006-05-17 21:10:33 ajohan Exp $
+! $Id: messages.f90,v 1.7 2006-06-13 11:53:21 mee Exp $
 !
 !  This module takes care of messages.
 !
@@ -138,7 +138,7 @@ module Messages
 !  17-may-2006/anders: coded
 !
       if (.not.llife_support) then
-        call mpireduce_sum_int(fatal_errors,fatal_errors_total,1)
+        call mpireduce_sum_int(fatal_errors,fatal_errors_total)
         call mpibcast_int(fatal_errors_total,1)
 !  
         if (fatal_errors_total/=0) then
