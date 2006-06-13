@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   25-Feb-2002
-;;;  $Id: thermo.pro,v 1.10 2006-03-27 17:05:47 ngrs Exp $
+;;;  $Id: thermo.pro,v 1.11 2006-06-13 23:33:26 bingert Exp $
 ;;;
 ;;;  Description:
 ;;;   Calculate all relevant thermodynamical variables from lnrho and
@@ -13,7 +13,7 @@
 ;;;  
 ;;;  Modified 24-3-2006, for use with cp /= 0 runs, ngrs & neamvonk
 
-cp = par.cp
+cp = par.cp_cgs
 mpoly = par.mpoly
 beta = gamma/gamma1/cp*gravz/(mpoly+1)       ; gamma1*cp/gamma=R_{*}
 TT0 = beta*z2
