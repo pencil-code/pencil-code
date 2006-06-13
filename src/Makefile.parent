@@ -24,8 +24,8 @@ cleann:
 cleanall: cleann
 
 # Clean up log files.
-cleanlog:
-	rm -f *.log run.csh.e*  run.csh.o*  start_run.csh.e*  start_run.csh.o*  start.csh.e*  start.csh.o* lamhosts
+cleanlog: qoutclean
+	rm -f *.log lamhosts
 
 # Compile with -g
 debug:
