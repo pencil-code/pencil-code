@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.119 2006-06-03 20:51:12 ajohan Exp $
+! $Id: nompicomm.f90,v 1.120 2006-06-13 10:29:07 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -63,9 +63,36 @@ module Mpicomm
     module procedure mpibcast_char_arr
   endinterface
 
+  interface mpireduce_sum_double
+    module procedure mpireduce_sum_double_scl
+    module procedure mpireduce_sum_double_arr
+  endinterface
+
+! Not possible because array version is used with
+! a multi dimensional array!
+!  interface mpireduce_sum
+!    module procedure mpireduce_sum_scl
+!    module procedure mpireduce_sum_arr
+!  endinterface
+
   interface mpireduce_sum_int
     module procedure mpireduce_sum_int_scl
     module procedure mpireduce_sum_int_arr
+  endinterface
+
+  interface mpireduce_max
+    module procedure mpireduce_max_scl
+    module procedure mpireduce_max_arr
+  endinterface
+
+  interface mpireduce_min
+    module procedure mpireduce_min_scl
+    module procedure mpireduce_min_arr
+  endinterface
+
+  interface mpireduce_or
+    module procedure mpireduce_or_scl
+    module procedure mpireduce_or_arr
   endinterface
 
   contains
@@ -512,21 +539,35 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
+    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp, fmax
 !
       fmax=fmax_tmp
-    endsubroutine mpireduce_max
+    endsubroutine mpireduce_max_arr
 !***********************************************************************
-    subroutine mpireduce_min(fmin_tmp,fmin,nreduce)
+    subroutine mpireduce_max_scl(fmax_tmp,fmax)
+!
+      real :: fmax_tmp, fmax
+!
+      fmax=fmax_tmp
+    endsubroutine mpireduce_max_scl
+!***********************************************************************
+    subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmin_tmp, fmin
 !
       fmin=fmin_tmp
-    endsubroutine mpireduce_min
+    endsubroutine mpireduce_min_arr
+!***********************************************************************
+    subroutine mpireduce_min_scl(fmin_tmp,fmin)
+!
+      real :: fmin_tmp, fmin
+!
+      fmin=fmin_tmp
+    endsubroutine mpireduce_min_scl
 !***********************************************************************
     subroutine mpireduce_sum(fsum_tmp,fsum,nreduce)
 !
@@ -535,14 +576,29 @@ module Mpicomm
 !
       fsum=fsum_tmp
     endsubroutine mpireduce_sum
+!!ajwm see interface block
+!!!***********************************************************************
+!!    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
+!!!
+!!      real :: fsum_tmp,fsum
+!!!
+!!      fsum=fsum_tmp
+!!    endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_double(dsum_tmp,dsum,nreduce)
+    subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
 !
       integer :: nreduce
       double precision, dimension(nreduce) :: dsum_tmp,dsum
 !
       dsum=dsum_tmp
-    endsubroutine mpireduce_sum_double
+    endsubroutine mpireduce_sum_double_arr
+!***********************************************************************
+    subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
+!
+      double precision :: dsum_tmp,dsum
+!
+      dsum=dsum_tmp
+    endsubroutine mpireduce_sum_double_scl
 !***********************************************************************
     subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
 !
@@ -566,16 +622,26 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_scl
 !***********************************************************************
-    subroutine mpireduce_or(flor_tmp,flor,nreduce)
+    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
 !
 !  17-sep-05/anders: coded
 !
       integer :: nreduce
+      logical, dimension(nreduce) :: flor_tmp, flor
+!
+      flor=flor_tmp
+!
+    endsubroutine mpireduce_or_arr
+!***********************************************************************
+    subroutine mpireduce_or_scl(flor_tmp,flor)
+!
+!  17-sep-05/anders: coded
+!
       logical :: flor_tmp, flor
 !
       flor=flor_tmp
 !
-    endsubroutine mpireduce_or
+    endsubroutine mpireduce_or_scl
 !***********************************************************************
     subroutine start_serialize()
     endsubroutine start_serialize

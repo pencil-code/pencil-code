@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.164 2006-06-07 21:14:34 joishi Exp $
+! $Id: mpicomm.f90,v 1.165 2006-06-13 10:29:07 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -105,6 +105,28 @@ module Mpicomm
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
+  endinterface
+
+  interface mpireduce_max
+    module procedure mpireduce_max_arr
+    module procedure mpireduce_max_scl
+  endinterface
+
+  interface mpireduce_min
+    module procedure mpireduce_min_arr
+    module procedure mpireduce_min_scl
+  endinterface
+
+  interface mpireduce_or
+    module procedure mpireduce_or_arr
+    module procedure mpireduce_or_scl
+  endinterface
+
+  interface mpireduce_sum
+    module procedure mpireduce_sum_arr
+    module procedure mpireduce_sum_scl
+    module procedure mpireduce_sum_double_arr
+    module procedure mpireduce_sum_double_scl
   endinterface
 
   interface mpireduce_sum_int
@@ -1254,7 +1276,7 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
-    subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
+    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
@@ -1263,20 +1285,30 @@ module Mpicomm
 !
       call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
                       MPI_COMM_WORLD, ierr)
-    endsubroutine mpireduce_max
+    endsubroutine mpireduce_max_arr
 !***********************************************************************
-    subroutine mpireduce_min(fmin_tmp,fmin,nreduce)
+    subroutine mpireduce_max_scl(fmax_tmp,fmax)
+!
+      real :: fmax_tmp,fmax
+!
+!  calculate total maximum for each array element and return to root
+!
+      call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
+                      MPI_COMM_WORLD, ierr)
+    endsubroutine mpireduce_max_scl
+!***********************************************************************
+    subroutine mpireduce_min_scl(fmin_tmp,fmin)
 !
       integer :: nreduce
-      real, dimension(nreduce) :: fmin_tmp,fmin
+      real :: fmin_tmp,fmin
 !
 !  calculate total minimum for each array element and return to root
 !
-      call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
+      call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
                       MPI_COMM_WORLD, ierr)
-    endsubroutine mpireduce_min
+    endsubroutine mpireduce_min_scl
 !***********************************************************************
-    subroutine mpireduce_sum(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
@@ -1291,9 +1323,25 @@ module Mpicomm
                         MPI_COMM_WORLD, ierr)
       endif
 !
+    endsubroutine mpireduce_sum_arr
+!***********************************************************************
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
+!
+      real :: fsum_tmp,fsum
+!
+!  calculate total sum for each array element and return to root
+!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
+!
+      if (nprocs==1) then
+        fsum=fsum_tmp
+      else
+        call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
     endsubroutine mpireduce_sum
 !***********************************************************************
-    subroutine mpireduce_sum_double(dsum_tmp,dsum,nreduce)
+    subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
 !
       integer :: nreduce
       double precision, dimension(nreduce) :: dsum_tmp,dsum
@@ -1308,7 +1356,23 @@ module Mpicomm
                         MPI_COMM_WORLD, ierr)
       endif
 !
-    endsubroutine mpireduce_sum_double
+    endsubroutine mpireduce_sum_double_arr
+!***********************************************************************
+    subroutine mpireduce_sum_double_scl(dsum_tmp,dsum)
+!
+      double precision :: dsum_tmp,dsum
+!
+!  calculate total sum for each array element and return to root
+!  Unlike for MPI_MAX, for MPI_SUM cannot handle nprocs=1 correctly!
+!
+      if (nprocs==1) then
+        dsum=dsum_tmp
+      else
+        call MPI_REDUCE(dsum_tmp, dsum, 1, MPI_DOUBLE_PRECISION, MPI_SUM, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_sum_double_scl
 !***********************************************************************
     subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
 !
@@ -1329,11 +1393,10 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
 !
 !  16-sep-05/anders: adapted from mpireduce_sum_int
 !
-      integer :: nreduce
       integer :: fsum_tmp,fsum
 !
 !  Calculate sum and return to root.
@@ -1347,11 +1410,28 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_scl
 !***********************************************************************
-    subroutine mpireduce_or(flor_tmp,flor,nreduce)
+    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
 !
 !  17-sep-05/anders: coded
 !
       integer :: nreduce
+      logical, dimension(nreduce) :: flor_tmp, flor
+!
+!  Calculate logical or over all procs and return to root.
+!
+      if (nprocs==1) then
+        flor=flor_tmp
+      else
+        call MPI_REDUCE(flor_tmp, flor, nreduce, MPI_LOGICAL, MPI_LOR, root, &
+                        MPI_COMM_WORLD, ierr)
+      endif
+!
+    endsubroutine mpireduce_or_arr
+!***********************************************************************
+    subroutine mpireduce_or_scl(flor_tmp,flor)
+!
+!  17-sep-05/anders: coded
+!
       logical :: flor_tmp, flor
 !
 !  Calculate logical or over all procs and return to root.
@@ -1363,7 +1443,7 @@ module Mpicomm
                         MPI_COMM_WORLD, ierr)
       endif
 !
-    endsubroutine mpireduce_or
+    endsubroutine mpireduce_or_scl
 !***********************************************************************
     subroutine start_serialize()
 !
