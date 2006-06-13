@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.189 2006-06-07 02:40:30 ajohan Exp $
+### $Id: Makefile.src,v 1.190 2006-06-13 10:35:49 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -83,6 +83,7 @@ F77FLAGS=
 CFLAGS=-O3 -DFUNDERSC=1
 FCCLEANER=
 LIBMPISUFFIX=
+MAKEOPTS=
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
@@ -323,15 +324,19 @@ LIBMPISUFFIX=
 ##
 ## wormhole Tony's Laptop
 ##
+#MAKEOPTS=-j 3 #(wormhole)
 #FFLAGS=-CA -CV -CS -CB -tpp7 -vec_report0 #(wormhole)
 #FFLAGS=-O2 -align -tpp7 -vec_report0 #(wormhole)
 #FFLAGS=-O2 -mp -vec_report0 #(wormhole)
+#FFLAGS=-O3  #(wormhole)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(wormhole)
-#FC=ifort  -I/usr/lib/lam/include #(wormhole)  
+#FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)  
+#FC=ifort #(wormhole)  
 #LDMPI= #(wormhole)
 #LIBMPISUFFIX=_#(wormhole)
 ##LDMPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 ##LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
+#LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
 #F77=$(FC) #(wormhole)
 #F77FLAGS=-w90 #(wormhole)
 ##
@@ -614,27 +619,27 @@ EXECUTABLES=start.x run.x \
         # write_dummy_namelists.x
 code:
 	if [ ! -z "$(FCCLEANER)" ]; then \
-	    ($(MAKE) $(EXECUTABLES) \
+	    ($(MAKE) $(MAKEOPTS) $(EXECUTABLES) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
-	    $(MAKE) $(EXECUTABLES) ; \
+	    $(MAKE) $(MAKEOPTS) $(EXECUTABLES) ; \
 	fi
 
 FASTEXECS=startfast.x runfast.x read_videofiles.x read_vectorfiles.x
 fast:
 	if [ ! -z "$(FCCLEANER)" ]; then \
-	    ($(MAKE) $(FASTEXECS) \
+	    ($(MAKE) $(MAKEOPTS) $(FASTEXECS) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
-	    $(MAKE) $(FASTEXECS) ; \
+	    $(MAKE) $(MAKEOPTS) $(FASTEXECS) ; \
 	fi
 
 debug:
 	if [ ! -z "$(FCCLEANER)" ]; then \
-	    ($(MAKE) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
+	    ($(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
 	else \
-	    $(MAKE) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
+	    $(MAKE) $(MAKEOPTS) FFLAGS='$(FFLAGS) $(DEBUGFLAGS)' start.x run.x; \
 	fi
 
 
@@ -660,7 +665,7 @@ linkonly:
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 #shorthand for this
 l:
-	$(MAKE) linkonly
+	$(MAKE) $(MAKEOPTS) linkonly
 
 # Needed for the underscore trick:
 mpicomm_.f90:      mpicomm.f90
@@ -703,7 +708,7 @@ clean:
 # Clean up all
 cleann: clean
 	rm -f Makefile TAGS mpicomm_.f90
-	$(MAKE) -f Makefile.src Makefile
+	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 # same thing
 cleanall: cleann
 
