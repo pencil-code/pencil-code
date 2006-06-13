@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.117 2006-04-03 23:54:40 brandenb Exp $
+! $Id: interstellar.f90,v 1.118 2006-06-13 10:32:29 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -24,14 +24,43 @@ module Interstellar
   include 'interstellar.h'
   include 'record_types.h'
 !
+  type SNRemnant
+    real :: x, y, z, t    ! Time and location
+    double precision :: EE, MM ! Mass and energy injected
+    double precision :: rhom   ! Local mean density at explosion time
+    real :: radius        ! Injection radius
+    real :: t_sedov
+    integer :: l,m,n      ! Grid position
+    integer :: iproc,ipy,ipz
+    integer :: SN_type
+    integer :: state
+  endtype
+!
+  type ExplosionSite
+    real :: rho, lnrho, yH, lnTT, TT, ss, ee
+  endtype
+!
+! Enumeration of Supernovae types.
+!
+  integer, parameter :: SNtype_I = 1, SNtype_II = 2
+!
+! Enumeration of Supernovae states.
+!
+  integer, parameter :: SNstate_invalid = 0
+  integer, parameter :: SNstate_waiting = 1
+  integer, parameter :: SNstate_exploding = 2
+  integer, parameter :: SNstate_damping = 3
+!
+!
+  real :: xsi_sedov=1.17   ! Estimated value for the similarity variable at shock
+!
 ! 'Current' SN Explosion site parameters
 !
-  real :: x_SN=0.,y_SN=0.,z_SN=0.
-  real :: rho_SN=0.,lnrho_SN=0.,yH_SN=0.,lnTT_SN=0.,TT_SN=0.,ss_SN=0.,ee_SN=0.
-  integer :: l_SN=-1,m_SN=-1,n_SN=-1
-  integer :: iproc_SN,ipy_SN,ipz_SN
+  type (SNRemnant) :: SNR
+!
+  type (ExplosionSite) :: SNsite
+!
   integer :: icooling=0
-
 !
 ! Squared distance to the SNe site along the current pencil
 !
@@ -133,6 +162,7 @@ module Interstellar
 !
   double precision :: sigma_SN
   real, parameter :: width_SN_cgs=3.086E19
+  real :: energy_width_ratio=1. !308533
   real :: mass_width_ratio=2.
   real :: velocity_width_ratio=1.
   real :: outer_shell_proportion = 2.
@@ -192,6 +222,11 @@ module Interstellar
 !
   logical :: lSNI=.true., lSNII=.false.
 !
+! Damp central regions of SNRs at early times
+!
+  logical :: lSNR_damping = .false.
+  real :: SNR_damping = 0.
+!
   logical :: lsmooth_coolingfunc = .false.
   logical :: laverage_SN_heating = .false.
   logical :: lheating_UV         = .true.
@@ -218,7 +253,7 @@ module Interstellar
   character (len=labellen) :: cooling_select  = 'RB'
   character (len=labellen) :: heating_select  = 'wolfire'
   character (len=labellen) :: thermal_profile = 'gaussian3'
-  character (len=labellen) :: velocity_profile= 'quintictanh'
+  character (len=labellen) :: velocity_profile= 'lineartanh'
   character (len=labellen) :: mass_profile    = 'gaussian3'
   character (len=labellen) :: mass_movement   = 'off'
   character (len=labellen) :: cavity_profile  = 'gaussian3'
@@ -243,7 +278,7 @@ module Interstellar
       lheating_UV, cdt_tauc, initial_SNI, initial_SNI_done, &
       cooling_select, heating_select, heating_rate, t_settle, &
       lforce_locate_SNI, thermal_profile,velocity_profile, mass_profile, &
-      t_next_SNI
+      t_next_SNI, SNR_damping
 
   contains
 
@@ -279,7 +314,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.117 2006-04-03 23:54:40 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.118 2006-06-13 10:32:29 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -406,6 +441,10 @@ module Interstellar
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
 !
+!  SNRdamping factor
+!
+      if (SNR_damping/=0.) lSNR_damping=.true.
+!
 !  Slopeyness used for tanh rounding profiles etc.
 !
       sigma_SN=dxmax
@@ -490,6 +529,7 @@ module Interstellar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        SNR_damping=0.
         idiag_taucmin=0
         idiag_Hmax=0
         idiag_Lamm=0
@@ -789,6 +829,9 @@ module Interstellar
 !
     l_SNI=.false.
     if (initial_SNI_done < initial_SNI) then
+      SNR%t=t
+      SNR%state=SNstate_exploding
+      SNR%radius=width_SN
       if (uniform_zdist_SNI) then
         call position_SN_uniformz(f)
       else
@@ -797,10 +840,13 @@ module Interstellar
       call explode_SN(f,1)
       initial_SNI_done=initial_SNI_done+1
     elseif (t >= t_next_SNI) then
-      TT_SN=1E20
-      rho_SN=0.
+      SNsite%TT=1E20
+      SNsite%rho=0.
+      SNR%t=t
+      SNR%radius=width_SN
+      SNR%state=SNstate_waiting
       try_count=100
-      do while ((rho_SN .lt. rho_SN_min) .or. (TT_SN .gt. TT_SN_max))
+      do while ((SNsite%rho .lt. rho_SN_min) .or. (SNsite%TT .gt. TT_SN_max))
         if (ltestSN) then  
           call position_SN_testposition(f)
         elseif (uniform_zdist_SNI) then
@@ -810,8 +856,8 @@ module Interstellar
         endif
 
         if (lforce_locate_SNI.and. &
-             ((rho_SN .lt. rho_SN_min) .or. &
-              (TT_SN .gt. TT_SN_max))) then
+             ((SNsite%rho .lt. rho_SN_min) .or. &
+              (SNsite%TT .gt. TT_SN_max))) then
           call find_nearest_SNI(f)
         endif
 
@@ -822,6 +868,7 @@ module Interstellar
         endif
       enddo
        if (try_count.ne.0) then
+          SNR%state=SNstate_exploding
           call explode_SN(f,1)
        !  pre-determine time for next SNI
           if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",t_next_SNI
@@ -908,6 +955,7 @@ module Interstellar
     endif
     !endif
     if (franSN(1) <= prob_SNII) then
+      SNR%state=SNstate_waiting
       !  position_SN_bycloudmass needs the cloud_masses for each processor;  
       !   communicate and store them here, to avoid recalculation.
       cloud_mass_byproc(:)=0.0
@@ -919,6 +967,9 @@ module Interstellar
       enddo
       ! if (lroot.and.ip<14) print*,'check_SNII: cloud_mass_byproc:',cloud_mass_byproc
       call position_SN_bycloudmass(f,cloud_mass_byproc)
+      SNR%t=t
+      SNR%radius=width_SN
+      SNR%state=SNstate_exploding
       call explode_SN(f,2)
       last_SN_t=0.
     endif
@@ -946,7 +997,7 @@ module Interstellar
     if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
     if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
-!  Pick SN position (l_SN,m_SN,n_SN)
+!  Pick SN position (SNR%l,SNR%m,SNR%n)
 !
     if (lroot) then
       if (center_SN_x.eq.impossible) then
@@ -954,24 +1005,24 @@ module Interstellar
       else
         i=int((center_SN_x-x00)/dx)
       endif
-      l_SN=i+nghost
+      SNR%l=i+nghost
 !
       if (center_SN_y.eq.impossible) then
         i=max(int(nygrid/2)+1,1)
       else
         i=int((center_SN_y-y00)/dy)
       endif
-      ipy_SN=(i-1)/ny  ! uses integer division
-      m_SN=i-(ipy_SN*ny)+nghost
+      SNR%ipy=(i-1)/ny  ! uses integer division
+      SNR%m=i-(SNR%ipy*ny)+nghost
 !
       if (center_SN_z.eq.impossible) then
         i=max(int(nzgrid/2)+1,1)
       else
         i=int((center_SN_z-z00)/dz)
       endif
-      ipz_SN=(i-1)/nz   ! uses integer division
-      n_SN=i-(ipz_SN*nz)+nghost
-      iproc_SN=ipz_SN*nprocy + ipy_SN
+      SNR%ipz=(i-1)/nz   ! uses integer division
+      SNR%n=i-(SNR%ipz*nz)+nghost
+      SNR%iproc=SNR%ipz*nprocy + SNR%ipy
     endif
     call share_SN_parameters(f)
 !
@@ -1004,18 +1055,18 @@ module Interstellar
     if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
     if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
-!  Pick SN position (l_SN,m_SN,n_SN)
+!  Pick SN position (SNR%l,SNR%m,SNR%n)
 !
     call random_number_wrapper(fran3)    ! get 3 random numbers
 !                                        ! on all processors to keep
 !                                        ! rnd. generators in sync
     if (lroot) then
       i=int(fran3(1)*nxgrid)+1
-      l_SN=i+nghost
+      SNR%l=i+nghost
 !
       i=int(fran3(2)*nygrid)+1
-      ipy_SN=(i-1)/ny  ! uses integer division
-      m_SN=i-(ipy_SN*ny)+nghost
+      SNR%ipy=(i-1)/ny  ! uses integer division
+      SNR%m=i-(SNR%ipy*ny)+nghost
 !
 !  Cumulative probability function in z currently calculated each time.
 !  It's constant, and could be stored (and calculated in init)
@@ -1035,12 +1086,12 @@ module Interstellar
       do i=nzskip+1,nzgrid-nzskip
         if (cum_prob_SN(i-1) <= fran3(3) .and. fran3(3) < cum_prob_SN(i)) &
            then
-          ipz_SN=(i-1)/nz  ! uses integer division
-          n_SN=i-(ipz_SN*nz)+nghost
+          SNR%ipz=(i-1)/nz  ! uses integer division
+          SNR%n=i-(SNR%ipz*nz)+nghost
           exit
         endif
       enddo
-      iproc_SN=ipz_SN*nprocy + ipy_SN
+      SNR%iproc=SNR%ipz*nprocy + SNR%ipy
     endif
 !
     call share_SN_parameters(f)
@@ -1070,7 +1121,7 @@ module Interstellar
     if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
     if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
 !
-!  Pick SN position (l_SN,m_SN,n_SN)
+!  Pick SN position (SNR%l,SNR%m,SNR%n)
 !
     call random_number_wrapper(fran3)    ! get 3 random numbers
 !                                         ! on all processors to keep
@@ -1078,18 +1129,18 @@ module Interstellar
     if (lroot) then
       i=int(fran3(1)*nxgrid)+1
       if (nxgrid==1) i=1
-      l_SN=i+nghost
+      SNR%l=i+nghost
 
       i=int(fran3(2)*nygrid)+1
       if (nygrid==1) i=1
-      ipy_SN=(i-1)/ny  ! uses integer division
-      m_SN=i-(ipy_SN*ny)+nghost
+      SNR%ipy=(i-1)/ny  ! uses integer division
+      SNR%m=i-(SNR%ipy*ny)+nghost
 
       i=int(fran3(3)*nzgrid)+1
       if (nzgrid==1) i=1
-      ipz_SN=(i-1)/nz   ! uses integer division
-      n_SN=i-(ipz_SN*nz)+nghost
-      iproc_SN=ipz_SN*nprocy + ipy_SN
+      SNR%ipz=(i-1)/nz   ! uses integer division
+      SNR%n=i-(SNR%ipz*nz)+nghost
+      SNR%iproc=SNR%ipz*nprocy + SNR%ipy
     endif
 !
     call share_SN_parameters(f)
@@ -1146,20 +1197,20 @@ module Interstellar
     do icpu=1,ncpus
       if (cum_prob_byproc(icpu-1) <= franSN(1) .and.                      &
            franSN(1) < cum_prob_byproc(icpu)) then
-        iproc_SN=icpu-1 
+        SNR%iproc=icpu-1 
         exit
       endif
     enddo
     if (lroot.and.ip<14) &
-          print*, 'position_SN_bycloudmass: franSN(1),iproc_SN=',franSN(1),iproc_SN
+          print*, 'position_SN_bycloudmass: franSN(1),SNR%iproc=',franSN(1),SNR%iproc
 !
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
-!    franSN(1)=(franSN(1)-cum_prob_byproc(iproc_SN)) /                      &
-!              (cum_prob_byproc(iproc_SN+1)-cum_prob_byproc(iproc_SN))
+!    franSN(1)=(franSN(1)-cum_prob_byproc(SNR%iproc)) /                      &
+!              (cum_prob_byproc(SNR%iproc+1)-cum_prob_byproc(SNR%iproc))
 !
     call random_number_wrapper(franSN)   
-    if (iproc == iproc_SN) then
+    if (iproc == SNR%iproc) then
       cum_mass=0.0
 find_SN: do n=n1,n2
       do m=m1,m2
@@ -1172,7 +1223,7 @@ find_SN: do n=n1,n2
             cum_mass=cum_mass+rho(l)
             cum_prob_onproc=cum_mass/cloud_mass
             if (franSN(1) <= cum_prob_onproc) then
-              l_SN=l+l1-1; m_SN=m; n_SN=n
+              SNR%l=l+l1-1; SNR%m=m; SNR%n=n
               if (lroot.and.ip<14) &
                 print*,'position_SN_bycloudmass: cum_mass,cum_prob_onproc,franSN(1)=', &
                                  cum_mass,cum_prob_onproc,franSN(1)
@@ -1214,7 +1265,7 @@ find_SN: do n=n1,n2
     if(headtt) print*,'find_nearest_SNI: ENTER'
 !    
     call random_number_wrapper(fran_location)   
-    if (iproc==iproc_SN) then
+    if (iproc==SNR%iproc) then
       deltar2=nx**2+ny**2+nx**2
       do n=n1,n2
       do m=m1,m2
@@ -1223,9 +1274,9 @@ find_SN: do n=n1,n2
         TT_test=exp(lnTT_test)
 !   
         do ii=l1,l2
-          if ((rho_SN .gt. rho_SN_min) .and. &
-              (TT_SN .lt. TT_SN_max)) then
-            deltar2_test=((ii-l_SN)**2+(m-m_SN)**2+(n-n_SN)**2)
+          if ((SNsite%rho .gt. rho_SN_min) .and. &
+              (SNsite%TT .lt. TT_SN_max)) then
+            deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
             if (deltar2_test .lt. deltar2) then
               nfound=1
               deltar2=deltar2_test
@@ -1239,7 +1290,7 @@ find_SN: do n=n1,n2
       enddo
 !
       if (nfound==0) then
-        new_lmn=(/ nfound, l_SN, m_SN, n_SN /)
+        new_lmn=(/ nfound, SNR%l, SNR%m, SNR%n /)
       elseif (nfound.gt.1) then
         chosen_site=int(nfound*fran_location(1)+0.5) 
         nfound=0
@@ -1250,13 +1301,13 @@ find_SN: do n=n1,n2
           TT_test=exp(lnTT_test)
 ! 
           do ii=l1,l2
-            if ((rho_SN .gt. rho_SN_min) .and. &
-                (TT_SN .lt. TT_SN_max)) then
-              deltar2_test=((ii-l_SN)**2+(m-m_SN)**2+(n-n_SN)**2)
+            if ((SNsite%rho .gt. rho_SN_min) .and. &
+                (SNsite%TT .lt. TT_SN_max)) then
+              deltar2_test=((ii-SNR%l)**2+(m-SNR%m)**2+(n-SNR%n)**2)
               if (deltar2==deltar2_test) then
                 nfound=nfound+1
                 if (nfound==chosen_site) then
-                  new_lmn=(/ 1, l_SN, m_SN, n_SN /)
+                  new_lmn=(/ 1, SNR%l, SNR%m, SNR%n /)
                   exit search_two
                 endif
               endif
@@ -1268,13 +1319,13 @@ find_SN: do n=n1,n2
     endif    
 !
 !
-    call mpibcast_int(new_lmn,4,iproc_SN)
+    call mpibcast_int(new_lmn,4,SNR%iproc)
     nfound=new_lmn(1)   
 ! 
     if (nfound.gt.0) then 
-      l_SN=new_lmn(2)
-      m_SN=new_lmn(3)
-      n_SN=new_lmn(4)
+      SNR%l=new_lmn(2)
+      SNR%m=new_lmn(3)
+      SNR%n=new_lmn(4)
       call share_SN_parameters(f)
     endif
 !
@@ -1298,59 +1349,59 @@ find_SN: do n=n1,n2
     integer, dimension(4) :: impi4
 !
 !  Broadcast position to all processors from root;
-!  also broadcast iproc_SN, needed for later broadcast of rho_SN.
+!  also broadcast SNR%iproc, needed for later broadcast of SNsite%rho.
 !
 !
-    impi4=(/ iproc_SN, l_SN, m_SN, n_SN /)
+    impi4=(/ SNR%iproc, SNR%l, SNR%m, SNR%n /)
     call mpibcast_int(impi4,4)
-    iproc_SN=impi4(1)
-    l_SN=impi4(2)
-    m_SN=impi4(3)
-    n_SN=impi4(4)
+    SNR%iproc=impi4(1)
+    SNR%l=impi4(2)
+    SNR%m=impi4(3)
+    SNR%n=impi4(4)
 !
 !  With current SN scheme, we need rho at the SN location.
 !
-    if (iproc==iproc_SN) then
-      !lnrho_SN=alog(sum(exp(f(l_SN:l_SN+1,m_SN:m_SN+1,n_SN:n_SN+1,ilnrho)))/4.)
-      !ss_SN=sum(f(l_SN:l_SN+1,m_SN:m_SN+1,n_SN:n_SN+1,iss))/4.
-      lnrho_SN=f(l_SN,m_SN,n_SN,ilnrho)
-      m=m_SN
-      n=n_SN
+    if (iproc==SNR%iproc) then
+      !SNsite%lnrho=alog(sum(exp(f(SNR%l:SNR%l+1,SNR%m:SNR%m+1,SNR%n:SNR%n+1,ilnrho)))/4.)
+      !SNsite%ss=sum(f(SNR%l:SNR%l+1,SNR%m:SNR%m+1,SNR%n:SNR%n+1,iss))/4.
+      SNsite%lnrho=f(SNR%l,SNR%m,SNR%n,ilnrho)
+      m=SNR%m
+      n=SNR%n
       call eoscalc(f,nx,lnTT=lnTT)
-      lnTT_SN=lnTT(l_SN-l1+1)
-      x_SN=0.; y_SN=0.; z_SN=0.
-      if (nxgrid/=1) x_SN=x(l_SN)+dx/2.
-      if (nygrid/=1) y_SN=y(m_SN)+dy/2.
-      if (nzgrid/=1) z_SN=z(n_SN)+dz/2.
+      SNsite%lnTT=lnTT(SNR%l-l1+1)
+      SNR%x=0.; SNR%y=0.; SNR%z=0.
+      if (nxgrid/=1) SNR%x=x(SNR%l)+dx/2.
+      if (nygrid/=1) SNR%y=y(SNR%m)+dy/2.
+      if (nzgrid/=1) SNR%z=z(SNR%n)+dz/2.
     print*, &
- 'share_SN_parameters: (MY SNe) iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,lnTT_SN = ' &
-          ,iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,lnTT_SN
+ 'share_SN_parameters: (MY SNe) SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,SNsite%rho,SNsite%lnTT = ' &
+          ,SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n,SNsite%rho,SNsite%lnTT
     else
       ! Better initialise these to something on the other processors
-      lnrho_SN=0.
-      lnTT_SN=0.
-      x_SN=0.
-      y_SN=0.
-      z_SN=0.
+      SNsite%lnrho=0.
+      SNsite%lnTT=0.
+      SNR%x=0.
+      SNR%y=0.
+      SNR%z=0.
     endif
 !
 !  Broadcast to all processors.
 !
-    fmpi5=(/ x_SN, y_SN, z_SN, lnrho_SN, lnTT_SN /)
-    call mpibcast_real(fmpi5,5,iproc_SN)
+    fmpi5=(/ SNR%x, SNR%y, SNR%z, SNsite%lnrho, SNsite%lnTT /)
+    call mpibcast_real(fmpi5,5,SNR%iproc)
 !
-    x_SN=fmpi5(1); y_SN=fmpi5(2); z_SN=fmpi5(3); 
-    lnrho_SN=fmpi5(4); lnTT_SN=fmpi5(5)
+    SNR%x=fmpi5(1); SNR%y=fmpi5(2); SNR%z=fmpi5(3); 
+    SNsite%lnrho=fmpi5(4); SNsite%lnTT=fmpi5(5)
 !
-    rho_SN=exp(lnrho_SN);
+    SNsite%rho=exp(SNsite%lnrho);
 !
-    call eoscalc(ilnrho_lnTT,lnrho_SN,lnTT_SN, &
-                    yH=yH_SN,ss=ss_SN,ee=ee_SN)
-    TT_SN=exp(lnTT_SN)
+    call eoscalc(ilnrho_lnTT,SNsite%lnrho,SNsite%lnTT, &
+                    yH=SNsite%yH,ss=SNsite%ss,ee=SNsite%ee)
+    SNsite%TT=exp(SNsite%lnTT)
 !
     if (lroot.and.ip<54) print*, &
- 'share_SN_parameters: iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN,TT_SN = ' &
-          ,iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN,TT_SN
+ 'share_SN_parameters: SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,SNsite%rho,SNsite%ss,SNsite%TT = ' &
+          ,SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n,SNsite%rho,SNsite%ss,SNsite%TT
 !
     endsubroutine share_SN_parameters
 !***********************************************************************
@@ -1375,12 +1426,10 @@ find_SN: do n=n1,n2
       integer, intent(in) :: itype_SN
 !
       double precision :: c_SN,cmass_SN,cvelocity_SN
-      double precision :: mass_shell, MMtot_SN
+      double precision :: mass_shell
       real :: rho_SN_lowest
       double precision :: width_energy, width_mass, width_velocity
       double precision :: cavity_depth, r_cavity
-      double precision :: EEtot_SN=0.
-!,EE2_SN=0.
       real :: rho_SN_new,lnrho_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new
       real :: TT_SN_new,dv
 !      
@@ -1400,13 +1449,13 @@ find_SN: do n=n1,n2
 !!      ! If slices are following the SN explosions then set the slice position
 !!      ! and take a snapshot now.
 !!      if (slice_position=='S') theN
-!!        ix=l_SN
-!!        iy=m_SN
-!!        iz=n_SN
+!!        ix=SNR%l
+!!        iy=SNR%m
+!!        iz=SNR%n
 !!        iz2=n2
-!!        lwrite_slice_xy2=(ipz_SN==ipz)
-!!        lwrite_slice_xy=(ipz_SN==ipz)
-!!        lwrite_slice_xz=(ipy_SN==ipy)
+!!        lwrite_slice_xy2=(SNR%ipz==ipz)
+!!        lwrite_slice_xy=(SNR%ipz==ipz)
+!!        lwrite_slice_xz=(SNR%ipy==ipy)
 !!        lwrite_slice_yz=.true.
 !!        ! And do a snapshot immediately! 
 !!        call update_snaptime(trim(datadir)//'/tvid.dat',tvid,nvid,dvid,t,lvid,ch,ENUM=.false.)
@@ -1416,9 +1465,9 @@ find_SN: do n=n1,n2
       !
       if(lroot.and.ip<12) print*,'explode_SN: itype_SN=',itype_SN
       !
-      width_energy   = width_SN
-      width_mass     = width_SN*mass_width_ratio
-      width_velocity = width_SN*velocity_width_ratio
+      width_energy   = SNR%radius*energy_width_ratio
+      width_mass     = SNR%radius*mass_width_ratio
+      width_velocity = SNR%radius*velocity_width_ratio
 !
 ! Energy insertion normalization 
 !
@@ -1488,22 +1537,22 @@ find_SN: do n=n1,n2
       if (nzgrid/=1) dv=dv*dz
       if (lroot) print*,'explode_SN: dv=',dv
 
-      if (lroot.and.ip<14) print*,'explode_SN: width_energy,c_SN,rho_SN=', width_energy,c_SN,rho_SN
+      if (lroot.and.ip<14) print*,'explode_SN: width_energy,c_SN,SNsite%rho=', width_energy,c_SN,SNsite%rho
         
       !
       !  Now deal with (if nec.) mass relocation
       !
 
-      if (lroot) print*,'explode_SN: rho_new,ee_SN=',rho_SN,ee_SN
-      ee_SN_new = (ee_SN+frac_eth*c_SN/(rho_SN+cmass_SN))
-      if (lroot) print*,'explode_SN: rho_SN_new,ee_SN_new=',rho_SN+cmass_SN,ee_SN_new
-      call eoscalc(ilnrho_ee,real(log(rho_SN+cmass_SN)),ee_SN_new, &
+      if (lroot) print*,'explode_SN: rho_new,SNsite%ee=',SNsite%rho,SNsite%ee
+      ee_SN_new = (SNsite%ee+frac_eth*c_SN/(SNsite%rho+cmass_SN))
+      if (lroot) print*,'explode_SN: rho_SN_new,ee_SN_new=',SNsite%rho+cmass_SN,ee_SN_new
+      call eoscalc(ilnrho_ee,real(log(SNsite%rho+cmass_SN)),ee_SN_new, &
                               lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
 
       if(lroot.and.ip<32) print*, &
-         'explode_SN: TT_SN, TT_SN_new, TT_SN_min, ee_SN =', &
-                                TT_SN,TT_SN_new,TT_SN_min, ee_SN
+         'explode_SN: SNsite%TT, TT_SN_new, TT_SN_min, SNsite%ee =', &
+                                SNsite%TT,TT_SN_new,TT_SN_min, SNsite%ee
       if (lroot) print*,'explode_SN: yH_SN_new =',yH_SN_new
 
       if ((TT_SN_new < TT_SN_min).or.(mass_movement=='constant')) then
@@ -1517,14 +1566,10 @@ find_SN: do n=n1,n2
          ! ASSUME: SN will fully ionize the gas at its centre
          if (lmove_mass) then
            if (lroot) print*,'explode_SN: moving mass to compensate.'
-           call getdensity(real((ee_SN*rho_SN)+c_SN),TT_SN_min,1.,rho_SN_new)
+           call getdensity(real((SNsite%ee*SNsite%rho)+c_SN),TT_SN_min,1.,rho_SN_new)
            if (mass_movement=='rho-cavity') then 
              call get_lowest_rho(f,r_cavity,rho_SN_lowest)
-             fmpi1_tmp=(/ -rho_SN_lowest /)
-             call mpireduce_max(fmpi1_tmp,fmpi1,1) 
-             call mpibcast_real(fmpi1,1)
-             rho_SN_lowest=-fmpi1(1)
-             cavity_depth=rho_SN-rho_SN_new
+             cavity_depth=SNsite%rho-rho_SN_new
              if (cavity_depth .gt. rho_SN_lowest-rho_min) then
                cavity_depth=rho_SN_lowest-rho_min
                if (cavity_depth .le. 0.) then
@@ -1532,14 +1577,14 @@ find_SN: do n=n1,n2
                  lmove_mass=.false.
                endif
                if (lroot) print*,"Reduced cavity from:,", &
-                                  rho_SN-rho_SN_new," to: ", &
+                                  SNsite%rho-rho_SN_new," to: ", &
                                   cavity_depth
-               rho_SN_new=rho_SN-cavity_depth
+               rho_SN_new=SNsite%rho-cavity_depth
                lnrho_SN_new=log(rho_SN_new)
              endif
            elseif (mass_movement=='Galaxycode') then
              lnrho_SN_new=log(rho_SN_new-cmass_SN)
-             cavity_depth=max(lnrho_SN-lnrho_SN_new,0.)
+             cavity_depth=max(SNsite%lnrho-lnrho_SN_new,0.)
              cavity_profile="gaussian3log"
            elseif (mass_movement=='constant') then
              lnrho_SN_new=log(cmass_SN)
@@ -1549,7 +1594,7 @@ find_SN: do n=n1,n2
          endif
            
          if (lmove_mass) then
-           ee_SN_new=(ee_SN*rho_SN+frac_eth*c_SN)/rho_SN_new
+           ee_SN_new=(SNsite%ee*SNsite%rho+frac_eth*c_SN)/rho_SN_new
 
            call eoscalc(ilnrho_ee,lnrho_SN_new,ee_SN_new, &
                                  lnTT=lnTT_SN_new,yH=yH_SN_new)
@@ -1574,15 +1619,15 @@ find_SN: do n=n1,n2
       endif
       
 
-      EEtot_SN=0. 
-      MMtot_SN=0.
+      SNR%EE=0. 
+      SNR%MM=0.
       !EE_SN2=0.
       do n=n1,n2
          do m=m1,m2
             
             ! Calculate the distances to the SN origin for all points
             ! in the current pencil and store in the dr2_SN global array
-            call proximity_SN()
+            call proximity_SN
             ! Get the old energy
             lnrho=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho) 
@@ -1592,32 +1637,32 @@ find_SN: do n=n1,n2
             TT=exp(lnTT)
 
             ! Apply perturbations
-            call injectenergy_SN(deltaEE,width_energy,c_SN,EEtot_SN)
+            call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%EE)
             if (lmove_mass) then
               if (mass_movement=='rho_cavity') then 
                 if (lSN_mass) then
                   call make_cavity_rho(deltarho,width_energy,cavity_depth, &
-                            cnorm_SN(dimensionality),MMtot_SN)
+                            cnorm_SN(dimensionality),SNR%MM)
                 else
                   call make_cavity_rho(deltarho,width_energy,cavity_depth, &
-                            cnorm_SN(dimensionality),MMtot_SN)
+                            cnorm_SN(dimensionality),SNR%MM)
                 endif
                 lnrho=log(rho_old(1:nx)+deltarho(1:nx))
               elseif (mass_movement=='Galaxycode') then 
                 if (lSN_mass) then
                   call make_cavity_lnrho(lnrho,width_energy,cavity_depth, &
-                      (mass_shell+mass_SN),cnorm_SN(dimensionality),MMtot_SN)
+                      (mass_shell+mass_SN),cnorm_SN(dimensionality),SNR%MM)
                 else
                   call make_cavity_lnrho(lnrho,width_energy,cavity_depth, &
-                        mass_shell,cnorm_SN(dimensionality),MMtot_SN)
+                        mass_shell,cnorm_SN(dimensionality),SNR%MM)
                 endif
               elseif (mass_movement=='constant') then 
                 call make_cavity_lnrho(lnrho,width_mass,cmass_SN, &
-                      mass_shell,cnorm_SN(dimensionality),MMtot_SN)
+                      mass_shell,cnorm_SN(dimensionality),SNR%MM)
               endif
             else
               if (lSN_mass) then
-                call injectmass_SN(deltarho,width_mass,cmass_SN,MMtot_SN)
+                call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%MM)
                 lnrho=log(rho_old(1:nx)+deltarho(1:nx))
               endif
             endif
@@ -1651,19 +1696,27 @@ find_SN: do n=n1,n2
        enddo
       enddo
 !
+!  Calculate explosion site mean density
+!
+      call get_mean_density(f,SNR)
+!
 !  Sum and share diagnostics etc. amongst processors
 !
-      dmpi2_tmp=(/ MMtot_SN, EEtot_SN /)
+      dmpi2_tmp=(/ SNR%MM, SNR%EE /)
       call mpireduce_sum_double(dmpi2_tmp,dmpi2,2) 
       call mpibcast_double(dmpi2,2)
-      MMtot_SN=dmpi2(1)*dv
-      EEtot_SN=dmpi2(2)*dv
+      SNR%MM=dmpi2(1)*dv
+      SNR%EE=dmpi2(2)*dv
 ! Extra debug - no longer calculated 
 !      EE2_SN=fmpi2(3)*dv; 
 !print*,'EE2_SN = ',EE2_SN
-
+!
+!  Calculate effective Sedov evolution time
+!
+      SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/SNR%EE)
+!
       if (lroot.and.ip<20) print*, &
-           'explode_SN: MMtot_SN=',MMtot_SN
+           'explode_SN: SNR%MM=',SNR%MM
 
       if (lroot) then
          open(1,file=trim(datadir)//'/sn_series.dat',position='append')
@@ -1671,21 +1724,96 @@ find_SN: do n=n1,n2
         print*, 'explode_SN:    step, time = ', it,t
         print*, 'explode_SN:            dv = ', dv
         print*, 'explode_SN:       SN type = ', itype_SN 
-        print*, 'explode_SN: proc, l, m, n = ', iproc_SN, l_SN,m_SN,n_SN
-        print*, 'explode_SN:       x, y, z = ', x_SN,y_SN,z_SN
-        print*, 'explode_SN:       rho, TT = ', rho_SN,TT_SN
-        print*, 'explode_SN:  Total energy = ', EEtot_SN
-        print*, 'explode_SN:    Total mass = ', MMtot_SN
-        print*, 'explode_SN:            n1 = ', n1
+        print*, 'explode_SN: proc, l, m, n = ', SNR%iproc, SNR%l,SNR%m,SNR%n
+        print*, 'explode_SN:       x, y, z = ', SNR%x,SNR%y,SNR%z
+        print*, 'explode_SN:       rho, TT = ', SNsite%rho,SNsite%TT
+        print*, 'explode_SN:  Mean density = ', SNR%rhom
+        print*, 'explode_SN:  Total energy = ', SNR%EE
+        print*, 'explode_SN:    Total mass = ', SNR%MM
+        print*, 'explode_SN:    Sedov time = ', SNR%t_sedov
          write(1,'(i10,e13.5,2i4,3i10,6e13.5)')  &
           it,t, &
           itype_SN, &
-          iproc_SN, l_SN,m_SN,n_SN, &
-          x_SN,y_SN,z_SN, &
-          rho_SN,TT_SN,EEtot_SN
+          SNR%iproc, SNR%l,SNR%m,SNR%n, &
+          SNR%x,SNR%y,SNR%z, &
+          SNsite%rho,SNsite%TT,SNR%EE
          close(1)
       endif
+
+      if (lSNR_damping) then
+        SNR%state=SNstate_damping
+      else
+        SNR%state=SNstate_invalid
+      endif
+
     endsubroutine explode_SN
+!***********************************************************************
+    subroutine calc_interstellar_SNRdamping(f,ivar)
+!
+      use Cdata
+!
+      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+      integer, intent(in) :: ivar
+      real, dimension(nx) :: damping
+!
+      if (SNR%state/=SNstate_damping) return
+!
+      call proximity_SN
+!
+!  Have to divide by dxmin**2 to compensate for the * dxmin**2 in
+!  the shock code!
+!
+      damping=SNR_damping*exp(-(dr2_SN/SNR%radius**2)**3)/dxmin**2
+!
+!ajwm  FIX ME
+! This goes into the shock routine, presmoothing, so needs to 
+! have the ghost zones done too...
+!
+      f(l1:l2,m,n,ivar)=max(f(l1:l2,m,n,ivar),damping)
+!
+    endsubroutine calc_interstellar_SNRdamping
+!***********************************************************************
+    subroutine get_mean_density(f,remnant)
+!
+!  Calculate integral of mass cavity profile  
+!
+!  22-may-03/tony: coded
+!
+      use Cdata, only: ilnrho,m,n
+      use Mpicomm
+!
+      real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+      type (SNRemnant), intent(inout) :: remnant
+      double precision :: radius2
+      double precision :: rhom
+      integer :: point_count
+      real, dimension(nx) :: rho
+      integer, dimension(nx) :: mask
+      double precision, dimension(2) :: tmp,tmp2
+!
+!  Sum all points inside 1.5 * SNR radius and divide by number of points 
+!
+      radius2 = (remnant%radius)**2
+      tmp=0.
+      do n=n1,n2
+         do m=m1,m2
+            call proximity_SN
+            mask=1
+            rho=exp(f(l1:l2,m,n,ilnrho))
+            where (dr2_SN(1:nx) .gt. radius2) 
+              rho(1:nx)=0.
+              mask(1:nx)=0
+            endwhere
+            tmp(1)=tmp(1)+sum(rho)
+            tmp(2)=tmp(2)+sum(mask)
+         enddo
+      enddo
+!
+      call mpireduce_sum_double(tmp,tmp2,2)
+      call mpibcast_double(tmp2,2)
+      remnant%rhom=tmp2(1)/tmp2(2) 
+!
+    endsubroutine get_mean_density
 !***********************************************************************
     subroutine get_lowest_rho(f,radius,rho_lowest)
 !
@@ -1694,11 +1822,13 @@ find_SN: do n=n1,n2
 !  22-may-03/tony: coded
 !
       use Cdata, only: ilnrho,m,n
+      use Mpicomm
 !
       real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(out) :: rho_lowest
+      real :: tmp
       double precision, intent(in) :: radius
       double precision :: radius2
-      real, intent(out) :: rho_lowest
       real, dimension(nx) :: rho
 !
 !  Find lowest rho value in the surronding cavity
@@ -1707,12 +1837,16 @@ find_SN: do n=n1,n2
       radius2 = radius**2
       do n=n1,n2
          do m=m1,m2
-            call proximity_SN()
+            call proximity_SN
             rho=f(l1:l2,m,n,ilnrho)
             where (dr2_SN(1:nx) .gt. radius2) rho=1E10
             rho_lowest=min(rho_lowest,minval(rho(1:nx)))
          enddo
       enddo
+!
+      tmp=-exp(rho_lowest)
+      call mpireduce_max(tmp,rho_lowest) 
+      call mpibcast_real(rho_lowest,2)
 !
     endsubroutine get_lowest_rho
 !***********************************************************************
@@ -1733,19 +1867,19 @@ find_SN: do n=n1,n2
 !
 !  Obtain distance to SN
 !
-         dx_SN=x(l1:l2)-x_SN
+         dx_SN=x(l1:l2)-SNR%x
          if (lperi(1)) then
            where (dx_SN .gt. Lx/2.) dx_SN=dx_SN-Lx
            where (dx_SN .lt. -Lx/2.) dx_SN=dx_SN+Lx
          endif
 !
-         dy_SN=y(m)-y_SN
+         dy_SN=y(m)-SNR%y
          if (lperi(2)) then
            if (dy_SN .gt. Ly/2.) dy_SN=dy_SN-Ly
            if (dy_SN .lt. -Ly/2.) dy_SN=dy_SN+Ly
          endif
 !
-         dz_SN=z(n)-z_SN
+         dz_SN=z(n)-SNR%z
          if (lperi(3)) then
            if (dz_SN .gt. Lz/2.) dz_SN=dz_SN-Lz
            if (dz_SN .lt. -Lz/2.) dz_SN=dz_SN+Lz

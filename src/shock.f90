@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.13 2006-06-03 21:37:59 ajohan Exp $
+! $Id: shock.f90,v 1.14 2006-06-13 10:32:29 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -101,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.13 2006-06-03 21:37:59 ajohan Exp $")
+           "$Id: shock.f90,v 1.14 2006-06-13 10:32:29 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -316,23 +316,25 @@ module Shock
      real, dimension (mx,my,mz,mvar+maux) :: f
      real, dimension (mx,my,mz) :: tmp
 !
-     if ((.not.lgauss_integral).and.(.not.lcommunicate_uu).and.((.not.lshock_first).or.lfirst)) then
+!  Exit if were're not using the "simple" shock profile code or it's the wrong time.
+!
+     if (lgauss_integral.or.lcommunicate_uu.or.(lshock_first.and.(.not.lfirst))) return
 !
 !  calculate shock viscosity only when nu_shock /=0
 !
 !  calculate (-divu)_+
 !
-       call shock_divu(f,f(:,:,:,ishock))
+     call shock_divu(f,f(:,:,:,ishock))
 !
-       if (lwith_extreme_div) then
-         where ((f(:,:,:,ishock) .gt. 0.) .and. (f(:,:,:,ishock) .lt. div_threshold)) &
-             f(:,:,:,ishock)=0.
-         where (f(:,:,:,ishock) .gt. 0.) &
-             f(:,:,:,ishock)=f(:,:,:,ishock)*div_scaling
-         f(:,:,:,ishock)=abs(f(:,:,:,ishock))
-       else
-         f(:,:,:,ishock)=max(0., -f(:,:,:,ishock))
-       endif
+     if (lwith_extreme_div) then
+       where ((f(:,:,:,ishock) .gt. 0.) .and. (f(:,:,:,ishock) .lt. div_threshold)) &
+           f(:,:,:,ishock)=0.
+       where (f(:,:,:,ishock) .gt. 0.) &
+           f(:,:,:,ishock)=f(:,:,:,ishock)*div_scaling
+       f(:,:,:,ishock)=abs(f(:,:,:,ishock))
+     else
+       f(:,:,:,ishock)=max(0., -f(:,:,:,ishock))
+     endif
 !
 !  take the max over 5 neighboring points and smooth.
 !  Note that this means that we'd need 4 ghost zones, so
@@ -340,20 +342,19 @@ module Shock
 !  Alternatively, to get the same result with and without MPI
 !  you may want to try lshock_max5=.false. (default is .true.)  
 !
-       if (lshock_max5) then
-         call shock_max5(f(:,:,:,ishock),tmp)
-       else
-         call shock_max3(f(:,:,:,ishock),tmp)
-       endif
+     if (lshock_max5) then
+       call shock_max5(f(:,:,:,ishock),tmp)
+     else
+       call shock_max3(f(:,:,:,ishock),tmp)
+     endif
 
 ! Save test data and scale to match the maximum expected result of smoothing 
 
-       call shock_smooth(tmp,f(:,:,:,ishock))
+     call shock_smooth(tmp,f(:,:,:,ishock))
 !
 !  scale with dxmin**2
 !
-       f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
-     endif
+     f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
 !
 !debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
@@ -750,6 +751,7 @@ module Shock
 !  27-apr-03/tony: adapted from shock_max3
 !
       use Cdata
+      use Interstellar, only: calc_interstellar_SNRdamping
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx) :: maxf
@@ -796,6 +798,8 @@ module Shock
           maxf(l1:l2)=max(maxf(l1:l2),f(l1:l2,m1,n+kk,j))
         enddo
       endif
+!
+      call calc_interstellar_SNRdamping(f,ishock)
 !
     endsubroutine shock_max3_pencil
 !***********************************************************************
