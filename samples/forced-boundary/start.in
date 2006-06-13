@@ -2,7 +2,7 @@
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2005-06-26 17:34:34 eos_merger_tony Exp $'
+  cvsid='$Id: start.in,v 1.5 2006-06-13 22:29:29 bingert Exp $'
   xyz0 = , , 0.
   ! Lxyz =  6.28.,   6.28.,  6.28.
   lperi = T,    T,   F
@@ -16,10 +16,12 @@
   bcy = 'p' ,'p' ,'p','p', 'p', 'p', 'p'
   bcz = 'a2','a2','a','a2','a2','a2','a2'
 /
+&eos_init_pars
+  gamma=1.
+/
 &hydro_init_pars
 /
 &density_init_pars
-  gamma=1.
 /
 &magnetic_init_pars
   initaa='fluxrings', amplaa=1e-0
