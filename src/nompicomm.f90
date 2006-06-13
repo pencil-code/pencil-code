@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.120 2006-06-13 10:29:07 mee Exp $
+! $Id: nompicomm.f90,v 1.121 2006-06-13 11:52:43 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -577,13 +577,13 @@ module Mpicomm
       fsum=fsum_tmp
     endsubroutine mpireduce_sum
 !!ajwm see interface block
-!!!***********************************************************************
-!!    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
-!!!
-!!      real :: fsum_tmp,fsum
-!!!
-!!      fsum=fsum_tmp
-!!    endsubroutine mpireduce_sum_scl
+!***********************************************************************
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum)
+!
+      real :: fsum_tmp,fsum
+!
+      fsum=fsum_tmp
+    endsubroutine mpireduce_sum_scl
 !***********************************************************************
     subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
 !
@@ -611,11 +611,10 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
 !
 !  16-sep-05/anders: adapted from mpireduce_sum_int
 !
-      integer :: nreduce
       integer :: fsum_tmp,fsum
 !
       fsum=fsum_tmp

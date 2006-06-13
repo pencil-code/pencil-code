@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.165 2006-06-13 10:29:07 mee Exp $
+! $Id: mpicomm.f90,v 1.166 2006-06-13 11:52:43 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -122,9 +122,14 @@ module Mpicomm
     module procedure mpireduce_or_scl
   endinterface
 
-  interface mpireduce_sum
-    module procedure mpireduce_sum_arr
-    module procedure mpireduce_sum_scl
+! NOT POSSIBLE BECAUSE OF n-Dimensional array usage
+! in equ.f90
+!  interface mpireduce_sum
+!    module procedure mpireduce_sum_arr
+!    module procedure mpireduce_sum_scl
+!  endinterface
+
+  interface mpireduce_sum_double
     module procedure mpireduce_sum_double_arr
     module procedure mpireduce_sum_double_scl
   endinterface
@@ -1297,6 +1302,17 @@ module Mpicomm
                       MPI_COMM_WORLD, ierr)
     endsubroutine mpireduce_max_scl
 !***********************************************************************
+    subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce)
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmin_tmp,fmin
+!
+!  calculate total maximum for each array element and return to root
+!
+      call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
+                      MPI_COMM_WORLD, ierr)
+    endsubroutine mpireduce_min_arr
+!***********************************************************************
     subroutine mpireduce_min_scl(fmin_tmp,fmin)
 !
       integer :: nreduce
@@ -1308,7 +1324,7 @@ module Mpicomm
                       MPI_COMM_WORLD, ierr)
     endsubroutine mpireduce_min_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum(fsum_tmp,fsum,nreduce)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
@@ -1323,7 +1339,7 @@ module Mpicomm
                         MPI_COMM_WORLD, ierr)
       endif
 !
-    endsubroutine mpireduce_sum_arr
+    endsubroutine mpireduce_sum
 !***********************************************************************
     subroutine mpireduce_sum_scl(fsum_tmp,fsum)
 !
@@ -1339,7 +1355,7 @@ module Mpicomm
                         MPI_COMM_WORLD, ierr)
       endif
 !
-    endsubroutine mpireduce_sum
+    endsubroutine mpireduce_sum_scl
 !***********************************************************************
     subroutine mpireduce_sum_double_arr(dsum_tmp,dsum,nreduce)
 !
