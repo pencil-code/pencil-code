@@ -3,7 +3,7 @@
 !
 &run_pars
   ip=14
-  cvsid='$Id: run.in,v 1.6 2005-06-26 17:34:34 eos_merger_tony Exp $'
+  cvsid='$Id: run.in,v 1.7 2006-06-13 23:01:26 bingert Exp $'
   nt=100, it1=10, isave=100
   cdt=0.4, cdtv=0.80, itorder=3,
   dsnap=1., dvid=0.5,
@@ -14,11 +14,15 @@
   force_lower_bound='uxy_sin-cos'
   lpencil_check=T
   /
+&eos_run_pars             
+/
 &hydro_run_pars
-  nu=1.5e-2,
 /
 &density_run_pars
 /
 &magnetic_run_pars
   eta=1.5e-2,
+/
+&viscosity_run_pars
+  nu=1.5e-2,
 /
