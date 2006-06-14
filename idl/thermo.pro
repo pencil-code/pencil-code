@@ -5,25 +5,25 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   25-Feb-2002
-;;;  $Id: thermo.pro,v 1.11 2006-06-13 23:33:26 bingert Exp $
+;;;  $Id: thermo.pro,v 1.12 2006-06-14 02:01:54 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Calculate all relevant thermodynamical variables from lnrho and
-;;;   ss.
-;;;  
-;;;  Modified 24-3-2006, for use with cp /= 0 runs, ngrs & neamvonk
+;;;   ss for box convection runs.
+;;;  Usage:
+;;;   cd ${PENCIL_HOME}/samples/conv-slab; make; start.csh; run.csh; idl
+;;;   .r start
+;;;   .r rall
+;;;   .r thermo
+;;;   .r pvert
 
-cp = par.cp_cgs
-mpoly = par.mpoly
-beta = gamma/gamma1/cp*gravz/(mpoly+1)       ; gamma1*cp/gamma=R_{*}
-TT0 = beta*z2
-lnTT0=alog(TT0)
+;; Get cp (make sure par.cp exists and default to 1)
+default, STRUCT=par, 'cp', 1.
+cp = par.cp
 
-rho=exp(lnrho)
-pp  = rho/gamma * cs20*exp(gamma*ss/cp + gamma1*(lnrho-lnrho0))       ; use cs2=rho pp/gamma
+pp  = cs20*rho0/gamma*exp(gamma*(ss/cp + lnrho-lnrho0))
 cs2 = cs20*exp(gamma*ss/cp + gamma1*(lnrho-lnrho0))
 TT  = cs2/gamma1/cp
-;;TT = exp(lnTT0 + gamma*ss/cp + gamma1*(lnrho-lnrho0))  ;; alternative formula, also correct for general cp
 
 ;; initial profiles of temperature, density and entropy for solar
 ;; convection runs
@@ -39,11 +39,12 @@ zint = zref                     ; position of top/unstable layer interface
 if (top[0] ge 0) then begin
   zint = z2 < ztop
   if (isothtop eq 0) then begin ; polytropic top layer
-    Tinit[top] = Tref + beta*(z[top]-zref)
-    lnrhoinit[top] = lnrhoref + mpoly2*alog( (1.+beta*(z[top]-zref)/Tref) > 1.e-5 )
+    beta = gamma/gamma1/cp*gravz/(mpoly2+1)
+    Tinit[top] = (Tref + beta*(z[top]-zref)) > 1.e-5*Tref ; (or rather 1.e-20?)
+    lnrhoinit[top] = lnrhoref + mpoly2*alog(Tinit[top]/Tref)
     ssinit[top] = ssref $
                   + (1-mpoly2*(gamma-1))/gamma $
-                    * alog( (1.+beta*(z[top]-zref)/Tref) > 1.e-5 )
+                    * alog(Tinit[top]/Tref)
 ;;;    zint = zrefz2 < ztop
     lnrhoref = lnrhoref + mpoly2*alog(1.+beta*(zint-zref)/Tref)
     ssref = ssref $
@@ -63,13 +64,12 @@ endif
 ;
 stab = where((z le z2) and (z ge z1))
 if (stab[0] ge 0) then begin
-  ggamma = 1. + (1./mpoly0)
-  zinf = zref + (mpoly0+1.)*cs20/gamma/(-gravz)
-  phi = (z[stab] - zinf)*(-gravz)
+  beta = gamma/gamma1/cp*gravz/(mpoly0+1)
   Tinit[stab] = Tref + beta*(z[stab]-zint)
-  lnrhoinit[stab] = lnrhoref + (mpoly0 * alog(-gamma*phi/(mpoly0+1.)/cs20))
-  ssinit[stab] = ssref + ((ggamma/gamma -1) * mpoly0 * alog(-gamma*phi/(mpoly0+1.)/cs20))*cp
-
+  lnrhoinit[stab] = lnrhoref + mpoly0*alog(Tinit[stab]/Tref)
+  ssinit[stab] = ssref $
+                 + (1-mpoly0*(gamma-1))/gamma $
+                   * alog(Tinit[stab]/Tref)
 endif
 ;
 unstab = where(z le z1)
@@ -79,14 +79,14 @@ if (unstab[0] ge 0) then begin
           + (1-mpoly0*(gamma-1))/gamma $
             * alog(1.+beta*(z1-z2)/Tref)
   Tref = Tref + beta*(z1-z2)
+  beta = gamma/gamma1/cp*gravz/(mpoly1+1)
   Tinit[unstab] = Tref + beta*(z[unstab]-z1)
-  lnrhoinit[unstab] = lnrhoref + mpoly1*alog(1.+beta*(z[unstab]-z1)/Tref)
-  phi = (z[unstab] - zinf)*(-gravz)
-  ssinit[unstab] = ((ggamma/gamma -1) * mpoly0 * alog(-gamma*phi/(mpoly0+1)/cs20))*cp
-  
+  lnrhoinit[unstab] = lnrhoref + mpoly1*alog(Tinit[unstab]/Tref)
+  ssinit[unstab] = ssref $
+                   + (1-mpoly1*(gamma-1))/gamma $
+                     * alog(Tinit[unstab]/Tref)
 endif
 
-; anything else?
 
 end
 ; End of file thermo.pro
