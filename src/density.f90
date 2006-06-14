@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.252 2006-06-06 14:51:53 joishi Exp $
+! $Id: density.f90,v 1.253 2006-06-14 00:08:50 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.252 2006-06-06 14:51:53 joishi Exp $")
+           "$Id: density.f90,v 1.253 2006-06-14 00:08:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -361,6 +361,7 @@ module Density
       case('soundwave-y'); call soundwave(ampllnrho,f,ilnrho,ky=1.)
       case('soundwave-z'); call soundwave(ampllnrho,f,ilnrho,kz=1.)
       case('sinwave-phase'); call sinwave_phase(f,ilnrho,ampllnrho,kx_lnrho,ky_lnrho,kz_lnrho,phase_lnrho)
+      case('coswave-phase'); call coswave_phase(f,ilnrho,ampllnrho,kx_lnrho,ky_lnrho,kz_lnrho,phase_lnrho)
       case('sinwave-x'); call sinwave(ampllnrho,f,ilnrho,kx=kx_lnrho)
       case('sinwave-y'); call sinwave(ampllnrho,f,ilnrho,ky=ky_lnrho)
       case('sinwave-z'); call sinwave(ampllnrho,f,ilnrho,kz=kz_lnrho)
