@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.3 2006-05-19 20:40:03 joishi Exp $
+! $Id: selfgravity.f90,v 1.4 2006-06-14 00:14:32 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -29,12 +29,13 @@ module Selfgravity
   include 'selfgravity.h'
 
   real :: rhs_const=1.0
+  logical :: lselfgravity_gas=.true.
   
   namelist /selfgrav_init_pars/ &
-      rhs_const
+      rhs_const, lselfgravity_gas
       
   namelist /selfgrav_run_pars/ &
-      rhs_const
+      rhs_const, lselfgravity_gas
 
   contains
 
@@ -63,7 +64,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.3 2006-05-19 20:40:03 joishi Exp $")
+           "$Id: selfgravity.f90,v 1.4 2006-06-14 00:14:32 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -132,11 +133,26 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: coded
 !
+      use Particles_main, only: particles_calc_selfpotential
       use Poisson
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      call poisson_solver_fft(f,ilnrho,ipotself,rhs_const)
+      real, dimension (nx,ny,nz) :: rhs_poisson
+!
+      if (lselfgravity_gas) then
+        if (ldensity_nolog) then
+          rhs_poisson = rhs_const*f(l1:l2,m1:m2,n1:n2,ilnrho)
+        else
+          rhs_poisson = rhs_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        endif
+      endif
+!
+      if (lparticles) call particles_calc_selfpotential(f,rhs_poisson,rhs_const,lselfgravity_gas)
+!
+      call poisson_solver_fft(rhs_poisson)
+!
+      f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson
 !
     endsubroutine calc_selfpotential
 !***********************************************************************

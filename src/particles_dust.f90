@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.94 2006-06-10 16:04:34 ajohan Exp $
+! $Id: particles_dust.f90,v 1.95 2006-06-14 00:14:32 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -44,7 +44,8 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical, parameter :: ldraglaw_epstein=.true.
-  character (len=labellen) :: initxxp='origin', initvvp='nothing'
+  character (len=labellen), dimension (ninit) :: initxxp='nothing'
+  character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='zero',  gravz_profile='zero'
 
   namelist /particles_init_pars/ &
@@ -55,7 +56,8 @@ module Particles
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
-      phase_vpx, phase_vpy, phase_vpz, lquadratic_interpolation
+      phase_vpx, phase_vpy, phase_vpz, lquadratic_interpolation, &
+      lselfgravity_particles
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -64,7 +66,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
-      lmigration_redo, lquadratic_interpolation
+      lmigration_redo, lquadratic_interpolation, lselfgravity_particles
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -92,7 +94,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.94 2006-06-10 16:04:34 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.95 2006-06-14 00:14:32 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -238,7 +240,6 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use Boundcond
       use EquationOfState, only: gamma, beta_glnrho_global, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
@@ -251,123 +252,158 @@ module Particles
       real, dimension (3) :: uup
       real :: r, p, px, py, pz, eps, cs
       real :: fac, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
-      integer :: l, k, ix0, iy0, iz0
+      integer :: l, j, k, ix0, iy0, iz0
 !
       intent (out) :: f, fp, ineargrid
 !
 !  Initial particle position.
 !
-      select case(initxxp)
+      do j=1,ninit
 
-      case ('origin')
-        if (lroot) print*, 'init_particles: All particles at origin'
-        fp(1:npar_loc,ixp:izp)=0.
+        select case(initxxp(j))
 
-      case ('constant')
-        if (lroot) &
-            print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
-        fp(1:npar_loc,ixp)=xp0
-        fp(1:npar_loc,iyp)=yp0
-        fp(1:npar_loc,izp)=zp0
+        case ('nothing')
+          if (lroot .and. j==1) print*, 'init_particles: nothing'
 
-      case ('random')
-        if (lroot) print*, 'init_particles: Random particle positions'
-        do k=1,npar_loc
-          if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-          if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-          if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-        enddo
-        if (nxgrid/=1) &
-            fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-        if (nygrid/=1) &
-            fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
-        if (nzgrid/=1) &
-            fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
-
-      case ('np-constant')
-        if (lroot) print*, 'init_particles: Constant number density'
-        k=1
-k_loop: do while (.not. (k>npar_loc))
-          do l=l1,l2; do m=m1,m2; do n=n1,n2
-            if (nxgrid/=1) call random_number_wrapper(px)
-            if (nygrid/=1) call random_number_wrapper(py)
-            if (nzgrid/=1) call random_number_wrapper(pz)
-            fp(k,ixp)=x(l)+(px-0.5)*dx
-            fp(k,iyp)=y(m)+(py-0.5)*dy
-            fp(k,izp)=z(n)+(pz-0.5)*dz
-            k=k+1
-            if (k>npar_loc) exit k_loop
-          enddo; enddo; enddo
-        enddo k_loop
-
-      case ('equidistant')
-        if (lroot) print*, 'init_particles: Particles placed equidistantly'
+        case ('origin')
+          if (lroot) print*, 'init_particles: All particles at origin'
+          fp(1:npar_loc,ixp:izp)=0.
+ 
+        case ('constant')
+          if (lroot) &
+              print*, 'init_particles: All particles at x,y,z=', xp0, yp0, zp0
+          fp(1:npar_loc,ixp)=xp0
+          fp(1:npar_loc,iyp)=yp0
+          fp(1:npar_loc,izp)=zp0
+ 
+        case ('random')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=xyz0_loc(3)+fp(1:npar_loc,izp)*Lxyz_loc(3)
+ 
+        case ('np-constant')
+          if (lroot) print*, 'init_particles: Constant number density'
+          k=1
+k_loop:   do while (.not. (k>npar_loc))
+            do l=l1,l2; do m=m1,m2; do n=n1,n2
+              if (nxgrid/=1) call random_number_wrapper(px)
+              if (nygrid/=1) call random_number_wrapper(py)
+              if (nzgrid/=1) call random_number_wrapper(pz)
+              fp(k,ixp)=x(l)+(px-0.5)*dx
+              fp(k,iyp)=y(m)+(py-0.5)*dy
+              fp(k,izp)=z(n)+(pz-0.5)*dz
+              k=k+1
+              if (k>npar_loc) exit k_loop
+            enddo; enddo; enddo
+          enddo k_loop
+ 
+        case ('equidistant')
+          if (lroot) print*, 'init_particles: Particles placed equidistantly'
 !  Number of particles in each direction.          
-        fac=1.0/dimensionality
-        dx_par=0.0; dy_par=0.0; dz_par=0.0
-        fp(1,ixp)=x(l1); fp(1,iyp)=y(m1); fp(1,izp)=z(n1)
-        if (nxgrid/=1) then
-          npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**fac
-          dx_par=Lxyz_loc(1)/npar_loc_x
-          fp(1,ixp) = xyz0_loc(1)+dx_par/2
-        endif
-        if (nygrid/=1) then
-          npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**fac
-          dy_par=Lxyz_loc(2)/npar_loc_y
-          fp(1,iyp) = xyz0_loc(2)+dy_par/2
-        endif
-        if (nzgrid/=1) then
-          npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**fac
-          dz_par=Lxyz_loc(3)/npar_loc_z
-          fp(1,izp) = xyz0_loc(3)+dz_par/2
-        endif
+          fac=1.0/dimensionality
+          dx_par=0.0; dy_par=0.0; dz_par=0.0
+          fp(1,ixp)=x(l1); fp(1,iyp)=y(m1); fp(1,izp)=z(n1)
+          if (nxgrid/=1) then
+            npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**fac
+            dx_par=Lxyz_loc(1)/npar_loc_x
+            fp(1,ixp) = xyz0_loc(1)+dx_par/2
+          endif
+          if (nygrid/=1) then
+            npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**fac
+            dy_par=Lxyz_loc(2)/npar_loc_y
+            fp(1,iyp) = xyz0_loc(2)+dy_par/2
+          endif
+          if (nzgrid/=1) then
+            npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**fac
+            dz_par=Lxyz_loc(3)/npar_loc_z
+            fp(1,izp) = xyz0_loc(3)+dz_par/2
+          endif
 !  Place particles iteratively, making sure that they are always in the box.
-        do k=2,npar_loc
-          fp(k,ixp)=fp(k-1,ixp)+dx_par
-          fp(k,iyp)=fp(k-1,iyp)
-          fp(k,izp)=fp(k-1,izp)
-          if (fp(k,ixp)>xyz1_loc(1) .or. nxgrid==1) then
-            fp(k,ixp)=fp(1,ixp)
-            fp(k,iyp)=fp(k,iyp)+dy_par
+          do k=2,npar_loc
+            fp(k,ixp)=fp(k-1,ixp)+dx_par
+            fp(k,iyp)=fp(k-1,iyp)
+            fp(k,izp)=fp(k-1,izp)
+            if (fp(k,ixp)>xyz1_loc(1) .or. nxgrid==1) then
+              fp(k,ixp)=fp(1,ixp)
+              fp(k,iyp)=fp(k,iyp)+dy_par
+            endif
+            if (fp(k,iyp)>xyz1_loc(2) .or. nygrid==1) then
+              fp(k,iyp)=fp(1,iyp)
+              fp(k,izp)=fp(k,izp)+dz_par
+            endif
+          enddo
+!
+!  Shift particle locations slightly so that a mode appears.
+!
+        case ('shift')
+          if (lroot) print*, 'init_particles: shift particle positions'
+          if (kx_xxp==0.0 .and. kz_xxp==0.0) then
+            if (lroot) print*, 'init_particles: kx_xxp=kz_xxp not allowed!'
+            call fatal_error('init_particles','')
           endif
-          if (fp(k,iyp)>xyz1_loc(2) .or. nygrid==1) then
-            fp(k,iyp)=fp(1,iyp)
-            fp(k,izp)=fp(k,izp)+dz_par
-          endif
-        enddo
+          do k=1,npar_loc
+            fp(k,ixp) = fp(k,ixp) - &
+                amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
+                (kx_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))+ &
+                 kx_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
+            fp(k,izp) = fp(k,izp) - &
+                amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
+                (kz_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))- &
+                 kz_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
+            fp(k,ixp) = fp(k,ixp) + &
+                kx_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+            fp(k,izp) = fp(k,izp) + &
+                kz_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+          enddo
+ 
+        case ('gaussian-z')
+          if (lroot) print*, 'init_particles: Gaussian particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
+            if (nprocz==2) then
+              if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+              if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
+            else
+              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+            endif
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+ 
+        case ('streaming')
+          call streaming(fp,f)
+ 
+        case ('streaming_coldstart')
+          call streaming_coldstart(fp,f)
+ 
+        case ('constant-Ri')
+          call constant_richardson(fp,f)
+ 
+        case default
+          if (lroot) &
+              print*, 'init_particles: No such such value for initxxp: ', &
+              trim(initxxp(j))
+          call stop_it("")
+ 
+        endselect
 
-      case ('gaussian-z')
-        if (lroot) print*, 'init_particles: Gaussian particle positions'
-        do k=1,npar_loc
-          if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-          if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-          call random_number_wrapper(r)
-          call random_number_wrapper(p)
-          if (nprocz==2) then
-            if (ipz==0) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-            if (ipz==1) fp(k,izp)= abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
-          else
-            fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
-          endif
-        enddo
-        if (nxgrid/=1) fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
-        if (nygrid/=1) fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
-
-      case ('streaming')
-        call streaming(fp,f)
-
-      case ('streaming_coldstart')
-        call streaming_coldstart(fp,f)
-
-      case ('constant-Ri')
-        call constant_richardson(fp,f)
-
-      case default
-        if (lroot) print*, 'init_particles: No such such value for initxxp: ', &
-            trim(initxxp)
-        call stop_it("")
-
-      endselect
+      enddo ! do j=1,ninit
 !      
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
@@ -387,125 +423,133 @@ k_loop: do while (.not. (k>npar_loc))
 !
 !  Initial particle velocity.
 !
-      select case(initvvp)
+      do j=1,ninit
 
-      case ('nothing')
-        if (lroot) print*, 'init_particles: No particle velocity set'
-      case ('zero')
-        if (lroot) print*, 'init_particles: Zero particle velocity'
-        fp(1:npar_loc,ivpx:ivpz)=0.
+        select case(initvvp(j))
 
-      case ('constant')
-        if (lroot) print*, 'init_particles: Constant particle velocity'
-        if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
-        fp(1:npar_loc,ivpx)=vpx0
-        fp(1:npar_loc,ivpy)=vpy0
-        fp(1:npar_loc,ivpz)=vpz0
-
-      case ('sinwave-phase')
-        if (lroot) print*, 'init_particles: sinwave-phase'
-        if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
-        do k=1,npar_loc
-          fp(k,ivpx)=fp(k,ivpx)+vpx0*sin(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
-          fp(k,ivpy)=fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
-          fp(k,ivpz)=fp(k,ivpz)+vpz0*sin(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
-        enddo
-
-      case ('coswave-phase')
-        if (lroot) print*, 'init_particles: coswave-phase'
-        if (lroot) print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
-        do k=1,npar_loc
-          fp(k,ivpx)=fp(k,ivpx)+vpx0*cos(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
-          fp(k,ivpy)=fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
-          fp(k,ivpz)=fp(k,ivpz)+vpz0*cos(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
-        enddo
-
-      case ('random')
-        if (lroot) print*, 'init_particles: Random particle velocities; '// &
-            'delta_vp0=', delta_vp0
-        do k=1,npar_loc
-          call random_number_wrapper(fp(k,ivpx))
-          call random_number_wrapper(fp(k,ivpy))
-          call random_number_wrapper(fp(k,ivpz))
-        enddo
-        fp(1:npar_loc,ivpx) = -delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
-        fp(1:npar_loc,ivpy) = -delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
-        fp(1:npar_loc,ivpz) = -delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
-
-      case ('follow-gas')
-        if (lroot) &
-            print*, 'init_particles: Particle velocity equal to gas velocity'
-        do k=1,npar_loc
-          call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
-          fp(k,ivpx:ivpz) = uup
-        enddo
-
-      case('dragforce_equilibrium')
+        case ('nothing')
+          if (lroot) print*, 'init_particles: No particle velocity set'
+        case ('zero')
+          if (lroot) print*, 'init_particles: Zero particle velocity'
+          fp(1:npar_loc,ivpx:ivpz)=0.
+ 
+        case ('constant')
+          if (lroot) print*, 'init_particles: Constant particle velocity'
+          if (lroot) &
+              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          fp(1:npar_loc,ivpx)=vpx0
+          fp(1:npar_loc,ivpy)=vpy0
+          fp(1:npar_loc,ivpz)=vpz0
+ 
+        case ('sinwave-phase')
+          if (lroot) print*, 'init_particles: sinwave-phase'
+          if (lroot) &
+              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          do k=1,npar_loc
+            fp(k,ivpx)=fp(k,ivpx)+vpx0*sin(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
+            fp(k,ivpy)=fp(k,ivpy)+vpy0*sin(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
+            fp(k,ivpz)=fp(k,ivpz)+vpz0*sin(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
+          enddo
+ 
+        case ('coswave-phase')
+          if (lroot) print*, 'init_particles: coswave-phase'
+          if (lroot) &
+              print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
+          do k=1,npar_loc
+            fp(k,ivpx)=fp(k,ivpx)+vpx0*cos(kx_vpx*fp(k,ixp)+ky_vpx*fp(k,iyp)+kz_vpx*fp(k,izp)+phase_vpx)
+            fp(k,ivpy)=fp(k,ivpy)+vpy0*cos(kx_vpy*fp(k,ixp)+ky_vpy*fp(k,iyp)+kz_vpy*fp(k,izp)+phase_vpy)
+            fp(k,ivpz)=fp(k,ivpz)+vpz0*cos(kx_vpz*fp(k,ixp)+ky_vpz*fp(k,iyp)+kz_vpz*fp(k,izp)+phase_vpz)
+          enddo
+ 
+        case ('random')
+          if (lroot) print*, 'init_particles: Random particle velocities; '// &
+              'delta_vp0=', delta_vp0
+          do k=1,npar_loc
+            call random_number_wrapper(fp(k,ivpx))
+            call random_number_wrapper(fp(k,ivpy))
+            call random_number_wrapper(fp(k,ivpz))
+          enddo
+          fp(1:npar_loc,ivpx) = -delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
+          fp(1:npar_loc,ivpy) = -delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
+          fp(1:npar_loc,ivpz) = -delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
+ 
+        case ('follow-gas')
+          if (lroot) &
+              print*, 'init_particles: Particle velocity equal to gas velocity'
+          do k=1,npar_loc
+            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
+            fp(k,ivpx:ivpz) = uup
+          enddo
+ 
+        case('dragforce_equilibrium')
 !
 !  Equilibrium between drag forces on dust and gas and other forces
 !  (from Nakagawa, Sekiya, & Hayashi 1986).
 !
-        if (lroot) then
-          print*, 'init_particles: drag equilibrium'
-          print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
-        endif
+          if (lroot) then
+            print*, 'init_particles: drag equilibrium'
+            print*, 'init_particles: beta_glnrho_global=', beta_glnrho_global
+          endif
 !  Calculate average dust-to-gas ratio in box.
-        if (ldensity_nolog) then
-          eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
-              sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
-        else
-          eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
-              sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
-        endif
-
-        if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
+          if (ldensity_nolog) then
+            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+                sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+          else
+            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+                sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
+          endif
+ 
+          if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !  Set gas velocity field.
-        do l=l1,l2; do m=m1,m2; do n=n1,n2
-          cs=sqrt(cs20)
+          do l=l1,l2; do m=m1,m2; do n=n1,n2
+            cs=sqrt(cs20)
 !  Take either global or local dust-to-gas ratio.
-          if (.not. ldragforce_equi_global_eps) then
-            if (ldensity_nolog) then
-              eps = rhop_tilde*f(l,m,n,inp)/f(l,m,n,ilnrho)
-            else
-              eps = rhop_tilde*f(l,m,n,inp)/exp(f(l,m,n,ilnrho))
+            if (.not. ldragforce_equi_global_eps) then
+              if (ldensity_nolog) then
+                eps = rhop_tilde*f(l,m,n,inp)/f(l,m,n,ilnrho)
+              else
+                eps = rhop_tilde*f(l,m,n,inp)/exp(f(l,m,n,ilnrho))
+              endif
             endif
-          endif
-
-          f(l,m,n,iux) = f(l,m,n,iux) - &
-              1/gamma*beta_glnrho_global(1)*eps*Omega*tausp/ &
-              ((1.0+eps)**2+(Omega*tausp)**2)*cs
-          f(l,m,n,iuy) = f(l,m,n,iuy) + &
-              1/gamma*beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
-              (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
-
-        enddo; enddo; enddo
+ 
+            f(l,m,n,iux) = f(l,m,n,iux) - &
+                1/gamma*beta_glnrho_global(1)*eps*Omega*tausp/ &
+                ((1.0+eps)**2+(Omega*tausp)**2)*cs
+            f(l,m,n,iuy) = f(l,m,n,iuy) + &
+                1/gamma*beta_glnrho_global(1)*(1+eps+(Omega*tausp)**2)/ &
+                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+ 
+          enddo; enddo; enddo
 !  Set particle velocity field.
-        do k=1,npar_loc
+          do k=1,npar_loc
 !  Take either global or local dust-to-gas ratio.
-          if (.not. ldragforce_equi_global_eps) then
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            if (ldensity_nolog) then
-              eps = rhop_tilde*f(ix0,iy0,iz0,inp)/f(ix0,iy0,iz0,ilnrho)
-            else
-              eps = rhop_tilde*f(ix0,iy0,iz0,inp)/exp(f(ix0,iy0,iz0,ilnrho))
+            if (.not. ldragforce_equi_global_eps) then
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              if (ldensity_nolog) then
+                eps = rhop_tilde*f(ix0,iy0,iz0,inp)/f(ix0,iy0,iz0,ilnrho)
+              else
+                eps = rhop_tilde*f(ix0,iy0,iz0,inp)/exp(f(ix0,iy0,iz0,ilnrho))
+              endif
             endif
-          endif
-          
-          fp(k,ivpx) = fp(k,ivpx) + &
-              1/gamma*beta_glnrho_global(1)*Omega*tausp/ &
-              ((1.0+eps)**2+(Omega*tausp)**2)*cs
-          fp(k,ivpy) = fp(k,ivpy) + &
-              1/gamma*beta_glnrho_global(1)*(1+eps)/ &
-              (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+            
+            fp(k,ivpx) = fp(k,ivpx) + &
+                1/gamma*beta_glnrho_global(1)*Omega*tausp/ &
+                ((1.0+eps)**2+(Omega*tausp)**2)*cs
+            fp(k,ivpy) = fp(k,ivpy) + &
+                1/gamma*beta_glnrho_global(1)*(1+eps)/ &
+                (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
+ 
+          enddo
+ 
+        case default
+          if (lroot) &
+              print*, 'init_particles: No such such value for initvvp: ', &
+              trim(initvvp(j))
+          call stop_it("")
 
-        enddo
-
-      case default
-        if (lroot) print*, 'init_particles: No such such value for initvvp: ', &
-            trim(initvvp)
-        call stop_it("")
-
-      endselect
+        endselect
+!
+      enddo ! do j=1,ninit
 !
 !  Sort particles (must happen at the end of the subroutine so that random
 !  positions and velocities are not displaced relative to when there is no
@@ -1329,22 +1373,11 @@ k_loop: do while (.not. (k>npar_loc))
 !
 !  01-jan-06/anders: coded
 !
-      use Boundcond, only: bc_per_x, bc_per_y, bc_per_z
       use Power_spectrum, only: power_1d
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (lpar_spec) then
-!  Fill out ghost zones in np.        
-        call bc_per_x(f,'top',inp)
-        call bc_per_x(f,'bot',inp)
-        call bc_per_y(f,'top',inp)
-        call bc_per_y(f,'bot',inp)
-        call bc_per_z(f,'top',inp)
-        call bc_per_z(f,'bot',inp)
-!
-        call power_1d(f,'p',0,inp)
-      endif
+      if (lpar_spec) call power_1d(f,'p',0,inp)
 !
     endsubroutine powersnap_particles
 !***********************************************************************

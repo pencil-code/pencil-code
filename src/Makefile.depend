@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.16 2006-06-13 11:54:18 mee Exp $
+### $Id: Makefile.depend,v 1.17 2006-06-14 00:14:32 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -57,7 +57,7 @@ shock.o:           shock.h          shock.f90 shock_profile.inc cdata.o cparam.o
 noshock.o:         shock.h          noshock.f90 cdata.o cparam.o sub.o 
 $(SHEAR).o:        shear.h          $(SHEAR).f90 $(MPICOMM_FIX).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:      gravity.h        $(GRAVITY).f90 cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o $(PLANET).o
-$(SELFGRAVITY).o:      selfgravity.h cdata.o sub.o $(POISSON).o
+$(SELFGRAVITY).o:  selfgravity.h $(SELFGRAVITY).f90 cdata.o sub.o $(POISSON).o $(PARTICLES_MAIN).o
 $(POISSON).o:          poisson.h cdata.o sub.o
 $(FORCING).o:      forcing.h        $(FORCING).f90 cdata.o $(MPICOMM_FIX).o sub.o $(HYDRO).o
 $(ENTROPY).o:      entropy.h        $(ENTROPY).f90 cdata.o messages.o $(MPICOMM_FIX).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(INTERSTELLAR).o $(EOS).o $(SPECIAL).o $(PLANET).o
@@ -87,9 +87,9 @@ $(DEBUG).o:        debug_c.c Makefile.src Makefile.local
 #  Particle modules
 #
 particles_cdata.o :    particles_cdata.f90 cdata.o
-$(PARTICLES_MAIN).o:   particles_main.h $(PARTICLES).o $(PARTICLES_SUB).o cdata.o
+$(PARTICLES_MAIN).o:   particles_main.h $(PARTICLES).o $(PARTICLES_SUB).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o cdata.o
 $(PARTICLES_SUB).o:    $(PARTICLES_SUB).f90 cdata.o particles_cdata.o $(GLOBAL).o
-$(PARTICLES).o:        particles.h particles_cdata.o $(PARTICLES_SUB).o $(PARTICLES_NUMBER).o cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o boundcond.o $(POWER).o $(PLANET).o
+$(PARTICLES).o:        particles.h particles_cdata.o $(PARTICLES_SUB).o $(PARTICLES_NUMBER).o cdata.o $(MPICOMM_FIX).o sub.o $(GLOBAL).o $(POWER).o $(PLANET).o
 $(PARTICLES_RADIUS).o: particles_radius.h particles_cdata.o $(PARTICLES_NUMBER).o
 $(PARTICLES_NUMBER).o: particles_number.h particles_cdata.o $(PARTICLES_SUB).o
 

@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.7 2006-06-07 03:02:24 ajohan Exp $
+! $Id: poisson.f90,v 1.8 2006-06-14 00:14:32 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -29,31 +29,25 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine poisson_solver_fft(f,irhs,ipoisson,rhs_const)
+    subroutine poisson_solver_fft(a1)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !  This method works both with and without shear.
 !
 !  15-may-2006/anders+jeff: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: rhs_const
-      real, dimension (nx,ny,nz) :: a1,b1
-      integer :: irhs, ipoisson,i,ikx,iky,ikz
+      real, dimension (nx,ny,nz) :: a1
+!
+      real, dimension (nx,ny,nz) :: b1
+      integer :: i, ikx, iky, ikz
 !
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.7 2006-06-07 03:02:24 ajohan Exp $")
+        "$Id: poisson.f90,v 1.8 2006-06-14 00:14:32 ajohan Exp $")
 !
-!  set up right-hand-side of Poisson equation
+!  The right-hand-side of the Poisson equation is purely real.
 !
-      if (ldensity_nolog) then
-        a1 = rhs_const*f(l1:l2,m1:m2,n1:n2,ilnrho)
-      else
-        a1 = rhs_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-      endif
-
       b1 = 0.0
 !  forward transform (to k-space)
       if (lshear) then
@@ -112,10 +106,6 @@ module Poisson
       else
         call transform_fftpack(a1,b1,-1)
       endif
-!
-!  The real part is the potential.
-!
-      f(l1:l2,m1:m2,n1:n2,ipoisson) = a1
 !
     endsubroutine poisson_solver_fft
 !***********************************************************************
