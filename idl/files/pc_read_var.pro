@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.34 2006-06-02 19:10:17 joishi Exp $
+; $Id: pc_read_var.pro,v 1.35 2006-06-14 15:40:13 joishi Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-06-02 19:10:17 $
-;  $Revision: 1.34 $
+;  $Date: 2006-06-14 15:40:13 $
+;  $Revision: 1.35 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -351,8 +351,8 @@ makeobject = "object = "+ $
     arraytostring(variables) + ")"
 
 if (execute(makeobject) ne 1) then begin
-      message, 'ERROR Evaluating variables: '+makeobject,/INFO
-      undefine,object
+  message, 'ERROR Evaluating variables: '+makeobject
+  undefine,object
 endif
 
 ; If requested print a summary
