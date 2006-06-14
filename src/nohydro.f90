@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.55 2006-05-09 00:32:33 dobler Exp $
+! $Id: nohydro.f90,v 1.56 2006-06-14 22:15:27 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.55 2006-05-09 00:32:33 dobler Exp $")
+           "$Id: nohydro.f90,v 1.56 2006-06-14 22:15:27 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -154,6 +154,7 @@ module Hydro
 !
       use Cdata
 !
+      if (kinflow/='') lpenc_requested(i_uu)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_u2m/=0 .or. &
           idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
 !
@@ -311,14 +312,16 @@ module Hydro
 !
       intent(in) :: f,df,p
 !
-!  uu/dx for timestep
+!  uu/dx for timestep (if kinflow is set)
 !
-      if (lfirst.and.ldt) advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                                   abs(p%uu(:,2))*dy_1(  m  )+ &
-                                   abs(p%uu(:,3))*dz_1(  n  )
-      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+      if (kinflow/='') then
+        if (lfirst.and.ldt) advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+                                     abs(p%uu(:,2))*dy_1(  m  )+ &
+                                     abs(p%uu(:,3))*dz_1(  n  )
+      endif
+      if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
 !
-      if(NO_WARN) print*, f, df     !(keep compiler quiet)
+      if (NO_WARN) print*, f, df     !(keep compiler quiet)
 !
     endsubroutine duu_dt
 !***********************************************************************
