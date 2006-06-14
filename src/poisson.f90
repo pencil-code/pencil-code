@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.8 2006-06-14 00:14:32 ajohan Exp $
+! $Id: poisson.f90,v 1.9 2006-06-14 23:57:00 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -9,6 +9,8 @@
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lpoisson=.true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -44,7 +46,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.8 2006-06-14 00:14:32 ajohan Exp $")
+        "$Id: poisson.f90,v 1.9 2006-06-14 23:57:00 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -56,7 +58,7 @@ module Poisson
         call transform_fftpack(a1,b1,1)
       endif
 !
-!  FT(phi) = -rhs_const*FT(rho)/k^2
+!  FT(phi) = -rhs_poisson_const*FT(rho)/k^2
 !
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
         if ((kx_fft(ikx)==0.0) .and. &

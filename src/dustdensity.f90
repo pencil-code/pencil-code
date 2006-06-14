@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.164 2006-05-30 23:44:42 theine Exp $
+! $Id: dustdensity.f90,v 1.165 2006-06-14 23:57:00 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.164 2006-05-30 23:44:42 theine Exp $")
+           "$Id: dustdensity.f90,v 1.165 2006-06-14 23:57:00 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -261,6 +261,7 @@ module Dustdensity
       use Initcond
       use IO
       use Mpicomm
+      use Selfgravity, only: rhs_poisson_const
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -434,6 +435,13 @@ module Dustdensity
             f(:,:,n,ind(k)) = f(:,:,n,ind(k)) + 1.0 + nd_const*cos(kz_nd*z(n))
           enddo; enddo
           if (lroot) print*, 'init_nd: Cosine nd with nd_const=', nd_const
+        case('jeans-wave-dust-x')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ind(1)) = 1.0 + amplnd*cos(kx_nd*x(l1:l2))
+            f(l1:l2,m,n,iudx(1)) = f(l1:l2,m,n,iudx(1)) - amplnd* &
+                (sqrt(1+4*rhs_poisson_const*1.0*tausd(1)**2)-1)/ &
+                (2*kx_nd*1.0*tausd(1))*sin(kx_nd*(x(l1:l2)))
+          enddo; enddo
         case('minimum_nd')
           where (f(:,:,:,ind).lt.nd_const) f(:,:,:,ind)=nd_const
           if (lroot) print*, 'init_nd: Minimum dust density nd_const=', nd_const

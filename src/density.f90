@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.254 2006-06-14 13:04:11 mee Exp $
+! $Id: density.f90,v 1.255 2006-06-14 23:57:00 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.254 2006-06-14 13:04:11 mee Exp $")
+           "$Id: density.f90,v 1.255 2006-06-14 23:57:00 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -297,7 +297,7 @@ module Density
       use Global
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential, &
                           lnumerical_equilibrium
-      use Selfgravity,only: rhs_const
+      use Selfgravity,only: rhs_poisson_const
       use Initcond
       use Initcond_spec
       use IO
@@ -674,7 +674,7 @@ module Density
 
      case('jeans-wave-x')
 ! soundwave + self gravity
-        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 - rhs_const*rho0,0.))/(rho0*kx_lnrho)
+        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho)
         print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
           real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
@@ -687,7 +687,8 @@ module Density
      case('jeans-wave-oblique')
 ! soundwave + self gravity
         k_j2 = kx_lnrho**2 + ky_lnrho**2 + kz_lnrho**2
-        omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_const*rho0,0.))/(rho0*sqrt(k_j2))
+        omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_poisson_const*rho0,0.))/ &
+            (rho0*sqrt(k_j2))
         print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
           real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)
 
@@ -708,7 +709,7 @@ module Density
 
      case('toomre-wave-x')
 ! soundwave + self gravity + (differential) rotation
-        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 + Omega**2 - rhs_const*rho0,0.))/(rho0*kx_lnrho)
+        omega_jeans = sqrt(cmplx(cs20*kx_lnrho**2 + Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho)
 
         print*,'Re(omega_jeans), Im(omega_jeans), Abs(omega_jeans)',&
           real(omega_jeans),aimag(omega_jeans),abs(omega_jeans)

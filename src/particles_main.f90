@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.27 2006-06-14 00:14:32 ajohan Exp $
+! $Id: particles_main.f90,v 1.28 2006-06-14 23:57:00 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -234,7 +234,7 @@ module Particles_main
 !
     endsubroutine particles_pencil_interdep
 !***********************************************************************
-    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_const,lcontinued)
+    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
 !
 !  Calculate the potential of the dust particles.
 !
@@ -242,14 +242,15 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
-      real :: rhs_const
+      real :: rhs_poisson_const
       logical :: lcontinued
 !
       if (lselfgravity_particles) then
         if (lcontinued) then  ! Potential has already been zeroed by the gas.
-          rhs_poisson=rhs_poisson+rhs_const*rhop_tilde*f(l1:l2,m1:m2,n1:n2,inp)
+          rhs_poisson=rhs_poisson+ &
+              rhs_poisson_const*rhop_tilde*f(l1:l2,m1:m2,n1:n2,inp)
         else                  ! Must zero potential from last time-step.
-          rhs_poisson=rhs_const*rhop_tilde*f(l1:l2,m1:m2,n1:n2,inp)
+          rhs_poisson=rhs_poisson_const*rhop_tilde*f(l1:l2,m1:m2,n1:n2,inp)
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.10 2006-06-14 00:14:32 ajohan Exp $
+! $Id: noparticles_main.f90,v 1.11 2006-06-14 23:57:00 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -174,7 +174,7 @@ module Particles_main
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
-    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_const,lcontinued)
+    subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
 !
 !  Calculate the potential of the dust particles.
 !
@@ -182,10 +182,10 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
-      real :: rhs_const
+      real :: rhs_poisson_const
       logical :: lcontinued
 !
-      if (NO_WARN) print*, f, rhs_poisson, rhs_const, lcontinued
+      if (NO_WARN) print*, f, rhs_poisson, rhs_poisson_const, lcontinued
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
