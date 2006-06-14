@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.411 2006-06-07 13:57:40 nbabkovs Exp $
+! $Id: entropy.f90,v 1.412 2006-06-14 13:04:11 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.411 2006-06-07 13:57:40 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.412 2006-06-14 13:04:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -213,13 +213,13 @@ module Entropy
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
-      if (.not. lreloading) then ! already in place when reloading
+!ajwm      if (.not. lreloading) then ! already in place when reloading
         if (pretend_lnTT) then
           call select_eos_variable('lnTT',iss)
         else 
           call select_eos_variable('ss',iss)
         endif
-      endif
+!ajwm      endif
 !
 !  radiative diffusion: initialize flux etc
 !

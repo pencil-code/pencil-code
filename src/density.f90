@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.253 2006-06-14 00:08:50 ajohan Exp $
+! $Id: density.f90,v 1.254 2006-06-14 13:04:11 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.253 2006-06-14 00:08:50 ajohan Exp $")
+           "$Id: density.f90,v 1.254 2006-06-14 13:04:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -232,13 +232,13 @@ module Density
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
-      if (.not. lreloading) then ! already in place when reloading
+!ajwm      if (.not. lreloading) then ! already in place when reloading
         if (ldensity_nolog) then
           call select_eos_variable('rho',ilnrho)
         else 
           call select_eos_variable('lnrho',ilnrho)
         endif
-      endif
+!ajwm      endif
 !
       if (NO_WARN) print*,f,lstarting  !(to keep compiler quiet)
 !
