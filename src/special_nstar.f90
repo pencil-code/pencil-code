@@ -1,39 +1,20 @@
-! $Id: nospecial.f90,v 1.14 2006-06-14 21:34:01 brandenb Exp $
+! $Id: special_nstar.f90,v 1.1 2006-06-14 21:34:01 brandenb Exp $
+!
+!  This module incorporates all the modules used for Natalia's
+!  neutron star -- disk coupling simulations (referred to as nstar)
+!
+!  This sample modules solves a special set of problems related
+!  to computing the accretion through a thin disk onto a rigid surface
+!  and the spreading of accreted material along the neutron star's surface.
+!  One-dimensional problems along the disc and perpendicular to it
+!  can also be considered.
+!
 
-!  This module provide a way for users to specify custom 
-!  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
-!
-!  The module provides a set of standard hooks into the Pencil-Code and 
-!  currently allows the following customizations:                                        
-!
-!   Description                                     | Relevant function call 
-!  ---------------------------------------------------------------------------
-!   Special variable registration                   | register_special 
-!     (pre parameter read)                          |
-!   Special variable initialization                 | initialize_special 
-!     (post parameter read)                         |
-!                                                   |
-!   Special initial condition                       | init_special
-!    this is called last so may be used to modify   |
-!    the mvar variables declared by this module     |
-!    or optionally modify any of the other f array  |
-!    variables.  The latter, however, should be     |
-!    avoided where ever possible.                   |
-!                                                   |
-!   Special term in the mass (density) equation     | special_calc_density
-!   Special term in the momentum (hydro) equation   | special_calc_hydro
-!   Special term in the entropy equation            | special_calc_entropy
-!   Special term in the induction (magnetic)        | special_calc_magnetic 
-!      equation                                     |
-!                                                   |
-!   Special equation                                | dspecial_dt
-!     NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE 
-!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! CPARAM logical, parameter :: lspecial = .false.
+! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -62,9 +43,9 @@
 ! use your additional physics.  Add a line with all the module 
 ! selections to say something like:
 !
-!    SPECIAL=special/geo_kws
+!    SPECIAL=special/nstar
 !
-! Where geo_kws it replaced by the filename of your new module
+! Where nstar it replaced by the filename of your new module
 ! upto and not including the .f90
 !
 !--------------------------------------------------------------------
@@ -79,13 +60,16 @@ module Special
 
   include 'special.h'
   
-!!  character, len(50) :: initcustom
+  ! input parameters
+  logical :: leffective_gravity=.false.
 
-! input parameters
-!  namelist /special_init_pars/ dummy 
-!!!eg.    initcustom
-! run parameters
-!  namelist /special_run_pars/ dummy
+  namelist /special_init_pars/ &
+       leffective_gravity
+
+  ! run parameters
+
+  namelist /special_run_pars/ &
+       leffective_gravity
 
 !!
 !! Declare any index variables necessary for main or 
@@ -136,11 +120,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.14 2006-06-14 21:34:01 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: special_nstar.f90,v 1.1 2006-06-14 21:34:01 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.14 2006-06-14 21:34:01 brandenb Exp $")
+           "$Id: special_nstar.f90,v 1.1 2006-06-14 21:34:01 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -278,27 +262,35 @@ module Special
     subroutine read_special_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      if (present(iostat)) then
+        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=special_init_pars,ERR=99)
+      endif
+
+99    return
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
-                                                                                                   
-      if (NO_WARN) print*,unit
-                                                                                                   
+
+      write(unit,NML=special_init_pars)
+
     endsubroutine write_special_init_pars
 !***********************************************************************
     subroutine read_special_run_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
-                                                                                                   
-      if (present(iostat) .and. (NO_WARN)) print*,iostat
-      if (NO_WARN) print*,unit
-                                                                                                   
-    endsubroutine read_special_run_pars
+    
+      if (present(iostat)) then
+        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
+      else
+        read(unit,NML=special_run_pars,ERR=99)
+      endif
+
+99    return
+endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
@@ -312,7 +304,7 @@ module Special
 !
 !   06-oct-03/tony: coded
 !
-      use Cdata
+!AB:  use Cdata   !(not needed, right?)
       use Sub
 
       logical :: lreset,lwr
@@ -390,19 +382,141 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
+      integer :: j,l_sz
+
 !!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!  
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
+!!AB: this is a verbatim copy from the old hydro.f90 module
 !!
 
-! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+!
+! add effective gravity term = -Fgrav+Fcentrifugal
+! Natalia
+!
+      if (leffective_gravity) then
+        if (headtt) &
+          print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
+
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
+                   M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
+      endif
+
+! acceleration zone in a case of a Keplerian disk
+
+
+      if (laccelerat_zone) then
+       if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
+
+         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+             -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
+       
+       if (nxgrid .LE. 1) then  
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+           -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+       else
+         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+         -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
+
+         !  df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
+         !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,iuz)-f(l1:H_disk_point+4,m,n-1,iuz))
+
+         !df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
+         !   -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
+
+     
+         !   df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
+         !    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
+ 
+        endif 
+       endif
+
+      endif
+
+! deceleration zone in a case of a Keplerian disk
+
+
+      if (ldecelerat_zone) then
+ 
+         if (n .LE. ac_dc_size+4  .AND. dt .GT.0.) then
+         if (lnstar_entropy) then  
+        ! if (lnstar_T_const) then
+           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+            !          -1./(5.*dt)*(p%uu(:,2)-f(l1:l2,m,n-1,iuy))
+             -1./(5.*dt)*(p%uu(:,2)-0.)   
+                 
+           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+           !    -1./(5.*dt)*(p%uu(:,3)-f(l1:l2,m,n-1,iuz)) 
+           -1./(5.*dt)*(p%uu(:,3)-0.)   
+        ! endif  
+         else 
+           
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+                           -1./(5.*dt)*(p%uu(:,2)-0.)
+    
+         
+           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+                          -1./(5.*dt)*(p%uu(:,3)-0.)
+
+         endif   
+         endif
+
+      endif
+
+! surface zone in a case of a Keplerian disk
+
+      if (lsurface_zone) then
+          if ( dt .GT.0.) then
+                         
+         l_sz=l2-5
+               
+           do j=l_sz,l2   
+           !  df(j,m,n,iux)=df(j,m,n,iux)&
+           !        -1./(3.*dt)*(-f(j-1,m,n,iux)+f(j,m,n,iux))
+           !   df(j,m,n,iux)=df(j,m,n,iux)&
+           !        -1./(10.*dt)*(f(j,m,n,iux)-f(j+1,m,n,iux))
+           enddo
+
+        if (lnstar_1D) then
+
+             df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
+                   -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
+     
+         
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+                  -1./(5.*dt)*(f(l1:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
+
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+             -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
+
+         else
+
+           do j=l_sz,l2   
+            df(j,m,n,iux)=df(j,m,n,iux)&
+               -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
+           df(j,m,n,iuy)=df(j,m,n,iuy)&
+                  -1./(5.*dt)*(f(j,m,n,iuy)-f(j-1,m,n,iuy))
+           df(j,m,n,iuz)=df(j,m,n,iuz)&
+                  -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
+           enddo
+
+
+           !  df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
+           !        -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
+     
+         
+         !   df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
+         !         -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/z(n)))
+
+         !   df(l_sz:l2,m,n,iuz)=df(l_sz:l2,m,n,iuz)&
+         !    -1./(5.*dt)*(f(l_sz:l2,m,n,iuz)+accretion_flux/p%rho(:))
+ 
+     
+         endif 
+    
+        
+         endif
+
+      endif
 
     endsubroutine special_calc_hydro
 !***********************************************************************

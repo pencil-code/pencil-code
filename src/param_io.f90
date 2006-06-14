@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.240 2006-06-07 13:57:40 nbabkovs Exp $ 
+! $Id: param_io.f90,v 1.241 2006-06-14 21:34:01 brandenb Exp $ 
 
 module Param_IO
 
@@ -544,8 +544,7 @@ module Param_IO
       if (ierr.ne.0) call sample_runpars('viscosity_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
-      !call read_special_run_pars(1,IOSTAT=ierr)
-      call read_special_run_pars(1)
+      call read_special_run_pars(1,IOSTAT=ierr)
       if (ierr.ne.0) call sample_runpars('special_run_pars',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')

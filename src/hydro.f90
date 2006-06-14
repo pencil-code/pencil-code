@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.265 2006-06-11 09:51:41 brandenb Exp $
+! $Id: hydro.f90,v 1.266 2006-06-14 21:34:01 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -46,7 +46,6 @@ module Hydro
   integer :: N_modes_uu=0
   logical :: lcoriolis_force=.true., lcentrifugal_force=.false.
   logical :: ladvection_velocity=.true.
-  logical :: leffective_gravity=.false.
   logical :: lcounter_rotation=.false.
 
   namelist /hydro_init_pars/ &
@@ -57,7 +56,7 @@ module Hydro
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
        kep_cutoff_pos_int, kep_cutoff_width_int, &
        u_out_kep, N_modes_uu, lcoriolis_force, lcentrifugal_force, &
-       ladvection_velocity, leffective_gravity, lcounter_rotation
+       ladvection_velocity, lcounter_rotation
 
   ! run parameters
   real :: tdamp=0.,dampu=0.,wdamp=0.
@@ -156,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.265 2006-06-11 09:51:41 brandenb Exp $")
+           "$Id: hydro.f90,v 1.266 2006-06-14 21:34:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -785,9 +784,9 @@ module Hydro
       type (pencil_case) :: p
 !      
       real, dimension (nx) :: pdamp
-      real :: c2,s2, const_for_eff_grav
+      real :: c2,s2
       real :: gr_part, cf_part
-      integer :: j,i,l_sz
+      integer :: j,i
 !
       intent(in) :: f,p
       intent(out) :: df
@@ -801,7 +800,7 @@ module Hydro
         call identify_bcs('uz',iuz)
       endif
 !
-!  advection term
+!  advection term, -u.gradu
 !
       if (ladvection_velocity) &
           df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%ugu
@@ -849,137 +848,6 @@ module Hydro
         endif
       endif
 !
-! add effective gravity term = -Fgrav+Fcentrifugal
-! Natalia
-!
-      if (leffective_gravity) then
-        if (headtt) &
-          print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
-
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
-                   M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
-      endif
-
-! acceleration zone in a case of a Keplerian disk
-
-
-      if (laccelerat_zone) then
-       if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
-
-         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-             -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
-       
-       if (nxgrid .LE. 1) then  
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-           -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
-       else
-         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-         -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
-
-         !  df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
-         !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,iuz)-f(l1:H_disk_point+4,m,n-1,iuz))
-
-         !df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
-         !   -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
-
-     
-         !   df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
-         !    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
- 
-        endif 
-       endif
-
-      endif
-
-! deceleration zone in a case of a Keplerian disk
-
-
-      if (ldecelerat_zone) then
- 
-         if (n .LE. ac_dc_size+4  .AND. dt .GT.0.) then
-         if (lnstar_entropy) then  
-        ! if (lnstar_T_const) then
-           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-            !          -1./(5.*dt)*(p%uu(:,2)-f(l1:l2,m,n-1,iuy))
-             -1./(5.*dt)*(p%uu(:,2)-0.)   
-                 
-           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-           !    -1./(5.*dt)*(p%uu(:,3)-f(l1:l2,m,n-1,iuz)) 
-           -1./(5.*dt)*(p%uu(:,3)-0.)   
-        ! endif  
-         else 
-           
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                           -1./(5.*dt)*(p%uu(:,2)-0.)
-    
-         
-           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-                          -1./(5.*dt)*(p%uu(:,3)-0.)
-
-         endif   
-         endif
-
-      endif
-
-! surface zone in a case of a Keplerian disk
-
-      if (lsurface_zone) then
-          if ( dt .GT.0.) then
-                         
-         l_sz=l2-5
-               
-           do j=l_sz,l2   
-           !  df(j,m,n,iux)=df(j,m,n,iux)&
-           !        -1./(3.*dt)*(-f(j-1,m,n,iux)+f(j,m,n,iux))
-           !   df(j,m,n,iux)=df(j,m,n,iux)&
-           !        -1./(10.*dt)*(f(j,m,n,iux)-f(j+1,m,n,iux))
-           enddo
-
-        if (lnstar_1D) then
-
-             df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
-                   -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
-     
-         
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-                  -1./(5.*dt)*(f(l1:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
-
-            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-             -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
-
-         else
-
-           do j=l_sz,l2   
-            df(j,m,n,iux)=df(j,m,n,iux)&
-               -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
-           df(j,m,n,iuy)=df(j,m,n,iuy)&
-                  -1./(5.*dt)*(f(j,m,n,iuy)-f(j-1,m,n,iuy))
-           df(j,m,n,iuz)=df(j,m,n,iuz)&
-                  -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
-           enddo
-
-
-           !  df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
-           !        -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
-     
-         
-         !   df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
-         !         -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/z(n)))
-
-         !   df(l_sz:l2,m,n,iuz)=df(l_sz:l2,m,n,iuz)&
-         !    -1./(5.*dt)*(f(l_sz:l2,m,n,iuz)+accretion_flux/p%rho(:))
- 
-     
-         endif 
-    
-        
-         endif
-
-      endif
-
-
-!
 ! calculate viscous force
 !
       if (lviscosity) call calc_viscous_force(df,p)
@@ -1022,7 +890,7 @@ module Hydro
 !
 !  interface for your personal subroutines calls
 !
-      if (lspecial) call special_calc_hydro(df,p)
+      if (lspecial) call special_calc_hydro(f,df,p)
 !
 !  write slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).

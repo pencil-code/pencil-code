@@ -1,4 +1,4 @@
-! $Id: special_sample.f90,v 1.11 2006-05-28 20:24:45 brandenb Exp $
+! $Id: special_sample.f90,v 1.12 2006-06-14 21:34:01 brandenb Exp $
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: special_sample.f90,v 1.11 2006-05-28 20:24:45 brandenb Exp $")
+           "$Id: special_sample.f90,v 1.12 2006-06-14 21:34:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -258,7 +258,6 @@ module Special
       integer, intent(in) :: unit
 
       write(unit,NML=special_run_pars)
-
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -338,7 +337,7 @@ module Special
 
     endsubroutine special_calc_density
 !***********************************************************************
-    subroutine special_calc_hydro(df,p)
+    subroutine special_calc_hydro(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -350,6 +349,7 @@ module Special
 !
       use Cdata
       
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -365,7 +365,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
+      if (NO_WARN) print*,f,df,p
 
     endsubroutine special_calc_hydro
 !***********************************************************************
