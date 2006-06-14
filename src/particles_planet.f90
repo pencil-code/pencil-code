@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.27 2006-06-10 03:17:57 ajohan Exp $
+! $Id: particles_planet.f90,v 1.28 2006-06-14 15:01:42 ajohan Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.27 2006-06-10 03:17:57 ajohan Exp $")
+           "$Id: particles_planet.f90,v 1.28 2006-06-14 15:01:42 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -128,7 +128,6 @@ module Particles
 !
 !  17-nov-05/anders+wlad: adapted
 !
-      use Boundcond
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
       use Sub
