@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.96 2006-06-15 19:34:43 ajohan Exp $
+! $Id: particles_dust.f90,v 1.97 2006-06-15 20:16:25 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -40,7 +40,7 @@ module Particles
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false.
-  logical :: lsmooth_dragforce=.false., lsmooth_dragforce_gas=.false.
+  logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical, parameter :: ldraglaw_epstein=.true.
@@ -51,7 +51,7 @@ module Particles
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       bcpx, bcpy, bcpz, tausp, beta_dPdr_dust, rhop_tilde, &
-      eps_dtog, nu_epicycle, lsmooth_dragforce, lsmooth_dragforce_gas, &
+      eps_dtog, nu_epicycle, lsmooth_dragforce_dust, lsmooth_dragforce_gas, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, Ri0, eps1, &
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
@@ -61,7 +61,7 @@ module Particles
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
       ldragforce_gas_par, ldragforce_dust_par, &
-      lsmooth_dragforce, lsmooth_dragforce_gas, &
+      lsmooth_dragforce_dust, lsmooth_dragforce_gas, &
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
@@ -93,7 +93,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.96 2006-06-15 19:34:43 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.97 2006-06-15 20:16:25 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1041,7 +1041,7 @@ k_loop:   do while (.not. (k>npar_loc))
                 call interpolate_quadratic( &
                     f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
               else
-                if (lsmooth_dragforce) then
+                if (lsmooth_dragforce_dust) then
                   call interpolate_linear_smooth( &
                       f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
                 else
