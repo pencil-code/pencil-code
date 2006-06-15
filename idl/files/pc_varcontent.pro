@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.23 2006-05-17 17:11:10 theine Exp $
+;  $Id: pc_varcontent.pro,v 1.24 2006-06-15 19:35:18 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -286,6 +286,12 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[inp].idlvarloc  = 'np_loc'
   varcontent[inp].idlinitloc = INIT_SCALAR_LOC
 
+  varcontent[irhop].variable   = 'Particle mass density (rhop)'
+  varcontent[irhop].idlvar     = 'rhop'
+  varcontent[irhop].idlinit    = INIT_SCALAR
+  varcontent[irhop].idlvarloc  = 'rhop_loc'
+  varcontent[irhop].idlinitloc = INIT_SCALAR_LOC
+
   varcontent[ivpxsum].variable   = 'Sum of particle velocities (vvpsum)'
   varcontent[ivpxsum].idlvar     = 'vvpsum'
   varcontent[ivpxsum].idlinit    = INIT_3VECTOR
@@ -298,6 +304,13 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[ipotself].idlinit    = INIT_SCALAR
   varcontent[ipotself].idlvarloc  = 'potself_loc'
   varcontent[ipotself].idlinitloc = INIT_SCALAR_LOC
+
+  varcontent[igpotselfx].variable   = 'Gradient of self gravity potential'
+  varcontent[igpotselfx].idlvar     = 'gpotself'
+  varcontent[igpotselfx].idlinit    = INIT_3VECTOR
+  varcontent[igpotselfx].idlvarloc  = 'gpotself_loc'
+  varcontent[igpotselfx].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[igpotselfx].skip       = 2
 endif
 
 ; ZERO out default 'should never be used' definition
