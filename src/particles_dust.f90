@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.97 2006-06-15 20:16:25 ajohan Exp $
+! $Id: particles_dust.f90,v 1.98 2006-06-15 22:19:45 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -71,8 +71,10 @@ module Particles
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
+  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhoptilm=0, idiag_rhopmax=0, idiag_dtdragp=0, idiag_npmz=0
+  integer :: idiag_rhoptilm=0, idiag_dtdragp=0, idiag_npmz=0
+  integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0, idiag_epspmz=0
   integer :: idiag_npmy=0, idiag_nparmax=0, idiag_mpt=0
 
@@ -93,7 +95,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.97 2006-06-15 20:16:25 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.98 2006-06-15 22:19:45 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -358,12 +360,12 @@ k_loop:   do while (.not. (k>npar_loc))
                 amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
                 (kz_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))- &
                  kz_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
-            fp(k,ixp) = fp(k,ixp) + &
-                kx_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
-                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
-            fp(k,izp) = fp(k,izp) + &
-                kz_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
-                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+!            fp(k,ixp) = fp(k,ixp) + &
+!                kx_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+!                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+!            fp(k,izp) = fp(k,izp) + &
+!                kz_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
+!                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
           enddo
  
         case ('gaussian-z')
@@ -1117,6 +1119,9 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
         if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
         if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
+        if (idiag_rhopm/=0)   call sum_mn_name(rhop,idiag_rhopm)
+        if (idiag_rhoprms/=0) call sum_mn_name(rhop**2,idiag_rhoprms,lsqrt=.true.)
+        if (idiag_rhop2m/=0)  call sum_mn_name(rhop**2,idiag_rhop2m)
         if (idiag_rhopmax/=0) call max_mn_name(rhop,idiag_rhopmax)
         if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
         if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
@@ -1293,6 +1298,9 @@ k_loop:   do while (.not. (k>npar_loc))
             call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
         if (idiag_vpz2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
+        if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
+        if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
+        if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
         if (idiag_rhoptilm/=0) then
           do k=1,npar_loc
             call get_nptilde(fp,k,np_tilde)
@@ -1431,8 +1439,10 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
+        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhoptilm=0; idiag_rhopmax=0; idiag_dtdragp=0; idiag_npmz=0
+        idiag_rhoptilm=0; idiag_dtdragp=0; idiag_npmz=0
+        idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0; idiag_epspmz=0
         idiag_npmy=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
       endif
@@ -1454,15 +1464,22 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'vpx2m',idiag_vpx2m)
         call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
         call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
+        call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
+        call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
+        call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
         call parse_name(iname,cname(iname),cform(iname),'dtdragp',idiag_dtdragp)
         call parse_name(iname,cname(iname),cform(iname),'npm',idiag_npm)
         call parse_name(iname,cname(iname),cform(iname),'np2m',idiag_np2m)
         call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
         call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
-        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_rhoptilm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_rhopm)
+        call parse_name(iname,cname(iname),cform(iname),'rhoprms',idiag_rhoprms)
+        call parse_name(iname,cname(iname),cform(iname),'rhop2m',idiag_rhop2m)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
         call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
         call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'rhoptilm',idiag_rhoptilm)
       enddo
 !
 !  check for those quantities for which we want z-averages
