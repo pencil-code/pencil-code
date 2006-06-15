@@ -4,7 +4,7 @@
 !  velocity field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2006-05-21 20:57:01 ajohan Exp $',
+  cvsid='$Id: start.in,v 1.6 2006-06-15 20:14:06 ajohan Exp $',
   xyz0  = -0.5, -0.5, -0.5
   Lxyz  =  1.0,  1.0,  1.0
   lperi =    T,    T,    T
@@ -21,4 +21,5 @@
   initxxp='random', initvvp='random'
   delta_vp0=0.001
   eps_dtog=1.0
+  lsmooth_dragforce_gas=T
 /
