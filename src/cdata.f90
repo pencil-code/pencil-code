@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.319 2006-06-12 22:52:19 joishi Exp $
+! ! $Id: cdata.f90,v 1.320 2006-06-15 12:00:03 brandenb Exp $
 
 module Cdata
 
@@ -27,7 +27,7 @@ module Cdata
 
 !  timestep related:
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall
-  real, dimension (nx) :: advec_cs2,advec_va2,advec_uud
+  real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud
   real, dimension (nx) :: diffus_pscalar
   real, dimension (nx) :: diffus_chiral,diffus_diffrho,diffus_cr,diffus_nud
   real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi,diffus_diffnd

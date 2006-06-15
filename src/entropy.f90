@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.412 2006-06-14 13:04:11 mee Exp $
+! $Id: entropy.f90,v 1.413 2006-06-15 12:00:03 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.412 2006-06-14 13:04:11 mee Exp $")
+           "$Id: entropy.f90,v 1.413 2006-06-15 12:00:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2319,7 +2319,12 @@ module Entropy
 
         df(l1:l2,m,n,iux) = &
          df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1) 
-
+!
+!  include constraint from radiative time step
+!
+      if (lfirst.and.ldt) then
+        advec_crad2=p%rho1*16./3.*sigmaSB/c_light*p%TT**4
+      endif
 
      if (headtt) print*,'calc_radiation_pressure: added to z-component'
 !

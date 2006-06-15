@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.303 2006-06-08 20:24:20 theine Exp $
+! $Id: equ.f90,v 1.304 2006-06-15 12:00:04 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.303 2006-06-08 20:24:20 theine Exp $")
+           "$Id: equ.f90,v 1.304 2006-06-15 12:00:04 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -511,7 +511,7 @@ module Equ
 !  
         if (lfirst) then
           advec_uu=0.; advec_shear=0.; advec_hall=0.
-          advec_cs2=0.; advec_va2=0.; advec_uud=0;
+          advec_cs2=0.; advec_va2=0.; advec_crad2=0.; advec_uud=0;
           diffus_pscalar=0.
           diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
           diffus_eta=0.; diffus_nu=0.; diffus_chi=0.
@@ -761,7 +761,8 @@ module Equ
 !  sum or maximum of the advection terms?
 !  (lmaxadvec_sum=.false. by default)
 !
-          maxadvec=advec_uu+advec_shear+advec_hall+sqrt(advec_cs2+advec_va2)
+          maxadvec=advec_uu+advec_shear+advec_hall+ &
+              sqrt(advec_cs2+advec_va2+advec_crad2)
           maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
               diffus_pscalar,diffus_cr,diffus_nud,diffus_diffnd,diffus_chiral)
           if (nxgrid==1.and.nygrid==1.and.nzgrid==1) then
