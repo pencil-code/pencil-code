@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.5 2006-06-14 23:57:00 ajohan Exp $
+! $Id: selfgravity.f90,v 1.6 2006-06-15 19:34:43 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -57,14 +57,12 @@ module Selfgravity
 !
 !  Set indices for auxiliary variables
 !
-      ipotself = mvar + naux_com + 1
-      naux = naux + 1
-      naux_com = naux_com + 1
+      ipotself = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
 !
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.5 2006-06-14 23:57:00 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.6 2006-06-15 19:34:43 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -140,10 +138,12 @@ module Selfgravity
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 !      
-      intent(in) :: f
-      intent(inout) :: p
+      intent(inout) :: f, p
 !
-      if (lpencil(i_gpotself)) call grad(f,ipotself,p%gpotself)
+      if (lpencil(i_gpotself)) then
+        call grad(f,ipotself,p%gpotself)
+        if (igpotselfx/=0) f(l1:l2,m,n,igpotselfx:igpotselfz)=p%gpotself
+      endif
 !
     endsubroutine calc_pencils_selfgravity
 !***********************************************************************

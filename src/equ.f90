@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.304 2006-06-15 12:00:04 brandenb Exp $
+! $Id: equ.f90,v 1.305 2006-06-15 19:34:43 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.304 2006-06-15 12:00:04 brandenb Exp $")
+           "$Id: equ.f90,v 1.305 2006-06-15 19:34:43 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -429,6 +429,7 @@ module Equ
 !
 !  Apply global boundary conditions to particle positions and communiate
 !  migrating particles between the processors.
+!
 !
       if (lparticles) call particles_boundconds(f)
 !
@@ -812,9 +813,20 @@ module Equ
        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
        call fatal_error_local('pde','')
      endif
-!        
+!
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
-!       
+!
+!  Calculate the gradient of the potential if there is room allocated in the
+!  f-array.
+!
+      if (igpotselfx/=0) then
+        call initiate_isendrcv_bdry(f,igpotselfx,igpotselfz)
+        call finalize_isendrcv_bdry(f,igpotselfx,igpotselfz)
+        call boundconds_x(f,igpotselfx,igpotselfz)
+        call boundconds_y(f,igpotselfx,igpotselfz)
+        call boundconds_z(f,igpotselfx,igpotselfz)
+      endif
+!
 !  Change dfp according to the chosen particle modules
 !
       if (lparticles) call particles_pde(f,df)
@@ -865,7 +877,7 @@ module Equ
 !  Fold df from first ghost zone into main df.
 !  Currently only needed for smoothed out particle drag force.
 !
-      if (lfold_df) call fold_df(df)
+      if (lfold_df) call fold_df(df,iux,iuz)
 !
     endsubroutine pde
 !***********************************************************************

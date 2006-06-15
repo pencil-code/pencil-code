@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.68 2006-06-13 11:53:21 mee Exp $
+! $Id: particles_sub.f90,v 1.69 2006-06-15 19:34:43 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1244,13 +1244,15 @@ module Particles_sub
 !  27-nov-05/anders: coded
 !
       use Cdata
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: fold_f
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      integer :: k, ix0, iy0, iz0
+      real :: area
+      integer :: k, ix0, iy0, iz0, ix1, iy1, iz1, ixx, iyy, izz
+      integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
 !
       intent(in)  :: fp, ineargrid
       intent(out) :: f
@@ -1258,11 +1260,37 @@ module Particles_sub
 !  Calculate the number of particles in each grid cell.
 !
       if (inp/=0) then
-        f(l1:l2,m1:m2,n1:n2,inp)=0.0
+        f(:,:,:,inp)=0.0
         do k=1,npar_loc
           ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
           f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
         enddo
+      endif
+!
+!  Calculate the smooth number of particles in each grid cell. Here every
+!  particle has a grid cell of influence centred on itself.
+!
+      if (irhop/=0) then
+        f(:,:,:,irhop)=0.0
+        do k=1,npar_loc
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          ixx0=ix0; iyy0=iy0; izz0=iz0
+          if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+          if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+          if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+          ixx1=ixx0; if (nxgrid/=1) ixx1=ixx1+1
+          iyy1=iyy0; if (nygrid/=1) iyy1=iyy1+1
+          izz1=izz0; if (nzgrid/=1) izz1=izz1+1
+          do ixx=ixx0,ixx1; do iyy=iyy0,iyy1; do izz=izz0,izz1
+            area=1.0
+            if (nxgrid/=1) area=area*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+            if (nygrid/=1) area=area*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+            if (nzgrid/=1) area=area*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+            f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + area
+          enddo; enddo; enddo
+        enddo
+        call fold_f(f,irhop,irhop)
+        f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)
       endif
 !
     endsubroutine map_xxp_grid

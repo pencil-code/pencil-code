@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.241 2006-06-14 21:34:01 brandenb Exp $ 
+! $Id: param_io.f90,v 1.242 2006-06-15 19:34:43 ajohan Exp $ 
 
 module Param_IO
 
@@ -349,9 +349,14 @@ module Param_IO
         ! no input parameters for planet
         if (lshear        )  print*,'&shear_init_pars          /'
         if (lspecial      )  print*,'&special_init_pars        /'
-        if (lparticles       ) print*,'&particles_init_pars       /'
-        if (lparticles_radius) print*,'&particles_radius_init_pars/'
-        if (lparticles_number) print*,'&particles_number_init_pars/'
+        if (lparticles) &
+            print*,'&particles_init_pars         /'
+        if (lparticles_radius) &
+            print*,'&particles_radius_init_pars  /'
+        if (lparticles_number) &
+            print*,'&particles_number_init_pars  /'
+        if (lparticles_selfgravity) &
+            print*,'&particles_selfgrav_init_pars/'
         !if (lshock       ) print*,'&shock_init_pars          /'
         ! no input parameters for viscosity
         print*,'------END sample namelist -------'
@@ -654,9 +659,14 @@ module Param_IO
         if (lshear        ) print*,'&shear_run_pars           /'
         if (lviscosity    ) print*,'&viscosity_run_pars       /'
         if (lspecial      ) print*,'&special_run_pars         /'
-        if (lparticles       ) print*,'&particles_run_pars       /'
-        if (lparticles_radius) print*,'&particles_radius_run_pars       /'
-        if (lparticles_number) print*,'&particles_number_run_pars       /'
+        if (lparticles) &
+            print*,'&particles_run_pars         /'
+        if (lparticles_radius) &
+            print*,'&particles_radius_run_pars  /'
+        if (lparticles_number) &
+            print*,'&particles_number_run_pars  /'
+        if (lparticles_selfgravity) &
+            print*,'&particles_selfgrav_run_pars/'
         if (lshock        ) print*,'&shock_run_pars           /'
         if (lplanet       ) print*,'&planet_run_pars          /'
         print*,'------END sample namelist -------'

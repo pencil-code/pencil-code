@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.121 2006-06-13 11:52:43 mee Exp $
+! $Id: nompicomm.f90,v 1.122 2006-06-15 19:34:43 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -773,7 +773,7 @@ module Mpicomm
 !
     endsubroutine transp
 !***********************************************************************
-    subroutine fold_df(df)
+    subroutine fold_df(df,ivar1,ivar2)
 !
 !  Fold first ghost zone of df into main part of df.
 !
@@ -782,35 +782,82 @@ module Mpicomm
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: df
+      integer :: ivar1,ivar2
 !
       if (nzgrid/=1) then
-        df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz) +&
-            df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)
-        df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz) +&
-            df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)
-        df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)=0.0
-        df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)=0.0
+        df(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
+            df(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2) + &
+            df(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)
+        df(l1-1:l2+1,m1-1:m2+1,n2,ivar1:ivar2)= &
+            df(l1-1:l2+1,m1-1:m2+1,n2,ivar1:ivar2) + &
+            df(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)
+        df(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)=0.0
+        df(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
 !
       if (nygrid/=1) then
-        df(l1-1:l2+1,m1,n1:n2,iux:iuz)=df(l1-1:l2+1,m1,n1:n2,iux:iuz) + &
-            df(l1-1:l2+1,m2+1,n1:n2,iux:iuz)
-        df(l1-1:l2+1,m2,n1:n2,iux:iuz)=df(l1-1:l2+1,m2,n1:n2,iux:iuz) + &
-            df(l1-1:l2+1,m1-1,n1:n2,iux:iuz)
-        df(l1-1:l2+1,m1-1,n1:n2,iux:iuz)=0.0
-        df(l1-1:l2+1,m2+1,n1:n2,iux:iuz)=0.0
+        df(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)= &
+            df(l1-1:l2+1,m1,n1:n2,ivar1:ivar2) + &
+            df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)
+        df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
+            df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
+            df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
+        df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
+        df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
 !
       if (nxgrid/=1) then
-        df(l1,m1:m2,n1:n2,iux:iuz)=df(l1,m1:m2,n1:n2,iux:iuz) + &
-            df(l2+1,m1:m2,n1:n2,iux:iuz) 
-        df(l2,m1:m2,n1:n2,iux:iuz)=df(l2,m1:m2,n1:n2,iux:iuz) + &
-            df(l1-1,m1:m2,n1:n2,iux:iuz) 
-        df(l1-1,m1:m2,n1:n2,iux:iuz)=0.0
-        df(l2+1,m1:m2,n1:n2,iux:iuz)=0.0
+        df(l1,m1:m2,n1:n2,ivar1:ivar2)=df(l1,m1:m2,n1:n2,ivar1:ivar2) + &
+            df(l2+1,m1:m2,n1:n2,ivar1:ivar2) 
+        df(l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2,m1:m2,n1:n2,ivar1:ivar2) + &
+            df(l1-1,m1:m2,n1:n2,ivar1:ivar2) 
+        df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif
 !
     endsubroutine fold_df
+!***********************************************************************
+    subroutine fold_f(f,ivar1,ivar2)
+!
+!  Fold first ghost zone of f into main part of f.
+!
+!  14-jun-2006/anders: adapted
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: ivar1, ivar2
+!
+      if (nzgrid/=1) then
+        f(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
+            f(l1-1:l2+1,m1-1:m2+1,n1,  ivar1:ivar2) + &
+            f(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)
+        f(l1-1:l2+1,m1-1:m2+1,n2,ivar1:ivar2)= &
+            f(l1-1:l2+1,m1-1:m2+1,n2,  ivar1:ivar2) + &
+            f(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)
+        f(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)=0.0
+        f(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
+      endif
+!
+      if (nygrid/=1) then
+        f(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)=f(l1-1:l2+1,m1,n1:n2,ivar1:ivar2) + &
+            f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)
+        f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)=f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
+            f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
+        f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
+        f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
+      endif
+!
+      if (nxgrid/=1) then
+        f(l1,m1:m2,n1:n2,ivar1:ivar2)=f(l1,m1:m2,n1:n2,ivar1:ivar2) + &
+            f(l2+1,m1:m2,n1:n2,ivar1:ivar2) 
+        f(l2,m1:m2,n1:n2,ivar1:ivar2)=f(l2,m1:m2,n1:n2,ivar1:ivar2) + &
+            f(l1-1,m1:m2,n1:n2,ivar1:ivar2) 
+        f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+      endif
+!
+    endsubroutine fold_f
 !***********************************************************************
     subroutine transform(a1,a2,a3,b1,b2,b3)
 !

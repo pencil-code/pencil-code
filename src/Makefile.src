@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.191 2006-06-15 08:07:50 mee Exp $
+### $Id: Makefile.src,v 1.192 2006-06-15 19:34:43 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -45,11 +45,12 @@ SHEAR        = noshear
 TIMEAVG      = notimeavg
 SPECIAL      = nospecial
 
-PARTICLES_MAIN   = noparticles_main
-PARTICLES_SUB    = noparticles_sub
-PARTICLES        = noparticles
-PARTICLES_RADIUS = noparticles_radius
-PARTICLES_NUMBER = noparticles_number
+PARTICLES_MAIN         = noparticles_main
+PARTICLES_SUB          = noparticles_sub
+PARTICLES              = noparticles
+PARTICLES_RADIUS       = noparticles_radius
+PARTICLES_NUMBER       = noparticles_number
+PARTICLES_SELFGRAVITY  = noparticles_selfgravity
 
 PLANET           =  noplanet
 
@@ -532,7 +533,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 ## Abbreviations
 
 technical=cparam.o cdata.o particles_cdata.o messages.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
-physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o $(PLANET).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o $(PLANET).o $(PARTICLES_SELFGRAVITY).o
 comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o $(MPICOMM_FIX).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
 start_deps_f90=$(comm_deps) $(GRID).o
 start_deps=$(start_deps_f90) $(DEBUG).o

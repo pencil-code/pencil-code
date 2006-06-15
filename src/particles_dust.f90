@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.95 2006-06-14 00:14:32 ajohan Exp $
+! $Id: particles_dust.f90,v 1.96 2006-06-15 19:34:43 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -56,8 +56,7 @@ module Particles
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
-      phase_vpx, phase_vpy, phase_vpz, lquadratic_interpolation, &
-      lselfgravity_particles
+      phase_vpx, phase_vpy, phase_vpz, lquadratic_interpolation
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -66,7 +65,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
-      lmigration_redo, lquadratic_interpolation, lselfgravity_particles
+      lmigration_redo, lquadratic_interpolation
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -94,7 +93,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.95 2006-06-14 00:14:32 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.96 2006-06-15 19:34:43 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -114,7 +113,7 @@ module Particles
 !
 !  Set indices for auxiliary variables
 !
-      inp     = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      inp  = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -347,7 +346,7 @@ k_loop:   do while (.not. (k>npar_loc))
         case ('shift')
           if (lroot) print*, 'init_particles: shift particle positions'
           if (kx_xxp==0.0 .and. kz_xxp==0.0) then
-            if (lroot) print*, 'init_particles: kx_xxp=kz_xxp not allowed!'
+            if (lroot) print*, 'init_particles: kx_xxp=kz_xxp=0.0 not allowed!'
             call fatal_error('init_particles','')
           endif
           do k=1,npar_loc
@@ -479,6 +478,14 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=1,npar_loc
             call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:))
             fp(k,ivpx:ivpz) = uup
+          enddo
+
+        case('jeans-wave-dustpar-x')
+        ! assumes rhs_poisson_const=1 !
+          do k=1,npar_loc
+            fp(k,ivpx) = fp(k,ivpx) - amplxxp* &
+                (sqrt(1+4*1.0*1.0*tausp**2)-1)/ &
+                (2*kx_xxp*1.0*tausp)*sin(kx_xxp*(fp(k,ixp)))
           enddo
  
         case('dragforce_equilibrium')
@@ -1013,7 +1020,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: np, tausg1, dt1_drag
+      real, dimension (nx) :: np, rhop, tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
       real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, area
       integer :: k, l, ix0, iy0, iz0, ix1, iy1, iz1, ixx, iyy, izz
@@ -1029,17 +1036,21 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=k1_imn(imn),k2_imn(imn)
             call get_frictiontime(f,fp,ineargrid,k,tausp1_point)
 !  Use interpolation to calculate gas velocity at position of particles.
-            if (lquadratic_interpolation) then
-              call interpolate_quadratic( &
-                  f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
-            else
-              if (lsmooth_dragforce) then
-                call interpolate_linear_smooth( &
+            if (lhydro) then
+              if (lquadratic_interpolation) then
+                call interpolate_quadratic( &
                     f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
               else
-                call interpolate_linear( &
-                    f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                if (lsmooth_dragforce) then
+                  call interpolate_linear_smooth( &
+                      f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                else
+                  call interpolate_linear( &
+                      f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+                endif
               endif
+            else
+              uup=0.0
             endif
             dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
@@ -1097,20 +1108,22 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldiagnos) then
         np=f(l1:l2,m,n,inp)
+        if (irhop/=0) then
+          rhop=f(l1:l2,m,n,irhop)
+        else
+          rhop=rhop_tilde*np
+        endif
         if (idiag_npm/=0)     call sum_mn_name(np,idiag_npm)
         if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
         if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
         if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
-        if (idiag_rhopmax/=0) call max_mn_name(rhop_tilde*np,idiag_rhopmax)
+        if (idiag_rhopmax/=0) call max_mn_name(rhop,idiag_rhopmax)
         if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
         if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
         if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
-        if (idiag_rhopmx/=0) &
-            call yzsum_mn_name_x(rhop_tilde*np,idiag_rhopmx)
-        if (idiag_epspmx/=0) &
-            call yzsum_mn_name_x(rhop_tilde*np*p%rho1,idiag_epspmx)
-        if (idiag_epspmz/=0) &
-            call xysum_mn_name_z(rhop_tilde*np*p%rho1,idiag_epspmz)
+        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(rhop,idiag_rhopmx)
+        if (idiag_epspmx/=0)  call yzsum_mn_name_x(rhop*p%rho1,idiag_epspmx)
+        if (idiag_epspmz/=0)  call xysum_mn_name_z(rhop*p%rho1,idiag_epspmz)
       endif
 !
     endsubroutine dvvp_dt_pencil

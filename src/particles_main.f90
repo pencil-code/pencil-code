@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.28 2006-06-14 23:57:00 ajohan Exp $
+! $Id: particles_main.f90,v 1.29 2006-06-15 19:34:43 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -10,6 +10,7 @@ module Particles_main
   use Particles
   use Particles_radius
   use Particles_number
+  use Particles_selfgravity
   use Messages
 
   implicit none
@@ -28,9 +29,10 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      call register_particles       ()
-      call register_particles_radius()
-      call register_particles_number()
+      call register_particles            ()
+      call register_particles_radius     ()
+      call register_particles_number     ()
+      call register_particles_selfgravity()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -44,9 +46,10 @@ module Particles_main
 !
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
-      call rprint_particles       (lreset,LWRITE=lroot)
-      call rprint_particles_radius(lreset,LWRITE=lroot)
-      call rprint_particles_number(lreset,LWRITE=lroot)
+      call rprint_particles            (lreset,LWRITE=lroot)
+      call rprint_particles_radius     (lreset,LWRITE=lroot)
+      call rprint_particles_number     (lreset,LWRITE=lroot)
+      call rprint_particles_selfgravity(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
@@ -73,9 +76,10 @@ module Particles_main
         call fatal_error('particles_initialize_modules','')
       endif
 !
-      call initialize_particles(lstarting)
-      call initialize_particles_radius(lstarting)
-      call initialize_particles_number(lstarting)
+      call initialize_particles            (lstarting)
+      call initialize_particles_radius     (lstarting)
+      call initialize_particles_number     (lstarting)
+      call initialize_particles_selfgravity(lstarting)
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
@@ -236,7 +240,7 @@ module Particles_main
 !***********************************************************************
     subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
 !
-!  Calculate the potential of the dust particles.
+!  Calculate the potential of the dust particles (wrapper).
 !
 !  13-jun-06/anders: coded
 !
@@ -245,14 +249,7 @@ module Particles_main
       real :: rhs_poisson_const
       logical :: lcontinued
 !
-      if (lselfgravity_particles) then
-        if (lcontinued) then  ! Potential has already been zeroed by the gas.
-          rhs_poisson=rhs_poisson+ &
-              rhs_poisson_const*rhop_tilde*f(l1:l2,m1:m2,n1:n2,inp)
-        else                  ! Must zero potential from last time-step.
-          rhs_poisson=rhs_poisson_const*rhop_tilde*f(l1:l2,m1:m2,n1:n2,inp)
-        endif
-      endif
+      call calc_selfpotential_particles(f,rhs_poisson,rhs_poisson_const,lcontinued)
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
@@ -310,6 +307,8 @@ module Particles_main
       call dvvp_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_radius) call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_selfgravity) &
+          call dvvp_dt_selfgravity(f,df,fp,dfp,ineargrid)
 !
     endsubroutine particles_pde
 !***********************************************************************
@@ -321,6 +320,8 @@ module Particles_main
       call read_particles_init_pars(unit,iostat)
       if (lparticles_radius) call read_particles_rad_init_pars(unit,iostat)
       if (lparticles_number) call read_particles_num_init_pars(unit,iostat)
+      if (lparticles_selfgravity) &
+          call read_particles_selfg_init_pars(unit,iostat)
 !
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
@@ -331,6 +332,8 @@ module Particles_main
       call write_particles_init_pars(unit)
       if (lparticles_radius) call write_particles_rad_init_pars(unit)
       if (lparticles_number) call write_particles_num_init_pars(unit)
+      if (lparticles_selfgravity) &
+          call write_particles_selfg_init_pars(unit)
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
@@ -342,6 +345,8 @@ module Particles_main
       call read_particles_run_pars(unit,iostat)
       if (lparticles_radius) call read_particles_rad_run_pars(unit,iostat)
       if (lparticles_number) call read_particles_num_run_pars(unit,iostat)
+      if (lparticles_selfgravity) &
+          call read_particles_selfg_run_pars(unit,iostat)
 !
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
@@ -352,6 +357,8 @@ module Particles_main
       call write_particles_run_pars(unit)
       if (lparticles_radius) call write_particles_rad_run_pars(unit)
       if (lparticles_number) call write_particles_num_run_pars(unit)
+      if (lparticles_selfgravity) &
+          call write_particles_selfg_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
 !***********************************************************************

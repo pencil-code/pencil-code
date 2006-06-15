@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.166 2006-06-13 11:52:43 mee Exp $
+! $Id: mpicomm.f90,v 1.167 2006-06-15 19:34:43 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1731,7 +1731,7 @@ module Mpicomm
 !
     endsubroutine transp
 !***********************************************************************
-    subroutine fold_df(df)
+    subroutine fold_df(df,ivar1,ivar2)
 !
 !  Fold first ghost zone of df into main part of df.
 !
@@ -1740,85 +1740,186 @@ module Mpicomm
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx+2,ny+2,1,3) :: df_tmp_xy
-      real, dimension (nx+2,1,nz,3) :: df_tmp_xz
+      integer :: ivar1, ivar2
+!      
+      real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: df_tmp_xy
+      real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
       integer :: iproc_rcv
 !  The first ghost zone in the z-direction is folded (the corners will find
 !  their proper positions after folding in x and y as well).
       if (nzgrid/=1) then
         if (nprocz==1) then
-          df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n1,iux:iuz)+ &
-              df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)
-          df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)=df(l1-1:l2+1,m1-1:m2+1,n2,iux:iuz)+ &
-              df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)
+          df(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
+              df(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)+ &
+              df(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)
+          df(l1-1:l2+1,m1-1:m2+1,n2,ivar1:ivar2)= &
+              df(l1-1:l2+1,m1-1:m2+1,n2,ivar1:ivar2)+ &
+              df(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xy, &
                   (/nx+2,ny+2,1,3/), zlneigh, 10000)
             elseif (iproc_rcv==zuneigh) then
-              call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,iux:iuz), &
+              call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,ivar1:ivar2), &
                   (/nx+2,ny+2,1,3/), zuneigh, 10000)
             endif
-            if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n1:n1,iux:iuz)= &
-                df(l1-1:l2+1,m1-1:m2+1,n1:n1,iux:iuz) + df_tmp_xy
+            if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2)= &
+                df(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2) + df_tmp_xy
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xy, &
                   (/nx+2,ny+2,1,3/), zuneigh, 10001)
             elseif (iproc_rcv==zlneigh) then
-              call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,iux:iuz), &
+              call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,ivar1:ivar2), &
                   (/nx+2,ny+2,1,3/), zlneigh, 10001)
             endif
-            if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n2:n2,iux:iuz)= &
-                df(l1-1:l2+1,m1-1:m2+1,n2:n2,iux:iuz) + df_tmp_xy
+            if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2)= &
+                df(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2) + df_tmp_xy
           enddo
         endif
-        df(l1-1:l2+1,m1-1:m2+1,n1-1,iux:iuz)=0.0
-        df(l1-1:l2+1,m1-1:m2+1,n2+1,iux:iuz)=0.0
+        df(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)=0.0
+        df(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
 ! Then y.
       if (nygrid/=1) then
         if (nprocy==1) then
-          df(l1-1:l2+1,m1,n1:n2,iux:iuz)=df(l1-1:l2+1,m1,n1:n2,iux:iuz) + &
-              df(l1-1:l2+1,m2+1,n1:n2,iux:iuz)
-          df(l1-1:l2+1,m2,n1:n2,iux:iuz)=df(l1-1:l2+1,m2,n1:n2,iux:iuz) + &
-              df(l1-1:l2+1,m1-1,n1:n2,iux:iuz)
+          df(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)= &
+              df(l1-1:l2+1,m1,n1:n2,ivar1:ivar2) + &
+              df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)
+          df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
+              df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
+              df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xz, &
                   (/nx+2,1,nz,3/), ylneigh, 10002)
             elseif (iproc_rcv==yuneigh) then
-              call mpisend_real(df(l1-1:l2+1,m2+1:m2+1,n1:n2,iux:iuz), &
+              call mpisend_real(df(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2), &
                   (/nx+2,1,nz,3/), yuneigh, 10002)
             endif
-            if (iproc==iproc_rcv) df(l1-1:l2+1,m1:m1,n1:n2,iux:iuz)= &
-                df(l1-1:l2+1,m1:m1,n1:n2,iux:iuz) + df_tmp_xz
+            if (iproc==iproc_rcv) df(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
+                df(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + df_tmp_xz
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xz, &
                   (/nx+2,1,nz,3/), ylneigh, 10003)
             elseif (iproc_rcv==ylneigh) then
-              call mpisend_real(df(l1-1:l2+1,m1-1:m1-1,n1:n2,iux:iuz), &
+              call mpisend_real(df(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
                   (/nx+2,1,nz,3/), yuneigh, 10003)
             endif
-            if (iproc==iproc_rcv) df(l1-1:l2+1,m2:m2,n1:n2,iux:iuz)= &
-                df(l1-1:l2+1,m2:m2,n1:n2,iux:iuz) + df_tmp_xz
+            if (iproc==iproc_rcv) df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
+                df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + df_tmp_xz
           enddo
         endif
-        df(l1-1:l2+1,m1-1,n1:n2,iux:iuz)=0.0
-        df(l1-1:l2+1,m2+1,n1:n2,iux:iuz)=0.0
+        df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
+        df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
 ! Then x (always at the same processor).
       if (nxgrid/=1) then
-        df(l1,m1:m2,n1:n2,iux:iuz)=df(l1,m1:m2,n1:n2,iux:iuz) + &
-            df(l2+1,m1:m2,n1:n,iux:iuz)
-        df(l2,m1:m2,n1:n2,iux:iuz)=df(l2,m1:m2,n1:n2,iux:iuz) + &
-            df(l1-1,m1:m2,n1:n2,iux:iuz)
-        df(l1-1,m1:m2,n1:n2,iux:iuz)=0.0
-        df(l2+1,m1:m2,n1:n2,iux:iuz)=0.0
+        df(l1,m1:m2,n1:n2,ivar1:ivar2)=df(l1,m1:m2,n1:n2,ivar1:ivar2) + &
+            df(l2+1,m1:m2,n1:n,ivar1:ivar2)
+        df(l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2,m1:m2,n1:n2,ivar1:ivar2) + &
+            df(l1-1,m1:m2,n1:n2,ivar1:ivar2)
+        df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif
 !
     endsubroutine fold_df
+!***********************************************************************
+    subroutine fold_f(f,ivar1,ivar2)
+!
+!  Fold first ghost zone of f into main part of f.
+!
+!  20-may-2006/anders: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: ivar1, ivar2
+!      
+      real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
+      real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: f_tmp_xz
+      integer :: iproc_rcv
+!  The first ghost zone in the z-direction is folded (the corners will find
+!  their proper positions after folding in x and y as well).
+      if (nzgrid/=1) then
+        if (nprocz==1) then
+          f(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
+              f(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)+ &
+              f(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)
+          f(l1-1:l2+1,m1-1:m2+1,n2,ivar1:ivar2)= &
+              f(l1-1:l2+1,m1-1:m2+1,n2,ivar1:ivar2)+ &
+              f(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)
+        else
+          do iproc_rcv=0,ncpus-1
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(f_tmp_xy, &
+                  (/nx+2,ny+2,1,3/), zlneigh, 10000)
+            elseif (iproc_rcv==zuneigh) then
+              call mpisend_real(f(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,ivar1:ivar2), &
+                  (/nx+2,ny+2,1,3/), zuneigh, 10000)
+            endif
+            if (iproc==iproc_rcv) f(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2)= &
+                f(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2) + f_tmp_xy
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(f_tmp_xy, &
+                  (/nx+2,ny+2,1,3/), zuneigh, 10001)
+            elseif (iproc_rcv==zlneigh) then
+              call mpisend_real(f(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,ivar1:ivar2), &
+                  (/nx+2,ny+2,1,3/), zlneigh, 10001)
+            endif
+            if (iproc==iproc_rcv) f(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2)= &
+                f(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2) + f_tmp_xy
+          enddo
+        endif
+        f(l1-1:l2+1,m1-1:m2+1,n1-1,ivar1:ivar2)=0.0
+        f(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
+      endif
+! Then y.
+      if (nygrid/=1) then
+        if (nprocy==1) then
+          f(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)= &
+              f(l1-1:l2+1,m1,n1:n2,ivar1:ivar2) + &
+              f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)
+          f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
+              f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
+              f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
+        else
+          do iproc_rcv=0,ncpus-1
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(f_tmp_xz, &
+                  (/nx+2,1,nz,3/), ylneigh, 10002)
+            elseif (iproc_rcv==yuneigh) then
+              call mpisend_real(f(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2), &
+                  (/nx+2,1,nz,3/), yuneigh, 10002)
+            endif
+            if (iproc==iproc_rcv) f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
+                f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + f_tmp_xz
+            if (iproc==iproc_rcv) then
+              call mpirecv_real(f_tmp_xz, &
+                  (/nx+2,1,nz,3/), ylneigh, 10003)
+            elseif (iproc_rcv==ylneigh) then
+              call mpisend_real(f(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
+                  (/nx+2,1,nz,3/), yuneigh, 10003)
+            endif
+            if (iproc==iproc_rcv) f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
+                f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + f_tmp_xz
+          enddo
+        endif
+        f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
+        f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
+      endif
+! Then x (always at the same processor).
+      if (nxgrid/=1) then
+        f(l1,m1:m2,n1:n2,ivar1:ivar2)=f(l1,m1:m2,n1:n2,ivar1:ivar2) + &
+            f(l2+1,m1:m2,n1:n,ivar1:ivar2)
+        f(l2,m1:m2,n1:n2,ivar1:ivar2)=f(l2,m1:m2,n1:n2,ivar1:ivar2) + &
+            f(l1-1,m1:m2,n1:n2,ivar1:ivar2)
+        f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+      endif
+!
+    endsubroutine fold_f
 !***********************************************************************
     subroutine transform(a1,a2,a3,b1,b2,b3)
 !

@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.13 2006-06-14 00:14:32 ajohan Exp $
+! $Id: particles_cdata.f90,v 1.14 2006-06-15 19:34:43 ajohan Exp $
 !!
 !! Global particle variables
 !!
@@ -18,7 +18,7 @@ module Particles_cdata
   integer :: idiag_nmigmax=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
-  logical :: lcalc_np=.false., lselfgravity_particles=.false.
+  logical :: lcalc_np=.false.
   character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
 
 endmodule Particles_cdata
