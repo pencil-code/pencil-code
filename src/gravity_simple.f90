@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.6 2006-02-19 10:25:19 ajohan Exp $
+! $Id: gravity_simple.f90,v 1.7 2006-06-15 21:42:58 theine Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -41,7 +41,7 @@ module Gravity
   real, dimension(ny) :: gravy_ypencil=0.,poty_ypencil=0.
   real, dimension(nz) :: gravz_zpencil=0.,potz_zpencil=0.
   real :: gravx=0.,gravy=0.,gravz=0.
-  real :: kx_gg=1.,ky_gg=1.,kz_gg=1.,grav_const=1.
+  real :: kx_gg=1.,ky_gg=1.,kz_gg=1.,grav_const=1.,reduced_top=1.
   real :: xgrav=impossible,ygrav=impossible,zgrav=impossible
   real :: xinfty=0.,yinfty=0.,zinfty=0.
   real :: dgravx=0.,pot_ratio=1.
@@ -96,7 +96,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.6 2006-02-19 10:25:19 ajohan Exp $")
+           "$Id: gravity_simple.f90,v 1.7 2006-06-15 21:42:58 theine Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !

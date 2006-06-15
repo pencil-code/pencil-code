@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.82 2006-02-08 14:21:46 mee Exp $
+! $Id: grav_r.f90,v 1.83 2006-06-15 21:42:58 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -33,7 +33,7 @@ module Gravity
   real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
-  real :: grav_const=1.
+  real :: grav_const=1.,reduced_top=1.
   real :: g0=0.
   real :: r0_pot=0.    ! peak radius for smoothed potential
   integer :: n_pot=10  ! exponent for smoothed potential
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.82 2006-02-08 14:21:46 mee Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.83 2006-06-15 21:42:58 theine Exp $")
 !
       lgrav =.true.
       lgravr=.true.

@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.36 2006-06-10 20:10:28 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.37 2006-06-15 21:42:58 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -49,20 +49,15 @@ module EquationOfState
   real :: xHe=0.1,yH_const=0.0,yMetals=0.0,tau_relax=1.0
   logical :: lconst_yH=.false.
 
-  real, dimension(3) :: B_ext=(/0.,0.,0./)
-  integer :: va2power_jxb=5
-  real :: rhomin_jxb=-1.,va2max_jxb=-1.
   real :: lnpp_bot=0.
   real :: ss_bot=0.
 
   ! input parameters
   namelist /eos_init_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
-                           B_ext, &
                            tau_relax
 
   ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
-                          B_ext,va2power_jxb,rhomin_jxb,va2max_jxb, &
                           tau_relax
 
   real :: cs0=impossible, rho0=impossible, cp=impossible
@@ -127,7 +122,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.36 2006-06-10 20:10:28 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.37 2006-06-15 21:42:58 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -656,8 +651,8 @@ module EquationOfState
 
       if (present(kapparho)) then
         TT1 = exp(-lnTT_)
-        kapparho = (yH_+yMetals)*(1-yH_)*kappa0* &
-                   exp(2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1)
+        kapparho = min(sqrt(0.9*huge(1.0)),(yH_+yMetals)*(1-yH_)*kappa0* &
+                   exp(2*lnrho_-lnrho_e_+1.5*(lnTT_ion_-lnTT_)+TT_ion_*TT1))
       endif
 
     endsubroutine eoscalc_farray
@@ -1625,25 +1620,20 @@ module EquationOfState
 !  11-May-2006/tobi: coded
 !  16-May-2006/tobi: isentropic lower boundary
 !
-      use Gravity, only: gravz
-      use Sub, only: curl_mn,cross_mn,gij,bij_etc
-      use Global, only: get_global
+      use Gravity, only: gravz,grav_profile,fac_reduced
 
       real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (mx,my) :: geff
-      real, dimension (mx,my) :: rho1_jxb,jxb_z,va2
       real, dimension (mx,my) :: rho1,TT1
       real, dimension (mx,my) :: rhs,sqrtrhs,yH
       real, dimension (mx,my) :: mu1,rho1pp
       real, dimension (mx,my) :: yH_term_cv,yH_term_cp
       real, dimension (mx,my) :: TT_term_cv,TT_term_cp
-      real, dimension (mx,my) :: dlnppdlnTT,dlnppdlnrho
-      real, dimension (mx,my) :: dlnrhodz,dlnTTdz
+      real, dimension (mx,my) :: alpha,delta
       real, dimension (mx,my) :: cv,cp,cs2,nabla_ad
-      real, dimension (nx,3,3) :: aij,bij
-      real, dimension (nx,3) :: jj,bb,tmp
+      real, dimension (mx,my) :: dlnrhodz,dlnTTdz
+      real :: fac
       integer :: i,j
 
       select case (topbot)
@@ -1654,45 +1644,20 @@ module EquationOfState
       case ('bot')
 
 !
+!  Boundary condition for density and temperature
+!
+        if (bcz1(ilnTT)/='StS'.and.bcz1(ilnTT)/='') then
+          call fatal_error("bc_stellar_surface", &
+                           "This boundary condition for density also sets "// &
+                           "temperature. We therfore require "// &
+                           "bcz1(ilnTT)='StS' or bcz1(ilnTT)=''")
+        endif
+
+!
 !  Get variables from f-array
 !
         rho1 = exp(-f(:,:,n1,ilnrho))
         TT1 = exp(-f(:,:,n1,ilnTT))
-
-!
-!  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
-!
-        geff = gravz
-
-!
-!  Compute z-derivative of the lorentz force on the boundary
-!  and add to the `effective' gravitational acceleration.
-!
-        if (lmagnetic) then
-
-             n=n1
-          do m=m1,m2
-            call gij(f,iaa,aij,1)
-            call curl_mn(aij,bb)
-            do j=1,3; bb(:,j)=bb(:,j)+B_ext(j); enddo
-            call bij_etc(f,iaa,bij)
-            call curl_mn(bij,jj)
-            call cross_mn(jj,bb,tmp)
-            jxb_z(l1:l2,m) = tmp(:,3)
-          enddo
-
-          geff = geff + rho1*jxb_z
-
-        endif
-
-!
-!  Boundary condition for density and temperature
-!
-        if (bcz1(ilnTT)/='StS'.and.bcz1(ilnTT)/='hs'.and.bcz1(ilnTT)/='') then
-          call fatal_error("bc_stellar_surface", &
-                           "This boundary condition for density also sets"// &
-                           "temperature. We therfore require bcz1(ilnTT)=''")
-        endif
 
 !
 !  Hydrogen ionization fraction
@@ -1721,34 +1686,32 @@ module EquationOfState
         TT_term_cp = 2.5 + TT_ion*TT1
 
 !
-!  Specific heats
-!  The following is really mu*cv/Rgas and mu*cp/Rgas respectively
+!  Specific heats in units of Rgas/mu
 !
         cv = 1.5 + yH_term_cv*TT_term_cv**2
         cp = 2.5 + yH_term_cp*TT_term_cp**2
 
 !
-!  Pressure derivatives
+!  See Kippenhahn & Weigert
 !
-        dlnppdlnTT = 1 + yH_term_cv*TT_term_cv
-        dlnppdlnrho = 1 - yH_term_cv
+        alpha = ((2-yH)*(1+yH+xHe))/(2+xHe*(2-yH))
+        delta = 1 + yH_term_cp*TT_term_cp
 
 !
 !  Speed of sound
 !
-        cs2 = rho1pp*(dlnppdlnTT**2/cv + dlnppdlnrho)
+        cs2 = cp*rho1pp/(alpha*cv)
 
 !
 !  Adiabatic pressure gradient
-!  The following is really rho*nabla_ad/pp
 !
-        nabla_ad = (1+yH_term_cp*TT_term_cp)/(cp*rho1pp)
+        nabla_ad = delta/cp
 
 !
 !  z-derivatives of density and temperature on the boundary
 !
-        dlnrhodz = geff/cs2
-        dlnTTdz = nabla_ad*geff
+        dlnrhodz = gravz/cs2
+        dlnTTdz = (nabla_ad/rho1pp)*gravz
 
 !
 !  Fill ghost zones accordingly
@@ -1764,6 +1727,16 @@ module EquationOfState
       case ('top')
 
 !
+!  Boundary condition for density, temperature, and vector potential
+!
+        if (bcz2(ilnTT)/='StS'.and.bcz2(ilnTT)/='') then
+          call fatal_error("bc_stellar_surface", &
+                           "This boundary condition for density also sets "// &
+                           "temperature. We therfore require "// &
+                           "bcz2(ilnTT)='StS' or bcz2(ilnTT)=''")
+        endif
+
+!
 !  Get variables from f-array
 !
         rho1 = exp(-f(:,:,n2,ilnrho))
@@ -1772,45 +1745,10 @@ module EquationOfState
 !
 !  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
 !
-        geff = gravz
-
-!
-!  Compute z-derivative of the lorentz force on the boundary
-!  and add to the `effective' gravitational acceleration.
-!
-        if (lmagnetic) then
-
-             n=n2
-          do m=m1,m2
-            call gij(f,iaa,aij,1)
-            call curl_mn(aij,bb)
-            do j=1,3; bb(:,j)=bb(:,j)+B_ext(j); enddo
-            if (va2max_jxb>0) then
-              va2(l1:l2,m)=rho1(l1:l2,m)*(bb(:,1)**2+bb(:,2)**2+bb(:,3)**2)
-            endif
-            call bij_etc(f,iaa,bij)
-            call curl_mn(bij,jj)
-            call cross_mn(jj,bb,tmp)
-            jxb_z(l1:l2,m) = tmp(:,3)
-          enddo
-
-          rho1_jxb = rho1
-          if (rhomin_jxb>0) rho1_jxb = min(rho1_jxb,1/rhomin_jxb)
-          if (va2max_jxb>0) then
-            rho1_jxb = rho1_jxb/(1+(va2/va2max_jxb)**va2power_jxb)
-          endif
-          
-          geff = geff + rho1_jxb*jxb_z
-
-        endif
-
-!
-!  Boundary condition for density and temperature
-!
-        if (bcz2(ilnTT)/='StS'.and.bcz2(ilnTT)/='hs'.and.bcz2(ilnTT)/='') then
-          call fatal_error("bc_stellar_surface", &
-                           "This boundary condition for density also sets"// &
-                           "temperature. We therfore require bcz2(ilnTT)=''")
+        if (grav_profile=='reduced') then
+          fac = fac_reduced
+        else
+          fac = 1.0
         endif
 
 !
@@ -1833,12 +1771,12 @@ module EquationOfState
 !
 !  Pressure derivative
 !
-        dlnppdlnrho = 1 - yH*(1-yH)/((2-yH)*(1+yH+xHe))
+        alpha = ((2-yH)*(1+yH+xHe))/(2+xHe*(2-yH))
 
 !
 !  z-derivatives of density on the boundary
 !
-        dlnrhodz = geff/(rho1pp*dlnppdlnrho)
+        dlnrhodz = fac*gravz*alpha/rho1pp
 
 !
 !  Fill ghost zones accordingly
@@ -1880,8 +1818,6 @@ module EquationOfState
       character (len=3), intent (in) :: topbot
       real, dimension (mx,my,mz,mvar), optional :: df
 
-      real, dimension (mx,my) :: geff
-      real, dimension (mx,my) :: rho1_jxb,jxb_z,va2
       real, dimension (mx,my) :: lnrho,lnTT,rho1,TT1,uz
       real, dimension (mx,my) :: rhs,sqrtrhs,yH
       real, dimension (mx,my) :: mu1,rho1pp
@@ -1892,8 +1828,6 @@ module EquationOfState
       real, dimension (mx,my) :: dlnpp,dss
       real, dimension (mx,my) :: cv,cp,cs2,nabla_ad,alpha,delta,gamma
       real, dimension (mx,my) :: lnpp,ss,tmp
-      real, dimension (nx,3,3) :: aij,bij
-      real, dimension (nx,3) :: jj,bb,temp
       integer, dimension (3) :: coeffs
       integer :: i,j,k
 
@@ -2059,41 +1993,6 @@ module EquationOfState
         TT1 = exp(-f(:,:,n2,ilnTT))
 
 !
-!  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
-!
-        geff = gravz
-
-!
-!  Compute z-derivative of the lorentz force on the boundary
-!  and add to the `effective' gravitational acceleration.
-!
-        if (lmagnetic) then
-
-             n=n2
-          do m=m1,m2
-            call gij(f,iaa,aij,1)
-            call curl_mn(aij,bb)
-            do j=1,3; bb(:,j)=bb(:,j)+B_ext(j); enddo
-            if (va2max_jxb>0) then
-              va2(l1:l2,m)=rho1(l1:l2,m)*(bb(:,1)**2+bb(:,2)**2+bb(:,3)**2)
-            endif
-            call bij_etc(f,iaa,bij)
-            call curl_mn(bij,jj)
-            call cross_mn(jj,bb,temp)
-            jxb_z(l1:l2,m) = temp(:,3)
-          enddo
-
-          rho1_jxb = rho1
-          if (rhomin_jxb>0) rho1_jxb = min(rho1_jxb,1/rhomin_jxb)
-          if (va2max_jxb>0) then
-            rho1_jxb = rho1_jxb/(1+(va2/va2max_jxb)**va2power_jxb)
-          endif
-          
-          geff = geff + rho1_jxb*jxb_z
-
-        endif
-
-!
 !  Boundary condition for density and temperature
 !
         if (bcz2(ilnTT)/='sun') then
@@ -2128,7 +2027,7 @@ module EquationOfState
 !
 !  z-derivatives of density on the boundary
 !
-        dlnrhodz = geff/(rho1pp*dlnppdlnrho)
+        dlnrhodz = gravz/(rho1pp*dlnppdlnrho)
 
 !
 !  Fill ghost zones accordingly

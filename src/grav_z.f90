@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.71 2005-07-05 16:21:42 mee Exp $
+! $Id: grav_z.f90,v 1.72 2006-06-15 21:42:58 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -37,7 +37,7 @@ module Gravity
   real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,nu_epicycle=1.
   real :: zgrav=impossible,dzgrav=impossible,gravz2=0.
   real :: lnrho_bot=0.,lnrho_top=0.,ss_bot=0.,ss_top=0.
-  real :: grav_const=1.
+  real :: grav_const=1.,reduced_top=1.
   real :: g0=0.,r0_pot=0.,kx_gg=1.,ky_gg=1.,kz_gg=1.
   integer :: n_pot=10   
   character (len=labellen) :: grav_profile='const'
@@ -75,7 +75,7 @@ module Gravity
 !
   namelist /grav_init_pars/ &
        z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav,dzgrav,gravz2, &
-       kx_gg,ky_gg,kz_gg, &
+       kx_gg,ky_gg,kz_gg,reduced_top, &
        lnrho_bot,lnrho_top,ss_bot,ss_top
 
 !  It would be rather unusual to change the profile during the
@@ -83,7 +83,7 @@ module Gravity
 
   namelist /grav_run_pars/ &
        zref,gravz,nu_epicycle,grav_profile,zgrav,dzgrav,gravz2, &
-       kx_gg,ky_gg,kz_gg, &
+       kx_gg,ky_gg,kz_gg,reduced_top, &
        lnrho_bot,lnrho_top,ss_bot,ss_top,lgravz_dust,lgravz_gas
 
   ! other variables (needs to be consistent with reset list below)
@@ -111,7 +111,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.71 2005-07-05 16:21:42 mee Exp $")
+           "$Id: grav_z.f90,v 1.72 2006-06-15 21:42:58 theine Exp $")
 !
       lgrav =.true.
       lgravz=.true.
@@ -213,6 +213,7 @@ module Gravity
       type (pencil_case) :: p
 !      
       real :: nu_epicycle2
+      real :: ztop,prof
       integer :: k
 !
       intent(in) :: f,p
@@ -233,6 +234,12 @@ module Gravity
           if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
           if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
           gravz_pencil=gravz+(gravz2-gravz)*step(z_mn,zgrav,dzgrav)
+        case('reduced_top')
+          if (headtt) print*,'duu_dt_grav: reduced, gravz=',gravz
+          if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
+          ztop = xyz0(3)+Lxyz(3)
+          prof = sine_step(z(n),(zgrav+ztop)/2,(ztop-zgrav)/2)
+          gravz_pencil = (1 - prof*(1-reduced_top))*gravz
         case('linear')      !  Linear gravity profile (for accretion discs)
           nu_epicycle2=nu_epicycle**2
           if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
