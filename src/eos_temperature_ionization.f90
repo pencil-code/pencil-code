@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.37 2006-06-15 21:42:58 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.38 2006-06-15 21:53:39 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -122,7 +122,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.37 2006-06-15 21:42:58 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.38 2006-06-15 21:53:39 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1620,7 +1620,7 @@ module EquationOfState
 !  11-May-2006/tobi: coded
 !  16-May-2006/tobi: isentropic lower boundary
 !
-      use Gravity, only: gravz,grav_profile,fac_reduced
+      use Gravity, only: gravz,grav_profile,reduced_top
 
       real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
       character (len=3), intent (in) :: topbot
@@ -1746,7 +1746,7 @@ module EquationOfState
 !  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
 !
         if (grav_profile=='reduced') then
-          fac = fac_reduced
+          fac = reduced_top
         else
           fac = 1.0
         endif
