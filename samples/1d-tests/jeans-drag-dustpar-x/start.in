@@ -1,0 +1,26 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for shocktube problem
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-06-15 22:14:50 ajohan Exp $'
+  xyz0  = -3.1415, -3.1415, -3.1415   ! first corner of box
+  xyz1  =  3.1415,  3.1415,  3.1415   ! box size
+  lperi =     T,     T,     T   ! periodic direction?
+  lwrite_ic=T, lwrite_aux=T
+/
+&eos_init_pars
+  gamma=1.0, rho0=1.0, cs0=1.0
+/
+&selfgrav_init_pars
+  rhs_poisson_const=1.0
+  lselfgravity_gas=F, lselfgravity_dust=F
+/
+&particles_init_pars
+  initxxp='equidistant','shift'
+  initvvp='jeans-wave-dustpar-x'
+  amplxxp=1.0e-3, kx_xxp=1.0, ky_xxp=0.0, kz_xxp=0.0
+  eps_dtog=1.0, tausp=0.1
+/
+&particles_selfgrav_init_pars
+/

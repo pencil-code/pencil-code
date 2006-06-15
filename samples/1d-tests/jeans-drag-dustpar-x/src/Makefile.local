@@ -1,0 +1,25 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM     = nompicomm
+HYDRO       = nohydro
+GRAVITY     = nograv
+DENSITY     = nodensity
+ENTROPY     = noentropy
+MAGNETIC    = nomagnetic
+FORCING     = noforcing
+SHOCK       = noshock
+SELFGRAVITY =   selfgravity
+POISSON     =   poisson
+VISCOSITY   = noviscosity
+
+PARTICLES             =   particles_dust
+PARTICLES_SELFGRAVITY =   particles_selfgravity
+
+FFTPACK     =   fftpack
+POWER       = nopower_spectrum
+
+FFLAGS_GENERAL=-r8
+CFLAGS_GENERAL=-DDOUBLE_PRECISION
