@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.190 2006-06-13 10:35:49 mee Exp $
+### $Id: Makefile.src,v 1.191 2006-06-15 08:07:50 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -521,11 +521,11 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 .SUFFIXES: .f .f90 .c .o
 
 .f.o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f 
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS)  -o $*.o -c $*.f 
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o $*.o -c $*.f90 
 .c.o:
-	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -c $*.c
+	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -o $*.o -c $*.c
 
 #
 # ---------------------------------------------------------------------- #
