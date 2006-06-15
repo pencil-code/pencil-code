@@ -18,4 +18,4 @@ GRAVITY   = nograv
 FORCING   = noforcing
 SHEAR     = noshear
 
-SPECIAL   = special_sample
+SPECIAL   = special/meanfield_alpm
