@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.25 2006-06-16 18:55:05 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.26 2006-06-16 19:04:21 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -12,6 +12,9 @@ default,ifcr,0
 ishock=0
 inp=0
 ivpxsum=0
+irhop=0
+ipsi_real=0
+ipsi_imag=0
 ; 
 ;  Read the positions of variables in f
 ;  Can't just use `@data/index', as the data directory may have a different name
