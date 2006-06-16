@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.227 2006-06-12 22:52:19 joishi Exp $
+! $Id: run.f90,v 1.228 2006-06-16 18:56:47 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.227 2006-06-12 22:52:19 joishi Exp $")
+             "$Id: run.f90,v 1.228 2006-06-16 18:56:47 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -218,8 +218,8 @@
 !
 !  Prepare particles.
 !
+        call particles_rprint_list(.false.)
         if (lparticles) then
-          call particles_rprint_list(.false.)
           call particles_initialize_modules(LSTARTING=.false.)
         endif
 !
