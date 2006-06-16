@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.98 2006-06-15 22:19:45 ajohan Exp $
+! $Id: particles_dust.f90,v 1.99 2006-06-16 20:09:18 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -44,6 +44,7 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical :: lquadratic_interpolation=.false.
   logical, parameter :: ldraglaw_epstein=.true.
+  logical :: lcoldstart_amplitude_correction=.false.
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='zero',  gravz_profile='zero'
@@ -56,7 +57,8 @@ module Particles
       lmigration_redo, ldragforce_equi_global_eps, coeff, &
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
-      phase_vpx, phase_vpy, phase_vpz, lquadratic_interpolation
+      phase_vpx, phase_vpy, phase_vpz, lquadratic_interpolation, &
+      lcoldstart_amplitude_correction
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -95,7 +97,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.98 2006-06-15 22:19:45 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.99 2006-06-16 20:09:18 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -580,7 +582,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      real :: eta_glnrho, v_Kepler, amplnp, dxp, dzp
+      real :: eta_glnrho, v_Kepler, ampluug, dxp, dzp
       integer :: i, i1, i2, j, k, npar_loc_x, npar_loc_z
 !
 !  The number of particles per grid cell must be a quadratic number.
@@ -647,6 +649,15 @@ k_loop:   do while (.not. (k>npar_loc))
               real(coeff(3))*sin(kx_xxp*fp(k,ixp)))*sin(kz_xxp*fp(k,izp))
       enddo
 !
+!  Change the gas velocity amplitude so that the numerical error on the drag
+!  force is corrected (the error is due to the interpolation of the gas
+!  velocity field to the positions of the particles). A better way to correct
+!  this is to go to a quadratic interpolation scheme.
+!
+      ampluug=amplxxp
+      if (lcoldstart_amplitude_correction) &
+          ampluug=amplxxp/(1-dx**2/8*(kx_xxp**2+kz_xxp**2))
+!
 !  Set fluid fields.
 !
       do m=m1,m2; do n=n1,n2
@@ -654,19 +665,19 @@ k_loop:   do while (.not. (k>npar_loc))
             amplxxp* &
             ( real(coeff(7))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(7))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
-!                
+!
         f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + &
-            eta_glnrho*v_Kepler*amplxxp* &
+            eta_glnrho*v_Kepler*ampluug* &
             ( real(coeff(4))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(4))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !                
         f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-            eta_glnrho*v_Kepler*amplxxp* &
+            eta_glnrho*v_Kepler*ampluug* &
             ( real(coeff(5))*cos(kx_xxp*x(l1:l2)) - &
              aimag(coeff(5))*sin(kx_xxp*x(l1:l2)))*cos(kz_xxp*z(n))
 !
         f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + &
-            eta_glnrho*v_Kepler*(-amplxxp)* &
+            eta_glnrho*v_Kepler*(-ampluug)* &
             (aimag(coeff(6))*cos(kx_xxp*x(l1:l2)) + &
               real(coeff(6))*sin(kx_xxp*x(l1:l2)))*sin(kz_xxp*z(n))
       enddo; enddo
