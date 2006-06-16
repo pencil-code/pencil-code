@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.1 2006-06-16 18:27:13 mee Exp $
+! $Id: gross_pitaevskii.f90,v 1.2 2006-06-16 20:42:29 brandenb Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -150,10 +150,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.1 2006-06-16 18:27:13 mee Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.2 2006-06-16 20:42:29 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.1 2006-06-16 18:27:13 mee Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.2 2006-06-16 20:42:29 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -581,13 +581,13 @@ endsubroutine read_special_run_pars
       
       real, dimension(nx,2) :: vortex_line
       type (line_param), intent(in) :: vl
-      real, dimension(nx) :: r, theta
+      real, dimension(nx) :: vort_r, vort_theta
   
-      call get_r(vl%x0, vl%y0, vl%amp, vl%ll, r)
-      call get_theta(vl%x0, vl%y0, vl%amp, vl%ll, vl%sgn, theta)
+      call get_r(vl%x0, vl%y0, vl%amp, vl%ll, vort_r)
+      call get_theta(vl%x0, vl%y0, vl%amp, vl%ll, vl%sgn, vort_theta)
   
-      vortex_line(:,1) = amp(r) * cos(theta)
-      vortex_line(:,2) = amp(r) * sin(theta)
+      vortex_line(:,1) = amp(vort_r) * cos(vort_theta)
+      vortex_line(:,2) = amp(vort_r) * sin(vort_theta)
       
     end function vortex_line
 !***********************************************************************
