@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.12 2006-06-16 16:22:31 theine Exp $
+! $Id: noparticles_main.f90,v 1.13 2006-06-16 19:11:18 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -7,7 +7,6 @@ module Particles_main
 
   use Cdata
   use Particles_cdata
-  use Particles_selfgravity
 
   implicit none
 
@@ -30,14 +29,9 @@ module Particles_main
 !
 !  22-aug-05/anders: dummy
 !
-      use Cdata, only: lroot
-
       logical :: lreset
 !
-      if (lroot) open(3, file=trim(datadir)//'/index.pro', &
-          STATUS='old', POSITION='append')
-      call rprint_particles_selfgrav(lreset,lwrite=lroot)
-      if (lroot) close(3)
+      if (NO_WARN) print*, lreset
 !
     endsubroutine particles_rprint_list
 !***********************************************************************
