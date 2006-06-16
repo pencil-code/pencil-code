@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.26 2006-06-16 19:04:21 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.27 2006-06-16 19:24:15 ajohan Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -13,6 +13,7 @@ ishock=0
 inp=0
 ivpxsum=0
 irhop=0
+igpotselfx=0 & igpotselfy=0 & igpotselfz=0
 ipsi_real=0
 ipsi_imag=0
 ; 
