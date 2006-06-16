@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.57 2006-05-30 23:44:42 theine Exp $
+! $Id: slices.f90,v 1.58 2006-06-16 19:01:26 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -552,6 +552,18 @@ module Slices
           call wslice(path//'DQ_chiral.xz',DQ_chiral_xz,y(iy_loc),nx,nz)
           call wslice(path//'DQ_chiral.xy',DQ_chiral_xy,z(iz_loc),nx,ny)
           call wslice(path//'DQ_chiral.Xy',DQ_chiral_xy2,z(iz2_loc),nx,ny)
+!
+!  psi2 - Absolute value of the wave function squared
+!
+        case ('psi2')
+          lnrho_yz=f(ix_loc,m1:m2,n1:n2,1)**2 + f(ix_loc,m1:m2,n1:n2,2)**2 
+          lnrho_xz=f(l1:l2,iy_loc,n1:n2,1)**2 + f(l1:l2,iy_loc,n1:n2,2)**2 
+          lnrho_xy=f(l1:l2,m1:m2,iz_loc,1)**2 + f(l1:l2,m1:m2,iz_loc,2)**2
+          lnrho_xy2=f(l1:l2,m1:m2,iz2_loc,1)**2 + f(l1:l2,m1:m2,iz2_loc,2)**2 
+          call wslice(path//'psi2.yz',lnrho_yz,x(ix_loc),ny,nz)
+          call wslice(path//'psi2.xz',lnrho_xz,y(iy_loc),nx,nz)
+          call wslice(path//'psi2.xy',lnrho_xy,z(iz_loc),nx,ny)
+          call wslice(path//'psi2.Xy',lnrho_xy2,z(iz2_loc),nx,ny)
 !
 !  Dust-to-gas mass ratio (derived variable)
 !
