@@ -1,4 +1,4 @@
-! $Id: noparticles_selfgravity.f90,v 1.2 2006-06-16 15:26:27 ajohan Exp $
+! $Id: noparticles_selfgravity.f90,v 1.3 2006-06-16 16:22:31 theine Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -7,8 +7,8 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MAUX CONTRIBUTION 4
-! CPARAM logical, parameter :: lparticles_selfgravity=.true.
+! MAUX CONTRIBUTION 0
+! CPARAM logical, parameter :: lparticles_selfgravity=.false.
 !
 !***************************************************************
 module Particles_selfgravity

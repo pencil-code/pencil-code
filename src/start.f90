@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.157 2006-06-12 22:52:19 joishi Exp $
+! $Id: start.f90,v 1.158 2006-06-16 16:22:31 theine Exp $
 !
 !***********************************************************************
       program start
@@ -90,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.157 2006-06-12 22:52:19 joishi Exp $")
+             "$Id: start.f90,v 1.158 2006-06-16 16:22:31 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -305,12 +305,10 @@
 !
 !  Prepare particles.
 !
-        if (lparticles) then
-          call particles_register_modules()
-          call particles_rprint_list(.false.)
-          call particles_initialize_modules(lstarting=.true.)
-          call particles_init(f)
-        endif
+        call particles_register_modules()
+        call particles_rprint_list(.false.)
+        call particles_initialize_modules(lstarting=.true.)
+        if (lparticles) call particles_init(f)
 !
 !  Calculate the potential of the self-gravity (mostly for debugging).
 !
