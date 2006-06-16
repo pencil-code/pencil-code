@@ -1,4 +1,4 @@
-! $Id: noparticles_selfgravity.f90,v 1.1 2006-06-15 19:34:43 ajohan Exp $
+! $Id: noparticles_selfgravity.f90,v 1.2 2006-06-16 15:26:27 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -11,7 +11,7 @@
 ! CPARAM logical, parameter :: lparticles_selfgravity=.true.
 !
 !***************************************************************
-module particles_selfgravity
+module Particles_selfgravity
 
   use Cdata
   use Particles_cdata
@@ -24,15 +24,15 @@ module particles_selfgravity
   contains
 
 !***********************************************************************
-    subroutine register_particles_selfgravity()
+    subroutine register_particles_selfgrav()
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
 !  14-jun-06/anders: dummy
 !
-    endsubroutine register_particles_selfgravity
+    endsubroutine register_particles_selfgrav
 !***********************************************************************
-    subroutine initialize_particles_selfgravity(lstarting)
+    subroutine initialize_particles_selfgrav(lstarting)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -43,7 +43,7 @@ module particles_selfgravity
 !
       if (NO_WARN) print*, lstarting
 !
-    endsubroutine initialize_particles_selfgravity
+    endsubroutine initialize_particles_selfgrav
 !***********************************************************************
     subroutine calc_selfpotential_particles(f,rhs_poisson,rhs_poisson_const,    lcontinued)
 !
@@ -60,7 +60,7 @@ module particles_selfgravity
 !
     endsubroutine calc_selfpotential_particles
 !***********************************************************************
-    subroutine dvvp_dt_selfgravity(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
 !
 !  Add self-gravity to particle equation of motion.
 !
@@ -78,7 +78,7 @@ module particles_selfgravity
 !
       if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
-    endsubroutine dvvp_dt_selfgravity
+    endsubroutine dvvp_dt_selfgrav
 !***********************************************************************
     subroutine read_particles_selfg_init_pars(unit,iostat)
 !
@@ -120,7 +120,7 @@ module particles_selfgravity
 !
     endsubroutine write_particles_selfg_run_pars
 !***********************************************************************
-    subroutine rprint_particles_selfgravity(lreset,lwrite)
+    subroutine rprint_particles_selfgrav(lreset,lwrite)
 !   
 !  Read and register print parameters relevant for particle self-gravity.
 !
@@ -147,7 +147,7 @@ module particles_selfgravity
 !
       if (NO_WARN) print*, lreset
 !
-    endsubroutine rprint_particles_selfgravity
+    endsubroutine rprint_particles_selfgrav
 !***********************************************************************
 
-endmodule particles_selfgravity
+endmodule Particles_selfgravity

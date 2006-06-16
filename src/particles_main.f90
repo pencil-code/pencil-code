@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.29 2006-06-15 19:34:43 ajohan Exp $
+! $Id: particles_main.f90,v 1.30 2006-06-16 15:26:27 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -29,10 +29,10 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      call register_particles            ()
-      call register_particles_radius     ()
-      call register_particles_number     ()
-      call register_particles_selfgravity()
+      call register_particles         ()
+      call register_particles_radius  ()
+      call register_particles_number  ()
+      call register_particles_selfgrav()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -46,10 +46,10 @@ module Particles_main
 !
       if (lroot) open(3, file=trim(datadir)//'/index.pro', &
           STATUS='old', POSITION='append')
-      call rprint_particles            (lreset,LWRITE=lroot)
-      call rprint_particles_radius     (lreset,LWRITE=lroot)
-      call rprint_particles_number     (lreset,LWRITE=lroot)
-      call rprint_particles_selfgravity(lreset,LWRITE=lroot)
+      call rprint_particles         (lreset,LWRITE=lroot)
+      call rprint_particles_radius  (lreset,LWRITE=lroot)
+      call rprint_particles_number  (lreset,LWRITE=lroot)
+      call rprint_particles_selfgrav(lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
@@ -76,10 +76,10 @@ module Particles_main
         call fatal_error('particles_initialize_modules','')
       endif
 !
-      call initialize_particles            (lstarting)
-      call initialize_particles_radius     (lstarting)
-      call initialize_particles_number     (lstarting)
-      call initialize_particles_selfgravity(lstarting)
+      call initialize_particles         (lstarting)
+      call initialize_particles_radius  (lstarting)
+      call initialize_particles_number  (lstarting)
+      call initialize_particles_selfgrav(lstarting)
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
@@ -305,10 +305,9 @@ module Particles_main
 !
       call dxxp_dt(f,df,fp,dfp,ineargrid)
       call dvvp_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_radius) call dap_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)
-      if (lparticles_selfgravity) &
-          call dvvp_dt_selfgravity(f,df,fp,dfp,ineargrid)
+      if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
 !
     endsubroutine particles_pde
 !***********************************************************************
