@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.170 2006-06-07 02:40:04 ajohan Exp $
+# $Id: getconf.csh,v 1.171 2006-06-16 16:49:52 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -575,6 +575,11 @@ else if ($hn =~ obelix || \
     set mpirun = /opt/intel/lam-7.1.1/bin/mpiexec
     set mpirunops = '-boot'
   endif
+
+else if ($hn == pencil) then
+  echo "Pencil [sic] - Calgary"
+  set mpirun = mpiexec
+  set mpirunops = '-boot'
 
 else if ($hn == rasmussen) then
   echo "Rasmussen - Copenhagen (SGI machine)"
