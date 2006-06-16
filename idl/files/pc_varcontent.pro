@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.24 2006-06-15 19:35:18 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.25 2006-06-16 18:55:05 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -187,6 +187,19 @@ varcontent[ifcr].idlinit    = INIT_3VECTOR
 varcontent[ifcr].idlvarloc= 'fcr_loc'
 varcontent[ifcr].idlinitloc = INIT_3VECTOR_LOC
 varcontent[ifcr].skip  = 2
+
+varcontent[ipsi_real].variable = 'Wave function (real part)'
+varcontent[ipsi_real].idlvar   = 'psi_real'
+varcontent[ipsi_real].idlinit    = INIT_SCALAR
+varcontent[ipsi_real].idlvarloc= 'psi_real_loc'
+varcontent[ipsi_real].idlinitloc = INIT_SCALAR_LOC
+
+varcontent[ipsi_imag].variable = 'Wave function (imaginary part)'
+varcontent[ipsi_imag].idlvar   = 'psi_imag'
+varcontent[ipsi_imag].idlinit    = INIT_SCALAR
+varcontent[ipsi_imag].idlvarloc= 'psi_imag_loc'
+varcontent[ipsi_imag].idlinitloc = INIT_SCALAR_LOC
+
 
 dustcount=n_elements(iuud) 
 if (dustcount gt 0L) then begin

@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.17 2006-01-15 13:42:57 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.18 2006-06-16 18:55:05 mee Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-01-15 13:42:57 $
-;  $Revision: 1.17 $
+;  $Date: 2006-06-16 18:55:05 $
+;  $Revision: 1.18 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -66,6 +66,9 @@
 ;    mdave   -> Average grain mass (mean over all bins)
 ; Interstellar
 ;    ismcool -> Interstellar cooling (Switched by params cooling_select)
+; Gross-Pitaevskii Equation (Bose-Einstein Condensate)
+;    psi2    -> mod psi squared (density squared)
+;    argpsi  -> atan(imag(psi),real(psi))
 ;
 ;
 pro pc_magic_var,variables,tags,param=param,datadir=datadir
@@ -224,7 +227,19 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if variables[iv] eq 'vvp' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_particles_aux(np=np,vvpsum=vvpsum,dim=dim,var='vvp')"
+
+    ; Absolute value of the wavefunction squared
+    endif else if variables[iv] eq 'psi2' then begin
+      tags[iv]=variables[iv]
+      variables[iv]="psi_real^2+psi_imag^2"
+
+    ; Argument of the complex wavefunction
+    endif else if variables[iv] eq 'argpsi' then begin
+      tags[iv]=variables[iv]
+      variables[iv]="atan(psi_imag,psi_real)"
+
     endif
+
 
   endfor
 
