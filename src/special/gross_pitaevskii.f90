@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.2 2006-06-16 20:42:29 brandenb Exp $
+! $Id: gross_pitaevskii.f90,v 1.3 2006-06-17 06:49:02 brandenb Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -150,10 +150,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.2 2006-06-16 20:42:29 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.3 2006-06-17 06:49:02 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.2 2006-06-16 20:42:29 brandenb Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.3 2006-06-17 06:49:02 brandenb Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -302,22 +302,31 @@ module Special
 
      preal = f(l1:l2,m,n,ipsi_real)
      pimag = f(l1:l2,m,n,ipsi_imag)
-
+!
+!  calculate dpsi/dx
+!
      if (frame_Ux /= 0.) then
         call der(f,ipsi_real,drealdx,1)
         call der(f,ipsi_imag,dimagdx,1)
      endif
- 
+!
+!  calculate the position 3 mesh points away from the boundaries
+!  in the positive x, y, and z directions
+!
      a = 0.5*Lxyz(1)-3*dxmax
      b = 0.5*Lxyz(2)-3*dxmax
      c = 0.5*Lxyz(3)-3*dxmax
-     
+!
+!  calculate mask for damping term
+!
      if (diff_boundary /= 0.) then
        diss = diff_boundary *((1.0+tanh(x(l1:l2)-a)*tanh(x(l1:l2)+a)) + &
                    (1.0+tanh(y(m)-b)*tanh(y(m)+b)) + &
                    (1.0+tanh(z(n)-c)*tanh(z(n)+c)))
      endif
-      
+!
+!  calculate del2(psi)
+!
 !    call der(f, ipsi_real, dpsi)
     !call deriv_z(in_var, dz)
     call del2(f,ipsi_real,del2real)   
@@ -334,6 +343,10 @@ module Special
          0.5 * (del2real + diss * del2imag) &
            - (1. - psi2) * pimag
     else
+!
+!  dpsi/dt = hbar/(2m) * [ diss*del2(psi) + i*del2(psi) ] + (1-|psi|^2)*psi
+!  (but use hbar=m=1)
+!
       df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
          0.5 * (diss * del2real - del2imag) &
            + (1. - psi2) * preal
@@ -341,6 +354,9 @@ module Special
       df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
          0.5 * (del2real + diss * del2imag) &
            + (1. - psi2) * pimag
+!
+!  dpsi/dt = ... +Ux*dpsi/dx
+!
       if (frame_Ux /= 0.) then
         df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
            frame_Ux * drealdx
