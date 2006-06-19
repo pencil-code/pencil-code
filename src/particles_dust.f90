@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.99 2006-06-16 20:09:18 ajohan Exp $
+! $Id: particles_dust.f90,v 1.100 2006-06-19 14:37:47 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -97,7 +97,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.99 2006-06-16 20:09:18 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.100 2006-06-19 14:37:47 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1093,7 +1093,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     rho1_point=p%rho1(ixx-nghost)
                   endif
                   df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                      rhop_tilde*1/rho1_point*dragforce*area
+                      rhop_tilde*rho1_point*dragforce*area
                 enddo; enddo; enddo
               else ! No smoothing.
                 l=ineargrid(k,1)
