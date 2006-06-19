@@ -4,7 +4,7 @@
 !  velocity field.
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.6 2006-06-15 20:14:06 ajohan Exp $',
+  cvsid='$Id: start.in,v 1.7 2006-06-19 23:46:32 ajohan Exp $',
   xyz0  = -0.5, -0.5, -0.5
   Lxyz  =  1.0,  1.0,  1.0
   lperi =    T,    T,    T
@@ -16,10 +16,11 @@
   inituu='gaussian-noise', ampluu=0.001
 /
 &density_init_pars
+  ldensity_nolog=T
 /
 &particles_init_pars
   initxxp='random', initvvp='random'
   delta_vp0=0.001
   eps_dtog=1.0
-  lsmooth_dragforce_gas=T
+  lparticlemesh_cic=T
 /
