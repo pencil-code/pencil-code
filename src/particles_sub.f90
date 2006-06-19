@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.69 2006-06-15 19:34:43 ajohan Exp $
+! $Id: particles_sub.f90,v 1.70 2006-06-19 20:25:23 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1250,7 +1250,7 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: area
+      real :: weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ix1, iy1, iz1, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
 !
@@ -1267,28 +1267,111 @@ module Particles_sub
         enddo
       endif
 !
-!  Calculate the smooth number of particles in each grid cell. Here every
-!  particle has a grid cell of influence centred on itself.
+!  Calculate the smooth number of particles in each grid cell. Three methods are
+!  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
+!
+!    0. NGP (Nearest Grid Point)
+!       The entire effect of the particle goes to the nearest grid point. 
+!    1. CIC (Cloud In Cell)
+!       The particle has a region of influence with the size of a grid cell.
+!       This is equivalent to a first order (spline) interpolation scheme.
+!    2. TSC (Triangular Shaped Cloud)
+!       The particle is spread over a length of two grid cells, but with
+!       a density that falls linearly outwards.
+!       This is equivalent to a second order spline interpolation scheme.
 !
       if (irhop/=0) then
         f(:,:,:,irhop)=0.0
-        do k=1,npar_loc
-          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-          ixx0=ix0; iyy0=iy0; izz0=iz0
-          if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
-          if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
-          if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
-          ixx1=ixx0; if (nxgrid/=1) ixx1=ixx1+1
-          iyy1=iyy0; if (nygrid/=1) iyy1=iyy1+1
-          izz1=izz0; if (nzgrid/=1) izz1=izz1+1
-          do ixx=ixx0,ixx1; do iyy=iyy0,iyy1; do izz=izz0,izz1
-            area=1.0
-            if (nxgrid/=1) area=area*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
-            if (nygrid/=1) area=area*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
-            if (nzgrid/=1) area=area*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-            f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + area
-          enddo; enddo; enddo
-        enddo
+        if (lparticlemesh_cic) then
+!
+!  Cloud In Cell (CIC) scheme.
+!  
+          do k=1,npar_loc
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            ixx0=ix0; iyy0=iy0; izz0=iz0
+            ixx1=ix0; iyy1=iy0; izz1=iz0
+            if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+            if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+            if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+            if (nxgrid/=1) ixx1=ixx0+1
+            if (nygrid/=1) iyy1=iyy0+1
+            if (nzgrid/=1) izz1=izz0+1
+            do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+              weight=1.0
+              if (nxgrid/=1) &
+                  weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+              if (nygrid/=1) &
+                  weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+              if (nzgrid/=1) &
+                  weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+              f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+            enddo; enddo; enddo
+          enddo
+!
+!  Triangular Shaped Cloud (TSC) scheme.
+!        
+        elseif (lparticlemesh_tsc) then
+!
+!  Particle influences the 27 surrounding grid points, but has a density that
+!  decreases with the distance from the particle centre.
+!
+          do k=1,npar_loc
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            if (nxgrid/=1) then
+              ixx0=ix0-1; ixx1=ix0+1
+            else
+              ixx0=ix0  ; ixx1=ix0
+            endif
+            if (nygrid/=1) then
+              iyy0=iy0-1; iyy1=iy0+1
+            else
+              iyy0=iy0  ; iyy1=iy0
+            endif
+            if (nzgrid/=1) then
+              izz0=iz0-1; izz1=iz0+1
+            else
+              izz0=iz0  ; izz1=iz0
+            endif
+!
+!  The nearest grid point is influenced differently than the left and right
+!  neighbours are. A particle that is situated exactly on a grid point gives
+!  3/4 contribution to that grid point and 1/8 to each of the neighbours.
+!
+            do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+              if ( ((ixx-ix0)==-1) .or. ((ixx-ix0)==+1) ) then
+                weight_x = 1.125 - 1.5* abs(fp(k,ixp)-x(ixx))*dx_1(ixx) + &
+                                   0.5*(abs(fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+              else
+                if (nxgrid/=1) &
+                weight_x = 0.75  -       ((fp(k,ixp)-x(ixx))*dx_1(ixx))**2
+              endif
+              if ( ((iyy-iy0)==-1) .or. ((iyy-iy0)==+1) ) then
+                weight_y = 1.125 - 1.5* abs(fp(k,iyp)-y(iyy))*dy_1(iyy) + &
+                                   0.5*(abs(fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+              else
+                if (nygrid/=1) &
+                weight_y = 0.75  -       ((fp(k,iyp)-y(iyy))*dy_1(iyy))**2
+              endif
+              if ( ((izz-iz0)==-1) .or. ((izz-iz0)==+1) ) then
+                weight_z = 1.125 - 1.5* abs(fp(k,izp)-z(izz))*dz_1(izz) + &
+                                   0.5*(abs(fp(k,izp)-z(izz))*dz_1(izz))**2
+              else
+                if (nzgrid/=1) &
+                weight_z = 0.75  -       ((fp(k,izp)-z(izz))*dz_1(izz))**2
+              endif
+ 
+              weight=1.0
+ 
+              if (nxgrid/=1) weight=weight*weight_x
+              if (nygrid/=1) weight=weight*weight_y
+              if (nzgrid/=1) weight=weight*weight_z
+              f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+            enddo; enddo; enddo
+          enddo
+        endif
+!
+!  Fold first ghost zone of f.
+!
         call fold_f(f,irhop,irhop)
         f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)
       endif
