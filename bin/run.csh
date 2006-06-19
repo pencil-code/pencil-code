@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.84 2006-04-23 17:41:11 theine Exp $
+# CVS: $Id: run.csh,v 1.85 2006-06-19 22:51:30 theine Exp $
 
 #                       run.csh
 #                      ---------
@@ -109,9 +109,15 @@ if ($local_binary) then
   ls -lt src/run.x $SCRATCH_DIR
 endif
 
-# Write $PBS_JOBID to file (important when run is migrated within the same job)
+# Write $PBS_JOBID or $LOADL_STEP_ID to file
+# (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
-  echo $PBS_JOBID "  RUN STARTED on "$PBS_O_QUEUE `date` >> $datadir/jobid.dat
+  echo $PBS_JOBID "  RUN STARTED on "$PBS_O_QUEUE `date` \
+    >> $datadir/jobid.dat
+endif
+if ($?LOADL_STEP_ID) then
+  echo $LOADL_STEP_ID "  RUN STARTED on "$LOADL_STEP_CLASS `date` \
+    >> $datadir/jobid.dat
 endif
 
 # Run run.x
