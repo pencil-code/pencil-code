@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.100 2006-06-19 14:37:47 ajohan Exp $
+! $Id: particles_dust.f90,v 1.101 2006-06-19 17:57:56 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -97,7 +97,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.100 2006-06-19 14:37:47 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.101 2006-06-19 17:57:56 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1035,8 +1035,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: np, rhop, tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
-      real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, area
-      integer :: k, l, ix0, iy0, iz0, ix1, iy1, iz1, ixx, iyy, izz
+      real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, weight
+      integer :: k, l, ix0, iy0, iz0
+      integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
@@ -1047,6 +1048,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
             call get_frictiontime(f,fp,ineargrid,k,tausp1_point)
 !  Use interpolation to calculate gas velocity at position of particles.
             if (lhydro) then
@@ -1070,22 +1072,23 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Back-reaction friction force from particles on gas (conserves momentum).
             if (ldragforce_gas_par) then  ! Smooth back-reaction drag force.
               if (lsmooth_dragforce_gas) then
-                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-                if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ix0=ix0-1
-                if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iy0=iy0-1
-                if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) iz0=iz0-1
-                ix1=ix0; if (nxgrid/=1) ix1=ix0+1
-                iy1=iy0; if (nygrid/=1) iy1=iy0+1
-                iz1=iz0; if (nzgrid/=1) iz1=iz0+1
-                do ixx=ix0,ix1; do iyy=iy0,iy1; do izz=iz0,iz1
-                  area=1.0
+                ixx0=ix0; iyy0=iy0; izz0=iz0
+                ixx1=ix0; iyy1=iy0; izz1=iz0
+                if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+                if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+                if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+                if (nxgrid/=1) ixx1=ixx0+1
+                if (nygrid/=1) iyy1=iyy0+1
+                if (nzgrid/=1) izz1=izz0+1
+                do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                  weight=1.0
                   if (nxgrid/=1) &
-                      area=area*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                      weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
                   if (nygrid/=1) &
-                      area=area*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                      weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
                   if (nzgrid/=1) &
-                      area=area*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
-                  if (ixx<l1 .or. ixx>l2) then
+                      weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                  if ( (iyy/=m) .or. (izz/=n) .or. (ixx<l1) .or. (ixx>l2) ) then
                     rho_point=f(ixx,iyy,izz,ilnrho)
                     if (.not. ldensity_nolog) rho_point=exp(rho_point)
                     rho1_point=1/rho_point
@@ -1093,7 +1096,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     rho1_point=p%rho1(ixx-nghost)
                   endif
                   df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                      rhop_tilde*rho1_point*dragforce*area
+                      rhop_tilde*rho1_point*dragforce*weight
                 enddo; enddo; enddo
               else ! No smoothing.
                 l=ineargrid(k,1)
