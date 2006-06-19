@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.28 2006-06-14 15:01:42 ajohan Exp $
+! $Id: particles_planet.f90,v 1.29 2006-06-19 14:36:46 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -43,10 +43,10 @@ module Particles
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_smap=0,idiag_eccp=0
-  integer :: idiag_xstar=0,idiag_ystar=0
-  integer :: idiag_vxstar=0,idiag_vystar=0
-  integer :: idiag_vxplanet=0,idiag_vyplanet=0
-  integer :: idiag_xplanet=0,idiag_yplanet=0
+  integer :: idiag_xstar=0,idiag_ystar=0,idiag_zstar=0
+  integer :: idiag_vxstar=0,idiag_vystar=0,idiag_vzstar=0
+  integer :: idiag_vxplanet=0,idiag_vyplanet=0,idiag_vzplanet=0
+  integer :: idiag_xplanet=0,idiag_yplanet=0,idiag_zplanet=0
 
   contains
 
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.28 2006-06-14 15:01:42 ajohan Exp $")
+           "$Id: particles_planet.f90,v 1.29 2006-06-19 14:36:46 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -404,17 +404,17 @@ module Particles
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (mpar_loc) :: sma_planet,ecc_planet
-      real, dimension (mpar_loc) :: xstar,ystar,vxstar,vystar
-      real, dimension (mpar_loc) :: xplanet,yplanet,vxplanet,vyplanet
-      real :: sma,ecc,rv,rrdot,w2,mdot,m2dot,extra_accx,extra_accy
-      real :: vx,vy,axr,ayr,vxr,vyr,vxs,vys,mu,tcut,gp_d  
+      real, dimension (mpar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
+      real, dimension (mpar_loc) :: xplanet,yplanet,zplanet,vxplanet,vyplanet,vzplanet
+      real :: sma,ecc,rv,rrdot,w2,mdot,m2dot,extra_accx,extra_accy,extra_accz
+      real :: vx,vy,vz,axr,ayr,azr,vxr,vyr,vzr,vxs,vys,vzs,mu,tcut,gp_d
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx) :: re, grav_gas
       real :: Omega2,rsep,gs,gp
       integer :: i, k, ix0, iy0, iz0,mg,ng
       logical :: lheader, lfirstcall=.true.
-      real :: ax,ay,axs,ays
+      real :: ax,ay,az,axs,ays,azs
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
@@ -443,20 +443,22 @@ module Particles
 !
 !  More readable variables names
 !
-      ax = fp(1,ixp)  ; axs = fp(2,ixp)  
-      ay = fp(1,iyp)  ; ays = fp(2,iyp) 
+      ax = fp(1,ixp)  ; axs = fp(npar,ixp)  
+      ay = fp(1,iyp)  ; ays = fp(npar,iyp) 
+      az = fp(1,izp)  ; azs = fp(npar,izp)
 !
-      vx = fp(1,ivpx) ; vxs = fp(2,ivpx)  
-      vy = fp(1,ivpy) ; vys = fp(2,ivpy) 
+      vx = fp(1,ivpx) ; vxs = fp(npar,ivpx)  
+      vy = fp(1,ivpy) ; vys = fp(npar,ivpy) 
+      vz = fp(1,ivpz) ; vzs = fp(npar,ivpz)
 !
 !  Relative positions and velocities
 !
-      axr = ax - axs ; ayr = ay - ays
-      vxr = vx - vxs ; vyr = vy - vys 
+      axr = ax - axs ; ayr = ay - ays ; azr = az - azs
+      vxr = vx - vxs ; vyr = vy - vys ; vzr = vz - vzs
 !
       if (lroot) then
 !
-         rsep = sqrt(axr**2 + ayr**2)
+         rsep = sqrt(axr**2 + ayr**2 + azr**2)
 !      
 !  Planet's gravity on star - must use ramp up as well
 !        
@@ -464,14 +466,17 @@ module Particles
 !
          extra_accx = m2dot*cos(t) - 2*mdot*sin(t)
          extra_accy = m2dot*sin(t) + 2*mdot*cos(t)
+         extra_accz = 0. 
 !
-         dfp(2,ivpx) = dfp(2,ivpx) - gp/rsep**3 * (axs-ax) + extra_accx 
-         dfp(2,ivpy) = dfp(2,ivpy) - gp/rsep**3 * (ays-ay) + extra_accy
+         dfp(npar,ivpx) = dfp(npar,ivpx) - gp/rsep**3 * (axs-ax) + extra_accx 
+         dfp(npar,ivpy) = dfp(npar,ivpy) - gp/rsep**3 * (ays-ay) + extra_accy
+         dfp(npar,ivpz) = 0. !dfp(npar,ivpz) - gp/rsep**3 * (azs-az) + extra_accz
 !
 !  Star's gravity on planet
 !
          dfp(1,ivpx) = dfp(1,ivpx) - gs/rsep**3 * (ax-axs) + extra_accx
          dfp(1,ivpy) = dfp(1,ivpy) - gs/rsep**3 * (ay-ays) + extra_accy
+         dfp(1,ivpz) = 0. !dfp(1,ivpz) - gs/rsep**3 * (az-azs) + extra_accz
 !
       endif
 !
@@ -505,9 +510,11 @@ module Particles
 !
          xstar(1:npar_loc) = axs  ; vxstar(1:npar_loc) = vxs
          ystar(1:npar_loc) = ays  ; vystar(1:npar_loc) = vys
+         zstar(1:npar_loc) = azs  ; vzstar(1:npar_loc) = vzs
 !
          xplanet(1:npar_loc) = ax ; vxplanet(1:npar_loc) = vx
          yplanet(1:npar_loc) = ay ; vyplanet(1:npar_loc) = vy
+         zplanet(1:npar_loc) = az ; vzplanet(1:npar_loc) = vz
 !
       endif
 !
@@ -528,12 +535,16 @@ module Particles
         if (idiag_eccp/=0)     call sum_par_name(ecc_planet(1:npar_loc),idiag_eccp)     
         if (idiag_xstar/=0)    call sum_par_name(xstar(1:npar_loc),idiag_xstar)
         if (idiag_ystar/=0)    call sum_par_name(ystar(1:npar_loc),idiag_ystar)
+        if (idiag_zstar/=0)    call sum_par_name(zstar(1:npar_loc),idiag_zstar)
         if (idiag_xplanet/=0)  call sum_par_name(xplanet(1:npar_loc),idiag_xplanet)
         if (idiag_yplanet/=0)  call sum_par_name(yplanet(1:npar_loc),idiag_yplanet)
+        if (idiag_zplanet/=0)  call sum_par_name(zplanet(1:npar_loc),idiag_zplanet)
         if (idiag_vxstar/=0)   call sum_par_name(vxstar(1:npar_loc),idiag_vxstar)
         if (idiag_vystar/=0)   call sum_par_name(vystar(1:npar_loc),idiag_vystar)
+        if (idiag_vzstar/=0)   call sum_par_name(vzstar(1:npar_loc),idiag_vzstar)
         if (idiag_vxplanet/=0) call sum_par_name(vxplanet(1:npar_loc),idiag_vxplanet)
         if (idiag_vyplanet/=0) call sum_par_name(vyplanet(1:npar_loc),idiag_vyplanet)
+        if (idiag_vzplanet/=0) call sum_par_name(vzplanet(1:npar_loc),idiag_vzplanet)
 !
         if (idiag_vpx2m/=0) &
             call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
@@ -650,10 +661,10 @@ module Particles
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_smap=0; idiag_eccp=0 
-        idiag_xstar=0; idiag_ystar=0 
-        idiag_vxstar=0; idiag_vystar=0
-        idiag_xplanet=0; idiag_yplanet=0 
-        idiag_vxplanet=0; idiag_vyplanet=0
+        idiag_xstar=0; idiag_ystar=0; idiag_zstar=0
+        idiag_vxstar=0; idiag_vystar=0; idiag_vzstar=0
+        idiag_xplanet=0; idiag_yplanet=0; idiag_zplanet=0
+        idiag_vxplanet=0; idiag_vyplanet=0; idiag_vzplanet=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -673,15 +684,19 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
         call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
         call parse_name(iname,cname(iname),cform(iname),'smap',idiag_smap)
-        call parse_name(iname,cname(iname),cform(iname),'xstar',idiag_xstar)
         call parse_name(iname,cname(iname),cform(iname),'eccp',idiag_eccp)
+        call parse_name(iname,cname(iname),cform(iname),'xstar',idiag_xstar)
         call parse_name(iname,cname(iname),cform(iname),'ystar',idiag_ystar)
+        call parse_name(iname,cname(iname),cform(iname),'zstar',idiag_zstar)
         call parse_name(iname,cname(iname),cform(iname),'xplanet',idiag_xplanet)
         call parse_name(iname,cname(iname),cform(iname),'yplanet',idiag_yplanet)
+        call parse_name(iname,cname(iname),cform(iname),'zplanet',idiag_zplanet)
         call parse_name(iname,cname(iname),cform(iname),'vxplanet',idiag_vxplanet)
         call parse_name(iname,cname(iname),cform(iname),'vyplanet',idiag_vyplanet)
+        call parse_name(iname,cname(iname),cform(iname),'vzplanet',idiag_vzplanet)
         call parse_name(iname,cname(iname),cform(iname),'vxstar',idiag_vxstar)
         call parse_name(iname,cname(iname),cform(iname),'vystar',idiag_vystar)
+        call parse_name(iname,cname(iname),cform(iname),'vzstar',idiag_vzstar)
       enddo
 !
     endsubroutine rprint_particles
