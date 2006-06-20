@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.30 2006-06-16 15:26:27 ajohan Exp $
+! $Id: particles_main.f90,v 1.31 2006-06-20 02:28:47 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -212,7 +212,8 @@ module Particles_main
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
 !      
-      call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+      if (.not.lparticles_planet) &
+           call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
 !
     endsubroutine particles_boundconds
 !***********************************************************************
