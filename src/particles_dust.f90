@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.102 2006-06-19 20:25:23 ajohan Exp $
+! $Id: particles_dust.f90,v 1.103 2006-06-20 00:14:02 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -44,6 +44,7 @@ module Particles
   logical :: ldragforce_equi_global_eps=.false.
   logical, parameter :: ldraglaw_epstein=.true.
   logical :: lcoldstart_amplitude_correction=.false.
+  logical :: linterpolate_spline=.true.
   character (len=labellen), dimension (ninit) :: initxxp='nothing'
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='zero',  gravz_profile='zero'
@@ -57,7 +58,7 @@ module Particles
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
-      lparticlemesh_cic, lparticlemesh_tsc
+      lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -96,7 +97,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.102 2006-06-19 20:25:23 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.103 2006-06-20 00:14:02 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1053,16 +1054,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Use interpolation to calculate gas velocity at position of particles.
             if (lhydro) then
               if (lparticlemesh_cic) then
-                if (lsmooth_dragforce_dust) then
-                  call interpolate_linear_smooth( &
+                call interpolate_linear( &
+                    f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
+              elseif (lparticlemesh_tsc) then
+                if (linterpolate_spline) then
+                  call interpolate_quadratic_spline( &
                       f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
                 else
-                  call interpolate_linear( &
+                  call interpolate_quadratic( &
                       f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
                 endif
-              elseif (lparticlemesh_tsc) then
-                call interpolate_quadratic( &
-                    f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),ipar(k) )
               else
                 uup=f(ix0,iy0,iz0,iux:iuz)
               endif

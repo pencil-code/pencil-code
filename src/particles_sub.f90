@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.70 2006-06-19 20:25:23 ajohan Exp $
+! $Id: particles_sub.f90,v 1.71 2006-06-20 00:14:02 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -15,7 +15,8 @@ module Particles_sub
   public :: wsnap_particles, boundconds_particles
   public :: redist_particles_procs, dist_particles_evenly_procs
   public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
-  public :: interpolate_linear, interpolate_linear_smooth, interpolate_quadratic
+  public :: interpolate_linear
+  public :: interpolate_quadratic, interpolate_quadratic_spline
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index, find_closest_gridpoint
 
@@ -686,7 +687,7 @@ module Particles_sub
 !
     endsubroutine integrate_par_name
 !***********************************************************************
-    subroutine interpolate_linear(f,ii0,ii1,xxp,gp,inear,ipar)
+    subroutine interpolate_linear(f,ivar1,ivar2,xxp,gp,inear,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
 !  using the linear interpolation formula
@@ -704,17 +705,17 @@ module Particles_sub
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (3) :: xxp
       integer, dimension (3) :: inear
-      integer :: ii0, ii1
-      real, dimension (ii1-ii0+1) :: gp
+      integer :: ivar1, ivar2
+      real, dimension (ivar2-ivar1+1) :: gp
       integer, optional :: ipar
 !
-      real, dimension (ii1-ii0+1) :: g1, g2, g3, g4, g5, g6, g7, g8
+      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
       integer :: i, ix0, iy0, iz0
       logical :: lfirstcall=.true.
 !
-      intent(in)  :: f, xxp, ii0
+      intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
 !
 !  Determine index value of lowest lying corner point of grid box surrounding
@@ -763,14 +764,14 @@ module Particles_sub
 !
 !  Function values at all corners.
 !
-      g1=f(ix0  ,iy0  ,iz0  ,ii0:ii1)
-      g2=f(ix0+1,iy0  ,iz0  ,ii0:ii1)
-      g3=f(ix0  ,iy0+1,iz0  ,ii0:ii1)
-      g4=f(ix0+1,iy0+1,iz0  ,ii0:ii1)
-      g5=f(ix0  ,iy0  ,iz0+1,ii0:ii1)
-      g6=f(ix0+1,iy0  ,iz0+1,ii0:ii1)
-      g7=f(ix0  ,iy0+1,iz0+1,ii0:ii1)
-      g8=f(ix0+1,iy0+1,iz0+1,ii0:ii1)
+      g1=f(ix0  ,iy0  ,iz0  ,ivar1:ivar2)
+      g2=f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)
+      g3=f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)
+      g4=f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)
+      g5=f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)
+      g6=f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)
+      g7=f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)
+      g8=f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)
 !
 !  Interpolation formula.
 !
@@ -782,7 +783,7 @@ module Particles_sub
 !  Do a reality check on the interpolation scheme.
 !
       if (linterp_reality_check) then
-        do i=1,ii1-ii0+1
+        do i=1,ivar2-ivar1+1
           if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
             print*, 'interpolate_linear: interpolated value is LARGER than'
             print*, 'interpolate_linear: a values at the corner points!'
@@ -810,105 +811,7 @@ module Particles_sub
 !
     endsubroutine interpolate_linear
 !***********************************************************************
-    subroutine interpolate_linear_smooth(f,ii0,ii1,xxp,gp,inear,ipar)
-!
-!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
-!  using first order formula 
-!
-!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
-!
-!  The interpolated value is then averaged over the entire particle swarm,
-!  i.e. a volume of constant density centred on the particle and with the size
-!  of a grid cell.
-!
-!  10-jun-06/anders: coded
-!
-      use Cdata
-      use Messages, only: fatal_error
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (3) :: xxp
-      integer, dimension (3) :: inear
-      integer :: ii0, ii1
-      real, dimension (ii1-ii0+1) :: gp
-      integer, optional :: ipar
-!
-      real, dimension (ii1-ii0+1) :: g0, g1, g2, g3, g4, g5, g6, g7, g8
-      real :: dxp0, dyp0, dzp0
-      integer :: i, ix0, iy0, iz0
-      logical :: lfirstcall=.true.
-!
-      intent(in)  :: f, xxp, ii0
-      intent(out) :: gp
-!
-!  Not implemented in y-direction.
-!
-      if (nygrid/=1) then
-        if (lroot) print*, 'interpolate_linear_smooth: not implemented in y'
-        call fatal_error('interpolate_linear_smooth','')
-      endif
-!
-!  Redefine the interpolation point in coordinates relative to nearest grid
-!  point and normalize with the cell size.
-!
-      ix0=inear(1); iy0=inear(2); iz0=inear(3)
-      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
-      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
-      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
-!
-!  Interpolation formula.
-!
-      gp= (3.0-4*dxp0**2)*(3.0-4*dzp0**2)*f(ix0,iy0,iz0,ii0:ii1)/16 + &
-          (3.0-4*dxp0**2)/32*( f(ix0  ,iy0,iz0+1,ii0:ii1)*(1+2*dzp0)**2 +   &
-                               f(ix0  ,iy0,iz0-1,ii0:ii1)*(1-2*dzp0)**2 ) + &
-          (3.0-4*dzp0**2)/32*( f(ix0+1,iy0,iz0  ,ii0:ii1)*(1+2*dxp0)**2 +   &
-                               f(ix0-1,iy0,iz0  ,ii0:ii1)*(1-2*dxp0)**2 ) + &
-          (1.0+2*dxp0)**2/64*( f(ix0+1,iy0,iz0+1,ii0:ii1)*(1+2*dzp0)**2 +   &
-                               f(ix0+1,iy0,iz0-1,ii0:ii1)*(1-2*dzp0)**2 ) + &
-          (1.0-2*dxp0)**2/64*( f(ix0-1,iy0,iz0+1,ii0:ii1)*(1+2*dzp0)**2 +   &
-                               f(ix0-1,iy0,iz0-1,ii0:ii1)*(1-2*dzp0)**2 )
-!
-!  Do a reality check on the interpolation scheme.
-!
-      if (linterp_reality_check) then
-        g0=f(ix0  ,iy0,iz0,ii0:ii1)
-        g1=f(ix0  ,iy0,iz0+1,ii0:ii1)
-        g2=f(ix0  ,iy0,iz0-1,ii0:ii1)
-        g3=f(ix0+1,iy0,iz0  ,ii0:ii1)
-        g4=f(ix0-1,iy0,iz0  ,ii0:ii1)
-        g5=f(ix0+1,iy0,iz0+1,ii0:ii1)
-        g6=f(ix0-1,iy0,iz0-1,ii0:ii1)
-        g7=f(ix0-1,iy0,iz0+1,ii0:ii1)
-        g8=f(ix0-1,iy0,iz0-1,ii0:ii1)
-        do i=1,ii1-ii0+1
-          if (gp(i)>max(g0(i),g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_linear_smooth: interpolated value is LARGER    than'
-            print*, 'interpolate_linear_smooth: all values at the corner ponts!'
-            print*, 'interpolate_linear_smooth: ipar, xxp=', ipar, xxp
-            print*, 'interpolate_linear_smooth: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_linear_smooth: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_linear_smooth: g0...g8=', &
-                g0(i), g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-            print*, '------------------'
-          endif
-          if (gp(i)<min(g0(i),g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-            print*, 'interpolate_linear_smooth: interpolated value is smaller   than'
-            print*, 'interpolate_linear_smooth: all values at the corner ponts!'
-            print*, 'interpolate_linear_smooth: xxp=', xxp
-            print*, 'interpolate_linear_smooth: x0, y0, z0=', &
-                x(ix0), y(iy0), z(iz0)
-            print*, 'interpolate_linear_smooth: i, gp(i)=', i, gp(i)
-            print*, 'interpolate_linear_smooth: g0...g8=', &
-                g0(i), g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-            print*, '------------------'
-          endif
-        enddo
-      endif
-!
-    endsubroutine interpolate_linear_smooth
-!***********************************************************************
-    subroutine interpolate_quadratic(f,ii0,ii1,xxp,gp,inear,ipar)
+    subroutine interpolate_quadratic(f,ivar1,ivar2,xxp,gp,inear,ipar)
 !
 !  Quadratic interpolation of g to arbitrary (xp, yp, zp) coordinate
 !  using the biquadratic interpolation function
@@ -960,18 +863,18 @@ module Particles_sub
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (3) :: xxp
       integer, dimension (3) :: inear
-      integer :: ii0, ii1
-      real, dimension (ii1-ii0+1) :: gp
+      integer :: ivar1, ivar2
+      real, dimension (ivar2-ivar1+1) :: gp
       integer, optional :: ipar
 !
-      real, dimension (9,ii1-ii0+1) :: cc
-      real, dimension (ii1-ii0+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
+      real, dimension (9,ivar2-ivar1+1) :: cc
+      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
       real :: dxp, dzp
       real, save :: dx1, dx2, dz1, dz2, dx1dz1, dx2dz1, dx1dz2, dx2dz2
       integer :: i, j, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
-      intent(in)  :: f, xxp, ii0
+      intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
@@ -995,15 +898,15 @@ module Particles_sub
 !
 !  Define function values at the grid points.
 !
-      g1=f(ix0-1,iy0,iz0-1,ii0:ii1)
-      g2=f(ix0  ,iy0,iz0-1,ii0:ii1)
-      g3=f(ix0+1,iy0,iz0-1,ii0:ii1)
-      g4=f(ix0-1,iy0,iz0  ,ii0:ii1)
-      g5=f(ix0  ,iy0,iz0  ,ii0:ii1)
-      g6=f(ix0+1,iy0,iz0  ,ii0:ii1)
-      g7=f(ix0-1,iy0,iz0+1,ii0:ii1)
-      g8=f(ix0  ,iy0,iz0+1,ii0:ii1)
-      g9=f(ix0+1,iy0,iz0+1,ii0:ii1)
+      g1=f(ix0-1,iy0,iz0-1,ivar1:ivar2)
+      g2=f(ix0  ,iy0,iz0-1,ivar1:ivar2)
+      g3=f(ix0+1,iy0,iz0-1,ivar1:ivar2)
+      g4=f(ix0-1,iy0,iz0  ,ivar1:ivar2)
+      g5=f(ix0  ,iy0,iz0  ,ivar1:ivar2)
+      g6=f(ix0+1,iy0,iz0  ,ivar1:ivar2)
+      g7=f(ix0-1,iy0,iz0+1,ivar1:ivar2)
+      g8=f(ix0  ,iy0,iz0+1,ivar1:ivar2)
+      g9=f(ix0+1,iy0,iz0+1,ivar1:ivar2)
 !
 !  Calculate the coefficients of the interpolation formula (see introduction).
 !
@@ -1027,6 +930,59 @@ module Particles_sub
            cc(7,:)*dxp**2*dzp + cc(8,:)*dxp*dzp**2 + cc(9,:)*dxp**2*dzp**2
 !
     endsubroutine interpolate_quadratic
+!***********************************************************************
+    subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,ipar)
+!
+!  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
+!
+!  10-jun-06/anders: coded
+!
+      use Cdata
+      use Messages, only: fatal_error
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (3) :: xxp
+      integer, dimension (3) :: inear
+      integer :: ivar1, ivar2
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, optional :: ipar
+!
+      real, dimension (ivar2-ivar1+1) :: g0, g1, g2, g3, g4, g5, g6, g7, g8
+      real :: dxp0, dyp0, dzp0
+      integer :: i, ix0, iy0, iz0
+      logical :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ivar1
+      intent(out) :: gp
+!
+!  Not implemented in y-direction.
+!
+      if (nygrid/=1) then
+        if (lroot) print*, 'interpolate_quadratic_spline: not implemented in y'
+        call fatal_error('interpolate_quadratic_spline','')
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to nearest grid
+!  point and normalize with the cell size.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
+      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
+      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
+!
+!  Interpolation formula.
+!
+      gp= (3.0-4*dxp0**2)*(3.0-4*dzp0**2)*f(ix0,iy0,iz0,ivar1:ivar2)/16 + &
+          (3.0-4*dxp0**2)/32*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*(1+2*dzp0)**2 +  &
+                               f(ix0  ,iy0,iz0-1,ivar1:ivar2)*(1-2*dzp0)**2 ) +&
+          (3.0-4*dzp0**2)/32*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*(1+2*dxp0)**2 +  &
+                               f(ix0-1,iy0,iz0  ,ivar1:ivar2)*(1-2*dxp0)**2 ) +&
+          (1.0+2*dxp0)**2/64*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*(1+2*dzp0)**2 +  &
+                               f(ix0+1,iy0,iz0-1,ivar1:ivar2)*(1-2*dzp0)**2 ) +&
+          (1.0-2*dxp0)**2/64*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*(1+2*dzp0)**2 +  &
+                               f(ix0-1,iy0,iz0-1,ivar1:ivar2)*(1-2*dzp0)**2 )
+!
+    endsubroutine interpolate_quadratic_spline
 !***********************************************************************
     subroutine map_nearest_grid(f,fp,ineargrid)
 !
