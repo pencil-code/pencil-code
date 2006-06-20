@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.51 2006-06-20 09:40:26 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.52 2006-06-20 13:29:49 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.51 2006-06-20 09:40:26 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.52 2006-06-20 13:29:49 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -559,7 +559,8 @@ module EquationOfState
           call fatal_error("calc_pencils_eos","Full equation of state not implemented for ilnrho_cs2")
         endif
         if (lpencil(i_pp)) p%pp=gamma11*gamma1*exp(p%lnTT+p%lnrho)
-        if (lpencil(i_ee)) p%ee=gamma11*p%cs2
+!-BUG-  if (lpencil(i_ee)) p%ee=gamma11*p%cs2
+        if (lpencil(i_ee)) p%ee=gamma11/gamma1*p%cs2
         if (lpencil(i_yH)) p%yH=impossible
         if (lpencil(i_TT)) p%TT=exp(p%lnTT)
         if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
