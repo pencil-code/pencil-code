@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.26 2006-06-07 19:13:15 theine Exp $
+# CVS: $Id: mkcparam,v 1.27 2006-06-20 23:48:06 mee Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -128,6 +128,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'del4a'        => ', dimension (nx,3)',
                   'del6a'        => ', dimension (nx,3)',
                   'delta'        => ', dimension (nx)',
+                  'diffus_total' => ', dimension (nx)',
                   'divgg'        => ', dimension (nx)',
                   'diva'         => ', dimension (nx)',
                   'divg2'        => ', dimension (nx)',
@@ -136,6 +137,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'djuidjbi'     => ', dimension (nx)',
                   'ecr'          => ', dimension (nx)',
                   'ee'           => ', dimension (nx)',
+                  'fvisc'        => ', dimension (nx,3)',
                   'gamma'        => ', dimension (nx)',
                   'gamma1'       => ', dimension (nx)',
                   'gamma11'      => ', dimension (nx)',
@@ -246,8 +248,9 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'uxb2'         => ', dimension (nx)',
                   'uxj'          => ', dimension (nx,3)',
                   'va2'          => ', dimension (nx)',
+                  'visc_heat'    => ', dimension (nx)',
                   'yH'           => ', dimension (nx)',
-		  'uu_kep'       => ', dimension (nx)'
+        		  'uu_kep'       => ', dimension (nx)'
                  );
 
 

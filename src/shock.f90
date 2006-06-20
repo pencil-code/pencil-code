@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.14 2006-06-13 10:32:29 mee Exp $
+! $Id: shock.f90,v 1.15 2006-06-20 23:48:05 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -101,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.14 2006-06-13 10:32:29 mee Exp $")
+           "$Id: shock.f90,v 1.15 2006-06-20 23:48:05 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -371,6 +371,7 @@ module Shock
       use Boundcond
       use Mpicomm
       use Sub
+      use Interstellar, only: calc_interstellar_snr_unshock
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp 
@@ -420,6 +421,7 @@ module Shock
 !          
           do n=n1+2,n2-2; do m=m1+2,m2-2
             call shock_max3(f,ishock,penc) 
+            call calc_interstellar_snr_unshock(penc) 
             tmp(:,m,n)=penc
           enddo; enddo
 !
@@ -461,17 +463,21 @@ module Shock
           do n=3,mz-2; do jj=2,4
             m=1+jj
             call shock_max3(f,ishock,penc) 
+            call calc_interstellar_snr_unshock(penc) 
             tmp(:,m,n)=penc
             m=my-jj
             call shock_max3(f,ishock,penc) 
+            call calc_interstellar_snr_unshock(penc) 
             tmp(:,m,n)=penc
           enddo; enddo
           do kk=2,4; do m=6,my-5
             n=1+kk
             call shock_max3(f,ishock,penc) 
+            call calc_interstellar_snr_unshock(penc) 
             tmp(:,m,n)=penc
             n=mz-kk
             call shock_max3(f,ishock,penc) 
+            call calc_interstellar_snr_unshock(penc) 
             tmp(:,m,n)=penc
           enddo; enddo
 !
@@ -514,6 +520,7 @@ module Shock
 !  properly with shock).
 !
           call boundconds_x(f,ishock,ishock)
+
 !
 !  Scale with dxmin**2.
 !
@@ -751,7 +758,6 @@ module Shock
 !  27-apr-03/tony: adapted from shock_max3
 !
       use Cdata
-      use Interstellar, only: calc_interstellar_SNRdamping
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx) :: maxf
@@ -799,7 +805,6 @@ module Shock
         enddo
       endif
 !
-      call calc_interstellar_SNRdamping(f,ishock)
 !
     endsubroutine shock_max3_pencil
 !***********************************************************************

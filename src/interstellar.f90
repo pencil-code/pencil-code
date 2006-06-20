@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.118 2006-06-13 10:32:29 mee Exp $
+! $Id: interstellar.f90,v 1.119 2006-06-20 23:48:05 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -30,6 +30,10 @@ module Interstellar
     double precision :: rhom   ! Local mean density at explosion time
     real :: radius        ! Injection radius
     real :: t_sedov
+    real :: t_damping
+    real :: heat_energy
+    real :: damping_factor
+    real :: energy_loss
     integer :: l,m,n      ! Grid position
     integer :: iproc,ipy,ipz
     integer :: SN_type
@@ -80,6 +84,10 @@ module Interstellar
 ! NB: 1d and 2d results just from numerical integration -- calculate
 !      exact integrals at some point...
 !
+  double precision, parameter, dimension(3) :: &
+             cnorm_gaussian_SN = (/ 0.8862269255, 3.141592654, 5.568327998 /) 
+  double precision, parameter, dimension(3) :: &
+             cnorm_gaussian2_SN = (/ 0.9064024771, 2.784163999, 3.849760109 /)
   double precision, parameter, dimension(3) :: &
              cnorm_SN = (/ 1.855438667 , 2.805377875 , 3.712218666 /) 
   double precision, parameter, dimension(3) :: &
@@ -314,7 +322,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.118 2006-06-13 10:32:29 mee Exp $")
+           "$Id: interstellar.f90,v 1.119 2006-06-20 23:48:05 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -447,7 +455,7 @@ module Interstellar
 !
 !  Slopeyness used for tanh rounding profiles etc.
 !
-      sigma_SN=dxmax
+      sigma_SN=dxmax*3
 !
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
@@ -804,8 +812,10 @@ module Interstellar
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
     if (t < t_settle) return
+    call calc_interstellar_snr_damping_factor(f)
     if (lSNI) call check_SNI (f,l_SNI)
     if (lSNII) call check_SNII(f,l_SNI)
+    call calc_interstellar_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
 !***********************************************************************
@@ -1473,6 +1483,10 @@ find_SN: do n=n1,n2
 !
       if (thermal_profile=="gaussian3") then
         c_SN=ampl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
+      elseif (thermal_profile=="gaussian2") then
+        c_SN=ampl_SN/(cnorm_gaussian2_SN(dimensionality)*width_energy**dimensionality)
+      elseif (thermal_profile=="gaussian") then
+        c_SN=ampl_SN/(cnorm_gaussian_SN(dimensionality)*width_energy**dimensionality)
       elseif (thermal_profile=="quadratictanh") then
         c_SN=ampl_SN/(cnorm_para_SN(dimensionality)*width_energy**dimensionality)
       elseif (thermal_profile=="quartictanh") then
@@ -1742,36 +1756,217 @@ find_SN: do n=n1,n2
 
       if (lSNR_damping) then
         SNR%state=SNstate_damping
+        SNR%t_damping=2.E-5-SNR%t_sedov+t
       else
         SNR%state=SNstate_invalid
       endif
 
     endsubroutine explode_SN
+!!***********************************************************************
+!    subroutine calc_interstellar_SNR_smooth(f)
+!!
+!      use Cdata
+!!
+!      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+!      real, dimension(nx) :: ee, rho, profile_smooth
+!      real, dimension(nx) :: ee_new, rho_new
+!      real, dimension(nx,3) :: uu, uu_new
+!      real :: EE_tot, MM_tot, EKIN_tot
+!      real :: EE_local, MM_local, EKIN_local
+!      real, dimension(3) :: MOM_local, MOM_local_new
+!      real :: EE_local_new, MM_local_new, EKIN_local_new
+!!
+!      if (SNR%state/=SNstate_damping) return
+!!
+!      EE_tot=0.
+!      MM_tot=0.
+!      MOM_tot=0.
+!      do n=n1,n2; do m=m1,m2
+!        call proximity_SN(dr2_SN)
+!        profile_smooth=(exp(-(dr2_SN(1:nx)/width**2)))
+!        call eoscalc(f,nx,ee=ee)
+!        rho = exp(f(l1:l2,m,n,ilnrho))
+!        rho_new=rho*
+!        EE_tot=EE_tot+sum(rho*ee)
+!        EKIN_tot=EKIN_tot+sum(sqrt(dot2(uu))*rho)
+!        MOM_tot=MOM_tot+sum(sqrt(dot2(uu))*rho)
+!        MM_tot=MM_tot+sum(rho)
+!
+!        where (dr2_SN .le. radius2)
+!          EE_local=EE_local+sum(rho*ee)
+!          MOM_local=MOM_local+sum(sqrt(dot2(uu))*rho)
+!          MM_local=MM_local+sum(rho)
+!        endwhere 
+!      enddo; enddo
+!print*,"SNR smooth: Total thermal (energy, momentum, mass)", EE_tot, MOM_tot, MM_tot
+!
+!
+!!
+!!  Have to divide by dxmin**2 to compensate for the * dxmin**2 in
+!!  the shock code!
+!!
+!      penc=max(penc,SNR_damping*exp(-(dr2_SN_mx/SNR%radius**2))/dxmin**2)
+!!
+!    endsubroutine calc_interstellar_SNRdamping
 !***********************************************************************
-    subroutine calc_interstellar_SNRdamping(f,ivar)
+    subroutine calc_interstellar_snr_damping_factor(f)
 !
       use Cdata
 !
       real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
-      integer, intent(in) :: ivar
-      real, dimension(nx) :: damping
+      integer, dimension(3) :: worst
+      real, dimension(nx,3) :: r_vec, r_hat, uu
+      real, dimension(nx) :: ruu, ttc
+      real, dimension(nx) :: r2, lnrho
+      real :: time_to_centre, radius2
+      integer :: l=0
 !
       if (SNR%state/=SNstate_damping) return
+
+      SNR%damping_factor = SNR_damping
+
+!      worst=-1
+!      radius2=SNR%radius**2
+!      do n=n1,n2; do m=m1,m2
+!        call proximity_SN()
+!        uu = f(l1:l2,m,n,iux:iuz)
+!        lnrho = f(l1:l2,m,n,ilnrho)
+!        r_vec=0.
+!        r_vec(:,1) = x(l1:l2) - SNR%x
+!        r_vec(:,2) = y(m) - SNR%y
+!        r_vec(:,3) = z(n) - SNR%z
+!        call dot2(r_vec,r2)
+!        r_hat=r_vec/spread(sqrt(r2),2,3)
+!        call dot(r_hat,uu,ruu)
+!        where (ruu .lt. 0)
 !
+!        endwhere 
+!
+!        call dot2(r_vec,r2)
+!        ruu = min(ruu,1E-20) 
+!        ttc=r2/ruu
+!        do l=1,nx  
+!          if (ttc(l).lt.time_to_centre) then
+!            time_to_centre = time_to_centre
+!          endif
+!        enddo
+!        where (dr2_SN .lt. radius2)
+!            ruu=0.
+!        endwhere 
+!
+!      enddo; enddo
+!
+
+    endsubroutine calc_interstellar_snr_damping_factor
+!***********************************************************************
+    subroutine calc_interstellar_snr_unshock(penc)
+!
+      use Cdata
+!
+!      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+!      integer, intent(in) :: ivar
+      real, dimension(mx), intent(inout) :: penc
+      real, dimension(mx) :: dr2_SN_mx
+!
+      if (SNR%state/=SNstate_damping) return
+      call proximity_SN_mx(dr2_SN_mx)
+      penc = penc*(1.-exp(-(dr2_SN_mx/SNR%radius**2)))
+!
+!
+    endsubroutine calc_interstellar_snr_unshock
+!***********************************************************************
+    subroutine calc_interstellar_snr_damping(p)
+!
+      use Cdata
+      use Sub, only: multsv, multsv_add, dot
+!
+!      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+!      integer, intent(in) :: ivar
+      type (pencil_case) :: p
+      real, dimension(nx) :: profile
+      real, dimension(nx,3) :: tmp, tmp2, gprofile
+!
+      if (SNR%state/=SNstate_damping) return
+
+      if (lfirst) SNR%energy_loss=0.
       call proximity_SN
+      profile = SNR%damping_factor*exp(-(dr2_SN/SNR%radius**2))
+      gprofile = -SNR%damping_factor*spread(x(l1:l2)*(dr2_SN)**2/(SNR%radius**(2.5))*exp(-(dr2_SN/SNR%radius**2)),2,3)
+      if (ldensity) then
+        call multsv(p%divu,p%glnrho,tmp2)
+        tmp=tmp2 + p%graddivu
+        call multsv(profile,tmp,tmp2)
+        call multsv_add(tmp2,p%divu,gprofile,tmp)
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+sum(profile)
+        SNR%energy_loss=SNR%energy_loss-sum(profile*p%rho*p%divu**2)
+        
+        p%fvisc=p%fvisc+tmp
+      endif
+!
 !
 !  Have to divide by dxmin**2 to compensate for the * dxmin**2 in
 !  the shock code!
 !
-      damping=SNR_damping*exp(-(dr2_SN/SNR%radius**2)**3)/dxmin**2
+!      penc=max(penc,SNR_damping*exp(-(dr2_SN_mx/SNR%radius**2))/dxmin**2)
 !
-!ajwm  FIX ME
-! This goes into the shock routine, presmoothing, so needs to 
-! have the ghost zones done too...
+    endsubroutine calc_interstellar_snr_damping
+!***********************************************************************
+    subroutine calc_interstellar_snr_damping_int(dt)
 !
-      f(l1:l2,m,n,ivar)=max(f(l1:l2,m,n,ivar),damping)
+      use Cdata
+      use Sub, only: multsv, multsv_add
+      use EquationOfState, only: eoscalc, eosperturb
 !
-    endsubroutine calc_interstellar_SNRdamping
+      real :: dt, dv
+!
+      if (SNR%state/=SNstate_damping) return
+!
+      dv=1.
+      if (nxgrid/=1) dv=dv*dx
+      if (nygrid/=1) dv=dv*dy
+      if (nzgrid/=1) dv=dv*dz
+!
+      SNR%heat_energy=SNR%heat_energy+dt*SNR%energy_loss*dv*dt
+!
+    endsubroutine calc_interstellar_snr_damping_int
+!***********************************************************************
+    subroutine calc_interstellar_snr_damping_add_heat(f)
+!
+      use Cdata
+      use Mpicomm
+      use Sub, only: multsv, multsv_add
+      use EquationOfState, only: eoscalc, eosperturb
+!
+      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: profile, ee_old, rho, lnrho
+      real :: factor
+      real, dimension(1) :: fmpi, fmpi_tmp
+!
+      if (SNR%state/=SNstate_damping) return
+
+      fmpi_tmp(1)=SNR%heat_energy 
+      call mpireduce_sum(fmpi_tmp,fmpi,1) 
+      call mpibcast_real(fmpi,1) 
+      SNR%heat_energy=fmpi(1)
+
+      factor=SNR%heat_energy/(cnorm_gaussian_SN(dimensionality)*SNR%radius**dimensionality)
+      do n=n1,n2; do m=m1,m2
+        call proximity_SN
+        call eoscalc(f,nx,ee=ee_old)
+        lnrho=f(l1:l2,m,n,ilnrho)
+        rho=exp(lnrho)
+        profile = factor*exp(-(dr2_SN/SNR%radius**2))
+        call eosperturb(f,nx,ee=real((ee_old*rho+profile) &
+                                                   /exp(lnrho)))
+      enddo; enddo
+
+      SNR%heat_energy=0.
+
+      if (t >= SNR%t_damping) then
+        SNR%state=SNstate_invalid
+      endif
+!
+    endsubroutine calc_interstellar_snr_damping_add_heat
 !***********************************************************************
     subroutine get_mean_density(f,remnant)
 !
@@ -1896,6 +2091,46 @@ find_SN: do n=n1,n2
 !       
     endsubroutine proximity_SN
 !***********************************************************************
+    subroutine proximity_SN_mx(dr2_SN_mx)
+!
+!  Calculate pencil of distance to SN explosion site
+!
+!  20-may-03/tony: extracted from explode_SN code written by grs
+!  22-may-03/tony: pencil formulation
+!
+      use Cparam
+      use Cdata, only: Lx,Ly,Lz,x,y,z,lperi,m,n
+!
+      real,dimension(mx), intent(out) :: dr2_SN_mx
+      real,dimension(mx) :: dx_SN, dr_SN
+      real :: dy_SN 
+      real :: dz_SN 
+      integer :: j
+!
+!  Obtain distance to SN
+!
+         dx_SN=x-SNR%x
+         if (lperi(1)) then
+           where (dx_SN .gt. Lx/2.) dx_SN=dx_SN-Lx
+           where (dx_SN .lt. -Lx/2.) dx_SN=dx_SN+Lx
+         endif
+!
+         dy_SN=y(m)-SNR%y
+         if (lperi(2)) then
+           if (dy_SN .gt. Ly/2.) dy_SN=dy_SN-Ly
+           if (dy_SN .lt. -Ly/2.) dy_SN=dy_SN+Ly
+         endif
+!
+         dz_SN=z(n)-SNR%z
+         if (lperi(3)) then
+           if (dz_SN .gt. Lz/2.) dz_SN=dz_SN-Lz
+           if (dz_SN .lt. -Lz/2.) dz_SN=dz_SN+Lz
+         endif
+!
+         dr2_SN_mx=dx_SN**2 + dy_SN**2 + dz_SN**2           
+!
+    endsubroutine proximity_SN_mx
+!***********************************************************************
     subroutine calc_cavity_mass_lnrho(f,width,depth,mass_removed)
 !
 !  Calculate integral of mass cavity profile  
@@ -1935,6 +2170,14 @@ find_SN: do n=n1,n2
             mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
           elseif (cavity_profile=="gaussian3") then
             profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**3))
+            lnrho=lnrho_old - profile_cavity
+            mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
+          elseif (cavity_profile=="gaussian2") then
+            profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**2))
+            lnrho=lnrho_old - profile_cavity
+            mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
+          elseif (cavity_profile=="gaussian") then
+            profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)))
             lnrho=lnrho_old - profile_cavity
             mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
           elseif (cavity_profile=="tanh") then
@@ -2018,6 +2261,16 @@ find_SN: do n=n1,n2
         lnrho = lnrho(1:nx) - profile_cavity
         lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
            (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
+      elseif (cavity_profile=="gaussian2") then
+        profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)**2))
+        lnrho = lnrho(1:nx) - profile_cavity
+        lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
+           (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
+      elseif (cavity_profile=="gaussian") then
+        profile_cavity=(depth*exp(-(dr2_SN(1:nx)/width**2)))
+        lnrho = lnrho(1:nx) - profile_cavity
+        lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
+           (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
       elseif (cavity_profile=="tanh") then
         profile_cavity=(1.-tanh( (width- sqrt(dr2_SN(1:nx)) )/sigma_SN ))*0.5
         lnrho = log(exp(lnrho(1:nx))*profile_cavity + c_shell *    &
@@ -2044,6 +2297,10 @@ find_SN: do n=n1,n2
 
       if (thermal_profile=="gaussian3") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
+      elseif (thermal_profile=="gaussian2") then
+        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**2)
+      elseif (thermal_profile=="gaussian") then
+        profile_SN=exp(-(dr2_SN(1:nx)/width**2))
       elseif (thermal_profile=="quadratictanh") then
         profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0d0) &
             *0.5*(1.-tanh((sqrt(dr2_SN)-width)/sigma_SN))
@@ -2073,6 +2330,10 @@ find_SN: do n=n1,n2
 
       if (mass_profile=="gaussian3") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
+      elseif (mass_profile=="gaussian2") then
+        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**2)
+      elseif (mass_profile=="gaussian") then
+        profile_SN=exp(-(dr2_SN(1:nx)/width**2))
       elseif (mass_profile=="quadratic") then
         profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0D0)
       elseif (mass_profile=="tanh") then

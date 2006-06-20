@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.22 2006-05-22 11:14:14 nbabkovs Exp $
+! $Id: viscosity.f90,v 1.23 2006-06-20 23:48:06 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -12,6 +12,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+! PENCILS PROVIDED fvisc, diffus_total, visc_heat
 !
 !***************************************************************
 
@@ -43,6 +44,7 @@ module Viscosity
   logical :: lvisc_hyper3_nu_const=.false.
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
+  logical :: lvisc_snr_damp=.false.
 
   ! input parameters
   !integer :: dummy1
@@ -81,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.22 2006-05-22 11:14:14 nbabkovs Exp $")
+           "$Id: viscosity.f90,v 1.23 2006-06-20 23:48:06 mee Exp $")
 
       ivisc(1)='nu-const'
 
@@ -117,6 +119,7 @@ module Viscosity
       lvisc_hyper3_nu_const=.false.
       lvisc_smag_simplified=.false.
       lvisc_smag_cross_simplified=.false.
+      lvisc_snr_damp=.false.
 
       do i=1,nvisc_max
         select case (ivisc(i))
@@ -161,7 +164,10 @@ module Viscosity
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
           if (nu/=0.) lvisc_smag_cross_simplified=.true.
-         case ('')
+        case ('snr_damp')
+          if (lroot) print*,'viscous force: SNR damping'
+          lvisc_snr_damp=.true.
+        case ('')
           ! do nothing
         case default
           if (lroot) print*, 'No such such value for ivisc(',i,'): ', trim(ivisc(i))
@@ -278,6 +284,7 @@ module Viscosity
 !
 !  20-11-04/anders: coded
 !
+      if (lentropy .or. ltemperature) lpenc_requested(i_visc_heat)=.true.
       if (lentropy .and. (lvisc_simplified .or. lvisc_rho_nu_const .or. &
           lvisc_nu_const .or. lvisc_nu_shock)) lpenc_requested(i_TT1)=.true.
       if ( lvisc_rho_nu_const .or. lvisc_nu_const .or. &
@@ -315,10 +322,14 @@ module Viscosity
         lpenc_diagnos(i_sij2)=.true.
       endif
       if (idiag_epsK2/=0) then
+        lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
       if (lvisc_nu_shock.and.idiag_epsK/=0) then
+        lpenc_diagnos(i_fvisc)=.true.
+        lpenc_diagnos(i_diffus_total)=.true.
+        if (lentropy.or.ltemperature) lpenc_diagnos(i_visc_heat)=.true.
         lpenc_diagnos(i_shock)=.true.
         lpenc_diagnos(i_divu)=.true.
         lpenc_diagnos(i_rho)=.true.
@@ -339,6 +350,8 @@ module Viscosity
       logical, dimension (npencils) :: lpencil_in
 !      
       if (NO_WARN) print*, lpencil_in !(keep compiler quiet)
+
+      if (lpencil_in(i_visc_heat)) lpencil_in(i_rho)=.true.
 !
     endsubroutine pencil_interdep_viscosity
 !***********************************************************************
@@ -350,13 +363,192 @@ module Viscosity
 !  20-11-04/anders: coded
 !
       use Cdata
+      use Sub
+      use Interstellar, only: calc_interstellar_snr_damping
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
+      real, dimension (nx,3) :: fvisc,tmp,tmp2
+      real, dimension (nx) :: murho1,nu_smag, diffus_total,rr_mn
+      real, dimension (nx) :: ufvisc
+!
+      integer :: i
 !
       intent(in) :: f
       intent(inout) :: p
 !
+!
+!  viscosity operator
+!
+      p%fvisc=0. 
+      p%diffus_total=0.
+      p%visc_heat=0.
+           
+!!!
+!! Calculate the heating term due to the viscous force
+!!
+!      if (lpencil(i_visc_heat)) then
+!        call dot_mn(p%uu,p%fvisc,ufvisc)
+!        p%visc_heat = -ufvisc
+!      endif
+!
+!!!!!!!!!!   DIFFUSIVITIES BELOW HERE EITHER DO NOT CONSERVE  !!!!!!!!
+!!!!!!!!!!      TOTAL ENERGY OR EXPLICITLY HANDLE HEATING     !!!!!!!!
+!
+!
+      if (lvisc_simplified) then
+!
+!  viscous force: nu*del2v
+!  -- not physically correct (no momentum conservation), but
+!  numerically easy and in most cases qualitatively OK
+!
+        p%fvisc=p%fvisc+nu*p%del2u
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
+      endif
+!
+      if (lvisc_rho_nu_const) then
+!
+!  viscous force: mu/rho*(del2u+graddivu/3)
+!  -- the correct expression for rho*nu=const
+!
+        murho1=nu*p%rho1  !(=mu/rho)
+        do i=1,3
+         p%fvisc(:,i)=p%fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
+        enddo  
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + &
+                                                2*nu*p%sij2*p%rho1
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+murho1
+      endif
+!
+      if (lvisc_nu_const) then
+!
+!  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+!  -- the correct expression for nu=const
+!
+        if(ldensity) then
+          p%fvisc=p%fvisc+2*nu*p%sglnrho+nu*(p%del2u+1./3.*p%graddivu)
+        else
+          p%fvisc=p%fvisc+nu*(p%del2u+1./3.*p%graddivu)
+        endif
+        if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + &
+                                                 2*nu*p%sij2
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu
+     endif
+!
+!
+!  viscous force: nu_shock
+!
+      if (lvisc_nu_shock) then
+        if (ldensity) then
+          call multsv(p%divu,p%glnrho,tmp2)
+          tmp=tmp2 + p%graddivu
+          call multsv(nu_shock*p%shock,tmp,tmp2)
+          call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
+          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+(nu_shock*p%shock)
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + &
+                                                 nu_shock*p%shock*p%divu**2
+          p%fvisc=p%fvisc+tmp
+        endif
+      endif
+!
+!
+!
+      if (lvisc_hyper2_simplified) then
+!
+!  viscous force: nu_hyper2*de46v (not momentum-conserving)
+!
+        p%fvisc=p%fvisc+nu_hyper2*p%del4u
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper2*dxyz_4/dxyz_2
+      endif
+!
+      if (lvisc_hyper3_simplified) then
+!
+!  viscous force: nu_hyper3*del6v (not momentum-conserving)
+!
+        p%fvisc=p%fvisc+nu_hyper3*p%del6u
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+      endif
+!
+      if (lvisc_hyper3_rho_nu_const) then
+!
+!  viscous force: mu/rho*del6u
+!
+        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u(:,i)
+        enddo
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+      endif
+!
+      if (lvisc_hyper3_rho_nu_const_bulk) then
+!
+!  viscous force: mu/rho*d6uj/dx6
+!
+        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i)+murho1*p%del6u_bulk(:,i)
+        enddo
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+      endif
+!
+      if (lvisc_hyper3_nu_const) then
+!
+!  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
+!
+        p%fvisc=p%fvisc+nu_hyper3*(p%del6u+p%uij5glnrho)
+        if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_hyper3*dxyz_6/dxyz_2
+      endif
+!
+!  viscous force: Handle damping at the core of SNRs
+!
+      if (lvisc_snr_damp) then
+        call calc_interstellar_snr_damping(p)
+      endif
+!
+!  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
+!
+      if (lvisc_smag_simplified) then
+!
+!  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
+!  where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS)
+!
+        if (ldensity) then
+!
+! Find nu_smag
+!
+          nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
+!
+! Calculate viscous force
+!
+          call multsv_mn(nu_smag,p%sglnrho,tmp2)
+          call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
+          p%fvisc=p%fvisc+2*tmp2+tmp
+          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
+        else
+          if (lfirstpoint) print*, 'calc_viscous_force: '// &
+              "ldensity better be .true. for ivisc='smagorinsky'"
+        endif
+      endif
+!
+      if (lvisc_smag_cross_simplified) then
+!
+!  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
+!  where nu_smag=(C_smag*dxmax)**2*sqrt(S:J)
+!
+        if (ldensity) then
+          nu_smag=(C_smag*dxmax)**2.*p%ss12
+!
+! Calculate viscous force
+!
+          call multsv_mn(nu_smag,p%sglnrho,tmp2)
+          call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
+          p%fvisc=p%fvisc+2*tmp2+tmp
+          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+nu_smag
+        else
+          if (lfirstpoint) print*, 'calc_viscous_force: '// &
+              "ldensity better be .true. for ivisc='smagorinsky'"
+        endif
+     endif
       if(NO_WARN) print*,f,p    !(to keep compiler quiet)
 !
     endsubroutine calc_pencils_viscosity
@@ -384,41 +576,48 @@ module Viscosity
 !      
       real, dimension (nx) :: heat,Hmax
 !
-      heat=0.
-
-      if (lvisc_simplified) then
-        if (headtt) print*,"no viscous heating: ivisc(x)='simplified'"
-      endif
+!      heat=0.
 !
-      if (lvisc_rho_nu_const) then
-        if (headtt) print*,"viscous heating: ivisc(x)='rho_nu-const'"
-        heat = heat + 2*nu*p%sij2*p%rho1
-      endif
+!      if (lvisc_simplified) then
+!        if (headtt) print*,"no viscous heating: ivisc(x)='simplified'"
+!      endif
+!!
+!      if (lvisc_rho_nu_const) then
+!        if (headtt) print*,"viscous heating: ivisc(x)='rho_nu-const'"
+!        heat = heat + 2*nu*p%sij2*p%rho1
+!      endif
+!!
+!      if (lvisc_nu_const) then
+!        if (headtt) print*,"viscous heating: ivisc(x)='nu_const'"
+!        heat = heat +2*nu*p%sij2
+!      endif
+!!
+!      if (lvisc_nu_shock) then
+!        if (headtt) print*,"viscous heating: ivisc(x)='nu_shock'"
+!        heat = heat + nu_shock*p%shock*p%divu**2
+!      endif
 !
-      if (lvisc_nu_const) then
-        if (headtt) print*,"viscous heating: ivisc(x)='nu_const'"
-        heat = heat +2*nu*p%sij2
-      endif
-!
-      if (lvisc_nu_shock) then
-        if (headtt) print*,"viscous heating: ivisc(x)='nu_shock'"
-        heat = heat + nu_shock*p%shock*p%divu**2
-      endif
+!      if (lvisc_snr_damp) then
+!ajwm   No heat is added here in this case, rather the
+!ajwm   force code keeps a total of the amount of heat needed
+!ajwm   and the interstellar code puts that much back as a gaussian
+!ajwm   bump of heat afterwards.
+!      endif
 !
 !  Add viscous heat (which has units of energy/mass) to the RHS
 !  of the entropy ...
 !
       if (lentropy) then
-         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*heat
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) +  p%TT1*p%visc_heat
       endif
 !
 !  ... or temperature equation.
 !
       if (ltemperature) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*heat
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + p%cv1*p%TT1*p%visc_heat
       endif
 !      
-      if (lfirst .and. ldt) Hmax=Hmax+heat
+      if (lfirst .and. ldt) Hmax=Hmax+p%visc_heat
 !
       if(NO_WARN) print*,p  !(keep compiler quiet)
 !        
@@ -434,182 +633,46 @@ module Viscosity
       use Cdata
       use Mpicomm
       use Sub
-      use Global, only: get_global
 !
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: nu_smag
       real, dimension (nx,3) :: nuD2uxb
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: fvisc,tmp,tmp2
-      real, dimension (nx) :: ufvisc,rufvisc,murho1,nu_smag, diffus_total,rr_mn
-      integer :: i,j
-!
       intent (in) :: p
       intent (inout) :: df
-!
-!  viscosity operator
-!
-      fvisc=0. 
-      diffus_total=0.
-
-      if (lvisc_simplified) then
-!
-!  viscous force: nu*del2v
-!  -- not physically correct (no momentum conservation), but
-!  numerically easy and in most cases qualitatively OK
-!
-        fvisc=fvisc+nu*p%del2u
-        if (lfirst.and.ldt) diffus_total=diffus_total+nu
-      endif
-!
-      if (lvisc_rho_nu_const) then
-!
-!  viscous force: mu/rho*(del2u+graddivu/3)
-!  -- the correct expression for rho*nu=const
-!
-        murho1=nu*p%rho1  !(=mu/rho)
-        do i=1,3
-         fvisc(:,i)=fvisc(:,i)+murho1*(p%del2u(:,i)+1./3.*p%graddivu(:,i))
-        enddo  
-        if (lfirst.and.ldt) diffus_total=diffus_total+murho1
-      endif
-!
-      if (lvisc_nu_const) then
-!
-!  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
-!  -- the correct expression for nu=const
-!
-        if(ldensity) then
-          fvisc=fvisc+2*nu*p%sglnrho+nu*(p%del2u+1./3.*p%graddivu)
-        else
-          fvisc=fvisc+nu*(p%del2u+1./3.*p%graddivu)
-        endif
-        if (lfirst.and.ldt) diffus_total=diffus_total+nu
-     endif
-!
-      if (lvisc_hyper2_simplified) then
-!
-!  viscous force: nu_hyper2*de46v (not momentum-conserving)
-!
-        fvisc=fvisc+nu_hyper2*p%del4u
-        if (lfirst.and.ldt) diffus_total=diffus_total+nu_hyper2*dxyz_4/dxyz_2
-      endif
-!
-      if (lvisc_hyper3_simplified) then
-!
-!  viscous force: nu_hyper3*del6v (not momentum-conserving)
-!
-        fvisc=fvisc+nu_hyper3*p%del6u
-        if (lfirst.and.ldt) diffus_total=diffus_total+nu_hyper3*dxyz_6/dxyz_2
-      endif
-!
-      if (lvisc_hyper3_rho_nu_const) then
-!
-!  viscous force: mu/rho*del6u
-!
-        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
-        do i=1,3
-          fvisc(:,i)=fvisc(:,i)+murho1*p%del6u(:,i)
-        enddo
-        if (lfirst.and.ldt) diffus_total=diffus_total+nu_hyper3*dxyz_6/dxyz_2
-      endif
-!
-      if (lvisc_hyper3_rho_nu_const_bulk) then
-!
-!  viscous force: mu/rho*d6uj/dx6
-!
-        murho1=nu_hyper3*p%rho1  ! (=mu_hyper3/rho)
-        do i=1,3
-          fvisc(:,i)=fvisc(:,i)+murho1*p%del6u_bulk(:,i)
-        enddo
-        if (lfirst.and.ldt) diffus_total=diffus_total+nu_hyper3*dxyz_6/dxyz_2
-      endif
-!
-      if (lvisc_hyper3_nu_const) then
-!
-!  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
-!
-        fvisc=fvisc+nu_hyper3*(p%del6u+p%uij5glnrho)
-        if (lfirst.and.ldt) diffus_total=diffus_total+nu_hyper3*dxyz_6/dxyz_2
-      endif
-!
-!  viscous force: nu_shock(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
-!
-      if (lvisc_nu_shock) then
-        if (ldensity) then
-          call multsv(p%divu,p%glnrho,tmp2)
-          tmp=tmp2 + p%graddivu
-          call multsv(nu_shock*p%shock,tmp,tmp2)
-          call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
-          if (lfirst.and.ldt) diffus_total=diffus_total+(nu_shock*p%shock)
-          fvisc=fvisc+tmp
-        endif
-      endif
-!
-!  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
-!
-      if (lvisc_smag_simplified) then
-!
-!  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
-!  where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS)
-!
-        if (ldensity) then
-!
-! Find nu_smag
-!
-          nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
-!
-! Calculate viscous force
-!
-          call multsv_mn(nu_smag,p%sglnrho,tmp2)
-          call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
-          fvisc=fvisc+2*tmp2+tmp
-          if (lfirst.and.ldt) diffus_total=diffus_total+nu_smag
-        else
-          if (lfirstpoint) print*, 'calc_viscous_force: '// &
-              "ldensity better be .true. for ivisc='smagorinsky'"
-        endif
-      endif
-!
-      if (lvisc_smag_cross_simplified) then
-!
-!  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
-!  where nu_smag=(C_smag*dxmax)**2*sqrt(S:J)
-!
-        if (ldensity) then
-          nu_smag=(C_smag*dxmax)**2.*p%ss12
-!
-! Calculate viscous force
-!
-          call multsv_mn(nu_smag,p%sglnrho,tmp2)
-          call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
-          fvisc=fvisc+2*tmp2+tmp
-          if (lfirst.and.ldt) diffus_total=diffus_total+nu_smag
-        else
-          if (lfirstpoint) print*, 'calc_viscous_force: '// &
-              "ldensity better be .true. for ivisc='smagorinsky'"
-        endif
-     endif
 
 !
 !  Add viscosity to equation of motion
 !
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + fvisc
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
 !
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
-      diffus_nu=max(diffus_nu,diffus_total*dxyz_2)
+      diffus_nu=max(diffus_nu,p%diffus_total*dxyz_2)
 !
 !  Diagnostic output
 !
       if (ldiagnos) then
+        if (lvisc_smag_simplified) then
+          if (ldensity) then
+            nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
+          endif
+        endif
+        if (lvisc_smag_cross_simplified) then
+          if (ldensity) then
+            nu_smag=(C_smag*dxmax)**2.*p%ss12
+          endif
+        endif
         if (idiag_dtnu/=0) &
             call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
         if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
         if (idiag_meshRemax/=0) &
-           call max_mn_name(sqrt(p%u2(:))*dxmax/diffus_total,idiag_meshRemax)
+           call max_mn_name(sqrt(p%u2(:))*dxmax/p%diffus_total,idiag_meshRemax)
 !  Viscous heating as explicit analytical term.
         if (idiag_epsK/=0) then
+!           call dot2(p%uu,fvisc,visc_heat)
+!           call sum_mn_name(visc_heat,idiag_epsK)
           if (lvisc_nu_const) call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
           if (lvisc_nu_shock) &  ! Heating from shock viscosity.
               call sum_mn_name((nu_shock*p%shock*p%divu**2)*p%rho,idiag_epsK)
@@ -624,9 +687,7 @@ module Viscosity
 !  However, in strongly random flow, there can be significant difference
 !  between epsK and epsK2, even for periodic boundaries.
         if (idiag_epsK2/=0) then
-          call dot_mn(p%uu,fvisc,ufvisc)
-          rufvisc=ufvisc*p%rho
-          call sum_mn_name(-rufvisc,idiag_epsK2)
+          call sum_mn_name(p%visc_heat*p%rho,idiag_epsK2)
         endif
 !  Viscous heating for Smagorinsky viscosity.
         if (idiag_epsK_LES/=0) then
@@ -643,7 +704,7 @@ module Viscosity
         if (lmagnetic) then
           if (idiag_nuD2uxbxm/=0.or.idiag_nuD2uxbym/=0.or.idiag_nuD2uxbzm/=0) then
 !           call curl(f,iaa,bb)
-            call cross(fvisc,p%bb,nuD2uxb)
+            call cross(p%fvisc,p%bb,nuD2uxb)
             call sum_mn_name(nuD2uxb(:,1),idiag_nuD2uxbxm)
             call sum_mn_name(nuD2uxb(:,2),idiag_nuD2uxbym)
             call sum_mn_name(nuD2uxb(:,3),idiag_nuD2uxbzm)
