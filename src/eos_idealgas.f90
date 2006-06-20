@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.50 2006-06-13 10:30:36 mee Exp $
+! $Id: eos_idealgas.f90,v 1.51 2006-06-20 09:40:26 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.50 2006-06-13 10:30:36 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.51 2006-06-20 09:40:26 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -540,6 +540,7 @@ module EquationOfState
           if (lpencil(i_glnTT)) p%glnTT=0
           if (lpencil(i_hlnTT)) p%hlnTT=0
           if (lpencil(i_del2lnTT)) p%del2lnTT=0
+!AB: isn't gamma1=0 in the isothermal case? So in the next 4 lines could put zero.
           if (lpencil(i_ss)) p%ss=-gamma1*(p%lnrho-lnrho0)*gamma11
           if (lpencil(i_del2ss)) p%del2ss=-gamma1*p%del2lnrho*gamma11
           if (lpencil(i_gss)) p%gss=-gamma1*p%glnrho*gamma11
@@ -980,7 +981,8 @@ module EquationOfState
         lnrho_=var1
         ee_=var2
         ss_=gamma11*(log(ee_*gamma)-lnTT0-gamma1*(lnrho_-lnrho0))
-        lnTT_=log(gamma11*ee_)
+!-BUG-  lnTT_=log(gamma11*ee_)
+        lnTT_=log(gamma*ee_)
         pp_=gamma1*ee_*exp(lnrho_)
 
       case (ilnrho_pp)
@@ -994,7 +996,8 @@ module EquationOfState
         lnrho_=var1
         lnTT_=var2
         ss_=gamma1*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
-        ee_=gamma1*exp(lnTT_)
+!-BUG-  ee_=gamma1*exp(lnTT_)
+        ee_=gamma11*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
 
       case default 
@@ -1049,7 +1052,8 @@ module EquationOfState
         lnrho_=var1
         ee_=var2
         ss_=gamma11*(log(ee_*gamma)-lnTT0-gamma1*(lnrho_-lnrho0))
-        lnTT_=log(gamma11*ee_)
+!-BUG-  lnTT_=log(gamma11*ee_)
+        lnTT_=log(gamma*ee_)
         pp_=gamma1*ee_*exp(lnrho_)
 
       case (ilnrho_pp)
