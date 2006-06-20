@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.3 2006-06-17 06:49:02 brandenb Exp $
+! $Id: gross_pitaevskii.f90,v 1.4 2006-06-20 16:58:12 mee Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -150,10 +150,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.3 2006-06-17 06:49:02 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.4 2006-06-20 16:58:12 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.3 2006-06-17 06:49:02 brandenb Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.4 2006-06-20 16:58:12 mee Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -341,19 +341,19 @@ module Special
 
       df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) - &
          0.5 * (del2real + diss * del2imag) &
-           - (1. - psi2) * pimag
+           + (1. - psi2) * pimag
     else
 !
 !  dpsi/dt = hbar/(2m) * [ diss*del2(psi) + i*del2(psi) ] + (1-|psi|^2)*psi
 !  (but use hbar=m=1)
 !
       df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-         0.5 * (diss * del2real - del2imag) &
-           + (1. - psi2) * preal
+         0.5 * ((diss * del2real - del2imag) &
+           + (1. - psi2) * (diss * preal - pimag))
 
       df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-         0.5 * (del2real + diss * del2imag) &
-           + (1. - psi2) * pimag
+         0.5 * ((del2real + diss * del2imag) &
+           + (1. - psi2) * (preal + diss * pimag))
 !
 !  dpsi/dt = ... +Ux*dpsi/dx
 !
@@ -699,7 +699,7 @@ endsubroutine read_special_run_pars
       real, dimension(nx), intent(out) :: vort_r
   
        vort_r = sqrt((x(l1:l2)-vort_x0)**2 +  &
-            (y(m)-vort_y0-vort_a*cos(2.0*pi*z(n)/vort_ll))**2)
+            spread((y(m)-vort_y0-vort_a*cos(2.0*pi*z(n)/vort_ll))**2,1,nx))
   
     end subroutine get_r
 !***********************************************************************
@@ -766,12 +766,11 @@ endsubroutine read_special_run_pars
 
     real, dimension(nx) :: amp
     real, dimension(nx), intent(in) :: vort_r
-    real, parameter                                        :: c1 = -0.7
-    real, parameter                                        :: c2 = 1.15
+    real, parameter :: c1 = -0.7
+    real, parameter :: c2 = 1.15
 
     amp = 1.0 - exp(c1*vort_r**c2)
 
-    return
   end function amp
 !***********************************************************************
 endmodule Special
