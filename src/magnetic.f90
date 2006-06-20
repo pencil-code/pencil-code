@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.294 2006-06-07 22:08:07 theine Exp $
+! $Id: magnetic.f90,v 1.295 2006-06-20 16:44:50 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -147,6 +147,7 @@ module Magnetic
   integer :: idiag_brm=0,idiag_bpm=0,idiag_bzm=0
   integer :: idiag_br2m=0,idiag_bp2m=0,idiag_bzz2m=0  
   integer :: idiag_brbpm=0,idiag_bzbpm=0,idiag_brbzm=0,idiag_vA2m=0 
+  integer :: idiag_maxalphass=0
 
   contains
 
@@ -187,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.294 2006-06-07 22:08:07 theine Exp $")
+           "$Id: magnetic.f90,v 1.295 2006-06-20 16:44:50 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1363,6 +1364,9 @@ module Magnetic
          if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm)
          if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm)
          if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm)
+!
+         if (idiag_maxalphass/=0) call sum_lim_mn_name(-br*bp/(p%rho*p%cs2),idiag_maxalphass)
+!
       endif
 !
     endsubroutine calc_mag_stress
@@ -1674,6 +1678,7 @@ module Magnetic
         idiag_brm=0; idiag_bpm=0; idiag_bzm=0 
         idiag_br2m=0; idiag_bp2m=0; idiag_bzz2m=0; idiag_brbpm=0 
         idiag_bzbpm=0; idiag_brbzm=0; idiag_va2m=0 
+        idiag_maxalphass=0
 !
       endif
 !
@@ -1746,6 +1751,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'brbpm',idiag_brbpm)
         call parse_name(iname,cname(iname),cform(iname),'bzbpm',idiag_bzbpm)
         call parse_name(iname,cname(iname),cform(iname),'brbzm',idiag_brbzm)
+        call parse_name(iname,cname(iname),cform(iname),'maxalphass',idiag_maxalphass)
 !
       enddo
 !
@@ -1867,6 +1873,7 @@ module Magnetic
         write(3,*) 'i_bzz2m=',idiag_bzz2m
         write(3,*) 'i_brbpm=',idiag_brbpm
         write(3,*) 'i_bzbpm=',idiag_bzbpm
+        write(3,*) 'i_maxalphass=',idiag_maxalphass
         write(3,*) 'i_jbmphi=',idiag_jbmphi
         write(3,*) 'i_uxBrms=',idiag_uxBrms
         write(3,*) 'i_Bresrms=',idiag_Bresrms

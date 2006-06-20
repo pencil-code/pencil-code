@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.266 2006-06-14 21:34:01 brandenb Exp $
+! $Id: hydro.f90,v 1.267 2006-06-20 16:44:50 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -113,7 +113,7 @@ module Hydro
   integer :: idiag_ur2m=0,idiag_up2m=0,idiag_uzz2m=0
   integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0
   integer :: idiag_uzupm=0,idiag_uruzm=0,idiag_urupm=0
-  integer :: idiag_totmass=0
+  integer :: idiag_totmass=0,idiag_reyalphass=0
   contains
 
 !***********************************************************************
@@ -155,7 +155,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.266 2006-06-14 21:34:01 brandenb Exp $")
+           "$Id: hydro.f90,v 1.267 2006-06-20 16:44:50 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1075,12 +1075,15 @@ module Hydro
          if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm)
          if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm)
          if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm)
-         if (idiag_ur2m/=0)   call sum_lim_mn_name(ur**2,idiag_ur2m)
-         if (idiag_up2m/=0)   call sum_lim_mn_name(up**2,idiag_up2m)
-         if (idiag_uzz2m/=0)  call sum_lim_mn_name(uz**2,idiag_uzz2m)
-         if (idiag_urupm/=0)  call sum_lim_mn_name(ur*up,idiag_urupm)
-         if (idiag_uzupm/=0)  call sum_lim_mn_name(uz*up,idiag_uzupm)
-         if (idiag_uruzm/=0)  call sum_lim_mn_name(ur*uz,idiag_uruzm)
+         if (idiag_ur2m/=0)   call sum_lim_mn_name(p%rho*ur**2,idiag_ur2m)
+         if (idiag_up2m/=0)   call sum_lim_mn_name(p%rho*up**2,idiag_up2m)
+         if (idiag_uzz2m/=0)  call sum_lim_mn_name(p%rho*uz**2,idiag_uzz2m)
+         if (idiag_urupm/=0)  call sum_lim_mn_name(p%rho*ur*up,idiag_urupm)
+         if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm)
+         if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm)
+!
+         if (idiag_reyalphass/=0) call sum_lim_mn_name(ur*up/(p%rho*p%cs2),idiag_reyalphass)
+!
       endif
 !
     endsubroutine calc_hydro_stress
@@ -1416,7 +1419,7 @@ module Hydro
         idiag_ur2m=0; idiag_up2m=0; idiag_uzz2m=0
         idiag_urm=0; idiag_upm=0; idiag_uzzm=0
         idiag_uzupm=0; idiag_uruzm=0; idiag_urupm=0
-        idiag_totmass=0
+        idiag_totmass=0; idiag_reyalphass=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1483,6 +1486,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uzupm',idiag_uzupm)
         call parse_name(iname,cname(iname),cform(iname),'uruzm',idiag_uruzm)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
+        call parse_name(iname,cname(iname),cform(iname),'reyalphass',idiag_reyalphass)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1638,6 +1642,7 @@ module Hydro
         write(3,*) 'i_uzz2m=',idiag_uzz2m
         write(3,*) 'i_urupm=',idiag_urupm
         write(3,*) 'totmass=',idiag_totmass
+        write(3,*) 'reyalphass=',idiag_reyalphass
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
