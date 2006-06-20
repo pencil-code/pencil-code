@@ -1,4 +1,4 @@
-! $Id: particles_planet.f90,v 1.29 2006-06-19 14:36:46 wlyra Exp $
+! $Id: particles_planet.f90,v 1.30 2006-06-20 02:29:32 wlyra Exp $
 !
 !  This module takes care of everything related to planet particles.
 !
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_planet.f90,v 1.29 2006-06-19 14:36:46 wlyra Exp $")
+           "$Id: particles_planet.f90,v 1.30 2006-06-20 02:29:32 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -152,7 +152,7 @@ module Particles
 
       case ('origin')
         if (lroot) print*, 'init_particles: All particles at origin'
-        fp(1:npar,ixp:izp)=0.
+        fp(1:npar_loc,ixp:izp)=0.
         
       case('constant') 
          if (lroot) &
@@ -166,16 +166,16 @@ module Particles
 ! center of mass fixed on center of grid
 !
          call get_ramped_mass(gp,gs,g0,mdot,m2dot)
-         fp(npar_loc,ixp)=gp 
-         fp(npar_loc,iyp)=0.
-         fp(npar_loc,izp)=0.
+         fp(2,ixp)=gp 
+         fp(2,iyp)=0.
+         fp(2,izp)=0.
 !
          fp(1,ixp) = -gs 
          fp(1,iyp) = 0.
          fp(1,izp) = 0. 
 !
          if (lroot) &
-              print*, 'init_particles: All particles at x=', fp(1,ixp), fp(npar_loc,ixp)
+              print*, 'init_particles: All particles at x=', fp(1,ixp), fp(2,ixp)
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle positions'
@@ -198,9 +198,9 @@ module Particles
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
 !
-      if (nxgrid==1) fp(1:npar,ixp)=x(nghost+1)
-      if (nygrid==1) fp(1:npar,iyp)=y(nghost+1)
-      if (nzgrid==1) fp(1:npar,izp)=z(nghost+1)
+      if (nxgrid==1) fp(1:npar_loc,ixp)=x(nghost+1)
+      if (nygrid==1) fp(1:npar_loc,iyp)=y(nghost+1)
+      if (nzgrid==1) fp(1:npar_loc,izp)=z(nghost+1)
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
@@ -225,16 +225,17 @@ module Particles
 
       case ('fixed-cm')
          call get_ramped_mass(gp,gs,g0,mdot,m2dot)
-         fp(npar_loc,ivpx)=0.
-         fp(npar_loc,ivpy)=gp
-         fp(npar_loc,ivpz)=0.
+!
+         fp(2,ivpx)=0.
+         fp(2,ivpy)=gp
+         fp(2,ivpz)=0.
 !
          fp(1,ivpx) = 0.
          fp(1,ivpy) = -gs
          fp(1,ivpz) = 0.
 !
          if (lroot) &
-              print*, 'init_particles: All particles at vy=', fp(1,ivpy), fp(npar_loc,ivpy)
+              print*, 'init_particles: All particles at vy=', fp(1,ivpy), fp(2,ivpy)
 
       case ('random')
         if (lroot) print*, 'init_particles: Random particle velocities; '// &
@@ -371,16 +372,16 @@ module Particles
 !  The rate of change of a particle's position is the particle's velocity.
 !
       if (nxgrid/=1) &
-          dfp(1:npar,ixp) = dfp(1:npar,ixp) + fp(1:npar,ivpx)
+          dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
       if (nygrid/=1) &
-          dfp(1:npar,iyp) = dfp(1:npar,iyp) + fp(1:npar,ivpy)
+          dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
       if (nzgrid/=1) &
-          dfp(1:npar,izp) = dfp(1:npar,izp) + fp(1:npar,ivpz)
+          dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-      if (lshear.and.nygrid/=0) dfp(1:npar,iyp) = &
-          dfp(1:npar,iyp) - qshear*Omega*fp(1:npar,ixp)
+      if (lshear.and.nygrid/=0) dfp(1:npar_loc,iyp) = &
+          dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
 !
       if (lfirstcall) lfirstcall=.false.
 !
@@ -432,24 +433,24 @@ module Particles
       if (Omega/=0.) then
          if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
          Omega2=2*Omega
-         dfp(1:npar,ivpx) = dfp(1:npar,ivpx) + Omega2*fp(1:npar,ivpy)
-         dfp(1:npar,ivpy) = dfp(1:npar,ivpy) - Omega2*fp(1:npar,ivpx)
+         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+         dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
 !
 !  With shear there is an extra term due to the background shear flow.
 !          
-         if (lshear) dfp(1:npar,ivpy) = &
-              dfp(1:npar,ivpy) + qshear*Omega*fp(1:npar,ivpx)
+         if (lshear) dfp(1:npar_loc,ivpy) = &
+              dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
       endif
 !
 !  More readable variables names
 !
-      ax = fp(1,ixp)  ; axs = fp(npar,ixp)  
-      ay = fp(1,iyp)  ; ays = fp(npar,iyp) 
-      az = fp(1,izp)  ; azs = fp(npar,izp)
+      ax = fp(1,ixp)  ; axs = fp(2,ixp)  
+      ay = fp(1,iyp)  ; ays = fp(2,iyp) 
+      az = fp(1,izp)  ; azs = fp(2,izp)
 !
-      vx = fp(1,ivpx) ; vxs = fp(npar,ivpx)  
-      vy = fp(1,ivpy) ; vys = fp(npar,ivpy) 
-      vz = fp(1,ivpz) ; vzs = fp(npar,ivpz)
+      vx = fp(1,ivpx) ; vxs = fp(2,ivpx)  
+      vy = fp(1,ivpy) ; vys = fp(2,ivpy) 
+      vz = fp(1,ivpz) ; vzs = fp(2,ivpz)
 !
 !  Relative positions and velocities
 !
@@ -468,15 +469,15 @@ module Particles
          extra_accy = m2dot*sin(t) + 2*mdot*cos(t)
          extra_accz = 0. 
 !
-         dfp(npar,ivpx) = dfp(npar,ivpx) - gp/rsep**3 * (axs-ax) + extra_accx 
-         dfp(npar,ivpy) = dfp(npar,ivpy) - gp/rsep**3 * (ays-ay) + extra_accy
-         dfp(npar,ivpz) = 0. !dfp(npar,ivpz) - gp/rsep**3 * (azs-az) + extra_accz
+         dfp(2,ivpx) = dfp(2,ivpx) - gp/rsep**3 * (axs-ax) + extra_accx 
+         dfp(2,ivpy) = dfp(2,ivpy) - gp/rsep**3 * (ays-ay) + extra_accy
+         dfp(2,ivpz) = dfp(2,ivpz) - gp/rsep**3 * (azs-az) + extra_accz
 !
 !  Star's gravity on planet
 !
          dfp(1,ivpx) = dfp(1,ivpx) - gs/rsep**3 * (ax-axs) + extra_accx
          dfp(1,ivpy) = dfp(1,ivpy) - gs/rsep**3 * (ay-ays) + extra_accy
-         dfp(1,ivpz) = 0. !dfp(1,ivpz) - gs/rsep**3 * (az-azs) + extra_accz
+         dfp(1,ivpz) = dfp(1,ivpz) - gs/rsep**3 * (az-azs) + extra_accz
 !
       endif
 !
