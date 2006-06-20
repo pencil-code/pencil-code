@@ -1,4 +1,4 @@
- ! $Id: global_avgs.f90,v 1.3 2006-05-22 16:48:00 wlyra Exp $
+ ! $Id: global_avgs.f90,v 1.4 2006-06-20 13:59:58 wlyra Exp $
 
 module Global
 
@@ -13,7 +13,8 @@ module Global
   interface set_global
     module procedure set_global_vect
     module procedure set_global_scal
-    module procedure set_global_coarse
+    module procedure set_global_coarse_vect
+    module procedure set_global_coarse_scal
   endinterface
 
   interface set_global_point
@@ -24,7 +25,8 @@ module Global
   interface get_global
     module procedure get_global_vect
     module procedure get_global_scal
-    module procedure get_global_coarse
+    module procedure get_global_coarse_vect
+    module procedure get_global_coarse_scal
   endinterface
 
   interface get_global_point
@@ -34,11 +36,12 @@ module Global
 !
 !
   real, dimension (mx,my,mz,3) :: gg
-  real, dimension (mx,my,mz) :: rho,cs2
+  real, dimension (mx,my,mz) :: rho,cs2,rhos
   real, dimension (mx,my,mz,3) :: bbs
   real, dimension (mx,my,mz,3) :: uus
 !
-  real, dimension (10,3) :: bavg_coarse,uavg_coarse  
+  real, dimension (10,3) :: bavg_coarse,uavg_coarse
+  real, dimension (10) :: rhoavg_coarse
 !  
   contains
 
@@ -119,6 +122,13 @@ module Global
          elseif (length==mx) then
             cs2(:,m,n) = var
          endif
+
+      case ('rhos')
+         if (length==nx) then
+            rhos(l1:l2,m,n) = var
+         elseif (length==mx) then
+            rhos(:,m,n) = var
+         endif
 !
       case default
          if (lroot) &
@@ -129,7 +139,7 @@ module Global
 !
     endsubroutine set_global_scal
 !***********************************************************************
-    subroutine set_global_coarse(var,label,length)
+    subroutine set_global_coarse_vect(var,label,length)
 !
 !  set global variable identified by LABEL
 !
@@ -148,12 +158,36 @@ module Global
 !
       case default
          if (lroot) &
-              print*, 'set_global_scal: No such value for label', trim(label)
-         call stop_it('set_global_scal')
+              print*, 'set_global_coarse_vect: No such value for label', trim(label)
+         call stop_it('set_global_coarse_vect')
 !
       endselect
 !
-    endsubroutine set_global_coarse
+    endsubroutine set_global_coarse_vect
+!***********************************************************************
+    subroutine set_global_coarse_scal(var,label,length)
+!
+!  set global variable identified by LABEL
+!
+!  13-jun-05/anders: adapted
+!
+      integer :: length
+      real, dimension(length) :: var
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('rhoavg')
+         rhoavg_coarse(1:length) = var
+!
+      case default
+         if (lroot) &
+              print*, 'set_global_coarse_scal: No such value for label', trim(label)
+         call stop_it('set_global_coarse_scal')
+!
+      endselect
+!
+    endsubroutine set_global_coarse_scal
 !**********************************************************************
     subroutine reset_global(label)
 !
@@ -214,6 +248,9 @@ module Global
       case ('cs2')
          var = cs2(l1:l2,m,n)
 !
+      case ('rhos')
+         var = rhos(l1:l2,m,n)
+!
       case default
          if (lroot) print*, 'get_global_scal: No such value for label', trim(label)
          call stop_it('get_global_scal')
@@ -222,7 +259,7 @@ module Global
 !
     endsubroutine get_global_scal
 !***********************************************************************
-    subroutine get_global_coarse(var,label,length)
+    subroutine get_global_coarse_vect(var,label,length)
 !                                                                               
 !  Get (m,n)-pencil of the global vector variable identified by LABEL.          
 !                                                                               
@@ -241,13 +278,36 @@ module Global
         var = bavg_coarse
 !
       case default
-        if (lroot) print*, 'get_global_vect: No such value for label', trim(label)
-        call stop_it('get_global_vect')
+        if (lroot) print*, 'get_global_coarse_vect: No such value for label', trim(label)
+        call stop_it('get_global_coarse_vect')
 !
       endselect
 !
-    endsubroutine get_global_coarse
+    endsubroutine get_global_coarse_vect
 !********************************************************************
+    subroutine get_global_coarse_scal(var,label,length)
+!
+!  Get (m,n)-pencil of the global vector variable identified by LABEL.
+!
+!  18-jul-02/wolf: coded
+!
+      integer :: length
+      real, dimension(length) :: var
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('rhoavg')
+        var = rhoavg_coarse
+!
+      case default
+        if (lroot) print*, 'get_global_coarse_scal: No such value for label', trim(label)
+        call stop_it('get_global_coarse_scal')
+!
+      endselect
+!
+    endsubroutine get_global_coarse_scal
+!*************************************************************************
     subroutine set_global_scal_point(var,l,m,n,label)
 !
 !  set point value of the global scalar variable identified by LABEL
@@ -265,6 +325,9 @@ module Global
 !
       case ('rho')
          rho(l,m,n) = rho(l,m,n) + var
+!
+      case ('rhos')
+         rhos(l,m,n) = rhos(l,m,n) + var
 !
       case default
          if (lroot) print*, &
@@ -306,6 +369,9 @@ module Global
 !
       case ('rho')
          var = rho(l,m,n)
+!
+      case ('rhos')
+         var = rhos(l,m,n)
 !
       case default
         if (lroot) print*, &
@@ -383,11 +449,13 @@ module Global
 !
       call output(trim(directory)//'/rho.dat',rho,1)
       call output(trim(directory)//'/cs2.dat',cs2,1)
-      call output(trim(directory)//'/gg.dat'  ,gg  ,3)
-      call output(trim(directory)//'/bbs.dat'  ,bbs  ,3)
-      call output(trim(directory)//'/uus.dat'  ,uus  ,3)
-      call output(trim(directory)//'/uavg_coarse.dat'  ,uavg_coarse  ,3,10)
-      call output(trim(directory)//'/bavg_coarse.dat'  ,bavg_coarse  ,3,10)
+      call output(trim(directory)//'/rhos.dat',rhos,1)
+      call output(trim(directory)//'/gg.dat',gg,3)
+      call output(trim(directory)//'/bbs.dat',bbs,3)
+      call output(trim(directory)//'/uus.dat',uus,3)
+      call output(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,10)
+      call output(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,10)
+      call output(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,10)
 !
     endsubroutine wglobal
 !***********************************************************************
@@ -402,12 +470,14 @@ module Global
 !
       call input(trim(directory)//'/rho.dat',rho,1,0)
       call input(trim(directory)//'/cs2.dat',cs2,1,0)
-      call input(trim(directory)//'/gg.dat'  ,gg  ,3,0)
-      call input(trim(directory)//'/bbs.dat'  ,bbs  ,3,0)
-      call input(trim(directory)//'/uus.dat'  ,uus  ,3,0)
-      call input_coarse(trim(directory)//'/uavg_coarse.dat'  ,uavg_coarse  ,3,0,10)
-      call input_coarse(trim(directory)//'/bavg_coarse.dat'  ,bavg_coarse  ,3,0,10)
-
+      call input(trim(directory)//'/rhos.dat',rhos,1,0)
+      call input(trim(directory)//'/gg.dat',gg,3,0)
+      call input(trim(directory)//'/bbs.dat',bbs,3,0)
+      call input(trim(directory)//'/uus.dat',uus,3,0)
+      call input_coarse(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,0,10)
+      call input_coarse(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,0,10)
+      call input_coarse(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,0,10)
+!
     endsubroutine rglobal
 !***********************************************************************
 

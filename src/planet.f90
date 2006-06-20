@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.44 2006-05-30 15:02:44 wlyra Exp $
+! $Id: planet.f90,v 1.45 2006-06-20 13:59:58 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -37,7 +37,7 @@ module Planet
 !
 ! things needed for companion
 !
-  real :: gc=0.          !location and mass
+  real :: gc=0.          !planet's mass
   real :: b=0.           !peak radius for potential
   integer :: nc=2        !exponent of smoothed potential 
   integer :: n_periods=5 !periods for ramping
@@ -83,7 +83,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.44 2006-05-30 15:02:44 wlyra Exp $")
+           "$Id: planet.f90,v 1.45 2006-06-20 13:59:58 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -448,14 +448,21 @@ module Planet
       do i=l1,l2
          ii = i-l1+1
          if ((r(ii).le.0.5).and.(r(ii).gt.0.4)) then
-            df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
-            df(i,m,n,iux)    = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
-            df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
-            if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
+            df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - &
+                 (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
+            df(i,m,n,iux)    = df(i,m,n,iux) - &
+                 (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
+            df(i,m,n,iuy)    = df(i,m,n,iuy) - &
+                 (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
+            if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - &
+                 (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
             if (lmagnetic) then
-               df(i,m,n,iax)    = df(i,m,n,iax)    - (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
-               df(i,m,n,iay)    = df(i,m,n,iay)    - (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
-               if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
+               df(i,m,n,iax)    = df(i,m,n,iax) - &
+                    (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
+               df(i,m,n,iay)    = df(i,m,n,iay) - &
+                    (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
+               if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - &
+                    (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
             endif
          endif
       enddo
@@ -481,14 +488,21 @@ module Planet
      do i=l1,l2
         ii = i-l1+1
         if ((r(ii) .ge. 2.1).and.(r(ii).le.2.5)) then
-           df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
-           df(i,m,n,iux)    = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
-           df(i,m,n,iuy)    = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
-           if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
+           df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - &
+                (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
+           df(i,m,n,iux)    = df(i,m,n,iux) - &
+                (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
+           df(i,m,n,iuy)    = df(i,m,n,iuy)    - &
+                (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
+           if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - &
+                (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
            if (lmagnetic) then
-              df(i,m,n,iax)    = df(i,m,n,iax)    - (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
-              df(i,m,n,iay)    = df(i,m,n,iay)    - (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
-              if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
+              df(i,m,n,iax)    = df(i,m,n,iax)    - &
+                   (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
+              df(i,m,n,iay)    = df(i,m,n,iay)    - &
+                   (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
+              if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - &
+                   (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
            endif
         endif
      enddo
@@ -755,9 +769,11 @@ module Planet
 !
       real, dimension(nx,3) :: bavg,uavg
       real, dimension(nr,3) :: bavg_coarse,uavg_coarse
-      real, dimension(nx) :: rcyl
+      real, dimension(nx) :: rcyl,rhoavg
+      real, dimension(nr) :: rhoavg_coarse
       real :: rloop_1,rloop_int,rloop_ext,rmid,rmid_1,rmid_2
-      real :: dudr,dbdr,dr,step,upu,upb,dwr,u0,b0 
+      real :: dudr,dbdr,dr,step,upu,upb,dwr,u0,b0
+      real :: upr,r0
       integer :: i,ir,aux
       type (pencil_case) :: p
 !
@@ -787,6 +803,7 @@ module Planet
 ! get the arrays of nr points calculated in set_new_average
 ! in the previous time-step
 !
+         call get_global(rhoavg_coarse,'rhoavg',nr)
          call get_global(uavg_coarse,'uavg',nr)
          if (lmagnetic) call get_global(bavg_coarse,'bavg',nr)
 !
@@ -808,11 +825,15 @@ module Planet
 !
 ! gives problem for ir=nr because ir+1 will be out of bounds
 !
-               do aux=1,3
-                  if (ir /= nr) then 
-                     dwr = rmid_1 - rmid
-                     dr = rcyl(i) - rmid
+               if (ir /= nr) then 
+                  dwr = rmid_1 - rmid
+                  dr = rcyl(i) - rmid
 !
+                  upr = rhoavg_coarse(ir+1) - rhoavg_coarse(ir)
+                  r0 = rhoavg_coarse(ir)
+                  rhoavg(i) = r0 + upr/dwr*dr
+!
+                  do aux=1,3
                      upu = uavg_coarse(ir+1,aux) - uavg_coarse(ir,aux)
                      dudr = upu/dwr
                      u0 = uavg_coarse(ir,aux)
@@ -824,16 +845,22 @@ module Planet
                         b0 = bavg_coarse(ir,aux)
                         bavg(i,aux) = b0 + dbdr*dr
                      endif   
+                  enddo
 !
-                  endif
+               endif
 !
 ! so do it backward for ir=nr
 !
-                  if (ir == nr) then 
-                     rmid_2 = rmid-step
-                     dwr = rmid - rmid_2
-                     dr = rcyl(i) - rmid
+               if (ir == nr) then 
+                  rmid_2 = rmid-step
+                  dwr = rmid - rmid_2
+                  dr = rcyl(i) - rmid
 !
+                  upr = rhoavg_coarse(ir) - rhoavg_coarse(ir-1)
+                  r0 = rhoavg_coarse(ir)
+                  rhoavg(i) = r0 + upr/dwr*dr
+!
+                  do aux=1,3
                      upu = uavg_coarse(ir,aux) - uavg_coarse(ir-1,aux)
                      dudr = upu/dwr
                      u0 = uavg_coarse(ir,aux)
@@ -845,9 +872,10 @@ module Planet
                         b0 = bavg_coarse(ir,aux)
                         bavg(i,aux) = b0 + dbdr*dr
                      endif
+                  enddo
 !
-                  endif
-               enddo
+               endif
+!            
             endif  !end if r_int r_ext
 !
 ! close pencil loop
@@ -863,6 +891,7 @@ module Planet
 !
       if (lmagnetic) call set_global(bavg,m,n,'bbs',nx)
       call set_global(uavg,m,n,'uus',nx)
+      call set_global(rhoavg,m,n,'rhos',nx)
 !
     endsubroutine get_old_average
 !*******************************************************************
@@ -873,6 +902,7 @@ module Planet
       use Mpicomm 
 !
       real, dimension(nr,3) :: bavg_coarse,uavg_coarse
+      real, dimension(nr) :: rhoavg_coarse,s_rho,rho_sum
       real, dimension(nr) :: s_uphi,s_urad,s_uzed
       real, dimension(nr) :: s_bphi,s_brad,s_bzed
       real, dimension(nr) :: up_sum,ur_sum,uz_sum
@@ -903,6 +933,7 @@ module Planet
 ! each zone has its limits rloop_int and rloop_ext
 !
       s_uphi=0. ; s_urad=0. ; s_uzed=0.
+      s_rho=0.
       if (lmagnetic) then 
          s_bphi=0. ; s_brad=0. ; s_bzed=0.
       endif
@@ -913,6 +944,8 @@ module Planet
          rloop_ext = r_int + ir*step
          do i=1,nx
             if ((rcyl_mn(i).le.rloop_ext).and.(rcyl_mn(i).ge.rloop_int)) then
+!
+               s_rho(ir)  = s_rho(ir) + p%rho(i)
 !
                s_uphi(ir) = s_uphi(ir) + uphi(i)
                s_urad(ir) = s_urad(ir) + urad(i)
@@ -932,6 +965,8 @@ module Planet
 !
 ! go filling the sums and the counter
 !
+      call mpireduce_sum(s_rho,rho_sum,nr)
+!
       call mpireduce_sum(s_urad,ur_sum,nr)
       call mpireduce_sum(s_uphi,up_sum,nr)
       call mpireduce_sum(s_uzed,uz_sum,nr)
@@ -945,6 +980,8 @@ module Planet
       call mpireduce_sum_int(k,ktot,nr)
 !
 ! Broadcast the values
+!
+      call mpibcast_real(rho_sum,nr)
 !
       call mpibcast_real(ur_sum,nr)
       call mpibcast_real(up_sum,nr)
@@ -962,16 +999,13 @@ module Planet
 !
       if (llastpoint) then
 !
+! stop if any ktot is zero
+!
+         if (any(ktot == 0)) &
+              call error("set_new_average","ktot=0") 
 
+         rhoavg_coarse=rho_sum/ktot
 !
-! TEMPORARY EMERGENCY BRAKE
-!
-        if (any(ktot == 0)) &
-            call error("set_new_average","Wlad, please fix me: ktot=0") 
-!
-! END OF TEMPORARY EMERGENCY BRAKE
-!
-
          uavg_coarse(:,1)=ur_sum/ktot
          uavg_coarse(:,2)=up_sum/ktot
          uavg_coarse(:,3)=uz_sum/ktot
@@ -984,6 +1018,7 @@ module Planet
 !
 ! set the averages as global variables to use in the next timestep
 !
+         call set_global(rhoavg_coarse,'rhoavg',nr)
          call set_global(uavg_coarse,'uavg',nr)
          if (lmagnetic) call set_global(bavg_coarse,'bavg',nr)
 !

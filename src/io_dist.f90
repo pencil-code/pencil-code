@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.89 2006-05-22 16:51:22 wlyra Exp $
+! $Id: io_dist.f90,v 1.90 2006-06-20 13:59:58 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -27,6 +27,7 @@ module Io
     module procedure output_vect
     module procedure output_scal
     module procedure output_vect_coarse
+    module procedure output_scal_coarse
   endinterface
 
   interface output_pencil        ! Overload the `output_pencil' function
@@ -94,7 +95,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.89 2006-05-22 16:51:22 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.90 2006-06-20 13:59:58 wlyra Exp $")
 !
     endsubroutine register_io
 !
@@ -233,6 +234,34 @@ contains
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_vect
+!***********************************************************************
+    subroutine output_scal_coarse(file,a,nv,nr)
+!
+!  write global file of coarse resolution
+!  needed for phi_avg of globaldisk
+!
+!  22-05-06/wlad: adapted from output_vect
+!
+      use Cdata
+      use Mpicomm, only: start_serialize,end_serialize
+!
+      integer :: nv,nr
+      real, dimension (nr) :: a
+      character (len=*) :: file
+!
+      if (lserial_io) call start_serialize()
+      open(lun_output,FILE=file,FORM='unformatted')
+      write(lun_output) a
+      if (lshear) then
+        write(lun_output) t,x,y,z,dx,dy,dz,deltay
+      else
+        write(lun_output) t,x,y,z,dx,dy,dz
+      endif
+!
+      close(lun_output)
+      if (lserial_io) call end_serialize()
+!
+    endsubroutine output_scal_coarse
 !***********************************************************************
     subroutine output_vect_coarse(file,a,nv,nr)
 !

@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.35 2006-05-22 16:51:22 wlyra Exp $
+! $Id: io_mpio.f90,v 1.36 2006-06-20 13:59:58 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -29,6 +29,7 @@ module Io
     module procedure output_vect
     module procedure output_scal
     module procedure output_vect_coarse
+    module procedure output_scal_coarse
   endinterface
 
   interface output_pencil        ! Overload the `output_pencil' function
@@ -114,7 +115,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.35 2006-05-22 16:51:22 wlyra Exp $")
+           "$Id: io_mpio.f90,v 1.36 2006-06-20 13:59:58 wlyra Exp $")
 !
 !  consistency check
 !
@@ -400,9 +401,9 @@ contains
       real, dimension (nr,nv) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'output_vect: nv =', nv
+      if ((ip<=8) .and. lroot) print*,'output_vect_coarse: nv =', nv
       if (.not. io_initialized) &
-           call stop_it("output_vect: Need to call init_io first")
+           call stop_it("output_vect_coarse: Need to call init_io first")
 !
       call commit_io_type_vect_1D(nr,nv) ! will free old type if new one is needed
       !
@@ -426,6 +427,46 @@ contains
 !
     endsubroutine output_vect_coarse
 !*********************************************************************** 
+    subroutine output_scal_coarse(file,a,nv,nr)
+!
+!  Write snapshot file; currently without ghost zones and grid.
+!  Looks like we need to commit the MPI type anew each time we are called,
+!  since nv may vary.
+!
+!  22-may-05/wlad: adapted from output_vect
+!
+      use Cdata
+      use Mpicomm, only: lroot,stop_it
+!
+      integer :: nv,nr
+      real, dimension (nr) :: a
+      character (len=*) :: file
+!
+       if (.not. io_initialized) &
+           call stop_it("output_scal_coarse: Need to call init_io first")
+!
+      call commit_io_type_vect_1D(nr,1) ! will free old type if new one is needed
+      !
+      !  open file and set view (specify which file positions we can access)
+      !
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
+               ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
+               "native", MPI_INFO_NULL, ierr)
+      !
+      !  write data
+      !
+      call MPI_FILE_WRITE_ALL(fhandle, a, 1, io_memtype_v, status, ierr)
+      call MPI_FILE_CLOSE(fhandle, ierr)
+      !
+      !  write meta data (to make var.dat as identical as possible to
+      !  what a single-processor job would write with io_dist.f90)
+      !
+      call write_record_info_1D(file, nr,1)
+!
+    endsubroutine output_scal_coarse
+!***********************************************************************          
     subroutine output_scal(file,a,nv)
 !
 !  Write snapshot file; currently without ghost zones and grid
