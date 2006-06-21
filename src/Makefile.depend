@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.19 2006-06-15 19:34:43 ajohan Exp $
+### $Id: Makefile.depend,v 1.20 2006-06-21 14:02:16 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -52,7 +52,7 @@ messages.o:    messages.f90 cdata.o $(MPICOMM_FIX).o
 #
 $(MPICOMM_FIX).o:      mpicomm.h        $(MPICOMM_FIX).f90 cdata.o general.o $(FFT).o 
 $(GLOBAL).o:       global.h         $(GLOBAL).f90 cdata.o messages.o $(MPICOMM_FIX).o $(IO).o sub.o
-$(VISCOSITY).o:    viscosity.h      $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
+$(VISCOSITY).o:    viscosity.h      $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o $(INTERSTELLAR).o
 shock.o:           shock.h          shock.f90 shock_profile.inc cdata.o cparam.o $(DENSITY).o sub.o boundcond.o
 noshock.o:         shock.h          noshock.f90 cdata.o cparam.o sub.o 
 $(SHEAR).o:        shear.h          $(SHEAR).f90 $(MPICOMM_FIX).o cdata.o sub.o cparam.o $(HYDRO).o
