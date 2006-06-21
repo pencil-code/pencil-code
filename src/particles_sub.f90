@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.71 2006-06-20 00:14:02 ajohan Exp $
+! $Id: particles_sub.f90,v 1.72 2006-06-21 03:51:57 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -947,20 +947,15 @@ module Particles_sub
       real, dimension (ivar2-ivar1+1) :: gp
       integer, optional :: ipar
 !
-      real, dimension (ivar2-ivar1+1) :: g0, g1, g2, g3, g4, g5, g6, g7, g8
+      real :: fac_x_m1, fac_x_00, fac_x_p1
+      real :: fac_y_m1, fac_y_00, fac_y_p1
+      real :: fac_z_m1, fac_z_00, fac_z_p1
       real :: dxp0, dyp0, dzp0
       integer :: i, ix0, iy0, iz0
       logical :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
-!
-!  Not implemented in y-direction.
-!
-      if (nygrid/=1) then
-        if (lroot) print*, 'interpolate_quadratic_spline: not implemented in y'
-        call fatal_error('interpolate_quadratic_spline','')
-      endif
 !
 !  Redefine the interpolation point in coordinates relative to nearest grid
 !  point and normalize with the cell size.
@@ -970,17 +965,116 @@ module Particles_sub
       dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
       dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
 !
-!  Interpolation formula.
+!  Interpolation formulae.
 !
-      gp= (3.0-4*dxp0**2)*(3.0-4*dzp0**2)*f(ix0,iy0,iz0,ivar1:ivar2)/16 + &
-          (3.0-4*dxp0**2)/32*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*(1+2*dzp0)**2 +  &
-                               f(ix0  ,iy0,iz0-1,ivar1:ivar2)*(1-2*dzp0)**2 ) +&
-          (3.0-4*dzp0**2)/32*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*(1+2*dxp0)**2 +  &
-                               f(ix0-1,iy0,iz0  ,ivar1:ivar2)*(1-2*dxp0)**2 ) +&
-          (1.0+2*dxp0)**2/64*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*(1+2*dzp0)**2 +  &
-                               f(ix0+1,iy0,iz0-1,ivar1:ivar2)*(1-2*dzp0)**2 ) +&
-          (1.0-2*dxp0)**2/64*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*(1+2*dzp0)**2 +  &
-                               f(ix0-1,iy0,iz0-1,ivar1:ivar2)*(1-2*dzp0)**2 )
+      if (dimensionality==1) then
+        if (nxgrid/=1) then
+          gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
+                  (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dxp0)**2*f(ix0+1,iy0,iz0,ivar1:ivar2)
+        endif
+        if (nygrid/=1) then
+          gp = 0.5*(0.5-dyp0)**2*f(ix0,iy0-1,iz0,ivar1:ivar2) + &
+                  (0.75-dyp0**2)*f(ix0,iy0  ,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dyp0)**2*f(ix0,iy0+1,iz0,ivar1:ivar2)
+        endif
+        if (nzgrid/=1) then
+          gp = 0.5*(0.5-dzp0)**2*f(ix0,iy0,iz0-1,ivar1:ivar2) + &
+                  (0.75-dzp0**2)*f(ix0,iy0,iz0  ,ivar1:ivar2) + &
+               0.5*(0.5+dzp0)**2*f(ix0,iy0,iz0+1,ivar1:ivar2)
+        endif
+      elseif (dimensionality==2) then
+        if (nxgrid==1) then
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_y_00*( f(ix0,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_p1*( f(ix0,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_y_m1*( f(ix0,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nygrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_x_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0  ,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0+1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0-1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nzgrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+!
+          gp= fac_x_00*fac_y_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0  ,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_00*( f(ix0+1,iy0  ,iz0,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0  ,iz0,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0+1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0-1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 )
+        endif
+      elseif (dimensionality==3) then
+        fac_x_m1 = 0.5*(0.5-dxp0)**2
+        fac_x_00 = 0.75-dxp0**2
+        fac_x_p1 = 0.5*(0.5+dxp0)**2
+        fac_y_m1 = 0.5*(0.5-dyp0)**2
+        fac_y_00 = 0.75-dyp0**2
+        fac_y_p1 = 0.5*(0.5+dyp0)**2
+        fac_z_m1 = 0.5*(0.5-dzp0)**2
+        fac_z_00 = 0.75-dzp0**2
+        fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2)* &
+            fac_x_00*fac_y_00*( f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_z_00*( f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0  ,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_y_00*fac_z_00*( f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_x_p1*fac_y_p1*( f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_p1*fac_y_m1*( f(ix0+1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_p1*( f(ix0-1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_m1*( f(ix0-1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_p1*( f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_m1*( f(ix0  ,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_y_00*fac_z_p1*( f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_y_00*fac_z_m1*( f(ix0+1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_z_00*fac_x_p1*( f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0+1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_z_00*fac_x_m1*( f(ix0-1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) 
+      endif
 !
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************
