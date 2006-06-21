@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.119 2006-06-20 23:48:05 mee Exp $
+! $Id: interstellar.f90,v 1.120 2006-06-21 21:04:19 bingert Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -322,7 +322,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.119 2006-06-20 23:48:05 mee Exp $")
+           "$Id: interstellar.f90,v 1.120 2006-06-21 21:04:19 bingert Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -1911,13 +1911,13 @@ find_SN: do n=n1,n2
 !
     endsubroutine calc_interstellar_snr_damping
 !***********************************************************************
-    subroutine calc_interstellar_snr_damping_int(dt)
+    subroutine calc_interstellar_snr_damping_int(int_dt)
 !
       use Cdata
       use Sub, only: multsv, multsv_add
       use EquationOfState, only: eoscalc, eosperturb
 !
-      real :: dt, dv
+      real :: int_dt, dv
 !
       if (SNR%state/=SNstate_damping) return
 !
@@ -1926,7 +1926,7 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 !
-      SNR%heat_energy=SNR%heat_energy+dt*SNR%energy_loss*dv*dt
+      SNR%heat_energy=SNR%heat_energy+int_dt*SNR%energy_loss*dv*int_dt
 !
     endsubroutine calc_interstellar_snr_damping_int
 !***********************************************************************
