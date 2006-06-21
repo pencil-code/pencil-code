@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.7 2006-06-13 11:53:21 mee Exp $
+! $Id: messages.f90,v 1.8 2006-06-21 19:27:05 brandenb Exp $
 !
 !  This module takes care of messages.
 !
@@ -101,7 +101,7 @@ module Messages
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occured at "//trim(location)
+        write (*,*) trim(message)//" occurred at "//trim(location)
 !
         if (ldie_onfatalerror) call die_gracefully
 !
@@ -125,7 +125,7 @@ module Messages
         call terminal_highlight_fatal_error()
         write (*,'(A13)',ADVANCE='NO') "FATAL ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occured at "//trim(location)
+        write (*,*) trim(message)//" occurred at "//trim(location)
 !
       endif
 !
@@ -145,7 +145,7 @@ module Messages
           if (lroot) then
             print*, 'DYING - there was ', fatal_errors_total, ' errors.'
             print*, 'This is probably due to one or more fatal errors that'
-            print*, 'have occured only on a single processor.'
+            print*, 'have occurred only on a single processor.'
           endif
           if (ldie_onfatalerror) call die_gracefully
         endif
@@ -168,7 +168,7 @@ module Messages
         call terminal_highlight_error()
         write (*,'(A7)',ADVANCE='NO') "ERROR: "
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occured at "//trim(location)
+        write (*,*) trim(message)//" occurred at "//trim(location)
 !
         if (ldie_onerror) call die_gracefully
 !
@@ -189,7 +189,7 @@ module Messages
         call terminal_highlight_warning()
         write (*,'(A9)',ADVANCE='NO') "WARNING:"
         call terminal_defaultcolor()
-        write (*,*) trim(message)//" occured at "//trim(location)
+        write (*,*) trim(message)//" occurred at "//trim(location)
 !
         if (ldie_onwarning) call die_gracefully
 !
