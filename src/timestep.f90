@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.37 2006-06-20 23:48:06 mee Exp $
+! $Id: timestep.f90,v 1.38 2006-06-22 08:58:07 mee Exp $
 
 module Timestep
 
@@ -33,7 +33,7 @@ module Timestep
       use Cdata
       use Equ
       use Particles_main
-      use Interstellar, only: calc_interstellar_snr_damping_int
+      use Interstellar, only: calc_interstellar_snr_damp_int
       use Shear, only: advance_shear
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -110,7 +110,7 @@ module Timestep
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
 !
-        if (linterstellar) call calc_interstellar_snr_damping_int(dt_beta(itsub))
+        if (linterstellar) call calc_interstellar_snr_damp_int(dt_beta(itsub))
 !
 !  Time evolution of grid variables
 !  (do this loop in pencils, for cache efficiency)

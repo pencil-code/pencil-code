@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.22 2006-06-21 21:04:19 bingert Exp $
+! $Id: nointerstellar.f90,v 1.23 2006-06-22 08:58:07 mee Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.22 2006-06-21 21:04:19 bingert Exp $")
+           "$Id: nointerstellar.f90,v 1.23 2006-06-22 08:58:07 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -206,13 +206,13 @@ module Interstellar
 !
     endsubroutine calc_interstellar_snr_damping
 !***********************************************************************
-    subroutine calc_interstellar_snr_damping_int(int_dt)
+    subroutine calc_interstellar_snr_damp_int(int_dt)
 !
       use Cdata
       real :: int_dt
 !
       if (NO_WARN) print*,int_dt
 !
-    endsubroutine calc_interstellar_snr_damping_int
+    endsubroutine calc_interstellar_snr_damp_int
 !***********************************************************************
 endmodule interstellar
