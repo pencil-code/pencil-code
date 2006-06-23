@@ -4,11 +4,12 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.7 2006-04-18 17:50:18 theine Exp $'
+  cvsid='$Id: start.in,v 1.8 2006-06-23 12:42:21 theine Exp $'
 
   unit_length=1e8               !
   unit_velocity=1e6             ! unit system (relative to cgs)
   unit_density=1e-7             !
+  unit_temperature=1e0
 
   xyz0  = -3.0, -3.0, -2.61196  ! first corner of box
   Lxyz  =  6.0,  6.0,  3.20542  ! box size
