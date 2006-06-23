@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.195 2006-06-23 09:49:26 nbabkovs Exp $
+### $Id: Makefile.src,v 1.196 2006-06-23 15:51:06 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -369,8 +369,7 @@ MAKEOPTS=
 ##
 ## giga[0-9] Newcastle eScience (tony,dave,greame)
 ##
-#FC=mpif90 #(giga[0-9]*)  
-#FC=/addon/shared/mpich/bin/mpif90 -static -I/addon/shared/mpich/include/ #(giga[0-9]*)  
+#FC=mpif90 -static #(giga[0-9]*)  
 ##FC=gfortran_4win -static -I/addon/shared/lam/include #(giga01)  
 ##CC=gcc_4win -static -I/addon/shared/lam/include #(giga01)  
 #FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-9]*)
@@ -378,8 +377,7 @@ MAKEOPTS=
 #FFLAGS=-O0 -CA -CB -CS -CV #(giga[0-9]*)  
 #FFLAGS=-O2 -ipo -tpp7 -vec_report0 #(giga[0-9]*)  
 #FFLAGS=-C -tpp7 -vec_report0  #(giga[0-9]*)  
-#FFLAGS=-O2 -mp -vec_report0  #(giga[0-9]*)  
-##FFLAGS=-O2 -I/addon/shared/mpich-1.2.7/include #(giga01)  
+#FFLAGS=-O2 -mp -vec_report0 #(giga[0-9]*)  
 #LDMPI= #(giga[0-9]*)
 ##
 ## St. Andrews Copson Cluster (tony,dave,greame)
