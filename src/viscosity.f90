@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.23 2006-06-20 23:48:06 mee Exp $
+! $Id: viscosity.f90,v 1.24 2006-06-23 15:52:01 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -83,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.23 2006-06-20 23:48:06 mee Exp $")
+           "$Id: viscosity.f90,v 1.24 2006-06-23 15:52:01 mee Exp $")
 
       ivisc(1)='nu-const'
 
@@ -364,7 +364,7 @@ module Viscosity
 !
       use Cdata
       use Sub
-      use Interstellar, only: calc_interstellar_snr_damping
+      use Interstellar, only: calc_snr_damping
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
@@ -501,8 +501,8 @@ module Viscosity
 !
 !  viscous force: Handle damping at the core of SNRs
 !
-      if (lvisc_snr_damp) then
-        call calc_interstellar_snr_damping(p)
+      if (linterstellar.and.lvisc_snr_damp) then
+        call calc_snr_damping(p)
       endif
 !
 !  viscous force: nu_hyper3*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5

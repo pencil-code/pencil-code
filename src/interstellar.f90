@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.121 2006-06-22 08:58:07 mee Exp $
+! $Id: interstellar.f90,v 1.122 2006-06-23 15:52:00 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -322,7 +322,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.121 2006-06-22 08:58:07 mee Exp $")
+           "$Id: interstellar.f90,v 1.122 2006-06-23 15:52:00 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -812,10 +812,10 @@ module Interstellar
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
     if (t < t_settle) return
-    call calc_interstellar_snr_damping_factor(f)
+    call calc_snr_damping_factor(f)
     if (lSNI) call check_SNI (f,l_SNI)
     if (lSNII) call check_SNII(f,l_SNI)
-    call calc_interstellar_snr_damping_add_heat(f)
+    call calc_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
 !***********************************************************************
@@ -1809,7 +1809,7 @@ find_SN: do n=n1,n2
 !!
 !    endsubroutine calc_interstellar_SNRdamping
 !***********************************************************************
-    subroutine calc_interstellar_snr_damping_factor(f)
+    subroutine calc_snr_damping_factor(f)
 !
       use Cdata
 !
@@ -1857,9 +1857,9 @@ find_SN: do n=n1,n2
 !      enddo; enddo
 !
 
-    endsubroutine calc_interstellar_snr_damping_factor
+    endsubroutine calc_snr_damping_factor
 !***********************************************************************
-    subroutine calc_interstellar_snr_unshock(penc)
+    subroutine calc_snr_unshock(penc)
 !
       use Cdata
 !
@@ -1873,9 +1873,9 @@ find_SN: do n=n1,n2
       penc = penc*(1.-exp(-(dr2_SN_mx/SNR%radius**2)))
 !
 !
-    endsubroutine calc_interstellar_snr_unshock
+    endsubroutine calc_snr_unshock
 !***********************************************************************
-    subroutine calc_interstellar_snr_damping(p)
+    subroutine calc_snr_damping(p)
 !
       use Cdata
       use Sub, only: multsv, multsv_add, dot
@@ -1909,9 +1909,9 @@ find_SN: do n=n1,n2
 !
 !      penc=max(penc,SNR_damping*exp(-(dr2_SN_mx/SNR%radius**2))/dxmin**2)
 !
-    endsubroutine calc_interstellar_snr_damping
+    endsubroutine calc_snr_damping
 !***********************************************************************
-    subroutine calc_interstellar_snr_damp_int(int_dt)
+    subroutine calc_snr_damp_int(int_dt)
 !
       use Cdata
       use Sub, only: multsv, multsv_add
@@ -1928,9 +1928,9 @@ find_SN: do n=n1,n2
 !
       SNR%heat_energy=SNR%heat_energy+int_dt*SNR%energy_loss*dv*int_dt
 !
-    endsubroutine calc_interstellar_snr_damp_int
+    endsubroutine calc_snr_damp_int
 !***********************************************************************
-    subroutine calc_interstellar_snr_damping_add_heat(f)
+    subroutine calc_snr_damping_add_heat(f)
 !
       use Cdata
       use Mpicomm
@@ -1966,7 +1966,7 @@ find_SN: do n=n1,n2
         SNR%state=SNstate_invalid
       endif
 !
-    endsubroutine calc_interstellar_snr_damping_add_heat
+    endsubroutine calc_snr_damping_add_heat
 !***********************************************************************
     subroutine get_mean_density(f,remnant)
 !

@@ -8,8 +8,8 @@
   public :: pencil_criteria_interstellar
 
   public :: calc_heat_cool_interstellar, check_SN
-  public :: calc_interstellar_snr_damping
-  public :: calc_interstellar_snr_damp_int
-  public :: calc_interstellar_snr_unshock
+  public :: calc_snr_damping
+  public :: calc_snr_damp_int
+  public :: calc_snr_unshock
   public :: input_persistent_interstellar, output_persistent_interstellar
 

@@ -1,4 +1,4 @@
-! $Id: timestep_rkf.f90,v 1.1 2006-06-23 09:39:14 mee Exp $
+! $Id: timestep_rkf.f90,v 1.2 2006-06-23 15:52:01 mee Exp $
 
 module Timestep
 
@@ -39,7 +39,7 @@ module Timestep
       use Cdata
       use Messages
 !!      use Particles_main
-!!      use Interstellar, only: calc_interstellar_snr_damp_int
+!!      use Interstellar, only: calc_snr_damp_int
 !!      use Shear, only: advance_shear
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
