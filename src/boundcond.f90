@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.115 2006-06-10 12:04:29 theine Exp $
+! $Id: boundcond.f90,v 1.116 2006-06-23 09:49:26 nbabkovs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -947,7 +947,11 @@ module Boundcond
           if (nxgrid <= 1) then
             if (j==5) then
               lnrho=f(l1:l2,m2,n2,ilnrho)
+              if (T_disk.EQ.0) then    
               lnTT=log(cs0**2/(gamma1))
+              else
+              lnTT=log(T_disk)    
+              endif           
               call eoscalc(4,lnrho,lnTT,ss=ss)
               f(l1:l2,m2,n2,iss)=ss
             else 

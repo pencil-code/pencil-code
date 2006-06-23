@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.413 2006-06-15 12:00:03 brandenb Exp $
+! $Id: entropy.f90,v 1.414 2006-06-23 09:49:26 nbabkovs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -55,7 +55,7 @@ module Entropy
   real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
-  real :: deltaT_poleq=0.
+  real :: deltaT_poleq=0.,beta_hand=1.
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
@@ -104,7 +104,7 @@ module Entropy
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, lviscosity_heat, l1D_cooling,l1D_heating,lheat_conduct
+      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, lviscosity_heat, l1D_cooling,l1D_heating,lheat_conduct,beta_hand
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss, &
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.413 2006-06-15 12:00:03 brandenb Exp $")
+           "$Id: entropy.f90,v 1.414 2006-06-23 09:49:26 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1644,7 +1644,7 @@ module Entropy
       real, dimension (nx) :: rhs,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
       real :: zbot,ztop,xi,profile_cor
-      real :: uT, TT_cs0, const_tmp
+      real :: uT,  const_tmp
       integer :: j,ju,l_sz, l_sz_1
 !
       intent(inout)  :: f,p
@@ -1784,15 +1784,16 @@ module Entropy
 
 !
     if (lnstar_entropy) then
-   
-     TT_cs0=cs0**2/gamma1
+   if (T_disk.EQ.0) then
+     T_disk=cs0**2/gamma1
+   endif 
    !  print*,'  TT_cs0     ',TT_cs0
  
        if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
    
          if (lnstar_T_const) then
     
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-TT_cs0)/TT_cs0
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-T_disk)/T_disk
            !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
            !   -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/p%TT(:)
 
@@ -1810,17 +1811,17 @@ module Entropy
          if ( dt .GT. 0..AND. n .LE. ac_dc_size+4 ) then
           if (lnstar_T_const) then
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/TT_cs0    
+           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk    
           !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)/p%rho(:)/TT_cs0
+          ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)/p%rho(:)/T_disk
           !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          ! -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+          ! -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
 
           else
-          !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-          ! -1./(5.*dt)*(p%TT(:)-T_star)/T_star
-            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-           -1./(1.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star 
+              df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(5.*dt)*(p%TT(:)-T_star)/T_star
+         !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star!p%TT(:)
 
           !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
           !     -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
@@ -1841,17 +1842,17 @@ module Entropy
           if (nxgrid .LE.1) then
               if (lnstar_T_const) then   
                  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-                 -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+                 -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
               else  
 
               !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-              !   -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+              !   -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
               !    df(l1:H_disk_point+4,m,n,iss)=df(l1:H_disk_point+4,m,n,iss) &
-               !   -1./(5.*dt)*(p%TT(1:H_disk_point)-TT_cs0)/TT_cs0
+               !   -1./(5.*dt)*(p%TT(1:H_disk_point)-T_disk)/T_disk
                ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-               !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)
+               !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_disk)/gamma)
               ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-              ! -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n-1,ilnrho))/p%rho(:)/TT_cs0
+              ! -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n-1,ilnrho))/p%rho(:)/T_disk
       
 
               endif
@@ -1871,7 +1872,7 @@ module Entropy
 
           if (lnstar_1D) then   
             df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
-            -1./(5.*dt)*(f(l_sz:l2,m,n,iss)-log(TT_cs0)/gamma) &
+            -1./(5.*dt)*(f(l_sz:l2,m,n,iss)-log(T_disk)/gamma) &
             /p%rho(l_sz_1:nxgrid)/p%TT(l_sz_1:nxgrid)  
           else
 
@@ -1883,14 +1884,14 @@ module Entropy
           endif
 
       !        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-      !       -1./(5.*dt)*(p%TT(:)-TT_cs0)/TT_cs0
+      !       -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
         
           !    df(l_sz:l2,m,n,iss)=df(l1:l2,m,n,iss) &
        !     -1./(1.*dt)*(f(l_sz:l2,m,n,iss)*gamma+gamma1*f(l_sz:l2,m,n,ilnrho))/ &
-       !     p%rho(l_sz_1:nxgrid)/TT_cs0!p%TT(l_sz_1:nxgrid) 
+       !     p%rho(l_sz_1:nxgrid)/T_disk!p%TT(l_sz_1:nxgrid) 
 
       !   df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
-      !      -1./(5.*dt)*(p%TT(l_sz_1:nxgrid)-TT_cs0)/TT_cs0
+      !      -1./(5.*dt)*(p%TT(l_sz_1:nxgrid)-T_disk)/T_disk
 
        
          endif
@@ -2273,7 +2274,7 @@ module Entropy
 !
     if (l1D_cooling) then
 
-      beta=1e7
+      beta=beta_hand  !1e6
 
       thdiff_1D =-16./3.*sigmaSB/kappa_es*p%TT**4 &
                  *p%rho1*beta
@@ -3241,7 +3242,7 @@ module Entropy
       real, dimension (mx,my,mz) :: xx, zz
       real, dimension (nx) ::  lnrho, lnTT,ss
       integer :: step_width, step_length, mi,ni, li,  decel_zone
-      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, Tstar, const_tmp, TT_cs0
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, Tstar, const_tmp
 
 
       decel_zone=ac_dc_size+4
@@ -3263,8 +3264,10 @@ module Entropy
 
 
       lnTT=log(T_star)!  log(T0)
-      TT_cs0=cs0**2/gamma1
-
+ if (T_disk.EQ.0) then
+     T_disk=cs0**2/gamma1
+   endif 
+    
 
       print*,'T_star=',T_star
       do ni=n1,n2;

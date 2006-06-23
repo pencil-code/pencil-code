@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.321 2006-06-15 19:34:43 ajohan Exp $
+! ! $Id: cdata.f90,v 1.322 2006-06-23 09:49:26 nbabkovs Exp $
 
 module Cdata
 
@@ -290,6 +290,7 @@ module Cdata
   real :: R_star=0.
   real :: M_star=0. 
   real :: T_star=0.
+  real :: T_disk=0.
   real :: accretion_flux=0.
   logical :: lextrapolate_bot_density=.false.
   logical :: ltop_velocity_kep=.false.
