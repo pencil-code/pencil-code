@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.167 2006-06-15 19:34:43 ajohan Exp $
+! $Id: mpicomm.f90,v 1.168 2006-06-23 09:39:14 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -105,6 +105,11 @@ module Mpicomm
   interface mpibcast_char
     module procedure mpibcast_char_scl
     module procedure mpibcast_char_arr
+  endinterface
+
+  interface mpiallreduce_max
+    module procedure mpiallreduce_max_arr
+    module procedure mpiallreduce_max_scl
   endinterface
 
   interface mpireduce_max
@@ -1280,6 +1285,27 @@ module Mpicomm
           MPI_COMM_WORLD,ierr)
 !
     endsubroutine mpibcast_char_arr
+!***********************************************************************
+    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmax_tmp,fmax
+!
+!  calculate total maximum for each array element and return to root
+!
+      call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
+                      MPI_COMM_WORLD, ierr)
+    endsubroutine mpiallreduce_max_arr
+!***********************************************************************
+    subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
+!
+      real :: fmax_tmp,fmax
+!
+!  calculate total maximum for each array element and return to root
+!
+      call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
+                      MPI_COMM_WORLD, ierr)
+    endsubroutine mpiallreduce_max_scl
 !***********************************************************************
     subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
 !

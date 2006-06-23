@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.20 2006-06-21 14:02:16 mee Exp $
+### $Id: Makefile.depend,v 1.21 2006-06-23 09:39:13 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -36,7 +36,7 @@ fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM_FIX).o general.o
-param_io.o:  param_io.f90 cdata.o $(MPICOMM_FIX).o sub.o timestep.o $(TIMEAVG).o $(physics) $(PARTICLES_MAIN).o
+param_io.o:  param_io.f90 cdata.o $(MPICOMM_FIX).o sub.o $(TIMESTEP).o $(TIMEAVG).o $(physics) $(PARTICLES_MAIN).o
 register.o:  register.f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o equ.o
 prints.o:    prints.f90 cdata.o sub.o param_io.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM_FIX).o messages.o sub.o $(physics) boundcond.o $(GLOBAL).o $(PARTICLES_MAIN).o
@@ -45,7 +45,7 @@ filter.o:    filter.f90 cdata.o sub.o boundcond.o
 initcond.o:  initcond.f90 cdata.o $(MPICOMM_FIX).o general.o sub.o $(EOS).o
 kepvor.o : kepvor.f90 cdata.o general.o
 noinitcond_spec.o: noinitcond_spec.f90 cdata.o general.o
-timestep.o:  timestep.f90 cdata.o $(MPICOMM_FIX).o equ.o $(FORCING).o
+$(TIMESTEP).o:  $(TIMESTEP).f90 cdata.o $(MPICOMM_FIX).o equ.o $(FORCING).o
 persist.o:    persist.f90 cdata.o general.o $(INTERSTELLAR).o $(FORCING).o
 snapshot.o:    snapshot.f90 cdata.o $(MPICOMM_FIX).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o $(RADIATION).o $(EOS).o $(MAGNETIC).o persist.o $(PARTICLES_MAIN).o
 messages.o:    messages.f90 cdata.o $(MPICOMM_FIX).o

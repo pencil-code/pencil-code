@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.122 2006-06-15 19:34:43 ajohan Exp $
+! $Id: nompicomm.f90,v 1.123 2006-06-23 09:39:14 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -83,6 +83,11 @@ module Mpicomm
   interface mpireduce_max
     module procedure mpireduce_max_scl
     module procedure mpireduce_max_arr
+  endinterface
+
+  interface mpiallreduce_max
+    module procedure mpiallreduce_max_scl
+    module procedure mpiallreduce_max_arr
   endinterface
 
   interface mpireduce_min
@@ -538,6 +543,21 @@ module Mpicomm
       if (NO_WARN) print*, cbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_char_arr
+!***********************************************************************
+    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmax_tmp, fmax
+!
+      fmax=fmax_tmp
+    endsubroutine mpiallreduce_max_arr
+!***********************************************************************
+    subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
+!
+      real :: fmax_tmp, fmax
+!
+      fmax=fmax_tmp
+    endsubroutine mpiallreduce_max_scl
 !***********************************************************************
     subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
 !
