@@ -4,11 +4,12 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-04-18 10:59:29 theine Exp $'
+  cvsid='$Id: start.in,v 1.2 2006-06-24 06:08:41 brandenb Exp $'
 
   unit_length=1e8               !
   unit_velocity=1e6             ! unit system (relative to cgs)
   unit_density=1e-7             !
+  unit_temperature=1e-0         ! temperature measured in Kelvin
 
   xyz0  = -3.0, -3.0, -2.61196  ! first corner of box
   Lxyz  =  6.0,  6.0,  3.20542  ! box size
