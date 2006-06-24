@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.54 2006-06-24 07:06:10 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.55 2006-06-24 12:54:42 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.54 2006-06-24 07:06:10 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.55 2006-06-24 12:54:42 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -150,16 +150,25 @@ module EquationOfState
 !  Conversely, if cp is set, then unit_temperature must follow from this.
 !  If unit_temperature and cp are set, the problem is overdetermined,
 !    but it may still be correct, so this will be checked here.
+!  When gamma=1. (gamma1=0.), write Rgas=mu*cp or cp=Rgas/mu.
 !
       Rgas_cgs=k_B_cgs/m_u_cgs
       if (unit_temperature == impossible) then
         if (cp == impossible) cp=1.
-        Rgas=mu*gamma1*gamma11*cp
+        if (gamma1 == 0.) then
+          Rgas=mu*cp
+        else
+          Rgas=mu*gamma1*gamma11*cp
+        endif
         unit_temperature=unit_velocity**2*Rgas/Rgas_cgs
       else
         Rgas=Rgas_cgs*unit_temperature/unit_velocity**2
         if (cp == impossible) then
-          cp=Rgas/(mu*gamma1*gamma11)
+          if (gamma1 == 0.) then
+            cp=Rgas/mu
+          else
+            cp=Rgas/(mu*gamma1*gamma11)
+          endif
         else
 !
 !  checking whether the units are overdetermined.
