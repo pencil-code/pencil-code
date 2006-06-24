@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.414 2006-06-23 09:49:26 nbabkovs Exp $
+! $Id: entropy.f90,v 1.415 2006-06-24 07:06:10 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.414 2006-06-23 09:49:26 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.415 2006-06-24 07:06:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -193,7 +193,8 @@ module Entropy
       use EquationOfState, only: cs0, get_soundspeed, &
                                  beta_glnrho_global, beta_glnrho_scaled, &
                                  mpoly, mpoly0, mpoly1, mpoly2, &
-                                 select_eos_variable
+                                 select_eos_variable, pressure_gradient
+!
 !AB: Tony, what's the plan; should these entries all be declared at the
 !AB: beginning of the module (as is done now already), or should we do it
 !AB: again in each routine?
@@ -201,7 +202,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !
-      real :: beta1
+      real :: beta1,cp1tilde,lnrho_dummy=0.
       integer :: i
       logical :: lnothing
 !
@@ -369,8 +370,14 @@ module Entropy
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
           endif
 !
-!         temperatures at shell boundaries
-          beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
+!  To get cp1tilde factor, we need to call pressure_gradient
+!  (AB: this is really a bit strange, of course!!)
+!
+          call pressure_gradient(lnrho_dummy,ss_const,cs20,cp1tilde)
+          beta1=cp1tilde*g0/(mpoly+1)*gamma/gamma1
+!
+!  temperatures at shell boundaries
+!
           TT_ext=T0
           TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           if (lroot) then
@@ -905,7 +912,8 @@ module Entropy
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint
       integer :: isoth
 !
-      ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+!  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+!
       if (isoth /= 0) then ! isothermal layer
         beta1 = 0.
         tmp = ssint - gamma1*gravz*(zz-zint)/cs2int
@@ -959,7 +967,8 @@ module Entropy
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
       integer :: isoth
 !
-      ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+!  Warning: beta1 is here not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+!
       nu_epicycle2 = nu_epicycle**2
       if (isoth /= 0) then ! isothermal layer
         beta1 = 0.
@@ -1156,14 +1165,23 @@ module Entropy
 !  20-oct-03/dave -- coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly,pressure_gradient
       use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
-      real :: beta1
+      real :: beta1,cp1tilde,lnrho_dummy=0.
 !
-      beta1=g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
+!  beta1 is the temperature gradient
+!  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
+!  To get cp1tilde factor, we need to call pressure_gradient
+!  (AB: this is really a bit strange, of course!!)
+!
+      call pressure_gradient(lnrho_dummy,ss_const,cs20,cp1tilde)
+      beta1=cp1tilde*g0/(mpoly+1)*gamma/gamma1
+!
+!  set intial condition
+!
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
@@ -1172,7 +1190,8 @@ module Entropy
         call shell_ss_perturb(pert_TT)
 !
         where (r_mn >= r_ext) TT = TT_ext
-        where (r_mn < r_ext .AND. r_mn > r_int) TT = TT_ext*(1.+beta1*(r_ext/r_mn-1))+pert_TT
+        where (r_mn < r_ext .AND. r_mn > r_int) &
+          TT = TT_ext*(1.+beta1*(r_ext/r_mn-1))+pert_TT
         where (r_mn <= r_int) TT = TT_int
 !
         lnrho=f(l1:l2,m,n,ilnrho)
@@ -1220,13 +1239,21 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, pressure_gradient
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss
-      real :: beta1
+      real :: beta1,cp1tilde,lnrho_dummy=0.
 !
-      beta1 = gamma/gamma1*gravz/(mpoly+1)  ! gamma1*cp/gamma=R_{*}
+!  beta1 is the temperature gradient
+!  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
+!  To get cp1tilde factor, we need to call pressure_gradient
+!  (AB: this is really a bit strange, of course!!)
+!
+      call pressure_gradient(lnrho_dummy,ss_const,cs20,cp1tilde)
+      beta1=cp1tilde*gamma/gamma1*gravz/(mpoly+1)
+!
+!  set initial condition (first in terms of TT, and then in terms of ss)
 !
       do m=m1,m2
       do n=n1,n2
@@ -1997,6 +2024,10 @@ module Entropy
 !  rho*T*Ds/Dt = ... + nab.(rho*cp*chi*gradT)
 !        Ds/Dt = ... + cp*chi*[del2lnTT+(glnrho+glnTT).glnTT]
 !
+!  with additional turbulent diffusion
+!  rho*T*Ds/Dt = ... + nab.(rho*T*chit*grads)
+!        Ds/Dt = ... + chit*[del2ss+(glnrho+glnTT).gss]
+!
       if (pretend_lnTT) then
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
         thdiff=gamma*chi*(p%del2lnTT+g2)
@@ -2006,7 +2037,9 @@ module Entropy
         endif
       else
         call dot(p%glnrho+p%glnTT,p%glnTT,g2)
-        thdiff=chi*(p%del2lnTT+g2)
+        !thdiff=cp*chi*(p%del2lnTT+g2)
+!AB:  divide by p%cp1tilde, since we don't have cp here.
+        thdiff=chi*(p%del2lnTT+g2)/p%cp1tilde
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
           thdiff=thdiff+chi_t*(p%del2ss+g2)
@@ -2194,7 +2227,7 @@ module Entropy
       !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT)^2]
       !
       ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
-      chix = p%rho1*hcond   
+      chix = p%rho1*hcond*p%cp1tilde
       call dot(p%glnTT,p%glnTT,g2)
       thdiff = p%rho1*hcond * (p%del2lnTT + g2)  
 !
@@ -2369,6 +2402,7 @@ module Entropy
       if (pretend_lnTT) call fatal_error("calc_heatcond_spitzer","not implemented when pretend_lnTT = T")
 !
 !ajwm this should be p%TT
+!AB: yes, I agree
       TT = exp(p%lnTT)
 !        
 !     Calculate variable diffusion coefficients along pencils
@@ -2491,7 +2525,7 @@ module Entropy
         !        Ds/Dt = ... + K/rho*[del2lnTT+(glnTT+glnhcond).glnTT]
         !
         ! NB: chix = K/(cp rho) is needed for diffus_chi calculation
-        chix = p%rho1*hcond
+        chix = p%rho1*hcond*p%cp1tilde
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot(p%glnTT,glnThcond,g2)
         thdiff = p%rho1*hcond * (p%del2lnTT + g2)  
@@ -2775,6 +2809,8 @@ module Entropy
       intent(out) :: df
 !
       if (pretend_lnTT) call fatal_error("calc_heat_cool_RTV","not implemented when pretend_lnTT = T")
+!
+!AB: looks like a strange hack to me
 !
 !     All is in SI units and has to be rescaled to PENCIL units
 !
@@ -3142,6 +3178,8 @@ module Entropy
 !     Calculate ln(T) in SI
 !
       lnTTor = p0*(tanh((xil-p1)/p2) +p3 +p4*xil)
+!
+!AB: also strange hack, I guess
 !
       unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
 !

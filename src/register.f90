@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.172 2006-05-26 17:00:19 theine Exp $
+! $Id: register.f90,v 1.173 2006-06-24 07:06:10 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -155,7 +155,7 @@ module Register
       use Param_IO
       use Print
       use Timeavg,         only: initialize_timeavg
-      use EquationOfState, only: initialize_eos
+      use EquationOfState, only: initialize_eos, units_eos
       use CosmicrayFlux,   only: initialize_cosmicrayflux
       use Hydro,           only: initialize_hydro
       use Density,         only: initialize_density
@@ -188,12 +188,16 @@ module Register
 !  used currently only in eos, but later also in
 !  the interstellar and radiation modules, for example
 !
+      call units_eos()
+!
+!  calculated derived units
+!
       unit_mass=unit_density*unit_length**3
       unit_energy=unit_mass*unit_velocity**2
       unit_time=unit_length/unit_velocity
       unit_flux=unit_energy/(unit_length**2*unit_time)
 !
-!  convert physical constants
+!  convert physical constants to code units
 !
       if (unit_system=='cgs') then
         if(lroot.and.leos_ionization.and.ip<14) print*,'initialize_modules: ' &
@@ -223,30 +227,12 @@ module Register
         c_light=c_light_cgs*1e-2/(unit_length/unit_time)
       endif
 !
-!  calculate additional constants
+!  calculate additional constants (now all in code units)
 !
       m_H=m_p+m_e
       m_He=3.97153*m_H
       chiH=13.6*eV
       chiH_=0.754*eV        
-!
-!  run initialization of individual modules
-!   allow initialize_eos to go early so that it may change the unit temperature.
-!     IFF it does it must then be careful not to use any of the consants above
-!     that depend upon unit_temperature without extreme care!
-!
-!      call initialize_io
-      call initialize_eos()
-!
-!  recalculate anything that depends upon unit_temperature
-!
-      if (unit_system=='cgs') then
-        k_B=k_B_cgs/(unit_energy/unit_temperature)
-        sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
-      elseif (unit_system=='SI') then
-        k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
-        sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
-      endif
 !
 !  print parameters in code units, but only when used
 !
@@ -255,13 +241,12 @@ module Register
             write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
          endif
       endif
-
 !
 !  run rest of initialization of individual modules
 !
       call initialize_prints()
       call initialize_timeavg(f) ! initialize time averages
-!
+      call initialize_eos()
       call initialize_gravity()
       call initialize_selfgravity()
       call initialize_density(f,lstarting)

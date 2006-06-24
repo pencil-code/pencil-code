@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.25 2006-06-09 15:20:20 brandenb Exp $
+! $Id: noeos.f90,v 1.26 2006-06-24 07:06:10 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,18 +80,22 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.25 2006-06-09 15:20:20 brandenb Exp $')
+           '$Id: noeos.f90,v 1.26 2006-06-24 07:06:10 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
-    subroutine initialize_eos()
+    subroutine units_eos()
 !
 !  dummy
 !
       gamma1=gamma-1.
       gamma11=1./gamma
-!      cs20=0.          ! to avoid wrong results with samples/testfield
-! wd: commented out as it creates more problems than it solves
+!
+    endsubroutine units_eos
+!***********************************************************************
+    subroutine initialize_eos()
+!
+!  dummy
 !
     endsubroutine initialize_eos
 !*******************************************************************

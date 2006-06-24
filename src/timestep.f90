@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.39 2006-06-23 15:52:01 mee Exp $
+! $Id: timestep.f90,v 1.40 2006-06-24 07:06:10 brandenb Exp $
 
 module Timestep
 
@@ -109,6 +109,7 @@ module Timestep
         if (ldt) dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
+!AB: Tony, could you please say a few words here
 !
         if (linterstellar) call calc_snr_damp_int(dt_beta(itsub))
 !

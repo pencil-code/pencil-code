@@ -11,7 +11,7 @@
   public :: getdensity
                                                                                                        
   public :: register_eos
-  public :: initialize_eos
+  public :: initialize_eos, units_eos
   public :: rprint_eos
   public :: read_eos_init_pars, write_eos_init_pars
   public :: read_eos_run_pars,  write_eos_run_pars
@@ -35,7 +35,7 @@
 
 !ajwm SHOULDN'T BE PUBLIC
   public :: cs0,cs20,lnrho0,rho0
-  public :: gamma,gamma1,gamma11,cs2top,cs2bot !!,cp1
+  public :: gamma,gamma1,gamma11,cs2top,cs2bot
   public :: beta_glnrho_global, beta_glnrho_scaled
   public :: cs2cool
   public :: mpoly, mpoly0, mpoly1, mpoly2

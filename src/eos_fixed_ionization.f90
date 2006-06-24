@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.22 2006-06-09 10:51:06 brandenb Exp $
+! $Id: eos_fixed_ionization.f90,v 1.23 2006-06-24 07:06:10 brandenb Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.22 2006-06-09 10:51:06 brandenb Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.23 2006-06-24 07:06:10 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -134,6 +134,12 @@ module EquationOfState
           call stop_it('initialize_ionization: xH2 must be <= 0.5 and >= 0.0')
 !
     endsubroutine getmu
+!***********************************************************************
+    subroutine units_eos()
+!
+!  dummy: here we don't allow for inputting cp.
+!
+    endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos()
 !

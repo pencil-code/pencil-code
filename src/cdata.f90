@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.322 2006-06-23 09:49:26 nbabkovs Exp $
+! ! $Id: cdata.f90,v 1.323 2006-06-24 07:06:10 brandenb Exp $
 
 module Cdata
 
@@ -64,7 +64,8 @@ module Cdata
 
   !  units (need to be in double precision)
   character (len=3) :: unit_system='cgs'
-  double precision :: unit_length=1.,unit_velocity=1.,unit_density=1.,unit_temperature=1.
+  double precision :: unit_length=1.,unit_velocity=1.,unit_density=1.
+  double precision :: unit_temperature=impossible
   ! Derived units
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   

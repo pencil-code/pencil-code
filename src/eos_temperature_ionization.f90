@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.38 2006-06-15 21:53:39 theine Exp $
+! $Id: eos_temperature_ionization.f90,v 1.39 2006-06-24 07:06:10 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -122,7 +122,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.38 2006-06-15 21:53:39 theine Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.39 2006-06-24 07:06:10 brandenb Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -725,6 +725,12 @@ module EquationOfState
       if (NO_WARN) print*,lnTT
 !
     end subroutine get_soundspeed
+!***********************************************************************
+    subroutine units_eos()
+!
+!  dummy: here we don't allow for inputting cp.
+!
+    endsubroutine units_eos
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)
 
