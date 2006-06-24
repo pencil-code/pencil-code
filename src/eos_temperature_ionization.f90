@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.39 2006-06-24 07:06:10 brandenb Exp $
+! $Id: eos_temperature_ionization.f90,v 1.40 2006-06-24 21:29:56 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -122,7 +122,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.39 2006-06-24 07:06:10 brandenb Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.40 2006-06-24 21:29:56 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -728,8 +728,13 @@ module EquationOfState
 !***********************************************************************
     subroutine units_eos()
 !
-!  dummy: here we don't allow for inputting cp.
+!  If unit_temperature hasn't been specified explictly in start.in,
+!  set it to 1 (Kelvin).
 !
+!  24-jun-06/tobi: coded
+!
+      if (unit_temperature==impossible) unit_temperature=1.
+
     endsubroutine units_eos
 !***********************************************************************
     subroutine read_eos_init_pars(unit,iostat)

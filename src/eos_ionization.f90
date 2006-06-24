@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.33 2006-06-24 07:06:10 brandenb Exp $
+! $Id: eos_ionization.f90,v 1.34 2006-06-24 21:29:56 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.33 2006-06-24 07:06:10 brandenb Exp $")
+           "$Id: eos_ionization.f90,v 1.34 2006-06-24 21:29:56 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -139,8 +139,13 @@ module EquationOfState
 !***********************************************************************
     subroutine units_eos()
 !
-!  dummy: here we don't allow for inputting cp.
+!  If unit_temperature hasn't been specified explictly in start.in,
+!  set it to 1 (Kelvin).
 !
+!  24-jun-06/tobi: coded
+!
+      if (unit_temperature==impossible) unit_temperature=1.
+
     endsubroutine units_eos
 !***********************************************************************
     subroutine initialize_eos()
