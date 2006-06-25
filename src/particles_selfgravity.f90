@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.2 2006-06-16 15:26:28 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.3 2006-06-25 14:53:41 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -51,7 +51,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.2 2006-06-16 15:26:28 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.3 2006-06-25 14:53:41 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -139,7 +139,7 @@ module Particles_selfgravity
 !
       if (lselfgravity_particles) then
         do k=1,npar_loc
-          call interpolate_quadratic( &
+          call interpolate_quadratic_spline( &
               f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
               ineargrid(k,:),ipar(k) )
           dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
