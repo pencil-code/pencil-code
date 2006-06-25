@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.330 2006-06-03 04:30:22 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.331 2006-06-25 11:14:55 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-06-03 04:30:22 $ $,~ $ $Revision: 1.330 $ $}
+%\date{$ $Date: 2006-06-25 11:14:55 $ $,~ $ $Revision: 1.331 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-06-03 04:30:22 $ $,~ $ $Revision: 1.330 $ $}\\
+  \emph{$ $Date: 2006-06-25 11:14:55 $ $,~ $ $Revision: 1.331 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5332,7 +5332,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-06-03 04:30:22 $ $,~ $ $Revision: 1.330 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-06-25 11:14:55 $ $,~ $ $Revision: 1.331 $ $}
 
 \section{Timings}
 
@@ -5353,6 +5353,7 @@ application on your specific hardware.
 
 
 % ---------------------------------------------------------------------- %
+\small %AB: Wolfgang, this \small doesn't seem to have an effect!?
 %\begin{table}[htb]
 \begin{center}
 %    \caption{
@@ -5362,33 +5363,30 @@ application on your specific hardware.
 %    \label{Ttimescale}
     \begin{small}
 %    \begin{tabular}{rllrlrll}
-    \begin{longtable}{rllrlrll}
+    \begin{longtable}{rllrlrrr}
     \toprule
-   \mcc{proc(s)}
+   \mcc{proc}
      & \mcc{machine}
              & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
                     & \mcc{resol.} 
                               & \mcc{what}
-                                             & \mcc{mem./proc}
+                                             & \mcc{mem/proc}
                                                       & \mcc{when}&\mcc{who}\\
     \midrule
    1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 MB & 20-may-02 & AB \\
    1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 MB & 20-may-02 & AB \\
    1 & Nq1   &  10  &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
    1 & Ukaff & 9.2  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   1 & Mattias&8.7  &  $64^3$ & magn/noentro &        & 30-sep-02 & AB \\
-   1 & Mattias&8.5  & $128^3$ & magn/noentro &        & 30-sep-02 & AB \\
    1 & Nl6   & 6.8  &  $64^3$ & magn/noentro &        & 10-mar-03 & AB \\
-   1 & Nl6   & 36.3 &  $64\times128\times64$
+   1 & Nl6   & 36.3 &  $64\!\times\!128\!\times\!64$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
    1 & Nl6   & 42.7 & $16^2{\times}256$                                  
-                     & nomagn/entro/rad6/ion &        & 22-oct-03 & AB \\
+                     & nomag/entro/rad6/ion &        & 22-oct-03 & AB \\
    1 & Nl6   & 37.6 & $16^2{\times}256$                                  
-                     & nomagn/entro/rad2/ion &        & 22-oct-03 & AB \\
+                     & nomag/entro/rad2/ion &        & 22-oct-03 & AB \\
    1 & Nl6   & 19.6 & $16^2{\times}256$                                  
-                      & nomagn/entro/norad/ion &      & 22-oct-03 & AB \\
-   1 & Nl6   &  8.7 & $16^2{\times}256$                                  
-                    & nomagn/entro/norad/noion &      & 22-oct-03 & AB \\
+                      & nomag/entro/ion &      & 22-oct-03 & AB \\
+   1 & Nl6   &  8.7 & $16^2{\times}256$ & nomag/entro &      & 22-oct-03 & AB \\
    1 & Nl6n  &  9.8 & $32^3$                                  
                     & magn/noentro/pscalar   &        & 17-mar-06 & AB \\
    1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -5412,16 +5410,16 @@ application on your specific hardware.
    4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
    4 & fe1   & 3.39 &  $32^3$ & magn/noentro &        & 16-aug-02 & AB \\
    4 & Rasm. & 2.02 &  $64^3$ & magn/noentro &  2x2   &  8-sep-02 & AB \\
-   4 & Mhd   & 8.2  &  $64^2\times16$
-                              & nomagn/entro &        & 23-jul-02 & AB \\
-   4 & fe1   & 6.35 &  $64\times128\times64$
+   4 & Mhd   & 8.2  &  $64^2\!\times\!16$
+                              & nomag/entro &        & 23-jul-02 & AB \\
+   4 & fe1   & 6.35 &  $64\!\times\!128\!\times\!64$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
    4 & fe1   & 2.09 & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
    4 & fe1   & 1.45 & $128^3$ & magn/noentro & giga   &  9-oct-02 & AB \\
    4 & fe1   & 7.55 & $16^2{\times}512$                                  
-                     & nomagn/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
+                     & nomag/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
    4 & fe1   & 5.48 & $16^2{\times}512$                                  
-                     & nomagn/entro/rad2/ion &  1x4   &  1-nov-03 & AB \\
+                     & nomag/entro/rad2/ion &  1x4   &  1-nov-03 & AB \\
    4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 MB & 20-jun-02 & WD \\
    4 & Hwwsx5& 1.8  & $256^3$ & convstar     & 8.2 GB & 29-jan-03 & WD \\
    8 & Nqall & 3.0  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
@@ -5429,7 +5427,7 @@ application on your specific hardware.
    8 & fe1   & 2.36 &  $64^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
    8 & Kabul & 1.25 & $64^2{\times}128$                                  
-                              & nomagn/entro &        & 11-jul-02 & WD \\
+                              & nomag/entro &        & 11-jul-02 & WD \\
    8 & fe1   & 1.68 & $128^3$ & magn/noentro &  1x8   &  8-sep-02 & AB \\
    8 & fe1   & 1.50 & $128^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & fe1   & 1.44 & $128^3$ & magn/noentro &  4x2   &  8-sep-02 & AB \\
@@ -5439,7 +5437,7 @@ application on your specific hardware.
    8 & fe1   & 0.99 & $256^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & fe1   & 0.98 & $256^3$ & magn/noentro &  4x2   &  8-sep-02 & AB \\
    8 & Mhd   & 1.46 & $160^2\times40$
-                              & nomagn/entro &  46 MB &  7-oct-02 & AB \\
+                              & nomag/entro &  46 MB &  7-oct-02 & AB \\
    8 & Hwwsx5& 0.50 & $256^3$ & convstar     & 8.6 GB & 29-jan-03 & WD \\
   16 & fe1   & 1.77 &  $64^3$ & convstar     &        &  9-feb-03 & AB \\
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
@@ -5453,10 +5451,10 @@ application on your specific hardware.
   16 & Mhd   & 2.03 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
   16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 MB & 22-may-02 & AB \\
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
-  16 & fe1   & 6.30 & $128\times256\times128$
+  16 & fe1   & 6.30 & $128\!\times\!256\!\times\!128$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
   16 & fe1   & 1.31 & $128^2{\times}512$                                  
-                     & nomagn/entro/rad2/ion &  4x4   &  1-nov-03 & AB \\
+                     & nomag/entro/rad2/ion &  4x4   &  1-nov-03 & AB \\
   16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
   16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 MB & 20-jun-02 & WD \\
@@ -5467,19 +5465,20 @@ application on your specific hardware.
   32 & giga? & 0.32 & $256^3$ & magn/noentro &        & 13-sep-03 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
-  32 & fe1   & 0.168& $512^3$ &nomagn/noentro&        &  9-oct-02 & AB \\
-  32 & fe1   & 1.26 & $64^2\times256$ &nomagn/entro/rad/ion&
+  32 & fe1   & 0.168& $512^3$ &nomag/noentro&        &  9-oct-02 & AB \\
+  32 & fe1   & 1.26 & $64^2\times256$ &nomag/entro/rad/ion&
                                                       &  7-sep-03 & AB \\
+  32 & Steno & 0.081& $256^3$ &nomag/entro/cool& 4x8 & 20-jun-06 & AB \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
-  64 & giga  & 0.11 & $256^3$ &nomagn/noentro&  4x16  & 29-apr-03 & AB \\
-  64 & giga  & 0.23 & $256^3$ &nomagn/noentro/hyper&4x16& 8-dec-03& AB \\
-  64 & fe1   & 0.164& $512^3$ &nomagn/noentro/hyper&4x16&17-dec-03& AB \\
-  64 & giga  & 0.091& $512^3$ &nomagn/noentro/hyper&4x16&17-dec-03& AB \\
+  64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
+  64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
+  64 & fe1   & 0.164& $512^3$ &nomag/noentro/hyp&4x16&17-dec-03& AB \\
+  64 & giga  & 0.091& $512^3$ &nomag/noentro/hyp&4x16&17-dec-03& AB \\
   64 & giga  & 0.150& $256^3$ & magn/noentro &  4x16  &  1-jul-03 & AB \\
-  64 & giga  & 0.166& $512^3$ & magn/noentro &4x16, 64*173MB& 10-jul-03 & AB \\
+  64 & giga  & 0.166& $512^3$ & magn/noentro &64*173MB& 10-jul-03 & AB \\
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
- 128 & fe1   & 0.44 & $256^3$ & nomagn/entro/rad8/ion &  4x32  & 10-mar-04 & TH \\
+ 128 & fe1   & 0.44 & $256^3$ & nomag/entro/rad8/ion &  4x32  & 10-mar-04 & TH \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
  128 & fe1   & 0.27 & $512^3$ & magn/noentro & 4x32   &  5-sep-02 & AB \\
@@ -5495,6 +5494,7 @@ application on your specific hardware.
     \end{small}
   \end{center}
 %\end{table}
+\normalsize
 % ---------------------------------------------------------------------- %
 
 The machines we have used can be characterized as follows:
@@ -5540,6 +5540,8 @@ The machines we have used can be characterized as follows:
   OSF1 4.0;
   native MPI
 \item[Sander and Rasmussen:] Origin 3000
+\item[Steno] 118 node IBM cluster with dual node AMD Opteron processors
+with 10 Gb infiniband network, compiled with pgf90 -fastsse -tp k8-64e (Copenhagen).
 \item[Gridur:] Origin 3000
 \end{description}
 
@@ -5590,13 +5592,13 @@ in Fig~\ref{cvsstat}.
     \midrule
       \multicolumn{7}{c}{\emph{conv-slab-flat}}\\
     \midrule
-        1 & Kabul       & 3.02 &  $128^2{\times}32$
+        1 & Kabul       & 3.02 &  $128^2{\!\times\!}32$
                                          &   29 MB & 23-jul-02 & wd \\
-        2 & Kabul       & 1.81 &  $128^2{\times}32$
+        2 & Kabul       & 1.81 &  $128^2{\!\times\!}32$
                                          &   18 MB & 23-jul-02 & wd \\
-        4 & Kabul       & 1.03 &  $128^2{\times}32$
+        4 & Kabul       & 1.03 &  $128^2{\!\times\!}32$
                                          &   11 MB & 23-jul-02 & wd \\
-        8 & Kabul       & 0.87 &  $128^2{\times}32$
+        8 & Kabul       & 0.87 &  $128^2{\!\times\!}32$
                                          &    9 MB & 23-jul-02 & wd \\
     \bottomrule
     \end{tabular}
@@ -8553,7 +8555,7 @@ initial condition.
 
 \bibitem{Collatz66}Collatz, L.,
   \emph{The numerical treatment of differential equations},
-  Springer-Verlag, New York, p. 164 (1966)
+  Springer-Verlag, New York, p.\ 164 (1966)
 
 \bibitem{GNG87}Goodman, J., Narayan, R. \& Goldreich, P.,
   \emph{Month. Not. Roy. Soc.} \textbf{225}, 695--711 (1987)
@@ -8615,7 +8617,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.330 2006-06-03 04:30:22 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.331 2006-06-25 11:14:55 brandenb Exp $ $}
 
 
 \end{document}
