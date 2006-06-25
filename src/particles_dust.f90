@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.104 2006-06-25 08:09:52 ajohan Exp $
+! $Id: particles_dust.f90,v 1.105 2006-06-25 13:02:07 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -97,7 +97,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.104 2006-06-25 08:09:52 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.105 2006-06-25 13:02:07 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -220,12 +220,14 @@ module Particles
 !
 !  Need to map particles on the grid for dragforce on gas.
 !      
-      if (ldragforce_gas_par) lcalc_np=.true.
+      if (ldragforce_gas_par) then
+        lcalc_np=.true.
 !
 !  When drag force is smoothed, df is also set in the first ghost zone. This 
 !  region needs to be folded back into the df array after pde is finished,
 !
-      if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
+        if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
+      endif
 !
 !  Write constants to disc.
 !      

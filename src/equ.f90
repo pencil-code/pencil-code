@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.305 2006-06-15 19:34:43 ajohan Exp $
+! $Id: equ.f90,v 1.306 2006-06-25 13:02:07 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.305 2006-06-15 19:34:43 ajohan Exp $")
+           "$Id: equ.f90,v 1.306 2006-06-25 13:02:07 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -877,7 +877,7 @@ module Equ
 !  Fold df from first ghost zone into main df.
 !  Currently only needed for smoothed out particle drag force.
 !
-      if (lfold_df) call fold_df(df,iux,iuz)
+      if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
 !
     endsubroutine pde
 !***********************************************************************
