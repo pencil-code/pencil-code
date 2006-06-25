@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.103 2006-06-20 00:14:02 ajohan Exp $
+! $Id: particles_dust.f90,v 1.104 2006-06-25 08:09:52 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -97,7 +97,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.103 2006-06-20 00:14:02 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.104 2006-06-25 08:09:52 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -253,9 +253,10 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
-      real :: r, p, px, py, pz, eps, cs
+      real :: r, p, px, py, pz, eps, cs, k2_xxp
       real :: fac, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       integer :: l, j, k, ix0, iy0, iz0
+      logical :: lequidistant=.false.
 !
       intent (out) :: f, fp, ineargrid
 !
@@ -344,30 +345,29 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,izp)=fp(k,izp)+dz_par
             endif
           enddo
+          lequidistant=.true.
 !
 !  Shift particle locations slightly so that a mode appears.
 !
         case ('shift')
           if (lroot) print*, 'init_particles: shift particle positions'
-          if (kx_xxp==0.0 .and. kz_xxp==0.0) then
-            if (lroot) print*, 'init_particles: kx_xxp=kz_xxp=0.0 not allowed!'
+          if (.not. lequidistant) then
+            if (lroot) print*, 'init_particles: must place particles equidistantly before shifting!'
+            call fatal_error('init_particles','')
+          endif
+          k2_xxp=kx_xxp**2+ky_xxp**2+kz_xxp**2
+          if (k2_xxp==0.0) then
+            if (lroot) print*, &
+                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
             call fatal_error('init_particles','')
           endif
           do k=1,npar_loc
-            fp(k,ixp) = fp(k,ixp) - &
-                amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
-                (kx_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))+ &
-                 kx_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
-            fp(k,izp) = fp(k,izp) - &
-                amplxxp/(2*(kx_xxp**2+kz_xxp**2))* &
-                (kz_xxp*sin(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp))- &
-                 kz_xxp*sin(kx_xxp*fp(k,ixp)-kz_xxp*fp(k,izp)))
-!            fp(k,ixp) = fp(k,ixp) + &
-!                kx_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
-!                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
-!            fp(k,izp) = fp(k,izp) + &
-!                kz_xxp/(2*(kx_xxp**2+kz_xxp**2))*amplxxp**2* &
-!                sin(2*(kx_xxp*fp(k,ixp)+kz_xxp*fp(k,izp)))
+            fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
+                sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
+            fp(k,iyp) = fp(k,iyp) - ky_xxp/k2_xxp*amplxxp* &
+                sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
+            fp(k,izp) = fp(k,izp) - kz_xxp/k2_xxp*amplxxp* &
+                sin(kx_xxp*fp(k,ixp)+ky_xxp*fp(k,iyp)+kz_xxp*fp(k,izp))
           enddo
  
         case ('gaussian-z')
