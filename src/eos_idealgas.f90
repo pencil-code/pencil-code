@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.55 2006-06-24 12:54:42 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.56 2006-06-25 03:43:08 brandenb Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.55 2006-06-24 12:54:42 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.56 2006-06-25 03:43:08 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -127,7 +127,7 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
-      real :: Rgas_cgs
+      real :: Rgas_cgs, cp_reference
 !
 !  set gamma1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
@@ -174,9 +174,14 @@ module EquationOfState
 !  checking whether the units are overdetermined.
 !  This is assumed to be the case when the to differ by error_cp
 !
-          if (abs(cp-Rgas/(mu*gamma1*gamma11))/cp > error_cp) then
+          if (gamma1 == 0.) then
+            cp_reference=Rgas/mu
+          else
+            cp_reference=Rgas/(mu*gamma1*gamma11)
+          endif
+          if (abs(cp-cp_reference)/cp > error_cp) then
             if (lroot) print*,'initialize_eos: consistency: cp=',cp, &
-               'while: (Rgas/mu)*(gamma/gamma1)=',(Rgas/mu)*(gamma/gamma1)
+               'while: cp_reference=',cp_reference
             call stop_it('initialize_eos')
           endif
         endif
