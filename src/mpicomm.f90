@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.168 2006-06-23 09:39:14 mee Exp $
+! $Id: mpicomm.f90,v 1.169 2006-06-25 15:56:01 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1771,6 +1771,12 @@ module Mpicomm
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: df_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
       integer :: iproc_rcv
+!
+      real, dimension (ny,nz,ivar2-ivar1+1) :: df_tmp_yz
+      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
+      integer :: nvar_fold, displs
+!
+      nvar_fold=ivar2-ivar1+1
 !  The first ghost zone in the z-direction is folded (the corners will find
 !  their proper positions after folding in x and y as well).
       if (nzgrid/=1) then
@@ -1785,19 +1791,19 @@ module Mpicomm
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xy, &
-                  (/nx+2,ny+2,1,3/), zlneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10000)
             elseif (iproc_rcv==zuneigh) then
               call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,3/), zuneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10000)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2)= &
                 df(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2) + df_tmp_xy
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xy, &
-                  (/nx+2,ny+2,1,3/), zuneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10001)
             elseif (iproc_rcv==zlneigh) then
               call mpisend_real(df(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,3/), zlneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10001)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2) + df_tmp_xy
@@ -1815,27 +1821,64 @@ module Mpicomm
           df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
               df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
               df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
+!
+!  With shearing boundary conditions we must take care that the information is
+!  shifted properly before the final fold.
+!
+          if (lshear) then
+            deltay_dy=deltay/dy
+            displs=int(deltay_dy)
+            frak=deltay_dy-displs
+            c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+            c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+            c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+            c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+            c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+            c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+            df_tmp_yz = &
+                 c1*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
+                +c2*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
+                +c3*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
+                +c4*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
+                +c5*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
+                +c6*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
+            df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
+            df_tmp_yz = &
+                 c1*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
+                +c2*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
+                +c3*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
+                +c4*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
+                +c5*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
+                +c6*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
+            df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
+          endif
+          df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
+          df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xz, &
-                  (/nx+2,1,nz,3/), ylneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10002)
             elseif (iproc_rcv==yuneigh) then
               call mpisend_real(df(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,3/), yuneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10002)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + df_tmp_xz
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xz, &
-                  (/nx+2,1,nz,3/), ylneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
             elseif (iproc_rcv==ylneigh) then
               call mpisend_real(df(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,3/), yuneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + df_tmp_xz
           enddo
+          if (lshear) then
+            if (lroot) print*, 'fold_df: not implemented with nprocy>1!'
+            call stop_it('')
+          endif
         endif
         df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
@@ -1865,7 +1908,13 @@ module Mpicomm
 !      
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: f_tmp_xz
-      integer :: iproc_rcv
+      integer :: nvar_fold, iproc_rcv
+!
+      real, dimension (ny,nz,ivar2-ivar1+1) :: f_tmp_yz
+      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
+      integer :: displs
+!
+      nvar_fold=ivar2-ivar1+1
 !  The first ghost zone in the z-direction is folded (the corners will find
 !  their proper positions after folding in x and y as well).
       if (nzgrid/=1) then
@@ -1880,19 +1929,19 @@ module Mpicomm
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xy, &
-                  (/nx+2,ny+2,1,3/), zlneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10000)
             elseif (iproc_rcv==zuneigh) then
               call mpisend_real(f(l1-1:l2+1,m1-1:m2+1,n2+1:n2+1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,3/), zuneigh, 10000)
+                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10000)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2)= &
                 f(l1-1:l2+1,m1-1:m2+1,n1:n1,ivar1:ivar2) + f_tmp_xy
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xy, &
-                  (/nx+2,ny+2,1,3/), zuneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/), zuneigh, 10001)
             elseif (iproc_rcv==zlneigh) then
               call mpisend_real(f(l1-1:l2+1,m1-1:m2+1,n1-1:n1-1,ivar1:ivar2), &
-                  (/nx+2,ny+2,1,3/), zlneigh, 10001)
+                  (/nx+2,ny+2,1,nvar_fold/), zlneigh, 10001)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m1-1:m2+1,n2:n2,ivar1:ivar2) + f_tmp_xy
@@ -1910,27 +1959,63 @@ module Mpicomm
           f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
               f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
               f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
+!
+!  With shearing boundary conditions we must take care that the information is
+!  shifted properly before the final fold.
+!
+          if (lshear) then
+            deltay_dy=deltay/dy
+            displs=int(deltay_dy)
+            frak=deltay_dy-displs
+            c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+            c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+            c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+            c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+            c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+            c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+            f_tmp_yz = &
+                 c1*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
+                +c2*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
+                +c3*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
+                +c4*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
+                +c5*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
+                +c6*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
+            f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
+            f_tmp_yz = &
+                 c1*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
+                +c2*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
+                +c3*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
+                +c4*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
+                +c5*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
+                +c6*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
+            f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
+          endif
         else
+      print*, '223', iproc
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xz, &
-                  (/nx+2,1,nz,3/), ylneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10002)
             elseif (iproc_rcv==yuneigh) then
               call mpisend_real(f(l1-1:l2+1,m2+1:m2+1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,3/), yuneigh, 10002)
+                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10002)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + f_tmp_xz
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xz, &
-                  (/nx+2,1,nz,3/), ylneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
             elseif (iproc_rcv==ylneigh) then
               call mpisend_real(f(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,3/), yuneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + f_tmp_xz
           enddo
+          if (lshear) then
+            if (lroot) print*, 'fold_f: not implemented with nprocy>1!'
+            call stop_it('')
+          endif
         endif
         f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.123 2006-06-23 09:39:14 mee Exp $
+! $Id: nompicomm.f90,v 1.124 2006-06-25 15:56:01 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -804,6 +804,12 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar) :: df
       integer :: ivar1,ivar2
 !
+      real, dimension (ny,nz,ivar2-ivar1+1) :: df_tmp_yz
+      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
+      integer :: displs
+!
+!  Fold z-direction first (including first ghost zone in x and y).
+!
       if (nzgrid/=1) then
         df(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
             df(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2) + &
@@ -815,6 +821,8 @@ module Mpicomm
         df(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
 !
+!  Then fold y-direction (including first ghost zone in x).
+!
       if (nygrid/=1) then
         df(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)= &
             df(l1-1:l2+1,m1,n1:n2,ivar1:ivar2) + &
@@ -822,6 +830,37 @@ module Mpicomm
         df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
             df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
             df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
+!
+!  With shearing boundary conditions we must take care that the information is
+!  shifted properly before the final fold.
+!
+        if (lshear) then
+          deltay_dy=deltay/dy
+          displs=int(deltay_dy)
+          frak=deltay_dy-displs
+          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+          df_tmp_yz = &
+               c1*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
+              +c2*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
+              +c3*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
+              +c4*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
+              +c5*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
+              +c6*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
+          df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
+          df_tmp_yz = &
+               c1*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
+              +c2*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
+              +c3*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
+              +c4*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
+              +c5*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
+              +c6*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
+          df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
+        endif
         df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
@@ -834,6 +873,8 @@ module Mpicomm
         df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
         df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif
+!
+!  Finally fold the x-direction.
 !
     endsubroutine fold_df
 !***********************************************************************
@@ -848,6 +889,12 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: ivar1, ivar2
 !
+      real, dimension (ny,nz,ivar2-ivar1+1) :: f_tmp_yz
+      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
+      integer :: displs
+!
+!  Fold z-direction first (including first ghost zone in x and y).
+!
       if (nzgrid/=1) then
         f(l1-1:l2+1,m1-1:m2+1,n1,ivar1:ivar2)= &
             f(l1-1:l2+1,m1-1:m2+1,n1,  ivar1:ivar2) + &
@@ -859,14 +906,49 @@ module Mpicomm
         f(l1-1:l2+1,m1-1:m2+1,n2+1,ivar1:ivar2)=0.0
       endif
 !
+!  Then fold y-direction (including first ghost zone in x).
+!
       if (nygrid/=1) then
         f(l1-1:l2+1,m1,n1:n2,ivar1:ivar2)=f(l1-1:l2+1,m1,n1:n2,ivar1:ivar2) + &
             f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)
         f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)=f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
             f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
+!
+!  With shearing boundary conditions we must take care that the information is
+!  shifted properly before the final fold.
+!
+        if (lshear) then
+          deltay_dy=deltay/dy
+          displs=int(deltay_dy)
+          frak=deltay_dy-displs
+          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+          f_tmp_yz = &
+               c1*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
+              +c2*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
+              +c3*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
+              +c4*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
+              +c5*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
+              +c6*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
+          f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
+          f_tmp_yz = &
+               c1*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
+              +c2*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
+              +c3*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
+              +c4*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
+              +c5*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
+              +c6*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
+          f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
+        endif
         f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
+!
+!  Finally fold the x-direction.
 !
       if (nxgrid/=1) then
         f(l1,m1:m2,n1:n2,ivar1:ivar2)=f(l1,m1:m2,n1:n2,ivar1:ivar2) + &
