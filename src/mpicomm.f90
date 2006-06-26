@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.169 2006-06-25 15:56:01 ajohan Exp $
+! $Id: mpicomm.f90,v 1.170 2006-06-26 05:43:25 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1825,7 +1825,7 @@ module Mpicomm
 !  With shearing boundary conditions we must take care that the information is
 !  shifted properly before the final fold.
 !
-          if (lshear) then
+          if (nxgrid>1 .and. lshear) then
             deltay_dy=deltay/dy
             displs=int(deltay_dy)
             frak=deltay_dy-displs
@@ -1875,7 +1875,7 @@ module Mpicomm
             if (iproc==iproc_rcv) df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + df_tmp_xz
           enddo
-          if (lshear) then
+          if (nxgrid>1 .and. lshear) then
             if (lroot) print*, 'fold_df: not implemented with nprocy>1!'
             call stop_it('')
           endif
@@ -1963,7 +1963,7 @@ module Mpicomm
 !  With shearing boundary conditions we must take care that the information is
 !  shifted properly before the final fold.
 !
-          if (lshear) then
+          if (nxgrid>1 .and. lshear) then
             deltay_dy=deltay/dy
             displs=int(deltay_dy)
             frak=deltay_dy-displs
@@ -1991,7 +1991,6 @@ module Mpicomm
             f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
           endif
         else
-      print*, '223', iproc
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xz, &
@@ -2012,7 +2011,7 @@ module Mpicomm
             if (iproc==iproc_rcv) f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + f_tmp_xz
           enddo
-          if (lshear) then
+          if (nxgrid>1 .and. lshear) then
             if (lroot) print*, 'fold_f: not implemented with nprocy>1!'
             call stop_it('')
           endif
