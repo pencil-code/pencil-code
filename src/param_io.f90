@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.243 2006-06-23 09:49:26 nbabkovs Exp $ 
+! $Id: param_io.f90,v 1.244 2006-06-26 12:21:20 ajohan Exp $ 
 
 module Param_IO
 
@@ -264,7 +264,7 @@ module Param_IO
 
       call sgi_fix(lsgifix,1,'start.in')
       call read_particles_init_pars_wrap(1,IOSTAT=ierr)
-      if (ierr.ne.0) call sample_startpars('particles_init_pars',ierr)
+      if (ierr.ne.0) call sample_startpars('particles_init_pars_wrap',ierr)
 
       call sgi_fix(lsgifix,1,'start.in')
       call read_shock_init_pars(1,IOSTAT=ierr)
@@ -554,7 +554,7 @@ module Param_IO
 
       call sgi_fix(lsgifix,1,'run.in')
       call read_particles_run_pars_wrap(1,IOSTAT=ierr)
-      if (ierr.ne.0) call sample_runpars('particles_run_pars',ierr)
+      if (ierr.ne.0) call sample_runpars('particles_run_pars_wrap',ierr)
 
       call sgi_fix(lsgifix,1,'run.in')
       call read_shock_run_pars(1,IOSTAT=ierr)
