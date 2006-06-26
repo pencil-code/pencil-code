@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.105 2006-06-25 13:02:07 ajohan Exp $
+! $Id: particles_dust.f90,v 1.106 2006-06-26 06:17:26 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -75,10 +75,12 @@ module Particles
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
-  integer :: idiag_rhoptilm=0, idiag_dtdragp=0, idiag_npmz=0
+  integer :: idiag_rhoptilm=0, idiag_dtdragp=0, idiag_nparmax=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
-  integer :: idiag_npmx=0, idiag_rhopmx=0, idiag_epspmx=0, idiag_epspmz=0
-  integer :: idiag_npmy=0, idiag_nparmax=0, idiag_mpt=0
+  integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
+  integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
+  integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
+  integer :: idiag_mpt=0
 
   contains
 
@@ -97,7 +99,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.105 2006-06-25 13:02:07 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.106 2006-06-26 06:17:26 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1235,11 +1237,14 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhoprms/=0) call sum_mn_name(rhop**2,idiag_rhoprms,lsqrt=.true.)
         if (idiag_rhop2m/=0)  call sum_mn_name(rhop**2,idiag_rhop2m)
         if (idiag_rhopmax/=0) call max_mn_name(rhop,idiag_rhopmax)
-        if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
-        if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
         if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
+        if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
+        if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
         if (idiag_rhopmx/=0)  call yzsum_mn_name_x(rhop,idiag_rhopmx)
+        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(rhop,idiag_rhopmy)
+        if (idiag_rhopmz/=0)  call xysum_mn_name_z(rhop,idiag_rhopmz)
         if (idiag_epspmx/=0)  call yzsum_mn_name_x(rhop*p%rho1,idiag_epspmx)
+        if (idiag_epspmy/=0)  call xzsum_mn_name_y(rhop*p%rho1,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(rhop*p%rho1,idiag_epspmz)
       endif
 !
@@ -1553,10 +1558,12 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhoptilm=0; idiag_dtdragp=0; idiag_npmz=0
+        idiag_rhoptilm=0; idiag_dtdragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
-        idiag_npmx=0; idiag_rhopmx=0; idiag_epspmx=0; idiag_epspmz=0
-        idiag_npmy=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
+        idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
+        idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
+        idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
+        idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -1594,13 +1601,6 @@ k_loop:   do while (.not. (k>npar_loc))
             'rhoptilm',idiag_rhoptilm)
       enddo
 !
-!  check for those quantities for which we want z-averages
-!
-      do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
-      enddo
-!
 !  check for those quantities for which we want x-averages
 !
       do inamex=1,nnamex
@@ -1612,7 +1612,17 @@ k_loop:   do while (.not. (k>npar_loc))
 !  check for those quantities for which we want y-averages
 !
       do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformx(inamey),'npmy',idiag_npmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'npmy',idiag_npmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhopmy',idiag_npmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'epspmy',idiag_epspmy)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
       enddo
 !
     endsubroutine rprint_particles
