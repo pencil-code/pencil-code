@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.238 2006-06-12 22:43:14 theine Exp $ 
+! $Id: sub.f90,v 1.239 2006-06-26 12:07:59 ajohan Exp $ 
 
 module Sub 
 
@@ -54,7 +54,7 @@ module Sub
   public :: calc_phiavg_general, calc_phiavg_profile
   public :: calc_phiavg_unitvects
 
-  public :: max_for_dt
+  public :: max_for_dt, wslice
 
   public :: write_dx_general, wdim
   public :: write_zprof, remove_zprof
@@ -4269,6 +4269,33 @@ nameloop: do
       maxf = max(f1,f2,f3,maxf)
 
     endsubroutine max_for_dt_1_1_1_nx
+!***********************************************************************
+    subroutine wslice(filename,a,pos,ndim1,ndim2)
+!
+!  appending to an existing slice file
+!
+!  12-nov-02/axel: coded
+!  26-jun-06/anders: moved from Slices
+!
+      use Cdata, only: t, lwrite_slice_xy2, lwrite_slice_xy, lwrite_slice_xz, lwrite_slice_yz
+!
+      integer :: ndim1,ndim2
+      character (len=*) :: filename
+      real, dimension (ndim1,ndim2) :: a
+      real, intent(in) :: pos
+!
+!  check whether we want to write a slice on this processor
+!
+      if ( (lwrite_slice_xy2.and.index(filename,'Xy')>0) .or. &
+           (lwrite_slice_xy .and.index(filename,'xy')>0) .or. &
+           (lwrite_slice_xz .and.index(filename,'xz')>0) .or. &
+           (lwrite_slice_yz .and.index(filename,'yz')>0) ) then
+        open(1,file=filename,form='unformatted',position='append')
+        write(1) a,t,pos
+        close(1)
+      endif
+!
+    endsubroutine wslice
 !***********************************************************************
     function pencil_multiply1(s,v)
 !

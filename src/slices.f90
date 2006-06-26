@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.58 2006-06-16 19:01:26 mee Exp $
+! $Id: slices.f90,v 1.59 2006-06-26 12:07:59 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -10,7 +10,7 @@ module Slices
 
   private
 
-  public :: wvid, wslice, wvid_prepare, setup_slices
+  public :: wvid, wvid_prepare, setup_slices
 
 !  Variables for xy slices start here
 !  Code variables
@@ -20,7 +20,7 @@ module Slices
   real, public, dimension (nx,ny) :: nd_xy
   real, public, dimension (nx,ny,ndustspec) :: md_xy
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy,shock_xy,Qrad_xy,ecr_xy,np_xy
+  real, public, dimension (nx,ny) :: yH_xy,shock_xy,Qrad_xy,ecr_xy
   real, public, dimension (nx,ny,3) :: Frad_xy
 !  Derived variables
   real, public, dimension (nx,ny,3) :: oo_xy,bb_xy
@@ -36,7 +36,7 @@ module Slices
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy2,shock_xy2,Qrad_xy2,ecr_xy2,np_xy2
+  real, public, dimension (nx,ny) :: yH_xy2,shock_xy2,Qrad_xy2,ecr_xy2
   real, public, dimension (nx,ny,3) :: Frad_xy2
 !  Derived variables
   real, public, dimension (nx,ny,3) :: oo_xy2,bb_xy2
@@ -52,7 +52,7 @@ module Slices
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
 !  Auxiliary variables  
-  real, public, dimension (nx,nz) :: yH_xz,shock_xz,Qrad_xz,ecr_xz,np_xz
+  real, public, dimension (nx,nz) :: yH_xz,shock_xz,Qrad_xz,ecr_xz
   real, public, dimension (nx,nz,3) :: Frad_xz
 !  Derived variables
   real, public, dimension (nx,nz,3) :: oo_xz,bb_xz
@@ -68,7 +68,7 @@ module Slices
   real, public, dimension (ny,nz) :: nd_yz
   real, public, dimension (ny,nz,ndustspec) :: md_yz
 !  Auxiliary variables  
-  real, public, dimension (ny,nz) :: yH_yz,shock_yz,Qrad_yz,ecr_yz,np_yz
+  real, public, dimension (ny,nz) :: yH_yz,shock_yz,Qrad_yz,ecr_yz
   real, public, dimension (ny,nz,3) :: Frad_yz
 !  Derived variables
   real, public, dimension (ny,nz,3) :: oo_yz,bb_yz
@@ -129,7 +129,7 @@ module Slices
       use EquationOfState, only: eoscalc, ilnrho_ss
       use General
       use Messages
-      use Particles_cdata
+      use Particles_main
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -391,18 +391,6 @@ module Slices
           call wslice(path//'ecr.xy',ecr_xy,z(iz_loc),nx,ny)
           call wslice(path//'ecr.Xy',ecr_xy2,z(iz2_loc),nx,ny)
 !
-!  Dust number density (auxiliary variable)
-!
-        case ('np')
-          np_yz=f(ix_loc,m1:m2,n1:n2,inp)
-          np_xz=f(l1:l2,iy_loc,n1:n2,inp)
-          np_xy=f(l1:l2,m1:m2,iz_loc,inp)
-          np_xy2=f(l1:l2,m1:m2,iz2_loc,inp)
-          call wslice(path//'np.yz',np_yz,x(ix_loc),ny,nz)
-          call wslice(path//'np.xz',np_xz,y(iy_loc),nx,nz)
-          call wslice(path//'np.xy',np_xy,z(iz_loc),nx,ny)
-          call wslice(path//'np.Xy',np_xy2,z(iz2_loc),nx,ny)
-!
 !  Divergence of velocity (derived variable)
 !
         case ('divu')
@@ -613,34 +601,12 @@ module Slices
 !
         endselect
       enddo
-
+!
+      call particles_wvid(f,path,lfirstloop,lnewfile)
+!
       lfirstloop=.false.
 !
     endsubroutine wvid
-!***********************************************************************
-    subroutine wslice(file,a,pos,ndim1,ndim2)
-!
-!  appending to an existing slice file
-!
-!  12-nov-02/axel: coded
-!
-      integer :: ndim1,ndim2
-      character (len=*) :: file
-      real, dimension (ndim1,ndim2) :: a
-      real, intent(in) :: pos
-!
-!  check whether we want to write a slice on this processor
-!
-      if ( (lwrite_slice_xy2.and.index(file,'Xy')>0) .or. &
-           (lwrite_slice_xy.and.index(file,'xy')>0)  .or. &
-           (lwrite_slice_xz.and.index(file,'xz')>0)  .or. &
-           (lwrite_slice_yz.and.index(file,'yz')>0) ) then
-        open(1,file=file,form='unformatted',position='append')
-        write(1) a,t,pos
-        close(1)
-      endif
-!
-    endsubroutine wslice
 !***********************************************************************
     subroutine setup_slices()
 !

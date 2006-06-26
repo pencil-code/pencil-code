@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.13 2006-06-16 19:11:18 ajohan Exp $
+! $Id: noparticles_main.f90,v 1.14 2006-06-26 12:07:59 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -262,6 +262,20 @@ module Particles_main
 !
     endsubroutine particles_powersnap
 !***********************************************************************
+    subroutine particles_wvid(f,path,lfirstloop,lnewfile)
+!
+!  Write slices for animation of particle variables.
+!
+!  26-jun-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      character(len=*) :: path
+      logical :: lfirstloop, lnewfile
+!
+      if (NO_WARN) print*, f, path, lfirstloop, lnewfile
+!
+    endsubroutine particles_wvid
+!***********************************************************************
     subroutine auxcall_gravcomp(f,df,g0,r0_pot,n_pot,p)
 !
 !  Auxiliary call to gravity_companion in order 
@@ -275,7 +289,7 @@ module Particles_main
       integer :: n_pot
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*,f
+      if (NO_WARN) print*, f
 !
     endsubroutine auxcall_gravcomp
 !***********************************************************************

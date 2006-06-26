@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.21 2006-06-23 09:39:13 mee Exp $
+### $Id: Makefile.depend,v 1.22 2006-06-26 12:07:59 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -30,7 +30,7 @@ cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 $(GRID).o:   $(GRID).f90 cdata.o $(MPICOMM_FIX).o
 general.o:   general.f90 cparam.o cdata.o
-slices.o:    slices.f90 cdata.o sub.o $(EOS).o particles_cdata.o
+slices.o:    slices.f90 cdata.o sub.o $(EOS).o $(PARTICLES_MAIN).o
 deriv.o:     deriv.f90 cdata.o messages.o
 fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f

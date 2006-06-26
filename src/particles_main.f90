@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.31 2006-06-20 02:28:47 wlyra Exp $
+! $Id: particles_main.f90,v 1.32 2006-06-26 12:07:59 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -373,6 +373,78 @@ module Particles_main
       call powersnap_particles(f)
 !
     endsubroutine particles_powersnap
+!***********************************************************************
+    subroutine particles_wvid(f,path,lfirstloop,lnewfile)
+!
+!  Write slices for animation of particle variables.
+!
+!  26-jun-06/anders: split from wvid
+!
+      use Sub, only: wslice
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      character(len=*) :: path
+      logical :: lfirstloop, lnewfile
+!
+      real, dimension (nx,ny) :: np_xy, np_xy2, rhop_xy, rhop_xy2
+      real, dimension (nx,nz) :: np_xz, rhop_xz
+      real, dimension (ny,nz) :: np_yz, rhop_yz
+      integer :: inamev
+!
+!  Loop over slices
+!
+      do inamev=1,nnamev
+        select case (trim(cnamev(inamev)))
+!
+!  Dust number density (auxiliary variable)
+!
+        case ('np')
+          np_yz=f(ix_loc,m1:m2,n1:n2,inp)
+          np_xz=f(l1:l2,iy_loc,n1:n2,inp)
+          np_xy=f(l1:l2,m1:m2,iz_loc,inp)
+          np_xy2=f(l1:l2,m1:m2,iz2_loc,inp)
+          call wslice(path//'np.yz',np_yz,x(ix_loc),ny,nz)
+          call wslice(path//'np.xz',np_xz,y(iy_loc),nx,nz)
+          call wslice(path//'np.xy',np_xy,z(iz_loc),nx,ny)
+          call wslice(path//'np.Xy',np_xy2,z(iz2_loc),nx,ny)
+!
+!  Dust density (auxiliary variable)
+!
+        case ('rhop')
+          if (irhop/=0) then
+            rhop_yz=f(ix_loc,m1:m2,n1:n2,irhop)
+            rhop_xz=f(l1:l2,iy_loc,n1:n2,irhop)
+            rhop_xy=f(l1:l2,m1:m2,iz_loc,irhop)
+            rhop_xy2=f(l1:l2,m1:m2,iz2_loc,irhop)
+          else
+            rhop_yz=rhop_tilde*f(ix_loc,m1:m2,n1:n2,inp)
+            rhop_xz=f(l1:l2,iy_loc,n1:n2,inp)
+            rhop_xy=f(l1:l2,m1:m2,iz_loc,inp)
+            rhop_xy2=f(l1:l2,m1:m2,iz2_loc,inp)
+          endif
+          call wslice(path//'rhop.yz',rhop_yz,x(ix_loc),ny,nz)
+          call wslice(path//'rhop.xz',rhop_xz,y(iy_loc),nx,nz)
+          call wslice(path//'rhop.xy',rhop_xy,z(iz_loc),nx,ny)
+          call wslice(path//'rhop.Xy',rhop_xy2,z(iz2_loc),nx,ny)
+!
+!  Catch unknown values
+!
+        case default
+          if (lfirstloop.and.lroot) then
+            if (lnewfile) then
+              open(1,file='video.err')
+              lnewfile=.false.
+            else
+              open(1,file='video.err',position='append')
+            endif
+            write(1,*) 'unknown slice: ',trim(cnamev(inamev))
+            close(1)
+          endif
+!
+        endselect
+      enddo
+!
+    endsubroutine particles_wvid
 !***********************************************************************
     subroutine auxcall_gravcomp(f,df,g0,r0_pot,n_pot,p)
 !
