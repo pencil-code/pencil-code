@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.48 2006-04-19 12:12:13 nbabkovs Exp $
+! $Id: cparam.f90,v 1.49 2006-06-27 13:09:59 mee Exp $
 
 module Cparam
 
@@ -114,6 +114,20 @@ module Cparam
 ! is false, the compiler should infact optimise all such lines away.
 !
   logical, parameter :: NO_WARN=.false.
+!
+!
+  type slice_data
+    character (LEN=30) :: name
+    integer :: ix, iy, iz, iz2
+    integer :: index
+    logical :: ready
+    real, pointer, dimension (:,:) :: xy
+    real, pointer, dimension (:,:) :: xz
+    real, pointer, dimension (:,:) :: yz
+    real, pointer, dimension (:,:) :: xy2
+  endtype slice_data
+
+!
 !
 !
 endmodule Cparam

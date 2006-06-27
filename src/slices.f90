@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.59 2006-06-26 12:07:59 ajohan Exp $
+! $Id: slices.f90,v 1.60 2006-06-27 13:09:59 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -13,6 +13,12 @@ module Slices
   public :: wvid, wvid_prepare, setup_slices
 
 !  Variables for xy slices start here
+!!! New slice code reuses the following slice variables.
+  real, target, dimension (nx,ny) :: slice_xy, slice_xy2
+  real, target, dimension (nx,nz) :: slice_xz
+  real, target, dimension (ny,nz) :: slice_yz
+
+!!! LEGACY SLICE VARIABLES FOLLOW
 !  Code variables
   real, public, dimension (nx,ny,3) :: uu_xy,aa_xy,uud_xy,vvp_xy
   real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,cc_xy,lncc_xy
@@ -133,18 +139,37 @@ module Slices
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
       character(len=*) :: path
-      character(len=4) :: sdust
+      character(len=4) :: sindex
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
+      logical :: lslices_legacy=.true.
       integer :: inamev,k,i
       real :: tmpval
       integer :: l
+
+      slices%ix=ix_loc
+      slices%iy=iy_loc
+      slices%iz=iz_loc
+      slices%iz2=iz2_loc
+      slices%ready=.false.
+      slices%index=0
 !
 !  Loop over slices
 !
-      do inamev=1,nnamev
-        select case (trim(cnamev(inamev)))
+      inamev = 1
+      do while (inamev <= nnamev)
+        slices%xy=>slice_xy
+        slices%xz=>slice_xz
+        slices%yz=>slice_yz
+        slices%xy2=>slice_xy2
+
+        slices%name=cnamev(inamev)
+        lslices_legacy=.true.       ! By default assume we're not 
+                                    ! using module hooks to get the
+                                    ! slice contents
+        select case (trim(slices%name))
 !
 !  Velocity field (code variable)
 !
@@ -270,35 +295,35 @@ module Slices
 !
         case ('uud')
           do k=1,ndustspec
-            call chn(k,sdust)
-            if (k == 1) sdust = ''
+            call chn(k,sindex)
+            if (k == 1) sindex = ''
             uud_yz=f(ix_loc,m1:m2,n1:n2,iudx(k):iudz(k))
             uud_xz=f(l1:l2,iy_loc,n1:n2,iudx(k):iudz(k))
             uud_xy=f(l1:l2,m1:m2,iz_loc,iudx(k):iudz(k))
             uud_xy2=f(l1:l2,m1:m2,iz2_loc,iudx(k):iudz(k))
-            call wslice(path//'udx'//trim(sdust)//'.yz', &
+            call wslice(path//'udx'//trim(sindex)//'.yz', &
                 uud_yz(:,:,1),x(ix_loc),ny,nz)
-            call wslice(path//'udy'//trim(sdust)//'.yz', &
+            call wslice(path//'udy'//trim(sindex)//'.yz', &
                 uud_yz(:,:,2),x(ix_loc),ny,nz)
-            call wslice(path//'udz'//trim(sdust)//'.yz', &
+            call wslice(path//'udz'//trim(sindex)//'.yz', &
                 uud_yz(:,:,3),x(ix_loc),ny,nz)
-            call wslice(path//'udx'//trim(sdust)//'.xz', &
+            call wslice(path//'udx'//trim(sindex)//'.xz', &
                 uud_xz(:,:,1),y(iy_loc),nx,nz)
-            call wslice(path//'udy'//trim(sdust)//'.xz', &
+            call wslice(path//'udy'//trim(sindex)//'.xz', &
                 uud_xz(:,:,2),y(iy_loc),nx,nz)
-            call wslice(path//'udz'//trim(sdust)//'.xz', &
+            call wslice(path//'udz'//trim(sindex)//'.xz', &
                 uud_xz(:,:,3),y(iy_loc),nx,nz)
-            call wslice(path//'udx'//trim(sdust)//'.xy', &
+            call wslice(path//'udx'//trim(sindex)//'.xy', &
                 uud_xy(:,:,1),z(iz_loc),nx,ny)
-            call wslice(path//'udy'//trim(sdust)//'.xy', &
+            call wslice(path//'udy'//trim(sindex)//'.xy', &
                 uud_xy(:,:,2),z(iz_loc),nx,ny)
-            call wslice(path//'udz'//trim(sdust)//'.xy', &
+            call wslice(path//'udz'//trim(sindex)//'.xy', &
                 uud_xy(:,:,3),z(iz_loc),nx,ny)
-            call wslice(path//'udx'//trim(sdust)//'.Xy', &
+            call wslice(path//'udx'//trim(sindex)//'.Xy', &
                 uud_xy2(:,:,1),z(iz2_loc),nx,ny)
-            call wslice(path//'udy'//trim(sdust)//'.Xy', &
+            call wslice(path//'udy'//trim(sindex)//'.Xy', &
                 uud_xy2(:,:,2),z(iz2_loc),nx,ny)
-            call wslice(path//'udz'//trim(sdust)//'.Xy', &
+            call wslice(path//'udz'//trim(sindex)//'.Xy', &
                 uud_xy2(:,:,3),z(iz2_loc),nx,ny)
           enddo
 !
@@ -306,17 +331,17 @@ module Slices
 !
         case ('nd')
           do k=1,ndustspec
-            call chn(k,sdust)
-            if (k == 1) sdust = ''
+            call chn(k,sindex)
+            if (k == 1) sindex = ''
             if (ldustdensity) then
               nd_yz=f(ix_loc,m1:m2,n1:n2,ind(k))
               nd_xz=f(l1:l2,iy_loc,n1:n2,ind(k))
               nd_xy=f(l1:l2,m1:m2,iz_loc,ind(k))
               nd_xy2=f(l1:l2,m1:m2,iz2_loc,ind(k))
-              call wslice(path//'nd'//trim(sdust)//'.yz',nd_yz,x(ix_loc),ny,nz)
-              call wslice(path//'nd'//trim(sdust)//'.xz',nd_xz,y(iy_loc),nx,nz)
-              call wslice(path//'nd'//trim(sdust)//'.xy',nd_xy,z(iz_loc),nx,ny)
-              call wslice(path//'nd'//trim(sdust)//'.Xy',nd_xy2,z(iz2_loc),nx,ny)
+              call wslice(path//'nd'//trim(sindex)//'.yz',nd_yz,x(ix_loc),ny,nz)
+              call wslice(path//'nd'//trim(sindex)//'.xz',nd_xz,y(iy_loc),nx,nz)
+              call wslice(path//'nd'//trim(sindex)//'.xy',nd_xy,z(iz_loc),nx,ny)
+              call wslice(path//'nd'//trim(sindex)//'.Xy',nd_xy2,z(iz2_loc),nx,ny)
             else
               if (lroot) call warning('WVID', &
                   "Can't use 'nd' slices with nodustdensity")
@@ -557,8 +582,8 @@ module Slices
 !
         case ('epsd')
           do k=1,ndustspec
-            call chn(k,sdust)
-            if (k == 1) sdust = ''
+            call chn(k,sindex)
+            if (k == 1) sindex = ''
             if (ldustdensity_log) then
               nd_yz=exp(f(ix_loc,m1:m2,n1:n2,ind(k)))
               nd_xz=exp(f(l1:l2,iy_loc,n1:n2,ind(k)))
@@ -574,10 +599,10 @@ module Slices
             epsd_xz=md_xz(:,:,k)*nd_xz/exp(f(l1:l2,iy_loc,n1:n2,ilnrho))
             epsd_xy=md_xy(:,:,k)*nd_xy/exp(f(l1:l2,m1:m2,iz_loc,ilnrho))
             epsd_xy2=md_xy2(:,:,k)*nd_xy2/exp(f(l1:l2,m1:m2,iz2_loc,ilnrho))
-            call wslice(path//'epsd'//trim(sdust)//'.yz',epsd_yz,x(ix_loc),ny,nz)
-            call wslice(path//'epsd'//trim(sdust)//'.xz',epsd_xz,y(iy_loc),nx,nz)
-            call wslice(path//'epsd'//trim(sdust)//'.xy',epsd_xy,z(iz_loc),nx,ny)
-            call wslice(path//'epsd'//trim(sdust)//'.Xy',epsd_xy2,z(iz2_loc),nx,ny)
+            call wslice(path//'epsd'//trim(sindex)//'.yz',epsd_yz,x(ix_loc),ny,nz)
+            call wslice(path//'epsd'//trim(sindex)//'.xz',epsd_xz,y(iy_loc),nx,nz)
+            call wslice(path//'epsd'//trim(sindex)//'.xy',epsd_xy,z(iz_loc),nx,ny)
+            call wslice(path//'epsd'//trim(sindex)//'.Xy',epsd_xy2,z(iz2_loc),nx,ny)
           enddo
 !
 !  Surface intensity (derived variable)
@@ -585,28 +610,100 @@ module Slices
         case ('Isurf')
           call wslice(path//'Isurf.xy',Isurf_xy,z(iz2_loc),nx,ny)
 !
-!  Catch unknown values
-!
         case default
-          if (lfirstloop.and.lroot) then
-            if (lnewfile) then
-              open(1,file='video.err')
-              lnewfile=.false.
-            else
-              open(1,file='video.err',position='append')
-            endif
-            write(1,*) 'unknown slice: ',trim(cnamev(inamev))
-            close(1)
-          endif
+!
+! Add new slice providing routines here!
+!
+          lslices_legacy=.false.
+          if (lparticles) call get_slices_particles(f,slices)
 !
         endselect
+
+        if (lslices_legacy) then
+          inamev=inamev+1
+          continue
+        endif
+
+        if (slices%ready) then
+          if (slices%index==0) then    ! If this wasn't a multi slice...
+            if (associated(slices%yz)) &
+              call wslice(path//trim(slices%name)//'.yz',slices%yz, &
+                                                     x(slices%ix),ny,nz)
+            if (associated(slices%xz)) &
+              call wslice(path//trim(slices%name)//'.xz',slices%xz, &
+                                                     y(slices%iy),nx,nz)
+            if (associated(slices%xy)) &
+              call wslice(path//trim(slices%name)//'.xy',slices%xy, &
+                                                     z(slices%iz),nx,ny)
+            if (associated(slices%xy2)) &
+              call wslice(path//trim(slices%name)//'.Xy',slices%xy2, &
+                                                     z(slices%iz2),nx,ny)
+            inamev=inamev+1
+           else 
+            call chn(slices%index, sindex)
+            if (associated(slices%yz)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.yz', &
+                                       slices%yz, x(slices%ix),ny,nz)
+            if (associated(slices%xz)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.xz', &
+                                       slices%xz, y(slices%iy),nx,nz)
+            if (associated(slices%xy)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.xy', &
+                                       slices%xy, z(slices%iz),nx,ny)
+            if (associated(slices%xy2)) &
+              call wslice(path//trim(slices%name)//trim(sindex)//'.Xy', &
+                                       slices%xy2, z(slices%iz2),nx,ny)
+          endif
+        else
+          if (slices%index==0) then    ! If this wasn't a multi slice...
+            if (lfirstloop.and.lroot) then
+              if (lnewfile) then
+                open(1,file='video.err')
+                lnewfile=.false.
+              else
+                open(1,file='video.err',position='append')
+              endif
+              write(1,*) 'unknown slice: ',trim(cnamev(inamev))
+              close(1)
+            endif
+          else
+            slices%index=0
+            inamev=inamev+1
+          endif
+        endif
       enddo
 !
-      call particles_wvid(f,path,lfirstloop,lnewfile)
 !
       lfirstloop=.false.
 !
     endsubroutine wvid
+!***********************************************************************
+    subroutine wslice(filename,a,pos,ndim1,ndim2)
+!
+!  appending to an existing slice file
+!
+!  12-nov-02/axel: coded
+!  26-jun-06/anders: moved from Slices
+!
+      use Cdata, only: t, lwrite_slice_xy2, lwrite_slice_xy, lwrite_slice_xz, lwrite_slice_yz
+!
+      integer :: ndim1,ndim2
+      character (len=*) :: filename
+      real, dimension (ndim1,ndim2) :: a
+      real, intent(in) :: pos
+!
+!  check whether we want to write a slice on this processor
+!
+      if ( (lwrite_slice_xy2.and.index(filename,'Xy')>0) .or. &
+           (lwrite_slice_xy .and.index(filename,'xy')>0) .or. &
+           (lwrite_slice_xz .and.index(filename,'xz')>0) .or. &
+           (lwrite_slice_yz .and.index(filename,'yz')>0) ) then
+        open(1,file=filename,form='unformatted',position='append')
+        write(1) a,t,pos
+        close(1)
+      endif
+!
+    endsubroutine wslice
 !***********************************************************************
     subroutine setup_slices()
 !
