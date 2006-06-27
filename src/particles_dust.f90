@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.106 2006-06-26 06:17:26 ajohan Exp $
+! $Id: particles_dust.f90,v 1.107 2006-06-27 12:12:58 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -99,7 +99,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.106 2006-06-26 06:17:26 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.107 2006-06-27 12:12:58 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1041,6 +1041,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (3) :: uup, dragforce
       real :: np_point, eps_point, rho_point, rho1_point, tausp1_point
       real :: weight, weight_x, weight_y, weight_z
+      real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k, l, ix0, iy0, iz0
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
 !
@@ -1205,7 +1206,9 @@ k_loop:   do while (.not. (k>npar_loc))
               endif
             endif
           enddo
+!          
 !  Contribution of friction force to time-step.
+!
           if (lfirst.and.ldt) then
             if (ldragforce_gas_par) then
               tausg1  =rhop_tilde*f(l1:l2,m,n,inp)*p%rho1*tausp1_point
@@ -1218,6 +1221,23 @@ k_loop:   do while (.not. (k>npar_loc))
                 call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
           endif
         endif
+      endif
+!
+!  Contribution of dust particles to drag force.
+!
+      if (npar_imn(imn)/=0) then
+        do k=k1_imn(imn),k2_imn(imn)
+          if (lfirst.and.ldt) then
+            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+            dt1_advpx=fp(k,ivpx)*dx_1(ix0)/cdtp
+            dt1_advpy=fp(k,ivpy)*dy_1(iy0)/cdtp
+            dt1_advpz=fp(k,ivpz)*dz_1(iz0)/cdtp
+
+            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpx)
+            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpy)
+            dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost),dt1_advpz)
+          endif 
+        enddo
       endif
 !
 !  Diagnostic output
