@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.72 2006-06-21 03:51:57 ajohan Exp $
+! $Id: particles_sub.f90,v 1.73 2006-06-27 12:09:58 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -189,6 +189,7 @@ module Particles_sub
 !
 !  30-dec-04/anders: coded
 !
+      use Messages, only: fatal_error_local
       use Mpicomm
 !
       real, dimension (mpar_loc,mpvar) :: fp
@@ -205,14 +206,33 @@ module Particles_sub
       if (nxgrid/=1) then
         if (bcpx=='p') then
           do k=1,npar_loc
-            do while (fp(k,ixp)< xyz0(1))
+!  xp < x0
+            if (fp(k,ixp)< xyz0(1)) then
               fp(k,ixp)=fp(k,ixp)+Lxyz(1)
               if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)-deltay
-            enddo
-            do while (fp(k,ixp)>=xyz1(1))
+!  Particle position must never need more than one addition of Lx to get back
+!  in the box. Often a NaN or Inf in the particle position will show up as a
+!  problem here.
+              if (fp(k,ixp)< xyz0(1)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Lx outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
+!  xp > x1
+            if (fp(k,ixp)>=xyz1(1)) then
               fp(k,ixp)=fp(k,ixp)-Lxyz(1)
               if (lshear.and.nygrid/=1) fp(k,iyp)=fp(k,iyp)+deltay
-            enddo
+              if (fp(k,ixp)>=xyz1(1)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Lx outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
           enddo
         else
           print*, 'boundconds_particles: No such boundary condition bcpx=', bcpx
@@ -224,13 +244,29 @@ module Particles_sub
 !
       if (nygrid/=1) then
         if (bcpy=='p') then
+!  yp < y0
           do k=1,npar_loc
-            do while (fp(k,iyp)< xyz0(2))
+            if (fp(k,iyp)< xyz0(2)) then
               fp(k,iyp)=fp(k,iyp)+Lxyz(2)
-            enddo
-            do while (fp(k,iyp)>=xyz1(2))
+              if (fp(k,iyp)< xyz0(2)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Ly outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
+!  yp > y1
+            if (fp(k,iyp)>=xyz1(2)) then
               fp(k,iyp)=fp(k,iyp)-Lxyz(2)
-            enddo
+              if (fp(k,iyp)>=xyz1(2)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Ly outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
           enddo
         else
           print*, 'boundconds_particles: No such boundary condition bcpy=', bcpy
@@ -243,12 +279,28 @@ module Particles_sub
       if (nzgrid/=1) then
         if (bcpz=='p') then
           do k=1,npar_loc
-            do while (fp(k,izp)< xyz0(3))
+!  zp < z0
+            if (fp(k,izp)< xyz0(3)) then
               fp(k,izp)=fp(k,izp)+Lxyz(3)
-            enddo
-            do while (fp(k,izp)>=xyz1(3))
+              if (fp(k,izp)< xyz0(3)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Lz outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
+!  zp > z1
+            if (fp(k,izp)>=xyz1(3)) then
               fp(k,izp)=fp(k,izp)-Lxyz(3)
-            enddo
+              if (fp(k,izp)>=xyz1(3)) then
+                print*, 'boundconds_particles: ERROR - particle ', ipar(k), &
+                    ' was further than Lz outside the simulation box!'
+                print*, 'This must never happen.'
+                print*, 'iproc, ipar, xxp=', iproc, ipar(k), fp(k,ixp:izp)
+                call fatal_error_local('boundconds_particles','')
+              endif
+            endif
           enddo
         else
           print*, 'boundconds_particles: No such boundary condition bcpz=', bcpz
