@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.295 2006-06-20 16:44:50 wlyra Exp $
+! $Id: magnetic.f90,v 1.296 2006-06-27 12:17:05 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -188,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.295 2006-06-20 16:44:50 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.296 2006-06-27 12:17:05 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -303,29 +303,22 @@ module Magnetic
         endselect
       enddo
 !
-! If we're timestepping warn if there's no resistivity
+!  If we're timestepping, die or warn if the the resistivity coefficient that
+!  corresponds to the chosen resistivity type is not set.
 !
       if (lrun) then
-        if (lresi_eta_const.and.eta==0.0) then
-          call warning('initialize_magnetic', &
-              'Resistivity coefficient eta is zero!')
-          lresi_eta_const=.false.
-        endif
-        if (lresi_hyper2.and.eta_hyper2==0.0) then
-          call warning('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper2 is zero!')
-          lresi_hyper2=.false.
-        endif
-        if (lresi_hyper3.and.eta_hyper3==0.0) then
-          call warning('initialize_magnetic', &
-              'Resistivity coefficient eta_hyper3 is zero!')
-          lresi_hyper3=.false.
-        endif
-        if (lresi_eta_shock.and.eta_shock==0.0) then
-          call warning('initialize_magnetic', &
-              'Resistivity coefficient eta_shock is zero!')
-          lresi_eta_shock=.false.
-        endif
+        if (lresi_eta_const.and.eta==0.0) &
+            call warning('initialize_magnetic', &
+            'Resistivity coefficient eta is zero!')
+        if (lresi_hyper2.and.eta_hyper2==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_hyper2 is zero!')
+        if (lresi_hyper3.and.eta_hyper3==0.0) &
+            call fatal_error('initialize_magnetic', &
+            'Resistivity coefficient eta_hyper3 is zero!')
+        if (lresi_eta_shock.and.eta_shock==0.0) &
+          call fatal_error('initialize_magnetic', &
+          'Resistivity coefficient eta_shock is zero!')
       endif
 !
     endsubroutine initialize_magnetic

@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.24 2006-06-23 15:52:01 mee Exp $
+! $Id: viscosity.f90,v 1.25 2006-06-27 12:17:05 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -83,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.24 2006-06-23 15:52:01 mee Exp $")
+           "$Id: viscosity.f90,v 1.25 2006-06-27 12:17:05 ajohan Exp $")
 
       ivisc(1)='nu-const'
 
@@ -175,7 +175,32 @@ module Viscosity
         endselect
       enddo
 !
-      if (NO_WARN) print*,lstarting
+!  If we're timestepping, die or warn if the viscosity coefficient that
+!  corresponds to the chosen viscosity type is not set.
+!
+      if (lrun) then
+        if ( (lvisc_simplified.or.lvisc_rho_nu_const.or.lvisc_nu_const) &
+            .and.nu==0.0) &
+            call warning('initialize_viscosity', &
+            'Viscosity coefficient nu is zero!')
+        if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
+            call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_hyper2 is zero!')
+        if ( (lvisc_hyper3_simplified.or.lvisc_hyper3_rho_nu_const.or. &
+              lvisc_hyper3_rho_nu_const_bulk.or.lvisc_hyper3_nu_const).and. &
+              nu_hyper3==0.0 ) &
+            call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_hyper3 is zero!')
+        if ( (lvisc_smag_simplified.or.lvisc_smag_cross_simplified).and. &
+             C_smag==0.0 ) &
+            call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient C_smag is zero!')
+        if (lvisc_nu_shock.and.nu_shock==0.0) &
+            call fatal_error('initialize_viscosity', &
+            'Viscosity coefficient nu_shock is zero!')
+      endif
+!
+      if (NO_WARN) print*, lstarting
 !
     endsubroutine initialize_viscosity
 !***********************************************************************

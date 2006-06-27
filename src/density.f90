@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.255 2006-06-14 23:57:00 ajohan Exp $
+! $Id: density.f90,v 1.256 2006-06-27 12:17:05 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.255 2006-06-14 23:57:00 ajohan Exp $")
+           "$Id: density.f90,v 1.256 2006-06-27 12:17:05 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -207,18 +207,24 @@ module Density
         lnothing=.true.
       enddo
 !
-      if (ldiff_normal.and. diffrho==0.0) then
-        call warning('initialize_density','Diffusion coefficient diffrho is zero!')
-        ldiff_normal=.false.
+!  If we're timestepping, die or warn if the the diffusion coefficient that
+!  corresponds to the chosen diffusion type is not set.
+!
+      if (lrun) then
+        if (ldiff_normal.and.diffrho==0.0) &
+            call warning('initialize_density', &
+            'Diffusion coefficient diffrho is zero!')
+        if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho) &
+            .and. diffrho_hyper3==0.0) &
+            call fatal_error('initialize_density', &
+            'Diffusion coefficient diffrho_hyper3 is zero!')
+        if (ldiff_shock .and. diffrho_shock==0.0) &
+            call fatal_error('initialize_density', &
+            'diffusion coefficient diffrho_shock is zero!')
       endif
-      if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho) .and. diffrho_hyper3==0.0) then
-        call warning('initialize_density','Diffusion coefficient diffrho_hyper3 is zero!')
-        ldiff_hyper3=.false.
-      endif
-      if (ldiff_shock .and. diffrho_shock==0.0) then
-        call warning('initialize_density','diffusion coefficient diffrho_shock is zero!')
-        ldiff_shock=.false.
-      endif
+!
+!  Hyperdiffusion only works with (not log) density. One must either use
+!  ldensity_nolog=T or work with GLOBAL =   global_nolog_density.
 !
       if (ldiff_hyper3 .and. (.not. ldensity_nolog) .and. &
           (.not. lglobal_nolog_density) ) then
