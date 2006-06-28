@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.244 2006-06-26 12:21:20 ajohan Exp $ 
+! $Id: param_io.f90,v 1.245 2006-06-28 14:37:02 ajohan Exp $ 
 
 module Param_IO
 
@@ -645,6 +645,7 @@ module Param_IO
         if (ldensity      ) print*,'&density_run_pars         /'
         if (lforcing      ) print*,'&forcing_run_pars         /'
         if (lgrav         ) print*,'&grav_run_pars            /'
+        if (lselfgravity  ) print*,'&selfgrav_run_pars        /'
         if (lentropy      ) print*,'&entropy_run_pars         /'
         if (lmagnetic     ) print*,'&magnetic_run_pars        /'
         if (ltestfield    ) print*,'&testfield_run_pars       /'
