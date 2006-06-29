@@ -3,7 +3,7 @@
 ! Initialisation parameters for shocktube problem
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2006-06-15 22:14:50 ajohan Exp $'
+  cvsid='$Id: start.in,v 1.2 2006-06-29 10:20:17 ajohan Exp $'
   xyz0  = -3.1415, -3.1415, -3.1415   ! first corner of box
   xyz1  =  3.1415,  3.1415,  3.1415   ! box size
   lperi =     T,     T,     T   ! periodic direction?
@@ -21,6 +21,7 @@
   initvvp='jeans-wave-dustpar-x'
   amplxxp=1.0e-3, kx_xxp=1.0, ky_xxp=0.0, kz_xxp=0.0
   eps_dtog=1.0, tausp=0.1
+  lparticlemesh_tsc=T
 /
 &particles_selfgrav_init_pars
 /
