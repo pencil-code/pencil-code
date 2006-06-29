@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.60 2006-06-27 13:09:59 mee Exp $
+! $Id: slices.f90,v 1.61 2006-06-29 08:55:13 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -621,7 +621,7 @@ module Slices
 
         if (lslices_legacy) then
           inamev=inamev+1
-          continue
+          cycle
         endif
 
         if (slices%ready) then
