@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.3 2006-06-25 14:53:41 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.4 2006-06-29 11:08:58 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -24,14 +24,14 @@ module Particles_selfgravity
 
   include 'particles_selfgravity.h'
   
-  real :: dummy
+  real :: dummy, tstart_selfgrav_par=0.0
   logical :: lselfgravity_particles=.true.
 
   namelist /particles_selfgrav_init_pars/ &
-      lselfgravity_particles
+      lselfgravity_particles, tstart_selfgrav_par
 
   namelist /particles_selfgrav_run_pars/ &
-      lselfgravity_particles
+      lselfgravity_particles, tstart_selfgrav_par
 
   contains
 
@@ -51,7 +51,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.3 2006-06-25 14:53:41 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.4 2006-06-29 11:08:58 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -137,13 +137,15 @@ module Particles_selfgravity
 !
 !  Interpolate the gradient of the potential to the location of the particle.
 !
-      if (lselfgravity_particles) then
-        do k=1,npar_loc
-          call interpolate_quadratic_spline( &
-              f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
-              ineargrid(k,:),ipar(k) )
-          dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
-        enddo
+      if (t>=tstart_selfgrav_par) then
+        if (lselfgravity_particles) then
+          do k=1,npar_loc
+            call interpolate_quadratic_spline( &
+                f,igpotselfx,igpotselfz,fp(k,ixp:izp),gpotself, &
+                ineargrid(k,:),ipar(k) )
+            dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
+          enddo
+        endif
       endif
 !
     endsubroutine dvvp_dt_selfgrav

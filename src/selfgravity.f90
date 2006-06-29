@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.6 2006-06-15 19:34:43 ajohan Exp $
+! $Id: selfgravity.f90,v 1.7 2006-06-29 11:08:58 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -28,14 +28,16 @@ module Selfgravity
 
   include 'selfgravity.h'
 
-  real :: rhs_poisson_const=1.0
+  real :: rhs_poisson_const=1.0, tstart_selfgrav=0.0
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   
   namelist /selfgrav_init_pars/ &
-      rhs_poisson_const, lselfgravity_gas, lselfgravity_dust
+      rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
+      tstart_selfgrav
       
   namelist /selfgrav_run_pars/ &
-      rhs_poisson_const, lselfgravity_gas, lselfgravity_dust
+      rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
+      tstart_selfgrav
 
   contains
 
@@ -62,7 +64,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.6 2006-06-15 19:34:43 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.7 2006-06-29 11:08:58 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -222,9 +224,11 @@ module Selfgravity
 !
 !  Add self-gravity acceleration on the gas and on the dust.
 !
-      if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
-      if (ldustvelocity) df(l1:l2,m,n,iudx(1):iudz(1)) = &
-          df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
+      if (t>=tstart_selfgrav) then
+        if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
+        if (ldustvelocity) df(l1:l2,m,n,iudx(1):iudz(1)) = &
+            df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
+      endif
 !
       if (NO_WARN) print*, f, p !(keep compiler quiet)
 !        
