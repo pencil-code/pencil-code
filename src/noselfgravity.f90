@@ -1,4 +1,4 @@
-! $Id: noselfgravity.f90,v 1.4 2006-06-14 23:57:00 ajohan Exp $
+! $Id: noselfgravity.f90,v 1.5 2006-06-30 12:44:58 joishi Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -20,6 +20,8 @@ module Selfgravity
   include 'selfgravity.h'
 
   real :: rhs_poisson_const=0.
+
+  integer :: idiag_gpoten=0
 
   contains
 
@@ -167,6 +169,7 @@ module Selfgravity
 !  write column where which variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_gpoten=',idiag_gpoten
         write(3,*) 'ipotself=0'
       endif
 !

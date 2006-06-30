@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.7 2006-06-29 11:08:58 ajohan Exp $
+! $Id: selfgravity.f90,v 1.8 2006-06-30 12:44:58 joishi Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 1
 ! COMMUNICATED AUXILIARIES 1
 !
-! PENCILS PROVIDED gpotself
+! PENCILS PROVIDED potself,gpotself
 !
 !***************************************************************
 
@@ -38,6 +38,8 @@ module Selfgravity
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
       tstart_selfgrav
+
+  integer :: idiag_gpoten=0
 
   contains
 
@@ -64,7 +66,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.7 2006-06-29 11:08:58 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.8 2006-06-30 12:44:58 joishi Exp $")
 !
 !  Put variable name in array
 !
@@ -113,6 +115,10 @@ module Selfgravity
 !  15-may-06/anders+jeff: adapted
 !
       lpenc_requested(i_gpotself)=.true.
+      if (idiag_gpoten/=0) then
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_potself)=.true.
+      endif
 !
     endsubroutine pencil_criteria_selfgravity
 !***********************************************************************
@@ -142,6 +148,7 @@ module Selfgravity
 !      
       intent(inout) :: f, p
 !
+      if (lpencil(i_potself)) p%potself = f(l1:l2,m,n,ipotself)
       if (lpencil(i_gpotself)) then
         call grad(f,ipotself,p%gpotself)
         if (igpotselfx/=0) f(l1:l2,m,n,igpotselfx:igpotselfz)=p%gpotself
@@ -213,6 +220,8 @@ module Selfgravity
 !
 !  15-may-06/anders+jeff: coded
 !
+      use Sub
+
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -228,6 +237,10 @@ module Selfgravity
         if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
         if (ldustvelocity) df(l1:l2,m,n,iudx(1):iudz(1)) = &
             df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
+      endif
+!
+      if (ldiagnos) then
+        if (idiag_gpoten/=0) call sum_mn_name(p%potself*p%rho,idiag_gpoten)
       endif
 !
       if (NO_WARN) print*, f, p !(keep compiler quiet)
@@ -293,17 +306,27 @@ module Selfgravity
 !
 !  16-may-06/anders+jeff: adapted
 !
+      use Sub
+
       logical :: lreset,lwr
       logical, optional :: lwrite
+      integer :: iname
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-      if(NO_WARN) print*, lreset  !(to keep compiler quiet)
+      if (lreset) then
+        idiag_gpoten = 0
+      endif
+!
+      do iname=1,nname 
+        call parse_name(iname,cname(iname),cform(iname),'gpoten',idiag_gpoten)
+      enddo
 !
 !  write column where which variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_gpoten=',idiag_gpoten
         write(3,*) 'ipotself=', ipotself
       endif
 !
