@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.33 2006-06-27 13:09:59 mee Exp $
+! $Id: particles_main.f90,v 1.34 2006-07-02 11:54:07 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -217,28 +217,6 @@ module Particles_main
 !
     endsubroutine particles_boundconds
 !***********************************************************************
-    subroutine particles_pencil_criteria()
-!
-!  Request pencils for particles.
-!
-!  20-apr-06/anders: coded
-!
-      call pencil_criteria_particles()
-!
-    endsubroutine particles_pencil_criteria
-!***********************************************************************
-    subroutine particles_pencil_interdep(lpencil_in)
-!
-!  Calculate particle pencils.
-!
-!  15-feb-06/anders: coded
-!
-      logical, dimension(npencils) :: lpencil_in
-!
-      call pencil_interdep_particles(lpencil_in)
-!
-    endsubroutine particles_pencil_interdep
-!***********************************************************************
     subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
 !
 !  Calculate the potential of the dust particles (wrapper).
@@ -254,6 +232,30 @@ module Particles_main
 !
     endsubroutine particles_calc_selfpotential
 !***********************************************************************
+    subroutine particles_pencil_criteria()
+!
+!  Request pencils for particles.
+!
+!  20-apr-06/anders: coded
+!
+      call pencil_criteria_particles()
+      if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
+!
+    endsubroutine particles_pencil_criteria
+!***********************************************************************
+    subroutine particles_pencil_interdep(lpencil_in)
+!
+!  Calculate particle pencils.
+!
+!  15-feb-06/anders: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      call pencil_interdep_particles(lpencil_in)
+      if (lparticles_selfgravity) call pencil_interdep_par_selfgrav(lpencil_in)
+!
+    endsubroutine particles_pencil_interdep
+!***********************************************************************
     subroutine particles_calc_pencils(f,p)
 !
 !  Calculate particle pencils.
@@ -264,8 +266,7 @@ module Particles_main
       type (pencil_case) :: p
 !
       call calc_pencils_particles(f,p)
-!      call calc_pencils_particles_radius(f,p)
-!      call calc_pencils_particles_number(f,p)
+      if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
@@ -288,6 +289,8 @@ module Particles_main
       call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !      if (lparticles_radius) call dap_dt(f,df,fp,dfp,ineargrid)
 !      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_selfgravity) &
+          call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************

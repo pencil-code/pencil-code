@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.4 2006-06-29 11:08:58 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.5 2006-07-02 11:54:07 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -33,6 +33,8 @@ module Particles_selfgravity
   namelist /particles_selfgrav_run_pars/ &
       lselfgravity_particles, tstart_selfgrav_par
 
+  integer :: idiag_gpotenp=0
+
   contains
 
 !***********************************************************************
@@ -51,7 +53,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.4 2006-06-29 11:08:58 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.5 2006-07-02 11:54:07 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -105,6 +107,69 @@ module Particles_selfgravity
       endif
 !
     endsubroutine calc_selfpotential_particles
+!***********************************************************************
+    subroutine pencil_criteria_par_selfgrav()
+!   
+!  All pencils that the Particles_selfgrav module depends on are specified here.
+!         
+!  02-jul-06/anders: adapted
+!
+      lpenc_requested(i_gpotself)=.true.
+      if (idiag_gpotenp/=0) then
+        lpenc_diagnos(i_rhop)=.true.
+        lpenc_diagnos(i_potself)=.true.
+      endif
+!
+    endsubroutine pencil_criteria_par_selfgrav
+!***********************************************************************
+    subroutine pencil_interdep_par_selfgrav(lpencil_in)
+!   
+!  Interdependency among pencils provided by the Particles_selfgrav module
+!  is specified here.
+!         
+!  02-jul-06/anders: adapted
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*, lpencil_in
+!   
+    endsubroutine pencil_interdep_par_selfgrav
+!***********************************************************************
+    subroutine calc_pencils_par_selfgrav(f,p)
+!   
+!  Calculate particle pencils.
+!
+!  02-jul-06/anders: adapted
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+!
+      if (NO_WARN) print*, f, p
+!   
+    endsubroutine calc_pencils_par_selfgrav
+!***********************************************************************
+    subroutine dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
+!
+!  Add self-gravity to particle equation of motion.
+!
+!  14-jun-06/anders: coded
+!
+      use Messages, only: fatal_error
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      intent (in) :: f, df, p, fp, dfp, ineargrid
+!
+      if (ldiagnos) then
+        if (idiag_gpotenp/=0) call sum_mn_name(p%potself*p%rhop,idiag_gpotenp)
+      endif 
+!
+    endsubroutine dvvp_dt_selfgrav_pencil
 !***********************************************************************
     subroutine dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
 !
@@ -208,10 +273,19 @@ module Particles_selfgravity
       logical :: lreset
       logical, optional :: lwrite
 !
+      integer :: iname
       logical :: lwr
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
+!
+      if (lreset) then
+        idiag_gpotenp = 0
+      endif
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'gpotenp',idiag_gpotenp)
+      enddo
 !
 !  Write information to index.pro
 ! 

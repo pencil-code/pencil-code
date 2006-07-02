@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.109 2006-07-02 11:00:36 ajohan Exp $
+! $Id: particles_dust.f90,v 1.110 2006-07-02 11:54:07 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -11,6 +11,8 @@
 ! MAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_planet=.false.
+!
+! PENCILS PROVIDED np, rhop
 !
 !***************************************************************
 module Particles
@@ -101,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.109 2006-07-02 11:00:36 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.110 2006-07-02 11:54:07 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -996,6 +998,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldragforce_gas_par) lpenc_requested(i_rho1)=.true.
 !
+      lpenc_diagnos(i_np)=.true.
+      lpenc_diagnos(i_rhop)=.true.
+!
     endsubroutine pencil_criteria_particles
 !***********************************************************************
     subroutine pencil_interdep_particles(lpencil_in)
@@ -1020,7 +1025,13 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, f, p
+      if (lpencil(i_rhop)) then
+        if (irhop/=0) then
+          p%rhop=f(l1:l2,m,n,irhop)
+        else
+          p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
+        endif
+      endif
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -1058,7 +1069,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: np, rhop, tausg1, dt1_drag
+      real, dimension (nx) :: tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
       real :: np_point, eps_point, rho_point, rho1_point, tausp1_point
       real :: weight, weight_x, weight_y, weight_z
@@ -1264,29 +1275,23 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Diagnostic output
 !
       if (ldiagnos) then
-        np=f(l1:l2,m,n,inp)
-        if (irhop/=0) then
-          rhop=f(l1:l2,m,n,irhop)
-        else
-          rhop=rhop_tilde*np
-        endif
-        if (idiag_npm/=0)     call sum_mn_name(np,idiag_npm)
-        if (idiag_np2m/=0)    call sum_mn_name(np**2,idiag_np2m)
-        if (idiag_npmax/=0)   call max_mn_name(np,idiag_npmax)
-        if (idiag_npmin/=0)   call max_mn_name(-np,idiag_npmin,lneg=.true.)
-        if (idiag_rhopm/=0)   call sum_mn_name(rhop,idiag_rhopm)
-        if (idiag_rhoprms/=0) call sum_mn_name(rhop**2,idiag_rhoprms,lsqrt=.true.)
-        if (idiag_rhop2m/=0)  call sum_mn_name(rhop**2,idiag_rhop2m)
-        if (idiag_rhopmax/=0) call max_mn_name(rhop,idiag_rhopmax)
-        if (idiag_npmx/=0)    call yzsum_mn_name_x(np,idiag_npmx)
-        if (idiag_npmy/=0)    call xzsum_mn_name_y(np,idiag_npmy)
-        if (idiag_npmz/=0)    call xysum_mn_name_z(np,idiag_npmz)
-        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(rhop,idiag_rhopmx)
-        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(rhop,idiag_rhopmy)
-        if (idiag_rhopmz/=0)  call xysum_mn_name_z(rhop,idiag_rhopmz)
-        if (idiag_epspmx/=0)  call yzsum_mn_name_x(rhop*p%rho1,idiag_epspmx)
-        if (idiag_epspmy/=0)  call xzsum_mn_name_y(rhop*p%rho1,idiag_epspmy)
-        if (idiag_epspmz/=0)  call xysum_mn_name_z(rhop*p%rho1,idiag_epspmz)
+        if (idiag_npm/=0)     call sum_mn_name(p%np,idiag_npm)
+        if (idiag_np2m/=0)    call sum_mn_name(p%np**2,idiag_np2m)
+        if (idiag_npmax/=0)   call max_mn_name(p%np,idiag_npmax)
+        if (idiag_npmin/=0)   call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
+        if (idiag_rhopm/=0)   call sum_mn_name(p%rhop,idiag_rhopm)
+        if (idiag_rhoprms/=0) call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
+        if (idiag_rhop2m/=0)  call sum_mn_name(p%rhop**2,idiag_rhop2m)
+        if (idiag_rhopmax/=0) call max_mn_name(p%rhop,idiag_rhopmax)
+        if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
+        if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
+        if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
+        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
+        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
+        if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%rhop*p%rho1,idiag_epspmx)
+        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%rhop*p%rho1,idiag_epspmy)
+        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%rhop*p%rho1,idiag_epspmz)
       endif
 !
     endsubroutine dvvp_dt_pencil

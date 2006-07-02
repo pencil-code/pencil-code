@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.28 2006-06-30 12:44:58 joishi Exp $
+# CVS: $Id: mkcparam,v 1.29 2006-07-02 11:54:07 ajohan Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -191,6 +191,7 @@ my %full_type=   ('aa'           => ', dimension (nx,3)',
                   'mu1'          => ', dimension (nx)',
                   'nabla_ad'     => ', dimension (nx)',
                   'nd'           => ', dimension (nx,ndustspec)',
+                  'np'           => ', dimension (nx)',
                   'oo'           => ', dimension (nx,3)',
                   'o2'           => ', dimension (nx)',
                   'ood'          => ', dimension (nx,3,ndustspec)',
