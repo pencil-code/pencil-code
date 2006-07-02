@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.8 2006-06-30 12:44:58 joishi Exp $
+! $Id: selfgravity.f90,v 1.9 2006-07-02 10:24:19 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -66,7 +66,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.8 2006-06-30 12:44:58 joishi Exp $")
+           "$Id: selfgravity.f90,v 1.9 2006-07-02 10:24:19 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -234,9 +234,10 @@ module Selfgravity
 !  Add self-gravity acceleration on the gas and on the dust.
 !
       if (t>=tstart_selfgrav) then
-        if (lhydro) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
-        if (ldustvelocity) df(l1:l2,m,n,iudx(1):iudz(1)) = &
-            df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
+        if (lhydro.and.lselfgravity_gas) &
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - p%gpotself
+        if ( ldustvelocity.and.lselfgravity_dust) &
+            df(l1:l2,m,n,iudx(1):iudz(1)) = df(l1:l2,m,n,iudx(1):iudz(1)) - p%gpotself
       endif
 !
       if (ldiagnos) then
