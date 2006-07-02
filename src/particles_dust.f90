@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.111 2006-07-02 13:49:58 ajohan Exp $
+! $Id: particles_dust.f90,v 1.112 2006-07-02 13:53:42 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -103,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.111 2006-07-02 13:49:58 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.112 2006-07-02 13:53:42 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1400,7 +1400,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  (the term must be added to the dust equation of motion when measuring
 !  velocities relative to the shear flow modified by the global pressure grad.)
 !
-      if (beta_dPdr_dust/=0.0) then
+      if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
         dfp(1:npar_loc,ivpx) = &
             dfp(1:npar_loc,ivpx) + 1/gamma*cs20*beta_dPdr_dust_scaled
       endif
