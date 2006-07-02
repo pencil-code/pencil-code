@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.110 2006-07-02 11:54:07 ajohan Exp $
+! $Id: particles_dust.f90,v 1.111 2006-07-02 13:49:58 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -103,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.110 2006-07-02 11:54:07 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.111 2006-07-02 13:49:58 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1032,6 +1032,8 @@ k_loop:   do while (.not. (k>npar_loc))
           p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
         endif
       endif
+!
+      if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
