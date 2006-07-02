@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.107 2006-06-27 12:12:58 ajohan Exp $
+! $Id: particles_dust.f90,v 1.108 2006-07-02 08:37:39 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -37,6 +37,7 @@ module Particles
   real :: ky_vpx=0.0, ky_vpy=0.0, ky_vpz=0.0
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
+  real :: tstart_dragforce_par=0.0
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false.
@@ -58,7 +59,8 @@ module Particles
       kx_vvp, ky_vvp, kz_vvp, amplvvp, kx_xxp, ky_xxp, kz_xxp, amplxxp, &
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
-      lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline
+      lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
+      tstart_dragforce_par
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -66,7 +68,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
-      lmigration_redo, &
+      lmigration_redo, tstart_dragforce_par, &
       lparticlemesh_cic, lparticlemesh_tsc
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -99,7 +101,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.107 2006-06-27 12:12:58 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.108 2006-07-02 08:37:39 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1050,7 +1052,7 @@ k_loop:   do while (.not. (k>npar_loc))
 ! 
 !  Add drag force if stopping time is not infinite.
 ! 
-      if (ldragforce_dust_par) then
+      if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
