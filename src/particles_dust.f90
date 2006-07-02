@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.108 2006-07-02 08:37:39 ajohan Exp $
+! $Id: particles_dust.f90,v 1.109 2006-07-02 11:00:36 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -101,7 +101,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.108 2006-07-02 08:37:39 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.109 2006-07-02 11:00:36 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -437,7 +437,7 @@ k_loop:   do while (.not. (k>npar_loc))
         select case(initvvp(j))
 
         case ('nothing')
-          if (lroot) print*, 'init_particles: No particle velocity set'
+          if (lroot.and.j==1) print*, 'init_particles: No particle velocity set'
         case ('zero')
           if (lroot) print*, 'init_particles: Zero particle velocity'
           fp(1:npar_loc,ivpx:ivpz)=0.
@@ -556,6 +556,25 @@ k_loop:   do while (.not. (k>npar_loc))
                 1/gamma*beta_glnrho_global(1)*(1+eps)/ &
                 (2*((1.0+eps)**2+(Omega*tausp)**2))*cs
  
+          enddo
+ 
+        case('dragforce_equi_dust')
+!
+!  Equilibrium between drag force and Coriolis force on the dust.
+!
+          if (lroot) then
+            print*, 'init_particles: drag equilibrium dust'
+            print*, 'init_particles: beta_dPdr_dust=', beta_dPdr_dust
+          endif
+!  Set particle velocity field.
+          cs=sqrt(cs20)
+          do k=1,npar_loc
+            fp(k,ivpx) = fp(k,ivpx) + &
+                1/gamma*beta_dPdr_dust/ &
+                (Omega*tausp+1/(Omega*tausp))*cs
+            fp(k,ivpy) = fp(k,ivpy) - &
+                1/gamma*beta_dPdr_dust*Omega*tausp*0.5/ &
+                (Omega*tausp+1/(Omega*tausp))*cs
           enddo
  
         case default
