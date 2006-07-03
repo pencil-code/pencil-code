@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.9 2006-06-14 23:57:00 ajohan Exp $
+! $Id: poisson.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $
 
 !
 !  This module solves the Poisson equation
@@ -31,7 +31,7 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine poisson_solver_fft(a1)
+    subroutine poisson_solver_fft(a1,lklimit,kmax)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !  This method works both with and without shear.
@@ -41,12 +41,14 @@ module Poisson
       real, dimension (nx,ny,nz) :: a1
 !
       real, dimension (nx,ny,nz) :: b1
+      real :: kmax
+      logical :: lklimit
       integer :: i, ikx, iky, ikz
 !
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.9 2006-06-14 23:57:00 ajohan Exp $")
+        "$Id: poisson.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -94,6 +96,15 @@ module Poisson
                   ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2 )
             endif
+!
+!  Limit |k| < kmax
+            if (lklimit) then
+              if (sqrt(kx_fft(ikx)**2  + ky_fft(iky)**2 + kz_fft(ikz)**2) >= kmax) then
+                a1(ikx,iky,ikz) = 0.
+                b1(ikx,iky,ikz) = 0.
+              endif
+            endif
+
           else ! The order of the array is not important here, because no shear!
             a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
                 (kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2)

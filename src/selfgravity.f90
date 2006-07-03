@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.9 2006-07-02 10:24:19 ajohan Exp $
+! $Id: selfgravity.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -29,7 +29,9 @@ module Selfgravity
   include 'selfgravity.h'
 
   real :: rhs_poisson_const=1.0, tstart_selfgrav=0.0
+  real :: kmax = 1.
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
+  logical :: lklimit=.false.
   
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
@@ -37,7 +39,7 @@ module Selfgravity
       
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      tstart_selfgrav
+      tstart_selfgrav, lklimit, kmax
 
   integer :: idiag_gpoten=0
 
@@ -66,7 +68,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.9 2006-07-02 10:24:19 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $")
 !
 !  Put variable name in array
 !
@@ -84,6 +86,11 @@ module Selfgravity
 !  parameters.
 !
 !  15-may-06/anders+jeff: adapted
+!
+!  set maximum k for gravity if limiter is set. kmax run parameter
+!  is in units of the nyquist frequency, thus making it
+!  resolution independent
+      if (lklimit) kmax = kmax * pi * min(nx/Lx,ny/Ly,nz/Lz)
 !
       if (.not.lpoisson) then
         if (lroot) print*, 'initialize_selfgravity: must choose a Poisson '// &
@@ -206,7 +213,7 @@ module Selfgravity
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
 !  receive the self-gravity potential back.
 !
-      call poisson_solver_fft(rhs_poisson)
+      call poisson_solver_fft(rhs_poisson,lklimit,kmax)
 !
 !  Put potential into f array.
 !
