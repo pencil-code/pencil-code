@@ -1,0 +1,42 @@
+#!/usr/bin/csh
+#
+#  Compare *.in and *.local files of two Pencil Code run directories.
+#
+#  Usage : pc_diffruns dir1 dir2
+#          pc_diffruns dir
+#
+#  Author: Anders Johansen
+#
+set narg=$#argv
+
+if ( $narg == 2 ) then
+  set dir1=$argv[1]
+  set dir2=$argv[2]
+else if ( $narg == 1 ) then
+  set dir1=$argv[1]
+  set dir2='.'
+else if ( $narg == 0 ) then
+  echo "Usage: pc_diffruns dir1 dir2"
+  exit
+endif
+
+echo "Comparing Pencil Code run directories '$dir1' and '$dir2'"
+
+echo "-- start.in:  --"
+diff $dir1/start.in $dir2
+echo "-- run.in:    --"
+diff $dir1/run.in $dir2
+echo "-- print.in:  --"
+diff $dir1/print.in $dir2
+echo "-- video.in:  --"
+diff $dir1/video.in $dir2
+echo "-- xyaver.in: --"
+diff $dir1/xyaver.in $dir2
+echo "-- xzaver.in: --"
+diff $dir1/xzaver.in $dir2
+echo "-- yzaver.in: --"
+diff $dir1/yzaver.in $dir2
+echo "-- Makefile.local: --"
+diff $dir1/src/Makefile.local $dir2/src
+echo "-- cparam.local:   --"
+diff $dir1/src/cparam.local $dir2/src
