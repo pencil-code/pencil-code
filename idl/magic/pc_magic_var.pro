@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.18 2006-06-16 18:55:05 mee Exp $
+; $Id: pc_magic_var.pro,v 1.19 2006-07-03 11:24:18 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-06-16 18:55:05 $
-;  $Revision: 1.18 $
+;  $Date: 2006-07-03 11:24:18 $
+;  $Revision: 1.19 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -128,9 +128,14 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       variables[iv]='exp(lnrho)'
 
     ; Advection
-    endif else if variables[iv] eq 'adv' then begin
+    endif else if variables[iv] eq 'advu' then begin
       tags[iv]=variables[iv]
       variables[iv]='0.5*grad(dot2(uu))-cross(uu,curl(uu))'
+
+    ; Advection
+    endif else if variables[iv] eq 'advlnrho' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='dot(uu,grad(lnrho))'
 
     ; Modulus of velocity
     endif else if variables[iv] eq 'u2' then begin
@@ -181,6 +186,11 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss,dim=dim,param=param)'
       endelse
+
+    ; Divergence of dust velocity
+    endif else if variables[iv] eq 'divud' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='div(uud)'
 
     ; Dust density
     endif else if variables[iv] eq 'rhod' then begin
