@@ -32,12 +32,6 @@ program shock_finder2D
   integer :: rotation=0
 !
   call read_surfaceinfo
-
-  if ( ndimensions /= problem_dimensions ) then
-     print "(a,i1,a,i1,a)", "The compiled in shock profile integral is ",ndimensions, &
-                     "D but the problem is ", problem_dimensions,"D. STOPPING."
-     STOP
-  endif
  
   xextent=(nxgrid/=1)
   yextent=(nygrid/=1)
@@ -87,6 +81,12 @@ subroutine make_calc_body(unitno)
   write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: i,j,k"
+
+  if ( ndimensions /= problem_dimensions ) then
+     write (unitno,"(a,i1,a,i1,a)") "if (lroot) print*, 'The compiled in shock profile integral is ",ndimensions, &
+                     "D but the problem is ", problem_dimensions,"D. STOPPING.'"
+     write (unitno,"(a)") "STOP"
+  endif
   if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
 !  write(unitno,"(a)") "      if (lroot) print*,'shock_calc_body: The compiled in shock profile integral is 2D'"
 !  write(unitno,"(a)") "      call stop_it('shock_calc_body: This problem is 3D - INCONSITENCY')"
@@ -510,6 +510,370 @@ subroutine make_calc_internalboundary(unitno)
   endif
 endsubroutine make_calc_internalboundary
 !***********************************************************************
+subroutine make_calc_3d_ext_j_ji(unitno)
+  use Cparam
+  integer :: unitno,i,j,k
+  character (len=4) :: istr='',jstr='',kstr=''
+  character (len=5) :: pistr='',nistr=''
+  character (len=5) :: pjstr='',njstr=''
+  character (len=5) :: pkstr='',nkstr=''
+  write(unitno,"(a)") "!***********************************************************************"
+  write(unitno,"(a)") "  subroutine shock_calc_ext_j_ji(f)"
+  write(unitno,"(a)") "    use Cdata"
+  write(unitno,"(a)") "    use Mpicomm, only: stop_it"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  call declare_facefactors(unitno)
+  write(unitno,"(a)") "    integer :: k"
+
+  call evaluate_facefactors(unitno,0)
+! Top/bottom 
+  pjstr=""
+  njstr=""
+  do j=0,2
+    call chn(j,jstr)
+    if (j/=0) njstr='-'//trim(jstr)
+    if (j/=0) pjstr='+'//trim(jstr)
+    write(unitno,"(a)") "      do k=n1i,n2i"
+    call evaluate_integral(unitno,2,-3,3,3-j,+3,-3,+3, &
+        'f(l1i:l2i,1'//trim(pjstr)//',k,ishock)','l1i:l2i','1'//trim(pjstr),'k')
+    call evaluate_integral(unitno,2,-3,3,-3,-3+j,-3,+3, &
+        'f(l1i:l2i,my'//trim(njstr)//',k,ishock)','l1i:l2i','my'//trim(njstr),'k')
+    pistr=""
+    nistr=""
+    do i=0,2
+      call chn(i,istr)
+      if (i/=0) nistr='-'//trim(istr)
+      if (i/=0) pistr='+'//trim(istr)
+      call evaluate_integral(unitno,2,-i,3,3-j,+3,-3,+3, &
+        'f(l1'//trim(pistr)//',1'//trim(pjstr)//',k,ishock)',&
+          'l1'//trim(pistr),'1'//trim(pjstr),'k')
+      call evaluate_integral(unitno,2,-3,+i,-3,-3+j,-3,+3, &
+        'f(l2'//trim(nistr)//',my'//trim(njstr)//',k,ishock)', &
+          'l2'//trim(nistr),'my'//trim(njstr),'k')
+      call evaluate_integral(unitno,2,-i,3,-3,-3+j,-3,+3, &
+        'f(l1'//trim(pistr)//',my'//trim(njstr)//',k,ishock)',&
+          'l1'//trim(pistr),'my'//trim(njstr),'k')
+      call evaluate_integral(unitno,2,-3,+i,3-j,+3,-3,+3, &
+        'f(l2'//trim(nistr)//',1'//trim(pjstr)//',k,ishock)', &
+          'l2'//trim(nistr),'1'//trim(pjstr),'k')
+
+
+      call evaluate_integral(unitno,2,3-i,3,3-j,+3,-3,+3, &
+        'f(1'//trim(pistr)//',1'//trim(pjstr)//',k,ishock)',&
+          '1'//trim(pistr),'1'//trim(pjstr),'k')
+      call evaluate_integral(unitno,2,-3,-3+i,-3,-3+j,-3,+3, &
+        'f(mx'//trim(nistr)//',my'//trim(njstr)//',k,ishock)', &
+          'mx'//trim(nistr),'my'//trim(njstr),'k')
+      call evaluate_integral(unitno,2,3-i,3,-3,-3+j,-3,+3, &
+        'f(1'//trim(pistr)//',my'//trim(njstr)//',k,ishock)',&
+          '1'//trim(pistr),'my'//trim(njstr),'k')
+      call evaluate_integral(unitno,2,-3,-3+i,3-j,+3,-3,+3, &
+        'f(mx'//trim(nistr)//',1'//trim(pjstr)//',k,ishock)', &
+          'mx'//trim(nistr),'1'//trim(pjstr),'k')
+    enddo
+    write(unitno,"(a)") "      enddo"
+  enddo
+  write(unitno,"(a)") "    endsubroutine shock_calc_ext_j_ji"
+endsubroutine make_calc_3d_ext_j_ji
+!***********************************************************************
+subroutine make_calc_3d_ext_k_ki(unitno)
+  use Cparam
+  integer :: unitno,i,j,k
+  character (len=4) :: istr='',jstr='',kstr=''
+  character (len=5) :: pistr='',nistr=''
+  character (len=5) :: pjstr='',njstr=''
+  character (len=5) :: pkstr='',nkstr=''
+  write(unitno,"(a)") "!***********************************************************************"
+  write(unitno,"(a)") "  subroutine shock_calc_ext_k_ki(f)"
+  write(unitno,"(a)") "    use Cdata"
+  write(unitno,"(a)") "    use Mpicomm, only: stop_it"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  call declare_facefactors(unitno)
+  write(unitno,"(a)") "    integer :: j"
+
+  call evaluate_facefactors(unitno,0)
+! Left/right 
+  pkstr=""
+  nkstr=""
+  do k=0,2
+    call chn(k,kstr)
+    if (k/=0) nkstr='-'//trim(kstr)
+    if (k/=0) pkstr='+'//trim(kstr)
+    write(unitno,"(a)") "      do j=m1i,m2i"
+    call evaluate_integral(unitno,2,-3,3,-3,+3,3-k,+3, &
+        'f(l1i:l2i,j,1'//trim(pkstr)//',ishock)','l1i:l2i','j','1'//trim(pkstr))
+    call evaluate_integral(unitno,2,-3,3,-3,+3,-3,-3+k, &
+        'f(l1i:l2i,j,mz'//trim(nkstr)//',ishock)','l1i:l2i','j','mz'//trim(nkstr))
+    pistr=""
+    nistr=""
+    do i=0,2
+      call chn(i,istr)
+      if (i/=0) nistr='-'//trim(istr)
+      if (i/=0) pistr='+'//trim(istr)
+      call evaluate_integral(unitno,2,-i,3,-3,+3,3-k,+3, &
+        'f(l1'//trim(pistr)//',j,1'//trim(pkstr)//',ishock)',&
+          'l1'//trim(pistr),'j','1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,+3,-3,-3+k, &
+        'f(l2'//trim(nistr)//',j,mz'//trim(nkstr)//',ishock)',&
+          'l2'//trim(nistr),'j','mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-i,3,-3,+3,-3,-3+k, &
+        'f(l1'//trim(pistr)//',j,mz'//trim(nkstr)//',ishock)',&
+          'l1'//trim(pistr),'j','mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,+3,3-k,+3, &
+        'f(l2'//trim(nistr)//',j,1'//trim(pkstr)//',ishock)',&
+          'l2'//trim(nistr),'j','1'//trim(pkstr))
+
+      call evaluate_integral(unitno,2,3-i,3,-3,+3,3-k,+3, &
+        'f(1'//trim(pistr)//',j,1'//trim(pkstr)//',ishock)',&
+          '1'//trim(pistr),'j','1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,+3,-3,-3+k, &
+        'f(mx'//trim(nistr)//',j,mz'//trim(nkstr)//',ishock)',&
+          'mx'//trim(nistr),'j','mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,3-i,3,-3,+3,-3,-3+k, &
+        'f(1'//trim(pistr)//',j,mz'//trim(nkstr)//',ishock)',&
+          '1'//trim(pistr),'j','mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,+3,3-k,+3, &
+        'f(mx'//trim(nistr)//',j,1'//trim(pkstr)//',ishock)',&
+          'mx'//trim(nistr),'j','1'//trim(pkstr))
+    enddo
+    write(unitno,"(a)") "      enddo"
+  enddo
+
+  write(unitno,"(a)") "    endsubroutine shock_calc_ext_k_ki"
+endsubroutine make_calc_3d_ext_k_ki
+!***********************************************************************
+subroutine make_calc_3d_ext_kj_kji(unitno,k)
+  use Cparam
+  integer :: unitno,i,j,k
+  character (len=4) :: istr='',jstr='',kstr=''
+  character (len=5) :: pistr='',nistr=''
+  character (len=5) :: pjstr='',njstr=''
+  character (len=5) :: pkstr='',nkstr=''
+  write(unitno,"(a)") "!***********************************************************************"
+  write(unitno,"(a,i1,a)") "  subroutine shock_calc_ext_kj_kji_",k,"(f)"
+  write(unitno,"(a)") "    use Cdata"
+  write(unitno,"(a)") "    use Mpicomm, only: stop_it"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  call declare_facefactors(unitno)
+
+  call evaluate_facefactors(unitno,0)
+! Corners 
+  pkstr=""
+  nkstr=""
+  pjstr=""
+  njstr=""
+!  do k=0,2
+  do j=0,2
+  call chn(k,kstr)
+  call chn(j,jstr)
+  if (k/=0) nkstr='-'//trim(kstr)
+  if (k/=0) pkstr='+'//trim(kstr)
+  if (j/=0) njstr='-'//trim(jstr)
+  if (j/=0) pjstr='+'//trim(jstr)
+  call evaluate_integral(unitno,2,-3,3,-j,+3,3-k,+3, &
+      'f(l1i:l2i,m1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+      'l1i:l2i','m1'//trim(pjstr),'1'//trim(pkstr))
+  call evaluate_integral(unitno,2,-3,3,-3,+j,3-k,+3, &
+      'f(l1i:l2i,m2'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+      'l1i:l2i','m2'//trim(njstr),'1'//trim(pkstr))
+  call evaluate_integral(unitno,2,-3,3,-3,+j,-3,-3+k, &
+      'f(l1i:l2i,m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+      'l1i:l2i','m2'//trim(njstr),'mz'//trim(nkstr))
+  call evaluate_integral(unitno,2,-3,3,-j,+3,-3,-3+k, &
+      'f(l1i:l2i,m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+      'l1i:l2i','m1'//trim(pjstr),'mz'//trim(nkstr))
+
+  call evaluate_integral(unitno,2,-3,3,3-j,+3,-k,+3, &
+      'f(l1i:l2i,1'//trim(pjstr)//',n1'//trim(pkstr)//',ishock)', &
+      'l1i:l2i','1'//trim(pjstr),'n1'//trim(pkstr))
+  call evaluate_integral(unitno,2,-3,3,-3,-3+j,-k,+3, &
+      'f(l1i:l2i,my'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+      'l1i:l2i','my'//trim(njstr),'n1'//trim(pkstr))
+  call evaluate_integral(unitno,2,-3,3,-3,-3+j,-3,+k, &
+      'f(l1i:l2i,my'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1i:l2i','my'//trim(njstr),'n2'//trim(nkstr))
+  call evaluate_integral(unitno,2,-3,3,3-j,+3,-3,+k, &
+      'f(l1i:l2i,1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+      'l1i:l2i','1'//trim(pjstr),'n2'//trim(nkstr))
+
+  call evaluate_integral(unitno,2,-3,3,3-j,+3,3-k,+3, &
+      'f(l1i:l2i,1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+      'l1i:l2i','1'//trim(pjstr),'1'//trim(pkstr))
+  call evaluate_integral(unitno,2,-3,3,-3,-3+j,3-k,+3, &
+      'f(l1i:l2i,my'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+      'l1i:l2i','my'//trim(njstr),'1'//trim(pkstr))
+  call evaluate_integral(unitno,2,-3,3,-3,-3+j,-3,-3+k, &
+      'f(l1i:l2i,my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+      'l1i:l2i','my'//trim(njstr),'mz'//trim(nkstr))
+  call evaluate_integral(unitno,2,-3,3,3-j,+3,-3,-3+k, &
+      'f(l1i:l2i,1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+      'l1i:l2i','1'//trim(pjstr),'mz'//trim(nkstr))
+    pistr=""
+    nistr=""
+    do i=0,2
+      call chn(i,istr)
+      if (i/=0) nistr='-'//trim(istr)
+      if (i/=0) pistr='+'//trim(istr)
+      call evaluate_integral(unitno,2,-i,3,-j,+3,3-k,+3, &
+          'f(l1'//trim(pistr)//',m1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          'l1'//trim(pistr),'m1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-i,3,-3,+j,3-k,+3, &
+          'f(l1'//trim(pistr)//',m2'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          'l1'//trim(pistr),'m2'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-i,3,-3,+j,-3,-3+k, &
+          'f(l1'//trim(pistr)//',m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l1'//trim(pistr),'m2'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-i,3,-j,+3,-3,-3+k, &
+          'f(l1'//trim(pistr)//',m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l1'//trim(pistr),'m1'//trim(pjstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,+i,-j,+3,3-k,+3, &
+          'f(l2'//trim(nistr)//',m1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          'l2'//trim(nistr),'m1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,+j,3-k,+3, &
+          'f(l2'//trim(nistr)//',m2'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          'l2'//trim(nistr),'m2'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,+j,-3,-3+k, &
+          'f(l2'//trim(nistr)//',m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l2'//trim(nistr),'m2'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,+i,-j,+3,-3,-3+k, &
+          'f(l2'//trim(nistr)//',m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l2'//trim(nistr),'m1'//trim(pjstr),'mz'//trim(nkstr))
+
+      call evaluate_integral(unitno,2,-i,3,3-j,+3,-k,+3, &
+          'f(l1'//trim(pistr)//',1'//trim(pjstr)//',n1'//trim(pkstr)//',ishock)', &
+          'l1'//trim(pistr),'1'//trim(pjstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-i,3,-3,-3+j,-k,+3, &
+          'f(l1'//trim(pistr)//',my'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+          'l1'//trim(pistr),'my'//trim(njstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-i,3,-3,-3+j,-3,+k, &
+          'f(l1'//trim(pistr)//',my'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+          'l1'//trim(pistr),'my'//trim(njstr),'n2'//trim(nkstr))
+      call evaluate_integral(unitno,2,-i,3,3-j,+3,-3,+k, &
+          'f(l1'//trim(pistr)//',1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+          'l1'//trim(pistr),'1'//trim(pjstr),'n2'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,+i,3-j,+3,-k,+3, &
+          'f(l2'//trim(nistr)//',1'//trim(pjstr)//',n1'//trim(pkstr)//',ishock)', &
+          'l2'//trim(nistr),'1'//trim(pjstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,-3+j,-k,+3, &
+          'f(l2'//trim(nistr)//',my'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+          'l2'//trim(nistr),'my'//trim(njstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,-3+j,-3,+k, &
+          'f(l2'//trim(nistr)//',my'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+          'l2'//trim(nistr),'my'//trim(njstr),'n2'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,+i,3-j,+3,-3,+k, &
+          'f(l2'//trim(nistr)//',1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+          'l2'//trim(nistr),'1'//trim(pjstr),'n2'//trim(nkstr))
+
+      call evaluate_integral(unitno,2,-i,3,3-j,+3,3-k,+3, &
+          'f(l1'//trim(pistr)//',1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          'l1'//trim(pistr),'1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-i,3,-3,-3+j,3-k,+3, &
+          'f(l1'//trim(pistr)//',my'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          'l1'//trim(pistr),'my'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-i,3,-3,-3+j,-3,-3+k, &
+          'f(l1'//trim(pistr)//',my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l1'//trim(pistr),'my'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-i,3,3-j,+3,-3,-3+k, &
+          'f(l1'//trim(pistr)//',1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l1'//trim(pistr),'1'//trim(pjstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,+i,3-j,+3,3-k,+3, &
+          'f(l2'//trim(nistr)//',1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          'l2'//trim(nistr),'1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,-3+j,3-k,+3, &
+          'f(l2'//trim(nistr)//',my'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          'l2'//trim(nistr),'my'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,+i,-3,-3+j,-3,-3+k, &
+          'f(l2'//trim(nistr)//',my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l2'//trim(nistr),'my'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,+i,3-j,+3,-3,-3+k, &
+          'f(l2'//trim(nistr)//',1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          'l2'//trim(nistr),'1'//trim(pjstr),'mz'//trim(nkstr))
+
+
+
+
+      call evaluate_integral(unitno,2,3-i,3,-j,+3,3-k,+3, &
+          'f(1'//trim(pistr)//',m1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          '1'//trim(pistr),'m1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,3-i,3,-3,+j,3-k,+3, &
+          'f(1'//trim(pistr)//',m2'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          '1'//trim(pistr),'m2'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,3-i,3,-3,+j,-3,-3+k, &
+          'f(1'//trim(pistr)//',m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          '1'//trim(pistr),'m2'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,3-i,3,-j,+3,-3,-3+k, &
+          'f(1'//trim(pistr)//',m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          '1'//trim(pistr),'m1'//trim(pjstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-j,+3,3-k,+3, &
+          'f(mx'//trim(nistr)//',m1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          'mx'//trim(nistr),'m1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,+j,3-k,+3, &
+          'f(mx'//trim(nistr)//',m2'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          'mx'//trim(nistr),'m2'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,+j,-3,-3+k, &
+          'f(mx'//trim(nistr)//',m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          'mx'//trim(nistr),'m2'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-j,+3,-3,-3+k, &
+          'f(mx'//trim(nistr)//',m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          'mx'//trim(nistr),'m1'//trim(pjstr),'mz'//trim(nkstr))
+
+      call evaluate_integral(unitno,2,3-i,3,3-j,+3,-k,+3, &
+          'f(1'//trim(pistr)//',1'//trim(pjstr)//',n1'//trim(pkstr)//',ishock)', &
+          '1'//trim(pistr),'1'//trim(pjstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,3-i,3,-3,-3+j,-k,+3, &
+          'f(1'//trim(pistr)//',my'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+          '1'//trim(pistr),'my'//trim(njstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,3-i,3,-3,-3+j,-3,+k, &
+          'f(1'//trim(pistr)//',my'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+          '1'//trim(pistr),'my'//trim(njstr),'n2'//trim(nkstr))
+      call evaluate_integral(unitno,2,3-i,3,3-j,+3,-3,+k, &
+          'f(1'//trim(pistr)//',1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+          '1'//trim(pistr),'1'//trim(pjstr),'n2'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,3-j,+3,-k,+3, &
+          'f(mx'//trim(nistr)//',1'//trim(pjstr)//',n1'//trim(pkstr)//',ishock)', &
+          'mx'//trim(nistr),'1'//trim(pjstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,-3+j,-k,+3, &
+          'f(mx'//trim(nistr)//',my'//trim(njstr)//',n1'//trim(pkstr)//',ishock)', &
+          'mx'//trim(nistr),'my'//trim(njstr),'n1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,-3+j,-3,+k, &
+          'f(mx'//trim(nistr)//',my'//trim(njstr)//',n2'//trim(nkstr)//',ishock)', &
+          'mx'//trim(nistr),'my'//trim(njstr),'n2'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,3-j,+3,-3,+k, &
+          'f(mx'//trim(nistr)//',1'//trim(pjstr)//',n2'//trim(nkstr)//',ishock)', &
+          'mx'//trim(nistr),'1'//trim(pjstr),'n2'//trim(nkstr))
+
+      call evaluate_integral(unitno,2,3-i,3,3-j,+3,3-k,+3, &
+          'f(1'//trim(pistr)//',1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          '1'//trim(pistr),'1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,3-i,3,-3,-3+j,3-k,+3, &
+          'f(1'//trim(pistr)//',my'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          '1'//trim(pistr),'my'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,3-i,3,-3,-3+j,-3,-3+k, &
+          'f(1'//trim(pistr)//',my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          '1'//trim(pistr),'my'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,3-i,3,3-j,+3,-3,-3+k, &
+          'f(1'//trim(pistr)//',1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          '1'//trim(pistr),'1'//trim(pjstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,3-j,+3,3-k,+3, &
+          'f(mx'//trim(nistr)//',1'//trim(pjstr)//',1'//trim(pkstr)//',ishock)', &
+          'mx'//trim(nistr),'1'//trim(pjstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,-3+j,3-k,+3, &
+          'f(mx'//trim(nistr)//',my'//trim(njstr)//',1'//trim(pkstr)//',ishock)', &
+          'mx'//trim(nistr),'my'//trim(njstr),'1'//trim(pkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,-3,-3+j,-3,-3+k, &
+          'f(mx'//trim(nistr)//',my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
+          'mx'//trim(nistr),'my'//trim(njstr),'mz'//trim(nkstr))
+      call evaluate_integral(unitno,2,-3,-3+i,3-j,+3,-3,-3+k, &
+          'f(mx'//trim(nistr)//',1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
+          'mx'//trim(nistr),'1'//trim(pjstr),'mz'//trim(nkstr))
+
+    enddo
+  enddo
+!  enddo
+
+  write(unitno,"(a,i1)") "    endsubroutine shock_calc_ext_kj_kji_",k
+endsubroutine make_calc_3d_ext_kj_kji
+!***********************************************************************
 subroutine make_calc_externalboundary(unitno)
   use Cparam
   integer :: unitno,i,j,k
@@ -531,141 +895,16 @@ subroutine make_calc_externalboundary(unitno)
   write(unitno,"(a)") "    integer :: i,j,k"
 
   if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
-    write(unitno,"(a)") "    real, dimension(l2i-l1i+1) :: integral1,integral2"
+!    write(unitno,"(a)") "    real, dimension(l2i-l1i+1) :: integral1,integral2"
     write(unitno,"(a)") "!  make_calc_externalboundary: 3D CASE"
     call evaluate_facefactors(unitno,0)
 
-    write(unitno,"(a)") "!  make_calc_externalboundary: 2D CASE (yz)"
-    call evaluate_facefactors(unitno,2)
-! Top/bottom 
-    do k=0,2
-      call chn(k,kstr)
-      if (k/=0) nkstr='-'//trim(kstr)
-      if (k/=0) pkstr='+'//trim(kstr)
-      write(unitno,"(a)") "      do j=m1i+1,m2i-1"
-      call evaluate_integral(unitno,2,-3,3,-3,+3,3-k,+3, &
-          'integral1','l1i:l2i','j','1 '//trim(pkstr))
-      call evaluate_integral(unitno,2,-3,3,-3,+3,-3,k-3, &
-          'integral2','l1i:l2i','j','mz'//trim(nkstr))
-      write(unitno,"(a)") "        f(l1i:l2i,j,1 "//trim(pkstr)//",ishock)=integral1"
-      write(unitno,"(a)") "        f(l1i:l2i,j,mz"//trim(nkstr)//",ishock)=integral2"
-      write(unitno,"(a)") "      enddo"
-    enddo
-! Left/right 
-    do j=0,2
-      call chn(j,jstr)
-      if (j/=0) njstr='-'//trim(jstr)
-      if (j/=0) pjstr='+'//trim(jstr)
-      write(unitno,"(a)") "      do k=n1i+1,n2i-1"
-      call evaluate_integral(unitno,2,-3,3,3-j,+3,-3,+3, &
-          'integral1','l1i:l2i','1 '//trim(pjstr),'k')
-      call evaluate_integral(unitno,2,-3,3,-3,j-3,-3,+3, &
-          'integral2','l1i:l2i','my'//trim(njstr),'k')
-      write(unitno,"(a)") "        f(l1i:l2i,1 "//trim(pjstr)//",k,ishock)=integral1"
-      write(unitno,"(a)") "        f(l1i:l2i,my"//trim(njstr)//",k,ishock)=integral2"
-      write(unitno,"(a)") "      enddo"
-    enddo
-! Near Corners 
-  do k=0,2
-  do j=0,2
-  call chn(k,kstr)
-  call chn(j,jstr)
-  if (k/=0) nkstr='-'//trim(kstr)
-  if (k/=0) pkstr='+'//trim(kstr)
-  if (j/=0) njstr='-'//trim(jstr)
-  if (j/=0) pjstr='+'//trim(jstr)
-  call evaluate_integral(unitno,2,-3,3,-j,+3,3-k,+3, &
-      'f(l1i:l2i,m1'//trim(pjstr)//',1 '//trim(pkstr)//',ishock)', &
-      'l1i:l2i','m1'//trim(pjstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,-3,3,-3,+j,3-k,+3, &
-      'f(l1i:l2i,m2'//trim(njstr)//',1 '//trim(pkstr)//',ishock)', &
-      'l1i:l2i','m2'//trim(njstr),'1 '//trim(pkstr))
-  call evaluate_integral(unitno,2,-3,3,-3,+j,-3,k-3, &
-      'f(l1i:l2i,m2'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
-      'l1i:l2i','m2'//trim(njstr),'mz'//trim(nkstr))
-  call evaluate_integral(unitno,2,-3,3,-j,+3,-3,k-3, &
-      'f(l1i:l2i,m1'//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
-      'l1i:l2i','m1'//trim(pjstr),'mz'//trim(nkstr))
+    write(unitno,"(a)") " call shock_calc_ext_j_ji(f)"
+    write(unitno,"(a)") " call shock_calc_ext_k_ki(f)"
+    write(unitno,"(a)") " call shock_calc_ext_kj_kji_0(f)"
+    write(unitno,"(a)") " call shock_calc_ext_kj_kji_1(f)"
+    write(unitno,"(a)") " call shock_calc_ext_kj_kji_2(f)"
 
-!  call evaluate_integral(unitno,2,0,0,3-j,+3,-k,+3,'f(l1,1 '//trim(pjstr)//',n1'//trim(pkstr)//',ishock)','l1','1 '//trim(pjstr),'n1'//trim(pkstr))
-!  call evaluate_integral(unitno,2,0,0,-3,j-3,-k,+3,'f(l1,my'//trim(njstr)//',n1'//trim(pkstr)//',ishock)','l1','my'//trim(njstr),'n1'//trim(pkstr))
-!  call evaluate_integral(unitno,2,0,0,-3,j-3,-3,+k,'f(l1,my'//trim(njstr)//',n2'//trim(nkstr)//',ishock)','l1','my'//trim(njstr),'n2'//trim(nkstr))
-!  call evaluate_integral(unitno,2,0,0,3-j,+3,-3,+k,'f(l1,1 '//trim(pjstr)//',n2'//trim(nkstr)//',ishock)','l1','1 '//trim(pjstr),'n2'//trim(nkstr))
-  enddo
-  enddo
-! Corners 
-    do k=0,2
-    do j=0,2
-      call chn(k,kstr)
-      call chn(j,jstr)
-      if (k/=0) nkstr='-'//trim(kstr)
-      if (k/=0) pkstr='+'//trim(kstr)
-      if (j/=0) njstr='-'//trim(jstr)
-      if (j/=0) pjstr='+'//trim(jstr)
-      call evaluate_integral(unitno,2,-3,3,3-j,+3,3-k,+3, &
-          'f(l1i:l2i,1 '//trim(pjstr)//',1 '//trim(pkstr)//',ishock)', &
-          'l1i:l2i','1 '//trim(pjstr),'1 '//trim(pkstr))
-      call evaluate_integral(unitno,2,-3,3,-3,j-3,3-k,+3, &
-          'f(l1i:l2i,my'//trim(njstr)//',1 '//trim(pkstr)//',ishock)', &
-          'l1i:l2i','my'//trim(njstr),'1 '//trim(pkstr))
-      call evaluate_integral(unitno,2,-3,3,-3,j-3,-3,k-3, &
-          'f(l1i:l2i,my'//trim(njstr)//',mz'//trim(nkstr)//',ishock)', &
-          'l1i:l2i','my'//trim(njstr),'mz'//trim(nkstr))
-      call evaluate_integral(unitno,2,-3,3,3-j,+3,-3,k-3, &
-          'f(l1i:l2i,1 '//trim(pjstr)//',mz'//trim(nkstr)//',ishock)', &
-          'l1i:l2i','1 '//trim(pjstr),'mz'//trim(nkstr))
-    enddo
-    enddo
-!!!!kloop:do k=1,mz
-!!!!      kbound=.true.
-!!!!      if (k>=n1 .and. k<=n2) kbound=.false.
-!!!!      call chn(k,kstr)
-!!!!      if (k<n1) then
-!!!!        koff=k-1
-!!!!        kmin=3-koff
-!!!!        kmax=3
-!!!!      else
-!!!!        koff=mz-k
-!!!!        kmin=-3
-!!!!        kmax=-3+koff
-!!!!      endif
-!!!!jloop:do j=1,my
-!!!!        jbound=.true.
-!!!!        if (j>=m1 .and. j<=m2) jbound=.false.
-!!!!        call chn(j,jstr)
-!!!!        if (j<m1) then
-!!!!          joff=j-1
-!!!!          jmin=3-joff
-!!!!          jmax=3
-!!!!        else
-!!!!          joff=my-j
-!!!!          jmin=-3
-!!!!          jmax=-3+joff
-!!!!        endif
-!!!!iloop:  do i=1,mx
-!!!!          ibound=.true.
-!!!!          if (i>=l1 .and. i<=l2) ibound=.false.
-!!!!          if (.not.(ibound.or.jbound.or.kbound)) cycle iloop
-!!!!          call chn(i,istr)
-!!!!          if (i<l1) then
-!!!!            ioff=i-1
-!!!!            imin=3-ioff
-!!!!            imax=3
-!!!!          else
-!!!!            ioff=mx-i
-!!!!            imin=-3
-!!!!            imax=-3+ioff
-!!!!          endif
-!!!!
-!!!!          call evaluate_integral(unitno,0,imin,imax,jmin,jmax,kmin,kmax, &
-!!!!              ' f('//trim(istr)//','//trim(jstr)//','//trim(kstr)//',ishock)' &
-!!!!                ,trim(istr),trim(jstr),trim(kstr))
-!!!!
-!!!!
-!!!!        enddo iloop
-!!!!      enddo jloop
-!!!!    enddo kloop
-!
 !    write(unitno,"(a)") "!  make_calc_externalboundary: 3D CASE"
 !    write(unitno,"(a)") "      if (lroot) print*,'shock_calc_body: The compiled in shock profile integral is 2D'"
 !    write(unitno,"(a)") "      call stop_it('shock_calc_body: This problem is 3D - INCONSITENCY')"
@@ -933,6 +1172,14 @@ subroutine make_calc_externalboundary(unitno)
     write(unitno,"(a)") "      call stop_it('shock_calc_body: Case not implemented')"
   endif
   write(unitno,"(a)") "  endsubroutine shock_calc_externalboundary"
+
+  if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
+    call make_calc_3d_ext_k_ki(unitno)
+    call make_calc_3d_ext_j_ji(unitno)
+    call make_calc_3d_ext_kj_kji(unitno,0)
+    call make_calc_3d_ext_kj_kji(unitno,1)
+    call make_calc_3d_ext_kj_kji(unitno,2)
+  endif
 endsubroutine make_calc_externalboundary
 !***********************************************************************
 subroutine evaluate_facefactors(unitno,rotation)
