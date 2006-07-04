@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.171 2006-07-04 14:57:19 mee Exp $
+! $Id: mpicomm.f90,v 1.172 2006-07-04 23:52:59 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -526,7 +526,6 @@ module Mpicomm
       if (nprocy>1) then
         lbufyo(:,:,:,1:ivar2-ivar1+1)=f(:,1:m1-1,n1:n2,ivar1:ivar2) !!(lower y-zone)
         ubufyo(:,:,:,1:ivar2-ivar1+1)=f(:,m2+1:my,n1:n2,ivar1:ivar2) !!(upper y-zone)
-print*,"Sending y_boundaries: ",iproc,ylneigh,maxval(lbufyo(:,:,:,1:ivar2-ivar1+1)),minval(lbufyo(:,:,:,1:ivar2-ivar1+1))
         nbufy=mx*nz*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD, &
             irecv_rq_fromuppy,ierr)
@@ -627,7 +626,6 @@ print*,"Sending y_boundaries: ",iproc,ylneigh,maxval(lbufyo(:,:,:,1:ivar2-ivar1+
                           ubufyi(:,:,:,j-ivar1+1)  !!(set upper buffer)
           endif
         enddo
-print*,"Setting y_boundaries: ",iproc,ylneigh,maxval(lbufyo(:,:,:,1:ivar2-ivar1+1)),minval(lbufyo(:,:,:,1:ivar2-ivar1+1))
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
       endif
