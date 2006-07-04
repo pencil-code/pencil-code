@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.16 2006-06-23 15:52:01 mee Exp $
+! $Id: shock.f90,v 1.17 2006-07-04 14:50:49 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -101,7 +101,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.16 2006-06-23 15:52:01 mee Exp $")
+           "$Id: shock.f90,v 1.17 2006-07-04 14:50:49 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -388,21 +388,25 @@ module Shock
 ! Initiate asyncronous communication of contributions to other processors 
 !
           if (nxgrid/=1) call bcshock_per_x(f)
-          call initiate_isendrcv_bdry(f,ishock,ishock)
+          call initiate_isendrcv_shockbdry(f,ishock,ishock)
 !
 ! Calculate all local shock profile contributions
 !
-!        call shock_calc_internalboundary(f)
+          call shock_calc_internalboundary(f)
           call shock_calc_body(f)
 !
 ! Finalize all shock profile communications
 !
-          call finalize_isendrcv_bdry(f,ishock,ishock)
+          call finalize_isendrcv_shockbdry(f,ishock,ishock)
           if (nygrid/=1) call bcshock_per_y(f)
           if (nzgrid/=1) call bcshock_per_z(f)
 !FIX ME
 !! CALCULATE shock in REAL boundary locations... and neighbours!
 !!!
+         
+         do n=n1,n2; do m=m1,m2
+           f(l1:l2,m,n,ishock)=max(f(l1:l2,m,n,ishock),0.)
+         enddo; enddo
 !        call scale_and_chop_internalboundary(f)
          !f(:,:,:,ishock) = tmp * dxmin**2 
         elseif (lcommunicate_uu) then
@@ -1218,9 +1222,20 @@ module Shock
       integer :: i,j,k
 !
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
-        call stop_it("scale_and_chop_internalboundary: 3D not implemented yet...")
+        do j=m1i,m2i
+        do i=0,nghost-1
+          f(l1+i,j,n1,ishock)=scale_and_chop(f(l1+i,j,n1,ishock))
+          f(l2-i,j,n1,ishock)=scale_and_chop(f(l2-i,j,n1,ishock))
+        enddo
+        enddo
+        do j=0,nghost-1
+        do i=l1,l2
+          f(i,m1+j,n1,ishock)=scale_and_chop(f(i,m1+j,n1,ishock))
+          f(i,m2-j,n1,ishock)=scale_and_chop(f(i,m2-j,n1,ishock))
+        enddo
+        enddo
       elseif ((nxgrid/=1).and.(nygrid/=1)) then
-        do j=m1i+1,m2i-1
+        do j=m1i,m2i
         do i=0,nghost-1
           f(l1+i,j,n1,ishock)=scale_and_chop(f(l1+i,j,n1,ishock))
           f(l2-i,j,n1,ishock)=scale_and_chop(f(l2-i,j,n1,ishock))
@@ -1233,7 +1248,7 @@ module Shock
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nzgrid/=1)) then
-        do k=n1i+1,n2i-1
+        do k=n1i,n2i
         do i=0,nghost-1
           f(l1+i,m1,k,ishock)=scale_and_chop(f(l1+i,m1,k,ishock))
           f(l2-i,m1,k,ishock)=scale_and_chop(f(l2-i,m1,k,ishock))
@@ -1247,7 +1262,7 @@ module Shock
         enddo
       elseif ((nygrid/=1).and.(nzgrid/=1)) then
         do k=0,nghost-1
-        do j=m1i+1,m2i-1
+        do j=m1i,m2i
           f(l1,j,n1+k,ishock)=scale_and_chop(f(l1,j,n1+k,ishock))
           f(l1,j,n2-k,ishock)=scale_and_chop(f(l1,j,n2-k,ishock))
         enddo
@@ -1424,11 +1439,11 @@ module Shock
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (nprocx==1)  then 
+      if (nprocx==1.and.lperi(1))  then 
         f(l1:l1i ,:,:,ishock) = f(l1:l1i,:,:,ishock) + f(l2+1:mx,:,:,ishock)
-        f(l2+1:mx,:,:,ishock) = f(l1:l1i,:,:,ishock)
+ !       f(l2+1:mx,:,:,ishock) = f(l1:l1i,:,:,ishock)
         f(l2i:l2 ,:,:,ishock) = f(l2i:l2,:,:,ishock) + f(1:l1-1 ,:,:,ishock) 
-        f(1:l1-1 ,:,:,ishock) = f(l2i:l2,:,:,ishock)
+!        f(1:l1-1 ,:,:,ishock) = f(l2i:l2,:,:,ishock)
       endif
 !
     endsubroutine bcshock_per_x
@@ -1442,11 +1457,11 @@ module Shock
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 
-      if (nprocy==1) then
+      if (nprocy==1.and.lperi(2)) then
         f(:,m1:m1i,:,ishock)  = f(:,m1:m1i,:,ishock) + f(:,m2+1:my,:,ishock)
-        f(:,m2+1:my,:,ishock) = f(:,m1:m1i,:,ishock)
+!        f(:,m2+1:my,:,ishock) = f(:,m1:m1i,:,ishock)
         f(:,m2i:m2,:,ishock)  = f(:,m2i:m2,:,ishock) + f(:,1:m1-1 ,:,ishock)
-        f(:,1:m1-1,:,ishock)  = f(:,m2i:m2,:,ishock)
+!        f(:,1:m1-1,:,ishock)  = f(:,m2i:m2,:,ishock)
       endif
 !
     endsubroutine bcshock_per_y
@@ -1460,11 +1475,11 @@ module Shock
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (nprocz==1)  then 
+      if (nprocz==1.and.lperi(3))  then 
         f(:,:,n1:n1i ,ishock) = f(:,:,n1:n1i,ishock) + f(:,:,n2+1:mz,ishock)
-        f(:,:,n2+1:mz,ishock) = f(:,:,n1:n1i,ishock)
+!        f(:,:,n2+1:mz,ishock) = f(:,:,n1:n1i,ishock)
         f(:,:,n2i:n2 ,ishock) = f(:,:,n2i:n2,ishock) + f(:,:,1:n1-1 ,ishock) 
-        f(:,:,1:n1-1 ,ishock) = f(:,:,n2i:n2,ishock)
+!        f(:,:,1:n1-1 ,ishock) = f(:,:,n2i:n2,ishock)
       endif
 !
     endsubroutine bcshock_per_z
