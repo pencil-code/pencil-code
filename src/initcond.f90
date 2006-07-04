@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.155 2006-06-14 00:08:50 ajohan Exp $ 
+! $Id: initcond.f90,v 1.156 2006-07-04 13:46:34 wlyra Exp $ 
 
 module Initcond 
  
@@ -1420,7 +1420,7 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy,zz,lcounter)
+    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy,zz)
 !
 !  Keplerian initial condition
 !
@@ -1436,7 +1436,6 @@ module Initcond
       integer :: n_pot,mcount,ncount
       real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: aux
-      logical :: lcounter
 !
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero
@@ -1462,16 +1461,6 @@ module Initcond
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
       f(:,:,:,iuz)=0.
-!
-! Introduce counter-rotation on outer disk
-!
-      if (lcounter) then
-         r_border = 0.5*(r_ext+r_int)
-         where (rrp .ge. r_border)
-            f(:,:,:,iux) = -f(:,:,:,iux)
-            f(:,:,:,iuy) = -f(:,:,:,iuy)
-         endwhere
-      endif
 !
     endsubroutine keplerian
 !***********************************************************************
