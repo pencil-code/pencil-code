@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.61 2006-06-29 08:55:13 mee Exp $
+! $Id: slices.f90,v 1.62 2006-07-04 14:44:17 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -165,7 +165,7 @@ module Slices
         slices%yz=>slice_yz
         slices%xy2=>slice_xy2
 
-        slices%name=cnamev(inamev)
+        slices%name=trim(cnamev(inamev))
         lslices_legacy=.true.       ! By default assume we're not 
                                     ! using module hooks to get the
                                     ! slice contents
