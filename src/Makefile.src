@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.196 2006-06-23 15:51:06 mee Exp $
+### $Id: Makefile.src,v 1.197 2006-07-04 14:58:33 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -369,6 +369,7 @@ MAKEOPTS=
 ##
 ## giga[0-9] Newcastle eScience (tony,dave,greame)
 ##
+#MAKEOPTS=-j 3 #(giga[0-9]*)
 #FC=mpif90 -static #(giga[0-9]*)  
 ##FC=gfortran_4win -static -I/addon/shared/lam/include #(giga01)  
 ##CC=gcc_4win -static -I/addon/shared/lam/include #(giga01)  
