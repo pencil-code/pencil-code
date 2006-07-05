@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.198 2006-07-05 01:51:08 mee Exp $
+### $Id: Makefile.src,v 1.199 2006-07-05 23:55:04 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -612,13 +612,13 @@ depend.dot: Makefile.src Makefile.local scripts/mkdot
 cparam.inc: Makefile.src Makefile.local scripts/mkcparam
 	scripts/mkcparam $(physics:.o=.f90) cparam.local -o cparam.inc
 
-shock_profile.inc: Makefile.src Makefile.local $(SHOCK_FINDER).f90 $(shock_finder_deps) $(SHOCK_PROFILE).*
-	+if [ -f $(SHOCK_PROFILE).desc ]; then \
-          $(MAKE) $(SHOCK_FINDER).x; \
-          ./$(SHOCK_FINDER).x < $(SHOCK_PROFILE).desc > shock_profile.inc; \
-	elif [ -f $(SHOCK_PROFILE).inc ]; then \
+shock_profile.inc: Makefile.src Makefile.local $(SHOCK_FINDER).f90 $(shock_finder_deps) $(SHOCK_PROFILE).desc
+	+if [ -f $(SHOCK_PROFILE).inc ]; then \
           rm -f shock_profile.inc; \
           ln -s $(SHOCK_PROFILE).inc shock_profile.inc; \
+	elif [ -f $(SHOCK_PROFILE).desc ]; then \
+          $(MAKE) $(SHOCK_FINDER).x; \
+          ./$(SHOCK_FINDER).x < $(SHOCK_PROFILE).desc > shock_profile.inc; \
         fi
 
 mpicomm_double.f90: mpicomm.f90
