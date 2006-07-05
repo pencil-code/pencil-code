@@ -71,6 +71,7 @@ endprogram shock_finder2D
 !***********************************************************************
 subroutine make_calc_body(unitno)
   use Cparam
+  use SurfaceData
   integer :: unitno
   write(unitno,"(a)") "!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)"
   write(unitno,"(a)") "!"
@@ -83,9 +84,10 @@ subroutine make_calc_body(unitno)
   write(unitno,"(a)") "    integer :: i,j,k"
 
   if ( ndimensions /= problem_dimensions ) then
-     write (unitno,"(a,i1,a,i1,a)") "if (lroot) print*, 'The compiled in shock profile integral is ",ndimensions, &
-                     "D but the problem is ", problem_dimensions,"D. STOPPING.'"
-     write (unitno,"(a)") "STOP"
+     write (unitno,"(a)") "call fatal_error('shock_calc_body',& "
+     write (unitno,"(a,i1,a,i1,a)") "'The compiled in shock profile integral is ", &
+                      ndimensions, &
+                     "D but the problem is ", problem_dimensions,"D. STOPPING.')"
   endif
   if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
 !  write(unitno,"(a)") "      if (lroot) print*,'shock_calc_body: The compiled in shock profile integral is 2D'"
