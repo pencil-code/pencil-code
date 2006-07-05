@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.197 2006-07-04 14:58:33 mee Exp $
+### $Id: Makefile.src,v 1.198 2006-07-05 01:51:08 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -54,7 +54,7 @@ PARTICLES_SELFGRAVITY  = noparticles_selfgravity
 
 PLANET           =  noplanet
 
-SHOCK_PROFILE = shock_profiles/octagon2D
+SHOCK_PROFILE = shock_profiles/noshock_profile
 SHOCK_FINDER  = shock_finder
 
 POISSON      = nopoisson
@@ -527,7 +527,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 
 ## Generic rules:
 .SUFFIXES:			# get rid of that annoying Modula rule
-.SUFFIXES: .f .f90 .c .o
+.SUFFIXES: .f .f90 .c .o .inc .h
 
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS)  -o $*.o -c $*.f 
@@ -611,8 +611,16 @@ depend.dot: Makefile.src Makefile.local scripts/mkdot
 	scripts/mkdot $(physics:.o=.f90) > depend.dot
 cparam.inc: Makefile.src Makefile.local scripts/mkcparam
 	scripts/mkcparam $(physics:.o=.f90) cparam.local -o cparam.inc
-shock_profile.inc: Makefile.src Makefile.local shock_finder.x $(SHOCK_PROFILE).desc
-	./shock_finder.x < $(SHOCK_PROFILE).desc > shock_profile.inc
+
+shock_profile.inc: Makefile.src Makefile.local $(SHOCK_FINDER).f90 $(shock_finder_deps) $(SHOCK_PROFILE).*
+	+if [ -f $(SHOCK_PROFILE).desc ]; then \
+          $(MAKE) $(SHOCK_FINDER).x; \
+          ./$(SHOCK_FINDER).x < $(SHOCK_PROFILE).desc > shock_profile.inc; \
+	elif [ -f $(SHOCK_PROFILE).inc ]; then \
+          rm -f shock_profile.inc; \
+          ln -s $(SHOCK_PROFILE).inc shock_profile.inc; \
+        fi
+
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
