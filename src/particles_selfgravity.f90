@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.5 2006-07-02 11:54:07 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.6 2006-07-06 11:24:47 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -9,7 +9,7 @@
 !
 ! CPARAM logical, parameter :: lparticles_selfgravity=.true.
 !
-! MAUX CONTRIBUTION 4
+! MAUX CONTRIBUTION 3
 ! COMMUNICATED AUXILIARIES 3
 !
 !***************************************************************
@@ -53,7 +53,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.5 2006-07-02 11:54:07 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.6 2006-07-06 11:24:47 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -61,7 +61,6 @@ module Particles_selfgravity
       igpotselfx = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
       igpotselfy = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
       igpotselfz = mvar + naux_com + 1; naux = naux + 1; naux_com = naux_com + 1
-      irhop      = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -293,7 +292,6 @@ module Particles_selfgravity
         write(3,*) 'igpotselfx=', igpotselfx
         write(3,*) 'igpotselfy=', igpotselfy
         write(3,*) 'igpotselfz=', igpotselfz
-        write(3,*) 'irhop     =', irhop
       endif
 !
     endsubroutine rprint_particles_selfgrav

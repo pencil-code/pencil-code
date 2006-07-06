@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.73 2006-06-27 12:09:58 ajohan Exp $
+! $Id: particles_sub.f90,v 1.74 2006-07-06 11:24:47 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1470,11 +1470,16 @@ module Particles_sub
               f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
             enddo; enddo; enddo
           enddo
+!
+!  Nearest Grid Point (NGP) method.
+!          
+        else
+          f(l1:l2,m1:m2,n1:n2,irhop)=f(l1:l2,m1:m2,n1:n2,inp)
         endif
 !
 !  Fold first ghost zone of f.
 !
-        call fold_f(f,irhop,irhop)
+        if (lparticlemesh_cic.or.lparticlemesh_tsc) call fold_f(f,irhop,irhop)
         f(l1:l2,m1:m2,n1:n2,irhop)=rhop_tilde*f(l1:l2,m1:m2,n1:n2,irhop)
       endif
 !

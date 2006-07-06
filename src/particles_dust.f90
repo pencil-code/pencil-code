@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.112 2006-07-02 13:53:42 ajohan Exp $
+! $Id: particles_dust.f90,v 1.113 2006-07-06 11:24:47 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_planet=.false.
 !
@@ -103,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.112 2006-07-02 13:53:42 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.113 2006-07-06 11:24:47 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -123,7 +123,8 @@ module Particles
 !
 !  Set indices for auxiliary variables
 !
-      inp  = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      inp   = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      irhop = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -511,10 +512,10 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
-            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
                 sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
           else
-            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,inp))/ &
+            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
                 sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
           endif
  
@@ -525,9 +526,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               if (ldensity_nolog) then
-                eps = rhop_tilde*f(l,m,n,inp)/f(l,m,n,ilnrho)
+                eps = rhop_tilde*f(l,m,n,irhop)/f(l,m,n,ilnrho)
               else
-                eps = rhop_tilde*f(l,m,n,inp)/exp(f(l,m,n,ilnrho))
+                eps = rhop_tilde*f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
               endif
             endif
  
@@ -545,9 +546,9 @@ k_loop:   do while (.not. (k>npar_loc))
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (ldensity_nolog) then
-                eps = rhop_tilde*f(ix0,iy0,iz0,inp)/f(ix0,iy0,iz0,ilnrho)
+                eps = rhop_tilde*f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
               else
-                eps = rhop_tilde*f(ix0,iy0,iz0,inp)/exp(f(ix0,iy0,iz0,ilnrho))
+                eps = rhop_tilde*f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
               endif
             endif
             
@@ -1245,7 +1246,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lfirst.and.ldt) then
             if (ldragforce_gas_par) then
-              tausg1  =rhop_tilde*f(l1:l2,m,n,inp)*p%rho1*tausp1_point
+              tausg1  =f(l1:l2,m,n,irhop)*p%rho1*tausp1_point
               dt1_drag=(tausp1_point+tausg1)/cdtp
             else
               dt1_drag=tausp1_point/cdtp
@@ -1563,7 +1564,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (lpar_spec) call power_1d(f,'p',0,inp)
+      if (lpar_spec) call power_1d(f,'p',0,irhop)
 !
     endsubroutine powersnap_particles
 !***********************************************************************
@@ -1595,6 +1596,7 @@ k_loop:   do while (.not. (k>npar_loc))
         write(3,*) 'ivpy=', ivpy
         write(3,*) 'ivpz=', ivpz
         write(3,*) 'inp=', inp
+        write(3,*) 'irhop=', irhop
       endif
 !
 !  Reset everything in case of reset
