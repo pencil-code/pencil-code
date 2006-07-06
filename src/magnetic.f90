@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.296 2006-06-27 12:17:05 ajohan Exp $
+! $Id: magnetic.f90,v 1.297 2006-07-06 09:07:55 joishi Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
   integer :: idiag_arms=0,idiag_amax=0,idiag_beta1m=0,idiag_beta1max=0
   integer :: idiag_bx2m=0,idiag_by2m=0,idiag_bz2m=0
   integer :: idiag_bxbym=0,idiag_bxbzm=0,idiag_bybzm=0,idiag_djuidjbim=0
-  integer :: idiag_bxbymz=0,idiag_bxbzmz=0,idiag_bybzmz=0
+  integer :: idiag_bxbymz=0,idiag_bxbzmz=0,idiag_bybzmz=0,idiag_b2mz=0
   integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0
   integer :: idiag_bmy=0,idiag_bmz=0
   integer :: idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
@@ -188,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.296 2006-06-27 12:17:05 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.297 2006-07-06 09:07:55 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1156,6 +1156,7 @@ module Magnetic
             call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmz)
         if (idiag_bybzmz/=0) &
             call xysum_mn_name_z(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmz)
+        if (idiag_b2mz/=0) call xysum_mn_name_z(p%b2,idiag_b2mz)
         if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
         if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
         if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
@@ -1658,7 +1659,7 @@ module Magnetic
         idiag_vAmax=0; idiag_dtb=0; idiag_arms=0; idiag_amax=0
         idiag_beta1m=0; idiag_beta1max=0; idiag_bx2m=0
         idiag_by2m=0; idiag_bz2m=0
-        idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0
+        idiag_bxbymz=0; idiag_bxbzmz=0; idiag_bybzmz=0; idiag_b2mz=0
         idiag_bxbym=0; idiag_bxbzm=0; idiag_bybzm=0; idiag_djuidjbim=0
         idiag_bxmz=0; idiag_bymz=0; idiag_bzmz=0; idiag_bmx=0; idiag_bmy=0
         idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
@@ -1762,6 +1763,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxbymz',idiag_bxbymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxbzmz',idiag_bxbzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bybzmz',idiag_bybzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mz',idiag_b2mz)
       enddo
 !
 !  check for those quantities for which we want y-averages
@@ -1842,6 +1844,8 @@ module Magnetic
         write(3,*) 'i_bxmz=',idiag_bxmz
         write(3,*) 'i_bymz=',idiag_bymz
         write(3,*) 'i_bzmz=',idiag_bzmz
+        write(3,*) 'i_bxbymz=',idiag_bxbymz
+        write(3,*) 'i_b2mz=',idiag_b2mz
         write(3,*) 'i_bmx=',idiag_bmx
         write(3,*) 'i_bmy=',idiag_bmy
         write(3,*) 'i_bmz=',idiag_bmz
