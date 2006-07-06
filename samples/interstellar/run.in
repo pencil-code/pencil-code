@@ -3,13 +3,12 @@
 !  run parameters for interstellar
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.15 2006-04-02 19:38:22 mee Exp $',
+  cvsid='$Id: run.in,v 1.16 2006-07-06 13:48:35 brandenb Exp $',
   nt=30, it1=2, isave=50, itorder=3
   cdt=0.4, cdtv=0.3, dtmin=1e-9
   dsnap=2., dvid=2.
   ip=20
   lpencil_check=T
-  bcz = 's','s','a','a2','sT'
 /
 &eos_run_pars
 /
