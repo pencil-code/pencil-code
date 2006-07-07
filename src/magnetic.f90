@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.297 2006-07-06 09:07:55 joishi Exp $
+! $Id: magnetic.f90,v 1.298 2006-07-07 12:00:45 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -188,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.297 2006-07-06 09:07:55 joishi Exp $")
+           "$Id: magnetic.f90,v 1.298 2006-07-07 12:00:45 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -986,9 +986,8 @@ module Magnetic
       endif
 !
       if (lresi_eta_shock) then
-        do i=1,3
-          call dot(p%gshock,p%aij(:,i,:),gshockgai)
-          fres(:,i)=fres(:,i) + eta_shock*(p%shock*p%del2a(:,i)+gshockgai)
+        do j=1,3
+          fres(:,j)=fres(:,j) + eta_shock*p%shock*p%del2a(:,j)
         enddo
         etatotal=etatotal+eta_shock*p%shock
       endif
