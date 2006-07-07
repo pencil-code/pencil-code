@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.298 2006-07-07 12:00:45 ajohan Exp $
+! $Id: magnetic.f90,v 1.299 2006-07-07 12:05:02 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -188,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.298 2006-07-07 12:00:45 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.299 2006-07-07 12:05:02 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -504,7 +504,7 @@ module Magnetic
       if (lresi_eta_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
-        lpenc_requested(i_aij)=.true.
+        lpenc_requested(i_diva)=.true.
       endif
       if (lresi_shell) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
@@ -986,8 +986,9 @@ module Magnetic
       endif
 !
       if (lresi_eta_shock) then
-        do j=1,3
-          fres(:,j)=fres(:,j) + eta_shock*p%shock*p%del2a(:,j)
+        do i=1,3
+          fres(:,i) = fres(:,i) &
+                    + eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
         enddo
         etatotal=etatotal+eta_shock*p%shock
       endif
