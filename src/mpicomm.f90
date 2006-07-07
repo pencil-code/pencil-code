@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.172 2006-07-04 23:52:59 mee Exp $
+! $Id: mpicomm.f90,v 1.173 2006-07-07 13:18:29 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2101,7 +2101,7 @@ module Mpicomm
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: ivar1, ivar2
 !      
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
