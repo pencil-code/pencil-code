@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.156 2006-07-04 13:46:34 wlyra Exp $ 
+! $Id: initcond.f90,v 1.157 2006-07-07 15:40:20 wlyra Exp $ 
 
 module Initcond 
  
@@ -2504,10 +2504,10 @@ module Initcond
 ! Minimum Mass Solar Nebula model
 !
 ! rho    = rho(R) * rho(z) 
-! rho(R) = C2 r**-plaw 
+! rho(R) = C2 R**-plaw 
 ! rho(z) = exp(-z^2/(2*H^2), where H/R=0.05 is the scale height
 !
-! sigma(r) = Int rho dz = C1 r**-0.5 
+! sigma(r) = Int rho dz = C1 R**-0.5 
 
       use Cdata
       use Mpicomm, only: stop_it
@@ -2517,12 +2517,12 @@ module Initcond
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,rr,H2 
-      real, dimension (nx) :: cs2_mn,aux
+      real, dimension (nx) :: cs2_mn,Omega2
       real, dimension (nx,3) :: gg_mn
       real :: lnrho_const,plaw
       integer :: mcount,ncount
 !      
-      rr  = sqrt(xx**2 + yy**2 + zz**2) + epsi
+      rr   = sqrt(xx**2 + yy**2) + epsi
 !
       if (nzgrid==1) then
          f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
@@ -2530,14 +2530,11 @@ module Initcond
 !        
          do mcount=m1,m2
             do ncount=n1,n2
-               call get_global( gg_mn,mcount,ncount, 'gg')
                call get_global(cs2_mn,mcount,ncount,'cs2')
-               aux  = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
-               !H = cs/OO = sqrt(cs2)/sqrt(grav/rr)=sqrt(cs2*rr/grav)
-               !grav(l1:l2,mcount,ncount) = aux
-               !cs2(l1:l2,mcount,ncount) = cs2_mn
-               
-               H2(l1:l2,mcount,ncount) = cs2_mn/aux*rr(l1:l2,mcount,ncount)
+!
+               Omega2 = (rr(l1:l2,mcount,ncount)**2+0.1**2)**(-1.5)
+               H2(l1:l2,mcount,ncount) = cs2_mn/Omega2
+!
             enddo
          enddo
 !
