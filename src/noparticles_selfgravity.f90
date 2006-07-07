@@ -1,4 +1,4 @@
-! $Id: noparticles_selfgravity.f90,v 1.4 2006-07-02 11:54:07 ajohan Exp $
+! $Id: noparticles_selfgravity.f90,v 1.5 2006-07-07 11:13:55 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -197,7 +197,6 @@ module Particles_selfgravity
         write(3,*) 'igpotselfx=0'
         write(3,*) 'igpotselfy=0'
         write(3,*) 'igpotselfz=0'
-        write(3,*) 'irhop     =0'
       endif
 !
       if (NO_WARN) print*, lreset

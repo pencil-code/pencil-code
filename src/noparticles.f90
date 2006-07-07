@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.10 2006-04-25 16:59:28 ajohan Exp $
+! $Id: noparticles.f90,v 1.11 2006-07-07 11:13:55 ajohan Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -214,12 +214,14 @@ module Particles
       if (present(lwrite)) lwr=lwrite
       
       if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
+        write(3,*) 'ixp=0'
+        write(3,*) 'iyp=0'
+        write(3,*) 'izp=0'
+        write(3,*) 'ivpx=0'
+        write(3,*) 'ivpy=0'
+        write(3,*) 'ivpz=0'
+        write(3,*) 'inp=0'
+        write(3,*) 'irho=0'
       endif
 !
     endsubroutine rprint_particles
