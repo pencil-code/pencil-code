@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.171 2006-06-16 16:49:52 dobler Exp $
+# $Id: getconf.csh,v 1.172 2006-07-08 16:58:36 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -319,6 +319,13 @@ else if ($hn =~ node*.steno.dcsc.ku.dk) then
   set remote_top     = 1
   set local_binary   = 0
   set nprocpernode   = 4
+
+else if (($hn =~ columbia*) || ($hn =~ cfe*)) then
+  echo "Columbia cluster"
+  set mpirun = mpirun
+  set start_x=$PBS_O_WORKDIR/src/start.x
+  set run_x=$PBS_O_WORKDIR/src/run.x
+  set local_disc = 0
 
 else if ($hn =~ node[0-9]*) then
   echo "CLX - CINECA, Bologna (IBM Linux Cluster)"

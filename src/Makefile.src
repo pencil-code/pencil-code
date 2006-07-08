@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.199 2006-07-05 23:55:04 mee Exp $
+### $Id: Makefile.src,v 1.200 2006-07-08 16:58:36 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -425,6 +425,12 @@ MAKEOPTS=
 #CFLAGS=-fastsse -tp k8-64e -DFUNDERSC=1 #(fend0[1-3])
 #LDMPI=-L/usr/local/topspin/mpi/mpich/lib64 -lmpich -lpthread -lmpich_p #(fend0[1-3])
 ##
+## Altix clusters at DCSC (brahe) and Columbia (cfe2)
+#FC=ifort #(brahe|cfe2)
+#CC=icc #(brahe|cfe2)
+#FFLAGS=-O3 #(brahe|cfe2)
+#CFLAGS=-O3 -DFUNDERSC=1 #(brahe|cfe2)
+#LDMPI=-lmpi #(brahe|cfe2)
 
 
 ## Darwin:
