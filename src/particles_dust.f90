@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.115 2006-07-08 15:01:16 ajohan Exp $
+! $Id: particles_dust.f90,v 1.116 2006-07-08 17:55:51 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -103,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.115 2006-07-08 15:01:16 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.116 2006-07-08 17:55:51 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -347,11 +347,17 @@ k_loop:   do while (.not. (k>npar_loc))
             fp(k,izp)=fp(k-1,izp)
             if (fp(k,ixp)>xyz1_loc(1) .or. nxgrid==1) then
               fp(k,ixp)=fp(1,ixp)
-              fp(k,iyp)=fp(k,iyp)+dy_par
+              if (nygrid/=1) then
+                fp(k,iyp)=fp(k,iyp)+dy_par
+              else
+                fp(k,izp)=fp(k,izp)+dz_par
+              endif
             endif
-            if (fp(k,iyp)>xyz1_loc(2) .or. nygrid==1) then
+            if (fp(k,iyp)>xyz1_loc(2)) then
               fp(k,iyp)=fp(1,iyp)
-              fp(k,izp)=fp(k,izp)+dz_par
+              if (nzgrid/=1) then
+                fp(k,izp)=fp(k,izp)+dz_par
+              endif
             endif
           enddo
           lequidistant=.true.
@@ -512,13 +518,13 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !  Calculate average dust-to-gas ratio in box.
           if (ldensity_nolog) then
-            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
+            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
                 sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
           else
-            eps = rhop_tilde*sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
+            eps = sum(f(l1:l2,m1:m2,n1:n2,irhop))/ &
                 sum(exp(f(l1:l2,m1:m2,n1:n2, ilnrho)))
           endif
- 
+
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !  Set gas velocity field.
           do l=l1,l2; do m=m1,m2; do n=n1,n2
@@ -526,9 +532,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Take either global or local dust-to-gas ratio.
             if (.not. ldragforce_equi_global_eps) then
               if (ldensity_nolog) then
-                eps = rhop_tilde*f(l,m,n,irhop)/f(l,m,n,ilnrho)
+                eps = f(l,m,n,irhop)/f(l,m,n,ilnrho)
               else
-                eps = rhop_tilde*f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
+                eps = f(l,m,n,irhop)/exp(f(l,m,n,ilnrho))
               endif
             endif
  
@@ -546,9 +552,9 @@ k_loop:   do while (.not. (k>npar_loc))
             if (.not. ldragforce_equi_global_eps) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (ldensity_nolog) then
-                eps = rhop_tilde*f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
+                eps = f(ix0,iy0,iz0,irhop)/f(ix0,iy0,iz0,ilnrho)
               else
-                eps = rhop_tilde*f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
+                eps = f(ix0,iy0,iz0,irhop)/exp(f(ix0,iy0,iz0,ilnrho))
               endif
             endif
             
@@ -1241,7 +1247,7 @@ k_loop:   do while (.not. (k>npar_loc))
                   else
                     rho1_point=p%rho1(ixx-nghost)
                   endif
-!  Add friction force to grid point.                  
+!  Add friction force to grid point.
                   df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                       rhop_tilde*rho1_point*dragforce*weight
                 enddo; enddo; enddo
