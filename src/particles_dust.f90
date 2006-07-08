@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.113 2006-07-06 11:24:47 ajohan Exp $
+! $Id: particles_dust.f90,v 1.114 2006-07-08 12:41:29 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
-  integer :: idiag_mpt=0
+  integer :: idiag_mpt=0, idiag_dedragp=0
 
   contains
 
@@ -103,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.113 2006-07-06 11:24:47 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.114 2006-07-08 12:41:29 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1074,7 +1074,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
-      real :: np_point, eps_point, rho_point, rho1_point, tausp1_point
+      real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k, l, ix0, iy0, iz0
@@ -1112,6 +1112,20 @@ k_loop:   do while (.not. (k>npar_loc))
             endif
             dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+!
+!  Drag force diagnostics
+!
+            if (ldiagnos) then
+              if (idiag_dedragp/=0) then
+                if (ldragforce_gas_par) then
+                  up2=sum((fp(k,ivpx:ivpz)-uup)**2)
+                  call sum_par_name((/-rhop_tilde*tausp1_point*up2/),idiag_dedragp)
+                else
+                  up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
+                  call sum_par_name((/-rhop_tilde*tausp1_point*up2/),idiag_dedragp)
+                endif
+              endif
+            endif
 !            
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
@@ -1608,7 +1622,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
         idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_rhoptilm=0; idiag_dtdragp=0
+        idiag_rhoptilm=0; idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
@@ -1649,6 +1663,8 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
         call parse_name(iname,cname(iname),cform(iname), &
             'rhoptilm',idiag_rhoptilm)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'dedragp',idiag_dedragp)
       enddo
 !
 !  check for those quantities for which we want x-averages
