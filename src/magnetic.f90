@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.299 2006-07-07 12:05:02 theine Exp $
+! $Id: magnetic.f90,v 1.300 2006-07-08 17:56:00 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -188,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.299 2006-07-07 12:05:02 theine Exp $")
+           "$Id: magnetic.f90,v 1.300 2006-07-08 17:56:00 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -800,7 +800,10 @@ module Magnetic
 !  set va2power_jxb to an integer value in order to specify the power
 !  of the limiting term,
         if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
-        if (va2max_jxb>0) rho1_jxb=rho1_jxb/(1+(p%va2/va2max_jxb)**va2power_jxb)
+        if (va2max_jxb>0) then
+          rho1_jxb = rho1_jxb &
+                   * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+        endif
         call multsv_mn(rho1_jxb,p%jxb,p%jxbr)
       endif
 ! ub
@@ -909,7 +912,7 @@ module Magnetic
 !      
       real, dimension (nx,3) :: geta,uxDxuxb,fres
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,gshockgai,etaSS
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j
@@ -1081,9 +1084,15 @@ module Magnetic
 !  meanfield_etat, which is however only invoked in mean field models
 !
       if (lfirst.and.ldt) then
+        rho1_jxb=p%rho1
+        if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
+        if (va2max_jxb>0) then
+          rho1_jxb = rho1_jxb &
+                   * (1+(p%va2/va2max_jxb)**va2power_jxb)**(-1.0/va2power_jxb)
+        endif
         advec_va2=((p%bb(:,1)*dx_1(l1:l2))**2+ &
                    (p%bb(:,2)*dy_1(  m  ))**2+ &
-                   (p%bb(:,3)*dz_1(  n  ))**2)*mu01*p%rho1
+                   (p%bb(:,3)*dz_1(  n  ))**2)*mu01*rho1_jxb
         diffus_eta=(etatotal+meanfield_etat)*dxyz_2
         if (ldiagnos.and.idiag_dteta/=0) then
           call max_mn_name(diffus_eta/cdtv,idiag_dteta,l_dt=.true.)
