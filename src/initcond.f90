@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.158 2006-07-08 13:39:49 wlyra Exp $ 
+! $Id: initcond.f90,v 1.159 2006-07-08 13:51:45 wlyra Exp $ 
 
 module Initcond 
  
@@ -1425,39 +1425,35 @@ module Initcond
 !  Keplerian initial condition
 !
 !   2-may-05/axel+wlad: coded   
-
+!
       use Cdata
       use EquationOfState, only : cs20
       use Global
-
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rrp,OO,grav
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr_cyl,OO,grav
       real :: g0,r0_pot,Mach,plaw,r_border
       integer :: n_pot,mcount,ncount
       real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: aux
 !
 !  Angular velocity for centrifugally supported disc in given potential.
-!  Subtract angular velocity of the reference frame, if Omega is non-zero
+!  Subtract angular velocity of the reference frame, if Omega is non-zero 
 !
       if (lroot) print*,'accretion disk initial condition'
-
-      if (lcylindrical) then
-         rrp=sqrt(xx**2+yy**2)+tini
-      else   
-         rrp=sqrt(xx**2+yy**2+zz**2)+tini
-      endif   
-
+!
+      rr_cyl=sqrt(xx**2+yy**2)+tini
+!
       do mcount=m1,m2
          do ncount=n1,n2
             call get_global(gg_mn,mcount,ncount,'gg')
-            aux = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2+gg_mn(:,3)**2)
+            aux = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2)
             grav(l1:l2,mcount,ncount) = aux
          enddo
       enddo
-     
-      OO = sqrt(grav/rrp)
-     
+!    
+      OO = sqrt(grav/rr_cyl)
+!     
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
       f(:,:,:,iuz)=0.
