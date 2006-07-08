@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.114 2006-07-08 12:41:29 ajohan Exp $
+! $Id: particles_dust.f90,v 1.115 2006-07-08 15:01:16 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -84,7 +84,7 @@ module Particles
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
-  integer :: idiag_mpt=0, idiag_dedragp=0
+  integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0
 
   contains
 
@@ -103,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.114 2006-07-08 12:41:29 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.115 2006-07-08 15:01:16 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1309,6 +1309,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%rhop*p%rho1,idiag_epspmx)
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%rhop*p%rho1,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%rhop*p%rho1,idiag_epspmz)
+        if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
       endif
 !
     endsubroutine dvvp_dt_pencil
@@ -1594,7 +1595,7 @@ k_loop:   do while (.not. (k>npar_loc))
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname,inamez,inamey,inamex
+      integer :: iname,inamez,inamey,inamex, inamexy
       logical :: lwr
 ! 
 !  Write information to index.pro
@@ -1628,6 +1629,7 @@ k_loop:   do while (.not. (k>npar_loc))
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
+        idiag_rhopmxy=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -1689,6 +1691,12 @@ k_loop:   do while (.not. (k>npar_loc))
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
+      enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamexy=1,nnamexy
+        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
       enddo
 !
     endsubroutine rprint_particles
