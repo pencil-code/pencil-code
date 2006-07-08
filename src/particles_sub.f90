@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.74 2006-07-06 11:24:47 ajohan Exp $
+! $Id: particles_sub.f90,v 1.75 2006-07-08 17:53:50 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1019,7 +1019,9 @@ module Particles_sub
 !
 !  Interpolation formulae.
 !
-      if (dimensionality==1) then
+      if (dimensionality==0) then
+        gp=f(ix0,iy0,iz0,ivar1:ivar2)
+      elseif (dimensionality==1) then
         if (nxgrid/=1) then
           gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
                   (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
