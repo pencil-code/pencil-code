@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.157 2006-07-07 15:40:20 wlyra Exp $ 
+! $Id: initcond.f90,v 1.158 2006-07-08 13:39:49 wlyra Exp $ 
 
 module Initcond 
  
@@ -2498,47 +2498,57 @@ module Initcond
     subroutine power_law(f,xx,yy,zz,lnrho_const,plaw)
 !
 ! 24-fev-05/wlad : coded.
-! yields from Minimum Mass Solar Nebula model
+! Yields from Minimum Mass Solar Nebula model
 !
-! initial condition for density as yielded by the 
-! Minimum Mass Solar Nebula model
+! Initial condition for density 
 !
 ! rho    = rho(R) * rho(z) 
-! rho(R) = C2 R**-plaw 
-! rho(z) = exp(-z^2/(2*H^2), where H/R=0.05 is the scale height
-!
-! sigma(r) = Int rho dz = C1 R**-0.5 
+! rho(R) = R**-plaw 
+! rho(z) = exp(-z^2/(2*H^2), where H=cs/Omega is the scale height
 
       use Cdata
       use Mpicomm, only: stop_it
-      use Gravity, only: g0
+      use Gravity, only: g0,r0_pot,n_pot
       use General
       use Global
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,rr,H2 
-      real, dimension (nx) :: cs2_mn,Omega2
+      real, dimension(mx,my,mz) :: xx,yy,zz,r_cyl,H2 
+      real, dimension (nx) :: cs2_mn,Omega2_mn
       real, dimension (nx,3) :: gg_mn
       real :: lnrho_const,plaw
       integer :: mcount,ncount
-!      
-      rr   = sqrt(xx**2 + yy**2) + epsi
+!
+      if (n_pot.ne.2) then
+        print*,'initcond.f90: You are trying to model a protoplanetary disk' 
+        print*,'with smoothed gravity but the smoothing lenght is not equal'  
+        print*,'to 2. Better stop and change, since it will lead to boundary'
+        print*,'troubles as Omega does not flatten properly.'
+        call stop_it('')
+     endif
+!
+      r_cyl   = sqrt(xx**2 + yy**2) + epsi
 !
       if (nzgrid==1) then
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr)
+!
+! Radial stratification
+!
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(r_cyl)
       else 
+!
+! Vertical stratification
 !        
          do mcount=m1,m2
             do ncount=n1,n2
                call get_global(cs2_mn,mcount,ncount,'cs2')
 !
-               Omega2 = (rr(l1:l2,mcount,ncount)**2+0.1**2)**(-1.5)
-               H2(l1:l2,mcount,ncount) = cs2_mn/Omega2
+               Omega2_mn = g0*(r_cyl(l1:l2,mcount,ncount)**2+r0_pot**2)**(-1.5)
+               H2(l1:l2,mcount,ncount) = cs2_mn/Omega2_mn
 !
             enddo
          enddo
 !
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr) - 0.5*(zz**2/H2) 
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(r_cyl) - 0.5*(zz**2/H2) 
 !
       endif
 !    
