@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.45 2006-06-20 13:59:58 wlyra Exp $
+! $Id: planet.f90,v 1.46 2006-07-08 13:35:56 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -45,10 +45,13 @@ module Planet
   logical :: lwavedamp=.false.,llocal_iso=.false.
   logical :: lsmoothlocal=.false.,lcs2_global=.false.
   logical :: lmigrate=.false.,lnorm=.false.
-  real :: Gvalue=1. !gravity constant in same unit as density
+!gravity constant in same unit as density
+  real :: Gvalue=1. 
   logical :: ldnolog=.true.,lcs2_thick=.false.
   logical :: lcalc_turb=.false.
   integer :: nr=10
+! extension of damping zones
+  real :: dp_int=0.1,dp_ext=0.4,plaw=0. 
 !
   namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
        lcs2_global,llocal_iso,lcs2_thick,lramp
@@ -56,7 +59,7 @@ module Planet
   namelist /planet_run_pars/ gc,nc,b,lramp, &
        lwavedamp,llocal_iso,lsmoothlocal,lcs2_global, &
        lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick,nr,&
-       lcalc_turb
+       lcalc_turb,dp_int,dp_ext,plaw
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_totenergy=0,idiag_totangmom=0
@@ -83,7 +86,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.45 2006-06-20 13:59:58 wlyra Exp $")
+           "$Id: planet.f90,v 1.46 2006-07-08 13:35:56 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -389,32 +392,43 @@ module Planet
 !
     endsubroutine get_ramped_mass
 !***********************************************************
-    subroutine wave_damping(f,df)
+    subroutine wave_damping(f,df,g0,r0_pot,n_pot)
 !
 ! 05-nov-05/wlad : coded
 !
-! Wave killing zone. Its only purpose is to have the same 
-! specifications as Miguel's setup for the comparison project.
+! Wave killing zone. Same profile as used
+! for the comparison project.
 !
-! As far as I understand, this thing is just like udamping 
-! but with a varying pdamp, in the form of
+! Acts just like udamping but with a varying pdamp, in the form of
 ! a parabola y=a*x**2 + c. Performs like freezing in the sense
 ! that it does not change the derivative in the boundary of the
 ! physical zone. But it does not stop the material completely
 ! in the outer boundary of the freezing ring.
 !
+      use Mpicomm, only: stop_it
+      use Global,  only: get_global
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      integer ider,j,k,i,ii
-      real, dimension(nx) :: r,pdamp,aux0,velx0,vely0
-      real :: tau,lnrho_cte
+      integer ider,j,k,i,ii,n_pot
+      real, dimension(nx) :: r_cyl,pdamp,aux0,H2
+      real, dimension(nx) :: cs2_mn,velx0,vely0,dens
+      real :: tau,lnrho_cte,plaw,r0_pot,g0
+!
+      if (n_pot.ne.2) then
+        print*,'planet.f90: Smoothed gravity used for star but smoothing lenght'
+        print*,'is not equal to 2. Better stop and change, since it will lead'
+        print*,'to boundary troubles as omega does not flatten properly.'
+        call stop_it('')
+     endif
 !
       if (headtt) print*,&
            'wave_damping: damping motions for inner and outer boundary'
 !
-      tau = 2*pi/(0.4)**(-1.5)
-      r = sqrt(x(l1:l2)**2 + y(m)**2)
+! extense of the damping zones
+!
+      tau = 2*pi/(r_int)**(-1.5)
+      r_cyl = sqrt(x(l1:l2)**2 + y(m)**2)
 !
       if (ldnolog) then
          lnrho_cte = 1.
@@ -424,85 +438,80 @@ module Planet
 !     
 ! for 0.4 : 1 ; 0.5 : 0
 !
-      pdamp = -11.111111*r**2 + 2.77777778  !parabolic function R
+      pdamp = -11.111111*r_cyl**2 + 2.77777778  !parabolic function R
 !
 ! for 0.4 : 0 ; 0.5 : 1
 ! pdamp = 11.1111111*r**2 - 1.777777778  
 !      
-      where (r .le. 0.4) 
-         pdamp = 1.
-      endwhere
-      where (r .ge. 0.5)
-         pdamp = 0.
-      endwhere
+      where (r_cyl .le. r_int)        ; pdamp = 1. ; endwhere
+      where (r_cyl .ge. r_int+dp_int) ; pdamp = 0. ; endwhere
 !      
 ! aux0 is omega2
 !           
-      aux0 = (r**2+0.1**2)**(-1.5) 
+      aux0 = (r_cyl**2+r0_pot**2)**(-1.5)
+      if ((nzgrid/=1).and.(.not.lcylindrical)) then
+         call get_global(cs2_mn,m,n,'cs2')
+         H2 = cs2_mn / aux0
+      else
+         H2 = 1.
+      endif
 !      
 ! initial conditions
 !
       velx0 = -y(  m  ) * sqrt(aux0)   
       vely0 =  x(l1:l2) * sqrt(aux0)
+      if (ldnolog) then
+         dens = lnrho_cte * r_cyl**plaw * exp(0.5*(z(n)**2/H2))
+      else
+         dens = lnrho_cte - plaw*alog(r_cyl) - 0.5*(z(n)**2/H2)
+      endif
 !      
+! reset to initial conditions in the buffer zone
+!
       do i=l1,l2
          ii = i-l1+1
-         if ((r(ii).le.0.5).and.(r(ii).gt.0.4)) then
-            df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - &
-                 (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
-            df(i,m,n,iux)    = df(i,m,n,iux) - &
-                 (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
-            df(i,m,n,iuy)    = df(i,m,n,iuy) - &
-                 (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
-            if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - &
-                 (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
+         if ((r_cyl(ii).le.r_int+dp_int).and.(r_cyl(ii).gt.r_int)) then
+            df(i,m,n,ilnrho)   = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) -  dens(ii))/tau * pdamp(ii) 
+            df(i,m,n,iux)      = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
+            df(i,m,n,iuy)      = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
+            if (nzgrid/=1) &
+                 df(i,m,n,iuz) = df(i,m,n,iuz)    - (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
             if (lmagnetic) then
-               df(i,m,n,iax)    = df(i,m,n,iax) - &
-                    (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
-               df(i,m,n,iay)    = df(i,m,n,iay) - &
-                    (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
-               if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - &
-                    (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
+               df(i,m,n,iax)      = df(i,m,n,iax) - (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
+               df(i,m,n,iay)      = df(i,m,n,iay) - (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
+               if (nzgrid/=1) &
+                    df(i,m,n,iaz) = df(i,m,n,iaz) - (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
             endif
          endif
       enddo
 !     
 ! Outer boundary
 !     
-     tau = 2*pi/(2.5)**(-1.5)
+     tau = 2*pi/(r_ext)**(-1.5)
 !     
 ! for 2.1 : 0 , 2.5 : 1
 !
-     pdamp = 0.543478*r**2 - 2.3967391  !parabolic function R
+     pdamp = 0.543478*r_cyl**2 - 2.3967391  !parabolic function R
 !
 ! for 2.1 : 1, 2.5 : 0
 ! pdamp = -0.543478*r**2 + 3.3967375
 !     
-     where (r .ge. 2.5) 
-        pdamp = 1.
-     endwhere
-     where (r .le. 2.1)
-        pdamp = 0.
-     endwhere
+     where (r_cyl .ge. r_ext)        ; pdamp = 1. ; endwhere
+     where (r_cyl .le. r_ext-dp_ext) ; pdamp = 0. ; endwhere
 !     
      do i=l1,l2
         ii = i-l1+1
-        if ((r(ii) .ge. 2.1).and.(r(ii).le.2.5)) then
-           df(i,m,n,ilnrho) = df(i,m,n,ilnrho) - &
-                (f(i,m,n,ilnrho) - lnrho_cte)/tau * pdamp(ii) 
-           df(i,m,n,iux)    = df(i,m,n,iux) - &
-                (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
-           df(i,m,n,iuy)    = df(i,m,n,iuy)    - &
-                (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
-           if (nzgrid/=1) df(i,m,n,iuz) = df(i,m,n,iuz) - &
-                (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
+        if ((r_cyl(ii) .ge. r_ext-dp_ext).and.(r_cyl(ii).le.r_ext)) then
+           df(i,m,n,ilnrho)   = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) -  dens(ii))/tau * pdamp(ii) 
+           df(i,m,n,iux)      = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
+           df(i,m,n,iuy)      = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
+           if (nzgrid/=1) &
+                df(i,m,n,iuz) = df(i,m,n,iuz)    - (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
            if (lmagnetic) then
-              df(i,m,n,iax)    = df(i,m,n,iax)    - &
-                   (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
-              df(i,m,n,iay)    = df(i,m,n,iay)    - &
-                   (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
-              if (nzgrid/=1) df(i,m,n,iaz) = df(i,m,n,iaz) - &
-                   (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
+              df(i,m,n,iax)      = df(i,m,n,iax) - (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
+              df(i,m,n,iay)      = df(i,m,n,iay) - (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
+              if (nzgrid/=1) &
+                   df(i,m,n,iaz) = df(i,m,n,iaz) - (f(i,m,n,iaz) - 0.)/tau * pdamp(ii)
            endif
         endif
      enddo
@@ -532,7 +541,7 @@ module Planet
         endif
 !
      if (n_pot.ne.2) then
-        print*,'planet: smoothed gravity used for star but smoothing lenght'
+        print*,'planet.f90: Smoothed gravity used for star but smoothing lenght'
         print*,'is not equal to 2. Better stop and change, since it will lead'
         print*,'to boundary troubles as omega does not flatten properly.'
         call stop_it('')
@@ -676,7 +685,7 @@ module Planet
 !
 ! The obscure coefficients were calculated with an IDL
 ! routine to match a 1/r fall of cs2 with a constant value
-! inside r = 0.4. Have to make it general some other day. 
+! inside r = 0.4. Have to make it general someday. 
 !
 ! cs = H * Omega, being H the scale height and (H/r) = cte.
 !

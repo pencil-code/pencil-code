@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.20 2006-05-22 16:47:20 wlyra Exp $
+! $Id: noplanet.f90,v 1.21 2006-07-08 13:35:56 wlyra Exp $
 !
 !  Dummy module
 !
@@ -51,7 +51,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.20 2006-05-22 16:47:20 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.21 2006-07-08 13:35:56 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -189,7 +189,7 @@ module Planet
 !
    endsubroutine gravity_star
 !***************************************************************
-    subroutine wave_damping(f,df)
+    subroutine wave_damping(f,df,g0,r0_pot,n_pot)
 !
 !20-nov-05/wlad : dummy  
 !
@@ -198,6 +198,8 @@ module Planet
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz,mvar) :: df
+      real :: g0,r0_pot
+      integer :: n_pot
 !
       call stop_it("noplanet.f90 - wave_damping")
 !    
