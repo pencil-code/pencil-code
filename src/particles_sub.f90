@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.75 2006-07-08 17:53:50 ajohan Exp $
+! $Id: particles_sub.f90,v 1.76 2006-07-09 08:21:38 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1101,7 +1101,7 @@ module Particles_sub
         fac_z_00 = 0.75-dzp0**2
         fac_z_p1 = 0.5*(0.5+dzp0)**2
 !
-        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2)* &
+        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
             fac_x_00*fac_y_00*( f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
                                 f(ix0  ,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
             fac_x_00*fac_z_00*( f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
@@ -1127,7 +1127,7 @@ module Particles_sub
             fac_z_00*fac_x_p1*( f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
                                 f(ix0+1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
             fac_z_00*fac_x_m1*( f(ix0-1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
-                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) 
+                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
       endif
 !
     endsubroutine interpolate_quadratic_spline
