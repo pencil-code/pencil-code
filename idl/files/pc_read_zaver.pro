@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.1 2006-07-08 14:29:06 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.2 2006-07-10 11:24:02 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -6,7 +6,8 @@
 ;;   number of snapshots to save.
 ;;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
-    nit=nit, lplot=lplot, iplot=iplot, nzoom=nzoom, quiet=quiet
+    nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
+    quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -17,7 +18,9 @@ default, varfile, 'zaverages.dat'
 default, nit, 0
 default, lplot, 1
 default, iplot, 0
-default, nzoom, 1
+default, zoom, 1
+default, min, 0.0
+default, max, 0.0
 default, quiet, 0
 ;;
 ;;  Get necessary dimensions.
@@ -83,7 +86,12 @@ while (not eof(file)) do begin
 ;;
 ;;  Plot requested variable, variable number 0 by default.
 ;;
-  if (lplot) then tvscl, rebin(array[*,*,iplot],nzoom*[nx,ny])
+  if (lplot) then begin
+    array_plot=array[*,*,iplot]
+    ii=where(array_plot gt max) & if (ii[0] ne -1) then array_plot[ii]=max
+    ii=where(array_plot lt min) & if (ii[0] ne -1) then array_plot[ii]=min
+    tvscl, rebin(array_plot,zoom*[nx,ny])
+  endif
 ;;
 ;;  Diagnostics.
 ;;
