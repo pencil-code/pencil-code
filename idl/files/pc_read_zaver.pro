@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.2 2006-07-10 11:24:02 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.3 2006-07-10 13:45:50 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -7,7 +7,8 @@
 ;;
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
-    quiet=quiet
+    xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, position=position, $
+    tmin=tmin, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;;
@@ -20,7 +21,8 @@ default, lplot, 1
 default, iplot, 0
 default, zoom, 1
 default, min, 0.0
-default, max, 0.0
+default, max, 1.0
+default, tmin, 0.0
 default, quiet, 0
 ;;
 ;;  Get necessary dimensions.
@@ -82,38 +84,44 @@ it=0
 while (not eof(file)) do begin
 
   readu, file, t
-  readu, file, array
+  if (t ge tmin) then begin
+    readu, file, array
 ;;
 ;;  Plot requested variable, variable number 0 by default.
 ;;
-  if (lplot) then begin
-    array_plot=array[*,*,iplot]
-    ii=where(array_plot gt max) & if (ii[0] ne -1) then array_plot[ii]=max
-    ii=where(array_plot lt min) & if (ii[0] ne -1) then array_plot[ii]=min
-    tvscl, rebin(array_plot,zoom*[nx,ny])
-  endif
+    if (lplot) then begin
+      array_plot=array[*,*,iplot]
+      ii=where(array_plot gt max) & if (ii[0] ne -1) then array_plot[ii]=max
+      ii=where(array_plot lt min) & if (ii[0] ne -1) then array_plot[ii]=min
+      tvscl_axes_aj, array_plot, min=min, max=max, $
+          xtitle=xtitle, ytitle=ytitle, $
+          zoom=zoom, position=position, nonewwindow=(it ne 0), xax=xax, yax=yax
+    endif
 ;;
 ;;  Diagnostics.
 ;;
-  if (not quiet) then begin
-    if (it eq 0 ) then $
-        print, '  ------- it ------- ivar -------- t --------- min(var) ------- max(var) -----'
-    for ivar=0,nvar-1 do begin
-      print, it, ivar, t, min(array[*,*,ivar]), max(array[*,*,ivar])
-    endfor
-  endif
+    if (not quiet) then begin
+      if (it eq 0 ) then $
+          print, '  ------- it ------- ivar -------- t --------- min(var) ------- max(var) -----'
+      for ivar=0,nvar-1 do begin
+          print, it, ivar, t, min(array[*,*,ivar]), max(array[*,*,ivar])
+      endfor
+    endif
 ;;
 ;;  Split read data into named arrays.
 ;;
-  if ( it le nit-1 ) then begin
-    tt[it]=t
-    for ivar=0,nvar-1 do begin
-      cmd=varnames[ivar]+'[*,*,it]=array[*,*,ivar]'
-      if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
-    endfor
-  endif
+    if ( it le nit-1 ) then begin
+      tt[it]=t
+      for ivar=0,nvar-1 do begin
+        cmd=varnames[ivar]+'[*,*,it]=array[*,*,ivar]'
+        if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
+      endfor
+    endif
 ;
-  it=it+1
+    it=it+1
+  endif else begin
+    readu, file, dummy
+  endelse
 endwhile
 ;;
 ;;  Put data in structure.
