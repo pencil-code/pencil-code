@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.3 2006-07-10 13:45:50 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.4 2006-07-10 13:46:17 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -93,7 +93,7 @@ while (not eof(file)) do begin
       array_plot=array[*,*,iplot]
       ii=where(array_plot gt max) & if (ii[0] ne -1) then array_plot[ii]=max
       ii=where(array_plot lt min) & if (ii[0] ne -1) then array_plot[ii]=min
-      tvscl_axes_aj, array_plot, min=min, max=max, $
+      tvscl_axes, array_plot, min=min, max=max, $
           xtitle=xtitle, ytitle=ytitle, $
           zoom=zoom, position=position, nonewwindow=(it ne 0), xax=xax, yax=yax
     endif
