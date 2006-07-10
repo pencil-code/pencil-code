@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.259 2006-07-08 15:00:44 ajohan Exp $
+! $Id: density.f90,v 1.260 2006-07-10 04:50:29 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.259 2006-07-08 15:00:44 ajohan Exp $")
+           "$Id: density.f90,v 1.260 2006-07-10 04:50:29 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1452,7 +1452,7 @@ module Density
     !               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i+1,m,n,ilnrho))
     ! enddo    
          df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-        -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-log(rho_up))
+        -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-log(rho_up)-(1.-(x(H_disk_point+1)/H_disk)))
 
         ! df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
         ! -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
