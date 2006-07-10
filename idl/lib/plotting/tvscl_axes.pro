@@ -1,5 +1,5 @@
 ;;
-;;  $Id: tvscl_axes.pro,v 1.1 2006-07-10 13:45:18 ajohan Exp $
+;;  $Id: tvscl_axes.pro,v 1.2 2006-07-10 13:53:39 ajohan Exp $
 ;;
 ;;  tvscl_axes - tvscl contour plot with axes.
 ;;
@@ -16,8 +16,8 @@ pro tvscl_axes, ff, xax=xax, yax=yax, $
 ;;
 default, ps, 0
 default, zoom, 1
-default, xstyle, 0
-default, ystyle, 0
+default, xstyle, 1
+default, ystyle, 1
 default, noaxis, 0
 default, filename, 'tvscl_axes.eps'
 default, nonewwindow, 0
