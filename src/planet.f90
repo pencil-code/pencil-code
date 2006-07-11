@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.46 2006-07-08 13:35:56 wlyra Exp $
+! $Id: planet.f90,v 1.47 2006-07-11 12:59:09 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -86,7 +86,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.46 2006-07-08 13:35:56 wlyra Exp $")
+           "$Id: planet.f90,v 1.47 2006-07-11 12:59:09 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -461,9 +461,20 @@ module Planet
       velx0 = -y(  m  ) * sqrt(aux0)   
       vely0 =  x(l1:l2) * sqrt(aux0)
       if (ldnolog) then
-         dens = lnrho_cte * r_cyl**plaw * exp(0.5*(z(n)**2/H2))
+         !
+         ! just to solve the underflow problem in Kolmogorov
+         !
+         if (nzgrid == 1) then
+            dens = lnrho_cte * r_cyl**plaw
+         else
+            dens = lnrho_cte * r_cyl**plaw * exp(0.5*(z(n)**2/H2))
+         endif
       else
-         dens = lnrho_cte - plaw*alog(r_cyl) - 0.5*(z(n)**2/H2)
+         if (nzgrid == 1) then
+            dens = lnrho_cte - plaw*alog(r_cyl)
+         else
+            dens = lnrho_cte - plaw*alog(r_cyl) - 0.5*(z(n)**2/H2)
+         endif
       endif
 !      
 ! reset to initial conditions in the buffer zone
