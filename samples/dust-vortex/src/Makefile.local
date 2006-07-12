@@ -30,3 +30,6 @@ PARTICLES =   particles_tracers
 FFTPACK   = nofftpack
 FFT       = nofft
 
+# Compile using double precision
+REAL_PRECISION=double
+

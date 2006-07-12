@@ -21,5 +21,8 @@ PLANET    =   planet
 
 PARTICLES = particles_planet
 
-FFLAGS_GENERAL=-r8
-CFLAGS_GENERAL=-DDOUBLE_PRECISION
+# Compile using double precision
+#FFLAGS_GENERAL=-r8
+#CFLAGS_GENERAL=-DDOUBLE_PRECISION
+REAL_PRECISION=double
+
