@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.173 2006-06-24 07:06:10 brandenb Exp $
+! $Id: register.f90,v 1.174 2006-07-12 11:14:09 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -509,6 +509,7 @@ module Register
 !
       use Cdata
       use Param_IO
+      use Sub,             only: numeric_precision
       use Hydro,           only: rprint_hydro
       use Density,         only: rprint_density
       use Forcing,         only: rprint_forcing
@@ -535,13 +536,21 @@ module Register
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamexy,inamexz,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat,iname_tmp
-      logical :: lreset,exist
-      character (LEN=30) :: cname_tmp
+      logical :: lreset,exist,print_in_double
+      character (LEN=30)    :: cname_tmp
+      character (LEN=fnlen) :: print_in_file
 !
 !  read in the list of variables to be printed
 !  recognize "!" and "#" as comments
 !
-      open(1,file='print.in')
+      ! read print.in.double if applicable else print.in
+      print_in_file = 'print.in'
+      inquire(FILE="print.in.double", EXIST=print_in_double)
+      if (print_in_double .and. (numeric_precision() == 'D')) then
+        print_in_file = 'print.in.double'
+      endif
+      if (lroot) print*, 'Reading print formats from ' // trim(print_in_file)
+      open(1,FILE=print_in_file)
       iname=0
       do iname_tmp=1,mname
         read(1,*,end=99) cname_tmp

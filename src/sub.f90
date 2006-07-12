@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.240 2006-06-27 13:09:59 mee Exp $ 
+! $Id: sub.f90,v 1.241 2006-07-12 11:14:10 dobler Exp $ 
 
 module Sub 
 
@@ -56,7 +56,7 @@ module Sub
 
   public :: max_for_dt
 
-  public :: write_dx_general, wdim
+  public :: write_dx_general, numeric_precision, wdim
   public :: write_zprof, remove_zprof
 
   public :: tensor_diffusion_coef
@@ -2213,6 +2213,26 @@ module Sub
 10    format(8e10.3)
     endsubroutine outpuf
 !***********************************************************************
+    character function numeric_precision()
+!
+!  return 'S' if running in single, 'D' if running in double precsision
+!
+!  12-jul-06/wolf: extracted from wdim()
+!
+      integer :: real_prec
+!
+      real_prec = precision(1.)
+      if (real_prec==6 .or. real_prec==7) then
+        numeric_precision = 'S'
+      elseif (real_prec == 15) then
+        numeric_precision = 'D'
+      else
+        print*, 'WARNING: encountered unknown precision ', real_prec
+        numeric_precision = '?'        
+      endif
+!
+    endfunction numeric_precision
+!***********************************************************************
     subroutine wdim(file,mxout,myout,mzout)
 !
 !  write dimension to file
@@ -2222,8 +2242,9 @@ module Sub
       use Cdata
 !
       character (len=*) :: file
+      character         :: prec
       integer, optional :: mxout,myout,mzout
-      integer :: mxout1,myout1,mzout1,real_prec,iprocz_slowest=0
+      integer           :: mxout1,myout1,mzout1,iprocz_slowest=0
 !
 !  determine whether mxout=mx (as on each processor)
 !  or whether mxout is different (eg when writing out full array)
@@ -2251,15 +2272,8 @@ module Sub
         !
         !  check for double precision
         !
-        real_prec = precision(1.)
-        if (real_prec==6 .or. real_prec==7) then
-          write(1,'(a)') 'S'
-        elseif (real_prec == 15) then
-          write(1,'(a)') 'D'
-        else
-          print*, 'WARNING: encountered unknown precision ', real_prec
-          write(1,'(a)') '?'
-        endif
+        prec = numeric_precision()
+        write(1,'(a)') prec
         !
         !  write number of ghost cells (could be different in x, y and z)
         !
