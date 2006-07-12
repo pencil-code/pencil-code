@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.416 2006-07-06 13:39:04 nbabkovs Exp $
+! $Id: entropy.f90,v 1.417 2006-07-12 19:52:03 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -159,7 +159,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.416 2006-07-06 13:39:04 nbabkovs Exp $")
+           "$Id: entropy.f90,v 1.417 2006-07-12 19:52:03 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -585,7 +585,7 @@ module Entropy
 
         case('zero', '0'); f(:,:,:,iss) = 0.
         case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
-        case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
+        case('blob'); call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
         case('isothermal'); call isothermal_entropy(f,T0)
         case('isothermal_lnrho_ss')
           print*, 'init_ss: Isothermal density and entropy stratification'

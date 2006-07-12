@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.26 2006-06-24 07:06:10 brandenb Exp $
+! $Id: noeos.f90,v 1.27 2006-07-12 19:52:04 dintrans Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.26 2006-06-24 07:06:10 brandenb Exp $')
+           '$Id: noeos.f90,v 1.27 2006-07-12 19:52:04 dintrans Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1298,5 +1298,17 @@ module EquationOfState
       if (NO_WARN) print*,f(1,1,1,1),df(1,1,1,1),topbot
 ! 
     end subroutine bc_stellar_surface_2
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z(f,topbot)
+! 
+      use Mpicomm, only: stop_it
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN NOEOS")
+      if (NO_WARN) print*,f(1,1,1,1),topbot
+! 
+    end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************
 endmodule EquationOfState

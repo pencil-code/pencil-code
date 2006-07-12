@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.116 2006-06-23 09:49:26 nbabkovs Exp $
+! $Id: boundcond.f90,v 1.117 2006-07-12 19:52:03 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -335,6 +335,9 @@ module Boundcond
                 if (j==iss)   call bc_ss_temp_z(f,topbot)
               case ('cT2')       ! constant temp. (keep lnrho)
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
+              case ('hs')       ! hydrostatic equilibrium
+                if (j==ilnrho) call bc_lnrho_hydrostatic_z(f,topbot)
+!               if (j==iss)    call bc_lnrho_hydrostatic_z(f,topbot)
               case ('cp')       ! constant pressure
                 if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
               case ('sT')       ! symmetric temp.

@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.56 2006-06-25 03:43:08 brandenb Exp $
+! $Id: eos_idealgas.f90,v 1.57 2006-07-12 19:52:04 dintrans Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.56 2006-06-25 03:43:08 brandenb Exp $')
+           '$Id: eos_idealgas.f90,v 1.57 2006-07-12 19:52:04 dintrans Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -2061,5 +2061,74 @@ module EquationOfState
       if (NO_WARN) print*,f(1,1,1,1),df(1,1,1,1),topbot
 !
     end subroutine bc_stellar_surface_2
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z(f,topbot)
+!
+!  Boundary condition for density *and* entropy.
+!
+!  This sets
+!    \partial_{z} \ln\rho
+!  such that
+!    \partial_{z} p = \rho g_{z},
+!  i.e. it enforces hydrostatic equlibrium at the boundary.
+!
+!  Currently this is only correct if
+!    \partial_{z} lnT = 0
+!  at the boundary.
+!
+!
+!  12-Juil-2006/dintrans: coded
+!
+      use Cdata
+      use Gravity
+
+      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+      real :: dlnrhodz, dssdz
+      integer :: i
+
+      select case (topbot)
+
+!
+!  Bottom boundary
+!
+      case ('bot')
+
+        if (bcz1(iss)/='hs') then
+          call fatal_error("bc_lnrho_hydrostatic_z", &
+                           "This boundary condition for density is "// &
+                           "currently only correct for bcz1(iss)='hs'")
+        endif
+
+        dlnrhodz = gamma*gravz/cs2bot
+        dssdz = -gamma1*gravz/cs2bot
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) - 2*i*dz*dlnrhodz
+          f(:,:,n1-i,iss   ) = f(:,:,n1+i,iss   ) - 2*i*dz*dssdz
+        enddo
+
+!
+!  Top boundary
+!
+      case ('top')
+
+        if (bcz2(iss)/='hs') then
+          call fatal_error("bc_lnrho_hydrostatic_z", &
+                           "This boundary condition for density is "//&
+                           "currently only correct for bcz2(iss)='s'")
+        endif
+
+        dlnrhodz = gamma*gravz/cs2top
+        dssdz = -gamma1*gravz/cs2top
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) + 2*i*dz*dlnrhodz
+          f(:,:,n2+i,iss   ) = f(:,:,n2-i,iss   ) + 2*i*dz*dssdz
+        enddo
+
+      case default
+
+      endselect
+
+    end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************
 endmodule EquationOfState

@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.23 2006-06-24 07:06:10 brandenb Exp $
+! $Id: eos_fixed_ionization.f90,v 1.24 2006-07-12 19:52:04 dintrans Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.23 2006-06-24 07:06:10 brandenb Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.24 2006-07-12 19:52:04 dintrans Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1176,5 +1176,17 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (NO_WARN) print*,f(1,1,1,1),df(1,1,1,1),topbot
 !
     end subroutine bc_stellar_surface_2
+!***********************************************************************
+    subroutine bc_lnrho_hydrostatic_z(f,topbot)
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_FIXED")
+      if (NO_WARN) print*,f(1,1,1,1),topbot
+!
+    end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************
 endmodule EquationOfState
