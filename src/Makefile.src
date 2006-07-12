@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.202 2006-07-12 11:14:09 dobler Exp $
+### $Id: Makefile.src,v 1.203 2006-07-12 12:44:52 snod Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -374,6 +374,12 @@ MAKEOPTS=
 #FFLAGS=-I/usr/include/mpi -O3 #(hades)
 #LIBMPISUFFIX=_#(hades)
 #LDMPI=-L$(MPI_HOME) -pthread $(MPI_LDLIBS) #(hades)
+##
+## Andrew's Laptop (wkfg)
+##
+#FC=mpif90 #(wkfg)
+#FFLAGS=-O2 -frecord-marker=4 -mtune=athlon-4 #(wkfg)
+#FFLAGS_DOUBLE= -fdefault-real-8 #(wkfg)
 ##
 ## clx IBM Linux Cluster, Bologna IT
 ##
