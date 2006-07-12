@@ -5,7 +5,7 @@
 
 LDMPI    =-lmpi
 
-#MPICOMM  =   mpicomm
+MPICOMM  =   mpicomm
 GLOBAL   = noglobal
 IO       =   io_dist
 
