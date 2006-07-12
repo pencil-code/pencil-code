@@ -1,0 +1,26 @@
+!                               -*-f90-*-   (for emacs)
+!
+! Isothermal atmosphere
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1.1.1 2006-07-12 19:46:45 dintrans Exp $',
+  nt=100, it1=10, isave=1000, itorder=3,
+  dsnap=0.25,
+  lpencil_check=T  ! test of the requested pencils
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T     ! use upwinding for lnrho to avoid wiggles
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  lupw_ss=T        ! use upwinding for entropy to avoid wiggles
+/
+&viscosity_run_pars
+  ivisc='nu-const', nu=5e-3
+/

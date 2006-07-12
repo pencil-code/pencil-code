@@ -1,0 +1,27 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Oscillations of an entropy bubble in an isothermal atmosphere
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1.1.1 2006-07-12 19:46:45 dintrans Exp $',
+  lwrite_ic = T,              ! write the initial condition VAR0
+  xyz0  = -2., -1., -0.5,     ! first corner of box
+  xyz1  =  2.,  1.,  0.5,     ! second corner of box
+  lperi =  T ,  T ,  F,       ! periodic direction?
+  bcz   = 's','s','a','hs','hs'  ! (ux,uy,uz,lnrho,ss)
+/
+&eos_init_pars
+  cs0=1., rho0=1.  ! sound speed cs0=cte and density at the top
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='isothermal'
+/
+&grav_init_pars
+  gravz_profile='const', gravz=-1.
+/
+&entropy_init_pars
+  initss='blob', radius_ss=0.2, ampl_ss=-0.2, center1_z=0.3
+/

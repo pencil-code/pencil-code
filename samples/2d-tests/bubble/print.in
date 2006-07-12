@@ -1,0 +1,8 @@
+it(i8)
+t(F8.2)
+dt(1pE11.3)
+urms(0pF10.5)
+umax(F10.5)
+rhom(F10.4)
+dtc(F6.3)
+dtnu(F6.3)
