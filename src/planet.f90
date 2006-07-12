@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.47 2006-07-11 12:59:09 wlyra Exp $
+! $Id: planet.f90,v 1.48 2006-07-12 19:44:27 brandenb Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -86,7 +86,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.47 2006-07-11 12:59:09 wlyra Exp $")
+           "$Id: planet.f90,v 1.48 2006-07-12 19:44:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -413,7 +413,7 @@ module Planet
       integer ider,j,k,i,ii,n_pot
       real, dimension(nx) :: r_cyl,pdamp,aux0,H2
       real, dimension(nx) :: cs2_mn,velx0,vely0,dens
-      real :: tau,lnrho_cte,plaw,r0_pot,g0
+      real :: tau,lnrho_cte,r0_pot,g0
 !
       if (n_pot.ne.2) then
         print*,'planet.f90: Smoothed gravity used for star but smoothing lenght'
