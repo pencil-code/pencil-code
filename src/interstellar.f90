@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.122 2006-06-23 15:52:00 mee Exp $
+! $Id: interstellar.f90,v 1.123 2006-07-12 05:41:03 brandenb Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -254,6 +254,8 @@ module Interstellar
   integer :: idiag_Hmax=0
   integer :: idiag_Lamm=0
   integer :: idiag_nrhom=0
+  integer :: idiag_rhoLm=0
+  integer :: idiag_Gamm=0
 !
 ! Heating function, cooling function and mass movement
 ! method selection.
@@ -322,7 +324,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.122 2006-06-23 15:52:00 mee Exp $")
+           "$Id: interstellar.f90,v 1.123 2006-07-12 05:41:03 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -542,6 +544,8 @@ module Interstellar
         idiag_Hmax=0
         idiag_Lamm=0
         idiag_nrhom=0
+        idiag_rhoLm=0
+        idiag_Gamm=0
 
 !        TT_SN_max=impossible 
 !        rho_SN_min=impossible 
@@ -566,6 +570,8 @@ module Interstellar
         call parse_name(iname,cname(iname),cform(iname),'Hmax',idiag_Hmax)
         call parse_name(iname,cname(iname),cform(iname),'Lamm',idiag_Lamm)
         call parse_name(iname,cname(iname),cform(iname),'nrhom',idiag_nrhom)
+        call parse_name(iname,cname(iname),cform(iname),'rhoLm',idiag_rhoLm)
+        call parse_name(iname,cname(iname),cform(iname),'Gamm',idiag_Gamm)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -575,6 +581,8 @@ module Interstellar
         write(3,*) 'i_Hmax=',idiag_Hmax
         write(3,*) 'i_Lamm=',idiag_Lamm
         write(3,*) 'i_nrhom=',idiag_nrhom
+        write(3,*) 'i_rhoLm=',idiag_rhoLm
+        write(3,*) 'i_Gamm=',idiag_Gamm
         write(3,*) 'icooling=',icooling
       endif
 !
@@ -638,7 +646,7 @@ module Interstellar
 !
 !  diagnostic pencils
 !
-      if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
+!AB:  if (idiag_nrhom/=0) lpenc_diagnos(i_rho)=.true.
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
@@ -765,7 +773,13 @@ module Interstellar
         if(idiag_Lamm/=0) &
           call sum_mn_name(cool,idiag_Lamm)  
         if(idiag_nrhom/=0) &
-          call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)  
+          call sum_mn_name(cool/p%ee,idiag_nrhom)  
+!--       call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)  
+!AB: the factor rho is already included in cool, so cool=rho*Lambda
+        if(idiag_rhoLm/=0) &
+          call sum_mn_name(p%rho*cool,idiag_rhoLm)  
+        if(idiag_Gamm/=0) &
+          call sum_mn_name(p%rho*heat,idiag_Gamm)  
       endif
 
 ! Limit timestep by the cooling time (having subtracted any heating) 

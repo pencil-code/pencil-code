@@ -1,11 +1,11 @@
-! $Id: persist.f90,v 1.4 2005-12-21 16:45:13 mee Exp $
+! $Id: persist.f90,v 1.5 2006-07-12 05:41:03 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   persist.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!
 
 !!!  Module to handle variables whose state should persist
-!!!  between executions of run.x, eg. the randome number seeds
+!!!  between executions of run.x, e.g. the random number seeds
 !!!  and some other forcing state information. 
 !!!
 !!!  25-Apr-2005/tony: Implemented initial try at backwards compatible
@@ -36,6 +36,7 @@ contains
     subroutine input_persistent(lun)
 !
 !  write auxiliary information into snapshot file
+!  lun should be set to the same lun as that of the snapshot
 !
 !  26-may-03/axel: adapted from output_vect
 !
@@ -78,6 +79,7 @@ dataloop: do
     subroutine output_persistent(lun_output)
 !
 !  write auxiliary information into snapshot file
+!  lun should be set to the same lun as that of the snapshot
 !
 !  26-may-03/axel: adapted from output_vect
 !

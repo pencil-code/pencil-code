@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.88 2006-02-08 14:10:47 mee Exp $
+! $Id: forcing.f90,v 1.89 2006-07-12 05:41:03 brandenb Exp $
 
 module Forcing
 
@@ -70,7 +70,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.88 2006-02-08 14:10:47 mee Exp $")
+           "$Id: forcing.f90,v 1.89 2006-07-12 05:41:03 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1829,8 +1829,7 @@ module Forcing
       else
         read(unit,NML=forcing_run_pars,ERR=99)
       endif
-                                                                                                   
-                                                                                                   
+!
 99    return
     endsubroutine read_forcing_run_pars
 !***********************************************************************
@@ -1844,6 +1843,8 @@ module Forcing
     subroutine input_persistent_forcing(id,lun,done)
 !
 !  Read in the stored time of the next SNI
+!
+!  21-dec-05/tony: coded
 !
       use Cdata, only: lroot
 !
@@ -1864,6 +1865,10 @@ module Forcing
     subroutine output_persistent_forcing(lun)
 !
 !  Writes out the time of the next SNI
+!  This is used, for example, for forcing functions with temporal
+!  memory, such as in the paper by Mee & Brandenburg (2006, MNRAS)
+!
+!  21-dec-05/tony: coded
 !
       use Cdata, only: lroot
 !
