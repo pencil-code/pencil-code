@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.49 2006-06-27 13:09:59 mee Exp $
+! $Id: cparam.f90,v 1.50 2006-07-13 07:54:36 brandenb Exp $
 
 module Cparam
 
@@ -103,7 +103,8 @@ module Cparam
 ! unclear source (probably just guessing?)
   double precision, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
   double precision, parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
-  double precision, parameter :: c_light_cgs=2.99792458D10       ! [cm/s]
+  double precision, parameter :: c_light_cgs=2.99792458d10 ! [cm/s]
+  double precision, parameter :: G_Newton_cgs=6.6742d-8    ! [cm3/g/s2]
 !
 !
 ! Variable used in lines like:

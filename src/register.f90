@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.174 2006-07-12 11:14:09 dobler Exp $
+! $Id: register.f90,v 1.175 2006-07-13 07:54:36 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -188,6 +188,7 @@ module Register
 !  used currently only in eos, but later also in
 !  the interstellar and radiation modules, for example
 !
+      call units_general()
       call units_eos()
 !
 !  calculated derived units
@@ -345,6 +346,43 @@ module Register
       endif
 !
     endsubroutine initialize_modules
+!***********************************************************************
+    subroutine units_general()
+!
+!  This routine calculates things related to units and must be called
+!  before the rest of the units are being calculated.
+!
+!  12-jul-06/axel: adapted from units_eos
+!
+      use Cdata, only: G_Newton,c_light,hbar,lroot, &
+        unit_length,unit_velocity,unit_density
+      use Cparam, only: G_Newton_cgs,c_light_cgs,hbar_cgs,impossible
+      use Mpicomm, only: stop_it
+!
+!  Unless G_Newton,c_light,hbar are all set,
+!  unit_velocity,unit_density,unit_length will be calculated
+!
+      if (G_Newton == impossible .or. &
+           c_light == impossible .or. &
+              hbar == impossible) then
+        if (unit_velocity == impossible) unit_velocity=1.
+        if (unit_density == impossible) unit_density=1.
+        if (unit_length == impossible) unit_length=1.
+      else
+        unit_velocity=c_light_cgs/c_light
+        unit_density=unit_velocity**5/((G_Newton_cgs/G_Newton)**2 &
+                    *(hbar_cgs/hbar))
+        unit_length=sqrt((G_Newton_cgs/G_Newton) &
+                   *(hbar_cgs/hbar)/unit_velocity**3)
+      endif
+!
+!  check that everything is OK
+!
+      if (lroot) print*,'units_general: unit_velocity=',unit_velocity
+      if (lroot) print*,'units_general: unit_density=',unit_density
+      if (lroot) print*,'units_general: unit_length=',unit_length
+!
+    endsubroutine units_general
 !***********************************************************************
     subroutine choose_pencils()
 !

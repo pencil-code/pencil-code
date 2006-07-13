@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.324 2006-07-12 12:46:33 snod Exp $
+! ! $Id: cdata.f90,v 1.325 2006-07-13 07:54:36 brandenb Exp $
 
 module Cdata
 
@@ -64,13 +64,14 @@ module Cdata
 
   !  units (need to be in double precision)
   character (len=3) :: unit_system='cgs'
-  double precision :: unit_length=1.,unit_velocity=1.,unit_density=1.
-  double precision :: unit_temperature=impossible
+  double precision :: unit_length=impossible,unit_velocity=impossible
+  double precision :: unit_density=impossible,unit_temperature=impossible
   ! Derived units
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   
-  double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV,hbar, &
-                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es,c_light
+  double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
+                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es
+  double precision :: c_light=impossible,G_Newton=impossible,hbar=impossible
 
   ! magnetic permeability
   real :: mu0=1., mu01=0.

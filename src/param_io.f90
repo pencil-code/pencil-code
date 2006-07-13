@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.245 2006-06-28 14:37:02 ajohan Exp $ 
+! $Id: param_io.f90,v 1.246 2006-07-13 07:54:36 brandenb Exp $ 
 
 module Param_IO
 
@@ -57,6 +57,7 @@ module Param_IO
        coord_system,lequidist,coeff_grid,zeta_grid0,grid_func,xyz_star, &
        lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
+       c_light,G_Newton,hbar, &
        random_gen,nfilter,lserial_io, &
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lwrite_aux,pretend_lnTT, &
