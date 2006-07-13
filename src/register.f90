@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.175 2006-07-13 07:54:36 brandenb Exp $
+! $Id: register.f90,v 1.176 2006-07-13 15:42:30 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -188,7 +188,7 @@ module Register
 !  used currently only in eos, but later also in
 !  the interstellar and radiation modules, for example
 !
-      call units_general()
+      !call units_general()
       call units_eos()
 !
 !  calculated derived units
