@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.94 2006-06-10 00:06:46 theine Exp $
+! $Id: radiation_ray.f90,v 1.95 2006-07-13 23:13:44 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 4
+! MAUX CONTRIBUTION 5
 !
 !***************************************************************
 
@@ -42,7 +42,7 @@ module Radiation
     logical, pointer :: set
   endtype Qpoint
 
-  real, dimension (mx,my,mz) :: Srad,kapparho,tau,Qrad,Qrad0
+  real, dimension (mx,my,mz) :: Srad,tau,Qrad,Qrad0
   real, dimension (mx,my,mz,3) :: Frad
   type (Qbound), dimension (my,mz), target :: Qbc_yz
   type (Qbound), dimension (mx,mz), target :: Qbc_zx
@@ -123,7 +123,7 @@ module Radiation
 !  24-mar-03/axel+tobi: coded
 !
       use Cdata, only: nvar,naux,aux_var,naux_com,aux_count,lroot,varname
-      use Cdata, only: iQrad,iFrad,iFradx,iFrady,iFradz
+      use Cdata, only: iQrad,ikapparho,iFrad,iFradx,iFrady,iFradz
       use Cdata, only: lradiation,lradiation_ray
       use Mpicomm, only: stop_it
 !
@@ -141,6 +141,7 @@ module Radiation
 !  Set indices for auxiliary variables
 !
       iQrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
+      ikapparho = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 1
       iFrad = mvar + naux + 1 + (maux_com - naux_com); naux = naux + 3
       iFradx = iFrad
       iFrady = iFrad+1
@@ -149,12 +150,14 @@ module Radiation
       if ((ip<=8) .and. lroot) then
         print*, 'register_radiation: radiation naux = ', naux
         print*, 'iQrad = ', iQrad
+        print*, 'ikapparho = ', ikapparho
         print*, 'iFrad = ', iFrad
       endif
 !
 !  Put variable name in array
 !
       varname(iQrad) = 'Qrad'
+      varname(ikapparho) = 'kapparho'
       varname(iFradx) = 'Fradx'
       varname(iFrady) = 'Frady'
       varname(iFradz) = 'Fradz'
@@ -162,7 +165,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.94 2006-06-10 00:06:46 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.95 2006-07-13 23:13:44 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -175,11 +178,14 @@ module Radiation
 !
       aux_var(aux_count)=',Qrad $'
       aux_count=aux_count+1
+      aux_var(aux_count)=',kapparho $'
+      aux_count=aux_count+1
       if (naux < maux) aux_var(aux_count)=',Frad $'
       if (naux == maux) aux_var(aux_count)=',Frad'
       aux_count=aux_count+3
       if (lroot) then
         write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
+        write(15,*) 'kapparho = fltarr(mx,my,mz)*one'
         write(15,*) 'Frad = fltarr(mx,my,mz,3)*one'
       endif
 !
@@ -338,7 +344,7 @@ module Radiation
 
         call raydirection
 
-        if (lintrinsic) call Qintrinsic
+        if (lintrinsic) call Qintrinsic(f)
 
         if (lcommunicate) then
           if (lperiodic_ray) then
@@ -435,7 +441,7 @@ module Radiation
 
     endsubroutine raydirection
 !***********************************************************************
-    subroutine Qintrinsic
+    subroutine Qintrinsic(f)
 !
 !  Integration radiation transfer equation along rays
 !
@@ -445,9 +451,10 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   3-aug-03/axel: added max(dtau,dtaumin) construct
 !
-      use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap
+      use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap,ikapparho
       use IO, only: output
 !
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
       character(len=3) :: raydir
@@ -471,8 +478,10 @@ module Radiation
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign 
 
-        dtau_m=sqrt(kapparho(l-lrad,m-mrad,n-nrad)*kapparho(l,m,n))*dlength
-        dtau_p=sqrt(kapparho(l,m,n)*kapparho(l+lrad,m+mrad,n+nrad))*dlength
+        dtau_m=sqrt(f(l-lrad,m-mrad,n-nrad,ikapparho)* &
+                    f(l,m,n,ikapparho))*dlength
+        dtau_p=sqrt(f(l,m,n,ikapparho)* &
+                    f(l+lrad,m+mrad,n+nrad,ikapparho))*dlength
         dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
         dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
@@ -1122,7 +1131,7 @@ module Radiation
       type (pencil_case) :: p
       real, dimension (nx) :: cooling,Qrad2
 !
-      cooling=kapparho(l1:l2,m,n)*f(l1:l2,m,n,iQrad)
+      cooling=f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,iQrad)
 !
 !  Add radiative cooling
 !
@@ -1168,7 +1177,7 @@ module Radiation
       if (lradflux) then
         do j=1,3
           k=iFradx+(j-1)
-          radpressure(:,j)=p%rho1*kapparho(l1:l2,m,n)*f(l1:l2,m,n,k)/c_light
+          radpressure(:,j)=p%rho1*f(l1:l2,m,n,ikapparho)*f(l1:l2,m,n,k)/c_light
         enddo
 !
 !  Add radiative radpressure
@@ -1253,12 +1262,12 @@ module Radiation
 !  03-apr-04/tobi: coded
 !
       use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,pi,dx,dy,dz,pi,directory_snap
-      use Cdata, only: kappa_es
+      use Cdata, only: kappa_es,ikapparho
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
 
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho
       logical, save :: lfirst=.true.
 
@@ -1268,7 +1277,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,kapparho=tmp)
-          kapparho(:,m,n)=tmp
+          f(:,m,n,ikapparho)=tmp
         enddo
         enddo
 
@@ -1276,7 +1285,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
-          kapparho(:,m,n)=kappa_es*exp(lnrho)
+          f(:,m,n,ikapparho)=kappa_es*exp(lnrho)
         enddo
         enddo
 
@@ -1284,13 +1293,13 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
-          kapparho(:,m,n)=kappa_cst*exp(lnrho)
+          f(:,m,n,ikapparho)=kappa_cst*exp(lnrho)
         enddo
         enddo
 
       case ('blob')
         if (lfirst) then
-          kapparho=kapparho_const + amplkapparho &
+          f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
                   *spread(spread(exp(-(x/radius_kapparho)**2),2,my),3,mz) &
                   *spread(spread(exp(-(y/radius_kapparho)**2),1,mx),3,mz) &
                   *spread(spread(exp(-(z/radius_kapparho)**2),1,mx),2,my)
@@ -1299,7 +1308,7 @@ module Radiation
 
       case ('cos')
         if (lfirst) then
-          kapparho=kapparho_const + amplkapparho &
+          f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
                   *spread(spread(cos(kx_kapparho*x),2,my),3,mz) &
                   *spread(spread(cos(ky_kapparho*y),1,mx),3,mz) &
                   *spread(spread(cos(kz_kapparho*z),1,mx),2,my)
@@ -1311,10 +1320,6 @@ module Radiation
         call stop_it('no such opacity type: '//trim(opacity_type))
 
       endselect
-
-      if (lrad_debug) then
-        call output(trim(directory_snap)//'/kapparho.dat',kapparho,1)
-      endif
 
     endsubroutine opacity
 !***********************************************************************
@@ -1504,6 +1509,7 @@ module Radiation
         write(3,*) 'ify=',ify
         write(3,*) 'ifz=',ifz
         write(3,*) 'iQrad=',iQrad
+        write(3,*) 'ikapparho=',ikapparho
         write(3,*) 'iFrad=',iFrad
         write(3,*) 'iFradx=',iFradx
         write(3,*) 'iFrady=',iFrady

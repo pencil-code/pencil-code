@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.326 2006-07-13 09:13:29 dobler Exp $
+! ! $Id: cdata.f90,v 1.327 2006-07-13 23:13:44 theine Exp $
 
 module Cdata
 
@@ -109,7 +109,7 @@ module Cdata
   integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper=0
   integer :: iecr=0,ismagorinsky
-  integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
+  integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,ikapparho=0
   integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0, irhop=0
   integer :: nt=1000000,it1=10
