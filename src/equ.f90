@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.307 2006-07-08 13:35:56 wlyra Exp $
+! $Id: equ.f90,v 1.308 2006-07-13 09:13:29 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -364,7 +364,7 @@ module Equ
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec,maxdiffus,pfreeze_int,pfreeze_ext
+      real, dimension (nx) :: maxadvec,maxdiffus,pfreeze,pfreeze_int,pfreeze_ext
       integer :: iv
 !
 !  print statements when they are first executed
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.307 2006-07-08 13:35:56 wlyra Exp $")
+           "$Id: equ.f90,v 1.308 2006-07-13 09:13:29 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -646,7 +646,7 @@ module Equ
         if (any(lfreeze_varint)) then
           if (headtt) &
               print*, 'pde: freezing variables for r < ', rfreeze_int, &
-              ' : ', lfreeze_varint
+                  ' : ', lfreeze_varint
           if (lcylindrical) then
             pfreeze_int = &
                 quintic_step(rcyl_mn,rfreeze_int,wfreeze_int,SHIFT=fshift_int)
@@ -664,7 +664,7 @@ module Equ
         if (any(lfreeze_varext)) then
           if (headtt) &
               print*, 'pde: freezing variables for r > ', rfreeze_ext, &
-              ' : ', lfreeze_varext
+                  ' : ', lfreeze_varext
           if (lcylindrical) then
             pfreeze_ext = &
                 1-quintic_step(rcyl_mn,rfreeze_ext,wfreeze_ext,SHIFT=fshift_ext)
@@ -678,6 +678,20 @@ module Equ
                 df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
           enddo
         endif
+
+        if (any(lfreeze_varsquare)) then
+          if (headtt) &
+              print*, 'pde: freezing variables inside square : ', &
+                  lfreeze_varsquare
+          pfreeze = 1. - quintic_step(x_mn,xfreeze_square, wfreeze,SHIFT=-1.) &
+                       * quintic_step(y_mn,yfreeze_square,-wfreeze,SHIFT=-1.)
+!
+          do iv=1,nvar          
+            if (lfreeze_varsquare(iv)) &
+                df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+          enddo
+        endif
+
 !
 !  Freeze components of variables in boundary slice if specified by boundary
 !  condition 'f'

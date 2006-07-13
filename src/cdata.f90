@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.325 2006-07-13 07:54:36 brandenb Exp $
+! ! $Id: cdata.f90,v 1.326 2006-07-13 09:13:29 dobler Exp $
 
 module Cdata
 
@@ -52,8 +52,9 @@ module Cdata
   real :: r_ref=0.
   
 !  parameter for freezing
+  real :: xfreeze_square=impossible,yfreeze_square=impossible
   real :: rfreeze_int=-impossible,rfreeze_ext=-impossible
-  real :: wfreeze_int=0.,wfreeze_ext=0.
+  real :: wfreeze=0.,wfreeze_int=0.,wfreeze_ext=0.
   real :: fshift_int=-1.,fshift_ext=1.
 
   real :: ttransient=0.,C_smag=0.17
@@ -270,6 +271,7 @@ module Cdata
   logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
+  logical, dimension(mcom) :: lfreeze_varsquare=.false.
   logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 
   ! possibility to set boundary values
