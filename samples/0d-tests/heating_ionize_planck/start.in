@@ -1,0 +1,23 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-07-13 07:52:30 brandenb Exp $'
+  c_light=1., G_Newton=1., hbar=1.
+  unit_temperature=1e12
+  Lxyz=1e0, xyz0=0.
+  lwrite_aux=T
+/
+&eos_init_pars
+  xHe=.1
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='const_lnrho', lnrho_const=-0.0
+/
+&entropy_init_pars
+  initss='const_ss', ss_const=-12.8
+  initss='const_ss', ss_const=-0.
+/
