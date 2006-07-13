@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.246 2006-07-13 07:54:36 brandenb Exp $ 
+! $Id: param_io.f90,v 1.247 2006-07-13 09:06:52 dobler Exp $ 
 
 module Param_IO
 
@@ -787,23 +787,23 @@ module Param_IO
 !  check x direction
 !
       j=1
-      if(any(bcx=='p'.or. bcx=='she').and..not.lperi(j).or.&
-         any(bcx/='p'.and.bcx/='she').and.lperi(j)) &
-           call warning_lperi(lwarning,bcx,lperi,j)
+      if(any(bcx(1:nvar)=='p'.or. bcx(1:nvar)=='she').and..not.lperi(j).or.&
+         any(bcx(1:nvar)/='p'.and.bcx(1:nvar)/='she').and.lperi(j)) &
+           call warning_lperi(lwarning,bcx(1:nvar),lperi,j)
 !
 !  check y direction
 !
       j=2
-      if(any(bcy=='p').and..not.lperi(j).or.&
-         any(bcy/='p').and.lperi(j)) &
-           call warning_lperi(lwarning,bcy,lperi,j)
+      if(any(bcy(1:nvar)=='p').and..not.lperi(j).or.&
+         any(bcy(1:nvar)/='p').and.lperi(j)) &
+           call warning_lperi(lwarning,bcy(1:nvar),lperi,j)
 !
 !  check z direction
 !
       j=3
-      if(any(bcz=='p').and..not.lperi(j).or.&
-         any(bcz/='p').and.lperi(j)) &
-           call warning_lperi(lwarning,bcz,lperi,j)
+      if(any(bcz(1:nvar)=='p').and..not.lperi(j).or.&
+         any(bcz(1:nvar)/='p').and.lperi(j)) &
+           call warning_lperi(lwarning,bcz(1:nvar),lperi,j)
 !
 !  print final warning
 !  make the warnings less dramatic looking, if we are only in start
@@ -838,11 +838,16 @@ module Param_IO
           print*,'------------------------------------------------------'
           print*,'W A R N I N G'
           lwarning=.false.
+        else
+          print*
         endif
 !
-        print*,'warning_lperi: inconsistency, j=',j
-        print*,'lperi(j)=',lperi(j)
+        print*,'warning_lperi: inconsistency, j=', j, ', lperi(j)=',lperi(j)
         print*,'bc=',bc
+        print*,"any(bc=='p'.or. bc=='she'), .not.lperi(j) = ", &
+          any(bc=='p'.or. bc=='she'), .not.lperi(j)
+        print*, "any(bcx/='p'.and.bcx/='she'), lperi(j) = ", &
+          any(bc=='p'.or. bc=='she'), .not.lperi(j) 
       endif
 !
     endsubroutine warning_lperi
