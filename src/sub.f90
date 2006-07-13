@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.241 2006-07-12 11:14:10 dobler Exp $ 
+! $Id: sub.f90,v 1.242 2006-07-13 08:59:35 dobler Exp $ 
 
 module Sub 
 
@@ -3517,7 +3517,8 @@ module Sub
 !
 !  fix annoying Fortran 0p/1p stuff (Ew.d --> 1pEw.d, Fw.d --> 0pFw.d)
 !
-        if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E')) then
+        if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') &
+            .or. (cform(1:1) == 'g') .or. (cform(1:1) == 'G')) then
           call safe_character_assign(cform, '1p'//trim(cform))
         endif
         if ((cform(1:1) == 'f') .or. (cform(1:1) == 'F')) then
