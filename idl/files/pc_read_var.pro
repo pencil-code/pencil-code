@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.35 2006-06-14 15:40:13 joishi Exp $
+; $Id: pc_read_var.pro,v 1.36 2006-07-14 10:09:19 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-06-14 15:40:13 $
-;  $Revision: 1.35 $
+;  $Date: 2006-07-14 10:09:19 $
+;  $Revision: 1.36 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -17,7 +17,7 @@ pro pc_read_var, t=t,                                            $
             dim=dim,param=param,                                 $
             datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,     $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,   $
-            SWAP_ENDIAN=SWAP_ENDIAN
+            SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist
@@ -124,7 +124,7 @@ endif
 ;
 ;  Read data
 ;
-varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+default,varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
 totalvars=(size(varcontent))[1]-1L
 
 
