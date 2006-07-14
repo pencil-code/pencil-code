@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.48 2006-07-12 19:44:27 brandenb Exp $
+! $Id: planet.f90,v 1.49 2006-07-14 09:24:50 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -86,7 +86,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.48 2006-07-12 19:44:27 brandenb Exp $")
+           "$Id: planet.f90,v 1.49 2006-07-14 09:24:50 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -204,7 +204,7 @@ module Planet
 !
     endsubroutine write_planet_run_pars
 !***********************************************************************
-    subroutine gravity_companion(f,df,fp,dfp,g0,r0_pot,n_pot,p)
+    subroutine gravity_companion(f,fp,dfp,g0,r0_pot,n_pot,p)
 !
 !  calculate the gravity of a companion offcentered by (Rx,Ry,Rz)
 !
@@ -219,7 +219,6 @@ module Planet
       use Mpicomm
 !     
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp,dfp 
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,rrc,rrs,g_star
@@ -449,13 +448,13 @@ module Planet
 ! aux0 is omega2
 !           
       aux0 = (r_cyl**2+r0_pot**2)**(-1.5)
-      if ((nzgrid/=1).and.(.not.lcylindrical)) then
+      if ((nzgrid==1).or.(lcylindrical)) then
+         H2 = 1.
+      else
          call get_global(cs2_mn,m,n,'cs2')
          H2 = cs2_mn / aux0
-      else
-         H2 = 1.
       endif
-!      
+!
 ! initial conditions
 !
       velx0 = -y(  m  ) * sqrt(aux0)   
@@ -464,13 +463,13 @@ module Planet
          !
          ! just to solve the underflow problem in Kolmogorov
          !
-         if (nzgrid == 1) then
+         if ((nzgrid == 1).or.(lcylindrical)) then
             dens = lnrho_cte * r_cyl**plaw
          else
             dens = lnrho_cte * r_cyl**plaw * exp(0.5*(z(n)**2/H2))
          endif
       else
-         if (nzgrid == 1) then
+         if ((nzgrid == 1).or.(lcylindrical)) then
             dens = lnrho_cte - plaw*alog(r_cyl)
          else
             dens = lnrho_cte - plaw*alog(r_cyl) - 0.5*(z(n)**2/H2)
@@ -482,11 +481,19 @@ module Planet
       do i=l1,l2
          ii = i-l1+1
          if ((r_cyl(ii).le.r_int+dp_int).and.(r_cyl(ii).gt.r_int)) then
+!
+! urgent: make the buffer zone more general.
+! ivars are supposed to be private to their modules
+! do something like 
+!      call bufferzone(f,df,ivar,tau,func)
+! for general use on natalia's code and mine as well
+!
             df(i,m,n,ilnrho)   = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) -  dens(ii))/tau * pdamp(ii) 
             df(i,m,n,iux)      = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
             df(i,m,n,iuy)      = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
             if (nzgrid/=1) &
                  df(i,m,n,iuz) = df(i,m,n,iuz)    - (f(i,m,n,iuz) - 0.)/tau * pdamp(ii)
+!
             if (lmagnetic) then
                df(i,m,n,iax)      = df(i,m,n,iax) - (f(i,m,n,iax) - 0.)/tau * pdamp(ii)
                df(i,m,n,iay)      = df(i,m,n,iay) - (f(i,m,n,iay) - 0.)/tau * pdamp(ii)
