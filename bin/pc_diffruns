@@ -8,7 +8,9 @@
 #  Author: Anders Johansen
 #
 set narg=$#argv
-
+#
+#  If dir2 is missing, set to './'.
+#
 if ( $narg == 2 ) then
   set dir1=$argv[1]
   set dir2=$argv[2]
@@ -17,26 +19,45 @@ else if ( $narg == 1 ) then
   set dir2='.'
 else if ( $narg == 0 ) then
   echo "Usage: pc_diffruns dir1 dir2"
+  echo "       pc_diffruns dir1"
   exit
 endif
-
+#
 echo "Comparing Pencil Code run directories '$dir1' and '$dir2'"
+#
+#  Check if dir1 and dir2 are valid directories.
+#
+if ( ! -d $dir1 ) then
+  echo "ERROR - $dir1 is not a directory!"
+  exit
+endif
+#
+if ( ! -d $dir2 ) then
+  echo "ERROR - $dir2 is not a directory!"
+  exit
+endif
+#
+if ( $dir1 == $dir2 ) then
+  echo "ERROR - $dir1 and $dir2 is the same directory!"
+  exit
+endif
+#
+#  Loop through all possible *.in and *.local files.
+#
+foreach file ( start.in run.in print.in video.in xyaver.in xzaver.in yzaver.in zaver.in src/Makefile.local src/cparam.local)
 
-echo "-- start.in:  --"
-diff $dir1/start.in $dir2
-echo "-- run.in:    --"
-diff $dir1/run.in $dir2
-echo "-- print.in:  --"
-diff $dir1/print.in $dir2
-echo "-- video.in:  --"
-diff $dir1/video.in $dir2
-echo "-- xyaver.in: --"
-diff $dir1/xyaver.in $dir2
-echo "-- xzaver.in: --"
-diff $dir1/xzaver.in $dir2
-echo "-- yzaver.in: --"
-diff $dir1/yzaver.in $dir2
-echo "-- Makefile.local: --"
-diff $dir1/src/Makefile.local $dir2/src
-echo "-- cparam.local:   --"
-diff $dir1/src/cparam.local $dir2/src
+  if ( -e ${dir1}/${file} && -e ${dir2}/${file} ) then
+    echo "-- ${file}:  --"
+    diff ${dir1}/${file} ${dir2}/${file}
+  else
+    if ( -e ${dir1}/${file} && ! -e ${dir2}/${file} ) then
+      echo "-- ${file}:  --"
+      echo "exists in ${dir1}/, but not in ${dir2}"/
+    endif
+    if ( -e ${dir2}/${file} && ! -e ${dir1}/${file} ) then
+      echo "-- ${file}:  --"
+      echo "exists in ${dir2}/, but not in ${dir1}/"
+    endif
+  endif
+
+end
