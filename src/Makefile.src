@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.205 2006-07-12 19:52:03 dintrans Exp $
+### $Id: Makefile.src,v 1.206 2006-07-14 10:31:47 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -61,15 +61,16 @@ POISSON      = nopoisson
 
 TIMESTEP     = timestep
 
+## Extra compiler flags (what does the `GENERAL' rrefer to?)
+FFLAGS_GENERAL=
+CFLAGS_GENERAL=
+
 ## Single vs. double precision
 REAL_PRECISION=default
 
 # Default double flags (can be overwritten in machine-specific section):
 FFLAGS_DOUBLE=-r8
 CFLAGS_DOUBLE=-DDOUBLE_PRECISION
-
-FFLAGS_GENERAL=
-CFLAGS_GENERAL=
 
 ## Overwrite settings that are local to each run directory
 include Makefile.local
@@ -600,7 +601,7 @@ pacx: pacx-makefile cparam.inc code
 
 # Create Makefile.inc, but need this to be a `phony' target (i.e. not a
 # filename as target), so this file is always written.
-# Don't know whether .phony declaration is portable, so we just slightly
+# Don't know whether .PHONY declaration is portable, so we just slightly
 # rename the target.
 Makefile_inc:
 	@printf \
@@ -616,8 +617,8 @@ Makefile_inc:
 	default|4) \
 	    ;; \
 	double|8) \
-	    echo "FFLAGS_GENERAL=$(FFLAGS_GENERAL) $(FFLAGS_DOUBLE)" >> Makefile.inc; \
-	    echo "CFLAGS_GENERAL=$(CFLAGS_GENERAL) $(CFLAGS_DOUBLE)" >> Makefile.inc; \
+	    echo "FFLAGS_GENERAL=$(FFLAGS_DOUBLE)" >> Makefile.inc; \
+	    echo "CFLAGS_GENERAL=$(CFLAGS_DOUBLE)" >> Makefile.inc; \
 	    case "$(MPICOMM)" in \
 	    mpicomm) \
 	        echo "MPICOMM=mpicomm_double" >> Makefile.inc; \
