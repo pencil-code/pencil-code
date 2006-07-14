@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.80 2006-04-16 15:29:58 ajohan Exp $
+! $Id: prints.f90,v 1.81 2006-07-14 10:12:58 ajohan Exp $
 
 module Print
 
@@ -45,9 +45,9 @@ public :: write_zaverages
         !  Calculate the three surface elements.
         !  Take care of degenerate dimensions.
         !
-        if(nxgrid==1) then; dxeff=1.; else; dxeff=dx; endif
-        if(nygrid==1) then; dyeff=1.; else; dyeff=dy; endif
-        if(nzgrid==1) then; dzeff=1.; else; dzeff=dz; endif
+        if (nxgrid==1) then; dxeff=1.; else; dxeff=dx; endif
+        if (nygrid==1) then; dyeff=1.; else; dyeff=dy; endif
+        if (nzgrid==1) then; dzeff=1.; else; dzeff=dz; endif
         !
         dsurfxy=dxeff*dyeff
         dsurfyz=dyeff*dzeff
@@ -107,7 +107,7 @@ public :: write_zaverages
 !  time when the corresponding contribution to UUmax is known.
 !
         do iname=1,nname
-          if(itype_name(iname)==ilabel_max_dt) fname(iname)=dt*fname(iname)
+          if (itype_name(iname)==ilabel_max_dt) fname(iname)=dt*fname(iname)
         enddo
 !
 !  produce the format
@@ -121,7 +121,7 @@ public :: write_zaverages
         enddo
         call safe_character_append(fform, ')')
 
-        if(ldebug) then
+        if (ldebug) then
           write(0,*) 'PRINTS.prints: format = ', trim(fform)
           write(0,*) 'PRINTS.prints: args   = ', fname(1:nname)
         endif
@@ -130,13 +130,13 @@ public :: write_zaverages
 !  Only those numbers are given (and computed) that are
 !  also listed in print.in.
 !
-        if(first) print*
-        if(first) write(*,'(" ",A)') trim(legend)
+        if (first) print*
+        if (first) write(*,'(" ",A)') trim(legend)
 !
 !  write legend to extra file
 !  (might want to do only once after each lreset)
 !
-        if(first) then
+        if (first) then
           open(1,file=trim(datadir)//'/legend.dat')
           write(1,'(" ",A)') trim(legend)
           close(1)
@@ -144,7 +144,7 @@ public :: write_zaverages
 !
 !  put output line into a string and remove spurious dots
 !
-        if(ldebug) print*,'bef. writing prints'
+        if (ldebug) print*,'bef. writing prints'
         write(line,trim(fform)) fname(1:nname)
         index_d=index(line,'. ')
         if (index_d >= 1) then
@@ -161,7 +161,7 @@ public :: write_zaverages
 !  append to diagnostics file
 !
         open(1,file=trim(datadir)//'/time_series.dat',position='append')
-        if(first) write(1,'("#",A)') trim(legend)
+        if (first) write(1,'("#",A)') trim(legend)
         !write(1,trim(fform)) fname(1:nname)  ! write to `time_series.dat'
         !write(6,trim(fform)) fname(1:nname)  ! write to standard output
         write(1,'(a)') trim(line)
@@ -195,7 +195,7 @@ public :: write_zaverages
         call mpibcast_real(gcc2m,1)
       endif
 !
-      if(ldebug) print*,'exit prints'
+      if (ldebug) print*,'exit prints'
       first = .false.
     endsubroutine prints
 !***********************************************************************
@@ -260,7 +260,7 @@ public :: write_zaverages
         if (lwrite_zaverages)   call write_zaverages(ch2davg)
         if (lwrite_phiaverages) call write_phiaverages(ch2davg)
         !
-        if(ip<=10) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
+        if (ip<=10) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
       endif
 !
     endsubroutine write_2daverages
@@ -272,7 +272,7 @@ public :: write_zaverages
 !
 !   6-jun-02/axel: coded
 !
-      if(lroot.and.nnamez>0) then
+      if (lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') tdiagnos
         write(1,'(1p,8e13.5)') fnamez(:,:,1:nnamez)
@@ -288,7 +288,7 @@ public :: write_zaverages
 !
 !  12-oct-05/anders: adapted from write_xyaverages
 !
-      if(lroot.and.nnamey>0) then
+      if (lroot.and.nnamey>0) then
         open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
         write(1,'(1pe12.5)') tdiagnos
         write(1,'(1p,8e13.5)') fnamey(:,:,1:nnamey)
@@ -304,7 +304,7 @@ public :: write_zaverages
 !
 !   2-oct-05/anders: adapted from write_xyaverages
 !
-      if(lroot.and.nnamex>0) then
+      if (lroot.and.nnamex>0) then
         open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
         write(1,'(1pe12.5)') tdiagnos
         write(1,'(1p,8e13.5)') fnamex(:,1:nnamex)
@@ -322,14 +322,15 @@ public :: write_zaverages
 !
       character (len=4) :: ch
 !
-      if(lroot.and.nnamexz>0) then
-        open(1,file=trim(datadir)//'/yaverages.dat',position='append')
-        write(1,'(1pe12.5)') t
-        write(1,'(1p,8e12.4)') fnamexz(:,:,:,1:nnamexz)
+      if (lroot.and.nnamexz>0) then
+        open(1, file=trim(datadir)//'/yaverages.dat', form='unformatted', &
+            position='append')
+        write(1) t
+        write(1) fnamexz(:,:,:,1:nnamexz)
         close(1)
       endif
 !
-      if(ip==0) print*,ch       ! (keep compiler quiet)
+      if (NO_WARN) print*, ch       ! (keep compiler quiet)
 !
     endsubroutine write_yaverages
 !***********************************************************************
@@ -342,14 +343,15 @@ public :: write_zaverages
 !
       character (len=4) :: ch
 !
-      if(lroot.and.nnamexy>0) then
-        open(1,file=trim(datadir)//'/zaverages.dat',position='append')
-        write(1,'(1pe12.5)') t
-        write(1,'(1p,8e12.4)') fnamexy(:,:,:,1:nnamexy)
+      if (lroot.and.nnamexy>0) then
+        open(1, file=trim(datadir)//'/zaverages.dat', form='unformatted', &
+            position='append')
+        write(1) t
+        write(1) fnamexy(:,:,:,1:nnamexy)
         close(1)
       endif
 !
-      if(NO_WARN) print*,ch       ! (keep compiler quiet)
+      if (NO_WARN) print*, ch       ! (keep compiler quiet)
 !
     endsubroutine write_zaverages
 !***********************************************************************
@@ -378,7 +380,7 @@ public :: write_zaverages
 !
 !  write result; normalization is already done in phiaverages_rz
 !
-      if(lroot.and.nnamerz>0) then
+      if (lroot.and.nnamerz>0) then
         call safe_character_assign(avgdir, trim(datadir)//'/averages')
         call safe_character_assign(sname, 'PHIAVG'//trim(ch))
         call safe_character_assign(fname, trim(avgdir)//'/'//trim(sname))
