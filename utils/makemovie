@@ -1,0 +1,84 @@
+#!/bin/sh
+
+fileprefix=$1
+
+[ "$fileprefix" ] || fileprefix=img
+#
+# The script must be run from the directory containing the saved frames (ImagNNNN.x)
+# Convert the frames to 'fmt' format (fmt can be jpg, png)
+#
+fmt=sgi
+quality=90
+fps=15
+for i in $fileprefix*.png
+do
+  echo $i
+  convert png:$i ./`basename $i \.png`.$fmt
+done
+
+#
+# Uncomment this part if you have more than 1000 frame saved
+#
+#fixImag . $fmt > fixImag.sh
+#sh fixImag.sh
+#rm fixImag.sh
+
+#
+# Set the mplayer environment variables (change for your configuration)
+#
+#LD_LIBRARY_PATH=/local/usr/lib; export LD_LIBRARY_PATH
+#PATH=${PATH}:/local/usr/bin; export PATH
+
+#
+# read the image dimensions
+# image width and height must be multiple of 16
+#
+for i in $fileprefix*.$fmt
+do
+  img=$i
+  break
+done
+
+size=`identify $img | awk '{print $3}'`
+width=${size/x*/}
+height=${size/*x/}
+height=${height/+*/}
+#
+# compute the optimal bitrate 
+#	br = 50 * 25 * width * height / 256
+#
+# the 50 factor can vary between 40 and 60
+#
+obr=`expr $width \* $height \* $quality \* $fps / 256`
+#
+# set the MPEG4 codec options
+#	you have to experiment!
+#
+#opt="vbitrate=$obr:mbd=2:keyint=132:v4mv:vqmin=3:lumi_mask=0.07:dark_mask=0.2:scplx_mask=0.1:tcplx_mask=0.1:naq:trell"
+#opt="vbitrate=$obr:keyint=132:v4mv:vqmin=3:lumi_mask=0.07:dark_mask=0.2:scplx_mask=0.1:tcplx_mask=0.1:naq:trell"
+#codec="mpeg4"
+
+#
+# set the Microsoft MPEG4 V2 codec options
+#
+opt="vbitrate=$obr:mbd=2:keyint=132:vqblur=1.0:cmp=2:subcmp=2:dia=2:mv0:last_pred=3"
+opt="vbitrate=$obr:keyint=132:vqblur=1.0:cmp=2:subcmp=2:dia=2:last_pred=3"
+codec="msmpeg4v2"
+
+
+#
+# clean temporary files that can interfere with the compression phase
+#
+rm -f divx2pass.log frameno.avi
+
+#
+# compress
+#
+
+#mencoder -ovc lavc -lavcopts vcodec=$codec:vpass=1:$opt -mf type=$fmt:w=$width:h=$height:fps=$fps mf://\*.$fmt -nosound -o /dev/null 
+#mencoder -ovc lavc -lavcopts vcodec=$codec:vpass=2:$opt -mf type=$fmt:w=$width:h=$height:fps=$fps mf://\*.$fmt -nosound -o output.avi 
+mencoder -ovc lavc -lavcopts vcodec=$codec:$opt -mf type=$fmt:w=$width:h=$height:fps=$fps mf://\*.$fmt -nosound -o output.avi 
+#
+# cleanup
+#
+rm -f divx2pass.log
