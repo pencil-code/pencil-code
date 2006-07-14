@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.27 2006-06-16 19:24:15 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.28 2006-07-14 01:14:28 theine Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -270,6 +270,12 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[iQrad].idlinit    = INIT_SCALAR
   varcontent[iQrad].idlvarloc= 'Qrad_loc'
   varcontent[iQrad].idlinitloc = INIT_SCALAR_LOC
+
+  varcontent[ikapparho].variable = 'Opacity (kapparho)'
+  varcontent[ikapparho].idlvar   = 'kapparho'
+  varcontent[ikapparho].idlinit    = INIT_SCALAR
+  varcontent[ikapparho].idlvarloc= 'kapparho_loc'
+  varcontent[ikapparho].idlinitloc = INIT_SCALAR_LOC
 
   varcontent[iFrad].variable = 'Radiative flux (Frad)'
   varcontent[iFrad].idlvar   = 'Frad'
