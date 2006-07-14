@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.176 2006-07-13 15:42:30 brandenb Exp $
+! $Id: register.f90,v 1.177 2006-07-14 00:47:22 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -188,7 +188,7 @@ module Register
 !  used currently only in eos, but later also in
 !  the interstellar and radiation modules, for example
 !
-      !call units_general()
+      call units_general()
       call units_eos()
 !
 !  calculated derived units
@@ -212,7 +212,8 @@ module Register
         eV=eV_cgs/unit_energy
         sigmaH_=sigmaH_cgs/unit_length**2
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
-        c_light=c_light_cgs/(unit_length/unit_time)
+        c_light=c_light_cgs/unit_velocity
+        G_Newton=G_Newton_cgs*unit_length**2*unit_density/unit_velocity**2
       elseif (unit_system=='SI') then
         if(lroot.and.leos_ionization) print*,&
             'initialize_modules: unit_velocity, unit_density, etc, are in SI'
@@ -225,7 +226,8 @@ module Register
         sigmaH_=sigmaH_cgs*1e-4/unit_length**2
         sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
         kappa_es=kappa_es_cgs*1e-1/(unit_length**2/unit_mass)
-        c_light=c_light_cgs*1e-2/(unit_length/unit_time)
+        c_light=c_light_cgs*1e-2/unit_velocity
+        G_Newton=G_Newton_cgs*1e-3*unit_length**2*unit_density/unit_velocity**2
       endif
 !
 !  calculate additional constants (now all in code units)
