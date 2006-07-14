@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.44 2006-07-14 00:54:34 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.45 2006-07-14 01:21:38 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -157,7 +157,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.44 2006-07-14 00:54:34 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.45 2006-07-14 01:21:38 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -890,7 +890,7 @@ module Radiation
 
       real, dimension (ny,nz) :: Isurf_yz
       real, dimension (nx,nz) :: Isurf_xz
-      real, dimension (nx,nx) :: Isurf_xy,Isurf_xy2
+      real, dimension (nx,ny) :: Isurf_xy,Isurf_xy2
       character (len=2) :: str
 !
 !  identifier
