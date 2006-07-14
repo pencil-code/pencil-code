@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.36 2006-07-14 10:09:19 mee Exp $
+; $Id: pc_read_var.pro,v 1.37 2006-07-14 10:43:35 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-07-14 10:09:19 $
-;  $Revision: 1.36 $
+;  $Date: 2006-07-14 10:43:35 $
+;  $Revision: 1.37 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -124,7 +124,7 @@ endif
 ;
 ;  Read data
 ;
-default,varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+default,varcontent,pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
 totalvars=(size(varcontent))[1]-1L
 
 
