@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.43 2006-07-13 23:13:44 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.44 2006-07-14 00:54:34 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -157,7 +157,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.43 2006-07-13 23:13:44 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.44 2006-07-14 00:54:34 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -393,16 +393,14 @@ module Radiation
 !
 !  Label for debug output
 !
-      if (lrad_debug) then
-        lrad_str='0'; mrad_str='0'; nrad_str='0'
-        if (lrad>0) lrad_str='p'
-        if (lrad<0) lrad_str='m'
-        if (mrad>0) mrad_str='p'
-        if (mrad<0) mrad_str='m'
-        if (nrad>0) nrad_str='p'
-        if (nrad<0) nrad_str='m'
-        raydir_str=lrad_str//mrad_str//nrad_str
-      endif
+      lrad_str='0'; mrad_str='0'; nrad_str='0'
+      if (lrad>0) lrad_str='p'
+      if (lrad<0) lrad_str='m'
+      if (mrad>0) mrad_str='p'
+      if (mrad<0) mrad_str='m'
+      if (nrad>0) nrad_str='p'
+      if (nrad<0) nrad_str='m'
+      raydir_str=lrad_str//mrad_str//nrad_str
 
     endsubroutine raydirection
 !***********************************************************************
@@ -884,8 +882,16 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata, only: ldebug,headt,directory_snap
-      use Slices, only: Isurf_xy
+      use Cdata, only: directory,lvid,lwrite_slices,cnamev
+      use Cdata, only: ix_loc,iy_loc,iz_loc,iz2_loc
+      use Cdata, only: x,y,z
+      use Slices, only: wslice
       use IO, only: output
+
+      real, dimension (ny,nz) :: Isurf_yz
+      real, dimension (nx,nz) :: Isurf_xz
+      real, dimension (nx,nx) :: Isurf_xy,Isurf_xy2
+      character (len=2) :: str
 !
 !  identifier
 !
@@ -906,6 +912,24 @@ module Radiation
 !
       if (lrad==0.and.mrad==0.and.nrad==1) then
         Isurf_xy=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
+      endif
+
+      if (lvid.and.lwrite_slices) then
+        if (any(cnamev=='Isurf').and.nrad>0) then
+          Isurf_yz=0.0
+          Isurf_xz=0.0
+          Isurf_xy=0.0
+          Isurf_xy2=Qrad(l1:l2,m1:m2,n2)+Srad(l1:l2,m1:m2,n2)
+          str=raydir_str(1:2)
+          call wslice(trim(directory)//'/slice_Isurf-'//str//'.yz',&
+                      Isurf_yz,x(ix_loc),ny,nz)
+          call wslice(trim(directory)//'/slice_Isurf-'//str//'.xz',&
+                      Isurf_xz,y(iy_loc),nx,nz)
+          call wslice(trim(directory)//'/slice_Isurf-'//str//'.xy',&
+                      Isurf_xy,z(iz_loc),nx,ny)
+          call wslice(trim(directory)//'/slice_Isurf-'//str//'.Xy',&
+                      Isurf_xy2,z(iz2_loc),nx,ny)
+        endif
       endif
 !
       if (lrad_debug) then

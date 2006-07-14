@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.62 2006-07-04 14:44:17 mee Exp $
+! $Id: slices.f90,v 1.63 2006-07-14 00:54:34 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -10,7 +10,7 @@ module Slices
 
   private
 
-  public :: wvid, wvid_prepare, setup_slices
+  public :: wvid, wvid_prepare, setup_slices, wslice
 
 !  Variables for xy slices start here
 !!! New slice code reuses the following slice variables.
