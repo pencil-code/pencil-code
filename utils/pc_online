@@ -19,7 +19,7 @@ else
 fi
 
 
-pc_cvs_chroot -d $PENCIL_HOME $localdir $online_cvsroot
+pc_cvschroot -d $PENCIL_HOME $localdir $online_cvsroot
 
 if [ "$remove_mirror" ]; then
   echo -n "Removing offline content... "

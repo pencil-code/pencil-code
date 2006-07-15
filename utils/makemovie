@@ -77,7 +77,7 @@ rm -f divx2pass.log frameno.avi
 
 #mencoder -ovc lavc -lavcopts vcodec=$codec:vpass=1:$opt -mf type=$fmt:w=$width:h=$height:fps=$fps mf://\*.$fmt -nosound -o /dev/null 
 #mencoder -ovc lavc -lavcopts vcodec=$codec:vpass=2:$opt -mf type=$fmt:w=$width:h=$height:fps=$fps mf://\*.$fmt -nosound -o output.avi 
-mencoder -ovc lavc -lavcopts vcodec=$codec:$opt -mf type=$fmt:w=$width:h=$height:fps=$fps mf://\*.$fmt -nosound -o output.mpg
+mencoder -ovc lavc -lavcopts vcodec=$codec:$opt -mf type=$fmt:w=$width:h=$height:fps=$fps mf://\*.$fmt -nosound -o output.avi 
 #
 # cleanup
 #
