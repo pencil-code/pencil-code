@@ -1,18 +1,21 @@
-! $Id: border_profiles.f90,v 1.1 2006-07-15 17:21:52 mee Exp $ 
+! $Id: border_profiles.f90,v 1.2 2006-07-16 08:14:32 mee Exp $ 
 
 module BorderProfiles 
+
+  use Cparam
+  use Cdata
 
   implicit none
 
   private
 
-  public :: initialize_borderprofiles
+  public :: initialize_border_profiles
 
-  public :: border_profiles
+  public :: border_quenching, border_driving
 
-  integer, parameter, public :: i_BORDER_ZERO
-  integer, parameter, public :: i_BORDER_SPECIAL
-  integer, parameter, public :: i_BORDER_
+  integer, parameter, public :: i_BORDER_ZERO    = 1
+  integer, parameter, public :: i_BORDER_SPECIAL = 2
+  integer, parameter, public :: i_BORDER_        = 3
 !:
 !  border_prof_[x-z] could be of size n[x-z], but having the same
 !  length as f() (in the given dimension) gives somehow more natural code.
@@ -24,7 +27,7 @@ module BorderProfiles
   contains
 
 !***********************************************************************
-    subroutine initialize_borderprofiles()
+    subroutine initialize_border_profiles()
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
@@ -92,7 +95,7 @@ module BorderProfiles
         border_prof_z(n1:n2)=min(border_prof_z(n1:n2),zeta**2*(3-2*zeta))
       endif
 !
-    endsubroutine initialize_borderprofiles
+    endsubroutine initialize_border_profiles
 !***********************************************************************
     subroutine border_driving(f,df,j)
 !
@@ -104,7 +107,7 @@ module BorderProfiles
 !  the variable toward some target solution on the boundary.
 !
        df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
-             - (f(l1:l2,m,n,j) - f_target(j))/drive_time_t
+             - (f(l1:l2,m,n,j) ) !configurable: - f_target(j))/drive_time_t
 !
     endsubroutine border_driving
 !***********************************************************************
