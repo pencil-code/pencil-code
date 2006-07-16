@@ -3,11 +3,19 @@
 dollar='$'
 script='
 
-    s/\bMpicomm\b/\$(MPICOMM).o/i;
+    s/\bSelfGravity\b/\$(SELFGRAVITY).o/i;
+    s/\bMessages\b/messages.o/i;
+    s/\bMpicomm\b/\$(MPICOMM_FIX).o/i;
     s/\bGlobal\b/\$(GLOBAL).o/i;
     s/\bIo\b/\$(IO).o/i;
     s/\bPower_Spectrum\b/\$(POWER).o/i;
-
+    s/\bPlanet\b/\$(PLANET).o/i;
+    s/\bParticles\b/\$(PARTICLES).o/i;
+    s/\bParticles_sub\b/\$(PARTICLES_SUB).o/i;
+    s/\bParticles_main\b/\$(PARTICLES_MAIN).o/i;
+    s/\bParticles_radius\b/\$(PARTICLES_RADIUS).o/i;
+    s/\bParticles_number\b/\$(PARTICLES_NUMBER).o/i;
+    s/\bParticles_selfgravity\b/\$(PARTICLES_SELFGRAVITY).o/i;
     s/\bHydro\b/\$(HYDRO).o/i;
     s/\bViscosity\b/\$(VISCOSITY).o/i;
     s/\bDensity\b/\$(DENSITY).o/i;
@@ -18,18 +26,24 @@ script='
     s/\bDustVelocity\b/\$(DUSTVELOCITY).o/i;
     s/\bDustDensity\b/\$(DUSTDENSITY).o/i;
     s/\bInterstellar\b/\$(INTERSTELLAR).o/i;
-    s/\bCosmicRay\b/\$(COSMICRAY).o/i;
-    s/\bEquationOfState\b/\$(EOS).o/i;
+    s/\bCosmicray\b/\$(COSMICRAY).o/i;
+    s/\bCosmicrayFlux\b/\$(COSMICRAYFLUX).o/i;
     s/\bStruct_Func\b/\$(STRUCT_FUNC).o/i;
     s/\bInitcond_Spec\b/\$(INITCOND_SPEC).o/i;
     s/\bGravity\b/\$(GRAVITY).o/i;
+    s/\bEquationOfState\b/\$(EOS).o/i;
     s/\bForcing\b/\$(FORCING).o/i;
     s/\bShear\b/\$(SHEAR).o/i;
     s/\bTimeavg\b/\$(TIMEAVG).o/i;
     s/\bSpecial\b/\$(SPECIAL).o/i;
+    s/\bTestfield\b/\$(TESTFIELD).o/i;
+    s/\bShock\b/\$(SHOCK).o/i;
     s/\bChiral\b/\$(CHIRAL).o/i;
+    s/\bGrid\b/\$(GRID).o/i;
 
+    s/\bParticles_cdata\b/\particles_cdata.o/i;
     s/\bCdata\b/cdata.o/i; 
+    s/\bPersist\b/persist.o/i; 
     s/\bCparam\b/cparam.o/i; 
     s/\bBoundcond\b/boundcond.o/i;
     s/\bFilter\b/filter.o/i;
@@ -43,17 +57,25 @@ script='
     s/\bParam_IO\b/param_io.o/i;
     s/\bDeriv\b/deriv.o/i;
     s/\bSlices\b/slices.o/i;
+    s/\bBorderProfiles\b/border_profiles.o/i;
     s/\bGeneral\b/general.o/i;
+    s/\bPrint\b/prints.o/i;
+    s/\bSnapshot\b/snapshot.o/i;
 '
 
-while [ $1 ]
+while [ "$1" ]
 do
-  if [ -e $1 ]; then
-    used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $1 | sort | uniq -i `
-    depends=`echo $used | perl -npe "$script"`
-    includes=`perl -ne "print \"${dollar}1 \" if m/^\s*include\s*\\'([\S]*\\.(inc|local))\\'/ ;" $1 `
+  file="$1"
+  if [ -e "$file" ]; then
+    if [ "${file%.c}" != "$file" ]; then
+      echo "${file%.c}.o: $file" 
+    else
+      used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $file | sort | uniq -i `
+      depends=`echo $used | perl -npe "$script"`
+      includes=`perl -ne "print \"${dollar}1 \" if m/^\s*include\s*\\'([\S]*\\.(inc|local))\\'/ ;" $file `
 
-    echo "${1/f90/o}: $1 $includes $depends" 
+      echo "${file%.f90}.o: $file $includes $depends" 
+    fi
   fi
   shift
 done
