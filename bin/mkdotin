@@ -1,5 +1,5 @@
 #!/bin/sh
-#  -*-Perl-*-
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkstartrun
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkdotin,v 1.4 2005-06-26 17:34:16 eos_merger_tony Exp $
+# CVS: $Id: mkdotin,v 1.5 2006-07-16 13:54:51 theine Exp $
 # Description:
 #   Given a set of files (normally Makefile and Makefile.local), scan
 #   through all lines of the type
@@ -73,8 +73,8 @@ GetOptions(\%opts,
                -v   --version     ));
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.4 $';
-    my $date = '$Date: 2005-06-26 17:34:16 $';
+    my $rev = '$Revision: 1.5 $';
+    my $date = '$Date: 2006-07-16 13:54:51 $';
     $rev =~ s/${dollar}Revision:\s*(\S+).*/$1/;
     $date =~ s/${dollar}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";

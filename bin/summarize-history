@@ -1,5 +1,5 @@
 #!/bin/sh
-#  -*-Perl-*-
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
 # Run the right perl version:
 if [ -x /usr/local/bin/perl ]; then
@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   summarize-history
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   03-Nov-2002
-# CVS:    $Id: summarize-history,v 1.9 2005-12-08 02:04:27 dobler Exp $
+# CVS:    $Id: summarize-history,v 1.10 2006-07-16 13:54:51 theine Exp $
 # Description:
 #    Evaluate `params.log' and print a history of changes.
 

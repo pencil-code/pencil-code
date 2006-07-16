@@ -1,8 +1,23 @@
-#!/usr/bin/perl -w
+#!/bin/sh
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: llsub,v 1.5 2006-05-17 22:47:57 theine Exp $
+# CVS:    $Id: llsub,v 1.6 2006-07-16 13:54:51 theine Exp $
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its
