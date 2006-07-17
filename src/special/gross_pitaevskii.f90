@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.4 2006-06-20 16:58:12 mee Exp $
+! $Id: gross_pitaevskii.f90,v 1.5 2006-07-17 00:19:28 mee Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -86,14 +86,22 @@ module Special
     real :: sgn         ! sign of the argument of the line
   end type line_param
 
+  type :: ring_param
+    real :: x0          ! x position
+    real :: y0          ! y position
+    real :: r0          ! radius
+    real :: dir         ! Propagation direction (+/-1)
+  end type ring_param
+
   logical :: limag_time = .false.
   real :: diff_boundary = 0.000
   real :: vortex_spacing = 12.000
+  real :: ampl = 0.000
   real :: frame_Ux = 0.
   character(len=50) :: initgpe = 'constant'
 
 ! input parameters
-  namelist /gpe_init_pars/ initgpe, vortex_spacing
+  namelist /gpe_init_pars/ initgpe, vortex_spacing, ampl
 
 ! run parameters
   namelist /gpe_run_pars/ diff_boundary, limag_time, frame_Ux
@@ -150,10 +158,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.4 2006-06-20 16:58:12 mee Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.5 2006-07-17 00:19:28 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.4 2006-06-20 16:58:12 mee Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.5 2006-07-17 00:19:28 mee Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -210,8 +218,11 @@ module Special
       type (line_param) :: vl3
      ! type (line_param), parameter :: vl3 = line_param( 0.0,-1.1,-0.1,14.6,-1.0)
      ! type (line_param), parameter :: vl4 = line_param(-3.0,-3.0,-0.0,33.0, 1.0)
-      vl1 = line_param( 0.0, vortex_spacing*0.5,0.,33.0, 1.0)
-      vl3 = line_param( 0.0,-vortex_spacing*0.5,0.,33.0,-1.0)
+      type (ring_param) :: vr1
+     ! type (line_param) :: vl1
+      vl1 = line_param( 0.0, vortex_spacing*0.5,ampl,33.0, 1.0)
+      vl3 = line_param( 0.0,-vortex_spacing*0.5,-ampl,33.0,-1.0)
+      vr1 = ring_param(-20.0, 0.0, 15.0, -1.0)
 
 !!
 !!  SAMPLE IMPLEMENTATION
@@ -229,6 +240,10 @@ module Special
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = complex_mult(vortex_line(vl1), &
                                                vortex_line(vl3))
+          enddo; enddo
+        case('vortex-ring'); 
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_ring(vr1)
           enddo; enddo
         case default
           !
@@ -335,13 +350,21 @@ module Special
     psi2 = preal**2 + pimag**2
 
     if (limag_time) then
+      df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
+         0.5 * ((del2real + diss * del2imag) &
+           + (1. - psi2) * (preal + diss * pimag))
+!
       df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-         0.5 * (diss * del2real - del2imag) &
-           + (1. - psi2) * preal
+         0.5 * ((del2imag - diss * del2real) &
+           + (psi2 - 1.) * (diss * preal - pimag))
+!
+      if (frame_Ux /= 0.) then
+        df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
+           frame_Ux * dimagdx
 
-      df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) - &
-         0.5 * (del2real + diss * del2imag) &
-           + (1. - psi2) * pimag
+        df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) - &
+           frame_Ux * drealdx
+      endif
     else
 !
 !  dpsi/dt = hbar/(2m) * [ diss*del2(psi) + i*del2(psi) ] + (1-|psi|^2)*psi
@@ -607,46 +630,35 @@ endsubroutine read_special_run_pars
       
     end function vortex_line
 !***********************************************************************
-!    function vortex_ring(x0, y0, r0, dir)
-!      ! Vortex ring initial condition
-!      implicit none
-!  
-!      complex, dimension(0:nx1,jsta:jend,ksta:kend) :: vortex_ring
-!      real,    intent(in)                           :: x0, y0, r0, dir
-!      real,    dimension(jsta:jend,ksta:kend)       :: s
-!      real,    dimension(0:nx1,jsta:jend,ksta:kend) :: rr1, rr2, d1, d2
-!      integer                                       :: i, j, k
-!  
-!      call get_s(s, y0)
-!      
-!      do k=ksta,kend
-!        do j=jsta,jend
-!          do i=0,nx1
-!            d1(i,j,k) = sqrt( (x(i)-x0)**2 + (s(j,k)+r0)**2 )
-!            d2(i,j,k) = sqrt( (x(i)-x0)**2 + (s(j,k)-r0)**2 )
-!          end do
-!        end do
-!      end do
-!      
-!      call get_rr(d1,rr1)
-!      call get_rr(d2,rr2)
-!      
-!      rr1 = sqrt( ((0.3437+0.0286*d1**2)) / &
-!                          (1.0+(0.3333*d1**2)+(0.0286*d1**4)) )
-!      rr2 = sqrt( ((0.3437+0.0286*d2**2)) / &
-!                          (1.0+(0.3333*d2**2)+(0.0286*d2**4)) )
-!  
-!      do k=ksta,kend
-!        do j=jsta,jend
-!          do i=0,nx1
-!            vortex_ring(i,j,k) = rr1(i,j,k)*((x(i)-x0)+dir*eye*(s(j,k)+r0)) * &
-!                                 rr2(i,j,k)*((x(i)-x0)-dir*eye*(s(j,k)-r0))
-!          end do
-!        end do
-!      end do
-!  
-!      return
-!    end function vortex_ring
+    function vortex_ring(vr)
+      ! Vortex ring initial condition
+
+      real, dimension(nx,2) :: vortex_ring
+      type (ring_param), intent(in) :: vr
+      real :: s
+      real,parameter :: scal=1.
+      real, dimension(nx) :: rr1, rr2, d1, d2
+      integer :: i, j, k
+  
+      call get_s(s, vr%y0)
+      
+      d1 = sqrt( (scal*(x(l1:l2)-vr%x0))**2 + (s+vr%r0)**2 )
+      d2 = sqrt( (scal*(x(l1:l2)-vr%x0))**2 + (s-vr%r0)**2 )
+      
+      call get_rr(d1,rr1)
+      call get_rr(d2,rr2)
+      
+      rr1 = sqrt( ((0.3437+0.0286*d1**2)) / &
+                          (1.0+(0.3333*d1**2)+(0.0286*d1**4)) )
+      rr2 = sqrt( ((0.3437+0.0286*d2**2)) / &
+                          (1.0+(0.3333*d2**2)+(0.0286*d2**4)) )
+  
+      vortex_ring(:,1) = rr1*rr2*scal**2*((x(l1:l2)-vr%x0)**2 + &
+                          (vr%dir**2*(s-vr%r0)*(s+vr%r0))) 
+      vortex_ring(:,2) = rr1*rr2*scal**2*((x(l1:l2)-vr%x0) * &
+                          (vr%dir*2.*vr%r0))
+  
+    end function vortex_ring
 !***********************************************************************
 !    function vortex_ring2(x0, y0, r0, dir)
 !      ! Vortex ring initial condition
@@ -703,22 +715,16 @@ endsubroutine read_special_run_pars
   
     end subroutine get_r
 !***********************************************************************
-!    subroutine get_s(s, y0)
-!      ! Another radial variable
-!      use Cdata
-!  
-!      real,                                 intent(in)  :: y0
-!      real, dimension(jsta:jend,ksta:kend), intent(out) :: s
-!      integer                                           :: j, k
-!  
-!      do k=ksta,kend
-!        do j=jsta,jend
-!          s(j,k) = sqrt((y(j)-y0)**2 + z(k)**2)
-!        end do
-!      end do
-!  
-!      return
-!    end subroutine get_s
+    subroutine get_s(s, sy0)
+      ! Another radial variable
+      use Cdata
+  
+      real, intent(in)  :: sy0
+      real, intent(out) :: s
+  
+      s = sqrt((y(m)-sy0)**2 + z(n)**2)
+
+    end subroutine get_s
 !***********************************************************************
     subroutine get_theta(vort_x0, vort_y0, vort_a, vort_ll, vort_sgn, vort_theta)
       ! Get the argument theta=arctan(y/x)
@@ -733,20 +739,17 @@ endsubroutine read_special_run_pars
   
     end subroutine get_theta
 !***********************************************************************
-!    subroutine get_rr(r,rr)
-!      ! R in psi=R(r)exp(i*theta)
-!      use parameters
-!      implicit none
-!  
-!      real, dimension(0:nx1,jsta:jend,ksta:kend), intent(in)  :: r
-!      real, dimension(0:nx1,jsta:jend,ksta:kend), intent(out) :: rr
-!      integer                                                 :: i, j, k
-!      
-!      rr = sqrt( ((0.3437+0.0286*r**2)) / &
-!                  (1.0+(0.3333*r**2)+(0.0286*r**4)) )
-!  
-!      return
-!    end subroutine get_rr
+    subroutine get_rr(r,rr)
+      ! R in psi=R(r)exp(i*theta)
+      use Cdata
+  
+      real, dimension(nx), intent(in)  :: r
+      real, dimension(nx), intent(out) :: rr
+      
+      rr = sqrt( ((0.3437+0.0286*r**2)) / &
+                  (1.0+(0.3333*r**2)+(0.0286*r**4)) )
+  
+    end subroutine get_rr
 !***********************************************************************
   function complex_mult(a,b)
     ! Amplitude of a vortex line
