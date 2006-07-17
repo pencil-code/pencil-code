@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.23 2006-06-27 12:09:58 ajohan Exp $
+### $Id: Makefile.depend,v 1.24 2006-07-17 11:30:02 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -21,7 +21,7 @@ nodebug.o:            nodebug.f90 cdata.o $(MPICOMM_FIX).o
 ## ---------------------------------------------------------------------- #
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
-shock_finder.o: shock_finder.f90 $(shock_finder_deps)
+$(SHOCK_FINDER).o: $(SHOCK_FINDER).f90 $(shock_finder_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #merge_tony var2ascii.o: var2ascii.f90 $(var2ascii_deps)
@@ -35,6 +35,7 @@ deriv.o:     deriv.f90 cdata.o messages.o
 fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
+border_profiles.o:  border_profiles.f90 cdata.o
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM_FIX).o general.o
 param_io.o:  param_io.f90 cdata.o $(MPICOMM_FIX).o sub.o $(TIMESTEP).o $(TIMEAVG).o $(physics) $(PARTICLES_MAIN).o
 register.o:  register.f90 cdata.o $(MPICOMM_FIX).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o equ.o
