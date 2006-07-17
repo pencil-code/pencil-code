@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.17 2006-07-04 14:50:49 mee Exp $
+! $Id: shock.f90,v 1.18 2006-07-17 11:36:48 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -39,6 +39,7 @@ module Shock
   logical :: lwith_extreme_div=.false.
   logical :: lmax_smooth=.false.
   logical :: lgauss_integral=.false.
+  logical :: lgauss_integral_comm_uu=.false.
   logical :: lcommunicate_uu=.true.
   real :: div_threshold=0., div_scaling=1.
   real, dimension (3,3,3) :: smooth_factor
@@ -48,7 +49,7 @@ module Shock
 
   ! run parameters
   namelist /shock_run_pars/ lshock_first, lshock_max5, div_threshold, div_scaling, &
-                            lmax_smooth, lgauss_integral, lcommunicate_uu
+                            lmax_smooth, lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu
  
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
@@ -101,7 +102,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.17 2006-07-04 14:50:49 mee Exp $")
+           "$Id: shock.f90,v 1.18 2006-07-17 11:36:48 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -229,6 +230,7 @@ module Shock
         lwith_extreme_div=.false.
         lmax_smooth=.false.
         lgauss_integral=.false.
+        lgauss_integral_comm_uu=.false.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -318,7 +320,8 @@ module Shock
 !
 !  Exit if were're not using the "simple" shock profile code or it's the wrong time.
 !
-     if (lgauss_integral.or.lcommunicate_uu.or.(lshock_first.and.(.not.lfirst))) return
+     if (lgauss_integral.or.lgauss_integral_comm_uu.or. &
+          lcommunicate_uu.or.(lshock_first.and.(.not.lfirst))) return
 !
 !  calculate shock viscosity only when nu_shock /=0
 !
@@ -373,6 +376,7 @@ module Shock
       use Sub
       use Interstellar, only: calc_snr_unshock
 !
+      logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp 
       real, dimension(mx) :: penc
@@ -409,6 +413,54 @@ module Shock
          enddo; enddo
 !        call scale_and_chop_internalboundary(f)
          !f(:,:,:,ishock) = tmp * dxmin**2 
+        elseif (lgauss_integral_comm_uu) then
+!
+!  need to finalize communication early either for test purposes
+!
+          early_finalize=test_nonblocking
+!
+!  Initiate (non-blocking) communication of uu and do boundary conditions.
+!  Required order:
+!  1. x-boundaries (x-ghost zones will be communicated) - done above
+!  2. communication
+!  3. y- and z-boundaries
+!
+          call initiate_isendrcv_bdry(f,iux,iuz)
+          if (early_finalize) then
+            call finalize_isendrcv_bdry(f,iux,iuz)
+            call boundconds_y(f,iux,iuz)
+            call boundconds_z(f,iux,iuz)
+          endif
+!
+!  do loop over y and z
+!  set indices and check whether communication must now be completed
+!  if test_nonblocking=.true., we communicate immediately as a test.
+!
+          do imn=1,ny*nz
+            n=nn(imn)
+            m=mm(imn)
+            lfirstpoint=(imn==1)      ! true for very first m-n loop
+            llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+!
+! make sure all ghost points are set
+!
+            if (.not.early_finalize.and.necessary(imn)) then
+              call finalize_isendrcv_bdry(f,iux,iuz)
+              call boundconds_y(f,iux,iuz)
+              call boundconds_z(f,iux,iuz)
+            endif
+!
+! Calculate all local shock profile contributions
+!
+            call shock_calc_body(f)
+          enddo
+!
+! Scale and chop the shock profile, as needed
+!         
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ishock)=max(f(l1:l2,m,n,ishock),0.)
+          enddo; enddo
+!
         elseif (lcommunicate_uu) then
 !  Communicate uu ghost zones
           call initiate_isendrcv_bdry(f,iux,iuz)
