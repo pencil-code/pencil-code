@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.177 2006-07-14 00:47:22 brandenb Exp $
+! $Id: register.f90,v 1.178 2006-07-17 11:31:18 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -46,7 +46,7 @@ module Register
       use Chiral,          only: register_chiral
       use Dustdensity,     only: register_dustdensity
       use Dustvelocity,    only: register_dustvelocity
-      use CosmicRay,       only: register_cosmicray
+      use Cosmicray,       only: register_cosmicray
       use CosmicrayFlux,   only: register_cosmicrayflux
       use Interstellar,    only: register_interstellar
       use Shear,           only: register_shear
@@ -171,12 +171,13 @@ module Register
       use Chiral,          only: initialize_chiral
       use Dustvelocity,    only: initialize_dustvelocity
       use Dustdensity,     only: initialize_dustdensity
-      use CosmicRay,       only: initialize_cosmicray
+      use Cosmicray,       only: initialize_cosmicray
       use Interstellar,    only: initialize_interstellar
       use Shear,           only: initialize_shear
       use Viscosity,       only: initialize_viscosity
       use Special,         only: initialize_special
       use Planet,          only: initialize_planet
+      use BorderProfiles,  only: initialize_border_profiles
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstarting
@@ -271,6 +272,7 @@ module Register
       call initialize_viscosity(lstarting)
       call initialize_special(f)
       call initialize_planet(f,lstarting) !will need f for torque
+      call initialize_border_profiles() 
 !
 ! Store the value of impossible for use in IDL
 !
@@ -563,8 +565,8 @@ module Register
       use Interstellar,    only: rprint_interstellar
       use Dustvelocity,    only: rprint_dustvelocity
       use Dustdensity,     only: rprint_dustdensity
-      use CosmicRay,       only: rprint_cosmicray
-      use CosmicRayFlux,   only: rprint_cosmicrayflux
+      use Cosmicray,       only: rprint_cosmicray
+      use CosmicrayFlux,   only: rprint_cosmicrayflux
       use Gravity,         only: rprint_gravity
       use Selfgravity,     only: rprint_selfgravity
       use Special,         only: rprint_special
