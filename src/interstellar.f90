@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.123 2006-07-12 05:41:03 brandenb Exp $
+! $Id: interstellar.f90,v 1.124 2006-07-17 11:26:21 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,6 +115,8 @@ module Interstellar
 !
   real, parameter :: TT_SN_min_cgs=1.e7
   real :: TT_SN_min=impossible
+  real :: TT_cutoff_cgs=100.
+  real :: TT_cutoff=impossible
 !
 ! SNe placement limitations (for code stability)
 !
@@ -168,7 +170,7 @@ module Interstellar
 !
 ! Size of SN insertion site (energy and mass) and shell in mass movement
 !
-  double precision :: sigma_SN
+  real :: sigma_SN, sigma_SN1
   real, parameter :: width_SN_cgs=3.086E19
   real :: energy_width_ratio=1. !308533
   real :: mass_width_ratio=2.
@@ -189,7 +191,7 @@ module Interstellar
 !
 ! Cooling timestep limiter coefficient
 !
-  real :: cdt_tauc=0.1
+  real :: cdt_tauc=0.05
 !
 ! COMMENT ME
 !
@@ -211,8 +213,8 @@ module Interstellar
   real, parameter :: TUV_cgs=7000.,T0UV_cgs=12000.,cUV_cgs=5.e-4
 !
   real :: GammaUV=impossible,T0UV=impossible,cUV=impossible
-  double precision, dimension(6) :: coolT_cgs, coolH_cgs
-  real, dimension(6) :: coolB, lncoolH, lncoolT
+  double precision, dimension(7) :: coolT_cgs, coolH_cgs
+  real, dimension(7) :: coolB, lncoolH, lncoolT
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
@@ -234,6 +236,10 @@ module Interstellar
 !
   logical :: lSNR_damping = .false.
   real :: SNR_damping = 0.
+  real :: SNR_damping_time_cgs = 5E4*yr_cgs
+  real :: SNR_damping_rate_cgs = 1E3*yr_cgs
+  real :: SNR_damping_time = impossible
+  real :: SNR_damping_rate = impossible
 !
   logical :: lsmooth_coolingfunc = .false.
   logical :: laverage_SN_heating = .false.
@@ -264,6 +270,7 @@ module Interstellar
   character (len=labellen) :: heating_select  = 'wolfire'
   character (len=labellen) :: thermal_profile = 'gaussian3'
   character (len=labellen) :: velocity_profile= 'lineartanh'
+!  character (len=labellen) :: velocity_profile= 'quadratictanh'
   character (len=labellen) :: mass_profile    = 'gaussian3'
   character (len=labellen) :: mass_movement   = 'off'
   character (len=labellen) :: cavity_profile  = 'gaussian3'
@@ -324,7 +331,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.123 2006-07-12 05:41:03 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.124 2006-07-17 11:26:21 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -393,22 +400,39 @@ module Interstellar
 !
       if (cooling_select == 'RB') then
          if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 4.D7, 1.D9 /)
-         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0)   /) / ( m_p_cgs )**2 
-         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.)   /)
+         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, 0D0 /)
+         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2 
+         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
+      else if (cooling_select == 'RBr') then
+         if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
+         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, 0D0 /)
+         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2 
+         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
       else if (cooling_select == 'SS') then
          ! These are the SS et al (2002) coefficients multiplied by m_proton**2
          ! to obtain same units as RB above
          if (lroot) print*,'initialize_interstellar: SS cooling function'
-         coolT_cgs=(/   10D0,   141D0,   313D0,  6102D0,      1D5,       1D9 /)
-         coolH_cgs=(/3.42D16, 9.10D18, 1.11D20,  2.00D8, tiny(0D0), tiny(0D0)/)
-         coolB    =(/   2.12,     1.0,    0.56,    3.67,     -.65 , tiny(0.) /)
+         coolT_cgs=(/   10D0,   141D0,   313D0,  6102D0,      1D5,       1D9, 0D0 /)
+         coolH_cgs=(/3.42D16, 9.10D18, 1.11D20,  2.00D8, tiny(0D0), tiny(0D0), tiny(0D0) /)
+         coolB    =(/   2.12,     1.0,    0.56,    3.67,     -.65 , tiny(0.), tiny(0.) /)
       else if (cooling_select == 'SSr') then
          ! revised to make continuous
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       1D9 /)
-         coolH_cgs=(/3.70D16, 9.46D18, 1.185D20, 2.00D8, 7.96D29, tiny(0D0) /)
-         coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, tiny(0.)  /)
+         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       1D9, 0D0 /)
+         coolH_cgs=(/3.70D16, 9.46D18, 1.185D20, 2.00D8, 7.96D29, tiny(0D0), tiny(0D0) /)
+         coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, tiny(0.) , tiny(0.) /)
+      else if (cooling_select == 'SSrr') then
+         ! revised to make continuous
+         if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
+         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       4D7, 1D10 /)
+         coolH_cgs=(/3.703109927416290D16, &
+                     9.455658188464892D18, &
+                     1.185035244783337D20, &
+                     1.9994576479D8, &
+                     7.96D29, &
+                     1.440602814622207D21, &
+                     0D0 /)
+         coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, 0.5, tiny(0.)  /)
       else if (cooling_select == 'off') then
          if (lroot) print*,'initialize_interstellar: no cooling applied'
          coolT_cgs=tiny(0.D0)
@@ -426,6 +450,7 @@ module Interstellar
         if (TT_SN_max==impossible) TT_SN_max=TT_SN_max_cgs / unit_temperature
         if (rho_SN_min==impossible) rho_SN_min=rho_SN_min_cgs / unit_density
         TT_SN_min=TT_SN_min_cgs / unit_temperature
+        TT_cutoff=TT_cutoff / unit_temperature
         if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
         if (h_SNI==impossible)         h_SNI=h_SNI_cgs / unit_length
         h_SNII=h_SNII_cgs / unit_length
@@ -447,6 +472,8 @@ module Interstellar
         if (mass_SN_progenitor == impossible) &
                 mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass 
         if (width_SN == impossible) width_SN=width_SN_cgs / unit_length 
+        if (SNR_damping_time == impossible) SNR_damping_time=SNR_damping_time_cgs / unit_time 
+        if (SNR_damping_rate == impossible) SNR_damping_rate=SNR_damping_rate_cgs / unit_time 
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -458,6 +485,7 @@ module Interstellar
 !  Slopeyness used for tanh rounding profiles etc.
 !
       sigma_SN=dxmax*3
+      sigma_SN1=1./sigma_SN
 !
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
@@ -667,7 +695,7 @@ module Interstellar
 !
       use Cdata, only: lroot, headtt, lfirst, ldiagnos, ldt, m, n,  &
                        iss, ilnTT, unit_length, unit_velocity, dt1_max, z, &
-                       datadir, pretend_lnTT
+                       datadir, pretend_lnTT, t
 !
       use Sub, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma, gamma11
@@ -677,7 +705,9 @@ module Interstellar
       type (pencil_case) :: p
       
       real, dimension (nx), intent(inout) :: Hmax
-      real, dimension (nx) :: heat,cool
+      real, dimension (nx) :: heat,cool, cool_beta
+      real, dimension (nx) :: damp_profile
+      real :: minqty
 !      real ::  mu
       integer :: i
 !
@@ -701,10 +731,15 @@ module Interstellar
 !  to avoid creating gas too cold to resolve.]
 !
       cool=0.0
-      do i=1,5
-        where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1)) &
+      cool_beta=1.0
+cool_loop: do i=1,6
+        if (lncoolT(i) .ge. lncoolT(i+1)) exit cool_loop
+        where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1))
                cool=cool+exp(lncoolH(i)+p%lnrho+p%lnTT*coolB(i))
-      enddo
+               cool_beta=coolB(i)
+        endwhere
+      enddo cool_loop
+
 !
 !  possibility of temporal smoothing of cooling function
 !
@@ -738,6 +773,9 @@ module Interstellar
          heat = heating_rate_code
       Else If (heating_select == 'wolfire') Then
         heat(1:nx)=GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(p%lnTT))))
+      Else If (heating_select == 'wolfire_min') Then
+        heat(1:nx)=GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(p%lnTT))))
+        heat = max(heat,heating_rate_code)
       Else If (heating_select == 'eql') Then
          If (headtt) Then 
             heating_rate = cool(1)
@@ -752,6 +790,14 @@ module Interstellar
          heat = 0.
       End If
 
+      if (SNR%state==SNstate_damping) then
+        call proximity_SN()        
+        minqty=0.5*(1.+tanh((t-SNR%t_damping)/SNR_damping_rate))
+        damp_profile=((1.-minqty)*0.5*(1.+tanh((sqrt(dr2_SN)-(SNR%radius*2.))*sigma_SN1-2.))+minqty)
+        cool=cool*damp_profile
+        heat=heat*damp_profile
+      endif
+!      where (p%lnTT < TT_cutoff) cool=min(cool,heat)
 !      Print*,'Debug: cool, heat',cool,heat
 !
 !  Average SN heating (due to SNI and SNII)
@@ -786,7 +832,12 @@ module Interstellar
 !    dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 
     if (lfirst.and.ldt) then
-      dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
+        !dt1_max=max(dt1_max,(cool-heat)/(p%ee*cdt_tauc))
+        dt1_max=max(dt1_max,cool/(p%ee*cdt_tauc))
+        !dt1_max=max(dt1_max,(cool-heat)/(p%ee*cdt_tauc)*max(abs(cool_beta-1.),1.))
+      !where ((heat-cool) > 0.) &
+      !  dt1_max=max(dt1_max,heat/(p%ee*cdt_tauc))
+!      dt1_max=max(dt1_max,(cool-0.99*heat)/(p%ee*cdt_tauc)*max(abs(cool_beta-1.)**4,1.))
 !print*,'dt1_max(1),p%ee(1)=',dt1_max(1),p%ee(1)
             !cdt_tauc*(heat)/ee)
       Hmax=Hmax+heat
@@ -806,7 +857,7 @@ module Interstellar
 !      
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
-    subroutine check_SN(f)
+    subroutine check_SN(f,df)
 !
 !  Checks for SNe, and implements appropriately:
 !   relevant subroutines in entropy.f90
@@ -814,6 +865,7 @@ module Interstellar
     use Cdata, only: headtt, t
 !
     real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mvar) :: df
     logical :: l_SNI=.false.   !only allow SNII if no SNI this step
                                !(may not be worth keeping)
 !
@@ -827,13 +879,13 @@ module Interstellar
 !
     if (t < t_settle) return
     call calc_snr_damping_factor(f)
-    if (lSNI) call check_SNI (f,l_SNI)
-    if (lSNII) call check_SNII(f,l_SNI)
+    if (lSNI) call check_SNI (f,df,l_SNI)
+    if (lSNII) call check_SNII(f,df,l_SNI)
     call calc_snr_damping_add_heat(f)
 !
     endsubroutine check_SN
 !***********************************************************************
-    subroutine check_SNI(f,l_SNI)
+    subroutine check_SNI(f,df,l_SNI)
 !
 !  If time for next SNI, then implement, and calculate time of subsequent SNI
 !
@@ -841,6 +893,7 @@ module Interstellar
     use General, only: random_number_wrapper
 !
     real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mvar) :: df
     real, dimension(1) :: franSN
     logical :: l_SNI
     integer :: try_count
@@ -861,7 +914,7 @@ module Interstellar
       else
         call position_SN_gaussianz(f,h_SNII)
       endif
-      call explode_SN(f,1)
+      call explode_SN(f,df,1)
       initial_SNI_done=initial_SNI_done+1
     elseif (t >= t_next_SNI) then
       SNsite%TT=1E20
@@ -893,7 +946,7 @@ module Interstellar
       enddo
        if (try_count.ne.0) then
           SNR%state=SNstate_exploding
-          call explode_SN(f,1)
+          call explode_SN(f,df,1)
        !  pre-determine time for next SNI
           if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",t_next_SNI
           call random_number_wrapper(franSN)   
@@ -905,7 +958,7 @@ module Interstellar
 !
     endsubroutine check_SNI
 !***********************************************************************
-    subroutine check_SNII(f,l_SNI)
+    subroutine check_SNII(f,df,l_SNI)
 !
 !  Check for SNII, via self-regulating scheme.
 !
@@ -915,6 +968,7 @@ module Interstellar
     use EquationOfState, only: eoscalc
 ! 
     real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mvar) :: df
     real, dimension(nx) :: rho,rho_cloud,ss,lnTT,TT,yH
     real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII,dv
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
@@ -994,7 +1048,7 @@ module Interstellar
       SNR%t=t
       SNR%radius=width_SN
       SNR%state=SNstate_exploding
-      call explode_SN(f,2)
+      call explode_SN(f,df,2)
       last_SN_t=0.
     endif
     !
@@ -1017,9 +1071,9 @@ module Interstellar
 !    
 !  Calculate the global (nzgrid) lower z-coordinate
 !
-    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
-    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
-    if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
+    if (lperi(1)) then; x00=xyz0(1)-.5*dx; else; x00=xyz0(1); endif
+    if (lperi(2)) then; y00=xyz0(2)-.5*dy; else; y00=xyz0(2); endif
+    if (lperi(3)) then; z00=xyz0(3)-.5*dz; else; z00=xyz0(3); endif
 !
 !  Pick SN position (SNR%l,SNR%m,SNR%n)
 !
@@ -1429,7 +1483,7 @@ find_SN: do n=n1,n2
 !
     endsubroutine share_SN_parameters
 !***********************************************************************
-    subroutine explode_SN(f,itype_SN)
+    subroutine explode_SN(f,df,itype_SN)
       !
       !  Implement SN (of either type), at pre-calculated position
       !  (This can all be made more efficient, after debugging.)
@@ -1447,15 +1501,17 @@ find_SN: do n=n1,n2
 !      use Slices, only: tvid, nvid
 !
       real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(inout), dimension(mx,my,mz,mvar) :: df
       integer, intent(in) :: itype_SN
 !
       double precision :: c_SN,cmass_SN,cvelocity_SN
       double precision :: mass_shell
       real :: rho_SN_lowest
       double precision :: width_energy, width_mass, width_velocity
-      double precision :: cavity_depth, r_cavity
+      double precision :: cavity_depth, r_cavity, rhom, ekintot
+      double precision ::  rhom_new, ekintot_new
       real :: rho_SN_new,lnrho_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new
-      real :: TT_SN_new,dv
+      real :: TT_SN_new,dv, uu_sedov
 !      
       double precision, dimension(nx) :: deltarho, deltaEE
       double precision, dimension(nx,3) :: deltauu
@@ -1517,15 +1573,6 @@ find_SN: do n=n1,n2
 
       if (lroot) print*,'explode_SN: c_SN         =',c_SN
 !
-! Velocity insertion normalization 
-!
-      if (lSN_velocity) then
-        cvelocity_SN=velocity_SN !/(cnorm_SN(dimensionality)*(width_SN*velocity_width_ratio)**dimensionality)
-        if (lroot) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
-      else 
-        cvelocity_SN=0.
-      endif
-!
 ! Mass insertion normalization 
 !
       if (lSN_mass) then
@@ -1577,6 +1624,26 @@ find_SN: do n=n1,n2
       call eoscalc(ilnrho_ee,real(log(SNsite%rho+cmass_SN)),ee_SN_new, &
                               lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
+!
+!  Calculate explosion site mean density
+!
+      call get_properties(f,SNR,rhom,ekintot)
+      SNR%rhom=rhom
+!
+!  Calculate effective Sedov evolution time
+!
+      SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
+      uu_sedov = 0.4*SNR%radius/SNR%t_sedov
+!
+! Velocity insertion normalization 
+!
+      if (lSN_velocity) then
+        cvelocity_SN=uu_sedov  !/(cnorm_SN(dimensionality)*(width_SN*velocity_width_ratio)**dimensionality)
+        !cvelocity_SN=velocity_SN !/(cnorm_SN(dimensionality)*(width_SN*velocity_width_ratio)**dimensionality)
+        if (lroot) print*,'explode_SN: cvelocity_SN =',cvelocity_SN
+      else 
+        cvelocity_SN=0.
+      endif
 
       if(lroot.and.ip<32) print*, &
          'explode_SN: SNsite%TT, TT_SN_new, TT_SN_min, SNsite%ee =', &
@@ -1723,10 +1790,9 @@ find_SN: do n=n1,n2
 !
        enddo
       enddo
-!
-!  Calculate explosion site mean density
-!
-      call get_mean_density(f,SNR)
+
+      call get_properties(f,SNR,rhom_new,ekintot_new)
+      print*,"TOTAL KINETIC ENERGY CHANGE:",ekintot_new-ekintot
 !
 !  Sum and share diagnostics etc. amongst processors
 !
@@ -1738,10 +1804,6 @@ find_SN: do n=n1,n2
 ! Extra debug - no longer calculated 
 !      EE2_SN=fmpi2(3)*dv; 
 !print*,'EE2_SN = ',EE2_SN
-!
-!  Calculate effective Sedov evolution time
-!
-      SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/SNR%EE)
 !
       if (lroot.and.ip<20) print*, &
            'explode_SN: SNR%MM=',SNR%MM
@@ -1759,6 +1821,7 @@ find_SN: do n=n1,n2
         print*, 'explode_SN:  Total energy = ', SNR%EE
         print*, 'explode_SN:    Total mass = ', SNR%MM
         print*, 'explode_SN:    Sedov time = ', SNR%t_sedov
+        print*, 'explode_SN:    Shell velocity  = ', uu_sedov
          write(1,'(i10,e13.5,2i4,3i10,6e13.5)')  &
           it,t, &
           itype_SN, &
@@ -1770,7 +1833,7 @@ find_SN: do n=n1,n2
 
       if (lSNR_damping) then
         SNR%state=SNstate_damping
-        SNR%t_damping=2.E-5-SNR%t_sedov+t
+        SNR%t_damping=SNR_damping_time-SNR%t_sedov+t
       else
         SNR%state=SNstate_invalid
       endif
@@ -1826,49 +1889,53 @@ find_SN: do n=n1,n2
     subroutine calc_snr_damping_factor(f)
 !
       use Cdata
+      use Mpicomm
+      use Sub
 !
       real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
       integer, dimension(3) :: worst
       real, dimension(nx,3) :: r_vec, r_hat, uu
-      real, dimension(nx) :: ruu, ttc
+      real, dimension(nx) :: uur, ttc
       real, dimension(nx) :: r2, lnrho
-      real :: time_to_centre, radius2
+      real :: radius2, fac, fac2
       integer :: l=0
 !
       if (SNR%state/=SNstate_damping) return
 
-      SNR%damping_factor = SNR_damping
+      if ((t-SNR%t_damping)/SNR_damping_rate >= 2.5) then
+        print*,"No more damping!!"
+        SNR%state=SNstate_invalid
+        return
+      endif
 
-!      worst=-1
-!      radius2=SNR%radius**2
-!      do n=n1,n2; do m=m1,m2
-!        call proximity_SN()
-!        uu = f(l1:l2,m,n,iux:iuz)
-!        lnrho = f(l1:l2,m,n,ilnrho)
-!        r_vec=0.
-!        r_vec(:,1) = x(l1:l2) - SNR%x
-!        r_vec(:,2) = y(m) - SNR%y
-!        r_vec(:,3) = z(n) - SNR%z
-!        call dot2(r_vec,r2)
+
+!      SNR%damping_factor = SNR_damping * 0.5 * (1. - tanh((t-SNR%t_damping)/SNR_damping_rate))
+      
+
+      fac=0.
+      radius2=SNR%radius**2
+      do n=n1,n2; do m=m1,m2
+        call proximity_SN()
+        uu = f(l1:l2,m,n,iux:iuz)
+        lnrho = f(l1:l2,m,n,ilnrho)
+        r_vec=0.
+        r_vec(:,1) = x(l1:l2) - SNR%x
+        r_vec(:,2) = y(m) - SNR%y
+        r_vec(:,3) = z(n) - SNR%z
+        call dot2(r_vec,r2)
 !        r_hat=r_vec/spread(sqrt(r2),2,3)
-!        call dot(r_hat,uu,ruu)
-!        where (ruu .lt. 0)
-!
-!        endwhere 
-!
-!        call dot2(r_vec,r2)
-!        ruu = min(ruu,1E-20) 
-!        ttc=r2/ruu
-!        do l=1,nx  
-!          if (ttc(l).lt.time_to_centre) then
-!            time_to_centre = time_to_centre
-!          endif
-!        enddo
-!        where (dr2_SN .lt. radius2)
-!            ruu=0.
-!        endwhere 
-!
-!      enddo; enddo
+        call dot(r_vec,uu,uur)
+        uur=-uur/r2
+        where (r2 .gt. radius2)
+          uur=0.
+        endwhere 
+        fac=max(fac,maxval(uur))
+      enddo; enddo
+!      fac=fac*2. 
+     call mpiallreduce_max(fac,fac2)
+
+!     print*,"Choose damping factor of:",fac2*2E-4
+      SNR%damping_factor = fac2 * 2E-4 * (1. - tanh((t-SNR%t_damping)/SNR_damping_rate))
 !
 
     endsubroutine calc_snr_damping_factor
@@ -1982,23 +2049,32 @@ find_SN: do n=n1,n2
 !
     endsubroutine calc_snr_damping_add_heat
 !***********************************************************************
-    subroutine get_mean_density(f,remnant)
+    subroutine get_properties(f,remnant,rhom,ekintot)
 !
 !  Calculate integral of mass cavity profile  
 !
 !  22-may-03/tony: coded
 !
-      use Cdata, only: ilnrho,m,n
+      use Cdata
+      use Sub
       use Mpicomm
 !
       real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
-      type (SNRemnant), intent(inout) :: remnant
+      type (SNRemnant) :: remnant
       double precision :: radius2
-      double precision :: rhom
+      double precision :: rhom, ekintot
       integer :: point_count
-      real, dimension(nx) :: rho
+      real, dimension(nx) :: rho, u2
       integer, dimension(nx) :: mask
-      double precision, dimension(2) :: tmp,tmp2
+      double precision, dimension(3) :: tmp,tmp2
+      real :: dv 
+!
+!  Obtain distance to SN
+!
+      dv=1.
+      if (nxgrid/=1) dv=dv*dx
+      if (nygrid/=1) dv=dv*dy
+      if (nzgrid/=1) dv=dv*dz
 !
 !  Sum all points inside 1.5 * SNR radius and divide by number of points 
 !
@@ -2009,6 +2085,8 @@ find_SN: do n=n1,n2
             call proximity_SN
             mask=1
             rho=exp(f(l1:l2,m,n,ilnrho))
+            call dot2(f(l1:l2,m,n,iuu:iuu+2),u2)
+            tmp(3)=tmp(3)+sum(rho*u2)
             where (dr2_SN(1:nx) .gt. radius2) 
               rho(1:nx)=0.
               mask(1:nx)=0
@@ -2018,11 +2096,12 @@ find_SN: do n=n1,n2
          enddo
       enddo
 !
-      call mpireduce_sum_double(tmp,tmp2,2)
-      call mpibcast_double(tmp2,2)
-      remnant%rhom=tmp2(1)/tmp2(2) 
+      call mpireduce_sum_double(tmp,tmp2,3)
+      call mpibcast_double(tmp2,3)
+      ekintot=tmp2(3)*dv
+      rhom=tmp2(1)/tmp2(2) 
 !
-    endsubroutine get_mean_density
+    endsubroutine get_properties
 !***********************************************************************
     subroutine get_lowest_rho(f,radius,rho_lowest)
 !
@@ -2195,7 +2274,7 @@ find_SN: do n=n1,n2
             lnrho=lnrho_old - profile_cavity
             mass_removed=mass_removed+sum(exp(lnrho_old)-exp(lnrho))
           elseif (cavity_profile=="tanh") then
-            profile_cavity=(1.-tanh( (width-sqrt(dr2_SN(1:nx)) ) /sigma_SN ))*0.5
+            profile_cavity=(1.-tanh( (width-sqrt(dr2_SN(1:nx)) ) *sigma_SN1 ))*0.5
             rho=exp(lnrho_old)*profile_cavity
             mass_removed=mass_removed+sum(exp(lnrho_old)-rho)
           endif
@@ -2286,10 +2365,10 @@ find_SN: do n=n1,n2
         lnrho = log(exp(lnrho(1:nx)) + c_shell *    &
            (profile_shell_outer(1:nx) - profile_shell_inner(1:nx)))
       elseif (cavity_profile=="tanh") then
-        profile_cavity=(1.-tanh( (width- sqrt(dr2_SN(1:nx)) )/sigma_SN ))*0.5
+        profile_cavity=(1.-tanh( (width- sqrt(dr2_SN(1:nx)) )*sigma_SN1 ))*0.5
         lnrho = log(exp(lnrho(1:nx))*profile_cavity + c_shell *    &
            (  profile_shell_outer(1:nx) - profile_shell_inner(1:nx)) &
-            + depth*(1.-tanh( (sqrt(dr2_SN(1:nx)) - width )/sigma_SN ))*0.5 &
+            + depth*(1.-tanh( (sqrt(dr2_SN(1:nx)) - width )*sigma_SN1 ))*0.5 &
            )
       endif
       mass_after=sum(exp(lnrho(1:nx)))  
@@ -2317,12 +2396,12 @@ find_SN: do n=n1,n2
         profile_SN=exp(-(dr2_SN(1:nx)/width**2))
       elseif (thermal_profile=="quadratictanh") then
         profile_SN=max(1d0-(dr2_SN(1:nx)/width**2),0d0) &
-            *0.5*(1.-tanh((sqrt(dr2_SN)-width)/sigma_SN))
+            *0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="quartictanh") then
         profile_SN=max(1d0-(dr2_SN(1:nx)/width**2)**2,0d0) &
-            *0.5*(1.-tanh((sqrt(dr2_SN)-width)/sigma_SN))
+            *0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1))
       elseif (thermal_profile=="tanh") then
-        profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)/sigma_SN))*0.5
+        profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5
       endif
 
       deltaEE(1:nx)=c_SN*profile_SN(1:nx) ! spatial energy density 
@@ -2354,7 +2433,7 @@ find_SN: do n=n1,n2
       !
       !  This is normally handled in the mass movement section
       !
-        profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)/sigma_SN))*0.5
+        profile_SN=(1.-tanh((sqrt(dr2_SN(1:nx))-width)*sigma_SN1))*0.5
       endif
 
       deltarho(1:nx)=cmass_SN*profile_SN(1:nx) ! spatial mass density 
@@ -2380,14 +2459,17 @@ find_SN: do n=n1,n2
                    *0.5*(1.-tanh((sqrt(dr2_SN)-(1.1*width))/(0.08*width)))
 !
       elseif (velocity_profile=="lineartanh") then
-        profile_SN=sqrt(dr2_SN)*0.5/width*(1.-tanh((sqrt(dr2_SN)-width)/sigma_SN))
+        profile_SN=max(sqrt(dr2_SN)/width,1.)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.))
+!
+      elseif (velocity_profile=="quadratictanh") then
+        profile_SN=min((dr2_SN/(width**2)),0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.)))
 !
       elseif (velocity_profile=="gaussian3") then
         profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
 !
       elseif (velocity_profile=="cubictanh") then
         profile_SN=(sqrt(dr2_SN/width)**3) &
-               * (1.-tanh((sqrt(dr2_SN)-(1.1*width))/sigma_SN))
+               * (1.-tanh((sqrt(dr2_SN)-(1.1*width))*sigma_SN1))
 !
       elseif (velocity_profile=="gaussian3der") then
         profile_SN=(((sqrt(dr2_SN)**5)/width**6*(1./35.)) &

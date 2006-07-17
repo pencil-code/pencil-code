@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.24 2006-06-23 15:52:01 mee Exp $
+! $Id: nointerstellar.f90,v 1.25 2006-07-17 11:26:21 mee Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.24 2006-06-23 15:52:01 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.25 2006-07-17 11:26:21 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -171,16 +171,17 @@ module Interstellar
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
-    subroutine check_SN(f)
+    subroutine check_SN(f,df)
 !
 !  dummy routine for checking for SNe (interstellar)
 !
     use Cdata
 !
     real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mvar) :: df
 !
 ! (to keep compiler quiet)
-      if (NO_WARN) print*,'SN check',f(1,1,1,1)
+      if (NO_WARN) print*,'SN check',f(1,1,1,1),df(1,1,1,1)
 !
     endsubroutine check_SN
 !***********************************************************************
