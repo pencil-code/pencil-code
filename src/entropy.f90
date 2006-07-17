@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.417 2006-07-12 19:52:03 dintrans Exp $
+! $Id: entropy.f90,v 1.418 2006-07-17 11:37:31 mee Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -159,7 +159,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.417 2006-07-12 19:52:03 dintrans Exp $")
+           "$Id: entropy.f90,v 1.418 2006-07-17 11:37:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2388,7 +2388,7 @@ module Entropy
 !
       use EquationOfState
       use Sub
-      use Io
+      use IO
 !       
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp

@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.76 2006-07-09 08:21:38 ajohan Exp $
+! $Id: particles_sub.f90,v 1.77 2006-07-17 11:37:31 mee Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -106,7 +106,7 @@ module Particles_sub
 !  29-dec-04/anders: adapted from wsnap
 !
       use General
-      use Io
+      use IO
       use Sub
 !
       real, dimension (mpar_loc,mpvar) :: fp

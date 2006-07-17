@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.16 2005-06-27 00:14:19 mee Exp $ 
+! $Id: timeavg.f90,v 1.17 2006-07-17 11:37:31 mee Exp $ 
 
 module Timeavg
 
@@ -104,7 +104,7 @@ module Timeavg
       use General
       use Mpicomm
       use Sub
-      use Io
+      use IO
 !
       character (len=4) :: ch
       character (len=fnlen) :: file

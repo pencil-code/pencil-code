@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext_cs2.f90,v 1.1 2006-02-07 03:26:43 wlyra Exp $
+ ! $Id: global_gg_bext_cs2.f90,v 1.2 2006-07-17 11:37:31 mee Exp $
 
 module Global
 
@@ -293,7 +293,7 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use Io, only: output
+      use IO, only: output
 !
       call output(trim(directory)//'/cs2.dat',cs2,1)
       call output(trim(directory)//'/gg.dat'  ,gg  ,3)

@@ -1,4 +1,4 @@
- ! $Id: global_gg_cs2_nolnrho.f90,v 1.3 2006-02-17 16:01:40 wlyra Exp $
+ ! $Id: global_gg_cs2_nolnrho.f90,v 1.4 2006-07-17 11:37:31 mee Exp $
 
 module Global
 
@@ -293,7 +293,7 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use Io, only: output
+      use IO, only: output
 !
       call output(trim(directory)//'/rho.dat',rho,1)
       call output(trim(directory)//'/nd.dat',nd,1)

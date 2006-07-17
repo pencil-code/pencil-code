@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.11 2005-07-05 16:21:42 mee Exp $
+! $Id: nocosmicray.f90,v 1.12 2006-07-17 11:37:31 mee Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -13,7 +13,7 @@
 !
 !***************************************************************
 
-module CosmicRay
+module Cosmicray
 
   use Cparam
   use Cdata
@@ -51,7 +51,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.11 2005-07-05 16:21:42 mee Exp $")
+           "$Id: nocosmicray.f90,v 1.12 2006-07-17 11:37:31 mee Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -210,4 +210,4 @@ module CosmicRay
     endsubroutine rprint_cosmicray
 !***********************************************************************
 
-endmodule CosmicRay
+endmodule Cosmicray

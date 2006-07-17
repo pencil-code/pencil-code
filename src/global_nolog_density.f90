@@ -1,4 +1,4 @@
- ! $Id: global_nolog_density.f90,v 1.4 2005-11-16 11:20:08 mee Exp $
+ ! $Id: global_nolog_density.f90,v 1.5 2006-07-17 11:37:31 mee Exp $
 
 module Global
 
@@ -260,7 +260,7 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use Io, only: output
+      use IO, only: output
 !
       call output(trim(directory)//'/rho.dat',rho,1)
       call output(trim(directory)//'/nd.dat',nd,1)

@@ -1,4 +1,4 @@
- ! $Id: global_particles.f90,v 1.4 2005-09-17 12:25:02 ajohan Exp $
+ ! $Id: global_particles.f90,v 1.5 2006-07-17 11:37:31 mee Exp $
 
 module Global
 
@@ -266,7 +266,7 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use Io, only: output
+      use IO, only: output
 !
       call output(trim(directory)//'/np.dat',np,1)
       call output(trim(directory)//'/uupsum.dat',uupsum,3)

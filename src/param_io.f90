@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.248 2006-07-13 09:13:29 dobler Exp $ 
+! $Id: param_io.f90,v 1.249 2006-07-17 11:37:31 mee Exp $ 
 
 module Param_IO
 
@@ -18,8 +18,8 @@ module Param_IO
   use Testfield
   use Pscalar
   use Chiral
-  use CosmicRay
-  use CosmicRayFlux
+  use Cosmicray
+  use CosmicrayFlux
   use Dustvelocity
   use Dustdensity
   use Radiation

@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.4 2006-04-28 18:15:32 brandenb Exp $
+! $Id: snapshot.f90,v 1.5 2006-07-17 11:37:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -38,7 +38,7 @@ contains
       use EquationOfState
       use General
       use Sub
-      use Io
+      use IO
 !
 !  the dimension msnap can either be mvar+maux (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
@@ -161,7 +161,7 @@ contains
 !
       use Boundcond
       use Cdata
-      use Io
+      use IO
       use Mpicomm
       use Particles_main
       use Power_spectrum

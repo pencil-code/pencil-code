@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.309 2006-07-14 09:24:50 wlyra Exp $
+! $Id: equ.f90,v 1.310 2006-07-17 11:37:31 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -348,8 +348,8 @@ module Equ
       use Chiral
       use Dustvelocity
       use Dustdensity
-      use CosmicRay
-      use CosmicRayFlux
+      use Cosmicray
+      use CosmicrayFlux
       use Special
       use Boundcond
       use Shear
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.309 2006-07-14 09:24:50 wlyra Exp $")
+           "$Id: equ.f90,v 1.310 2006-07-17 11:37:31 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

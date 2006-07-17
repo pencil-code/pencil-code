@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.10 2006-04-04 13:41:31 theine Exp $
+! $Id: entropy_onefluid.f90,v 1.11 2006-07-17 11:37:31 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.10 2006-04-04 13:41:31 theine Exp $")
+           "$Id: entropy_onefluid.f90,v 1.11 2006-07-17 11:37:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1979,7 +1979,7 @@ module Entropy
 !
       use EquationOfState
       use Sub
-      use Io
+      use IO
 !       
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df

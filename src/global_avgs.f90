@@ -1,4 +1,4 @@
- ! $Id: global_avgs.f90,v 1.4 2006-06-20 13:59:58 wlyra Exp $
+ ! $Id: global_avgs.f90,v 1.5 2006-07-17 11:37:31 mee Exp $
 
 module Global
 
@@ -445,7 +445,7 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use Io, only: output
+      use IO, only: output
 !
       call output(trim(directory)//'/rho.dat',rho,1)
       call output(trim(directory)//'/cs2.dat',cs2,1)
@@ -466,7 +466,7 @@ module Global
 !  10-jan-02/wolf: coded
 !
       use Cdata, only: directory
-      use Io, only: input,input_coarse
+      use IO, only: input,input_coarse
 !
       call input(trim(directory)//'/rho.dat',rho,1,0)
       call input(trim(directory)//'/cs2.dat',cs2,1,0)
