@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.261 2006-07-17 13:43:39 nbabkovs Exp $
+! $Id: density.f90,v 1.262 2006-07-17 23:13:10 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -115,7 +115,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.261 2006-07-17 13:43:39 nbabkovs Exp $")
+           "$Id: density.f90,v 1.262 2006-07-17 23:13:10 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -820,115 +820,100 @@ module Density
       H_disk_min=Lxyz(1)/(nxgrid-1)
       L_disk_min=Lxyz(3)/(nzgrid-1)
 
-      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
-      if (H_disk .LT. H_disk_min) hdisk=0.
+      if (H_disk .gt. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+      if (H_disk .lt. H_disk_min) hdisk=0.
 
-      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
-      if (L_disk .LT. L_disk_min) ldisk=0.
+      if (L_disk .gt. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .lt. L_disk_min) ldisk=0.
 
       step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
       step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
 
-
-      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_star)
-      
-      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_disk)
-   
-    
-      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
-        f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
-        f(:,:,step_length+3+1:mz,ilnrho)=log(rho_star)
-      endif
-
-
-      if (sharp) then
-        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
-          f(1:step_width+3,:,:,ilnrho)=log(rho_star)
-          f(step_width+3+1:mx,:,:,ilnrho)=log(rho_disk)
-        endif
-
-        if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
-          if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-            f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_star)
-            f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_disk)
-            f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
-          end if
-        end if
-      end if 
-
-     if (smooth) then
-
-        ln_ro_r=log(rho_disk)
-        ln_ro_l=log(rho_star)
-        ln_ro_u=log(rho_surf)
-
-        ll=Lxyz(3)-ldisk
-
-      if (nxgrid .GT. 1 .AND. nzgrid .GT. 1 ) then
-   
-     !  lnrho_2d(:,:)=(zz(l1,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
-
-     !  do i=1,l1
-     !   f(i,:,:,ilnrho)=lnrho_2d(:,:)
-     !  enddo 
-  
-     !  do i=l1+1,mx
-     !   f(i,:,:,ilnrho)=(xx(i,:,:)-xx(l1,:,:))/Lxyz(1)*(ln_ro_l-lnrho_2d(:,:))+ln_ro_l 
-     !  enddo        
-
-     !  do i=1,H_disk_point+4
-     !   f(i,:,:,ilnrho)=ln_ro_r
-     !  enddo 
-  
-     !  do i=H_disk_point+5,mx
-     !    f(i,:,:,ilnrho)=ln_ro_u 
-     !  enddo    
-
-
-      !if (H_disk.GT.0.) f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+(1.-(xx(:,:,:)/H_disk)**2)
-      !  if (H_disk.GT.0.) 
-      !f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
-       
-    
-
-
-
-
-
-       do i=1,H_disk_point_int+4
-     
-        f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
-    ! f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*mu/Rgas/T_star)
- 
-       enddo 
-
-		   
-		   
-       do i=H_disk_point_int+5,mx
-       
-	 
-	f(i,:,:,ilnrho)=f(H_disk_point_int+4,:,:,ilnrho)
-
-    ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
-    ! f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point+4)**2*mu/Rgas/T_star)
-     
-     
-        enddo    
-
-
-      else 
-   
-         if (nzgrid .GT. 1) then 
-
-           f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
-
-         else
-
-         if (H_disk.GT.0.) f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
-
-         endif 
-      endif     
-    end if
+!ajwm
+!ajwm  CANNOT ADD ARBITRARY THINGS TO THE PUBLIC INTERFACE OF SPECIAL MODULES!!
+!ajwm  This breaks ALL auto-tests. Please run auto-test BEFORE committing changes!
+!ajwm
+!ajwm      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_star)
+!ajwm      
+!ajwm      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_disk)
+!ajwm   
+!ajwm    
+!ajwm      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
+!ajwm        f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
+!ajwm        f(:,:,step_length+3+1:mz,ilnrho)=log(rho_star)
+!ajwm      endif
+!ajwm
+!ajwm
+!ajwm      if (sharp) then
+!ajwm        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+!ajwm          f(1:step_width+3,:,:,ilnrho)=log(rho_star)
+!ajwm          f(step_width+3+1:mx,:,:,ilnrho)=log(rho_disk)
+!ajwm        endif
+!ajwm
+!ajwm        if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+!ajwm          if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+!ajwm            f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_star)
+!ajwm            f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_disk)
+!ajwm            f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
+!ajwm          end if
+!ajwm        end if
+!ajwm      end if 
+!ajwm
+!ajwm     if (smooth) then
+!ajwm
+!ajwm        ln_ro_r=log(rho_disk)
+!ajwm        ln_ro_l=log(rho_star)
+!ajwm        ln_ro_u=log(rho_surf)
+!ajwm
+!ajwm        ll=Lxyz(3)-ldisk
+!ajwm
+!ajwm        if (nxgrid .GT. 1 .AND. nzgrid .GT. 1 ) then
+!ajwm   
+!ajwm        !  lnrho_2d(:,:)=(zz(l1,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+!ajwm
+!ajwm        !  do i=1,l1
+!ajwm        !   f(i,:,:,ilnrho)=lnrho_2d(:,:)
+!ajwm        !  enddo 
+!ajwm     
+!ajwm        !  do i=l1+1,mx
+!ajwm        !   f(i,:,:,ilnrho)=(xx(i,:,:)-xx(l1,:,:))/Lxyz(1)*(ln_ro_l-lnrho_2d(:,:))+ln_ro_l 
+!ajwm        !  enddo        
+!ajwm
+!ajwm        !  do i=1,H_disk_point+4
+!ajwm        !   f(i,:,:,ilnrho)=ln_ro_r
+!ajwm        !  enddo 
+!ajwm     
+!ajwm        !  do i=H_disk_point+5,mx
+!ajwm        !    f(i,:,:,ilnrho)=ln_ro_u 
+!ajwm        !  enddo    
+!ajwm
+!ajwm
+!ajwm        !if (H_disk.GT.0.) f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+(1.-(xx(:,:,:)/H_disk)**2)
+!ajwm        !  if (H_disk.GT.0.) 
+!ajwm        !f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
+!ajwm
+!ajwm        do i=1,H_disk_point_int+4
+!ajwm     
+!ajwm          f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
+!ajwm        ! f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*mu/Rgas/T_star)
+!ajwm 
+!ajwm        enddo 
+!ajwm
+!ajwm        do i=H_disk_point_int+5,mx
+!ajwm 
+!ajwm          f(i,:,:,ilnrho)=f(H_disk_point_int+4,:,:,ilnrho)
+!ajwm
+!ajwm          ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
+!ajwm          ! f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point+4)**2*mu/Rgas/T_star)
+!ajwm        enddo    
+!ajwm      else 
+!ajwm         if (nzgrid .GT. 1) then 
+!ajwm           f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+!ajwm         else
+!ajwm           if (H_disk.GT.0.) f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
+!ajwm         endif 
+!ajwm      endif     
+!ajwm    end if
    
   
 
@@ -1435,7 +1420,8 @@ module Density
 
 
 !
-      if (lspecial) call special_calc_density(f,df,p)
+!ajwm  Cannot alter special interface!!
+      if (lspecial) call special_calc_density(df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.

@@ -16,8 +16,11 @@
   public :: special_calc_entropy
   public :: special_calc_magnetic
 
+!Tony
+! Cannot just add things to the public interface!!
+! this breaks all the auto tests!
+!
 !Natalia
-
-   public :: rho_disk, rho_star, rho_surf
+!   public :: rho_disk, rho_star, rho_surf
 
 

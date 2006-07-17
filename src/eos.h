@@ -35,7 +35,10 @@
   public :: isothermal_entropy,isothermal_lnrho_ss
 
 !ajwm SHOULDN'T BE PUBLIC
-  public :: cs0,cs20,lnrho0,rho0,mu,Rgas
+  public :: cs0,cs20,lnrho0,rho0
+!Shouldn't be public, certainly means don't add anymore!!
+!,mu,Rgas    BREAKS THE AUTO-TEST
+
   public :: gamma,gamma1,gamma11,cs2top,cs2bot
   public :: beta_glnrho_global, beta_glnrho_scaled
   public :: cs2cool
