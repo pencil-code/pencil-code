@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.29 2006-07-02 11:54:07 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.30 2006-07-17 23:26:16 mee Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -268,15 +268,16 @@ my (%opts);	# Variables written by GetOptions
 GetOptions(\%opts,
 	   qw( -h   --help
 	       -o=s --output=s
+	       -M=s --metatype=s
                                ));
 
 die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
+my $meta_type = ($opts{M} || $opts{metatype} || "");
 my $outfile = ($opts{o} || $opts{output} || "-");
 open(OUT, "> $outfile") or die "Can't open $outfile for writing";
-open(OUT_PENCIL, "> cparam_pencils.inc") or die "Can't open cparam_pencils.inc
- for writing";
-open(OUT_PENC_INIT, "> pencil_init.inc") or die "Can't open pencil_init.inc
+open(OUT_PENCIL, "> cparam_pencils$meta_type.inc") or die "Can't open cparam_pencils$meta_type.inc for writing";
+open(OUT_PENC_INIT, "> pencil_init$meta_type.inc") or die "Can't open pencil_init$meta_type.inc
  for writing";
 
 # Cycle through files (later files will overwrite effect of earlier files)
