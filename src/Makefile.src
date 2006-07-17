@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.206 2006-07-14 10:31:47 dobler Exp $
+### $Id: Makefile.src,v 1.207 2006-07-17 11:33:04 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -572,7 +572,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 
 technical=cparam.o cdata.o particles_cdata.o messages.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o persist.o
 physics=$(GLOBAL).o $(VISCOSITY).o $(SHOCK).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(POISSON).o $(SELFGRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(EOS).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o $(COSMICRAYFLUX).o $(TESTFIELD).o $(PARTICLES).o $(PARTICLES_RADIUS).o $(PARTICLES_NUMBER).o $(PLANET).o $(PARTICLES_SELFGRAVITY).o
-comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o $(MPICOMM_FIX).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o
+comm_deps=$(technical) sub.o $(IO).o snapshot.o param_io.o $(MPICOMM_FIX).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o $(PARTICLES_MAIN).o $(PARTICLES_SUB).o border_profiles.o
 start_deps_f90=$(comm_deps) $(GRID).o
 start_deps=$(start_deps_f90) $(DEBUG).o
 run_deps_f90=$(comm_deps) equ.o $(TIMESTEP).o
@@ -642,7 +642,7 @@ pacx-makefile: Makefile.src
 	cp pacx-Makefile Makefile
 depend dep: 
 	rm -f Makefile.depend
-	scripts/mkdep start.f90 run.f90 equ.f90 $(TIMESTEP).f90 $(comm_deps:.o=.f90) > Makefile.depend
+	scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 $(TIMESTEP).f90 debug_c.c $(GRID).f90 $(comm_deps:.o=.f90)  > Makefile.depend
 # Generate files for automated debugging and testing etc.
 start_buildtime:
 	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
@@ -737,8 +737,8 @@ runfast.x: $(run_fast_deps) Makefile.local
 startfast.x: $(start_fast_deps) Makefile.local
 	$(FC) -o startfast.x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LDMPI) 
 
-shock_finder.x: $(shock_finder) Makefile.local
-	$(LD) $(LDFLAGS) $(shock_finder) $(LDMPI) $(LIBSIG) -o shock_finder.x 
+$(SHOCK_FINDER).x: $(shock_finder) Makefile.local
+	$(LD) $(LDFLAGS) $(shock_finder) $(LDMPI) $(LIBSIG) -o $(SHOCK_FINDER).x 
 
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
