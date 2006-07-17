@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.24 2006-07-17 11:30:02 mee Exp $
+### $Id: Makefile.depend,v 1.25 2006-07-17 12:21:24 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -46,7 +46,7 @@ filter.o:    filter.f90 cdata.o sub.o boundcond.o
 initcond.o:  initcond.f90 cdata.o $(MPICOMM_FIX).o general.o sub.o $(EOS).o
 kepvor.o : kepvor.f90 cdata.o general.o
 noinitcond_spec.o: noinitcond_spec.f90 cdata.o general.o
-$(TIMESTEP).o:  $(TIMESTEP).f90 cdata.o $(MPICOMM_FIX).o equ.o $(FORCING).o
+$(TIMESTEP).o:  $(TIMESTEP).f90 cdata.o $(MPICOMM_FIX).o equ.o $(FORCING).o border_profiles.o
 persist.o:    persist.f90 cdata.o general.o $(INTERSTELLAR).o $(FORCING).o
 snapshot.o:    snapshot.f90 cdata.o $(MPICOMM_FIX).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o $(RADIATION).o $(EOS).o $(MAGNETIC).o persist.o $(PARTICLES_MAIN).o
 messages.o:    messages.f90 cdata.o $(MPICOMM_FIX).o
