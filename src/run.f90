@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.229 2006-06-16 19:11:18 ajohan Exp $
+! $Id: run.f90,v 1.230 2006-07-17 11:27:43 mee Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.229 2006-06-16 19:11:18 ajohan Exp $")
+             "$Id: run.f90,v 1.230 2006-07-17 11:27:43 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -248,11 +248,6 @@
 !  save spectrum snapshot
 !
         if (dspec/=impossible) call powersnap(f)
-!
-!  DOCUMENT ME
-!  AB: should check whether this can come under initialize_modules
-!
-        call border_profiles()
 !
 !  Initialize pencils in the pencil_case...
 !  wd: This has nothing to do with pencil_consistency_check, right? So we
@@ -435,7 +430,7 @@
 !
 !  Check for SNe, and update f if necessary (see interstellar.f90)
 !
-          if (linterstellar) call check_SN(f)
+          if (linterstellar) call check_SN(f,df)
 !
           if (lout.and.lroot.and.(idiag_walltime/=0 .or. max_walltime/=0.)) then
             time2=mpiwtime()
