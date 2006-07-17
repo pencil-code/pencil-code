@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.260 2006-07-10 04:50:29 nbabkovs Exp $
+! $Id: density.f90,v 1.261 2006-07-17 13:43:39 nbabkovs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -27,11 +27,13 @@ module Density
                              gamma,gamma1,cs2top,cs2bot, &
                              mpoly,beta_glnrho_global
 
+  use Special 
+
   implicit none
 
   include 'density.h'
 
-  real :: ampllnrho=0.,widthlnrho=.1,rho_left=1.,rho_right=1., rho_up=1.
+  real :: ampllnrho=0.,widthlnrho=.1,rho_left=1.,rho_right=1.
   real :: cdiffrho=0.,diffrho=0.,diffrho_hyper3=0.,diffrho_shock=0.
   real :: lnrho_const=0., rho_const=1.
   real :: amplrho=0, phase_lnrho=0.0
@@ -47,24 +49,25 @@ module Density
   logical :: ldiff_hyper3lnrho=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: sharp=.false., smooth=.false.
-  logical :: lmass_source_NS=.false. 
- 
+
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=4) :: iinit_str
   complex :: coeflnrho=0.
+ 
+  integer :: H_disk_point_int=0
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
-       rho_left,rho_right,rho_up,lnrho_const,rho_const,cs2bot,cs2top, &
+       rho_left,rho_right,lnrho_const,rho_const,cs2bot,cs2top, &
        radius_lnrho,eps_planet,                      &
        b_ell,q_ell,hh0,rbound,                       &
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas, sharp, smooth, lmass_source_NS
+       wdamp,plaw,lcontinuity_gas, sharp, smooth, H_disk_point_int
      
 
   namelist /density_run_pars/ &
@@ -72,7 +75,7 @@ module Density
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw,lcontinuity_gas, sharp, smooth, lmass_source_NS
+       lnrho_const,plaw,lcontinuity_gas, sharp, smooth
   
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -112,7 +115,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.260 2006-07-10 04:50:29 nbabkovs Exp $")
+           "$Id: density.f90,v 1.261 2006-07-17 13:43:39 nbabkovs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -827,37 +830,37 @@ module Density
       step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
 
 
-      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_left)
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_star)
       
-      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_right)
+      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_disk)
    
     
       if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
-        f(:,:,1:step_length+3,ilnrho)=log(rho_right)
-        f(:,:,step_length+3+1:mz,ilnrho)=log(rho_left)
+        f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
+        f(:,:,step_length+3+1:mz,ilnrho)=log(rho_star)
       endif
 
 
       if (sharp) then
         if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
-          f(1:step_width+3,:,:,ilnrho)=log(rho_left)
-          f(step_width+3+1:mx,:,:,ilnrho)=log(rho_right)
+          f(1:step_width+3,:,:,ilnrho)=log(rho_star)
+          f(step_width+3+1:mx,:,:,ilnrho)=log(rho_disk)
         endif
 
         if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
           if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
-            f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_left)
-            f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_right)
-            f(:,:,1:step_length+3,ilnrho)=log(rho_right)
+            f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_star)
+            f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_disk)
+            f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
           end if
         end if
       end if 
 
      if (smooth) then
 
-        ln_ro_r=log(rho_right)
-        ln_ro_l=log(rho_left)
-        ln_ro_u=log(rho_up)
+        ln_ro_r=log(rho_disk)
+        ln_ro_l=log(rho_star)
+        ln_ro_u=log(rho_surf)
 
         ll=Lxyz(3)-ldisk
 
@@ -886,13 +889,32 @@ module Density
       !  if (H_disk.GT.0.) 
       !f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
        
-       do i=1,H_disk_point+4
+    
+
+
+
+
+
+       do i=1,H_disk_point_int+4
+     
         f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
+    ! f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*mu/Rgas/T_star)
+ 
        enddo 
-  
-       do i=H_disk_point+5,mx
-         f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
-      enddo    
+
+		   
+		   
+       do i=H_disk_point_int+5,mx
+       
+	 
+	f(i,:,:,ilnrho)=f(H_disk_point_int+4,:,:,ilnrho)
+
+    ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
+    ! f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point+4)**2*mu/Rgas/T_star)
+     
+     
+        enddo    
+
 
       else 
    
@@ -1135,7 +1157,7 @@ module Density
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
 
       if (laccelerat_zone)  lpenc_requested(i_rho)=.true.
-      if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
+    !  if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
@@ -1349,10 +1371,6 @@ module Density
 !
       if (lmass_source) call mass_source(f,df)
 !
-!  mass sources and sinks for the boundary layer on NS in 1D approximation
-!
-      if (lmass_source_NS) call mass_source_NS(f,df,p%rho)
-!
 !  Mass diffusion
 !
       fdiff=0.0
@@ -1412,121 +1430,12 @@ module Density
           print*,'dlnrho_dt: max(diffus_diffrho) =', maxval(diffus_diffrho)
 !
 !
-!
-! Natalia
-! deceleration zone in a case of a Keplerian disk
-
- 
-
-       if (laccelerat_zone) then
-     
-         
-         if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
-       
-            if (lnstar_entropy) then   
-             
-             if (nxgrid .LE. 1) then       
-              if (lnstar_T_const) then
-              else            
-              endif    
-
-             else
-
-         ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
-         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n-1,ilnrho))
-
-
-         !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
-         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
-        
-        !df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -log(rho_up)-(1.-(x(1:H_disk_point)/H_disk)**2))
-
-          df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-          -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-          -log(rho_up)-(1.-(x(1:H_disk_point)/H_disk)))
-     
-    ! do i=1,H_disk_point+4
-    !         df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-    !               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i+1,m,n,ilnrho))
-    ! enddo    
-         df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-        -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-log(rho_up)-(1.-(x(H_disk_point+1)/H_disk)))
-
-        ! df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-        ! -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
-
-      
-      
-             endif 
-           endif
-           
-
-
-         endif 
-
-       if (ldecelerat_zone) then
-        
-         if (n .LE. ac_dc_size+4 .AND. dt .GT. 0.) then
-       
-            if (lnstar_entropy) then          
-              if (lnstar_T_const) then
-               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                -1./p%rho(:)/(5.*dt) &
-                *(p%rho(:)-rho_left*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
-               else            
-
-              !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-              !           -1./p%rho(:)/(5.*dt) &
-              !   *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
-              ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-              !  -1./p%rho(:)/(5.*dt) &
-              !  *(p%rho(:)-rho_left*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
-              
-           !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-           !   -1./(5.*dt)*(p%rho(:)-rho_left)/p%rho(:)
-          
-            endif    
-
-            else
-               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                         -1./p%rho(:)/(5.*dt) &
-                 *(p%rho(:)-rho_left*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
-            endif
-      
-          endif
-       endif
-           
-     endif  
-
-! surface zone in a case of a Keplerian disk
-
-      if (lsurface_zone) then
-
-
-          if ( dt .GT.0.) then
-            l_sz=l2-5
-
-          !  df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
-          !       -1./(5.*dt)*(1.-rho_up/exp(f(l_sz:l2,m,n,ilnrho)))
-
-           
-           do i=l_sz,l2   
-             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-                   -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
-           enddo
-
-
-         endif
-      endif
-
 
 
 
 
 !
-      if (lspecial) call special_calc_density(df,p)
+      if (lspecial) call special_calc_density(f,df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
@@ -1858,57 +1767,6 @@ module Density
 !     df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+f(l1:l2,m,n,iuy)*fext
 !
     endsubroutine mass_source
-!***********************************************************************
-    subroutine mass_source_NS(f,df,rho)
-!
-!  add mass sources and sinks
-!
-!  2006/Natalia
-!
-      use Cdata
-     
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
- !     real, dimension(nx) :: fint,fext,pdamp
-      real  ::  sink_area, V_acc, V_0, rho_0, ksi, integral_rho=0., flux
-      integer :: sink_area_points=50, i
-      integer :: idxz  
-      real, dimension (nx), intent(in) :: rho 
 
-       sink_area=Lxyz(3)/(nzgrid-1.)*sink_area_points
-
-       !
-       ! No clue what this index is good for, but nzgrid-30 is not a
-       ! valid index for e.g. 2-d runs, so sanitize it to avoid
-       ! `Array reference at (1) is out of bounds' with g95 -Wall
-       !
-       idxz = min(nzgrid-30,n2)
-
-       V_0=f(4,4,idxz,iuz)
-       rho_0=exp(f(4,4,idxz,ilnrho))
-       flux=accretion_flux
-   
-       flux=V_0*rho_0     
-
-      ! V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
-       
-      !   
-      !  ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
-       ksi=1./sink_area
-
-       if ( 25 .GT. n .AND. n .LT. sink_area_points+25) then 
-         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-flux*ksi/rho(:)
-       endif
- 
-       if ( n .EQ. 25 .OR. n .EQ. sink_area_points+25) then
-         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
-       endif
-
-      
-       if (headtt) print*,'dlnrho_dt: mass source*rho = ', flux/sink_area
-    
-
-
-     endsubroutine mass_source_NS
 !***********************************************************************
 endmodule Density

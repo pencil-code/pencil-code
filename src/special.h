@@ -16,4 +16,8 @@
   public :: special_calc_entropy
   public :: special_calc_magnetic
 
+!Natalia
+
+   public :: rho_disk, rho_star, rho_surf
+
 

@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.1 2006-06-15 08:35:21 mee Exp $
+! $Id: neutron_star.f90,v 1.2 2006-07-17 13:43:39 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -55,21 +55,28 @@ module Special
   use Cparam
   use Cdata
   use Messages
+!  use Density, only: rho_up
+  use EquationOfState
 
   implicit none
 
   include 'special.h'
   
-  ! input parameters
+  ! input parameters 
+ ! logical :: sharp=.false., smooth=.false.
+
+  logical :: lmass_source_NS=.false. 
   logical :: leffective_gravity=.false.
 
+ real :: rho_star=1.,rho_disk=1., rho_surf=1.
+
   namelist /special_init_pars/ &
-       leffective_gravity
+       lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf!,sharp
 
   ! run parameters
 
   namelist /special_run_pars/ &
-       leffective_gravity
+      lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf
 
 !!
 !! Declare any index variables necessary for main or 
@@ -93,6 +100,8 @@ module Special
 !  6-oct-03/tony: coded
 !
       use Cdata
+   !   use Density
+      use EquationOfState
       use Mpicomm
 !
       logical, save :: first=.true.
@@ -120,11 +129,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.1 2006-06-15 08:35:21 mee Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.2 2006-07-17 13:43:39 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.1 2006-06-15 08:35:21 mee Exp $")
+           "$Id: neutron_star.f90,v 1.2 2006-07-17 13:43:39 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -148,7 +157,10 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Cdata
+      use Cdata 
+   !   use Density
+      use EquationOfState
+
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !!
@@ -166,6 +178,8 @@ module Special
 !  06-oct-2003/tony: coded
 !
       use Cdata
+   !   use Density
+      use EquationOfState
       use Mpicomm
       use Sub
 !
@@ -200,7 +214,10 @@ module Special
 !
 !   24-nov-04/tony: coded
 !
-      use Cdata
+      use Cdata  
+  !    use Density
+      use EquationOfState
+      
 !
       real, dimension (mx,my,mz,mvar+maux) :: f       
       type (pencil_case) :: p
@@ -337,7 +354,7 @@ endsubroutine read_special_run_pars
 
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_calc_density(df,p)
+    subroutine special_calc_density(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -348,10 +365,13 @@ endsubroutine read_special_run_pars
 !   06-oct-03/tony: coded
 !
       use Cdata
-      
+     ! use Density    
+     ! use EquationOfState
+    
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
+      integer :: i, l_sz, tmp_int
 !!
 !!  SAMPLE IMPLEMENTATION
 !!     (remember one must ALWAYS add to df)
@@ -360,6 +380,155 @@ endsubroutine read_special_run_pars
 !!  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + SOME NEW TERM
 !!
 !!
+
+
+!  mass sources and sinks for the boundary layer on NS in 1D approximation
+!
+      if (lmass_source_NS) call mass_source_NS(f,df,p%rho)
+!
+! Natalia
+! deceleration zone in a case of a Keplerian disk
+
+
+
+       if (laccelerat_zone) then
+     
+         
+         if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
+       
+            if (lnstar_entropy) then   
+             
+             if (nxgrid .LE. 1) then       
+              if (lnstar_T_const) then
+              else            
+              endif    
+
+             else
+
+         ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n-1,ilnrho))
+
+
+         !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
+        
+        !df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+        !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+        !  -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)**2))
+
+        !  df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+        !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+        !  -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)))
+     
+    ! do i=1,H_disk_point+4
+    !         df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+    !               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i+1,m,n,ilnrho))
+    ! enddo    
+    !     df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+    !-1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)
+    !-log(rho_surf)-(1.-(x(H_disk_point+1)/H_disk)))
+       
+        ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) & 
+        !   -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+	!   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
+			     
+
+
+
+        ! df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+        ! -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
+
+           if (H_disk_point .GE. nxgrid) then
+	  
+	     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+	     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+             -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
+			   
+			   
+	   
+	   else
+	   
+	 !  print*,'hjhjhjhjhjh'
+	   
+         df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+         -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+     	 -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*mu/Rgas/T_star))
+			
+	  
+			      
+             df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+        	     -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
+	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*mu/Rgas/T_star))
+	    endif
+						    
+             endif 
+           endif
+           
+
+
+         endif 
+
+       if (ldecelerat_zone) then
+        
+         if (n .LE. ac_dc_size+4 .AND. dt .GT. 0.) then
+       
+            if (lnstar_entropy) then          
+              if (lnstar_T_const) then
+               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                -1./p%rho(:)/(5.*dt) &
+                *(p%rho(:)-rho_star*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
+               else            
+
+              !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+              !           -1./p%rho(:)/(5.*dt) &
+              !   *(p%rho(:)-rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+              ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+              !  -1./p%rho(:)/(5.*dt) &
+              !  *(p%rho(:)-rho_star*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
+              
+           !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+           !   -1./(5.*dt)*(p%rho(:)-rho_star)/p%rho(:)
+          
+            endif    
+
+            else
+               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                         -1./p%rho(:)/(5.*dt) &
+                 *(p%rho(:)-rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+            endif
+      
+          endif
+       endif
+           
+     endif  
+
+! surface zone in a case of a Keplerian disk
+
+      if (lsurface_zone) then
+
+
+          if ( dt .GT.0.) then
+            l_sz=l2-5
+
+          !  df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
+          !       -1./(5.*dt)*(1.-rho_surf/exp(f(l_sz:l2,m,n,ilnrho)))
+
+           
+           do i=l_sz,l2   
+             df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+                   -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
+           enddo
+
+
+         endif
+      endif
+
+
+
+
+
+
+
 
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
@@ -396,8 +565,14 @@ endsubroutine read_special_run_pars
         if (headtt) &
           print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
 
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
+              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
                    M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
+          if (nxgrid .GT. 1) then  
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- &
+                   M_star/z(n)**2/sqrt(z(n)**2+x(l1:l2)**2)*x(l1:l2)*(z(n)-R_star)/(Lxyz(1)*0.5)
+       
+          endif
+
       endif
 
 ! acceleration zone in a case of a Keplerian disk
@@ -579,7 +754,61 @@ endsubroutine read_special_run_pars
       if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_entropy
-!***********************************************************************
+!*************************************************************************
+ 
+!*********************************************************************
+    subroutine mass_source_NS(f,df,rho)
+!
+!  add mass sources and sinks
+!
+!  2006/Natalia
+!
+      use Cdata
+     
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+ !     real, dimension(nx) :: fint,fext,pdamp
+      real  ::  sink_area, V_acc, V_0, rho_0, ksi, integral_rho=0., flux
+      integer :: sink_area_points=50, i
+      integer :: idxz  
+      real, dimension (nx), intent(in) :: rho 
+
+       sink_area=Lxyz(3)/(nzgrid-1.)*sink_area_points
+
+       !
+       ! No clue what this index is good for, but nzgrid-30 is not a
+       ! valid index for e.g. 2-d runs, so sanitize it to avoid
+       ! `Array reference at (1) is out of bounds' with g95 -Wall
+       !
+       idxz = min(nzgrid-30,n2)
+
+       V_0=f(4,4,idxz,iuz)
+       rho_0=exp(f(4,4,idxz,ilnrho))
+       flux=accretion_flux
+   
+       flux=V_0*rho_0     
+
+      ! V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
+       
+      !   
+      !  ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
+       ksi=1./sink_area
+
+       if ( 25 .GT. n .AND. n .LT. sink_area_points+25) then 
+         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-flux*ksi/rho(:)
+       endif
+ 
+       if ( n .EQ. 25 .OR. n .EQ. sink_area_points+25) then
+         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
+       endif
+
+      
+       if (headtt) print*,'dlnrho_dt: mass source*rho = ', flux/sink_area
+    
+
+
+     endsubroutine mass_source_NS
+
 !***********************************************************************
 endmodule Special
 
