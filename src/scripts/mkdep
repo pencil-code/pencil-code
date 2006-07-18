@@ -70,7 +70,7 @@ do
     if [ "${file%.c}" != "$file" ]; then
       echo "${file%.c}.o: $file" 
     else
-      used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $file | sort | uniq -i `
+      used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $file | sort | tr '[:lower:]' '[:upper:]' | uniq `
       depends=`echo $used | perl -npe "$script"`
       includes=`perl -ne "print \"${dollar}1 \" if m/^\s*include\s*\\'([\S]*\\.(inc|local))\\'/ ;" $file `
 
