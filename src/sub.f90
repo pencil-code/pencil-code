@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.242 2006-07-13 08:59:35 dobler Exp $ 
+! $Id: sub.f90,v 1.243 2006-07-18 19:23:49 wlyra Exp $ 
 
 module Sub 
 
@@ -377,7 +377,7 @@ module Sub
 !
     endsubroutine sum_weighted_name
 !***********************************************************************
-    subroutine sum_lim_mn_name(a,iname,norm,lnorm)
+    subroutine sum_lim_mn_name(a,iname)
 !
 !  Successively calculate integral of a, which is supplied at each call.
 !  Just takes values between r_int < r < r_ext
@@ -391,17 +391,14 @@ module Sub
       real, dimension (nx) :: a,r,aux
       real :: sumaux,dsv
       integer :: iname,i
-      real, optional :: norm
-      logical, optional :: lnorm
 !
       dsv=dx*dy
       if (nzgrid/=1) dsv=dx*dy*dz
 !
       if (iname /= 0) then 
 !
-        r = sqrt(x(l1:l2)**2+y(m)**2)
         do i=1,nx
-           if ((r(i) .le. r_ext) .and. (r(i) .ge. r_int)) then
+           if ((rcyl_mn(i) .le. r_ext).and.(rcyl_mn(i) .ge. r_int)) then
               aux(i) = a(i) 
             else
               aux(i) = 0.
@@ -409,18 +406,6 @@ module Sub
         enddo
 !
         sumaux = sum(aux)
-!
-        if (present(lnorm)) then
-!
-! Normalize by the size of the z-box if 3D cylindrical
-!
-           if ((nzgrid/=1).and.(lcylindrical)) then
-              norm = norm*Lxyz(3)
-           endif
-!
-           sumaux = sumaux / norm
-        endif
-!
         sumaux = sumaux * dsv
         call surf_mn_name(sumaux,iname)
 !
