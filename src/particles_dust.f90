@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.116 2006-07-08 17:55:51 ajohan Exp $
+! $Id: particles_dust.f90,v 1.117 2006-07-18 17:31:39 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -103,7 +103,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.116 2006-07-08 17:55:51 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.117 2006-07-18 17:31:39 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -318,25 +318,46 @@ k_loop:   do while (.not. (k>npar_loc))
               if (k>npar_loc) exit k_loop
             enddo; enddo; enddo
           enddo k_loop
- 
+
         case ('equidistant')
           if (lroot) print*, 'init_particles: Particles placed equidistantly'
-!  Number of particles in each direction.          
           fac=1.0/dimensionality
           dx_par=0.0; dy_par=0.0; dz_par=0.0
           fp(1,ixp)=x(l1); fp(1,iyp)=y(m1); fp(1,izp)=z(n1)
+!  Number of particles in x-direction.          
           if (nxgrid/=1) then
-            npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**fac
+            if (nygrid/=1) then
+              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(2))**fac
+            elseif (nzgrid/=1) then
+              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(3))**fac
+            else
+              npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**fac
+            endif
             dx_par=Lxyz_loc(1)/npar_loc_x
             fp(1,ixp) = xyz0_loc(1)+dx_par/2
           endif
+!  Number of particles in y-direction.          
           if (nygrid/=1) then
+            if (nxgrid/=1) then
+              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(1))**fac
+            elseif (nzgrid/=1) then
+              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(3))**fac
+            else
+              npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**fac
+            endif
             npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**fac
             dy_par=Lxyz_loc(2)/npar_loc_y
             fp(1,iyp) = xyz0_loc(2)+dy_par/2
           endif
+!  Number of particles in z-direction.          
           if (nzgrid/=1) then
-            npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**fac
+            if (nxgrid/=1) then
+              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(1))**fac
+            elseif (nygrid/=1) then
+              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(2))**fac
+            else
+              npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**fac
+            endif
             dz_par=Lxyz_loc(3)/npar_loc_z
             fp(1,izp) = xyz0_loc(3)+dz_par/2
           endif
