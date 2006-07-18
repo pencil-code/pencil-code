@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.50 2006-07-13 07:54:36 brandenb Exp $
+! $Id: cparam.f90,v 1.51 2006-07-18 19:29:55 mee Exp $
 
 module Cparam
 
@@ -117,6 +117,9 @@ module Cparam
   logical, parameter :: NO_WARN=.false.
 !
 !
+! Data structure used to gather slice information from
+! the various modules.
+!
   type slice_data
     character (LEN=30) :: name
     integer :: ix, iy, iz, iz2
@@ -127,7 +130,27 @@ module Cparam
     real, pointer, dimension (:,:) :: yz
     real, pointer, dimension (:,:) :: xy2
   endtype slice_data
+!
+! Data structure used to allow module specific
+! boundary conditions.
+!
+  type boundary_condition 
+    character (len=bclen) :: bcname
+    integer :: ivar
+    integer :: location
+    logical :: done
 
+!ajwm Not sure this is the pretiest representation
+    real :: value1
+    real :: value2
+  endtype boundary_condition
+!
+  integer, parameter :: iBC_X_TOP=1
+  integer, parameter :: iBC_X_BOT=-1
+  integer, parameter :: iBC_Y_TOP=2
+  integer, parameter :: iBC_Y_BOT=-2
+  integer, parameter :: iBC_Z_TOP=3
+  integer, parameter :: iBC_Z_BOT=-3
 !
 !
 !
