@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.2 2006-07-17 13:43:39 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.3 2006-07-18 10:57:39 mee Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -68,7 +68,11 @@ module Special
   logical :: lmass_source_NS=.false. 
   logical :: leffective_gravity=.false.
 
- real :: rho_star=1.,rho_disk=1., rho_surf=1.
+  real :: rho_star=1.,rho_disk=1., rho_surf=1.
+!
+! Keep some over used pencils
+!
+  real, dimension(nx) :: z_2
 
   namelist /special_init_pars/ &
        lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf!,sharp
@@ -129,11 +133,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.2 2006-07-17 13:43:39 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.3 2006-07-18 10:57:39 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.2 2006-07-17 13:43:39 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.3 2006-07-18 10:57:39 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -389,150 +393,118 @@ endsubroutine read_special_run_pars
 ! Natalia
 ! deceleration zone in a case of a Keplerian disk
 
-
-
        if (laccelerat_zone) then
-     
-         
-         if (n .GE. nzgrid-ac_dc_size .AND. dt .GT. 0.) then
-       
+         if (n .gt. nzgrid-ac_dc_size .and. dt .gt. 0.) then
             if (lnstar_entropy) then   
-             
-             if (nxgrid .LE. 1) then       
-              if (lnstar_T_const) then
-              else            
-              endif    
-
-             else
-
-         ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
-         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n-1,ilnrho))
-
-
-         !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
-         !     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
-        
-        !df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)**2))
-
-        !  df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-        !  -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)))
-     
-    ! do i=1,H_disk_point+4
-    !         df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-    !               -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i+1,m,n,ilnrho))
-    ! enddo    
-    !     df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-    !-1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)
-    !-log(rho_surf)-(1.-(x(H_disk_point+1)/H_disk)))
-       
-        ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) & 
-        !   -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-	!   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
-			     
-
-
-
-        ! df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-        ! -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
-
-           if (H_disk_point .GE. nxgrid) then
-	  
-	     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-	     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-             -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
-			   
-			   
-	   
-	   else
-	   
-	 !  print*,'hjhjhjhjhjh'
-	   
-         df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
-         -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-     	 -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*mu/Rgas/T_star))
-			
-	  
-			      
-             df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
-        	     -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
-	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*mu/Rgas/T_star))
-	    endif
-						    
-             endif 
-           endif
-           
-
-
-         endif 
-
+              if (nxgrid /= 1) then       
+!natalia  .... REASON FOR BLOCK COMMENT ...
+!natalia                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+!natalia                  -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,n-1,ilnrho))
+!natalia
+!natalia
+!natalia                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)&
+!natalia                  -1./(5.*dt)*(f(l1:l2,m,n,ilnrho)-f(l1:l2,m,nzgrid-ac_dc_size,ilnrho))
+!natalia        
+!natalia                df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+!natalia                  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+!natalia                 -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)**2))
+!natalia
+!natalia                df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
+!natalia                  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+!natalia                  -log(rho_surf)-(1.-(x(1:H_disk_point)/H_disk)))
+!natalia     
+!natalia                do i=1,H_disk_point+4
+!natalia                  df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
+!natalia                    -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i+1,m,n,ilnrho))
+!natalia                enddo    
+!natalia                df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+!natalia                  -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)
+!natalia                  -log(rho_surf)-(1.-(x(H_disk_point+1)/H_disk)))
+!natalia       
+!natalia                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) & 
+!natalia                  -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+!natalia                  -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
+!natalia
+!natalia                df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
+!natalia                  -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
+!natalia
+                if (H_disk_point .ge. nxgrid) then
+                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                    -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+                    -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
+                else
+                  df(l1:H_disk_point+4,m,n,ilnrho)= &
+                    df(l1:H_disk_point+4,m,n,ilnrho) &
+                    -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+                    -log(rho_surf)-(1.-M_star/2./z(n)**3 &
+                                    * x(l1:H_disk_point+4)**2*mu/Rgas/T_star))
+                  
+                  df(H_disk_point+5:l2,m,n,ilnrho)=i &
+                    df(H_disk_point+5:l2,m,n,ilnrho) &
+                    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
+                    -log(rho_surf)-(1.-M_star/2./z(n)**3 &
+                                    * x(H_disk_point+4)**2*mu/Rgas/T_star))
+                endif ! (H_disk_point .lt. nxgrid)
+              else
+!  if nxgrid==1
+                if (lnstar_T_const) then
+                else            
+                endif    
+              endif 
+            endif ! (lnstar_entropy)
+         endif  ! (
+!
        if (ldecelerat_zone) then
-        
-         if (n .LE. ac_dc_size+4 .AND. dt .GT. 0.) then
-       
+!
+         if (n .le. ac_dc_size+4 .and. dt .gt. 0.) then
+!
             if (lnstar_entropy) then          
               if (lnstar_T_const) then
-               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                -1./p%rho(:)/(5.*dt) &
-                *(p%rho(:)-rho_star*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
-               else            
-
-              !   df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-              !           -1./p%rho(:)/(5.*dt) &
-              !   *(p%rho(:)-rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
-              ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-              !  -1./p%rho(:)/(5.*dt) &
-              !  *(p%rho(:)-rho_star*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
-              
-           !  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-           !   -1./(5.*dt)*(p%rho(:)-rho_star)/p%rho(:)
-          
-            endif    
-
+                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                  -0.2*p%rho1(:)/dt &
+                  *(p%rho(:)-rho_star*exp(-M_star/R_star/cs0**2*gamma*(1.-R_star/z(n))))
+              else            
+!
+!natalia   .... REASON FOR BLOCK COMMENT ...
+!natalia                 df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!natalia                   -1./p%rho(:)/(5.*dt) &
+!natalia                   *(p%rho(:)-rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+!natalia                 df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!natalia                   -1./p%rho(:)/(5.*dt) &
+!natalia                   *(p%rho(:)-rho_star*exp(-M_star/R_star/(gamma1*T_star)*gamma*(1.-R_star/z(n))))
+!natalia                
+!natalia                 df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!natalia                   -1./(5.*dt)*(p%rho(:)-rho_star)/p%rho(:)
+              endif    
             else
-               df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                         -1./p%rho(:)/(5.*dt) &
-                 *(p%rho(:)-rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
+              df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+                 -1./p%rho(:)/(5.*dt) *(p%rho(:) &
+                 -rho_star*exp(-M_star/R_star/p%cs2(:)*(1.-R_star/z(n))))
             endif
-      
           endif
-       endif
-           
-     endif  
-
+        endif
+      endif  
+!
 ! surface zone in a case of a Keplerian disk
-
+!
       if (lsurface_zone) then
-
-
-          if ( dt .GT.0.) then
+          if ( dt .gt.0.) then
             l_sz=l2-5
-
-          !  df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
-          !       -1./(5.*dt)*(1.-rho_surf/exp(f(l_sz:l2,m,n,ilnrho)))
-
-           
+!
+!            df(l_sz:l2,m,n,ilnrho)=df(l_sz:l2,m,n,ilnrho)&
+!                 -1./(5.*dt)*(1.-rho_surf/exp(f(l_sz:l2,m,n,ilnrho)))
+!
            do i=l_sz,l2   
              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
-                   -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
+                   -0.2/dt*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))
            enddo
-
-
-         endif
+         endif ! ()
       endif
-
-
-
-
-
-
-
-
+!
 ! Keep compiler quiet by ensuring every parameter is used
+!
       if (NO_WARN) print*,df,p
-
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
@@ -543,20 +515,15 @@ endsubroutine read_special_run_pars
 !   Some precalculated pencils of data are passed in for efficiency
 !   others may be calculated directly from the f array
 !
-!   06-oct-03/tony: coded
+!   16-jul-06/natalia: coded
 !
       use Cdata
-      
+!      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-
+!
       integer :: j,l_sz
-
-!!
-!!AB: this is a verbatim copy from the old hydro.f90 module
-!!
-
 !
 ! add effective gravity term = -Fgrav+Fcentrifugal
 ! Natalia
@@ -565,82 +532,71 @@ endsubroutine read_special_run_pars
         if (headtt) &
           print*,'duu_dt: Effectiv gravity; Omega, Rstar=', Omega, R_star, M_star
 
-              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
-                   M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
-          if (nxgrid .GT. 1) then  
-              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- &
-                   M_star/z(n)**2/sqrt(z(n)**2+x(l1:l2)**2)*x(l1:l2)*(z(n)-R_star)/(Lxyz(1)*0.5)
-       
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
+            M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
+          if (nxgrid /= 1) then  
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- &
+              M_star/z(n)**2/sqrt(z(n)**2+x(l1:l2)**2)*x(l1:l2)*(z(n)-R_star)/(Lxyz(1)*0.5)
           endif
-
       endif
-
+!
 ! acceleration zone in a case of a Keplerian disk
-
-
+!
       if (laccelerat_zone) then
-       if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
-
-         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+        if (n .ge. nzgrid-ac_dc_size  .and. dt .gt.0.) then
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
              -1./(5.*dt)*(p%uu(:,2)-sqrt(M_star/z(n)))
        
-       if (nxgrid .LE. 1) then  
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-           -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
-       else
-         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-         -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
+          if (nxgrid == 1) then  
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+              -1./(5.*dt)*(p%uu(:,3)+accretion_flux/p%rho(:))
+          else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-1./(5.*dt)*(p%uu(:,1)-0.)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+            -1./(5.*dt)*(f(l1:l2,m,n,iuz)-f(l1:l2,m,n-1,iuz))
 
-         !  df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
-         !  -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,iuz)-f(l1:H_disk_point+4,m,n-1,iuz))
-
-         !df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
-         !   -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
-
-     
-         !   df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
-         !    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
- 
-        endif 
+!natalia  .... REASON FOR BLOCK QUOTE ...
+!natalia            df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
+!natalia              -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,iuz)-f(l1:H_disk_point+4,m,n-1,iuz))
+!natalia
+!natalia            df(l1:H_disk_point+4,m,n,iuz)=df(l1:H_disk_point+4,m,n,iuz)&
+!natalia              -1./(5.*dt)*(p%uu(1:H_disk_point,3)+accretion_flux/p%rho(1:H_disk_point))
+!natalia
+!natalia            df(H_disk_point+5:l2,m,n,iuz)=df(H_disk_point+5:l2,m,n,iuz)&
+!natalia              -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,iuz)-f(H_disk_point+5:l2,m,nzgrid-ac_dc_size,iuz))
+           endif 
+         endif
        endif
-
-      endif
-
+!
 ! deceleration zone in a case of a Keplerian disk
-
-
+!
       if (ldecelerat_zone) then
- 
-         if (n .LE. ac_dc_size+4  .AND. dt .GT.0.) then
-         if (lnstar_entropy) then  
-        ! if (lnstar_T_const) then
-           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
-            !          -1./(5.*dt)*(p%uu(:,2)-f(l1:l2,m,n-1,iuy))
-             -1./(5.*dt)*(p%uu(:,2)-0.)   
+        if (n .le. ac_dc_size+4  .and. dt .gt.0.) then
+          if (lnstar_entropy) then  
+!            if (lnstar_T_const) then
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
+!               -1./(5.*dt)*(p%uu(:,2)-f(l1:l2,m,n-1,iuy))
+               -1./(5.*dt)*(p%uu(:,2)-0.)   
                  
-           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
-           !    -1./(5.*dt)*(p%uu(:,3)-f(l1:l2,m,n-1,iuz)) 
-           -1./(5.*dt)*(p%uu(:,3)-0.)   
-        ! endif  
-         else 
-           
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+!               -1./(5.*dt)*(p%uu(:,3)-f(l1:l2,m,n-1,iuz)) 
+               -1./(5.*dt)*(p%uu(:,3)-0.)   
+!            endif  
+          else 
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                            -1./(5.*dt)*(p%uu(:,2)-0.)
-    
-         
-           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
+!
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
                           -1./(5.*dt)*(p%uu(:,3)-0.)
-
-         endif   
-         endif
-
+!
+          endif   
+        endif
       endif
 
 ! surface zone in a case of a Keplerian disk
 
       if (lsurface_zone) then
-          if ( dt .GT.0.) then
+          if ( dt .gt.0.) then
                          
          l_sz=l2-5
                
@@ -652,7 +608,6 @@ endsubroutine read_special_run_pars
            enddo
 
         if (lnstar_1D) then
-
              df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
                    -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
      
@@ -794,11 +749,11 @@ endsubroutine read_special_run_pars
       !  ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
        ksi=1./sink_area
 
-       if ( 25 .GT. n .AND. n .LT. sink_area_points+25) then 
+       if ( 25 .gt. n .and. n .lt. sink_area_points+25) then 
          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-flux*ksi/rho(:)
        endif
  
-       if ( n .EQ. 25 .OR. n .EQ. sink_area_points+25) then
+       if ( n .eq. 25 .or. n .eq. sink_area_points+25) then
          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
        endif
 
