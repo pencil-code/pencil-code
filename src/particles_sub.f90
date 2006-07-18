@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.77 2006-07-17 11:37:31 mee Exp $
+! $Id: particles_sub.f90,v 1.78 2006-07-18 19:16:16 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -311,7 +311,7 @@ module Particles_sub
 !  Redistribute particles among processors (internal boundary conditions).
 !
       if (lmpicomm) then
-        if (lparticles_planet) then
+        if (lparticles_nbody) then
           call share_allparticles_procs(fp)
         else
           if (present(dfp)) then
@@ -566,7 +566,7 @@ module Particles_sub
 !***********************************************************************
     subroutine share_allparticles_procs(fp)
 !
-!  For runs with few particles, e.g. planets, keep particles at root
+!  For N-body runs (few sink particles), keep particles at root
 !  processor and inform other processors of positions and velocities.
 !
       use Mpicomm
