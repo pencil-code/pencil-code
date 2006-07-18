@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.179 2006-07-18 19:26:15 mee Exp $
+! $Id: register.f90,v 1.180 2006-07-18 21:50:03 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -319,11 +319,6 @@ module Register
         print*,'x(lpoint),y(mpoint),z(npoint)=',x(lpoint),y(mpoint),z(npoint)
       endif
 !
-!  DOCUMENT ME
-!  AB: should check whether this can come under initialize_modules
-!
-!       call border_profiles()
-!
 !  cleanup profile files
 !
       call remove_zprof()
@@ -444,6 +439,10 @@ module Register
 !  the called module will inform about the pencils that it needs locally.
 !  Interdependency among pencils is not solved here.
 !
+!  Note: No pencils can exist for the forcing module, because it is
+!  used outside the pencil mn loop, so rho and 1/rho needs to be
+!  calculated separately.
+!
 !  20-11-04/anders: coded
 !
       use Cdata
@@ -499,6 +498,9 @@ module Register
 !  pencils depend on. The dependency only needs to be specified one level
 !  up, since this subroutine is called several times (currently three).
 !
+!  Note: No pencils can exist for the forcing module, because it is
+!  used outside the pencil mn loop, so rho and 1/rho needs to be
+!  calculated separately.
 !
 !  20-11-04/anders: coded
 !

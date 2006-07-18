@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.89 2006-07-12 05:41:03 brandenb Exp $
+! $Id: forcing.f90,v 1.90 2006-07-18 21:50:03 brandenb Exp $
 
 module Forcing
 
@@ -70,7 +70,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.89 2006-07-12 05:41:03 brandenb Exp $")
+           "$Id: forcing.f90,v 1.90 2006-07-18 21:50:03 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -166,6 +166,7 @@ module Forcing
         case ('irrotational');  call forcing_irro(f)
         case ('helical', '2');  call forcing_hel(f)
         case ('TG');            call forcing_TG(f)
+        case ('ABC');           call forcing_ABC(f)
         case ('nocos');         call forcing_nocos(f)
         case ('fountain', '3'); call forcing_fountain(f)
         case ('horiz-shear');   call forcing_hshear(f)
@@ -612,7 +613,7 @@ module Forcing
       endif
       ifirst=ifirst+1
 !
-      if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
+      if(ip<=6) print*,'forcing_TG: dt, ifirst=',dt,ifirst
 !
 !  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
@@ -670,9 +671,112 @@ module Forcing
         endif
       endif
 !
-      if (ip.le.9) print*,'forcing_TG: forcing OK'
+      if (ip<=9) print*,'forcing_TG: forcing OK'
 !
     endsubroutine forcing_TG
+!***********************************************************************
+    subroutine forcing_ABC(f)
+!
+!  Added ABC forcing function
+!
+!  17-jul-06/axel: coded
+!
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use Hydro
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      real :: phase,ffnorm,irufm
+      real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
+      real, dimension (2) :: fran
+      real, dimension (nx) :: radius,tmpx,ruf,rho
+      real, dimension (mz) :: tmpz
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (mx), save :: sinx,cosx
+      real, dimension (my), save :: siny,cosy
+      real, dimension (mz), save :: sinz,cosz
+      integer, save :: ifirst
+      integer :: ik,j,jf
+      real :: force_ampl=1.,fact
+!
+!  at the first step, the sin and cos functions are calculated for all
+!  x,y,z points and are then saved and used for all subsequent steps
+!  and pencils
+!
+      if(ip<=6) print*,'forcing_ABC: ifirst=',ifirst
+      if (ifirst==0) then
+        if (lroot) print*,'forcing_ABC: calculate sinx,cosx,siny,cosy,sinz,cosz'
+        sinx=sin(k1_ff*x)
+        cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y)
+        cosy=cos(k1_ff*y)
+        sinz=sin(k1_ff*z)
+        cosz=cos(k1_ff*z)
+      endif
+      ifirst=ifirst+1
+      if(ip<=6) print*,'forcing_ABC: dt, ifirst=',dt,ifirst
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=2*force*sqrt(dt)
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
+      do n=n1,n2
+        do m=m1,m2
+          variable_rhs=f(l1:l2,m,n,iffx:iffz)
+          forcing_rhs(:,1)=fact*(sinz(n    )+cosy(m)    )
+          forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
+          forcing_rhs(:,3)=fact*(siny(m    )+cosx(l1:l2))
+          do j=1,3
+            jf=j+ifff-1
+            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+          enddo
+          if (lout) then
+            if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+        enddo
+      enddo
+      !
+      ! For printouts
+      !
+      if (lout) then
+        if (idiag_rufm/=0) then 
+          irufm=irufm/(nwgrid)
+          !
+          !  on different processors, irufm needs to be communicated
+          !  to other processors
+          !
+          fsum_tmp(1)=irufm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          irufm=fsum(1)
+          call mpibcast_real(irufm,1)
+          !
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
+        endif
+      endif
+!
+      if (ip<=9) print*,'forcing_ABC: forcing OK'
+!
+    endsubroutine forcing_ABC
 !***********************************************************************
     subroutine forcing_nocos(f)
 !
@@ -1881,6 +1985,37 @@ module Forcing
       write (lun) tsforce
 !
     endsubroutine output_persistent_forcing
+!***********************************************************************
+    subroutine pencil_criteria_forcing()
+! 
+!  All pencils that the Density module depends on are specified here.
+! 
+!  17-jul-06/axel: coded
+!
+      use Cdata
+!
+      if (lforcing) then
+        if (idiag_rufm/=0) lpenc_diagnos(i_rho)=.true.
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_rho1)=.true.
+      endif
+!
+    endsubroutine pencil_criteria_forcing
+!***********************************************************************
+    subroutine pencil_interdep_forcing(lpencil_in)
+!
+!  Interdependency among pencils from the Density module is specified here.
+!
+!  17-jul-06/axel: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lforcing) then
+        lpencil_in(i_rho)=.true.
+        lpencil_in(i_rho1)=.true.
+      endif
+!   
+    endsubroutine pencil_interdep_forcing
 !***********************************************************************
     subroutine rprint_forcing(lreset,lwrite)
 !

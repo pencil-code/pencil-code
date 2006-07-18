@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.17 2005-12-21 16:45:13 mee Exp $
+! $Id: noforcing.f90,v 1.18 2006-07-18 21:50:03 brandenb Exp $
 
 module Forcing
 
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.17 2005-12-21 16:45:13 mee Exp $")
+           "$Id: noforcing.f90,v 1.18 2006-07-18 21:50:03 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -56,15 +56,15 @@ module Forcing
       if(NO_WARN) print*,'lstarting=',lstarting !(to keep compiler quiet)
     endsubroutine initialize_forcing
 !***********************************************************************
-    subroutine addforce(df)
+    subroutine addforce(f)
 !
       use Cdata
 !
 !  add forcing in timestep()
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if(ip==1) print*,df !(to remove compiler warnings)
+      if(ip==1) print*,f !(to remove compiler warnings)
     endsubroutine addforce
 !***********************************************************************
     subroutine read_forcing_init_pars(unit,iostat)
@@ -112,7 +112,6 @@ module Forcing
     subroutine output_persistent_forcing(lun)
 !
 !  Writes out the time of the next SNI
-!
 !
       integer :: lun
 !
