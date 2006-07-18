@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.1 2006-07-18 19:12:05 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.2 2006-07-18 20:06:52 mee Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -23,7 +23,7 @@ module Particles
 
   implicit none
 
-  include 'particles_nbody.h'
+  include 'particles.h'
 
   real, dimension(npar) :: xp0=0.0, yp0=0.0, zp0=0.0
   real, dimension(npar) :: vpx0=0.0, vpy0=0.0, vpz0=0.0
@@ -68,7 +68,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.1 2006-07-18 19:12:05 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.2 2006-07-18 20:06:52 mee Exp $")
 !
 !  Indices for particle position.
 !
