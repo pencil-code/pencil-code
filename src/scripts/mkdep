@@ -3,64 +3,64 @@
 dollar='$'
 script='
 
-    s/\bSelfGravity\b/\$(SELFGRAVITY).o/i;
-    s/\bMessages\b/messages.o/i;
-    s/\bMpicomm\b/\$(MPICOMM_FIX).o/i;
-    s/\bGlobal\b/\$(GLOBAL).o/i;
-    s/\bIo\b/\$(IO).o/i;
-    s/\bPower_Spectrum\b/\$(POWER).o/i;
-    s/\bPlanet\b/\$(PLANET).o/i;
-    s/\bParticles\b/\$(PARTICLES).o/i;
-    s/\bParticles_sub\b/\$(PARTICLES_SUB).o/i;
-    s/\bParticles_main\b/\$(PARTICLES_MAIN).o/i;
-    s/\bParticles_radius\b/\$(PARTICLES_RADIUS).o/i;
-    s/\bParticles_number\b/\$(PARTICLES_NUMBER).o/i;
-    s/\bParticles_selfgravity\b/\$(PARTICLES_SELFGRAVITY).o/i;
-    s/\bHydro\b/\$(HYDRO).o/i;
-    s/\bViscosity\b/\$(VISCOSITY).o/i;
-    s/\bDensity\b/\$(DENSITY).o/i;
-    s/\bEntropy\b/\$(ENTROPY).o/i;
-    s/\bMagnetic\b/\$(MAGNETIC).o/i;
-    s/\bRadiation\b/\$(RADIATION).o/i;
-    s/\bPScalar\b/\$(PSCALAR).o/i;
-    s/\bDustVelocity\b/\$(DUSTVELOCITY).o/i;
-    s/\bDustDensity\b/\$(DUSTDENSITY).o/i;
-    s/\bInterstellar\b/\$(INTERSTELLAR).o/i;
-    s/\bCosmicray\b/\$(COSMICRAY).o/i;
-    s/\bCosmicrayFlux\b/\$(COSMICRAYFLUX).o/i;
-    s/\bStruct_Func\b/\$(STRUCT_FUNC).o/i;
-    s/\bInitcond_Spec\b/\$(INITCOND_SPEC).o/i;
-    s/\bGravity\b/\$(GRAVITY).o/i;
-    s/\bEquationOfState\b/\$(EOS).o/i;
-    s/\bForcing\b/\$(FORCING).o/i;
-    s/\bShear\b/\$(SHEAR).o/i;
-    s/\bTimeavg\b/\$(TIMEAVG).o/i;
-    s/\bSpecial\b/\$(SPECIAL).o/i;
-    s/\bTestfield\b/\$(TESTFIELD).o/i;
-    s/\bShock\b/\$(SHOCK).o/i;
-    s/\bChiral\b/\$(CHIRAL).o/i;
-    s/\bGrid\b/\$(GRID).o/i;
+    s/\bSELFGRAVITY\b/\$(SELFGRAVITY).o/i;
+    s/\bMESSAGES\b/messages.o/i;
+    s/\bMPICOMM\b/\$(MPICOMM_FIX).o/i;
+    s/\bGLOBAL\b/\$(GLOBAL).o/i;
+    s/\bIO\b/\$(IO).o/i;
+    s/\bPOWER_SPECTRUM\b/\$(POWER).o/i;
+    s/\bPLANET\b/\$(PLANET).o/i;
+    s/\bPARTICLES\b/\$(PARTICLES).o/i;
+    s/\bPARTICLES_SUB\b/\$(PARTICLES_SUB).o/i;
+    s/\bPARTICLES_MAIN\b/\$(PARTICLES_MAIN).o/i;
+    s/\bPARTICLES_RADIUS\b/\$(PARTICLES_RADIUS).o/i;
+    s/\bPARTICLES_NUMBER\b/\$(PARTICLES_NUMBER).o/i;
+    s/\bPARTICLES_SELFGRAVITY\b/\$(PARTICLES_SELFGRAVITY).o/i;
+    s/\bHYDRO\b/\$(HYDRO).o/i;
+    s/\bVISCOSITY\b/\$(VISCOSITY).o/i;
+    s/\bDENSITY\b/\$(DENSITY).o/i;
+    s/\bENTROPY\b/\$(ENTROPY).o/i;
+    s/\bMAGNETIC\b/\$(MAGNETIC).o/i;
+    s/\bRADIATION\b/\$(RADIATION).o/i;
+    s/\bPSCALAR\b/\$(PSCALAR).o/i;
+    s/\bDUSTVELOCITY\b/\$(DUSTVELOCITY).o/i;
+    s/\bDUSTDENSITY\b/\$(DUSTDENSITY).o/i;
+    s/\bINTERSTELLAR\b/\$(INTERSTELLAR).o/i;
+    s/\bCOSMICRAY\b/\$(COSMICRAY).o/i;
+    s/\bCOSMICRAYFLUX\b/\$(COSMICRAYFLUX).o/i;
+    s/\bSTRUCT_FUNC\b/\$(STRUCT_FUNC).o/i;
+    s/\bINITCOND_SPEC\b/\$(INITCOND_SPEC).o/i;
+    s/\bGRAVITY\b/\$(GRAVITY).o/i;
+    s/\bEQUATIONOFSTATE\b/\$(EOS).o/i;
+    s/\bFORCING\b/\$(FORCING).o/i;
+    s/\bSHEAR\b/\$(SHEAR).o/i;
+    s/\bTIMEAVG\b/\$(TIMEAVG).o/i;
+    s/\bSPECIAL\b/\$(SPECIAL).o/i;
+    s/\bTESTFIELD\b/\$(TESTFIELD).o/i;
+    s/\bSHOCK\b/\$(SHOCK).o/i;
+    s/\bCHIRAL\b/\$(CHIRAL).o/i;
+    s/\bGRID\b/\$(GRID).o/i;
 
-    s/\bParticles_cdata\b/\particles_cdata.o/i;
-    s/\bCdata\b/cdata.o/i; 
-    s/\bPersist\b/persist.o/i; 
-    s/\bCparam\b/cparam.o/i; 
-    s/\bBoundcond\b/boundcond.o/i;
-    s/\bFilter\b/filter.o/i;
-    s/\bInitcond\b/initcond.o/i;
-    s/\bTimestep\b/timestep.o/i;
-    s/\bWsnaps\b/wsnaps.o/i;
-    s/\bSub\b/sub.o/i;
-    s/\bEqu\b/equ.o/i;
-    s/\bPrint\b/prints.o/i;
-    s/\bRegister\b/register.o/i;
-    s/\bParam_IO\b/param_io.o/i;
-    s/\bDeriv\b/deriv.o/i;
-    s/\bSlices\b/slices.o/i;
-    s/\bBorderProfiles\b/border_profiles.o/i;
-    s/\bGeneral\b/general.o/i;
-    s/\bPrint\b/prints.o/i;
-    s/\bSnapshot\b/snapshot.o/i;
+    s/\bPARTICLES_CDATA\b/\particles_cdata.o/i;
+    s/\bCDATA\b/cdata.o/i; 
+    s/\bPERSIST\b/persist.o/i; 
+    s/\bCPARAM\b/cparam.o/i; 
+    s/\bBOUNDCOND\b/boundcond.o/i;
+    s/\bFILTER\b/filter.o/i;
+    s/\bINITCOND\b/initcond.o/i;
+    s/\bTIMESTEP\b/timestep.o/i;
+    s/\bWSNAPS\b/wsnaps.o/i;
+    s/\bSUB\b/sub.o/i;
+    s/\bEQU\b/equ.o/i;
+    s/\bPRINT\b/prints.o/i;
+    s/\bREGISTER\b/register.o/i;
+    s/\bPARAM_IO\b/param_io.o/i;
+    s/\bDERIV\b/deriv.o/i;
+    s/\bSLICES\b/slices.o/i;
+    s/\bBORDERPROFILES\b/border_profiles.o/i;
+    s/\bGENERAL\b/general.o/i;
+    s/\bPRINT\b/prints.o/i;
+    s/\bSNAPSHOT\b/snapshot.o/i;
 '
 
 while [ "$1" ]
@@ -70,7 +70,7 @@ do
     if [ "${file%.c}" != "$file" ]; then
       echo "${file%.c}.o: $file" 
     else
-      used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $file | sort | tr '[:lower:]' '[:upper:]' | uniq `
+      used=`perl -ne 'print "$1\n" if m/^\s*use\s*([\w\d]*)/ ' $file | tr '[:lower:]' '[:upper:]' | sort | uniq `
       depends=`echo $used | perl -npe "$script"`
       includes=`perl -ne "print \"${dollar}1 \" if m/^\s*include\s*\\'([\S]*\\.(inc|local))\\'/ ;" $file `
 
