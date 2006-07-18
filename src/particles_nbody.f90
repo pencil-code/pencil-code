@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.2 2006-07-18 20:06:52 mee Exp $
+! $Id: particles_nbody.f90,v 1.3 2006-07-18 21:57:23 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -10,8 +10,6 @@
 ! MPVAR CONTRIBUTION 6
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_nbody=.true.
-!
-! PENCILS PROVIDED rp_mn,rpcyl_mn
 !
 !***************************************************************
 module Particles
@@ -68,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.2 2006-07-18 20:06:52 mee Exp $")
+           "$Id: particles_nbody.f90,v 1.3 2006-07-18 21:57:23 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -301,31 +299,6 @@ module Particles
       if (NO_WARN) print*, f, p
 !
     endsubroutine calc_pencils_particles
-!***********************************************************************                   
-    subroutine calc_pencils_par_nbody(f,fp,p)
-!   
-!  Calculate particle-gas radial distances 
-!
-!  18-jul-06/wlad: coded
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
-      integer :: i
-      type (pencil_case) :: p
-!
-      do i=1,mpar_loc
-!
-! Spherical and cylindrical distances
-! 
-         p%rp_mn(:,i)    = sqrt((x(l1:l2)-fp(i,ixp))**2 &
-              +(y(m)-fp(i,iyp))**2 &
-              +(z(n)-fp(i,izp))**2) + tini
-         p%rpcyl_mn(:,i) = sqrt((x(l1:l2)-fp(i,ixp))**2 &
-              +(y(m)-fp(i,iyp))**2) + tini
-!
-      enddo
-!
-    endsubroutine calc_pencils_par_nbody
 !***********************************************************************
     subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
@@ -558,6 +531,31 @@ module Particles
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dvvp_dt
+!***********************************************************************
+    subroutine get_distances(f,fp,rp_mn,rpcyl_mn)
+!
+! 18-jul-06/wlad: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
+      integer :: i
+!      
+      intent(out) :: rp_mn,rpcyl_mn
+
+       do i=1,mpar_loc
+!
+! Spherical and cylindrical distances
+! 
+          rp_mn(:,i)    = sqrt((x(l1:l2)-fp(i,ixp))**2 &
+               +(y(m)-fp(i,iyp))**2 &
+               +(z(n)-fp(i,izp))**2) + tini
+          rpcyl_mn(:,i) = sqrt((x(l1:l2)-fp(i,ixp))**2 &
+               +(y(m)-fp(i,iyp))**2) + tini
+!
+       enddo
+!
+    endsubroutine get_distances
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    

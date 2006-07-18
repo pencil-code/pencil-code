@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.50 2006-07-18 19:35:01 wlyra Exp $
+! $Id: planet.f90,v 1.51 2006-07-18 21:57:23 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -83,7 +83,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.50 2006-07-18 19:35:01 wlyra Exp $")
+           "$Id: planet.f90,v 1.51 2006-07-18 21:57:23 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -189,7 +189,7 @@ module Planet
 !
     endsubroutine write_planet_run_pars
 !***********************************************************************
-    subroutine gravity_companion(f,fp,dfp,g0,r0_pot,n_pot,p)
+    subroutine gravity_companion(f,fp,dfp,rp_mn,rpcyl_mn,g0,r0_pot,n_pot,p)
 !
 !  calculate the gravity of a companion offcentered by (Rx,Ry,Rz)
 !
@@ -205,6 +205,7 @@ module Planet
 !     
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp,dfp 
+      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,rrc,rrc1,rrs1,g_star
       real :: Omega_inertial,ax,ay,az,gtc
@@ -241,7 +242,7 @@ module Planet
 !
 !  Planet's gravity field
 !
-         rrc=p%rp_mn(:,1)
+         rrc=rp_mn(:,1)
          rrc1=1./rrc
 !           
          g_companion=-gp*rrc*(rrc**2+b**2)**(-1.5)
@@ -255,18 +256,18 @@ module Planet
 !  Star's gravity field
 !
       if (lcylindrical) then
-         rrs1=1./p%rpcyl_mn(:,2)
+         rrs1=1./rpcyl_mn(:,2)
       else
-         rrs1=1./p%rp_mn(:,2)
+         rrs1=1./rp_mn(:,2)
       endif
       
 !      
 !  gravity_star will call the ramped mass from inside again
 !
       if (gc.ne.0) then
-         call gravity_star(g0,r0_pot,n_pot,g_star,p,axs,ays,azs)
+         call gravity_star(g0,r0_pot,n_pot,g_star,rpcyl_mn,rp_mn,axs,ays,azs)
       else
-         call gravity_star(g0,r0_pot,n_pot,g_star,p)
+         call gravity_star(g0,r0_pot,n_pot,g_star,rpcyl_mn,rp_mn)
       endif
 !
       ggs(:,1) = (x(l1:l2)-axs)*rrs1*g_star
@@ -286,16 +287,16 @@ module Planet
 !
       if (ldiagnos) then
          if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
-              call calc_torque(p%rho,gp,ax,ay,b,p)
+              call calc_torque(p%rho,rpcyl_mn,gp,ax,ay,b,p)
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0)) &
-              call calc_monitored(f,axs,ays,ax,ay,gs,gp,r0_pot,p)
+              call calc_monitored(f,axs,ays,ax,ay,gs,gp,r0_pot,rpcyl_mn,p)
       endif
       lfirstcall=.false.
 !
     endsubroutine gravity_companion
 !***********************************************************************
-    subroutine calc_torque(dens,gp,ax,ay,b,p)
+    subroutine calc_torque(dens,rpcyl_mn,gp,ax,ay,b,p)
 !
 ! 05-nov-05/wlad : coded
 !
@@ -303,6 +304,7 @@ module Planet
 !
       real, dimension(nx) :: torque,torqint,torqext
       real, dimension(nx) :: rrcyl,re,rpre,dens
+      real, dimension(nx,mpar_loc) :: rpcyl_mn
       real :: b,ax,ay,Rc,roche,gp
       integer :: i
       type (pencil_case) :: p
@@ -312,7 +314,7 @@ module Planet
       Rc = sqrt(ax*ax + ay*ay)
       roche = Rc*(gp/3.)**(1./3.)
 !
-      re = p%rpcyl_mn(:,1) 
+      re = rpcyl_mn(:,1) 
       rpre = ax*y(m) - ay*x(l1:l2)
 !
       torque = gp*dens*&
@@ -521,7 +523,8 @@ module Planet
 !
    endsubroutine wave_damping
 !***************************************************************
-   subroutine gravity_star(g0,r0_pot,n_pot,g_r,p,xstar,ystar,zstar)
+   subroutine gravity_star(g0,r0_pot,n_pot,g_r,rpcyl_mn,rp_mn,&
+        xstar,ystar,zstar)
 !
 ! 08-nov-05/wlad : coded
 !
@@ -529,19 +532,19 @@ module Planet
 !
      real, dimension (nx), intent(out) :: g_r
      real, dimension (nx) :: rr_mn
+     real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
      real, optional :: xstar,ystar,zstar !initial position of star
      integer :: i,n_pot
      real :: g0,axs,ays,azs,r0_pot,gp,gs,mdot,m2dot
-     type (pencil_case) :: p
 !
      if (present(xstar)) then;axs=xstar;else;axs=0.;endif
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
      if (present(zstar)) then;azs=zstar;else;azs=0.;endif
 !  
         if (lcylindrical) then
-           rr_mn = p%rpcyl_mn(:,2)
+           rr_mn = rpcyl_mn(:,2)
         else
-           rr_mn = p%rp_mn(:,2)
+           rr_mn = rp_mn(:,2)
         endif
 !
      if (n_pot.ne.2) then
@@ -616,7 +619,7 @@ module Planet
 !
    endsubroutine gravity_disk
 !***************************************************************
-   subroutine calc_monitored(f,xs,ys,xp,yp,gs,gp,r0_pot,p)
+   subroutine calc_monitored(f,xs,ys,xp,yp,gs,gp,r0_pot,rpcyl_mn,p)
 
 ! calculate total energy and angular momentum
 ! and output their evolution as monitored variables
@@ -629,6 +632,7 @@ module Planet
      real, dimension(nx) :: rstar,rplanet,r,uphi
      real, dimension(nx) :: angular_momentum
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
+     real, dimension(nx,mpar_loc) :: rpcyl_mn
      real :: xs,ys,xp,yp  !position of star and planet
      real :: gs,gp,r0_pot !star's and planet's mass
      integer :: i
@@ -639,8 +643,8 @@ module Planet
 !
 ! Calculate the total energy and integrate it
 !
-     rstar   = p%rpcyl_mn(:,2) 
-     rplanet = p%rpcyl_mn(:,1)
+     rstar   = rpcyl_mn(:,2) 
+     rplanet = rpcyl_mn(:,1)
 !
 ! Kinetic energy
 !

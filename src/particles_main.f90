@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.36 2006-07-18 19:16:16 wlyra Exp $
+! $Id: particles_main.f90,v 1.37 2006-07-18 21:57:23 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -267,7 +267,6 @@ module Particles_main
 !
       call calc_pencils_particles(f,p)
       if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
-      if (lparticles_nbody) call calc_pencils_par_nbody(f,fp,p)
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
@@ -438,11 +437,14 @@ module Particles_main
       use Planet, only : gravity_companion
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
       real :: g0,r0_pot
       integer :: n_pot
       type (pencil_case) :: p
 !
-      call gravity_companion(f,fp,dfp,g0,r0_pot,n_pot,p)
+      call get_distances(f,fp,rp_mn,rpcyl_mn)
+      call gravity_companion(f,fp,dfp,rp_mn,rpcyl_mn,&
+           g0,r0_pot,n_pot,p)
 !
     endsubroutine auxcall_gravcomp
 !***********************************************************************
