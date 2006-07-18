@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.49 2006-07-14 09:24:50 wlyra Exp $
+! $Id: planet.f90,v 1.50 2006-07-18 19:35:01 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -11,8 +11,6 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-!
-! PENCILS PROVIDED uu_kep
 !
 !***************************************************************
 !
@@ -63,7 +61,6 @@ module Planet
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_totenergy=0,idiag_totangmom=0
-  integer :: idiag_totmass2=0
 !
   contains
 !
@@ -86,7 +83,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.49 2006-07-14 09:24:50 wlyra Exp $")
+           "$Id: planet.f90,v 1.50 2006-07-18 19:35:01 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,26 +139,14 @@ module Planet
 !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
-    subroutine calc_pencils_planet(f,p,g0,r0_pot)
-!
-! calculate keplerian velocity as a pencil, so I don't
-! have to recalculate it on other routines from f,g0 and r0_pot
-!
-! 28-mar-06/wlad : coded 
+    subroutine calc_pencils_planet(f,p)
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) :: rc_mn
       type (pencil_case) :: p
-      real :: g0,r0_pot
 !
       intent(in) :: f
       intent(inout) :: p
 !   
-      if (lpencil(i_uu_kep)) then
-         rc_mn = sqrt(x(l1:l2)**2 + y(m)**2)
-         p%uu_kep = rc_mn*sqrt(g0*(rc_mn**2+r0_pot**2)**(-1.5))
-      endif
-!
     endsubroutine calc_pencils_planet
 !***********************************************************************
     subroutine read_planet_init_pars(unit,iostat)
@@ -221,7 +206,7 @@ module Planet
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp,dfp 
       real, dimension (nx,3) :: ggc,ggs
-      real, dimension (nx) :: g_companion,rrc,rrs,g_star
+      real, dimension (nx) :: g_companion,rrc,rrc1,rrs1,g_star
       real :: Omega_inertial,ax,ay,az,gtc
       real :: axs,ays,azs,g0,gp,gs,r0_pot,mdot,m2dot
       integer :: n_pot
@@ -256,40 +241,40 @@ module Planet
 !
 !  Planet's gravity field
 !
-         rrc=sqrt((x(l1:l2)-ax)**2+(y(m)-ay)**2+(z(n)-az)**2) + tini
+         rrc=p%rp_mn(:,1)
+         rrc1=1./rrc
 !           
-         g_companion=-gp*rrc**(nc-1) &
-              *(rrc**nc+b**nc)**(-1./nc-1.)
+         g_companion=-gp*rrc*(rrc**2+b**2)**(-1.5)
 !
-         ggc(:,1) = (x(l1:l2)-ax)/rrc*g_companion 
-         ggc(:,2) = (y(  m  )-ay)/rrc*g_companion
-         ggc(:,3) = (z(  n  )-az)/rrc*g_companion
+         ggc(:,1) = (x(l1:l2)-ax)*rrc1*g_companion 
+         ggc(:,2) = (y(  m  )-ay)*rrc1*g_companion
+         ggc(:,3) = (z(  n  )-az)*rrc1*g_companion
 !
       endif
 !
 !  Star's gravity field
 !
       if (lcylindrical) then
-         rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2)+tini
+         rrs1=1./p%rpcyl_mn(:,2)
       else
-         rrs=sqrt((x(l1:l2)-axs)**2+(y(m)-ays)**2+(z(n)-azs)**2) + tini
+         rrs1=1./p%rp_mn(:,2)
       endif
+      
 !      
 !  gravity_star will call the ramped mass from inside again
 !
       if (gc.ne.0) then
-         call gravity_star(g0,r0_pot,n_pot,g_star,axs,ays,azs)
+         call gravity_star(g0,r0_pot,n_pot,g_star,p,axs,ays,azs)
       else
-         call gravity_star(g0,r0_pot,n_pot,g_star)
+         call gravity_star(g0,r0_pot,n_pot,g_star,p)
       endif
 !
-      ggs(:,1) = (x(l1:l2)-axs)/rrs*g_star
-      ggs(:,2) = (y(  m  )-ays)/rrs*g_star
-      ggs(:,3) = (z(  n  )-azs)/rrs*g_star     
+      ggs(:,1) = (x(l1:l2)-axs)*rrs1*g_star
+      ggs(:,2) = (y(  m  )-ays)*rrs1*g_star
+      ggs(:,3) = (z(  n  )-azs)*rrs1*g_star     
       if (lcylindrical) ggs(:,3) = 0.
 !
 !  Reset gravity as global variable 
-!  In the future, compute only potential and call grav=grad(pot)
 !      
       call set_global(ggs+ggc,m,n,'gg',nx)
 !
@@ -297,41 +282,41 @@ module Planet
 !
       if (lmigrate) call gravity_disk(fp,dfp,p,r0_pot)
 !      
-!  Stuff for calc_torque. Should maybe change it to particles_planet
+!  Stuff for calc_torque.
 !
       if (ldiagnos) then
          if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
-              call calc_torque(p%rho,gp,ax,ay,b)
+              call calc_torque(p%rho,gp,ax,ay,b,p)
          
-         if ((idiag_totenergy/=0).or.(idiag_totangmom/=0) &
-              .or.idiag_totmass2/=0) &
+         if ((idiag_totenergy/=0).or.(idiag_totangmom/=0)) &
               call calc_monitored(f,axs,ays,ax,ay,gs,gp,r0_pot,p)
       endif
       lfirstcall=.false.
 !
     endsubroutine gravity_companion
 !***********************************************************************
-    subroutine calc_torque(dens,gp,ax,ay,b)
+    subroutine calc_torque(dens,gp,ax,ay,b,p)
 !
 ! 05-nov-05/wlad : coded
 !
       use Sub
 !
       real, dimension(nx) :: torque,torqint,torqext
-      real, dimension(nx) :: r,re,rpre,dens
+      real, dimension(nx) :: rrcyl,re,rpre,dens
       real :: b,ax,ay,Rc,roche,gp
       integer :: i
+      type (pencil_case) :: p
 !
 ! Planet's hills radius
 !
-      Rc = sqrt(ax**2 + ay**2)
+      Rc = sqrt(ax*ax + ay*ay)
       roche = Rc*(gp/3.)**(1./3.)
 !
-      r  = sqrt(x(l1:l2)**2 + y(m)**2)
-      re = sqrt((x(l1:l2)-ax)**2 + (y(m)-ay)**2)
+      re = p%rpcyl_mn(:,1) 
       rpre = ax*y(m) - ay*x(l1:l2)
 !
-      torque = gp*dens*rpre*(re**2+b**2)**(-1.5)
+      torque = gp*dens*&
+           rpre*(re**2+b**2)**(-1.5)
 !
       torqext=0.
       torqint=0.
@@ -344,13 +329,14 @@ module Planet
 !
 ! External torque
 !
-            if (r(i).ge.Rc) torqext(i) = torque(i)
+            if (rcyl_mn(i).ge.Rc) torqext(i) = torque(i)
 !
 ! Internal torque
 !
-            if (r(i).le.Rc) torqint(i) = torque(i)
+            if (rcyl_mn(i).le.Rc) torqint(i) = torque(i)
 !
          endif
+!
       enddo
 !
       call sum_lim_mn_name(torqext,idiag_torqext)
@@ -379,7 +365,7 @@ module Planet
       if (lramp) then
          tcut = n_periods * 2*pi
          if (t .le. tcut) then
-            gp = fgp* (sin(pi/2. * t/tcut))**2
+            gp = fgp* (sin(0.5*pi * t/tcut))**2
 !            
             mdot  = 0.5*fgp* pi/tcut      * sin(pi*t/tcut)
             m2dot = 0.5*fgp*(pi/tcut)**2  * cos(pi*t/tcut)
@@ -410,7 +396,7 @@ module Planet
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz,mvar) :: df
       integer ider,j,k,i,ii,n_pot
-      real, dimension(nx) :: r_cyl,pdamp,aux0,H2
+      real, dimension(nx) :: pdamp,aux0,H2
       real, dimension(nx) :: cs2_mn,velx0,vely0,dens
       real :: tau,lnrho_cte,r0_pot,g0
 !
@@ -427,7 +413,6 @@ module Planet
 ! extense of the damping zones
 !
       tau = 2*pi/(r_int)**(-1.5)
-      r_cyl = sqrt(x(l1:l2)**2 + y(m)**2)
 !
       if (ldnolog) then
          lnrho_cte = 1.
@@ -437,17 +422,17 @@ module Planet
 !     
 ! for 0.4 : 1 ; 0.5 : 0
 !
-      pdamp = -11.111111*r_cyl**2 + 2.77777778  !parabolic function R
+      pdamp = -11.111111*rcyl_mn**2 + 2.77777778  !parabolic function R
 !
 ! for 0.4 : 0 ; 0.5 : 1
 ! pdamp = 11.1111111*r**2 - 1.777777778  
 !      
-      where (r_cyl .le. r_int)        ; pdamp = 1. ; endwhere
-      where (r_cyl .ge. r_int+dp_int) ; pdamp = 0. ; endwhere
+      where (rcyl_mn .le. r_int)        ; pdamp = 1. ; endwhere
+      where (rcyl_mn .ge. r_int+dp_int) ; pdamp = 0. ; endwhere
 !      
 ! aux0 is omega2
 !           
-      aux0 = (r_cyl**2+r0_pot**2)**(-1.5)
+      aux0 = (rcyl_mn**2+r0_pot**2)**(-1.5)
       if ((nzgrid==1).or.(lcylindrical)) then
          H2 = 1.
       else
@@ -464,15 +449,15 @@ module Planet
          ! just to solve the underflow problem in Kolmogorov
          !
          if ((nzgrid == 1).or.(lcylindrical)) then
-            dens = lnrho_cte * r_cyl**plaw
+            dens = lnrho_cte * rcyl_mn**plaw
          else
-            dens = lnrho_cte * r_cyl**plaw * exp(0.5*(z(n)**2/H2))
+            dens = lnrho_cte * rcyl_mn**plaw * exp(0.5*(z(n)**2/H2))
          endif
       else
          if ((nzgrid == 1).or.(lcylindrical)) then
-            dens = lnrho_cte - plaw*alog(r_cyl)
+            dens = lnrho_cte - plaw*alog(rcyl_mn)
          else
-            dens = lnrho_cte - plaw*alog(r_cyl) - 0.5*(z(n)**2/H2)
+            dens = lnrho_cte - plaw*alog(rcyl_mn) - 0.5*(z(n)**2/H2)
          endif
       endif
 !      
@@ -480,7 +465,7 @@ module Planet
 !
       do i=l1,l2
          ii = i-l1+1
-         if ((r_cyl(ii).le.r_int+dp_int).and.(r_cyl(ii).gt.r_int)) then
+         if ((rcyl_mn(ii).le.r_int+dp_int).and.(rcyl_mn(ii).gt.r_int)) then
 !
 ! urgent: make the buffer zone more general.
 ! ivars are supposed to be private to their modules
@@ -509,17 +494,17 @@ module Planet
 !     
 ! for 2.1 : 0 , 2.5 : 1
 !
-     pdamp = 0.543478*r_cyl**2 - 2.3967391  !parabolic function R
+     pdamp = 0.543478*rcyl_mn**2 - 2.3967391  !parabolic function R
 !
 ! for 2.1 : 1, 2.5 : 0
 ! pdamp = -0.543478*r**2 + 3.3967375
 !     
-     where (r_cyl .ge. r_ext)        ; pdamp = 1. ; endwhere
-     where (r_cyl .le. r_ext-dp_ext) ; pdamp = 0. ; endwhere
+     where (rcyl_mn .ge. r_ext)        ; pdamp = 1. ; endwhere
+     where (rcyl_mn .le. r_ext-dp_ext) ; pdamp = 0. ; endwhere
 !     
      do i=l1,l2
         ii = i-l1+1
-        if ((r_cyl(ii) .ge. r_ext-dp_ext).and.(r_cyl(ii).le.r_ext)) then
+        if ((rcyl_mn(ii) .ge. r_ext-dp_ext).and.(rcyl_mn(ii).le.r_ext)) then
            df(i,m,n,ilnrho)   = df(i,m,n,ilnrho) - (f(i,m,n,ilnrho) -  dens(ii))/tau * pdamp(ii) 
            df(i,m,n,iux)      = df(i,m,n,iux)    - (f(i,m,n,iux)    - velx0(ii))/tau * pdamp(ii)
            df(i,m,n,iuy)      = df(i,m,n,iuy)    - (f(i,m,n,iuy)    - vely0(ii))/tau * pdamp(ii)
@@ -536,7 +521,7 @@ module Planet
 !
    endsubroutine wave_damping
 !***************************************************************
-   subroutine gravity_star(g0,r0_pot,n_pot,g_r,xstar,ystar,zstar)
+   subroutine gravity_star(g0,r0_pot,n_pot,g_r,p,xstar,ystar,zstar)
 !
 ! 08-nov-05/wlad : coded
 !
@@ -547,15 +532,16 @@ module Planet
      real, optional :: xstar,ystar,zstar !initial position of star
      integer :: i,n_pot
      real :: g0,axs,ays,azs,r0_pot,gp,gs,mdot,m2dot
+     type (pencil_case) :: p
 !
      if (present(xstar)) then;axs=xstar;else;axs=0.;endif
      if (present(ystar)) then;ays=ystar;else;ays=0.;endif
      if (present(zstar)) then;azs=zstar;else;azs=0.;endif
 !  
         if (lcylindrical) then
-           rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2) + tini
+           rr_mn = p%rpcyl_mn(:,2)
         else
-           rr_mn = sqrt((x(l1:l2)-axs)**2 + (y(m)-ays)**2 + (z(n)-azs)**2) + tini
+           rr_mn = p%rp_mn(:,2)
         endif
 !
      if (n_pot.ne.2) then
@@ -567,8 +553,7 @@ module Planet
 !
      call get_ramped_mass(gp,gs,g0,mdot,m2dot)
 !
-     g_r=-gs*rr_mn**(n_pot-1) &
-          *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+     g_r=-gs*rr_mn*(rr_mn**2+r0_pot**2)**(-1.5)
 !   
    endsubroutine gravity_star
 !***************************************************************
@@ -646,7 +631,6 @@ module Planet
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
      real :: xs,ys,xp,yp  !position of star and planet
      real :: gs,gp,r0_pot !star's and planet's mass
-     real :: ang_tot,energy_tot,totmass
      integer :: i
      type (pencil_case) :: p
 !
@@ -655,42 +639,32 @@ module Planet
 !
 ! Calculate the total energy and integrate it
 !
-     rstar   = sqrt((x(l1:l2)-xs)**2 + (y(m)-ys)**2)+tini
-     rplanet = sqrt((x(l1:l2)-xp)**2 + (y(m)-yp)**2)+tini
+     rstar   = p%rpcyl_mn(:,2) 
+     rplanet = p%rpcyl_mn(:,1)
 !
 ! Kinetic energy
 !
-     kin_energy = p%rho * p%u2/2.
+     kin_energy = p%rho * 0.5*p%u2
 !     
 ! Potential energy - uses smoothed potential
 !
-     pot_energy = -1.*(gs*(rstar**2+r0_pot**2)**(-1./2) &
-          + gp*(rplanet**2+b**2)**(-1./2))*p%rho
+     pot_energy = -1.*(gs*(rstar**2+r0_pot**2)**(-0.5) &
+          + gp*(rplanet**2+b**2)**(-0.5))*p%rho
 !     
      total_energy = kin_energy + pot_energy  
 !     
 ! integrate it
 !
-     energy_tot = -pi*(r_ext - r_int)
-     call sum_lim_mn_name(total_energy,idiag_totenergy, &
-          energy_tot,lnorm)
+     call sum_lim_mn_name(total_energy,idiag_totenergy)
 !
 ! Angular momentum
 !
-     r = sqrt(x(l1:l2)**2 + y(m)**2)+tini !this is correct: baricenter
-     uphi = (-p%uu(:,1)*y(m) + p%uu(:,2)*x(l1:l2))/r
-     angular_momentum = p%rho * r * uphi
+     uphi = (-p%uu(:,1)*y(m) + p%uu(:,2)*x(l1:l2))/rcyl_mn
+     angular_momentum = p%rho * rcyl_mn * uphi
 !     
 ! integrate it
 !
-     ang_tot = 0.8*pi*(r_ext**2.5 - r_int**2.5)
-     call sum_lim_mn_name(angular_momentum,idiag_totangmom, &
-          ang_tot,lnorm)
-!
-! total mass
-!
-     totmass=pi*(r_ext**2 - r_int**2)
-     call sum_lim_mn_name(p%rho,idiag_totmass2,totmass,lnorm)
+     call sum_lim_mn_name(angular_momentum,idiag_totangmom)
 !
    endsubroutine calc_monitored
 !***************************************************************
@@ -711,7 +685,7 @@ module Planet
 ! 
      use Global, only: set_global
 !
-      real, dimension (nx) :: rrp,cs2
+      real, dimension (nx) :: cs2
       real :: g0=1.,r0_pot=0.2
       logical :: lheader,lfirstcall=.true.
 !
@@ -723,12 +697,6 @@ module Planet
       if (lheader) print*,&
            'planet: setting sound speed as global variable'
 !
-      if (lcylindrical) then
-         rrp = sqrt(x(l1:l2)**2 + y(m)**2) + tini
-      else
-         rrp = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + tini
-      endif   
-!      
       if (lcs2_thick) then 
 !
 ! This is for H=cs/Omega = Lz/2
@@ -736,7 +704,7 @@ module Planet
          if (lheader) &
               print*,'set soundspeed: constant H=',Lxyz(3)/2.
 !
-         cs2 = g0**2 * (rrp**2 + r0_pot**2)**(-1.5) &
+         cs2 = g0**2 * (rcyl_mn**2 + r0_pot**2)**(-1.5) &
               *(Lxyz(3)/2.)**2
       else
 !
@@ -745,20 +713,20 @@ module Planet
          if (lheader) &
               print*,'set soundspeed: Mach=20 all over'
 !
-         where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
+         where ((rcyl_mn.le.0.4).and.(rcyl_mn.ge.0.2)) 
          
             cs2 = 0.00749375        & 
-                 +0.00679450*rrp    &
-                 -0.0149310 *rrp**2 &
-                 -0.0580586 *rrp**3 &
-                 +0.0816006 *rrp**4 
+                 +0.00679450*rcyl_mn    &
+                 -0.0149310 *rcyl_mn**2 &
+                 -0.0580586 *rcyl_mn**3 &
+                 +0.0816006 *rcyl_mn**4 
          endwhere
 !
-         where (rrp.gt.0.4)
-            cs2 = 0.05**2 * g0 / rrp
+         where (rcyl_mn.gt.0.4)
+            cs2 = 0.05**2 * g0 / rcyl_mn
          endwhere
 !
-         where (rrp.lt.0.2) 
+         where (rcyl_mn.lt.0.2) 
             cs2 = 0.008
          endwhere
 
@@ -790,26 +758,18 @@ module Planet
 !*******************************************************************
     subroutine get_old_average(p)
 !
-      use Sub, only: calc_phiavg_general,calc_phiavg_unitvects
       use Global, only: set_global,get_global
       use Mpicomm, only: stop_it
 !
       real, dimension(nx,3) :: bavg,uavg
       real, dimension(nr,3) :: bavg_coarse,uavg_coarse
-      real, dimension(nx) :: rcyl,rhoavg
+      real, dimension(nx) :: rhoavg
       real, dimension(nr) :: rhoavg_coarse
       real :: rloop_1,rloop_int,rloop_ext,rmid,rmid_1,rmid_2
       real :: dudr,dbdr,dr,step,upu,upb,dwr,u0,b0
       real :: upr,r0
       integer :: i,ir,aux
       type (pencil_case) :: p
-!
-! Get the unit vectors
-!
-      rcyl = sqrt(x(l1:l2)**2 + y(m)**2)
-!
-      call calc_phiavg_general()
-      call calc_phiavg_unitvects()
 !
 ! in the first time step, there is no average yet 
 ! use the pencil value then. The same will be used
@@ -842,19 +802,19 @@ module Planet
 !
 ! this retrives ir, from 1 to nr
 !
-            ir = floor((rcyl(i)-r_int)/step) + 1 
+            ir = floor((rcyl_mn(i)-r_int)/step) + 1 
             rloop_int = r_int + (ir-1)*step
             rloop_ext = r_int + ir*step
             rmid = 0.5*(rloop_int + rloop_ext)
             rmid_1 = rmid + step
 
-            if ((rcyl(i) .gt. r_int).and.(rcyl(i) .le. r_ext)) then 
+            if ((rcyl_mn(i) .gt. r_int).and.(rcyl_mn(i) .le. r_ext)) then 
 !
 ! gives problem for ir=nr because ir+1 will be out of bounds
 !
                if (ir /= nr) then 
                   dwr = rmid_1 - rmid
-                  dr = rcyl(i) - rmid
+                  dr = rcyl_mn(i) - rmid
 !
                   upr = rhoavg_coarse(ir+1) - rhoavg_coarse(ir)
                   r0 = rhoavg_coarse(ir)
@@ -881,7 +841,7 @@ module Planet
                if (ir == nr) then 
                   rmid_2 = rmid-step
                   dwr = rmid - rmid_2
-                  dr = rcyl(i) - rmid
+                  dr = rcyl_mn(i) - rmid
 !
                   upr = rhoavg_coarse(ir) - rhoavg_coarse(ir-1)
                   r0 = rhoavg_coarse(ir)
@@ -924,7 +884,6 @@ module Planet
 !*******************************************************************
     subroutine set_new_average(p)
 !
-      use Sub, only: calc_phiavg_general,calc_phiavg_unitvects
       use Global, only: set_global
       use Mpicomm 
 !
@@ -940,9 +899,6 @@ module Planet
       real :: step,rloop_int,rloop_ext
       integer :: ir,i
       type (pencil_case) :: p
-!
-      call calc_phiavg_general()
-      call calc_phiavg_unitvects()
 !
       urad=p%uu(:,1)*pomx+p%uu(:,2)*pomy 
       uphi=p%uu(:,1)*phix+p%uu(:,2)*phiy 
@@ -1076,7 +1032,6 @@ module Planet
          idiag_torqext=0
          idiag_totenergy=0
          idiag_totangmom=0
-         idiag_totmass2=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1091,8 +1046,6 @@ module Planet
               'totenergy',idiag_totenergy)
          call parse_name(iname,cname(iname),cform(iname),&
               'totangmom',idiag_totangmom)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'totmass2',idiag_totmass2)
       enddo
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
@@ -1103,7 +1056,6 @@ module Planet
         write(3,*) 'i_torqext=',idiag_torqext
         write(3,*) 'i_totenergy=',idiag_totenergy
         write(3,*) 'i_totangmom=',idiag_totangmom
-        write(3,*) 'i_totmass2=',idiag_totmass2
       endif
 !
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
