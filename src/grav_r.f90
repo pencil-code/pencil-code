@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.83 2006-06-15 21:42:58 theine Exp $
+! $Id: grav_r.f90,v 1.84 2006-07-18 19:41:46 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.83 2006-06-15 21:42:58 theine Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.84 2006-07-18 19:41:46 wlyra Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -95,7 +95,6 @@ module Gravity
       use Sub, only: poly, calc_unitvects_sphere
       use Mpicomm
       use Global
-      use Planet
 !
       real, dimension (nx,3) :: gg_mn=0.
       real, dimension (nx) :: g_r,rr_mn
@@ -212,16 +211,11 @@ module Gravity
 
           else
 
-             if (.not.lplanet) then 
+             ! smoothed 1/r potential in a spherical shell
+             g_r=-g0*rr_mn**(n_pot-1) &
+                  *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
 !
-                ! smoothed 1/r potential in a spherical shell
-                g_r=-g0*rr_mn**(n_pot-1) &
-                     *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-! 
-            else
-               call gravity_star(g0,r0_pot,n_pot,g_r)
-            endif
-         endif
+          endif
 !
           gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
           gg_mn(:,2) = y(  m  )/rr_mn*g_r
@@ -230,7 +224,7 @@ module Gravity
          
           call set_global(gg_mn,m,n,'gg',nx)
 
-        enddo
+          enddo
         enddo
 !
       endif
