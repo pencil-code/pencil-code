@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.22 2006-07-14 09:24:50 wlyra Exp $
+! $Id: noplanet.f90,v 1.23 2006-07-18 19:28:38 wlyra Exp $
 !
 !  Dummy module
 !
@@ -7,8 +7,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lplanet = .false.
-!
-! PENCILS PROVIDED uu_kep
 !
 !***************************************************************
 
@@ -51,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.22 2006-07-14 09:24:50 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.23 2006-07-18 19:28:38 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,23 +127,15 @@ module Planet
       !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
-    subroutine calc_pencils_planet(f,p,g0,r0_pot)
-!
-! calculate keplerian velocity as a pencil, so I don't
-! have to recalculate it on other routines from f,g0 and r0_pot
-!
-! 28-mar-06/wlad : dummy
+    subroutine calc_pencils_planet(f,p)
 !
      use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      real :: g0,r0_pot
 !
       intent(in) :: f
       intent(inout) :: p
-!
-      if (lpencil(i_uu_kep)) p%uu_kep=0.
 !   
     endsubroutine calc_pencils_planet
 !***********************************************************************
