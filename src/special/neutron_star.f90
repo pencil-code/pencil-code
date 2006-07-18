@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.4 2006-07-18 11:18:36 mee Exp $
+! $Id: neutron_star.f90,v 1.5 2006-07-18 12:08:45 mee Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -63,20 +63,22 @@ module Special
   include 'special.h'
   
   ! input parameters 
- ! logical :: sharp=.false., smooth=.false.
+  logical :: lsharp=.false., lsmooth=.false.
 
   logical :: lmass_source_NS=.false. 
   logical :: leffective_gravity=.false.
 
-  character (len=labellen), dimension(ninit) :: initnstar='default'
+  character (len=labellen) :: initnstar='default'
   real :: rho_star=1.,rho_disk=1., rho_surf=1.
 !
 ! Keep some over used pencils
 !
   real, dimension(nx) :: z_2
+  integer :: H_disk_point_int=0
+
 
   namelist /neutron_star_init_pars/ &
-      initnstar,lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf!,sharp
+      initnstar,lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf, H_disk_point_int 
 
   ! run parameters
 
@@ -134,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.4 2006-07-18 11:18:36 mee Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.5 2006-07-18 12:08:45 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.4 2006-07-18 11:18:36 mee Exp $")
+           "$Id: neutron_star.f90,v 1.5 2006-07-18 12:08:45 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -198,6 +200,14 @@ module Special
       select case(initnstar)
         case('default')
           if(lroot) print*,'init_special: Default neutron star setup'
+          call density_step(f,xx,zz)
+        case('sharp')
+          if(lroot) print*,'init_special: Sharp neutron star setup'
+          lsharp=.true.
+          call density_step(f,xx,zz)
+        case('smooth')
+          if(lroot) print*,'init_special: Sharp neutron star setup'
+          lsmooth=.true.
           call density_step(f,xx,zz)
         case default
           !
@@ -285,9 +295,9 @@ module Special
       integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=neutron_star_init_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=special_init_pars,ERR=99)
+        read(unit,NML=neutron_star_init_pars,ERR=99)
       endif
 
 99    return
@@ -296,7 +306,7 @@ module Special
     subroutine write_special_init_pars(unit)
       integer, intent(in) :: unit
 
-      write(unit,NML=special_init_pars)
+      write(unit,NML=neutron_star_init_pars)
 
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -305,9 +315,9 @@ module Special
       integer, intent(inout), optional :: iostat
     
       if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
+        read(unit,NML=neutron_star_run_pars,ERR=99, IOSTAT=iostat)
       else
-        read(unit,NML=special_run_pars,ERR=99)
+        read(unit,NML=neutron_star_run_pars,ERR=99)
       endif
 
 99    return
@@ -316,7 +326,8 @@ endsubroutine read_special_run_pars
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit
                                                                                                    
-      if (NO_WARN) print*,unit
+      write(unit,NML=neutron_star_run_pars)
+
     endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
@@ -429,21 +440,23 @@ endsubroutine read_special_run_pars
 !natalia                  -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho)-f(H_disk_point+5:l2,m,n-1,ilnrho))
 !natalia
                 if (H_disk_point .ge. nxgrid) then
-                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
-                    -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-                    -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
+!ajwm  PENDING MU/RGAS fix
+!ajwm                  df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!ajwm                    -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
+!ajwm                    -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
                 else
-                  df(l1:H_disk_point+4,m,n,ilnrho)= &
-                    df(l1:H_disk_point+4,m,n,ilnrho) &
-                    -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-                    -log(rho_surf)-(1.-M_star/2./z(n)**3 &
-                                    * x(l1:H_disk_point+4)**2*mu/Rgas/T_star))
-                  
-                  df(H_disk_point+5:l2,m,n,ilnrho)=i &
-                    df(H_disk_point+5:l2,m,n,ilnrho) &
-                    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
-                    -log(rho_surf)-(1.-M_star/2./z(n)**3 &
-                                    * x(H_disk_point+4)**2*mu/Rgas/T_star))
+!ajwm  PENDING MU/RGAS fix
+!ajwm                  df(l1:H_disk_point+4,m,n,ilnrho)= &
+!ajwm                    df(l1:H_disk_point+4,m,n,ilnrho) &
+!ajwm                    -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
+!ajwm                    -log(rho_surf)-(1.-M_star/2./z(n)**3 &
+!ajwm                                    * x(l1:H_disk_point+4)**2*mu/Rgas/T_star))
+!ajwm                  
+!ajwm                  df(H_disk_point+5:l2,m,n,ilnrho)= &
+!ajwm                    df(H_disk_point+5:l2,m,n,ilnrho) &
+!ajwm                    -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
+!ajwm                    -log(rho_surf)-(1.-M_star/2./z(n)**3 &
+!ajwm                                    * x(H_disk_point+4)**2*mu/Rgas/T_star))
                 endif ! (H_disk_point .lt. nxgrid)
               else
 !  if nxgrid==1
@@ -651,7 +664,7 @@ endsubroutine read_special_run_pars
 
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(df,p)
+    subroutine special_calc_magnetic(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -663,6 +676,7 @@ endsubroutine read_special_run_pars
 !
       use Cdata
       
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -682,7 +696,7 @@ endsubroutine read_special_run_pars
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
-    subroutine special_calc_entropy(df,p)
+    subroutine special_calc_entropy(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -694,6 +708,7 @@ endsubroutine read_special_run_pars
 !
       use Cdata
       
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -796,7 +811,7 @@ endsubroutine read_special_run_pars
         f(:,:,step_length+3+1:mz,ilnrho)=log(rho_star)
       endif
 !
-      if (sharp) then
+      if (lsharp) then
         if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
           f(1:step_width+3,:,:,ilnrho)=log(rho_star)
           f(step_width+3+1:mx,:,:,ilnrho)=log(rho_disk)
@@ -811,7 +826,7 @@ endsubroutine read_special_run_pars
         end if
       end if 
 !
-      if (smooth) then
+      if (lsmooth) then
         ln_ro_r=log(rho_disk)
         ln_ro_l=log(rho_star)
         ln_ro_u=log(rho_surf)
