@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.159 2006-07-08 13:51:45 wlyra Exp $ 
+! $Id: initcond.f90,v 1.160 2006-07-18 19:38:53 wlyra Exp $ 
 
 module Initcond 
  
@@ -2525,7 +2525,7 @@ module Initcond
 !
       r_cyl   = sqrt(xx**2 + yy**2) + epsi
 !
-      if (nzgrid==1) then
+      if ((nzgrid==1).or.(lcylindrical)) then
 !
 ! Radial stratification
 !
