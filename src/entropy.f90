@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.418 2006-07-17 11:37:31 mee Exp $
+! $Id: entropy.f90,v 1.419 2006-07-18 12:05:41 mee Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -159,7 +159,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.418 2006-07-17 11:37:31 mee Exp $")
+           "$Id: entropy.f90,v 1.419 2006-07-18 12:05:41 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1932,7 +1932,7 @@ module Entropy
 !  entry possibility for "personal" entries.
 !  In that case you'd need to provide your own "special" routine.
 !
-      if (lspecial) call special_calc_entropy(df,p)
+      if (lspecial) call special_calc_entropy(f,df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.

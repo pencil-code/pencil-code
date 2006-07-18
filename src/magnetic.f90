@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.300 2006-07-08 17:56:00 theine Exp $
+! $Id: magnetic.f90,v 1.301 2006-07-18 12:05:41 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -188,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.300 2006-07-08 17:56:00 theine Exp $")
+           "$Id: magnetic.f90,v 1.301 2006-07-18 12:05:41 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1105,7 +1105,7 @@ module Magnetic
 !
 !  Special contributions to this module are called here
 !
-      if (lspecial) call special_calc_magnetic(df,p)
+      if (lspecial) call special_calc_magnetic(f,df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.

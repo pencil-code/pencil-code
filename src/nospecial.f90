@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.14 2006-06-14 21:34:01 brandenb Exp $
+! $Id: nospecial.f90,v 1.15 2006-07-18 12:05:41 mee Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.14 2006-06-14 21:34:01 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.15 2006-07-18 12:05:41 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.14 2006-06-14 21:34:01 brandenb Exp $")
+           "$Id: nospecial.f90,v 1.15 2006-07-18 12:05:41 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -345,7 +345,7 @@ module Special
 
     endsubroutine rprint_special
 !***********************************************************************
-    subroutine special_calc_density(df,p)
+    subroutine special_calc_density(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -357,6 +357,7 @@ module Special
 !
       use Cdata
       
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -406,7 +407,7 @@ module Special
 
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_magnetic(df,p)
+    subroutine special_calc_magnetic(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -418,6 +419,7 @@ module Special
 !
       use Cdata
       
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -437,7 +439,7 @@ module Special
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
-    subroutine special_calc_entropy(df,p)
+    subroutine special_calc_entropy(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
 !   entropy equation.
@@ -449,6 +451,7 @@ module Special
 !
       use Cdata
       
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -465,7 +468,6 @@ module Special
       if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_entropy
-!***********************************************************************
 !***********************************************************************
 endmodule Special
 
