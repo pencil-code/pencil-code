@@ -10,17 +10,12 @@
   public :: dspecial_dt
 
   public :: calc_pencils_special
+  public :: pencil_criteria_special
+  public :: pencil_interdep_special
 
   public :: special_calc_density
   public :: special_calc_hydro
   public :: special_calc_entropy
   public :: special_calc_magnetic
 
-!Tony
-! Cannot just add things to the public interface!!
-! this breaks all the auto tests!
-!
-!Natalia
-!   public :: rho_disk, rho_star, rho_surf
-
-
+  public :: special_boundconds

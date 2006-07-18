@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.15 2006-07-18 12:05:41 mee Exp $
+! $Id: nospecial.f90,v 1.16 2006-07-18 19:24:59 mee Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.15 2006-07-18 12:05:41 mee Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.16 2006-07-18 19:24:59 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.15 2006-07-18 12:05:41 mee Exp $")
+           "$Id: nospecial.f90,v 1.16 2006-07-18 19:24:59 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -208,6 +208,26 @@ module Special
       if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
+!***********************************************************************
+    subroutine pencil_criteria_special()
+! 
+!  All pencils that this special module depends on are specified here.
+! 
+!  18-07-06/tony: coded
+!
+    endsubroutine pencil_criteria_special
+!***********************************************************************
+    subroutine pencil_interdep_special(lpencil_in)
+!
+!  Interdependency among pencils provided by this module are specified here.
+!
+!  18-07-06/tony: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*,lpencil_in(1)
+!
+    endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
@@ -468,6 +488,25 @@ module Special
       if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_entropy
+!***********************************************************************
+    subroutine special_boundconds(f,bc)
+!
+!   calculate a additional 'special' term on the right hand side of the 
+!   entropy equation.
+!
+!   Some precalculated pencils of data are passed in for efficiency
+!   others may be calculated directly from the f array
+!
+!   06-oct-03/tony: coded
+!
+      use Cdata
+!      
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      type (boundary_condition) :: bc
+!
+      if (NO_WARN) print*,f(1,1,1,1),bc%name
+!
+    endsubroutine special_boundconds
 !***********************************************************************
 endmodule Special
 
