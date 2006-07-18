@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.328 2006-07-14 10:16:12 ajohan Exp $
+! ! $Id: cdata.f90,v 1.329 2006-07-18 19:19:06 mee Exp $
 
 module Cdata
 
@@ -287,25 +287,6 @@ module Cdata
   character (len=120) :: directory='',datadir_snap='',directory_snap=''
   character (len=120) :: cvsid='[No CVS Id given]'
 
-! Natalia (NS)
- 
-  real :: H_disk=0.
-  real :: L_disk=0.
-  real :: R_star=0.
-  real :: M_star=0. 
-  real :: T_star=0.
-  real :: T_disk=0.
-  real :: accretion_flux=0.
-  logical :: lextrapolate_bot_density=.false.
-  logical :: ltop_velocity_kep=.false.
-  logical :: laccelerat_zone=.false.
-  logical :: ldecelerat_zone=.false.
-  logical :: lsurface_zone=.false.
-  logical :: lnstar_T_const=.false.
-  logical :: lnstar_entropy=.false.
-  logical :: lnstar_1D=.false.
-  integer :: ac_dc_size=5
-  integer :: H_disk_point=0
 ! A buffer in which to construct an error message
   character (len=255) :: errormsg
 
