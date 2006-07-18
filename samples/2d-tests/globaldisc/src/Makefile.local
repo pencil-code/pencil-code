@@ -19,10 +19,7 @@ SHEAR     = noshear
 SHOCK     =   shock
 PLANET    =   planet
 
-PARTICLES = particles_planet
+PARTICLES = particles_nbody
 
-# Compile using double precision
-#FFLAGS_GENERAL=-r8
-#CFLAGS_GENERAL=-DDOUBLE_PRECISION
 REAL_PRECISION=double
 
