@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.63 2006-07-14 00:54:34 theine Exp $
+! $Id: slices.f90,v 1.64 2006-07-18 19:18:23 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -14,9 +14,9 @@ module Slices
 
 !  Variables for xy slices start here
 !!! New slice code reuses the following slice variables.
-  real, target, dimension (nx,ny) :: slice_xy, slice_xy2
-  real, target, dimension (nx,nz) :: slice_xz
-  real, target, dimension (ny,nz) :: slice_yz
+  real, target, dimension (nx,ny) :: slice_xy = 0., slice_xy2 = 0.
+  real, target, dimension (nx,nz) :: slice_xz = 0.
+  real, target, dimension (ny,nz) :: slice_yz = 0.
 
 !!! LEGACY SLICE VARIABLES FOLLOW
 !  Code variables
