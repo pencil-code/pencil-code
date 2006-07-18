@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.264 2006-07-18 12:06:28 mee Exp $
+! $Id: density.f90,v 1.265 2006-07-18 19:23:39 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -111,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.264 2006-07-18 12:06:28 mee Exp $")
+           "$Id: density.f90,v 1.265 2006-07-18 19:23:39 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1019,8 +1019,6 @@ module Density
            idiag_rhomax/=0 .or. idiag_rhomxy/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_lnrho2m/=0) lpenc_diagnos(i_lnrho)=.true.
 
-      if (laccelerat_zone)  lpenc_requested(i_rho)=.true.
-    !  if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
 !
     endsubroutine pencil_criteria_density
 !***********************************************************************
