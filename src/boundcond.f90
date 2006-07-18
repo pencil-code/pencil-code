@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.117 2006-07-12 19:52:03 dintrans Exp $
+! $Id: boundcond.f90,v 1.118 2006-07-18 19:27:50 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -63,6 +63,7 @@ module Boundcond
       use Cdata
       use Entropy
       use Magnetic
+      use Special, only: special_boundconds
       use Radiation
       use EquationOfState
 !
@@ -73,6 +74,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
+      type (boundary_condition) :: bc 
 !
       if (ldebug) print*, 'boundconds_x: ENTER: boundconds_x'
 !
@@ -138,14 +140,22 @@ module Boundcond
                   call bcx_extrap_2_1(f,topbot,j)
                 case ('e2')       ! extrapolation
                   call bcx_extrap_2_2(f,topbot,j)
-                case ('stp') 
-                  call bc_BL_x(f,-1,topbot, j,REL=.true., val=fbcx12)
                 case ('')         ! do nothing; assume that everything is set
                 case default
-                  write(unit=errormsg,fmt='(A,A4,A,I3)') &
-                       "No such boundary condition bcx1/2 = ", &
-                       bc12(j), " for j=", j
-                  call fatal_error("boundconds_x",errormsg)
+                  bc%bcname=bc12(j)
+                  bc%ivar=j
+                  bc%location=(((k-1)*2)-1)   ! -1/1 for x bot/top
+                  bc%value1=fbcx12(j)
+                  bc%done=.false.
+
+                  call special_boundconds(f,bc)
+
+                  if (.not.bc%done) then
+                    write(unit=errormsg,fmt='(A,A4,A,I3)') &
+                         "No such boundary condition bcx1/2 = ", &
+                         bc12(j), " for j=", j
+                    call fatal_error("boundconds_x",errormsg)
+                  endif
                 endselect
               endif
             enddo
@@ -169,6 +179,7 @@ module Boundcond
       use Cdata
       use Entropy
       use Magnetic
+      use Special, only: special_boundconds
       use EquationOfState
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -178,6 +189,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
+      type (boundary_condition) :: bc 
 !
       if (ldebug) print*,'boundconds_y: ENTER: boundconds_y'
 !
@@ -232,9 +244,18 @@ module Boundcond
                 call bcy_extrap_2_2(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
               case default
-                write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
-                     bc12(j), " for j=", j
-                call fatal_error("boundconds_y",errormsg)
+                bc%bcname=bc12(j)
+                bc%ivar=j
+                bc%location=(((k-1)*4)-2)   ! -2/2 for y bot/top
+                bc%done=.false.
+
+                if (lspecial) call special_boundconds(f,bc)
+
+                if (.not.bc%done) then
+                  write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcy1/2 = ", &
+                       bc12(j), " for j=", j
+                  call fatal_error("boundconds_y",errormsg)
+                endif
               endselect
             endif
           enddo
@@ -258,6 +279,7 @@ module Boundcond
       use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,Ftop,FtopKtop,chi, &
                          lmultilayer,lheatc_chiconst
       use Magnetic
+      use Special, only: special_boundconds
       use Density
       use EquationOfState
 !
@@ -270,6 +292,7 @@ module Boundcond
       integer :: ivar1, ivar2, j, k, ip_ok
       character (len=bclen), dimension(mcom) :: bc12
       character (len=3) :: topbot
+      type (boundary_condition) :: bc 
 !
       if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
 !
@@ -385,13 +408,21 @@ module Boundcond
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
               case ('')         ! do nothing; assume that everything is set
-              case ('stp') 
-             ! if (j==5)  print*,'fbcz12_1, fbcz12_2',fbcz12_1, fbcz12_2
-                call bc_BL_z(f,-1,topbot, j, fbcz12_1, fbcz12_2)
               case default
-                write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
-                     bc12(j), " for j=", j
-                call fatal_error("boundconds_z",errormsg)
+                bc%bcname=bc12(j)
+                bc%ivar=j
+                bc%location=(((k-1)*6)-3)   ! -3/3 for z bot/top
+                bc%value1=fbcz12_1(j)
+                bc%value2=fbcz12_2(j)
+                bc%done=.false.
+
+                if (lspecial) call special_boundconds(f,bc)
+
+                if (.not.bc%done) then
+                  write(unit=errormsg,fmt='(A,A4,A,I3)') "No such boundary condition bcz1/2 = ", &
+                       bc12(j), " for j=", j
+                  call fatal_error("boundconds_z",errormsg)
+                endif
               endselect
             endif
           enddo
@@ -809,207 +840,6 @@ module Boundcond
       endselect
 !
     endsubroutine bc_van_z
-!***********************************************************************
-
-    subroutine bc_BL_x(f,sgn,topbot,j,rel,val)
-!
-! Natalia
-!  11-may-06
-!
-      use Cdata
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mcom), optional :: val
-      integer :: sgn,i,j
-      logical, optional :: rel
-      logical :: relative
-!
-      if (present(rel)) then; relative=rel; else; relative=.false.; endif
-
-      select case(topbot)
-
-      case('bot')  
-
-             ! bottom boundary
-
-     if (j == 1) then 
-         f(l1,:,:,j) = 0.
-         do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
-     else
-        do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
-     endif
-          !   f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
-
-      case('top')               ! top boundary
-
-     if (nxgrid <= 1) then
-       if (j == 1) then
-          f(l2,m1:m2,n1:n2,j)=val(j)
-          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
-       else
-        f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
-        f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
-        f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
-       endif
-     else
-      !  f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
-      !  f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
-      !  f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
-
-      do i=1,nghost; f(l1+i,:,:,j)=f(l1-i,:,:,j); enddo
-
-
-     endif
-
-      case default
-        print*, "bc_BL_x: ", topbot, " should be `top' or `bot'"
-
-      endselect
-!
-    endsubroutine bc_BL_x
- !***********************************************************************
-    subroutine bc_BL_z(f,sgn,topbot,j,val1,val2)
-!
-!  Step boundary conditions.
-!
-!  11-feb-06/nbabkovs
-!
-      use Cdata
-      use EquationOfState
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mcom) :: val1_,val2_ 
-      real, dimension (mcom), intent(in) :: val1,val2
-      real, dimension(nx) :: lnrho,lnTT,ss
-      integer :: sgn,i,j, step_width, n1p4,n2m4, i_tmp
-      real :: H_disk_min, L_disk_min, ddz, ddx
-    !  integer, parameter :: ilnrho_lnTT=4
-
-      H_disk_min=Lxyz(1)/(nxgrid-1)
-      step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
-      ddx=H_disk_min
-
-      L_disk_min=Lxyz(3)/(nzgrid-1)
-      ddz=L_disk_min
-
-      if (j == 4 .or. j==5) then
-        val1_=log(val1)
-        val2_=log(val2)
-      else
-        val1_=val1
-        val2_=val2
-      endif
-
-      select case(topbot)
-
-      case('bot')               ! bottom boundary
-
-        if (lextrapolate_bot_density .and. j>=4) then
-
-          n1p4=n1+4
-
-          f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
-          f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
-          f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
-
-        else
-
-          if (j==5) then
-            lnrho=f(l1:l2,m1,n1,ilnrho)
-            if (lnstar_T_const) then 
-              lnTT=log(cs0**2/(gamma1))
-            else     
-              lnTT=log(T_star)
-            endif
-            !+ other terms for sound speed not equal to cs_0
-            call eoscalc(4,lnrho,lnTT,ss=ss)
-            f(l1:l2,m1,n1,iss)=ss 
-            !  print*, 'boundary entropy ', ss
-            !ss=exp(ss-(-log(cs0**2/(gamma1))-gamma1*lnrho)/gamma)
-            !   ss=exp(log(cs0**2/(gamma1))+gamma*ss+gamma1*lnrho)
-            !print*, 'boundary entropy ', ss
-          else
-            if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
-              f(1:step_width+3,:,n1,j)=val1_(j)
-              f(step_width+3+1:mx,:,n1,j)=val2_(j)
-            endif
-            if (H_disk < H_disk_min)    f(:,:,n1,j)=val2_(j)
-            if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n1,j)=val1_(j)
-          endif
-          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
-        endif
-
-      case('top')               ! top boundary
-
-        if (ltop_velocity_kep .and. j==2) then 
-          f(:,:,n2,j)=sqrt(M_star/(R_star+Lxyz(3)))
-        else
-
-          if (nxgrid <= 1) then
-            if (j==5) then
-              lnrho=f(l1:l2,m2,n2,ilnrho)
-              if (T_disk.EQ.0) then    
-              lnTT=log(cs0**2/(gamma1))
-              else
-              lnTT=log(T_disk)    
-              endif           
-              call eoscalc(4,lnrho,lnTT,ss=ss)
-              f(l1:l2,m2,n2,iss)=ss
-            else 
-              if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
-                f(1:step_width+3,:,n2,j)=val1_(j)
-                f(step_width+3+1:mx,:,n2,j)=val2_(j)
-              endif
-              if (H_disk < H_disk_min)    f(:,:,n2,j)=val2_(j)
-              if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n2,j)=val1_(j)
-            endif
-          else
-
-            !    if (j==4) then
-            !    f(1:H_disk_point+4,:,n2,j)=val1_(j)
-            !    f(H_disk_point+5:mx,:,n2,j)=val2_(j)
-
-            !    do i=1,H_disk_point+4
-            !       f(i,:,n2,ilnrho)=log(5.)+(1.-(ddx*i/H_disk)**2)
-            !    enddo 
-
-            !    do i=H_disk_point+5,mx
-            !       f(i,:,n2,ilnrho)=f(H_disk_point+4,:,n2,ilnrho)
-            !   enddo    
-
-            !    else 
-            n2m4=n2-4
-            i_tmp=H_disk_point+5
-
-            f(i_tmp:mx,:,n2+1,j)=0.2   *(   9*f(i_tmp:mx,:,n2  ,j) &
-                                         -  4*f(i_tmp:mx,:,n2-2,j) &
-                                         -  3*f(i_tmp:mx,:,n2-3,j) &
-                                         +  3*f(i_tmp:mx,:,n2m4,j))
-            f(i_tmp:mx,:,n2+2,j)=0.2   *(  15*f(i_tmp:mx,:,n2  ,j) &
-                                        -   2*f(i_tmp:mx,:,n2-1,j) &
-                                        -   9*f(i_tmp:mx,:,n2-2,j) &
-                                        -   6*f(i_tmp:mx,:,n2-3,j) &
-                                        +   7*f(i_tmp:mx,:,n2m4,j))
-            f(i_tmp:mx,:,n2+3,j)=1./35.*( 157*f(i_tmp:mx,:,n2  ,j) &
-                                         - 33*f(i_tmp:mx,:,n2-1,j) &
-                                         -108*f(i_tmp:mx,:,n2-2,j) &
-                                         - 68*f(i_tmp:mx,:,n2-3,j) &
-                                         + 87*f(i_tmp:mx,:,n2m4,j))
-            !  endif
-
-          endif
-        endif
-
-        do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
-
-      case default
-        print*, "bc_step_z: ", topbot, " should be `top' or `bot'"
-
-      endselect
-!
-    endsubroutine bc_BL_z
 !***********************************************************************
     subroutine bc_van3rd_z(f,topbot,j)
 !
