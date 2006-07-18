@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.301 2006-07-18 12:05:41 mee Exp $
+! $Id: magnetic.f90,v 1.302 2006-07-18 19:37:23 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -188,7 +188,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.301 2006-07-18 12:05:41 mee Exp $")
+           "$Id: magnetic.f90,v 1.302 2006-07-18 19:37:23 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -493,8 +493,6 @@ module Magnetic
 !
       if (dvid/=0.0) lpenc_video(i_b2)=.true.
 !
-      if (lplanet) lpenc_requested(i_uu_kep)=.true.
-      
       if ( (hall_term/=0. .and. ldt) .or. height_eta/=0. .or. ip<=4) &
           lpenc_requested(i_jj)=.true.
       if (dvid/=0.) lpenc_video(i_jb)=.true.
@@ -1345,32 +1343,26 @@ module Magnetic
       real, dimension (nx,3) :: bbs
       real, dimension (nx) :: br,bp,bz
 !
-      if (lcylindrical) then
-!
-         call calc_phiavg_general()
-         call calc_phiavg_unitvects()
-!
 ! from the planet phi-average
 !
-         call get_global(bbs,m,n,'bbs')
+      call get_global(bbs,m,n,'bbs')
 !
-         br=p%bb(:,1)*pomx+p%bb(:,2)*pomy - bbs(:,1)
-         bp=p%bb(:,1)*phix+p%bb(:,2)*phiy - bbs(:,2)
-         bz=p%bb(:,3) - bbs(:,3)
+      br=p%bb(:,1)*pomx+p%bb(:,2)*pomy - bbs(:,1)
+      bp=p%bb(:,1)*phix+p%bb(:,2)*phiy - bbs(:,2)
+      bz=p%bb(:,3) - bbs(:,3)
 !
-         if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm)
-         if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm)
-         if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm)
-         if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m)
-         if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m)
-         if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m)
-         if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm)
-         if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm)
-         if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm)
+      if (idiag_brm/=0)    call sum_lim_mn_name(br,idiag_brm)
+      if (idiag_bpm/=0)    call sum_lim_mn_name(bp,idiag_bpm)
+      if (idiag_bzm/=0)    call sum_lim_mn_name(bz,idiag_bzm)
+      if (idiag_br2m/=0)   call sum_lim_mn_name(br**2,idiag_br2m)
+      if (idiag_bp2m/=0)   call sum_lim_mn_name(bp**2,idiag_bp2m)
+      if (idiag_bzz2m/=0)  call sum_lim_mn_name(bz**2,idiag_bzz2m)
+      if (idiag_brbpm/=0)  call sum_lim_mn_name(br*bp,idiag_brbpm)
+      if (idiag_bzbpm/=0)  call sum_lim_mn_name(bz*bp,idiag_bzbpm)
+      if (idiag_brbzm/=0)  call sum_lim_mn_name(br*bz,idiag_brbzm)
 !
-         if (idiag_maxalphass/=0) call sum_lim_mn_name(-br*bp/(p%rho*p%cs2),idiag_maxalphass)
-!
-      endif
+      if (idiag_maxalphass/=0) &
+           call sum_lim_mn_name(-br*bp/(p%rho*p%cs2),idiag_maxalphass)
 !
     endsubroutine calc_mag_stress
 !***********************************************************************
@@ -2766,27 +2758,21 @@ module Magnetic
 !
       use Cdata
       use Global, only: get_global
-      use Sub, only: calc_phiavg_general,calc_phiavg_unitvects
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: bbs,uus
-      real, dimension(nx) :: r_cyl,u_phi
+      real, dimension(nx) :: u_phi
       type (pencil_case) :: p
       integer :: i
 !
       intent(inout) :: df
 !
-      call calc_phiavg_general()
-      call calc_phiavg_unitvects()
-!
-      r_cyl  =  sqrt(x(l1:l2)**2 + y(m)**2) + tini
-!
       call get_global(bbs,m,n,'bbs')
       call get_global(uus,m,n,'uus')
 !     
-      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - uus(:,2)*bbs(:,3)*x(l1:l2)/r_cyl 
-      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - uus(:,2)*bbs(:,3)*y(  m  )/r_cyl
+      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - uus(:,2)*bbs(:,3)*x(l1:l2)/rcyl_mn 
+      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - uus(:,2)*bbs(:,3)*y(  m  )/rcyl_mn
 !
     endsubroutine subtract_mean_lorentz
 !************************************************************************

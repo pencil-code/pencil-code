@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.270 2006-07-18 19:25:42 mee Exp $
+! $Id: hydro.f90,v 1.271 2006-07-18 19:37:23 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -154,7 +154,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.270 2006-07-18 19:25:42 mee Exp $")
+           "$Id: hydro.f90,v 1.271 2006-07-18 19:37:23 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -583,7 +583,6 @@ module Hydro
       if (ldt) lpenc_requested(i_uu)=.true.
 !
       if (lspecial) lpenc_requested(i_u2)=.true.
-      if (lplanet)  lpenc_requested(i_uu_kep)=.true.
       if (dvid/=0.) then
         lpenc_video(i_oo)=.true.
         lpenc_video(i_o2)=.true.
@@ -1054,32 +1053,26 @@ module Hydro
       real, dimension (nx,3) :: uus
       real, dimension (nx) :: ur,up,uz
 !
-      if (lcylindrical) then
-!
-         call calc_phiavg_general()
-         call calc_phiavg_unitvects()
-!
 ! from the planet phi-average
 !
-         call get_global(uus,m,n,'uus')
+      call get_global(uus,m,n,'uus')
 !
-         ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy - uus(:,1)
-         up=p%uu(:,1)*phix+p%uu(:,2)*phiy - uus(:,2)
-         uz=p%uu(:,3) - uus(:,3)
+      ur=p%uu(:,1)*pomx+p%uu(:,2)*pomy - uus(:,1)
+      up=p%uu(:,1)*phix+p%uu(:,2)*phiy - uus(:,2)
+      uz=p%uu(:,3) - uus(:,3)
 !
-         if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm)
-         if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm)
-         if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm)
-         if (idiag_ur2m/=0)   call sum_lim_mn_name(p%rho*ur**2,idiag_ur2m)
-         if (idiag_up2m/=0)   call sum_lim_mn_name(p%rho*up**2,idiag_up2m)
-         if (idiag_uzz2m/=0)  call sum_lim_mn_name(p%rho*uz**2,idiag_uzz2m)
-         if (idiag_urupm/=0)  call sum_lim_mn_name(p%rho*ur*up,idiag_urupm)
-         if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm)
-         if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm)
+      if (idiag_urm/=0)    call sum_lim_mn_name(ur,idiag_urm)
+      if (idiag_upm/=0)    call sum_lim_mn_name(up,idiag_upm)
+      if (idiag_uzzm/=0)   call sum_lim_mn_name(uz,idiag_uzzm)
+      if (idiag_ur2m/=0)   call sum_lim_mn_name(p%rho*ur**2,idiag_ur2m)
+      if (idiag_up2m/=0)   call sum_lim_mn_name(p%rho*up**2,idiag_up2m)
+      if (idiag_uzz2m/=0)  call sum_lim_mn_name(p%rho*uz**2,idiag_uzz2m)
+      if (idiag_urupm/=0)  call sum_lim_mn_name(p%rho*ur*up,idiag_urupm)
+      if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm)
+      if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm)
 !
-         if (idiag_reyalphass/=0) call sum_lim_mn_name(ur*up/(p%rho*p%cs2),idiag_reyalphass)
-!
-      endif
+      if (idiag_reyalphass/=0) &
+           call sum_lim_mn_name(ur*up/(p%rho*p%cs2),idiag_reyalphass)
 !
     endsubroutine calc_hydro_stress
 !***********************************************************************
