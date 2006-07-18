@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.3 2006-07-18 10:57:39 mee Exp $
+! $Id: neutron_star.f90,v 1.4 2006-07-18 11:18:36 mee Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -68,18 +68,19 @@ module Special
   logical :: lmass_source_NS=.false. 
   logical :: leffective_gravity=.false.
 
+  character (len=labellen), dimension(ninit) :: initnstar='default'
   real :: rho_star=1.,rho_disk=1., rho_surf=1.
 !
 ! Keep some over used pencils
 !
   real, dimension(nx) :: z_2
 
-  namelist /special_init_pars/ &
-       lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf!,sharp
+  namelist /neutron_star_init_pars/ &
+      initnstar,lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf!,sharp
 
   ! run parameters
 
-  namelist /special_run_pars/ &
+  namelist /neutron_star_run_pars/ &
       lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf
 
 !!
@@ -133,11 +134,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.3 2006-07-18 10:57:39 mee Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.4 2006-07-18 11:18:36 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.3 2006-07-18 10:57:39 mee Exp $")
+           "$Id: neutron_star.f90,v 1.4 2006-07-18 11:18:36 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -194,18 +195,17 @@ module Special
       intent(inout) :: f
 
 !!
-!!  SAMPLE IMPLEMENTATION
-!!
-!!      select case(initspecial)
-!!        case('nothing'); if(lroot) print*,'init_special: nothing'
-!!        case('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
-!!        case default
-!!          !
-!!          !  Catch unknown values
-!!          !
-!!          if (lroot) print*,'init_special: No such value for initspecial: ', trim(initspecial)
-!!          call stop_it("")
-!!      endselect
+      select case(initnstar)
+        case('default')
+          if(lroot) print*,'init_special: Default neutron star setup'
+          call density_step(f,xx,zz)
+        case default
+          !
+          !  Catch unknown values
+          !
+          if (lroot) print*,'init_special: No such value for initnstar: ', trim(initnstar)
+          call stop_it("")
+      endselect
 !
       if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
@@ -596,49 +596,50 @@ endsubroutine read_special_run_pars
 ! surface zone in a case of a Keplerian disk
 
       if (lsurface_zone) then
-          if ( dt .gt.0.) then
-                         
-         l_sz=l2-5
-               
-           do j=l_sz,l2   
-           !  df(j,m,n,iux)=df(j,m,n,iux)&
-           !        -1./(3.*dt)*(-f(j-1,m,n,iux)+f(j,m,n,iux))
-           !   df(j,m,n,iux)=df(j,m,n,iux)&
-           !        -1./(10.*dt)*(f(j,m,n,iux)-f(j+1,m,n,iux))
-           enddo
+        if ( dt .gt.0.) then
+!
+          l_sz=l2-5
+!
 
+!natalia  ... REASON FOR BLOCK QUOTE ...
+!          do j=l_sz,l2   
+!            df(j,m,n,iux)=df(j,m,n,iux)&
+!                 -1./(3.*dt)*(-f(j-1,m,n,iux)+f(j,m,n,iux))
+!            df(j,m,n,iux)=df(j,m,n,iux)&
+!                 -1./(10.*dt)*(f(j,m,n,iux)-f(j+1,m,n,iux))
+!          enddo
+!
         if (lnstar_1D) then
              df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
                    -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
-     
-         
+!
+!
             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                   -1./(5.*dt)*(f(l1:l2,m,n,iuy)-sqrt(M_star/xyz0(3)))
-
+!
             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
              -1./(5.*dt)*(f(l1:l2,m,n,iuz)+accretion_flux/p%rho(:))
-
+!
          else
-
            do j=l_sz,l2   
-            df(j,m,n,iux)=df(j,m,n,iux)&
-               -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
-           df(j,m,n,iuy)=df(j,m,n,iuy)&
+             df(j,m,n,iux)=df(j,m,n,iux)&
+                  -1./(5.*dt)*(f(j,m,n,iux)-f(j-1,m,n,iux))
+             df(j,m,n,iuy)=df(j,m,n,iuy)&
                   -1./(5.*dt)*(f(j,m,n,iuy)-f(j-1,m,n,iuy))
-           df(j,m,n,iuz)=df(j,m,n,iuz)&
+             df(j,m,n,iuz)=df(j,m,n,iuz)&
                   -1./(5.*dt)*(f(j,m,n,iuz)-f(j-1,m,n,iuz))
            enddo
-
-
-           !  df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
-           !        -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
-     
-         
-         !   df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
-         !         -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/z(n)))
-
-         !   df(l_sz:l2,m,n,iuz)=df(l_sz:l2,m,n,iuz)&
-         !    -1./(5.*dt)*(f(l_sz:l2,m,n,iuz)+accretion_flux/p%rho(:))
+!
+!natalia ... REASON FOR BLOCK QUOTE ...
+!           df(l_sz:l2,m,n,iux)=df(l_sz:l2,m,n,iux)&
+!                  -1./(2.*dt)*(f(l_sz:l2,m,n,iux)-0.)
+!
+!
+!           df(l_sz:l2,m,n,iuy)=df(l_sz:l2,m,n,iuy)&
+!                  -1./(5.*dt)*(f(l_sz:l2,m,n,iuy)-sqrt(M_star/z(n)))
+!
+!           df(l_sz:l2,m,n,iuz)=df(l_sz:l2,m,n,iuz)&
+!                  -1./(5.*dt)*(f(l_sz:l2,m,n,iuz)+accretion_flux/p%rho(:))
  
      
          endif 
@@ -710,8 +711,6 @@ endsubroutine read_special_run_pars
 
     endsubroutine special_calc_entropy
 !*************************************************************************
- 
-!*********************************************************************
     subroutine mass_source_NS(f,df,rho)
 !
 !  add mass sources and sinks
@@ -719,10 +718,10 @@ endsubroutine read_special_run_pars
 !  2006/Natalia
 !
       use Cdata
-     
+!     
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
- !     real, dimension(nx) :: fint,fext,pdamp
+!     real, dimension(nx) :: fint,fext,pdamp
       real  ::  sink_area, V_acc, V_0, rho_0, ksi, integral_rho=0., flux
       integer :: sink_area_points=50, i
       integer :: idxz  
@@ -730,11 +729,11 @@ endsubroutine read_special_run_pars
 
        sink_area=Lxyz(3)/(nzgrid-1.)*sink_area_points
 
-       !
-       ! No clue what this index is good for, but nzgrid-30 is not a
-       ! valid index for e.g. 2-d runs, so sanitize it to avoid
-       ! `Array reference at (1) is out of bounds' with g95 -Wall
-       !
+! 
+!  No clue what this index is good for, but nzgrid-30 is not a
+!  valid index for e.g. 2-d runs, so sanitize it to avoid
+!  `Array reference at (1) is out of bounds' with g95 -Wall
+! 
        idxz = min(nzgrid-30,n2)
 
        V_0=f(4,4,idxz,iuz)
@@ -743,10 +742,10 @@ endsubroutine read_special_run_pars
    
        flux=V_0*rho_0     
 
-      ! V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
-       
-      !   
-      !  ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
+!       V_0=rho_0*V_acc*(sink_area_points+1)/integral_rho
+!
+!
+!       ksi=2.*((Lxyz(3)/(nzgrid-1.)*(sink_area_points+4-n))/sink_area)/sink_area
        ksi=1./sink_area
 
        if ( 25 .gt. n .and. n .lt. sink_area_points+25) then 
@@ -756,14 +755,118 @@ endsubroutine read_special_run_pars
        if ( n .eq. 25 .or. n .eq. sink_area_points+25) then
          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-0.5*flux*ksi/rho(:)
        endif
-
-      
+!
        if (headtt) print*,'dlnrho_dt: mass source*rho = ', flux/sink_area
-    
+!
+    endsubroutine mass_source_NS
+!***********************************************************************
+    subroutine density_step(f,xx,zz)
+!
+!Natalia
+!Initialization of density in a case of the step-like distribution
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (my,mz) :: lnrho_2d
+      real, dimension (mx,my,mz) :: xx, zz
+!
+      integer :: step_width, step_length,i
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll,  ln_ro_l, ln_ro_r, ln_ro_u
+!
+      hdisk=H_disk 
+      ldisk=L_disk
+!
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      L_disk_min=Lxyz(3)/(nzgrid-1)
+!
+      if (H_disk .gt. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+      if (H_disk .lt. H_disk_min) hdisk=0.
+!
+      if (L_disk .gt. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .lt. L_disk_min) ldisk=0.
+!
+      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
+!
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  f(:,:,:,ilnrho)=log(rho_star)
+!
+      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,ilnrho)=log(rho_disk)
+!
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
+        f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
+        f(:,:,step_length+3+1:mz,ilnrho)=log(rho_star)
+      endif
+!
+      if (sharp) then
+        if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+          f(1:step_width+3,:,:,ilnrho)=log(rho_star)
+          f(step_width+3+1:mx,:,:,ilnrho)=log(rho_disk)
+        endif
+!
+        if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+          if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+            f(1:step_width+3,:,step_length+3+1:mz,ilnrho)=log(rho_star)
+            f(step_width+3+1:mx,:,step_length+3+1:mz,ilnrho)=log(rho_disk)
+            f(:,:,1:step_length+3,ilnrho)=log(rho_disk)
+          end if
+        end if
+      end if 
+!
+      if (smooth) then
+        ln_ro_r=log(rho_disk)
+        ln_ro_l=log(rho_star)
+        ln_ro_u=log(rho_surf)
+!
+        ll=Lxyz(3)-ldisk
+!
+        if (nxgrid/=1.and.nzgrid/=1) then
+!natalia  ... REASON FOR BLOCK COMMENT ...
+!natalia          lnrho_2d(:,:)=(zz(l1,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+!natalia
+!natalia          do i=1,l1
+!natalia           f(i,:,:,ilnrho)=lnrho_2d(:,:)
+!natalia          enddo 
+!natalia       
+!natalia          do i=l1+1,mx
+!natalia           f(i,:,:,ilnrho)=(xx(i,:,:)-xx(l1,:,:))/Lxyz(1)*(ln_ro_l-lnrho_2d(:,:))+ln_ro_l 
+!natalia          enddo        
+!natalia
+!natalia          do i=1,H_disk_point+4
+!natalia           f(i,:,:,ilnrho)=ln_ro_r
+!natalia          enddo 
+!natalia       
+!natalia          do i=H_disk_point+5,mx
+!natalia            f(i,:,:,ilnrho)=ln_ro_u 
+!natalia          enddo    
+!natalia
+!natalia
+!natalia        if (H_disk.GT.0.) f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+(1.-(xx(:,:,:)/H_disk)**2)
+!natalia          if (H_disk.GT.0.) 
+!natalia        f(:,:,:,ilnrho)=ln_ro_u+(1.-(xx(:,:,:)/H_disk)**2)
+!
+          do i=1,H_disk_point_int+4
+!
+            f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
+!natalia           f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*mu/Rgas/T_star)
+ 
+          enddo 
 
+          do i=H_disk_point_int+5,mx
+ 
+            f(i,:,:,ilnrho)=f(H_disk_point_int+4,:,:,ilnrho)
 
-     endsubroutine mass_source_NS
+!natalia            f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
+!natalia            f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point+4)**2*mu/Rgas/T_star)
+          enddo    
+        else 
+          if (nzgrid .GT. 1) then 
+            f(:,:,:,ilnrho)=(zz(:,:,:)-R_star)/Lxyz(3)*(ln_ro_r-ln_ro_l)+ln_ro_l
+          else
+            if (H_disk.GT.0.) f(:,:,:,ilnrho)=(xx(:,:,:)-0.)/Lxyz(1)*(ln_ro_u-ln_ro_r)+ln_ro_r
+          endif 
+        endif     
+      endif
 
+    endsubroutine density_step
 !***********************************************************************
 endmodule Special
 
