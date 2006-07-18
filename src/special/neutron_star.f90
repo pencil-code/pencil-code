@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.5 2006-07-18 12:08:45 mee Exp $
+! $Id: neutron_star.f90,v 1.6 2006-07-18 19:35:20 mee Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -70,21 +70,66 @@ module Special
 
   character (len=labellen) :: initnstar='default'
   real :: rho_star=1.,rho_disk=1., rho_surf=1.
+
+  real :: uu_left=0.
+  real :: uy_left=0.,uy_right=0.
+ 
+  real :: H_disk=0.
+  real :: L_disk=0.
+  real :: R_star=0.
+  real :: M_star=0. 
+  real :: T_star=0.
+  real :: T_disk=0.
+  real :: accretion_flux=0.
+
+  logical :: lextrapolate_bot_density=.false.
+  logical :: ltop_velocity_kep=.false.
+  logical :: laccelerat_zone=.false.
+  logical :: ldecelerat_zone=.false.
+  logical :: lsurface_zone=.false.
+  logical :: lnstar_T_const=.false.
+  logical :: lnstar_entropy=.false.
+  logical :: lnstar_1D=.false.
+  integer :: ac_dc_size=5
+  integer :: H_disk_point=0
+
+  real :: beta_hand=1.
+  real :: mu_local=0.
+  logical :: l1D_cooling=.false.,l1D_heating=.false.
+  logical :: lheat_conduct=.true.
+
+  logical :: lheatc_diffusion=.false.
 !
 ! Keep some over used pencils
 !
   real, dimension(nx) :: z_2
   integer :: H_disk_point_int=0
 
-
+! start parameters
   namelist /neutron_star_init_pars/ &
-      initnstar,lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf, H_disk_point_int 
+      initnstar,lmass_source_NS,leffective_gravity, &
+      laccelerat_zone, ldecelerat_zone, lsurface_zone, &
+      rho_star,rho_disk,rho_surf, &
+      H_disk_point_int, &
+      H_disk, H_disk_point, &
+      L_disk, R_star, M_star, &
+      T_star,accretion_flux, &
+      T_disk, &
+      uu_left, uy_left, uy_right, &
+      l1D_cooling,l1D_heating,lheat_conduct,beta_hand, &
+      ltop_velocity_kep, lextrapolate_bot_density, &
+      lnstar_entropy, lnstar_T_const, lnstar_1D, &
+      mu_local
 
-  ! run parameters
-
+! run parameters
   namelist /neutron_star_run_pars/ &
-      lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf
-
+      lmass_source_NS,leffective_gravity, rho_star,rho_disk,rho_surf, &
+      laccelerat_zone, ldecelerat_zone, lsurface_zone, &
+       H_disk, H_disk_point, &
+       L_disk, R_star, M_star, T_star, &
+       accretion_flux, lnstar_entropy, &
+       lnstar_T_const,lnstar_1D, &
+       l1D_cooling,l1D_heating,lheat_conduct
 !!
 !! Declare any index variables necessary for main or 
 !! 
@@ -136,11 +181,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.5 2006-07-18 12:08:45 mee Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.6 2006-07-18 19:35:20 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.5 2006-07-18 12:08:45 mee Exp $")
+           "$Id: neutron_star.f90,v 1.6 2006-07-18 19:35:20 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -173,6 +218,9 @@ module Special
 !!
 !!  Initialize any module variables which are parameter dependant  
 !!
+    lheatc_diffusion=lheat_conduct.or.l1D_cooling.or.l1D_heating
+    if (lheatc_diffusion.and.lroot) &
+          print*, 'neutron_star: heat conduction: diffusion of radiation'
 !
 ! DO NOTHING
       if(NO_WARN) print*,f  !(keep compiler quiet)
@@ -201,14 +249,20 @@ module Special
         case('default')
           if(lroot) print*,'init_special: Default neutron star setup'
           call density_step(f,xx,zz)
+          call entropy_step(f,xx,zz,T_star)
+          call velocity_step(f)
         case('sharp')
           if(lroot) print*,'init_special: Sharp neutron star setup'
           lsharp=.true.
           call density_step(f,xx,zz)
+          call entropy_step(f,xx,zz,T_star)
+          call velocity_kep_disk(f,zz)
         case('smooth')
           if(lroot) print*,'init_special: Sharp neutron star setup'
           lsmooth=.true.
           call density_step(f,xx,zz)
+          call entropy_step(f,xx,zz,T_star)
+          call velocity_kep_disk(f,zz)
         case default
           !
           !  Catch unknown values
@@ -220,6 +274,49 @@ module Special
       if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
+!***********************************************************************
+    subroutine pencil_criteria_special()
+! 
+!  All pencils that this special module depends on are specified here.
+! 
+!  18-07-06/tony: coded
+!
+      use Cdata
+!
+      if (laccelerat_zone)  lpenc_requested(i_rho)=.true.
+    !  if (lmass_source_NS)  lpenc_requested(i_rho)=.true.
+!Natalia (accretion on a NS)
+       if (lnstar_entropy) then
+         lpenc_requested(i_TT)=.true.
+          lpenc_requested(i_lnTT)=.true.
+         lpenc_requested(i_cs2)=.true.
+         lpenc_requested(i_ss)=.true.
+         lpenc_requested(i_rho)=.true.
+      endif
+!
+     if (lheatc_diffusion) then 
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_TT)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_del2lnrho)=.true.
+        lpenc_requested(i_del2ss)=.true.
+      endif
+!
+!
+    endsubroutine pencil_criteria_special
+!***********************************************************************
+    subroutine pencil_interdep_special(lpencil_in)
+!
+!  Interdependency among pencils from the Density module is specified here.
+!
+!  18-07-06/tony: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*,lpencil_in(1)
+!
+    endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
@@ -711,20 +808,290 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
+      integer :: j, l_sz, l_sz_1
 
-!!
-!!  SAMPLE IMPLEMENTATION
-!!     (remember one must ALWAYS add to df)
-!!  
-!!
-!!  df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + SOME NEW TERM
-!!
-!!
+      if (lheatc_diffusion) call calc_heatcond_diffusion(f,df,p)
+
+!f (accretion on NS)
+!
+    if (lnstar_entropy) then
+   if (T_disk.EQ.0) then
+     T_disk=cs0**2/gamma1
+   endif 
+   !  print*,'  TT_cs0     ',TT_cs0
+ 
+       if ( dt .GT. 0..AND. n .GT. 24 .AND. n .LT. nzgrid-20) then
+   
+         if (lnstar_T_const) then
+    
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-1./(dt)*(p%TT(:)-T_disk)/T_disk
+           !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           !   -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/p%TT(:)
+
+
+        else
+       
+        endif
+ 
+    
+       endif 
+
+
+      if (ldecelerat_zone) then
+    
+         if ( dt .GT. 0..AND. n .LE. ac_dc_size+4 ) then
+          if (lnstar_T_const) then
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_disk    
+          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          ! -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(TT_cs0)/gamma)/p%rho(:)/T_disk
+          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          ! -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
+
+          else
+              df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+           -1./(5.*dt)*(p%TT(:)-T_star)/T_star
+         !   df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+         !  -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star!p%TT(:)
+
+          !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          !     -1./(2.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n,ilnrho))/p%rho(:)/T_star   
+ 
+          !  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+          !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_star)/gamma)/p%rho(:)/T_star
+   
+          endif
+        end if  
+
+
+    !     endif 
+     endif  
+   
+     if (laccelerat_zone) then
+         if (n .GE. nzgrid-ac_dc_size  .AND. dt .GT.0.) then
+                   
+          if (nxgrid .LE.1) then
+              if (lnstar_T_const) then   
+                 df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+                 -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
+              else  
+
+              !    df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+              !   -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
+              !    df(l1:H_disk_point+4,m,n,iss)=df(l1:H_disk_point+4,m,n,iss) &
+               !   -1./(5.*dt)*(p%TT(1:H_disk_point)-T_disk)/T_disk
+               ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+               !  -1./(5.*dt)*(f(l1:l2,m,n,iss)-log(T_disk)/gamma)
+              ! df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+              ! -1./(5.*dt)*(f(l1:l2,m,n,iss)*gamma+gamma1*f(l1:l2,m,n-1,ilnrho))/p%rho(:)/T_disk
+      
+
+              endif
+         else
+         endif     
+ 
+
+     endif 
+
+     endif  
+    endif
+
+       if (lsurface_zone) then
+          if ( dt .GT.0.) then
+            l_sz=l2-5
+            l_sz_1=nxgrid-5
+
+          if (lnstar_1D) then   
+            df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
+            -1./(5.*dt)*(f(l_sz:l2,m,n,iss)-log(T_disk)/gamma) &
+            /p%rho(l_sz_1:nxgrid)/p%TT(l_sz_1:nxgrid)  
+          else
+
+            do j=l_sz,l2   
+             df(j,m,n,iss)=df(j,m,n,iss)&
+               -1./(5.*dt)*(f(j,m,n,iss)-f(j-1,m,n,iss))
+            enddo 
+
+          endif
+
+      !        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+      !       -1./(5.*dt)*(p%TT(:)-T_disk)/T_disk
+        
+          !    df(l_sz:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+       !     -1./(1.*dt)*(f(l_sz:l2,m,n,iss)*gamma+gamma1*f(l_sz:l2,m,n,ilnrho))/ &
+       !     p%rho(l_sz_1:nxgrid)/T_disk!p%TT(l_sz_1:nxgrid) 
+
+      !   df(l_sz:l2,m,n,iss)=df(l_sz:l2,m,n,iss) &
+      !      -1./(5.*dt)*(p%TT(l_sz_1:nxgrid)-T_disk)/T_disk
+
+       
+         endif
+      endif
 
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,df,p
 
     endsubroutine special_calc_entropy
+!***********************************************************************
+    subroutine special_boundconds(f,bc)
+!
+!   calculate a additional 'special' term on the right hand side of the 
+!   entropy equation.
+!
+!   Some precalculated pencils of data are passed in for efficiency
+!   others may be calculated directly from the f array
+!
+!   06-oct-03/tony: coded
+!
+      use Cdata
+!      
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      type (boundary_condition) :: bc
+!
+      select case (bc%bcname)
+       case ('stp')
+         select case (bc%location)
+         case (iBC_X_TOP)
+           call bc_BL_x(f,-1, bc)
+         case (iBC_X_BOT)
+           call bc_BL_x(f,-1, bc)
+         case (iBC_Z_TOP)
+           call bc_BL_z(f,-1, bc)
+         case (iBC_Z_BOT)
+           call bc_BL_z(f,-1, bc)
+         endselect
+         bc%done=.true.
+      endselect
+
+      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+!
+    endsubroutine special_boundconds
+!***********************************************************************
+!
+!  PRIVATE UTITLITY ROUTINES
+!
+!***********************************************************************
+    subroutine calc_heatcond_diffusion(f,df,p)
+!
+!  heat conduction
+!  Natalia (NS)
+!   12-apr-06/axel: adapted from Wolfgang's more complex version
+!
+      use Sub, only: max_mn_name,dot
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (pencil_case) :: p
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: glnT,glnThcond !,glhc
+      real, dimension (nx) :: chix
+      real, dimension (nx) :: thdiff,g2,thdiff_1D
+      real, dimension (nx) :: hcond
+      real ::  beta
+      integer :: l_sz, l_sz_1 
+
+      intent(in) :: f,p
+      intent(out) :: df
+ 
+!
+!  Heat conduction
+!
+      chix = p%rho1*p%rho1*p%TT**3*16./3.*sigmaSB/kappa_es!hcond
+      glnT = gamma*p%gss + gamma1*p%glnrho ! grad ln(T)
+      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      call dot(glnT,glnThcond,g2)
+!
+!AB:  derivs of chix missing??
+!
+      thdiff = chix * (gamma*p%del2ss+gamma1*p%del2lnrho + g2)
+
+
+   !  add heat conduction to entropy equation
+    !
+     if (lheat_conduct) then
+        if (ldecelerat_zone) then
+          if (nxgrid == 1) then
+           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+          else
+           if (n .gt. ac_dc_size+4) df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff 
+          endif
+         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+        else
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff   
+         if (headtt) print*,'calc_heatcond_diffusion: added thdiff'
+        endif
+     endif 
+! 
+
+
+!   cooling in 1D case 
+!
+    if (l1D_cooling) then
+
+      beta=beta_hand  !1e6
+
+      thdiff_1D =-16./3.*sigmaSB/kappa_es*p%TT**4 &
+                 *p%rho1*beta
+
+      l_sz=l2-10
+      l_sz_1=nxgrid-10 
+
+      if (ldecelerat_zone) then
+        if (n .GT. ac_dc_size+4)   df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+        if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
+      else
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+       if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
+   
+  !     print*,' cooling  ',thdiff_1D
+      endif
+    endif 
+ 
+!   heating in 1D case 
+!
+    if (l1D_heating) then
+
+      thdiff_1D =p%rho*nu*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
+      
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+
+     
+    !   if (lsurface_zone) then
+       !    df(l2-l_sz:l2,m,n,iss) = df(l2-l_sz:l2,m,n,iss) + thdiff_1D(l_sz_1:nxgrid)
+      
+    !     df(l1:l2-l_sz,m,n,iss) = df(l1:l2-l_sz,m,n,iss) + thdiff_1D(1:l_sz_1)
+    !   else
+    !       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
+    !   endif
+
+  ! print*,'heating',thdiff_1D
+      if (headtt) print*,'calc_heatcond_diffusion: added thdiff_1D'
+    endif 
+ 
+!AB: shouldn't we use all 3 components here?
+        df(l1:l2,m,n,iuz) = &
+         df(l1:l2,m,n,iuz)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,3) 
+
+        df(l1:l2,m,n,iux) = &
+         df(l1:l2,m,n,iux)-p%rho1*16./3.*sigmaSB/c_light*p%TT**4*glnT(:,1) 
+!
+!  include constraint from radiative time step
+!
+      if (lfirst.and.ldt) then
+        advec_crad2=p%rho1*16./3.*sigmaSB/c_light*p%TT**4
+      endif
+
+     if (headtt) print*,'calc_radiation_pressure: added to z-component'
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chix*del2ss
+!
+      if (lfirst.and.ldt) then
+! Calculate timestep limitation
+        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+      endif
+!
+    endsubroutine calc_heatcond_diffusion
 !*************************************************************************
     subroutine mass_source_NS(f,df,rho)
 !
@@ -882,6 +1249,409 @@ endsubroutine read_special_run_pars
       endif
 
     endsubroutine density_step
+!***************************************************************
+    subroutine entropy_step(f,xx,zz,T_star)
+!Natalia
+!Initialization of entropy in a case of the step-like distribution
+ use EquationOfState
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx, zz
+      real, dimension (nx) ::  lnrho, lnTT,ss
+      integer :: step_width, step_length, mi,ni, li,  decel_zone
+      real :: H_disk_min, L_disk_min, hdisk, ldisk, ll, T_star, const_tmp
+
+
+      decel_zone=ac_dc_size+4
+
+      hdisk=H_disk 
+      ldisk=L_disk
+
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      L_disk_min=Lxyz(3)/(nzgrid-1)
+
+      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+      if (H_disk .LT. H_disk_min) hdisk=0.
+
+      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .LT. L_disk_min) ldisk=0.
+
+      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
+
+
+      lnTT=log(T_star)!  log(T0)
+ if (T_disk.EQ.0) then
+     T_disk=cs0**2/gamma1
+   endif 
+    
+
+      print*,'T_star=',T_star
+      do ni=n1,n2;
+       do mi=m1,m2;
+     if (lnstar_T_const) then
+       f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+      else
+      ! lnrho=f(l1:l2,mi,ni,ilnrho)
+      ! const_tmp=M_star/sigmaSB*c_light*3./4.
+
+     !  lnTT=0.25*log(T_star**4+const_tmp*exp(f(l1:l2,mi,ni,ilnrho))*(1./zz(l1:l2,mi,ni)-1./R_star))
+    
+     !  call eoscalc(4,lnrho,lnTT,ss=ss)
+  
+      ! f(l1:l2,mi,ni,iss)=ss  
+
+     if (nxgrid .LE. 1) then
+        f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+     else
+         f(l1:l2,mi,ni,iss)=-f(l1:l2,mi,ni,ilnrho)*gamma1/gamma
+
+     !  lnrho=f(l1:l2,mi,ni,ilnrho)
+    
+   
+     !  lnTT=log(T_disk)
+   
+     !  call eoscalc(4,lnrho,lnTT,ss=ss)
+  
+     !  f(l1:l2,mi,ni,iss)=ss  
+
+
+   !    f(l1,mi,ni,iss)=-f(l1,mi,ni,ilnrho)*gamma1/gamma
+   
+   !     do li=l1+1,l2;
+   !         lnrho=f(li,mi,ni,ilnrho)
+   !         lnTT=(xx(li,mi,ni)-0.)/Lxyz(1)*(log(TT_cs0)-log(TT_cs0*0.01))+log(TT_cs0*0.01)
+   !         call eoscalc(4,lnrho,lnTT,ss=ss)
+   !         f(l1:l2,mi,ni,iss)=ss  
+   !    enddo
+
+     endif 
+
+
+
+     endif
+
+!print*,'IC    ', f(l1:l2,mi,ni,iss),f(l1:l2,mi,ni,ilnrho),lnTT(1)
+!print*,T_star**4+const_tmp*exp(f(l1:l2,mi,ni,ilnrho))*(1./zz(l1:l2,mi,ni)-1./R_star)
+
+ !print*, lnTT,ni
+       end do 
+     end do   
+
+     !   f(l1:l2,:,:,iss)=lnTT0/gamma
+
+    !    f(:,:,:,iss)=(zz(:,:,:)-R_star)/Lxyz(3)*(lnTT0-lnTT0/10.)/gamma+lnTT0/10./gamma
+
+    endsubroutine entropy_step
+!***********************************************************************
+    subroutine velocity_step(f)
+!Natalia
+!Initialization of velocity in a case of the step-like distribution
+
+      use Cdata
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: step_width, step_length
+      real ::  H_disk_min, L_disk_min, hdisk, ldisk
+    
+      hdisk=H_disk 
+      ldisk=L_disk
+    
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      L_disk_min=Lxyz(3)/(nzgrid-1)
+
+      if (H_disk .GT. Lxyz(1)-H_disk_min) hdisk=Lxyz(1)
+      if (H_disk .LT. H_disk_min) hdisk=0.
+
+      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .LT. L_disk_min) ldisk=0.
+
+
+       
+      step_width=nint((nxgrid-1)*hdisk/Lxyz(1))
+      step_length=nint((nzgrid-1)*(Lxyz(3)-ldisk)/Lxyz(3))
+
+
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .EQ. Lxyz(3))  then
+        f(:,:,:,iuz)=uu_left
+        f(:,:,:,iuy)=uy_left
+      end if
+
+      if (hdisk .EQ. 0. .AND. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
+      if (hdisk .EQ. 0. .OR. ldisk .EQ. 0.) f(:,:,:,iuy)=uy_right
+      
+       
+      if (hdisk .EQ. Lxyz(1) .AND. ldisk .LT. Lxyz(3)) then
+        f(:,:,step_length+3+1:mz,iuz)=uu_left
+        f(:,:,step_length+3+1:mz,iuy)=uy_left
+        f(:,:,1:step_length+3,iuy)=uy_right
+      endif
+
+      if (hdisk .LT. Lxyz(1) .AND. ldisk .EQ. Lxyz(3)) then
+        f(1:step_width+3,:,:,iuz)=uu_left
+        f(1:step_width+3,:,:,iuy)=uy_left
+        f(step_width+3+1:mx,:,:,iuy)=uy_right
+      endif
+
+
+      if (hdisk .GT. 0.  .AND. hdisk .LT. Lxyz(1) ) then
+        if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+          f(1:step_width+3,:,step_length+3+1:mz,iuz)=uu_left
+          f(1:step_width+3,:,step_length+3+1:mz,iuy)=uy_left
+          f(step_width+3+1:mx,:,step_length+3+1:mz,iuy)=uy_right
+          f(:,:,1:step_length+3,iuy)=uy_right
+        end if
+      end if
+
+    endsubroutine  velocity_step
+!***********************************************************************
+    subroutine velocity_kep_disk(f,zz)
+!Natalia
+!Initialization of velocity in a case of the step-like distribution
+
+      use Cdata
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: zz
+      integer :: step_length, decel_zone
+      real ::   L_disk_min,  ldisk,   ll
+
+      decel_zone=ac_dc_size+4
+       
+
+      ll=Lxyz(3)-L_disk
+      ldisk=L_disk
+
+   if (nzgrid .GT. 1) then
+      L_disk_min=Lxyz(3)/(nzgrid-1)
+
+      if (L_disk .GT. Lxyz(3)-L_disk_min) ldisk=Lxyz(3)
+      if (L_disk .LT. L_disk_min) ldisk=0.
+     
+      step_length=nint((nzgrid-1)*ll/Lxyz(3))
+
+      if (ldisk .LT. L_disk_min) then
+        f(:,:,:,iuz)=uu_left
+        f(:,:,:,iuy)=(zz-R_star)/ll*sqrt(M_star/(ll+R_star))
+      endif
+
+      if (ldisk .GE. Lxyz(3)) then
+        f(:,:,:,iuz)=uu_left
+        f(:,:,:,iuy)=sqrt(M_star/zz)
+      endif
+!
+      if (ldisk .GT. 0.  .AND. ldisk .LT. Lxyz(3)) then
+
+        f(:,:,:,iuz)=uu_left
+       if (ldecelerat_zone .AND. decel_zone .LT. nzgrid) then 
+ 
+        f(:,:,step_length+3+1:mz,iuy)=sqrt(M_star/zz(:,:,step_length+3+1:mz))
+
+        f(:,:,decel_zone+1:step_length+3,iuy)= &
+           (zz(:,:,decel_zone+1:step_length+3)-R_star-(decel_zone-4)*L_disk_min) &
+           /(ll-(decel_zone-4)*L_disk_min)*sqrt(M_star/(ll+R_star))
+        f(:,:,1:decel_zone,iuy)=0.
+
+       else
+         f(:,:,step_length+3+1:mz,iuy)=sqrt(M_star/zz(:,:,step_length+3+1:mz))
+         f(:,:,1:step_length+3,iuy)= &
+           (zz(:,:,1:step_length+3)-R_star)/ll*sqrt(M_star/(ll+R_star))
+       end if
+
+      end if
+   else
+    f(:,:,:,iux)=uu_left
+    f(:,:,:,iuz)=uu_left
+    f(:,:,:,iuy)=sqrt(M_star/xyz0(3))
+   endif
+
+
+    endsubroutine  
+!***********************************************************************
+    subroutine bc_BL_x(f,sgn,bc)
+!
+! Natalia
+!  11-may-06
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: sgn
+      type (boundary_condition) :: bc
+      integer :: i,j
+
+      j=bc%ivar
+      if (bc%location==iBC_X_BOT) then
+      ! bottom boundary
+        if (j == 1) then 
+            f(l1,:,:,j) = 0.
+            do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+        else
+           do i=1,nghost; f(l1-i,:,:,j)= f(l1+i,:,:,j); enddo
+        endif
+          !   f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
+
+      elseif (bc%location==iBC_X_TOP) then
+      ! top boundary
+        if (nxgrid <= 1) then
+          if (j == 1) then
+            f(l2,m1:m2,n1:n2,j)=bc%value1
+            do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+          else
+            f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
+            f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
+            f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
+          endif
+        else
+!            f(l2+1,:,:,j)=0.25*(  9*f(l2,:,:,j)- 3*f(l2-1,:,:,j)- 5*f(l2-2,:,:,j)+ 3*f(l2-3,:,:,j))
+!            f(l2+2,:,:,j)=0.05*( 81*f(l2,:,:,j)-43*f(l2-1,:,:,j)-57*f(l2-2,:,:,j)+39*f(l2-3,:,:,j))
+!            f(l2+3,:,:,j)=0.05*(127*f(l2,:,:,j)-81*f(l2-1,:,:,j)-99*f(l2-2,:,:,j)+73*f(l2-3,:,:,j))
+!
+          do i=1,nghost; f(l1+i,:,:,j)=f(l1-i,:,:,j); enddo
+!
+        endif
+      else
+        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_BL_x
+ !***********************************************************************
+    subroutine bc_BL_z(f,sgn,bc)
+!
+!  Step boundary conditions.
+!
+!  11-feb-06/nbabkovs
+!
+      use Cdata
+      use EquationOfState
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: value1,value2 
+      type (boundary_condition) :: bc
+      real, dimension(nx) :: lnrho,lnTT,ss
+      integer :: sgn,i,j, step_width, n1p4,n2m4, i_tmp
+      real :: H_disk_min, L_disk_min, ddz, ddx
+    !  integer, parameter :: ilnrho_lnTT=4
+
+      j=bc%ivar
+      H_disk_min=Lxyz(1)/(nxgrid-1)
+      step_width=nint((nxgrid-1)*H_disk/Lxyz(1))
+      ddx=H_disk_min
+
+      L_disk_min=Lxyz(3)/(nzgrid-1)
+      ddz=L_disk_min
+
+      if (j == 4 .or. j==5) then
+        value1=log(bc%value1)
+        value2=log(bc%value2)
+      else
+        value1=bc%value1
+        value2=bc%value2
+      endif
+
+      if (bc%location==iBC_Z_BOT) then
+      ! bottom boundary
+        if (lextrapolate_bot_density .and. j>=4) then
+          n1p4=n1+4
+
+          f(:,:,n1-1,j)=0.2   *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+          f(:,:,n1-2,j)=0.2   *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+          f(:,:,n1-3,j)=1./35.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+        else
+          if (j==5) then
+            lnrho=f(l1:l2,m1,n1,ilnrho)
+            if (lnstar_T_const) then 
+              lnTT=log(cs0**2/(gamma1))
+            else     
+              lnTT=log(T_star)
+            endif
+            !+ other terms for sound speed not equal to cs_0
+            call eoscalc(4,lnrho,lnTT,ss=ss)
+            f(l1:l2,m1,n1,iss)=ss 
+            !  print*, 'boundary entropy ', ss
+            !ss=exp(ss-(-log(cs0**2/(gamma1))-gamma1*lnrho)/gamma)
+            !   ss=exp(log(cs0**2/(gamma1))+gamma*ss+gamma1*lnrho)
+            !print*, 'boundary entropy ', ss
+          else
+            if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
+              f(1:step_width+3,:,n1,j)=value1
+              f(step_width+3+1:mx,:,n1,j)=value2
+            endif
+            if (H_disk < H_disk_min)    f(:,:,n1,j)=value2
+            if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n1,j)=value1
+          endif
+          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+        endif
+      elseif (bc%location==iBC_Z_TOP) then
+      ! top boundary
+
+        if (ltop_velocity_kep .and. j==2) then 
+          f(:,:,n2,j)=sqrt(M_star/(R_star+Lxyz(3)))
+        else
+          if (nxgrid <= 1) then
+            if (j==5) then
+              lnrho=f(l1:l2,m2,n2,ilnrho)
+              if (T_disk.EQ.0) then    
+              lnTT=log(cs0**2/(gamma1))
+              else
+              lnTT=log(T_disk)    
+              endif           
+              call eoscalc(4,lnrho,lnTT,ss=ss)
+              f(l1:l2,m2,n2,iss)=ss
+            else 
+              if (H_disk >= H_disk_min .and. H_disk <= Lxyz(1)-H_disk_min) then
+                f(1:step_width+3,:,n2,j)=value1
+                f(step_width+3+1:mx,:,n2,j)=value2
+              endif
+              if (H_disk < H_disk_min)    f(:,:,n2,j)=value2
+              if (H_disk > Lxyz(1)-H_disk_min)    f(:,:,n2,j)=value1
+            endif
+          else
+
+!           if (j==4) then
+!             f(1:H_disk_point+4,:,n2,j)=value1
+!             f(H_disk_point+5:mx,:,n2,j)=value2
+!
+!             do i=1,H_disk_point+4
+!               f(i,:,n2,ilnrho)=log(5.)+(1.-(ddx*i/H_disk)**2)
+!             enddo 
+!
+!             do i=H_disk_point+5,mx
+!               f(i,:,n2,ilnrho)=f(H_disk_point+4,:,n2,ilnrho)
+!             enddo    
+!
+!           else 
+            n2m4=n2-4
+            i_tmp=H_disk_point+5
+
+            f(i_tmp:mx,:,n2+1,j)=0.2   *(   9*f(i_tmp:mx,:,n2  ,j) &
+                                         -  4*f(i_tmp:mx,:,n2-2,j) &
+                                         -  3*f(i_tmp:mx,:,n2-3,j) &
+                                         +  3*f(i_tmp:mx,:,n2m4,j))
+            f(i_tmp:mx,:,n2+2,j)=0.2   *(  15*f(i_tmp:mx,:,n2  ,j) &
+                                        -   2*f(i_tmp:mx,:,n2-1,j) &
+                                        -   9*f(i_tmp:mx,:,n2-2,j) &
+                                        -   6*f(i_tmp:mx,:,n2-3,j) &
+                                        +   7*f(i_tmp:mx,:,n2m4,j))
+            f(i_tmp:mx,:,n2+3,j)=1./35.*( 157*f(i_tmp:mx,:,n2  ,j) &
+                                         - 33*f(i_tmp:mx,:,n2-1,j) &
+                                         -108*f(i_tmp:mx,:,n2-2,j) &
+                                         - 68*f(i_tmp:mx,:,n2-3,j) &
+                                         + 87*f(i_tmp:mx,:,n2m4,j))
+!           endif
+
+          endif
+        endif
+
+        do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+
+      else 
+        print*, "bc_BL_z: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!
+    endsubroutine bc_BL_z
 !***********************************************************************
 endmodule Special
 
