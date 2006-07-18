@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.11 2006-07-07 11:13:55 ajohan Exp $
+! $Id: noparticles.f90,v 1.12 2006-07-18 19:18:26 wlyra Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles=.false.
-! CPARAM logical, parameter :: lparticles_planet=.false.
+! CPARAM logical, parameter :: lparticles_nbody=.false.
 !
 !***************************************************************
 module Particles
