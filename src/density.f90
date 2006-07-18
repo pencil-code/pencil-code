@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.263 2006-07-18 11:18:35 mee Exp $
+! $Id: density.f90,v 1.264 2006-07-18 12:06:28 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -48,16 +48,12 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
-  logical :: sharp=.false., smooth=.false.
-
 
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
   character (len=4) :: iinit_str
   complex :: coeflnrho=0.
- 
-  integer :: H_disk_point_int=0
 
   namelist /density_init_pars/ &
        ampllnrho,initlnrho,initlnrho2,widthlnrho,    &
@@ -67,7 +63,7 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas, sharp, smooth, H_disk_point_int
+       wdamp,plaw,lcontinuity_gas
      
 
   namelist /density_run_pars/ &
@@ -75,8 +71,8 @@ module Density
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw,lcontinuity_gas, sharp, smooth
-  
+       lnrho_const,plaw,lcontinuity_gas
+
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
   integer :: idiag_rhomin=0,idiag_rhomax=0
@@ -115,7 +111,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.263 2006-07-18 11:18:35 mee Exp $")
+           "$Id: density.f90,v 1.264 2006-07-18 12:06:28 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1300,7 +1296,7 @@ module Density
 
 !
 !ajwm  Cannot alter special interface!!
-      if (lspecial) call special_calc_density(df,p)
+      if (lspecial) call special_calc_density(f,df,p)
 !
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
