@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.310 2006-07-17 11:37:31 mee Exp $
+! $Id: equ.f90,v 1.311 2006-07-18 19:29:24 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -373,7 +373,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.310 2006-07-17 11:37:31 mee Exp $")
+           "$Id: equ.f90,v 1.311 2006-07-18 19:29:24 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -549,7 +549,7 @@ module Equ
         if (lchiral)        call calc_pencils_chiral(f,p)
         if (lradiation)     call calc_pencils_radiation(f,p)
         if (lspecial)       call calc_pencils_special(f,p)
-                            call calc_pencils_planet(f,p,g0,r0_pot)
+        if (lplanet)        call calc_pencils_planet(f,p)
         if (lparticles)     call particles_calc_pencils(f,p)
 !
 !  --------------------------------------------------------
