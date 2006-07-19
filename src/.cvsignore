@@ -1,4 +1,5 @@
 work.pc work.pcl
+special
 makefile Makefile
 *.d
 *.inc

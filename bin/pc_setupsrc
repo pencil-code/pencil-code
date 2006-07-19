@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.13 2006-07-12 11:14:07 dobler Exp $
+#   $Id: pc_setupsrc,v 1.14 2006-07-19 11:34:31 mee Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -48,7 +48,6 @@ make_src_dir()
   fi
 }
 #
-
 link_src_files()
 {
   #
@@ -62,7 +61,50 @@ link_src_files()
   for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
               $srcdir/Makefile.src $srcdir/Makefile.depend \
               $srcdir/.cvsignore $srcdir/*.h $srcdir/scripts \
-              $srcdir/shock_profiles $srcdir/special
+              $srcdir/shock_profiles
+  do
+    if [ -f $file ] || [ -d $file ]; then
+      if [ -h "`basename $file`" ]; then
+        rm -f "`basename $file`"
+	to_link="$to_link $file"
+        #ln -s $file .
+      elif [ -f "`basename $file`" ] \
+        || [ -d "`basename $file`" ]; then
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      else
+	to_link="$to_link $file"
+        #ln -s $file .
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+  cd $old_dir
+}
+
+make_special_dir()
+{
+  ## src subdirectory
+  [ -h $src/special ] && rm $src/special
+  if [ ! -d $src/special ]; then
+    echo "No special directory found: creating new one (`pwd`/src/special)."
+    mkdir $src/special
+  fi
+}
+#
+link_special_files()
+{
+  #
+  #  LINK all *.f90, *.f, and the Makefile to local src directory
+  #
+  echo "Linking files in '$src/special'."
+  old_dir="`pwd`"
+  cd $src/special
+  n=0
+  to_link=
+  for file in $srcdir/special/*
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
@@ -217,6 +259,8 @@ link_scripts
 link_root_makefile
 make_src_dir
 link_src_files
+make_special_dir
+link_special_files
 create_Makefile_inc
 #copy_local_files
 print_status
