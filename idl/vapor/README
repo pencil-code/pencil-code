@@ -1,0 +1,42 @@
+This directory contains idl routines that can be used with VAPOR,
+a suite of visualization and analysis tools developed at NCAR.
+See http://www.vapor.ucar.edu for VAPOR documentation
+
+pencil2vapor.pro is an idl routine that converts a pencil dataset to
+a vapor dataset, so that the vapor tools can then be applied to the data.
+To convert a pencil dataset to vapor, you need first to have the vapor 
+libraries installed (as described on the website http://www.vapor.ucar.edu).  
+You will also need to set up your vapor idl environment (e.g. the LD_LIBRARY_PATH 
+and the IDL_DLM_PATH.  These are set for you when you follow the VAPOR
+installation instructions )  Then do the following:
+
+1.  From the command line, run "vdfcreate" to create the vapor metadata 
+for your dataset.  You will need to specify the data size and variable 
+names in the arguments to vdfcreate, and the variable names need to be 
+specified in the order that pencil uses them.  You need to specify the 
+total number of timesteps that you would (eventually) like to convert.  
+Make sure to specify that the metadata file is created in a file system 
+with adequate space to hold the data, because the vapor data will be 
+stored in the same directory. (Note: there are also vapor idl routines 
+to create the metadata).
+
+2. In a vapor IDL session run pencil2vapor with the following arguments:
+    the absolute path to the root of the pencil data
+    the number of processors used to create the pencil data
+    the absolute path to the vdf file (created in step 1)
+    the timestep being converted
+    optionally, the name of the var files (if it is not "var", as in "var.dat")
+ 
+3. Run "vaporgui" to visualize the resulting data.  Load the metadata you created in step 1
+
+pencil2vapor should convert all of the pencil variables for the specified time 
+step.   If there is more than one time step, you need to do step 2. for 
+each additional time step.  The code has not been well tested, but 
+it should correctly handle both double and single precision data.  
+It correctly handles any assignment of processors to data, as long 
+as they form a grid.  The chunks don't have to be the same size, but all 
+the chunks at a given x coordinate must have the same x-size, and 
+similarly for y and z.  This code converts all the variables that are named 
+in the vdfcreate command, but does not deal with auxiliary variables.
+
+-Alan Norton (alan@ucar.edu)
