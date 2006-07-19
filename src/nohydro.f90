@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.56 2006-06-14 22:15:27 ajohan Exp $
+! $Id: nohydro.f90,v 1.57 2006-07-19 00:19:13 snod Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.56 2006-06-14 22:15:27 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.57 2006-07-19 00:19:13 snod Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -199,7 +199,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar+maux) :: f       
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: kdotxwt
+      real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
       real :: kkx_aa,kky_aa,kkz_aa
       integer :: modeN
 !
@@ -253,10 +253,11 @@ module Hydro
         p%uu=0.
         do modeN=1,KS_modes  ! sum over KS_modes modes
            kdotxwt=KS_k(1,modeN)*x(l1:l2)+(KS_k(2,modeN)*y(m)+KS_k(3,modeN)*z(n))+KS_omega(modeN)*t
+           cos_kdotxwt=cos(kdotxwt) ;  sin_kdotxwt=sin(kdotxwt)
            if (lpencil(i_uu)) then 
-             p%uu(:,1) = p%uu(:,1) + cos(kdotxwt)*KS_A(1,modeN) + sin(kdotxwt)*KS_B(1,modeN)    
-             p%uu(:,2) = p%uu(:,2) + cos(kdotxwt)*KS_A(2,modeN) + sin(kdotxwt)*KS_B(2,modeN)    
-             p%uu(:,3) = p%uu(:,3) + cos(kdotxwt)*KS_A(3,modeN) + sin(kdotxwt)*KS_B(3,modeN)    
+             p%uu(:,1) = p%uu(:,1) + cos_kdotxwt*KS_A(1,modeN) + sin_kdotxwt*KS_B(1,modeN)    
+             p%uu(:,2) = p%uu(:,2) + cos_kdotxwt*KS_A(2,modeN) + sin_kdotxwt*KS_B(2,modeN)    
+             p%uu(:,3) = p%uu(:,3) + cos_kdotxwt*KS_A(3,modeN) + sin_kdotxwt*KS_B(3,modeN)    
            endif
         enddo
         if (lpencil(i_divu))  p%divu = 0.
