@@ -1,5 +1,5 @@
 ;
-; $Id: pc_read_global.pro,v 1.5 2006-06-02 19:10:17 joishi Exp $
+; $Id: pc_read_global.pro,v 1.6 2006-07-19 17:18:58 dintrans Exp $
 ;
 ;   Read global variable from file.
 ;  
@@ -64,6 +64,9 @@ if (varfile eq 'np.dat') then begin
   vartype='s'
 endif else if (varfile eq 'uup.dat') then begin
   varname='uup'
+  vartype='v'
+endif else if (varfile eq 'gg.dat') then begin
+  varname='gg'
   vartype='v'
 endif
 
