@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.1 2006-07-19 15:22:19 mee Exp $ 
+! $Id: shared_variables.f90,v 1.2 2006-07-19 17:25:34 mee Exp $ 
 !
 !  This module make an interface available to allow modules
 !  to register pointers to their internal variables so that
@@ -23,7 +23,6 @@ module SharedVariables
 !
   implicit none
 !
-!
   private
 !
   public :: initialize_shared_variables
@@ -35,7 +34,7 @@ module SharedVariables
     module procedure get_variable_real1d
     module procedure get_variable_int0d
     module procedure get_variable_int1d
-    module procedure get_variable_char
+!    module procedure get_variable_char
   endinterface get_shared_variable
 !
   interface put_shared_variable
@@ -43,7 +42,7 @@ module SharedVariables
     module procedure put_variable_real1d
     module procedure put_variable_int0d
     module procedure put_variable_int1d
-    module procedure put_variable_char
+!    module procedure put_variable_char
   endinterface put_shared_variable
 !
 ! Used internally to keep track ot the type of data
@@ -63,6 +62,7 @@ module SharedVariables
 !
   integer, public, parameter :: iSHVAR_ERR_NOSUCHVAR=1
   integer, public, parameter :: iSHVAR_ERR_WRONGTYPE=2
+  integer, public, parameter :: iSHVAR_ERR_DUPLICATE=2
 !
 ! Store pointers to variables in a general linked
 ! list structure.  Shame we can't have (void *) pointers.
@@ -71,21 +71,23 @@ module SharedVariables
     character (len=30) :: varname
     integer :: vartype
     real, pointer :: real0d
-    real, pointer :: real1d
-    real, pointer :: int0d
-    real, pointer :: int1d
-    character (len=*), pointer :: char0D
-    type (shared_variable_list) :: next
+    real, dimension(:), pointer :: real1d
+    integer, pointer :: int0d
+    integer, dimension(:), pointer :: int1d
+!    character (len=*), pointer :: char0D
+    type (shared_variable_list), pointer :: next
   endtype
 !
 ! The head of the list (initially empty)
 !
-  type (shared_variable_list) :: thelist
+  type (shared_variable_list), pointer :: thelist
  
   contains
 
 !***********************************************************************
-    subroutine initialize_shared_variables()
+    subroutine initialize_shared_variables(lreloading)
+!
+      logical :: lreloading
 !
       if (lreloading) then
         call free_list(thelist)
@@ -108,23 +110,23 @@ module SharedVariables
             variable=>item%real0D
             return
           else
-            print*,"Getting shared variable: ",varname
             nullify(variable)
             if (present(err)) then
-              err=iSHVAR_ERROR_NOSUCHVAR
+              err=iSHVAR_ERR_WRONGTYPE
               return
             endif
+            print*,"Getting shared variable: ",varname
             call fatal_error("get_variable","Shared variable has the wrong type!")
           endif
         endif
         item=>item%next
       enddo
-      print*,"Getting shared variable: ",varname
       nullify(variable)
       if (present(err)) then
-        err=iSHVAR_ERROR_WRONGTYPE
+        err=iSHVAR_ERR_NOSUCHVAR
         return
       endif
+      print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
 !    
     endsubroutine get_variable_real0d
@@ -141,15 +143,23 @@ module SharedVariables
           if (item%vartype==iSHVAR_TYPE_REAL1D) then
             variable=>item%real1D
           else
-            print*,"Getting shared variable: ",varname
             nullify(variable)
+            if (present(err)) then
+              err=iSHVAR_ERR_WRONGTYPE
+              return
+            endif
+            print*,"Getting shared variable: ",varname
             call fatal_error("get_variable","Shared variable has the wrong type!")
           endif
         endif
         item=>item%next
       enddo
-      print*,"Getting shared variable: ",varname
       nullify(variable)
+      if (present(err)) then
+        err=iSHVAR_ERR_NOSUCHVAR
+        return
+      endif
+      print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
 !    
     endsubroutine get_variable_real1d
@@ -167,23 +177,23 @@ module SharedVariables
             variable=>item%int0D
             return
           else
-            print*,"Getting shared variable: ",varname
             nullify(variable)
             if (present(err)) then
-              err=iSHVAR_ERROR_NOSUCHVAR
+              err=iSHVAR_ERR_WRONGTYPE
               return
             endif
+            print*,"Getting shared variable: ",varname
             call fatal_error("get_variable","Shared variable has the wrong type!")
           endif
         endif
         item=>item%next
       enddo
-      print*,"Getting shared variable: ",varname
       nullify(variable)
       if (present(err)) then
-        err=iSHVAR_ERROR_WRONGTYPE
+        err=iSHVAR_ERR_NOSUCHVAR
         return
       endif
+      print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
 !    
     endsubroutine get_variable_int0d
@@ -200,23 +210,41 @@ module SharedVariables
           if (item%vartype==iSHVAR_TYPE_INT1D) then
             variable=>item%int1D
           else
-            print*,"Getting shared variable: ",varname
             nullify(variable)
+            if (present(err)) then
+              err=iSHVAR_ERR_WRONGTYPE
+              return
+            endif
+            print*,"Getting shared variable: ",varname
             call fatal_error("get_variable","Shared variable has the wrong type!")
           endif
         endif
         item=>item%next
       enddo
-      print*,"Getting shared variable: ",varname
       nullify(variable)
+      if (present(err)) then
+        err=iSHVAR_ERR_NOSUCHVAR
+        return
+      endif
+      print*,"Getting shared variable: ",varname
       call fatal_error("get_variable","Shared variable does not exist!")
 !    
     endsubroutine get_variable_int1d
 !***********************************************************************
-    subroutine put_variable_int0d(varname,variable) 
+    subroutine put_variable_int0d(varname,variable,err) 
       character (len=*) :: varname
       integer, target :: variable
       type (shared_variable_list), pointer :: new
+      integer, optional :: err
+!
+      if (variable_exists(varname)) then
+        if (present(err)) then
+          err=iSHVAR_ERR_DUPLICATE
+          return
+        endif
+        print*,"Setting shared variable: ",varname
+        call fatal_error("get_variable","Shared variable name already exists!")
+      endif
 !
       call new_item_atstart(thelist,new=new)
       new%varname=varname
@@ -225,10 +253,20 @@ module SharedVariables
 !    
     endsubroutine put_variable_int0d
 !***********************************************************************
-    subroutine put_variable_int1d(varname,variable) 
+    subroutine put_variable_int1d(varname,variable,err) 
       character (len=*) :: varname
       integer, dimension(:), target :: variable
       type (shared_variable_list), pointer :: new
+      integer, optional :: err
+!
+      if (variable_exists(varname)) then
+        if (present(err)) then
+          err=iSHVAR_ERR_DUPLICATE
+          return
+        endif
+        print*,"Setting shared variable: ",varname
+        call fatal_error("get_variable","Shared variable name already exists!")
+      endif
 !
       call new_item_atstart(thelist,new=new)
       new%varname=varname
@@ -237,10 +275,19 @@ module SharedVariables
 !    
     endsubroutine put_variable_int1d
 !***********************************************************************
-    subroutine put_variable_real0d(varname,variable) 
+    subroutine put_variable_real0d(varname,variable,err) 
       character (len=*) :: varname
       real, target :: variable
       type (shared_variable_list), pointer :: new
+!
+      if (variable_exists(varname)) then
+        if (present(err)) then
+          err=iSHVAR_ERR_DUPLICATE
+          return
+        endif
+        print*,"Setting shared variable: ",varname
+        call fatal_error("get_variable","Shared variable name already exists!")
+      endif
 !
       call new_item_atstart(thelist,new=new)
       new%varname=varname
@@ -249,10 +296,20 @@ module SharedVariables
 !    
     endsubroutine put_variable_real0d
 !***********************************************************************
-    subroutine put_variable_real1d(varname,variable) 
+    subroutine put_variable_real1d(varname,variable,err) 
       character (len=*) :: varname
       real, dimension(:), target :: variable
       type (shared_variable_list), pointer :: new
+      integer, optional :: err
+!
+      if (variable_exists(varname)) then
+        if (present(err)) then
+          err=iSHVAR_ERR_DUPLICATE
+          return
+        endif
+        print*,"Setting shared variable: ",varname
+        call fatal_error("get_variable","Shared variable name already exists!")
+      endif
 !
       call new_item_atstart(thelist,new=new)
       new%varname=varname
@@ -261,11 +318,27 @@ module SharedVariables
 !    
     endsubroutine put_variable_real1d
 !***********************************************************************
+    function variable_exists(varname) 
+      character (len=*) :: varname
+      logical :: variable_exists
+      type (shared_variable_list), pointer :: item
+!
+      item=>thelist
+      do while (associated(item))
+        if (item%varname==varname) then
+          return .true.
+        endif
+        item=>item%next
+      enddo
+      return .false.
+!    
+    endsubroutine get_variable_int0d
+!***********************************************************************
     subroutine free_list(list) 
       type (shared_variable_list), pointer :: list
       type (shared_variable_list), pointer :: next
  
-      do while (associated(start))
+      do while (associated(list))
         next=>list%next
         deallocate(list)
         list=>next
