@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.37 2006-07-14 10:43:35 mee Exp $
+; $Id: pc_read_var.pro,v 1.38 2006-07-19 09:30:28 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-07-14 10:43:35 $
-;  $Revision: 1.37 $
+;  $Date: 2006-07-19 09:30:28 $
+;  $Revision: 1.38 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -15,6 +15,7 @@ pro pc_read_var, t=t,                                            $
             TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL,                    $
             nameobject=nameobject,                               $
             dim=dim,param=param,                                 $
+            ivar=ivar,                                           $
             datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,     $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,   $
             SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent
@@ -37,11 +38,13 @@ COMPILE_OPT IDL2,HIDDEN
     print, "  datadir: specify the root data directory. Default is './data'   [string]   "
     print, "     proc: specify a processor to get the data from. Default: ALL [integer]  "
     print, "  varfile: name for the var file, default: 'var.dat'              [string]   "
+    print, "     ivar: a number to optionally append to the end of the        [integer]   "
+    print, "           varfile name.                                                     "
     print, "                                                                             "
     print, "        t: array of x mesh point positions in length units    [precision(mx)]"
     print, "                                                                             "
     print, "   object: optional structure in which to return all the above    [structure]"
-    print, "           (or those vars specified in VARIABLES)                 [structure]"
+    print, "           (or those vars specified in VARIABLES)                            "
     print, "variables: array of variable name to return                       [string(*)]"
     print, "                                                                             "
     print, "/ADDITIONAL: Load all variables stores in the files, PLUS and additional     "
@@ -65,7 +68,11 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory
 
 default, datadir, 'data'
+
 default,varfile,'var.dat'
+if n_elements(ivar) eq 1 then begin
+  varfile=varfile+strcompress(string(ivar),/remove_all)
+endif
 
 ; Get necessary dimensions, inheriting QUIET
   if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,/quiet
