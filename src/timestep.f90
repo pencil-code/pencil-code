@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.41 2006-07-17 11:27:43 mee Exp $
+! $Id: timestep.f90,v 1.42 2006-07-19 11:22:39 mee Exp $
 
 module Timestep
 
@@ -103,7 +103,8 @@ module Timestep
         if (ldt) dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
-!AB: Tony, could you please say a few words here
+! Add artificial damping at the location of SN explosions for
+! a short time after insertion.
 !
         if (linterstellar) call calc_snr_damp_int(dt_beta(itsub))
 !
