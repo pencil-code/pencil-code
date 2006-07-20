@@ -1,15 +1,14 @@
-PRO pc_write_vapor,topdir,numprocs, vdffile,timestep,varfilename
+pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir,ivar=ivar,ivarmin=ivarmin,ivarmax=ivarmax, $
+                           variables=variables,proc=proc,varcontent=varcontent,_extra=_extra
 ;
 ; Program to convert a directory of pencil files into a vapor dataset.
 ; Arguments are:
 ;	topdir = absolute path to directory where pencil data is stored
-;	numprocs = number of procN subdirectories (N goes from 0 to numprocs -1)
+;	nprocs = number of procN subdirectories (N goes from 0 to nprocs -1)
 ;	vdffile = absolute path, including filename, of vdf file for the result.
 ;		The vdf file should be created by running vdffile before this.
 ;		The vdf file should specify names for the variables, in the same order
 ;		as they appear in the pencil var.dat files
-;	timestep = an integer timestep for the data to be converted.  Must be within
-;		the number of time steps specified in the vdf file 
 ;	varfilename = a string used to identify the name of the var.dat files.  If it
 ;		is not specified, then the default is "var"
 ;	 
@@ -17,89 +16,95 @@ PRO pc_write_vapor,topdir,numprocs, vdffile,timestep,varfilename
 ;	the same size, however, all chunks at a given x-coordinate have the same x-thickness,
 ;	and likewize for the chunks at a given y or z coordinate
 ;
-	IF (N_PARAMS() LT 5 ) THEN varfilename = 'var'
-	varfilename = varfilename + '.dat' 
-;
-;    Create tables to hold information about data:
-;
-	xsize = intarr(numprocs)
-	ysize = intarr(numprocs)
-	zsize = intarr(numprocs)
-	xposition = intarr(numprocs)
-	yposition = intarr(numprocs)
-	zposition = intarr(numprocs)
+    pc_read_dim,obj=dim,proc=proc
+    if (n_elements(proc) eq 1L) then nprocs=1 else nprocs = dim.nprocx*dim.nprocy*dim.nprocz
+
+    if (n_elements(ivar) eq 1L) then begin
+      numts=1L
+    endif else begin
+      default,ivarmin,-1L
+      default,ivarmax,-1L
+      if ((ivarmin ge 0) and (ivarmax lt 0)) then begin
+        ivar=ivarmin
+        ivarmin=-1L
+        ivarmax=-1L
+      endif
+      if ((ivarmin lt 0) and (ivarmax ge 0)) then begin
+        ivar=ivarmax
+        ivarmin=-1L
+        ivarmax=-1L
+      endif
+      numts=ivarmax-ivarmin+1L
+    endelse
+
+    default,datadir,'data'
+    default,vdffile,datadir+'/var.vdf'
+    ;default,vdffile,'var.vdf'
+
+    default,varcontent,pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+ 
+    dimstr=strcompress(string(dim.nx),/remove_all)+'x' $
+          +strcompress(string(dim.ny),/remove_all)+'x' $
+          +strcompress(string(dim.nz),/remove_all)
+
+    vdfcreate_command='vdfcreate -dimension '+dimstr $
+                              +' -numts '+strcompress(string(numts)) $
+                              +' -comment "Created by pc_write_vapor"' $
+                              +' -gridtype regular' $
+                              +' -coordsys cartesian' $
+                              +' -varnames '+arraytostring(variables,list=':') $
+                              +' ' + vdffile 
+
+    spawn,vdfcreate_command,exit_status=exit_status
+    if (exit_status ne 0) then begin
+      print,"Failed to create vdf file"
+    endif
+;Usage: vdfcreate [options] filename
+;    -dimensio arg0            Volume dimensions (NXxNYxNZ)
+;    -numts    arg0            Number of timesteps
+;    -bs       arg0            Internal storage blocking factor (NXxNYxNZ)
+;    -level    arg0            Maximum refinement level. 0 => no refinement
+;    -nfilter  arg0            Number of wavelet filter coefficients
+;    -nlifting arg0            Number of wavelet lifting coefficients
+;    -comment  arg0            Top-level comment
+;    -gridtype arg0            Data grid type (regular|streched|block_amr)
+;    -coordsys arg0            Top-level comment (cartesian|spherical)
+;    -extents  arg0            Domain extents in user coordinates
+;    -varnames arg0            Colon delimited list of variable names
+;    -mtkcompa                 Force compatibility with older mtk files
+;    -help                     Print this message and exit
+
+
 ;
 ;	Read dim.dat files:
 ;
 ;	(while finding the thickest z-size)
 	maxzthick = 0
-	FOR I = 0, numprocs-1 DO BEGIN
-		dimfile = topdir+'/proc'+STRTRIM(STRING(I),1)+'/dim.dat'
-		OPENR, 1, dimfile 
-;	Read the first line (contains sizes)
-		READF,1,sizex,sizey,sizez,foo,bar
-		xsize[I] = sizex
-		ysize[I] = sizey
-		zsize[I] = sizez
-		IF (sizez GT maxzthick) THEN maxzthick = sizez
-;	Read second line (precision, a string) 
-		prec = ' '
-		READF,1,prec
-;	Read third line (ghost widths)
-		READF,1,ghostx,ghosty,ghostz
-;	Read the last line (contains positions)
-		READF,1,xpos,ypos,zpos
-		xposition[I] = xpos
-		yposition[I] = ypos
-		zposition[I] = zpos
-		CLOSE, 1
-	ENDFOR
-	maxzthick = maxzthick - 2*ghostz
-;  	Determine the x,y,and z-grid spacing
+	for I = 0, nprocs-1 do begin
+        pc_read_dim,obj=procdim,proc=i
+		maxzthick = max([maxzthick , procdim.nz])
 
-	xspacing = intarr(numprocs)
-	yspacing = intarr(numprocs)
-	zspacing = intarr(numprocs)
-	xspacing[*] = 0
-	yspacing[*] = 0
-	yspacing[*] = 0
-
-	FOR I = 0, numprocs-1 DO BEGIN
-		xspacing[xposition[I]] = xsize[I] - 2*ghostx
-		yspacing[yposition[I]] = ysize[I] - 2*ghosty
-		zspacing[zposition[I]] = zsize[I] - 2*ghostz
-	ENDFOR
-
-;	Accumulate the spacings
-	xtot = 0
-	ytot = 0
-	ztot = 0
-	FOR I = 0, numprocs -1 DO BEGIN
-		IF (xspacing[I] NE 0) THEN BEGIN
-			xtot = xtot + xspacing[I]
-			xspacing[I] = xtot - xspacing[I]		
-		ENDIF
-		IF (yspacing[I] NE 0) THEN BEGIN
-			ytot = ytot + yspacing[I]
-			yspacing[I] = ytot - yspacing[I]		
-		ENDIF
-		IF (zspacing[I] NE 0) THEN BEGIN
-			numslabs = I+1
-			ztot = ztot + zspacing[I]
-			zspacing[I] = ztot - zspacing[I]		
-		ENDIF
-	ENDFOR
-
+        if (i eq 0) then begin
+          procdims=[procdim]
+        endif else begin
+          procdims=[procdims,procdim]
+        endelse
+	endfor
+;
 ;	Sort the tables on z-coordinate:
 ;
-	fileorder = SORT(zposition)
+	fileorder = SORT(procdims[*].ipz)
 
 ;	Create the metadata from the vdffile.
 ;	Find the dimensions of the data.
 ;	These had better agree with the pencil data!
 ; 
+print,"Call vdf_create: ", vdffile
 	mfd = vdf_create(vdffile)
+print,"Call vdf_getdimension"
 	dim = vdf_getdimension(mfd)
+print,"Call vdf_getvarnames"
 	varnames = vdf_getvarnames(mfd)
 	sz = size(varnames)
 	numvariables = sz[1]
@@ -107,52 +112,52 @@ PRO pc_write_vapor,topdir,numprocs, vdffile,timestep,varfilename
 ;
 ;	Determine how many chunks of pencil data are associated with a slab:
 ;
-	chunksperslab = numprocs/numslabs
+    numslabs=dim.nprocz
+	chunksperslab = nprocs/numslabs
 ;	Allocate enough memory to hold the largest slab:
 
 	slabdata = FLTARR(dim[0],dim[1],maxzthick)
 
 ;	Loop over each variable
-	FOR varnum = 0, numvariables -1 DO BEGIN
+	for timestep = 0L, numts -1 DO BEGIN
+	for varnum = 0L, numvariables -1 DO BEGIN
+        if (ivarmin ge 0) then ivar=ivarmin+timestep
 		print, 'assembling variable ',varnames[varnum]
 		dfd = vdc_bufwritecreate(mfd)
 		vdc_openvarwrite, dfd, timestep, varnames[varnum], -1
 ;
 ;  	Loop over the slabs:
 	
-		FOR slab = 0, numslabs -1 DO BEGIN
+        chunknum=0
+		for slab = 0L, numslabs - 1 do begin
 ;	For each slab, loop over the proc directories (chunks) associated with it:
-			FOR chunk = 0, chunksperslab-1 DO BEGIN 		
-				chunknum = slab*chunksperslab + chunk 
-				dirnum = fileorder[chunknum]
+			for chunk = 0L, chunksperslab - 1 do begin 		
+				proc = fileorder[chunknum]
 ;				read the chunk into the dataarray
 ;				Create an array to hold a variable chunk as it is read from the proc directory 
-				IF (prec EQ 'D') THEN BEGIN
-					dataarray = DBLARR(xsize[dirnum],ysize[dirnum],zsize[dirnum],numvariables)
-				ENDIF ELSE dataarray = FLTARR(xsize[dirnum],ysize[dirnum],zsize[dirnum],numvariables)
-				varfile = topdir+'/proc'+STRTRIM(STRING(dirnum),1)+'/'+varfilename
-				openr,1,varfile,/f77
-				readu,1,dataarray
-				close,1
+                pc_read_var,obj=data,proc=proc,varfile=varfile,ivar=ivar,variables=[ varnames[varnum] ],/trimall,_extra=_extra
 ;
 ;				Then copy the data chunks into the data slab:
-				minx = xspacing[xposition[dirnum]]
-				maxx = FIX(minx + xsize[dirnum] - 2*ghostx-1)
-				miny = yspacing[yposition[dirnum]]
-				maxy = FIX(miny + ysize[dirnum] - 2*ghosty-1)
-				minz = zspacing[zposition[dirnum]]
-				maxz = FIX(minz + zsize[dirnum] - 2*ghostz-1)
-				slabdata[minx:maxx,miny:maxy,0:(maxz-minz)] = FLOAT(dataarray[ghostx:xsize[dirnum]-ghostx-1,ghosty:ysize[dirnum]-ghosty-1,ghostz:zsize[dirnum]-ghostz-1,varnum])
-			ENDFOR
+                minx = procdims[i].ipx * procdims[i].nx
+				maxx = FIX(minx + procdims[proc].nx - 1L)
+                miny = procdims[i].ipy * procdims[i].ny
+				maxy = FIX(miny + procdims[proc].ny - 1L)
+                minz = procdims[i].ipz * procdims[i].nz
+				maxz = FIX(minz + procdims[proc].nz - 1L)
+				;res=execute('slabdata[minx:maxx,miny:maxy,0:(maxz-minz)] = float(data.'+varnames[varnum]+')'
+				print,'slabdata[minx:maxx,miny:maxy,0:(maxz-minz)] = float(data.'+varnames[varnum]+')'
+				chunknum = chunknum+1
+			endfor
 ; 			now the full slab is populated, write it to the vdf, one
 ; 			z-slice at a time
 ;
-			FOR z = 0, (maxz-minz) DO BEGIN
+			for z = 0, (maxz-minz) do begin
 				vdc_bufwriteslice, dfd, slabdata[*,*,z]
-			ENDFOR
-		ENDFOR
+			endfor
+		endfor
 ;  	Now close the dfd
 		vdc_closevar, dfd
 		vdc_bufwritedestroy,dfd
-	ENDFOR
-END
+	endfor
+	endfor
+end
