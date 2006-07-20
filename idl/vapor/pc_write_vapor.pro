@@ -137,7 +137,7 @@ print,"Call vdf_getvarnames"
 				proc = fileorder[chunknum]
 ;				read the chunk into the dataarray
 ;				Create an array to hold a variable chunk as it is read from the proc directory 
-                pc_read_var,obj=data,proc=proc,varfile=varfile,ivar=ivar,variables=[ varnames[varnum] ],/trimall,_extra=_extra
+                pc_read_var,obj=data,proc=proc,varfile=varfile,ivar=ivar,variables=[ varnames[varnum] ],/trimall,/quiet,_extra=_extra
 ;
 ;				Then copy the data chunks into the data slab:
                 minx = procdims[proc].ipx * procdims[proc].nx
