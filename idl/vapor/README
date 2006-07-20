@@ -7,6 +7,10 @@ See http://www.vapor.ucar.edu for VAPOR documentation
   1. Tony's Getting Started Instructions
   2. Alan's original instructions (annotated)
 
+Sample Output
+-------------
+   http://video.google.com/videoplay?docid=-272573806280164847&hl=en
+
 Getting Started
 ---------------
 To generate the Vapor file (defaults to data/var.vdf)
