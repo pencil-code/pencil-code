@@ -1,0 +1,29 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Initialisation parameters for dust particles moving in a random
+!  velocity field.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-07-20 07:36:19 ajohan Exp $',
+  lperi =    T,    T,    T
+  ip=20, lwrite_ic=T, lwrite_aux=T
+/
+&eos_init_pars
+  gamma=1.0, rho0=1.0, cs0=1.0
+/
+&selfgrav_init_pars
+  rhs_poisson_const=12.5664
+  lselfgravity_gas=F, lselfgravity_dust=F
+/
+&shear_init_pars
+  Omega=1.0, qshear=1.5
+/
+&particles_init_pars
+  initxxp='equidistant','shift'
+  kx_xxp=-1.0, ky_xxp=1.0, kz_xxp=0.0, amplxxp=1.0e-3
+  eps_dtog=1.0, tausp=1.0
+  lparticlemesh_tsc=T
+/
+&particles_selfgrav_init_pars
+  lselfgravity_particles=T
+/
