@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.173 2006-07-07 13:18:29 ajohan Exp $
+! $Id: mpicomm.f90,v 1.174 2006-07-20 07:43:55 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2794,5 +2794,25 @@ module Mpicomm
       if (lroot .and. ip<10) print*,'transform_nr: fft has finished'
 !
     endsubroutine transform_nr
+!***********************************************************************
+    subroutine fourier_shift_yz(a_re,shift_y)
+!
+!  Performs a periodic shift in the y-direction of an entire y-z plane by
+!  the amount shift_y. The shift is done in Fourier space for maximum
+!  interpolation accuracy.
+!
+!  19-jul-06/anders: coded
+!
+      use Cdata, only: ky_fft
+!
+      real, dimension (ny,nz) :: a_re
+      real :: shift_y
+!
+      if (lroot) print*, 'fourier_shift_yz: not implemented for ncpus>1'
+      call stop_it('fourier_shift_yz')
+!
+      if (NO_WARN) print*, a_re, shift_y
+!
+    endsubroutine fourier_shift_yz
 !***********************************************************************
 endmodule Mpicomm

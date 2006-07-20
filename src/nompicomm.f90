@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.125 2006-07-04 14:57:19 mee Exp $
+! $Id: nompicomm.f90,v 1.126 2006-07-20 07:43:55 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -830,9 +830,8 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar) :: df
       integer :: ivar1,ivar2
 !
-      real, dimension (ny,nz,ivar2-ivar1+1) :: df_tmp_yz
-      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
-      integer :: displs
+      real, dimension (ny,nz) :: df_tmp_yz
+      integer :: ivar
 !
 !  Fold z-direction first (including first ghost zone in x and y).
 !
@@ -861,35 +860,20 @@ module Mpicomm
 !  shifted properly before the final fold.
 !
         if (lshear) then
-          deltay_dy=deltay/dy
-          displs=int(deltay_dy)
-          frak=deltay_dy-displs
-          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-          df_tmp_yz = &
-               c1*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
-              +c2*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
-              +c3*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
-              +c4*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
-              +c5*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
-              +c6*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
-          df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
-          df_tmp_yz = &
-               c1*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
-              +c2*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
-              +c3*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
-              +c4*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
-              +c5*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
-              +c6*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
-          df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
+          do ivar=ivar1,ivar2
+            df_tmp_yz=df(l1-1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(df_tmp_yz,-deltay)
+            df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz
+            df_tmp_yz=df(l2+1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(df_tmp_yz,+deltay)
+            df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz
+          enddo
         endif
         df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
+!
+!  Finally fold the x-direction.
 !
       if (nxgrid/=1) then
         df(l1,m1:m2,n1:n2,ivar1:ivar2)=df(l1,m1:m2,n1:n2,ivar1:ivar2) + &
@@ -899,8 +883,6 @@ module Mpicomm
         df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
         df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=0.0
       endif
-!
-!  Finally fold the x-direction.
 !
     endsubroutine fold_df
 !***********************************************************************
@@ -915,9 +897,8 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: ivar1, ivar2
 !
-      real, dimension (ny,nz,ivar2-ivar1+1) :: f_tmp_yz
-      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
-      integer :: displs
+      real, dimension (ny,nz) :: f_tmp_yz
+      integer :: ivar
 !
 !  Fold z-direction first (including first ghost zone in x and y).
 !
@@ -944,31 +925,14 @@ module Mpicomm
 !  shifted properly before the final fold.
 !
         if (lshear) then
-          deltay_dy=deltay/dy
-          displs=int(deltay_dy)
-          frak=deltay_dy-displs
-          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-          f_tmp_yz = &
-               c1*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
-              +c2*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
-              +c3*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
-              +c4*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
-              +c5*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
-              +c6*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
-          f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
-          f_tmp_yz = &
-               c1*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
-              +c2*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
-              +c3*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
-              +c4*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
-              +c5*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
-              +c6*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
-          f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
+          do ivar=ivar1,ivar2
+            f_tmp_yz=f(l1-1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(f_tmp_yz,-deltay)
+            f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz
+            f_tmp_yz=f(l2+1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(f_tmp_yz,+deltay)
+            f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz
+          enddo
         endif
         f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
@@ -1415,5 +1379,45 @@ module Mpicomm
       a_im=a_im/nwgrid
 !
     endsubroutine transform_nr
+!***********************************************************************
+    subroutine fourier_shift_yz(a_re,shift_y)
+!
+!  Performs a periodic shift in the y-direction of an entire y-z plane by
+!  the amount shift_y. The shift is done in Fourier space for maximum
+!  interpolation accuracy.
+!
+!  19-jul-06/anders: coded
+!
+      use Cdata, only: ky_fft
+!
+      real, dimension (ny,nz) :: a_re
+      real :: shift_y
+!
+      complex, dimension(ny) :: ay
+      real, dimension(ny,nz) :: a_im
+      real, dimension(4*ny+15) :: wsavey
+      integer :: n
+!
+!  Transform to Fourier space.
+!
+      call cffti(ny,wsavey)
+      do n=1,nz
+        ay=cmplx(a_re(:,n),0.0)
+        call cfftf(ny,ay,wsavey)
+        ay(2:ny)=ay(2:ny)*exp(cmplx(0.0,-ky_fft(2:ny)*shift_y))
+        a_re(:,n)=real(ay)
+        a_im(:,n)=aimag(ay)
+      enddo
+!
+!  Back to real space.
+!
+      call cffti(ny,wsavey)
+      do n=1,nz
+        ay=cmplx(a_re(:,n),a_im(:,n))
+        call cfftb(ny,ay,wsavey)
+        a_re(:,n)=real(ay)/ny
+      enddo
+!
+    endsubroutine fourier_shift_yz
 !***********************************************************************
 endmodule Mpicomm
