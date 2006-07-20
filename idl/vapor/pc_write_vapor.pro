@@ -1,5 +1,8 @@
-pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir,ivar=ivar,ivarmin=ivarmin,ivarmax=ivarmax, $
-                           variables=variables,proc=proc,varcontent=varcontent,_extra=_extra
+pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir, $
+                   ivar=ivar,ivarmin=ivarmin,ivarmax=ivarmax, $
+                   variables=variables, $
+                   proc=proc,varcontent=varcontent, $
+                   scalar=scalar, _extra=_extra
 ;
 ; Program to convert a directory of pencil files into a vapor dataset.
 ; Arguments are:
@@ -42,8 +45,11 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir,ivar=ivar,iva
     default,vdffile,datadir+'/var.vdf'
     ;default,vdffile,'var.vdf'
 
-    default,varcontent,pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
-    default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+    default,varcontent,pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet,scalar=scalar)
+ 
+    pc_read_var,proc=0,varfile=varfile,ivar=ivar,variables=variables,tags=tags, $
+                /quiet,varcontent=varcontent,_extra=_extra
+    
  
     dimstr=strcompress(string(dim.nx),/remove_all)+'x' $
           +strcompress(string(dim.ny),/remove_all)+'x' $
@@ -55,7 +61,7 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir,ivar=ivar,iva
                               +' -comment "Created by pc_write_vapor"' $
                               +' -gridtype regular' $
                               +' -coordsys cartesian' $
-                              +' -varnames '+arraytostring(variables,list=':',/noleader) $
+                              +' -varnames '+arraytostring(tags,list=':',/noleader) $
                               +' ' + vdffile 
 
     print,vdfcreate_command
@@ -137,7 +143,10 @@ print,"Call vdf_getvarnames"
 				proc = fileorder[chunknum]
 ;				read the chunk into the dataarray
 ;				Create an array to hold a variable chunk as it is read from the proc directory 
-                pc_read_var,obj=data,proc=proc,varfile=varfile,ivar=ivar,variables=[ varnames[varnum] ],/trimall,/quiet,_extra=_extra
+                pc_read_var,obj=data,proc=proc,varfile=varfile,ivar=ivar, $
+                            variables=[ varnames[varnum] ], $
+                            /trimall,/quiet,varcontent=varcontent, $
+                            scalar=scalar,_extra=_extra
 ;
 ;				Then copy the data chunks into the data slab:
                 minx = procdims[proc].ipx * procdims[proc].nx
