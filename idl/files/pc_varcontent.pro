@@ -1,12 +1,10 @@
-;  $Id: pc_varcontent.pro,v 1.28 2006-07-14 01:14:28 theine Exp $
-FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
+;  $Id: pc_varcontent.pro,v 1.29 2006-07-20 11:14:29 mee Exp $
+FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
+                       param=param,quiet=quiet,scalar=scalar
 COMPILE_OPT IDL2,HIDDEN
-
 ;
 ;
 ;
-;
-
 default,ifcr,0
 
 ishock=0
@@ -16,6 +14,7 @@ irhop=0
 igpotselfx=0 & igpotselfy=0 & igpotselfz=0
 ipsi_real=0
 ipsi_imag=0
+ikapparho=0
 ; 
 ;  Read the positions of variables in f
 ;  Can't just use `@data/index', as the data directory may have a different name
@@ -207,42 +206,86 @@ varcontent[ipsi_imag].idlinitloc = INIT_SCALAR_LOC
 
 dustcount=n_elements(iuud) 
 if (dustcount gt 0L) then begin
-varcontent[iuud[0]].variable = 'Dust velocity  (uud)'
-varcontent[iuud[0]].idlvar   = 'uud'
-varcontent[iuud[0]].idlinit  = 'fltarr(mx,my,mz,3,'+str(dustcount)+')*one' 
-varcontent[iuud[0]].idlvarloc= 'uud_loc'
-varcontent[iuud[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3,'+str(dustcount)+')*one'
-varcontent[iuud[0]].skip     = (dustcount * 3) - 1
+  if (keyword_set(scalar)) then begin
+    for i=0,dustcount-1 do begin
+     istr=strcompress(string(i),/remove_all)
+     varcontent[iuud[i]].variable = 'Dust velocity  (uud['+istr+'])'
+     varcontent[iuud[i]].idlvar   = 'uud'+istr
+     varcontent[iuud[i]].idlinit  = 'fltarr(mx,my,mz,3)*one' 
+     varcontent[iuud[i]].idlvarloc= 'uud'+istr+'_loc'
+     varcontent[iuud[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3)*one'
+    endfor
+  endif else begin
+    varcontent[iuud[0]].variable = 'Dust velocity  (uud)'
+    varcontent[iuud[0]].idlvar   = 'uud'
+    varcontent[iuud[0]].idlinit  = 'fltarr(mx,my,mz,3,'+str(dustcount)+')*one' 
+    varcontent[iuud[0]].idlvarloc= 'uud_loc'
+    varcontent[iuud[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3,'+str(dustcount)+')*one'
+    varcontent[iuud[0]].skip     = (dustcount * 3) - 1
+  endelse
 endif
 
 dustcount=n_elements(ind)
 if (dustcount gt 0L) then begin
-varcontent[ind[0]].variable = 'Dust number density (nd)'
-varcontent[ind[0]].idlvar   = 'nd'
-varcontent[ind[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
-varcontent[ind[0]].idlvarloc= 'nd_loc'
-varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
-varcontent[ind[0]].skip     = dustcount - 1
+  if (keyword_set(scalar)) then begin
+    for i=0,dustcount-1 do begin
+     istr=strcompress(string(i),/remove_all)
+     varcontent[ind[0]].variable = 'Dust number density (nd'+istr+')'
+     varcontent[ind[0]].idlvar   = 'nd'+istr
+     varcontent[ind[0]].idlinit  = 'fltarr(mx,my,mz)*one' 
+     varcontent[ind[0]].idlvarloc= 'nd'+istr+'_loc'
+     varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
+    endfor
+  endif else begin
+    varcontent[ind[0]].variable = 'Dust number density (nd)'
+    varcontent[ind[0]].idlvar   = 'nd'
+    varcontent[ind[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
+    varcontent[ind[0]].idlvarloc= 'nd_loc'
+    varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
+    varcontent[ind[0]].skip     = dustcount - 1
+  endelse
 endif
 
 dustcount=n_elements(imd)
 if (dustcount gt 0L) then begin
-varcontent[imd[0]].variable = 'Dust density (md)'
-varcontent[imd[0]].idlvar   = 'md'
-varcontent[imd[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
-varcontent[imd[0]].idlvarloc= 'md_loc'
-varcontent[imd[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
-varcontent[imd[0]].skip     = dustcount - 1
+  if (keyword_set(scalar)) then begin
+    for i=0,dustcount-1 do begin
+     istr=strcompress(string(i),/remove_all)
+      varcontent[imd[i]].variable = 'Dust density (md'+istr+')'
+      varcontent[imd[i]].idlvar   = 'md'+istr
+      varcontent[imd[i]].idlinit  = 'fltarr(mx,my,mz)*one' 
+      varcontent[imd[i]].idlvarloc= 'md'+istr+'_loc'
+      varcontent[imd[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
+    endfor
+  endif else begin
+    varcontent[imd[0]].variable = 'Dust density (md)'
+    varcontent[imd[0]].idlvar   = 'md'
+    varcontent[imd[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
+    varcontent[imd[0]].idlvarloc= 'md_loc'
+    varcontent[imd[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
+    varcontent[imd[0]].skip     = dustcount - 1
+  endelse
 endif
 
 dustcount=n_elements(imi)
 if (dustcount gt 0L) then begin
-varcontent[imi[0]].variable = 'Ice density (mi)'
-varcontent[imi[0]].idlvar   = 'mi'
-varcontent[imi[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
-varcontent[imi[0]].idlvarloc= 'mi_loc'
-varcontent[imi[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
-varcontent[imi[0]].skip     = dustcount - 1
+  if (keyword_set(scalar)) then begin
+    for i=0,dustcount-1 do begin
+      istr=strcompress(string(i),/remove_all)
+      varcontent[imi[i]].variable = 'Ice density (mi'+istr+')'
+      varcontent[imi[i]].idlvar   = 'mi'+istr
+      varcontent[imi[i]].idlinit  = 'fltarr(mx,my,mz)*one' 
+      varcontent[imi[i]].idlvarloc= 'mi'+istr+'_loc'
+      varcontent[imi[i]].idlinitloc = 'fltarr(mxloc,myloc,mzloc)*one'
+    endfor
+  endif else begin
+    varcontent[imi[0]].variable = 'Ice density (mi)'
+    varcontent[imi[0]].idlvar   = 'mi'
+    varcontent[imi[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
+    varcontent[imi[0]].idlvarloc= 'mi_loc'
+    varcontent[imi[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
+    varcontent[imi[0]].skip     = dustcount - 1
+  endelse
 endif
 
 varcontent[igg].variable = 'Gravitational acceleration (gg)'
@@ -334,6 +377,26 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[igpotselfx].idlvarloc  = 'gpotself_loc'
   varcontent[igpotselfx].idlinitloc = INIT_3VECTOR_LOC
   varcontent[igpotselfx].skip       = 2
+endif
+
+if keyword_set(scalar) then begin
+  for i = 1, totalvars do begin
+    if (varcontent[i].skip eq 2) then begin
+      varcontent[i+2].variable  = varcontent[i].variable + ' 3rd component' 
+      varcontent[i+1].variable  = varcontent[i].variable + ' 2nd component' 
+      varcontent[i  ].variable  = varcontent[i].variable + ' 1st component' 
+      varcontent[i+2].idlvar    = varcontent[i].idlvar + '3' 
+      varcontent[i+1].idlvar    = varcontent[i].idlvar + '2' 
+      varcontent[i  ].idlvar    = varcontent[i].idlvar + '1' 
+      varcontent[i+2].idlvarloc = varcontent[i].idlvarloc + '3' 
+      varcontent[i+1].idlvarloc = varcontent[i].idlvarloc + '2' 
+      varcontent[i  ].idlvarloc = varcontent[i].idlvarloc + '1' 
+      varcontent[i:i+2].idlinit = INIT_SCALAR
+      varcontent[i:i+2].idlinitloc = INIT_SCALAR_LOC
+      varcontent[i:i+2].skip    = 0
+      i=i+2
+    endif   
+  endfor
 endif
 
 ; ZERO out default 'should never be used' definition

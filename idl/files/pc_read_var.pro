@@ -51,7 +51,7 @@
 ;       pc_read_var,obj=mydata,variables=['tt'],/magic,/add,/trimall
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.39 2006-07-20 01:21:26 mee Exp $
+;       $Id: pc_read_var.pro,v 1.40 2006-07-20 11:14:29 mee Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -65,7 +65,8 @@ pro pc_read_var, t=t,                                            $
             datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,     $
             nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,     $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,   $
-            SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent
+            SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent,       $
+            scalar=scalar
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -157,7 +158,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read meta data and set up variable/tag lists
 ;
-  default,varcontent,pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
+  default,varcontent,pc_varcontent(datadir=datadir,dim=dim, $
+                         param=param,quiet=quiet,scalar=scalar)
   totalvars=(size(varcontent))[1]-1L
 ;
   if n_elements(variables) ne 0 then begin
