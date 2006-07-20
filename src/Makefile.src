@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.209 2006-07-19 11:34:31 mee Exp $
+### $Id: Makefile.src,v 1.210 2006-07-20 15:25:35 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -61,7 +61,7 @@ POISSON      = nopoisson
 
 TIMESTEP     = timestep
 
-## Extra compiler flags (what does the `GENERAL' rrefer to?)
+## Extra compiler flags (what does the `GENERAL' refer to?)
 FFLAGS_GENERAL=
 CFLAGS_GENERAL=
 

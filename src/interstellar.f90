@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.124 2006-07-17 11:26:21 mee Exp $
+! $Id: interstellar.f90,v 1.125 2006-07-20 15:25:35 dobler Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -331,7 +331,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.124 2006-07-17 11:26:21 mee Exp $")
+           "$Id: interstellar.f90,v 1.125 2006-07-20 15:25:35 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -2459,7 +2459,7 @@ find_SN: do n=n1,n2
                    *0.5*(1.-tanh((sqrt(dr2_SN)-(1.1*width))/(0.08*width)))
 !
       elseif (velocity_profile=="lineartanh") then
-        profile_SN=max(sqrt(dr2_SN)/width,1.)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.))
+        profile_SN=max(sqrt(dr2_SN)/width,1.D0)*0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.))
 !
       elseif (velocity_profile=="quadratictanh") then
         profile_SN=min((dr2_SN/(width**2)),0.5*(1.-tanh((sqrt(dr2_SN)-width)*sigma_SN1-2.)))
