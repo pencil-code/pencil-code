@@ -18,6 +18,7 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir,ivar=ivar,iva
 ;
     pc_read_dim,obj=dim,proc=proc
     if (n_elements(proc) eq 1L) then nprocs=1 else nprocs = dim.nprocx*dim.nprocy*dim.nprocz
+    numslabs=dim.nprocz
 
     if (n_elements(ivar) eq 1L) then begin
       numts=1L
@@ -49,13 +50,15 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir,ivar=ivar,iva
           +strcompress(string(dim.nz),/remove_all)
 
     vdfcreate_command='vdfcreate -dimension '+dimstr $
+;                              +' -bs '+dimstr $
                               +' -numts '+strcompress(string(numts)) $
                               +' -comment "Created by pc_write_vapor"' $
                               +' -gridtype regular' $
                               +' -coordsys cartesian' $
-                              +' -varnames '+arraytostring(variables,list=':') $
+                              +' -varnames '+arraytostring(variables,list=':',/noleader) $
                               +' ' + vdffile 
 
+    print,vdfcreate_command
     spawn,vdfcreate_command,exit_status=exit_status
     if (exit_status ne 0) then begin
       print,"Failed to create vdf file"
@@ -112,7 +115,6 @@ print,"Call vdf_getvarnames"
 ;
 ;	Determine how many chunks of pencil data are associated with a slab:
 ;
-    numslabs=dim.nprocz
 	chunksperslab = nprocs/numslabs
 ;	Allocate enough memory to hold the largest slab:
 
@@ -138,14 +140,14 @@ print,"Call vdf_getvarnames"
                 pc_read_var,obj=data,proc=proc,varfile=varfile,ivar=ivar,variables=[ varnames[varnum] ],/trimall,_extra=_extra
 ;
 ;				Then copy the data chunks into the data slab:
-                minx = procdims[i].ipx * procdims[i].nx
+                minx = procdims[proc].ipx * procdims[proc].nx
 				maxx = FIX(minx + procdims[proc].nx - 1L)
-                miny = procdims[i].ipy * procdims[i].ny
+                miny = procdims[proc].ipy * procdims[proc].ny
 				maxy = FIX(miny + procdims[proc].ny - 1L)
-                minz = procdims[i].ipz * procdims[i].nz
+                minz = procdims[proc].ipz * procdims[proc].nz
 				maxz = FIX(minz + procdims[proc].nz - 1L)
-				;res=execute('slabdata[minx:maxx,miny:maxy,0:(maxz-minz)] = float(data.'+varnames[varnum]+')'
-				print,'slabdata[minx:maxx,miny:maxy,0:(maxz-minz)] = float(data.'+varnames[varnum]+')'
+				res=execute('slabdata[minx:maxx,miny:maxy,0:(maxz-minz)] = float(data.'+varnames[varnum]+')')
+				;print,'slabdata[minx:maxx,miny:maxy,0:(maxz-minz)] = float(data.'+varnames[varnum]+')'
 				chunknum = chunknum+1
 			endfor
 ; 			now the full slab is populated, write it to the vdf, one
