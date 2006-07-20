@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.272 2006-07-18 21:50:03 brandenb Exp $
+! $Id: hydro.f90,v 1.273 2006-07-20 21:30:59 joishi Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -92,7 +92,7 @@ module Hydro
   integer :: idiag_ox2m=0,idiag_oy2m=0,idiag_oz2m=0
   integer :: idiag_oxm=0,idiag_oym=0,idiag_ozm=0
   integer :: idiag_uxuym=0,idiag_uxuzm=0,idiag_uyuzm=0
-  integer :: idiag_uxuymz=0,idiag_uxuzmz=0,idiag_uyuzmz=0
+  integer :: idiag_uxuymz=0,idiag_uxuzmz=0,idiag_uyuzmz=0,idiag_ruxuymz=0
   integer :: idiag_uxuymy=0,idiag_uxuzmy=0,idiag_uyuzmy=0
   integer :: idiag_uxuymx=0,idiag_uxuzmx=0,idiag_uyuzmx=0
   integer :: idiag_oxoym=0,idiag_oxozm=0,idiag_oyozm=0
@@ -153,7 +153,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.272 2006-07-18 21:50:03 brandenb Exp $")
+           "$Id: hydro.f90,v 1.273 2006-07-20 21:30:59 joishi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -603,7 +603,7 @@ module Hydro
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
-      if (idiag_fmassz/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_fmassz/=0 .or. idiag_ruxuymz/=0) lpenc_diagnos(i_rho)=.true.
       if (idiag_ekin/=0 .or. idiag_ekintot/=0 .or. idiag_fkinz/=0 .or. &
           idiag_ekinz/=0) then
         lpenc_diagnos(i_rho)=.true.
@@ -939,6 +939,8 @@ module Hydro
         if (idiag_uxuymz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,2),idiag_uxuymz)
         if (idiag_uxuzmz/=0)  call xysum_mn_name_z(p%uu(:,1)*p%uu(:,3),idiag_uxuzmz)
         if (idiag_uyuzmz/=0)  call xysum_mn_name_z(p%uu(:,2)*p%uu(:,3),idiag_uyuzmz)
+        if (idiag_ruxuymz/=0) & 
+          call xysum_mn_name_z(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymz)
         if (idiag_uxuymy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
         if (idiag_uxuzmy/=0)  call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
         if (idiag_uyuzmy/=0)  call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
@@ -1390,7 +1392,7 @@ module Hydro
         idiag_uxm=0; idiag_uym=0; idiag_uzm=0
         idiag_ux2m=0; idiag_uy2m=0; idiag_uz2m=0
         idiag_uxuym=0; idiag_uxuzm=0; idiag_uyuzm=0
-        idiag_uxuymz=0; idiag_uxuzmz=0; idiag_uyuzmz=0
+        idiag_uxuymz=0; idiag_uxuzmz=0; idiag_uyuzmz=0; idiag_uxuymz=0
         idiag_ox2m=0; idiag_oy2m=0; idiag_oz2m=0; idiag_oxm=0; idiag_oym=0
         idiag_ozm=0; idiag_oxoym=0; idiag_oxozm=0; idiag_oyozm=0
         idiag_umx=0; idiag_umy=0; idiag_umz=0
@@ -1494,6 +1496,8 @@ module Hydro
             'uxuzmz',idiag_uxuzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'uyuzmz',idiag_uyuzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+            'ruxuymz',idiag_ruxuymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'fmassz',idiag_fmassz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
