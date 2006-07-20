@@ -2,7 +2,7 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir, $
                    ivar=ivar,ivarmin=ivarmin,ivarmax=ivarmax, $
                    variables=variables, $
                    proc=proc,varcontent=varcontent, $
-                   scalar=scalar, _extra=_extra
+                   scalar=scalar, _extra=_extra, additional=additional
 ;
 ; Program to convert a directory of pencil files into a vapor dataset.
 ; Arguments are:
@@ -47,8 +47,17 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir, $
 
     default,varcontent,pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet,scalar=scalar)
  
-    pc_read_var,proc=0,varfile=varfile,ivar=ivar,variables=variables,tags=tags, $
-                /quiet,varcontent=varcontent,_extra=_extra
+    filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+    if n_elements(variables) ne 0 then begin
+      if keyword_set(ADDITIONAL) then begin
+        variables=[filevars,variables]
+      endif
+    endif else begin
+      variables=filevars
+    endelse
+
+;    pc_read_var,proc=0,varfile=varfile,ivar=ivar,variables=variables,tags=tags, $
+;                /quiet,varcontent=varcontent,_extra=_extra
     
  
     dimstr=strcompress(string(dim.nx),/remove_all)+'x' $
@@ -61,7 +70,7 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir, $
                               +' -comment "Created by pc_write_vapor"' $
                               +' -gridtype regular' $
                               +' -coordsys cartesian' $
-                              +' -varnames '+arraytostring(tags,list=':',/noleader) $
+                              +' -varnames '+arraytostring(variables,list=':',/noleader) $
                               +' ' + vdffile 
 
     print,vdfcreate_command
@@ -146,6 +155,7 @@ print,"Call vdf_getvarnames"
                 pc_read_var,obj=data,proc=proc,varfile=varfile,ivar=ivar, $
                             variables=[ varnames[varnum] ], $
                             /trimall,/quiet,varcontent=varcontent, $
+                            additional=additional, $
                             scalar=scalar,_extra=_extra
 ;
 ;				Then copy the data chunks into the data slab:
