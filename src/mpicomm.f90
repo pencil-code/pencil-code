@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.174 2006-07-20 07:43:55 ajohan Exp $
+! $Id: mpicomm.f90,v 1.175 2006-07-21 19:33:33 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1968,11 +1968,8 @@ module Mpicomm
 !      
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: df_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
-      integer :: iproc_rcv
-!
-      real, dimension (ny,nz,ivar2-ivar1+1) :: df_tmp_yz
-      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
-      integer :: nvar_fold, displs
+      real, dimension (ny,nz) :: df_tmp_yz
+      integer :: nvar_fold, iproc_rcv, ivar
 !
       nvar_fold=ivar2-ivar1+1
 !  The first ghost zone in the z-direction is folded (the corners will find
@@ -2019,39 +2016,6 @@ module Mpicomm
           df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
               df(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
               df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
-!
-!  With shearing boundary conditions we must take care that the information is
-!  shifted properly before the final fold.
-!
-          if (nxgrid>1 .and. lshear) then
-            deltay_dy=deltay/dy
-            displs=int(deltay_dy)
-            frak=deltay_dy-displs
-            c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-            c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-            c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-            c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-            c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-            c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-            df_tmp_yz = &
-                 c1*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
-                +c2*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
-                +c3*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
-                +c4*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
-                +c5*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
-                +c6*cshift(df(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
-            df(l1-1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
-            df_tmp_yz = &
-                 c1*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
-                +c2*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
-                +c3*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
-                +c4*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
-                +c5*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
-                +c6*cshift(df(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
-            df(l2+1,m1:m2,n1:n2,ivar1:ivar2)=df_tmp_yz
-          endif
-          df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
-          df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
@@ -2065,19 +2029,31 @@ module Mpicomm
                 df(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + df_tmp_xz
             if (iproc==iproc_rcv) then
               call mpirecv_real(df_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
             elseif (iproc_rcv==ylneigh) then
               call mpisend_real(df(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
             endif
             if (iproc==iproc_rcv) df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 df(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + df_tmp_xz
           enddo
-          if (nxgrid>1 .and. lshear) then
-            if (lroot) print*, 'fold_df: not implemented with nprocy>1!'
-            call stop_it('')
-          endif
+!
         endif
+!
+!  With shearing boundary conditions we must take care that the information is
+!  shifted properly before the final fold.
+!
+        if (nxgrid>1 .and. lshear) then
+!          do ivar=ivar1,ivar2
+!            df_tmp_yz=df(l1-1,m1:m2,n1:n2,ivar)
+!            call fourier_shift_yz(df_tmp_yz,-deltay)
+!            df(l1-1,m1:m2,n1:n2,ivar)=df_tmp_yz
+!            df_tmp_yz=df(l2+1,m1:m2,n1:n2,ivar)
+!            call fourier_shift_yz(df_tmp_yz,+deltay)
+!            df(l2+1,m1:m2,n1:n2,ivar)=df_tmp_yz
+!          enddo
+        endif
+!
         df(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         df(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
@@ -2106,11 +2082,8 @@ module Mpicomm
 !      
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: f_tmp_xz
-      integer :: nvar_fold, iproc_rcv
-!
-      real, dimension (ny,nz,ivar2-ivar1+1) :: f_tmp_yz
-      real :: deltay_dy, c1, c2, c3, c4, c5, c6, frak
-      integer :: displs
+      real, dimension (ny,nz) :: f_tmp_yz
+      integer :: nvar_fold, iproc_rcv, ivar
 !
       nvar_fold=ivar2-ivar1+1
 !  The first ghost zone in the z-direction is folded (the corners will find
@@ -2157,37 +2130,6 @@ module Mpicomm
           f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2)= &
               f(l1-1:l2+1,m2,n1:n2,ivar1:ivar2) + &
               f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)
-!
-!  With shearing boundary conditions we must take care that the information is
-!  shifted properly before the final fold.
-!
-          if (nxgrid>1 .and. lshear) then
-            deltay_dy=deltay/dy
-            displs=int(deltay_dy)
-            frak=deltay_dy-displs
-            c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
-            c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
-            c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
-            c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
-            c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
-            c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-            f_tmp_yz = &
-                 c1*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-2,1) &
-                +c2*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs-1,1) &
-                +c3*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs  ,1) &
-                +c4*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+1,1) &
-                +c5*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+2,1) &
-                +c6*cshift(f(l1-1,m1:m2,n1:n2,ivar1:ivar2), displs+3,1)
-            f(l1-1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
-            f_tmp_yz = &
-                 c1*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+2,1) &
-                +c2*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs+1,1) &
-                +c3*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs  ,1) &
-                +c4*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-1,1) &
-                +c5*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-2,1) &
-                +c6*cshift(f(l2+1,m1:m2,n1:n2,ivar1:ivar2),-displs-3,1)
-            f(l2+1,m1:m2,n1:n2,ivar1:ivar2)=f_tmp_yz
-          endif
         else
           do iproc_rcv=0,ncpus-1
             if (iproc==iproc_rcv) then
@@ -2201,19 +2143,31 @@ module Mpicomm
                 f(l1-1:l2+1,m1:m1,n1:n2,ivar1:ivar2) + f_tmp_xz
             if (iproc==iproc_rcv) then
               call mpirecv_real(f_tmp_xz, &
-                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
             elseif (iproc_rcv==ylneigh) then
               call mpisend_real(f(l1-1:l2+1,m1-1:m1-1,n1:n2,ivar1:ivar2), &
-                  (/nx+2,1,nz,nvar_fold/), yuneigh, 10003)
+                  (/nx+2,1,nz,nvar_fold/), ylneigh, 10003)
             endif
             if (iproc==iproc_rcv) f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2)= &
                 f(l1-1:l2+1,m2:m2,n1:n2,ivar1:ivar2) + f_tmp_xz
           enddo
-          if (nxgrid>1 .and. lshear) then
-            if (lroot) print*, 'fold_f: not implemented with nprocy>1!'
-            call stop_it('')
-          endif
+!
         endif
+!
+!  With shearing boundary conditions we must take care that the information is
+!  shifted properly before the final fold.
+!
+        if (nxgrid>1 .and. lshear) then
+          do ivar=ivar1,ivar2
+            f_tmp_yz=f(l1-1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(f_tmp_yz,-deltay)
+            f(l1-1,m1:m2,n1:n2,ivar)=f_tmp_yz
+            f_tmp_yz=f(l2+1,m1:m2,n1:n2,ivar)
+            call fourier_shift_yz(f_tmp_yz,+deltay)
+            f(l2+1,m1:m2,n1:n2,ivar)=f_tmp_yz
+          enddo
+        endif
+!
         f(l1-1:l2+1,m1-1,n1:n2,ivar1:ivar2)=0.0
         f(l1-1:l2+1,m2+1,n1:n2,ivar1:ivar2)=0.0
       endif
@@ -2808,10 +2762,109 @@ module Mpicomm
       real, dimension (ny,nz) :: a_re
       real :: shift_y
 !
-      if (lroot) print*, 'fourier_shift_yz: not implemented for ncpus>1'
-      call stop_it('fourier_shift_yz')
+      complex, dimension(nygrid) :: ay
+      real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
+      integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
+      real, dimension(4*nygrid+15) :: wsavey
 !
-      if (NO_WARN) print*, a_re, shift_y
+!  Fourier transform of the subdivided y-interval is done by collecting
+!  pencils of length nygrid at each processor. Consider the processor space
+!  for a given ipz for nygrid=32, nz=8:
+!
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!    |               |               |               |               | 8
+!    |               |               |               |               | 7
+!    |               |               |               |               | 6
+!    |               |               |               |               | 5
+!  z |     ipy=0     |     ipy=1     |     ipy=2     |     ipy=3     | 4
+!    |               |               |               |               | 3
+!    |               |               |               |               | 2
+!    |               |               |               |               | 1
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!                                    y
+!
+!  This is the resulting processor division that can be used for the Fourier
+!  transform:
+!
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!    |                             ipy=3                             | 8
+!    |_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _| 7
+!    |                             ipy=2                             | 6
+!    |_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _| 5
+!  z |                             ipy=1                             | 4
+!    |_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _| 3
+!    |                             ipy=0                             | 2
+!    |                                                               | 1
+!     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+!                                    y
+!
+!  The height at each processor is nz'=nz/nprocy.
+!
+      nz_new = nz/nprocy
+      if (nz_new==0) nz_new=1
+!
+!  Cut yz-plane so that whole nygrid pencils are present at the different
+!  processors.
+!
+      if (nprocy/=1) then
+        do ipy_from=0,nprocy-1
+          iproc_from=ipz*nprocy+ipy_from
+          if (ipy/=ipy_from) &
+              call mpirecv_real(a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
+              (/ny,nz_new/), iproc_from, 666)
+          if (ipy==ipy_from) then
+            a_re_new(ipy*ny+1:(ipy+1)*ny,:)=a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
+            do ipy_to=0,nprocy-1
+              iproc_to=ipz*nprocy+ipy_to
+              if (ipy/=iproc_to) &
+                  call mpisend_real(a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new), &
+                  (/ny,nz_new/), iproc_to, 666)
+            enddo
+          endif
+        enddo
+      endif
+!
+!  Transform to Fourier space.
+!
+      call cffti(nygrid,wsavey)
+      do n=1,nz_new
+        ay=cmplx(a_re_new(:,n),0.0)
+        call cfftf(nygrid,ay,wsavey)
+!  Do the shifting in Fourier space.
+        ay(2:nygrid)=ay(2:nygrid)*exp(cmplx(0.0,-ky_fft(2:nygrid)*shift_y))
+!
+        a_re_new(:,n)=real(ay)
+        a_im_new(:,n)=aimag(ay)
+      enddo
+!
+!  Back to real space.
+!
+      call cffti(nygrid,wsavey)
+      do n=1,nz_new
+        ay=cmplx(a_re_new(:,n),a_im_new(:,n))
+        call cfftb(nygrid,ay,wsavey)
+        a_re_new(:,n)=real(ay)/nygrid
+      enddo
+!
+!  Reinstate original division of yz-plane.
+!
+      if (nprocy/=1) then
+        do ipy_from=0,nprocy-1
+          iproc_from=ipz*nprocy+ipy_from
+          if (ipy/=ipy_from) &
+              call mpirecv_real(a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
+              (/ny,nz_new/), iproc_from, 666)
+          if (ipy==ipy_from) then
+            a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)=a_re_new(ipy*ny+1:(ipy+1)*ny,:)
+            do ipy_to=0,nprocy-1
+              iproc_to=ipz*nprocy+ipy_to
+              if (ipy/=iproc_to) &
+                  call mpisend_real(a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:), &
+                  (/ny,nz_new/), iproc_to, 666)
+            enddo
+          endif
+        enddo
+      endif
 !
     endsubroutine fourier_shift_yz
 !***********************************************************************
