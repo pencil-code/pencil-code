@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.58 2006-07-19 12:31:51 mee Exp $
+! $Id: eos_idealgas.f90,v 1.59 2006-07-21 11:21:41 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.58 2006-07-19 12:31:51 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.59 2006-07-21 11:21:41 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1020,7 +1020,7 @@ module EquationOfState
         lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
-        cs2_=cs20*cv1*ee_
+        cs2_=gamma*gamma1*ee_
 
       case (ilnrho_ee)
         lnrho_=var1
@@ -1028,7 +1028,7 @@ module EquationOfState
         lnTT_=log(cv1*ee_)
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         pp_=gamma1*ee_*exp(lnrho_)
-        cs2_=cs20*cv1*ee_
+        cs2_=gamma*gamma1*ee_
 
       case (ilnrho_pp)
         lnrho_=var1
@@ -1036,14 +1036,14 @@ module EquationOfState
         ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
         ee_=pp_*exp(-lnrho_)/gamma1
         lnTT_=log(cv1*ee_)
-        cs2_=cs20*cv1*ee_
+        cs2_=gamma*gamma1*ee_
       case (ilnrho_lnTT)
         lnrho_=var1
         lnTT_=var2
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=cs20*cv1*ee_
+        cs2_=gamma*gamma1*ee_
 
       case default 
         call not_implemented('eoscalc_point')
@@ -1093,6 +1093,7 @@ module EquationOfState
         lnTT_=lnTT0+cv1*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cv*exp(lnTT_)
         pp_=(cp-cv)*exp(lnTT_+lnrho_)
+        cs2_=gamma*gamma1*ee_
         cs2_=cs20*cv1*ee_
 
       case (ilnrho_ee)
@@ -1101,7 +1102,7 @@ module EquationOfState
         lnTT_=log(cv1*ee_)
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         pp_=gamma1*ee_*exp(lnrho_)
-        cs2_=cs20*cv1*ee_
+        cs2_=gamma*gamma1*ee_
 
       case (ilnrho_pp)
         lnrho_=var1
@@ -1109,7 +1110,7 @@ module EquationOfState
         ss_=cv*(log(pp_*exp(-lnrho_)*gamma/cs20)-gamma1*(lnrho_-lnrho0))
         ee_=pp_*exp(-lnrho_)/gamma1
         lnTT_=log(cv1*ee_)
-        cs2_=cs20*cv1*ee_
+        cs2_=gamma*gamma1*ee_
 
       case (ilnrho_lnTT)
         lnrho_=var1
@@ -1117,7 +1118,7 @@ module EquationOfState
         ss_=cv*(lnTT_-lnTT0-gamma1*(lnrho_-lnrho0))
         ee_=cv*exp(lnTT_)
         pp_=ee_*exp(lnrho_)*gamma1
-        cs2_=cs20*cv1*ee_
+        cs2_=gamma*gamma1*ee_
 
       case default 
         call not_implemented('eoscalc_point')
