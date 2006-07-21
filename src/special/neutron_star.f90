@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.7 2006-07-19 10:31:05 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.8 2006-07-21 11:57:45 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -185,11 +185,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.7 2006-07-19 10:31:05 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.8 2006-07-21 11:57:45 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.7 2006-07-19 10:31:05 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.8 2006-07-21 11:57:45 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -488,11 +488,12 @@ endsubroutine read_special_run_pars
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       integer :: i, l_sz, tmp_int
-      real :: mu,Rgas
+      real :: cs2_star
 !
 
 
-      call eos_param(mu,Rgas)
+    
+       call eoscalc(ilnrho_lnTT,log(rho_star),log(T_star), cs2=cs2_star)
 
 !  mass sources and sinks for the boundary layer on NS in 1D approximation
 !
@@ -542,7 +543,7 @@ endsubroutine read_special_run_pars
        
         ! df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) & 
         !   -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-	!   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
+	!   -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star))
 			     
 
 
@@ -554,7 +555,7 @@ endsubroutine read_special_run_pars
 	  
 	     df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
 	     -1./(5.*dt)*(f(l1:l2,m,n,ilnrho) &
-             -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*mu/Rgas/T_star))
+             -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:l2)**2*gamma/cs2_star))
 			   
 			   
 	   
@@ -564,13 +565,13 @@ endsubroutine read_special_run_pars
 	   
          df(l1:H_disk_point+4,m,n,ilnrho)=df(l1:H_disk_point+4,m,n,ilnrho) &
          -1./(5.*dt)*(f(l1:H_disk_point+4,m,n,ilnrho) &
-     	 -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*mu/Rgas/T_star))
+     	 -log(rho_surf)-(1.-M_star/2./z(n)**3*x(l1:H_disk_point+4)**2*gamma/cs2_star))
 			
 	  
 			      
              df(H_disk_point+5:l2,m,n,ilnrho)=df(H_disk_point+5:l2,m,n,ilnrho) &
         	     -1./(5.*dt)*(f(H_disk_point+5:l2,m,n,ilnrho) &
-	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*mu/Rgas/T_star))
+	     -log(rho_surf)-(1.-M_star/2./z(n)**3*x(H_disk_point+4)**2*gamma/cs2_star))
 	    endif
 						    
              endif 
@@ -629,7 +630,7 @@ endsubroutine read_special_run_pars
            do i=l_sz,l2   
              df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
              -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho) &
-	    +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*mu/Rgas/T_star)
+	    +M_star/z(n)**3*(x(i)-x(i-1))*x(i-1)*gamma/cs2_star)
 				    
 		!  df(i,m,n,ilnrho)=df(i,m,n,ilnrho)&
                 !   -1./(5.*dt)*(f(i,m,n,ilnrho)-f(i-1,m,n,ilnrho))		    
@@ -1189,12 +1190,12 @@ endsubroutine read_special_run_pars
 !
       integer :: step_width, step_length,i
       real :: H_disk_min, L_disk_min, hdisk, ldisk, ll,  ln_ro_l, ln_ro_r, ln_ro_u
-      real :: mu,Rgas
+      real :: cs2_star
 !
 
+       call eoscalc(ilnrho_lnTT,log(rho_star),log(T_star), cs2=cs2_star)
 
-      call eos_param(mu,Rgas)
-
+      
       hdisk=H_disk 
       ldisk=L_disk
 !
@@ -1270,7 +1271,7 @@ endsubroutine read_special_run_pars
  !   do i=1,44!H_disk_point+4
         do i=1,H_disk_point_int+4
     !    f(i,:,:,ilnrho)=ln_ro_u+(1.-(xx(i,:,:)/H_disk)**2)
-     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*mu/Rgas/T_star)
+     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(i)**2*gamma/cs2_star)
  
        enddo 
 
@@ -1282,7 +1283,7 @@ endsubroutine read_special_run_pars
      !	f(i,:,:,ilnrho)=f(44,:,:,ilnrho)
 	
     ! f(i,:,:,ilnrho)=f(H_disk_point+4,:,:,ilnrho)
-     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*mu/Rgas/T_star)
+     f(i,:,:,ilnrho)=ln_ro_u+(1.-M_star/2./zz(i,:,:)**3*x(H_disk_point_int+4)**2*gamma/cs2_star)
      
      
       enddo    
@@ -1702,14 +1703,7 @@ endsubroutine read_special_run_pars
       endif
 !
     endsubroutine bc_BL_z
-!***********************************************************************
-subroutine eos_param(mu,Rgas)
-      real :: mu, Rgas
-
-      mu=mu_local
-      Rgas=mu*gamma1*gamma11
-
-endsubroutine eos_param
+!*********************************************************************
 !********************************************************************
 endmodule Special
 
