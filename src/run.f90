@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.230 2006-07-17 11:27:43 mee Exp $
+! $Id: run.f90,v 1.231 2006-07-21 10:35:02 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.230 2006-07-17 11:27:43 mee Exp $")
+             "$Id: run.f90,v 1.231 2006-07-21 10:35:02 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -80,6 +80,18 @@
 !
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
+!
+!  Size of box at local processor.
+!
+        Lxyz_loc(1)=Lxyz(1)/nprocx
+        Lxyz_loc(2)=Lxyz(2)/nprocy
+        Lxyz_loc(3)=Lxyz(3)/nprocz
+        xyz0_loc(1)=xyz0(1)
+        xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
+        xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
+        xyz1_loc(1)=xyz1(1)
+        xyz1_loc(2)=xyz0(2)+(ipy+1)*Lxyz_loc(2)
+        xyz1_loc(3)=xyz0(3)+(ipz+1)*Lxyz_loc(3)
 !
 !  populate wavenumber arrays for fft and calculate nyquist wavenumber
 !

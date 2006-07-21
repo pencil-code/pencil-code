@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.120 2006-07-19 20:46:16 ajohan Exp $
+! $Id: particles_dust.f90,v 1.121 2006-07-21 10:35:02 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.120 2006-07-19 20:46:16 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.121 2006-07-21 10:35:02 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -160,18 +160,6 @@ module Particles
 !  Distribute particles evenly among processors to begin with.
 !
       if (lstarting) call dist_particles_evenly_procs(npar_loc,ipar)
-!
-!  Size of box at local processor is needed for particle boundary conditions.
-!
-      Lxyz_loc(1)=Lxyz(1)/nprocx
-      Lxyz_loc(2)=Lxyz(2)/nprocy
-      Lxyz_loc(3)=Lxyz(3)/nprocz
-      xyz0_loc(1)=xyz0(1)
-      xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
-      xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
-      xyz1_loc(1)=xyz1(1)
-      xyz1_loc(2)=xyz0(2)+(ipy+1)*Lxyz_loc(2)
-      xyz1_loc(3)=xyz0(3)+(ipz+1)*Lxyz_loc(3)
 !
 !  The inverse stopping time is needed for drag force.
 !
@@ -264,7 +252,7 @@ module Particles
 !
       real, dimension (3) :: uup
       real :: r, p, px, py, pz, eps, cs, k2_xxp
-      real :: fac, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
+      real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
 !
@@ -322,66 +310,140 @@ k_loop:   do while (.not. (k>npar_loc))
 
         case ('equidistant')
           if (lroot) print*, 'init_particles: Particles placed equidistantly'
-          fac=1.0/dimensionality
-          dx_par=0.0; dy_par=0.0; dz_par=0.0
-          fp(1,ixp)=x(l1); fp(1,iyp)=y(m1); fp(1,izp)=z(n1)
-!  Number of particles in x-direction.          
-          if (nxgrid/=1) then
-            if (nygrid/=1) then
-              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(2))**fac
-            elseif (nzgrid/=1) then
-              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(3))**fac
-            else
-              npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**fac
+          dim1=1.0/dimensionality
+!
+!  Number of particles per direction. Found by solving the equation system
+!
+!    npar_loc_x/npar_loc_y = Lx_loc/Ly_loc
+!    npar_loc_x/npar_loc_z = Lx_loc/Lz_loc
+!    npar_loc_y/npar_loc_z = Ly_loc/Lz_loc
+!    npar_loc_x*npar_loc_y*npar_loc_z = npar_loc
+!
+!  Found it to be easier to separate in all possible dimensionalities.
+!  For a missing direction i, set npar_loc_i=1 in the above equations and
+!  ignore any equation that has Li_loc in it.
+!
+          if (dimensionality==3) then
+!  3-D
+            npar_loc_x=(npar_loc*Lxyz_loc(1)**2/(Lxyz_loc(2)*Lxyz_loc(3)))**dim1
+            npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**dim1
+            npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**dim1
+          elseif (dimensionality==2) then
+!  2-D
+            if (nxgrid==1) then
+              npar_loc_x=1
+              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(3))**dim1
+              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(2))**dim1
+            elseif (nygrid==1) then
+              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(3))**dim1
+              npar_loc_y=1
+              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(2))**dim1
+            elseif (nzgrid==1) then
+              npar_loc_x=(npar_loc*Lxyz_loc(1)/Lxyz_loc(2))**dim1
+              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(1))**dim1
+              npar_loc_z=1
             endif
-            dx_par=Lxyz_loc(1)/npar_loc_x
-            fp(1,ixp) = xyz0_loc(1)+dx_par/2
-          endif
-!  Number of particles in y-direction.          
-          if (nygrid/=1) then
+          elseif (dimensionality==1) then
+!  1-D
             if (nxgrid/=1) then
-              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(1))**fac
-            elseif (nzgrid/=1) then
-              npar_loc_y=(npar_loc*Lxyz_loc(2)/Lxyz_loc(3))**fac
-            else
-              npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**fac
-            endif
-            npar_loc_y=(npar_loc*Lxyz_loc(2)**2/(Lxyz_loc(1)*Lxyz_loc(3)))**fac
-            dy_par=Lxyz_loc(2)/npar_loc_y
-            fp(1,iyp) = xyz0_loc(2)+dy_par/2
-          endif
-!  Number of particles in z-direction.          
-          if (nzgrid/=1) then
-            if (nxgrid/=1) then
-              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(1))**fac
+              npar_loc_x=npar_loc
+              npar_loc_y=1
+              npar_loc_z=1
             elseif (nygrid/=1) then
-              npar_loc_z=(npar_loc*Lxyz_loc(3)/Lxyz_loc(2))**fac
-            else
-              npar_loc_z=(npar_loc*Lxyz_loc(3)**2/(Lxyz_loc(1)*Lxyz_loc(2)))**fac
+              npar_loc_x=1
+              npar_loc_y=npar_loc
+              npar_loc_z=1
+            elseif (nzgrid/=1) then
+              npar_loc_x=1
+              npar_loc_y=1
+              npar_loc_z=npar_loc
             endif
-            dz_par=Lxyz_loc(3)/npar_loc_z
-            fp(1,izp) = xyz0_loc(3)+dz_par/2
           endif
-!  Place particles iteratively, making sure that they are always in the box.
-          do k=2,npar_loc
-            fp(k,ixp)=fp(k-1,ixp)+dx_par
-            fp(k,iyp)=fp(k-1,iyp)
-            fp(k,izp)=fp(k-1,izp)
-            if (fp(k,ixp)>xyz1_loc(1) .or. nxgrid==1) then
-              fp(k,ixp)=fp(1,ixp)
-              if (nygrid/=1) then
+!  Distance between particles.          
+          dx_par=Lxyz_loc(1)/npar_loc_x
+          dy_par=Lxyz_loc(2)/npar_loc_y
+          dz_par=Lxyz_loc(3)/npar_loc_z
+!  Place first particle.
+          fp(1,ixp) = x(l1) ; fp(1,iyp) = y(m1) ; fp(1,izp) = z(n1)
+          if (nxgrid/=1) fp(1,ixp) = xyz0_loc(1)+dx_par/2
+          if (nzgrid/=1) fp(1,iyp) = xyz0_loc(2)+dy_par/2
+          if (nygrid/=1) fp(1,izp) = xyz0_loc(3)+dz_par/2
+!  Place all other particles iteratively.
+          if (dimensionality==3) then
+!  3-D
+            do k=2,npar_loc
+              fp(k,ixp)=fp(k-1,ixp)+dx_par
+              fp(k,iyp)=fp(k-1,iyp)
+              fp(k,izp)=fp(k-1,izp)
+              if (fp(k,ixp)>xyz1_loc(1)) then
+                fp(k,ixp)=fp(1,ixp)
                 fp(k,iyp)=fp(k,iyp)+dy_par
-              else
+              endif
+              if (fp(k,iyp)>xyz1_loc(2)) then
+                fp(k,iyp)=fp(1,iyp)
                 fp(k,izp)=fp(k,izp)+dz_par
               endif
+            enddo
+          elseif (dimensionality==2) then
+!  2-D
+            if (nxgrid==1) then
+              do k=2,npar_loc
+                fp(k,ixp)=fp(k-1,ixp)
+                fp(k,iyp)=fp(k-1,iyp)+dy_par
+                fp(k,izp)=fp(k-1,izp)
+                if (fp(k,iyp)>xyz1_loc(2)) then
+                  fp(k,iyp)=fp(1,iyp)
+                  fp(k,izp)=fp(k,izp)+dz_par
+                endif
+              enddo
+            elseif (nygrid==1) then
+              do k=2,npar_loc
+                fp(k,ixp)=fp(k-1,ixp)+dx_par
+                fp(k,iyp)=fp(k-1,iyp)
+                fp(k,izp)=fp(k-1,izp)
+                if (fp(k,ixp)>xyz1_loc(1)) then
+                  fp(k,ixp)=fp(1,ixp)
+                  fp(k,izp)=fp(k,izp)+dz_par
+                endif
+              enddo
+            elseif (nzgrid==1) then
+              do k=2,npar_loc
+                fp(k,ixp)=fp(k-1,ixp)+dx_par
+                fp(k,iyp)=fp(k-1,iyp)
+                fp(k,izp)=fp(k-1,izp)
+                if (fp(k,ixp)>xyz1_loc(1)) then
+                  fp(k,ixp)=fp(1,ixp)
+                  fp(k,iyp)=fp(k,iyp)+dy_par
+                endif
+              enddo
             endif
-            if (fp(k,iyp)>xyz1_loc(2)) then
-              fp(k,iyp)=fp(1,iyp)
-              if (nzgrid/=1) then
-                fp(k,izp)=fp(k,izp)+dz_par
-              endif
+          elseif (dimensionality==1) then
+!  1-D
+            if (nxgrid/=1) then
+              do k=2,npar_loc
+                fp(k,ixp)=fp(k-1,ixp)+dx_par
+                fp(k,iyp)=fp(k-1,iyp)
+                fp(k,izp)=fp(k-1,izp)
+              enddo
+            elseif (nygrid/=1) then
+              do k=2,npar_loc
+                fp(k,ixp)=fp(k-1,ixp)
+                fp(k,iyp)=fp(k-1,iyp)+dy_par
+                fp(k,izp)=fp(k-1,izp)
+              enddo
+            elseif (nzgrid/=1) then
+              do k=2,npar_loc
+                fp(k,ixp)=fp(k-1,ixp)
+                fp(k,iyp)=fp(k-1,iyp)
+                fp(k,izp)=fp(k-1,izp)+dz_par
+              enddo
             endif
-          enddo
+          else
+!  0-D
+            fp(2:npar_loc,ixp)=fp(1,ixp)
+            fp(2:npar_loc,iyp)=fp(1,iyp)
+            fp(2:npar_loc,izp)=fp(1,izp)
+          endif
           lequidistant=.true.
 !
 !  Shift particle locations slightly so that a mode appears.

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.158 2006-06-16 16:22:31 theine Exp $
+! $Id: start.f90,v 1.159 2006-07-21 10:35:02 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -90,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.158 2006-06-16 16:22:31 theine Exp $")
+             "$Id: start.f90,v 1.159 2006-07-21 10:35:02 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -162,10 +162,22 @@
         enddo
         xyz1=xyz0+Lxyz
 !
-!  abbreviations
+!  Abbreviations
 !
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
+!
+!  Size of box at local processor.
+!
+        Lxyz_loc(1)=Lxyz(1)/nprocx
+        Lxyz_loc(2)=Lxyz(2)/nprocy
+        Lxyz_loc(3)=Lxyz(3)/nprocz
+        xyz0_loc(1)=xyz0(1)
+        xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
+        xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
+        xyz1_loc(1)=xyz1(1)
+        xyz1_loc(2)=xyz0(2)+(ipy+1)*Lxyz_loc(2)
+        xyz1_loc(3)=xyz0(3)+(ipz+1)*Lxyz_loc(3)
 !
 !  Calculate dimensionality of the run.
 !

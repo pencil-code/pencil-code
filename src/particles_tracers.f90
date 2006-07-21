@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.22 2006-07-19 01:46:48 wlyra Exp $
+! $Id: particles_tracers.f90,v 1.23 2006-07-21 10:35:02 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -58,7 +58,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.22 2006-07-19 01:46:48 wlyra Exp $")
+           "$Id: particles_tracers.f90,v 1.23 2006-07-21 10:35:02 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -106,18 +106,6 @@ module Particles
 !  Distribute particles evenly among processors to begin with.
 !
       if (lstarting) call dist_particles_evenly_procs(npar_loc,ipar)
-!
-!  Size of box at local processor is needed for particle boundary conditions.
-!
-      Lxyz_loc(1)=Lxyz(1)/nprocx
-      Lxyz_loc(2)=Lxyz(2)/nprocy
-      Lxyz_loc(3)=Lxyz(3)/nprocz
-      xyz0_loc(1)=xyz0(1)
-      xyz0_loc(2)=xyz0(2)+ipy*Lxyz_loc(2)
-      xyz0_loc(3)=xyz0(3)+ipz*Lxyz_loc(3)
-      xyz1_loc(1)=xyz1(1)
-      xyz1_loc(2)=xyz0(2)+(ipy+1)*Lxyz_loc(2)
-      xyz1_loc(3)=xyz0(3)+(ipz+1)*Lxyz_loc(3)
 !
       if (rhop_tilde==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
