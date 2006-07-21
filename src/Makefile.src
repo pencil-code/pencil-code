@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.210 2006-07-20 15:25:35 dobler Exp $
+### $Id: Makefile.src,v 1.211 2006-07-21 08:43:54 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -174,7 +174,7 @@ MAKEOPTS=
 #LDMPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
 #LDONLYFLAGS=farg.o #(lfc101)
 #FC=ifort #(nw[0-9]*|hamlet|lynx|brahe|nq[0-9]*|aida[0-9]*)
-#FFLAGS=-O3 -I/home/johansen/mpich/include #(aida[0-9]*)
+#FFLAGS=-O3 -I/home/johansen/mpich/include -static-libcxa #(aida[0-9]*)
 #LDMPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
 #FC=ifort #(swift)
 #FFLAGS=-O3 -I/usr/local/mpich/include #(swift)
