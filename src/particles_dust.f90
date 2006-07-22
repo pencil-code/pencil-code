@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.121 2006-07-21 10:35:02 ajohan Exp $
+! $Id: particles_dust.f90,v 1.122 2006-07-22 17:26:12 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.121 2006-07-21 10:35:02 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.122 2006-07-22 17:26:12 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -366,8 +366,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Place first particle.
           fp(1,ixp) = x(l1) ; fp(1,iyp) = y(m1) ; fp(1,izp) = z(n1)
           if (nxgrid/=1) fp(1,ixp) = xyz0_loc(1)+dx_par/2
-          if (nzgrid/=1) fp(1,iyp) = xyz0_loc(2)+dy_par/2
-          if (nygrid/=1) fp(1,izp) = xyz0_loc(3)+dz_par/2
+          if (nygrid/=1) fp(1,iyp) = xyz0_loc(2)+dy_par/2
+          if (nzgrid/=1) fp(1,izp) = xyz0_loc(3)+dz_par/2
 !  Place all other particles iteratively.
           if (dimensionality==3) then
 !  3-D
