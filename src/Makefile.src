@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.212 2006-07-23 23:33:48 mee Exp $
+### $Id: Makefile.src,v 1.213 2006-07-23 23:38:50 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -135,7 +135,7 @@ MAKEOPTS=
 ## Compaq/HP alpha
 #FC=f95 #(Mhd.)
 #FC=f90 #(Mhd.)
-#OPTFLAGS=-fast -O5 
+#OPTFLAGS=-fast -O5
 #OPTFLAGS=-fast -O5 -notransform_loops #(Mhd.)
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
 #FFLAGS=$(OPTFLAGS) -warn argument_checking -warn declarations -warn unused
@@ -157,7 +157,7 @@ MAKEOPTS=
 ## Settings for individual machines
 ##
 #FC=mpif90 #(Samos|fire)
-#LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe #(nw43) 
+#LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe #(nw43)
 #FC=/usr/lib/lam/bin/mpif95 #(Owen|Master)
 #FC=g95 #(Cincinnatus|cosmo)
 #F77=$(FC) #(Cincinnatus|cosmo)
@@ -209,7 +209,7 @@ MAKEOPTS=
 #FC=/opt/intel/compiler70/ia32/bin/ifc -I/usr/local/share/lam-mpi/include #(frontend)
 #FFLAGS=-O3 -L/opt/intel/compiler70/bin/lib #(frontend)
 #LIBMPISUFFIX=_#(frontend)
-#LDMPI=-L/usr/local/share/lam-mpi/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lbproc -ldl -lpthread #(frontend) 
+#LDMPI=-L/usr/local/share/lam-mpi/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lbproc -ldl -lpthread #(frontend)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
@@ -247,10 +247,10 @@ MAKEOPTS=
 #FCCLEANER=2>&1 | scripts/cleanf95 #(obelix)
 #FFLAGS= #(davey[12])
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(nw17|nl11)
-#FC=ifc -I/usr/lib/lam/include #(nw17|nl11)  
+#FC=ifc -I/usr/lib/lam/include #(nw17|nl11)
 #FC=ifc -w95 #(sandin)
-#FC=f95 -dusty #(davey[12])  
-#FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
+#FC=f95 -dusty #(davey[12])
+#FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)
 #CC=mpicc #(obelix)
 #FC=ifort -stand f90 #(Kolmogorov|ulysse|shal)
 #FFLAGS=-O3 #(Kolmogorov|ulysse|shal)
@@ -353,8 +353,8 @@ MAKEOPTS=
 #FFLAGS=-O2 -mp -vec_report0 #(wormhole)
 #FFLAGS=-O3  #(wormhole)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(wormhole)
-#FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)  
-#FC=ifort #(wormhole)  
+#FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)
+#FC=ifort #(wormhole)
 #LDMPI= #(wormhole)
 #LIBMPISUFFIX=_#(wormhole)
 ##LDMPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
@@ -363,7 +363,7 @@ MAKEOPTS=
 #F77=$(FC) #(wormhole)
 #F77FLAGS=-w90 #(wormhole)
 ##
-## starlink Newcastle's general access machine 
+## starlink Newcastle's general access machine
 ##
 #FC=ifort -static -I/usr/local/lib/idl/lam/include #(starlink)
 #LDMPI=-L/usr/local/lib/idl/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(starlink)
@@ -374,7 +374,7 @@ MAKEOPTS=
 ##
 #FC=ifort #(hades)
 #MPI_HOME=/home/wlyra/test/lib #(hades)
-#MPI_LDLIBS= -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(hades) 
+#MPI_LDLIBS= -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(hades)
 #FFLAGS=-I/usr/include/mpi -O3 #(hades)
 #LIBMPISUFFIX=_#(hades)
 #LDMPI=-L$(MPI_HOME) -pthread $(MPI_LDLIBS) #(hades)
@@ -396,19 +396,19 @@ MAKEOPTS=
 ## giga[0-9] Newcastle eScience (tony,dave,greame)
 ##
 #MAKEOPTS=-j 3 #(giga[0-9]*)
-#FC=mpif90 -static #(giga[0-9]*)  
-##FC=gfortran_4win -static -I/addon/shared/lam/include #(giga01)  
-##CC=gcc_4win -static -I/addon/shared/lam/include #(giga01)  
+#FC=mpif90 -static #(giga[0-9]*)
+##FC=gfortran_4win -static -I/addon/shared/lam/include #(giga01)
+##CC=gcc_4win -static -I/addon/shared/lam/include #(giga01)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(giga[0-9]*)
 #FCCLEANER=  #(giga01)
-#FFLAGS=-O0 -CA -CB -CS -CV #(giga[0-9]*)  
-#FFLAGS=-O2 -ipo -tpp7 -vec_report0 #(giga[0-9]*)  
-#FFLAGS=-C -tpp7 -vec_report0  #(giga[0-9]*)  
-#FFLAGS=-O2 -mp -vec_report0 #(giga[0-9]*)  
+#FFLAGS=-O0 -CA -CB -CS -CV #(giga[0-9]*)
+#FFLAGS=-O2 -ipo -tpp7 -vec_report0 #(giga[0-9]*)
+#FFLAGS=-C -tpp7 -vec_report0  #(giga[0-9]*)
+#FFLAGS=-O2 -mp -vec_report0 #(giga[0-9]*)
 #LDMPI= #(giga[0-9]*)
 ##
 ## St. Andrews Copson Cluster (tony,dave,greame)
-## copson.st-and.ac.uk 
+## copson.st-and.ac.uk
 ##
 #FC=mpif90 # (copson)
 #FFLAGS=-gm -fast -Mvect=sse -Mipa -Minline # (copson)
@@ -417,14 +417,14 @@ MAKEOPTS=
 #LDMPI= # (copson)
 ##
 #FC=ifc #(gwdu102)
-#FFLAGS=-O3 -I/opt/scali/include #(gwdu102)  
+#FFLAGS=-O3 -I/opt/scali/include #(gwdu102)
 #LDMPI=-L/opt/scali/lib -lmpi -lfmpi #(gwdu102)
 ##
 ## Uppsala cluster - (nut is RA's front node)
 ## www.uppmax.uu.se
-#FC=pgf90 #(nut) 
+#FC=pgf90 #(nut)
 #MPI_HOME= /opt/scali#(nut)
-#MPI_LDLIBS= -lmpi -lfmpi #(nut) 
+#MPI_LDLIBS= -lmpi -lfmpi #(nut)
 #F90=$(FC) #(nut)
 #F95=$(FC) #(nut)
 #CC=mpicc #(nut)
@@ -435,7 +435,7 @@ MAKEOPTS=
 ##
 ## CSC cluster - (Espoo, Finland)
 ## www.csc.fi
-#FC=mpif90 #(sepeli) 
+#FC=mpif90 #(sepeli)
 #F90=$(FC) #(sepeli)
 #CC=mpicc #(sepeli)
 #FFLAGS=-O2 #(sepeli)
@@ -445,7 +445,7 @@ MAKEOPTS=
 ##
 ## DCSC cluster - (Copenhagen, not Odense!)
 ## www.dcsc.ku.dk
-#FC=pgf90 #(fend0[1-3]) 
+#FC=pgf90 #(fend0[1-3])
 #CC=pgcc #(fend0[1-3])
 #FFLAGS=-fastsse -tp k8-64e -I/usr/local/topspin/mpi/mpich/include #(fend0[1-3])
 #CFLAGS=-fastsse -tp k8-64e -DFUNDERSC=1 #(fend0[1-3])
@@ -559,12 +559,12 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 
 ## Generic rules:
 .SUFFIXES:			# get rid of that annoying Modula rule
-.SUFFIXES: .f .f90 .c $(PC_META_TYPE).o .inc .h 
+.SUFFIXES: .f .f90 .c $(PC_META_TYPE).o .inc .h
 
 .f$(PC_META_TYPE).o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS)  -o $*$(PC_META_TYPE).o -c $*.f 
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS)  -o $*$(PC_META_TYPE).o -c $*.f
 .f90$(PC_META_TYPE).o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o $*$(PC_META_TYPE).o -c $*.f90 
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o $*$(PC_META_TYPE).o -c $*.f90
 .c$(PC_META_TYPE).o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -o $*$(PC_META_TYPE).o -c $*.c
 
@@ -574,7 +574,7 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 
 technical=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o slices$(PC_META_TYPE).o deriv$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o filter$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o register$(PC_META_TYPE).o prints$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o persist$(PC_META_TYPE).o
 physics=$(GLOBAL)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(SELFGRAVITY)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(ENTROPY)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(SHEAR)$(PC_META_TYPE).o $(PSCALAR)$(PC_META_TYPE).o $(CHIRAL)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(DUSTVELOCITY)$(PC_META_TYPE).o $(DUSTDENSITY)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(COSMICRAY)$(PC_META_TYPE).o $(COSMICRAYFLUX)$(PC_META_TYPE).o $(TESTFIELD)$(PC_META_TYPE).o $(PARTICLES)$(PC_META_TYPE).o $(PARTICLES_RADIUS)$(PC_META_TYPE).o $(PARTICLES_NUMBER)$(PC_META_TYPE).o $(PLANET)$(PC_META_TYPE).o $(PARTICLES_SELFGRAVITY)$(PC_META_TYPE).o
-switchable=$(physics) $(BORDER_PROF)$(PC_META_TYPE).o 
+switchable=$(physics) $(BORDER_PROF)$(PC_META_TYPE).o
 comm_deps=$(technical) sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o snapshot$(PC_META_TYPE).o param_io$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(switchable) $(FFT)$(PC_META_TYPE).o $(FFTPACK)$(PC_META_TYPE).o $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o
 start_deps_f90=$(comm_deps) $(GRID)$(PC_META_TYPE).o
 start_deps=$(start_deps_f90) $(DEBUG)$(PC_META_TYPE).o
@@ -643,7 +643,7 @@ Makefile: Makefile.src
 pacx-makefile: Makefile.src
 	scripts/acx-adapt-mkfile Makefile.src pacx-Makefile
 	cp pacx-Makefile Makefile
-depend dep: 
+depend dep:
 	rm -f Makefile.depend
 	scripts/mkdep start.f90 run.f90 read_videofiles.f90 read_vectorfiles.f90 equ.f90 $(TIMESTEP).f90 debug_c.c $(GRID).f90 $(comm_deps:$(PC_META_TYPE).o=.f90)  > Makefile.depend
 # Generate files for automated debugging and testing etc.
@@ -651,7 +651,7 @@ start_buildtime:
 	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
 stop_buildtime:
 	@echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
-buildinfo: 
+buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
 	                       -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
 	                       -e "FCCLEANER='$(FCCLEANER)';LDMPI='$(LDMPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
@@ -686,7 +686,7 @@ cparam$(PC_META_TYPE).o:  cparam.f90 cparam$(PC_META_TYPE).local cparam$(PC_META
 	     ln -s cparam$(PC_META_TYPE).inc cparam.inc;\
 	     ln -s cparam_pencils$(PC_META_TYPE).inc cparam_pencils.inc;\
 	fi
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam$(PC_META_TYPE).o -c cparam.f90 
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam$(PC_META_TYPE).o -c cparam.f90
 
 shock_profile$(PC_META_TYPE).inc: Makefile.src Makefile$(PC_META_TYPE).local $(SHOCK_FINDER).f90 $(shock_finder_deps) $(SHOCK_PROFILE).desc
 	+if [ -f $(SHOCK_PROFILE)$(PC_META_TYPE).inc ]; then \
@@ -708,7 +708,7 @@ nompicomm_.f90: nompicomm.f90
 # The strange construct below is needed to have `make' realize there was
 # an error even when last command in pipe is FCCLEANER:
 EXECUTABLES=start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
-	read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x 
+	read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x
         # write_dummy_namelists$(PC_META_TYPE).x
 code:
 	if [ ! -z "$(FCCLEANER)" ]; then \
@@ -737,25 +737,25 @@ debug:
 
 
 start$(PC_META_TYPE).x: $(start) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start$(PC_META_TYPE).x
 
 run$(PC_META_TYPE).x: $(run) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x
 
 runfast$(PC_META_TYPE).x: $(run_fast_deps) Makefile$(PC_META_TYPE).local
-	$(FC) -o runfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LDMPI) $(LIBSIG) 
+	$(FC) -o runfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LDMPI) $(LIBSIG)
 
 startfast$(PC_META_TYPE).x: $(start_fast_deps) Makefile$(PC_META_TYPE).local
-	$(FC) -o startfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LDMPI) 
+	$(FC) -o startfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LDMPI)
 
 $(SHOCK_FINDER)$(PC_META_TYPE).x: $(shock_finder) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(shock_finder) $(LDMPI) $(LIBSIG) -o $(SHOCK_FINDER)$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(shock_finder) $(LDMPI) $(LIBSIG) -o $(SHOCK_FINDER)$(PC_META_TYPE).x
 
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start$(PC_META_TYPE).x
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x
 #shorthand for this
 l:
 	$(MAKE) $(MAKEOPTS) linkonly
@@ -767,12 +767,12 @@ mpicomm_.f90:      mpicomm.f90
 rad:
 	ifc -c radiation_exp.f90
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start$(PC_META_TYPE).x
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x
 
 # Remove all build files, but keep executables
 # (misleading name..)
 run:
-	rm -f *.o *.mod *.d 
+	rm -f *.o *.mod *.d
 	rm -f work.pc work.pcl
 
 # Alternative to make run. To copy executables to parent directory.
@@ -812,13 +812,13 @@ cleanall: cleann
 ## ---------------------------------------------------------------------- #
 
 read_videofiles$(PC_META_TYPE).x: $(read_videofiles)
-	$(LD) $(LDFLAGS) $(read_videofiles) $(LDMPI) -o read_videofiles$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(read_videofiles) $(LDMPI) -o read_videofiles$(PC_META_TYPE).x
 
 read_vectorfiles$(PC_META_TYPE).x: $(read_vectorfiles)
-	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LDMPI) -o read_vectorfiles$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LDMPI) -o read_vectorfiles$(PC_META_TYPE).x
 
 var2ascii$(PC_META_TYPE).x: $(var2ascii)
-	$(LD) $(LDFLAGS) $(var2ascii) $(LDMPI) -o var2ascii$(PC_META_TYPE).x 
+	$(LD) $(LDFLAGS) $(var2ascii) $(LDMPI) -o var2ascii$(PC_META_TYPE).x
 
 write_dnlists_deps=write_dummy_namelists$(PC_META_TYPE).o $(comm_deps) $(DEBUG)$(PC_META_TYPE).o
 write_dummy_namelists$(PC_META_TYPE).x: $(write_dnlists_deps)
@@ -831,7 +831,7 @@ write_dummy_namelists$(PC_META_TYPE).x: $(write_dnlists_deps)
 fft$(PC_META_TYPE).o:	     fft.f Makefile.src
 $(FFTPACK)$(PC_META_TYPE).o:   $(FFTPACK).f Makefile.src Makefile$(PC_META_TYPE).local
 #fft_nr$(PC_META_TYPE).o:    fft_nr.f90
-$(MPICOMM_FIX)$(PC_META_TYPE).o:         $(FFT)$(PC_META_TYPE).o 
+$(MPICOMM_FIX)$(PC_META_TYPE).o:         $(FFT)$(PC_META_TYPE).o
 $(MAGNETIC)$(PC_META_TYPE).o:        $(FFT)$(PC_META_TYPE).o
 $(FFT)$(PC_META_TYPE).o:	          cdata$(PC_META_TYPE).o
 nodebug$(PC_META_TYPE).o:            nodebug.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
