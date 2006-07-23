@@ -6,7 +6,7 @@
 #   Also link script files from the bin directory ==> should be renamed
 #
 # CVS:
-#   $Id: pc_setupsrc,v 1.14 2006-07-19 11:34:31 mee Exp $
+#   $Id: pc_setupsrc,v 1.15 2006-07-23 10:20:34 mee Exp $
 #
 # Usage:
 #   setup-src [options] [src-dir]
@@ -104,7 +104,7 @@ link_special_files()
   cd $src/special
   n=0
   to_link=
-  for file in $srcdir/special/*
+  for file in $srcdir/special/*.f90
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
