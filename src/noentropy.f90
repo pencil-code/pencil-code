@@ -1,5 +1,5 @@
-! $Id: noentropy.f90,v 1.86 2006-04-04 16:21:46 mee Exp $
-
+! $Id: noentropy.f90,v 1.87 2006-07-23 23:14:12 mee Exp $
+!
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.86 2006-04-04 16:21:46 mee Exp $")
+           "$Id: noentropy.f90,v 1.87 2006-07-23 23:14:12 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
