@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.28 2006-07-18 20:00:48 wlyra Exp $
+### $Id: Makefile.depend,v 1.29 2006-07-23 23:33:48 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -35,7 +35,7 @@ deriv$(PC_META_TYPE).o:     deriv.f90 cdata$(PC_META_TYPE).o messages$(PC_META_T
 fft$(PC_META_TYPE).o:	     fft.f
 $(FFTPACK)$(PC_META_TYPE).o:   $(FFTPACK).f
 #fft_nr$(PC_META_TYPE).o:    fft_nr.f90
-border_profiles$(PC_META_TYPE).o:  border_profiles.f90 cdata$(PC_META_TYPE).o
+$(BORDER_PROF)$(PC_META_TYPE).o:  $(BORDER_PROF).f90 cdata$(PC_META_TYPE).o
 sub$(PC_META_TYPE).o:       sub.f90 cdata$(PC_META_TYPE).o deriv$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o
 param_io$(PC_META_TYPE).o:  param_io.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(TIMESTEP)$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o $(physics) $(PARTICLES_MAIN)$(PC_META_TYPE).o
 register$(PC_META_TYPE).o:  register.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o param_io$(PC_META_TYPE).o $(physics) $(TIMEAVG)$(PC_META_TYPE).o prints$(PC_META_TYPE).o equ$(PC_META_TYPE).o
@@ -46,7 +46,7 @@ filter$(PC_META_TYPE).o:    filter.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE)
 initcond$(PC_META_TYPE).o:  initcond.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o
 kepvor$(PC_META_TYPE).o : kepvor.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
 noinitcond_spec$(PC_META_TYPE).o: noinitcond_spec.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
-$(TIMESTEP)$(PC_META_TYPE).o:  $(TIMESTEP).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o equ$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o border_profiles.o
+$(TIMESTEP)$(PC_META_TYPE).o:  $(TIMESTEP).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o equ$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o $(BORDER_PROF)$(PC_META_TYPE).o
 persist$(PC_META_TYPE).o:    persist.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o
 snapshot$(PC_META_TYPE).o:    snapshot.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o persist$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
 messages$(PC_META_TYPE).o:    messages.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o

@@ -1,4 +1,12 @@
-! $Id: border_profiles.f90,v 1.2 2006-07-16 08:14:32 mee Exp $ 
+! $Id: border_profiles.f90,v 1.3 2006-07-23 23:33:48 mee Exp $ 
+!
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+!
+! CPARAM logical, parameter :: lborder_profiles = .true.
+!
+!***************************************************************
 
 module BorderProfiles 
 
@@ -9,13 +17,7 @@ module BorderProfiles
 
   private
 
-  public :: initialize_border_profiles
-
-  public :: border_quenching, border_driving
-
-  integer, parameter, public :: i_BORDER_ZERO    = 1
-  integer, parameter, public :: i_BORDER_SPECIAL = 2
-  integer, parameter, public :: i_BORDER_        = 3
+  include 'border_profiles.h'
 !:
 !  border_prof_[x-z] could be of size n[x-z], but having the same
 !  length as f() (in the given dimension) gives somehow more natural code.

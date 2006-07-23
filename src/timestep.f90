@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.42 2006-07-19 11:22:39 mee Exp $
+! $Id: timestep.f90,v 1.43 2006-07-23 23:33:48 mee Exp $
 
 module Timestep
 
@@ -114,7 +114,7 @@ module Timestep
         do j=1,mvar; do n=n1,n2; do m=m1,m2
 !ajwm Note to self... Just how much overhead is there in calling
 !ajwm a sub this often...
-          call border_quenching(df,j)
+          if (lborder_profiles) call border_quenching(df,j)
           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
