@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.26 2006-06-27 12:57:15 ajohan Exp $
+! $Id: viscosity.f90,v 1.27 2006-07-24 12:15:41 apichat Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -83,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.26 2006-06-27 12:57:15 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.27 2006-07-24 12:15:41 apichat Exp $")
 
       ivisc(1)='nu-const'
 
@@ -699,6 +699,7 @@ module Viscosity
 !           call dot2(p%uu,fvisc,visc_heat)
 !           call sum_mn_name(visc_heat,idiag_epsK)
           if (lvisc_nu_const) call sum_mn_name(2*nu*p%rho*p%sij2,idiag_epsK)
+          if (lvisc_rho_nu_const) call sum_mn_name(2*nu*p%sij2,idiag_epsK)
           if (lvisc_nu_shock) &  ! Heating from shock viscosity.
               call sum_mn_name((nu_shock*p%shock*p%divu**2)*p%rho,idiag_epsK)
         endif
