@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.122 2006-07-22 17:26:12 ajohan Exp $
+! $Id: particles_dust.f90,v 1.123 2006-07-24 17:12:16 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.122 2006-07-22 17:26:12 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.123 2006-07-24 17:12:16 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1362,7 +1362,7 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-!  Contribution of dust particles to drag force.
+!  Contribution of dust particles to time step.
 !
       if (npar_imn(imn)/=0) then
         do k=k1_imn(imn),k2_imn(imn)
