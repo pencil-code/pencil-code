@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.17 2006-07-18 19:33:24 mee Exp $
+! $Id: nospecial.f90,v 1.18 2006-07-24 17:08:34 brandenb Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.17 2006-07-18 19:33:24 mee Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.18 2006-07-24 17:08:34 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.17 2006-07-18 19:33:24 mee Exp $")
+           "$Id: nospecial.f90,v 1.18 2006-07-24 17:08:34 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -334,17 +334,15 @@ module Special
 !
       use Cdata
       use Sub
-
+!!
+!!!   SAMPLE IMPLEMENTATION
+!!
+!!      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-
-!!
-!!!   SAMPLE IMPLEMENTATION
-!!
-!!      integer :: iname
 !!!
 !!!  reset everything in case of reset
 !!!  (this needs to be consistent with what is defined above!)
