@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.9 2006-07-24 13:09:41 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.10 2006-07-24 16:33:25 brandenb Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -131,20 +131,15 @@ module Special
        accretion_flux, lnstar_entropy, &
        lnstar_T_const,lnstar_1D, &
        l1D_cooling,l1D_heating,lheat_conduct, lgrav_x_mdf
-
-
-
-
 !!
 !! Declare any index variables necessary for main or 
 !! 
 !!   integer :: iSPECIAL_VARIABLE_INDEX=0
-!!  
+!  
 !! other variables (needs to be consistent with reset list below)
-!!
-!!   integer :: i_POSSIBLEDIAGNOSTIC=0
-!!
-
+!
+  integer :: idiag_dtcrad=0
+!
   contains
 
 !***********************************************************************
@@ -186,11 +181,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.9 2006-07-24 13:09:41 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.10 2006-07-24 16:33:25 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.9 2006-07-24 13:09:41 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.10 2006-07-24 16:33:25 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -380,12 +375,10 @@ module Special
 !!
 !! SAMPLE DIAGNOSTIC IMPLEMENTATION
 !!
-!!      if(ldiagnos) then
-!!        if(i_SPECIAL_DIAGNOSTIC/=0) then
-!!          call sum_mn_name(SOME MATHEMATICAL EXPRESSION,i_SPECIAL_DIAGNOSTIC)
-!!! see also integrate_mn_name
-!!        endif
-!!      endif
+      if(ldiagnos) then
+        if (idiag_dtcrad/=0) &
+          call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
+      endif
 
 ! Keep compiler quiet by ensuring every parameter is used
       if (NO_WARN) print*,f,df,p
@@ -438,37 +431,34 @@ endsubroutine read_special_run_pars
 !
 !   06-oct-03/tony: coded
 !
-!AB:  use Cdata   !(not needed, right?)
       use Sub
-
+!
+!  define diagnostics variable
+!
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 
-!!
-!!!   SAMPLE IMPLEMENTATION
-!!
-!!      integer :: iname
-!!!
-!!!  reset everything in case of reset
-!!!  (this needs to be consistent with what is defined above!)
-!!!
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
       if (lreset) then
-!!        i_SPECIAL_DIAGNOSTIC=0
+        idiag_dtcrad=0
       endif
-!!
-!!      do iname=1,nname
-!!        call parse_name(iname,cname(iname),cform(iname),'NAMEOFSPECIALDIAGNOSTIC',i_SPECIAL_DIAGNOSTIC)
-!!      enddo
-!!
-!!!  write column where which magnetic variable is stored
-!!      if (lwr) then
-!!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
-!!      endif
-!!
-
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtcrad',idiag_dtcrad)
+      enddo
+!
+!  write column where which magnetic variable is stored
+      if (lwr) then
+        write(3,*) 'i_dtcrad=',idiag_dtcrad
+      endif
+!
     endsubroutine rprint_special
 !***********************************************************************
     subroutine special_calc_density(f,df,p)
