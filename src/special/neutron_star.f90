@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.8 2006-07-21 11:57:45 nbabkovs Exp $
+! $Id: neutron_star.f90,v 1.9 2006-07-24 13:09:41 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -99,6 +99,7 @@ module Special
   logical :: lheat_conduct=.true.
 
   logical :: lheatc_diffusion=.false.
+  logical :: lgrav_x_mdf=.false. 
 !
 ! Keep some over used pencils
 !
@@ -119,7 +120,7 @@ module Special
       l1D_cooling,l1D_heating,lheat_conduct,beta_hand, &
       ltop_velocity_kep, lextrapolate_bot_density, &
       lnstar_entropy, lnstar_T_const, lnstar_1D, &
-      mu_local
+      lgrav_x_mdf
 
 ! run parameters
   namelist /neutron_star_run_pars/ &
@@ -129,7 +130,7 @@ module Special
        L_disk, R_star, M_star, T_star, &
        accretion_flux, lnstar_entropy, &
        lnstar_T_const,lnstar_1D, &
-       l1D_cooling,l1D_heating,lheat_conduct
+       l1D_cooling,l1D_heating,lheat_conduct, lgrav_x_mdf
 
 
 
@@ -185,11 +186,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.8 2006-07-21 11:57:45 nbabkovs Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.9 2006-07-24 13:09:41 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.8 2006-07-21 11:57:45 nbabkovs Exp $")
+           "$Id: neutron_star.f90,v 1.9 2006-07-24 13:09:41 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -676,9 +677,14 @@ endsubroutine read_special_run_pars
 
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)- &
             M_star/z(n)**2*(1.-p%uu(:,2)*p%uu(:,2)*z(n)/M_star)
-          if (nxgrid /= 1) then  
+          if (nxgrid /= 1) then 
+
+          if (lgrav_x_mdf) then 
             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- &
               M_star/z(n)**2/sqrt(z(n)**2+x(l1:l2)**2)*x(l1:l2)*(z(n)-R_star)/(Lxyz(1)*0.5)
+           else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-M_star/z(n)**3*x(l1:l2)
+           endif
           endif
       endif
 !
