@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.10 2006-07-24 16:33:25 brandenb Exp $
+! $Id: neutron_star.f90,v 1.11 2006-07-24 17:06:00 brandenb Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -139,6 +139,7 @@ module Special
 !! other variables (needs to be consistent with reset list below)
 !
   integer :: idiag_dtcrad=0
+  integer :: idiag_dtchi=0
 !
   contains
 
@@ -181,11 +182,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.10 2006-07-24 16:33:25 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.11 2006-07-24 17:06:00 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.10 2006-07-24 16:33:25 brandenb Exp $")
+           "$Id: neutron_star.f90,v 1.11 2006-07-24 17:06:00 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -378,6 +379,8 @@ module Special
       if(ldiagnos) then
         if (idiag_dtcrad/=0) &
           call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
+        if (idiag_dtchi/=0) &
+          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 
 ! Keep compiler quiet by ensuring every parameter is used
@@ -448,15 +451,18 @@ endsubroutine read_special_run_pars
 !
       if (lreset) then
         idiag_dtcrad=0
+        idiag_dtchi=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtcrad',idiag_dtcrad)
+        call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
       enddo
 !
 !  write column where which magnetic variable is stored
       if (lwr) then
         write(3,*) 'i_dtcrad=',idiag_dtcrad
+        write(3,*) 'i_dtchi=',idiag_dtchi
       endif
 !
     endsubroutine rprint_special
