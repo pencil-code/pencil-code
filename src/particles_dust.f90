@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.123 2006-07-24 17:12:16 ajohan Exp $
+! $Id: particles_dust.f90,v 1.124 2006-07-25 05:49:48 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -39,7 +39,7 @@ module Particles
   real :: ky_vpx=0.0, ky_vpy=0.0, ky_vpz=0.0
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
-  real :: tstart_dragforce_par=0.0
+  real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false.
@@ -62,7 +62,7 @@ module Particles
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par
+      tstart_dragforce_par, tstart_grav_par
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -70,7 +70,7 @@ module Particles
       rhop_tilde, eps_dtog, cdtp, lpar_spec, &
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
-      lmigration_redo, tstart_dragforce_par, &
+      lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.123 2006-07-24 17:12:16 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.124 2006-07-25 05:49:48 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1514,42 +1514,46 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Gravity on the particles.
 !
-      select case (gravx_profile)
-
-        case ('zero')
-          if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
- 
-        case ('sinusoidal')
-          if (lheader) &
-              print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
-          dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
-              gravx*sin(kx_gg*fp(1:npar_loc,ixp))
- 
-        case ('default')
-          call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
-
-      endselect
+      if (t>=tstart_grav_par) then
 !
-      select case (gravz_profile)
+        select case (gravx_profile)
 
-        case ('zero')
-          if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
+          case ('zero')
+            if (lheader) print*, 'dvvp_dt: No gravity in x-direction.'
  
-        case ('linear')
-          if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
-          dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-              nu_epicycle2*fp(1:npar_loc,izp)
+          case ('sinusoidal')
+            if (lheader) &
+                print*, 'dvvp_dt: Sinusoidal gravity field in x-direction.'
+            dfp(1:npar_loc,ivpx)=dfp(1:npar_loc,ivpx) - &
+                gravx*sin(kx_gg*fp(1:npar_loc,ixp))
  
-        case ('sinusoidal')
-          if (lheader) &
-              print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
-          dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
-              gravz*sin(kz_gg*fp(1:npar_loc,izp))
- 
-        case ('default')
-          call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
+          case ('default')
+            call fatal_error('dvvp_dt','chosen gravx_profile is not valid!')
 
-      endselect
+        endselect
+!
+        select case (gravz_profile)
+
+          case ('zero')
+            if (lheader) print*, 'dvvp_dt: No gravity in z-direction.'
+ 
+          case ('linear')
+            if (lheader) print*, 'dvvp_dt: Linear gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+                nu_epicycle2*fp(1:npar_loc,izp)
+ 
+          case ('sinusoidal')
+            if (lheader) &
+                print*, 'dvvp_dt: Sinusoidal gravity field in z-direction.'
+            dfp(1:npar_loc,ivpz)=dfp(1:npar_loc,ivpz) - &
+                gravz*sin(kz_gg*fp(1:npar_loc,izp))
+ 
+          case ('default')
+            call fatal_error('dvvp_dt','chosen gravz_profile is not valid!')
+
+        endselect
+!
+      endif
 !
 !  Diagnostic output
 !
