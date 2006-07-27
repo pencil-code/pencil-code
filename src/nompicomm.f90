@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.126 2006-07-20 07:43:55 ajohan Exp $
+! $Id: nompicomm.f90,v 1.127 2006-07-27 13:30:23 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -1031,7 +1031,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in x, direction =',direction
       call cosqi(nx,wsavex)
-      do m=1,ny; do n=1,nz
+      do n=1,nz; do m=1,ny
         ax=a_re(:,m,n)
         if (lforward) then 
           call cosqf(nx,ax,wsavex)
@@ -1043,7 +1043,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in y, direction =',direction
       call cosqi(ny,wsavey)
-      do l=1,nx; do n=1,nz
+      do n=1,nz; do l=1,nx
         ay=a_re(l,:,n)
         if (lforward) then 
           call cosqf(ny,ay,wsavey)
@@ -1055,7 +1055,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction =',direction
       call cosqi(nz,wsavez)
-      do l=1,nx; do m=1,ny
+      do m=1,ny; do l=1,nx
         az=a_re(l,m,:)
         if (lforward) then 
           call cosqf(nz,az,wsavez)
@@ -1101,7 +1101,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in x, direction =',direction
       call cffti(nx,wsavex)
-      do m=1,ny; do n=1,nz
+      do n=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,n),a_im(:,m,n))
         if (lforward) then 
           call cfftf(nx,ax,wsavex)
@@ -1114,7 +1114,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in y, direction =',direction
       call cffti(ny,wsavey)
-      do l=1,nx; do n=1,nz
+      do n=1,nz; do l=1,nx
         ay=cmplx(a_re(l,:,n),a_im(l,:,n))
         if (lforward) then 
             call cfftf(ny,ay,wsavey)
@@ -1127,7 +1127,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction =',direction
       call cffti(nz,wsavez)
-      do l=1,nx; do m=1,ny
+      do m=1,ny; do l=1,nx
         az=cmplx(a_re(l,m,:),a_im(l,m,:))
         if (lforward) then 
           call cfftf(nz,az,wsavez)
@@ -1173,7 +1173,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in x, direction =',direction
       call cffti(nx,wsavex)
-      do m=1,ny; do n=1,nz
+      do n=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,n),a_im(:,m,n))
         if (lforward) then 
           call cfftf(nx,ax,wsavex)
@@ -1186,7 +1186,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction =',direction
       call cffti(nz,wsavez)
-      do l=1,nx; do m=1,ny
+      do m=1,ny; do l=1,nx
         az=cmplx(a_re(l,m,:),a_im(l,m,:))
         if (lforward) then 
           call cfftf(nz,az,wsavez)
@@ -1220,7 +1220,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in x'
       call cffti(nx,wsavex)
-      do m=1,ny; do n=1,nz
+      do n=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,n),a_im(:,m,n))
         call cfftf(nx,ax,wsavex)
         a_re(:,m,n)=real(ax)
@@ -1266,7 +1266,7 @@ module Mpicomm
       if (lforward) then
         if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction=',direction
         call cffti(ny,wsavey)
-        do l=1,nx; do n=1,nz
+        do n=1,nz; do l=1,nx
           ay=cmplx(a_re(l,:,n),a_im(l,:,n))
           call cfftf(ny,ay,wsavey)
 !  Shift y-coordinate so that x-direction is periodic. This is best done in
@@ -1279,7 +1279,7 @@ module Mpicomm
 !
         if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
         call cffti(nx,wsavex)
-        do m=1,ny; do n=1,nz
+        do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nx,ax,wsavex)
           a_re(:,m,n)=real(ax)
@@ -1288,7 +1288,7 @@ module Mpicomm
       else
         if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
         call cffti(nx,wsavex)
-        do m=1,ny; do n=1,nz
+        do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftb(nx,ax,wsavex)
           a_re(:,m,n)=real(ax)
@@ -1297,7 +1297,7 @@ module Mpicomm
 !
         if (lroot.and.ip<10) print*, 'doing FFTpack in y, direction=',direction
         call cffti(ny,wsavey)
-        do l=1,nx; do n=1,nz
+        do n=1,nz; do l=1,nx
           ay=cmplx(a_re(l,:,n),a_im(l,:,n))
 !  Shift y-coordinate back to regular frame (see above).
           deltay_x=-deltay*(x(l+nghost)-(x0+Lx/2))/Lx
@@ -1310,7 +1310,7 @@ module Mpicomm
 !
       if (lroot .and. ip<10) print*, 'doing FFTpack in z, direction=',direction
       call cffti(nz,wsavez)
-      do l=1,nx; do m=1,ny
+      do m=1,ny; do l=1,nx
         az=cmplx(a_re(l,m,:),a_im(l,m,:))
         if (lforward) then 
           call cfftf(nz,az,wsavez)
@@ -1350,7 +1350,7 @@ module Mpicomm
       call stop_it("fft_nr currently disabled!")
 !
       if (lroot .and. ip<10) print*, 'doing FFT_nr in x'
-      do m=1,ny; do n=1,nz
+      do n=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,n),a_im(:,m,n))
         !call four1(ax,nx,-1)
         a_re(:,m,n)=real(ax)
@@ -1358,7 +1358,7 @@ module Mpicomm
       enddo; enddo
 !
       if (lroot .and. ip<10) print*, 'doing FFT_nr in y'
-      do l=1,nx; do n=1,nz
+      do n=1,nz; do l=1,nx
         ay=cmplx(a_re(l,:,n),a_im(l,:,n))
         !call four1(ay,ny,-1)
         a_re(l,:,n)=real(ay)
@@ -1366,7 +1366,7 @@ module Mpicomm
       enddo; enddo
 !
       if (lroot .and. ip<10) print*, 'doing FFT_nr in z'
-      do l=1,nx; do m=1,ny
+      do m=1,ny; do l=1,nx
         az=cmplx(a_re(l,m,:),a_im(l,m,:))
         !call four1(az,nz,-1)
         a_re(l,m,:)=real(az)
