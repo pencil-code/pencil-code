@@ -17,7 +17,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: pc_llsub,v 1.1 2006-07-27 14:11:22 joishi Exp $
+# CVS:    $Id: pc_llsub,v 1.2 2006-07-27 14:13:11 joishi Exp $
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its
@@ -98,6 +98,7 @@ $header =
 # @ notification  = $mail
 # @ node_usage = not_shared
 # @ job_type = parallel
+# @ environment = COPY_ALL
 # @ node = $nodes
 # @ tasks_per_node = $tasks
 # @ class = $queue
