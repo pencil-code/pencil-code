@@ -17,7 +17,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   llsub
 # Author: Tobias Heinemann (theine@nordita.dk)
 # Date:   23-Apr-2006
-# CVS:    $Id: llsub,v 1.6 2006-07-16 13:54:51 theine Exp $
+# CVS:    $Id: llsub,v 1.7 2006-07-27 10:30:11 joishi Exp $
 # Description:
 #   Wrapper script to pass start.csh and run.csh (or both) to IBM Loadleveler
 #   God knows why it does not take any useful command line options on its
@@ -39,6 +39,8 @@ Options:
   -t,  --tasks            \tNumber of tasks per node
   -q,  --queue            \tCluster queue
   -w,  --walltime         \tMaximum wall clock time
+  -a,  --account          \tAccount number
+  -m,  --mail             \tEmail notification ('always', 'never')
   -o,  --output           \tPipe the resulting script to standard output
 ";
 
@@ -49,6 +51,8 @@ my $ncpus = 4;
 my $tasks = 4;
 my $queue = 'parallel_2gb';
 my $walltime = '00:30:00';
+my $account = '';
+my $mail = 'never';
 my $output = 0;
 my $pipe = "| llsubmit -";
 
@@ -58,7 +62,9 @@ GetOptions('help'       => \$help,
            'tasks=i'    => \$tasks,
            'queue=s'    => \$queue,
            'walltime=s' => \$walltime,
-           'output'       => \$output);
+	   'account=s'  => \$account,
+	   'mail=s'     => \$mail,
+           'output'     => \$output);
 
 die $usage if (@ARGV == 0 or $help);
 
@@ -76,11 +82,20 @@ chomp ($pwd);
 
 # Header instructions for Loadleveler
 my $header =
-"\#\!/bin/csh
+    "\#\!/bin/csh";
+
+if ($account ne '') {
+$header = 
+"$header
+# @ account_no = $account";
+}
+
+$header = 
+"$header
 # @ output = $pwd/\$(jobid).out
 # @ error = \$(output)
 # @ wall_clock_limit = $walltime
-# @ notification  = never
+# @ notification  = $mail
 # @ node_usage = not_shared
 # @ job_type = parallel
 # @ node = $nodes
