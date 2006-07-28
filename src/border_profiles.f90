@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.4 2006-07-28 13:08:05 wlyra Exp $ 
+! $Id: border_profiles.f90,v 1.5 2006-07-28 14:48:31 wlyra Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -167,8 +167,6 @@ module BorderProfiles
 !  by a factor that goes gradually to zero near the boundaries.
 !  border_frac is a 3-D array, separately for all three directions.
 !  border_frac=1 would affect everything between center and border.
-!
-      print*,'enter border_quenching'
 !
        df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
           *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
