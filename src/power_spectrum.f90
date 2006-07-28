@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.53 2006-07-28 11:49:12 ajohan Exp $
+! $Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.53 2006-07-28 11:49:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -82,10 +82,7 @@ module  power_spectrum
      !
      !  Doing the Fourier transform
      !
-     !  call transform(a1,a2,a3,b1,b2,b3)
      select case (fft_switch)
-     case ('fft_nr')
-        call transform_nr(a1,b1)
      case ('fftpack')
         call transform_fftpack(a1,b1)
      case ('Singleton')
@@ -157,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.53 2006-07-28 11:49:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -194,7 +191,6 @@ module  power_spectrum
      !
      !  Doing the Fourier transform
      !
-     !  call transform(a1,a2,a3,b1,b2,b3)
      select case (fft_switch)
      case ('fftpack')
         call transform_fftpack_2d(a1,b1)
@@ -267,7 +263,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.53 2006-07-28 11:49:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -341,9 +337,6 @@ module  power_spectrum
     !  Doing the Fourier transform
     !
     select case (fft_switch)
-    case ('fft_nr')
-      call transform_nr(a_re,a_im)
-      call transform_nr(b_re,b_im)
     case ('fftpack')
       call transform_fftpack(a_re,a_im)
       call transform_fftpack(b_re,b_im)
@@ -425,7 +418,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.53 2006-07-28 11:49:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -469,8 +462,6 @@ module  power_spectrum
   !  Doing the Fourier transform
   !
   select case (fft_switch)
-  case ('fft_nr')
-    call transform_nr(a_re,a_im)
   case ('fftpack')
     call transform_fftpack(a_re,a_im)
   case ('Singleton')
@@ -541,7 +532,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.53 2006-07-28 11:49:12 ajohan Exp $")
+        "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero

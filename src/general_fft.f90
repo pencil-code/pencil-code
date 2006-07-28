@@ -1,4 +1,4 @@
-! $Id: general_fft.f90,v 1.2 2006-07-28 12:26:01 ajohan Exp $
+! $Id: general_fft.f90,v 1.3 2006-07-28 13:29:41 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -15,54 +15,6 @@ module General_FFT
 
   contains
 
-!***********************************************************************
-    subroutine transform(a1,a2,a3,b1,b2,b3)
-!
-!  Subroutine to do fourier transform
-!  The routine overwrites the input data
-!
-!  03-sep-02/nils: coded
-!  05-nov-02/axel: added normalization factor
-!
-      real,dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
-
-! Doing the x field
-      if (lroot .and. ip<10) print*,'transform: doing fft of x-component'
-      call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! x-direction
-      call transp(a1,'y')
-      call transp(b1,'y')
-      call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! y-direction
-      call transp(a1,'z')
-      call transp(b1,'z')
-      call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! z-direction
-
-! Doing the y field
-      if (lroot .and. ip<10) print*,'transform: doing fft of y-component'
-      call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! x-direction
-      call transp(a2,'y')
-      call transp(b2,'y')
-      call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! y-direction
-      call transp(a2,'z')
-      call transp(b2,'z')
-      call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! z-direction
-
-! Doing the z field
-      if (lroot .and. ip<10) print*,'transform: doing fft of z-component'
-      call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! x-direction
-      call transp(a3,'y')
-      call transp(b3,'y')
-      call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! y-direction
-      call transp(a3,'z')
-      call transp(b3,'z')
-      call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! z-direction
-!
-!  Normalize
-!
-      a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
-      b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
-      if (lroot .and. ip<10) print*,'transform: fft has finished'
-!
-    endsubroutine transform
 !***********************************************************************
     subroutine transform_i(a_re,a_im)
 !
@@ -524,63 +476,5 @@ module General_FFT
       endif
 !
     endsubroutine transform_fftpack_shear
-!***********************************************************************
-    subroutine transform_nr(a_re,a_im)
-!
-!  Subroutine to do Fourier transform using Numerical Recipes routine.
-!  Note that this routine requires that nx, ny, and nz are powers of 2.
-!  The routine overwrites the input data.
-!
-!  30-oct-02/axel: adapted from transform_fftpack for Numerical Recipes
-!
-      real, dimension(nx,ny,nz) :: a_re,a_im
-      complex, dimension(nx) :: ax
-      integer :: m,n
-!
-!  This Fourier transform would work, but it's very slow!
-!  Even the compilation is very slow, so we better get rid of it!
-!
-      call fatal_error('transform_nr: currently disabled!','')
-!
-      if (lroot .and. ip<10) print*,'transform_nr: doing FFT_nr in x'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-        !call four1(ax,nx,-1)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
-      enddo; enddo
-      call transp(a_re,'y')
-      call transp(a_im,'y')
-!
-!  The length of the array in the y-direction is nx
-!  (remember: nxgrid=nygrid=nzgrid!)
-!
-      if (lroot .and. ip<10) print*,'transform_nr: doing FFT_nr in y'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-        !call four1(ax,nx,-1)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
-      enddo; enddo
-      call transp(a_re,'z')
-      call transp(a_im,'z')
-!
-!  The length of the array in the z-direction is also nx
-!
-      if (lroot .and. ip<10) print*,'transform_nr: doing FFT_nr in z'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-        !call four1(ax,nx,-1)
-        a_re(:,m,n)=real(ax)
-        a_im(:,m,n)=aimag(ax)
-      enddo; enddo
-!
-!  Normalize
-!
-      a_re=a_re/nwgrid
-      a_im=a_im/nwgrid
-      if (lroot .and. ip<10) print*,'transform_nr: fft has finished'
-!
-    endsubroutine transform_nr
 !***********************************************************************
 endmodule General_FFT
