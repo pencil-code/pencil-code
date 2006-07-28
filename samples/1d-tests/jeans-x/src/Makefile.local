@@ -15,5 +15,5 @@ SELFGRAVITY =   selfgravity
 POISSON     =   poisson
 VISCOSITY  = noviscosity
 
-FFTPACK     =   fftpack
+FOURIER     =   fourier_fftpack
 POWER       = nopower_spectrum
