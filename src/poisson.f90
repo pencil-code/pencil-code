@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $
+! $Id: poisson.f90,v 1.11 2006-07-28 11:49:12 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -21,8 +21,8 @@ module Poisson
 
   use Cdata
   use Cparam
+  use General_FFT
   use Messages
-  use Mpicomm
 
   implicit none
 
@@ -48,7 +48,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $")
+        "$Id: poisson.f90,v 1.11 2006-07-28 11:49:12 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -79,9 +79,9 @@ module Poisson
 !    kx = kx0 + deltay/Lx*ky
 !  The parallel Fourier transform returns the array in a tranposed state, so
 !  must be able to identify the x-direction in order to take shear into account.
-!  (see the subroutine transform_fftpack_shear in mpicomm.f90 for details).
+!  (see the subroutine transform_fftpack_shear in Mpicomm for details).
 !
-            if (lmpicomm.and.nzgrid>1) then ! Order (kz,ky',kx)
+            if (nzgrid/=1) then ! Order (kz,ky',kx)
               a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
                   ( (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2 )

@@ -23,10 +23,7 @@
   public :: initiate_isendrcv_shockbdry, finalize_isendrcv_shockbdry
   public :: initiate_shearing, finalize_shearing
 
-  public :: transp
-  public :: transform_fftpack,transform_fftpack_2d, transform_fftpack_1d 
-  public :: transform_fftpack_shear
-  public :: transform_nr, transform_i, fourier_shift_yz
+  public :: transp, fourier_shift_yz
 
 ! Radiation ray routines
   public :: radboundary_xy_recv,radboundary_xy_send

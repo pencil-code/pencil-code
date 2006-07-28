@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.160 2006-07-18 19:38:53 wlyra Exp $ 
+! $Id: initcond.f90,v 1.161 2006-07-28 11:49:12 ajohan Exp $ 
 
 module Initcond 
  
@@ -2231,6 +2231,8 @@ module Initcond
 !
 !   07-may-03/tarek: coded
 !
+      use General_FFT
+!
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
       real, dimension (nx) :: k2x
@@ -2296,6 +2298,8 @@ module Initcond
 !   Still just one processor (but can be remeshed afterwards).
 !
 !   07-may-03/tarek: coded
+!
+      use General_FFT
 !
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.30 2006-07-23 23:38:50 mee Exp $
+### $Id: Makefile.depend,v 1.31 2006-07-28 11:49:12 ajohan Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -30,6 +30,7 @@ cparam$(PC_META_TYPE).o:    cparam.f90 cparam$(PC_META_TYPE).local cparam$(PC_ME
 cdata$(PC_META_TYPE).o:     cdata.f90 cparam$(PC_META_TYPE).o
 $(GRID)$(PC_META_TYPE).o:   $(GRID).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
 general$(PC_META_TYPE).o:   general.f90 cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o
+$(GENERAL_FFT).o:           $(GENERAL_FFT).f90 general_fft.h $(MPICOMM).o cparam.o cdata.o
 slices$(PC_META_TYPE).o:    slices.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
 deriv$(PC_META_TYPE).o:     deriv.f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o
 fft$(PC_META_TYPE).o:	     fft.f
@@ -43,8 +44,7 @@ prints$(PC_META_TYPE).o:    prints.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE)
 equ$(PC_META_TYPE).o:       equ.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o messages$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(physics) boundcond$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
 boundcond$(PC_META_TYPE).o: boundcond.f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(ENTROPY)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
 filter$(PC_META_TYPE).o:    filter.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o
-initcond$(PC_META_TYPE).o:  initcond.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o
-kepvor$(PC_META_TYPE).o : kepvor.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
+initcond$(PC_META_TYPE).o:  initcond.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o $(GENERAL_FFT)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o
 noinitcond_spec$(PC_META_TYPE).o: noinitcond_spec.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
 $(TIMESTEP)$(PC_META_TYPE).o:  $(TIMESTEP).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o equ$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o $(BORDER_PROF)$(PC_META_TYPE).o
 persist$(PC_META_TYPE).o:    persist.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o
@@ -59,7 +59,7 @@ noshock$(PC_META_TYPE).o:         shock.h          noshock.f90 cdata$(PC_META_TY
 $(SHEAR)$(PC_META_TYPE).o:        shear.h          $(SHEAR).f90 $(MPICOMM_FIX)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
 $(GRAVITY)$(PC_META_TYPE).o:      gravity.h        $(GRAVITY).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o
 $(SELFGRAVITY)$(PC_META_TYPE).o:  selfgravity.h $(SELFGRAVITY).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
-$(POISSON)$(PC_META_TYPE).o:          poisson.h cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o
+$(POISSON)$(PC_META_TYPE).o:      poisson.h $(POISSON)$(PC_META_TYPE).f90 $(GENERAL_FFT)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o
 $(FORCING)$(PC_META_TYPE).o:      forcing.h        $(FORCING).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
 $(ENTROPY)$(PC_META_TYPE).o:      entropy.h        $(ENTROPY).f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(PLANET)$(PC_META_TYPE).o
 $(MAGNETIC)$(PC_META_TYPE).o:     magnetic.h       $(MAGNETIC).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(FFT)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o slices$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o
@@ -78,7 +78,7 @@ $(EOS)$(PC_META_TYPE).o:          eos.h            $(EOS).f90 cdata$(PC_META_TYP
 $(IO)$(PC_META_TYPE).o:           io.h             $(IO).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o sub$(PC_META_TYPE).o
 #$(TIMEAVG)$(PC_META_TYPE).o:         $(TIMEAVG).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o ctimeavg.local
 $(TIMEAVG)$(PC_META_TYPE).o:      timeavg.h        $(TIMEAVG).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
-$(POWER)$(PC_META_TYPE).o:        power_spectrum.h $(POWER).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o
+$(POWER)$(PC_META_TYPE).o:        power_spectrum.h $(POWER).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o $(GENERAL_FFT)$(PC_META_TYPE).o
 $(STRUCT_FUNC)$(PC_META_TYPE).o:  struct_func.h    $(STRUCT_FUNC).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o
 $(SPECIAL)$(PC_META_TYPE).o:      special.h        $(SPECIAL).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o
 $(PLANET)$(PC_META_TYPE).o:       planet.h	    cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o general$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o
