@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.250 2006-07-18 19:28:33 mee Exp $ 
+! $Id: param_io.f90,v 1.251 2006-07-28 13:13:31 wlyra Exp $ 
 
 module Param_IO
 
@@ -85,6 +85,7 @@ module Param_IO
        lfreeze_varsquare,lfreeze_varint,lfreeze_varext, &
        xfreeze_square,yfreeze_square,rfreeze_int,rfreeze_ext, &
        wfreeze,wfreeze_int,wfreeze_ext, &
+       wborder,wborder_int,wborder_ext, &
        fshift_int,fshift_ext, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2, &
        fbcz1_1, fbcz1_2, fbcz2_1,fbcz2_2, &

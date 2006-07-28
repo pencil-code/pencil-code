@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.329 2006-07-18 19:19:06 mee Exp $
+! ! $Id: cdata.f90,v 1.330 2006-07-28 13:13:31 wlyra Exp $
 
 module Cdata
 
@@ -55,6 +55,7 @@ module Cdata
   real :: xfreeze_square=impossible,yfreeze_square=impossible
   real :: rfreeze_int=-impossible,rfreeze_ext=-impossible
   real :: wfreeze=0.,wfreeze_int=0.,wfreeze_ext=0.
+  real :: wborder=0.,wborder_int=0.,wborder_ext=0.
   real :: fshift_int=-1.,fshift_ext=1.
 
   real :: ttransient=0.,C_smag=0.17
