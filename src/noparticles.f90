@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.14 2006-07-19 01:46:48 wlyra Exp $
+! $Id: noparticles.f90,v 1.15 2006-07-28 13:25:32 wlyra Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -153,11 +153,10 @@ module Particles
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine get_distances(f,fp,rp_mn,rpcyl_mn)
+    subroutine get_distances(fp,rp_mn,rpcyl_mn)
 !
 ! 18-jul-06/wlad: dummy routine 
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
       integer :: i

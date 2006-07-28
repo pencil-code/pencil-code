@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.37 2006-07-18 21:57:23 wlyra Exp $
+! $Id: particles_main.f90,v 1.38 2006-07-28 13:25:32 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -427,7 +427,7 @@ module Particles_main
 !
     endsubroutine get_slices_particles
 !***********************************************************************
-    subroutine auxcall_gravcomp(f,g0,r0_pot,n_pot,p)
+    subroutine auxcall_gravcomp(g0,r0_pot,n_pot,p)
 !
 !  Auxiliary call to gravity_companion in order 
 !  to fetch the array fp inside the mn loop  
@@ -436,15 +436,15 @@ module Particles_main
 !
       use Planet, only : gravity_companion
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
       real :: g0,r0_pot
       integer :: n_pot
       type (pencil_case) :: p
 !
-      call get_distances(f,fp,rp_mn,rpcyl_mn)
-      call gravity_companion(f,fp,dfp,rp_mn,rpcyl_mn,&
-           g0,r0_pot,n_pot,p)
+      
+!
+      call get_distances(fp,rp_mn,rpcyl_mn)
+      call gravity_companion(fp,dfp,rp_mn,rpcyl_mn,g0,r0_pot,n_pot,p)
 !
     endsubroutine auxcall_gravcomp
 !***********************************************************************
