@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.33 2006-07-28 20:41:33 ajohan Exp $
+### $Id: Makefile.depend,v 1.34 2006-07-28 22:10:12 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -24,8 +24,17 @@ cparam$(PC_META_TYPE).o:    cparam.f90 cparam$(PC_META_TYPE).local cparam$(PC_ME
 cdata$(PC_META_TYPE).o:     cdata.f90 cparam$(PC_META_TYPE).o
 $(GRID)$(PC_META_TYPE).o:   $(GRID).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
 general$(PC_META_TYPE).o:   general.f90 cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o
-$(FFT_LIB).o$(PC_META_TYPE).o :           $(FFT_LIB).f
-$(FOURIER).o:           $(FOURIER).f90 fourier.h $(FFT_LIB).o $(MPICOMM).o cparam.o cdata.o
+
+#
+# Explict dependencies for the Fourier routines to allow them to pull in
+# different library routines
+#
+fft.o :      fft.f
+fftpack.o :  fftpack.f
+nofourier$(PC_META_TYPE).o:       nofourier.f90 fourier.h $(MPICOMM_FIX).o cparam.o cdata.o
+fourier_fft$(PC_META_TYPE).o:     fourier_fft.f90 fft.o fourier.h $(MPICOMM_FIX).o cparam.o cdata.o
+fourier_fftpack$(PC_META_TYPE).o: fourier_fftpack.f90 fftpack.o fourier.h $(MPICOMM_FIX).o cparam.o cdata.o
+
 slices$(PC_META_TYPE).o:    slices.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
 deriv$(PC_META_TYPE).o:     deriv.f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o
 $(BORDER_PROF)$(PC_META_TYPE).o:  $(BORDER_PROF).f90 cdata$(PC_META_TYPE).o
@@ -43,7 +52,7 @@ persist$(PC_META_TYPE).o:    persist.f90 cdata$(PC_META_TYPE).o general$(PC_META
 snapshot$(PC_META_TYPE).o:    snapshot.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o persist$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
 messages$(PC_META_TYPE).o:    messages.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
 #
-$(MPICOMM_FIX)$(PC_META_TYPE).o:      mpicomm.h        $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
+$(MPICOMM_FIX)$(PC_META_TYPE).o:  mpicomm.h        $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
 $(GLOBAL)$(PC_META_TYPE).o:       global.h         $(GLOBAL).f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o sub$(PC_META_TYPE).o
 $(VISCOSITY)$(PC_META_TYPE).o:    viscosity.h      $(VISCOSITY).f90 cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o
 shock$(PC_META_TYPE).o:           shock.h          shock.f90 shock_profile.inc cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o sub$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o

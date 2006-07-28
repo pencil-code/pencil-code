@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.216 2006-07-28 20:41:33 ajohan Exp $
+### $Id: Makefile.src,v 1.217 2006-07-28 22:10:12 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -7,14 +7,13 @@
 
 LIBSIG=
 LDONLYFLAGS=
-LDMPI=-lmpi
+LD_MPI=-lmpi
 DEBUGFLAGS=-g
 
 MPICOMM      =   mpicomm
 GLOBAL       = noglobal
 GRID         =   grid
 IO           =   io_dist
-FFT_LIB      = nofft_lib
 FOURIER      = nofourier
 POWER        = nopower_spectrum
 DEBUG        =   debug_c
@@ -87,14 +86,6 @@ ifneq ($(PARTICLES),noparticles)
   PARTICLES_SUB  =   particles_sub
 endif
 
-## Compile files with the proper FFT libraries.
-ifeq ($(FOURIER),fourier_fft)
-  FFT_LIB = fft
-endif
-ifeq ($(FOURIER),fourier_fftpack)
-  FFT_LIB = fftpack
-endif
-
 ## Default settings
 FC=f90
 FFLAGS=-O3
@@ -106,6 +97,16 @@ CFLAGS=-O3 -DFUNDERSC=1
 FCCLEANER=
 LIBMPISUFFIX=
 MAKEOPTS=
+
+#
+# Defaults for external libraries
+#
+CFLAGS_FFTW3=
+xFFLAGS_FFTW3=
+LD_FFTW3=
+CFLAGS_FFTW2=
+FFLAGS_FFTW2=
+LD_FFTW2=
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
@@ -130,9 +131,9 @@ MAKEOPTS=
 #FFLAGS= -64 -O3 -mips4 -r12000 #(wrenstandard)
 #FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M #(wrencache)
 #FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M -I/share/apps/unsupported/pacx/standard/include -L/share/apps/unsupported/pacx/standard/lib #(wrenpacx)
-#LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wrenpacx)
+#LD_MPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wrenpacx)
 #FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M -I/share/apps/unsupported/pacx/standard/include -L/share/apps/unsupported/pacx/standard/lib #(wren)
-#LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wren)
+#LD_MPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wren)
 ##FC=/c/brandenb/pacx/bin/pacxfc #(tacsg2)
 #FFLAGS=-64 -O3 -mips4 #(tacsg2)
 #OPTFLAGS= -64
@@ -159,13 +160,19 @@ MAKEOPTS=
 #F77=$(FC)
 #FFLAGS=-O3
 #F90FLAGS=
-#LDMPI=
+#LD_MPI=
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
+#CFLAGS_FFTW3=
+#FFLAGS_FFTW3=
+#LD_FFTW3=
+#CFLAGS_FFTW2=
+#FFLAGS_FFTW2=
+#LD_FFTW2=
 ##
 ## Settings for individual machines
 ##
 #FC=mpif90 #(Samos|fire)
-#LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe #(nw43)
+#LD_MPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe #(nw43)
 #FC=/usr/lib/lam/bin/mpif95 #(Owen|Master)
 #FC=g95 #(Cincinnatus|cosmo)
 #F77=$(FC) #(Cincinnatus|cosmo)
@@ -174,32 +181,32 @@ MAKEOPTS=
 #FFLAGS=-O4 -I/usr/include/mpi #(nl4)
 #CFLAGS=-O3 -DFUNDERSC=1 #(Cincinnatus)
 #CFLAGS=-O3 -DFUNDERSC=2 #(cosmo)
-#LDMPI=-L/usr/lib/mpich/lib -lmpich #(Cincinnatus|cosmo)
+#LD_MPI=-L/usr/lib/mpich/lib -lmpich #(Cincinnatus|cosmo)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)
 #FC=/home/ajohan/bin/ifc_7.1 #(ns0)
 #FC=pgf90 #(lfc101)
 #FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
-#LDMPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
+#LD_MPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
 #LDONLYFLAGS=farg.o #(lfc101)
 #FC=ifort #(nw[0-9]*|hamlet|lynx|brahe|nq[0-9]*|aida[0-9]*)
 #FFLAGS=-O3 -I/home/johansen/mpich/include -static-libcxa #(aida[0-9]*)
-#LDMPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
+#LD_MPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
 #FC=ifort #(swift)
 #FFLAGS=-O3 -I/usr/local/mpich/include #(swift)
-#LDMPI=-L /usr/local/mpich/lib -lmpich #(swift)
+#LD_MPI=-L /usr/local/mpich/lib -lmpich #(swift)
 #FFLAGS=-O3 -I/home/ajohan/mpich/include #(hamlet)
-#LDMPI=-L /home/ajohan/mpich/lib -lmpich #(hamlet)
+#LD_MPI=-L /home/ajohan/mpich/lib -lmpich #(hamlet)
 #FC=ifort #(opto[1-4])
 #FFLAGS=-O3 -I/home/johansen/mpich/include/ #(opto[1-4])
-#LDMPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
+#LD_MPI=-Wl,-m elf_i386 -L/home/johansen/mpich/lib/ -lmpich #(opto[1-4])
 ##FC=mpif95n #(rio*|pia*)
 ##FFLAGS=-mismatch -O3 -I/afs/ipp/amd64_sles9/soft/mvapich-0.9.7/nag/include #(rio*|pia*)
 #FC=mpif95i -v 8.1 #(rio*|pia*)
 #FC=g95 -fno-second-underscore #(moria|balrog|sky*)
 #FFLAGS= #(moria|balrog|sky*)
-#LDMPI= #(moria|balrog|sky*)
+#LD_MPI= #(moria|balrog|sky*)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/usr/local/bin/ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/people/disk2/brandenb/bin/ifort -I/usr/local/lib/LAM/include #(fe[0-9])
@@ -212,36 +219,36 @@ MAKEOPTS=
 #FC=ifort -I/usr/include/lam -L/usr/lib/lam/lib #(nl19)
 #FC=/opt/intel/compiler60/ia32/bin/ifc -I/usr/lib/lam/include #(taspd209a)
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
-#LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
+#LD_MPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #LIBMPISUFFIX=_#(taspd209a)
 #FC=/opt/intel/compiler70/ia32/bin/ifc -I/usr/local/share/lam-mpi/include #(frontend)
 #FFLAGS=-O3 -L/opt/intel/compiler70/bin/lib #(frontend)
 #LIBMPISUFFIX=_#(frontend)
-#LDMPI=-L/usr/local/share/lam-mpi/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lbproc -ldl -lpthread #(frontend)
+#LD_MPI=-L/usr/local/share/lam-mpi/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lbproc -ldl -lpthread #(frontend)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -static-libcxa #(ns0|char)
 #FFLAGS=-O3 -xW -vec_report0 #(obelix)
 #FC=pgf90 #(tycho|linux29|monolith)
 #FC=ifort #(erland|bohm|igor|onsager|char)
 #FC=ifort  #(co-login)
-#LDMPI=-lmpi  #(co-login)
+#LD_MPI=-lmpi  #(co-login)
 ##FC=pgf90 #(erland|bohm|igor|onsager)
 #FC=efc #(user0[1-9])
 #FC=efc #(srif-sb12-hpc-prod)
 #FCCLEANER=2>&1 | scripts/cleanf95 #(srif-sb12-hpc-prod)
 #FFLAGS= #(srif-sb12-hpc-prod)
 #FFLAGS=-align -ipo -O2 #(srif-sb12-hpc-prod)
-#LDMPI=-lmpi #(srif-sb12-hpc-prod)
+#LD_MPI=-lmpi #(srif-sb12-hpc-prod)
 #FC=lf95 #(pcponty)
 #FFLAGS=-O # (Samos)
 #FFLAGS= -fast -lm # (fire)
 #FFLAGS= -fast -O5 -notransform_loops -tune ev6 -arch ev6 #(mhd)
 ##AB: next line uncommented on Tobi's advice
-#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
-#LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
-#LDMPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]*)
-#LDMPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(lynx)
-#LDMPI=-lmpi #(brahe)
+#LD_MPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
+#LD_MPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
+#LD_MPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]*)
+#LD_MPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(lynx)
+#LD_MPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(tycho|linux29)
 ##FFLAGS= #(erland|bohm|igor|onsager)
@@ -264,17 +271,17 @@ MAKEOPTS=
 #FFLAGS=-O3 #(Kolmogorov|ulysse|shal)
 ##CC=gcc #(Kolmogorov|ulysse|shal)
 ##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|ulysse|shal)
-#LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov|shal)
+#LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov|shal)
 #LIBMPISUFFIX=_#(Kolmogorov|shal)
 #FC=g95 -fsecond-underscore #(Pencil)
 #FFLAGS=-I/usr/include/lam -pthread -O3 #(Pencil)
 #CFLAGS=-O3 -DFUNDERSC=2 #(Pencil)
-#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(Pencil)
-#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl11)
-#LDMPI=-L/opt/mpich/lib #(nw43)
-#LDMPI=-L/usr/local/mpich/lib #(pcponty)
-#LDMPI= # (Samos|fire|sandin)
-#LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd)
+#LD_MPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(Pencil)
+#LD_MPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl11)
+#LD_MPI=-L/opt/mpich/lib #(nw43)
+#LD_MPI=-L/usr/local/mpich/lib #(pcponty)
+#LD_MPI= # (Samos|fire|sandin)
+#LD_MPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
 #CFLAGS=-DFUNDERSC=1 #(obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
@@ -286,13 +293,13 @@ MAKEOPTS=
 #FC=ifort #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #F77=$(FC) #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #FFLAGS=-O3 -ipo #(lws.Stanford.EDU|lws2.Stanford.EDU)
-#LDMPI=-lmpi #(lws.Stanford.EDU|lws2.Stanford.EDU)
+#LD_MPI=-lmpi #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CC=icc #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #CFLAGS=-O3 -ipo -DFUNDERSC=1 #(lws.Stanford.EDU|lws2.Stanford.EDU)
 #FC=ifort #(damtp)
 #FFLAGS=  #(damtp)
 #CFLAGS=-O3  -DFUNDERSC=1 #(damtp)
-#LDMPI=-I/usr/include -pthread  -llamf77mpi -lmpi -llam -lutil #(damtp)
+#LD_MPI=-I/usr/include -pthread  -llamf77mpi -lmpi -llam -lutil #(damtp)
 ##
 ## Axel on h05n35 (ifc 8.1)
 ##
@@ -300,7 +307,7 @@ MAKEOPTS=
 #FFLAGS=-I/pdc/vol/lam/7.0.4/system/include -O3 #(h05n35*)
 #CC=icc #(h05n35*)
 #CFLAGS=-O3 -DFUNDERSC=1 #(h05n35*)
-#LDMPI=-I/pdc/vol/lam/7.0.4/system/include -pthread -L/pdc/vol/gm/2.0.6/lib -L/pdc/vol/lam/7.0.4/system/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lgm #(h05n35*)
+#LD_MPI=-I/pdc/vol/lam/7.0.4/system/include -pthread -L/pdc/vol/gm/2.0.6/lib -L/pdc/vol/lam/7.0.4/system/lib -llammpio -llamf77mpi -lmpi -llam -lutil -lgm #(h05n35*)
 #LIBMPISUFFIX=_#(h05n35*)
 ##
 ## Axel on Horseshoe (ifc 9.0)
@@ -309,7 +316,7 @@ MAKEOPTS=
 #FFLAGS=-I/usr/local/lib/LAM/include -O3 -assume 2underscores #(fe[0-4])
 #CC=~brandenb/apps/intel/cc/9.0/bin/icc #(fe[0-9])
 #CFLAGS=-O3 -DFUNDERSC=2 #(fe[0-4])
-#LDMPI=-pthread -L/usr/local/lib/LAM/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(fe[0-4])
+#LD_MPI=-pthread -L/usr/local/lib/LAM/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(fe[0-4])
 ##
 ## Axel on Horseshoe (ifc 7.1)
 ##
@@ -317,19 +324,19 @@ MAKEOPTS=
 #FFLAGS=-I/usr/local/lib/LAM/include -O3 #(fe[0-4])
 #CC=icc #(fe[0-9])
 #CFLAGS=-O3 -DFUNDERSC=1 #(fe[0-9])
-#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
+#LD_MPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
 #LIBMPISUFFIX=_#(fe[0-4])
 ##
 ## Axel's laptop (nl6, 2.0 GHz)
 ##
 #FC=g95 #(nl6)
 #FFLAGS=-freal=nan -finteger=-2147483648 -fbounds-check -ftrace=full -Wall -Wno=140,141,109,112,137 -I/usr/include/lam #(nl6)
-#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#LD_MPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #CFLAGS=-DFUNDERSC=2 #(nl6)
 ##
 #FC=ifort #(nl6)
 #FFLAGS=-O3 -I/usr/include/lam #(nl6)
-#LDMPI=-I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
+#LD_MPI=-I/usr/include/lam -L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(nl6)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall #(nl6)
 #F77FLAGS=-w90 #(nl6)
 ##
@@ -342,7 +349,7 @@ MAKEOPTS=
 ##
 #FC=ifort #(renton|morvern)
 #FFLAGS=-O3 -I/usr/lib/lam/include #(renton|morvern)
-#LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(renton|morvern)
+#LD_MPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(renton|morvern)
 #F77FLAGS=-w90 #(renton|morvern)
 #LIBMPISUFFIX=_#(renton|morvern)
 ##
@@ -350,7 +357,7 @@ MAKEOPTS=
 ##
 #FC=ifort #(barilko)
 #FFLAGS=-O3 -I/usr/local/lib/idl/lam/include #(barilko)
-#LDMPI=-I/usr/local/lib/idl/lam/include -L/usr/local/lib/idl/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(barilko)
+#LD_MPI=-I/usr/local/lib/idl/lam/include -L/usr/local/lib/idl/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(barilko)
 #F77FLAGS=-w90 #(barilko)
 ##
 ## wormhole Tony's Laptop
@@ -363,18 +370,18 @@ MAKEOPTS=
 #FCCLEANER=2>&1 | scripts/cleanf95 #(wormhole)
 #FC=ifc -i_dynamic -I/usr/lib/lam/include #(wormhole)
 #FC=ifort #(wormhole)
-#LDMPI= #(wormhole)
+#LD_MPI= #(wormhole)
 #LIBMPISUFFIX=_#(wormhole)
-##LDMPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
-##LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
-#LDMPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
+##LD_MPI=-llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
+##LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
+#LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(wormhole)
 #F77=$(FC) #(wormhole)
 #F77FLAGS=-w90 #(wormhole)
 ##
 ## starlink Newcastle's general access machine
 ##
 #FC=ifort -static -I/usr/local/lib/idl/lam/include #(starlink)
-#LDMPI=-L/usr/local/lib/idl/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(starlink)
+#LD_MPI=-L/usr/local/lib/idl/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(starlink)
 #LIBMPISUFFIX=_#(starlink)
 #MAKEOPTS=-j 3 #(starlink)
 #
@@ -385,7 +392,7 @@ MAKEOPTS=
 #MPI_LDLIBS= -llammpio -llamf77mpi -lmpi -llam -lutil -ldl #(hades)
 #FFLAGS=-I/usr/include/mpi -O3 #(hades)
 #LIBMPISUFFIX=_#(hades)
-#LDMPI=-L$(MPI_HOME) -pthread $(MPI_LDLIBS) #(hades)
+#LD_MPI=-L$(MPI_HOME) -pthread $(MPI_LDLIBS) #(hades)
 ##
 ## Andrew's Laptop (wkfg)
 ##
@@ -395,7 +402,7 @@ MAKEOPTS=
 ##
 ## clx IBM Linux Cluster, Bologna IT
 ##
-#LDMPI=    #(node[0-9]*)
+#LD_MPI=    #(node[0-9]*)
 #FC=mpif90 # (node[0-9]*)
 #CC=mpicc  # (node[0-9]*)
 #FFLAGS=-fast -Mvect=sse -Mipa -Minline  # (node[0-9]*)
@@ -413,7 +420,7 @@ MAKEOPTS=
 #FFLAGS=-O2 -ipo -tpp7 -vec_report0 #(giga[0-9]*)
 #FFLAGS=-C -tpp7 -vec_report0  #(giga[0-9]*)
 #FFLAGS=-O2 -mp -vec_report0 #(giga[0-9]*)
-#LDMPI= #(giga[0-9]*)
+#LD_MPI= #(giga[0-9]*)
 ##
 ## St. Andrews Copson Cluster (tony,dave,greame)
 ## copson.st-and.ac.uk
@@ -422,11 +429,11 @@ MAKEOPTS=
 #FFLAGS=-gm -fast -Mvect=sse -Mipa -Minline # (copson)
 #FFLAGS=-gm -fast -tp p7 -fastsse -Mvect=sse -O2 -Minline # (copson)
 #FFLAGS=-gm -fast -tp p7 -fastsse -Mvect=sse -O2 # (copson)
-#LDMPI= # (copson)
+#LD_MPI= # (copson)
 ##
 #FC=ifc #(gwdu102)
 #FFLAGS=-O3 -I/opt/scali/include #(gwdu102)
-#LDMPI=-L/opt/scali/lib -lmpi -lfmpi #(gwdu102)
+#LD_MPI=-L/opt/scali/lib -lmpi -lfmpi #(gwdu102)
 ##
 ## Uppsala cluster - (nut is RA's front node)
 ## www.uppmax.uu.se
@@ -438,7 +445,7 @@ MAKEOPTS=
 #CC=mpicc #(nut)
 #FFLAGS=-D_REENTRANT -I$(MPI_HOME)/include -O3 -tp k8-64 #(nut)
 #CFLAGS=-D_REENTRANT -I$(MPI_HOME)/include -DFUNDERSC=1 -O3 -tp k8-64 #(nut)
-#LDMPI= -L$(MPI_HOME)/lib64 $(MPI_LDLIBS)  #(nut)
+#LD_MPI= -L$(MPI_HOME)/lib64 $(MPI_LDLIBS)  #(nut)
 ##
 ##
 ## CSC cluster - (Espoo, Finland)
@@ -448,7 +455,7 @@ MAKEOPTS=
 #CC=mpicc #(sepeli)
 #FFLAGS=-O2 #(sepeli)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sepeli)
-#LDMPI= #(sepeli)
+#LD_MPI= #(sepeli)
 ##
 ##
 ## DCSC cluster - (Copenhagen, not Odense!)
@@ -457,14 +464,14 @@ MAKEOPTS=
 #CC=pgcc #(fend0[1-3])
 #FFLAGS=-fastsse -tp k8-64e -I/usr/local/topspin/mpi/mpich/include #(fend0[1-3])
 #CFLAGS=-fastsse -tp k8-64e -DFUNDERSC=1 #(fend0[1-3])
-#LDMPI=-L/usr/local/topspin/mpi/mpich/lib64 -lmpich -lpthread -lmpich_p #(fend0[1-3])
+#LD_MPI=-L/usr/local/topspin/mpi/mpich/lib64 -lmpich -lpthread -lmpich_p #(fend0[1-3])
 ##
 ## Altix clusters at DCSC (brahe) and Columbia (cfe2)
 #FC=ifort #(brahe|cfe2)
 #CC=icc #(brahe|cfe2)
 #FFLAGS=-O3 #(brahe|cfe2)
 #CFLAGS=-O3 -DFUNDERSC=1 #(brahe|cfe2)
-#LDMPI=-lmpi #(brahe|cfe2)
+#LD_MPI=-lmpi #(brahe|cfe2)
 
 
 ## Darwin:
@@ -473,13 +480,13 @@ MAKEOPTS=
 #F77=$(FC)
 #FFLAGS=-O3
 #CFLAGS=-DFUNDERSC=2
-#LDMPI=
+#LD_MPI=
 #FC=xlf90 #(Nils)
 #F77=xlf  #(Nils)
 #FFLAGS= -w -qsuppress=1501-510  #(Nils)
 #F90FLAGS=-qsuffix=f=f90 #(Nils)
 #CFLAGS=-O3 -DFUNDERSC=0 #(Nils)
-#LDMPI=-lSystemStubs #(easymac)
+#LD_MPI=-lSystemStubs #(easymac)
 ##
 ## Tarek's laptop (PowerBook G4)
 ##
@@ -488,7 +495,7 @@ MAKEOPTS=
 ##FFLAGS=  -ftrace=full   #(dendara|lapc|tay21)
 #CC= gcc-3.3 -03 #(dendara|lapc|tay21)
 #FFLAGS= -O2 #(dendara|lapc|tay21)
-##LDMPI= -L${HOME}/opt/lib  #(dendara|lapc|tay21)
+##LD_MPI= -L${HOME}/opt/lib  #(dendara|lapc|tay21)
 ##
 ## Petri's laptop (PowerBook G4)
 ##
@@ -510,8 +517,8 @@ MAKEOPTS=
 #CFLAGS=-O4 -DFUNDERSC=1
 #CFLAGS=-O4 -DFUNDERSC=0 #(ursa)
 #CFLAGS=-O3 -dalign -xarch=v9b -DFUNDERSC=1 #(corona[1-2])
-#LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
-#LDMPI=-lmpi  #(corona[1-2])
+#LD_MPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
+#LD_MPI=-lmpi  #(corona[1-2])
 #F77=$(FC)
 
 ## UNICOS/mk:
@@ -526,7 +533,7 @@ MAKEOPTS=
 #FFLAGS=-lowercase -I/usr/mpi/include -O4 -pvec -parallel=0
 #FFLAGS=-lowercase -Os -noparallel -O4
 #CFLAGS=-O4 -DFUNDERSC=0
-#LDMPI=-L/usr/mpi/lib/lib32 -lfmpi -lmpi
+#LD_MPI=-L/usr/mpi/lib/lib32 -lfmpi -lmpi
 
 ## SUPER-UX:
 ## NEC
@@ -541,7 +548,7 @@ MAKEOPTS=
 #FC=xlf90
 #FFLAGS=-I/usr/lpp/ppe.poe/include -I/usr/lpp/ppe.poe/include/thread -O5 -w
 #F90FLAGS=-qsuffix=f=f90
-#LDMPI=-F:mpxlf90
+#LD_MPI=-F:mpxlf90
 #FC=mpxlf90 #(sp[0-1]*)
 #F77=mpxlf #(sp[0-1]*)
 #CC=mpcc #(sp[0-1]*)
@@ -549,12 +556,12 @@ MAKEOPTS=
 #FFLAGS=-qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
 #CFLAGS=-O5 -qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
 #FFLAGS=-O5 -qarch=pwr4 -qtune=pwr4 -q64 #(sp[0-1]*)
-#LDMPI= #(sp[0-1]*)
+#LD_MPI= #(sp[0-1]*)
 #FC=mpxlf90_r #(p690*)
 #CC=mpcc_r #(p690*)
 #FFLAGS=-O2 -qarch=pwr4 -qtune=pwr4 #(p690*)
 #CFLAGS=-qarch=pwr4 -qtune=pwr4 -DFUNDERSC=0 #(p690*)
-#LDMPI= #(p690*)
+#LD_MPI= #(p690*)
 ### -bmaxdata:0x7000000
 
 
@@ -563,6 +570,32 @@ MAKEOPTS=
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
+
+## Compile files with the proper FFT libraries.
+# If condition not really needed for source libraries but will be needed
+# for external libraries
+#
+ifeq ($(FOURIER),fourier_fft)
+  CFLAGS_FOURIER=
+  FFLAGS_FOURIER=
+  LD_FOURIER=fft.o
+endif
+ifeq ($(FOURIER),fourier_fftpack)
+  CFLAGS_FOURIER=
+  FFLAGS_FOURIER=
+  LD_FOURIER=fftpack.o
+endif
+#ifeq ($(FOURIER),fourier_fftw2)
+#  CFLAGS_FOURIER=$(CFLAGS_FFTW2)
+#  FFLAGS_FOURIER=$(FFLAGS_FFTW2)
+#  LD_FOURIER=$(LD_FFTW2)
+#endif
+#ifeq ($(FOURIER),fourier_fftw3)
+#  CFLAGS_FOURIER=$(CFLAGS_FFTW3)
+#  FFLAGS_FOURIER=$(FFLAGS_FFTW3)
+#  LD_FOURIER=$(LD_FFTW3)
+#endif
+
 # -Mpencil.map
 
 ## Generic rules:
@@ -570,17 +603,17 @@ MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 .SUFFIXES: .f .f90 .c $(PC_META_TYPE).o .inc .h
 
 .f$(PC_META_TYPE).o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS)  -o $*$(PC_META_TYPE).o -c $*.f
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS)  -o $*$(PC_META_TYPE).o -c $*.f
 .f90$(PC_META_TYPE).o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o $*$(PC_META_TYPE).o -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $*$(PC_META_TYPE).o -c $*.f90
 .c$(PC_META_TYPE).o:
-	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -o $*$(PC_META_TYPE).o -c $*.c
+	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) -o $*$(PC_META_TYPE).o -c $*.c
 
 #
 # ---------------------------------------------------------------------- #
 ## Abbreviations
 
-technical=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o $(FFT_LIB)$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o slices$(PC_META_TYPE).o deriv$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o filter$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o register$(PC_META_TYPE).o prints$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o persist$(PC_META_TYPE).o
+technical=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o slices$(PC_META_TYPE).o deriv$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o filter$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o register$(PC_META_TYPE).o prints$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o persist$(PC_META_TYPE).o
 physics=$(GLOBAL)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(SELFGRAVITY)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(ENTROPY)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(SHEAR)$(PC_META_TYPE).o $(PSCALAR)$(PC_META_TYPE).o $(CHIRAL)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(DUSTVELOCITY)$(PC_META_TYPE).o $(DUSTDENSITY)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(COSMICRAY)$(PC_META_TYPE).o $(COSMICRAYFLUX)$(PC_META_TYPE).o $(TESTFIELD)$(PC_META_TYPE).o $(PARTICLES)$(PC_META_TYPE).o $(PARTICLES_RADIUS)$(PC_META_TYPE).o $(PARTICLES_NUMBER)$(PC_META_TYPE).o $(PLANET)$(PC_META_TYPE).o $(PARTICLES_SELFGRAVITY)$(PC_META_TYPE).o
 switchable=$(physics) $(BORDER_PROF)$(PC_META_TYPE).o
 comm_deps=$(technical) sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o snapshot$(PC_META_TYPE).o param_io$(PC_META_TYPE).o  $(MPICOMM_FIX)$(PC_META_TYPE).o $(switchable) $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o
@@ -662,10 +695,11 @@ stop_buildtime:
 buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
 	                       -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
-	                       -e "FCCLEANER='$(FCCLEANER)';LDMPI='$(LDMPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
+	                       -e "LD_FOURIER='$(LD_FOURIER)';FFLAGS_FOURIER='$(FFLAGS_FOURIER)';CFLAGS_FOURIER='$(CFLAGS_FOURIER)';" \
+	                       -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
 	                       -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
 	                       -e "FC='$(FC)';" \
-	                       -e "MPICOMM='$(MPICOMM_FIX)';GLOBAL='$(GLOBAL)';GRID='$(GRID)';IO='$(IO)';FFT_LIB='$(FFT_LIB)';" \
+	                       -e "MPICOMM='$(MPICOMM_FIX)';GLOBAL='$(GLOBAL)';GRID='$(GRID)';IO='$(IO)';" \
 	                       -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';" \
 	                       -e "VISCOSITY='$(VISCOSITY)';DENSITY='$(DENSITY)';ENTROPY='$(ENTROPY)';" \
 	                       -e "MAGNETIC='$(MAGNETIC)';RADIATION='$(RADIATION)';PSCALAR='$(PSCALAR)';" \
@@ -745,25 +779,25 @@ debug:
 
 
 start$(PC_META_TYPE).x: $(start) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start$(PC_META_TYPE).x
 
 run$(PC_META_TYPE).x: $(run) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run$(PC_META_TYPE).x
 
 runfast$(PC_META_TYPE).x: $(run_fast_deps) Makefile$(PC_META_TYPE).local
-	$(FC) -o runfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LDMPI) $(LIBSIG)
+	$(FC) -o runfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(run_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LIBSIG)
 
 startfast$(PC_META_TYPE).x: $(start_fast_deps) Makefile$(PC_META_TYPE).local
-	$(FC) -o startfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LDMPI)
+	$(FC) -o startfast$(PC_META_TYPE).x $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) $(start_fast_deps) $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) 
 
 $(SHOCK_FINDER)$(PC_META_TYPE).x: $(shock_finder) Makefile$(PC_META_TYPE).local
-	$(LD) $(LDFLAGS) $(shock_finder) $(LDMPI) $(LIBSIG) -o $(SHOCK_FINDER)$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(shock_finder) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o $(SHOCK_FINDER)$(PC_META_TYPE).x
 
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
-	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start$(PC_META_TYPE).x
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run$(PC_META_TYPE).x
 #shorthand for this
 l:
 	$(MAKE) $(MAKEOPTS) linkonly
@@ -774,8 +808,8 @@ mpicomm_.f90:      mpicomm.f90
 # Shortcut for debugging radiation:
 rad:
 	ifc -c radiation_exp.f90
-	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start$(PC_META_TYPE).x
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(start) $(LD_MPI) $(LD_FOURIER) -o start$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(run) $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run$(PC_META_TYPE).x
 
 # Remove all build files, but keep executables
 # (misleading name..)
@@ -820,17 +854,17 @@ cleanall: cleann
 ## ---------------------------------------------------------------------- #
 
 read_videofiles$(PC_META_TYPE).x: $(read_videofiles)
-	$(LD) $(LDFLAGS) $(read_videofiles) $(LDMPI) -o read_videofiles$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles$(PC_META_TYPE).x
 
 read_vectorfiles$(PC_META_TYPE).x: $(read_vectorfiles)
-	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LDMPI) -o read_vectorfiles$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(read_vectorfiles) $(LD_MPI) -o read_vectorfiles$(PC_META_TYPE).x
 
 var2ascii$(PC_META_TYPE).x: $(var2ascii)
-	$(LD) $(LDFLAGS) $(var2ascii) $(LDMPI) -o var2ascii$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(var2ascii) $(LD_MPI) -o var2ascii$(PC_META_TYPE).x
 
 write_dnlists_deps=write_dummy_namelists$(PC_META_TYPE).o $(comm_deps) $(DEBUG)$(PC_META_TYPE).o
 write_dummy_namelists$(PC_META_TYPE).x: $(write_dnlists_deps)
-	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LDMPI) -o write_dummy_namelists$(PC_META_TYPE).x
+	$(LD) $(LDFLAGS) $(write_dnlists_deps) $(LD_MPI) -o write_dummy_namelists$(PC_META_TYPE).x
 
 ## ---------------------------------------------------------------------- #
 ## Non-F90 / undetectable dependencies
