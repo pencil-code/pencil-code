@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.311 2006-07-18 19:29:24 wlyra Exp $
+! $Id: equ.f90,v 1.312 2006-07-28 13:10:37 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -359,6 +359,7 @@ module Equ
                            lvisc_first, idiag_epsK
       use Particles_main
       use Planet
+      use BorderProfiles
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -373,7 +374,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.311 2006-07-18 19:29:24 wlyra Exp $")
+           "$Id: equ.f90,v 1.312 2006-07-28 13:10:37 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -631,11 +632,19 @@ module Equ
 !  Add planet gravity and wave damping
 !
         if (lplanet) then
-           call auxcall_gravcomp(f,g0,r0_pot,n_pot,p)
+           call auxcall_gravcomp(g0,r0_pot,n_pot,p)
            if (lwavedamp) call wave_damping(f,df,g0,r0_pot,n_pot)
         endif
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
+!
+! Apply border profile before freezing
+!
+        if (lborder_profiles) then
+           do iv=1,nvar
+              call border_driving(f,df,iv)
+          enddo
+        endif
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -786,9 +795,8 @@ module Equ
           endif
           dt1_advec=maxadvec/cdt
           dt1_diffus=maxdiffus/cdtv
-
           dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
-
+!
           if (ldiagnos.and.idiag_dtv/=0) then
             call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
           endif
