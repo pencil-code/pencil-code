@@ -1,4 +1,4 @@
-! $Id: general_fft.f90,v 1.1 2006-07-28 11:49:12 ajohan Exp $
+! $Id: general_fft.f90,v 1.2 2006-07-28 12:26:01 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -102,7 +102,7 @@ module General_FFT
       real,dimension(nx,ny,nz) :: a_re,a_im
       complex,dimension(nx) :: ax
       real,dimension(4*nx+15) :: wsavex
-      integer :: m,n
+      integer :: l,m,n
       integer,optional :: direction
       logical :: lforward=.true.
 !
@@ -140,11 +140,11 @@ module General_FFT
 !  The length of the array in the y-direction is nx.
 !
           if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
-          do n=1,nz; do m=1,ny
-            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          do n=1,nz; do l=1,ny
+            ax=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nx,ax,wsavex)
-            a_re(:,m,n)=real(ax)
-            a_im(:,m,n)=aimag(ax)
+            a_re(:,l,n)=real(ax)
+            a_im(:,l,n)=aimag(ax)
           enddo; enddo
         endif
 !
@@ -162,11 +162,11 @@ module General_FFT
 !  The length of the array in the z-direction is also nx.
 !
           if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
-          do n=1,nz; do m=1,ny
-            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          do m=1,nz; do l=1,ny
+            ax=cmplx(a_re(:,l,m),a_im(:,l,m))
             call cfftf(nx,ax,wsavex)
-            a_re(:,m,n)=real(ax)
-            a_im(:,m,n)=aimag(ax)
+            a_re(:,l,m)=real(ax)
+            a_im(:,l,m)=aimag(ax)
           enddo; enddo
         endif
       else
@@ -184,11 +184,11 @@ module General_FFT
           endif
 !
           if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
-          do n=1,nz; do m=1,ny
-            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          do m=1,nz; do l=1,ny
+            ax=cmplx(a_re(:,l,m),a_im(:,l,m))
             call cfftb(nx,ax,wsavex)
-            a_re(:,m,n)=real(ax)
-            a_im(:,m,n)=aimag(ax)
+            a_re(:,l,m)=real(ax)
+            a_im(:,l,m)=aimag(ax)
           enddo; enddo
         endif
 !
@@ -206,11 +206,11 @@ module General_FFT
           endif
 !
           if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
-          do n=1,nz; do m=1,ny
-            ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+          do n=1,nz; do l=1,ny
+            ax=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftb(nx,ax,wsavex)
-            a_re(:,m,n)=real(ax)
-            a_im(:,m,n)=aimag(ax)
+            a_re(:,l,n)=real(ax)
+            a_im(:,l,n)=aimag(ax)
           enddo; enddo
         endif
 !
@@ -255,7 +255,7 @@ module General_FFT
       real, dimension(nx,ny,nz) :: a_re,a_im
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
-      integer :: m,n
+      integer :: l,m,n
       integer, optional :: dummy
 !
 !  check whether nxgrid=nygrid=nzgrid
@@ -282,8 +282,8 @@ module General_FFT
 !  The length of the array in the z-direction is also nx
 !
       if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
-      do n=1,nz; do m=1,ny
-        ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+      do l=1,nz; do m=1,ny
+        ax=cmplx(a_re(:,m,l),a_im(:,m,l))
         call cfftf(nx,ax,wsavex)
         a_re(:,m,n)=real(ax)
         a_im(:,m,n)=aimag(ax)
