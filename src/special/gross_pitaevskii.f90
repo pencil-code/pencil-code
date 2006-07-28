@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.5 2006-07-17 00:19:28 mee Exp $
+! $Id: gross_pitaevskii.f90,v 1.6 2006-07-28 21:45:30 mee Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -93,18 +93,43 @@ module Special
     real :: dir         ! Propagation direction (+/-1)
   end type ring_param
 
+  integer, parameter :: iboundary_point_SYMMETRIC = 1
+  integer, parameter :: iboundary_point_ZERO      = 2
+  integer, parameter :: iboundary_point_LINEAR    = 3
+
+  type :: boundary_point
+    integer :: ix          ! x position
+    integer :: iy          ! y position
+    integer :: iz          ! z position
+    integer :: pnt_type 
+    real :: bdry_value  
+    real :: rr    ! Distance from the boundary
+    real, dimension(3) :: xxp   ! Image point location
+    integer, dimension(3) :: inear  ! Image point nearest grid point
+  end type boundary_point
+
+  integer, parameter :: nboundary_points = 3000
+ 
+  type (boundary_point), dimension(nboundary_points) :: boundary_pnts
+  integer :: nboundary_pnts = 0
+
+  logical :: ltest_sphere = .false.
   logical :: limag_time = .false.
   real :: diff_boundary = 0.000
   real :: vortex_spacing = 12.000
   real :: ampl = 0.000
   real :: frame_Ux = 0.
+  real :: test_sphere_radius = 0.
   character(len=50) :: initgpe = 'constant'
 
 ! input parameters
-  namelist /gpe_init_pars/ initgpe, vortex_spacing, ampl
+  namelist /gpe_init_pars/ initgpe, vortex_spacing, ampl, &
+                          test_sphere_radius
 
 ! run parameters
-  namelist /gpe_run_pars/ diff_boundary, limag_time, frame_Ux
+  namelist /gpe_run_pars/ diff_boundary, &
+                          limag_time, &
+                          frame_Ux, test_sphere_radius
 
 !!
 !! Declare any index variables necessary for main or 
@@ -158,10 +183,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.5 2006-07-17 00:19:28 mee Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.6 2006-07-28 21:45:30 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.5 2006-07-17 00:19:28 mee Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.6 2006-07-28 21:45:30 mee Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -187,9 +212,69 @@ module Special
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: rr, r2, bdry_depth, inner_radius, proximity
+      real, dimension(3) :: xxp, dr
+      integer :: l
 !!
 !!  Initialize any module variables which are parameter dependant  
 !!
+      if (test_sphere_radius > 0.) ltest_sphere=.true.
+!
+      if (ltest_sphere) then
+        bdry_depth=nghost*dxmax
+        open(82,file='data/xxp_in.dat')
+        open(83,file='data/xxp_out.dat')
+        open(84,file='data/xxp_out_near.dat')
+        inner_radius=max(test_sphere_radius-bdry_depth,0.)
+        print*,'initialize_special (gpe): (bdry_depth, inner_radius, test_sphere_radius) = ', &
+           bdry_depth, inner_radius, test_sphere_radius
+        do n=n1,n2; do m=m1,m2; do l=l1,l2
+          r2 = x(l)**2 + y(m)**2 + z(n)**2
+          rr=sqrt(r2)
+          if ((rr < test_sphere_radius)) then
+            if (rr .lt. inner_radius) cycle
+
+            nboundary_pnts=nboundary_pnts+1
+
+            if (nboundary_pnts > nboundary_points) then
+              close(82)
+              close(83)
+              close(84)
+              call fatal_error('initialize_special (gpe)', &
+                               'Too many boundary points')
+            endif
+            boundary_pnts(nboundary_pnts)%ix=l
+            boundary_pnts(nboundary_pnts)%iy=m
+            boundary_pnts(nboundary_pnts)%iz=n
+            xxp=(/ x(l), y(m), z(n) /)
+            write(82,'(3e17.8)') xxp
+            dr=(xxp/rr)*max(test_sphere_radius-rr,0.)
+            proximity=(test_sphere_radius-rr)/sqrt(dx**2+dy**2+dz**2)
+            boundary_pnts(nboundary_pnts)%rr=rr
+
+            if (proximity <= 0.5) then
+              boundary_pnts(nboundary_pnts)%pnt_type=iboundary_point_ZERO
+            elseif (proximity <= 1.) then
+              boundary_pnts(nboundary_pnts)%pnt_type=iboundary_point_LINEAR
+              boundary_pnts(nboundary_pnts)%xxp=xxp+3.*dr
+            else
+              boundary_pnts(nboundary_pnts)%pnt_type=iboundary_point_SYMMETRIC
+              boundary_pnts(nboundary_pnts)%xxp=xxp+2.*dr
+            endif 
+            boundary_pnts(nboundary_pnts)%inear = &
+                         int(((xxp - (/ x(l1), y(m1), z(n1) /)) / (/ dx, dy, dz/))+0.5)
+          
+            write(83,'(3e17.8)') boundary_pnts(nboundary_pnts)%xxp
+            write(84,'(3e17.8)') (/ x(boundary_pnts(nboundary_pnts)%inear(1)), &
+                                    y(boundary_pnts(nboundary_pnts)%inear(2)), &
+                                    z(boundary_pnts(nboundary_pnts)%inear(3)) /)
+          endif
+        enddo; enddo; enddo
+        close(82)
+        close(83)
+        close(84)
+        if (lroot) print*,'Found ', nboundary_pnts, ' boundary points'
+      endif
 !
 ! DO NOTHING
       if(NO_WARN) print*,f  !(keep compiler quiet)
@@ -215,13 +300,17 @@ module Special
       type (line_param) :: vl1
      ! type (line_param), parameter :: vl1 = line_param( 0.0, 1.1, 0.1,14.6, 1.0)
      ! type (line_param), parameter :: vl2 = line_param(-3.0, 3.0,-0.0,33.0,-1.0)
+      type (line_param) :: vl2
       type (line_param) :: vl3
+      type (line_param) :: vl4
      ! type (line_param), parameter :: vl3 = line_param( 0.0,-1.1,-0.1,14.6,-1.0)
      ! type (line_param), parameter :: vl4 = line_param(-3.0,-3.0,-0.0,33.0, 1.0)
       type (ring_param) :: vr1
      ! type (line_param) :: vl1
       vl1 = line_param( 0.0, vortex_spacing*0.5,ampl,33.0, 1.0)
       vl3 = line_param( 0.0,-vortex_spacing*0.5,-ampl,33.0,-1.0)
+      vl2 = line_param( -20.0, vortex_spacing*0.5,ampl,33.0, 1.0)
+      vl4 = line_param( -20.0,-vortex_spacing*0.5,-ampl,33.0,-1.0)
       vr1 = ring_param(-20.0, 0.0, 15.0, -1.0)
 
 !!
@@ -241,6 +330,24 @@ module Special
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = complex_mult(vortex_line(vl1), &
                                                vortex_line(vl3))
           enddo; enddo
+        case('sphere'); 
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ipsi_real) = imaged_sphere(0.,0.,0.,1)
+            !f(l1:l2,m,n,ipsi_real) = sphere(0.,0.,0.)
+            f(l1:l2,m,n,ipsi_imag) = 0.
+          enddo; enddo
+        case('add-vortex-ring'); 
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
+              f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+               * vortex_ring(vr1)
+          enddo; enddo
+        case('add-vortex-pair'); 
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,ipsi_real:ipsi_imag) = &
+              f(l1:l2,m,n,ipsi_real:ipsi_imag) &
+               * vortex_line(vl2) * vortex_line(vl4) 
+          enddo; enddo
         case('vortex-ring'); 
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,ipsi_real:ipsi_imag) = vortex_ring(vr1)
@@ -256,6 +363,26 @@ module Special
       if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
 !
     endsubroutine init_special
+!***********************************************************************
+    subroutine pencil_criteria_special()
+! 
+!  All pencils that this special module depends on are specified here.
+! 
+!  18-07-06/tony: coded
+!
+    endsubroutine pencil_criteria_special
+!***********************************************************************
+    subroutine pencil_interdep_special(lpencil_in)
+!
+!  Interdependency among pencils provided by this module are specified here.
+!
+!  18-07-06/tony: coded
+!
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (NO_WARN) print*,lpencil_in(1)
+!
+    endsubroutine pencil_interdep_special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
@@ -301,6 +428,7 @@ module Special
       real, dimension (nx) :: pimag, preal, diss, psi2
       real, dimension (nx) :: del2real, del2imag
       real, dimension (nx) :: drealdx, dimagdx
+      real, dimension (nx) :: boundaries
       real :: a, b, c
       type (pencil_case) :: p
 
@@ -314,9 +442,8 @@ module Special
         print*,'dspecial_dt: SOLVE dpsi_dt (Gross-Pitaevskii Equation)'
 !!      if (headtt) call identify_bcs('ss',iss)
 !
-
-     preal = f(l1:l2,m,n,ipsi_real)
-     pimag = f(l1:l2,m,n,ipsi_imag)
+    preal = f(l1:l2,m,n,ipsi_real)
+    pimag = f(l1:l2,m,n,ipsi_imag)
 !
 !  calculate dpsi/dx
 !
@@ -349,21 +476,23 @@ module Special
 
     psi2 = preal**2 + pimag**2
 
+!    if (ltest_sphere) boundaries = sphere_sharp(0.,0.,0.)
+
     if (limag_time) then
       df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-         0.5 * ((del2real + diss * del2imag) &
-           + (1. - psi2) * (preal + diss * pimag))
+         (0.5 * ((del2real + diss * del2imag) &
+           + (1. - psi2) * (preal + diss * pimag))) !* boundaries
 !
       df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-         0.5 * ((del2imag - diss * del2real) &
-           + (psi2 - 1.) * (diss * preal - pimag))
+         (0.5 * ((del2imag - diss * del2real) &
+           + (psi2 - 1.) * (diss * preal - pimag))) !* boundaries
 !
       if (frame_Ux /= 0.) then
         df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-           frame_Ux * dimagdx
+           frame_Ux * dimagdx !* boundaries
 
         df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) - &
-           frame_Ux * drealdx
+           frame_Ux * drealdx !* boundaries
       endif
     else
 !
@@ -371,21 +500,21 @@ module Special
 !  (but use hbar=m=1)
 !
       df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-         0.5 * ((diss * del2real - del2imag) &
-           + (1. - psi2) * (diss * preal - pimag))
+         (0.5 * ((diss * del2real - del2imag) &
+           + (1. - psi2) * (diss * preal - pimag))) !*boundaries
 
       df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-         0.5 * ((del2real + diss * del2imag) &
-           + (1. - psi2) * (preal + diss * pimag))
+         (0.5 * ((del2real + diss * del2imag) &
+           + (1. - psi2) * (preal + diss * pimag))) !* boundaries
 !
 !  dpsi/dt = ... +Ux*dpsi/dx
 !
       if (frame_Ux /= 0.) then
         df(l1:l2,m,n,ipsi_real) = df(l1:l2,m,n,ipsi_real) + &
-           frame_Ux * drealdx
+           frame_Ux * drealdx !* boundaries
 
         df(l1:l2,m,n,ipsi_imag) = df(l1:l2,m,n,ipsi_imag) + &
-           frame_Ux * dimagdx
+           frame_Ux * dimagdx !* boundaries 
       endif
     endif
  
@@ -775,6 +904,274 @@ endsubroutine read_special_run_pars
     amp = 1.0 - exp(c1*vort_r**c2)
 
   end function amp
+!***********************************************************************
+  function imaged_sphere(sx,sy,sz,level)
+    use Cdata
+    implicit none
+
+    real, intent(in) :: sx,sy,sz
+    real, dimension(nx) :: imaged_sphere, temp
+    real :: local_sx, local_sy, local_sz
+    integer :: level
+    integer :: i,j,k
+
+    temp=1.
+    do k=-level,level
+      local_sz=sz-k*Lxyz(3) 
+      do j=-level,level
+        local_sy=sy-j*Lxyz(2) 
+        do i=-level,level
+          local_sx=sx-i*Lxyz(1) 
+          temp=temp*sphere(local_sx,local_sy,local_sz)
+        enddo
+      enddo
+    enddo
+
+    imaged_sphere=temp
+    !sphere(i,j,k) = max(0.5*(1.0+&
+    !                         tanh(sqrt(x(i)**2+y(j)**2+z(k)**2)-rad)-&
+    !                         eps),0.0)
+
+  end function imaged_sphere
+!***********************************************************************
+  function sphere(sx,sy,sz)
+    use Cdata
+    implicit none
+
+    real, intent(in) :: sx,sy,sz
+    real, dimension(nx) :: sphere
+    real, parameter :: eps = 2.0
+
+!    sphere = 0.5*(1.0+tanh(sqrt((x(l1:l2)-sx)**2+(y(m)-sy)**2+(z(n)-sz)**2)-test_sphere_radius-eps))
+    sphere = tanh(sqrt((x(l1:l2)-sx)**2+(y(m)-sy)**2+(z(n)-sz)**2)-test_sphere_radius)
+
+  end function sphere
+!***********************************************************************
+  function sphere_sharp(sx,sy,sz)
+    use Cdata
+    implicit none
+
+    real, intent(in) :: sx,sy,sz
+    real, dimension(nx) :: sphere_sharp
+    real, parameter :: rad = 10.0
+    real, parameter :: eps = 2.0
+
+    sphere_sharp = max(tanh(sqrt((x(l1:l2)-sx)**2+(y(m)-sy)**2+(z(n)-sz)**2)-rad-eps),0.)
+
+  end function sphere_sharp
+!***********************************************************************
+    subroutine special_boundconds(f,bc)
+!
+!   calculate a additional 'special' term on the right hand side of the 
+!   entropy equation.
+!
+!   Some precalculated pencils of data are passed in for efficiency
+!   others may be calculated directly from the f array
+!
+!   06-oct-03/tony: coded
+!
+      use Cdata
+!      
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      type (boundary_condition) :: bc
+!
+      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+!
+    endsubroutine special_boundconds
+!***********************************************************************
+    subroutine gpe_interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear)
+!
+!  Quadratic spline interpolation of the function g to the point xxp=(xp,yp,zp).
+!
+!  10-jun-06/anders: coded
+!
+      use Cdata
+      use Messages, only: fatal_error
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (3) :: xxp
+      integer, dimension (3) :: inear
+      integer :: ivar1, ivar2
+      real, dimension (ivar2-ivar1+1) :: gp
+!
+      real :: fac_x_m1, fac_x_00, fac_x_p1
+      real :: fac_y_m1, fac_y_00, fac_y_p1
+      real :: fac_z_m1, fac_z_00, fac_z_p1
+      real :: dxp0, dyp0, dzp0
+      integer :: i, ix0, iy0, iz0
+      logical :: lfirstcall=.true.
+!
+      intent(in)  :: f, xxp, ivar1
+      intent(out) :: gp
+!
+!  Redefine the interpolation point in coordinates relative to nearest grid
+!  point and normalize with the cell size.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      dxp0=(xxp(1)-x(ix0))*dx_1(ix0)
+      dyp0=(xxp(2)-y(iy0))*dy_1(iy0)
+      dzp0=(xxp(3)-z(iz0))*dz_1(iz0)
+!
+!  Interpolation formulae.
+!
+      if (dimensionality==0) then
+        gp=f(ix0,iy0,iz0,ivar1:ivar2)
+      elseif (dimensionality==1) then
+        if (nxgrid/=1) then
+          gp = 0.5*(0.5-dxp0)**2*f(ix0-1,iy0,iz0,ivar1:ivar2) + &
+                  (0.75-dxp0**2)*f(ix0  ,iy0,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dxp0)**2*f(ix0+1,iy0,iz0,ivar1:ivar2)
+        endif
+        if (nygrid/=1) then
+          gp = 0.5*(0.5-dyp0)**2*f(ix0,iy0-1,iz0,ivar1:ivar2) + &
+                  (0.75-dyp0**2)*f(ix0,iy0  ,iz0,ivar1:ivar2) + &
+               0.5*(0.5+dyp0)**2*f(ix0,iy0+1,iz0,ivar1:ivar2)
+        endif
+        if (nzgrid/=1) then
+          gp = 0.5*(0.5-dzp0)**2*f(ix0,iy0,iz0-1,ivar1:ivar2) + &
+                  (0.75-dzp0**2)*f(ix0,iy0,iz0  ,ivar1:ivar2) + &
+               0.5*(0.5+dzp0)**2*f(ix0,iy0,iz0+1,ivar1:ivar2)
+        endif
+      elseif (dimensionality==2) then
+        if (nxgrid==1) then
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_y_00*( f(ix0,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_p1*( f(ix0,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_y_m1*( f(ix0,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nygrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_z_m1 = 0.5*(0.5-dzp0)**2
+          fac_z_00 = 0.75-dzp0**2
+          fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+          gp= fac_x_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0  ,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_z_00*( f(ix0+1,iy0,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0+1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                         f(ix0-1,iy0,iz0-1,ivar1:ivar2)*fac_z_m1 )
+        elseif (nzgrid==1) then
+          fac_x_m1 = 0.5*(0.5-dxp0)**2
+          fac_x_00 = 0.75-dxp0**2
+          fac_x_p1 = 0.5*(0.5+dxp0)**2
+          fac_y_m1 = 0.5*(0.5-dyp0)**2
+          fac_y_00 = 0.75-dyp0**2
+          fac_y_p1 = 0.5*(0.5+dyp0)**2
+!
+          gp= fac_x_00*fac_y_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+              fac_x_00*( f(ix0  ,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0  ,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_y_00*( f(ix0+1,iy0  ,iz0,ivar1:ivar2)*fac_x_p1 + &
+                         f(ix0-1,iy0  ,iz0,ivar1:ivar2)*fac_x_m1 ) + &
+              fac_x_p1*( f(ix0+1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0+1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 ) + &
+              fac_x_m1*( f(ix0-1,iy0+1,iz0,ivar1:ivar2)*fac_y_p1 + &
+                         f(ix0-1,iy0-1,iz0,ivar1:ivar2)*fac_y_m1 )
+        endif
+      elseif (dimensionality==3) then
+        fac_x_m1 = 0.5*(0.5-dxp0)**2
+        fac_x_00 = 0.75-dxp0**2
+        fac_x_p1 = 0.5*(0.5+dxp0)**2
+        fac_y_m1 = 0.5*(0.5-dyp0)**2
+        fac_y_00 = 0.75-dyp0**2
+        fac_y_p1 = 0.5*(0.5+dyp0)**2
+        fac_z_m1 = 0.5*(0.5-dzp0)**2
+        fac_z_00 = 0.75-dzp0**2
+        fac_z_p1 = 0.5*(0.5+dzp0)**2
+!
+        gp= fac_x_00*fac_y_00*fac_z_00*f(ix0,iy0,iz0,ivar1:ivar2) + &
+            fac_x_00*fac_y_00*( f(ix0  ,iy0  ,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0  ,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_z_00*( f(ix0  ,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0  ,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_y_00*fac_z_00*( f(ix0+1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0  ,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_x_p1*fac_y_p1*( f(ix0+1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_p1*fac_y_m1*( f(ix0+1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0+1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_p1*( f(ix0-1,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_m1*fac_y_m1*( f(ix0-1,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0-1,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_p1*( f(ix0  ,iy0+1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0+1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_x_00*fac_y_m1*( f(ix0  ,iy0-1,iz0+1,ivar1:ivar2)*fac_z_p1 + &
+                                f(ix0  ,iy0-1,iz0-1,ivar1:ivar2)*fac_z_m1 ) + &
+            fac_y_00*fac_z_p1*( f(ix0+1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0+1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_y_00*fac_z_m1*( f(ix0+1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_p1 + &
+                                f(ix0-1,iy0  ,iz0-1,ivar1:ivar2)*fac_x_m1 ) + &
+            fac_z_00*fac_x_p1*( f(ix0+1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0+1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 ) + &
+            fac_z_00*fac_x_m1*( f(ix0-1,iy0+1,iz0  ,ivar1:ivar2)*fac_y_p1 + &
+                                f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
+      endif
+!
+    endsubroutine gpe_interpolate_quadratic_spline
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!   Possibility to modify the f array before the boundaries are 
+!   communicated.
+!
+!   Some precalculated pencils of data are passed in for efficiency
+!   others may be calculated directly from the f array
+!
+!   06-jul-06/tony: coded
+!
+      use Cdata
+!      
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (2)  :: bdry_value
+      integer :: i
+
+      if (ltest_sphere) then
+        do i=1,nboundary_pnts
+          if (boundary_pnts(i)%pnt_type /= iboundary_point_ZERO) then
+              call gpe_interpolate_quadratic_spline(f, &
+                                 ipsi_real, ipsi_imag, &
+                                 boundary_pnts(i)%xxp, &
+                                 boundary_pnts(i)%bdry_value, &
+                                 boundary_pnts(i)%inear)
+          endif
+        enddo  
+        do i=1,nboundary_pnts
+          select case (boundary_pnts(i)%pnt_type)
+            case (iboundary_point_SYMMETRIC)
+              f( boundary_pnts(i)%ix, &
+                 boundary_pnts(i)%iy, &
+                 boundary_pnts(i)%iz, ipsi_real:ipsi_imag ) = - boundary_pnts(i)%bdry_value
+            case (iboundary_point_LINEAR)
+              f( boundary_pnts(i)%ix, &
+                 boundary_pnts(i)%iy, &
+                 boundary_pnts(i)%iz, ipsi_real:ipsi_imag ) = - 0.5 * boundary_pnts(i)%bdry_value
+            case (iboundary_point_ZERO)
+              f( boundary_pnts(i)%ix, &
+                 boundary_pnts(i)%iy, &
+                 boundary_pnts(i)%iz, ipsi_real:ipsi_imag ) = 0.
+          endselect
+        enddo  
+      endif 
+
+    endsubroutine special_before_boundary
 !***********************************************************************
 endmodule Special
 

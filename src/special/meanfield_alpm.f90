@@ -1,4 +1,4 @@
-! $Id: meanfield_alpm.f90,v 1.3 2006-06-15 08:31:10 brandenb Exp $
+! $Id: meanfield_alpm.f90,v 1.4 2006-07-28 21:45:30 mee Exp $
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: meanfield_alpm.f90,v 1.3 2006-06-15 08:31:10 brandenb Exp $")
+           "$Id: meanfield_alpm.f90,v 1.4 2006-07-28 21:45:30 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -467,6 +467,24 @@ module Special
       endselect
 !
     endsubroutine divflux_from_Omega_effect
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!   Possibility to modify the f array before the boundaries are 
+!   communicated.
+!
+!   Some precalculated pencils of data are passed in for efficiency
+!   others may be calculated directly from the f array
+!
+!   06-jul-06/tony: coded
+!
+      use Cdata
+!      
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+!
+      if (NO_WARN) print*,f(1,1,1,1)
+!
+    endsubroutine special_before_boundary
 !***********************************************************************
 
 endmodule Special

@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.11 2006-07-24 17:06:00 brandenb Exp $
+! $Id: neutron_star.f90,v 1.12 2006-07-28 21:45:30 mee Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -182,11 +182,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.11 2006-07-24 17:06:00 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.12 2006-07-28 21:45:30 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.11 2006-07-24 17:06:00 brandenb Exp $")
+           "$Id: neutron_star.f90,v 1.12 2006-07-28 21:45:30 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -1705,7 +1705,24 @@ endsubroutine read_special_run_pars
       endif
 !
     endsubroutine bc_BL_z
-!*********************************************************************
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!   Possibility to modify the f array before the boundaries are 
+!   communicated.
+!
+!   Some precalculated pencils of data are passed in for efficiency
+!   others may be calculated directly from the f array
+!
+!   06-jul-06/tony: coded
+!
+      use Cdata
+!      
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+!
+      if (NO_WARN) print*,f(1,1,1,1)
+!
+    endsubroutine special_before_boundary
 !********************************************************************
 endmodule Special
 

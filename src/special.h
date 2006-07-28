@@ -19,3 +19,4 @@
   public :: special_calc_magnetic
 
   public :: special_boundconds
+  public :: special_before_boundary
