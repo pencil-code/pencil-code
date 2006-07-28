@@ -25,7 +25,7 @@ DUSTVELOCITY = nodustvelocity
 
 PARTICLES    = noparticles
 
-FFTPACK      =   fftpack
+FOURIER      =   fourier_fftpack
 
 FFLAGS_GENERAL=-r8
 CFLAGS_GENERAL=-DDOUBLE_PRECISION
