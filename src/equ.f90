@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.313 2006-07-28 13:23:30 wlyra Exp $
+! $Id: equ.f90,v 1.314 2006-07-28 16:38:30 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -374,7 +374,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.313 2006-07-28 13:23:30 wlyra Exp $")
+           "$Id: equ.f90,v 1.314 2006-07-28 16:38:30 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -792,8 +792,40 @@ module Equ
             maxadvec=0.
             maxdiffus=0.
           endif
+!
+!  exclude the frozen zones from the time-step calculation
+!
+          if (any(lfreeze_varint)) then                                                            
+             if (lcylindrical) then                                                                
+                where (rcyl_mn .le. rfreeze_int)                                                   
+                   maxadvec=0.                                                                     
+                   maxdiffus=0.                                                                    
+                endwhere                                                                           
+             else                                                                                  
+                where (r_mn .le. rfreeze_int)                                                      
+                   maxadvec=0.                                                                     
+                   maxdiffus=0.                                                                    
+                endwhere                                                                           
+             endif                                                                                 
+          endif                                                                                    
+!                                                                                                   
+          if (any(lfreeze_varext)) then                                                            
+             if (lcylindrical) then                                                                
+                where (rcyl_mn .ge. rfreeze_ext)                                                   
+                   maxadvec=0.                                                                     
+                   maxdiffus=0.                                                                    
+                endwhere                                                                           
+             else                                                                                  
+                where (r_mn .ge. rfreeze_ext)                                                      
+                   maxadvec=0.                                                                     
+                   maxdiffus=0.                                                                    
+                endwhere                                                                           
+             endif                                                                                 
+          endif                                    
+!
           dt1_advec=maxadvec/cdt
           dt1_diffus=maxdiffus/cdtv
+!
           dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
 !
           if (ldiagnos.and.idiag_dtv/=0) then
