@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.3 2006-07-18 21:57:23 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.4 2006-07-28 13:39:11 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -28,7 +28,7 @@ module Particles
   real :: delta_vp0=1.0, cdtp=0.2
   real :: gc=0.
   character (len=labellen) :: initxxp='origin', initvvp='nothing'
-  logical :: lcalc_orbit=.false.
+  logical :: lcalc_orbit=.true.
 
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.3 2006-07-18 21:57:23 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.4 2006-07-28 13:39:11 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -397,8 +397,8 @@ module Particles
       use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Sub
-      use Gravity,only: g0
-      use Planet,only: get_ramped_mass
+      use Gravity, only: g0
+      use Planet,only: get_ramped_mass,lmigrate
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -472,17 +472,21 @@ module Particles
          gs_acc = -gs*r1sep**2
          gp_acc = gs_acc * gp/gs
 !
-         dfp(2,ivpx) = dfp(2,ivpx) - gp_acc*r1sep*(axs-ax) + extra_accx 
-         dfp(2,ivpy) = dfp(2,ivpy) - gp_acc*r1sep*(ays-ay) + extra_accy
-         dfp(2,ivpz) = dfp(2,ivpz) - gp_acc*r1sep*(azs-az) + extra_accz
+         dfp(2,ivpx) = dfp(2,ivpx) + gp_acc*r1sep*(axs-ax) + extra_accx 
+         dfp(2,ivpy) = dfp(2,ivpy) + gp_acc*r1sep*(ays-ay) + extra_accy
+         dfp(2,ivpz) = dfp(2,ivpz) + gp_acc*r1sep*(azs-az) + extra_accz
 !
 !  Star's gravity on planet
 !
-         dfp(1,ivpx) = dfp(1,ivpx) - gs_acc*r1sep*(ax-axs) + extra_accx
-         dfp(1,ivpy) = dfp(1,ivpy) - gs_acc*r1sep*(ay-ays) + extra_accy
-         dfp(1,ivpz) = dfp(1,ivpz) - gs_acc*r1sep*(az-azs) + extra_accz
+         dfp(1,ivpx) = dfp(1,ivpx) + gs_acc*r1sep*(ax-axs) + extra_accx
+         dfp(1,ivpy) = dfp(1,ivpy) + gs_acc*r1sep*(ay-ays) + extra_accy
+         dfp(1,ivpz) = dfp(1,ivpz) + gs_acc*r1sep*(az-azs) + extra_accz
 !
       endif
+!
+! Add gravity from the gas
+!      
+      if (lmigrate) call gravity_gas(fp,dfp,f)
 !
       if (lcalc_orbit) then
          xstar(1:npar_loc) = axs  ; vxstar(1:npar_loc) = vxs
@@ -532,28 +536,93 @@ module Particles
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine get_distances(f,fp,rp_mn,rpcyl_mn)
+   subroutine gravity_gas(fp,dfp,f)
+!
+! This routine takes care of the migration process, calculating
+! the backreaction of the disk onto planet and star.
+!
+! 01-feb-06/wlad+anders: coded
+!
+! WL: Apparently, there is a difference between a real number and
+! an array of dimension=1. As mpireduce deals with arrays, I
+! have to define the sums as arrays as well.
+!
+     use Mpicomm
+     use Gravity, only: g0,r0_pot
+     use Planet, only: Gvalue,b_pot
+!
+     real, dimension (mx,my,mz,mvar+maux) :: f 
+     real, dimension (mpar_loc,mpvar) :: fp, dfp
+     real, dimension(nx) :: re,grav_gas,dens
+     real, dimension(1) :: sumx_loc,sumy_loc,sumz_loc
+     real, dimension(1) :: sumx,sumy,sumz
+     integer :: k
+     real :: r_smooth,dv
+!
+     dens = f(l1:l2,m,n,ilnrho)
+!
+     do k=1,npar
+        if (k==2) then
+           r_smooth = r0_pot         !star
+        else if (k==1) then
+           r_smooth = b_pot      !planet
+        else
+           call stop_it('gravity_gas - more than 2 planet particles?')
+        endif
+!
+        re = sqrt((x(l1:l2) - fp(k,ixp))**2 &
+             +    (y(  m  ) - fp(k,iyp))**2 &
+             +    (z(  n  ) - fp(k,izp))**2)
+!
+        dv = dx*dy
+        if (nzgrid/=1) dv = dv*dz
+!
+! Multiply this by G_newton 
+!
+        grav_gas = Gvalue*dens*dv*re/ &
+             (re**2 + r_smooth**2)**(-1.5)
+!
+        sumx_loc(1) = sum(grav_gas * (x(l1:l2) - fp(k,ixp))/re)
+        sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))/re)
+        sumz_loc(1) = sum(grav_gas * (z(  n  ) - fp(k,izp))/re)
+!
+        call mpireduce_sum(sumx_loc,sumx,1)
+        call mpireduce_sum(sumy_loc,sumy,1)
+        call mpireduce_sum(sumz_loc,sumz,1)
+!
+        if (lroot) then
+           dfp(k,ivpx) = dfp(k,ivpx) + sumx(1)
+           dfp(k,ivpy) = dfp(k,ivpy) + sumy(1)
+           dfp(k,ivpz) = dfp(k,ivpz) + sumz(1)
+        endif
+!
+     enddo
+!
+   endsubroutine gravity_gas
+!**********************************************************************
+    subroutine get_distances(fp,rp_mn,rpcyl_mn)
 !
 ! 18-jul-06/wlad: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
       integer :: i
 !      
       intent(out) :: rp_mn,rpcyl_mn
-
-       do i=1,mpar_loc
+!
+! more readable variable names
+!
+      do i=1,mpar_loc
 !
 ! Spherical and cylindrical distances
 ! 
-          rp_mn(:,i)    = sqrt((x(l1:l2)-fp(i,ixp))**2 &
-               +(y(m)-fp(i,iyp))**2 &
-               +(z(n)-fp(i,izp))**2) + tini
-          rpcyl_mn(:,i) = sqrt((x(l1:l2)-fp(i,ixp))**2 &
-               +(y(m)-fp(i,iyp))**2) + tini
+         rp_mn(:,i)    = &
+              sqrt((x(l1:l2)-fp(i,ixp))**2 + (y(m)-fp(i,iyp))**2  + (z(n)-fp(i,izp))**2) + tini
 !
-       enddo
+         rpcyl_mn(:,i) = &
+              sqrt((x(l1:l2)-fp(i,ixp))**2 + (y(m)-fp(i,iyp))**2) + tini
+!
+      enddo
 !
     endsubroutine get_distances
 !***********************************************************************
