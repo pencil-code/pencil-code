@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.38 2006-07-28 13:25:32 wlyra Exp $
+! $Id: particles_main.f90,v 1.39 2006-07-28 14:00:38 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -443,7 +443,7 @@ module Particles_main
 !
       
 !
-      call get_distances(fp,rp_mn,rpcyl_mn)
+      call get_particles_interdistances(fp,rp_mn,rpcyl_mn)
       call gravity_companion(fp,dfp,rp_mn,rpcyl_mn,g0,r0_pot,n_pot,p)
 !
     endsubroutine auxcall_gravcomp

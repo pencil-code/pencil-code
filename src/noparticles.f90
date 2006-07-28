@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.15 2006-07-28 13:25:32 wlyra Exp $
+! $Id: noparticles.f90,v 1.16 2006-07-28 14:00:38 wlyra Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -153,7 +153,7 @@ module Particles
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine get_distances(fp,rp_mn,rpcyl_mn)
+    subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
 !
 ! 18-jul-06/wlad: dummy routine 
 !
@@ -167,7 +167,7 @@ module Particles
           rpcyl_mn(:,i) = 0. 
        enddo
 !
-    endsubroutine get_distances
+     endsubroutine get_particles_interdistances
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    
