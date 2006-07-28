@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.24 2006-07-19 13:50:57 wlyra Exp $
+! $Id: noplanet.f90,v 1.25 2006-07-28 13:23:30 wlyra Exp $
 !
 !  Dummy module
 !
@@ -21,11 +21,12 @@ module Planet
   include 'planet.h'
 
   real :: gc=0.          !location and mass
-  real :: b=0.           !peak radius for potential
+  real :: b_pot=0.,Gvalue=0. !peak radius for potential
   integer :: nc=2        !exponent of smoothed potential 
   integer :: n_periods=5. !periods for ramping
   logical :: lramp=.false.
   logical :: lwavedamp=.false.,llocal_iso=.false.
+  logical :: lmigrate=.false.
 
   !namelist /planet_init_pars/ dummy
   !namelist /planet_run_pars/ dummy
@@ -49,7 +50,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.24 2006-07-19 13:50:57 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.25 2006-07-28 13:23:30 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -139,14 +140,13 @@ module Planet
 !   
     endsubroutine calc_pencils_planet
 !***********************************************************************
-    subroutine gravity_companion(f,fp,dfp,rp_mn,rpcyl_mn,gs,r0_pot,n_pot,p)
+    subroutine gravity_companion(fp,dfp,rp_mn,rpcyl_mn,gs,r0_pot,n_pot,p)
 !      
 !8-nov-05/wlad : dummy      
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp,dfp
       real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
       type (pencil_case) :: p
@@ -178,22 +178,6 @@ module Planet
      call stop_it("noplanet.f90 - gravity_star")
 !
    endsubroutine gravity_star
-!***************************************************************
-    subroutine wave_damping(f,df,g0,r0_pot,n_pot)
-!
-!20-nov-05/wlad : dummy  
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz,mvar) :: df
-      real :: g0,r0_pot
-      integer :: n_pot
-!
-      call stop_it("noplanet.f90 - wave_damping")
-!    
-    endsubroutine wave_damping
 !***************************************************************
     subroutine planet_phiavg(p)
 !
