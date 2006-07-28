@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.78 2006-07-18 19:16:16 wlyra Exp $
+! $Id: particles_sub.f90,v 1.79 2006-07-28 23:02:32 mee Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1348,7 +1348,7 @@ module Particles_sub
 !  27-nov-05/anders: coded
 !
       use Cdata
-      use Mpicomm, only: fold_f
+      use GhostFold, only: fold_f
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp

@@ -16,14 +16,14 @@
   public :: mpibcast_double
   public :: mpibcast_int, mpibcast_char
 
-  public :: mpiwtime, mpiwtick, fold_df, fold_f
+  public :: mpiwtime, mpiwtick
 
   public :: start_serialize,end_serialize
   public :: initiate_isendrcv_bdry, finalize_isendrcv_bdry
   public :: initiate_isendrcv_shockbdry, finalize_isendrcv_shockbdry
   public :: initiate_shearing, finalize_shearing
 
-  public :: transp, fourier_shift_yz
+  public :: transp
 
 ! Radiation ray routines
   public :: radboundary_xy_recv,radboundary_xy_send

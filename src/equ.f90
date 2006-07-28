@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.315 2006-07-28 21:46:27 mee Exp $
+! $Id: equ.f90,v 1.316 2006-07-28 23:02:32 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -334,6 +334,7 @@ module Equ
 !
       use Cdata
       use Mpicomm
+      use GhostFold, only: fold_df
       use Sub
       use Global
       use Hydro
@@ -374,7 +375,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.315 2006-07-28 21:46:27 mee Exp $")
+           "$Id: equ.f90,v 1.316 2006-07-28 23:02:32 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
