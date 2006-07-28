@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.52 2006-07-28 13:39:11 wlyra Exp $
+! $Id: planet.f90,v 1.53 2006-07-28 16:36:38 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -47,10 +47,10 @@ module Planet
   logical :: lcalc_turb=.false.
   integer :: nr=10
 !
-  namelist /planet_init_pars/ gc,nc,b,lsmoothlocal,&
+  namelist /planet_init_pars/ gc,nc,b_pot,lsmoothlocal,&
        lcs2_global,llocal_iso,lcs2_thick,lramp
 !
-  namelist /planet_run_pars/ gc,nc,b,lramp, &
+  namelist /planet_run_pars/ gc,nc,b_pot,lramp, &
        llocal_iso,lsmoothlocal,lcs2_global, &
        lmigrate,lnorm,Gvalue,n_periods,ldnolog,lcs2_thick,nr,&
        lcalc_turb
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.52 2006-07-28 13:39:11 wlyra Exp $")
+           "$Id: planet.f90,v 1.53 2006-07-28 16:36:38 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -280,7 +280,7 @@ module Planet
 !
       if (ldiagnos) then
          if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
-              call calc_torque(p%rho,gp,ax,ay,b,rpcyl_mn(:,1))
+              call calc_torque(p%rho,gp,ax,ay,rpcyl_mn(:,1))
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0)) &
               call calc_monitored(rpcyl_mn,axs,ays,ax,ay,gs,gp,r0_pot,p)
@@ -289,7 +289,7 @@ module Planet
 !
     endsubroutine gravity_companion
 !***********************************************************************
-    subroutine calc_torque(dens,gp,ax,ay,b,rp)
+    subroutine calc_torque(dens,gp,ax,ay,rp)
 !
 ! 05-nov-05/wlad : coded
 !
@@ -297,7 +297,7 @@ module Planet
 !
       real, dimension(nx) :: torque,torqint,torqext
       real, dimension(nx) :: rp,rpre,dens
-      real :: b,ax,ay,Rc,roche,gp
+      real :: ax,ay,Rc,roche,gp
       integer :: i
 !
 ! Planet's hills radius
@@ -307,7 +307,7 @@ module Planet
 !
       rpre = ax*y(m) - ay*x(l1:l2)
 !
-      torque = gp*dens*rpre*(rp*rp+b*b)**(-1.5)
+      torque = gp*dens*rpre*(rp*rp+b_pot*b_pot)**(-1.5)
 !
       torqext=0.
       torqint=0.
@@ -424,7 +424,7 @@ module Planet
 ! Potential energy - uses smoothed potential
 !
      pot_energy = -1.*(gs*(rs*rs+r0*r0)**(-0.5) &
-          + gp*(rp*rp+b*b)**(-0.5))*p%rho
+          + gp*(rp*rp+b_pot*b_pot)**(-0.5))*p%rho
 !     
      total_energy = kin_energy + pot_energy  
 !
