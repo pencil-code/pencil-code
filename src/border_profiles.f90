@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.5 2006-07-28 14:48:31 wlyra Exp $ 
+! $Id: border_profiles.f90,v 1.6 2006-07-28 16:35:42 wlyra Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -122,7 +122,7 @@ module BorderProfiles
 !***********************************************************************
     subroutine get_border(pborder)
 !
-      use Sub, only: quintic_step
+      use Sub, only: cubic_step
 !
       real, dimension(nx),intent(out) :: pborder
       real, dimension(nx) :: rlim_mn
@@ -136,8 +136,8 @@ module BorderProfiles
          rlim_mn = x_mn
       endif
 !
-      pborder = quintic_step(rlim_mn,r_int,wborder_int,SHIFT=1.)&
-           *(1-quintic_step(rlim_mn,r_ext,wborder_ext,SHIFT=-1.))
+      pborder = cubic_step(rlim_mn,r_int,wborder_int,SHIFT=1.)&
+           *(1-cubic_step(rlim_mn,r_ext,wborder_ext,SHIFT=-1.))
 !         
 ! Set pborder to zero at the limits of the border
 !
@@ -154,7 +154,7 @@ module BorderProfiles
 !
       real, dimension(nx),intent(out) :: drive_time
 !
-      drive_time = 2*pi/(rcyl_mn)**(-1.5)
+      drive_time = 2*pi*(rcyl_mn)**(1.5)
 !
     endsubroutine get_drive_time
 !***********************************************************************
