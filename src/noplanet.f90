@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.25 2006-07-28 13:23:30 wlyra Exp $
+! $Id: noplanet.f90,v 1.26 2006-07-28 13:39:39 wlyra Exp $
 !
 !  Dummy module
 !
@@ -24,8 +24,7 @@ module Planet
   real :: b_pot=0.,Gvalue=0. !peak radius for potential
   integer :: nc=2        !exponent of smoothed potential 
   integer :: n_periods=5. !periods for ramping
-  logical :: lramp=.false.
-  logical :: lwavedamp=.false.,llocal_iso=.false.
+  logical :: lramp=.false.,llocal_iso=.false.
   logical :: lmigrate=.false.
 
   !namelist /planet_init_pars/ dummy
@@ -50,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.25 2006-07-28 13:23:30 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.26 2006-07-28 13:39:39 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
