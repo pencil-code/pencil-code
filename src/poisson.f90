@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.11 2006-07-28 11:49:12 ajohan Exp $
+! $Id: poisson.f90,v 1.12 2006-07-28 12:18:59 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -39,21 +39,22 @@ module Poisson
 !  15-may-2006/anders+jeff: coded
 !
       real, dimension (nx,ny,nz) :: a1
-!
-      real, dimension (nx,ny,nz) :: b1
       real :: kmax
       logical :: lklimit
+!
+      real, dimension (nx,ny,nz) :: b1
+      real :: k2
       integer :: i, ikx, iky, ikz
 !
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.11 2006-07-28 11:49:12 ajohan Exp $")
+        "$Id: poisson.f90,v 1.12 2006-07-28 12:18:59 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
       b1 = 0.0
-!  forward transform (to k-space)
+!  Forward transform (to k-space).
       if (lshear) then
         call transform_fftpack_shear(a1,b1,1)
       else
@@ -65,8 +66,8 @@ module Poisson
       do ikz=1,nz; do iky=1,ny; do ikx=1,nx
         if ((kx_fft(ikx)==0.0) .and. &
             (ky_fft(iky)==0.0) .and. (kz_fft(ikz)==0.0) ) then
-          a1(ikx,iky,ikz) = 0.
-          b1(ikx,iky,ikz) = 0.
+          a1(ikx,iky,ikz) = 0.0
+          b1(ikx,iky,ikz) = 0.0
         else
           if (lshear) then
 !
@@ -82,38 +83,34 @@ module Poisson
 !  (see the subroutine transform_fftpack_shear in Mpicomm for details).
 !
             if (nzgrid/=1) then ! Order (kz,ky',kx)
-              a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
-                  ( (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2 )
-              b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
-                  ( (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                      ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2)
-            else                            ! Order (kx,ky',kz)
-              a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
-                  ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2 )
-              b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
-                  ( (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
-                     ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2 )
+              k2 = (kx_fft(ikz+ipz*nz)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                    ky_fft(iky+ipy*ny)**2 + kz_fft(ikx)**2
+            else                ! Order (kx,ky',kz)
+              k2 = (kx_fft(ikx)+deltay/Lx*ky_fft(iky+ipy*ny))**2 + &
+                    ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
             endif
+!  The ordering of the array is not important here, because there is no shear!
+          else
+            k2 = kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2
+          endif
+!
+!  Solution of Poisson equation.
+!
+          a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / k2
+          b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / k2
 !
 !  Limit |k| < kmax
-            if (lklimit) then
-              if (sqrt(kx_fft(ikx)**2  + ky_fft(iky)**2 + kz_fft(ikz)**2) >= kmax) then
-                a1(ikx,iky,ikz) = 0.
-                b1(ikx,iky,ikz) = 0.
-              endif
+!
+          if (lklimit) then
+            if (sqrt(k2)>= kmax) then
+              a1(ikx,iky,ikz) = 0.
+              b1(ikx,iky,ikz) = 0.
             endif
-
-          else ! The order of the array is not important here, because no shear!
-            a1(ikx,iky,ikz) = -a1(ikx,iky,ikz) / &
-                (kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2)
-            b1(ikx,iky,ikz) = -b1(ikx,iky,ikz) / &
-                (kx_fft(ikx)**2 + ky_fft(iky+ipy*ny)**2 + kz_fft(ikz+ipz*nz)**2)
           endif
+!
         endif
       enddo; enddo; enddo
-!  inverse transform (to real space)
+!  Inverse transform (to real space).
       if (lshear) then
         call transform_fftpack_shear(a1,b1,-1)
       else
