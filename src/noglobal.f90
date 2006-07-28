@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.11 2005-11-07 19:36:33 dobler Exp $
+! $Id: noglobal.f90,v 1.12 2006-07-28 13:19:38 wlyra Exp $
 
 module Global
 
@@ -13,6 +13,7 @@ module Global
   include 'global.h'
 
   interface set_global
+    module procedure set_global_mvar
     module procedure set_global_vect
     module procedure set_global_scal
   endinterface
@@ -43,6 +44,24 @@ module Global
 !
     endsubroutine register_global
 !***********************************************************************
+   subroutine set_global_mvar(var,m,n,j,label,length)
+!
+!  set (m-n)-pencil of global vector variable identified by LABEL
+!  [dummy routine]
+!
+!  18-jul-02/wolf coded
+!
+      integer :: length
+      real, dimension(length) :: var
+      integer :: m,n,j
+      character (len=*) :: label
+!
+      call not_implemented('set_global_mvar')
+!
+      if (NO_WARN) print*, length, var(1), m, n, j, label ! keep compiler quiet
+!
+    endsubroutine set_global_mvar
+!***********************************************************************                        
     subroutine set_global_vect(var,m,n,label,length)
 !
 !  set (m-n)-pencil of global vector variable identified by LABEL

@@ -1,4 +1,4 @@
- ! $Id: global_avgs.f90,v 1.5 2006-07-17 11:37:31 mee Exp $
+ ! $Id: global_avgs.f90,v 1.6 2006-07-28 13:19:38 wlyra Exp $
 
 module Global
 
@@ -11,6 +11,7 @@ module Global
   include 'global.h'
 
   interface set_global
+    module procedure set_global_mvar
     module procedure set_global_vect
     module procedure set_global_scal
     module procedure set_global_coarse_vect
@@ -23,6 +24,7 @@ module Global
   endinterface
 
   interface get_global
+    module procedure get_global_mvar 
     module procedure get_global_vect
     module procedure get_global_scal
     module procedure get_global_coarse_vect
@@ -35,6 +37,7 @@ module Global
   endinterface
 !
 !
+  real, dimension (mx,my,mz,mvar) :: fborder
   real, dimension (mx,my,mz,3) :: gg
   real, dimension (mx,my,mz) :: rho,cs2,rhos
   real, dimension (mx,my,mz,3) :: bbs
@@ -58,6 +61,37 @@ module Global
       lglobal_nolog_density=.true.
 !
     endsubroutine register_global
+!***********************************************************************
+    subroutine set_global_mvar(var,m,n,j,label,length)
+!
+!  set (m,n)-pencil of the global vector variable identified by LABEL
+!
+!  27-jul-06/wlad coded
+!
+      use Mpicomm, only: stop_it
+!
+      integer :: length
+      real, dimension(length) :: var
+      integer :: m,n,j
+      character (len=*) ::label
+!
+      if (length/=nx) then
+        print*, 'set_global_mvar: only nx pencils allowed!'
+        call stop_it('set_global_mvar')
+      endif
+!
+      select case(label)
+!
+      case ('fborder')
+         fborder(l1:l2,m,n,j) = var
+!
+      case default
+         if (lroot) print*, 'set_global_vect: No such value for label', trim(label)
+         call stop_it('set_global_mvar')
+!
+      endselect
+!
+    endsubroutine set_global_mvar
 !***********************************************************************
     subroutine set_global_vect(var,m,n,label,length)
 !
@@ -200,6 +234,29 @@ module Global
       if (ip == 0) print*, label ! keep compiler quiet
 !
     endsubroutine reset_global
+!***********************************************************************
+    subroutine get_global_mvar(var,m,n,j,label)
+!
+!  Get (m,n)-pencil of the global vector variable identified by LABEL.
+!
+!  27-jul-06/wolf coded
+!
+      real, dimension(nx) :: var
+      integer :: m,n,j
+      character (len=*) ::label
+!
+      select case(label)
+!
+      case ('fborder')
+        var = fborder(l1:l2,m,n,j)
+!
+      case default
+        if (lroot) print*, 'get_global_mvar: No such value for label', trim(label)
+        call stop_it('get_global_mvar')
+!
+      endselect
+!
+    endsubroutine get_global_mvar
 !***********************************************************************
     subroutine get_global_vect(var,m,n,label)
 !
@@ -453,6 +510,7 @@ module Global
       call output(trim(directory)//'/gg.dat',gg,3)
       call output(trim(directory)//'/bbs.dat',bbs,3)
       call output(trim(directory)//'/uus.dat',uus,3)
+      call output(trim(directory)//'/fborder.dat',fborder,mvar)
       call output(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,10)
       call output(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,10)
       call output(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,10)
@@ -474,6 +532,7 @@ module Global
       call input(trim(directory)//'/gg.dat',gg,3,0)
       call input(trim(directory)//'/bbs.dat',bbs,3,0)
       call input(trim(directory)//'/uus.dat',uus,3,0)
+      call input(trim(directory)//'/fborder.dat',fborder,mvar,0)
       call input_coarse(trim(directory)//'/uavg_coarse.dat',uavg_coarse,3,0,10)
       call input_coarse(trim(directory)//'/bavg_coarse.dat',bavg_coarse,3,0,10)
       call input_coarse(trim(directory)//'/rhoavg_coarse.dat',rhoavg_coarse,1,0,10)
