@@ -1,3 +1,4 @@
+!  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim) 
 
   public :: initialize_border_profiles
 
@@ -6,4 +7,3 @@
   integer, parameter, public :: i_BORDER_ZERO    = 1
   integer, parameter, public :: i_BORDER_SPECIAL = 2
   integer, parameter, public :: i_BORDER_        = 3
-

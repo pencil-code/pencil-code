@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.420 2006-07-18 19:23:39 mee Exp $
+! $Id: entropy.f90,v 1.421 2006-07-28 13:08:05 wlyra Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -65,7 +65,8 @@ module Entropy
   logical :: lheatc_shock=.false.,lheatc_hyper3ss=.false.
   logical :: lupw_ss=.false.,lmultilayer=.true.
   logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true., lviscosity_heat=.true.
-   character (len=labellen), dimension(ninit) :: initss='nothing'
+  character (len=labellen), dimension(ninit) :: initss='nothing'
+  character (len=labellen) :: borderss='initial-condition'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
@@ -91,6 +92,7 @@ module Entropy
   ! input parameters
   namelist /entropy_init_pars/ &
       initss,     &
+      borderss,   &
 !TEST
       pertss,     &
       grads0,     &
@@ -158,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.420 2006-07-18 19:23:39 mee Exp $")
+           "$Id: entropy.f90,v 1.421 2006-07-28 13:08:05 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -880,7 +882,46 @@ module Entropy
 !
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
 !
+!  Initialize border profile
+!
+      if (lborder_profiles) &
+           call set_border_entropy(f)
+!
     endsubroutine init_ss
+!***********************************************************************
+    subroutine set_border_entropy(f)
+!
+      use Global, only: set_global
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: f_target
+!
+      do n=n1,n2
+         do m=m1,m2
+!
+            select case(borderss)
+            case('zero','0')
+               f_target=0.
+            case('constant')
+               f_target=ss_const
+            case('initial-condition')
+               f_target=f(l1:l2,m,n,iss)
+            case('nothing')
+               if (lroot.and.ip<=5) &
+                    print*,"set_border_entropy: borderss='nothing'"
+            case default
+               write(unit=errormsg,fmt=*) &
+                    'set_border_entropy: No such value for borderss: ', &
+                    trim(borderss)
+               call fatal_error('set_border_entropy',errormsg)
+            endselect
+!
+            call set_global(f_target,m,n,iss,'fborder',nx)
+!
+         enddo
+      enddo
+!
+    endsubroutine set_border_entropy
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)

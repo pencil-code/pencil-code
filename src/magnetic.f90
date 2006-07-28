@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.302 2006-07-18 19:37:23 wlyra Exp $
+! $Id: magnetic.f90,v 1.303 2006-07-28 13:08:05 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -36,6 +36,7 @@ module Magnetic
 
   real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
   character (len=labellen), dimension(ninit) :: initaa='nothing'
+  character (len=labellen) :: borderaa='initial-condition'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
   character (len=labellen) :: Omega_profile='nothing',alpha_profile='nothing'
   ! input parameters
@@ -95,7 +96,7 @@ module Magnetic
        inclaa,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
        ampl_B0,initpower_aa,cutoff_aa,N_modes_aa, &
-       rmode,zmode,rm_int,rm_ext,lgauss
+       rmode,zmode,rm_int,rm_ext,lgauss,borderaa
 
   ! run parameters
   real :: eta=0.,eta_hyper2=0.,eta_hyper3=0.,height_eta=0.,eta_out=0.
@@ -188,7 +189,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.302 2006-07-18 19:37:23 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.303 2006-07-28 13:08:05 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -457,7 +458,48 @@ module Magnetic
         enddo
       endif
 !
+! Initialize border profile
+!
+      if (lborder_profiles) &
+           call set_border_magnetic(f)
+!
     endsubroutine init_aa
+!***********************************************************************
+    subroutine set_border_magnetic(f)
+!
+      use Global, only: set_global
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(nx,3) :: f_target
+      integer :: ncount,mcount,ju,j
+!
+      do ncount=n1,n2
+         do mcount=m1,m2
+!
+            select case(borderaa)
+            case('zero','0')
+               f_target=0.
+            case('initial-condition')
+               f_target=f(l1:l2,mcount,ncount,iax:iaz)
+            case('nothing')
+               if (lroot.and.ip<=5) &
+                    print*,"set_border_magnetic: borderaa='nothing'"
+            case default
+               write(unit=errormsg,fmt=*) &
+                    'set_border_magnetic: No such value for borderaa: ', &
+                    trim(borderaa)
+               call fatal_error('set_border_magnetic',errormsg)
+            endselect
+!
+            do j=1,3
+               ju=j+iaa-1
+               call set_global(f_target(:,j),mcount,ncount,ju,'fborder',nx)
+            enddo
+!
+         enddo
+      enddo
+!
+    endsubroutine set_border_magnetic
 !***********************************************************************
     subroutine pert_aa(f)
 !

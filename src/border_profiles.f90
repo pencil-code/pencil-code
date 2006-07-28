@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.3 2006-07-23 23:33:48 mee Exp $ 
+! $Id: border_profiles.f90,v 1.4 2006-07-28 13:08:05 wlyra Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,7 +25,7 @@ module BorderProfiles
   real, dimension(mx) :: border_prof_x=1.0
   real, dimension(my) :: border_prof_y=1.0
   real, dimension(mz) :: border_prof_z=1.0
- 
+!
   contains
 
 !***********************************************************************
@@ -101,17 +101,62 @@ module BorderProfiles
 !***********************************************************************
     subroutine border_driving(f,df,j)
 !
+      use Global, only: get_global
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension(nx) :: f_target,pborder,drive_time
       integer :: j
 ! 
 !  Position-dependent driving term that attempts to drive pde
 !  the variable toward some target solution on the boundary.
 !
-       df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
-             - (f(l1:l2,m,n,j) ) !configurable: - f_target(j))/drive_time_t
+      call get_global(f_target,m,n,j,'fborder')
+      call get_drive_time(drive_time)
+      call get_border(pborder)
+!     
+      df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
+           - (f(l1:l2,m,n,j) - f_target)*pborder/drive_time 
 !
     endsubroutine border_driving
+!***********************************************************************
+    subroutine get_border(pborder)
+!
+      use Sub, only: quintic_step
+!
+      real, dimension(nx),intent(out) :: pborder
+      real, dimension(nx) :: rlim_mn
+      integer :: i
+!
+      if (lcylindrical) then
+         rlim_mn = rcyl_mn
+      else if (lspherical) then
+         rlim_mn = r_mn
+      else    
+         rlim_mn = x_mn
+      endif
+!
+      pborder = quintic_step(rlim_mn,r_int,wborder_int,SHIFT=1.)&
+           *(1-quintic_step(rlim_mn,r_ext,wborder_ext,SHIFT=-1.))
+!         
+! Set pborder to zero at the limits of the border
+!
+      do i=1,nx
+         if ((rlim_mn(i).lt.r_int).or.&
+              ((rlim_mn(i).gt.r_int+2*wborder_int).and.(rlim_mn(i).lt.r_ext-2*wborder_ext)).or. &
+               (rlim_mn(i).gt.r_ext)) &
+               pborder(i)=0.
+      enddo
+!
+    endsubroutine get_border
+!***********************************************************************
+    subroutine get_drive_time(drive_time)
+!
+      real, dimension(nx),intent(out) :: drive_time
+!
+      drive_time = 2*pi/(rcyl_mn)**(-1.5)
+!
+    endsubroutine get_drive_time
 !***********************************************************************
     subroutine border_quenching(df,j)
 !
@@ -122,6 +167,8 @@ module BorderProfiles
 !  by a factor that goes gradually to zero near the boundaries.
 !  border_frac is a 3-D array, separately for all three directions.
 !  border_frac=1 would affect everything between center and border.
+!
+      print*,'enter border_quenching'
 !
        df(l1:l2,m,n,j) = df(l1:l2,m,n,j) &
           *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
