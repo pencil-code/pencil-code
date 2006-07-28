@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.128 2006-07-28 11:49:12 ajohan Exp $
+! $Id: nompicomm.f90,v 1.129 2006-07-28 11:54:26 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -816,6 +816,8 @@ module Mpicomm
         endif
 !
       endif
+!
+    endsubroutine transp
 !***********************************************************************
     subroutine fold_df(df,ivar1,ivar2)
 !
