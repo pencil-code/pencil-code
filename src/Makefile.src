@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.214 2006-07-28 11:49:12 ajohan Exp $
+### $Id: Makefile.src,v 1.215 2006-07-28 13:11:42 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -39,7 +39,7 @@ INITCOND_SPEC= noinitcond_spec
 SHOCK        = noshock
 TESTFIELD    = notestfield
 
-BORDER_PROF  =   border_profiles
+BORDER_PROF  = noborder_profiles
 
 GRAVITY      = nograv
 SELFGRAVITY  = noselfgravity
