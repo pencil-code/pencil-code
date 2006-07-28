@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $
+! $Id: power_spectrum.f90,v 1.55 2006-07-28 20:41:34 ajohan Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -12,7 +12,7 @@ module  power_spectrum
   !
   use Cdata
   use General
-  use General_FFT
+  use Fourier
   use Mpicomm
   use Messages
   use Sub
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.55 2006-07-28 20:41:34 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -79,24 +79,13 @@ module  power_spectrum
         print*,'There are no such sp=',sp
      endif
      b1=0
-     !
-     !  Doing the Fourier transform
-     !
-     select case (fft_switch)
-     case ('fftpack')
-        call transform_fftpack(a1,b1)
-     case ('Singleton')
-        call transform_i(a1,b1)
-     case default
-        call stop_it("power: no fft_switch chosen")
-     endselect
-     !
-     !    Stopping the run if FFT=nofft
-     !
-     if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
-     !
-     !  integration over shells
-     !
+!
+!  Doing the Fourier transform
+!
+     call fourier_transform(a1,b1)
+!
+!  integration over shells
+!
      if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
      do ikz=1,nz
         do iky=1,ny
@@ -154,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.55 2006-07-28 20:41:34 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -188,22 +177,13 @@ module  power_spectrum
         print*,'There are no such sp=',sp
      endif
      b1=0
-     !
-     !  Doing the Fourier transform
-     !
-     select case (fft_switch)
-     case ('fftpack')
-        call transform_fftpack_2d(a1,b1)
-     case default
-        call stop_it("power: no fft_switch chosen")
-     endselect
-     !
-     !    Stopping the run if FFT=nofft
-     !
-     if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
-     !
-     !  integration over shells
-     !
+!
+!  Doing the Fourier transform
+!
+     call fourier_transform_xz(a1,b1)
+!
+!  integration over shells
+!
      if(lroot .AND. ip<10) print*,'fft done; now integrate over circles...'
      do ikz=1,nz
        do iky=1,ny
@@ -263,13 +243,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
-  !
-  !   Stopping the run if FFT=nofft (applies only to Singleton fft)
-  !   But at the moment, fftpack is always linked into the code
-  !
-  if(.NOT.lfft.and.fft_switch=='Singleton') &
-    call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+       "$Id: power_spectrum.f90,v 1.55 2006-07-28 20:41:34 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -333,22 +307,14 @@ module  power_spectrum
       a_im=0.
       b_im=0.
     endif
-    !
-    !  Doing the Fourier transform
-    !
-    select case (fft_switch)
-    case ('fftpack')
-      call transform_fftpack(a_re,a_im)
-      call transform_fftpack(b_re,b_im)
-    case ('Singleton')
-      call transform_i(a_re,a_im)
-      call transform_i(b_re,b_im)
-    case default
-      call stop_it("powerhel: no fft_switch chosen")
-    endselect
-    !
-    !  integration over shells
-    !
+!
+!  Doing the Fourier transform
+!
+      call fourier_transform(a_re,a_im)
+      call fourier_transform(b_re,b_im)
+!
+!  integration over shells
+!
     if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
     do ikz=1,nz
       do iky=1,ny
@@ -418,13 +384,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
-  !
-  !   Stopping the run if FFT=nofft (applies only to Singleton fft)
-  !   But at the moment, fftpack is always linked into the code
-  !
-  if(.NOT.lfft.and.fft_switch=='Singleton') &
-    call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+       "$Id: power_spectrum.f90,v 1.55 2006-07-28 20:41:34 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -458,20 +418,13 @@ module  power_spectrum
     a_re=f(l1:l2,m1:m2,n1:n2,iecr)
     a_im=0.
   endif
-  !
-  !  Doing the Fourier transform
-  !
-  select case (fft_switch)
-  case ('fftpack')
-    call transform_fftpack(a_re,a_im)
-  case ('Singleton')
-    call transform_i(a_re,a_im)
-  case default
-    call stop_it("powerhel: no fft_switch chosen")
-  endselect
-  !
-  !  integration over shells
-  !
+!
+!  Doing the Fourier transform
+!
+    call fourier_transform(a_re,a_im)
+!
+!  integration over shells
+!
   if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
   do ikz=1,nz
     do iky=1,ny
@@ -532,7 +485,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.54 2006-07-28 13:29:41 ajohan Exp $")
+        "$Id: power_spectrum.f90,v 1.55 2006-07-28 20:41:34 ajohan Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -592,7 +545,7 @@ module  power_spectrum
 !
 !  Do the Fourier transform
 !
-    call transform_fftpack_1d(a1,b1)
+    call fourier_transform_x(a1,b1)
 !
 !  Stop the run if FFT=nofft
 !
@@ -618,7 +571,7 @@ module  power_spectrum
         a1=a2
         b1=0
         call transp(a1,'y')
-        call transform_fftpack_1d(a1,b1)
+        call fourier_transform_x(a1,b1)
         do iky=1,nk; do ix=1,nxgrid/nprocy; do iz=1,nz
           spectrumy(iky) = spectrumy(iky) + &
               sqrt(a1(iky,ix,iz)**2 + b1(iky,ix,iz)**2)
@@ -633,7 +586,7 @@ module  power_spectrum
         a1=a2
         b1=0
         call transp(a1,'z')
-        call transform_fftpack_1d(a1,b1)
+        call fourier_transform_x(a1,b1)
         do ikz=1,nk; do ix=1,nxgrid/nprocz; do iy=1,ny
           spectrumz(ikz) = spectrumz(ikz) + &
               sqrt(a1(ikz,iy,ix)**2 + b1(ikz,iy,ix)**2)

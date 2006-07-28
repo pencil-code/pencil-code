@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.35 2006-03-29 22:34:12 mee Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.36 2006-07-28 20:41:34 ajohan Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -107,7 +107,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.35 2006-03-29 22:34:12 mee Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.36 2006-07-28 20:41:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1087,7 +1087,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !  20-jan-00/axel+wolf: coded
 !  22-mar-00/axel: corrected sign (it is the same on both sides)
 !
-     use Cdata
+      use Cdata
+      use Fourier
 !
       real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
       real, dimension (nx,ny,nghost+1) :: fz
@@ -1101,11 +1102,11 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform
 !
-      call fft(f2r, f2i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f2r, f2i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform(f2r,f2i,-1) ! x-direction
+      call fourier_transform(f2r,f2i,-1) ! y-direction
 !
-      call fft(f3r, f3i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f3r, f3i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform(f3r,f3i,-1) ! x-direction
+      call fourier_transform(f3r,f3i,-1) ! y-direction
 !
 !  define wave vector
 !
@@ -1132,8 +1133,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform back
 !
-        call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
-        call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
+        call fourier_transform(g1r,g1i,+1) ! x-direction
+        call fourier_transform(g1r,g1i,+1) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
@@ -1152,7 +1153,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  22-mar-02/axel: coded
 !
-     use Cdata
+      use Cdata
+      use Fourier
 !
       real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
       real, dimension (nx,ny,nghost+1) :: fz
@@ -1166,11 +1168,11 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform
 !
-      call fft(f2r, f2i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f2r, f2i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform(f2r,f2i,-1) ! x-direction
+      call fourier_transform(f2r,f2i,-1) ! y-direction
 !
-      call fft(f3r, f3i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f3r, f3i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform(f3r,f3i,-1) ! x-direction
+      call fourier_transform(f3r,f3i,-1) ! y-direction
 !
 !  define wave vector
 !
@@ -1202,8 +1204,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform back
 !
-        call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
-        call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
+        call fourier_transform(g1r,g1i,+1) ! x-direction
+        call fourier_transform(g1r,g1i,+1) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !

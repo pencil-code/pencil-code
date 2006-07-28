@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.161 2006-07-28 11:49:12 ajohan Exp $ 
+! $Id: initcond.f90,v 1.162 2006-07-28 20:41:33 ajohan Exp $ 
 
 module Initcond 
  
@@ -2231,7 +2231,7 @@ module Initcond
 !
 !   07-may-03/tarek: coded
 !
-      use General_FFT
+      use Fourier
 !
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
@@ -2265,7 +2265,7 @@ module Initcond
             u_re=f(l1:l2,m1:m2,n1:n2,i)
             u_im=0. 
             !  fft of gausian noise w/ k^2 spectrum
-            call transform_fftpack(u_re,u_im,1)
+            call fourier_transform(u_re,u_im,1)
             ! change to k^n spectrum
             u_re =(k2)**(.25*initpower-.5)*u_re 
             u_im =(k2)**(.25*initpower-.5)*u_im 
@@ -2275,7 +2275,7 @@ module Initcond
               u_im = u_im*exp(-(k2/cutoff**2.)**2) 
             endif   
             ! back to real space 
-            call transform_fftpack(u_re,u_im,-1)
+            call fourier_transform(u_re,u_im,-1)
             f(l1:l2,m1:m2,n1:n2,i)=u_re
             
             if (lroot .and. (cutoff.eq.0)) then 
@@ -2299,7 +2299,7 @@ module Initcond
 !
 !   07-may-03/tarek: coded
 !
-      use General_FFT
+      use Fourier
 !
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
@@ -2346,7 +2346,7 @@ module Initcond
             u_im = u_im*exp(-(k2/cutoff**2.)**2) 
           endif   
           ! back to real space 
-          call transform_fftpack(u_re,u_im,-1)
+          call fourier_transform(u_re,u_im,-1)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
           
           if (lroot .and. (cutoff.eq.0)) then 
@@ -2644,9 +2644,9 @@ module Initcond
 ! of a mdi magnetogram
 !      
       use Cdata
+      use Fourier
       use Sub
-      
-
+!
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(nx,nygrid) :: kx,ky,k2
 
@@ -2691,8 +2691,8 @@ module Initcond
       !
       ! Fourier Transform of Bz0:
       !
-      call fft(Bz0_r,Bz0_i,nxygrid,nxgrid,nxgrid,1)
-      call fft(Bz0_r,Bz0_i,nxygrid,nygrid,nxygrid,1)
+      call fourier_transform_other(Bz0_r,Bz0_i,1)
+      call fourier_transform_other(Bz0_r,Bz0_i,1)
       !
       Bz0_i = Bz0_i/sqrt_nxy
       Bz0_r = Bz0_r/sqrt_nxy
@@ -2715,14 +2715,14 @@ module Initcond
             Ay_i =  Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
          endwhere
          !
-         call fft(Ax_r,Ax_i,nxygrid,nxgrid,nxgrid,-1)
-         call fft(Ax_r,Ax_i,nxygrid,nygrid,nxygrid,-1)
+         call fourier_transform_other(Ax_r,Ax_i,-1)
+         call fourier_transform_other(Ax_r,Ax_i,-1)
          !
          Ax_r = Ax_r/sqrt_nxy
          Ax_i = Ax_i/sqrt_nxy
          !
-         call fft(Ay_r,Ay_i,nxygrid,nxgrid,nxgrid,-1)
-         call fft(Ay_r,Ay_i,nxygrid,nygrid,nxygrid,-1)
+         call fourier_transform_other(Ay_r,Ay_i,-1)
+         call fourier_transform_other(Ay_r,Ay_i,-1)
          !
          Ay_r = Ay_r/sqrt_nxy
          Ay_i = Ay_i/sqrt_nxy

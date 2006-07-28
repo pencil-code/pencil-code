@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.303 2006-07-28 13:08:05 wlyra Exp $
+! $Id: magnetic.f90,v 1.304 2006-07-28 20:41:34 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -189,7 +189,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.303 2006-07-28 13:08:05 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.304 2006-07-28 20:41:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2653,7 +2653,8 @@ module Magnetic
 !  20-jan-00/axel+wolf: coded
 !  22-mar-00/axel: corrected sign (it is the same on both sides)
 !
-     use Cdata
+      use Cdata
+      use Fourier
 !
       real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
       real, dimension (nx,ny,nghost+1) :: fz
@@ -2667,11 +2668,11 @@ module Magnetic
 !
 !  Transform
 !
-      call fft(f2r, f2i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f2r, f2i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform_other(f2r,f2i,-1) ! x-direction
+      call fourier_transform_other(f2r,f2i,-1) ! y-direction
 !
-      call fft(f3r, f3i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f3r, f3i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform_other(f3r,f3i,-1) ! x-direction
+      call fourier_transform_other(f3r,f3i,-1) ! y-direction
 !
 !  define wave vector
 !
@@ -2698,8 +2699,8 @@ module Magnetic
 !
 !  Transform back
 !
-        call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
-        call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
+        call fourier_transform_other(g1r,g1i,+1) ! x-direction
+        call fourier_transform_other(g1r,g1i,+1) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
@@ -2718,7 +2719,8 @@ module Magnetic
 !
 !  22-mar-02/axel: coded
 !
-     use Cdata
+      use Cdata
+      use Fourier
 !
       real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
       real, dimension (nx,ny,nghost+1) :: fz
@@ -2732,11 +2734,11 @@ module Magnetic
 !
 !  Transform
 !
-      call fft(f2r, f2i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f2r, f2i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform_other(f2r,f2i,-1) ! x-direction
+      call fourier_transform_other(f2r,f2i,-1) ! y-direction
 !
-      call fft(f3r, f3i, nx*ny, nx,    nx,-1) ! x-direction
-      call fft(f3r, f3i, nx*ny, ny, nx*ny,-1) ! y-direction
+      call fourier_transform_other(f3r,f3i,-1) ! x-direction
+      call fourier_transform_other(f3r,f3i,-1) ! y-direction
 !
 !  define wave vector
 !
@@ -2768,8 +2770,8 @@ module Magnetic
 !
 !  Transform back
 !
-        call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
-        call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
+        call fourier_transform_other(g1r,g1i,+1) ! x-direction
+        call fourier_transform_other(g1r,g1i,+1) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !

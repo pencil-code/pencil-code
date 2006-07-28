@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.177 2006-07-28 11:49:12 ajohan Exp $
+! $Id: mpicomm.f90,v 1.178 2006-07-28 20:41:34 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -2291,10 +2291,10 @@ module Mpicomm
 !
 !  Transform to Fourier space.
 !
-      call cffti(nygrid,wsavey)
+!      call cffti(nygrid,wsavey)
       do n=1,nz_new
         ay=cmplx(a_re_new(:,n),0.0)
-        call cfftf(nygrid,ay,wsavey)
+!        call cfftf(nygrid,ay,wsavey)
 !  Do the shifting in Fourier space.
         ay(2:nygrid)=ay(2:nygrid)*exp(cmplx(0.0,-ky_fft(2:nygrid)*shift_y))
 !
@@ -2304,10 +2304,10 @@ module Mpicomm
 !
 !  Back to real space.
 !
-      call cffti(nygrid,wsavey)
+!      call cffti(nygrid,wsavey)
       do n=1,nz_new
         ay=cmplx(a_re_new(:,n),a_im_new(:,n))
-        call cfftb(nygrid,ay,wsavey)
+!        call cfftb(nygrid,ay,wsavey)
         a_re_new(:,n)=real(ay)/nygrid
       enddo
 !

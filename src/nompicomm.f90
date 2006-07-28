@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.129 2006-07-28 11:54:26 ajohan Exp $
+! $Id: nompicomm.f90,v 1.130 2006-07-28 20:41:34 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -971,10 +971,10 @@ module Mpicomm
 !
 !  Transform to Fourier space.
 !
-      call cffti(ny,wsavey)
+!      call cffti(ny,wsavey)
       do n=1,nz
         ay=cmplx(a_re(:,n),0.0)
-        call cfftf(ny,ay,wsavey)
+!        call cfftf(ny,ay,wsavey)
         ay(2:ny)=ay(2:ny)*exp(cmplx(0.0,-ky_fft(2:ny)*shift_y))
         a_re(:,n)=real(ay)
         a_im(:,n)=aimag(ay)
@@ -982,10 +982,10 @@ module Mpicomm
 !
 !  Back to real space.
 !
-      call cffti(ny,wsavey)
+!      call cffti(ny,wsavey)
       do n=1,nz
         ay=cmplx(a_re(:,n),a_im(:,n))
-        call cfftb(ny,ay,wsavey)
+!        call cfftb(ny,ay,wsavey)
         a_re(:,n)=real(ay)/ny
       enddo
 !

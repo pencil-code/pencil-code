@@ -1,8 +1,8 @@
-! $Id: general_fft.f90,v 1.3 2006-07-28 13:29:41 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.1 2006-07-28 20:41:33 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
-module General_FFT
+module Fourier
 
   use Cdata
   use Cparam
@@ -11,51 +11,31 @@ module General_FFT
 
   implicit none
 
-  include 'general_fft.h'
+  include 'fourier.h'
+
+  interface fourier_transform_other
+    module procedure fourier_transform_other_1
+    module procedure fourier_transform_other_2
+  endinterface
 
   contains
 
 !***********************************************************************
-    subroutine transform_i(a_re,a_im)
+    subroutine fourier_transform(a_re,a_im,direction)
 !
-!  Subroutine to do fourier transform
-!  The routine overwrites the input data
-!
-!  22-oct-02/axel+tarek: adapted from transform
-!
-      real,dimension(nx,ny,nz) :: a_re,a_im
-
-      if (lroot .and. ip<10) print*,'transform_i: doing three FFTs'
-      call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
-      call transp(a_re,'y')
-      call transp(a_im,'y')
-      call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
-      call transp(a_re,'z')
-      call transp(a_im,'z')
-      call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
-!
-!  Normalize
-!
-      a_re=a_re/nwgrid
-      a_im=a_im/nwgrid
-      if (lroot .and. ip<10) print*,'transform_i: fft has finished'
-!
-    endsubroutine transform_i
-!***********************************************************************
-    subroutine transform_fftpack(a_re,a_im,direction)
-!
-!  Subroutine to do Fourier transform
+!  Subroutine to do Fourier transform in 3-D.
 !  The routine overwrites the input data.
 !  This version works currently only when nxgrid=nygrid=nzgrid!
 !  The length of the work arrays for ffts is therefore always nx.
 !
 !  27-oct-02/axel: adapted from transform_i, for fftpack
 !
-      real,dimension(nx,ny,nz) :: a_re,a_im
-      complex,dimension(nx) :: ax
-      real,dimension(4*nx+15) :: wsavex
-      integer :: l,m,n
+      real, dimension(nx,ny,nz) :: a_re,a_im
       integer,optional :: direction
+!
+      complex, dimension(nx) :: ax
+      real, dimension(4*nx+15) :: wsavex
+      integer :: l,m,n
       logical :: lforward=.true.
 !
       if (present(direction)) then
@@ -71,7 +51,7 @@ module General_FFT
       call cffti(nx,wsavex)
 !
       if (lforward) then
-        if (lroot .and. ip<10) print*, 'transform_fftpack: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
           call cfftf(nx,ax,wsavex)
@@ -83,15 +63,15 @@ module General_FFT
 !      
         if (nygrid/=1) then
           if (nygrid/=nxgrid) then
-            if (lroot) print*, 'transform_fftpack: must have nygrid=nxgrid!'
-            call fatal_error('transform_fftpack','')
+            if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
+            call fatal_error('fourier_transform','')
           endif
           call transp(a_re,'y')
           call transp(a_im,'y')
 !
 !  The length of the array in the y-direction is nx.
 !
-          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
+          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in y'
           do n=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nx,ax,wsavex)
@@ -104,16 +84,15 @@ module General_FFT
 !      
         if (nzgrid/=1) then
           if (nzgrid/=nxgrid) then
-            if (lroot) &
-                print*, 'transform_fftpack: must have nzgrid=nxgrid!'
-            call fatal_error('transform_fftpack','')
+            if (lroot) print*, 'fourier_transform: must have nzgrid=nxgrid!'
+            call fatal_error('fourier_transform','')
           endif
           call transp(a_re,'z')
           call transp(a_im,'z')
 !
 !  The length of the array in the z-direction is also nx.
 !
-          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in z'
           do m=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,m),a_im(:,l,m))
             call cfftf(nx,ax,wsavex)
@@ -131,11 +110,11 @@ module General_FFT
 !  Transform z-direction back.
 !      
           if (nzgrid/=nxgrid) then
-            if (lroot) print*, 'transform_fftpack: must have nzgrid=nxgrid!'
-            call fatal_error('transform_fftpack','')
+            if (lroot) print*, 'fourier_transform: must have nzgrid=nxgrid!'
+            call fatal_error('fourier_transform','')
           endif
 !
-          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in z'
           do m=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,m),a_im(:,l,m))
             call cfftb(nx,ax,wsavex)
@@ -148,8 +127,8 @@ module General_FFT
 !
         if (nygrid/=1) then
           if (nygrid/=nxgrid) then
-            if (lroot) print*, 'transform_fftpack: must have nygrid=nxgrid!'
-            call fatal_error('transform_fftpack','')
+            if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
+            call fatal_error('fourier_transform','')
           endif
 !
           if (nzgrid/=1) then
@@ -157,7 +136,7 @@ module General_FFT
             call transp(a_im,'z')
           endif
 !
-          if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in y'
+          if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in y'
           do n=1,nz; do l=1,ny
             ax=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftb(nx,ax,wsavex)
@@ -168,7 +147,7 @@ module General_FFT
 !
 !  Transform x-direction back. Transpose to go from (y,x,z) to (x,y,z).
 !
-        if (lroot .and. ip<10) print*, 'transform_fftpack: doing FFTpack in x'
+        if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
         if (nygrid==1) then
           call transp(a_re,'z')
           call transp(a_im,'z')
@@ -191,13 +170,13 @@ module General_FFT
         a_im=a_im/nwgrid
       endif
 !
-      if (lroot .and. ip<10) print*,'transform_fftpack: fft has finished'
+      if (lroot .and. ip<10) print*, 'fourier_transform: fft has finished'
 !
-    endsubroutine transform_fftpack
+    endsubroutine fourier_transform
 !***********************************************************************
-    subroutine transform_fftpack_2d(a_re,a_im,dummy)
+    subroutine fourier_transform_xz(a_re,a_im,direction)
 !
-!  Subroutine to do Fourier transform
+!  Subroutine to do Fourier transform in the x- and z-directions.
 !  The routine overwrites the input data.
 !  This version works currently only when nxgrid=nygrid=nzgrid!
 !  The length of the work arrays for ffts is therefore always nx.
@@ -205,23 +184,25 @@ module General_FFT
 !  27-oct-02/axel: adapted from transform_fftpack
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
+      integer, optional :: direction
+!
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
       integer :: l,m,n
-      integer, optional :: dummy
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
       if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
-        print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
-        call fatal_error('must have nxgrid=nygrid=nzgrid!','')
+        if (lroot) &
+            print*, 'fourier_transform_xz: must have nxgrid=nygrid=nzgrid!'
+        call fatal_error('fourier_transform_xz','')
       endif
 !
 !  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
 !
       call cffti(nx,wsavex)
 !
-      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in x'
+      if (lroot .and. ip<10) print*, 'fourier_transform_xz: doing FFTpack in x'
       do n=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,n),a_im(:,m,n))
         call cfftf(nx,ax,wsavex)
@@ -233,7 +214,7 @@ module General_FFT
 !
 !  The length of the array in the z-direction is also nx
 !
-      if (lroot .and. ip<10) print*,'transform_fftpack: doing FFTpack in z'
+      if (lroot .and. ip<10) print*, 'fourier_transform_xz: doing FFTpack in z'
       do l=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,l),a_im(:,m,l))
         call cfftf(nx,ax,wsavex)
@@ -245,15 +226,16 @@ module General_FFT
 !
       a_re=a_re/nwgrid
       a_im=a_im/nwgrid
-      if (lroot .and. ip<10) print*,'transform_fftpack: fft has finished'
+      if (lroot .and. ip<10) print*, 'fourier_transform_xz: fft has finished'
 !
-      if (NO_WARN) print*,dummy  !(keep compiler quiet)
-!
-    endsubroutine transform_fftpack_2d
+    endsubroutine fourier_transform_xz
 !***********************************************************************
-    subroutine transform_fftpack_1d(a_re,a_im)
+    subroutine fourier_transform_x(a_re,a_im,direction)
 !
-!  Subroutine to do Fourier transform
+!  Subroutine to do Fourier transform in the x-direction.
+!  WARNING: It is not cache efficient to Fourier transform in any other
+!  direction, so better transpose the array and only transform in x.
+!
 !  The routine overwrites the input data.
 !  This version works currently only when nxgrid=nygrid=nzgrid!
 !  The length of the work arrays for ffts is therefore always nx.
@@ -261,6 +243,8 @@ module General_FFT
 !  06-feb-03/nils: adapted from transform_fftpack
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
+      integer, optional :: direction
+!
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
       integer :: m,n
@@ -270,16 +254,15 @@ module General_FFT
       if ( (nygrid/=1.and.nygrid/=nxgrid) .or. &
            (nzgrid/=1.and.nzgrid/=nxgrid) ) then
         if (lroot) &
-            print*, 'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
-        call fatal_error( &
-            'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!','')
+            print*, 'fourier_transform_x: must have nxgrid=nygrid=nzgrid!'
+        call fatal_error('fourier_transform_x','')
       endif
 !
 !  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
 !
       call cffti(nx,wsavex)
 !
-      if (lroot .and. ip<10) print*,'transform_fftpack_1d: doing FFTpack in x'
+      if (lroot .and. ip<10) print*, 'fourier_transform_x: doing FFTpack in x'
       do n=1,nz; do m=1,ny
         ax=cmplx(a_re(:,m,n),a_im(:,m,n))
         call cfftf(nx,ax,wsavex)
@@ -291,11 +274,11 @@ module General_FFT
 !
       a_re=a_re/nxgrid
       a_im=a_im/nxgrid
-      if (lroot .and. ip<10) print*,'transform_fftpack_1d: fft has finished'
+      if (lroot .and. ip<10) print*, 'fourier_transform_x: fft has finished'
 !
-    endsubroutine transform_fftpack_1d
+    endsubroutine fourier_transform_x
 !***********************************************************************
-    subroutine transform_fftpack_shear(a_re,a_im,direction)
+    subroutine fourier_transform_shear(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
 !  The routine overwrites the input data
@@ -347,12 +330,14 @@ module General_FFT
 !  if nxgrid/=nygrid/=nzgrid, stop.
 
       if (nygrid/=nxgrid .and. nygrid /= 1) then
-        print*,'transform_fftpack_shear: need to have nygrid=nxgrid if nygrid /=1.'
-        call fatal_error('Inconsistency: nygrid/=nxgrid','')
+        print*, 'fourier_transform_shear: '// &
+            'need to have nygrid=nxgrid if nygrid/=1.'
+        call fatal_error('fourier_transform_shear','')
       endif
       if (nzgrid/=nxgrid .and. nzgrid /= 1) then
-        print*,'transform_fftpack_shear: need to have nzgrid=nxgrid if nzgrid /=1.'
-        call fatal_error('Inconsistency: nzgrid/=nxgrid','')
+        print*,'fourier_transform_shear: '// &
+            'need to have nzgrid=nxgrid if nzgrid/=1.'
+        call fatal_error('fourier_transform_shear','')
       endif
 !
       if (present(direction)) then
@@ -373,7 +358,7 @@ module General_FFT
 !
         if (nygrid/=1) then
           if (lroot.and.ip<10) &
-              print*, 'doing FFTpack in y, direction=',direction
+              print*, 'fourier_transform_shear: doing FFTpack in y'
           call transp(a_re,'y')
           call transp(a_im,'y')
           do n=1,nz; do l=1,ny
@@ -390,7 +375,8 @@ module General_FFT
 !
 !  Transform x-direction.
 !
-        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
+        if (lroot.and.ip<10) &
+            print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nygrid/=1) then
           call transp(a_re,'y')
           call transp(a_im,'y')
@@ -406,7 +392,7 @@ module General_FFT
 !
         if (nzgrid/=1) then
           if (lroot.and.ip<10) &
-              print*, 'doing FFTpack in z, direction=',direction
+              print*, 'fourier_transform_shear: doing FFTpack in z'
           call transp(a_re,'z')
           call transp(a_im,'z')
           do l=1,nz; do m=1,ny
@@ -422,7 +408,7 @@ module General_FFT
 !
         if (nzgrid/=1) then
           if (lroot.and.ip<10) &
-              print*, 'doing FFTpack in z, direction=',direction
+              print*, 'fourier_transform_shear: doing FFTpack in z'
           do l=1,nz; do m=1,ny
             az=cmplx(a_re(:,m,l),a_im(:,m,l))
             call cfftb(nxgrid,az,wsave)
@@ -433,7 +419,8 @@ module General_FFT
 !
 !  Transform x-direction back.
 !
-        if (lroot.and.ip<10) print*, 'doing FFTpack in x, direction=',direction
+        if (lroot.and.ip<10) &
+            print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nzgrid/=1) then
           call transp(a_re,'z')
           call transp(a_im,'z')
@@ -453,7 +440,7 @@ module General_FFT
           call transp(a_re,'y')
           call transp(a_im,'y')
           if (lroot.and.ip<10) &
-              print*, 'doing FFTpack in y, direction=',direction
+              print*, 'fourier_transform_shear: doing FFTpack in y'
           do n=1,nz; do l=1,ny
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
 !  Shift y-coordinate back to regular frame (see above).
@@ -475,6 +462,163 @@ module General_FFT
         a_im=a_im/nwgrid
       endif
 !
-    endsubroutine transform_fftpack_shear
+    endsubroutine fourier_transform_shear
 !***********************************************************************
-endmodule General_FFT
+    subroutine fourier_transform_other_1(a_re,a_im,direction)
+!
+!  Subroutine to do Fourier transform on a 1-D array of arbitrary size.
+!  The routine overwrites the input data.
+!
+!  28-jul-2006/anders: adapted from fourier_transform
+!
+      real, dimension(:) :: a_re,a_im
+      integer, optional :: direction
+!
+      complex, dimension(size(a_re,1)) :: ax
+      real, dimension(4*size(a_re,1)+15) :: wsavex
+      integer :: nx_other
+      logical :: lforward=.true.
+!
+      nx_other=size(a_re,1)
+!
+      if (present(direction)) then
+        if (direction==-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
+!
+!  Initialize fftpack.
+!
+      call cffti(nx,wsavex)
+!
+!  Transform x-direction.
+!
+      if (lforward) then
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_other_1: doing FFTpack in x'
+        ax=cmplx(a_re,a_im)
+        call cfftf(nx_other,ax,wsavex)
+        a_re=real(ax)
+        a_im=aimag(ax)
+      else
+!
+!  Transform x-direction back.
+!
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_other_1: doing FFTpack in x'
+        ax=cmplx(a_re,a_im)
+        call cfftb(nx,ax,wsavex)
+        a_re=real(ax)
+        a_im=aimag(ax)
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/nwgrid
+        a_im=a_im/nwgrid
+      endif
+!
+      if (lroot .and. ip<10) &
+          print*, 'fourier_transform_other_1: fft has finished'
+!
+    endsubroutine fourier_transform_other_1
+!***********************************************************************
+    subroutine fourier_transform_other_2(a_re,a_im,direction)
+!
+!  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
+!  The routine overwrites the input data.
+!
+!  28-jul-2006/anders: adapted from fourier_transform_1
+!
+      real, dimension(:,:) :: a_re,a_im
+      integer, optional :: direction
+!
+      complex, dimension(size(a_re,1)) :: ax
+      complex, dimension(size(a_re,2)) :: ay
+      real, dimension(4*size(a_re,1)+15) :: wsavex
+      real, dimension(4*size(a_re,2)+15) :: wsavey
+      integer :: l, m, nx_other, ny_other
+      logical :: lforward=.true.
+!
+      nx_other=size(a_re,1); ny_other=size(a_re,2)
+!
+      if (present(direction)) then
+        if (direction==-1) then
+          lforward=.false.
+        else
+          lforward=.true.
+        endif
+      endif
+!
+      if (lforward) then
+!
+!  Transform x-direction.
+!      
+        call cffti(nx_other,wsavex)
+!
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_other_2: doing FFTpack in x'
+        do m=1,ny_other
+          ax=cmplx(a_re(:,m),a_im(:,m))
+          call cfftf(nx_other,ax,wsavex)
+          a_re(:,m)=real(ax)
+          a_im(:,m)=aimag(ax)
+        enddo
+!
+!  Transform y-direction.
+!      
+        call cffti(ny_other,wsavey)
+!
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_other_2: doing FFTpack in y'
+        do l=1,ny
+          ay=cmplx(a_re(l,:),a_im(l,:))
+          call cfftf(nx,ax,wsavex)
+          a_re(l,:)=real(ax)
+          a_im(l,:)=aimag(ax)
+        enddo
+      else
+!
+!  Transform x-direction back.
+!      
+        call cffti(nx_other,wsavex)
+!
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_other_2: doing FFTpack in x'
+        do m=1,ny_other
+          ax=cmplx(a_re(:,m),a_im(:,m))
+          call cfftb(nx_other,ax,wsavex)
+          a_re(:,m)=real(ax)
+          a_im(:,m)=aimag(ax)
+        enddo
+!
+!  Transform y-direction back.
+!      
+        call cffti(ny_other,wsavey)
+!
+        if (lroot .and. ip<10) &
+            print*, 'fourier_transform_other_2: doing FFTpack in y'
+        do l=1,ny
+          ay=cmplx(a_re(l,:),a_im(l,:))
+          call cfftb(nx,ax,wsavex)
+          a_re(l,:)=real(ax)
+          a_im(l,:)=aimag(ax)
+        enddo
+      endif
+!
+!  Normalize
+!
+      if (lforward) then
+        a_re=a_re/nwgrid
+        a_im=a_im/nwgrid
+      endif
+!
+      if (lroot .and. ip<10) &
+          print*, 'fourier_transform_other_2: fft has finished'
+!
+    endsubroutine fourier_transform_other_2
+!***********************************************************************
+endmodule Fourier
