@@ -1,5 +1,5 @@
 pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir, $
-                   ivar=ivar,ivarmin=ivarmin,ivarmax=ivarmax, $
+                   ivar=ivar_, $
                    variables=variables, $
                    proc=proc,varcontent=varcontent, $
                    scalar=scalar, _extra=_extra, additional=additional
@@ -23,22 +23,17 @@ pro pc_write_vapor,vdffile=vdffile,varfile=varfile,datadir=datadir, $
     if (n_elements(proc) eq 1L) then nprocs=1 else nprocs = dim.nprocx*dim.nprocy*dim.nprocz
     numslabs=dim.nprocz
 
-    if (n_elements(ivar) eq 1L) then begin
+    if (n_elements(ivar_) eq 1L) then begin
       numts=1L
+      ivar=ivar_
+    endif else if (n_elements(ivar_) eq 2L) then begin
+   
+      default,ivarmin,min(ivar_)
+      numts=max(ivar_)-min(ivar_)+1
+      ivar=ivarmin
     endif else begin
-      default,ivarmin,-1L
-      default,ivarmax,-1L
-      if ((ivarmin ge 0) and (ivarmax lt 0)) then begin
-        ivar=ivarmin
-        ivarmin=-1L
-        ivarmax=-1L
-      endif
-      if ((ivarmin lt 0) and (ivarmax ge 0)) then begin
-        ivar=ivarmax
-        ivarmin=-1L
-        ivarmax=-1L
-      endif
-      numts=ivarmax-ivarmin+1L
+      print,'ivar must be either a scalar value or range [ivarmin,ivarmax]'
+      return
     endelse
 
     default,datadir,'data'
@@ -139,7 +134,7 @@ print,"Call vdf_getvarnames"
 	for timestep = 0L, numts -1 DO BEGIN
 	for varnum = 0L, numvariables -1 DO BEGIN
         if (ivarmin ge 0) then ivar=ivarmin+timestep
-		print, 'assembling variable ',varnames[varnum]
+		print, 'ivar: ',strcompress(string(ivar),/remove_all),' variable: ',varnames[varnum]
 		dfd = vdc_bufwritecreate(mfd)
 		vdc_openvarwrite, dfd, timestep, varnames[varnum], -1
 ;
