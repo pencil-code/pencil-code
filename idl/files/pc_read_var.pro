@@ -51,7 +51,7 @@
 ;       pc_read_var,obj=mydata,variables=['tt'],/magic,/add,/trimall
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.40 2006-07-20 11:14:29 mee Exp $
+;       $Id: pc_read_var.pro,v 1.41 2006-07-28 17:05:30 mee Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -90,10 +90,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Name and path of varfile to read
 ;  
-  default,varfile_,'var.dat'
   if n_elements(ivar) eq 1 then begin
+    default,varfile_,'VAR'
     varfile=varfile_+strcompress(string(ivar),/remove_all)
   endif else begin
+    default,varfile_,'var.dat'
     varfile=varfile_
   endelse
 ;  
