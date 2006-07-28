@@ -1,23 +1,27 @@
-! $Id: shared_variables.f90,v 1.2 2006-07-19 17:25:34 mee Exp $ 
+! $Id: shared_variables.f90,v 1.3 2006-07-28 21:47:13 mee Exp $ 
 !
-!  This module make an interface available to allow modules
+!  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
 !  other modules my then request them by name.
 !
-!  This uses a linked list of pointer and is neither efficient
-!  nor easy to use.  THIS IS ON PURPOSE!
+!  This uses a linked list of pointers and is neither efficient
+!  nor easy to use.  THIS IS ON PURPOSE (a deterrent)!
 !
 !  Shared variable should always be avoided for portability 
-!  and generality reasons.  This module simply trys to protect 
-!  against accidental screw ups.
+!  and generality reasons.  This module allows for the possibility
+!  when needs must but trys to protect agains screw ups that
+!  can derive from shared quantities.
 !
 !  When used modules should call the get and put routines
 !  at initialize_ time for optimal performance.
 !
 !  Variables to be added to the list must have the target property
-!  And a pointer mut be provided when getting a variable from
+!  And a pointer must be provided when getting a variable from
 !  the list. 
 !
+!  Currently only scalar and 1D reals and integers may be used
+!  2D could perhaps be added but 3D almost certainly should not
+!  be shared this way.
 !
 module SharedVariables 
 !
@@ -68,13 +72,22 @@ module SharedVariables
 ! list structure.  Shame we can't have (void *) pointers.
 !
   type shared_variable_list
+!
+! Shared variable metadata
+!
     character (len=30) :: varname
-    integer :: vartype
-    real, pointer :: real0d
-    real, dimension(:), pointer :: real1d
-    integer, pointer :: int0d
+    integer            :: vartype
+!
+! Possible data types
+!
+    real,                  pointer :: real0d
+    real, dimension(:),    pointer :: real1d
+    integer,               pointer :: int0d
     integer, dimension(:), pointer :: int1d
-!    character (len=*), pointer :: char0D
+!    character (len=*),     pointer :: char0D
+!
+! Linked list link to next list element 
+!
     type (shared_variable_list), pointer :: next
   endtype
 !
