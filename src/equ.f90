@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.314 2006-07-28 16:38:30 wlyra Exp $
+! $Id: equ.f90,v 1.315 2006-07-28 21:46:27 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -374,7 +374,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.314 2006-07-28 16:38:30 wlyra Exp $")
+           "$Id: equ.f90,v 1.315 2006-07-28 21:46:27 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -404,6 +404,10 @@ module Equ
 !
       if (ldustdensity .and. ldustnulling) call null_dust_vars(f)
       if (ldustdensity .and. lmdvar .and. itsub==1) call redist_mdbins(f)
+!
+!  Call special "before_boundary" hook 
+!
+      if (lspecial) call special_before_boundary(f)
 !
 ! Prepare x-ghost zones required before f-array communication AND shock calculation
 !
