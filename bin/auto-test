@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.75 2006-07-16 13:54:51 theine Exp $
+# CVS: $Id: auto-test,v 1.76 2006-07-29 06:03:32 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -137,7 +137,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.75 2006-07-16 13:54:51 theine Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.76 2006-07-29 06:03:32 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -186,7 +186,7 @@ $t_run   &&= $t_start;
 $t_res   &&= $t_run;
 
 # Check for lock file and write one
-handle_lock_file() or exit(LOCK_FAILED);
+handle_lock_file() or exit(LOCK_FAILED) unless ($list_only);
 
 # Remember current directory
 my $cwd = `pwd`; chomp($cwd);
