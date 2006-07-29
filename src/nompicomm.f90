@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.134 2006-07-29 13:52:31 mee Exp $
+! $Id: nompicomm.f90,v 1.135 2006-07-29 17:55:59 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -12,7 +12,8 @@ module Mpicomm
   use Cparam
   use Cdata, only: iproc,ipx,ipy,ipz,root,lroot, &
                    ylneigh,zlneigh,yuneigh,zuneigh, &
-                   llcorn,lucorn,uucorn,ulcorn
+                   llcorn,lucorn,uucorn,ulcorn, &
+                   lemergency_brake
 
   implicit none
 
