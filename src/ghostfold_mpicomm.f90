@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.1 2006-07-28 23:02:32 mee Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.2 2006-07-29 07:54:25 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -12,11 +12,6 @@ module GhostFold
   private
 
   public :: fold_df, fold_f
-
-!ajwm Could and an initialize_ghostfold to calculate these...
-!ajwm but is it worth it?
-  integer :: ylneigh,zlneigh ! `lower' neighbours
-  integer :: yuneigh,zuneigh ! `upper' neighbours
 
   contains
 !***********************************************************************
@@ -37,13 +32,6 @@ module GhostFold
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: df_tmp_xz
       real, dimension (ny,nz) :: df_tmp_yz
       integer :: nvar_fold, iproc_rcv, ivar
-!
-!  set up `lower' and `upper' neighbours
-!
-      ylneigh = (ipz*nprocy+modulo(ipy-1,nprocy))
-      yuneigh = (ipz*nprocy+modulo(ipy+1,nprocy))
-      zlneigh = (modulo(ipz-1,nprocz)*nprocy+ipy)
-      zuneigh = (modulo(ipz+1,nprocz)*nprocy+ipy)
 !
       nvar_fold=ivar2-ivar1+1
 !  The first ghost zone in the z-direction is folded (the corners will find
@@ -160,13 +148,6 @@ module GhostFold
       real, dimension (nx+2,1,nz,ivar2-ivar1+1) :: f_tmp_xz
       real, dimension (ny,nz) :: f_tmp_yz
       integer :: nvar_fold, iproc_rcv, ivar
-!
-!  set up `lower' and `upper' neighbours
-!
-      ylneigh = (ipz*nprocy+modulo(ipy-1,nprocy))
-      yuneigh = (ipz*nprocy+modulo(ipy+1,nprocy))
-      zlneigh = (modulo(ipz-1,nprocz)*nprocy+ipy)
-      zuneigh = (modulo(ipz+1,nprocz)*nprocy+ipy)
 !
       nvar_fold=ivar2-ivar1+1
 !  The first ghost zone in the z-direction is folded (the corners will find

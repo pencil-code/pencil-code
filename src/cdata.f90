@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.330 2006-07-28 13:13:31 wlyra Exp $
+! ! $Id: cdata.f90,v 1.331 2006-07-29 07:54:25 ajohan Exp $
 
 module Cdata
 
@@ -119,6 +119,9 @@ module Cdata
   integer :: icc=0,ilncc=0,ialpm=0
   integer :: iXX_chiral=0,iYY_chiral=0
   integer :: iproc,ipx,ipy,ipz,root=0
+  integer :: ylneigh,zlneigh ! `lower' processor neighbours
+  integer :: yuneigh,zuneigh ! `upper' processor neighbours
+  integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
   integer :: mvar_io=0,dimensionality
   integer :: iinit
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,imd=0,imi=0

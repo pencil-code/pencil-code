@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.179 2006-07-28 23:02:32 mee Exp $
+! $Id: mpicomm.f90,v 1.180 2006-07-29 07:54:25 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -50,7 +50,9 @@
 module Mpicomm
 
   use Cparam
-  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot
+  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot, &
+                   ylneigh,zlneigh,yuneigh,zuneigh, &
+                   llcorn,lucorn,uucorn,ulcorn
 
   implicit none
 
@@ -190,10 +192,6 @@ module Mpicomm
                                           isend_stat_Tuu,isend_stat_Tlu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                           irecv_stat_Fll,irecv_stat_Ful
-
-  integer :: ylneigh,zlneigh ! `lower' neighbours
-  integer :: yuneigh,zuneigh ! `upper' neighbours
-  integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
 
   contains
 

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.131 2006-07-28 23:02:32 mee Exp $
+! $Id: nompicomm.f90,v 1.132 2006-07-29 07:54:25 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -10,7 +10,9 @@
 module Mpicomm
 
   use Cparam
-  use Cdata, only: iproc,ipx,ipy,ipz,lroot
+  use Cdata, only: iproc,ipx,ipy,ipz,root,lroot, &
+                   ylneigh,zlneigh,yuneigh,zuneigh, &
+                   llcorn,lucorn,uucorn,ulcorn
 
   implicit none
 
@@ -134,6 +136,14 @@ module Mpicomm
       ipx = 0
       ipy = 0
       ipz = 0
+      ylneigh = 0
+      zlneigh = 0
+      yuneigh = 0
+      zuneigh = 0
+      llcorn = 0
+      lucorn = 0
+      uucorn = 0
+      ulcorn = 0
 !
       call setup_mm_nn()
 !
