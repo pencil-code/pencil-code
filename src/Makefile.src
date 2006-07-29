@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.218 2006-07-28 23:02:32 mee Exp $
+### $Id: Makefile.src,v 1.219 2006-07-29 18:06:33 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -729,6 +729,9 @@ cparam$(PC_META_TYPE).o:  cparam.f90 cparam$(PC_META_TYPE).local cparam$(PC_META
 	     ln -s cparam_pencils$(PC_META_TYPE).inc cparam_pencils.inc;\
 	fi
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -o cparam$(PC_META_TYPE).o -c cparam.f90
+
+special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
+	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 
 shock_profile$(PC_META_TYPE).inc: Makefile.src Makefile$(PC_META_TYPE).local $(SHOCK_FINDER).f90 $(shock_finder_deps) $(SHOCK_PROFILE).desc
 	+if [ -f $(SHOCK_PROFILE)$(PC_META_TYPE).inc ]; then \

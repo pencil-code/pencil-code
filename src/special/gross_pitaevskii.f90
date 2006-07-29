@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.6 2006-07-28 21:45:30 mee Exp $
+! $Id: gross_pitaevskii.f90,v 1.7 2006-07-29 18:06:33 mee Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -183,10 +183,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.6 2006-07-28 21:45:30 mee Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.7 2006-07-29 18:06:33 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.6 2006-07-28 21:45:30 mee Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.7 2006-07-29 18:06:33 mee Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -1173,5 +1173,15 @@ endsubroutine read_special_run_pars
 
     endsubroutine special_before_boundary
 !***********************************************************************
+!
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING       **************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'special_dummies.inc'
+!********************************************************************
 endmodule Special
 

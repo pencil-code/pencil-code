@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.12 2006-07-28 21:45:30 mee Exp $
+! $Id: neutron_star.f90,v 1.13 2006-07-29 18:06:34 mee Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -182,11 +182,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.12 2006-07-28 21:45:30 mee Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.13 2006-07-29 18:06:34 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.12 2006-07-28 21:45:30 mee Exp $")
+           "$Id: neutron_star.f90,v 1.13 2006-07-29 18:06:34 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -304,42 +304,7 @@ module Special
         lpenc_requested(i_del2ss)=.true.
       endif
 !
-!
     endsubroutine pencil_criteria_special
-!***********************************************************************
-    subroutine pencil_interdep_special(lpencil_in)
-!
-!  Interdependency among pencils from the Density module is specified here.
-!
-!  18-07-06/tony: coded
-!
-      logical, dimension(npencils) :: lpencil_in
-!
-      if (NO_WARN) print*,lpencil_in(1)
-!
-    endsubroutine pencil_interdep_special
-!***********************************************************************
-    subroutine calc_pencils_special(f,p)
-!
-!  Calculate Hydro pencils.
-!  Most basic pencils should come first, as others may depend on them.
-!
-!   24-nov-04/tony: coded
-!
-      use Cdata  
-  !    use Density
-      use EquationOfState
-      
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f       
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
-!     
-      if(NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
-!
-    endsubroutine calc_pencils_special
 !***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
@@ -1723,6 +1688,15 @@ endsubroutine read_special_run_pars
       if (NO_WARN) print*,f(1,1,1,1)
 !
     endsubroutine special_before_boundary
+!
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING       **************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'special_dummies.inc'
 !********************************************************************
 endmodule Special
 

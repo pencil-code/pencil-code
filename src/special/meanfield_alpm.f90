@@ -1,4 +1,4 @@
-! $Id: meanfield_alpm.f90,v 1.4 2006-07-28 21:45:30 mee Exp $
+! $Id: meanfield_alpm.f90,v 1.5 2006-07-29 18:06:34 mee Exp $
 !
 !  This module serves as a sample for a special_XXX module that
 !  introduces additional primitive variables. Use this as a basis for your
@@ -83,7 +83,7 @@ module Special
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: meanfield_alpm.f90,v 1.4 2006-07-28 21:45:30 mee Exp $")
+           "$Id: meanfield_alpm.f90,v 1.5 2006-07-29 18:06:34 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -486,6 +486,15 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
-
+!
+!********************************************************************
+!************        DO NOT DELETE THE FOLLOWING       **************
+!********************************************************************
+!**  This is an automatically generated include file that creates  **
+!**  copies dummy routines from nospecial.f90 for any Special      **
+!**  routines not implemented in this file                         **
+!**                                                                **
+    include 'special_dummies.inc'
+!********************************************************************
 endmodule Special
 
