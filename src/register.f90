@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.180 2006-07-18 21:50:03 brandenb Exp $
+! $Id: register.f90,v 1.181 2006-07-29 08:24:03 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -26,6 +26,7 @@ module Register
 !  6-nov-01/wolf: coded
 !
       use Cdata
+      use General,         only: setup_mm_nn
       use Mpicomm,         only: mpicomm_init,stop_it,stop_it_if_any
       use Sub 
       use Param_IO,        only: get_datadir,get_snapdir
@@ -59,6 +60,10 @@ module Register
 !  initialize all mpi stuff
 !
       call mpicomm_init
+!
+!  Set up the ordering of the pencils.
+!
+      call setup_mm_nn
 !
 !  initialize nvar; is increased by the following routines
 !

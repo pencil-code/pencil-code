@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.180 2006-07-29 07:54:25 ajohan Exp $
+! $Id: mpicomm.f90,v 1.181 2006-07-29 08:24:03 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -210,7 +210,6 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
-      use General
       use Cdata, only: lmpicomm,lprocz_slowest
 !
 !  get processor number, number of procs, and whether we are root
@@ -297,8 +296,6 @@ module Mpicomm
            'mpicomm_init: MPICOMM neighbors ', &
            iproc,ipy,ipz, &
            ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
-!
-      call setup_mm_nn()
 !
 !  Define MPI communicator MPI_COMM_ROW that includes all processes
 !  sharing the same value of ipz. The rank within MPI_COMM_WORLD is

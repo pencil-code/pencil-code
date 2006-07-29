@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.49 2006-05-19 20:44:07 ajohan Exp $
+! $Id: general.f90,v 1.50 2006-07-29 08:24:03 ajohan Exp $
 
 module General
 
@@ -6,7 +6,7 @@ module General
 !  (Used for example in Sub and Mpicomm)
 
   use Cparam
-!  use Cdata, only: nseed,seed
+  use Messages
 
   implicit none
 
@@ -34,7 +34,6 @@ module General
     module procedure safe_character_append_2
     module procedure safe_character_append_3 ! add more if you like..
   endinterface
-!
 !
 !  state and default generator of random numbers
 !

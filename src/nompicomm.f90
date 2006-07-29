@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.132 2006-07-29 07:54:25 ajohan Exp $
+! $Id: nompicomm.f90,v 1.133 2006-07-29 08:24:03 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -117,7 +117,6 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
-      use General
       use Cdata, only: lmpicomm,iproc,ipx,ipy,ipz,lroot
 !
 !  sets iproc in order that we write in the correct directory
@@ -144,8 +143,6 @@ module Mpicomm
       lucorn = 0
       uucorn = 0
       ulcorn = 0
-!
-      call setup_mm_nn()
 !
     endsubroutine mpicomm_init
 !***********************************************************************
