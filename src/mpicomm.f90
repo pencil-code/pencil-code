@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.181 2006-07-29 08:24:03 ajohan Exp $
+! $Id: mpicomm.f90,v 1.182 2006-07-29 13:52:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1795,6 +1795,26 @@ module Mpicomm
       if (global_stop_flag) call stop_it(msg)
 !
     endsubroutine stop_it_if_any
+!***********************************************************************
+    subroutine check_emergency_brake()
+!
+!  Check the lemergency_brake flag and stop with any provided
+!  message if it is set.
+!
+!  29-jul-06/tony: coded
+!
+      logical :: global_stop_flag
+!
+!  Get global OR of lemergency_brake and distribute it, so all 
+!  processors agree on whether to call stop_it():
+!
+      call MPI_ALLREDUCE(lemergency_brake,global_stop_flag,1,MPI_LOGICAL, &
+                         MPI_LOR,MPI_COMM_WORLD,ierr)
+!
+      if (global_stop_flag) call stop_it( &
+            "Emergency brake activated. Check for error messages above.")
+!
+    endsubroutine check_emergency_brake
 !***********************************************************************
     subroutine transp(a,var)
 !

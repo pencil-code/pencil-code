@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.133 2006-07-29 08:24:03 ajohan Exp $
+! $Id: nompicomm.f90,v 1.134 2006-07-29 13:52:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -779,6 +779,18 @@ module Mpicomm
       if (stop_flag) call stop_it(msg)
 !
     endsubroutine stop_it_if_any
+!***********************************************************************
+    subroutine check_emergency_brake()
+!
+!  Check the lemergency_brake flag and stop with any provided
+!  message if it is set.
+!
+!  29-jul-06/tony: coded
+!
+      if (lemergency_brake) call stop_it( &
+            "Emergency brake activated. Check for error messages above.")
+!
+    endsubroutine check_emergency_brake
 !***********************************************************************
     subroutine transp(a,var)
 !

@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.331 2006-07-29 07:54:25 ajohan Exp $
+! ! $Id: cdata.f90,v 1.332 2006-07-29 13:52:31 mee Exp $
 
 module Cdata
 
@@ -191,6 +191,12 @@ module Cdata
   !  be reset also via appropriate namelist entries.
 
   logical :: lstart=.false., lrun=.false., lreloading=.false.
+!
+! Emergency brake
+!   When toggled the code will stop at the next convenient point
+!   (at the next call to check_emergency_break)
+!
+  logical :: lemergency_brake=.false.
 !
 !
 ! Module flags

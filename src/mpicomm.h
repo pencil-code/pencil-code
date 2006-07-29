@@ -5,6 +5,7 @@
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
   public :: die_gracefully
+  public :: check_emergency_brake
 
   public :: mpirecv_real, mpirecv_int
   public :: mpisend_real, mpisend_int
