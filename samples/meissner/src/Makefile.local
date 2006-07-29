@@ -3,11 +3,12 @@
 ### Included by `Makefile'
 ###
 
-LDMPI=-lmpi
+LDMPI     = -lmpi
 
 MPICOMM   = nompicomm
 IO        =   io_dist
 GLOBAL    =   global_gg_halo
+TIMEAVG   = notimeavg
 
 HYDRO     =   hydro
 DENSITY   =   density
@@ -21,4 +22,3 @@ GRAVITY   =   grav_r
 FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock
-TIMEAVG   = notimeavg
