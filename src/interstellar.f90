@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.125 2006-07-20 15:25:35 dobler Exp $
+! $Id: interstellar.f90,v 1.126 2006-07-30 05:11:31 dobler Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -331,7 +331,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.125 2006-07-20 15:25:35 dobler Exp $")
+           "$Id: interstellar.f90,v 1.126 2006-07-30 05:11:31 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -440,7 +440,11 @@ module Interstellar
          coolB=tiny(0.)
       end if
 !
-
+! BEGIN TEMPORARY
+        if (any(coolH_cgs == 0) .or. any(coolT_cgs == 0)) then
+          call fatal_error('initialize_interstellar', 'Calculating log(0.) -- Tony, please fix me.')
+        endif
+! END TEMPORARY
       lncoolH = real(dlog(coolH_cgs / unit_Lambda * (unit_temperature**coolB) * coolingfunction_scalefactor))
       lncoolT = real(dlog(coolT_cgs / unit_temperature))
 !
