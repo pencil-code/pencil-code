@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.183 2006-07-29 17:55:59 mee Exp $
+! $Id: mpicomm.f90,v 1.184 2006-07-30 19:46:12 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1817,7 +1817,7 @@ module Mpicomm
 !
     endsubroutine check_emergency_brake
 !***********************************************************************
-    subroutine transp(a,var)
+    subroutine transp(a,nx_transp,var)
 !
 !  Doing the transpose of information distributed on several processors
 !  Used for doing FFTs in the y and z directions.
@@ -1828,15 +1828,17 @@ module Mpicomm
 !  26-oct-02/axel: comments added
 !   6-jun-03/axel: works now also in 2-D (need only nxgrid=nygrid)
 !
+      real, dimension(nx,ny,nz) :: a
+      integer :: nx_transp
+      character :: var
+!
       real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y
       real, dimension(nz,ny,nz) :: send_buf_z, recv_buf_z
-      real, dimension(nx,ny,nz) :: a
-      real, dimension(nz) :: tmp_z
-      real, dimension(ny) :: tmp_y
-      integer :: i,j,sendc_y,recvc_y,sendc_z,recvc_z,px
-      integer :: ytag=101,ztag=102,partner,ierr
-      character :: var
+      real, dimension(nx_transp/nprocy,nx_transp/nprocy) :: a_tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
+      integer :: ytag=101,ztag=102,partner,ierr
+      integer :: m,n
 !
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
@@ -1894,9 +1896,9 @@ module Mpicomm
             send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
               call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-              call MPI_RECV (recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
               call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
             endif
             a(px*ny+1:(px+1)*ny,:,:)=recv_buf_y
@@ -1915,12 +1917,9 @@ module Mpicomm
 !                       transposed         transposed
 !
         do px=0,nprocy-1
-          do i=1,ny-1
-            do j=i+1,ny
-              tmp_z=a(i+px*ny,j,:)
-              a(i+px*ny,j,:)=a(j+px*ny,i,:)
-              a(j+px*ny,i,:)=tmp_z
-            enddo
+          do n=1,nz
+            a_tmp=transpose(a(px*ny+1:(px+1)*ny,:,n))
+            a(px*ny+1:(px+1)*ny,:,n)=a_tmp
           enddo
         enddo
 !
@@ -1952,12 +1951,9 @@ module Mpicomm
 !  Transposing the received data (x-z transpose)
 !
         do px=0,nprocz-1
-          do i=1,nz-1
-            do j=i+1,nz
-              tmp_y=a(i+px*nz,:,j)
-              a(i+px*nz,:,j)=a(j+px*nz,:,i)
-              a(j+px*nz,:,i)=tmp_y
-            enddo
+          do m=1,nz
+            a_tmp=transpose(a(px*nz+1:(px+1)*nz,m,:))
+            a(px*nz+1:(px+1)*nz,m,:)=a_tmp
           enddo
         enddo
 !

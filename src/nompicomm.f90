@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.135 2006-07-29 17:55:59 mee Exp $
+! $Id: nompicomm.f90,v 1.136 2006-07-30 19:46:12 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -793,45 +793,50 @@ module Mpicomm
 !
     endsubroutine check_emergency_brake
 !***********************************************************************
-    subroutine transp(a,var)
+    subroutine transp(a,nx_transp,var)
 !
 !  Doing a transpose (dummy version for single processor)
 !
 !   5-sep-02/axel: adapted from version in mpicomm.f90
 !
+      integer :: nx_transp
       real, dimension(nx,ny,nz) :: a
-      real, dimension(nz) :: tmp_z
-      real, dimension(ny) :: tmp_y
-      integer :: i,j
+      real, dimension(nx_transp,nx_transp) :: a_tmp
       character :: var
 !
-      if (ip<10) print*,'transp for single processor'
+      integer :: m, n
+!
+      if (ip<10) print*, 'transp for single processor'
 !
 !  Doing x-y transpose if var='y'
 !
       if (var=='y') then
+        if (nygrid/=1) then
 !
-        if (ny>1) then
-          do i=1,ny
-            do j=i+1,ny
-              tmp_z=a(i,j,:)
-              a(i,j,:)=a(j,i,:)
-              a(j,i,:)=tmp_z
-            enddo
+          if (nx/=ny) then
+            if (lroot) print*, 'transp: works only for nx=ny!'
+            call stop_it('transp')
+          endif
+!
+          do n=1,nz
+            a_tmp=transpose(a(:,:,n))
+            a(:,:,n)=a_tmp
           enddo
         endif
 !   
 !  Doing x-z transpose if var='z'
 !   
       elseif (var=='z') then
+        if (nzgrid/=1) then
 !
-        if (nz>1) then
-          do i=1,nz
-            do j=i+1,nz
-              tmp_y=a(i,:,j)
-              a(i,:,j)=a(j,:,i)
-              a(j,:,i)=tmp_y
-            enddo
+          if (nx/=nz) then
+            if (lroot) print*, 'transp: works only for nx=nz!'
+            call stop_it('transp')
+          endif
+!
+          do m=1,ny
+            a_tmp=transpose(a(:,m,:))
+            a(:,m,:)=a_tmp
           enddo
         endif
 !

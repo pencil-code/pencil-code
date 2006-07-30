@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.2 2006-07-30 15:00:44 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.3 2006-07-30 19:46:12 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -66,8 +66,8 @@ module Fourier
             if (lroot) print*, 'fourier_transform: must have nygrid=nxgrid!'
             call fatal_error('fourier_transform','')
           endif
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,nx,'y')
+          call transp(a_im,nx,'y')
 !
 !  The length of the array in the y-direction is nx.
 !
@@ -87,8 +87,8 @@ module Fourier
             if (lroot) print*, 'fourier_transform: must have nzgrid=nxgrid!'
             call fatal_error('fourier_transform','')
           endif
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          call transp(a_re,nx,'z')
+          call transp(a_im,nx,'z')
 !
 !  The length of the array in the z-direction is also nx.
 !
@@ -132,8 +132,8 @@ module Fourier
           endif
 !
           if (nzgrid/=1) then
-            call transp(a_re,'z')
-            call transp(a_im,'z')
+            call transp(a_re,nx,'z')
+            call transp(a_im,nx,'z')
           endif
 !
           if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in y'
@@ -149,11 +149,11 @@ module Fourier
 !
         if (lroot .and. ip<10) print*, 'fourier_transform: doing FFTpack in x'
         if (nygrid==1) then
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          call transp(a_re,nx,'z')
+          call transp(a_im,nx,'z')
         else
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,nx,'y')
+          call transp(a_im,nx,'y')
         endif
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -209,8 +209,8 @@ module Fourier
         a_re(:,m,n)=real(ax)
         a_im(:,m,n)=aimag(ax)
       enddo; enddo
-      call transp(a_re,'z')
-      call transp(a_im,'z')
+      call transp(a_re,nx,'z')
+      call transp(a_im,nx,'z')
 !
 !  The length of the array in the z-direction is also nx
 !
@@ -359,8 +359,8 @@ module Fourier
         if (nygrid/=1) then
           if (lroot.and.ip<10) &
               print*, 'fourier_transform_shear: doing FFTpack in y'
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,nx,'y')
+          call transp(a_im,nx,'y')
           do n=1,nz; do l=1,ny
             ay=cmplx(a_re(:,l,n),a_im(:,l,n))
             call cfftf(nxgrid,ay,wsave)
@@ -378,8 +378,8 @@ module Fourier
         if (lroot.and.ip<10) &
             print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nygrid/=1) then
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,nx,'y')
+          call transp(a_im,nx,'y')
         endif
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -393,8 +393,8 @@ module Fourier
         if (nzgrid/=1) then
           if (lroot.and.ip<10) &
               print*, 'fourier_transform_shear: doing FFTpack in z'
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          call transp(a_re,nx,'z')
+          call transp(a_im,nx,'z')
           do l=1,nz; do m=1,ny
             az=cmplx(a_re(:,m,l),a_im(:,m,l))
             call cfftf(nxgrid,az,wsave)
@@ -422,8 +422,8 @@ module Fourier
         if (lroot.and.ip<10) &
             print*, 'fourier_transform_shear: doing FFTpack in x'
         if (nzgrid/=1) then
-          call transp(a_re,'z')
-          call transp(a_im,'z')
+          call transp(a_re,nx,'z')
+          call transp(a_im,nx,'z')
         endif
         do n=1,nz; do m=1,ny
           ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -437,8 +437,8 @@ module Fourier
 !  the y-direction last.
 !
         if (nygrid/=1) then
-          call transp(a_re,'y')
-          call transp(a_im,'y')
+          call transp(a_re,nx,'y')
+          call transp(a_im,nx,'y')
           if (lroot.and.ip<10) &
               print*, 'fourier_transform_shear: doing FFTpack in y'
           do n=1,nz; do l=1,ny
@@ -450,8 +450,8 @@ module Fourier
             a_re(:,l,n)=real(ay)
             a_im(:,l,n)=aimag(ay)
           enddo; enddo
-          call transp(a_re,'y')  ! Deliver array back in (x,y,z) order.
-          call transp(a_im,'y')
+          call transp(a_re,nx,'y')  ! Deliver array back in (x,y,z) order.
+          call transp(a_im,nx,'y')
         endif
       endif
 !
