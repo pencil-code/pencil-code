@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.3 2006-07-30 15:05:45 ajohan Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.4 2006-07-30 22:36:21 mee Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -6,6 +6,7 @@
 module GhostFold
 
   use Cparam
+  use Messages
 
   implicit none
 

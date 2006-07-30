@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.37 2006-07-29 18:06:33 mee Exp $
+### $Id: Makefile.depend,v 1.38 2006-07-30 22:36:21 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -51,7 +51,7 @@ $(TIMESTEP)$(PC_META_TYPE).o:  $(TIMESTEP).f90 cdata$(PC_META_TYPE).o $(MPICOMM_
 persist$(PC_META_TYPE).o:    persist.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o
 snapshot$(PC_META_TYPE).o:    snapshot.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o persist$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
 messages$(PC_META_TYPE).o:    messages.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
-ghostfold_$(MPICOMM)$(PC_META_TYPE).o: ghostfold_$(MPICOMM).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o
+ghostfold_$(MPICOMM)$(PC_META_TYPE).o: ghostfold_$(MPICOMM).f90 messages$(PC_META_TYPE).o cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o
 #
 $(MPICOMM_FIX)$(PC_META_TYPE).o:  mpicomm.h        $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o
 $(GLOBAL)$(PC_META_TYPE).o:       global.h         $(GLOBAL).f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o sub$(PC_META_TYPE).o
