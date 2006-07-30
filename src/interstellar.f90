@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.126 2006-07-30 05:11:31 dobler Exp $
+! $Id: interstellar.f90,v 1.127 2006-07-30 13:47:52 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -215,6 +215,7 @@ module Interstellar
   real :: GammaUV=impossible,T0UV=impossible,cUV=impossible
   double precision, dimension(7) :: coolT_cgs, coolH_cgs
   real, dimension(7) :: coolB, lncoolH, lncoolT
+  integer :: ncool
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
@@ -331,7 +332,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.126 2006-07-30 05:11:31 dobler Exp $")
+           "$Id: interstellar.f90,v 1.127 2006-07-30 13:47:52 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -400,27 +401,31 @@ module Interstellar
 !
       if (cooling_select == 'RB') then
          if (lroot) print*,'initialize_interstellar: default RB cooling fct'
-         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, 0D0 /)
+         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, tiny(0D0) /)
          coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2 
          coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
+         ncool=5
       else if (cooling_select == 'RBr') then
          if (lroot) print*,'initialize_interstellar: RB cooling fct (revised)'
-         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, 0D0 /)
+         coolT_cgs=(/ 100.D0, 2000.D0, 8000.D0, 1.D5, 1.D6, 1.D9, tiny(0D0) /)
          coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, tiny(0.D0), tiny(0.D0) /) / ( m_p_cgs )**2 
          coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      tiny(0.), tiny(0.) /)
+         ncool=5
       else if (cooling_select == 'SS') then
          ! These are the SS et al (2002) coefficients multiplied by m_proton**2
          ! to obtain same units as RB above
          if (lroot) print*,'initialize_interstellar: SS cooling function'
-         coolT_cgs=(/   10D0,   141D0,   313D0,  6102D0,      1D5,       1D9, 0D0 /)
+         coolT_cgs=(/   10D0,   141D0,   313D0,  6102D0,      1D5,       1D9, tiny(0D0) /)
          coolH_cgs=(/3.42D16, 9.10D18, 1.11D20,  2.00D8, tiny(0D0), tiny(0D0), tiny(0D0) /)
          coolB    =(/   2.12,     1.0,    0.56,    3.67,     -.65 , tiny(0.), tiny(0.) /)
+         ncool=4
       else if (cooling_select == 'SSr') then
          ! revised to make continuous
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
-         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       1D9, 0D0 /)
+         coolT_cgs=(/   10D0,   141D0,    313D0, 6102D0,     1D5,       1D9, tiny(0D0) /)
          coolH_cgs=(/3.70D16, 9.46D18, 1.185D20, 2.00D8, 7.96D29, tiny(0D0), tiny(0D0) /)
          coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, tiny(0.) , tiny(0.) /)
+         ncool=5
       else if (cooling_select == 'SSrr') then
          ! revised to make continuous
          if (lroot) print*,'initialize_interstellar: revised SS cooling fct'
@@ -431,8 +436,9 @@ module Interstellar
                      1.9994576479D8, &
                      7.96D29, &
                      1.440602814622207D21, &
-                     0D0 /)
+                     tiny(0D0) /)
          coolB    =(/   2.12,     1.0,     0.56,   3.67,   -0.65, 0.5, tiny(0.)  /)
+         ncool=6
       else if (cooling_select == 'off') then
          if (lroot) print*,'initialize_interstellar: no cooling applied'
          coolT_cgs=tiny(0.D0)
@@ -441,12 +447,15 @@ module Interstellar
       end if
 !
 ! BEGIN TEMPORARY
-        if (any(coolH_cgs == 0) .or. any(coolT_cgs == 0)) then
-          call fatal_error('initialize_interstellar', 'Calculating log(0.) -- Tony, please fix me.')
+        if (any(coolH_cgs(1:ncool+1) == 0) .or. any(coolT_cgs(1:ncool+1) == 0)) then
+          call fatal_error('initialize_interstellar', &
+           'Calculating lncoolH and lncoolT: One of the cooling coefficient is zero')
         endif
 ! END TEMPORARY
-      lncoolH = real(dlog(coolH_cgs / unit_Lambda * (unit_temperature**coolB) * coolingfunction_scalefactor))
-      lncoolT = real(dlog(coolT_cgs / unit_temperature))
+      lncoolH(1:ncool+1) = real(dlog(coolH_cgs(1:ncool+1) / unit_Lambda &
+                                * (unit_temperature**coolB(1:ncool+1)) &
+                                * coolingfunction_scalefactor))
+      lncoolT(1:ncool+1) = real(dlog(coolT_cgs(1:ncool+1) / unit_temperature))
 !
       heating_rate_code=heating_rate*real(unit_length/unit_velocity**3)
 !
@@ -736,7 +745,7 @@ module Interstellar
 !
       cool=0.0
       cool_beta=1.0
-cool_loop: do i=1,6
+cool_loop: do i=1,ncool
         if (lncoolT(i) .ge. lncoolT(i+1)) exit cool_loop
         where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1))
                cool=cool+exp(lncoolH(i)+p%lnrho+p%lnTT*coolB(i))
