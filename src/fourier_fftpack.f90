@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.1 2006-07-28 20:41:33 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.2 2006-07-30 15:00:44 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -491,7 +491,7 @@ module Fourier
 !
 !  Initialize fftpack.
 !
-      call cffti(nx,wsavex)
+      call cffti(nx_other,wsavex)
 !
 !  Transform x-direction.
 !
@@ -509,7 +509,7 @@ module Fourier
         if (lroot .and. ip<10) &
             print*, 'fourier_transform_other_1: doing FFTpack in x'
         ax=cmplx(a_re,a_im)
-        call cfftb(nx,ax,wsavex)
+        call cfftb(nx_other,ax,wsavex)
         a_re=real(ax)
         a_im=aimag(ax)
       endif
@@ -517,8 +517,8 @@ module Fourier
 !  Normalize
 !
       if (lforward) then
-        a_re=a_re/nwgrid
-        a_im=a_im/nwgrid
+        a_re=a_re/nx_other
+        a_im=a_im/nx_other
       endif
 !
       if (lroot .and. ip<10) &
@@ -574,11 +574,11 @@ module Fourier
 !
         if (lroot .and. ip<10) &
             print*, 'fourier_transform_other_2: doing FFTpack in y'
-        do l=1,ny
+        do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
-          call cfftf(nx,ax,wsavex)
-          a_re(l,:)=real(ax)
-          a_im(l,:)=aimag(ax)
+          call cfftf(ny_other,ay,wsavey)
+          a_re(l,:)=real(ay)
+          a_im(l,:)=aimag(ay)
         enddo
       else
 !
@@ -601,19 +601,19 @@ module Fourier
 !
         if (lroot .and. ip<10) &
             print*, 'fourier_transform_other_2: doing FFTpack in y'
-        do l=1,ny
+        do l=1,nx_other
           ay=cmplx(a_re(l,:),a_im(l,:))
-          call cfftb(nx,ax,wsavex)
-          a_re(l,:)=real(ax)
-          a_im(l,:)=aimag(ax)
+          call cfftb(ny_other,ay,wsavey)
+          a_re(l,:)=real(ay)
+          a_im(l,:)=aimag(ay)
         enddo
       endif
 !
 !  Normalize
 !
       if (lforward) then
-        a_re=a_re/nwgrid
-        a_im=a_im/nwgrid
+        a_re=a_re/(nx_other*ny_other)
+        a_im=a_im/(nx_other*ny_other)
       endif
 !
       if (lroot .and. ip<10) &
