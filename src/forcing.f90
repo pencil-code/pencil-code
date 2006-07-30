@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.90 2006-07-18 21:50:03 brandenb Exp $
+! $Id: forcing.f90,v 1.91 2006-07-30 17:59:16 brandenb Exp $
 
 module Forcing
 
@@ -17,11 +17,12 @@ module Forcing
   real :: force=0.,force2=0.
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
+  real :: omega_ff=1.
   real :: tforce_stop=impossible
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
   real :: dtforce=0.
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
-  real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(should initialize profz_hel=1)
+  real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lmagnetic_forcing=.false.,lscale_kvector_tobox=.false.
@@ -40,6 +41,7 @@ module Forcing
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
+       omega_ff, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,max_force,dtforce,old_forcing_evector, &
        iforce_profile,lscale_kvector_tobox
@@ -70,7 +72,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.90 2006-07-18 21:50:03 brandenb Exp $")
+           "$Id: forcing.f90,v 1.91 2006-07-30 17:59:16 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -165,6 +167,7 @@ module Forcing
         case ('zero'); if (headt) print*,'addforce: No forcing'
         case ('irrotational');  call forcing_irro(f)
         case ('helical', '2');  call forcing_hel(f)
+        case ('GP');            call forcing_GP(f)
         case ('TG');            call forcing_TG(f)
         case ('ABC');           call forcing_ABC(f)
         case ('nocos');         call forcing_nocos(f)
@@ -571,6 +574,99 @@ module Forcing
       if (ip.le.9) print*,'forcing_hel: forcing OK'
 !
     endsubroutine forcing_hel
+!***********************************************************************
+    subroutine forcing_GP(f)
+!
+!  Add Galloway-Proctor forcing function.
+!
+!  24-jul-06/axel: coded
+!
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use Hydro
+!
+      real :: phase,ffnorm,irufm
+      real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
+      real, dimension (2) :: fran
+      real, dimension (nx) :: radius,tmpx,ruf,rho
+      real, dimension (mz) :: tmpz
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx) :: cosx,sinx
+      real :: cost,sint,cosym,sinym
+      logical, dimension (3), save :: extent
+      integer, save :: ifirst
+      integer :: ik,j,jf
+      real :: force_ampl=1.,fact
+!
+      if(ip<=6) print*,'forcing_GP: t=',t
+      cost=cos(omega_ff*t)
+      sint=sin(omega_ff*t)
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=sqrt(1.5)*force*sqrt(dt)
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+      irufm=0
+      do m=m1,m2
+        cosx=cos(k1_ff*x+cost)
+        sinx=sin(k1_ff*x+cost)
+        cosym=cos(k1_ff*y(m)+sint)
+        sinym=sin(k1_ff*y(m)+sint)
+        forcing_rhs(:,1)=-fact*sinym
+        forcing_rhs(:,2)=-fact*cosx(l1:l2)
+        forcing_rhs(:,3)=+fact*(sinx(l1:l2)+cosym)
+        do n=n1,n2
+          variable_rhs=f(l1:l2,m,n,iffx:iffz)
+          do j=1,3
+            jf=j+ifff-1
+            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
+          enddo
+          if (lout) then
+            if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+        enddo
+      enddo
+      !
+      ! For printouts
+      !
+      if (lout) then
+        if (idiag_rufm/=0) then 
+          irufm=irufm/(nwgrid)
+          !
+          !  on different processors, irufm needs to be communicated
+          !  to other processors
+          !
+          fsum_tmp(1)=irufm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          irufm=fsum(1)
+          call mpibcast_real(irufm,1)
+          !
+          fname(idiag_rufm)=irufm
+          itype_name(idiag_rufm)=ilabel_sum
+        endif
+      endif
+!
+      if (ip<=9) print*,'forcing_GP: forcing OK'
+!
+    endsubroutine forcing_GP
 !***********************************************************************
     subroutine forcing_TG(f)
 !
