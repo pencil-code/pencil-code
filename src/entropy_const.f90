@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.8 2005-07-05 16:21:42 mee Exp $
+! $Id: entropy_const.f90,v 1.9 2006-07-30 21:26:47 mee Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -80,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.8 2005-07-05 16:21:42 mee Exp $")
+           "$Id: entropy_const.f90,v 1.9 2006-07-30 21:26:47 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -157,7 +157,7 @@ module Entropy
 !
       use Density
       use Sub
-      Use Ionization, only: pressure_gradient
+      Use EquationOfState, only: pressure_gradient
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
