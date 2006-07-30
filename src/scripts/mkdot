@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkdot,v 1.1 2006-07-17 00:14:57 mee Exp $
+# CVS: $Id: mkdot,v 1.2 2006-07-30 22:53:19 mee Exp $
 # Usage:
 #  Hello errrr...
 
@@ -53,11 +53,13 @@ my (%opts);	# Variables written by GetOptions
 GetOptions(\%opts,
 	   qw( -h   --help
 	            --nono
+	       -T=s --title=s
 	       -o=s --output=s
                                ));
 
 my $nono = $opts{nono};
 die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
+my $title = ($opts{T} || $opts{title} || 'dependencies');
 
 my $outfile = ($opts{o} || $opts{output} || "-");
 open(OUT, "> $outfile") or die "Can't open $outfile for writing";
@@ -67,7 +69,7 @@ print OUT <<"EOF";
 //  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
 //  DOT description for Module dependence
 //
-digraph D {
+digraph "$title" {
     rotate=90;
     size="11,7.55";
     ratio = fill;
@@ -80,7 +82,7 @@ file: foreach my $infile (@ARGV) {
 print OUT "// Processing file: $infile\n";
 	$current_module=$main_program_module;
     unless (open(INPUT,"< $infile")) {
-	warn "Can't open $infile for reading";
+	print STDERR "Skipping $infile (not found)\n";
 	next file;
     }
 # Cycle through all lines up to first non-empty non-comment line in file
@@ -100,7 +102,7 @@ print OUT "// Processing file: $infile\n";
 	  if ($line=~ /$module_start/i) {
         $current_module=$1;
         $current_module =~ tr/a-z/A-Z/;
-        if ($infile =~ /^no/) { print OUT "$current_module [color=gray,fontcolor=grey]\n"}
+        if ($infile =~ /^no/) { print OUT "$current_module [color=blue,fontcolor=blue]\n"}
       }
 	  if ($line=~ /$module_end/i) {$current_module=$main_program_module;}
 	  if ($line=~ /$use_statement/i) {
