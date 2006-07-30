@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.2 2006-07-29 07:54:25 ajohan Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.3 2006-07-30 15:05:45 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -262,7 +262,7 @@ module GhostFold
       real, dimension (ny,nz) :: a_re
       real :: shift_y
 !
-      complex, dimension(nygrid) :: ay
+      complex, dimension(nygrid) :: a_cmplx, cmplx_shift
       real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
       real, dimension(4*nygrid+15) :: wsavey
@@ -328,7 +328,7 @@ module GhostFold
           if (modulo(nz,nprocy)/=0) then
             if (lroot) print*, 'fourier_shift_yz: nz must be a whole '// &
                 'multiple of nprocy!'
-            call stop_it('fourier_shift_yz')
+            call fatal_error('fourier_shift_yz','')
           endif
 !
           do ipy_from=0,nprocy-1
@@ -355,26 +355,23 @@ module GhostFold
         a_re_new(1:ny,1:nz_new)=a_re(1:ny,1:nz_new)
       endif
 !
+      a_im_new=0.0
+      cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
+!
 !  Transform to Fourier space.
 !
-!      call cffti(nygrid,wsavey)
       do n=1,nz_new
-        ay=cmplx(a_re_new(:,n),0.0)
-!        call cfftf(nygrid,ay,wsavey)
-!  Do the shifting in Fourier space.
-        ay(2:nygrid)=ay(2:nygrid)*exp(cmplx(0.0,-ky_fft(2:nygrid)*shift_y))
-!
-        a_re_new(:,n)=real(ay)
-        a_im_new(:,n)=aimag(ay)
+        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),+1)
+        a_cmplx=cmplx(a_re_new(:,n),a_im_new(:,n))
+        a_cmplx=a_cmplx*cmplx_shift
+        a_re_new(:,n)=real(a_cmplx)
+        a_im_new(:,n)=aimag(a_cmplx)
       enddo
 !
 !  Back to real space.
 !
-!      call cffti(nygrid,wsavey)
-      do n=1,nz_new
-        ay=cmplx(a_re_new(:,n),a_im_new(:,n))
-!        call cfftb(nygrid,ay,wsavey)
-        a_re_new(:,n)=real(ay)/nygrid
+      do n=1,nz
+        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),-1)
       enddo
 !
 !  Reinstate original division of yz-plane.

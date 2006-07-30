@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.1 2006-07-28 23:02:32 mee Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.2 2006-07-30 15:05:45 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -163,29 +163,28 @@ module GhostFold
       real, dimension (ny,nz) :: a_re
       real :: shift_y
 !
-      complex, dimension(ny) :: ay
       real, dimension(ny,nz) :: a_im
-      real, dimension(4*ny+15) :: wsavey
+      complex, dimension(ny) :: a_cmplx
+      complex, dimension(ny) :: cmplx_shift
       integer :: n
+!
+      a_im=0.0
+      cmplx_shift=exp(cmplx(0.0,-ky_fft*shift_y))
 !
 !  Transform to Fourier space.
 !
-!      call cffti(ny,wsavey)
       do n=1,nz
-        ay=cmplx(a_re(:,n),0.0)
-!        call cfftf(ny,ay,wsavey)
-        ay(2:ny)=ay(2:ny)*exp(cmplx(0.0,-ky_fft(2:ny)*shift_y))
-        a_re(:,n)=real(ay)
-        a_im(:,n)=aimag(ay)
+        call fourier_transform_other(a_re(:,n),a_im(:,n),+1)
+        a_cmplx=cmplx(a_re(:,n),a_im(:,n))
+        a_cmplx=a_cmplx*cmplx_shift
+        a_re(:,n)=real(a_cmplx)
+        a_im(:,n)=aimag(a_cmplx)
       enddo
 !
 !  Back to real space.
 !
-!      call cffti(ny,wsavey)
       do n=1,nz
-        ay=cmplx(a_re(:,n),a_im(:,n))
-!        call cfftb(ny,ay,wsavey)
-        a_re(:,n)=real(ay)/ny
+        call fourier_transform_other(a_re(:,n),a_im(:,n),-1)
       enddo
 !
     endsubroutine fourier_shift_yz
