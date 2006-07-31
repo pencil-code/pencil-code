@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.4 2006-07-31 14:31:41 ajohan Exp $ 
+! $Id: shared_variables.f90,v 1.5 2006-07-31 15:02:37 mee Exp $ 
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -68,7 +68,7 @@ module SharedVariables
 !
   integer, public, parameter :: iSHVAR_ERR_NOSUCHVAR=1
   integer, public, parameter :: iSHVAR_ERR_WRONGTYPE=2
-  integer, public, parameter :: iSHVAR_ERR_DUPLICATE=2
+  integer, public, parameter :: iSHVAR_ERR_DUPLICATE=3
 !
 ! Store pointers to variables in a general linked
 ! list structure.  Shame we can't have (void *) pointers.
