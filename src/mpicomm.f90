@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.184 2006-07-30 19:46:12 ajohan Exp $
+! $Id: mpicomm.f90,v 1.185 2006-07-31 11:19:27 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1834,7 +1834,8 @@ module Mpicomm
 !
       real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y
       real, dimension(nz,ny,nz) :: send_buf_z, recv_buf_z
-      real, dimension(nx_transp/nprocy,nx_transp/nprocy) :: a_tmp
+      real, dimension(nx_transp/nprocy,nx_transp/nprocy) :: a_tmp_xy
+      real, dimension(nx_transp/nprocz,nx_transp/nprocz) :: a_tmp_xz
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ytag=101,ztag=102,partner,ierr
@@ -1918,8 +1919,8 @@ module Mpicomm
 !
         do px=0,nprocy-1
           do n=1,nz
-            a_tmp=transpose(a(px*ny+1:(px+1)*ny,:,n))
-            a(px*ny+1:(px+1)*ny,:,n)=a_tmp
+            a_tmp_xy=transpose(a(px*ny+1:(px+1)*ny,:,n))
+            a(px*ny+1:(px+1)*ny,:,n)=a_tmp_xy
           enddo
         enddo
 !
@@ -1951,9 +1952,9 @@ module Mpicomm
 !  Transposing the received data (x-z transpose)
 !
         do px=0,nprocz-1
-          do m=1,nz
-            a_tmp=transpose(a(px*nz+1:(px+1)*nz,m,:))
-            a(px*nz+1:(px+1)*nz,m,:)=a_tmp
+          do m=1,ny
+            a_tmp_xz=transpose(a(px*nz+1:(px+1)*nz,m,:))
+            a(px*nz+1:(px+1)*nz,m,:)=a_tmp_xz
           enddo
         enddo
 !
