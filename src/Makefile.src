@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.222 2006-07-31 14:33:11 ajohan Exp $
+### $Id: Makefile.src,v 1.223 2006-07-31 15:38:11 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -619,7 +619,7 @@ endif
 #
 # ---------------------------------------------------------------------- #
 ## Abbreviations
-technical=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o shared_variables.o $(FOURIER)$(PC_META_TYPE).o slices$(PC_META_TYPE).o deriv$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o filter$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o register$(PC_META_TYPE).o prints$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o persist$(PC_META_TYPE).o
+technical=cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o shared_variables$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o slices$(PC_META_TYPE).o deriv$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o filter$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o register$(PC_META_TYPE).o prints$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o persist$(PC_META_TYPE).o
 #
 physics=$(GLOBAL)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(SELFGRAVITY)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(ENTROPY)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(SHEAR)$(PC_META_TYPE).o $(PSCALAR)$(PC_META_TYPE).o $(CHIRAL)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(DUSTVELOCITY)$(PC_META_TYPE).o $(DUSTDENSITY)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(COSMICRAY)$(PC_META_TYPE).o $(COSMICRAYFLUX)$(PC_META_TYPE).o $(TESTFIELD)$(PC_META_TYPE).o $(PARTICLES)$(PC_META_TYPE).o $(PARTICLES_RADIUS)$(PC_META_TYPE).o $(PARTICLES_NUMBER)$(PC_META_TYPE).o $(PLANET)$(PC_META_TYPE).o $(PARTICLES_SELFGRAVITY)$(PC_META_TYPE).o
 #

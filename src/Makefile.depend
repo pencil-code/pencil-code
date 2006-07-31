@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.39 2006-07-31 14:33:11 ajohan Exp $
+### $Id: Makefile.depend,v 1.40 2006-07-31 15:38:11 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -51,6 +51,7 @@ $(TIMESTEP)$(PC_META_TYPE).o:  $(TIMESTEP).f90 cdata$(PC_META_TYPE).o $(MPICOMM_
 persist$(PC_META_TYPE).o:    persist.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o
 snapshot$(PC_META_TYPE).o:    snapshot.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o persist$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
 messages$(PC_META_TYPE).o:    messages.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
+shared_variables$(PC_META_TYPE).o:    shared_variables.f90 messages$(PC_META_TYPE).o 
 ghostfold_$(MPICOMM)$(PC_META_TYPE).o: ghostfold_$(MPICOMM).f90 messages$(PC_META_TYPE).o cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o
 #
 $(MPICOMM_FIX)$(PC_META_TYPE).o:  mpicomm.h        $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o
@@ -60,7 +61,7 @@ shock$(PC_META_TYPE).o:           shock.h          shock.f90 shock_profile.inc c
 noshock$(PC_META_TYPE).o:         shock.h          noshock.f90 cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o sub$(PC_META_TYPE).o
 $(SHEAR)$(PC_META_TYPE).o:        shear.h          $(SHEAR).f90 $(MPICOMM_FIX)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
 $(GRAVITY)$(PC_META_TYPE).o:      gravity.h        $(GRAVITY).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o
-$(SELFGRAVITY)$(PC_META_TYPE).o:  selfgravity.h $(SELFGRAVITY).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o shared_variables.o
+$(SELFGRAVITY)$(PC_META_TYPE).o:  selfgravity.h $(SELFGRAVITY).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o shared_variables$(PC_META_TYPE).o
 $(POISSON)$(PC_META_TYPE).o:      poisson.h $(POISSON)$(PC_META_TYPE).f90 $(FOURIER)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o
 $(FORCING)$(PC_META_TYPE).o:      forcing.h        $(FORCING).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
 $(ENTROPY)$(PC_META_TYPE).o:      entropy.h        $(ENTROPY).f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(PLANET)$(PC_META_TYPE).o
