@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.50 2006-07-29 08:24:03 ajohan Exp $
+! $Id: general.f90,v 1.51 2006-07-31 08:04:34 joishi Exp $
 
 module General
 
@@ -20,7 +20,7 @@ module General
   public :: setup_mm_nn
   public :: input_persistent_general, output_persistent_general
 
-  public :: spline,complex_phase
+  public :: spline,complex_phase,erfcc
 
   include 'record_types.h'
 
@@ -938,5 +938,22 @@ module General
   if ( (re .ge. 0.0) .and. (im .lt. 0.0) ) complex_phase = 2*pi+asin(im/c)
 !
    endfunction complex_phase
+!*****************************************************************************
+    function erfcc(x)
+!  nr routine.
+!  12-jul-2005/joishi: added, translated syntax to f90, and pencilized
+!  21-jul-2006/joishi: generalized.
+       real :: x(:)
+       real,dimension(size(x)) :: erfcc,t,z
+
+
+      z=abs(x)
+      t=1./(1.+0.5*z)
+      erfcc=t*exp(-z*z-1.26551223+t*(1.00002368+t*(.37409196+t* &
+            (.09678418+t*(-.18628806+t*(.27886807+t*(-1.13520398+t*  &
+            (1.48851587+t*(-.82215223+t*.17087277)))))))))             
+      where (x.lt.0.) erfcc=2.-erfcc
+      return
+    endfunction erfcc
 !*****************************************************************************
 endmodule General
