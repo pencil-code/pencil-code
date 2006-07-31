@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.11 2006-07-31 14:33:11 ajohan Exp $
+! $Id: selfgravity.f90,v 1.12 2006-07-31 15:12:46 mee Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -28,7 +28,9 @@ module Selfgravity
 
   include 'selfgravity.h'
 
-  real :: rhs_poisson_const=1.0, tstart_selfgrav=0.0
+  real :: rhs_poisson_const=1.0
+  real, target :: tstart_selfgrav=0.0
+
   real :: kmax = 1.
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lklimit=.false.
@@ -68,7 +70,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.11 2006-07-31 14:33:11 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.12 2006-07-31 15:12:46 mee Exp $")
 !
 !  Put variable name in array
 !
