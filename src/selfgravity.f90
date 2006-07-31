@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $
+! $Id: selfgravity.f90,v 1.11 2006-07-31 14:33:11 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -68,7 +68,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.10 2006-07-03 12:29:06 joishi Exp $")
+           "$Id: selfgravity.f90,v 1.11 2006-07-31 14:33:11 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -86,6 +86,10 @@ module Selfgravity
 !  parameters.
 !
 !  15-may-06/anders+jeff: adapted
+!
+      use SharedVariables
+!
+      integer :: ierr=0
 !
 !  set maximum k for gravity if limiter is set. kmax run parameter
 !  is in units of the nyquist frequency, thus making it
@@ -110,6 +114,16 @@ module Selfgravity
               'and a dust density module in Makefile.local for '// &
               'self-gravity on the dust fluid'
         endif
+        call fatal_error('initialize_selfgravity','')
+      endif
+!
+!  Share the variable tstart_selfgrav so that it can be used by other
+!  self-gravity modules.
+!
+      call put_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
+      if (ierr/=0) then
+        if (lroot) print*, 'initialize_selfgravity: there was a problem '// &
+            'when sharing tstart_selfgrav!'
         call fatal_error('initialize_selfgravity','')
       endif
 !
@@ -176,48 +190,52 @@ module Selfgravity
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
+      if (t>=tstart_selfgrav) then
+!
 !  Consider self-gravity from gas and dust density or from either one.
 !
-      if (lhydro.and.ldensity.and.lselfgravity_gas) then
-        if (ldensity_nolog) then
-          rhs_poisson=rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrho)
-        else
-          rhs_poisson=rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        if (lhydro.and.ldensity.and.lselfgravity_gas) then
+          if (ldensity_nolog) then
+            rhs_poisson=rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ilnrho)
+          else
+            rhs_poisson=rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+          endif
         endif
-      endif
 !  Dust.
-      if (ldustdensity.and.ldustvelocity.and.lselfgravity_dust) then
-        if (ldustdensity_log) then
-          if (lselfgravity_gas) then  ! No need to zero rhs.
-            rhs_poisson = rhs_poisson + &
-                rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
-          else                        ! Must zero rhs.
-            rhs_poisson = rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
-          endif
-        else
-          if (lselfgravity_gas) then  ! No need to zero rhs.
-            rhs_poisson = rhs_poisson + &
-                rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ind(1))
-          else                        ! Must zero rhs.
-            rhs_poisson = rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ind(1))
+        if (ldustdensity.and.ldustvelocity.and.lselfgravity_dust) then
+          if (ldustdensity_log) then
+            if (lselfgravity_gas) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + &
+                  rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+            else                        ! Must zero rhs.
+              rhs_poisson = rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ind(1)))
+            endif
+          else
+            if (lselfgravity_gas) then  ! No need to zero rhs.
+              rhs_poisson = rhs_poisson + &
+                  rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ind(1))
+            else                        ! Must zero rhs.
+              rhs_poisson = rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,ind(1))
+            endif
           endif
         endif
-      endif
 !
 !  Contribution from particles is taken care of by the particle modules.
 !
-      if (lparticles) &
-          call particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const, &
-          lselfgravity_gas.or.lselfgravity_dust)
+        if (lparticles) &
+            call particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const, &
+            lselfgravity_gas.or.lselfgravity_dust)
 !
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
 !  receive the self-gravity potential back.
 !
-      call poisson_solver_fft(rhs_poisson,lklimit,kmax)
+        call poisson_solver_fft(rhs_poisson,lklimit,kmax)
 !
 !  Put potential into f array.
 !
-      f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson
+        f(l1:l2,m1:m2,n1:n2,ipotself) = rhs_poisson
+!
+      endif ! if (t>=tstart_selfgrav) then
 !
     endsubroutine calc_selfpotential
 !***********************************************************************

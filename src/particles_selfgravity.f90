@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.6 2006-07-06 11:24:47 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.7 2006-07-31 14:33:11 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -24,14 +24,15 @@ module Particles_selfgravity
 
   include 'particles_selfgravity.h'
   
-  real :: dummy, tstart_selfgrav_par=0.0
+  real :: dummy
+  real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
 
   namelist /particles_selfgrav_init_pars/ &
-      lselfgravity_particles, tstart_selfgrav_par
+      lselfgravity_particles
 
   namelist /particles_selfgrav_run_pars/ &
-      lselfgravity_particles, tstart_selfgrav_par
+      lselfgravity_particles
 
   integer :: idiag_gpotenp=0
 
@@ -53,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.6 2006-07-06 11:24:47 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.7 2006-07-31 14:33:11 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -78,9 +79,19 @@ module Particles_selfgravity
 !
 !  14-jun-06/anders: adapted
 !
+      use SharedVariables
+!
+      integer :: ierr
       logical :: lstarting
 !
       if (NO_WARN) print*, lstarting
+!
+      call get_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
+      if (ierr/=0) then
+        if (lroot) print*, 'initialize_particles_selfgrav: '// &
+            'there was a problem when getting tstart_selfgrav!'
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
 !
     endsubroutine initialize_particles_selfgrav
 !***********************************************************************
@@ -191,17 +202,18 @@ module Particles_selfgravity
       intent (in) :: f, fp
       intent (out) :: dfp
 !
+      if (t>=tstart_selfgrav) then
+!
 !  Print out header information in first time step.
 !
-      lheader=lfirstcall .and. lroot
+        lheader=lfirstcall .and. lroot
 !
-      lfirstcall=.false.
+        lfirstcall=.false.
 !
-      if (lheader) print*, 'dvvp_dt_selfgrav: add self-gravity'
+        if (lheader) print*, 'dvvp_dt_selfgrav: add self-gravity'
 !
 !  Interpolate the gradient of the potential to the location of the particle.
 !
-      if (t>=tstart_selfgrav_par) then
         if (lselfgravity_particles) then
           do k=1,npar_loc
             call interpolate_quadratic_spline( &
@@ -210,7 +222,8 @@ module Particles_selfgravity
             dfp(k,ivpx:ivpz)=dfp(k,ivpx:ivpz)-gpotself
           enddo
         endif
-      endif
+!
+      endif ! if (t>=tstart_selfgrav) then
 !
     endsubroutine dvvp_dt_selfgrav
 !***********************************************************************
