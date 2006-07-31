@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.220 2006-07-30 22:53:19 mee Exp $
+### $Id: Makefile.src,v 1.221 2006-07-31 11:33:02 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -600,7 +600,7 @@ endif
 
 ## Generic rules:
 .SUFFIXES:			# get rid of that annoying Modula rule
-.SUFFIXES: .f .f90 .c $(PC_META_TYPE).o .inc .h .dot .ps
+.SUFFIXES: .f .f90 .c $(PC_META_TYPE).o .inc .h .dot .ps .svg
 
 .f$(PC_META_TYPE).o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS)  -o $*$(PC_META_TYPE).o -c $*.f
@@ -613,6 +613,8 @@ endif
 #
 .dot.ps:
 	cat $*.dot | dot -Tps -o $*.ps
+.dot.svg:
+	cat $*.dot | dot -Tsvg -o $*.svg
 
 #
 # ---------------------------------------------------------------------- #
@@ -724,6 +726,8 @@ all.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot
 	scripts/mkdot -T "All f90 dependencies" *.f90 | grep -v "RVID_BOX" | grep -v "SURFACEDATA" | grep -v "MAIN_PROGRAM" | grep -v "WRITE_DEFAULT_NAMELISTS" > all.dot
 all_nocdata.dot: all.dot
 	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" > all_nocdata.dot
+all_nocdataexe.dot: all.dot
+	cat all.dot | grep -v "CDATA" | grep -v "CPARAM" | grep -v "RUN" | grep -v "START"| grep -v "READ_VIDEOFILES" | grep -v "READ_VECTORFILES" > all_nocdataexe.dot
 switchable.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot
 	scripts/mkdot -T "Switchable Module Dependencies" $(switchable:$(PC_META_TYPE).o=.f90) > switchable.dot
 run.dot: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkdot 
@@ -747,7 +751,23 @@ run_nocdata.ps: run_nocdata.dot
 start_nocdata.ps: start_nocdata.dot
 switchable_nocdata.ps: switchable_nocdata.dot
 #
-diagrams: run.ps run_nocdata.ps start.ps start_nocdata.ps switchable.ps switchable_nocdata.ps all.ps all_nocdata.ps
+all_nocdataexe.ps: all_nocdataexe.dot
+#
+diagrams: run.ps run_nocdata.ps start.ps start_nocdata.ps switchable.ps switchable_nocdata.ps all.ps all_nocdata.ps all_nocdataexe.ps
+#
+all.svg: all.dot
+run.svg: run.dot
+start.svg: start.dot
+#
+switchable.svg: switchable_nocdata.dot
+all_nocdata.svg: all_nocdata.dot
+run_nocdata.svg: run_nocdata.dot
+start_nocdata.svg: start_nocdata.dot
+switchable_nocdata.svg: switchable_nocdata.dot
+#
+all_nocdataexe.svg: all_nocdataexe.dot
+#
+diagrams_svg: run.svg run_nocdata.svg start.svg start_nocdata.svg switchable.svg switchable_nocdata.svg all.svg all_nocdata.svg all_nocdataexe.svg
 #
 #
 cparam$(PC_META_TYPE).inc: Makefile.src Makefile$(PC_META_TYPE).local scripts/mkcparam
