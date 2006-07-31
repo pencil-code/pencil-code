@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.3 2006-07-28 21:47:13 mee Exp $ 
+! $Id: shared_variables.f90,v 1.4 2006-07-31 14:31:41 ajohan Exp $ 
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -24,6 +24,8 @@
 !  be shared this way.
 !
 module SharedVariables 
+!
+  use Messages
 !
   implicit none
 !
@@ -110,11 +112,13 @@ module SharedVariables
 !
     endsubroutine initialize_shared_variables
 !***********************************************************************
-    subroutine get_variable_real0d(varname,variable,err) 
+    subroutine get_variable_real0d(varname,variable,ierr) 
       character (len=*) :: varname
       real, pointer :: variable
       type (shared_variable_list), pointer :: item
-      integer, optional :: err
+      integer, optional :: ierr
+!
+      if (present(ierr)) ierr=0
 !
       item=>thelist
       do while (associated(item))
@@ -124,8 +128,8 @@ module SharedVariables
             return
           else
             nullify(variable)
-            if (present(err)) then
-              err=iSHVAR_ERR_WRONGTYPE
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
               return
             endif
             print*,"Getting shared variable: ",varname
@@ -135,8 +139,8 @@ module SharedVariables
         item=>item%next
       enddo
       nullify(variable)
-      if (present(err)) then
-        err=iSHVAR_ERR_NOSUCHVAR
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
         return
       endif
       print*,"Getting shared variable: ",varname
@@ -144,11 +148,13 @@ module SharedVariables
 !    
     endsubroutine get_variable_real0d
 !***********************************************************************
-    subroutine get_variable_real1d(varname,variable,err) 
+    subroutine get_variable_real1d(varname,variable,ierr) 
       character (len=*) :: varname
       real, dimension(:), pointer :: variable
       type (shared_variable_list), pointer :: item
-      integer, optional :: err
+      integer, optional :: ierr
+!
+      if (present(ierr)) ierr=0
 !
       item=>thelist
       do while (associated(item))
@@ -157,8 +163,8 @@ module SharedVariables
             variable=>item%real1D
           else
             nullify(variable)
-            if (present(err)) then
-              err=iSHVAR_ERR_WRONGTYPE
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
               return
             endif
             print*,"Getting shared variable: ",varname
@@ -168,8 +174,8 @@ module SharedVariables
         item=>item%next
       enddo
       nullify(variable)
-      if (present(err)) then
-        err=iSHVAR_ERR_NOSUCHVAR
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
         return
       endif
       print*,"Getting shared variable: ",varname
@@ -177,11 +183,13 @@ module SharedVariables
 !    
     endsubroutine get_variable_real1d
 !***********************************************************************
-    subroutine get_variable_int0d(varname,variable,err) 
+    subroutine get_variable_int0d(varname,variable,ierr) 
       character (len=*) :: varname
       integer, pointer :: variable
       type (shared_variable_list), pointer :: item
-      integer, optional :: err
+      integer, optional :: ierr
+!
+      if (present(ierr)) ierr=0
 !
       item=>thelist
       do while (associated(item))
@@ -191,8 +199,8 @@ module SharedVariables
             return
           else
             nullify(variable)
-            if (present(err)) then
-              err=iSHVAR_ERR_WRONGTYPE
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
               return
             endif
             print*,"Getting shared variable: ",varname
@@ -202,8 +210,8 @@ module SharedVariables
         item=>item%next
       enddo
       nullify(variable)
-      if (present(err)) then
-        err=iSHVAR_ERR_NOSUCHVAR
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
         return
       endif
       print*,"Getting shared variable: ",varname
@@ -211,11 +219,13 @@ module SharedVariables
 !    
     endsubroutine get_variable_int0d
 !***********************************************************************
-    subroutine get_variable_int1d(varname,variable,err) 
+    subroutine get_variable_int1d(varname,variable,ierr) 
       character (len=*) :: varname
       integer, dimension(:), pointer :: variable
       type (shared_variable_list), pointer :: item
-      integer, optional :: err
+      integer, optional :: ierr
+!
+      if (present(ierr)) ierr=0
 !
       item=>thelist
       do while (associated(item))
@@ -224,8 +234,8 @@ module SharedVariables
             variable=>item%int1D
           else
             nullify(variable)
-            if (present(err)) then
-              err=iSHVAR_ERR_WRONGTYPE
+            if (present(ierr)) then
+              ierr=iSHVAR_ERR_WRONGTYPE
               return
             endif
             print*,"Getting shared variable: ",varname
@@ -235,8 +245,8 @@ module SharedVariables
         item=>item%next
       enddo
       nullify(variable)
-      if (present(err)) then
-        err=iSHVAR_ERR_NOSUCHVAR
+      if (present(ierr)) then
+        ierr=iSHVAR_ERR_NOSUCHVAR
         return
       endif
       print*,"Getting shared variable: ",varname
@@ -244,15 +254,17 @@ module SharedVariables
 !    
     endsubroutine get_variable_int1d
 !***********************************************************************
-    subroutine put_variable_int0d(varname,variable,err) 
+    subroutine put_variable_int0d(varname,variable,ierr) 
       character (len=*) :: varname
       integer, target :: variable
       type (shared_variable_list), pointer :: new
-      integer, optional :: err
+      integer, optional :: ierr
+!
+      if (present(ierr)) ierr=0
 !
       if (variable_exists(varname)) then
-        if (present(err)) then
-          err=iSHVAR_ERR_DUPLICATE
+        if (present(ierr)) then
+          ierr=iSHVAR_ERR_DUPLICATE
           return
         endif
         print*,"Setting shared variable: ",varname
@@ -266,15 +278,17 @@ module SharedVariables
 !    
     endsubroutine put_variable_int0d
 !***********************************************************************
-    subroutine put_variable_int1d(varname,variable,err) 
+    subroutine put_variable_int1d(varname,variable,ierr) 
       character (len=*) :: varname
       integer, dimension(:), target :: variable
       type (shared_variable_list), pointer :: new
-      integer, optional :: err
+      integer, optional :: ierr
+!
+      if (present(ierr)) ierr=0
 !
       if (variable_exists(varname)) then
-        if (present(err)) then
-          err=iSHVAR_ERR_DUPLICATE
+        if (present(ierr)) then
+          ierr=iSHVAR_ERR_DUPLICATE
           return
         endif
         print*,"Setting shared variable: ",varname
@@ -288,14 +302,19 @@ module SharedVariables
 !    
     endsubroutine put_variable_int1d
 !***********************************************************************
-    subroutine put_variable_real0d(varname,variable,err) 
+    subroutine put_variable_real0d(varname,variable,ierr) 
+!
       character (len=*) :: varname
       real, target :: variable
+      integer, optional :: ierr
+!
       type (shared_variable_list), pointer :: new
 !
+      if (present(ierr)) ierr=0
+!
       if (variable_exists(varname)) then
-        if (present(err)) then
-          err=iSHVAR_ERR_DUPLICATE
+        if (present(ierr)) then
+          ierr=iSHVAR_ERR_DUPLICATE
           return
         endif
         print*,"Setting shared variable: ",varname
@@ -309,15 +328,17 @@ module SharedVariables
 !    
     endsubroutine put_variable_real0d
 !***********************************************************************
-    subroutine put_variable_real1d(varname,variable,err) 
+    subroutine put_variable_real1d(varname,variable,ierr) 
       character (len=*) :: varname
       real, dimension(:), target :: variable
       type (shared_variable_list), pointer :: new
-      integer, optional :: err
+      integer, optional :: ierr
+!
+      if (present(ierr)) ierr=0
 !
       if (variable_exists(varname)) then
-        if (present(err)) then
-          err=iSHVAR_ERR_DUPLICATE
+        if (present(ierr)) then
+          ierr=iSHVAR_ERR_DUPLICATE
           return
         endif
         print*,"Setting shared variable: ",varname
@@ -339,13 +360,14 @@ module SharedVariables
       item=>thelist
       do while (associated(item))
         if (item%varname==varname) then
-          return .true.
+          variable_exists=.true.
         endif
         item=>item%next
       enddo
-      return .false.
+      variable_exists=.false.
+      return
 !    
-    endsubroutine get_variable_int0d
+    endfunction variable_exists
 !***********************************************************************
     subroutine free_list(list) 
       type (shared_variable_list), pointer :: list
