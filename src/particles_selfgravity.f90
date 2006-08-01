@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.7 2006-07-31 14:33:11 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.8 2006-08-01 06:14:20 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.7 2006-07-31 14:33:11 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.8 2006-08-01 06:14:20 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -106,15 +106,19 @@ module Particles_selfgravity
       real :: rhs_poisson_const
       logical :: lcontinued
 !
-      if (lselfgravity_particles) then
-        if (lcontinued) then  ! Potential has already been zeroed by the gas.
-          rhs_poisson=rhs_poisson+ &
-              rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhop)
-        else                  ! Must zero potential from last time-step.
-          rhs_poisson= &
-              rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhop)
+      if (t>=tstart_selfgrav) then
+!
+        if (lselfgravity_particles) then
+          if (lcontinued) then  ! Potential has already been zeroed by the gas.
+            rhs_poisson=rhs_poisson+ &
+                rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhop)
+          else                  ! Must zero potential from last time-step.
+            rhs_poisson= &
+                rhs_poisson_const*f(l1:l2,m1:m2,n1:n2,irhop)
+          endif
         endif
-      endif
+!
+      endif  ! if (t>=tstart_selfgrav) then
 !
     endsubroutine calc_selfpotential_particles
 !***********************************************************************
