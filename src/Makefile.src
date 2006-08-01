@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.223 2006-07-31 15:38:11 mee Exp $
+### $Id: Makefile.src,v 1.224 2006-08-01 13:31:28 snod Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -212,7 +212,7 @@ LD_FFTW2=
 #FC=/people/disk2/brandenb/bin/ifort -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=~dobler/opt/intel/compiler70/ia32/bin/ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 ##FC=ifort -I/usr/local/lib/LAM/include #(fe[0-9])
-#FC=fort -I/usr/lib/lam/include #(mhd)
+#FC=fort -I/usr/lib/lam/include #(mhd|metropolis)
 #FC=mpif90 #(Nunatak[0-9])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
 #FC=ifc #(nl19)
@@ -243,6 +243,7 @@ LD_FFTW2=
 #FFLAGS=-O # (Samos)
 #FFLAGS= -fast -lm # (fire)
 #FFLAGS= -fast -O5 -notransform_loops -tune ev6 -arch ev6 #(mhd)
+#FFLAGS= -fast -O5 -notransform_loops -tune ev67 -arch ev67 #(metropolis)
 ##AB: next line uncommented on Tobi's advice
 #LD_MPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread #(fe[0-4])
 #LD_MPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
@@ -281,10 +282,10 @@ LD_FFTW2=
 #LD_MPI=-L/opt/mpich/lib #(nw43)
 #LD_MPI=-L/usr/local/mpich/lib #(pcponty)
 #LD_MPI= # (Samos|fire|sandin)
-#LD_MPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd)
+#LDMPI=-L/usr/lib/lam/lib -llam -lmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd|metropolis)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx|opto[1-4])
 #CFLAGS=-DFUNDERSC=1 #(obelix)
-#CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
+#CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd|metropolis)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin)
 #F77=$(FC) -lm  #(tycho|monolith)
 #F77=$(FC) #(erland|bohm|igor|onsager)
@@ -820,7 +821,7 @@ nompicomm_.f90: nompicomm.f90
 EXECUTABLES=start$(PC_META_TYPE).x run$(PC_META_TYPE).x \
 	read_videofiles$(PC_META_TYPE).x read_vectorfiles$(PC_META_TYPE).x
         # write_dummy_namelists$(PC_META_TYPE).x
-code:
+code: Makefile_inc
 	if [ ! -z "$(FCCLEANER)" ]; then \
 	    ($(MAKE) $(MAKEOPTS) $(EXECUTABLES) \
 	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
