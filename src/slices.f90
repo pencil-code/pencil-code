@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.65 2006-08-01 19:02:48 mee Exp $
+! $Id: slices.f90,v 1.66 2006-08-01 19:03:56 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -26,7 +26,7 @@ module Slices
   real, public, dimension (nx,ny) :: nd_xy
   real, public, dimension (nx,ny,ndustspec) :: md_xy
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy,shock_xy,Qrad_xy,ecr_xy
+  real, public, dimension (nx,ny) :: yH_xy,Qrad_xy,ecr_xy
   real, public, dimension (nx,ny,3) :: Frad_xy
 !  Derived variables
   real, public, dimension (nx,ny,3) :: oo_xy,bb_xy
@@ -42,7 +42,7 @@ module Slices
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy2,shock_xy2,Qrad_xy2,ecr_xy2
+  real, public, dimension (nx,ny) :: yH_xy2,Qrad_xy2,ecr_xy2
   real, public, dimension (nx,ny,3) :: Frad_xy2
 !  Derived variables
   real, public, dimension (nx,ny,3) :: oo_xy2,bb_xy2
@@ -58,7 +58,7 @@ module Slices
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
 !  Auxiliary variables  
-  real, public, dimension (nx,nz) :: yH_xz,shock_xz,Qrad_xz,ecr_xz
+  real, public, dimension (nx,nz) :: yH_xz,Qrad_xz,ecr_xz
   real, public, dimension (nx,nz,3) :: Frad_xz
 !  Derived variables
   real, public, dimension (nx,nz,3) :: oo_xz,bb_xz
@@ -74,7 +74,7 @@ module Slices
   real, public, dimension (ny,nz) :: nd_yz
   real, public, dimension (ny,nz,ndustspec) :: md_yz
 !  Auxiliary variables  
-  real, public, dimension (ny,nz) :: yH_yz,shock_yz,Qrad_yz,ecr_yz
+  real, public, dimension (ny,nz) :: yH_yz,Qrad_yz,ecr_yz
   real, public, dimension (ny,nz,3) :: Frad_yz
 !  Derived variables
   real, public, dimension (ny,nz,3) :: oo_yz,bb_yz
@@ -361,18 +361,6 @@ module Slices
           call wslice(path//'yH.xz',yH_xz,y(iy_loc),nx,nz)
           call wslice(path//'yH.xy',yH_xy,z(iz_loc),nx,ny)
           call wslice(path//'yH.Xy',yH_xy2,z(iz2_loc),nx,ny)
-!
-!  Shock viscosity (auxiliary variable)
-!
-        case ('shock')
-          shock_yz=f(ix_loc,m1:m2,n1:n2,ishock)
-          shock_xz=f(l1:l2,iy_loc,n1:n2,ishock)
-          shock_xy=f(l1:l2,m1:m2,iz_loc,ishock)
-          shock_xy2=f(l1:l2,m1:m2,iz2_loc,ishock)
-          call wslice(path//'shock.yz',shock_yz,x(ix_loc),ny,nz)
-          call wslice(path//'shock.xz',shock_xz,y(iy_loc),nx,nz)
-          call wslice(path//'shock.xy',shock_xy,z(iz_loc),nx,ny)
-          call wslice(path//'shock.Xy',shock_xy2,z(iz2_loc),nx,ny)
 !
 !  Heating rate (auxiliary variable)
 !
