@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.40 2006-07-31 15:38:11 mee Exp $
+### $Id: Makefile.depend,v 1.41 2006-08-01 19:02:48 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -35,7 +35,7 @@ nofourier$(PC_META_TYPE).o:       nofourier.f90 fourier.h messages$(PC_META_TYPE
 fourier_fft$(PC_META_TYPE).o:     fourier_fft.f90 fft.o fourier.h messages$(PC_META_TYPE).o $(MPICOMM_FIX).o cparam.o cdata.o
 fourier_fftpack$(PC_META_TYPE).o: fourier_fftpack.f90 fftpack.o fourier.h messages$(PC_META_TYPE).o $(MPICOMM_FIX).o cparam.o cdata.o
 
-slices$(PC_META_TYPE).o:    slices.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
+slices$(PC_META_TYPE).o:    slices.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o
 deriv$(PC_META_TYPE).o:     deriv.f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o
 $(BORDER_PROF)$(PC_META_TYPE).o:  $(BORDER_PROF).f90 cdata$(PC_META_TYPE).o
 sub$(PC_META_TYPE).o:       sub.f90 cdata$(PC_META_TYPE).o deriv$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o

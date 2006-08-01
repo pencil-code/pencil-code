@@ -1,4 +1,4 @@
-! $Id: noshock.f90,v 1.4 2005-07-05 16:21:43 mee Exp $
+! $Id: noshock.f90,v 1.5 2006-08-01 19:02:48 mee Exp $
 
 !  This module calculates a divergence of u based shock finding
 !  profile used by shock viscosities and diffusion terms.
@@ -63,7 +63,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshock.f90,v 1.4 2005-07-05 16:21:43 mee Exp $")
+           "$Id: noshock.f90,v 1.5 2006-08-01 19:02:48 mee Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************
@@ -121,6 +121,19 @@ module Shock
 !
       if (NO_WARN) print*,lreset,present(lwrite) !(to keep compiler quiet)
     endsubroutine rprint_shock
+!***********************************************************************
+    subroutine get_slices_shock(f,slices)
+!
+!  Write slices for animation of particle variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+!
+    endsubroutine get_slices_shock
 !!***********************************************************************
     subroutine pencil_criteria_shock()
 !    

@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.26 2006-08-01 10:10:39 ajohan Exp $
+! $Id: nointerstellar.f90,v 1.27 2006-08-01 19:02:48 mee Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.26 2006-08-01 10:10:39 ajohan Exp $")
+           "$Id: nointerstellar.f90,v 1.27 2006-08-01 19:02:48 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -112,6 +112,19 @@ module Interstellar
       if (NO_WARN) print*,lreset
 !
     endsubroutine rprint_interstellar
+!***********************************************************************
+    subroutine get_slices_interstellar(f,slices)
+!
+!  Write slices for animation of particle variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+!
+    endsubroutine get_slices_interstellar
 !!***********************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
       integer, intent(in) :: unit

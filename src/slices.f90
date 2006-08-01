@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.64 2006-07-18 19:18:23 mee Exp $
+! $Id: slices.f90,v 1.65 2006-08-01 19:02:48 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -135,7 +135,9 @@ module Slices
       use EquationOfState, only: eoscalc, ilnrho_ss
       use General
       use Messages
-      use Particles_main
+      use Particles_main, only: get_slices_particles
+      use Interstellar, only: get_slices_interstellar
+      use Shock, only: get_slices_shock
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -615,7 +617,9 @@ module Slices
 ! Add new slice providing routines here!
 !
           lslices_legacy=.false.
-          if (lparticles) call get_slices_particles(f,slices)
+          if (lparticles)    call get_slices_particles   (f,slices)
+          if (lshock)        call get_slices_shock       (f,slices)
+          if (linterstellar) call get_slices_interstellar(f,slices)
 !
         endselect
 

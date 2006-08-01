@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.18 2006-07-17 11:36:48 mee Exp $
+! $Id: shock.f90,v 1.19 2006-08-01 19:02:48 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -102,7 +102,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.18 2006-07-17 11:36:48 mee Exp $")
+           "$Id: shock.f90,v 1.19 2006-08-01 19:02:48 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -252,6 +252,34 @@ module Shock
 !   
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_shock
+!***********************************************************************
+    subroutine get_slices_shock(f,slices)
+!
+!  Write slices for animation of shock variable.
+!
+!  26-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Shock profile
+!
+        case ('shock')
+          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,ishock)
+          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,ishock)
+          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,ishock)
+          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,ishock)
+          slices%ready = .true.
+!
+      endselect
+!
+    endsubroutine get_slices_shock
 !!***********************************************************************
     subroutine pencil_criteria_shock()
 !    

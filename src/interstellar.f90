@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.127 2006-07-30 13:47:52 mee Exp $
+! $Id: interstellar.f90,v 1.128 2006-08-01 19:02:48 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -332,7 +332,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.127 2006-07-30 13:47:52 mee Exp $")
+           "$Id: interstellar.f90,v 1.128 2006-08-01 19:02:48 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -629,6 +629,34 @@ module Interstellar
 !
     endsubroutine rprint_interstellar
 !***********************************************************************
+    subroutine get_slices_interstellar(f,slices)
+!
+!  Write slices for animation of interstellar variables.
+!
+!  26-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Shock profile
+!
+        case ('ism_cool')
+          slices%yz=f(slices%ix,m1:m2    ,n1:n2     ,icooling)
+          slices%xz=f(l1:l2    ,slices%iy,n1:n2     ,icooling)
+          slices%xy=f(l1:l2    ,m1:m2    ,slices%iz ,icooling)
+          slices%xy2=f(l1:l2   ,m1:m2    ,slices%iz2,icooling)
+          slices%ready = .true.
+!
+      endselect
+!
+    endsubroutine get_slices_interstellar
+!***********************************************************************
     subroutine read_interstellar_init_pars(unit,iostat)
       integer, intent(in) :: unit
       integer, intent(inout), optional :: iostat
@@ -859,7 +887,7 @@ cool_loop: do i=1,ncool
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
 !  so therefore we now need to multiply by TT1.
 !
-       f(l1:l2,m,n,icooling)=cool
+       f(l1:l2,m,n,icooling)=cool !/p%ee
        if (ltemperature) then
          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%TT1*(heat-cool)*gamma
        elseif (pretend_lnTT) then
