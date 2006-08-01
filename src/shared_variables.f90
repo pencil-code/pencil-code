@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.6 2006-07-31 15:24:43 mee Exp $ 
+! $Id: shared_variables.f90,v 1.7 2006-08-01 12:30:14 mee Exp $ 
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -41,7 +41,7 @@ module SharedVariables
     module procedure get_variable_int0d
     module procedure get_variable_int1d
 !    module procedure get_variable_char
-  endinterface get_shared_variable
+  endinterface
 !
   interface put_shared_variable
     module procedure put_variable_real0d
@@ -49,7 +49,7 @@ module SharedVariables
     module procedure put_variable_int0d
     module procedure put_variable_int1d
 !    module procedure put_variable_char
-  endinterface put_shared_variable
+  endinterface
 !
 ! Used internally to keep track ot the type of data
 ! stored in the shared variables list.
@@ -92,7 +92,7 @@ module SharedVariables
 ! Linked list link to next list element 
 !
     type (shared_variable_list), pointer :: next
-  endtype
+  endtype shared_variable_list
 !
 ! The head of the list (initially empty)
 !
