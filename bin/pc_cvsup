@@ -59,16 +59,16 @@ add_update_path samples doc
 # Shallow update other paths in the selected subdirectories 
 if [ "$UPDATE_PATHS_NONEWDIR" ]; then
   echo "Updating the subtrees of $PENCIL_HOME ($UPDATE_PATHS_NONEWDIR)"
-  cvs -q up -P $EXTRA_ARGS $UPDATE_PATHS_NONEWDIR
+  cvs -q up -A -P $EXTRA_ARGS $UPDATE_PATHS_NONEWDIR
 fi
 
 # Update files in the PENCIL_HOME root
 echo "Updating the root of $PENCIL_HOME"
-cvs -q up -l $EXTRA_ARGS .
+cvs -q up -A -l $EXTRA_ARGS .
 
 # Update files in the selected subdirectories 
 echo "Updating the subtrees of $PENCIL_HOME ($UPDATE_PATHS)"
-cvs -q up -dP $EXTRA_ARGS $UPDATE_PATHS
+cvs -q up -A -dP $EXTRA_ARGS $UPDATE_PATHS
 
 
 
