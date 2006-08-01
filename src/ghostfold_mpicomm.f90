@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.4 2006-07-30 22:36:21 mee Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.5 2006-08-01 14:28:34 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -371,7 +371,7 @@ module GhostFold
 !
 !  Back to real space.
 !
-      do n=1,nz
+      do n=1,nz_new
         call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),-1)
       enddo
 !
