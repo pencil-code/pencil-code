@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.57 2006-07-19 00:19:13 snod Exp $
+! $Id: nohydro.f90,v 1.58 2006-08-01 10:10:39 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.57 2006-07-19 00:19:13 snod Exp $")
+           "$Id: nohydro.f90,v 1.58 2006-08-01 10:10:39 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -294,7 +294,7 @@ module Hydro
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
       endif
 !     
-      if(NO_WARN) print*,f(1,1,1,1)   !(keep compiler quiet)
+      if(NO_WARN) print*,f   !(keep compiler quiet)
 !
     endsubroutine calc_pencils_hydro
 !***********************************************************************

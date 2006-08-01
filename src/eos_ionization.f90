@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.35 2006-07-12 19:52:04 dintrans Exp $
+! $Id: eos_ionization.f90,v 1.36 2006-08-01 10:10:39 ajohan Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.35 2006-07-12 19:52:04 dintrans Exp $")
+           "$Id: eos_ionization.f90,v 1.36 2006-08-01 10:10:39 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1379,7 +1379,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
     endsubroutine bc_ss_temp_old
 !***********************************************************************
     subroutine bc_ss_temp_x(f,topbot)
@@ -1396,7 +1396,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_x
 !***********************************************************************
@@ -1414,7 +1414,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
@@ -1432,7 +1432,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
@@ -1449,7 +1449,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_lnrho_temp_z
 !***********************************************************************
@@ -1466,7 +1466,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
@@ -1484,7 +1484,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
@@ -1502,7 +1502,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_stemp_x
 !***********************************************************************
@@ -1520,7 +1520,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
@@ -1640,7 +1640,7 @@ module EquationOfState
 !  first!)
 !
       call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_ss_energy
 !***********************************************************************
@@ -1652,7 +1652,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_stellar_surface
 !***********************************************************************
@@ -1665,7 +1665,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar), optional :: df
 !
       call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f(1,1,1,1),df(1,1,1,1),topbot
+      if (NO_WARN) print*,f,df,topbot
 !
     end subroutine bc_stellar_surface_2
 !***********************************************************************
@@ -1677,7 +1677,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************

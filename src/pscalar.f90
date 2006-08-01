@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.60 2006-04-17 15:27:28 ajohan Exp $
+! $Id: pscalar.f90,v 1.61 2006-08-01 10:10:39 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -85,7 +85,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.60 2006-04-17 15:27:28 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.61 2006-08-01 10:10:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -508,7 +508,7 @@ module Pscalar
         print*,'read bunit.dat with dimension: ',nx,ny,nz,3
         read(1) bunit,hhh
         close(1)
-        print*,'read bunit.dat; bunit(1,1,1,1)=',bunit(1,1,1,1)
+        print*,'read bunit.dat; bunit=',bunit
       endif
 !
 !  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij

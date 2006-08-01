@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.49 2006-05-04 14:43:40 dintrans Exp $
+! $Id: pscalar_nolog.f90,v 1.50 2006-08-01 10:10:39 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc.
@@ -110,7 +110,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.49 2006-05-04 14:43:40 dintrans Exp $")
+           "$Id: pscalar_nolog.f90,v 1.50 2006-08-01 10:10:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -726,7 +726,7 @@ module Pscalar
         print*,'read bunit.dat with dimension: ',nx,ny,nz,3
         read(1) bunit,hhh
         close(1)
-        print*,'read bunit.dat; bunit(1,1,1,1)=',bunit(1,1,1,1)
+        print*,'read bunit.dat; bunit=',bunit
       endif
 !
 !  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij

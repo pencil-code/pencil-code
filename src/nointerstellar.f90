@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.25 2006-07-17 11:26:21 mee Exp $
+! $Id: nointerstellar.f90,v 1.26 2006-08-01 10:10:39 ajohan Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.25 2006-07-17 11:26:21 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.26 2006-08-01 10:10:39 ajohan Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +181,7 @@ module Interstellar
     real, dimension(mx,my,mz,mvar) :: df
 !
 ! (to keep compiler quiet)
-      if (NO_WARN) print*,'SN check',f(1,1,1,1),df(1,1,1,1)
+      if (NO_WARN) print*,'SN check',f,df
 !
     endsubroutine check_SN
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.136 2006-07-30 19:46:12 ajohan Exp $
+! $Id: nompicomm.f90,v 1.137 2006-08-01 10:10:39 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -157,7 +157,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*,f(1,1,1,1)   !(keep compiler quiet)
+      if (NO_WARN) print*,f   !(keep compiler quiet)
 !
     endsubroutine initiate_isendrcv_shockbdry
 !***********************************************************************
@@ -170,7 +170,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      if (NO_WARN) print*,f(1,1,1,1)   !(keep compiler quiet)
+      if (NO_WARN) print*,f   !(keep compiler quiet)
     endsubroutine finalize_isendrcv_shockbdry
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)

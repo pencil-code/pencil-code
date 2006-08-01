@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.316 2006-07-28 23:02:32 mee Exp $
+! $Id: equ.f90,v 1.317 2006-08-01 10:10:39 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -375,7 +375,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.316 2006-07-28 23:02:32 mee Exp $")
+           "$Id: equ.f90,v 1.317 2006-08-01 10:10:39 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -1155,7 +1155,7 @@ f_loop:   do iv=1,mvar
 !
       if (ldie) call fatal_error('pencil_consistency_check','DYING')
 !
-      if (NO_WARN) print*, f(1,1,1,1) !(keep compiler quiet)
+      if (NO_WARN) print*, f !(keep compiler quiet)
 !
     endsubroutine pencil_consistency_check
 !***********************************************************************

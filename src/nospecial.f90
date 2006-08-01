@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.20 2006-07-29 18:06:33 mee Exp $
+! $Id: nospecial.f90,v 1.21 2006-08-01 10:10:39 ajohan Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.20 2006-07-29 18:06:33 mee Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.21 2006-08-01 10:10:39 ajohan Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.20 2006-07-29 18:06:33 mee Exp $")
+           "$Id: nospecial.f90,v 1.21 2006-08-01 10:10:39 ajohan Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -244,7 +244,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !     
-      if(NO_WARN) print*,f(1,1,1,1),p   !(keep compiler quiet)
+      if(NO_WARN) print*,f,p   !(keep compiler quiet)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -502,7 +502,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       type (boundary_condition) :: bc
 !
-      if (NO_WARN) print*,f(1,1,1,1),bc%bcname
+      if (NO_WARN) print*,f,bc%bcname
 !
     endsubroutine special_boundconds
 !***********************************************************************
@@ -520,7 +520,7 @@ module Special
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
 !
-      if (NO_WARN) print*,f(1,1,1,1)
+      if (NO_WARN) print*,f
 !
     endsubroutine special_before_boundary
 !***********************************************************************

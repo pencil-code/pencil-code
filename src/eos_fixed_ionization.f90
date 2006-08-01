@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.24 2006-07-12 19:52:04 dintrans Exp $
+! $Id: eos_fixed_ionization.f90,v 1.25 2006-08-01 10:10:39 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.24 2006-07-12 19:52:04 dintrans Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.25 2006-08-01 10:10:39 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -948,7 +948,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_flux: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),hcond0,hcond1,Fbot, FbotKbot, chi,lmultilayer,lcalc_heatcond_constchi,topbot
+      if (NO_WARN) print*,f,hcond0,hcond1,Fbot, FbotKbot, chi,lmultilayer,lcalc_heatcond_constchi,topbot
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
@@ -968,7 +968,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_old
 !***********************************************************************
@@ -985,7 +985,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_x
 !***********************************************************************
@@ -1002,7 +1002,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
@@ -1021,7 +1021,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       integer :: i
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
@@ -1038,7 +1038,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_lnrho_temp_z
 !***********************************************************************
@@ -1055,7 +1055,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
@@ -1073,7 +1073,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_temp2_z
 !***********************************************************************
@@ -1090,7 +1090,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_stemp_x
 !***********************************************************************
@@ -1107,7 +1107,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
         call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
@@ -1124,7 +1124,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     endsubroutine bc_ss_stemp_z
 !***********************************************************************
@@ -1148,7 +1148,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_ss_energy
 !***********************************************************************
@@ -1160,7 +1160,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_stellar_surface
 !***********************************************************************
@@ -1173,7 +1173,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar), optional :: df
 !
       call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
-      if (NO_WARN) print*,f(1,1,1,1),df(1,1,1,1),topbot
+      if (NO_WARN) print*,f,df,topbot
 !
     end subroutine bc_stellar_surface_2
 !***********************************************************************
@@ -1185,7 +1185,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_FIXED")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************

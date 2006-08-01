@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.11 2005-06-27 00:14:19 mee Exp $ 
+! $Id: notimeavg.f90,v 1.12 2006-08-01 10:10:39 ajohan Exp $ 
 
 module Timeavg
 
@@ -29,7 +29,7 @@ module Timeavg
       
       intent (in) :: a
 !
-      if (ip < 0) print*, a(1,1,1,1)
+      if (ip < 0) print*, a
 !
     endsubroutine initialize_timeavg
 !***********************************************************************
@@ -42,7 +42,7 @@ module Timeavg
 
       intent (in) :: a
 !
-      if (ip < 0) print*, a(1,1,1,1),dt,present(init)
+      if (ip < 0) print*, a,dt,present(init)
 !
     endsubroutine update_timeavgs
 !***********************************************************************

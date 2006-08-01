@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.41 2006-07-12 19:52:04 dintrans Exp $
+! $Id: eos_temperature_ionization.f90,v 1.42 2006-08-01 10:10:39 ajohan Exp $
 
 !  Dummy routine for ideal gas
 
@@ -122,7 +122,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.41 2006-07-12 19:52:04 dintrans Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.42 2006-08-01 10:10:39 ajohan Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -2062,7 +2062,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_TEMP")
-      if (NO_WARN) print*,f(1,1,1,1),topbot
+      if (NO_WARN) print*,f,topbot
 !
     end subroutine bc_lnrho_hydrostatic_z
 !***********************************************************************

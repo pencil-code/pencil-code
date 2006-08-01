@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.95 2006-07-13 23:13:44 theine Exp $
+! $Id: radiation_ray.f90,v 1.96 2006-08-01 10:10:39 ajohan Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -165,7 +165,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.95 2006-07-13 23:13:44 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.96 2006-08-01 10:10:39 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1529,7 +1529,7 @@ module Radiation
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
 !
     end subroutine bc_ee_inflow_x
 !***********************************************************************
@@ -1542,7 +1542,7 @@ module Radiation
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************

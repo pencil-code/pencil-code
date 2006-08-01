@@ -123,7 +123,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
 
   write(unitno,"(a)") "      call stop_it('shock_calc_internalboundary: Should not used in communicated uu shock')"
-  write(unitno,"(a)") "      if (NO_WARN) print*,f(1,1,1,1)"
+  write(unitno,"(a)") "      if (NO_WARN) print*,f"
   write(unitno,"(a)") "  endsubroutine shock_calc_internalboundary"
 
 endsubroutine make_calc_internalboundary
@@ -146,7 +146,7 @@ subroutine make_calc_externalboundary(unitno)
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
   write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
   write(unitno,"(a)") "      call stop_it('shock_calc_externalboundary: Should not used in communicated uu shock')"
-  write(unitno,"(a)") "      if (NO_WARN) print*,f(1,1,1,1)"
+  write(unitno,"(a)") "      if (NO_WARN) print*,f"
 
   write(unitno,"(a)") "  endsubroutine shock_calc_externalboundary"
 endsubroutine make_calc_externalboundary
