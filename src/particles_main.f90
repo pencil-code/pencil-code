@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.40 2006-08-01 10:14:08 ajohan Exp $
+! $Id: particles_main.f90,v 1.41 2006-08-01 19:05:03 mee Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -400,27 +400,27 @@ module Particles_main
 !  Dust number density (auxiliary variable)
 !
         case ('np')
-          slices%yz=f(ix_loc,m1:m2,n1:n2,inp)
-          slices%xz=f(l1:l2,iy_loc,n1:n2,inp)
-          slices%xy=f(l1:l2,m1:m2,iz_loc,inp)
-          slices%xy2=f(l1:l2,m1:m2,iz2_loc,inp)
+          slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,inp)
+          slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,inp)
+          slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,inp)
+          slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,inp)
           slices%ready = .true.
 !
 !  Dust density (auxiliary variable)
 !
         case ('rhop')
           if (irhop/=0) then
-            slices%yz=f(ix_loc,m1:m2,n1:n2,irhop)
-            slices%xz=f(l1:l2,iy_loc,n1:n2,irhop)
-            slices%xy=f(l1:l2,m1:m2,iz_loc,irhop)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,irhop)
+            slices%yz= f(slices%ix,m1:m2    ,n1:n2     ,irhop)
+            slices%xz= f(l1:l2    ,slices%iy,n1:n2     ,irhop)
+            slices%xy= f(l1:l2    ,m1:m2    ,slices%iz ,irhop)
+            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,irhop)
             slices%ready = .true.
           else
-            slices%yz=rhop_tilde*f(ix_loc,m1:m2,n1:n2,inp)
-            slices%xz=rhop_tilde*f(l1:l2,iy_loc,n1:n2,inp)
-            slices%xy=rhop_tilde*f(l1:l2,m1:m2,iz_loc,inp)
-            slices%xy2=rhop_tilde*f(l1:l2,m1:m2,iz2_loc,inp)
-            slices%ready = .true.
+            slices%yz= rhop_tilde * f(slices%ix,m1:m2    ,n1:n2     ,inp)
+            slices%xz= rhop_tilde * f(l1:l2    ,slices%iy,n1:n2     ,inp)
+            slices%xy= rhop_tilde * f(l1:l2    ,m1:m2    ,slices%iz ,inp)
+            slices%xy2=rhop_tilde * f(l1:l2    ,m1:m2    ,slices%iz2,inp)
+           slices%ready = .true.
           endif
 !
       endselect
