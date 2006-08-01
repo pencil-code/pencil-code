@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.39 2006-07-28 14:00:38 wlyra Exp $
+! $Id: particles_main.f90,v 1.40 2006-08-01 10:14:08 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -417,10 +417,10 @@ module Particles_main
             slices%ready = .true.
           else
             slices%yz=rhop_tilde*f(ix_loc,m1:m2,n1:n2,inp)
-            slices%xz=f(l1:l2,iy_loc,n1:n2,inp)
-            slices%xy=f(l1:l2,m1:m2,iz_loc,inp)
-            slices%xy2=f(l1:l2,m1:m2,iz2_loc,inp)
-           slices%ready = .true.
+            slices%xz=rhop_tilde*f(l1:l2,iy_loc,n1:n2,inp)
+            slices%xy=rhop_tilde*f(l1:l2,m1:m2,iz_loc,inp)
+            slices%xy2=rhop_tilde*f(l1:l2,m1:m2,iz2_loc,inp)
+            slices%ready = .true.
           endif
 !
       endselect
