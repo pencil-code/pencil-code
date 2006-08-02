@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.97 2006-08-02 16:05:52 mee Exp $
+! $Id: radiation_ray.f90,v 1.98 2006-08-02 18:46:26 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -169,7 +169,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.97 2006-08-02 16:05:52 mee Exp $")
+           "$Id: radiation_ray.f90,v 1.98 2006-08-02 18:46:26 mee Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1552,10 +1552,10 @@ module Radiation
 !  Heating rate (auxiliary variable)
 !
         case ('Qrad')
-          slice%yz=f(ix_loc,m1:m2,n1:n2,iQrad)
-          slice%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
-          slice%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
-          slice%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
+          slices%yz=f(ix_loc,m1:m2,n1:n2,iQrad)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
           slices%ready = .true.
 !
 !  Radiative Flux (auxiliary variable)
