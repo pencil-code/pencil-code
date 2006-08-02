@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.40 2006-05-15 21:29:03 brandenb Exp $
+! $Id: radiation.f90,v 1.41 2006-08-02 16:05:52 mee Exp $
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
@@ -99,7 +99,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.40 2006-05-15 21:29:03 brandenb Exp $")
+           "$Id: radiation.f90,v 1.41 2006-08-02 16:05:52 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -513,6 +513,19 @@ module Radiation
       endif
 !
     endsubroutine rprint_radiation
+!***********************************************************************
+    subroutine get_slices_radiation(f,slices)
+!
+!  Write slices for animation of radiation variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+!
+    endsubroutine get_slices_radiation
 !***********************************************************************
     subroutine flux_limiter(f,df,rho1,kappa,gradE,E_rad,P_tens,divF)
 !

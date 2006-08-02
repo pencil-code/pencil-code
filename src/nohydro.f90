@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.58 2006-08-01 10:10:39 ajohan Exp $
+! $Id: nohydro.f90,v 1.59 2006-08-02 16:05:52 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.58 2006-08-01 10:10:39 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.59 2006-08-02 16:05:52 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -845,6 +845,19 @@ module Hydro
       endif
 !
     endsubroutine rprint_hydro
+!***********************************************************************
+    subroutine get_slices_hydro(f,slices)
+!
+!  Write slices for animation of hydro variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+!
+    endsubroutine get_slices_hydro
 !***********************************************************************
     subroutine calc_mflow
 !

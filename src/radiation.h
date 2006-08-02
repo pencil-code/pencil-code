@@ -5,6 +5,7 @@
   public :: read_radiation_init_pars, write_radiation_init_pars
   public :: read_radiation_run_pars,  write_radiation_run_pars
   public :: rprint_radiation
+  public :: get_slices_radiation
   public :: pencil_criteria_radiation, pencil_interdep_radiation
   public :: calc_pencils_radiation
 

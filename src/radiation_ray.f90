@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.96 2006-08-01 10:10:39 ajohan Exp $
+! $Id: radiation_ray.f90,v 1.97 2006-08-02 16:05:52 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -41,7 +41,11 @@ module Radiation
     real, pointer :: val
     logical, pointer :: set
   endtype Qpoint
-
+!
+! Slice precalculation buffers
+!
+  real, target, dimension (nx,ny) :: Isurf_xy
+!
   real, dimension (mx,my,mz) :: Srad,tau,Qrad,Qrad0
   real, dimension (mx,my,mz,3) :: Frad
   type (Qbound), dimension (my,mz), target :: Qbc_yz
@@ -165,7 +169,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.96 2006-08-01 10:10:39 ajohan Exp $")
+           "$Id: radiation_ray.f90,v 1.97 2006-08-02 16:05:52 mee Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -965,7 +969,6 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata, only: ldebug,headt,directory_snap
-      use Slices, only: Isurf_xy
       use IO, only: output
 !
 !  identifier
@@ -1519,6 +1522,59 @@ module Radiation
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
 !        
     endsubroutine rprint_radiation
+!***********************************************************************
+    subroutine get_slices_radiation(f,slices)
+!
+!  Write slices for animation of radiation variables.
+!
+!  26-jul-06/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Surface intensity (derived variable)
+!
+        case ('Isurf')
+          nullify(slices%yz)
+          nullify(slices%xz)
+          slices%xy=>Isurf_xy
+          nullify(slices%xy2)
+          slices%ready = .true.
+!
+!  Heating rate (auxiliary variable)
+!
+        case ('Qrad')
+          slice%yz=f(ix_loc,m1:m2,n1:n2,iQrad)
+          slice%xz=f(l1:l2,iy_loc,n1:n2,iQrad)
+          slice%xy=f(l1:l2,m1:m2,iz_loc,iQrad)
+          slice%xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
+          slices%ready = .true.
+!
+!  Radiative Flux (auxiliary variable)
+!
+        case ('Frad')
+          if (slices%index >= 4) then
+            slices%ready = .false.
+          else
+            slices%yz=f(slices%ix,m1:m2    ,n1:n2,iFradx+slices%index)
+            slices%xz=f(l1:l2    ,slices%iy,n1:n2,iFradx+slices%index)
+            slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iFradx+slices%index)
+            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iFradx+slices%index)
+            slices%index = slices%index+1
+            slices%ready = .true.
+          endif
+!
+      endselect
+!
+    endsubroutine get_slices_radiation
 !***********************************************************************
     subroutine  bc_ee_inflow_x(f,topbot)
 !

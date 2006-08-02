@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.304 2006-07-28 20:41:34 ajohan Exp $
+! $Id: magnetic.f90,v 1.305 2006-08-02 16:05:52 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -31,9 +31,23 @@ module Magnetic
   implicit none
 
   include 'magnetic.h'
-
+!
+! Slice precalculation buffers
+!
+  real, target, dimension (nx,ny,3) :: bb_xy
+  real, target, dimension (nx,ny,3) :: bb_xy2
+  real, target, dimension (nx,nz,3) :: bb_xz
+  real, target, dimension (ny,nz,3) :: bb_yz
+!
+  real, target, dimension (nx,ny) :: b2_xy,jb_xy
+  real, target, dimension (nx,ny) :: b2_xy2,jb_xy2
+  real, target, dimension (ny,nz) :: b2_yz,jb_yz
+  real, target, dimension (nx,nz) :: b2_xz,jb_xz
+!
+! Parameters
+!
   integer, parameter :: nresi_max=4
-
+!
   real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen) :: borderaa='initial-condition'
@@ -189,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.304 2006-07-28 20:41:34 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.305 2006-08-02 16:05:52 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -940,7 +954,6 @@ module Magnetic
 !
       use Cdata
       use Sub
-      use Slices
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
       use Mpicomm, only: stop_it
@@ -1929,6 +1942,71 @@ module Magnetic
       endif
 !
     endsubroutine rprint_magnetic
+!***********************************************************************
+    subroutine get_slices_magnetic(f,slices)
+!
+!  Write slices for animation of magnetic variables.
+!
+!  26-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Magnetic vector potential (code variable)
+!
+        case ('aa')
+          if (slices%index == 4) then
+            slices%ready = .false.
+          else
+            slices%yz=f(slices%ix,m1:m2    ,n1:n2,iax+slices%index)
+            slices%xz=f(l1:l2    ,slices%iy,n1:n2,iax+slices%index)
+            slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iax+slices%index)
+            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iax+slices%index)
+            slices%index = slices%index+1
+            slices%ready = .true.
+          endif
+!
+!  Magnetic field (derived variable)
+!
+        case ('bb')
+          if (slices%index == 4) then
+            slices%ready = .false.
+          else
+            slices%index = slices%index+1
+            slices%yz=>bb_yz(:,:,slices%index)
+            slices%xz=>bb_xz(:,:,slices%index)
+            slices%xy=>bb_xy(:,:,slices%index)
+            slices%xy2=>bb_xy2(:,:,slices%index)
+            slices%ready = .true.
+          endif
+!
+!  Magnetic field squared (derived variable)
+!
+        case ('b2')
+          slices%yz=>b2_yz
+          slices%xz=>b2_xz
+          slices%xy=>b2_xy
+          slices%xy2=>b2_xy2
+          slices%ready = .true.
+!
+!  Current density (derived variable)
+!
+        case ('jb')
+          slices%yz=>jb_yz
+          slices%xz=>jb_xz
+          slices%xy=>jb_xy
+          slices%xy2=>jb_xy2
+          slices%ready = .true.
+!
+      endselect
+!
+    endsubroutine get_slices_magnetic
 !***********************************************************************
     subroutine calc_mfield
 !

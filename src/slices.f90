@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.66 2006-08-01 19:03:56 mee Exp $
+! $Id: slices.f90,v 1.67 2006-08-02 16:05:52 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -20,65 +20,57 @@ module Slices
 
 !!! LEGACY SLICE VARIABLES FOLLOW
 !  Code variables
-  real, public, dimension (nx,ny,3) :: uu_xy,aa_xy,uud_xy,vvp_xy
+  real, public, dimension (nx,ny,3) :: uud_xy,vvp_xy
   real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,cc_xy,lncc_xy
   real, public, dimension (nx,ny) :: XX_chiral_xy,YY_chiral_xy
   real, public, dimension (nx,ny) :: nd_xy
   real, public, dimension (nx,ny,ndustspec) :: md_xy
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy,Qrad_xy,ecr_xy
-  real, public, dimension (nx,ny,3) :: Frad_xy
+  real, public, dimension (nx,ny) :: yH_xy,ecr_xy
 !  Derived variables
-  real, public, dimension (nx,ny,3) :: oo_xy,bb_xy
-  real, public, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy,lnTT_xy,b2_xy,jb_xy,Isurf_xy
+  real, public, dimension (nx,ny) :: lnTT_xy
   real, public, dimension (nx,ny) :: DQ_chiral_xy,QQ_chiral_xy
   real, public, dimension (nx,ny) :: epsd_xy
   real, public, dimension (nx,ny) :: pp_xy
 !  Variables for xy2 slices start here
 !  Code variables
-  real, public, dimension (nx,ny,3) :: uu_xy2,aa_xy2,uud_xy2,vvp_xy2
+  real, public, dimension (nx,ny,3) :: uud_xy2,vvp_xy2
   real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,cc_xy2,lncc_xy2
   real, public, dimension (nx,ny) :: XX_chiral_xy2,YY_chiral_xy2
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
 !  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy2,Qrad_xy2,ecr_xy2
-  real, public, dimension (nx,ny,3) :: Frad_xy2
+  real, public, dimension (nx,ny) :: yH_xy2,ecr_xy2
 !  Derived variables
-  real, public, dimension (nx,ny,3) :: oo_xy2,bb_xy2
-  real, public, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2,lnTT_xy2,b2_xy2,jb_xy2
+  real, public, dimension (nx,ny) :: lnTT_xy2
   real, public, dimension (nx,ny) :: DQ_chiral_xy2,QQ_chiral_xy2
   real, public, dimension (nx,ny) :: epsd_xy2
   real, public, dimension (nx,ny) :: pp_xy2
 !  Variables for xz slices start here
 !  Code variables
-  real, public, dimension (nx,nz,3) :: uu_xz,aa_xz,uud_xz,vvp_xz
+  real, public, dimension (nx,nz,3) :: uud_xz,vvp_xz
   real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,cc_xz,lncc_xz
   real, public, dimension (nx,nz) :: XX_chiral_xz,YY_chiral_xz
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
 !  Auxiliary variables  
-  real, public, dimension (nx,nz) :: yH_xz,Qrad_xz,ecr_xz
-  real, public, dimension (nx,nz,3) :: Frad_xz
+  real, public, dimension (nx,nz) :: yH_xz,ecr_xz
 !  Derived variables
-  real, public, dimension (nx,nz,3) :: oo_xz,bb_xz
-  real, public, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz,lnTT_xz,b2_xz,jb_xz
+  real, public, dimension (nx,nz) :: lnTT_xz
   real, public, dimension (nx,nz) :: DQ_chiral_xz,QQ_chiral_xz
   real, public, dimension (nx,nz) :: epsd_xz
   real, public, dimension (nx,nz) :: pp_xz
 !  Variables for yz slices start here
 !  Code variables
-  real, public, dimension (ny,nz,3) :: uu_yz,aa_yz,uud_yz,vvp_yz
+  real, public, dimension (ny,nz,3) :: uud_yz,vvp_yz
   real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,cc_yz,lncc_yz
   real, public, dimension (ny,nz) :: XX_chiral_yz,YY_chiral_yz
   real, public, dimension (ny,nz) :: nd_yz
   real, public, dimension (ny,nz,ndustspec) :: md_yz
 !  Auxiliary variables  
-  real, public, dimension (ny,nz) :: yH_yz,Qrad_yz,ecr_yz
-  real, public, dimension (ny,nz,3) :: Frad_yz
+  real, public, dimension (ny,nz) :: yH_yz,ecr_yz
 !  Derived variables
-  real, public, dimension (ny,nz,3) :: oo_yz,bb_yz
-  real, public, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz,lnTT_yz,b2_yz,jb_yz
+  real, public, dimension (ny,nz) :: lnTT_yz
   real, public, dimension (ny,nz) :: DQ_chiral_yz,QQ_chiral_yz
   real, public, dimension (ny,nz) :: epsd_yz
   real, public, dimension (ny,nz) :: pp_yz
@@ -135,9 +127,12 @@ module Slices
       use EquationOfState, only: eoscalc, ilnrho_ss
       use General
       use Messages
-      use Particles_main, only: get_slices_particles
-      use Interstellar, only: get_slices_interstellar
-      use Shock, only: get_slices_shock
+      use Particles_main,  only: get_slices_particles
+      use Interstellar,    only: get_slices_interstellar
+      use Shock,           only: get_slices_shock
+      use Magnetic,        only: get_slices_magnetic
+      use Hydro,           only: get_slices_hydro
+      use Radiation,       only: get_slices_radiation
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -171,27 +166,7 @@ module Slices
         lslices_legacy=.true.       ! By default assume we're not 
                                     ! using module hooks to get the
                                     ! slice contents
-        select case (trim(slices%name))
-!
-!  Velocity field (code variable)
-!
-        case ('uu')
-          uu_yz=f(ix_loc,m1:m2,n1:n2,iux:iuz)
-          uu_xz=f(l1:l2,iy_loc,n1:n2,iux:iuz)
-          uu_xy=f(l1:l2,m1:m2,iz_loc,iux:iuz)
-          uu_xy2=f(l1:l2,m1:m2,iz2_loc,iux:iuz)
-          call wslice(path//'ux.yz',uu_yz(:,:,1),x(ix_loc),ny,nz)
-          call wslice(path//'uy.yz',uu_yz(:,:,2),x(ix_loc),ny,nz)
-          call wslice(path//'uz.yz',uu_yz(:,:,3),x(ix_loc),ny,nz)
-          call wslice(path//'ux.xz',uu_xz(:,:,1),y(iy_loc),nx,nz)
-          call wslice(path//'uy.xz',uu_xz(:,:,2),y(iy_loc),nx,nz)
-          call wslice(path//'uz.xz',uu_xz(:,:,3),y(iy_loc),nx,nz)
-          call wslice(path//'ux.xy',uu_xy(:,:,1),z(iz_loc),nx,ny)
-          call wslice(path//'uy.xy',uu_xy(:,:,2),z(iz_loc),nx,ny)
-          call wslice(path//'uz.xy',uu_xy(:,:,3),z(iz_loc),nx,ny)
-          call wslice(path//'ux.Xy',uu_xy2(:,:,1),z(iz2_loc),nx,ny)
-          call wslice(path//'uy.Xy',uu_xy2(:,:,2),z(iz2_loc),nx,ny)
-          call wslice(path//'uz.Xy',uu_xy2(:,:,3),z(iz2_loc),nx,ny)
+        select case (slices%name)
 !
 !  Logarithmic density (code variable)
 !
@@ -216,26 +191,6 @@ module Slices
           call wslice(path//'ss.xz',ss_xz,y(iy_loc),nx,nz)
           call wslice(path//'ss.xy',ss_xy,z(iz_loc),nx,ny)
           call wslice(path//'ss.Xy',ss_xy2,z(iz2_loc),nx,ny)
-!
-!  Magnetic vector potential (code variable)
-!
-        case ('aa')
-          aa_yz=f(ix_loc,m1:m2,n1:n2,iax:iaz)
-          aa_xz=f(l1:l2,iy_loc,n1:n2,iax:iaz)
-          aa_xy=f(l1:l2,m1:m2,iz_loc,iax:iaz)
-          aa_xy2=f(l1:l2,m1:m2,iz2_loc,iax:iaz)
-          call wslice(path//'ax.yz',aa_yz(:,:,1),x(ix_loc),ny,nz)
-          call wslice(path//'ay.yz',aa_yz(:,:,2),x(ix_loc),ny,nz)
-          call wslice(path//'az.yz',aa_yz(:,:,3),x(ix_loc),ny,nz)
-          call wslice(path//'ax.xz',aa_xz(:,:,1),y(iy_loc),nx,nz)
-          call wslice(path//'ay.xz',aa_xz(:,:,2),y(iy_loc),nx,nz)
-          call wslice(path//'az.xz',aa_xz(:,:,3),y(iy_loc),nx,nz)
-          call wslice(path//'ax.xy',aa_xy(:,:,1),z(iz_loc),nx,ny)
-          call wslice(path//'ay.xy',aa_xy(:,:,2),z(iz_loc),nx,ny)
-          call wslice(path//'az.xy',aa_xy(:,:,3),z(iz_loc),nx,ny)
-          call wslice(path//'ax.Xy',aa_xy2(:,:,1),z(iz2_loc),nx,ny)
-          call wslice(path//'ay.Xy',aa_xy2(:,:,2),z(iz2_loc),nx,ny)
-          call wslice(path//'az.Xy',aa_xy2(:,:,3),z(iz2_loc),nx,ny)
 !
 !  Passive scalar (code variable)
 !
@@ -362,38 +317,6 @@ module Slices
           call wslice(path//'yH.xy',yH_xy,z(iz_loc),nx,ny)
           call wslice(path//'yH.Xy',yH_xy2,z(iz2_loc),nx,ny)
 !
-!  Heating rate (auxiliary variable)
-!
-        case ('Qrad')
-          Qrad_yz=f(ix_loc,m1:m2,n1:n2,iQrad)
-          Qrad_xz=f(l1:l2,iy_loc,n1:n2,iQrad)
-          Qrad_xy=f(l1:l2,m1:m2,iz_loc,iQrad)
-          Qrad_xy2=f(l1:l2,m1:m2,iz2_loc,iQrad)
-          call wslice(path//'Qrad.yz',Qrad_yz,x(ix_loc),ny,nz)
-          call wslice(path//'Qrad.xz',Qrad_xz,y(iy_loc),nx,nz)
-          call wslice(path//'Qrad.xy',Qrad_xy,z(iz_loc),nx,ny)
-          call wslice(path//'Qrad.Xy',Qrad_xy2,z(iz2_loc),nx,ny)
-!
-!  Radiative Flux (auxiliary variable)
-!
-        case ('Frad')
-          Frad_yz=f(ix_loc,m1:m2,n1:n2,iFradx:iFradz)
-          Frad_xz=f(l1:l2,iy_loc,n1:n2,iFradx:iFradz)
-          Frad_xy=f(l1:l2,m1:m2,iz_loc,iFradx:iFradz)
-          Frad_xy2=f(l1:l2,m1:m2,iz2_loc,iFradx:iFradz)
-          call wslice(path//'Fradx.yz',Frad_yz(:,:,1),x(ix_loc),ny,nz)
-          call wslice(path//'Frady.yz',Frad_yz(:,:,2),x(ix_loc),ny,nz)
-          call wslice(path//'Fradz.yz',Frad_yz(:,:,3),x(ix_loc),ny,nz)
-          call wslice(path//'Fradx.xz',Frad_xz(:,:,1),y(iy_loc),nx,nz)
-          call wslice(path//'Frady.xz',Frad_xz(:,:,2),y(iy_loc),nx,nz)
-          call wslice(path//'Fradz.xz',Frad_xz(:,:,3),y(iy_loc),nx,nz)
-          call wslice(path//'Fradx.xy',Frad_xy(:,:,1),z(iz_loc),nx,ny)
-          call wslice(path//'Frady.xy',Frad_xy(:,:,2),z(iz_loc),nx,ny)
-          call wslice(path//'Fradz.xy',Frad_xy(:,:,3),z(iz_loc),nx,ny)
-          call wslice(path//'Fradx.Xy',Frad_xy2(:,:,1),z(iz2_loc),nx,ny)
-          call wslice(path//'Frady.Xy',Frad_xy2(:,:,2),z(iz2_loc),nx,ny)
-          call wslice(path//'Fradz.Xy',Frad_xy2(:,:,3),z(iz2_loc),nx,ny)
-!
 !  Cosmic ray energy density (auxiliary variable)
 !
         case ('ecr')
@@ -405,46 +328,6 @@ module Slices
           call wslice(path//'ecr.xz',ecr_xz,y(iy_loc),nx,nz)
           call wslice(path//'ecr.xy',ecr_xy,z(iz_loc),nx,ny)
           call wslice(path//'ecr.Xy',ecr_xy2,z(iz2_loc),nx,ny)
-!
-!  Divergence of velocity (derived variable)
-!
-        case ('divu')
-          call wslice(path//'divu.yz',divu_yz,x(ix_loc),ny,nz)
-          call wslice(path//'divu.xz',divu_xz,y(iy_loc),nx,nz)
-          call wslice(path//'divu.xy',divu_xy,z(iz_loc),nx,ny)
-          call wslice(path//'divu.Xy',divu_xy2,z(iz2_loc),nx,ny)
-!
-!  Velocity squared (derived variable)
-!
-        case ('u2')
-          call wslice(path//'u2.yz',u2_yz,x(ix_loc),ny,nz)
-          call wslice(path//'u2.xz',u2_xz,y(iy_loc),nx,nz)
-          call wslice(path//'u2.xy',u2_xy,z(iz_loc),nx,ny)
-          call wslice(path//'u2.Xy',u2_xy2,z(iz2_loc),nx,ny)
-!
-!  Vorticity (derived variable)
-!
-        case ('oo')
-          call wslice(path//'ox.yz',oo_yz(:,:,1),x(ix_loc),ny,nz)
-          call wslice(path//'oy.yz',oo_yz(:,:,2),x(ix_loc),ny,nz)
-          call wslice(path//'oz.yz',oo_yz(:,:,3),x(ix_loc),ny,nz)
-          call wslice(path//'ox.xz',oo_xz(:,:,1),y(iy_loc),nx,nz)
-          call wslice(path//'oy.xz',oo_xz(:,:,2),y(iy_loc),nx,nz)
-          call wslice(path//'oz.xz',oo_xz(:,:,3),y(iy_loc),nx,nz)
-          call wslice(path//'ox.xy',oo_xy(:,:,1),z(iz_loc),nx,ny)
-          call wslice(path//'oy.xy',oo_xy(:,:,2),z(iz_loc),nx,ny)
-          call wslice(path//'oz.xy',oo_xy(:,:,3),z(iz_loc),nx,ny)
-          call wslice(path//'ox.Xy',oo_xy2(:,:,1),z(iz2_loc),nx,ny)
-          call wslice(path//'oy.Xy',oo_xy2(:,:,2),z(iz2_loc),nx,ny)
-          call wslice(path//'oz.Xy',oo_xy2(:,:,3),z(iz2_loc),nx,ny)
-!
-!  Vorticity squared (derived variable)
-!
-        case ('o2')
-          call wslice(path//'o2.yz',o2_yz,x(ix_loc),ny,nz)
-          call wslice(path//'o2.xz',o2_xz,y(iy_loc),nx,nz)
-          call wslice(path//'o2.xy',o2_xy,z(iz_loc),nx,ny)
-          call wslice(path//'o2.Xy',o2_xy2,z(iz2_loc),nx,ny)
 !
 !  Temperature (derived variable, sometimes code variable)
 !
@@ -498,38 +381,6 @@ module Slices
           call wslice(path//'pp.xz',pp_xz,y(iy_loc),nx,nz)
           call wslice(path//'pp.xy',pp_xy,z(iz_loc),nx,ny)
           call wslice(path//'pp.Xy',pp_xy2,z(iz2_loc),nx,ny)
-!
-!  Magnetic field (derived variable)
-!
-        case ('bb')
-          call wslice(path//'bx.yz',bb_yz(:,:,1),x(ix_loc),ny,nz)
-          call wslice(path//'by.yz',bb_yz(:,:,2),x(ix_loc),ny,nz)
-          call wslice(path//'bz.yz',bb_yz(:,:,3),x(ix_loc),ny,nz)
-          call wslice(path//'bx.xz',bb_xz(:,:,1),y(iy_loc),nx,nz)
-          call wslice(path//'by.xz',bb_xz(:,:,2),y(iy_loc),nx,nz)
-          call wslice(path//'bz.xz',bb_xz(:,:,3),y(iy_loc),nx,nz)
-          call wslice(path//'bx.xy',bb_xy(:,:,1),z(iz_loc),nx,ny)
-          call wslice(path//'by.xy',bb_xy(:,:,2),z(iz_loc),nx,ny)
-          call wslice(path//'bz.xy',bb_xy(:,:,3),z(iz_loc),nx,ny)
-          call wslice(path//'bx.Xy',bb_xy2(:,:,1),z(iz2_loc),nx,ny)
-          call wslice(path//'by.Xy',bb_xy2(:,:,2),z(iz2_loc),nx,ny)
-          call wslice(path//'bz.Xy',bb_xy2(:,:,3),z(iz2_loc),nx,ny)
-!
-!  Magnetic field squared (derived variable)
-!
-        case ('b2')
-          call wslice(path//'b2.yz',b2_yz,x(ix_loc),ny,nz)
-          call wslice(path//'b2.xz',b2_xz,y(iy_loc),nx,nz)
-          call wslice(path//'b2.xy',b2_xy,z(iz_loc),nx,ny)
-          call wslice(path//'b2.Xy',b2_xy2,z(iz2_loc),nx,ny)
-!
-!  Current density (derived variable)
-!
-        case ('jb')
-          call wslice(path//'jb.yz',jb_yz,x(ix_loc),ny,nz)
-          call wslice(path//'jb.xz',jb_xz,y(iy_loc),nx,nz)
-          call wslice(path//'jb.xy',jb_xy,z(iz_loc),nx,ny)
-          call wslice(path//'jb.Xy',jb_xy2,z(iz2_loc),nx,ny)
 !
 !  chirality fields: DQ (derived variable)
 !
@@ -595,11 +446,6 @@ module Slices
             call wslice(path//'epsd'//trim(sindex)//'.Xy',epsd_xy2,z(iz2_loc),nx,ny)
           enddo
 !
-!  Surface intensity (derived variable)
-!
-        case ('Isurf')
-          call wslice(path//'Isurf.xy',Isurf_xy,z(iz2_loc),nx,ny)
-!
         case default
 !
 ! Add new slice providing routines here!
@@ -608,6 +454,9 @@ module Slices
           if (lparticles)    call get_slices_particles   (f,slices)
           if (lshock)        call get_slices_shock       (f,slices)
           if (linterstellar) call get_slices_interstellar(f,slices)
+          if (lhydro)        call get_slices_hydro(f,slices)
+          if (lmagnetic)     call get_slices_magnetic(f,slices)
+          if (lradiation)    call get_slices_radiation(f,slices)
 !
         endselect
 
@@ -660,8 +509,8 @@ module Slices
             endif
           else
             slices%index=0
-            inamev=inamev+1
           endif
+          inamev=inamev+1
         endif
       enddo
 !

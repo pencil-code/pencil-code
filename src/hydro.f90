@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.274 2006-07-28 13:08:05 wlyra Exp $
+! $Id: hydro.f90,v 1.275 2006-08-02 16:05:52 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -27,8 +27,20 @@ module Hydro
   implicit none
 
   include 'hydro.h'
-
-  ! init parameters
+!
+! Slice precalculation buffers
+!
+  real, target, dimension (nx,ny,3) :: oo_xy
+  real, target, dimension (nx,ny,3) :: oo_xy2
+  real, target, dimension (nx,nz,3) :: oo_xz
+  real, target, dimension (ny,nz,3) :: oo_yz
+  real, target, dimension (nx,ny) :: divu_xy,u2_xy,o2_xy
+  real, target, dimension (nx,ny) :: divu_xy2,u2_xy2,o2_xy2
+  real, target, dimension (nx,nz) :: divu_xz,u2_xz,o2_xz
+  real, target, dimension (ny,nz) :: divu_yz,u2_yz,o2_yz
+!
+! init parameters
+!
   real :: widthuu=.1, radiusuu=1., urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
@@ -154,7 +166,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.274 2006-07-28 13:08:05 wlyra Exp $")
+           "$Id: hydro.f90,v 1.275 2006-08-02 16:05:52 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -810,10 +822,6 @@ module Hydro
       use Cdata
       use Sub
       use IO
-      use Slices,  only: divu_yz, divu_xy, divu_xy2, divu_xz, &
-                         oo_xy, oo_xy2, oo_xz, oo_yz, &
-                         o2_xy, o2_xy2, o2_xz, o2_yz, &
-                         u2_xy, u2_xy2, u2_xz, u2_yz
       use Mpicomm, only: stop_it
       use Special, only: special_calc_hydro
       use Global, only: get_global
@@ -1693,6 +1701,82 @@ module Hydro
       endif
 !
     endsubroutine rprint_hydro
+!***********************************************************************
+    subroutine get_slices_hydro(f,slices)
+!
+!  Write slices for animation of hydro variables.
+!
+!  26-jul-06/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Velocity field (code variable)
+!
+        case ('uu')
+          if (slices%index >= 4) then
+            slices%ready = .false.
+          else
+            slices%yz=f(slices%ix,m1:m2    ,n1:n2,iux+slices%index)
+            slices%xz=f(l1:l2    ,slices%iy,n1:n2,iux+slices%index)
+            slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iux+slices%index)
+            slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iux+slices%index)
+            slices%index = slices%index+1
+            slices%ready = .true.
+          endif
+!
+!  Divergence of velocity (derived variable)
+!
+        case ('divu')
+          slices%yz=>divu_yz
+          slices%xz=>divu_xz
+          slices%xy=>divu_xy
+          slices%xy2=>divu_xy2
+          slices%ready = .true.
+!
+!  Velocity squared (derived variable)
+!
+        case ('u2')
+          slices%yz=>u2_yz
+          slices%xz=>u2_xz
+          slices%xy=>u2_xy
+          slices%xy2=>u2_xy2
+          slices%ready = .true.
+!
+!  Vorticity (derived variable)
+!
+        case ('oo')
+          if (slices%index == 4) then
+            slices%ready = .false.
+          else
+            slices%index = slices%index+1
+            slices%yz=>oo_yz(:,:,slices%index)
+            slices%xz=>oo_xz(:,:,slices%index)
+            slices%xy=>oo_xy(:,:,slices%index)
+            slices%xy2=>oo_xy2(:,:,slices%index)
+            slices%ready = .true.
+          endif
+!
+!  Vorticity squared (derived variable)
+!
+        case ('o2')
+          slices%yz=>o2_yz
+          slices%xz=>o2_xz
+          slices%xy=>o2_xy
+          slices%xy2=>o2_xy2
+          slices%ready = .true.
+!
+      endselect
+!
+    endsubroutine get_slices_hydro
 !***********************************************************************
     subroutine calc_mflow
 !
