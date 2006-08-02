@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.128 2006-08-01 19:02:48 mee Exp $
+! $Id: interstellar.f90,v 1.129 2006-08-02 15:37:20 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -9,7 +9,7 @@
 !
 ! CPARAM logical, parameter :: linterstellar = .true.
 !
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 2
 !
 !***************************************************************
 
@@ -65,6 +65,7 @@ module Interstellar
   type (ExplosionSite) :: SNsite
 !
   integer :: icooling=0
+  integer :: icooling2=0
 !
 ! Squared distance to the SNe site along the current pencil
 !
@@ -223,6 +224,9 @@ module Interstellar
   real :: heating_rate = 0.015
   real :: heating_rate_code = impossible
 !
+  logical :: lcooltime_smooth = .false.  ! If set .true. to smooth the
+!                                          radiative cooling in cooling
+!                                          time space.
 !
 !
   logical :: ltestSN = .false.  ! If set .true. SN are only exploded at the
@@ -318,21 +322,24 @@ module Interstellar
       endif
 !
       icooling = mvar+naux+1             ! indices to access uu
-      naux = naux+1             ! added 3 variables
+      icooling2 = mvar+naux+2             ! indices to access uu
+      naux = naux+2             ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_interstellar: naux = ', naux
-        print*, 'register_interstellar: icooling = ', icooling
+        print*, 'register_interstellar: icooling  = ', icooling
+        print*, 'register_interstellar: icooling2 = ', icooling2
       endif
 !
 !  Put variable names in array
 !
       varname(icooling) = 'cooling'
+      varname(icooling2) = 'cooling22'
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.128 2006-08-01 19:02:48 mee Exp $")
+           "$Id: interstellar.f90,v 1.129 2006-08-02 15:37:20 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -625,6 +632,7 @@ module Interstellar
         write(3,*) 'i_rhoLm=',idiag_rhoLm
         write(3,*) 'i_Gamm=',idiag_Gamm
         write(3,*) 'icooling=',icooling
+        write(3,*) 'icooling2=',icooling2
       endif
 !
     endsubroutine rprint_interstellar
@@ -651,6 +659,12 @@ module Interstellar
           slices%xz=f(l1:l2    ,slices%iy,n1:n2     ,icooling)
           slices%xy=f(l1:l2    ,m1:m2    ,slices%iz ,icooling)
           slices%xy2=f(l1:l2   ,m1:m2    ,slices%iz2,icooling)
+          slices%ready = .true.
+        case ('ism_cool2')
+          slices%yz=f(slices%ix,m1:m2    ,n1:n2     ,icooling2)
+          slices%xz=f(l1:l2    ,slices%iy,n1:n2     ,icooling2)
+          slices%xy=f(l1:l2    ,m1:m2    ,slices%iz ,icooling2)
+          slices%xy2=f(l1:l2   ,m1:m2    ,slices%iz2,icooling2)
           slices%ready = .true.
 !
       endselect
@@ -719,6 +733,60 @@ module Interstellar
 !
     endsubroutine pencil_criteria_interstellar
 !***********************************************************************
+    subroutine interstellar_before_boundary(f)
+!
+!  This routine calculates and applies the optically thin cooling function
+!  together with UV heating.
+!
+!  01-aug-06/tony: coded
+!
+      use Cdata, only: lroot, headtt, lfirst, ldiagnos, ldt, m, n,  &
+                       iss, ilnTT, unit_length, unit_velocity, dt1_max, z, &
+                       datadir, pretend_lnTT, t, ilnrho
+!
+      use Sub, only: max_mn_name, sum_mn_name
+      use EquationOfState, only: gamma, gamma11, eoscalc
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      
+      real, dimension (nx) :: heat,cool,ee, lnTT, lnrho
+      real, dimension (nx) :: damp_profile
+      real :: minqty
+!      real ::  mu
+      integer :: i
+!
+      if (.not.lcooltime_smooth) return
+!
+!  identifier
+!
+      if(headtt) print*,'interstellar_before_boundary: ENTER'
+!
+! Precalculate radiative cooling function
+!
+    do n=n1,n2; do m=m1,m2
+      lnrho = f(l1:l2,m,n,ilnrho)
+      call eoscalc(f,nx,ee=ee,lnTT=lnTT)
+!
+      cool=0.0
+cool_loop: do i=1,ncool
+!!        if (lncoolT(i) .ge. lncoolT(i+1)) exit cool_loop
+        where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
+               cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
+        endwhere
+      enddo cool_loop
+!
+      if (SNR%state==SNstate_damping) then
+        call proximity_SN()        
+        minqty=0.5*(1.+tanh((t-SNR%t_damping)/SNR_damping_rate))
+        damp_profile=((1.-minqty)*0.5*(1.+tanh((sqrt(dr2_SN)-(SNR%radius*2.))*sigma_SN1-2.))+minqty)
+        cool=cool*damp_profile
+      endif
+      f(l1:l2,m,n,icooling)=cool/ee
+    enddo; enddo
+!
+!      
+    endsubroutine interstellar_before_boundary
+!***********************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !
 !  This routine calculates and applies the optically thin cooling function
@@ -738,7 +806,7 @@ module Interstellar
                        iss, ilnTT, unit_length, unit_velocity, dt1_max, z, &
                        datadir, pretend_lnTT, t
 !
-      use Sub, only: max_mn_name, sum_mn_name
+      use Sub, only: max_mn_name, sum_mn_name, smooth_kernel
       use EquationOfState, only: gamma, gamma11
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
@@ -771,45 +839,38 @@ module Interstellar
 !  [Currently, coolT(1) is not modified, but this may be necessary
 !  to avoid creating gas too cold to resolve.]
 !
-      cool=0.0
-      cool_beta=1.0
+if (lcooltime_smooth) then
+     call smooth_kernel(f,icooling,cool)
+     cool=cool*p%ee
+else
+    cool=0.0
+    cool_beta=1.0
 cool_loop: do i=1,ncool
-        if (lncoolT(i) .ge. lncoolT(i+1)) exit cool_loop
-        where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1))
-               cool=cool+exp(lncoolH(i)+p%lnrho+p%lnTT*coolB(i))
-               cool_beta=coolB(i)
-        endwhere
-      enddo cool_loop
-
+      if (lncoolT(i) .ge. lncoolT(i+1)) exit cool_loop
+      where (lncoolT(i) <= p%lnTT .and. p%lnTT < lncoolT(i+1))
+        cool=cool+exp(lncoolH(i)+p%lnrho+p%lnTT*coolB(i))
+        cool_beta=coolB(i)
+      endwhere
+    enddo cool_loop
 !
 !  possibility of temporal smoothing of cooling function
 !
-      if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
-!
-!      open(1,file=trim(datadir)//'/cooling.dat',position='append')
-!      do i=1,nx
-!        write(1,'(4e15.8)') exp(p%lnTT(i)), cool(i)/exp(p%lnrho(i)), cool(i), exp(p%lnrho)
-!      enddo
-!      close(1)
-!print*,'min,max interstellar heating: ',minval(cool),maxval(cool)
+    if (lsmooth_coolingfunc) cool=(cool+f(l1:l2,m,n,icooling))*0.5
+    f(l1:l2,m,n,icooling)=cool
+endif
+
 !
 !  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.e4 K)
 !  nb: need rho0 from density_[init/run]_pars, if i want to implement
 !      the the arm/interarm scaling.
 !
-!      heat=0.0
-!tony: DISABLE UV HEATING -- Requires reformulation
-!      if (lheating_UV) then
-!        heat(1:nx)=GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT(1:nx)))))
-!      endif
-!
-!tony: need to do unit_system stuff with scale heights etc.
-!
-! Mara:UV heating off, heating_select='off' in interstellar_init_pars
-!      Constant heating with a rate heating_rate[erg/g/s]: 'cst'
-!      Heating balancing the initial cooling function: 'eql'
-!      Default: 'off' with heating_rate = 0.015
+!  Control with heating_select in interstellar_init_pars
+!   'off' - UV heating of
+!   'cst' - Constant heating with a rate heating_rate[erg/g/s]
+!   'eql' -  Heating balancing the initial cooling function
+!  Default 'off' 
+!  Default heating_rate = 0.015
       If (heating_select == 'cst') Then
          heat = heating_rate_code
       Else If (heating_select == 'wolfire') Then
@@ -830,7 +891,9 @@ cool_loop: do i=1,ncool
       Else If (heating_select == 'off') Then
          heat = 0.
       End If
-
+!
+! Prevent unresolved heating/cooling in early SNR core.
+!
       if (SNR%state==SNstate_damping) then
         call proximity_SN()        
         minqty=0.5*(1.+tanh((t-SNR%t_damping)/SNR_damping_rate))
@@ -838,36 +901,37 @@ cool_loop: do i=1,ncool
         cool=cool*damp_profile
         heat=heat*damp_profile
       endif
-!      where (p%lnTT < TT_cutoff) cool=min(cool,heat)
-!      Print*,'Debug: cool, heat',cool,heat
+!
+! Save result in diagnostic aux variable
+!
+     f(l1:l2,m,n,icooling2)=cool
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
 !
- 
-      if (laverage_SN_heating) then
-        heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
-        heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
-      endif
+    if (laverage_SN_heating) then
+      heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
+      heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
+    endif
 !
 !  prepare diagnostic output
 !
-      if(ldiagnos) then
-        if(idiag_Hmax/=0) &
-          call max_mn_name(heat,idiag_Hmax)
-        if(idiag_taucmin/=0) &
-          call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)  
-        if(idiag_Lamm/=0) &
-          call sum_mn_name(cool,idiag_Lamm)  
-        if(idiag_nrhom/=0) &
-          call sum_mn_name(cool/p%ee,idiag_nrhom)  
+    if(ldiagnos) then
+      if(idiag_Hmax/=0) &
+        call max_mn_name(heat,idiag_Hmax)
+      if(idiag_taucmin/=0) &
+        call max_mn_name(cool/p%ee,idiag_taucmin,lreciprocal=.true.)  
+      if(idiag_Lamm/=0) &
+        call sum_mn_name(cool,idiag_Lamm)  
+      if(idiag_nrhom/=0) &
+        call sum_mn_name(cool/p%ee,idiag_nrhom)  
 !--       call sum_mn_name(cool*p%rho/p%ee,idiag_nrhom)  
 !AB: the factor rho is already included in cool, so cool=rho*Lambda
-        if(idiag_rhoLm/=0) &
-          call sum_mn_name(p%rho*cool,idiag_rhoLm)  
-        if(idiag_Gamm/=0) &
-          call sum_mn_name(p%rho*heat,idiag_Gamm)  
-      endif
+      if(idiag_rhoLm/=0) &
+        call sum_mn_name(p%rho*cool,idiag_rhoLm)  
+      if(idiag_Gamm/=0) &
+        call sum_mn_name(p%rho*heat,idiag_Gamm)  
+    endif
 
 ! Limit timestep by the cooling time (having subtracted any heating) 
 !    dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
@@ -887,7 +951,6 @@ cool_loop: do i=1,ncool
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt]
 !  so therefore we now need to multiply by TT1.
 !
-       f(l1:l2,m,n,icooling)=cool !/p%ee
        if (ltemperature) then
          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+p%TT1*(heat-cool)*gamma
        elseif (pretend_lnTT) then

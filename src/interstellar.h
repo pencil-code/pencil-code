@@ -7,6 +7,7 @@
   public :: read_interstellar_init_pars, write_interstellar_init_pars
   public :: read_interstellar_run_pars,  write_interstellar_run_pars
   public :: pencil_criteria_interstellar
+  public :: interstellar_before_boundary
 
   public :: calc_heat_cool_interstellar, check_SN
   public :: calc_snr_damping

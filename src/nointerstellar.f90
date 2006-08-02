@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.27 2006-08-01 19:02:48 mee Exp $
+! $Id: nointerstellar.f90,v 1.28 2006-08-02 15:37:20 mee Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.27 2006-08-01 19:02:48 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.28 2006-08-02 15:37:20 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -167,6 +167,22 @@ module Interstellar
 !     DUMMY
 !
     endsubroutine pencil_criteria_interstellar
+!***********************************************************************
+    subroutine interstellar_before_boundary(f)
+!
+!  This routine calculates and applies the optically thin cooling function
+!  together with UV heating.
+!
+!  01-aug-06/tony: coded
+!
+      use Cparam
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+!
+      if (NO_WARN) print*,f      
+!
+!      
+    endsubroutine interstellar_before_boundary
 !***********************************************************************
     subroutine calc_heat_cool_interstellar(f,df,p,Hmax)
 !

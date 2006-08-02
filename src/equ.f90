@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.317 2006-08-01 10:10:39 ajohan Exp $
+! $Id: equ.f90,v 1.318 2006-08-02 15:37:20 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -358,6 +358,7 @@ module Equ
       use Shock, only: calc_pencils_shock, calc_shock_profile, calc_shock_profile_simple
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, &
                            lvisc_first, idiag_epsK
+      use Interstellar, only: interstellar_before_boundary
       use Particles_main
       use Planet
       use BorderProfiles
@@ -375,7 +376,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.317 2006-08-01 10:10:39 ajohan Exp $")
+           "$Id: equ.f90,v 1.318 2006-08-02 15:37:20 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -406,9 +407,10 @@ module Equ
       if (ldustdensity .and. ldustnulling) call null_dust_vars(f)
       if (ldustdensity .and. lmdvar .and. itsub==1) call redist_mdbins(f)
 !
-!  Call special "before_boundary" hook 
+!  Call "before_boundary" hooks (for f array precalculation)
 !
-      if (lspecial) call special_before_boundary(f)
+      if (linterstellar) call interstellar_before_boundary(f)
+      if (lspecial)      call special_before_boundary(f)
 !
 ! Prepare x-ghost zones required before f-array communication AND shock calculation
 !
