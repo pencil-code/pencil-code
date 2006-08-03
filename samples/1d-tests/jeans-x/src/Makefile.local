@@ -5,7 +5,7 @@
 
 MPICOMM     = nompicomm
 HYDRO       =   hydro
-GRAVITY     = nogravityity
+GRAVITY     = nogravity
 DENSITY     =   density
 ENTROPY     = noentropy
 MAGNETIC    = nomagnetic
