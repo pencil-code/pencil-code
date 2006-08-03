@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.247 2006-08-02 18:29:03 mee Exp $ 
+! $Id: sub.f90,v 1.248 2006-08-03 07:07:28 ajohan Exp $ 
 
 module Sub 
 
@@ -427,7 +427,7 @@ module Sub
 !
       use Cdata
 !
-      real, dimension (nx) :: a,r,aux
+      real, dimension (nx) :: a,aux
       real :: sumaux,dsv
       integer :: iname,i
 !
@@ -1687,7 +1687,7 @@ module Sub
       real, dimension (nx,3,3), optional :: gradcurl
       real, dimension (nx,3), optional :: del2,graddiv,curlcurl
       real, dimension (nx,3) ::  fjik
-      real, dimension (nx) :: tmp,tmp2
+      real, dimension (nx) :: tmp
       integer :: i,j,k,k1
 !
       intent(in) :: f,k
@@ -2042,7 +2042,6 @@ module Sub
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
-      integer :: k
 !
       call der6_other(f,d6fdx,1)
       call der6_other(f,d6fdy,2)

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.162 2006-07-28 20:41:33 ajohan Exp $ 
+! $Id: initcond.f90,v 1.163 2006-08-03 07:07:27 ajohan Exp $ 
 
 module Initcond 
  
@@ -1432,7 +1432,7 @@ module Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr_cyl,OO,grav
-      real :: g0,r0_pot,Mach,plaw,r_border
+      real :: g0,r0_pot
       integer :: n_pot,mcount,ncount
       real, dimension(nx,3) :: gg_mn
       real, dimension(nx) :: aux
@@ -2515,7 +2515,6 @@ module Initcond
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,r_cyl,H2 
       real, dimension (nx) :: cs2_mn,Omega2_mn
-      real, dimension (nx,3) :: gg_mn
       real :: lnrho_const,plaw
       integer :: mcount,ncount
 !

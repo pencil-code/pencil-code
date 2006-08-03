@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.21 2006-08-01 10:10:39 ajohan Exp $
+! $Id: nospecial.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.21 2006-08-01 10:10:39 ajohan Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.21 2006-08-01 10:10:39 ajohan Exp $")
+           "$Id: nospecial.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -389,8 +389,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+      if (NO_WARN) print*,f,df,p
+!
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
@@ -421,8 +421,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+      if (NO_WARN) print*,f,df,p
+!
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,p)
@@ -453,8 +453,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+      if (NO_WARN) print*,f,df,p
+!
     endsubroutine special_calc_magnetic
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,p)
@@ -483,8 +483,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (NO_WARN) print*,df,p
-
+      if (NO_WARN) print*,f,df,p
+!
     endsubroutine special_calc_entropy
 !***********************************************************************
     subroutine special_boundconds(f,bc)

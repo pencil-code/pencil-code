@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.159 2006-07-21 10:35:02 ajohan Exp $
+! $Id: start.f90,v 1.160 2006-08-03 07:07:28 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -90,7 +90,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.159 2006-07-21 10:35:02 ajohan Exp $")
+             "$Id: start.f90,v 1.160 2006-08-03 07:07:28 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -338,7 +338,7 @@
               mvar_io,ENUM=.false.,FLIST='varN.list')
           if (lparticles) &
               call particles_write_snapshot(trim(directory_snap)//'/PVAR0', &
-              mvar_io,ENUM=.false.,FLIST='pvarN.list')
+              ENUM=.false.,FLIST='pvarN.list')
         endif
 !
 !  The option lnowrite writes everything except the actual var.dat file
@@ -351,7 +351,7 @@
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           if (lparticles) &
               call particles_write_snapshot(trim(directory_snap)//'/pvar.dat', &
-              mvar_io,ENUM=.false.)
+              ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif
         call wdim(trim(directory)//'/dim.dat')

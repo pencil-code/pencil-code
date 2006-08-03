@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.43 2006-07-23 23:33:48 mee Exp $
+! $Id: timestep.f90,v 1.44 2006-08-03 07:07:28 ajohan Exp $
 
 module Timestep
 
@@ -146,8 +146,6 @@ module Timestep
       use Mpicomm, only: start_serialize, end_serialize
 
       real :: dt_local, dt1_max_local, dt1_max_global
-      integer :: l
-      integer, dimension(1) :: turn
  
       dt1_max_global=1./dt  !Could more accurately calculate this and mpireduce
       dt1_max_local=maxval(dt1_max)

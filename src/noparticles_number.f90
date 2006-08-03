@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.4 2005-11-27 10:33:44 ajohan Exp $
+! $Id: noparticles_number.f90,v 1.5 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -100,6 +100,8 @@ module Particles_number
 !
       np_tilde=np_tilde0
 !
+      if (NO_WARN) print*, fp
+!
     endsubroutine get_nptilde
 !***********************************************************************
     subroutine read_particles_num_init_pars(unit,iostat)
@@ -148,7 +150,6 @@ module Particles_number
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
       logical :: lwr
 !
 !  Write information to index.pro
@@ -157,6 +158,8 @@ module Particles_number
       if (present(lwrite)) lwr=lwrite
 !        
       if (lwr) write(3,*) 'inptilde=', inptilde
+!
+      if (NO_WARN) print*, lreset
 !
     endsubroutine rprint_particles_number
 !***********************************************************************

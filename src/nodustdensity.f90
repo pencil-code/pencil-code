@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.28 2006-08-01 10:10:39 ajohan Exp $
+! $Id: nodustdensity.f90,v 1.29 2006-08-03 07:07:28 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -54,7 +54,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.28 2006-08-01 10:10:39 ajohan Exp $")
+           "$Id: nodustdensity.f90,v 1.29 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -110,7 +110,6 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      integer :: k
 !      
       intent(in) :: f, p
 !

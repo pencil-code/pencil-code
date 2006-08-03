@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.251 2006-07-28 13:13:31 wlyra Exp $ 
+! $Id: param_io.f90,v 1.252 2006-08-03 07:07:28 ajohan Exp $ 
 
 module Param_IO
 
@@ -923,6 +923,10 @@ module Param_IO
         write(1,NML=lphysics              ) 
         close(1)
 !      endif
+!
+       if (NO_WARN) print*, lhydro, ldensity, lentropy, lmagnetic, ltestfield, &
+                            lpscalar, lradiation, lcosmicray, lcosmicrayflux, &
+                            linterstellar, lshock, lplanet
 !
     endsubroutine wparam
 !***********************************************************************

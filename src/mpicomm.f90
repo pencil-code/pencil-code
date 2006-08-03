@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.185 2006-07-31 11:19:27 ajohan Exp $
+! $Id: mpicomm.f90,v 1.186 2006-08-03 07:07:28 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -407,7 +407,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, j, nbufy, nbufz, nbufyz
+      integer :: ivar1, ivar2, j
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -597,7 +597,7 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, j, nbufy, nbufz, nbufyz
+      integer :: ivar1, ivar2, j
 !
       ivar1=1; ivar2=mcom
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -1535,7 +1535,6 @@ module Mpicomm
 !***********************************************************************
     subroutine mpireduce_min_scl(fmin_tmp,fmin)
 !
-      integer :: nreduce
       real :: fmin_tmp,fmin
 !
 !  calculate total minimum for each array element and return to root

@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.18 2006-08-01 10:10:39 ajohan Exp $
+! $Id: noparticles_main.f90,v 1.19 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -71,33 +71,31 @@ module Particles_main
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
-    subroutine particles_write_snapshot(chsnap,msnap,enum,flist)
+    subroutine particles_write_snapshot(chsnap,enum,flist)
 !
 !  Write particle snapshot to file.
 !
 !  22-aug-05/anders: dummy
 !
-      integer :: msnap
       logical :: enum
       character (len=*) :: chsnap,flist
       optional :: flist
 !
-      if (NO_WARN) print*, chsnap, msnap, enum, flist
+      if (NO_WARN) print*, chsnap, enum, flist
 !
     endsubroutine particles_write_snapshot
 !***********************************************************************
-    subroutine particles_write_dsnapshot(chsnap,msnap,enum,flist)
+    subroutine particles_write_dsnapshot(chsnap,enum,flist)
 !
 !  Write particle derivative snapshot to file.
 !
 !  22-aug-05/anders: dummy
 !
-      integer :: msnap
       logical :: enum
       character (len=*) :: chsnap,flist
       optional :: flist
 !
-      if (NO_WARN) print*, chsnap, msnap, enum, flist
+      if (NO_WARN) print*, chsnap, enum, flist
 !
     endsubroutine particles_write_dsnapshot
 !***********************************************************************
@@ -286,7 +284,7 @@ module Particles_main
       integer :: n_pot
       type (pencil_case) :: p
 !
-      if (NO_WARN) print*, g0,r0_pot,n_pot
+      if (NO_WARN) print*, g0, r0_pot, n_pot, p
 !
     endsubroutine auxcall_gravcomp
 !***********************************************************************

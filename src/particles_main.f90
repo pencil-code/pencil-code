@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.41 2006-08-01 19:05:03 mee Exp $
+! $Id: particles_main.f90,v 1.42 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -111,13 +111,12 @@ module Particles_main
 !
     endsubroutine particles_read_snapshot
 !***********************************************************************
-    subroutine particles_write_snapshot(chsnap,msnap,enum,flist)
+    subroutine particles_write_snapshot(chsnap,enum,flist)
 !
 !  Write particle snapshot to file.
 !
 !  07-jan-05/anders: coded
 !
-      integer :: msnap
       logical :: enum
       character (len=*) :: chsnap,flist
       optional :: flist
@@ -125,22 +124,21 @@ module Particles_main
       logical :: lsnap
 !
       if (present(flist)) then
-        call wsnap_particles(chsnap,fp,msnap,enum,lsnap,dsnap_par_minor, &
+        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor, &
             npar_loc,ipar,flist)
       else
-        call wsnap_particles(chsnap,fp,msnap,enum,lsnap,dsnap_par_minor, &
+        call wsnap_particles(chsnap,fp,enum,lsnap,dsnap_par_minor, &
             npar_loc,ipar)
       endif
 !
     endsubroutine particles_write_snapshot
 !***********************************************************************
-    subroutine particles_write_dsnapshot(chsnap,msnap,enum,flist)
+    subroutine particles_write_dsnapshot(chsnap,enum,flist)
 !
 !  Write particle derivative snapshot to file.
 !
 !  07-jan-05/anders: coded
 !
-      integer :: msnap
       logical :: enum
       character (len=*) :: chsnap,flist
       optional :: flist
@@ -148,10 +146,10 @@ module Particles_main
       logical :: lsnap
 !
       if (present(flist)) then
-        call wsnap_particles(chsnap,dfp,msnap,enum,lsnap,dsnap_par_minor, &
+        call wsnap_particles(chsnap,dfp,enum,lsnap,dsnap_par_minor, &
             npar_loc,ipar,flist)
       else
-        call wsnap_particles(chsnap,dfp,msnap,enum,lsnap,dsnap_par_minor, &
+        call wsnap_particles(chsnap,dfp,enum,lsnap,dsnap_par_minor, &
             npar_loc,ipar)
       endif
 !
@@ -207,7 +205,7 @@ module Particles_main
 !
 !  Map the particle positions on the grid for later use.
 !
-      call map_nearest_grid(f,fp,ineargrid)
+      call map_nearest_grid(fp,ineargrid)
       call map_xxp_grid(f,fp,ineargrid)
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
@@ -387,11 +385,6 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
-!
-      real, dimension (nx,ny) :: np_xy, np_xy2, rhop_xy, rhop_xy2
-      real, dimension (nx,nz) :: np_xz, rhop_xz
-      real, dimension (ny,nz) :: np_yz, rhop_yz
-      integer :: inamev
 !
 !  Loop over slices
 !

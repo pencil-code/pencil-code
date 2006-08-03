@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.421 2006-07-28 13:08:05 wlyra Exp $
+! $Id: entropy.f90,v 1.422 2006-08-03 07:07:27 ajohan Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.421 2006-07-28 13:08:05 wlyra Exp $")
+           "$Id: entropy.f90,v 1.422 2006-08-03 07:07:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1325,7 +1325,7 @@ module Entropy
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6 
       real :: T_c,T_w,T_i,T_h
-      real, dimension(nx) :: rho,pp,lnrho,ss,lnTT,yH
+      real, dimension(nx) :: rho,pp,lnrho,ss
       real :: cp1tilde !,mu 
 !      real, dimension(nx) :: pp 
 !     double precision :: pp0 
@@ -1688,7 +1688,7 @@ module Entropy
       real, dimension (nx) :: rhs,Hmax=0.
       real, dimension (nx) :: vKpara,vKperp
       real :: zbot,ztop,xi,profile_cor
-      real :: uT,  const_tmp
+      real :: uT
       integer :: j,ju
 !
       intent(inout)  :: f,p
@@ -1890,7 +1890,6 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnT,glnP
       real, dimension (nx) :: thdiff,g2
 !
       intent(out) :: df
@@ -2242,7 +2241,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,3) :: glnThcond,glhc,glnP,glchit_prof !,glnT
+      real, dimension (nx,3) :: glnThcond,glhc,glchit_prof !,glnT
       real, dimension (nx) :: chix
       real, dimension (nx) :: thdiff,g2
       real, dimension (nx) :: hcond,chit_prof
@@ -2569,7 +2568,7 @@ module Entropy
       use IO
 !     
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lncool,lnneni,rtv_cool,lnTT_SI
+      real, dimension (nx) :: lncool,rtv_cool,lnTT_SI
       integer :: i,imax
       real :: unit_temp,unit_Q
       type (pencil_case) :: p
@@ -2923,7 +2922,7 @@ module Entropy
       use EquationOfState, only: rho0
 
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lnTT,lnrho,newton
+      real, dimension (nx) :: newton
       real :: lnTTor,xil,unit_temp
       real :: p0,p1,p2,p3,p4
       type (pencil_case) :: p
@@ -2975,7 +2974,7 @@ module Entropy
       use EquationOfState, only: gamma, gamma1
 !
       real, dimension (nzgrid) :: lnrhom, ssm, cs2m, zz, eem
-      real :: rhotop, cs2top, zm, ztop, HT1, dlnrho, dee, &
+      real :: rhotop, cs2top, zm, ztop, dlnrho, dee, &
               mixinglength_flux, lnrhobot, rhobot
       real :: del, delad, fr_frac, fc_frac, fc, polyad=3./2.
       integer :: nbot1, nbot2

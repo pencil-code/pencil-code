@@ -1,4 +1,4 @@
-! $Id: messages.f90,v 1.8 2006-06-21 19:27:05 brandenb Exp $
+! $Id: messages.f90,v 1.9 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module takes care of messages.
 !
@@ -194,6 +194,8 @@ module Messages
         if (ldie_onwarning) call die_gracefully
 !
       endif
+!
+      if (NO_WARN) print*, ip
 !
     endsubroutine warning
 !***********************************************************************

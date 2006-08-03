@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.113 2006-05-29 18:03:42 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.114 2006-08-03 07:07:27 ajohan Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.113 2006-05-29 18:03:42 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.114 2006-08-03 07:07:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -171,7 +171,7 @@ module Dustvelocity
 !
       use EquationOfState, only: cs0
 !
-      integer :: k,l
+      integer :: k
       real :: gsurften=0.,Eyoung=1.,nu_Poisson=0.,Eyoungred=1.
 !
 !  Output grain mass discretization type
@@ -701,8 +701,6 @@ module Dustvelocity
 ! 
 !  20-11-04/anders: coded
 !
-      integer :: i
-!
       lpenc_requested(i_uud)=.true.
       if (ladvection_dust) lpenc_requested(i_udgud)=.true.
       if (ldustvelocity_shorttausd) then
@@ -876,10 +874,10 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
-      real, dimension (nx,3) :: fviscd,tausd13,tausg13,del2ud,AA_sfta,BB_sfta
-      real, dimension (nx) :: csrho,tausg1,mudrhod1
+      real, dimension (nx,3) :: fviscd,tausd13,tausg13,AA_sfta,BB_sfta
+      real, dimension (nx) :: tausg1,mudrhod1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
-      integer :: i,j,k,l
+      integer :: i,j,k
 !
       intent(in) :: f,p
       intent(out) :: df

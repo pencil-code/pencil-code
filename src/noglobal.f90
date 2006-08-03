@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.12 2006-07-28 13:19:38 wlyra Exp $
+! $Id: noglobal.f90,v 1.13 2006-08-03 07:07:28 ajohan Exp $
 
 module Global
 
@@ -234,7 +234,7 @@ module Global
 !
       call not_implemented('global_derivs')
 !
-      if (NO_WARN) print*, m, n, label
+      if (NO_WARN) print*, m, n, label, der6
 !
     endsubroutine global_derivs
 !***********************************************************************

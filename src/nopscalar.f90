@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.21 2006-05-01 09:07:21 brandenb Exp $
+! $Id: nopscalar.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -52,7 +52,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.21 2006-05-01 09:07:21 brandenb Exp $")
+           "$Id: nopscalar.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -129,6 +129,8 @@ module Pscalar
       if (lpencil(i_cc)) p%cc=1.
 ! cc1
       if (lpencil(i_cc1)) p%cc1=1.
+!
+      if (NO_WARN) print*, f
 !
     endsubroutine calc_pencils_pscalar
 !***********************************************************************

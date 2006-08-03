@@ -80,6 +80,8 @@ module Testfield
 !
       logical, dimension(npencils) :: lpencil_in
 !
+      if (NO_WARN) print*, lpencil_in
+!
     endsubroutine pencil_interdep_testfield
 !***********************************************************************
     subroutine read_testfield_init_pars(unit,iostat)
@@ -141,6 +143,8 @@ module Testfield
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       intent(in)     :: f
+!
+      if (NO_WARN) print*, f
 !
     endsubroutine calc_ltestfield_pars
 !***********************************************************************

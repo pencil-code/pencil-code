@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.231 2006-07-21 10:35:02 ajohan Exp $
+! $Id: run.f90,v 1.232 2006-08-03 07:07:28 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -67,7 +67,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.231 2006-07-21 10:35:02 ajohan Exp $")
+             "$Id: run.f90,v 1.232 2006-08-03 07:07:28 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -481,7 +481,7 @@
               mvar_io,ENUM=.true.,FLIST='varN.list')
           if (lparticles) &
               call particles_write_snapshot(trim(directory_snap)//'/PVAR', &
-              mvar_io,ENUM=.true.,FLIST='pvarN.list')
+              ENUM=.true.,FLIST='pvarN.list')
           call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
                FLIST='tavgN.list')
 !
@@ -498,7 +498,7 @@
                          f,mvar_io,ENUM=.false.)
               if (lparticles) &
                   call particles_write_snapshot( &
-                  trim(directory_snap)//'/pvar.dat',mvar_io,ENUM=.false.)
+                  trim(directory_snap)//'/pvar.dat',ENUM=.false.)
               call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
                                   ENUM=.false.)
               call wtime(trim(directory)//'/time.dat',t)
@@ -545,12 +545,12 @@
         if (save_lastsnap) then
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           if (lparticles) call particles_write_snapshot( &
-              trim(directory_snap)//'/pvar.dat',mvar_io,ENUM=.false.)
+              trim(directory_snap)//'/pvar.dat',ENUM=.false.)
           call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
                                   ENUM=.false.)
           if (ip<=11) then
             call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
-            call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',mvar,ENUM=.false.)
+            call particles_write_dsnapshot(trim(directory)//'/dpvar.dat',ENUM=.false.)
           endif
         else
           call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)

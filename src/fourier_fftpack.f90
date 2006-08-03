@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.3 2006-07-30 19:46:12 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.4 2006-08-03 07:07:27 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -190,6 +190,14 @@ module Fourier
       real, dimension(4*nx+15) :: wsavex
       integer :: l,m,n
 !
+      if (present(direction)) then
+        if (direction/=1) then
+          if (lroot) print*, 'fourier_transform_xz: only implemented for '// &
+              'direction=1'
+          call fatal_error('fourier_transform_xz','')
+        endif
+      endif
+!
 !  check whether nxgrid=nygrid=nzgrid
 !
       if (nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
@@ -248,6 +256,14 @@ module Fourier
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
       integer :: m,n
+!
+      if (present(direction)) then
+        if (direction/=1) then
+          if (lroot) print*, 'fourier_transform_x: only implemented for '// &
+              'direction=1'
+          call fatal_error('fourier_transform_x','')
+        endif
+      endif
 !
 !  check whether nxgrid=nygrid=nzgrid
 !

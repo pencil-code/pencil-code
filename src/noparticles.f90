@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.16 2006-07-28 14:00:38 wlyra Exp $
+! $Id: noparticles.f90,v 1.17 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -159,13 +159,15 @@ module Particles
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
-      integer :: i
+      integer :: k
 !
       intent(out) :: rp_mn,rpcyl_mn
-       do i=1,mpar_loc
-          rp_mn(:,i)    = 0. 
-          rpcyl_mn(:,i) = 0. 
+       do k=1,mpar_loc
+          rp_mn(:,k)    = 0. 
+          rpcyl_mn(:,k) = 0. 
        enddo
+!
+       if (NO_WARN) print*, fp
 !
      endsubroutine get_particles_interdistances
 !***********************************************************************
@@ -239,6 +241,8 @@ module Particles
         write(3,*) 'inp=0'
         write(3,*) 'irho=0'
       endif
+!
+      if (NO_WARN) print*, lreset
 !
     endsubroutine rprint_particles
 !***********************************************************************

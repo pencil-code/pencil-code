@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.5 2006-07-17 11:37:31 mee Exp $
+! $Id: snapshot.f90,v 1.6 2006-08-03 07:07:28 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -106,7 +106,6 @@ contains
 !
       integer :: msnap
       real, dimension (mx,my,mz,msnap) :: f
-      character (len=fnlen) :: file
       character (len=*) :: chsnap
       integer :: ivar
 !

@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.165 2006-06-14 23:57:00 ajohan Exp $
+! $Id: dustdensity.f90,v 1.166 2006-08-03 07:07:27 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.165 2006-06-14 23:57:00 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.166 2006-08-03 07:07:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -268,7 +268,7 @@ module Dustdensity
 !
       real, dimension (nx) :: eps
       real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt=0.
-      integer :: i,j,k,l
+      integer :: j,k,l
       logical :: lnothing
 !
 !  different initializations of nd (called from start).
@@ -516,7 +516,6 @@ module Dustdensity
 !
       real, dimension (mz) :: rho, eps
       real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho, epsz0
-      integer, dimension(1) :: i0
       integer :: i
 !
 !  Calculate dust "scale height".
@@ -1235,7 +1234,6 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: nd
       real, dimension (nx) :: mfluxcond
       real :: dmdfac
       integer :: k,l

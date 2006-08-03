@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.126 2006-07-28 14:00:38 wlyra Exp $
+! $Id: particles_dust.f90,v 1.127 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.126 2006-07-28 14:00:38 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.127 2006-08-03 07:07:28 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -155,7 +155,6 @@ module Particles
       logical :: lstarting
 !
       real :: rhom
-      integer, dimension (0:ncpus-1) :: ipar1, ipar2
 !
 !  Distribute particles evenly among processors to begin with.
 !
@@ -520,7 +519,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Map particle position on the grid.
 !
-      call map_nearest_grid(f,fp,ineargrid)
+      call map_nearest_grid(fp,ineargrid)
       call map_xxp_grid(f,fp,ineargrid)
 !
 !  Initial particle velocity.
@@ -815,7 +814,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       real :: eta_glnrho, v_Kepler, kx, kz
-      real :: ampl, r, p, xprob, zprob, dxprob, dzprob, fprob, dfprob
+      real :: r, p, xprob, zprob, dzprob, fprob, dfprob
       integer :: j, k
       logical :: lmigration_redo_org
 !
@@ -924,8 +923,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       integer, parameter :: nz_inc=10
       real, dimension (nz_inc*nz) :: z_dense, eps
-      real, dimension (nx) :: np
-      real :: r, p, Hg, Hd, frac, rho1, Sigmad, Sigmad_num, Xi, fXi, dfdXi
+      real :: r, Hg, Hd, frac, rho1, Sigmad, Sigmad_num, Xi, fXi, dfdXi
       real :: dz_dense, eps_point, z00_dense, rho, lnrho
       integer :: nz_dense=nz_inc*nz, npar_bin
       integer :: i, i0, k
@@ -1164,7 +1162,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (nx) :: tausg1, dt1_drag
       real, dimension (3) :: uup, dragforce
-      real :: np_point, eps_point, rho_point, rho1_point, tausp1_point, up2
+      real :: rho_point, rho1_point, tausp1_point, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k, l, ix0, iy0, iz0
@@ -1418,9 +1416,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: ran_xp, ran_yp, ran_zp
-      integer, dimension (mseed) :: iseed_org
-      integer :: k
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp, ineargrid
@@ -1457,6 +1452,8 @@ k_loop:   do while (.not. (k>npar_loc))
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
 !
       if (lfirstcall) lfirstcall=.false.
+!
+      if (NO_WARN) print*, f, df, ineargrid
 !
     endsubroutine dxxp_dt
 !***********************************************************************
@@ -1595,6 +1592,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lfirstcall) lfirstcall=.false.
 !
+      if (NO_WARN) print*, f, df, ineargrid
+!
     endsubroutine dvvp_dt
 !***********************************************************************
     subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_point)
@@ -1602,8 +1601,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Calculate the friction time.
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      real, dimension (mpar_loc,mpvar) :: fp
       real :: tausp1_point
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
@@ -1616,6 +1614,8 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
+      if (NO_WARN) print*, f, ineargrid
+!
     endsubroutine get_frictiontime
 !***********************************************************************
     subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
@@ -1624,15 +1624,18 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
-      integer :: i
+      integer :: k
 !
       intent(out) :: rp_mn,rpcyl_mn
-       do i=1,mpar_loc
-          rp_mn(:,i)    = 0.
-          rpcyl_mn(:,i) = 0.
-       enddo
 !
-     endsubroutine get_particles_interdistances
+      do k=1,mpar_loc
+         rp_mn(:,k)    = 0.
+         rpcyl_mn(:,k) = 0.
+      enddo
+!
+      if (NO_WARN) print*, fp
+!
+    endsubroutine get_particles_interdistances
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    

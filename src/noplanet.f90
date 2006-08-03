@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.26 2006-07-28 13:39:39 wlyra Exp $
+! $Id: noplanet.f90,v 1.27 2006-08-03 07:07:28 ajohan Exp $
 !
 !  Dummy module
 !
@@ -49,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.26 2006-07-28 13:39:39 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.27 2006-08-03 07:07:28 ajohan Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -68,7 +68,7 @@ module Planet
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      if (NO_WARN) print*, f, lstarting
 !
     endsubroutine initialize_planet
 !***********************************************************************
@@ -134,9 +134,10 @@ module Planet
       real, dimension(mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 !
-      intent(in) :: f
-      intent(inout) :: p
-!   
+      intent(in) :: f, p
+!
+      if (NO_WARN) print*, f, p
+!
     endsubroutine calc_pencils_planet
 !***********************************************************************
     subroutine gravity_companion(fp,dfp,rp_mn,rpcyl_mn,gs,r0_pot,n_pot,p)
@@ -153,7 +154,9 @@ module Planet
       integer :: n_pot
 !
       call stop_it("noplanet.f90 - gravity_companion")
-!      
+!
+      if (NO_WARN) print*, fp,dfp,rp_mn,rpcyl_mn,gs,r0_pot,n_pot,p
+!
     endsubroutine gravity_companion
 !***********************************************************************
     subroutine calc_torque(unit)
@@ -176,6 +179,8 @@ module Planet
      g_r=0.
      call stop_it("noplanet.f90 - gravity_star")
 !
+     if (NO_WARN) print*, gs,r0_pot,n_pot,g_r,xstar,ystar
+!
    endsubroutine gravity_star
 !***************************************************************
     subroutine planet_phiavg(p)
@@ -183,6 +188,8 @@ module Planet
 ! 02-03-06/wlad : dummy
 !
       type (pencil_case) :: p
+!
+      if (NO_WARN) print*, p
 !
     endsubroutine planet_phiavg
 !***************************************************************
@@ -199,6 +206,8 @@ module Planet
       gs=1. ; gp=0. ; mdot=0. ; m2dot = 0.
 !
       call stop_it("noplanet.f90 - get_ramped_mass")
+!
+      if (NO_WARN) print*, g0
 !
     endsubroutine get_ramped_mass
 !***************************************************************

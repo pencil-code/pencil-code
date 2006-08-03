@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.68 2006-08-02 16:05:52 mee Exp $
+! $Id: nomagnetic.f90,v 1.69 2006-08-03 07:07:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.68 2006-08-02 16:05:52 mee Exp $")
+           "$Id: nomagnetic.f90,v 1.69 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -76,7 +76,7 @@ module Magnetic
 !
       mu01=1./mu0
 !
-      if (NO_WARN) print*,'f=',f
+      if (NO_WARN) print*,f,lstarting
 !
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -148,6 +148,8 @@ module Magnetic
       if (lpencil(i_jxbr)) p%jxbr=0.
       if (lpencil(i_bij)) p%bij=0.
 !
+      if (NO_WARN) print*, f, p
+!
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
     subroutine daa_dt(f,df,p)
@@ -177,10 +179,10 @@ module Magnetic
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: scl
-      integer :: j
 !
       intent(inout) :: f
+!
+      if (NO_WARN) print*, f
 !
     endsubroutine rescaling
 !***********************************************************************

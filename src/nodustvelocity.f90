@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.28 2006-02-04 12:10:37 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.29 2006-08-03 07:07:28 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -73,7 +73,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.28 2006-02-04 12:10:37 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.29 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -137,7 +137,6 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      integer :: k
 !      
       intent(in) :: f,p
 !

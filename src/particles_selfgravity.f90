@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.8 2006-08-01 06:14:20 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.9 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.8 2006-08-01 06:14:20 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.9 2006-08-03 07:07:28 ajohan Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -183,6 +183,8 @@ module Particles_selfgravity
         if (idiag_gpotenp/=0) call sum_mn_name(p%potself*p%rhop,idiag_gpotenp)
       endif 
 !
+      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+!
     endsubroutine dvvp_dt_selfgrav_pencil
 !***********************************************************************
     subroutine dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
@@ -228,6 +230,8 @@ module Particles_selfgravity
         endif
 !
       endif ! if (t>=tstart_selfgrav) then
+!
+      if (NO_WARN) print*, df
 !
     endsubroutine dvvp_dt_selfgrav
 !***********************************************************************

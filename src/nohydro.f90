@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.59 2006-08-02 16:05:52 mee Exp $
+! $Id: nohydro.f90,v 1.60 2006-08-03 07:07:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.59 2006-08-02 16:05:52 mee Exp $")
+           "$Id: nohydro.f90,v 1.60 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -346,14 +346,14 @@ module Hydro
     integer :: modeN
 !
     real, dimension (3) :: k_unit
-    real, dimension (3) :: vec,ee,e1,e2,field
+    real, dimension (3) :: e1,e2
 !    real, dimension (4) :: r
     real,dimension (6) :: r
     real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
     real :: initpower,kmin,kmax
     real, dimension(KS_modes) :: k,dk,energy,ps
     real :: theta,phi,alpha,beta
-    real :: ex,ey,ez,norm,kdotx,a,mkunit
+    real :: a,mkunit
     real :: newthet,newphi  !get rid of this line if there's no change
 
     allocate(KS_k(3,KS_modes))
@@ -463,6 +463,7 @@ module Hydro
       call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
     enddo
 !
+    if (NO_WARN) print*, initpower
 !
     endsubroutine random_isotropic_KS_setup_tony
 !***********************************************************************
@@ -485,15 +486,13 @@ module Hydro
     integer :: modeN
 !
     real, dimension (3) :: k_unit
-    real, dimension (3) :: vec,ee,e1,e2,field
+    real, dimension (3) :: ee,e1,e2
 !    real, dimension (4) :: r
     real,dimension (6) :: r
-    real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
     real :: initpower,kmin,kmax
     real, dimension(KS_modes) :: k,dk,energy,ps
     real :: theta,phi,alpha,beta
-    real :: ex,ey,ez,norm,kdotx,a,mkunit
-    real :: newthet,newphi  !get rid of this line if there's no change
+    real :: ex,ey,ez,norm,a
 
     allocate(KS_k(3,KS_modes))
     allocate(KS_A(3,KS_modes))
@@ -604,6 +603,7 @@ module Hydro
       call cross(KS_B(:,modeN),k_unit(:),KS_B(:,modeN))
     enddo
 !
+    if (NO_WARN) print*, initpower
 !
     endsubroutine random_isotropic_KS_setup
 !***********************************************************************
@@ -624,14 +624,7 @@ module Hydro
 !
     real, dimension (3,KS_modes) :: k_unit
     real, dimension(KS_modes) :: k,dk,energy,ps
-    real, dimension (3) :: vec,ee,e1,e2,field
-!    real, dimension (4) :: r
-    real,dimension (6) :: r
-    real,dimension (3) ::j,l  !get rid of this - these replace ee,ee1
     real :: initpower,kmin,kmax
-    real :: theta,phi,alpha,beta
-    real :: ex,ey,ez,norm,kdotx,a,mkunit
-    real :: newthet,newphi  !get rid of this line if there's no change
 !
     allocate(KS_k(3,KS_modes))
     allocate(KS_A(3,KS_modes))

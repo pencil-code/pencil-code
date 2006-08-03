@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.60 2006-08-01 10:10:39 ajohan Exp $
+! $Id: eos_idealgas.f90,v 1.61 2006-08-03 07:07:27 ajohan Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.60 2006-08-01 10:10:39 ajohan Exp $')
+           '$Id: eos_idealgas.f90,v 1.61 2006-08-03 07:07:27 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -375,7 +375,7 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      if(NO_WARN) print*,lreset  !(keep compiler quiet)   
+      if (NO_WARN) print*, lreset, lwrite  !(keep compiler quiet)   
 !
     endsubroutine rprint_eos
 !***********************************************************************

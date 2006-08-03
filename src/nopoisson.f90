@@ -1,4 +1,4 @@
-! $Id: nopoisson.f90,v 1.3 2006-07-03 12:29:06 joishi Exp $
+! $Id: nopoisson.f90,v 1.4 2006-08-03 07:07:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -34,7 +34,7 @@ module Poisson
       real :: kmax
       logical :: lklimit
 !
-      if (NO_WARN) print*, a1
+      if (NO_WARN) print*, a1, lklimit, kmax
 !
     endsubroutine poisson_solver_fft
 !***********************************************************************

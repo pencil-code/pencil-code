@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.32 2006-08-02 16:05:52 mee Exp $
+! $Id: noradiation.f90,v 1.33 2006-08-03 07:07:28 ajohan Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -48,7 +48,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.32 2006-08-02 16:05:52 mee Exp $")
+           "$Id: noradiation.f90,v 1.33 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -161,7 +161,7 @@ module Radiation
 !      
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f !(keep compiler quiet)
+      if (NO_WARN) print*, f, p !(keep compiler quiet)
 ! 
     endsubroutine calc_pencils_radiation
 !***********************************************************************

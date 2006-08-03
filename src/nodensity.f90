@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.44 2006-04-12 05:18:18 brandenb Exp $
+! $Id: nodensity.f90,v 1.45 2006-08-03 07:07:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -55,7 +55,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.44 2006-04-12 05:18:18 brandenb Exp $")
+           "$Id: nodensity.f90,v 1.45 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -149,6 +149,8 @@ module Density
       if (lpencil(i_ugrho)) p%ugrho=0.
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.
+!
+      if (NO_WARN) print*, f
 !
     endsubroutine calc_pencils_density
 !***********************************************************************

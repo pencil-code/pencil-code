@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.6 2006-04-02 03:34:12 mee Exp $
+! $Id: noviscosity.f90,v 1.7 2006-08-03 07:07:28 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.6 2006-04-02 03:34:12 mee Exp $")
+           "$Id: noviscosity.f90,v 1.7 2006-08-03 07:07:28 ajohan Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -154,9 +154,11 @@ module Viscosity
       intent(in) :: f
       intent(inout) :: p
 ! shock    
-       if (lpencil(i_shock)) p%shock=0.
+      if (lpencil(i_shock)) p%shock=0.
 ! gshock    
-       if (lpencil(i_gshock)) p%gshock=0.
+      if (lpencil(i_gshock)) p%gshock=0.
+!
+      if (NO_WARN) print*, f
 !
     endsubroutine calc_pencils_viscosity
 !!***********************************************************************
@@ -199,8 +201,6 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!
-      integer :: i
 !
       intent (in) :: df,p
 !

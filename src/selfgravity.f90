@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.12 2006-07-31 15:12:46 mee Exp $
+! $Id: selfgravity.f90,v 1.13 2006-08-03 07:07:28 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -70,7 +70,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.12 2006-07-31 15:12:46 mee Exp $")
+           "$Id: selfgravity.f90,v 1.13 2006-08-03 07:07:28 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -252,8 +252,6 @@ module Selfgravity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-!
-      integer :: k
 !
       intent(in) :: f,p
       intent(out) :: df

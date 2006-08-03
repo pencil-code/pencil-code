@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.79 2006-07-28 23:02:32 mee Exp $
+! $Id: particles_sub.f90,v 1.80 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -97,7 +97,7 @@ module Particles_sub
 !
     endsubroutine output_particles
 !***********************************************************************
-    subroutine wsnap_particles(snapbase,fp,msnap,enum,lsnap,dsnap_par_minor, &
+    subroutine wsnap_particles(snapbase,fp,enum,lsnap,dsnap_par_minor, &
         npar_loc,ipar,flist)
 !
 !  Write particle snapshot file, labelled consecutively if enum==.true.
@@ -112,7 +112,7 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       real :: dsnap_par_minor
       integer, dimension (mpar_loc) :: ipar
-      integer :: msnap, npar_loc
+      integer :: npar_loc
       logical :: enum, lsnap
       character (len=*) :: snapbase, flist
 !
@@ -923,7 +923,7 @@ module Particles_sub
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8, g9
       real :: dxp, dzp
       real, save :: dx1, dx2, dz1, dz2, dx1dz1, dx2dz1, dx1dz2, dx2dz2
-      integer :: i, j, ix0, iy0, iz0
+      integer :: ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
       intent(in)  :: f, xxp, ivar1
@@ -981,6 +981,8 @@ module Particles_sub
            cc(4,:)*dzp        + cc(5,:)*dzp**2     + cc(6,:)*dxp*dzp       + &
            cc(7,:)*dxp**2*dzp + cc(8,:)*dxp*dzp**2 + cc(9,:)*dxp**2*dzp**2
 !
+      if (NO_WARN) print*, ipar
+!
     endsubroutine interpolate_quadratic
 !***********************************************************************
     subroutine interpolate_quadratic_spline(f,ivar1,ivar2,xxp,gp,inear,ipar)
@@ -1003,8 +1005,7 @@ module Particles_sub
       real :: fac_y_m1, fac_y_00, fac_y_p1
       real :: fac_z_m1, fac_z_00, fac_z_p1
       real :: dxp0, dyp0, dzp0
-      integer :: i, ix0, iy0, iz0
-      logical :: lfirstcall=.true.
+      integer :: ix0, iy0, iz0
 !
       intent(in)  :: f, xxp, ivar1
       intent(out) :: gp
@@ -1130,9 +1131,11 @@ module Particles_sub
                                 f(ix0-1,iy0-1,iz0  ,ivar1:ivar2)*fac_y_m1 )
       endif
 !
+      if (NO_WARN) print*, ipar
+!
     endsubroutine interpolate_quadratic_spline
 !***********************************************************************
-    subroutine map_nearest_grid(f,fp,ineargrid)
+    subroutine map_nearest_grid(fp,ineargrid)
 !
 !  Find index (ix0, iy0, iz0) of nearest grid point of all the particles.
 !
@@ -1141,15 +1144,14 @@ module Particles_sub
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, save :: dx1, dy1, dz1
-      integer :: j, k, ix0, iy0, iz0
+      integer :: k, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
-      intent(in)  :: f, fp
+      intent(in)  :: fp
       intent(out) :: ineargrid
 !
 !  Default values in case of missing directions.
@@ -1207,7 +1209,7 @@ module Particles_sub
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
 !
-      call particle_pencil_index(fp,ineargrid)
+      call particle_pencil_index(ineargrid)
 !
 !  Choose sort algorithm.
 !  WARNING - choosing the wrong one might make the code unnecessarily slow.
@@ -1355,7 +1357,7 @@ module Particles_sub
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: weight, weight_x, weight_y, weight_z
-      integer :: k, ix0, iy0, iz0, ix1, iy1, iz1, ixx, iyy, izz
+      integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
 !
       intent(in)  :: fp, ineargrid
@@ -1487,7 +1489,7 @@ module Particles_sub
 !
     endsubroutine map_xxp_grid
 !***********************************************************************
-    subroutine particle_pencil_index(fp,ineargrid)
+    subroutine particle_pencil_index(ineargrid)
 !
 !  Calculate the beginning and ending index of particles in a pencil.
 !
@@ -1496,12 +1498,11 @@ module Particles_sub
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       integer :: k, ix0, iy0, iz0
 !
-      intent(in)  :: fp, ineargrid
+      intent(in)  :: ineargrid
 !
       npar_imn=0
 !

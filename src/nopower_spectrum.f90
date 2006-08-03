@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.13 2006-08-01 10:10:39 ajohan Exp $
+! $Id: nopower_spectrum.f90,v 1.14 2006-08-03 07:07:28 ajohan Exp $
 !
 module  power_spectrum
   !
@@ -55,8 +55,9 @@ module  power_spectrum
     integer, optional :: ivar
 !
     if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
-    if(sp=='') print*,f,ivec  !(to keep compiler happy)
 !    
+    if (NO_WARN) print*, f, sp, ivec, ivar
+!
   endsubroutine power_1d
 !***********************************************************************
     subroutine pdf(f,variabl,pdf_mean,pdf_rms)

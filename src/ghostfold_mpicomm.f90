@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.5 2006-08-01 14:28:34 ajohan Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.6 2006-08-03 07:07:27 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -266,7 +266,6 @@ module GhostFold
       complex, dimension(nygrid) :: a_cmplx, cmplx_shift
       real, dimension(nygrid,max(nz/nprocy,1)) :: a_re_new, a_im_new
       integer :: n, nz_new, ipy_from, ipy_to, iproc_from, iproc_to
-      real, dimension(4*nygrid+15) :: wsavey
 !
 !  Fourier transform of the subdivided y-interval is done by collecting
 !  pencils of length nygrid at each processor. Consider the processor space

@@ -1,4 +1,4 @@
-! $Id: nofourier.f90,v 1.1 2006-07-28 20:41:34 ajohan Exp $
+! $Id: nofourier.f90,v 1.2 2006-08-03 07:07:28 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -30,6 +30,8 @@ module Fourier
 !
       call fatal_error('fourier_transform', &
           'this sub is not available in nofourier.f90!')
+!
+      if (NO_WARN) print*, a_re, a_im, direction
 !
     endsubroutine fourier_transform
 !***********************************************************************
@@ -85,7 +87,7 @@ module Fourier
       call fatal_error('fourier_transform_other_1', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im
+      if (NO_WARN) print*, a_re, a_im, direction
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
@@ -99,7 +101,7 @@ module Fourier
       call fatal_error('fourier_transform_other_2', &
           'this sub is not available in nofourier.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im
+      if (NO_WARN) print*, a_re, a_im, direction
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************

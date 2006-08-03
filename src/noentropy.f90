@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.87 2006-07-23 23:14:12 mee Exp $
+! $Id: noentropy.f90,v 1.88 2006-08-03 07:07:28 ajohan Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.87 2006-07-23 23:14:12 mee Exp $")
+           "$Id: noentropy.f90,v 1.88 2006-08-03 07:07:28 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -172,13 +172,14 @@ module Entropy
 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: tmp
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
+!
+      if (NO_WARN) print*, f, p
 !
     endsubroutine calc_pencils_entropy
 !**********************************************************************

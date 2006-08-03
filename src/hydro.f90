@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.275 2006-08-02 16:05:52 mee Exp $
+! $Id: hydro.f90,v 1.276 2006-08-03 07:07:27 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -166,7 +166,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.275 2006-08-02 16:05:52 mee Exp $")
+           "$Id: hydro.f90,v 1.276 2006-08-03 07:07:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -833,8 +833,7 @@ module Hydro
 !      
       real, dimension (nx) :: pdamp
       real :: c2,s2
-      real :: gr_part, cf_part
-      integer :: j,i,ju
+      integer :: j
 !
       intent(in) :: f,p
       intent(out) :: df
@@ -1712,8 +1711,6 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
-!
-      integer :: inamev
 !
 !  Loop over slices
 !

@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.25 2006-07-28 14:00:38 wlyra Exp $
+! $Id: particles_tracers.f90,v 1.26 2006-08-03 07:07:28 ajohan Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -58,7 +58,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.25 2006-07-28 14:00:38 wlyra Exp $")
+           "$Id: particles_tracers.f90,v 1.26 2006-08-03 07:07:28 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -266,7 +266,7 @@ module Particles
 !
 !  Map particle positions on the grid.
 !
-      call map_nearest_grid(f,fp,ineargrid)
+      call map_nearest_grid(fp,ineargrid)
       call map_xxp_grid(f,fp,ineargrid)
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
@@ -364,6 +364,8 @@ module Particles
         enddo
       endif
 !
+      if (NO_WARN) print*, df, p
+!
     endsubroutine dxxp_dt_pencil
 !***********************************************************************
     subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
@@ -410,6 +412,8 @@ module Particles
         if (idiag_nparmax/=0) call max_name(npar_loc,idiag_nparmax)
       endif
 !
+      if (NO_WARN) print*, f, df, dfp, ineargrid
+!
     endsubroutine dxxp_dt
 !***********************************************************************
     subroutine dvvp_dt(f,df,fp,dfp,ineargrid)
@@ -433,13 +437,16 @@ module Particles
 !
       real, dimension (mpar_loc,mpvar) :: fp
       real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
-      integer :: i
+      integer :: k
 !
       intent(out) :: rp_mn,rpcyl_mn
-       do i=1,mpar_loc
-          rp_mn(:,i)    = 0.
-          rpcyl_mn(:,i) = 0.
+!
+       do k=1,mpar_loc
+          rp_mn(:,k)    = 0.
+          rpcyl_mn(:,k) = 0.
        enddo
+!
+       if (NO_WARN) print*, fp
 !
      endsubroutine get_particles_interdistances
 !***********************************************************************

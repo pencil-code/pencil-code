@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.13 2006-07-28 20:41:34 ajohan Exp $
+! $Id: poisson.f90,v 1.14 2006-08-03 07:07:28 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -44,12 +44,12 @@ module Poisson
 !
       real, dimension (nx,ny,nz) :: b1
       real :: k2
-      integer :: i, ikx, iky, ikz
+      integer :: ikx, iky, ikz
 !
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.13 2006-07-28 20:41:34 ajohan Exp $")
+        "$Id: poisson.f90,v 1.14 2006-08-03 07:07:28 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !

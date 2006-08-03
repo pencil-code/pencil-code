@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.305 2006-08-02 16:05:52 mee Exp $
+! $Id: magnetic.f90,v 1.306 2006-08-03 07:07:27 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.305 2006-08-02 16:05:52 mee Exp $")
+           "$Id: magnetic.f90,v 1.306 2006-08-03 07:07:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -336,6 +336,8 @@ module Magnetic
           'Resistivity coefficient eta_shock is zero!')
       endif
 !
+      if (NO_WARN) print*, lstarting
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f,xx,yy,zz)
@@ -359,7 +361,7 @@ module Magnetic
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
       real :: beq2
-      integer :: j,ncount
+      integer :: j
 !
       do j=1,ninit
 
@@ -966,7 +968,7 @@ module Magnetic
       real, dimension (nx,3) :: geta,uxDxuxb,fres
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo,rho1_jxb
-      real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,gshockgai,etaSS
+      real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j
 !
@@ -1087,7 +1089,7 @@ module Magnetic
 !
 !  Subtract contribution from mean background flow
 !
-         if (llarge_scale_Bz) call subtract_mean_lorentz(df,p)
+         if (llarge_scale_Bz) call subtract_mean_lorentz(df)
 !
 !  Ambipolar diffusion in the strong coupling approximation
 !
@@ -1951,8 +1953,6 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (slice_data) :: slices
-!
-      integer :: inamev
 !
 !  Loop over slices
 !
@@ -2859,7 +2859,7 @@ module Magnetic
 !
     endsubroutine potentdiv
 !***********************************************************************
-    subroutine subtract_mean_lorentz(df,p)
+    subroutine subtract_mean_lorentz(df)
 !
 !  A vertical large scale magnetic field Bz
 !  
@@ -2884,9 +2884,6 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: bbs,uus
-      real, dimension(nx) :: u_phi
-      type (pencil_case) :: p
-      integer :: i
 !
       intent(inout) :: df
 !

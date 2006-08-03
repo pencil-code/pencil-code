@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.90 2006-06-20 13:59:58 wlyra Exp $
+! $Id: io_dist.f90,v 1.91 2006-08-03 07:07:27 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -95,7 +95,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.90 2006-06-20 13:59:58 wlyra Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.91 2006-08-03 07:07:27 ajohan Exp $")
 !
     endsubroutine register_io
 !
@@ -260,6 +260,8 @@ contains
 !
       close(lun_output)
       if (lserial_io) call end_serialize()
+!
+      if (NO_WARN) print*, nv
 !
     endsubroutine output_scal_coarse
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.181 2006-07-29 08:24:03 ajohan Exp $
+! $Id: register.f90,v 1.182 2006-08-03 07:07:28 ajohan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -588,7 +588,7 @@ module Register
       use Mpicomm
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamexy,inamexz,inamerz
-      integer :: ix_,iy_,iz_,iz2_,io_stat,iname_tmp
+      integer :: iname_tmp
       logical :: lreset,exist,print_in_double
       character (LEN=30)    :: cname_tmp
       character (LEN=fnlen) :: print_in_file

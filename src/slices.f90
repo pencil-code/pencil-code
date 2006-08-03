@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.67 2006-08-02 16:05:52 mee Exp $
+! $Id: slices.f90,v 1.68 2006-08-03 07:07:28 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -142,7 +142,7 @@ module Slices
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
       logical :: lslices_legacy=.true.
-      integer :: inamev,k,i
+      integer :: inamev,k
       real :: tmpval
       integer :: l
 

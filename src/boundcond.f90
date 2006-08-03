@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.118 2006-07-18 19:27:50 mee Exp $
+! $Id: boundcond.f90,v 1.119 2006-08-03 07:07:27 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1791,9 +1791,8 @@ module Boundcond
 
        real, dimension (mx,my,mz,mvar+maux) :: f
        real, dimension (nx,ny*nprocy) :: uxd,uyd,uxl,uxr,uyl,uyr
-       integer :: lend,iostat=0,i=0,j,k,l
+       integer :: lend,iostat=0,i=0,j
        real :: tl=0.,tr=0.,delta_t
-       real :: driver_nx,driver_ny,driver_dx,driver_dy,driver_dt
        intent (inout) :: f
 !
 !     Read the time table

@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.7 2006-06-15 21:42:58 theine Exp $
+! $Id: gravity_simple.f90,v 1.8 2006-08-03 07:07:27 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -96,7 +96,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.7 2006-06-15 21:42:58 theine Exp $")
+           "$Id: gravity_simple.f90,v 1.8 2006-08-03 07:07:27 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -305,6 +305,8 @@ module Gravity
         p%gg(:,3) = gravz_zpencil(n-nghost)
       endif
 !
+      if (NO_WARN) print*, f
+!
     endsubroutine calc_pencils_gravity
 !***********************************************************************
     subroutine duu_dt_grav(f,df,p)
@@ -384,6 +386,8 @@ module Gravity
 !  Calculate potential from master pencils defined in initialize_gravity
 !
       pot = potx_xpencil + poty_ypencil(m-nghost) + potz_zpencil(n-nghost)
+!
+      if (NO_WARN) print*, xmn, ymn, zmn, pot0, grav, rmn
 !
     endsubroutine potential_penc
 !***********************************************************************
