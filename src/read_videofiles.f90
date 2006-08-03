@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.20 2005-06-26 17:34:13 eos_merger_tony Exp $
+! $Id: read_videofiles.f90,v 1.21 2006-08-03 16:02:23 mee Exp $
 
 !***********************************************************************
       program rvid_box
@@ -37,6 +37,8 @@
       character (len=20) :: field='lnrho'
       character (len=1) :: slice_position='p'
 !
+      logical :: exists, lwritten_something=.false.
+!
       real :: min_xy_loc,min_xy2_loc,min_xz_loc,min_yz_loc
       real :: max_xy_loc,max_xy2_loc,max_xz_loc,max_yz_loc
 !
@@ -50,13 +52,18 @@
 !  read name of the field (must coincide with file extension)
 !
       !call getarg (1,field)
-      write(*,'(a)',ADVANCE='NO') 'enter name of variable (lnrho, ux, ..., bz): '
+      write(*,'(a)',ADVANCE='NO') 'enter name of variable (lnrho, uu1, ..., bb3): '
       read*,field
 !
 !  periphery or middle of the box?
 !  This information is now written in a file.
 !  If file doesn't exist, read from the input line.
 !
+      inquire(FILE='data/slice_position.dat',EXIST=exists)
+      if (.not.exists) then
+        print*,"Slice position data not found"
+        goto 999
+      endif
       open(1,file='data/slice_position.dat',err=998)
       read(1,*) slice_position
       close(1)
@@ -114,6 +121,12 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.Xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
+        inquire(FILE=trim(fullname),EXIST=exists)
+        if (.not.exists) then
+          print*,"Slice not found", fullname
+          xy2(:,1+ipy*ny:ny+ipy*ny)=0.
+          goto 999
+        endif
         call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof,err)
         min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
         max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
@@ -124,6 +137,7 @@
       err_timestep=err
       if(.not.err_timestep) then
         call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1)
+        lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
       endif
@@ -139,6 +153,12 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
+        inquire(FILE=trim(fullname),EXIST=exists)
+        if (.not.exists) then
+          print*,"Slice not found", fullname
+          xy(:,1+ipy*ny:ny+ipy*ny)=0.
+          goto 999
+        endif
         call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof,err)
         min_xy_loc=min(min_xy_loc,minval(xy_loc))
         max_xy_loc=max(max_xy_loc,maxval(xy_loc))
@@ -149,6 +169,7 @@
       err_timestep=err_timestep.or.err
       if(.not.err_timestep) then
         call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2)
+        lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
       endif
@@ -164,6 +185,12 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
+        inquire(FILE=trim(fullname),EXIST=exists)
+        if (.not.exists) then
+          print*,"Slice not found", fullname
+          xz(:,1+ipz*nz:nz+ipz*nz)=0.
+          goto 999
+        endif
         call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof,err)
         min_xz_loc=min(min_xz_loc,minval(xz_loc))
         max_xz_loc=max(max_xz_loc,maxval(xz_loc))
@@ -174,6 +201,7 @@
       err_timestep=err_timestep.or.err
       if(.not.err_timestep) then
         call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3)
+        lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
       endif
@@ -189,6 +217,12 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it<=itdebug) print*,trim(fullname)
+        inquire(FILE=trim(fullname),EXIST=exists)
+        if (.not.exists) then
+          print*,"Slice not found", fullname
+          yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=0.
+          goto 999
+        endif
         call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof,err)
         min_yz_loc=min(min_yz_loc,minval(yz_loc))
         max_yz_loc=max(max_yz_loc,maxval(yz_loc))
@@ -200,6 +234,7 @@
       err_timestep=err_timestep.or.err
       if(.not.err_timestep) then
         call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
+        lwritten_something=.true.
       else
         print*,'skip writing because of error; t=',t
       endif
@@ -207,6 +242,7 @@
       print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
       enddo
 999   continue
+      if (lwritten_something) then
       print*,'last file read: ',trim(fullname)
       print*,'-------------------------------------------------'
       print*,'minimum and maximum values:'
@@ -216,6 +252,25 @@
       print*,'yz-plane:',min_yz_loc,max_yz_loc
       print*,'-------------------------------------------------'
       print*,'finished OK'
+      endif
+
+      select case (trim(field))
+        case ('ux','uy','uz','bx','by','bz','Fradx','Frady','Fradz','ax','ay','az','ox','oy','oz')
+          print*,""
+          print*,"*****************************************************************************"
+          print*,"******                WARNING DEPRECATED SLICE NAME                    ******"
+          print*,"*****************************************************************************"
+          print*,"*** The slice name '"//trim(field)//"' is deprecated and soon will not be ***"
+          print*,"*** supported any longer                                                  ***"
+          print*,"*** New slice names are formed by taking the name specified in video.in   ***"
+          print*,"*** eg. uu and in the case of vector or other multiple slices appending   ***"
+          print*,"*** a number. For example the slice 'ux' is now 'uu1' and the slice 'uz'  ***"
+          print*,"*** is now called 'uu3', 'ay'->'aa2' etc. Similarly for aa, bb, oo, uu    ***"
+          print*,"*** and Frad slices.                                                      ***" 
+          print*,"*****************************************************************************"
+          print*,""
+      endselect
+
       end
 !***********************************************************************
     subroutine rslice(file,a,pos,ndim1,ndim2,t,it,lun,eof,err)
