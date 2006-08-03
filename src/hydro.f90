@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.276 2006-08-03 07:07:27 ajohan Exp $
+! $Id: hydro.f90,v 1.277 2006-08-03 07:44:12 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -166,7 +166,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.276 2006-08-03 07:07:27 ajohan Exp $")
+           "$Id: hydro.f90,v 1.277 2006-08-03 07:44:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -337,6 +337,10 @@ module Hydro
           call sinwave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
           call sinwave_phase(f,iuy,ampl_uy,kx_uu,ky_uu,kz_uu,phase_uy)
           call sinwave_phase(f,iuz,ampl_uz,kx_uu,ky_uu,kz_uu,phase_uz)
+        case('coswave-phase')
+          call coswave_phase(f,iux,ampl_ux,kx_uu,ky_uu,kz_uu,phase_ux)
+          call coswave_phase(f,iuy,ampl_uy,kx_uu,ky_uu,kz_uu,phase_uy)
+          call coswave_phase(f,iuz,ampl_uz,kx_uu,ky_uu,kz_uu,phase_uz)
         case('sinwave-x'); call sinwave(ampluu(j),f,iux,kx=kx_uu)
         case('sinwave-y'); call sinwave(ampluu(j),f,iuy,ky=ky_uu)
         case('sinwave-z'); call sinwave(ampluu(j),f,iuz,kz=kz_uu)
