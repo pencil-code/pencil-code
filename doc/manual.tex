@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.334 2006-08-03 14:25:49 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.335 2006-08-03 15:21:12 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-08-03 14:25:49 $ $,~ $ $Revision: 1.334 $ $}
+%\date{$ $Date: 2006-08-03 15:21:12 $ $,~ $ $Revision: 1.335 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-08-03 14:25:49 $ $,~ $ $Revision: 1.334 $ $}\\
+  \emph{$ $Date: 2006-08-03 15:21:12 $ $,~ $ $Revision: 1.335 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5194,19 +5194,54 @@ modules.
 \subsection{Adding new physics modules}
 
 If you want to add new physics to the code, you will in many cases want to
-add a new module \name{newphysics} together with the corresponding
-\name{nonewphysics} module.
-For a module involving a new variable, the \name{pscalar} module is a good
-prototype.
+add a new Special module.  Doing so is relatively straight forward and
+there is even a special directory for such additions.
+
+To create your own special module, copy \file{nospecial.f90} from the src/
+directory to a new name in the src/special/ directory.  It is currently only
+possible to have one special modules at a time and so several new bits of 
+physics are often put in to one special module. For this reasons a name 
+should be chosen that relates to the problem to be solved rather than
+the speficic physics being implemented.
+
+The first thing to do in your new module is to change the lspecial=.false.
+header to say lspecial=.true.
+
+The file is heavily commented though all such comments can be removed as you
+go.  You may implement any of the subroutines/function that exist in
+\name{nospecial.f90} and those routines must have the names and parameters
+as in \name{nospecial.f90}.  You do not however need to implement all
+routines, and you may either leave the dummy routines copied from
+\name{nospecial.f90} or delete them all together (provided the "include
+'special_dummy.inc'" is kept intact at the end of the file.  Beyond that,
+and data and subroutines can be added to a special module as required,
+though only for use within that module.
+
+There are routines in the special interface to allow you to add new
+equations, modify the existing equation, add diagnostics, add slices,
+and many more things.  If you feel there is something missing extra hooks
+can easily be added - please contact the Pencil Code team for assistance.
+
+You are encouraged to submit/commit your special modules to the Pencil-Code
+source.
+
+\subsection{Adding switchable modules}
+
+In some cases where a piece of physics is thought to be more fundamental,
+useful in many situations or simply more flexability is required it may be
+necessary to add a new module \name{newphysics} together with the
+corresponding \name{nonewphysics} module.  The special modules follow
+the same structure as the rest of the switchable modules and so using
+a special module to prototype new ideas can make writing a new 
+switchable module much easier.
+
+For an example of module involving a new
+variable (and PDE), the \name{pscalar} module is a good prototype.
 The grep command
 \begin{alltt}
   \prompt{unix> } grep -i pscalar src/*
 \end{alltt}
 gives you a good overview of which files you need to edit or add.
-
-If you just want to add a few new terms to the equation of motion or
-other evolution equations, \name{grav_z} or \name{forcing} may be a good
-starting point.
 
 % ====================================================================== %
 
@@ -5333,7 +5368,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-08-03 14:25:49 $ $,~ $ $Revision: 1.334 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-08-03 15:21:12 $ $,~ $ $Revision: 1.335 $ $}
 
 \section{Timings}
 
@@ -8621,7 +8656,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.334 2006-08-03 14:25:49 mee Exp $ $}
+$ $Id: manual.tex,v 1.335 2006-08-03 15:21:12 mee Exp $ $}
 
 
 \end{document}
