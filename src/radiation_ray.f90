@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.98 2006-08-02 18:46:26 mee Exp $
+! $Id: radiation_ray.f90,v 1.99 2006-08-03 14:08:36 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -169,7 +169,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.98 2006-08-02 18:46:26 mee Exp $")
+           "$Id: radiation_ray.f90,v 1.99 2006-08-03 14:08:36 mee Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1561,7 +1561,7 @@ module Radiation
 !  Radiative Flux (auxiliary variable)
 !
         case ('Frad')
-          if (slices%index >= 4) then
+          if (slices%index >= 3) then
             slices%ready = .false.
           else
             slices%yz=f(slices%ix,m1:m2    ,n1:n2,iFradx+slices%index)
@@ -1569,7 +1569,7 @@ module Radiation
             slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iFradx+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iFradx+slices%index)
             slices%index = slices%index+1
-            slices%ready = .true.
+            if ((slices%index < 3) slices%ready = .true.
           endif
 !
       endselect

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.306 2006-08-03 07:07:27 ajohan Exp $
+! $Id: magnetic.f90,v 1.307 2006-08-03 14:08:36 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.306 2006-08-03 07:07:27 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.307 2006-08-03 14:08:36 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1961,7 +1961,7 @@ module Magnetic
 !  Magnetic vector potential (code variable)
 !
         case ('aa')
-          if (slices%index == 4) then
+          if (slices%index >= 3) then
             slices%ready = .false.
           else
             slices%yz=f(slices%ix,m1:m2    ,n1:n2,iax+slices%index)
@@ -1969,13 +1969,13 @@ module Magnetic
             slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iax+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iax+slices%index)
             slices%index = slices%index+1
-            slices%ready = .true.
+            if (slices%index < 3) then slices%ready = .true.
           endif
 !
 !  Magnetic field (derived variable)
 !
         case ('bb')
-          if (slices%index == 4) then
+          if (slices%index >= 3) then
             slices%ready = .false.
           else
             slices%index = slices%index+1
@@ -1983,7 +1983,7 @@ module Magnetic
             slices%xz=>bb_xz(:,:,slices%index)
             slices%xy=>bb_xy(:,:,slices%index)
             slices%xy2=>bb_xy2(:,:,slices%index)
-            slices%ready = .true.
+            if (slices%index < 3) then slices%ready = .true.
           endif
 !
 !  Magnetic field squared (derived variable)
