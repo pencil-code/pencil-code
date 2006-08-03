@@ -7,19 +7,19 @@
 
 # Build the code:
 default:
-	(cd src; $(MAKE) -f Makefile.src Makefile; $(MAKE))
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src Makefile; $(MAKE) FROM_PARENT=src/ )
 
 # Use calculated dependencies instead:
 depend dep:
-	(cd src; $(MAKE) -f Makefile.src depend)
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src depend)
 
 # Clean up most files:
 clean:
-	(cd src; $(MAKE) -f Makefile.src clean)
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src clean)
 
 # Clean up even more files:
 cleann:
-	(cd src; $(MAKE) -f Makefile.src cleann)
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src cleann)
 # Same thing:
 cleanall: cleann
 
@@ -29,7 +29,7 @@ cleanlog: qoutclean
 
 # Compile with -g
 debug:
-	(cd src; $(MAKE) debug)
+	(cd src; $(MAKE) FROM_PARENT=src/ debug)
 
 # Clean up files produced by common queuing systems:
 qoutclean:

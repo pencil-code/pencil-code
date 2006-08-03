@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.228 2006-08-03 14:11:36 ajohan Exp $
+### $Id: Makefile.src,v 1.229 2006-08-03 14:17:17 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -94,7 +94,7 @@ nograv_message:
 	@echo "!!!"
 	@echo "!!! Please update your Makefile.local,  for example:"
 	@echo "!!!"
-	@echo "!!!      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)nograv([^a-zA-Z])/\$$1nogravity\$$2/' src/Makefile.local"
+	@echo "!!!      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)nograv([^a-zA-Z])/\$$1nogravity\$$2/' $(FROM_PARENT)Makefile.local"
 	@echo "!!!"
 	exit 1
 endif
