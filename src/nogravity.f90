@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.44 2006-06-15 21:42:58 theine Exp $
+! $Id: nogravity.f90,v 1.1 2006-08-03 11:08:27 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.44 2006-06-15 21:42:58 theine Exp $")
+           "$Id: nogravity.f90,v 1.1 2006-08-03 11:08:27 ajohan Exp $")
 !
       lgrav = .false.
       lgravz = .false.

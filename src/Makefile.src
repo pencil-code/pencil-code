@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.224 2006-08-01 13:31:28 snod Exp $
+### $Id: Makefile.src,v 1.225 2006-08-03 11:08:27 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -39,7 +39,7 @@ TESTFIELD    = notestfield
 
 BORDER_PROF  = noborder_profiles
 
-GRAVITY      = nograv
+GRAVITY      = nogravity
 SELFGRAVITY  = noselfgravity
 FORCING      = noforcing
 SHEAR        = noshear
@@ -84,6 +84,12 @@ include Makefile.inc
 ifneq ($(PARTICLES),noparticles)
   PARTICLES_MAIN =   particles_main
   PARTICLES_SUB  =   particles_sub
+endif
+
+## Compile files with particle programming structure if particles are chosen.
+ifeq ($(GRAVITY),nograv)
+nograv_message:
+	@echo !!! \'nograv\' has changed name to \'nogravity\'. Please update your Makefile.local
 endif
 
 ## Default settings
@@ -922,6 +928,9 @@ cleanall: cleann
 ## ---------------------------------------------------------------------- #
 ## Code targets
 ## ---------------------------------------------------------------------- #
+
+nograv.o:
+	echo "Hej"
 
 read_videofiles$(PC_META_TYPE).x: $(read_videofiles)
 	$(LD) $(LDFLAGS) $(read_videofiles) $(LD_MPI) -o read_videofiles$(PC_META_TYPE).x
