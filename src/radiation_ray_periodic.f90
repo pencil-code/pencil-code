@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.49 2006-08-03 14:08:36 mee Exp $
+! $Id: radiation_ray_periodic.f90,v 1.50 2006-08-03 14:12:32 snod Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -166,7 +166,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.49 2006-08-03 14:08:36 mee Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.50 2006-08-03 14:12:32 snod Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1057,7 +1057,7 @@ module Radiation
 !
 !  03-apr-04/tobi: coded
 !
-      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,pi,dx,dy,dz,pi,directory_snap
+      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
       use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc
       use IO, only: output
@@ -1112,7 +1112,7 @@ module Radiation
 !
 !  03-apr-04/tobi: coded
 !
-      use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,pi,dx,dy,dz,pi,directory_snap
+      use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,dx,dy,dz,pi,directory_snap
       use Cdata, only: kappa_es,ikapparho
       use EquationOfState, only: eoscalc
       use Mpicomm, only: stop_it
