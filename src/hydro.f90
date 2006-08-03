@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.278 2006-08-03 14:08:36 mee Exp $
+! $Id: hydro.f90,v 1.279 2006-08-03 14:10:28 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -166,7 +166,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.278 2006-08-03 14:08:36 mee Exp $")
+           "$Id: hydro.f90,v 1.279 2006-08-03 14:10:28 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1731,7 +1731,7 @@ module Hydro
             slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iux+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iux+slices%index)
             slices%index = slices%index+1
-            if (slices%index < 3) then slices%ready = .true.
+            if (slices%index < 3) slices%ready = .true.
           endif
 !
 !  Divergence of velocity (derived variable)
@@ -1763,7 +1763,7 @@ module Hydro
             slices%xz=>oo_xz(:,:,slices%index)
             slices%xy=>oo_xy(:,:,slices%index)
             slices%xy2=>oo_xy2(:,:,slices%index)
-            if (slices%index < 3) then slices%ready = .true.
+            if (slices%index < 3) slices%ready = .true.
           endif
 !
 !  Vorticity squared (derived variable)
