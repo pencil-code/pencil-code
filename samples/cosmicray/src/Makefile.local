@@ -16,6 +16,6 @@ COSMICRAY =   cosmicray_nolog
 EOS       =   eos_idealgas
 VISCOSITY =   viscosity
 
-GRAVITY   = nograv
+GRAVITY   = nogravity
 FORCING   = noforcing
 SHEAR     = noshear

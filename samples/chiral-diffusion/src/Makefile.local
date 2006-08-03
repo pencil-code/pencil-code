@@ -16,6 +16,6 @@ CHIRAL    =   chiral
 EOS       = noeos
 VISCOSITY = noviscosity
 
-GRAVITY   = nograv
+GRAVITY   = nogravity
 FORCING   = noforcing
 SHEAR     = noshear

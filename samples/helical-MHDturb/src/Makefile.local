@@ -6,7 +6,7 @@
 LDMPI=
 MPICOMM=nompicomm
 GLOBAL=noglobal
-GRAVITY=nograv
+GRAVITY=nogravity
 FORCING=forcing
 ENTROPY=noentropy
 MAGNETIC=magnetic

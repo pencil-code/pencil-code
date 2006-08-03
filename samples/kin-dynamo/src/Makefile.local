@@ -13,7 +13,7 @@ MAGNETIC  =   magnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-GRAVITY   = nograv
+GRAVITY   = nogravity
 FORCING   = noforcing
 VISCOSITY = noviscosity
 EOS       = noeos

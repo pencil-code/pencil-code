@@ -13,7 +13,7 @@ MAGNETIC     = nomagnetic
 RADIATION    = noradiation
 PSCALAR      = nopscalar
 
-GRAVITY      = nograv
+GRAVITY      = nogravity
 SELFGRAVITY  =   selfgravity
 POISSON      =   poisson
 FORCING      = noforcing

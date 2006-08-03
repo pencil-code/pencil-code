@@ -14,7 +14,7 @@ RADIATION = noradiation
 PSCALAR   = nopscalar
 
 VISCOSITY = noviscosity
-GRAVITY   = nograv
+GRAVITY   = nogravity
 FORCING   = noforcing
 SHEAR     = noshear
 

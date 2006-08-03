@@ -6,7 +6,7 @@
 LDMPI=-lmpi
 MPICOMM=nompicomm
 GLOBAL=noglobal
-GRAVITY=nograv
+GRAVITY=nogravity
 FORCING=noforcing
 ENTROPY=temperature_ionization
 MAGNETIC=nomagnetic

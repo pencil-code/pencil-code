@@ -15,6 +15,6 @@ DENSITY  =   density
 ENTROPY  = noentropy
 MAGNETIC =   magnetic
 
-GRAVITY  = nograv
+GRAVITY  = nogravity
 FORCING  = noforcing
 

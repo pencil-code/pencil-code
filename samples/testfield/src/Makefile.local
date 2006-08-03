@@ -11,7 +11,7 @@ DENSITY   = nodensity
 ENTROPY   = noentropy
 MAGNETIC  = nomagnetic
 
-GRAVITY   = nograv
+GRAVITY   = nogravity
 FORCING   = noforcing
 VISCOSITY = noviscosity
 EOS       = noeos

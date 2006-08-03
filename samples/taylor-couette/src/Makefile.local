@@ -17,7 +17,7 @@ RADIATION = noradiation
 PSCALAR   = nopscalar
 EOS       =   eos_idealgas
 
-GRAVITY   = nograv
+GRAVITY   = nogravity
 FORCING   = noforcing
 SHEAR     = noshear
 TIMEAVG   = notimeavg

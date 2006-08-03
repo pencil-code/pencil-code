@@ -17,7 +17,7 @@ RADIATION=noradiation
 PSCALAR  =nopscalar
 IONIZATION =   ionization_fixed
 
-GRAVITY  =nograv
+GRAVITY  =nogravity
 FORCING  =noforcing
 IO       =io_dist
 SHEAR    =noshear

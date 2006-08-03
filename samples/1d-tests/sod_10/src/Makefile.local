@@ -8,7 +8,7 @@ LDMPI  = -lmpi
 
 MPICOMM  = nompicomm
 GLOBAL   =   global_rr
-GRAVITY  = nograv
+GRAVITY  = nogravity
 FORCING  = noforcing
 ENTROPY  =   entropy
 MAGNETIC = nomagnetic
