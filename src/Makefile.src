@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.225 2006-08-03 11:08:27 ajohan Exp $
+### $Id: Makefile.src,v 1.226 2006-08-03 13:52:47 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -86,10 +86,17 @@ ifneq ($(PARTICLES),noparticles)
   PARTICLES_SUB  =   particles_sub
 endif
 
-## Compile files with particle programming structure if particles are chosen.
+## Check for deprecated features
 ifeq ($(GRAVITY),nograv)
 nograv_message:
-	@echo !!! \'nograv\' has changed name to \'nogravity\'. Please update your Makefile.local
+	@echo "!!! Settings in your Makefile.local are deprecated"
+	@echo "!!!    'nograv' has changed name to 'nogravity'"
+	@echo "!!!"
+	@echo "!!! Please update your Makefile.local,  for example:"
+	@echo "!!!"
+	@echo "!!!      perl -pi'~*' -e 's/(GRAVITY\s*\=\s*)nograv([^a-zA-Z])/$$1nogravity$$2/' Makefile.local"
+	@echo "!!!"
+	exit 1
 endif
 
 ## Default settings
