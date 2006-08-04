@@ -1,12 +1,12 @@
 pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
-               njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
+               njump=njump,datadir=datadir,OLDFILE=OLDFILE,debug=debug,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,imgdir=imgdir,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
                contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit
 ;
-; $Id: rvid_plane.pro,v 1.21 2006-06-07 18:21:53 joishi Exp $
+; $Id: rvid_plane.pro,v 1.22 2006-08-04 06:50:29 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -17,6 +17,8 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
 ;
 ;  Typical calling sequence
 ;  rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
+;
+COMMON pc_precision, zero, one
 ;
 default,ix,-1
 default,iy,-1
@@ -48,7 +50,7 @@ default,yimg,1
 ;
 default, datatopdir, 'data'
 ;  by default, look in data/, assuming we have run read_videofiles.x before:
-datadir = 'data'
+;datadir = 'data'
 if (n_elements(proc) le 0) then begin
   ;  change datadir when only data/proc0 exists
   spawn, '\ls -d data/proc*', lsproc
@@ -63,36 +65,28 @@ mx=0L & my=0L & mz=0L & nvar=0L & prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
 nprocx=0L & nprocy=0L & nprocz=0L
 ;
-close,1
-openr,1,datadir+'/'+'dim.dat'
-readf,1,mx,my,mz,nvar
-readf,1,prec
-readf,1,nghostx,nghosty,nghostz
-readf,1,nprocx,nprocy,nprocz
-close,1
+pc_set_precision, datadir=datadir
+;
+pc_read_dim, obj=dim, datadir=datadir
+nx=dim.nx & ny=dim.ny & nz=dim.nz
+mx=dim.mx & my=dim.my & mz=dim.mz
+nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
+nprocx=dim.nprocx & nprocy=dim.nprocy & nprocz=dim.nprocz
+ncpus=nprocx*nprocy*nprocz
 ;
 ;  Set reasonable extension for 2-D runs.
 ;
-if ( (mx ne 7) and (my ne 7) and (mz eq 7) ) then extension='xy'
-if ( (mx ne 7) and (my eq 7) and (mz ne 7) ) then extension='xz'
-if ( (mx eq 7) and (my ne 7) and (mz ne 7) ) then extension='yz'
+if ( (nx ne 1) and (ny ne 1) and (nz eq 1) ) then extension='xy'
+if ( (nx ne 1) and (ny eq 1) and (nz ne 1) ) then extension='xz'
+if ( (nx eq 1) and (ny ne 1) and (nz ne 1) ) then extension='yz'
 ;
-if n_elements(proc) ne 0 then begin
+if (n_elements(proc) ne 0) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
 endelse
 ;
-;  double precision?
-;
-if prec eq 'D' then unit=1d0 else unit=1e0
-;
-nx=mx-2*nghostx
-ny=my-2*nghosty
-nz=mz-2*nghostz
-ncpus = nprocx*nprocy*nprocz
-;
-if keyword_set(shell) then begin
+if (keyword_set(shell)) then begin
   ;
   ; to mask outside shell, need full grid;  read from varfiles, as in rall.pro
   ;
@@ -108,7 +102,6 @@ if keyword_set(shell) then begin
   nyloc=myloc-2*nghosty
   nzloc=mzloc-2*nghostz
   ;
-  one=unit & zero=0.0*unit
   x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
   xloc=fltarr(mxloc)*one & yloc=fltarr(myloc)*one & zloc=fltarr(mzloc)*one
   readstring=''
@@ -187,26 +180,25 @@ if keyword_set(shell) then begin
   ;
 endif
 ;
-t=0.*unit & islice=0
+t=zero & islice=0
 ;
-if (extension eq 'xy') then plane=fltarr(nx,ny)*unit
-if (extension eq 'Xy') then plane=fltarr(nx,ny)*unit
-if (extension eq 'xz') then plane=fltarr(nx,nz)*unit
-if (extension eq 'yz') then plane=fltarr(ny,nz)*unit
+if (extension eq 'xy') then plane=fltarr(nx,ny)*one
+if (extension eq 'Xy') then plane=fltarr(nx,ny)*one
+if (extension eq 'xz') then plane=fltarr(nx,nz)*one
+if (extension eq 'yz') then plane=fltarr(ny,nz)*one
 size_plane=size(plane)
 print, 'Array size: ', size_plane[0:size_plane[0]]
 ;
-slice_xpos=0.*unit
-slice_ypos=0.*unit
-slice_zpos=0.*unit
-slice_z2pos=0.*unit
+slice_xpos=0.0*one
+slice_ypos=0.0*one
+slice_zpos=0.0*one
+slice_z2pos=0.0*one
 ;
 ;  open MPEG file, if keyword is set
 ;
 dev='x' ;(default)
-if keyword_set(png) then begin
+if (keyword_set(png)) then begin
   Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
-;  resolution=[!d.x_size,!d.y_size] ; set window size
   resolution=[Nwx,Nwy] ; set window size
   print, 'z-buffer resolution in pixels '+ $
       '(set with zoom=', strtrim(zoom,2), ') =', strtrim(resolution,2)
@@ -214,9 +206,7 @@ if keyword_set(png) then begin
   device, SET_RESOLUTION=resolution ; set window size
   itpng=0 ;(image counter)
   dev='z'
-end else if keyword_set(mpeg) then begin
-  ;Nwx=400 & Nwy=320
-  ;Nwx=!d.x_size & Nwy=!d.y_size
+end else if (keyword_set(mpeg)) then begin
   Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
   resolution=[Nwx,Nwy] ; set window size
   print,'z-buffer resolution (in pixels)=',resolution
@@ -235,16 +225,16 @@ end
 ;
 ijump=njump ;(make sure the first one is written)
 ;
-if keyword_set(global_scaling) then begin
+if (keyword_set(global_scaling)) then begin
   first=1L
   close,1 & openr,1,file_slice,/f77
-  while not eof(1) do begin
-    if keyword_set(OLDFILE) then begin ; For files without position
+  while (not eof(1)) do begin
+    if (keyword_set(OLDFILE)) then begin ; For files without position
       readu,1,plane,t
     endif else begin
       readu,1,plane,t,slice_z2pos
     endelse
-    if keyword_set(exponential) then begin
+    if (keyword_set(exponential)) then begin
       if (first) then begin
         amax=exp(max(plane))
         amin=exp(min(plane))
@@ -253,7 +243,7 @@ if keyword_set(global_scaling) then begin
         amax=max([amax,exp(max(plane))])
         amin=min([amin,exp(min(plane))])
       endelse
-    endif else if keyword_set(sqroot) then begin
+    endif else if (keyword_set(sqroot)) then begin
       if (first) then begin
         amax=sqrt(max(plane))
         amin=sqrt(min(plane))
@@ -279,68 +269,68 @@ endif
 ;
 close,1 & openr,1,file_slice,/f77
 ifirst=1
-while not eof(1) do begin
-  if keyword_set(OLDFILE) then begin ; For files without position
+while (not eof(1)) do begin
+  if (keyword_set(OLDFILE)) then begin ; For files without position
     readu,1,plane,t
   end else begin
     readu,1,plane,t,slice_z2pos
   end
 ;
 ; rescale data with optional parameter zoom
+; WARNING: the scaling can produce artifacts at shearing boundaries. Contour
+; plots give better results in that case (/contour).
 ;
-  if keyword_set(exponential) then begin
-    plane2=rebinbox(exp(plane),zoom)
-  endif else if keyword_set(sqroot) then begin
-    plane2=rebinbox(sqrt(plane),zoom)
+  if (keyword_set(exponential)) then begin
+    plane2=rebin(exp(plane),zoom*[nx,ny])
+  endif else if (keyword_set(sqroot)) then begin
+    plane2=rebin(sqrt(plane),zoom*[nx,ny])
   endif else begin
-    plane2=rebinbox(plane,zoom)
+    plane2=rebin(plane,zoom*[nx,ny])
   endelse
 ;
 ; do masking, if shell set
 ;
-  if keyword_set(shell) then begin
+  if (keyword_set(shell)) then begin
     white=255
-    if extension eq 'xy' then begin
+    if (extension eq 'xy') then begin
       zrr = rebinbox(reform(rrxy,nx,ny),zoom)
       indxy=where(zrr lt r_int or zrr gt r_ext)
       plane2(indxy)=white
     endif
-    if extension eq 'Xy' then begin
+    if (extension eq 'Xy') then begin
       zrr2 = rebinbox(reform(rrxy2,nx,ny),zoom)
       indxy2=where(zrr2 lt r_int or zrr2 gt r_ext)
       plane2(indxy2)=white
     endif
-    if extension eq 'xz' then begin
+    if (extension eq 'xz') then begin
       yrr = rebinbox(reform(rrxz,nx,nz),zoom,/zdir)
       indxz=where(yrr lt r_int or yrr gt r_ext)
       plane2(indxz)=white
     endif
-    if extension eq 'yz' then begin
+    if (extension eq 'yz') then begin
       xrr = rebinbox(reform(rryz,ny,nz),zoom,/zdir)
       indyz=where(xrr lt r_int or xrr gt r_ext)
       plane2(indyz)=white
     endif
   endif
 ;
-  if keyword_set(test) then begin
-    print,t,min([plane2,xy,xz,yz]),max([plane2,xy,xz,yz])
-  end else begin
-    if t ge tmin and t le tmax then begin
-      if ijump eq njump then begin
-        ;if iy ne -1 then plot,plane2(*,iy),yr=[amin,amax],ps=ps
-        ;if ix ne -1 then plot,plane2(ix,*),yr=[amin,amax],ps=ps
+  if (keyword_set(debug)) then begin
+    print, t, min([plane2,xy,xz,yz]), max([plane2,xy,xz,yz])
+  endif else begin
+    if ( (t ge tmin) and (t le tmax) ) then begin
+      if (ijump eq njump) then begin
 ;
 ;  show image scaled between amin and amax and filling whole screen
 ;
-        if keyword_set(contourplot) then begin
-          contourfill,plane2,lev=grange(amin,amax,60)
+        if (keyword_set(contourplot)) then begin
+          contourfill, plane, levels=grange(amin,amax,60)
         endif else begin
+;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
         endelse
-        ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
         xyouts, 0.05, 0.9, /normal, $
             '!8t!6='+string(t/tunit,fo="(f6.1)"), color=color, size=0.5*zoom
-        if keyword_set(png) then begin
+        if (keyword_set(png)) then begin
           istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
           image = tvrd()
 ;
@@ -352,20 +342,20 @@ while not eof(1) do begin
           write_png, imgname, image, red, green, blue
           itpng=itpng+1 ;(counter)
           ;
-        end else if keyword_set(mpeg) then begin
+        end else if (keyword_set(mpeg)) then begin
 ;
 ;  write directly mpeg file
 ;  for idl_5.5 and later this requires the mpeg license
 ;
           image = tvrd(true=1)
-          if keyword_set(colmpeg) then begin
+          if (keyword_set(colmpeg)) then begin
 ; ngrs seem to need to work explictly with 24-bit color to get 
 ; color mpegs to come out on my local machines...
             image24 = bytarr(3,Nwx,Nwy)
             tvlct, red, green, blue, /GET
           endif
           for irepeat=0,nrepeat do begin
-            if keyword_set(colmpeg) then begin
+            if (keyword_set(colmpeg)) then begin
               image24[0,*,*]=red(image[0,*,*])
               image24[1,*,*]=green(image[0,*,*])
               image24[2,*,*]=blue(image[0,*,*])
@@ -389,7 +379,7 @@ while not eof(1) do begin
 ;
 ; check whether file has been written
 ;
-        if keyword_set(png) then spawn,'ls -l '+imgname
+        if (keyword_set(png)) then spawn,'ls -l '+imgname
 ;
       end else begin
         ijump=ijump+1
@@ -403,7 +393,7 @@ close,1
 ;
 ;  write & close mpeg file
 ;
-if keyword_set(mpeg) then begin
+if (keyword_set(mpeg)) then begin
   print,'Writing MPEG file..'
   mpeg_save, mpegID, FILENAME=mpeg_name
   mpeg_close, mpegID
