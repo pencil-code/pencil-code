@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.5 2006-07-11 11:59:26 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.6 2006-08-04 07:32:48 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -8,7 +8,7 @@
 pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
-    t_title=t_title, $
+    noaxes=noaxes, t_title=t_title, $
     position=position, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, quiet=quiet
@@ -143,7 +143,7 @@ while (not eof(file)) do begin
       plotimage, array_plot, $
           range=[min, max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
           xtitle=xtitle, ytitle=ytitle, title=title, $
-          position=position, noerase=noerase
+          position=position, noerase=noerase, noaxes=noaxes
 ;;  For png output, take image from z-buffer.          
       if (png) then begin
         image = tvrd()
