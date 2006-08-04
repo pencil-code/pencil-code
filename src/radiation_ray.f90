@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.100 2006-08-03 14:12:32 snod Exp $
+! $Id: radiation_ray.f90,v 1.101 2006-08-04 00:15:05 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -169,7 +169,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.100 2006-08-03 14:12:32 snod Exp $")
+           "$Id: radiation_ray.f90,v 1.101 2006-08-04 00:15:05 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1569,7 +1569,7 @@ module Radiation
             slices%xy=f(l1:l2    ,m1:m2    ,slices%iz,iFradx+slices%index)
             slices%xy2=f(l1:l2    ,m1:m2    ,slices%iz2,iFradx+slices%index)
             slices%index = slices%index+1
-            if ((slices%index < 3) slices%ready = .true.
+            if (slices%index < 3) slices%ready = .true.
           endif
 !
       endselect
