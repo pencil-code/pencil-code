@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.248 2006-08-03 07:07:28 ajohan Exp $ 
+! $Id: sub.f90,v 1.249 2006-08-05 07:29:47 dobler Exp $ 
 
 module Sub 
 
@@ -11,6 +11,7 @@ module Sub
   public :: identify_bcs, parse_bc, parse_bc_rad
 
   public :: poly, notanumber
+  public :: keep_compiler_quiet
   public :: blob, vecout
   public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step
   public :: sine_step
@@ -81,6 +82,15 @@ module Sub
     module procedure notanumber_3
     module procedure notanumber_4
   endinterface
+
+  interface keep_compiler_quiet ! Overload `keep_compiler_quiet' function
+    module procedure keep_compiler_quiet_r4d
+    module procedure keep_compiler_quiet_r3d
+    module procedure keep_compiler_quiet_p
+    module procedure keep_compiler_quiet_l1d
+    module procedure keep_compiler_quiet_l
+  endinterface
+
 
   interface cross
     module procedure cross_global
@@ -3443,6 +3453,125 @@ module Sub
         enddo
 !
       endsubroutine nan_inform
+!***********************************************************************
+      subroutine keep_compiler_quiet_r4d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        real, dimension(:,:,:,:) :: v1, v2, v3, v4
+        optional                 ::     v2, v3, v4
+!
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_r4d', &
+              'The world is a disk, and we never got here...')
+          print*,                  minval(v1)
+          if (present(v2)) print*, minval(v2)
+          if (present(v3)) print*, minval(v3)
+          if (present(v4)) print*, minval(v4)
+        endif
+!
+      endsubroutine keep_compiler_quiet_r4d
+!***********************************************************************
+      subroutine keep_compiler_quiet_r3d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        real, dimension(:,:,:) :: v1, v2, v3, v4
+        optional               ::     v2, v3, v4
+!
+        
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_r3d', &
+              '91 is a prime, and we never got here...')
+          print*,                  minval(v1)
+          if (present(v2)) print*, minval(v2)
+          if (present(v3)) print*, minval(v3)
+          if (present(v4)) print*, minval(v4)
+        endif
+!
+      endsubroutine keep_compiler_quiet_r3d
+!***********************************************************************
+      subroutine keep_compiler_quiet_p(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN, pencil_case
+!
+        type (pencil_case) :: v1, v2, v3, v4
+        optional           ::     v2, v3, v4
+!
+        
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_p', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1
+          if (present(v2)) print*, v2
+          if (present(v3)) print*, v3
+          if (present(v4)) print*, v4
+        endif
+!
+      endsubroutine keep_compiler_quiet_p
+!***********************************************************************
+      subroutine keep_compiler_quiet_l1d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        logical, dimension(:)  :: v1, v2, v3, v4
+        optional               ::     v2, v3, v4
+!
+        
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_4d', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1(1)
+          if (present(v2)) print*, v2(1)
+          if (present(v3)) print*, v3(1)
+          if (present(v4)) print*, v4(1)
+        endif
+!
+      endsubroutine keep_compiler_quiet_l1d
+!***********************************************************************
+      subroutine keep_compiler_quiet_l(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+        use Cparam, only: NO_WARN
+!
+        logical  :: v1, v2, v3, v4
+        optional ::     v2, v3, v4
+!
+        
+        if (NO_WARN) then
+          call error('keep_compiler_quiet_4d', &
+              'The world is a disk, and we never got here...')
+          print*,                  v1
+          if (present(v2)) print*, v2
+          if (present(v3)) print*, v3
+          if (present(v4)) print*, v4
+        endif
+!
+      endsubroutine keep_compiler_quiet_l
 !***********************************************************************
       subroutine parse_bc(bc,bc1,bc2)
 !

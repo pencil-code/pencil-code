@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.5 2005-07-05 16:21:42 mee Exp $
+! $Id: nochiral.f90,v 1.6 2006-08-05 07:29:47 dobler Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -18,6 +18,7 @@ module Chiral
   use Cparam
   use Cdata
   use Messages
+  use Sub, only: keep_compiler_quiet
 
   implicit none
 
@@ -53,7 +54,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.5 2005-07-05 16:21:42 mee Exp $")
+           "$Id: nochiral.f90,v 1.6 2006-08-05 07:29:47 dobler Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************
@@ -81,7 +82,9 @@ module Chiral
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(xx,yy,zz)
+!
     endsubroutine init_chiral
 !***********************************************************************
     subroutine pencil_criteria_chiral()
@@ -101,7 +104,7 @@ module Chiral
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in  !(keep compiler quiet)
+      call keep_compiler_quiet(lpencil_in)
 !
     endsubroutine pencil_interdep_chiral
 !***********************************************************************
@@ -118,7 +121,8 @@ module Chiral
 !      
       intent(in) :: f,p
 !
-      if (NO_WARN) print*, f, p  !(keep compiler quiet)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(p)
 !   
     endsubroutine calc_pencils_chiral
 !***********************************************************************
