@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.85 2006-06-19 22:51:30 theine Exp $
+# CVS: $Id: run.csh,v 1.86 2006-08-06 01:26:26 mee Exp $
 
 #                       run.csh
 #                      ---------
@@ -127,6 +127,9 @@ echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
 set run_status=$status		# save for exit
 date
+
+# Create symlinks for deprecated slices
+pc_deprecated_slice_links
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then

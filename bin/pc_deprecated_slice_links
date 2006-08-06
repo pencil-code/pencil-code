@@ -1,0 +1,49 @@
+#!/bin/sh
+
+make_links()
+{
+  old=$1
+  shift
+  new=$1
+  shift
+  
+  while [ $1 ]; do
+    dir=`dirname $1`
+    current=`basename $1`
+    oldname=`echo $current | perl -pe "s/slice_$new/slice_$old/;"`
+ 
+    (cd $dir; [ -h "$oldname" ] && rm -f "$oldname"; ln -sf $current $oldname)
+    shift
+  done
+}
+
+link_slices()
+{
+old=$1
+new=$2
+datadir=$3
+[ $datadir ] || datadir=data/
+
+slices=`find $datadir -name "slice_$new.*" -print0 -type f | xargs -0 2> /dev/null`
+
+make_links $old $new $slices
+}
+
+
+link_slices ux uu1
+link_slices uy uu2
+link_slices uz uu3
+link_slices ax aa1
+link_slices ay aa2
+link_slices az aa3
+link_slices bx bb1
+link_slices by bb2
+link_slices bz bb3
+link_slices ox oo1
+link_slices oy oo2
+link_slices oz oo3
+link_slices Fradx Frad1
+link_slices Frady Frad2
+link_slices Fradz Frad3
+
+
