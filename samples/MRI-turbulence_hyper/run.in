@@ -1,8 +1,9 @@
+!                          -*-f90-*- (for Emacs)
 !
 !  Run parameters for MRI turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2006-03-21 23:06:10 tarek Exp $',
+  cvsid='$Id: run.in,v 1.6 2006-08-07 16:09:32 wlyra Exp $',
   nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=100, itorder=3,
   dsnap=10., dtmin=1e-6
   lpencil_check=T
