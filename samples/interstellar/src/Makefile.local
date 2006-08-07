@@ -17,7 +17,7 @@ PSCALAR      = nopscalar
 INTERSTELLAR =   interstellar
 EOS          =   eos_idealgas
 
-GRAVITY      =   grav_z
+GRAVITY      =   gravity_simple
 FORCING      = noforcing
 SHEAR        =   shear
 

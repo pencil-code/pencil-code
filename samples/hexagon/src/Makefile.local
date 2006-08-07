@@ -11,7 +11,7 @@ DENSITY   =   density
 ENTROPY   =   entropy
 MAGNETIC  =   magnetic
 
-GRAVITY   =   grav_z
+GRAVITY   =   gravity_simple
 
 #MPICOMM   = mpicomm
 MPICOMM   = nompicomm

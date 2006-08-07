@@ -16,7 +16,7 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-GRAVITY   = grav_z
+GRAVITY   = gravity_simple
 FORCING   = noforcing
 SHEAR     = noshear
 
