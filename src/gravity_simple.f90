@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.9 2006-08-07 10:30:52 ajohan Exp $
+! $Id: gravity_simple.f90,v 1.10 2006-08-07 10:45:03 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -48,6 +48,10 @@ module Gravity
   real :: z1=0.,z2=1.,zref=0.
   real :: nu_epicycle=1.,nu_epicycle2=1.
   real :: r0_pot=0.    ! peak radius for smoothed potential
+  real :: g_A, g_C
+  real, parameter :: g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
+  double precision :: g_B, g_D
+  double precision, parameter :: g_B_cgs=6.172D20, g_D_cgs=3.086D21
   integer :: n_pot=10  ! exponent for smoothed potential
   character (len=labellen) :: gravx_profile='zero',gravy_profile='zero'
   character (len=labellen) :: gravz_profile='zero'
@@ -96,7 +100,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.9 2006-08-07 10:30:52 ajohan Exp $")
+           "$Id: gravity_simple.f90,v 1.10 2006-08-07 10:45:03 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -116,6 +120,17 @@ module Gravity
       use Sub, only: notanumber, sine_step
 !
       real :: ztop, prof  
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+          g_A = g_A_cgs/unit_velocity*unit_time
+          g_B = g_B_cgs/unit_length
+          g_C = g_C_cgs/unit_velocity*unit_time
+          g_D = g_D_cgs/unit_length
+      else if (unit_system=='SI') then
+        call stop_it('initialize_gravity: SI unit conversions not inplemented')
+      endif
 !
 !  Different x-gravity profiles
 !
@@ -226,6 +241,16 @@ module Gravity
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler z-grav, gravz=', gravz
         gravz_zpencil = -gravz/z(n1:n2)**2
+
+      case('Ferriere')
+!
+!  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!   at solar radius.  (for interstellar runs)
+!
+!  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
+!AB: These numbers should be inserted in the appropriate unuts.
+!AB: As it is now, it can never make much sense.
+        gravz_zpencil = -(g_A*z(n1:n2)/sqrt(z(n1:n2)**2+g_B**2) + g_C*z(n1:n2)/g_D)
 
       case('reduced_top') 
         if (headtt) print*,'duu_dt_grav: reduced, gravz=',gravz
