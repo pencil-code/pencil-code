@@ -3,7 +3,7 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.10 2006-07-06 13:48:35 brandenb Exp $'
+  cvsid='$Id: start.in,v 1.11 2006-08-07 10:47:00 ajohan Exp $'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
   unit_temperature=29.8277784018579
   xyz0=-0.0625,-0.0625,-0.125
@@ -23,7 +23,7 @@
   !initlnrho='const_lnrho', lnrho_const=0.
 /
 &grav_init_pars
-  grav_profile='Ferriere' 
+  gravz_profile='Ferriere' 
 /
 &entropy_init_pars
   !initss='isothermal', T0=4000.

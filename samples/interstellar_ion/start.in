@@ -3,7 +3,7 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2005-06-26 17:34:38 eos_merger_tony Exp $'
+  cvsid='$Id: start.in,v 1.3 2006-08-07 10:47:00 ajohan Exp $'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
 !  bcz = 's','s','a','a2','s'
   xyz0=-0.0625,-0.0625,-0.125
@@ -21,7 +21,7 @@
   initlnrho='Ferriere'
 /
 &grav_init_pars
-  grav_profile='Ferriere' 
+  gravz_profile='Ferriere' 
 /
 &entropy_init_pars
   !initss='isothermal', T0=4000.
