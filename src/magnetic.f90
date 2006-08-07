@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.308 2006-08-03 14:10:28 mee Exp $
+! $Id: magnetic.f90,v 1.309 2006-08-07 16:10:13 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.308 2006-08-03 14:10:28 mee Exp $")
+           "$Id: magnetic.f90,v 1.309 2006-08-07 16:10:13 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -301,7 +301,7 @@ module Magnetic
           if (lroot) print*, 'resistivity: shock'
           lresi_eta_shock=.true.
           if (.not. lshock) &
-            call fatal_error('initialize_mangetic', &
+            call fatal_error('initialize_magnetic', &
                 'shock resistivity, but module setting SHOCK=noshock')
         case ('smagorinsky')
           if (lroot) print*, 'resistivity: smagorinsky'
