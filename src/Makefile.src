@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.229 2006-08-03 14:17:17 mee Exp $
+### $Id: Makefile.src,v 1.230 2006-08-07 10:30:52 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -95,6 +95,18 @@ nograv_message:
 	@echo "!!! Please update your Makefile.local,  for example:"
 	@echo "!!!"
 	@echo "!!!      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)nograv([^a-zA-Z])/\$$1nogravity\$$2/' $(FROM_PARENT)Makefile.local"
+	@echo "!!!"
+	exit 1
+endif
+ifeq ($(GRAVITY),grav_z)
+grav_z_message:
+	@echo "!!! Settings in your Makefile.local are deprecated"
+	@echo "!!!    The file 'grav_z.f90' no longer exists"
+	@echo "!!! All functionality from grav_z.f90 is in gravity_simple.f90"
+	@echo "!!!"
+	@echo "!!! Please update your Makefile.local,  for example:"
+	@echo "!!!"
+	@echo "!!!      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)grav_z([^a-zA-Z])/\$$1gravity_simple\$$2/' $(FROM_PARENT)Makefile.local"
 	@echo "!!!"
 	exit 1
 endif

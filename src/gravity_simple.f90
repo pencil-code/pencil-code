@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.8 2006-08-03 07:07:27 ajohan Exp $
+! $Id: gravity_simple.f90,v 1.9 2006-08-07 10:30:52 ajohan Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -96,7 +96,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.8 2006-08-03 07:07:27 ajohan Exp $")
+           "$Id: gravity_simple.f90,v 1.9 2006-08-07 10:30:52 ajohan Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -113,7 +113,9 @@ module Gravity
 !  12-nov-04/anders: coded, copied init conds from grav_x, grav_y and grav_y.
 !
       use Mpicomm, only: stop_it
-      use Sub, only: notanumber
+      use Sub, only: notanumber, sine_step
+!
+      real :: ztop, prof  
 !
 !  Different x-gravity profiles
 !
@@ -224,6 +226,13 @@ module Gravity
       case('kepler')
         if (lroot) print*,'initialize_gravity: kepler z-grav, gravz=', gravz
         gravz_zpencil = -gravz/z(n1:n2)**2
+
+      case('reduced_top') 
+        if (headtt) print*,'duu_dt_grav: reduced, gravz=',gravz
+        if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
+        ztop = xyz0(3)+Lxyz(3)
+        prof = sine_step(z(n),(zgrav+ztop)/2,(ztop-zgrav)/2)
+        gravz_zpencil = (1 - prof*(1-reduced_top))*gravz
 
       case default
         if (lroot) print*, &
