@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.21 2006-06-02 19:10:17 joishi Exp $
+; $Id: pc_read_pvar.pro,v 1.22 2006-08-07 11:36:38 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -281,14 +281,11 @@ endif
 ;
 ;  Check if times are consistent between processors.
 ;
-for i=0,ncpus-1 do begin
-  if (tarr[i] ne mean(tarr)) then begin
-    print, 'The time of the snapshot at processor ', i, ' is strange!'
-    print, 't[i], mean(t)=', tarr[i], mean(tarr)
-  endif
-endfor
+if (min(tarr) ne max(tarr)) then begin
+  print, 'The time of the snapshot is inconsistent among the processors!'
+  print, 'min(t), max(t)=', min(tarr), max(tarr)
+endif
 
 if (not qquiet) then print,' t = ', mean(tarr)
-
 
 end
