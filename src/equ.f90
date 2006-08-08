@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.319 2006-08-08 11:00:03 mee Exp $
+! $Id: equ.f90,v 1.320 2006-08-08 11:05:09 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -376,7 +376,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.319 2006-08-08 11:00:03 mee Exp $")
+           "$Id: equ.f90,v 1.320 2006-08-08 11:05:09 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -999,9 +999,9 @@ module Equ
 !
 !  Allocate memory for alternative df, fname
 !
-      allocate(df_ref(mx,my,mz,mvar),mem_stat1)
-      allocate(fname_ref(mname),mem_stat2)
-      allocate(f_other(mx,my,mz,mvar+maux),mem_stat3)
+      allocate(f_other(mx,my,mz,mvar+maux),stat=mem_stat1)
+      allocate(df_ref(mx,my,mz,mvar)      ,stat=mem_stat2)
+      allocate(fname_ref(mname)           ,stat=mem_stat3)
       if ((mem_stat1 + mem_stat2 + mem_stat3) > 0) then
         if (lroot) then
         print*, &
