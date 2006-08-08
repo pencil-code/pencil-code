@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.6 2006-08-04 07:32:48 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.7 2006-08-08 14:10:15 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -9,7 +9,7 @@ pro pc_read_zaver, object=object, varfile=varfile, datadir=datadir, $
     nit=nit, lplot=lplot, iplot=iplot, min=min, max=max, zoom=zoom, $
     xax=xax, yax=yax, xtitle=xtitle, ytitle=ytitle, title=title, $
     noaxes=noaxes, t_title=t_title, $
-    position=position, tformat=tformat, $
+    position=position, fillwindow=fillwindow, tformat=tformat, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
@@ -35,9 +35,12 @@ default, xsize, 10.0
 default, ysize, 10.0
 default, title, ''
 default, t_title, 0
+default, fillwindow, 0
 default, tformat, '(f5.1)'
 default, it1, 10
 default, quiet, 0
+;
+if (fillwindow) then position=[0.1,0.1,0.9,0.9]
 ;;
 ;;  Get necessary dimensions.
 ;;
