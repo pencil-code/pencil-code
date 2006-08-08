@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.127 2006-08-03 07:07:28 ajohan Exp $
+! $Id: particles_dust.f90,v 1.128 2006-08-08 10:37:14 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -12,7 +12,7 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_nbody=.false.
 !
-! PENCILS PROVIDED np, rhop
+! PENCILS PROVIDED np, rhop, epsp
 !
 !***************************************************************
 module Particles
@@ -42,7 +42,7 @@ module Particles
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
-  logical :: lpar_spec=.false.
+  logical :: lpar_spec=.false., lcollisional_cooling=.false.
   logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
   logical, parameter :: ldraglaw_epstein=.true.
@@ -62,7 +62,7 @@ module Particles
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par
+      tstart_dragforce_par, tstart_grav_par, lcollisional_cooling
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -71,7 +71,7 @@ module Particles
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
-      lparticlemesh_cic, lparticlemesh_tsc
+      lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.127 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.128 2006-08-08 10:37:14 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1085,10 +1085,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Cdata
 !
-      if (ldragforce_gas_par) lpenc_requested(i_rho1)=.true.
+      if (ldragforce_gas_par.or.lcollisional_cooling) &
+          lpenc_requested(i_epsp)=.true.
 !
       lpenc_diagnos(i_np)=.true.
       lpenc_diagnos(i_rhop)=.true.
+      if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0) &
+          lpenc_diagnos(i_epsp)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -1101,7 +1104,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (NO_WARN) print*, lpencil_in
+      if (lpencil_in(i_rhop) .and. irhop==0) lpencil_in(i_np)=.true.
+!
+      if (lpencil_in(i_epsp)) then
+        lpencil_in(i_rhop)=.true.
+        lpencil_in(i_rho1)=.true.
+      endif
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -1114,6 +1122,8 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
 !
+      if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
+!
       if (lpencil(i_rhop)) then
         if (irhop/=0) then
           p%rhop=f(l1:l2,m,n,irhop)
@@ -1122,7 +1132,7 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-      if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
+      if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -1160,7 +1170,8 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: tausg1, dt1_drag
+      real, dimension (nx,3) :: vpm, vp2m
+      real, dimension (nx) :: tausg1, dt1_drag, vprms, tau_coll1
       real, dimension (3) :: uup, dragforce
       real :: rho_point, rho1_point, tausp1_point, up2
       real :: weight, weight_x, weight_y, weight_z
@@ -1348,7 +1359,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
           if (lfirst.and.ldt) then
             if (ldragforce_gas_par) then
-              tausg1  =f(l1:l2,m,n,irhop)*p%rho1*tausp1_point
+              tausg1  =p%epsp*tausp1_point
               dt1_drag=(tausp1_point+tausg1)/cdtp
             else
               dt1_drag=tausp1_point/cdtp
@@ -1357,6 +1368,35 @@ k_loop:   do while (.not. (k>npar_loc))
             if (ldiagnos.and.idiag_dtdragp/=0) &
                 call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
           endif
+        endif
+      endif
+!
+!  Add collisional cooling of the rms speed.
+!
+      if (lcollisional_cooling) then
+        if (npar_imn(imn)/=0) then
+!  Need vpm and vp2m to calculate the rms speed of the particles in a cell.
+          vpm=0.0; vp2m=0.0
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            vpm (ix0-nghost,:) = vpm (ix0-nghost,:) + fp(k,ivpx:ivpz)
+            vp2m(ix0-nghost,:) = vp2m(ix0-nghost,:) + fp(k,ivpx:ivpz)**2
+          enddo
+          do l=1,nx
+            if (p%np(l)/=0.0) then
+              vpm (l,:)=vpm (l,:)/p%np(l)
+              vp2m(l,:)=vp2m(l,:)/p%np(l)
+            endif
+          enddo
+          vprms=sqrt( vp2m(:,1)-vpm(:,1)**2 + vp2m(:,2)-vpm(:,2)**2 + vp2m(:,3)-vpm(:,3)**2)
+!  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
+!  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
+          tau_coll1=3*p%epsp*vprms*tausp1
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
+                tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vpm(ix0-nghost,:))
+          enddo
         endif
       endif
 !
@@ -1395,9 +1435,9 @@ k_loop:   do while (.not. (k>npar_loc))
         if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
         if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
         if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%rhop*p%rho1,idiag_epspmx)
-        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%rhop*p%rho1,idiag_epspmy)
-        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%rhop*p%rho1,idiag_epspmz)
+        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
+        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
+        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmxy/=0) call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
       endif
 !
