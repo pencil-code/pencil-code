@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.318 2006-08-02 15:37:20 mee Exp $
+! $Id: equ.f90,v 1.319 2006-08-08 11:00:03 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -376,7 +376,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.318 2006-08-02 15:37:20 mee Exp $")
+           "$Id: equ.f90,v 1.319 2006-08-08 11:00:03 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -988,6 +988,7 @@ module Equ
       integer :: i,j,k,penc,iv
       integer, dimension (mseed) :: iseed_org
       logical :: lconsistent=.true., ldie=.false.
+      integer :: mem_stat1, mem_stat2, mem_stat3
 !
       if (lroot) print*, &
           'pencil_consistency_check: checking the pencil case'      
@@ -998,9 +999,21 @@ module Equ
 !
 !  Allocate memory for alternative df, fname
 !
-      allocate(df_ref(mx,my,mz,mvar))
-      allocate(fname_ref(mname))
-      allocate(f_other(mx,my,mz,mvar+maux))
+      allocate(df_ref(mx,my,mz,mvar),mem_stat1)
+      allocate(fname_ref(mname),mem_stat2)
+      allocate(f_other(mx,my,mz,mvar+maux),mem_stat3)
+      if ((mem_stat1 + mem_stat2 + mem_stat3) > 0) then
+        if (lroot) then
+        print*, &
+  "                          Large buffers are needed to perform these tests"
+        print*, &
+  "                          rigourously. For that reason it may only be  "
+        print*, &
+  "                          possible to perform the check on smaller test runs."
+        call fatal_error("pencil_consistency_check", &
+                         "failed to allocate required memory")
+        endif
+      endif
 !
 !  Check requested pencils
 !
