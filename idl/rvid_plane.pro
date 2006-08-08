@@ -6,7 +6,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
                contourplot=contourplot,color=color,sqroot=sqroot,tunit=tunit
 ;
-; $Id: rvid_plane.pro,v 1.22 2006-08-04 06:50:29 ajohan Exp $
+; $Id: rvid_plane.pro,v 1.23 2006-08-08 14:20:31 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -280,12 +280,15 @@ while (not eof(1)) do begin
 ; WARNING: the scaling can produce artifacts at shearing boundaries. Contour
 ; plots give better results in that case (/contour).
 ;
+  planesize=size(plane)
+  nx_plane=planesize[1]
+  ny_plane=planesize[2]
   if (keyword_set(exponential)) then begin
-    plane2=rebin(exp(plane),zoom*[nx,ny])
+    plane2=rebin(exp(plane),zoom*[nx_plane,ny_plane])
   endif else if (keyword_set(sqroot)) then begin
-    plane2=rebin(sqrt(plane),zoom*[nx,ny])
+    plane2=rebin(sqrt(plane),zoom*[nx_plane,ny_plane])
   endif else begin
-    plane2=rebin(plane,zoom*[nx,ny])
+    plane2=rebin(plane,zoom*[nx_plane,ny_plane])
   endelse
 ;
 ; do masking, if shell set
