@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.128 2006-08-08 10:37:14 ajohan Exp $
+! $Id: particles_dust.f90,v 1.129 2006-08-08 11:46:55 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.128 2006-08-08 10:37:14 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.129 2006-08-08 11:46:55 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1087,6 +1087,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (ldragforce_gas_par.or.lcollisional_cooling) &
           lpenc_requested(i_epsp)=.true.
+      if (lcollisional_cooling) &
+          lpenc_requested(i_np)=.true.
 !
       lpenc_diagnos(i_np)=.true.
       lpenc_diagnos(i_rhop)=.true.
