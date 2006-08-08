@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.232 2006-08-08 06:00:08 brandenb Exp $
+### $Id: Makefile.src,v 1.233 2006-08-08 07:12:02 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -86,13 +86,13 @@ ifneq ($(PARTICLES),noparticles)
   PARTICLES_SUB  =   particles_sub
 endif
 
-## Check for deprecated features
+## Check for outdated features
 ifeq ($(GRAVITY),nograv)
 nograv_message:
-	@echo ";;; Settings in your Makefile.local are deprecated"
-	@echo ";;;    'nograv' has changed name to 'nogravity'"
+	@echo ";;; Cannot compile:"
+	@echo ";;;    'nograv.f90' has been renamed to 'nogravity.f90'"
 	@echo ";;;"
-	@echo ";;; Please update your Makefile.local, e.g. via cut+paste:"
+	@echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
 	@echo ";;;"
 	@echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)nograv([^a-zA-Z])/\$$1nogravity\$$2/' $(FROM_PARENT)Makefile.local"
 	@echo ";;;"
@@ -100,11 +100,11 @@ nograv_message:
 endif
 ifeq ($(GRAVITY),grav_z)
 grav_z_message:
-	@echo ";;; Settings in your Makefile.local are deprecated"
+	@echo ";;; Cannot compile:"
 	@echo ";;;    The file 'grav_z.f90' no longer exists"
 	@echo ";;; All functionality from grav_z.f90 is in gravity_simple.f90"
 	@echo ";;;"
-	@echo ";;; Please update your Makefile.local, e.g. via cut+paste:"
+	@echo ";;; Please update your src/Makefile.local, e.g. via cut+paste:"
 	@echo ";;;"
 	@echo ";;;      perl -pi'~' -e 's/(GRAVITY\s*\=\s*)grav_z([^a-zA-Z])/\$$1gravity_simple\$$2/' $(FROM_PARENT)Makefile.local"
 	@echo ";;;"
@@ -112,8 +112,8 @@ grav_z_message:
 endif
 ifeq ($(GRAVITY),grav_r)
 grav_r_message:
-	@echo ";;; Settings in your Makefile.local are deprecated"
-	@echo ";;;    'grav_r' has changed name to 'gravity_r'"
+	@echo ";;; Cannot compile:"
+	@echo ";;;    'grav_r.f90' has been renamed to 'gravity_r.f90'"
 	@echo ";;;"
 	@echo ";;; Please update your Makefile.local, e.g. via cut+paste:"
 	@echo ";;;"
