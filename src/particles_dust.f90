@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.129 2006-08-08 11:46:55 ajohan Exp $
+! $Id: particles_dust.f90,v 1.130 2006-08-08 13:04:37 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -104,7 +104,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.129 2006-08-08 11:46:55 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.130 2006-08-08 13:04:37 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1172,7 +1172,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx,3) :: vpm, vp2m
+      real, dimension (nx,3) :: vpm, vpvar
       real, dimension (nx) :: tausg1, dt1_drag, vprms, tau_coll1
       real, dimension (3) :: uup, dragforce
       real :: rho_point, rho1_point, tausp1_point, up2
@@ -1377,20 +1377,31 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lcollisional_cooling) then
         if (npar_imn(imn)/=0) then
-!  Need vpm and vp2m to calculate the rms speed of the particles in a cell.
-          vpm=0.0; vp2m=0.0
+!  Need vpm and vpvar to calculate the rms speed of the particles in a cell.
+          vpm=0.0; vpvar=0.0
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
-            vpm (ix0-nghost,:) = vpm (ix0-nghost,:) + fp(k,ivpx:ivpz)
-            vp2m(ix0-nghost,:) = vp2m(ix0-nghost,:) + fp(k,ivpx:ivpz)**2
+            vpm(ix0-nghost,:) = vpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
           enddo
           do l=1,nx
-            if (p%np(l)/=0.0) then
+            if (p%np(l)>1.0) then
               vpm (l,:)=vpm (l,:)/p%np(l)
-              vp2m(l,:)=vp2m(l,:)/p%np(l)
             endif
           enddo
-          vprms=sqrt( vp2m(:,1)-vpm(:,1)**2 + vp2m(:,2)-vpm(:,2)**2 + vp2m(:,3)-vpm(:,3)**2)
+!  vpvar
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            vpvar(ix0-nghost,:) = vpvar(ix0-nghost,:) + &
+                (fp(k,ivpx:ivpz)-vpm(ix0-nghost,:))**2
+          enddo
+          do l=1,nx
+            if (p%np(l)>1.0) then
+              vpvar(l,:)=vpvar(l,:)/p%np(l)
+            endif
+          enddo
+!  vprms
+          where (vpvar<0.0) vpvar=0.0  ! In case of underflows in calculation.
+          vprms=sqrt( vpvar(:,1) + vpvar(:,2) + vpvar(:,3) )
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
           tau_coll1=3*p%epsp*vprms*tausp1
