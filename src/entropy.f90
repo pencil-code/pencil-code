@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.422 2006-08-03 07:07:27 ajohan Exp $
+! $Id: entropy.f90,v 1.423 2006-08-09 20:20:29 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.422 2006-08-03 07:07:27 ajohan Exp $")
+           "$Id: entropy.f90,v 1.423 2006-08-09 20:20:29 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -206,6 +206,7 @@ module Entropy
       logical :: lstarting
 !
       real :: beta1,cp1tilde,lnrho_dummy=0.
+      real :: beta2,rcrit,TT_crit
       integer :: i
       logical :: lnothing
 !
@@ -368,7 +369,7 @@ module Entropy
 !   make sure all relevant parameters are set for spherical shell problems
 !
       select case(initss(1))
-        case('geo-kws','geo-benchmark')
+        case('geo-kws','geo-benchmark','shell_layers')
           if (lroot) then
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
           endif
@@ -381,8 +382,17 @@ module Entropy
 !
 !  temperatures at shell boundaries
 !
-          TT_ext=T0
-          TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
+          if (lmultilayer) then
+            beta1=-g0/(mpoly+1)*gamma/gamma1
+            beta2=-g0/(mpoly2+1)*gamma/gamma1
+            rcrit=r_ext-1.
+            TT_ext=cs20/gamma1
+            TT_crit=TT_ext+beta1*(rcrit-r_ext)
+            TT_int=TT_crit+beta2*(r_int-rcrit)
+          else
+            TT_ext=T0
+            TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
+          endif
           if (lroot) then
             print*,'initialize_entropy: g0,mpoly,beta1',g0,mpoly,beta1
             print*,'initialize_entropy: TT_int, TT_ext=',TT_int,TT_ext
@@ -797,6 +807,13 @@ module Entropy
           !
           if (lroot) print*,'init_ss: benchmark temperature in spherical shell'
           call shell_ss(f)
+
+        case ('shell_layers')
+          !
+          ! radial temperature profiles for spherical shell problem
+          !
+          call information('init_ss',' two polytropic layers in a spherical shell')
+          call shell_ss_layers(f)
 
         case ('polytropic_simple')     
           !
@@ -1235,8 +1252,8 @@ module Entropy
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
         f(l1:l2,m,n,iss)=ss
 !
-      enddo 
-!      
+      enddo
+!
     endsubroutine shell_ss
 !***********************************************************************
     subroutine shell_ss_perturb(pert_TT)
@@ -2310,6 +2327,15 @@ module Entropy
 !
       call write_zprof('hcond',hcond)
 !
+!  09-Aug-2006/dintrans: just to check the radial profile of hcond
+!  temporary because I should normally used the penciled version below
+!
+      if (lgravr .and. headt .and. lfirst) then
+        open(unit=11,file='prof.dat',access='append')
+        write(11,*) y_mn(1),hcond
+        close(11)
+      endif
+!
 !  Write radiative flux array
 !
       if (ldiagnos) then
@@ -2397,7 +2423,7 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax
 !
-      real, dimension (nx) :: heat,prof,theta_profile
+      real, dimension (nx) :: heat,prof,theta_profile,prof1
       real :: ssref,zbot,ztop,profile_buffer,xi,profile_cor
 !
       intent(in) :: p
@@ -2476,6 +2502,7 @@ module Entropy
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         prof = step(r_mn,rcool,wcool)
+
         !
         !  pick type of cooling
         !
@@ -2810,11 +2837,14 @@ module Entropy
 !
 !  23-jan-2002/wolf: coded
 !  18-sep-2002/axel: added lmultilayer switch
+!  09-aug-2006/dintrans: added a radial profile hcond(r)
 !
       use Sub, only: step
       use Gravity
+      use EquationOfState, only: mpoly, mpoly2
 !
       real, dimension (nx) :: hcond
+      real :: rcrit
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2825,7 +2855,14 @@ module Entropy
           hcond=Kbot
         endif
       else
-        hcond = hcond0
+        if (lmultilayer) then
+          rcrit=r_ext-1.
+          hcond2 = (mpoly2+1.)/(mpoly+1.)
+          hcond = 1. + (hcond2-1.)*step(r_mn,rcrit,-widthss)
+          hcond = hcond0*hcond
+        else
+          hcond = hcond0
+        endif
       endif
 !
     endsubroutine heatcond
@@ -2836,11 +2873,15 @@ module Entropy
 !  NB: *Must* be in sync with heatcond() above.
 !
 !  23-jan-2002/wolf: coded
+!  09-aug-2006/dintrans: preliminary version with hcond(r)
 !
       use Sub, only: der_step
       use Gravity
+      use EquationOfState, only: mpoly, mpoly2
 !
       real, dimension (nx,3) :: glhc
+      real, dimension (nx)   :: dprof
+      real :: rcrit
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2852,7 +2893,16 @@ module Entropy
           glhc = 0.
         endif
       else
-        glhc = 0.
+        if (lmultilayer) then
+          rcrit=r_ext-1.
+          hcond2 = (mpoly2+1.)/(mpoly+1.)
+          dprof=hcond0*(hcond2-1.)*der_step(r_mn,rcrit,-widthss)
+          glhc(:,1) = x_mn/r_mn*dprof
+          glhc(:,2) = y_mn/r_mn*dprof
+          glhc(:,3) = 0.
+        else
+          glhc = 0.
+        endif
       endif
 !
     endsubroutine gradloghcond
@@ -3036,5 +3086,54 @@ module Entropy
 !   print*,'find rhobot=',rhobot
 !
     endsubroutine strat_MLT
+!***********************************************************************
+    subroutine shell_ss_layers(f)
+!
+!  Initialize entropy in a spherical shell using two polytropic layers
+!
+!  09-aug-06/dintrans: coded
+!
+      use Gravity, only: g0
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, mpoly2, pressure_gradient
+      use Sub, only: calc_unitvects_sphere
+
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
+      real :: beta1,beta2,TT_crit,rcrit
+!
+!  beta is the temperature gradient
+!  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
+!
+      beta1=-g0/(mpoly+1)*gamma/gamma1
+      beta2=-g0/(mpoly2+1)*gamma/gamma1
+      TT_ext=cs20/gamma1
+      rcrit=r_ext-1.
+      TT_crit=TT_ext+beta1*(rcrit-r_ext)
+      TT_int=TT_crit+beta2*(r_int-rcrit)
+!
+!  set initial condition
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+!
+        call calc_unitvects_sphere()
+! zone1
+        where (r_mn < r_ext .AND. r_mn > rcrit) &
+          TT = TT_ext+beta1*(r_mn-r_ext)
+! zone2
+        where (r_mn <= rcrit .AND. r_mn > r_int) &
+          TT = TT_crit+beta2*(r_mn-rcrit)
+        where (r_mn >= r_ext) TT = TT_ext
+        where (r_mn <= r_int) TT = TT_int
+!
+        lnrho=f(l1:l2,m,n,ilnrho)
+        lnTT=log(TT)
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        f(l1:l2,m,n,iss)=ss
+!
+      enddo 
+!      
+    endsubroutine shell_ss_layers
 !***********************************************************************
 endmodule Entropy
