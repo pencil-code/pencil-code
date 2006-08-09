@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.335 2006-08-03 15:21:12 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.336 2006-08-09 15:19:06 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-08-03 15:21:12 $ $,~ $ $Revision: 1.335 $ $}
+%\date{$ $Date: 2006-08-09 15:19:06 $ $,~ $ $Revision: 1.336 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-08-03 15:21:12 $ $,~ $ $Revision: 1.335 $ $}\\
+  \emph{$ $Date: 2006-08-09 15:19:06 $ $,~ $ $Revision: 1.336 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5368,7 +5368,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-08-03 15:21:12 $ $,~ $ $Revision: 1.335 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-08-09 15:19:06 $ $,~ $ $Revision: 1.336 $ $}
 
 \section{Timings}
 
@@ -5386,6 +5386,15 @@ As these results were assembled during the development phase of the code
 (that hasn't really finished yet,\ldots), you may not get the same numbers,
 but they should give some orientation of what to expect for your specific
 application on your specific hardware.
+
+The code will output the timing (in microseconds per grid point per time-step)
+at the end of a run. You can also specify \code{walltime} in \code{print.in}
+to have the code continuously output the physical time it took to reach the
+time-steps where diagnostics is done. The time-dependent code speed can then be
+calculated by differentiating, e.g.\ in \code{IDL} with\\
+\prompt{IDL> } \code{pc\_read\_ts, obj=ts}\\
+\prompt{IDL> } \code{plot, ts.it, 1/nw*deriv(ts.it,ts.walltime/1.0e-6), psym=2}\\
+where \code{nw=nx*ny*nz}.
 
 
 % ---------------------------------------------------------------------- %
@@ -8656,7 +8665,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.335 2006-08-03 15:21:12 mee Exp $ $}
+$ $Id: manual.tex,v 1.336 2006-08-09 15:19:06 ajohan Exp $ $}
 
 
 \end{document}
