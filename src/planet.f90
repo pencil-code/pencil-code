@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.54 2006-08-07 16:25:15 wlyra Exp $
+! $Id: planet.f90,v 1.55 2006-08-09 18:32:27 dobler Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -41,7 +41,7 @@ module Planet
   integer :: n_periods=5 !periods for ramping
   logical :: lramp=.false.,llocal_iso=.false.
   logical :: lsmoothlocal=.false.,lcs2_global=.false.
-  logical :: lmigrate=.false.
+  logical :: lmigrate=.false.!,lnorm=.false.
   real :: Gvalue=1. !gravity constant in same unit as density
   logical :: ldnolog=.true.,lcs2_thick=.false.
   logical :: lcalc_turb=.false.
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.54 2006-08-07 16:25:15 wlyra Exp $")
+           "$Id: planet.f90,v 1.55 2006-08-09 18:32:27 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
