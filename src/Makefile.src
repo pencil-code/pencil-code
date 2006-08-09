@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.233 2006-08-08 07:12:02 dobler Exp $
+### $Id: Makefile.src,v 1.234 2006-08-09 16:26:21 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -950,7 +950,8 @@ clean:
 
 # Clean up all
 cleann: clean
-	rm -f Makefile TAGS mpicomm_.f90
+	rm -f Makefile TAGS mpicomm_.f90 mpicomm_double*.f90
+	rm -f *.inc && touch Makefile.inc
 	$(MAKE) $(MAKEOPTS) -f Makefile.src Makefile
 # same thing
 cleanall: cleann
