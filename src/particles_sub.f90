@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.80 2006-08-03 07:07:28 ajohan Exp $
+! $Id: particles_sub.f90,v 1.81 2006-08-10 12:57:41 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -448,10 +448,11 @@ module Particles_sub
 !  Share information about number of migrating particles.
 !
         do i=0,ncpus-1
-          if (iproc/=i) call mpirecv_int(nmig(i,iproc), 1, i, 111)
-          if (iproc==i) then
+          if (iproc/=i) then
+            call mpirecv_int(nmig(i,iproc), 1, i, 111)
+          else
             do j=0,ncpus-1
-              call mpisend_int(nmig(iproc,j), 1, j, 111)
+              if (iproc/=j) call mpisend_int(nmig(iproc,j), 1, j, 111)
             enddo
           endif
         enddo
@@ -489,7 +490,7 @@ module Particles_sub
 !        
           if (iproc==i) then
             do j=0,ncpus-1
-              if (nmig(iproc,j)/=0) then
+              if (iproc/=j .and. nmig(iproc,j)/=0) then
                 call mpisend_real(fp_mig(j,1:nmig(iproc,j),:), &
                     (/nmig(iproc,j),mpvar/), j, 222)
                 call mpisend_int(ipar_mig(j,1:nmig(iproc,j)), &
