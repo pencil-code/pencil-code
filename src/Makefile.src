@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.234 2006-08-09 16:26:21 dobler Exp $
+### $Id: Makefile.src,v 1.235 2006-08-10 21:08:14 dintrans Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -304,12 +304,12 @@ LD_FFTW2=
 #FC=f95 -dusty #(davey[12])
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)
 #CC=mpicc #(obelix)
-#FC=ifort -stand f90 #(Kolmogorov|ulysse|shal)
-#FFLAGS=-O3 #(Kolmogorov|ulysse|shal)
-##CC=gcc #(Kolmogorov|ulysse|shal)
-##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|ulysse|shal)
-#LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov|shal)
-#LIBMPISUFFIX=_#(Kolmogorov|shal)
+#FC=ifort -stand f90 #(Kolmogorov|ulysse|shal|efigi)
+#FFLAGS=-O3 #(Kolmogorov|ulysse|shal|efigi)
+##CC=gcc #(Kolmogorov|ulysse|shal|efigi)
+##CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov|ulysse|shal|efigi)
+#LD_MPI=-I/usr/include -pthread -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov|shal|efigi)
+#LIBMPISUFFIX=_#(Kolmogorov|shal|efigi)
 #FC=g95 -fsecond-underscore #(Pencil)
 #FFLAGS=-I/usr/include/lam -pthread -O3 #(Pencil)
 #CFLAGS=-O3 -DFUNDERSC=2 #(Pencil)

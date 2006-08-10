@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.424 2006-08-10 13:11:38 dintrans Exp $
+! $Id: entropy.f90,v 1.425 2006-08-10 21:08:14 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.424 2006-08-10 13:11:38 dintrans Exp $")
+           "$Id: entropy.f90,v 1.425 2006-08-10 21:08:14 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -383,14 +383,16 @@ module Entropy
 !  temperatures at shell boundaries
 !
           TT_ext=T0
-          if (lmultilayer) then
+          if (initss(1) .eq. 'shell_layers') then
+            lmultilayer=.true.
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             beta0=-g0/(mpoly0+1)*gamma/gamma1
             beta1=-g0/(mpoly1+1)*gamma/gamma1
-            rcrit=r_ext-1.
+            rcrit=r_ext-0.5
             TT_crit=TT_ext+beta0*(rcrit-r_ext)
             TT_int=TT_crit+beta1*(r_int-rcrit)
           else
+            lmultilayer=.false.
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           endif
           if (lroot) then
@@ -1252,8 +1254,8 @@ module Entropy
         call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
         f(l1:l2,m,n,iss)=ss
 !
-      enddo
-!
+      enddo 
+!      
     endsubroutine shell_ss
 !***********************************************************************
     subroutine shell_ss_perturb(pert_TT)
@@ -2414,7 +2416,7 @@ module Entropy
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax
 !
-      real, dimension (nx) :: heat,prof,theta_profile,prof1
+      real, dimension (nx) :: heat,prof,theta_profile
       real :: ssref,zbot,ztop,profile_buffer,xi,profile_cor
 !
       intent(in) :: p
@@ -2493,7 +2495,6 @@ module Entropy
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
         prof = step(r_mn,rcool,wcool)
-
         !
         !  pick type of cooling
         !
@@ -2832,7 +2833,6 @@ module Entropy
 !
       use Sub, only: step
       use Gravity
-      use EquationOfState, only: mpoly0, mpoly1
 !
       real, dimension (nx) :: hcond
       real :: rcrit
@@ -2847,7 +2847,7 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          rcrit=r_ext-1.
+          rcrit=r_ext-0.5
           hcond = 1. + (hcond1-1.)*step(r_mn,rcrit,-widthss)
           hcond = hcond0*hcond
         else
@@ -2863,14 +2863,12 @@ module Entropy
 !  NB: *Must* be in sync with heatcond() above.
 !
 !  23-jan-2002/wolf: coded
-!  09-aug-2006/dintrans: preliminary version with hcond(r)
 !
       use Sub, only: der_step
       use Gravity
-      use EquationOfState, only: mpoly0, mpoly1
 !
       real, dimension (nx,3) :: glhc
-      real, dimension (nx)   :: dprof
+      real, dimension (nx)   :: dhcond
       real :: rcrit
 !
       if (lgravz) then
@@ -2884,10 +2882,10 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          rcrit=r_ext-1.
-          dprof=hcond0*(hcond1-1.)*der_step(r_mn,rcrit,-widthss)
-          glhc(:,1) = x_mn/r_mn*dprof
-          glhc(:,2) = y_mn/r_mn*dprof
+          rcrit=r_ext-0.5
+          dhcond=hcond0*(hcond1-1.)*der_step(r_mn,rcrit,-widthss)
+          glhc(:,1) = x_mn/r_mn*dhcond
+          glhc(:,2) = y_mn/r_mn*dhcond
           glhc(:,3) = 0.
         else
           glhc = 0.
@@ -3097,7 +3095,7 @@ module Entropy
 !
       beta0=-g0/(mpoly0+1)*gamma/gamma1
       beta1=-g0/(mpoly1+1)*gamma/gamma1
-      rcrit=r_ext-1.
+      rcrit=r_ext-0.5
       TT_crit=TT_ext+beta0*(rcrit-r_ext)
       lnrho_ext=lnrho0
       lnrho_crit=lnrho0+ &
