@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.6 2006-08-03 07:07:27 ajohan Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.7 2006-08-10 15:15:26 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -333,15 +333,16 @@ module GhostFold
 !
           do ipy_from=0,nprocy-1
             iproc_from=ipz*nprocy+ipy_from
-            if (ipy/=ipy_from) call mpirecv_real( &
-                a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
-                (/ny,nz_new/), iproc_from, 666)
-            if (ipy==ipy_from) then
+            if (ipy/=ipy_from) then
+              call mpirecv_real( &
+                  a_re_new(ipy_from*ny+1:(ipy_from+1)*ny,:), &
+                  (/ny,nz_new/), iproc_from, 666)
+            else
               a_re_new(ipy*ny+1:(ipy+1)*ny,:) = &
                   a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)
               do ipy_to=0,nprocy-1
                 iproc_to=ipz*nprocy+ipy_to
-                if (ipy/=iproc_to) call mpisend_real( &
+                if (ipy/=ipy_to) call mpisend_real( &
                     a_re(:,ipy_to*nz_new+1:(ipy_to+1)*nz_new), &
                     (/ny,nz_new/), iproc_to, 666)
               enddo
@@ -394,15 +395,16 @@ module GhostFold
 !  Present z-direction.
           do ipy_from=0,nprocy-1
             iproc_from=ipz*nprocy+ipy_from
-            if (ipy/=ipy_from) call mpirecv_real( &
-                a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
-                (/ny,nz_new/), iproc_from, 666)
-            if (ipy==ipy_from) then
+            if (ipy/=ipy_from) then
+              call mpirecv_real( &
+                  a_re(:,ipy_from*nz_new+1:(ipy_from+1)*nz_new), &
+                  (/ny,nz_new/), iproc_from, 666)
+            else
               a_re(:,ipy*nz_new+1:(ipy+1)*nz_new)= &
                   a_re_new(ipy*ny+1:(ipy+1)*ny,:)
               do ipy_to=0,nprocy-1
                 iproc_to=ipz*nprocy+ipy_to
-                if (ipy/=iproc_to) call mpisend_real( &
+                if (ipy/=ipy_to) call mpisend_real( &
                     a_re_new(ipy_to*ny+1:(ipy_to+1)*ny,:), &
                     (/ny,nz_new/), iproc_to, 666)
               enddo
