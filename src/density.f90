@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.268 2006-08-09 20:20:29 dintrans Exp $
+! $Id: density.f90,v 1.269 2006-08-10 13:11:38 dintrans Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.268 2006-08-09 20:20:29 dintrans Exp $")
+           "$Id: density.f90,v 1.269 2006-08-10 13:11:38 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -665,13 +665,6 @@ module Density
       !
         call information('init_lnrho','kws hydrostatic in spherical shell and exterior')
         call shell_lnrho(f)
-
-      case('shell_layers')
-      !
-      ! radial hydrostatic profile in shell region only
-      !
-        call information('init_lnrho',' two polytropic layers in a spherical shell')
-        call shell_lnrho_layers(f)
 
       case('solar-nebula')
       !
@@ -1673,55 +1666,5 @@ module Density
 !
     endsubroutine mass_source
 
-!***********************************************************************
-    subroutine shell_lnrho_layers(f)
-!
-!  Initialize density in a spherical shell using two polytropic layers
-!
-!  09-Aug-2006/dintrans: coded
-!
-      use Gravity, only: g0
-      use Sub, only: calc_unitvects_sphere
-      use EquationOfState, only: cs20,mpoly,mpoly2
-!
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
-      real :: beta1,beta2,lnrho_int,lnrho_ext,TT_ext
-      real :: rcrit,TT_crit,lnrho_crit
-!
-      beta1=-g0/(mpoly+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
-      beta2=-g0/(mpoly2+1)*gamma/gamma1  ! gamma1/gamma=R_{*} (for cp=1)
-      rcrit=r_ext-1.
-!
-!     densities at shell boundaries
-      lnrho_ext=lnrho0
-      TT_ext=cs20/gamma1
-      TT_crit=TT_ext+beta1*(rcrit-r_ext)
-      lnrho_crit=lnrho0+ &
-            mpoly*log(TT_ext+beta1*(rcrit-r_ext))-mpoly*log(TT_ext)
-      lnrho_int=lnrho_crit + &
-            mpoly2*log(TT_crit+beta2*(r_int-rcrit))-mpoly2*log(TT_crit)
-!
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
-!
-        call calc_unitvects_sphere()
-!
-! in the fluid shell
-! zone1
-        where (r_mn < r_ext .AND. r_mn > rcrit) &
-          f(l1:l2,m,n,ilnrho)=lnrho0+ &
-            mpoly*log(TT_ext+beta1*(r_mn-r_ext))-mpoly*log(TT_ext)
-! zone2
-        where (r_mn <= rcrit .AND. r_mn > r_int) &
-          f(l1:l2,m,n,ilnrho)=lnrho_crit + &
-            mpoly2*log(TT_crit+beta2*(r_mn-rcrit))-mpoly2*log(TT_crit)
-
-! outside the fluid shell
-          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
-          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
-      enddo 
-!      
-    endsubroutine shell_lnrho_layers
 !***********************************************************************
 endmodule Density

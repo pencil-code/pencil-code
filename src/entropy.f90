@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.423 2006-08-09 20:20:29 dintrans Exp $
+! $Id: entropy.f90,v 1.424 2006-08-10 13:11:38 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -160,7 +160,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.423 2006-08-09 20:20:29 dintrans Exp $")
+           "$Id: entropy.f90,v 1.424 2006-08-10 13:11:38 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -206,7 +206,7 @@ module Entropy
       logical :: lstarting
 !
       real :: beta1,cp1tilde,lnrho_dummy=0.
-      real :: beta2,rcrit,TT_crit
+      real :: beta0,rcrit,TT_crit
       integer :: i
       logical :: lnothing
 !
@@ -382,15 +382,15 @@ module Entropy
 !
 !  temperatures at shell boundaries
 !
+          TT_ext=T0
           if (lmultilayer) then
-            beta1=-g0/(mpoly+1)*gamma/gamma1
-            beta2=-g0/(mpoly2+1)*gamma/gamma1
+            if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
+            beta0=-g0/(mpoly0+1)*gamma/gamma1
+            beta1=-g0/(mpoly1+1)*gamma/gamma1
             rcrit=r_ext-1.
-            TT_ext=cs20/gamma1
-            TT_crit=TT_ext+beta1*(rcrit-r_ext)
-            TT_int=TT_crit+beta2*(r_int-rcrit)
+            TT_crit=TT_ext+beta0*(rcrit-r_ext)
+            TT_int=TT_crit+beta1*(r_int-rcrit)
           else
-            TT_ext=T0
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
           endif
           if (lroot) then
@@ -2327,15 +2327,6 @@ module Entropy
 !
       call write_zprof('hcond',hcond)
 !
-!  09-Aug-2006/dintrans: just to check the radial profile of hcond
-!  temporary because I should normally used the penciled version below
-!
-      if (lgravr .and. headt .and. lfirst) then
-        open(unit=11,file='prof.dat',access='append')
-        write(11,*) y_mn(1),hcond
-        close(11)
-      endif
-!
 !  Write radiative flux array
 !
       if (ldiagnos) then
@@ -2518,7 +2509,7 @@ module Entropy
         case ('shell')          !  heating/cooling at shell boundaries
           heat=0.                            ! default
           select case(initss(1))
-            case ('geo-kws'); heat=0.        ! can add heating later based on value of initss
+            case ('geo-kws','shell_layers'); heat=0.        ! can add heating later based on value of initss
           endselect
           !
           !  possibility of a latitudinal heating profile
@@ -2841,7 +2832,7 @@ module Entropy
 !
       use Sub, only: step
       use Gravity
-      use EquationOfState, only: mpoly, mpoly2
+      use EquationOfState, only: mpoly0, mpoly1
 !
       real, dimension (nx) :: hcond
       real :: rcrit
@@ -2857,8 +2848,7 @@ module Entropy
       else
         if (lmultilayer) then
           rcrit=r_ext-1.
-          hcond2 = (mpoly2+1.)/(mpoly+1.)
-          hcond = 1. + (hcond2-1.)*step(r_mn,rcrit,-widthss)
+          hcond = 1. + (hcond1-1.)*step(r_mn,rcrit,-widthss)
           hcond = hcond0*hcond
         else
           hcond = hcond0
@@ -2877,7 +2867,7 @@ module Entropy
 !
       use Sub, only: der_step
       use Gravity
-      use EquationOfState, only: mpoly, mpoly2
+      use EquationOfState, only: mpoly0, mpoly1
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx)   :: dprof
@@ -2895,8 +2885,7 @@ module Entropy
       else
         if (lmultilayer) then
           rcrit=r_ext-1.
-          hcond2 = (mpoly2+1.)/(mpoly+1.)
-          dprof=hcond0*(hcond2-1.)*der_step(r_mn,rcrit,-widthss)
+          dprof=hcond0*(hcond1-1.)*der_step(r_mn,rcrit,-widthss)
           glhc(:,1) = x_mn/r_mn*dprof
           glhc(:,2) = y_mn/r_mn*dprof
           glhc(:,3) = 0.
@@ -3094,22 +3083,27 @@ module Entropy
 !  09-aug-06/dintrans: coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, mpoly2, pressure_gradient
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, mpoly1, &
+                                 pressure_gradient, lnrho0
       use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
-      real :: beta1,beta2,TT_crit,rcrit
+      real, dimension (nx) :: lnrho,lnTT,TT,ss
+      real :: beta0,beta1,TT_crit,rcrit
+      real :: lnrho_int,lnrho_ext,lnrho_crit
 !
 !  beta is the temperature gradient
-!  1/beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
+!  1/beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
 !
-      beta1=-g0/(mpoly+1)*gamma/gamma1
-      beta2=-g0/(mpoly2+1)*gamma/gamma1
-      TT_ext=cs20/gamma1
+      beta0=-g0/(mpoly0+1)*gamma/gamma1
+      beta1=-g0/(mpoly1+1)*gamma/gamma1
       rcrit=r_ext-1.
-      TT_crit=TT_ext+beta1*(rcrit-r_ext)
-      TT_int=TT_crit+beta2*(r_int-rcrit)
+      TT_crit=TT_ext+beta0*(rcrit-r_ext)
+      lnrho_ext=lnrho0
+      lnrho_crit=lnrho0+ &
+            mpoly0*log(TT_ext+beta0*(rcrit-r_ext))-mpoly0*log(TT_ext)
+      lnrho_int=lnrho_crit + &
+            mpoly1*log(TT_crit+beta1*(r_int-rcrit))-mpoly1*log(TT_crit)
 !
 !  set initial condition
 !
@@ -3118,14 +3112,28 @@ module Entropy
         m=mm(imn)
 !
         call calc_unitvects_sphere()
-! zone1
-        where (r_mn < r_ext .AND. r_mn > rcrit) &
-          TT = TT_ext+beta1*(r_mn-r_ext)
-! zone2
-        where (r_mn <= rcrit .AND. r_mn > r_int) &
-          TT = TT_crit+beta2*(r_mn-rcrit)
-        where (r_mn >= r_ext) TT = TT_ext
-        where (r_mn <= r_int) TT = TT_int
+!
+!  convective layer
+!
+        where (r_mn < r_ext .AND. r_mn > rcrit)
+          TT = TT_ext+beta0*(r_mn-r_ext)
+          f(l1:l2,m,n,ilnrho)=lnrho0+mpoly0*log(TT)-mpoly0*log(TT_ext)
+        endwhere
+!
+!  radiative layer
+!
+        where (r_mn <= rcrit .AND. r_mn > r_int)
+          TT = TT_crit+beta1*(r_mn-rcrit)
+          f(l1:l2,m,n,ilnrho)=lnrho_crit+mpoly1*log(TT)-mpoly1*log(TT_crit)
+        endwhere
+        where (r_mn >= r_ext) 
+          TT = TT_ext
+          f(l1:l2,m,n,ilnrho)=lnrho_ext
+        endwhere
+        where (r_mn <= r_int) 
+          TT = TT_int
+          f(l1:l2,m,n,ilnrho)=lnrho_int
+        endwhere
 !
         lnrho=f(l1:l2,m,n,ilnrho)
         lnTT=log(TT)
