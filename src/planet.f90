@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.55 2006-08-09 18:32:27 dobler Exp $
+! $Id: planet.f90,v 1.56 2006-08-11 05:53:07 dobler Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -79,7 +79,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.55 2006-08-09 18:32:27 dobler Exp $")
+           "$Id: planet.f90,v 1.56 2006-08-11 05:53:07 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -266,11 +266,13 @@ module Planet
 !      
 !  gravity_star will call the ramped mass from inside again
 !
+      ggs = 0.                  ! or ggs(:,3) might be uninitialized in
+                                !  cylindrical case 
       call gravity_star(g0,r0_pot,n_pot,g_star,rrs)
 !
       ggs(:,1) = (x(l1:l2)-axs)*rrs1*g_star
       ggs(:,2) = (y(  m  )-ays)*rrs1*g_star
-      if (.not.lcylindrical) ggs(:,3) = (z(n)-azs)*rrs1*g_star     
+      if (.not.lcylindrical) ggs(:,3) = (z(n)-azs)*rrs1*g_star
 !
 !  Reset gravity as global variable 
 !      
