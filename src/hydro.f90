@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.279 2006-08-03 14:10:28 mee Exp $
+! $Id: hydro.f90,v 1.280 2006-08-11 12:00:22 ajohan Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -95,8 +95,9 @@ module Hydro
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
-  integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0
-  integer :: idiag_uzrms=0,idiag_uzmax=0,idiag_orms=0,idiag_omax=0
+  integer :: idiag_dtu=0,idiag_urms=0,idiag_umax=0,idiag_uzrms=0,idiag_uzrmaxs=0
+  integer :: idiag_uxmax=0,idiag_uymax=0,idiag_uzmax=0
+  integer :: idiag_orms=0,idiag_omax=0
   integer :: idiag_uxm=0,idiag_uym=0,idiag_uzm=0
   integer :: idiag_ux2m=0,idiag_uy2m=0,idiag_uz2m=0
   integer :: idiag_ux2mz=0,idiag_uy2mz=0,idiag_uz2mz=0
@@ -166,7 +167,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.279 2006-08-03 14:10:28 mee Exp $")
+           "$Id: hydro.f90,v 1.280 2006-08-11 12:00:22 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -979,8 +980,11 @@ module Hydro
         if (idiag_umax/=0)   call max_mn_name(p%u2,idiag_umax,lsqrt=.true.)
         if (idiag_uzrms/=0) &
             call sum_mn_name(p%uu(:,3)**2,idiag_uzrms,lsqrt=.true.)
-        if (idiag_uzmax/=0) &
-            call max_mn_name(p%uu(:,3)**2,idiag_uzmax,lsqrt=.true.)
+        if (idiag_uzrmaxs/=0) &
+            call max_mn_name(p%uu(:,3)**2,idiag_uzrmaxs,lsqrt=.true.)
+        if (idiag_uxmax/=0) call max_mn_name(p%uu(:,1),idiag_uxmax)
+        if (idiag_uymax/=0) call max_mn_name(p%uu(:,2),idiag_uymax)
+        if (idiag_uzmax/=0) call max_mn_name(p%uu(:,3),idiag_uzmax)
         if (idiag_rumax/=0) call max_mn_name(p%u2*p%rho**2,idiag_rumax,lsqrt=.true.)
         if (idiag_u2m/=0)     call sum_mn_name(p%u2,idiag_u2m)
         if (idiag_um2/=0)     call max_mn_name(p%u2,idiag_um2)
@@ -1445,7 +1449,8 @@ module Hydro
       if (lreset) then
         idiag_u2m=0; idiag_um2=0; idiag_oum=0; idiag_o2m=0
         idiag_uxpt=0; idiag_uypt=0; idiag_uzpt=0; idiag_dtu=0
-        idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzmax=0
+        idiag_urms=0; idiag_umax=0; idiag_uzrms=0; idiag_uzrmaxs=0
+        idiag_uxmax=0; idiag_uymax=0; idiag_uzmax=0
         idiag_orms=0; idiag_omax=0
         idiag_ruxm=0; idiag_ruym=0; idiag_ruzm=0; idiag_rumax=0
         idiag_uxm=0; idiag_uym=0; idiag_uzm=0
@@ -1483,8 +1488,11 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'dtu',idiag_dtu)
         call parse_name(iname,cname(iname),cform(iname),'urms',idiag_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',idiag_umax)
-        call parse_name(iname,cname(iname),cform(iname),'uzrms',idiag_uzrms)
+        call parse_name(iname,cname(iname),cform(iname),'uxmax',idiag_uxmax)
+        call parse_name(iname,cname(iname),cform(iname),'uymax',idiag_uymax)
         call parse_name(iname,cname(iname),cform(iname),'uzmax',idiag_uzmax)
+        call parse_name(iname,cname(iname),cform(iname),'uzrms',idiag_uzrms)
+        call parse_name(iname,cname(iname),cform(iname),'uzrmaxs',idiag_uzrmaxs)
         call parse_name(iname,cname(iname),cform(iname),'uxm',idiag_uxm)
         call parse_name(iname,cname(iname),cform(iname),'uym',idiag_uym)
         call parse_name(iname,cname(iname),cform(iname),'uzm',idiag_uzm)
@@ -1635,8 +1643,11 @@ module Hydro
         write(3,*) 'i_dtu=',idiag_dtu
         write(3,*) 'i_urms=',idiag_urms
         write(3,*) 'i_umax=',idiag_umax
-        write(3,*) 'i_uzrms=',idiag_uzrms
+        write(3,*) 'i_uxmax=',idiag_uxmax
+        write(3,*) 'i_uymax=',idiag_uymax
         write(3,*) 'i_uzmax=',idiag_uzmax
+        write(3,*) 'i_uzrms=',idiag_uzrms
+        write(3,*) 'i_uzrmaxs=',idiag_uzrmaxs
         write(3,*) 'i_ux2m=',idiag_ux2m
         write(3,*) 'i_uy2m=',idiag_uy2m
         write(3,*) 'i_uz2m=',idiag_uz2m
