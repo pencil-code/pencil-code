@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.337 2006-08-14 12:09:43 ajohan Exp $
+%%  CVS: $Id: manual.tex,v 1.338 2006-08-14 12:35:35 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-08-14 12:09:43 $ $,~ $ $Revision: 1.337 $ $}
+%\date{$ $Date: 2006-08-14 12:35:35 $ $,~ $ $Revision: 1.338 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-08-14 12:09:43 $ $,~ $ $Revision: 1.337 $ $}\\
+  \emph{$ $Date: 2006-08-14 12:35:35 $ $,~ $ $Revision: 1.338 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4027,6 +4027,44 @@ where
 \end{equation}
 is the optical depth ($s$ is the geometrical coordinate along the ray).
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Self-gravity}
+
+The Pencil Code can consider the self-gravity of the fluid in the simulation
+box by adding the term
+\begin{equation}
+  \frac{\partial \vec{u}}{\partial t}
+      = \ldots - \nab \varPhi_{\rm self}
+\end{equation}
+to the equation of motion. The self-potential $\varPhi_{\rm self}$ (or just
+$\varPhi$ for simplicity) satisfies Poisson's equation
+\begin{equation}
+  \nabla^2 \varPhi = 4 \pi G \rho \, .
+\end{equation}
+The solution for a single Fourier component at scale $\vec{k}$ is
+\begin{equation}
+  \varPhi_\vec{k} = -\frac{4 \pi G \rho_\vec{k}}{k^2} \, .
+\end{equation}
+Here we have assumed periodic boundary conditions. The potential is obtained by
+Fourier-transforming the density, then finding the corresponding potential at
+that scale, and finally Fourier-transforming back to real space.
+
+The $x$-direction in the shearing sheet is not strictly periodic, but is rather
+shear periodic with two connected points at the inner and outer boundary
+separated by the distance $\Delta y(t)={\rm mod}[(3/2) \varOmega_0 L_x t,L_y]$
+in the $y$-direction. We follow here the method from \cite{Gammie2001} to allow
+for shear-periodic boundaries in the Fourier method for self-gravity. First we
+take the Fourier transform along the periodic $y$-direction. We then shift
+the entire $y$-direction by the amount $\delta y(x)=\Delta y(t) x/L_x$ to make
+the $x$-direction periodic. Then we proceed with Fourier transforms along $x$
+and then $z$. After solving the Poisson equation in Fourier space, we transform
+back to real space in the opposite order. We differ here from the method by
+\cite{Gammie2001} in that we shift in Fourier space rather than in real
+space\footnote{We were kindly made aware of the possibility of interpolating in
+Fourier space by C. McNally on his website.}. The Fourier interpolation formula
+has the advantage over polynomial interpolation in that it is continuous and
+smooth in all its derivatives.
 
 % ---------------------------------------------------------------------- %
 
@@ -5389,7 +5427,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-08-14 12:09:43 $ $,~ $ $Revision: 1.337 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-08-14 12:35:35 $ $,~ $ $Revision: 1.338 $ $}
 
 \section{Timings}
 
@@ -8626,6 +8664,10 @@ initial condition.
   \emph{The numerical treatment of differential equations},
   Springer-Verlag, New York, p.\ 164 (1966)
 
+\bibitem{Gammie2001}Gammie, C.~F.,
+  \emph{Astrophys. J.} \textbf{553}, 174--183 (2001)
+  ``Nonlinear outcome of gravitational instability in cooling, gaseous disks''
+
 \bibitem{GNG87}Goodman, J., Narayan, R. \& Goldreich, P.,
   \emph{Month. Not. Roy. Soc.} \textbf{225}, 695--711 (1987)
   ``The stability of accretion tori -- II. Nonlinear evolution
@@ -8686,7 +8728,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.337 2006-08-14 12:09:43 ajohan Exp $ $}
+$ $Id: manual.tex,v 1.338 2006-08-14 12:35:35 ajohan Exp $ $}
 
 
 \end{document}
