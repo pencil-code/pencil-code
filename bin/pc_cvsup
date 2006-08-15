@@ -48,7 +48,7 @@ check_for_sticky_local()
   sticky=
   while [ "$1" ]; do
     if [ -d "$1" ]; then
-      sticky="$sticky `find $1/ -path '*/CVS/Entries' -maxdepth 2 | xargs egrep -lv 'D|//$|/-kb/$|/-ko/$'`"
+      sticky="$sticky `find $1/ -maxdepth 2 -path '*/CVS/Entries' | xargs egrep -lv 'D|//$|/-kb/$|/-ko/$'`"
     fi
     shift
   done
