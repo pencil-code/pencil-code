@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.1 2006-08-08 15:02:16 ajohan Exp $
+! $Id: gravity_r.f90,v 1.2 2006-08-15 18:40:50 dintrans Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.1 2006-08-08 15:02:16 ajohan Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.2 2006-08-15 18:40:50 dintrans Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -92,12 +92,13 @@ module Gravity
 !  22-nov-02/tony: renamed
 !
       use Cdata
-      use Sub, only: poly, calc_unitvects_sphere
+      use Sub, only: poly, calc_unitvects_sphere,step
       use Mpicomm
       use Global
 !
       real, dimension (nx,3) :: gg_mn=0.
       real, dimension (nx) :: g_r,rr_mn
+      real :: widthgg=0.01
 
       logical, save :: first=.true.
       logical :: lpade=.true. ! set to false for 1/r potential
@@ -166,6 +167,10 @@ module Gravity
           if (r0_pot < epsi) print*, 'WARNING: grav_r: r0_pot is too small.'//&
                                      'Can be set in grav_r namelists.'
           lpade=.false.
+        case ('geo-hat')
+          call information('initialize_gravity', &
+            ' hat profile for the two-layers system')
+          lpade=.false.
         ! end geodynamo
 
         case default
@@ -210,11 +215,16 @@ module Gravity
                                             cpot(3) /), rr_mn)**2
 
           else
-
-             ! smoothed 1/r potential in a spherical shell
-             g_r=-g0*rr_mn**(n_pot-1) &
+            if (ipotential .eq. 'geo-hat') then
+!             g_r=-g0
+              ! hat profile for the two-layers system
+              g_r=step(rr_mn,r_int,widthgg)-step(rr_mn,r_ext,widthgg)
+              g_r=-g0*g_r
+            else
+              ! smoothed 1/r potential in a spherical shell
+              g_r=-g0*rr_mn**(n_pot-1) &
                   *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
-!
+            endif
           endif
 !
           gg_mn(:,1) = x(l1:l2)/rr_mn*g_r

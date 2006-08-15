@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.425 2006-08-10 21:08:14 dintrans Exp $
+! $Id: entropy.f90,v 1.426 2006-08-15 18:40:50 dintrans Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -56,7 +56,7 @@ module Entropy
   real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.,cool_RTV=0.
-  real :: deltaT_poleq=0.,beta_hand=1.
+  real :: deltaT_poleq=0.,beta_hand=1.,r_bcz=0.
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kconst=.false.,lheatc_simple=.false.,lheatc_chiconst=.false.
@@ -106,7 +106,8 @@ module Entropy
       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, lviscosity_heat
+      T0,ampl_TT,kx_ss,beta_glnrho_global,ladvection_entropy, &
+      lviscosity_heat,r_bcz
   ! run parameters
   namelist /entropy_run_pars/ &
       hcond0,hcond1,hcond2,widthss, &
@@ -120,7 +121,8 @@ module Entropy
       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
       heat_uniform,lupw_ss,cool_int,cool_ext,chi_hyper3, &
       lturbulent_heat,deltaT_poleq,lpressuregradient_gas, &
-      tdown, allp,beta_glnrho_global,ladvection_entropy, lviscosity_heat
+      tdown, allp,beta_glnrho_global,ladvection_entropy, &
+      lviscosity_heat,r_bcz
 
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_dtc=0,idiag_eth=0,idiag_ethdivum=0,idiag_ssm=0
@@ -160,7 +162,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.425 2006-08-10 21:08:14 dintrans Exp $")
+           "$Id: entropy.f90,v 1.426 2006-08-15 18:40:50 dintrans Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -206,7 +208,8 @@ module Entropy
       logical :: lstarting
 !
       real :: beta1,cp1tilde,lnrho_dummy=0.
-      real :: beta0,rcrit,TT_crit
+!     real :: beta0,r_bcz,TT_crit
+      real :: beta0,TT_crit
       integer :: i
       logical :: lnothing
 !
@@ -388,9 +391,8 @@ module Entropy
             if (hcond1==impossible) hcond1=(mpoly1+1.)/(mpoly0+1.)
             beta0=-g0/(mpoly0+1)*gamma/gamma1
             beta1=-g0/(mpoly1+1)*gamma/gamma1
-            rcrit=r_ext-0.5
-            TT_crit=TT_ext+beta0*(rcrit-r_ext)
-            TT_int=TT_crit+beta1*(r_int-rcrit)
+            TT_crit=TT_ext+beta0*(r_bcz-r_ext)
+            TT_int=TT_crit+beta1*(r_int-r_bcz)
           else
             lmultilayer=.false.
             TT_int=TT_ext*(1.+beta1*(r_ext/r_int-1.))
@@ -2835,7 +2837,7 @@ module Entropy
       use Gravity
 !
       real, dimension (nx) :: hcond
-      real :: rcrit
+!     real :: r_bcz
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2847,8 +2849,7 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          rcrit=r_ext-0.5
-          hcond = 1. + (hcond1-1.)*step(r_mn,rcrit,-widthss)
+          hcond = 1. + (hcond1-1.)*step(r_mn,r_bcz,-widthss)
           hcond = hcond0*hcond
         else
           hcond = hcond0
@@ -2869,7 +2870,7 @@ module Entropy
 !
       real, dimension (nx,3) :: glhc
       real, dimension (nx)   :: dhcond
-      real :: rcrit
+!     real :: r_bcz
 !
       if (lgravz) then
         if (lmultilayer) then
@@ -2882,11 +2883,10 @@ module Entropy
         endif
       else
         if (lmultilayer) then
-          rcrit=r_ext-0.5
-          dhcond=hcond0*(hcond1-1.)*der_step(r_mn,rcrit,-widthss)
+          dhcond=hcond0*(hcond1-1.)*der_step(r_mn,r_bcz,-widthss)
           glhc(:,1) = x_mn/r_mn*dhcond
           glhc(:,2) = y_mn/r_mn*dhcond
-          glhc(:,3) = 0.
+          glhc(:,3) = z_mn/r_mn*dhcond
         else
           glhc = 0.
         endif
@@ -3087,21 +3087,23 @@ module Entropy
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss
-      real :: beta0,beta1,TT_crit,rcrit
+!     real :: beta0,beta1,TT_crit,r_bcz
+      real :: beta0,beta1,TT_crit
       real :: lnrho_int,lnrho_ext,lnrho_crit
+
+      print*,'r_bcz=',r_bcz
 !
 !  beta is the temperature gradient
 !  1/beta = -(g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       beta0=-g0/(mpoly0+1)*gamma/gamma1
       beta1=-g0/(mpoly1+1)*gamma/gamma1
-      rcrit=r_ext-0.5
-      TT_crit=TT_ext+beta0*(rcrit-r_ext)
+      TT_crit=TT_ext+beta0*(r_bcz-r_ext)
       lnrho_ext=lnrho0
       lnrho_crit=lnrho0+ &
-            mpoly0*log(TT_ext+beta0*(rcrit-r_ext))-mpoly0*log(TT_ext)
+            mpoly0*log(TT_ext+beta0*(r_bcz-r_ext))-mpoly0*log(TT_ext)
       lnrho_int=lnrho_crit + &
-            mpoly1*log(TT_crit+beta1*(r_int-rcrit))-mpoly1*log(TT_crit)
+            mpoly1*log(TT_crit+beta1*(r_int-r_bcz))-mpoly1*log(TT_crit)
 !
 !  set initial condition
 !
@@ -3113,15 +3115,15 @@ module Entropy
 !
 !  convective layer
 !
-        where (r_mn < r_ext .AND. r_mn > rcrit)
+        where (r_mn < r_ext .AND. r_mn > r_bcz)
           TT = TT_ext+beta0*(r_mn-r_ext)
           f(l1:l2,m,n,ilnrho)=lnrho0+mpoly0*log(TT)-mpoly0*log(TT_ext)
         endwhere
 !
 !  radiative layer
 !
-        where (r_mn <= rcrit .AND. r_mn > r_int)
-          TT = TT_crit+beta1*(r_mn-rcrit)
+        where (r_mn <= r_bcz .AND. r_mn > r_int)
+          TT = TT_crit+beta1*(r_mn-r_bcz)
           f(l1:l2,m,n,ilnrho)=lnrho_crit+mpoly1*log(TT)-mpoly1*log(TT_crit)
         endwhere
         where (r_mn >= r_ext) 
