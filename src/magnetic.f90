@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.309 2006-08-07 16:10:13 wlyra Exp $
+! $Id: magnetic.f90,v 1.310 2006-08-16 20:09:18 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.309 2006-08-07 16:10:13 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.310 2006-08-16 20:09:18 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2895,4 +2895,89 @@ module Magnetic
 !
     endsubroutine subtract_mean_lorentz
 !************************************************************************
+    subroutine bb_unitvec_shock(f,bb_hat)
+!
+!  Compute unit vector along the magnetic field.
+!  Accurate to 2nd order.
+!  Tries to avoid division by zero.
+!  Taken from http://nuclear.llnl.gov/CNP/apt/apt/aptvunb.html.
+!  If anybody knows a more accurate way of doing this, please modify.
+!
+!  16-aug-06/tobi: coded
+!
+      use Cdata
+
+      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,3), intent (out) :: bb_hat
+
+      !Tobi: Not sure about this value
+      real, parameter :: tol=1e-11
+
+      real, dimension (mx,3) :: bb
+      real, dimension (mx) :: bb_len,aerr2
+      real :: fac
+      integer :: j
+
+!
+!  Compute magnetic field from vector potential.
+!
+      bb=0.
+
+      if (nxgrid/=1) then
+        fac = 1./(2.*dx)
+        bb(2:mx-1,3) = bb(2:mx-1,2)         &
+          + fac * ( f(3:mx  ,m  ,n  ,iay)   &
+                  - f(1:mx-2,m  ,n  ,iay) )
+        bb(2:mx-1,2) = bb(2:mx-1,2)         &
+          - fac * ( f(3:mx  ,m  ,n  ,iaz)   &
+                  - f(1:mx-2,m  ,n  ,iaz) )
+      endif
+
+      if (nygrid/=1) then
+        fac = 1./(2.*dy)
+        bb(:,1) = bb(:,1)                   &
+          + fac * ( f(:,     m+1,n  ,iaz)   &
+                  - f(:,     m-1,n  ,iaz) )
+        bb(:,3) = bb(:,3)                   &
+          - fac * ( f(:,     m+1,n  ,iax)   &
+                  - f(:,     m-1,n  ,iax) )
+      endif
+
+      if (nzgrid/=1) then
+        fac = 1./(2.*dz)
+        bb(:,2) = bb(:,2)                   &
+          + fac * ( f(:,     m  ,n+1,iax)   &
+                  - f(:,     m  ,n-1,iax) )
+        bb(:,1) = bb(:,1)                   &
+          - fac * ( f(:,     m  ,n+1,iay)   &
+                  - f(:,     m  ,n-1,iay) )
+      endif
+
+!
+!  Add external magnetic field.
+!
+      do j=1,3; bb(:,j) = bb(:,j) + B_ext(j); enddo
+
+!
+!  Truncate small components to zero.
+!
+      aerr2 = tol**2 * max(1.,bb(:,1)**2 + bb(:,2)**2 + bb(:,3)**2)
+
+      do j=1,3
+        where (bb(:,j) < aerr2)
+          bb_hat(:,j) = 0.
+        elsewhere
+          bb_hat(:,j) = bb(:,j)
+        endwhere
+      enddo
+
+!
+!  Get unit vector.
+!
+      bb_len = sqrt(bb_hat(:,1)**2 + bb_hat(:,2)**2 + bb_hat(:,3)**2)
+
+      do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
+
+    end subroutine bb_unitvec_shock
+!***********************************************************************
 endmodule Magnetic
