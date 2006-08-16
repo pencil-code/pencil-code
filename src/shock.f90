@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.19 2006-08-01 19:02:48 mee Exp $
+! $Id: shock.f90,v 1.20 2006-08-16 21:05:52 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -102,7 +102,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.19 2006-08-01 19:02:48 mee Exp $")
+           "$Id: shock.f90,v 1.20 2006-08-16 21:05:52 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -497,7 +497,7 @@ module Shock
 !  Divu over internal region
 !          
           do n=n1+1,n2-1; do m=m1+1,m2-1
-            call shock_divu(f,iuu,penc) 
+            call shock_divu(f,penc) 
             f(:,m,n,ishock)=max(0.,-penc)
           enddo; enddo
 !
@@ -527,18 +527,18 @@ module Shock
 !
           do n=2,mz-1; do jj=1,3
             m=1+jj
-            call shock_divu(f,iuu,penc) 
+            call shock_divu(f,penc) 
             f(:,m,n,ishock)=max(-penc,0.)
             m=my-jj
-            call shock_divu(f,iuu,penc) 
+            call shock_divu(f,penc) 
             f(:,m,n,ishock)=max(-penc,0.)
           enddo; enddo
           do kk=1,3; do m=5,my-4
             n=1+kk
-            call shock_divu(f,iuu,penc) 
+            call shock_divu(f,penc) 
             f(:,m,n,ishock)=max(-penc,0.)
             n=mz-kk
-            call shock_divu(f,iuu,penc) 
+            call shock_divu(f,penc) 
             f(:,m,n,ishock)=max(-penc,0.)
           enddo; enddo
 !
@@ -587,7 +587,7 @@ module Shock
 !  Non-MPI version:
 !          
 !          do n=2,mz-1; do m=2,my-1
-!            call shock_divu(f,iuu,penc) 
+!            call shock_divu(f,penc) 
 !            f(:,m,n,ishock)=max(0.,-penc)
 !          enddo; enddo
 !          do n=3,mz-2; do m=3,my-2
@@ -1152,7 +1152,7 @@ module Shock
 !      
     endsubroutine shock_divu_farray
 !***********************************************************************
-    subroutine shock_divu_pencil(f,j,df)
+    subroutine shock_divu_pencil(f,df)
 !
 !  calculate divergence of a vector U, get scalar
 !  accurate to 2nd order, explicit,  centred an left and right biased 
@@ -1164,33 +1164,85 @@ module Shock
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx) :: df
       real :: fac
-      integer :: j
 !
       df=0.
       if (nxgrid/=1) then
          fac=1./(2.*dx)
          df(2:mx-1) = df(2:mx-1)     &
-               + (f(3:mx  ,m     ,n     ,j  ) &
-               -  f(1:mx-2,m     ,n     ,j  ) ) &
+               + (f(3:mx  ,m     ,n     ,iux) &
+               -  f(1:mx-2,m     ,n     ,iux) ) &
                * fac
       endif
 
       if (nygrid/=1) then
          fac=1./(2.*dy)
          df = df  &  
-               + (f(:     ,m+1   ,n     ,j+1)   &
-               -  f(:     ,m-1   ,n     ,j+1) ) &
+               + (f(:     ,m+1   ,n     ,iuy)   &
+               -  f(:     ,m-1   ,n     ,iuy) ) &
                * fac
       endif
 
       if (nzgrid/=1) then
          fac=1./(2.*dz)
          df = df       & 
-               + (f(:     ,m     ,n+1   ,j+2)   &
-               -  f(:     ,m     ,n-1   ,j+2) ) &
+               + (f(:     ,m     ,n+1   ,iuz)   &
+               -  f(:     ,m     ,n-1   ,iuz) ) &
                * fac
       endif
     endsubroutine shock_divu_pencil
+!***********************************************************************
+    subroutine shock_divu_perp_pencil(f,bb_hat,divu,divu_perp)
+!
+!  Calculate `perpendicular divergence' of u.
+!  nabla_perp.uu = nabla.uu - (1/b2)*bb.(bb.nabla)uu
+!
+!  23-nov-02/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,3), intent (in) :: bb_hat
+      real, dimension (mx), intent (in) :: divu
+      real, dimension (mx), intent (out) :: divu_perp
+
+      real, dimension (mx) :: fac
+!
+      divu_perp = divu
+
+      if (nxgrid/=1) then
+         fac=bb_hat(:,1)/(2*dx)
+         divu_perp(2:mx-1) = divu_perp(2:mx-1)                               &
+             - fac(2:mx-1)*(bb_hat(2:mx-1,1)*( f(3:mx  ,m     ,n     ,iux)   &
+                                             - f(1:mx-2,m     ,n     ,iux) ) &
+                          + bb_hat(2:mx-1,2)*( f(3:mx  ,m     ,n     ,iuy)   &
+                                             - f(1:mx-2,m     ,n     ,iuy) ) &
+                          + bb_hat(2:mx-1,3)*( f(3:mx  ,m     ,n     ,iuz)   &
+                                             - f(1:mx-2,m     ,n     ,iuz) ) )
+      endif
+
+      if (nygrid/=1) then
+         fac=bb_hat(:,2)/(2*dy)
+         divu_perp(2:mx-1) = divu_perp(2:mx-1)                               &
+             - fac(2:mx-1)*(bb_hat(2:mx-1,1)*( f(2:mx-1,m+1   ,n     ,iux)   &
+                                             - f(2:mx-1,m-1   ,n     ,iux) ) &
+                          + bb_hat(2:mx-1,2)*( f(2:mx-1,m+1   ,n     ,iuy)   &
+                                             - f(2:mx-1,m-1   ,n     ,iuy) ) &
+                          + bb_hat(2:mx-1,3)*( f(2:mx-1,m+1   ,n     ,iuz)   &
+                                             - f(2:mx-1,m-1   ,n     ,iuz) ) )
+      endif
+
+      if (nzgrid/=1) then
+         fac=bb_hat(:,3)/(2*dz)
+         divu_perp(2:mx-1) = divu_perp(2:mx-1)                               &
+             - fac(2:mx-1)*(bb_hat(2:mx-1,1)*( f(2:mx-1,m     ,n+1   ,iux)   &
+                                             - f(2:mx-1,m     ,n-1   ,iux) ) &
+                          + bb_hat(2:mx-1,2)*( f(2:mx-1,m     ,n+1   ,iuy)   &
+                                             - f(2:mx-1,m     ,n-1   ,iuy) ) &
+                          + bb_hat(2:mx-1,3)*( f(2:mx-1,m     ,n+1   ,iuz)   &
+                                             - f(2:mx-1,m     ,n-1   ,iuz) ) )
+      endif
+
+    endsubroutine shock_divu_perp_pencil
 !***********************************************************************
     subroutine shock_smooth_cube_diamond7(f,df)
 !
