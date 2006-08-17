@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.13 2006-08-03 07:07:28 ajohan Exp $
+! $Id: selfgravity.f90,v 1.14 2006-08-17 12:37:33 ajohan Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -31,9 +31,9 @@ module Selfgravity
   real :: rhs_poisson_const=1.0
   real, target :: tstart_selfgrav=0.0
 
-  real :: kmax = 1.
+  real :: kmax=0.0
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
-  logical :: lklimit=.false.
+  logical :: lklimit_shear=.false.
   
   namelist /selfgrav_init_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
@@ -41,7 +41,7 @@ module Selfgravity
       
   namelist /selfgrav_run_pars/ &
       rhs_poisson_const, lselfgravity_gas, lselfgravity_dust, &
-      tstart_selfgrav, lklimit, kmax
+      tstart_selfgrav, lklimit_shear, kmax
 
   integer :: idiag_gpoten=0
 
@@ -70,7 +70,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.13 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.14 2006-08-17 12:37:33 ajohan Exp $")
 !
 !  Put variable name in array
 !
@@ -93,10 +93,26 @@ module Selfgravity
 !
       integer :: ierr=0
 !
-!  set maximum k for gravity if limiter is set. kmax run parameter
-!  is in units of the nyquist frequency, thus making it
-!  resolution independent
-      if (lklimit) kmax = kmax * pi * min(nx/Lx,ny/Ly,nz/Lz)
+!  Limit the wavenumber to the maximum circular region that is always available
+!  in k-space. The radial wavenumber kx changes with time due to shear as
+!
+!    kx = kx0+qshear*Omega*t*ky
+!
+!  Considering the available (kx,ky) space, it turns slowly from a square to a
+!  parallellogram (the hole for kx,ky<1 is ignored here):
+!
+!       - - - -                  - - - -
+!      |       |               /       /
+!      |       |    ->       /       /
+!      |       |           /       /
+!      |       |         /       /
+!       - - - -          - - - -
+!
+!  To make the gravity force isotropic at small scales one can limit k to
+!  the largest circular region that is present in both the square and the
+!  parallellogram. The circle has radius kmax=kNy/sqrt(2). See Gammie (2001).
+!
+      if (lklimit_shear) kmax = kx_ny/sqrt(2.0)
 !
       if (.not.lpoisson) then
         if (lroot) print*, 'initialize_selfgravity: must choose a Poisson '// &
@@ -231,7 +247,11 @@ module Selfgravity
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
 !  receive the self-gravity potential back.
 !
-        call poisson_solver_fft(rhs_poisson,lklimit,kmax)
+        if (kmax/=0.0) then
+          call poisson_solver_fft(rhs_poisson,kmax=kmax)
+        else
+          call poisson_solver_fft(rhs_poisson)
+        endif
 !
 !  Put potential into f array.
 !

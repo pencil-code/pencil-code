@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.14 2006-08-03 07:07:28 ajohan Exp $
+! $Id: poisson.f90,v 1.15 2006-08-17 12:37:33 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -31,7 +31,7 @@ module Poisson
   contains
 
 !***********************************************************************
-    subroutine poisson_solver_fft(a1,lklimit,kmax)
+    subroutine poisson_solver_fft(a1,kmax)
 !
 !  Solve the Poisson equation by Fourier transforming on a periodic grid.
 !  This method works both with and without shear.
@@ -39,8 +39,7 @@ module Poisson
 !  15-may-2006/anders+jeff: coded
 !
       real, dimension (nx,ny,nz) :: a1
-      real :: kmax
-      logical :: lklimit
+      real, optional :: kmax
 !
       real, dimension (nx,ny,nz) :: b1
       real :: k2
@@ -49,7 +48,7 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.14 2006-08-03 07:07:28 ajohan Exp $")
+        "$Id: poisson.f90,v 1.15 2006-08-17 12:37:33 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
@@ -101,8 +100,8 @@ module Poisson
 !
 !  Limit |k| < kmax
 !
-          if (lklimit) then
-            if (sqrt(k2)>= kmax) then
+          if (present(kmax)) then
+            if (sqrt(k2)>=kmax) then
               a1(ikx,iky,ikz) = 0.
               b1(ikx,iky,ikz) = 0.
             endif
