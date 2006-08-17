@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.21 2006-08-17 11:22:23 theine Exp $
+! $Id: shock.f90,v 1.22 2006-08-17 13:36:23 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -102,7 +102,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.21 2006-08-17 11:22:23 theine Exp $")
+           "$Id: shock.f90,v 1.22 2006-08-17 13:36:23 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -853,39 +853,53 @@ module Shock
         do kk=-1,1,2
         do jj=-1,1,2
         do ii=-1,1,2
-          maxf(3:mx-2)=max(maxf(3:mx-2),f(3+ii:mx-2+ii,m+jj,n+kk,j))
+          !if (kk/=0.or.jj/=0.or.ii/=0) then
+            maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m+jj,n+kk,j))
+          !endif
         enddo
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nygrid/=1)) then
         do jj=-1,1,2
         do ii=-1,1,2
-          maxf(3:mx-2)=max(maxf(3:mx-2),f(3+ii:mx-2+ii,m+jj,n1,j))
+          !if (jj/=0.or.ii/=0) then
+            maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m+jj,n1  ,j))
+          !endif
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nzgrid/=1)) then
         do kk=-1,1,2
         do ii=-1,1,2
-          maxf(3:mx-2)=max(maxf(3:mx-2),f(3+ii:mx-2+ii,m1,n+kk,j))
+          !if (kk/=0.or.ii/=0) then
+            maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m1  ,n+kk,j))
+          !endif
         enddo
         enddo
       elseif ((nygrid/=1).and.(nzgrid/=1)) then
         do kk=-1,1,2
         do jj=-1,1,2
-          maxf(l1:l2)=max(maxf(l1:l2),f(l1:l2,m+jj,n+kk,j))
+          !if (kk/=0.or.jj/=0) then
+            maxf(l1  :l2  )=max(maxf(l1  :l2  ),f(l1     :l2     ,m+jj,n+kk,j))
+          !endif
         enddo
         enddo
       elseif (nxgrid/=1) then 
         do ii=-1,1,2
-          maxf(3:mx-2)=max(maxf(3:mx-2),f(3+ii:mx-2+ii,m1,n1,j))
+          !if (ii/=0) then
+            maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m1  ,n1  ,j))
+          !endif
         enddo
       elseif (nygrid/=1) then 
         do jj=-1,1,2
-          maxf(l1:l2)=max(maxf(l1:l2),f(l1:l2,m+jj,n1,j))
+          !if (jj/=0) then
+            maxf(l1  :l2  )=max(maxf(l1  :l2  ),f(l1     :l2     ,m+jj,n1  ,j))
+          !endif
         enddo
       elseif (nzgrid/=1) then 
         do kk=-1,1,2
-          maxf(l1:l2)=max(maxf(l1:l2),f(l1:l2,m1,n+kk,j))
+          !if (kk/=0) then
+            maxf(l1  :l2  )=max(maxf(l1  :l2  ),f(l1     :l2     ,m1  ,n+kk,j))
+          !endif
         enddo
       endif
 !
