@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.20 2006-08-16 21:05:52 theine Exp $
+! $Id: shock.f90,v 1.21 2006-08-17 11:22:23 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -102,7 +102,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.20 2006-08-16 21:05:52 theine Exp $")
+           "$Id: shock.f90,v 1.21 2006-08-17 11:22:23 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -1055,39 +1055,46 @@ module Shock
         do kk=-1,1
         do jj=-1,1
         do ii=-1,1
-          smoothf(4:mx-3)=smoothf(4:mx-3)+smooth_factor(2+ii,2+jj,2+kk)*f(4+ii:mx-3+ii,m+jj,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) &
+            + smooth_factor(2+ii,2+jj,2+kk)*f(l1+ii:l2+ii,m+jj,n+kk)
         enddo
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nygrid/=1)) then
         do jj=-1,1
         do ii=-1,1
-          smoothf(4:mx-3)=smoothf(4:mx-3)+smooth_factor(2+ii,2+jj,2)*f(4+ii:mx-3+ii,m+jj,n1)
+          smoothf(l1:l2) = smoothf(l1:l2) &
+            + smooth_factor(2+ii,2+jj,2   )*f(l1+ii:l2+ii,m+jj,n1  )
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nzgrid/=1)) then
         do kk=-1,1
         do ii=-1,1
-          smoothf(4:mx-3)=smoothf(4:mx-3)+smooth_factor(2+ii,2,2+kk)*f(4+ii:mx-3+ii,m1,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) &
+            + smooth_factor(2+ii,2   ,2+kk)*f(l1+ii:l2+ii,m1  ,n+kk)
         enddo
         enddo
       elseif ((nygrid/=1).and.(nzgrid/=1)) then
         do kk=-1,1
         do jj=-1,1
-          smoothf(l1:l2)=smoothf(l1:l2)+smooth_factor(2,2+jj,2+kk)*f(l1:l2,m+jj,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) &
+            + smooth_factor(2   ,2+jj,2+kk)*f(l1   :l2   ,m+jj,n+kk)
         enddo
         enddo
       elseif (nxgrid/=1) then 
         do ii=-1,1
-          smoothf(4:mx-3)=smoothf(4:mx-3)+smooth_factor(2+ii,2,2)*f(4+ii:mx-3+ii,m1,n1)
+          smoothf(l1:l2) = smoothf(l1:l2) &
+            + smooth_factor(2+ii,2   ,2   )*f(l1+ii:l2+ii,m1  ,n1  )
         enddo
       elseif (nygrid/=1) then 
         do jj=-1,1
-          smoothf(l1:l2)=smoothf(l1:l2)+smooth_factor(2,2+jj,2)*f(l1:l2,m+jj,n1)
+          smoothf(l1:l2) = smoothf(l1:l2) &
+            + smooth_factor(2   ,2+jj,2   )*f(l1   :l2   ,m+jj,n1  )
         enddo
       elseif (nzgrid/=1) then 
         do kk=-1,1
-          smoothf(l1:l2)=smoothf(l1:l2)+smooth_factor(2,2,2+kk)*f(l1:l2,m1,n+kk)
+          smoothf(l1:l2) = smoothf(l1:l2) &
+            + smooth_factor(2   ,2   ,2+kk)*f(l1   :l2   ,m1  ,n+kk)
         enddo
       endif
 !
@@ -1196,7 +1203,7 @@ module Shock
 !  Calculate `perpendicular divergence' of u.
 !  nabla_perp.uu = nabla.uu - (1/b2)*bb.(bb.nabla)uu
 !
-!  23-nov-02/tony: coded
+!  16-aug-06/tobi: coded
 !
       use Cdata
 !
