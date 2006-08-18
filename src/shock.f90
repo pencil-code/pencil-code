@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.22 2006-08-17 13:36:23 theine Exp $
+! $Id: shock.f90,v 1.23 2006-08-18 12:02:23 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -35,7 +35,7 @@ module Shock
 
   include 'shock.h'
 
-  logical :: lshock_first=.true.,lshock_max5=.false.
+  logical :: lshock_first=.true.,lshock_max5=.false., lshock_max3_interp=.false.
   logical :: lwith_extreme_div=.false.
   logical :: lmax_smooth=.false.
   logical :: lgauss_integral=.false.
@@ -49,7 +49,8 @@ module Shock
 
   ! run parameters
   namelist /shock_run_pars/ lshock_first, lshock_max5, div_threshold, div_scaling, &
-                            lmax_smooth, lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu
+                            lmax_smooth, lgauss_integral, lcommunicate_uu, lgauss_integral_comm_uu, &
+                            lshock_max3_interp
  
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_shockmax=0
@@ -57,6 +58,10 @@ module Shock
   interface shock_max3
     module procedure shock_max3_farray
     module procedure shock_max3_pencil
+  endinterface
+!
+  interface shock_max3_interp
+    module procedure shock_max3_pencil_interp
   endinterface
 !
   interface shock_smooth
@@ -86,7 +91,7 @@ module Shock
       if (.not. first) call stop_it('register_shock called twice')
       first = .false.
 !
-      ishock = mvar + naux_com + 1
+      ishock = mvar + naux + 1
       naux = naux + 1
       naux_com = naux_com + 1
 !
@@ -102,7 +107,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.22 2006-08-17 13:36:23 theine Exp $")
+           "$Id: shock.f90,v 1.23 2006-08-18 12:02:23 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -491,6 +496,7 @@ module Shock
 !
         elseif (lcommunicate_uu) then
 !  Communicate uu ghost zones
+          call boundconds_x(f,iux,iuz)
           call initiate_isendrcv_bdry(f,iux,iuz)
           f(:,:,:,ishock)=0.
 !
@@ -503,11 +509,19 @@ module Shock
 !
 !  Max3 over internal region
 !          
-          do n=n1+2,n2-2; do m=m1+2,m2-2
-            call shock_max3(f,ishock,penc) 
-            if (linterstellar) call calc_snr_unshock(penc) 
-            tmp(:,m,n)=penc
-          enddo; enddo
+          if (lshock_max3_interp) then
+            do n=n1+2,n2-2; do m=m1+2,m2-2
+              call shock_max3_interp(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+            enddo; enddo
+          else
+            do n=n1+2,n2-2; do m=m1+2,m2-2
+              call shock_max3(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+            enddo; enddo
+          endif
 !
 !  Smooth over internal region
 !
@@ -519,7 +533,6 @@ module Shock
 !  End communication of uu ghost zones and set global boundary conditions.
 !
           call finalize_isendrcv_bdry(f,iux,iuz)
-          call boundconds_x(f,iux,iuz)
           call boundconds_y(f,iux,iuz)
           call boundconds_z(f,iux,iuz)
 !
@@ -544,26 +557,49 @@ module Shock
 !
 !  Max over external region
 !
-          do n=3,mz-2; do jj=2,4
-            m=1+jj
-            call shock_max3(f,ishock,penc) 
-            if (linterstellar) call calc_snr_unshock(penc) 
-            tmp(:,m,n)=penc
-            m=my-jj
-            call shock_max3(f,ishock,penc) 
-            if (linterstellar) call calc_snr_unshock(penc) 
-            tmp(:,m,n)=penc
-          enddo; enddo
-          do kk=2,4; do m=6,my-5
-            n=1+kk
-            call shock_max3(f,ishock,penc) 
-            if (linterstellar) call calc_snr_unshock(penc) 
-            tmp(:,m,n)=penc
-            n=mz-kk
-            call shock_max3(f,ishock,penc) 
-            if (linterstellar) call calc_snr_unshock(penc) 
-            tmp(:,m,n)=penc
-          enddo; enddo
+          if (lshock_max3_interp) then
+            do n=3,mz-2; do jj=2,4
+              m=1+jj
+              call shock_max3_interp(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+              m=my-jj
+              call shock_max3_interp(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+            enddo; enddo
+            do kk=2,4; do m=6,my-5
+              n=1+kk
+              call shock_max3_interp(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+              n=mz-kk
+              call shock_max3_interp(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+            enddo; enddo
+          else
+            do n=3,mz-2; do jj=2,4
+              m=1+jj
+              call shock_max3(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+              m=my-jj
+              call shock_max3(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+            enddo; enddo
+            do kk=2,4; do m=6,my-5
+              n=1+kk
+              call shock_max3(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+              n=mz-kk
+              call shock_max3(f,ishock,penc) 
+              if (linterstellar) call calc_snr_unshock(penc) 
+              tmp(:,m,n)=penc
+            enddo; enddo
+          endif
 !
 !  Smooth over external region
 !
@@ -598,12 +634,12 @@ module Shock
 !            call shock_smooth(tmp,penc) 
 !            f(:,m,n,ishock)=penc
 !          enddo; enddo
-!
-!  Set boundary conditions on shock viscosity in the x-direction. The two other
-!  directions are taken care of laster by pde (early_finalize does not work
-!  properly with shock).
-!
-          call boundconds_x(f,ishock,ishock)
+!!
+!!  Set boundary conditions on shock viscosity in the x-direction. The two other
+!!  directions are taken care of later by pde (early_finalize does not work
+!!  properly with shock).
+!!
+!          call boundconds_x(f,ishock,ishock)
 
 !
 !  Scale with dxmin**2.
@@ -850,61 +886,110 @@ module Shock
 
       maxf=f(:,m,n,j)
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
-        do kk=-1,1,2
-        do jj=-1,1,2
-        do ii=-1,1,2
-          !if (kk/=0.or.jj/=0.or.ii/=0) then
+        do kk=-1,1
+        do jj=-1,1
+        do ii=-1,1
+          if (kk/=0.or.jj/=0.or.ii/=0) then
             maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m+jj,n+kk,j))
-          !endif
+          endif
         enddo
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nygrid/=1)) then
-        do jj=-1,1,2
-        do ii=-1,1,2
-          !if (jj/=0.or.ii/=0) then
+        do jj=-1,1
+        do ii=-1,1
+          if (jj/=0.or.ii/=0) then
             maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m+jj,n1  ,j))
-          !endif
+          endif
         enddo
         enddo
       elseif ((nxgrid/=1).and.(nzgrid/=1)) then
-        do kk=-1,1,2
-        do ii=-1,1,2
-          !if (kk/=0.or.ii/=0) then
+        do kk=-1,1
+        do ii=-1,1
+          if (kk/=0.or.ii/=0) then
             maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m1  ,n+kk,j))
-          !endif
+          endif
         enddo
         enddo
       elseif ((nygrid/=1).and.(nzgrid/=1)) then
-        do kk=-1,1,2
-        do jj=-1,1,2
-          !if (kk/=0.or.jj/=0) then
+        do kk=-1,1
+        do jj=-1,1
+          if (kk/=0.or.jj/=0) then
             maxf(l1  :l2  )=max(maxf(l1  :l2  ),f(l1     :l2     ,m+jj,n+kk,j))
-          !endif
+          endif
         enddo
         enddo
       elseif (nxgrid/=1) then 
-        do ii=-1,1,2
-          !if (ii/=0) then
+        do ii=-1,1
+          if (ii/=0) then
             maxf(l1-1:l2+1)=max(maxf(l1-1:l2+1),f(l1-1+ii:l2+1+ii,m1  ,n1  ,j))
-          !endif
+          endif
         enddo
       elseif (nygrid/=1) then 
-        do jj=-1,1,2
-          !if (jj/=0) then
+        do jj=-1,1
+          if (jj/=0) then
             maxf(l1  :l2  )=max(maxf(l1  :l2  ),f(l1     :l2     ,m+jj,n1  ,j))
-          !endif
+          endif
         enddo
       elseif (nzgrid/=1) then 
-        do kk=-1,1,2
-          !if (kk/=0) then
+        do kk=-1,1
+          if (kk/=0) then
             maxf(l1  :l2  )=max(maxf(l1  :l2  ),f(l1     :l2     ,m1  ,n+kk,j))
-          !endif
+          endif
         enddo
       endif
 !
 !
     endsubroutine shock_max3_pencil
+!***********************************************************************
+!Utility routines - poss need moving elsewhere
+    subroutine shock_max3_pencil_interp(f,j,maxf)
+!
+!  return array maxed with by 2 points either way
+!  skipping 1 data point all round
+!
+!  14-aug-06/tony: adapted from shock_max3
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx) :: tmp_penc
+      real, dimension (mx) :: maxf
+      real, parameter :: t1 = 1.
+      real, parameter :: t2 = 0.70710678
+      real, parameter :: t3 = 0.57735027
+      real, parameter, dimension (-1:1,-1:1,-1:1) :: interp = reshape(&
+            (/ t3, t2, t3, &
+               t2, t1, t2, &
+               t3, t2, t3, &
+               t2, t1, t2, &
+               t1, 0., t1, &
+               t2, t1, t2, &
+               t3, t2, t3, &
+               t2, t1, t2, &
+               t3, t2, t3 /),&
+            (/ 3,3,3 /))
+      integer :: j
+      integer :: ii,jj,kk
+
+      maxf=0.
+      if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
+        tmp_penc=f(:,m,n,j)
+        do kk=-1,1
+        do jj=-1,1
+        do ii=-1,1
+          maxf(3:mx-2)=max(maxf(3:mx-2),interp(ii,jj,kk)*(f(3+ii:mx-2+ii,m+jj,n+kk,j)-tmp_penc(3:mx-2)))
+        enddo
+        enddo
+        enddo
+      else
+        call fatal_error("shock_max3_pencil_interp", &
+         "Tony got lazy and only implemented the 3D case")
+      endif
+      maxf(3:mx-2)=maxf(3:mx-2)+f(3:mx-2,m,n,j)
+!
+!
+    endsubroutine shock_max3_pencil_interp
 !***********************************************************************
     subroutine shock_max5_pencil(f,j,maxf)
 !
@@ -1586,7 +1671,7 @@ module Shock
     subroutine bcshock_per_x(f)
 !
 !  periodic boundary condition
-!  11-nov-02/wolf: coded
+!  11-nov-02/tony: coded
 !
       use Cdata
 !
@@ -1604,7 +1689,7 @@ module Shock
     subroutine bcshock_per_y(f)
 !
 !  periodic boundary condition
-!  11-nov-02/wolf: coded
+!  11-nov-02/tony: coded
 !
       use Cdata
 !
@@ -1622,7 +1707,7 @@ module Shock
     subroutine bcshock_per_z(f)
 !
 !  periodic boundary condition
-!  11-nov-02/wolf: coded
+!  11-nov-02/tony: coded
 !
       use Cdata
 !
