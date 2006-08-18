@@ -1,6 +1,8 @@
-! $Id: sub.f90,v 1.249 2006-08-05 07:29:47 dobler Exp $ 
+! $Id: sub.f90,v 1.250 2006-08-18 12:47:46 mee Exp $ 
 
 module Sub 
+
+  use Messages
 
   implicit none
 
@@ -62,7 +64,7 @@ module Sub
 
   public :: tensor_diffusion_coef
 
-  public :: smooth_kernel
+  public :: smooth_kernel, despike
 
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -2539,13 +2541,61 @@ module Sub
 !
     endsubroutine debugv
 !***********************************************************************
+    subroutine despike(f,j,retval,factor)
+!
+!  Remove large spikes from 
+!  14-aug-06/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: retval
+      real, dimension (mx) :: tmp_penc
+      real, dimension (mx) :: meanf
+      real :: factor
+      real, parameter :: t1 = 1./26.
+      real, parameter :: t2 = 0.70710678/26.
+      real, parameter :: t3 = 0.57735027/26.
+      real, parameter, dimension (-1:1,-1:1,-1:1) :: interp3D = reshape(&
+            (/ t3, t2, t3, &
+               t2, t1, t2, &
+               t3, t2, t3, &
+               t2, t1, t2, &
+               t1, 0., t1, &
+               t2, t1, t2, &
+               t3, t2, t3, &
+               t2, t1, t2, &
+               t3, t2, t3 /),&
+            (/ 3,3,3 /))
+      integer :: ii,jj,kk
+      integer :: j
+
+      meanf=0.
+      if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
+        tmp_penc=f(:,m,n,j)
+        do kk=-1,1
+        do jj=-1,1
+        do ii=-1,1
+          if (ii/=0.or.jj/=0.or.kk/=0) &
+          meanf(3:mx-2)=meanf(3:mx-2)+interp3D(ii,jj,kk)*(f(3+ii:mx-2+ii,m+jj,n+kk,j)-tmp_penc(3:mx-2))
+        enddo
+        enddo
+        enddo
+      else
+        call fatal_error("shock_max3_pencil_interp", &
+         "Tony got lazy and only implemented the 3D case")
+      endif
+!
+!      factor1=1./factor
+      retval=max(meanf(l1:l2)*factor,f(l1:l2,m,n,j))
+!      retval=max(meanf(l1:l2)*factor,retval)
+!
+    endsubroutine despike
+!***********************************************************************
     subroutine smooth_kernel(f,j,smth)
 !
-!  Smooth scalar vector field FF binomially N times, i.e. with the
-!  binomial coefficients (2*N \above k)/2^{2*N}.
-!  20-apr-99/wolf: coded
-!
-!  WARNING: This routine is likely to be broken if you use MPI
+!  Smooth scalar field FF using predefined constant gaussian like kernel
+!  20-jul-06/tony: coded
 !
       use Cdata
 !
