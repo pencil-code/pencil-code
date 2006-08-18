@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.1 2006-08-03 11:08:27 ajohan Exp $
+! $Id: nogravity.f90,v 1.2 2006-08-18 19:54:07 joishi Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.1 2006-08-03 11:08:27 ajohan Exp $")
+           "$Id: nogravity.f90,v 1.2 2006-08-18 19:54:07 joishi Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -222,9 +222,12 @@ module Gravity
       real, optional, dimension (nx) :: xmn,rmn
       real, optional, dimension (nx,3) :: grav
 !
+      intent(in) :: xmn,ymn,zmn,rmn
+      intent(out) :: pot
+
       if (lroot) print*,'potential: note, GRAV=nograv is not OK'
       pot = 0.
-      pot0 = 0.
+      if (present(pot0)) pot0 = 0.
 !
       if (NO_WARN) print*,xmn,ymn,zmn,rmn,grav
 !
