@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.160 2006-08-03 07:07:28 ajohan Exp $
+! $Id: start.f90,v 1.161 2006-08-18 12:45:40 mee Exp $
 !
 !***********************************************************************
       program start
@@ -42,6 +42,7 @@
 
         use Selfgravity,  only: calc_selfpotential
         use Radiation,    only: init_rad, radtransfer
+        use Interstellar, only: init_interstellar
         use Particles_main
 !
         implicit none
@@ -90,7 +91,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.160 2006-08-03 07:07:28 ajohan Exp $")
+             "$Id: start.f90,v 1.161 2006-08-18 12:45:40 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -294,6 +295,7 @@
           call init_nd        (f)
           call init_ecr       (f,xx,yy,zz)
           call init_fcr       (f,xx,yy,zz)
+          call init_interstellar (f)
           call init_special   (f,xx,yy,zz)
         enddo
 !
