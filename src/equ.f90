@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.320 2006-08-08 11:05:09 ajohan Exp $
+! $Id: equ.f90,v 1.321 2006-08-18 09:40:03 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -376,7 +376,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.320 2006-08-08 11:05:09 ajohan Exp $")
+           "$Id: equ.f90,v 1.321 2006-08-18 09:40:03 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -412,14 +412,14 @@ module Equ
       if (linterstellar) call interstellar_before_boundary(f)
       if (lspecial)      call special_before_boundary(f)
 !
-! Prepare x-ghost zones required before f-array communication AND shock calculation
-!
-      call boundconds_x(f)
-!
 !  Initiate shock profile calculation and use asynchronous to handle
 !  communication along processor/periodic boundaries.
 !
       if (lshock) call calc_shock_profile(f)
+!
+! Prepare x-ghost zones required before f-array communication AND shock calculation
+!
+      call boundconds_x(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
