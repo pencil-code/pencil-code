@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.310 2006-08-16 20:09:18 theine Exp $
+! $Id: magnetic.f90,v 1.311 2006-08-18 14:24:45 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.310 2006-08-16 20:09:18 theine Exp $")
+           "$Id: magnetic.f90,v 1.311 2006-08-18 14:24:45 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2978,6 +2978,6 @@ module Magnetic
 
       do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
 
-    end subroutine bb_unitvec_shock
+    endsubroutine bb_unitvec_shock
 !***********************************************************************
 endmodule Magnetic

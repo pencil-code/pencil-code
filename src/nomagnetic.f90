@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.69 2006-08-03 07:07:28 ajohan Exp $
+! $Id: nomagnetic.f90,v 1.70 2006-08-18 14:24:45 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.69 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: nomagnetic.f90,v 1.70 2006-08-18 14:24:45 theine Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -314,6 +314,22 @@ module Magnetic
 !
       if (ip==1) print*,topbot,f  !(to keep compiler quiet)
     endsubroutine bc_aa_pot
+!***********************************************************************
+    subroutine bb_unitvec_shock(f,bb_hat)
+!
+!  Dummy routine
+!
+!  18-aug-2006/tobi: coded
+!
+      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,3), intent (out) :: bb_hat
+
+      if (NO_WARN) then
+        print *,f
+        bb_hat = 0.
+      endif
+
+    endsubroutine bb_unitvec_shock
 !***********************************************************************
 
 endmodule Magnetic

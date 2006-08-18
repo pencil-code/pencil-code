@@ -14,6 +14,7 @@
   public :: calc_mfield
   public :: bc_aa_pot, bc_frozen_in_bb_z
   public :: pert_aa, rescaling
+  public :: bb_unitvec_shock
 
 !ajwm SHOULDN'T BE SHARED
 !

@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.23 2006-08-18 12:02:23 mee Exp $
+! $Id: shock.f90,v 1.24 2006-08-18 14:24:45 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -38,6 +38,7 @@ module Shock
   logical :: lshock_first=.true.,lshock_max5=.false., lshock_max3_interp=.false.
   logical :: lwith_extreme_div=.false.
   logical :: lmax_smooth=.false.
+  logical :: ldivu_perp=.false.
   logical :: lgauss_integral=.false.
   logical :: lgauss_integral_comm_uu=.false.
   logical :: lcommunicate_uu=.true.
@@ -74,6 +75,10 @@ module Shock
     module procedure shock_divu_pencil
   endinterface
 !
+  interface shock_divu_perp
+    module procedure shock_divu_perp_pencil
+  endinterface
+!
   contains
 
 !***********************************************************************
@@ -107,7 +112,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.23 2006-08-18 12:02:23 mee Exp $")
+           "$Id: shock.f90,v 1.24 2006-08-18 14:24:45 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -408,11 +413,13 @@ module Shock
       use Mpicomm
       use Sub
       use Interstellar, only: calc_snr_unshock
+      use Magnetic, only: bb_unitvec_shock
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp 
-      real, dimension(mx) :: penc
+      real, dimension (mx) :: penc,penc_perp
+      real, dimension (mx,3) :: bb_hat
       integer :: jj,kk
 !
       if ((.not.lshock_first).or.lfirst) then
@@ -505,6 +512,11 @@ module Shock
           do n=n1+1,n2-1; do m=m1+1,m2-1
             call shock_divu(f,penc) 
             f(:,m,n,ishock)=max(0.,-penc)
+            if (ldivu_perp) then
+              call bb_unitvec_shock(f,bb_hat)
+              call shock_divu_perp(f,bb_hat,penc,penc_perp)
+              f(:,m,n,ishock_perp)=max(0.,-penc_perp)
+            endif
           enddo; enddo
 !
 !  Max3 over internal region
@@ -514,12 +526,22 @@ module Shock
               call shock_max3_interp(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3_interp(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
             enddo; enddo
           else
             do n=n1+2,n2-2; do m=m1+2,m2-2
               call shock_max3(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
             enddo; enddo
           endif
 !
@@ -528,6 +550,11 @@ module Shock
           do n=n1+3,n2-3; do m=m1+3,m2-3
             call shock_smooth(tmp,penc) 
             f(:,m,n,ishock)=penc
+            if (ldivu_perp) then
+              !tobi: this needs to be commented out
+              !call shock_smooth(tmp_perp,penc_perp)
+              f(:,m,n,ishock_perp)=penc_perp
+            endif
           enddo; enddo
 !
 !  End communication of uu ghost zones and set global boundary conditions.
@@ -540,19 +567,39 @@ module Shock
 !
           do n=2,mz-1; do jj=1,3
             m=1+jj
-            call shock_divu(f,penc) 
+            call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
+            if (ldivu_perp) then
+              call bb_unitvec_shock(f,bb_hat)
+              call shock_divu_perp(f,bb_hat,penc,penc_perp)
+              f(:,m,n,ishock_perp)=max(0.,-penc_perp)
+            endif
             m=my-jj
-            call shock_divu(f,penc) 
+            call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
+            if (ldivu_perp) then
+              call bb_unitvec_shock(f,bb_hat)
+              call shock_divu_perp(f,bb_hat,penc,penc_perp)
+              f(:,m,n,ishock_perp)=max(0.,-penc_perp)
+            endif
           enddo; enddo
           do kk=1,3; do m=5,my-4
             n=1+kk
-            call shock_divu(f,penc) 
+            call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
+            if (ldivu_perp) then
+              call bb_unitvec_shock(f,bb_hat)
+              call shock_divu_perp(f,bb_hat,penc,penc_perp)
+              f(:,m,n,ishock_perp)=max(0.,-penc_perp)
+            endif
             n=mz-kk
-            call shock_divu(f,penc) 
+            call shock_divu(f,penc)
             f(:,m,n,ishock)=max(-penc,0.)
+            if (ldivu_perp) then
+              call bb_unitvec_shock(f,bb_hat)
+              call shock_divu_perp(f,bb_hat,penc,penc_perp)
+              f(:,m,n,ishock_perp)=max(0.,-penc_perp)
+            endif
           enddo; enddo
 !
 !  Max over external region
@@ -563,6 +610,11 @@ module Shock
               call shock_max3_interp(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3_interp(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
               m=my-jj
               call shock_max3_interp(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
@@ -573,10 +625,20 @@ module Shock
               call shock_max3_interp(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3_interp(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
               n=mz-kk
               call shock_max3_interp(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3_interp(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
             enddo; enddo
           else
             do n=3,mz-2; do jj=2,4
@@ -584,20 +646,40 @@ module Shock
               call shock_max3(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
               m=my-jj
               call shock_max3(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
             enddo; enddo
             do kk=2,4; do m=6,my-5
               n=1+kk
               call shock_max3(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
               n=mz-kk
               call shock_max3(f,ishock,penc) 
               if (linterstellar) call calc_snr_unshock(penc) 
               tmp(:,m,n)=penc
+              if (ldivu_perp) then
+                call shock_max3(f,ishock_perp,penc_perp)
+                !tobi: this needs to be commented out
+                !tmp_perp(:,m,n)=penc_perp
+              endif
             enddo; enddo
           endif
 !
@@ -607,17 +689,37 @@ module Shock
             m=1+jj
             call shock_smooth(tmp,penc) 
             f(:,m,n,ishock)=penc
+            if (ldivu_perp) then
+              !tobi: this needs to be commented out
+              !call shock_smooth(tmp_perp,penc_perp)
+              f(:,m,n,ishock_perp)=penc_perp
+            endif
             m=my-jj
             call shock_smooth(tmp,penc) 
             f(:,m,n,ishock)=penc
+            if (ldivu_perp) then
+              !tobi: this needs to be commented out
+              !call shock_smooth(tmp_perp,penc_perp)
+              f(:,m,n,ishock_perp)=penc_perp
+            endif
           enddo; enddo
           do kk=3,5; do m=7,my-6
             n=1+kk
             call shock_smooth(tmp,penc) 
             f(:,m,n,ishock)=penc
+            if (ldivu_perp) then
+              !tobi: this needs to be commented out
+              !call shock_smooth(tmp_perp,penc_perp)
+              f(:,m,n,ishock_perp)=penc_perp
+            endif
             n=mz-kk
             call shock_smooth(tmp,penc) 
             f(:,m,n,ishock)=penc
+            if (ldivu_perp) then
+              !tobi: this needs to be commented out
+              !call shock_smooth(tmp_perp,penc_perp)
+              f(:,m,n,ishock_perp)=penc_perp
+            endif
           enddo; enddo
 !
 !  Non-MPI version:
@@ -1300,7 +1402,7 @@ module Shock
     subroutine shock_divu_perp_pencil(f,bb_hat,divu,divu_perp)
 !
 !  Calculate `perpendicular divergence' of u.
-!  nabla_perp.uu = nabla.uu - (1/b2)*bb.(bb.nabla)uu
+!  nabla_perp.uu = nabla.uu - (1/b2)*bb.(bb.nabla)*uu
 !
 !  16-aug-06/tobi: coded
 !
@@ -1317,35 +1419,35 @@ module Shock
 
       if (nxgrid/=1) then
          fac=bb_hat(:,1)/(2*dx)
-         divu_perp(2:mx-1) = divu_perp(2:mx-1)                               &
-             - fac(2:mx-1)*(bb_hat(2:mx-1,1)*( f(3:mx  ,m     ,n     ,iux)   &
-                                             - f(1:mx-2,m     ,n     ,iux) ) &
-                          + bb_hat(2:mx-1,2)*( f(3:mx  ,m     ,n     ,iuy)   &
-                                             - f(1:mx-2,m     ,n     ,iuy) ) &
-                          + bb_hat(2:mx-1,3)*( f(3:mx  ,m     ,n     ,iuz)   &
-                                             - f(1:mx-2,m     ,n     ,iuz) ) )
+         divu_perp(l1-2:l2+2) = divu_perp(l1-2:l2+2)                          &
+           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-1:l2+3,m  ,n  ,iux)   &
+                                                 - f(l1-3:l2+1,m  ,n  ,iux) ) &
+                           + bb_hat(l1-2:l2+2,2)*( f(l1-1:l2+3,m  ,n  ,iuy)   &
+                                                 - f(l1-3:l2+1,m  ,n  ,iuy) ) &
+                           + bb_hat(l1-2:l2+2,3)*( f(l1-1:l2+3,m  ,n  ,iuz)   &
+                                                 - f(l1-3:l2+1,m  ,n  ,iuz) ) )
       endif
 
       if (nygrid/=1) then
          fac=bb_hat(:,2)/(2*dy)
-         divu_perp(2:mx-1) = divu_perp(2:mx-1)                               &
-             - fac(2:mx-1)*(bb_hat(2:mx-1,1)*( f(2:mx-1,m+1   ,n     ,iux)   &
-                                             - f(2:mx-1,m-1   ,n     ,iux) ) &
-                          + bb_hat(2:mx-1,2)*( f(2:mx-1,m+1   ,n     ,iuy)   &
-                                             - f(2:mx-1,m-1   ,n     ,iuy) ) &
-                          + bb_hat(2:mx-1,3)*( f(2:mx-1,m+1   ,n     ,iuz)   &
-                                             - f(2:mx-1,m-1   ,n     ,iuz) ) )
+         divu_perp(l1-2:l2+2) = divu_perp(l1-2:l2+2)                          &
+           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-2:l2+2,m+1,n  ,iux)   &
+                                                 - f(l1-2:l2+2,m-1,n  ,iux) ) &
+                           + bb_hat(l1-2:l2+2,2)*( f(l1-2:l2+2,m+1,n  ,iuy)   &
+                                                 - f(l1-2:l2+2,m-1,n  ,iuy) ) &
+                           + bb_hat(l1-2:l2+2,3)*( f(l1-2:l2+2,m+1,n  ,iuz)   &
+                                                 - f(l1-2:l2+2,m-1,n  ,iuz) ) )
       endif
 
       if (nzgrid/=1) then
          fac=bb_hat(:,3)/(2*dz)
-         divu_perp(2:mx-1) = divu_perp(2:mx-1)                               &
-             - fac(2:mx-1)*(bb_hat(2:mx-1,1)*( f(2:mx-1,m     ,n+1   ,iux)   &
-                                             - f(2:mx-1,m     ,n-1   ,iux) ) &
-                          + bb_hat(2:mx-1,2)*( f(2:mx-1,m     ,n+1   ,iuy)   &
-                                             - f(2:mx-1,m     ,n-1   ,iuy) ) &
-                          + bb_hat(2:mx-1,3)*( f(2:mx-1,m     ,n+1   ,iuz)   &
-                                             - f(2:mx-1,m     ,n-1   ,iuz) ) )
+         divu_perp(l1-2:l2+2) = divu_perp(l1-2:l2+2)                          &
+           - fac(l1-2:l2+2)*(bb_hat(l1-2:l2+2,1)*( f(l1-2:l2+2,m  ,n+1,iux)   &
+                                                 - f(l1-2:l2+2,m  ,n-1,iux) ) &
+                           + bb_hat(l1-2:l2+2,2)*( f(l1-2:l2+2,m  ,n+1,iuy)   &
+                                                 - f(l1-2:l2+2,m  ,n-1,iuy) ) &
+                           + bb_hat(l1-2:l2+2,3)*( f(l1-2:l2+2,m  ,n+1,iuz)   &
+                                                 - f(l1-2:l2+2,m  ,n-1,iuz) ) )
       endif
 
     endsubroutine shock_divu_perp_pencil

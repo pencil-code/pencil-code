@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.36 2006-07-28 20:41:34 ajohan Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.37 2006-08-18 14:24:45 theine Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -107,7 +107,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.36 2006-07-28 20:41:34 ajohan Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.37 2006-08-18 14:24:45 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1214,6 +1214,22 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       enddo
 !
     endsubroutine potentdiv
+!***********************************************************************
+    subroutine bb_unitvec_shock(f,bb_hat)
+!
+!  Dummy routine
+!
+!  18-aug-2006/tobi: coded
+!
+      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,3), intent (out) :: bb_hat
+
+      if (NO_WARN) then
+        print *,f
+        bb_hat = 0.
+      endif
+
+    endsubroutine bb_unitvec_shock
 !***********************************************************************
 
 endmodule Magnetic
