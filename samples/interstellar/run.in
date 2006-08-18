@@ -3,7 +3,7 @@
 !  run parameters for interstellar
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.16 2006-07-06 13:48:35 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.17 2006-08-18 13:01:47 mee Exp $',
   nt=30, it1=2, isave=50, itorder=3
   cdt=0.4, cdtv=0.3, dtmin=1e-9
   dsnap=2., dvid=2.
@@ -24,19 +24,7 @@
   chi_shock=1.
 /
 &interstellar_run_pars
-  heating_select='RB'
-  frac_eth=1.0
-  frac_ecr=0.0
-  lSN_ecr=F
-  lSNI=T, lSNII=F
-  lSN_mass=T
-  mass_SN=0.
-  ltestSN=T                !Position SN at centre of box only
-  mass_movement='Galaxycode'
-  width_SN=0.021
-  center_SN_y=0.0546875
-  center_SN_z=0.0234375
-  lsmooth_coolingfunc=T
+  lcooltime_smooth=T
 /
 &shear_run_pars
 /
