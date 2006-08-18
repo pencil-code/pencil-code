@@ -3,6 +3,7 @@
 
   public :: register_interstellar, initialize_interstellar
   public :: rprint_interstellar
+  public :: init_interstellar
   public :: get_slices_interstellar
   public :: read_interstellar_init_pars, write_interstellar_init_pars
   public :: read_interstellar_run_pars,  write_interstellar_run_pars

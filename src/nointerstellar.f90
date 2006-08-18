@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.28 2006-08-02 15:37:20 mee Exp $
+! $Id: nointerstellar.f90,v 1.29 2006-08-18 12:44:14 mee Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.28 2006-08-02 15:37:20 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.29 2006-08-18 12:44:14 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -156,6 +156,20 @@ module Interstellar
                                                                                                    
       if (NO_WARN) print*,unit
     endsubroutine write_interstellar_run_pars
+!***********************************************************************
+    subroutine init_interstellar(f)
+!
+!  initialise magnetic field; called from start.f90
+!  30-jul-2006/tony: dummy routine
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if (NO_WARN) print*,f !(keep compiler quiet)
+!
+    endsubroutine init_interstellar
 !***********************************************************************
     subroutine pencil_criteria_interstellar()
 ! 
