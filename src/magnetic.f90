@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.311 2006-08-18 14:24:45 theine Exp $
+! $Id: magnetic.f90,v 1.312 2006-08-18 22:12:51 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.311 2006-08-18 14:24:45 theine Exp $")
+           "$Id: magnetic.f90,v 1.312 2006-08-18 22:12:51 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2924,33 +2924,27 @@ module Magnetic
       bb=0.
 
       if (nxgrid/=1) then
-        fac = 1./(2.*dx)
-        bb(2:mx-1,3) = bb(2:mx-1,2)         &
-          + fac * ( f(3:mx  ,m  ,n  ,iay)   &
-                  - f(1:mx-2,m  ,n  ,iay) )
-        bb(2:mx-1,2) = bb(2:mx-1,2)         &
-          - fac * ( f(3:mx  ,m  ,n  ,iaz)   &
-                  - f(1:mx-2,m  ,n  ,iaz) )
+        fac = 1/(2*dx)
+        bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) + fac*( f(l1-1:l2+3,m  ,n  ,iay)   &
+                                                - f(l1-3:l2+1,m  ,n  ,iay) )
+        bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) - fac*( f(l1-1:l2+3,m  ,n  ,iaz)   &
+                                                - f(l1-3:l2+1,m  ,n  ,iaz) )
       endif
 
       if (nygrid/=1) then
-        fac = 1./(2.*dy)
-        bb(:,1) = bb(:,1)                   &
-          + fac * ( f(:,     m+1,n  ,iaz)   &
-                  - f(:,     m-1,n  ,iaz) )
-        bb(:,3) = bb(:,3)                   &
-          - fac * ( f(:,     m+1,n  ,iax)   &
-                  - f(:,     m-1,n  ,iax) )
+        fac = 1/(2*dy)
+        bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) + fac*( f(l1-2:l2+2,m+1,n  ,iaz)   &
+                                                - f(l1-2:l2+2,m-1,n  ,iaz) )
+        bb(l1-2:l2+2,3) = bb(l1-2:l2+2,3) - fac*( f(l1-2:l2+2,m+1,n  ,iax)   &
+                                                - f(l1-2:l2+2,m-1,n  ,iax) )
       endif
 
       if (nzgrid/=1) then
-        fac = 1./(2.*dz)
-        bb(:,2) = bb(:,2)                   &
-          + fac * ( f(:,     m  ,n+1,iax)   &
-                  - f(:,     m  ,n-1,iax) )
-        bb(:,1) = bb(:,1)                   &
-          - fac * ( f(:,     m  ,n+1,iay)   &
-                  - f(:,     m  ,n-1,iay) )
+        fac = 1/(2*dz)
+        bb(l1-2:l2+2,2) = bb(l1-2:l2+2,2) + fac*( f(l1-2:l2+2,m  ,n+1,iax)   &
+                                                - f(l1-2:l2+2,m  ,n-1,iax) )
+        bb(l1-2:l2+2,1) = bb(l1-2:l2+2,1) - fac*( f(l1-2:l2+2,m  ,n+1,iay)   &
+                                                - f(l1-2:l2+2,m  ,n-1,iay) )
       endif
 
 !
@@ -2964,7 +2958,7 @@ module Magnetic
       aerr2 = tol**2 * max(1.,bb(:,1)**2 + bb(:,2)**2 + bb(:,3)**2)
 
       do j=1,3
-        where (bb(:,j) < aerr2)
+        where (bb(:,j)**2 < aerr2)
           bb_hat(:,j) = 0.
         elsewhere
           bb_hat(:,j) = bb(:,j)
