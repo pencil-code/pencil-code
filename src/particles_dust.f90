@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.131 2006-08-17 08:45:13 ajohan Exp $
+! $Id: particles_dust.f90,v 1.132 2006-08-19 11:17:04 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -40,6 +40,7 @@ module Particles
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
+  real :: coeff_restitution=0.5, coll_geom_fac=0.40528473  ! (2/pi)^2
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false., lcollisional_cooling=.false.
@@ -62,7 +63,8 @@ module Particles
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, lcollisional_cooling
+      tstart_dragforce_par, tstart_grav_par, lcollisional_cooling, &
+      coeff_restitution
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -71,7 +73,8 @@ module Particles
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
-      lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling
+      lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling, &
+      coeff_restitution
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -104,7 +107,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.131 2006-08-17 08:45:13 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.132 2006-08-19 11:17:04 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1404,7 +1407,7 @@ k_loop:   do while (.not. (k>npar_loc))
           vprms=sqrt( vpvar(:,1) + vpvar(:,2) + vpvar(:,3) )
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
-          tau_coll1=3*p%epsp*vprms*tausp1
+          tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vprms*tausp1
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
