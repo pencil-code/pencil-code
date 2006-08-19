@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.312 2006-08-18 22:12:51 theine Exp $
+! $Id: magnetic.f90,v 1.313 2006-08-19 17:14:27 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -203,7 +203,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.312 2006-08-18 22:12:51 theine Exp $")
+           "$Id: magnetic.f90,v 1.313 2006-08-19 17:14:27 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2913,7 +2913,7 @@ module Magnetic
       !Tobi: Not sure about this value
       real, parameter :: tol=1e-11
 
-      real, dimension (mx,3) :: bb
+      real, dimension (mx,3) :: bb,bb2
       real, dimension (mx) :: bb_len,aerr2
       real :: fac
       integer :: j
@@ -2955,10 +2955,12 @@ module Magnetic
 !
 !  Truncate small components to zero.
 !
-      aerr2 = tol**2 * max(1.,bb(:,1)**2 + bb(:,2)**2 + bb(:,3)**2)
+      bb2 = bb**2
+
+      aerr2 = tol**2 * max(sum(bb2,2),1.)
 
       do j=1,3
-        where (bb(:,j)**2 < aerr2)
+        where (bb2(:,j) < aerr2)
           bb_hat(:,j) = 0.
         elsewhere
           bb_hat(:,j) = bb(:,j)
@@ -2968,7 +2970,7 @@ module Magnetic
 !
 !  Get unit vector.
 !
-      bb_len = sqrt(bb_hat(:,1)**2 + bb_hat(:,2)**2 + bb_hat(:,3)**2)
+      bb_len = sqrt(sum(bb_hat**2,2))
 
       do j=1,3; bb_hat(:,j) = bb_hat(:,j)/(bb_len+tini); enddo
 
