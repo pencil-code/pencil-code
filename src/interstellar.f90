@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.130 2006-08-18 12:44:14 mee Exp $
+! $Id: interstellar.f90,v 1.131 2006-08-19 11:42:46 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -377,7 +377,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.130 2006-08-18 12:44:14 mee Exp $")
+           "$Id: interstellar.f90,v 1.131 2006-08-19 11:42:46 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -595,10 +595,10 @@ module Interstellar
       if (id==id_record_T_NEXT_SN) then
         read (lun) t_next_SNI
         done=.true.
-      elseif (id==id_record_INTERSTELLAR_SN_TOGGLE) then
+      elseif (id==id_record_ISM_SN_TOGGLE) then
         read (lun) lSNI, lSNII
         done=.true.
-      elseif (id==id_record_INTERSTELLAR_SNRS) then
+      elseif (id==id_record_ISM_SNRS) then
         !  Forget any existing SNRs.
         SNRs(:)%state=SNstate_invalid
         read (lun) nSNR
@@ -624,9 +624,9 @@ module Interstellar
         print*,'output_persistent_interstellar: ', t_next_SNI
       write (lun) id_record_T_NEXT_SN
       write (lun) t_next_SNI
-      write (lun) id_record_INTERSTELLAR_SN_TOGGLE
+      write (lun) id_record_ISM_SN_TOGGLE
       write (lun) lSNI,lSNII
-      write (lun) id_record_INTERSTELLAR_SNRS
+      write (lun) id_record_ISM_SNRS
       write (lun) nSNR
       do i=1,nSNR
         iSNR=SNR_index(i)
