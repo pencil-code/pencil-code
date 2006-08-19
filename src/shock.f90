@@ -1,4 +1,4 @@
-! $Id: shock.f90,v 1.24 2006-08-18 14:24:45 theine Exp $
+! $Id: shock.f90,v 1.25 2006-08-19 17:11:34 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -96,7 +96,7 @@ module Shock
       if (.not. first) call stop_it('register_shock called twice')
       first = .false.
 !
-      ishock = mvar + naux + 1
+      ishock = mvar + naux_com + 1
       naux = naux + 1
       naux_com = naux_com + 1
 !
@@ -112,7 +112,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock.f90,v 1.24 2006-08-18 14:24:45 theine Exp $")
+           "$Id: shock.f90,v 1.25 2006-08-19 17:11:34 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
