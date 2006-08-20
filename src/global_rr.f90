@@ -1,4 +1,4 @@
-! $Id: global_rr.f90,v 1.8 2006-07-28 13:19:38 wlyra Exp $
+! $Id: global_rr.f90,v 1.9 2006-08-20 22:35:50 wlyra Exp $
 
 module Global
 
@@ -17,7 +17,6 @@ module Global
   include 'global.h'
 
   interface set_global
-    module procedure set_global_mvar 
     module procedure set_global_vect
     module procedure set_global_scal
   endinterface
@@ -54,23 +53,6 @@ module Global
 !
     endsubroutine register_global
 !***********************************************************************
-    subroutine set_global_mvar(var,m,n,j,label,length)
-!
-!  set (m-n)-pencil of global vector variable identified by LABEL
-!  [dummy routine]
-!
-      use Mpicomm, only: stop_it
-!
-      integer :: length
-      real, dimension(length) :: var
-      integer :: m,n,j
-      character (len=*) :: label
-!
-      call stop_it("GLOBAL_RR: set_global_mvar not implemented")
-      if (ip == 0) print*, var(1),m,n,j,label ! keep compiler quiet
-!
-    endsubroutine set_global_mvar
-!*****************************************************************
     subroutine set_global_vect(var,m,n,label,length)
 !
 !  set (m-n)-pencil of global vector variable identified by LABEL
