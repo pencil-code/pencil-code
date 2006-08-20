@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.61 2006-08-03 07:07:27 ajohan Exp $
+! $Id: eos_idealgas.f90,v 1.62 2006-08-20 22:15:00 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.61 2006-08-03 07:07:27 ajohan Exp $')
+           '$Id: eos_idealgas.f90,v 1.62 2006-08-20 22:15:00 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -648,7 +648,7 @@ module EquationOfState
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho
 
-      rho = EE * gamma / TT
+      rho = EE * cv1 / TT
       if (NO_WARN) print*,yH
 
     end subroutine getdensity
