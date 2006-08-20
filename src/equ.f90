@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.321 2006-08-18 09:40:03 mee Exp $
+! $Id: equ.f90,v 1.322 2006-08-20 22:19:56 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -361,7 +361,6 @@ module Equ
       use Interstellar, only: interstellar_before_boundary
       use Particles_main
       use Planet
-      use BorderProfiles
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -376,7 +375,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.321 2006-08-18 09:40:03 mee Exp $")
+           "$Id: equ.f90,v 1.322 2006-08-20 22:19:56 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -643,14 +642,6 @@ module Equ
         endif
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
-!
-! Apply border profile before freezing
-!
-        if (lborder_profiles) then
-           do iv=1,nvar
-              call border_driving(f,df,iv)
-          enddo
-        endif
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)

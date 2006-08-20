@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.269 2006-08-10 13:11:38 dintrans Exp $
+! $Id: density.f90,v 1.270 2006-08-20 22:19:56 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -52,7 +52,7 @@ module Density
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
   character (len=labellen), dimension(ndiff_max) :: idiff=''
-  character (len=labellen) :: borderlnrho='initial-condition'
+  character (len=labellen) :: borderlnrho='nothing'
   character (len=4) :: iinit_str
   complex :: coeflnrho=0.
 
@@ -64,7 +64,7 @@ module Density
        mpoly,strati_type,beta_glnrho_global,         &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,phase_lnrho,coeflnrho, &
        co1_ss,co2_ss,Sigma1,idiff,ldensity_nolog,    &
-       wdamp,plaw,lcontinuity_gas,borderlnrho
+       wdamp,plaw,lcontinuity_gas
      
 
   namelist /density_run_pars/ &
@@ -72,7 +72,7 @@ module Density
        cs2bot,cs2top,lupw_lnrho,idiff,lmass_source,     &
        lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext, &
        wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,         &
-       lnrho_const,plaw,lcontinuity_gas
+       lnrho_const,plaw,lcontinuity_gas,borderlnrho
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: idiag_rhom=0,idiag_rho2m=0,idiag_lnrho2m=0
@@ -112,7 +112,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.269 2006-08-10 13:11:38 dintrans Exp $")
+           "$Id: density.f90,v 1.270 2006-08-20 22:19:56 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -785,11 +785,6 @@ module Density
 
       endselect
 !
-!  Initialize border profile
-!
-      if (lborder_profiles) &
-           call set_border_lnrho(f)
-!
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
@@ -802,43 +797,6 @@ module Density
       endif
 !
     endsubroutine init_lnrho
-!***********************************************************************
-    subroutine set_border_lnrho(f)
-!
-      use Global, only: set_global
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) :: f_target
-      integer :: ncount,mcount
-!
-      do ncount=n1,n2
-         do mcount=m1,m2   
-!
-            select case(borderlnrho)      
-            case('zero','0')
-               f_target=0.
-            case('constant')
-               f_target=lnrho_const
-            case('initial-condition')
-               f_target=f(l1:l2,mcount,ncount,ilnrho)
-            case('nothing')   
-               if (lroot.and.ip<=5) &
-                    print*,"set_border_lnrho: borderlnrho='nothing'"
-            case default
-               write(unit=errormsg,fmt=*) &
-                    'set_border_lnrho: No such value for borderlnrho: ', &
-                    trim(borderlnrho)
-               call fatal_error('set_border_lnrho',errormsg)
-            endselect
-!
-            if (ldensity_nolog) f_target=exp(f_target)
-!
-            call set_global(f_target,mcount,ncount,ilnrho,'fborder',nx)
-!      
-         enddo
-      enddo
-!
-    endsubroutine set_border_lnrho
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,lnrhoint)
@@ -1335,6 +1293,10 @@ module Density
 !ajwm  Cannot alter special interface!!
       if (lspecial) call special_calc_density(f,df,p)
 !
+!  Apply border profile  
+!
+      if (lborder_profiles) call set_border_density(f,df)
+!
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
@@ -1361,6 +1323,43 @@ module Density
       endif
 !
     endsubroutine dlnrho_dt
+!***********************************************************************
+    subroutine set_border_density(f,df)
+!
+!  Calculates the driving term for the border profile
+!  of the lnrho variable.
+!
+!  28-jul-06/wlad: coded
+!
+      use BorderProfiles, only: border_driving
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx) :: f_target
+!
+      select case(borderlnrho)
+!
+      case('zero','0')
+         f_target=0.
+      case('constant')
+         f_target=lnrho_const
+!      case('initial-condition')
+!         f_target=f(l1:l2,m,n,ilnrho)
+      case('nothing')
+         if (lroot.and.ip<=5) &
+              print*,"set_border_lnrho: borderlnrho='nothing'"
+      case default
+         write(unit=errormsg,fmt=*) &
+              'set_border_lnrho: No such value for borderlnrho: ', &
+              trim(borderlnrho)
+         call fatal_error('set_border_lnrho',errormsg)
+      endselect
+!
+      if (ldensity_nolog) f_target=exp(f_target)
+!
+      call border_driving(f,df,f_target,ilnrho)
+!
+    endsubroutine set_border_density
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
 !

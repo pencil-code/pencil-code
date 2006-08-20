@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.280 2006-08-11 12:00:22 ajohan Exp $
+! $Id: hydro.f90,v 1.281 2006-08-20 22:19:56 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -49,7 +49,7 @@ module Hydro
   real :: phase_ux=0.0, phase_uy=0.0, phase_uz=0.0
   real, dimension (ninit) :: ampluu=0.0
   character (len=labellen), dimension(ninit) :: inituu='nothing'
-  character (len=labellen) :: borderuu='initial-condition'
+  character (len=labellen) :: borderuu='nothing'
   real, dimension(3) :: uu_const=(/0.,0.,0./)
   complex, dimension(3) :: coefuu=(/0.,0.,0./)
   real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
@@ -61,7 +61,7 @@ module Hydro
 
   namelist /hydro_init_pars/ &
        ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
-       inituu, widthuu, radiusuu, urand, borderuu, &
+       inituu, widthuu, radiusuu, urand, &
        uu_left, uu_right, uu_lower, uu_upper,  kx_uu, ky_uu, kz_uu, coefuu, &
        uy_left, uy_right,uu_const, Omega,  initpower, cutoff, &
        kep_cutoff_pos_ext, kep_cutoff_width_ext, &
@@ -86,7 +86,7 @@ module Hydro
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot, &
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-       lfreeze_uint, &
+       borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity
 
 
@@ -167,7 +167,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.280 2006-08-11 12:00:22 ajohan Exp $")
+           "$Id: hydro.f90,v 1.281 2006-08-20 22:19:56 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -587,53 +587,7 @@ module Hydro
 !
 !     if (NO_WARN) print*,yy,zz !(keep compiler from complaining)
 !
-!  Initialize border profile 
-!
-      if (lborder_profiles) &
-           call set_border_hydro(f)
-!
     endsubroutine init_uu
-!***********************************************************************
-    subroutine set_border_hydro(f)
-!
-      use Cdata
-      use Global, only: set_global
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx,3) :: f_target
-      integer :: ncount,mcount,ju,j
-!
-      do ncount=n1,n2
-         do mcount=m1,m2
-!
-            select case(borderuu)
-            case('zero','0')
-               f_target=0.
-            case('constant')
-               do j=1,3
-                  f_target(:,j) = uu_const(j)
-               enddo
-            case('initial-condition')
-               f_target=f(l1:l2,mcount,ncount,iux:iuz)
-            case('nothing')
-               if (lroot.and.ip<=5) &
-                    print*,"set_border_hydro: borderuu='nothing'"
-            case default
-               write(unit=errormsg,fmt=*) &
-                    'set_border_hydro: No such value for borderuu: ', &
-                    trim(borderuu)
-               call fatal_error('set_border_hydro',errormsg)
-            endselect
-!
-            do j=1,3
-               ju=j+iuu-1
-               call set_global(f_target(:,j),mcount,ncount,ju,'fborder',nx)
-            enddo
-!
-         enddo
-      enddo
-!
-    endsubroutine set_border_hydro
 !***********************************************************************
     subroutine pencil_criteria_hydro()
 !
@@ -944,6 +898,10 @@ module Hydro
 !
       if (lspecial) call special_calc_hydro(f,df,p)
 !
+!  Apply border profiles
+!
+      if (lborder_profiles) call set_border_hydro(f,df)
+!
 !  write slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
 !  Note: ix is the index with respect to array with ghost zones.
@@ -1107,7 +1065,61 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
+    subroutine set_border_hydro(f,df)
+!
+!  Calculates the driving term for the border profile
+!  of the uu variable.
+!
+!  28-jul-06/wlad: coded
+!
+      use Cdata
+      use Gravity, only: g0,r0_pot
+      use BorderProfiles, only: border_driving
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx,3) :: f_target
+      real, dimension(nx) :: OO
+      integer :: ju,j
+!
+      select case(borderuu)
+      case('zero','0')
+         f_target=0.
+      case('constant')
+         do j=1,3
+            f_target(:,j) = uu_const(j)
+         enddo
+      case('globaldisk')
+         OO=sqrt(g0*(rcyl_mn**2+r0_pot**2)**(-1.5))
+         f_target(:,1) = -y(  m  )*OO
+         f_target(:,2) =  x(l1:l2)*OO
+         f_target(:,3) =  0.
+      !case('initial-condition')
+      !   f_target=f(l1:l2,mcount,ncount,iux:iuz)
+      case('nothing')
+         if (lroot.and.ip<=5) &
+              print*,"set_border_hydro: borderuu='nothing'"
+      case default
+         write(unit=errormsg,fmt=*) &
+              'set_border_hydro: No such value for borderuu: ', &
+              trim(borderuu)
+         call fatal_error('set_border_hydro',errormsg)
+      endselect
+!
+      do j=1,3
+         ju=j+iuu-1
+         call border_driving(f,df,f_target(:,j),ju)
+      enddo
+!
+    endsubroutine set_border_hydro
+!***********************************************************************
     subroutine calc_hydro_stress(p)
+!
+!  Subroutine to calculate cylindrical stresses. 
+!  Currently needs the runtime phi averages 
+!  that are calculated at the planet code.
+!
+!  23-may-06/wlad : coded
 !
       use Cdata
       use Sub

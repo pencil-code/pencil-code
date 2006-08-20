@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.426 2006-08-15 18:40:50 dintrans Exp $
+! $Id: entropy.f90,v 1.427 2006-08-20 22:19:56 wlyra Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -66,7 +66,7 @@ module Entropy
   logical :: lupw_ss=.false.,lmultilayer=.true.
   logical :: lpressuregradient_gas=.true.,ladvection_entropy=.true., lviscosity_heat=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
-  character (len=labellen) :: borderss='initial-condition'
+  character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',cooling_profile='gaussian'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
@@ -92,7 +92,6 @@ module Entropy
   ! input parameters
   namelist /entropy_init_pars/ &
       initss,     &
-      borderss,   &
 !TEST
       pertss,     &
       grads0,     &
@@ -110,7 +109,7 @@ module Entropy
       lviscosity_heat,r_bcz
   ! run parameters
   namelist /entropy_run_pars/ &
-      hcond0,hcond1,hcond2,widthss, &
+      hcond0,hcond1,hcond2,widthss,borderss, &
 !AB: allow polytropic indices to be read in also during run stage.
 !AB: They are used to re-calculate the radiative conductivity profile.
       mpoly0,mpoly1,mpoly2, &
@@ -162,7 +161,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.426 2006-08-15 18:40:50 dintrans Exp $")
+           "$Id: entropy.f90,v 1.427 2006-08-20 22:19:56 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -903,46 +902,7 @@ module Entropy
 !
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)
 !
-!  Initialize border profile
-!
-      if (lborder_profiles) &
-           call set_border_entropy(f)
-!
     endsubroutine init_ss
-!***********************************************************************
-    subroutine set_border_entropy(f)
-!
-      use Global, only: set_global
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) :: f_target
-!
-      do n=n1,n2
-         do m=m1,m2
-!
-            select case(borderss)
-            case('zero','0')
-               f_target=0.
-            case('constant')
-               f_target=ss_const
-            case('initial-condition')
-               f_target=f(l1:l2,m,n,iss)
-            case('nothing')
-               if (lroot.and.ip<=5) &
-                    print*,"set_border_entropy: borderss='nothing'"
-            case default
-               write(unit=errormsg,fmt=*) &
-                    'set_border_entropy: No such value for borderss: ', &
-                    trim(borderss)
-               call fatal_error('set_border_entropy',errormsg)
-            endselect
-!
-            call set_global(f_target,m,n,iss,'fborder',nx)
-!
-         enddo
-      enddo
-!
-    endsubroutine set_border_entropy
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
@@ -1848,6 +1808,10 @@ module Entropy
 !
       if (lspecial) call special_calc_entropy(f,df,p)
 !
+!  Apply border profile
+!
+      if (lborder_profiles) call set_border_entropy(f,df)
+!
 !  phi-averages
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
@@ -1893,6 +1857,42 @@ module Entropy
       endif
 !
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine set_border_entropy(f,df)
+!
+!
+!  Calculates the driving term for the border profile
+!  of the ss variable.
+!
+!  28-jul-06/wlad: coded
+!
+      use BorderProfiles, only: border_driving
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(nx) :: f_target
+!
+      select case(borderss)
+!
+      case('zero','0')
+         f_target=0.
+      case('constant')
+         f_target=ss_const
+!      case('initial-condition')
+!         f_target=f(l1:l2,m,n,iss)
+      case('nothing')
+         if (lroot.and.ip<=5) &
+              print*,"set_border_entropy: borderss='nothing'"
+      case default
+         write(unit=errormsg,fmt=*) &
+              'set_border_entropy: No such value for borderss: ', &
+              trim(borderss)
+         call fatal_error('set_border_entropy',errormsg)
+      endselect
+!
+      call border_driving(f,df,f_target,iss)
+!
+    endsubroutine set_border_entropy
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
 !

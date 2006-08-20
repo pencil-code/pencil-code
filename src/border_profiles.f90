@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.6 2006-07-28 16:35:42 wlyra Exp $ 
+! $Id: border_profiles.f90,v 1.7 2006-08-20 22:19:56 wlyra Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -99,19 +99,16 @@ module BorderProfiles
 !
     endsubroutine initialize_border_profiles
 !***********************************************************************
-    subroutine border_driving(f,df,j)
-!
-      use Global, only: get_global
+    subroutine border_driving(f,df,f_target,j)
+!                                                           
+!  Position-dependent driving term that attempts to drive pde
+!  the variable toward some target solution on the boundary.
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target,pborder,drive_time
       integer :: j
-! 
-!  Position-dependent driving term that attempts to drive pde
-!  the variable toward some target solution on the boundary.
 !
-      call get_global(f_target,m,n,j,'fborder')
       call get_drive_time(drive_time)
       call get_border(pborder)
 !     
@@ -121,6 +118,15 @@ module BorderProfiles
     endsubroutine border_driving
 !***********************************************************************
     subroutine get_border(pborder)
+!
+! Apply a step function that smoothly goes from zero to one on both sides. 
+! In practice, means that the driving takes place 
+! from r_int to r_int+2*wborder_int, and
+! from r_ext-2*wborder_ext to r_ext
+!
+! Regions away from these limits are unaffected. 
+!
+! 28-Jul-06/wlad : coded
 !
       use Sub, only: cubic_step
 !
@@ -151,6 +157,12 @@ module BorderProfiles
     endsubroutine get_border
 !***********************************************************************
     subroutine get_drive_time(drive_time)
+!
+! This is problem-dependent, since the driving should occur in the
+! typical time-scale of the problem. Currently, only the keplerian
+! orbital time is implemented.
+! 
+! 28-Jul-06/wlad : coded
 !
       real, dimension(nx),intent(out) :: drive_time
 !
