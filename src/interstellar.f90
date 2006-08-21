@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.131 2006-08-19 11:42:46 mee Exp $
+! $Id: interstellar.f90,v 1.132 2006-08-21 06:03:14 dobler Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -377,7 +377,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.131 2006-08-19 11:42:46 mee Exp $")
+           "$Id: interstellar.f90,v 1.132 2006-08-21 06:03:14 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -2159,13 +2159,14 @@ find_SN: do n=n1,n2
         print*, 'explode_SN:    Total mass = ', SNR%MM
         print*, 'explode_SN:    Sedov time = ', SNR%t_sedov
         print*, 'explode_SN:    Shell velocity  = ', uu_sedov
-         write(1,'(i10,e13.5,2i4,3i10,6e13.5)')  &
-          it,t, &
-          SNR%SN_type, &
-          SNR%iproc, SNR%l,SNR%m,SNR%n, &
+        write(1,'(i10,e13.5,2i4,3i10,6e13.5)')  &
+          it, &
+          t, &
+          SNR%SN_type,SNR%iproc, &
+          SNR%l,SNR%m,SNR%n, &
           SNR%x,SNR%y,SNR%z, &
-          SNR%site%rho,SNR%site%TT,SNR%EE, SNR%t_sedov
-         close(1)
+          SNR%site%rho,SNR%site%TT,SNR%EE!, SNR%t_sedov
+        close(1)
       endif
 
       if (lSNR_damping) then
@@ -2319,7 +2320,13 @@ find_SN: do n=n1,n2
 
         call proximity_SN(SNRs(iSNR))
         profile = SNRs(iSNR)%damping_factor*exp(-(dr2_SN/SNRs(iSNR)%radius**2))
-        gprofile = -SNRs(iSNR)%damping_factor*spread(x(l1:l2)*(dr2_SN)**2/(SNRs(iSNR)%radius**(2.5))*exp(-(dr2_SN/SNRs(iSNR)%radius**2)),2,3)
+        gprofile = -SNRs(iSNR)%damping_factor &
+                    * spread( &
+                          x(l1:l2) &
+                          * (dr2_SN)**2 &
+                          / (SNRs(iSNR)%radius**(2.5)) &
+                          * exp(-(dr2_SN/SNRs(iSNR)%radius**2)) &
+                      ,2,3)
         if (ldensity) then
           call multsv(p%divu,p%glnrho,tmp2)
           tmp=tmp2 + p%graddivu
@@ -2846,9 +2853,9 @@ find_SN: do n=n1,n2
       enddo
     endsubroutine injectvelocity_SN
 !***********************************************************************
-    function get_free_SNR
+    function get_free_SNR()
 ! 
-     integer :: get_free_SNR
+      integer :: get_free_SNR
       integer :: i,iSNR
 !
       if (nSNR>=mSNR) then
