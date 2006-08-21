@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.132 2006-08-21 06:03:14 dobler Exp $
+! $Id: interstellar.f90,v 1.133 2006-08-21 07:43:51 dobler Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -377,7 +377,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.132 2006-08-21 06:03:14 dobler Exp $")
+           "$Id: interstellar.f90,v 1.133 2006-08-21 07:43:51 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -603,7 +603,7 @@ module Interstellar
         SNRs(:)%state=SNstate_invalid
         read (lun) nSNR
         do i=1,nSNR
-          read (lun), SNRs(i)
+          read (lun) SNRs(i)
           SNR_index(i)=i          
         enddo 
         done=.true.
