@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.322 2006-08-20 22:19:56 wlyra Exp $
+! $Id: equ.f90,v 1.323 2006-08-21 14:10:30 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -375,7 +375,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.322 2006-08-20 22:19:56 wlyra Exp $")
+           "$Id: equ.f90,v 1.323 2006-08-21 14:10:30 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -392,6 +392,11 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.leos_ionization.or.lradiation_ray
+!
+!  Apply global boundary conditions to particle positions and communiate
+!  migrating particles between the processors.
+!
+      if (lparticles) call particles_boundconds(f)
 !
 !  Calculate the potential of the self gravity. Must be done before
 !  communication in order to be able to take the gradient of the potential
@@ -433,12 +438,6 @@ module Equ
         call boundconds_y(f)
         call boundconds_z(f,df=df)
       endif
-!
-!  Apply global boundary conditions to particle positions and communiate
-!  migrating particles between the processors.
-!
-!
-      if (lparticles) call particles_boundconds(f)
 !
 !  set inverse timestep to zero before entering loop over m and n
 !
