@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.2 2006-08-22 12:40:16 theine Exp $
+! $Id: shock_perp.f90,v 1.3 2006-08-22 13:53:46 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -119,7 +119,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.2 2006-08-22 12:40:16 theine Exp $")
+           "$Id: shock_perp.f90,v 1.3 2006-08-22 13:53:46 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -554,6 +554,10 @@ module Shock
 !  Scale with dxmin**2.
 !
           f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
+
+          if (ldivu_perp) then
+            f(:,:,:,ishock_perp) = f(:,:,:,ishock_perp) * dxmin**2
+          endif
 
         endif
 
