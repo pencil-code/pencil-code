@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.30 2006-02-10 18:11:09 ajohan Exp $
+! $Id: deriv.f90,v 1.31 2006-08-22 12:07:08 mee Exp $
 
 module Deriv
   
@@ -8,7 +8,7 @@ module Deriv
 
   private
 
-  public :: der, der2, der4, der5, der6, derij
+  public :: der, der2, der3, der4, der5, der6, derij
   public :: der6_other
   public :: der_upwind1st
 
