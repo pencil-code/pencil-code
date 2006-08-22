@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.22 2006-08-21 00:15:16 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.23 2006-08-22 23:54:25 wlyra Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -58,5 +58,4 @@ rho0= 1.
   lramp=F
   nc=2,b_pot=0.03
   llocal_iso=T
-  lcs2_global=T
 /
