@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.7 2006-08-01 12:30:14 mee Exp $ 
+! $Id: shared_variables.f90,v 1.8 2006-08-22 12:21:48 mee Exp $ 
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -396,6 +396,7 @@ module SharedVariables
       do while (associated(item))
         if (item%varname==varname) then
           variable_exists=.true.
+          return
         endif
         item=>item%next
       enddo
