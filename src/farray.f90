@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.1 2006-08-22 11:04:49 mee Exp $ 
+! $Id: farray.f90,v 1.2 2006-08-22 12:08:32 mee Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -11,7 +11,8 @@
 !
 module FArrayManager 
 !
-  use Cdata
+  use Cparam, only: mvar,maux,mglobal,maux_com
+  use Cdata, only: nvar,naux,naux_com
   use Messages
 !
   implicit none
@@ -46,6 +47,11 @@ module FArrayManager
   integer, public, parameter :: iFARRAY_ERR_WRONGTYPE=3
   integer, public, parameter :: iFARRAY_ERR_WRONGSIZE=4
   integer, public, parameter :: iFARRAY_ERR_DUPLICATE=5
+
+  type pp
+    integer, pointer :: p
+  end type pp
+
 !
 ! Store pointers to variables in a general linked
 ! list structure.  Shame we can't have (void *) pointers.
@@ -57,7 +63,7 @@ module FArrayManager
     character (len=30) :: varname
     integer            :: ncomponents
     integer            :: vartype
-    integer, dimension(:), pointer :: ivar
+    type(pp), dimension(:), pointer :: ivar
 !
 ! Linked list link to next list element 
 !
@@ -73,7 +79,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_pde(varname,ivar,vector,ierr) 
       character (len=*) :: varname
-      integer, pointer  :: ivar
+      integer, target  :: ivar
       type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
@@ -94,7 +100,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_global(varname,ivar,vector,ierr) 
       character (len=*) :: varname
-      integer, pointer  :: ivar
+      integer, target  :: ivar
       type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
@@ -115,7 +121,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_auxilliary(varname,ivar,communicated,vector,ierr) 
       character (len=*) :: varname
-      integer, pointer  :: ivar
+      integer, target  :: ivar
       type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer :: vartype
@@ -145,14 +151,16 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_variable(varname,ivar,vartype,vector,ierr) 
       character (len=*) :: varname
-      integer, pointer  :: ivar
+      integer, target   :: ivar
       integer           :: vartype, i
       type (farray_contents_list), pointer :: item, new
       integer :: ncomponents
       integer, optional :: ierr
       integer, optional :: vector
+      integer :: memstat
 !
       
+      ncomponents=1
       if (present(ierr)) ierr=0
       if (present(vector)) ncomponents=vector
 !
@@ -161,7 +169,7 @@ module FArrayManager
         if (item%ncomponents/=ncomponents) then
           if (present(ierr)) then
             ierr=iFARRAY_ERR_WRONGSIZE
-            nullify(ivar)
+            ivar=0
             return
           endif
           print*,"Setting f-array variable: ",varname
@@ -170,7 +178,7 @@ module FArrayManager
         if (item%vartype/=vartype) then
           if (present(ierr)) then
             ierr=iFARRAY_ERR_WRONGTYPE
-            nullify(ivar)
+            ivar=0
             return
           endif
           print*,"Setting f-array variable: ",varname
@@ -178,7 +186,7 @@ module FArrayManager
         endif
         if (present(ierr)) then
           ierr=iFARRAY_ERR_DUPLICATE
-          nullify(ivar)
+          ivar=0
           return
         endif
         print*,"Setting shared variable: ",varname
@@ -189,38 +197,40 @@ module FArrayManager
       new%varname=varname
       new%vartype=vartype
       new%ncomponents=ncomponents
-      allocate(new%ivar(ncomponents))
+      allocate(new%ivar(ncomponents),stat=memstat)
+      new%ivar(1)%p=>ivar
 
       select case (vartype)
         case (iFARRAY_TYPE_PDE)
-          new%ivar(1)=nvar+1
+          ivar=nvar+1
           nvar=nvar+ncomponents
         case (iFARRAY_TYPE_COMM_AUXILLIARY)
-          new%ivar(1)=mvar+naux_com+1
+          ivar=mvar+naux_com+1
           naux=naux+ncomponents
           naux_com=naux_com+ncomponents
         case (iFARRAY_TYPE_AUXILLIARY)
-          new%ivar(1)=mvar+naux+1
+          ivar=mvar+naux+1
           naux=naux+ncomponents
 !        case (iFARRAY_TYPE_GLOBAL)
-!          new%ivar=mvar+maux+nglobal
+!          ivar=mvar+maux+nglobal
 !          nglobal=nglobal+ncomponents
       endselect
 !
 ! Keep a list of component indices
 !
-      do i=2,ncomponents
-        new%ivar(i)=new%ivar(i-1)+1
-      enddo
+ !     do i=2,ncomponents
+ !       new%ivar(i)%p=new%ivar(i-1)%p+1
+ !     enddo
 !
       call save_analysis_info(new)
 !
-      ivar=>new%ivar(1)
+!      ivar=>new%ivar(1)
 !    
     endsubroutine farray_register_variable
 !***********************************************************************
     subroutine save_analysis_info(item) 
 !
+      use Cdata, only: varname
       use General, only: chn
 !
       type (farray_contents_list), pointer :: item
@@ -233,9 +243,9 @@ module FArrayManager
 !  Put variable name in array
 !
         if (item%ncomponents>1) then      
-          varname(item%ivar(i)) = item%varname//trim(istr)
+          varname(item%ivar(1)%p+i-1) = item%varname//trim(istr)
         else
-          varname(item%ivar(i)) = item%varname
+          varname(item%ivar(1)%p) = item%varname
         endif
       enddo
     endsubroutine save_analysis_info
@@ -362,9 +372,9 @@ module FArrayManager
             print*,"Using f-array variable: ",varname
             call fatal_error("farray_use_variable","F-array variable not found!")
           endif
-          ivar=>item%ivar(component)
+          ivar=>item%ivar(component)%p
         else
-          ivar=>item%ivar(1)
+          ivar=>item%ivar(1)%p
           return
         endif
       endif
