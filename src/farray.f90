@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.2 2006-08-22 12:08:32 mee Exp $ 
+! $Id: farray.f90,v 1.3 2006-08-22 15:06:09 theine Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -173,7 +173,9 @@ module FArrayManager
             return
           endif
           print*,"Setting f-array variable: ",varname
-          call fatal_error("farray_register_variable","f array variable name already exists but with a different number of components!")
+          call fatal_error("farray_register_variable", &
+            "f array variable name already exists but with a different "//&
+            "number of components!")
         endif
         if (item%vartype/=vartype) then
           if (present(ierr)) then
