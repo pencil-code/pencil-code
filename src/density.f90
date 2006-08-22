@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.270 2006-08-20 22:19:56 wlyra Exp $
+! $Id: density.f90,v 1.271 2006-08-22 12:24:40 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -91,45 +91,20 @@ module Density
 !   4-jun-02/axel: adapted from hydro
 !
       use Sub
+      use FArrayManager
 !
       logical, save :: first=.true.
+!      integer, target :: tmp_ilnrho
 !
       if (.not. first) call fatal_error('register_density','module registration called twice')
       first = .false.
-!
-      ilnrho = nvar+1           ! indix to access lam
-      nvar = nvar+1             ! added 1 variable
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_density: nvar = ', nvar
-        print*, 'register_density: ilnrho = ', ilnrho
-      endif
-!
-!  Put variable name in array
-!
-      varname(ilnrho) = 'lnrho'
+
+      call farray_register_pde('lnrho',ilnrho) 
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.270 2006-08-20 22:19:56 wlyra Exp $")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call fatal_error('register_density','nvar > mvar')
-      endif
-!
-!  Writing files for use with IDL
-!
-      if (lroot) then
-        if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',lnrho $'
-          if (nvar == mvar) write(4,*) ',lnrho'
-        else
-          write(4,*) ',lnrho $'
-        endif
-        write(15,*) 'lnrho = fltarr(mx,my,mz)*one'
-      endif
+           "$Id: density.f90,v 1.271 2006-08-22 12:24:40 mee Exp $")
 !
     endsubroutine register_density
 !***********************************************************************

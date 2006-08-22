@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.51 2006-07-18 19:29:55 mee Exp $
+! $Id: cparam.f90,v 1.52 2006-08-22 12:24:40 mee Exp $
 
 module Cparam
 
@@ -24,6 +24,9 @@ module Cparam
   include 'cparam_pencils.inc'
 !
 !  derived and fixed parameters
+!
+  integer, parameter :: mfarray=mvar+maux+mglobal
+  integer, parameter :: mcom=mvar+maux_com
 !
   integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
   integer, parameter :: nghost=3
