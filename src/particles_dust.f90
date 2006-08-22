@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.133 2006-08-22 06:29:33 ajohan Exp $
+! $Id: particles_dust.f90,v 1.134 2006-08-22 14:30:18 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -43,6 +43,7 @@ module Particles
   real :: tstart_collisional_cooling=0.0
   real :: coeff_restitution=0.5, coll_geom_fac=0.40528473  ! (2/pi)^2
   complex, dimension (7) :: coeff=(0.0,0.0)
+  integer :: l_hole=0, m_hole=0, n_hole=0
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false., lcollisional_cooling=.false.
   logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
@@ -65,7 +66,8 @@ module Particles
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, lcollisional_cooling, &
-      coeff_restitution, tstart_collisional_cooling
+      coeff_restitution, tstart_collisional_cooling, &
+      l_hole, m_hole, n_hole
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -108,7 +110,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.133 2006-08-22 06:29:33 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.134 2006-08-22 14:30:18 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -490,6 +492,18 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_loc(2)+fp(1:npar_loc,iyp)*Lxyz_loc(2)
+ 
+        case ('hole')
+          call map_nearest_grid(fp,ineargrid)
+          call map_xxp_grid(f,fp,ineargrid)
+          call sort_particles_imn(fp,ineargrid,ipar)
+          do k=k1_imn(imn_array(m_hole+m1-1,n_hole+n1-1)), &
+               k2_imn(imn_array(m_hole+m1-1,n_hole+n1-1))
+            if (ineargrid(k,1)==l_hole+l1-1) then
+              print*, k
+              if (nxgrid/=0) fp(k,ixp)=fp(k,ixp)-dx
+            endif
+          enddo
  
         case ('streaming')
           call streaming(fp,f)
