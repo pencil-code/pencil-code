@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.57 2006-08-20 22:58:05 wlyra Exp $
+! $Id: planet.f90,v 1.58 2006-08-22 20:24:55 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -43,16 +43,15 @@ module Planet
   logical :: lcs2_global=.false.
   logical :: lmigrate=.false.!,lnorm=.false.
   real :: Gvalue=1. !gravity constant in same unit as density
-  logical :: lcs2_thick=.false.
   logical :: lcalc_turb=.false.
   integer :: nr=10
 !
   namelist /planet_init_pars/ gc,nc,b_pot,&
-       lcs2_global,llocal_iso,lcs2_thick,lramp
+       lcs2_global,llocal_iso,lramp
 !
   namelist /planet_run_pars/ gc,nc,b_pot,lramp, &
        llocal_iso,lcs2_global, &
-       lmigrate,Gvalue,n_periods,lcs2_thick,nr,&
+       lmigrate,Gvalue,n_periods,nr,&
        lcalc_turb
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
@@ -79,7 +78,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.57 2006-08-20 22:58:05 wlyra Exp $")
+           "$Id: planet.f90,v 1.58 2006-08-22 20:24:55 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -104,20 +103,6 @@ module Planet
       logical :: lstarting
 !
       if (lroot) print*, 'initialize_planet'
-!
-      if (lcs2_global) then
-         if (llocal_iso) then
-            do n=n1,n2
-               do m=m1,m2
-                  call set_soundspeed
-               enddo
-            enddo
-         else
-            print*,'planet : not isothermal, but sound speed is set'
-            print*,'as global variable. Better stop and check'
-            call stop_it('')
-         endif
-      endif
 !
     endsubroutine initialize_planet
 !***********************************************************************
@@ -440,84 +425,6 @@ module Planet
      call sum_lim_mn_name(angular_momentum,idiag_totangmom)
 !
    endsubroutine calc_monitored
-!***************************************************************
-   subroutine set_soundspeed
-!
-! Locally isothermal structure for accretion disks. 
-! The energy equation is not solved,but the variation
-! of temperature with radius (T ~ r-1) is crucial for the
-! treatment of ad hoc alpha viscosity.
-!
-! The obscure coefficients were calculated with an IDL
-! routine to match a 1/r fall of cs2 with a constant value
-! inside r = 0.4. Have to make it general some other day. 
-!
-! cs = H * Omega, being H the scale height and (H/r) = cte.
-!
-! This routine is called in start time only
-!
-! 25-nov-05/wlad : coded
-! 
-     use Global, only: set_global
-!
-      real, dimension (nx) :: rrp,cs2
-      real :: g0=1.,r0_pot=0.2
-      logical :: lheader,lfirstcall=.true.
-!
-!     It is better to set cs2 as a global variable than to recalculate it
-!     at every timestep...
-!
-      lheader = headtt.and.lfirstcall.and.lroot
-!
-      if (lheader) print*,&
-           'planet: setting sound speed as global variable'
-!
-      if (lcylindrical) then
-         rrp = sqrt(x(l1:l2)**2 + y(m)**2) + tini
-      else
-         rrp = sqrt(x(l1:l2)**2 + y(m)**2 + z(n)**2) + tini
-      endif   
-!      
-      if (lcs2_thick) then 
-!
-! This is for H=cs/Omega = Lz/2
-!
-         if (lheader) &
-              print*,'set soundspeed: constant H=',Lxyz(3)/2.
-!
-         cs2 = g0**2 * (rrp**2 + r0_pot**2)**(-1.5) &
-              *(Lxyz(3)/2.)**2
-      else
-!
-! This one is for Mach Number = 20 everywhere 
-!
-         if (lheader) &
-              print*,'set soundspeed: Mach=20 all over'
-!
-         where ((rrp.le.0.4).and.(rrp.ge.0.2)) 
-         
-            cs2 = 0.00749375        & 
-                 +0.00679450*rrp    &
-                 -0.0149310 *rrp**2 &
-                 -0.0580586 *rrp**3 &
-                 +0.0816006 *rrp**4 
-         endwhere
-!
-         where (rrp.gt.0.4)
-            cs2 = 0.05**2 * g0 / rrp
-         endwhere
-!
-         where (rrp.lt.0.2) 
-            cs2 = 0.008
-         endwhere
-
-      endif
-!    
-      call set_global(cs2,m,n,'cs2',nx)
-!       
-      lfirstcall=.false.
-!
-    endsubroutine set_soundspeed
 !***************************************************************
     subroutine planet_phiavg(p)
 !

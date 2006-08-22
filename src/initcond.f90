@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.163 2006-08-03 07:07:27 ajohan Exp $ 
+! $Id: initcond.f90,v 1.164 2006-08-22 20:24:55 wlyra Exp $ 
 
 module Initcond 
  
@@ -1420,43 +1420,45 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy,zz)
+    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy)
 !
 !  Keplerian initial condition
 !
 !   2-may-05/axel+wlad: coded   
 !
       use Cdata
-      use EquationOfState, only : cs20
-      use Global
+      use EquationOfState, only : cs0
+      use Global, only: set_global
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr_cyl,OO,grav
+      real, dimension (mx,my,mz) :: xx,yy,rr_cyl,OO,cs2
       real :: g0,r0_pot
       integer :: n_pot,mcount,ncount
-      real, dimension(nx,3) :: gg_mn
-      real, dimension(nx) :: aux
 !
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero 
 !
-      if (lroot) print*,'accretion disk initial condition'
+      if (lroot) print*,'Accretion disk initial condition'
 !
       rr_cyl=sqrt(xx**2+yy**2)+tini
 !
-      do mcount=m1,m2
-         do ncount=n1,n2
-            call get_global(gg_mn,mcount,ncount,'gg')
-            aux = sqrt(gg_mn(:,1)**2+gg_mn(:,2)**2)
-            grav(l1:l2,mcount,ncount) = aux
-         enddo
-      enddo
+      OO = sqrt(g0 * (rr_cyl**2 + r0_pot**2)**(-1.5))
 !    
-      OO = sqrt(grav/rr_cyl)
-!     
       f(:,:,:,iux)=f(:,:,:,iux)-yy*(OO - Omega) !Omega is defined in cdata
       f(:,:,:,iuy)=f(:,:,:,iuy)+xx*(OO - Omega)
       f(:,:,:,iuz)=0.
+!
+! Also set soundspeed as global variable      
+!
+      if (lroot) print*,&
+           'set sound speed as global variabel: Mach number=',1./cs0
+      cs2 = (OO*rr_cyl*cs0)**2
+!     
+      do ncount=n1,n2
+         do mcount=m1,m2
+            call set_global(cs2(l1:l2,mcount,ncount),mcount,ncount,'cs2',nx)
+         enddo
+      enddo   
 !
     endsubroutine keplerian
 !***********************************************************************
@@ -2513,26 +2515,28 @@ module Initcond
       use Global
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: xx,yy,zz,r_cyl,H2 
+      real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,H2 
       real, dimension (nx) :: cs2_mn,Omega2_mn
-      real :: lnrho_const,plaw
+      real :: lnrho_const,plaw,Mach
       integer :: mcount,ncount
 !
       if (n_pot.ne.2) then
-        print*,'initcond.f90: You are trying to model a protoplanetary disk' 
-        print*,'with smoothed gravity but the smoothing lenght is not equal'  
-        print*,'to 2. Better stop and change, since it will lead to boundary'
-        print*,'troubles as Omega does not flatten properly.'
-        call stop_it('')
-     endif
+         print*,'initcond.f90: You are trying to model a protoplanetary disk' 
+         print*,'with smoothed gravity but the smoothing lenght is not equal'  
+         print*,'to 2. Better stop and change, since it will lead to boundary'
+         print*,'troubles as Omega does not flatten properly.'
+         call stop_it('')
+      endif
 !
-      r_cyl   = sqrt(xx**2 + yy**2) + epsi
+      Mach=20.
+      rr_cyl   = sqrt(xx**2 + yy**2) + epsi
 !
       if ((nzgrid==1).or.(lcylindrical)) then
 !
 ! Radial stratification
 !
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(r_cyl)
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) !- 0.5*(0.01**2 * Mach**2 / (rr_cyl**2 + r0_pot**2))
+
       else 
 !
 ! Vertical stratification
@@ -2541,13 +2545,14 @@ module Initcond
             do ncount=n1,n2
                call get_global(cs2_mn,mcount,ncount,'cs2')
 !
-               Omega2_mn = g0*(r_cyl(l1:l2,mcount,ncount)**2+r0_pot**2)**(-1.5)
+               Omega2_mn = g0*(rr_cyl(l1:l2,mcount,ncount)**2+r0_pot**2)**(-1.5)
                H2(l1:l2,mcount,ncount) = cs2_mn/Omega2_mn
 !
             enddo
          enddo
 !
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(r_cyl) - 0.5*(zz**2/H2) 
+         !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) !- 0.5*(zz**2/H2) 
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) !- 0.5*(zz**2 * Mach**2 / (rr_cyl**2 + r0_pot**2))
 !
       endif
 !    
