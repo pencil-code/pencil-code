@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.314 2006-08-20 22:19:56 wlyra Exp $
+! $Id: magnetic.f90,v 1.315 2006-08-22 12:05:25 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,6 +80,7 @@ module Magnetic
   logical :: lresi_hyper2=.false.
   logical :: lresi_hyper3=.false.
   logical :: lresi_eta_shock=.false.
+  logical :: lresi_eta_shock_perp=.false.
   logical :: lresi_shell=.false.
   logical :: lresi_smagorinsky=.false.
   logical :: lresi_smagorinsky_cross=.false.
@@ -203,7 +204,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.314 2006-08-20 22:19:56 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.315 2006-08-22 12:05:25 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -277,6 +278,7 @@ module Magnetic
       lresi_hyper2=.false.
       lresi_hyper3=.false.
       lresi_eta_shock=.false.
+      lresi_eta_shock_perp=.false.
       lresi_smagorinsky=.false.
       lresi_smagorinsky_cross=.false.
 
@@ -300,6 +302,12 @@ module Magnetic
         case ('shock')
           if (lroot) print*, 'resistivity: shock'
           lresi_eta_shock=.true.
+          if (.not. lshock) &
+            call fatal_error('initialize_magnetic', &
+                'shock resistivity, but module setting SHOCK=noshock')
+        case ('shock_perp')
+          if (lroot) print*, 'resistivity: shock_perp'
+          lresi_eta_shock_perp=.true.
           if (.not. lshock) &
             call fatal_error('initialize_magnetic', &
                 'shock resistivity, but module setting SHOCK=noshock')
@@ -332,6 +340,9 @@ module Magnetic
             call fatal_error('initialize_magnetic', &
             'Resistivity coefficient eta_hyper3 is zero!')
         if (lresi_eta_shock.and.eta_shock==0.0) &
+          call fatal_error('initialize_magnetic', &
+          'Resistivity coefficient eta_shock is zero!')
+        if (lresi_eta_shock_perp.and.eta_shock==0.0) &
           call fatal_error('initialize_magnetic', &
           'Resistivity coefficient eta_shock is zero!')
       endif
@@ -515,10 +526,16 @@ module Magnetic
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
           lresi_eta_shock .or. lresi_smagorinsky .or. &
-          lresi_smagorinsky_cross) lpenc_requested(i_del2a)=.true.
+          lresi_smagorinsky_cross .or. lresi_eta_shock_perp) &
+            lpenc_requested(i_del2a)=.true.
       if (lresi_eta_shock) then
         lpenc_requested(i_shock)=.true.
         lpenc_requested(i_gshock)=.true.
+        lpenc_requested(i_diva)=.true.
+      endif
+      if (lresi_eta_shock_perp) then
+        lpenc_requested(i_shock_perp)=.true.
+        lpenc_requested(i_gshock_perp)=.true.
         lpenc_requested(i_diva)=.true.
       endif
       if (lresi_shell) lpenc_requested(i_diva)=.true.
@@ -1008,6 +1025,15 @@ module Magnetic
                     + eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
         enddo
         etatotal=etatotal+eta_shock*p%shock
+      endif
+!
+      if (lresi_eta_shock_perp) then
+        do i=1,3
+          fres(:,i) = fres(:,i) &
+                    + eta_shock*(p%shock_perp*p%del2a(:,i) &
+                                +p%diva*p%gshock_perp(:,i))
+        enddo
+        etatotal=etatotal+eta_shock*p%shock_perp
       endif
 !
       if (lresi_smagorinsky) then
