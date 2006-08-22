@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.132 2006-08-19 11:17:04 ajohan Exp $
+! $Id: particles_dust.f90,v 1.133 2006-08-22 06:29:33 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -40,6 +40,7 @@ module Particles
   real :: kz_vpx=0.0, kz_vpy=0.0, kz_vpz=0.0
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
+  real :: tstart_collisional_cooling=0.0
   real :: coeff_restitution=0.5, coll_geom_fac=0.40528473  ! (2/pi)^2
   complex, dimension (7) :: coeff=(0.0,0.0)
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
@@ -64,7 +65,7 @@ module Particles
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, lcollisional_cooling, &
-      coeff_restitution
+      coeff_restitution, tstart_collisional_cooling
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -74,7 +75,7 @@ module Particles
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling, &
-      coeff_restitution
+      coeff_restitution, tstart_collisional_cooling
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -107,7 +108,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.132 2006-08-19 11:17:04 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.133 2006-08-22 06:29:33 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1175,8 +1176,8 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx,3) :: vpm, vpvar
-      real, dimension (nx) :: tausg1, dt1_drag, vprms, tau_coll1
+      real, dimension (nx,3) :: vvpm
+      real, dimension (nx) :: tausg1, dt1_drag, vpm, tau_coll1
       real, dimension (3) :: uup, dragforce
       real :: rho_point, rho1_point, tausp1_point, up2
       real :: weight, weight_x, weight_y, weight_z
@@ -1378,40 +1379,39 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Add collisional cooling of the rms speed.
 !
-      if (lcollisional_cooling) then
+      if (lcollisional_cooling .and. t>=tstart_collisional_cooling) then
         if (npar_imn(imn)/=0) then
-!  Need vpm and vpvar to calculate the rms speed of the particles in a cell.
-          vpm=0.0; vpvar=0.0
+!  Need vpm=<|vvp-<vvp>|> to calculate the collisional time-scale.
+          vvpm=0.0; vpm=0.0
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
-            vpm(ix0-nghost,:) = vpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
+            vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
           enddo
           do l=1,nx
             if (p%np(l)>1.0) then
-              vpm(l,:)=vpm(l,:)/p%np(l)
+              vvpm(l,:)=vvpm(l,:)/p%np(l)
             endif
           enddo
-!  vpvar
+!  vpm
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
-            vpvar(ix0-nghost,:) = vpvar(ix0-nghost,:) + &
-                (fp(k,ivpx:ivpz)-vpm(ix0-nghost,:))**2
+            vpm(ix0-nghost) = vpm(ix0-nghost) + &
+                sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
+                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
+                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
           enddo
           do l=1,nx
             if (p%np(l)>1.0) then
-              vpvar(l,:)=vpvar(l,:)/p%np(l)
+              vpm(l)=vpm(l)/p%np(l)
             endif
           enddo
-!  vprms
-          where (vpvar<0.0) vpvar=0.0  ! In case of underflows in calculation.
-          vprms=sqrt( vpvar(:,1) + vpvar(:,2) + vpvar(:,3) )
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
-          tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vprms*tausp1
+          tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vpm(ix0-nghost,:))
+                tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
           enddo
         endif
       endif
