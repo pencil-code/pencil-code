@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.51 2006-07-31 08:04:34 joishi Exp $
+! $Id: general.f90,v 1.52 2006-08-23 20:33:23 wlyra Exp $
 
 module General
 
@@ -841,7 +841,7 @@ module General
 !
 ! Interpolates in x2 a natural cubic spline with knots defined by the 1d arrays arrx and arry
 ! 25-03-05/wlad : coded
-
+!
       integer, intent(in) :: psize1,psize2
       integer :: i,j,ct1,ct2
       real, dimension (psize1) :: arrx,arry,h,a,b,c,d,sol
@@ -854,18 +854,8 @@ module General
       if (present(err)) err=.false.      
       ct1 = psize1
       ct2 = psize2
-!
-!breaks if x2 exceeds the interval defined by arrx
-!
-      do j=1,ct2
-         if ((x2(j).lt.arrx(1)).or.(x2(j).gt.arrx(ct1))) then
-            print*,'spline : attempt of extrapolation'
-            if (present(err)) err=.true.
-            return
-         endif
-      enddo
 !      
-!also breaks if x is not monotonically increasing
+! Breaks if x is not monotonically increasing
 !
       do i=1,ct1-1
          if (arrx(i+1).le.arrx(i)) then
@@ -875,12 +865,12 @@ module General
          endif
       enddo
 !
-!step h
+! step h
 !
       h(1:ct1-1) = arrx(2:ct1) - arrx(1:ct1-1) 
       h(ct1) = h(ct1-1)
 !
-!coefficients for tridiagonal system
+! coefficients for tridiagonal system
 !
       a(2:ct1) = h(1:ct1-1)
       a(1) = a(2)
@@ -895,7 +885,7 @@ module General
 !        
       call tridag(a,b,c,d,sol)        
 !
-!interpolation formula
+! interpolation formula
 !
       do j=1,ct2
          do i=1,ct1-1
@@ -909,8 +899,14 @@ module General
             endif
 !            
          enddo
-      enddo
+!
+! zero beyond this interval - should perhaps allow for linear interpolation    
 !           
+         if ((x2(j).le.arrx(1)).or.(x2(j).ge.arrx(ct1))) then
+            S(j) = 0.
+         endif
+      enddo
+!
     endsubroutine spline
 !*****************************************************************************
     function complex_phase(z)

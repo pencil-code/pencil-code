@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.60 2006-08-23 16:53:32 mee Exp $
+! $Id: planet.f90,v 1.61 2006-08-23 20:33:23 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.60 2006-08-23 16:53:32 mee Exp $")
+           "$Id: planet.f90,v 1.61 2006-08-23 20:33:23 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -447,20 +447,18 @@ module Planet
       use Sub, only: calc_phiavg_general,calc_phiavg_unitvects
       use Global, only: set_global,get_global
       use Mpicomm, only: stop_it
+      use General, only: spline
 !
       real, dimension(nx,3) :: bavg,uavg
       real, dimension(nr,3) :: bavg_coarse,uavg_coarse
-      real, dimension(nx) :: rcyl,rhoavg
-      real, dimension(nr) :: rhoavg_coarse
-      real :: rloop_1,rloop_int,rloop_ext,rmid,rmid_1,rmid_2
-      real :: dudr,dbdr,dr,step,upu,upb,dwr,u0,b0
-      real :: upr,r0
-      integer :: i,ir,aux
+      real, dimension(nx) :: rhoavg,ukepler
+      real, dimension(nr) :: rhoavg_coarse,rcyl_coarse
+      real :: rloop_int,rloop_ext,rmid,step
+      integer :: i,ir,j
       type (pencil_case) :: p
+      logical :: err
 !
 ! Get the unit vectors
-!
-      rcyl = sqrt(x(l1:l2)**2 + y(m)**2)
 !
       call calc_phiavg_general()
       call calc_phiavg_unitvects()
@@ -488,83 +486,41 @@ module Planet
          call get_global(uavg_coarse,'uavg',nr)
          if (lmagnetic) call get_global(bavg_coarse,'bavg',nr)
 !
-! expand it onto the pencil with linear interpolation
+! expand it onto the pencil with spline interpolation
 !
          step = (r_ext - r_int)/nr
-!
-         do i=1,nx
-!
-! this retrives ir, from 1 to nr
-!
-            ir = floor((rcyl(i)-r_int)/step) + 1 
+         do ir=1,nr
             rloop_int = r_int + (ir-1)*step
             rloop_ext = r_int + ir*step
             rmid = 0.5*(rloop_int + rloop_ext)
-            rmid_1 = rmid + step
-
-            if ((rcyl(i) .gt. r_int).and.(rcyl(i) .le. r_ext)) then 
+            rcyl_coarse(ir)=rmid
+         enddo   
 !
-! gives problem for ir=nr because ir+1 will be out of bounds
-!
-               if (ir /= nr) then 
-                  dwr = rmid_1 - rmid
-                  dr = rcyl(i) - rmid
-!
-                  upr = rhoavg_coarse(ir+1) - rhoavg_coarse(ir)
-                  r0 = rhoavg_coarse(ir)
-                  rhoavg(i) = r0 + upr/dwr*dr
-!
-                  do aux=1,3
-                     upu = uavg_coarse(ir+1,aux) - uavg_coarse(ir,aux)
-                     dudr = upu/dwr
-                     u0 = uavg_coarse(ir,aux)
-                     uavg(i,aux) = u0 + dudr*dr
-!                     
-                     if (lmagnetic) then
-                        upb = bavg_coarse(ir+1,aux) - bavg_coarse(ir,aux)
-                        dbdr = upb/dwr
-                        b0 = bavg_coarse(ir,aux)
-                        bavg(i,aux) = b0 + dbdr*dr
-                     endif   
-                  enddo
-!
-               endif
-!
-! so do it backward for ir=nr
-!
-               if (ir == nr) then 
-                  rmid_2 = rmid-step
-                  dwr = rmid - rmid_2
-                  dr = rcyl(i) - rmid
-!
-                  upr = rhoavg_coarse(ir) - rhoavg_coarse(ir-1)
-                  r0 = rhoavg_coarse(ir)
-                  rhoavg(i) = r0 + upr/dwr*dr
-!
-                  do aux=1,3
-                     upu = uavg_coarse(ir,aux) - uavg_coarse(ir-1,aux)
-                     dudr = upu/dwr
-                     u0 = uavg_coarse(ir,aux)
-                     uavg(i,aux) = u0 + dudr*dr
-!
-                     if (lmagnetic) then
-                        upb = bavg_coarse(ir,aux) - bavg_coarse(ir-1,aux)
-                        dbdr = upb/dwr
-                        b0 = bavg_coarse(ir,aux)
-                        bavg(i,aux) = b0 + dbdr*dr
-                     endif
-                  enddo
-!
-               endif
-!            
-            endif  !end if r_int r_ext
-!
-! close pencil loop
-!
+         call spline(rcyl_coarse,rhoavg_coarse,rcyl_mn,rhoavg,nr,nx,err)
+         do j=1,3 
+            call spline(rcyl_coarse,uavg_coarse(:,j),rcyl_mn,uavg(:,j),nr,nx,err)
          enddo
+         if (lmagnetic) then
+            do j=1,3
+               call spline(rcyl_coarse,bavg_coarse(:,j),rcyl_mn,bavg(:,j),nr,nx,err)
+            enddo
+         endif
 !
-! end (it.ne.1)
+! fill in with pencil values the parts of the array that are away from the interpolation 
 !
+         do i=1,nx
+            if ((rcyl_mn(i).lt.rcyl_coarse(1)).or.(rcyl_mn(i).gt.rcyl_coarse(nr))) then
+               rhoavg(i) = p%rho(i)
+               uavg(i,1)=p%uu(i,1)*pomx(i)+p%uu(i,2)*pomy(i)
+               uavg(i,2)=p%uu(i,1)*phix(i)+p%uu(i,2)*phiy(i)
+               uavg(i,3)=p%uu(i,3)
+               if (lmagnetic) then
+                  bavg(i,1)=p%bb(i,1)*pomx(i)+p%bb(i,2)*pomy(i)
+                  bavg(i,2)=p%bb(i,1)*phix(i)+p%bb(i,2)*phiy(i)
+                  bavg(i,3)=p%bb(i,3)
+               endif
+            endif
+         enddo
       endif
 !
 ! Store the average onto a global variable, to be read on THIS
