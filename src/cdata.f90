@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.334 2006-08-22 12:24:40 mee Exp $
+! ! $Id: cdata.f90,v 1.335 2006-08-23 11:37:17 mee Exp $
 
 module Cdata
 
@@ -110,7 +110,8 @@ module Cdata
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
   integer :: iaatest=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0
-  integer :: ishock=0,ishock_perp=0,iyH=0,ihyper=0
+  integer :: ishock=0,ishock_perp=0
+  integer :: iyH=0,ihyper=0
   integer :: iecr=0,ismagorinsky
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,ikapparho=0
   integer :: iFrad=0,iFradx=0,iFrady=0,iFradz=0
@@ -119,8 +120,8 @@ module Cdata
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
   integer :: ix_loc=-1,iy_loc=-1,iz_loc=-1,iz2_loc=-1
   integer :: icc=0,ilncc=0,ialpm=0
-  integer :: iXX_chiral=0,iYY_chiral=0
   integer :: iproc,ipx,ipy,ipz,root=0
+
   integer :: ylneigh,zlneigh ! `lower' processor neighbours
   integer :: yuneigh,zuneigh ! `upper' processor neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)

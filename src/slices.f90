@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.68 2006-08-03 07:07:28 ajohan Exp $
+! $Id: slices.f90,v 1.69 2006-08-23 11:37:17 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -12,6 +12,7 @@ module Slices
 
   public :: wvid, wvid_prepare, setup_slices, wslice
 
+
 !  Variables for xy slices start here
 !!! New slice code reuses the following slice variables.
   real, target, dimension (nx,ny) :: slice_xy = 0., slice_xy2 = 0.
@@ -22,56 +23,49 @@ module Slices
 !  Code variables
   real, public, dimension (nx,ny,3) :: uud_xy,vvp_xy
   real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,cc_xy,lncc_xy
-  real, public, dimension (nx,ny) :: XX_chiral_xy,YY_chiral_xy
+
   real, public, dimension (nx,ny) :: nd_xy
   real, public, dimension (nx,ny,ndustspec) :: md_xy
 !  Auxiliary variables  
   real, public, dimension (nx,ny) :: yH_xy,ecr_xy
 !  Derived variables
   real, public, dimension (nx,ny) :: lnTT_xy
-  real, public, dimension (nx,ny) :: DQ_chiral_xy,QQ_chiral_xy
   real, public, dimension (nx,ny) :: epsd_xy
   real, public, dimension (nx,ny) :: pp_xy
 !  Variables for xy2 slices start here
 !  Code variables
   real, public, dimension (nx,ny,3) :: uud_xy2,vvp_xy2
   real, public, dimension (nx,ny) :: lnrho_xy2,ss_xy2,cc_xy2,lncc_xy2
-  real, public, dimension (nx,ny) :: XX_chiral_xy2,YY_chiral_xy2
   real, public, dimension (nx,ny) :: nd_xy2
   real, public, dimension (nx,ny,ndustspec) :: md_xy2
 !  Auxiliary variables  
   real, public, dimension (nx,ny) :: yH_xy2,ecr_xy2
 !  Derived variables
   real, public, dimension (nx,ny) :: lnTT_xy2
-  real, public, dimension (nx,ny) :: DQ_chiral_xy2,QQ_chiral_xy2
   real, public, dimension (nx,ny) :: epsd_xy2
   real, public, dimension (nx,ny) :: pp_xy2
 !  Variables for xz slices start here
 !  Code variables
   real, public, dimension (nx,nz,3) :: uud_xz,vvp_xz
   real, public, dimension (nx,nz) :: lnrho_xz,ss_xz,cc_xz,lncc_xz
-  real, public, dimension (nx,nz) :: XX_chiral_xz,YY_chiral_xz
   real, public, dimension (nx,nz) :: nd_xz
   real, public, dimension (nx,nz,ndustspec) :: md_xz
 !  Auxiliary variables  
   real, public, dimension (nx,nz) :: yH_xz,ecr_xz
 !  Derived variables
   real, public, dimension (nx,nz) :: lnTT_xz
-  real, public, dimension (nx,nz) :: DQ_chiral_xz,QQ_chiral_xz
   real, public, dimension (nx,nz) :: epsd_xz
   real, public, dimension (nx,nz) :: pp_xz
 !  Variables for yz slices start here
 !  Code variables
   real, public, dimension (ny,nz,3) :: uud_yz,vvp_yz
   real, public, dimension (ny,nz) :: lnrho_yz,ss_yz,cc_yz,lncc_yz
-  real, public, dimension (ny,nz) :: XX_chiral_yz,YY_chiral_yz
   real, public, dimension (ny,nz) :: nd_yz
   real, public, dimension (ny,nz,ndustspec) :: md_yz
 !  Auxiliary variables  
   real, public, dimension (ny,nz) :: yH_yz,ecr_yz
 !  Derived variables
   real, public, dimension (ny,nz) :: lnTT_yz
-  real, public, dimension (ny,nz) :: DQ_chiral_yz,QQ_chiral_yz
   real, public, dimension (ny,nz) :: epsd_yz
   real, public, dimension (ny,nz) :: pp_yz
 !
@@ -133,6 +127,7 @@ module Slices
       use Magnetic,        only: get_slices_magnetic
       use Hydro,           only: get_slices_hydro
       use Radiation,       only: get_slices_radiation
+      use Chiral,          only: get_slices_chiral
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -223,30 +218,6 @@ module Slices
             call wslice(path//'lncc.xy',lncc_xy,z(iz_loc),nx,ny)
             call wslice(path//'lncc.Xy',lncc_xy2,z(iz2_loc),nx,ny)
           endif
-!
-!  Chirality fields: XX (code variable)
-!
-        case ('XX_chiral')
-          XX_chiral_yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)
-          XX_chiral_xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)
-          XX_chiral_xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)
-          XX_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
-          call wslice(path//'XX_chiral.yz',XX_chiral_yz,x(ix_loc),ny,nz)
-          call wslice(path//'XX_chiral.xz',XX_chiral_xz,y(iy_loc),nx,nz)
-          call wslice(path//'XX_chiral.xy',XX_chiral_xy,z(iz_loc),nx,ny)
-          call wslice(path//'XX_chiral.Xy',XX_chiral_xy2,z(iz2_loc),nx,ny)
-!
-!  Chirality fields: YY (code variable)
-!
-        case ('YY_chiral')
-          YY_chiral_yz=f(ix_loc,m1:m2,n1:n2,iYY_chiral)
-          YY_chiral_xz=f(l1:l2,iy_loc,n1:n2,iYY_chiral)
-          YY_chiral_xy=f(l1:l2,m1:m2,iz_loc,iYY_chiral)
-          YY_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
-          call wslice(path//'YY_chiral.yz',YY_chiral_yz,x(ix_loc),ny,nz)
-          call wslice(path//'YY_chiral.xz',YY_chiral_xz,y(iy_loc),nx,nz)
-          call wslice(path//'YY_chiral.xy',YY_chiral_xy,z(iz_loc),nx,ny)
-          call wslice(path//'YY_chiral.Xy',YY_chiral_xy2,z(iz2_loc),nx,ny)
 !
 !  Dust velocity (code variable)
 !
@@ -382,31 +353,6 @@ module Slices
           call wslice(path//'pp.xy',pp_xy,z(iz_loc),nx,ny)
           call wslice(path//'pp.Xy',pp_xy2,z(iz2_loc),nx,ny)
 !
-!  chirality fields: DQ (derived variable)
-!
-        case ('DQ_chiral')
-          XX_chiral_yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)
-          XX_chiral_xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)
-          XX_chiral_xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)
-          XX_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
-          YY_chiral_yz=f(ix_loc,m1:m2,n1:n2,iYY_chiral)
-          YY_chiral_xz=f(l1:l2,iy_loc,n1:n2,iYY_chiral)
-          YY_chiral_xy=f(l1:l2,m1:m2,iz_loc,iYY_chiral)
-          YY_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
-          QQ_chiral_yz=XX_chiral_yz-YY_chiral_yz
-          QQ_chiral_xz=XX_chiral_xz-YY_chiral_xz
-          QQ_chiral_xy=XX_chiral_xy-YY_chiral_xy
-          QQ_chiral_xy2=XX_chiral_xy2-YY_chiral_xy2
-          DQ_chiral_yz=QQ_chiral_yz*(1.-QQ_chiral_yz**2)/(1.+QQ_chiral_yz**2)
-          DQ_chiral_xz=QQ_chiral_xz*(1.-QQ_chiral_xz**2)/(1.+QQ_chiral_xz**2)
-          DQ_chiral_xy=QQ_chiral_xy*(1.-QQ_chiral_xy**2)/(1.+QQ_chiral_xy**2)
-          DQ_chiral_xy2=&
-              QQ_chiral_xy2*(1.-QQ_chiral_xy2**2)/(1.+QQ_chiral_xy2**2)
-          call wslice(path//'DQ_chiral.yz',DQ_chiral_yz,x(ix_loc),ny,nz)
-          call wslice(path//'DQ_chiral.xz',DQ_chiral_xz,y(iy_loc),nx,nz)
-          call wslice(path//'DQ_chiral.xy',DQ_chiral_xy,z(iz_loc),nx,ny)
-          call wslice(path//'DQ_chiral.Xy',DQ_chiral_xy2,z(iz2_loc),nx,ny)
-!
 !  psi2 - Absolute value of the wave function squared
 !
         case ('psi2')
@@ -457,6 +403,7 @@ module Slices
           if (lhydro)        call get_slices_hydro(f,slices)
           if (lmagnetic)     call get_slices_magnetic(f,slices)
           if (lradiation)    call get_slices_radiation(f,slices)
+          if (lchiral)       call get_slices_chiral(f,slices)
 !
         endselect
 

@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.9 2006-08-05 07:29:47 dobler Exp $
+! $Id: chiral.f90,v 1.10 2006-08-23 11:37:17 mee Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -23,6 +23,8 @@ module Chiral
   implicit none
 
   include 'chiral.h'
+
+  integer :: iXX_chiral=0,iYY_chiral=0
 
   character (len=labellen) :: initXX_chiral='zero',initYY_chiral='zero'
 
@@ -90,7 +92,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.9 2006-08-05 07:29:47 dobler Exp $")
+           "$Id: chiral.f90,v 1.10 2006-08-23 11:37:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -432,6 +434,61 @@ module Chiral
       endif
 !
     endsubroutine rprint_chiral
+!***********************************************************************
+    subroutine get_slices_chiral(f,slices)
+!
+!  Write slices for animation of hydro variables.
+!
+!  26-jul-06/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+      real, dimension (nx,ny) :: QQ_chiral_xy
+      real, dimension (nx,ny) :: QQ_chiral_xy2
+      real, dimension (nx,nz) :: QQ_chiral_xz
+      real, dimension (ny,nz) :: QQ_chiral_yz
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Chirality fields: XX (code variable)
+!
+        case ('XX_chiral')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)
+          slices%ready = .true.
+!
+!  Chirality fields: YY (code variable)
+!
+        case ('YY_chiral')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,iYY_chiral)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,iYY_chiral)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,iYY_chiral)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
+          slices%ready = .true.
+!
+!  chirality fields: DQ (derived variable)
+!
+        case ('DQ_chiral')
+          QQ_chiral_yz=f(ix_loc,m1:m2,n1:n2,iXX_chiral)-f(ix_loc,m1:m2,n1:n2,iYY_chiral)
+          QQ_chiral_xz=f(l1:l2,iy_loc,n1:n2,iXX_chiral)-f(l1:l2,iy_loc,n1:n2,iYY_chiral)
+          QQ_chiral_xy=f(l1:l2,m1:m2,iz_loc,iXX_chiral)-f(l1:l2,m1:m2,iz_loc,iYY_chiral)
+          QQ_chiral_xy2=f(l1:l2,m1:m2,iz2_loc,iXX_chiral)-f(l1:l2,m1:m2,iz2_loc,iYY_chiral)
+          slices%yz=QQ_chiral_yz*(1.-QQ_chiral_yz**2)/(1.+QQ_chiral_yz**2)
+          slices%xz=QQ_chiral_xz*(1.-QQ_chiral_xz**2)/(1.+QQ_chiral_xz**2)
+          slices%xy=QQ_chiral_xy*(1.-QQ_chiral_xy**2)/(1.+QQ_chiral_xy**2)
+          slices%xy2=&
+              QQ_chiral_xy2*(1.-QQ_chiral_xy2**2)/(1.+QQ_chiral_xy2**2)
+          slices%ready = .true.
+!
+      endselect
+!
+    endsubroutine get_slices_chiral
 !***********************************************************************
 
 endmodule Chiral

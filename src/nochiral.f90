@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.6 2006-08-05 07:29:47 dobler Exp $
+! $Id: nochiral.f90,v 1.7 2006-08-23 11:37:17 mee Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -54,7 +54,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.6 2006-08-05 07:29:47 dobler Exp $")
+           "$Id: nochiral.f90,v 1.7 2006-08-23 11:37:17 mee Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************
@@ -198,11 +198,24 @@ module Chiral
       if (lwr) then
         write(3,*) 'i_XX_chiralmax=',idiag_XX_chiralmax
         write(3,*) 'i_YY_chiralmax=',idiag_YY_chiralmax
-        write(3,*) 'iXX_chiral=',iXX_chiral
-        write(3,*) 'iYY_chiral=',iYY_chiral
+        write(3,*) 'iXX_chiral=0'
+        write(3,*) 'iYY_chiral=0'
       endif
 !
     endsubroutine rprint_chiral
+!***********************************************************************
+    subroutine get_slices_chiral(f,slices)
+!
+!  Write slices for animation of chiral variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+!
+    endsubroutine get_slices_chiral
 !***********************************************************************
 
 endmodule Chiral
