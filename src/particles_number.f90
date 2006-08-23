@@ -1,4 +1,4 @@
-! $Id: particles_number.f90,v 1.12 2006-04-17 15:55:03 ajohan Exp $
+! $Id: particles_number.f90,v 1.13 2006-08-23 16:53:32 mee Exp $
 !
 !  This module takes care of everything related to internal particle number.
 !
@@ -51,7 +51,7 @@ module Particles_number
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_number.f90,v 1.12 2006-04-17 15:55:03 ajohan Exp $")
+           "$Id: particles_number.f90,v 1.13 2006-08-23 16:53:32 mee Exp $")
 !
 !  Index for particle internal number.
 !
@@ -91,7 +91,7 @@ module Particles_number
 !
 !  24-nov-05/anders: adapted
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
       integer :: j
@@ -125,7 +125,7 @@ module Particles_number
       use Messages, only: fatal_error
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -265,7 +265,7 @@ module Particles_number
 !
       use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !

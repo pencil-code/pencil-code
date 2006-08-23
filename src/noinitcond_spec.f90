@@ -1,4 +1,4 @@
-!  $Id: noinitcond_spec.f90,v 1.10 2005-06-26 23:49:58 mee Exp $
+!  $Id: noinitcond_spec.f90,v 1.11 2006-08-23 16:53:32 mee Exp $
 !
 !  Substitute routines for vortex_solve.f90
 !
@@ -29,7 +29,7 @@ module Initcond_spec
       use Cdata
       use General
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: q_ell_, b_ell_, hh0
       real :: gamma,cs20
@@ -43,7 +43,7 @@ module Initcond_spec
       use Cdata
       use General
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: q_ell_, b_ell_, hh0
       real :: gamma,cs20

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.114 2006-08-03 07:07:27 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.115 2006-08-23 16:53:31 mee Exp $
 !
 !  This module takes care of everything related to dust velocity
 !
@@ -137,7 +137,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.114 2006-08-03 07:07:27 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.115 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -420,7 +420,7 @@ module Dustvelocity
       use Initcond
       use EquationOfState, only: pressure_gradient,cs20
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
       real :: eps,cs,eta_glnrho,v_Kepler
       integer :: j,k,l
@@ -791,7 +791,7 @@ module Dustvelocity
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       real, dimension (nx,3,3) :: tmp_pencil_3x3
@@ -870,7 +870,7 @@ module Dustvelocity
       use EquationOfState, only: gamma
       use IO
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
@@ -1202,7 +1202,7 @@ module Dustvelocity
       use Cdata
       use Sub, only: dot2
       
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2
       integer :: k
 !

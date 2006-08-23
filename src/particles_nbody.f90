@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.5 2006-07-28 14:00:38 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.6 2006-08-23 16:53:32 mee Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -66,7 +66,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.5 2006-07-28 14:00:38 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.6 2006-08-23 16:53:32 mee Exp $")
 !
 !  Indices for particle position.
 !
@@ -134,7 +134,7 @@ module Particles
       use Gravity, only: g0
       use Planet,  only: get_ramped_mass
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -293,7 +293,7 @@ module Particles
 !
 !  16-feb-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
@@ -306,7 +306,7 @@ module Particles
 !
 !  25-apr-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
@@ -322,7 +322,7 @@ module Particles
 !
 !  20-apr-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
@@ -340,7 +340,7 @@ module Particles
 !
       use General, only: random_number_wrapper, random_seed_wrapper
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -400,7 +400,7 @@ module Particles
       use Gravity, only: g0
       use Planet,only: get_ramped_mass,lmigrate
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (mpar_loc) :: sma_planet,ecc_planet
@@ -551,7 +551,7 @@ module Particles
      use Gravity, only: g0,r0_pot
      use Planet, only: Gvalue,b_pot
 !
-     real, dimension (mx,my,mz,mvar+maux) :: f 
+     real, dimension (mx,my,mz,mfarray) :: f 
      real, dimension (mpar_loc,mpvar) :: fp, dfp
      real, dimension(nx) :: re,grav_gas,dens
      real, dimension(1) :: sumx_loc,sumy_loc,sumz_loc
@@ -686,7 +686,7 @@ module Particles
 !
 !  01-feb-06/anders: dummy
 !     
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*, f
 !

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.182 2006-08-03 07:07:28 ajohan Exp $
+! $Id: register.f90,v 1.183 2006-08-23 16:53:32 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -184,7 +184,7 @@ module Register
       use Planet,          only: initialize_planet
       use BorderProfiles,  only: initialize_border_profiles
 
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
 !  Defaults for some logicals; will later be set to true if needed

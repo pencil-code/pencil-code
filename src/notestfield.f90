@@ -42,7 +42,7 @@ module Testfield
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(ip==0) print*,f  !(to keep compiler quiet)
     endsubroutine initialize_testfield
@@ -53,7 +53,7 @@ module Testfield
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
@@ -122,7 +122,7 @@ module Testfield
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -141,7 +141,7 @@ module Testfield
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       intent(in)     :: f
 !
       if (NO_WARN) print*, f

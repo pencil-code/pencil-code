@@ -1,4 +1,4 @@
-! $Id: gravity_r.f90,v 1.2 2006-08-15 18:40:50 dintrans Exp $
+! $Id: gravity_r.f90,v 1.3 2006-08-23 16:53:31 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.2 2006-08-15 18:40:50 dintrans Exp $")
+      if (lroot) call cvs_id("$Id: gravity_r.f90,v 1.3 2006-08-23 16:53:31 mee Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -291,7 +291,7 @@ module Gravity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
@@ -328,7 +328,7 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 ! 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f,p
@@ -347,7 +347,7 @@ module Gravity
       use Sub
       use Global
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: gg_mn

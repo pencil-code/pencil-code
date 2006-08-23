@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.12 2006-07-17 11:37:31 mee Exp $
+! $Id: nocosmicray.f90,v 1.13 2006-08-23 16:53:32 mee Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -51,7 +51,7 @@ module Cosmicray
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.12 2006-07-17 11:37:31 mee Exp $")
+           "$Id: nocosmicray.f90,v 1.13 2006-08-23 16:53:32 mee Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -62,7 +62,7 @@ module Cosmicray
 !
 !  09-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -118,7 +118,7 @@ module Cosmicray
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
@@ -154,7 +154,7 @@ module Cosmicray
 !
 !  20-11-04/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -169,7 +169,7 @@ module Cosmicray
 !
 !   09-oct-03/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !

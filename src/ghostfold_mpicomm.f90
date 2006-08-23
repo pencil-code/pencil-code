@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.7 2006-08-10 15:15:26 ajohan Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.8 2006-08-23 16:53:31 mee Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -142,7 +142,7 @@ module GhostFold
       use Mpicomm
       use Fourier
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
 !      
       real, dimension (nx+2,ny+2,1,ivar2-ivar1+1) :: f_tmp_xy

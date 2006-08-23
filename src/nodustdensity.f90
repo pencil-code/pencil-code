@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.29 2006-08-03 07:07:28 ajohan Exp $
+! $Id: nodustdensity.f90,v 1.30 2006-08-23 16:53:32 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -54,7 +54,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.29 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: nodustdensity.f90,v 1.30 2006-08-23 16:53:32 mee Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -75,7 +75,7 @@ module Dustdensity
 !
 !  18-mar-03/axel: adapted from dustdensity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f ! keep compiler quiet
     endsubroutine init_nd
@@ -108,7 +108,7 @@ module Dustdensity
 !
 !  13-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f, p
@@ -124,7 +124,7 @@ module Dustdensity
 !
 !  18-mar-03/axel: adapted from dustdensity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -169,7 +169,7 @@ module Dustdensity
 !
 !  4-may-2004/wolf: Adapted from dustdensity.f90
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f
     endsubroutine redist_mdbins
@@ -178,7 +178,7 @@ module Dustdensity
 !
 !  Dummy routine
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f
     endsubroutine null_dust_vars

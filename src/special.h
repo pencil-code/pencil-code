@@ -5,6 +5,7 @@
   public :: read_special_init_pars, write_special_init_pars
   public :: read_special_run_pars,  write_special_run_pars
   public :: rprint_special
+  public :: get_slices_special
   public :: init_special
 
   public :: dspecial_dt

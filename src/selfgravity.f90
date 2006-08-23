@@ -1,4 +1,4 @@
-! $Id: selfgravity.f90,v 1.14 2006-08-17 12:37:33 ajohan Exp $
+! $Id: selfgravity.f90,v 1.15 2006-08-23 16:53:32 mee Exp $
 
 !
 !  This module takes care of self gravity by solving the Poisson equation
@@ -70,7 +70,7 @@ module Selfgravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: selfgravity.f90,v 1.14 2006-08-17 12:37:33 ajohan Exp $")
+           "$Id: selfgravity.f90,v 1.15 2006-08-23 16:53:32 mee Exp $")
 !
 !  Put variable name in array
 !
@@ -182,7 +182,7 @@ module Selfgravity
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(inout) :: f, p
@@ -204,7 +204,7 @@ module Selfgravity
       use Particles_main, only: particles_calc_selfpotential
       use Poisson
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx,ny,nz) :: rhs_poisson
 !
@@ -269,7 +269,7 @@ module Selfgravity
 !
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !

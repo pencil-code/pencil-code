@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.166 2006-08-03 07:07:27 ajohan Exp $
+! $Id: dustdensity.f90,v 1.167 2006-08-23 16:53:31 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -138,7 +138,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.166 2006-08-03 07:07:27 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.167 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -264,7 +264,7 @@ module Dustdensity
       use Selfgravity, only: rhs_poisson_const
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx) :: eps
       real :: lnrho_z,Hrho,rho00,rhod00,mdpeak,rhodmt=0.
@@ -512,7 +512,7 @@ module Dustdensity
       use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
       use General, only: random_number_wrapper
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (mz) :: rho, eps
       real :: Hg, Hd, Sigmad, Xi, fXi, dfdXi, rho1, lnrho, epsz0
@@ -763,7 +763,7 @@ module Dustdensity
       use Global, only: set_global,global_derivs
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       real, dimension (nx,3) :: tmp_pencil_3
@@ -957,7 +957,7 @@ module Dustdensity
       use Mpicomm, only: stop_it
       use Slices, only: md_xy,md_xy2,md_xz,md_yz
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -1163,7 +1163,7 @@ module Dustdensity
 !
       use Mpicomm, only: stop_it
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ndustspec) :: nd
       real, dimension (ndustspec) :: ndnew,mdnew,minew
       integer :: j,k,i_targ,l
@@ -1231,7 +1231,7 @@ module Dustdensity
 !
       use Mpicomm, only: stop_it
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond
@@ -1277,7 +1277,7 @@ module Dustdensity
       use EquationOfState, only: getmu,eoscalc,ilnrho_ss
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,cc,pp,ppmon,ppsat,vth
       real, dimension (nx) :: supsatratio1
       real, save :: mu
@@ -1312,7 +1312,7 @@ module Dustdensity
 !
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: TT1
 !      
       real :: deltavd,deltavd_drift,deltavd_therm,deltavd_turbu,deltavd_drift2
@@ -1379,7 +1379,7 @@ module Dustdensity
 !
 !  Dust coagulation due to collisional sticking.
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df 
       type (pencil_case) :: p
 !      
@@ -1472,7 +1472,7 @@ module Dustdensity
 !
 !  Force certain dust variables to be zero if they have become negative
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: k,l
 !
       do l=l1,l2; do m=m1,m2; do n=n1,n2

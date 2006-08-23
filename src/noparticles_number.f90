@@ -1,4 +1,4 @@
-! $Id: noparticles_number.f90,v 1.5 2006-08-03 07:07:28 ajohan Exp $
+! $Id: noparticles_number.f90,v 1.6 2006-08-23 16:53:32 mee Exp $
 !
 !  This module takes care of everything related to particle number.
 !
@@ -56,7 +56,7 @@ module Particles_number
 !
 !  24-nov-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
       if (NO_WARN) print*, f, fp
@@ -69,7 +69,7 @@ module Particles_number
 !
 !  24-oct-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid

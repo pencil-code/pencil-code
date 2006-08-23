@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.2 2006-07-30 15:05:45 ajohan Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.3 2006-08-23 16:53:31 mee Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -92,7 +92,7 @@ module GhostFold
       use Cdata
       use Fourier
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
 !
       real, dimension (ny,nz) :: f_tmp_yz

@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.37 2006-08-18 14:24:45 theine Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.38 2006-08-23 16:53:31 mee Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -107,7 +107,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.37 2006-08-18 14:24:45 theine Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.38 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -155,7 +155,7 @@ module Magnetic
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,cosphi,sinphi
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2
@@ -235,7 +235,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       use IO
       use Slices
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: aa,jj=0,uxB,JxB,JxBr,oxuxb,jxbxb
@@ -513,7 +513,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       use Cdata
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: bij,aij
       real, dimension (nx,3) :: bb,del2A,graddivA
 
@@ -823,7 +823,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  18-aug-02/axel: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: zz
       real :: ampl,kz
       integer :: iuu,iaa
@@ -849,7 +849,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  18-aug-02/axel: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: zz
       real :: ampl,kz,O,fac
       integer :: iuu,iaa
@@ -880,7 +880,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3)    :: tmpv
       real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
       real, dimension(3) :: axis,disp
@@ -1027,7 +1027,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny) :: f2,f3
       real, dimension (nx,ny,nghost+1) :: fz
       integer :: j
@@ -1221,7 +1221,7 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  18-aug-2006/tobi: coded
 !
-      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
 
       if (NO_WARN) then

@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.42 2006-08-03 07:07:28 ajohan Exp $
+! $Id: particles_main.f90,v 1.43 2006-08-23 16:53:32 mee Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -89,7 +89,7 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       intent (out) :: f
 !
@@ -199,7 +199,7 @@ module Particles_main
 !
 !  16-feb-06/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !      
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
 !
@@ -221,7 +221,7 @@ module Particles_main
 !
 !  13-jun-06/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
       real :: rhs_poisson_const
       logical :: lcontinued
@@ -260,7 +260,7 @@ module Particles_main
 !
 !  14-feb-06/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       call calc_pencils_particles(f,p)
@@ -274,7 +274,7 @@ module Particles_main
 !
 !  20-apr-06/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -298,7 +298,7 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
       intent (out) :: f, df
@@ -369,7 +369,7 @@ module Particles_main
 !
 !  01-jan-06/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call powersnap_particles(f)
 !
@@ -383,7 +383,7 @@ module Particles_main
 !  26-jun-06/tony: Rewrote to give Slices module responsibility for
 !                  how and when slices are written
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices

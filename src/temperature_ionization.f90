@@ -1,4 +1,4 @@
-! $Id: temperature_ionization.f90,v 1.18 2006-06-07 19:15:29 theine Exp $
+! $Id: temperature_ionization.f90,v 1.19 2006-08-23 16:53:33 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -87,7 +87,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature_ionization.f90,v 1.18 2006-06-07 19:15:29 theine Exp $")
+           "$Id: temperature_ionization.f90,v 1.19 2006-08-23 16:53:33 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -118,7 +118,7 @@ module Entropy
 !
 !  21-jul-2002/wolf: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
 !  Check any module dependencies
@@ -195,7 +195,7 @@ module Entropy
       use Sub, only: blob
       use Initcond, only: jump
 !
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz), intent (in) :: xx,yy,zz
       logical :: lnothing=.true.
 !
@@ -341,7 +341,7 @@ module Entropy
 !
       use Sub, only: u_dot_gradf
 
-      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       type (pencil_case), intent (inout) :: p
 
 !
@@ -372,7 +372,7 @@ module Entropy
       use Viscosity, only: calc_viscous_heat
       use Sub, only: max_mn_name,sum_mn_name,identify_bcs,quintic_step
 !
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (out) :: df
       type (pencil_case) :: p
 !
@@ -517,7 +517,7 @@ module Entropy
 
       use Sub, only: quintic_step
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 

@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.25 2006-03-29 22:34:12 mee Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.26 2006-08-23 16:53:31 mee Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -96,7 +96,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.25 2006-03-29 22:34:12 mee Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.26 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -124,7 +124,7 @@ module Hydro
 !
 !  24-nov-02/tony: coded 
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !      
       if (ip == 0) print*,f,lstarting
@@ -147,7 +147,7 @@ module Hydro
       use Gravity
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       real :: kabs,crit
       integer :: i
@@ -321,7 +321,7 @@ module Hydro
       use Sub
       use IO
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: Bij,uij
       real, dimension (nx,3) :: uu,SS,BB,CC,EE,divS,curlS,curlB,del2A,curlE

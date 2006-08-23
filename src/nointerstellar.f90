@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.29 2006-08-18 12:44:14 mee Exp $
+! $Id: nointerstellar.f90,v 1.30 2006-08-23 16:53:32 mee Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.29 2006-08-18 12:44:14 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.30 2006-08-23 16:53:32 mee Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -119,7 +119,7 @@ module Interstellar
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       if (NO_WARN) print*, f(1,1,1,1), slices%ready
@@ -165,7 +165,7 @@ module Interstellar
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*,f !(keep compiler quiet)
 !
@@ -191,7 +191,7 @@ module Interstellar
 !
       use Cparam
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if (NO_WARN) print*,f      
 !
@@ -204,7 +204,7 @@ module Interstellar
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(in) :: df
       type (pencil_case), intent(in) :: p 
       real, dimension(nx), intent(in) :: Hmax 
@@ -220,7 +220,7 @@ module Interstellar
 !
     use Cdata
 !
-    real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
 !
 ! (to keep compiler quiet)

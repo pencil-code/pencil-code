@@ -1,4 +1,4 @@
-! $Id: filter.f90,v 1.4 2005-06-26 17:34:12 eos_merger_tony Exp $
+! $Id: filter.f90,v 1.5 2006-08-23 16:53:31 mee Exp $
 
 module Filter
 
@@ -37,7 +37,7 @@ module Filter
       use Sub
       use Boundcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       logical, optional :: explog
       integer :: ivar1,ivar2
@@ -98,7 +98,7 @@ module Filter
       use Deriv
 !-- use Wsnaps
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tmp
       real :: awigg
@@ -167,7 +167,7 @@ module Filter
       use Sub
       use Boundcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tmp
       logical, optional :: explog
@@ -243,7 +243,7 @@ module Filter
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
       real :: del_average,rhom1,rhom2
       integer :: ivar
@@ -288,7 +288,7 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
       real :: del_average
       integer :: ivar

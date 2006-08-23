@@ -79,7 +79,7 @@ subroutine make_calc_body(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_body(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: i,j,k"
 
@@ -133,7 +133,7 @@ subroutine make_calc_3d_int_j_ji(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_int_j_ji(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: k"
 
@@ -185,7 +185,7 @@ subroutine make_calc_3d_int_k_ki(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_int_k_ki(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: j"
 
@@ -238,7 +238,7 @@ subroutine make_calc_3d_int_kj_kji(unitno,k)
   write(unitno,"(a,i1,a)") "  subroutine shock_calc_int_kj_kji_",k,"(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
 
   call evaluate_facefactors(unitno,0)
@@ -317,7 +317,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_internalboundary(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: i,j,k"
   if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
@@ -523,7 +523,7 @@ subroutine make_calc_3d_ext_j_ji(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_ext_j_ji(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: k"
 
@@ -589,7 +589,7 @@ subroutine make_calc_3d_ext_k_ki(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_ext_k_ki(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: j"
 
@@ -655,7 +655,7 @@ subroutine make_calc_3d_ext_kj_kji(unitno,k)
   write(unitno,"(a,i1,a)") "  subroutine shock_calc_ext_kj_kji_",k,"(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
 
   call evaluate_facefactors(unitno,0)
@@ -892,7 +892,7 @@ subroutine make_calc_externalboundary(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_externalboundary(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    integer :: i,j,k"
 

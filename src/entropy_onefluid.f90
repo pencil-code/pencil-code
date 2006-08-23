@@ -1,4 +1,4 @@
-! $Id: entropy_onefluid.f90,v 1.11 2006-07-17 11:37:31 mee Exp $
+! $Id: entropy_onefluid.f90,v 1.12 2006-08-23 16:53:31 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -157,7 +157,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_onefluid.f90,v 1.11 2006-07-17 11:37:31 mee Exp $")
+           "$Id: entropy_onefluid.f90,v 1.12 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -197,7 +197,7 @@ module Entropy
 !AB: beginning of the module (as is done now already), or should we do it
 !AB: again in each routine?
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       real :: beta1
@@ -506,7 +506,7 @@ module Entropy
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
       real, dimension (nx) :: pp,lnrho,ss
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
@@ -826,7 +826,7 @@ module Entropy
       use Sub, only: step
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint
@@ -879,7 +879,7 @@ module Entropy
       use Sub, only: step
       use Gravity, only: gravz, nu_epicycle
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
@@ -933,7 +933,7 @@ module Entropy
       use EquationOfState, only: pressure_gradient
       use Gravity, only: gravz
 
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: lnrho_bot,ss_const
       real :: cs2,cp1tilde,lnrho,lnrho_m
 
@@ -994,7 +994,7 @@ module Entropy
 !--   use EquationOfState, only: mpoly1
       use EquationOfState, only: gamma, gamma1, cs2top
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: cs2m,lnrhom,ssm
       real :: zm,ztop,cs2cool,mixinglength_flux
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
@@ -1085,7 +1085,7 @@ module Entropy
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly
       use Sub, only: calc_unitvects_sphere
 
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
       real :: beta1
 !
@@ -1155,7 +1155,7 @@ module Entropy
       use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_pp, pressure_gradient, getmu
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
       double precision, dimension(nx) :: n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
@@ -1265,7 +1265,7 @@ module Entropy
 !          year="1993",
 !          pages="1394-1414" }
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (4) :: rpp,rpr,rpu,rpv
 !
@@ -1495,7 +1495,7 @@ module Entropy
       use EquationOfState
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       real, dimension (nx,3) :: glnrhod, glnrhotot
@@ -1593,7 +1593,7 @@ module Entropy
       use Global
       use Special, only: special_calc_entropy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -1769,7 +1769,7 @@ module Entropy
       use Sub
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: glnT,glnP
@@ -1822,7 +1822,7 @@ module Entropy
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
@@ -1871,7 +1871,7 @@ module Entropy
       use Sub
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: thdiff,g2,gshockgss
@@ -1923,7 +1923,7 @@ module Entropy
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnT,glnThcond !,glhc
@@ -1981,7 +1981,7 @@ module Entropy
       use Sub
       use IO
 !       
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp
       real, dimension (nx,3) :: tmpv1,tmpv2,tmpv3
@@ -2060,7 +2060,7 @@ module Entropy
       use IO
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: glnT,glnThcond,glhc,glnP,glchit_prof
@@ -2195,7 +2195,7 @@ module Entropy
       use Sub
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx) :: Hmax
@@ -2368,7 +2368,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
       use IO
 !     
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lncool,lnneni,rtv_cool,lnTT_SI
       integer :: i,imax
@@ -2442,7 +2442,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
       use Cdata
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: scl
 !
@@ -2702,7 +2702,7 @@ if (headtt) print*,'cooling_profile: cooling_profile,z2,wcool=',cooling_profile,
 !
       use EquationOfState, only: rho0
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnTT,lnrho,newton
       real :: lnTTor,xil,unit_temp

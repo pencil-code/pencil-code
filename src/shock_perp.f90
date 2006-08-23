@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.3 2006-08-22 13:53:46 theine Exp $
+! $Id: shock_perp.f90,v 1.4 2006-08-23 16:53:32 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -119,7 +119,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.3 2006-08-22 13:53:46 theine Exp $")
+           "$Id: shock_perp.f90,v 1.4 2006-08-23 16:53:32 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -283,7 +283,7 @@ module Shock
 !
 !  26-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       integer :: inamev
@@ -342,7 +342,7 @@ module Shock
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -377,7 +377,7 @@ module Shock
 !for debug      use IO
      use Cdata
 !
-     real, dimension (mx,my,mz,mvar+maux) :: f
+     real, dimension (mx,my,mz,mfarray) :: f
      real, dimension (mx,my,mz) :: tmp
 !
 !  Exit if were're not using the "simple" shock profile code or it's the wrong time.
@@ -439,7 +439,7 @@ module Shock
       use Interstellar, only: calc_snr_unshock
 !
       logical :: early_finalize
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: shock_max,shock_perp_max
 !
       if ((.not.lshock_first).or.lfirst) then
@@ -569,7 +569,7 @@ module Shock
 
       use Magnetic, only: bb_unitvec_shock
 
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz), intent (inout) :: shock_max
       real, dimension (mx,my,mz), intent (inout) :: shock_perp_max
       real, dimension (mx) :: penc,penc_perp
@@ -631,7 +631,7 @@ module Shock
 
       use Magnetic, only: bb_unitvec_shock
 
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz), intent (inout) :: shock_max 
       real, dimension (mx,my,mz), intent (inout) :: shock_perp_max
 
@@ -1023,7 +1023,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: maxf
       integer :: j
       integer :: ii,jj,kk
@@ -1096,7 +1096,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: tmp_penc
       real, dimension (mx) :: maxf
       real, parameter :: t1 = 1.
@@ -1144,7 +1144,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: maxf
       integer :: j
       integer :: ii,jj,kk
@@ -1352,7 +1352,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
       real :: fac
 !
@@ -1411,7 +1411,7 @@ module Shock
 !
       use Cdata
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx) :: df
       real :: fac
 
@@ -1445,7 +1445,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (in) :: bb_hat
       real, dimension (mx), intent (in) :: divu
       real, dimension (mx), intent (out) :: divu_perp
@@ -1500,7 +1500,7 @@ module Shock
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
       real :: cube, diamond, fac
       integer :: i,j,k
@@ -1595,7 +1595,7 @@ module Shock
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
       if ((nxgrid/=1).and.(nygrid/=1).and.(nzgrid/=1)) then
@@ -1680,7 +1680,7 @@ module Shock
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
       real :: octagon, fac_diag, fac_straight
       integer :: i,j,k
@@ -1814,7 +1814,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (nprocx==1.and.lperi(1))  then 
         f(l1:l1i ,:,:,ishock) = f(l1:l1i,:,:,ishock) + f(l2+1:mx,:,:,ishock)
@@ -1832,7 +1832,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 
       if (nprocy==1.and.lperi(2)) then
         f(:,m1:m1i,:,ishock)  = f(:,m1:m1i,:,ishock) + f(:,m2+1:my,:,ishock)
@@ -1850,7 +1850,7 @@ module Shock
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (nprocz==1.and.lperi(3))  then 
         f(:,:,n1:n1i ,ishock) = f(:,:,n1:n1i,ishock) + f(:,:,n2+1:mz,ishock)

@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.7 2006-08-23 11:37:17 mee Exp $
+! $Id: nochiral.f90,v 1.8 2006-08-23 16:53:32 mee Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -54,7 +54,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.7 2006-08-23 11:37:17 mee Exp $")
+           "$Id: nochiral.f90,v 1.8 2006-08-23 16:53:32 mee Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************
@@ -65,7 +65,7 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 ! 
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -79,7 +79,7 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       call keep_compiler_quiet(f)
@@ -116,7 +116,7 @@ module Chiral
 !  21-11-04/anders: coded
 !
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f,p
@@ -133,7 +133,7 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -210,7 +210,7 @@ module Chiral
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       if (NO_WARN) print*, f(1,1,1,1), slices%ready

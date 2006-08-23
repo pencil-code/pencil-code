@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.133 2006-08-21 07:43:51 dobler Exp $
+! $Id: interstellar.f90,v 1.134 2006-08-23 16:53:31 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -377,7 +377,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.133 2006-08-21 07:43:51 dobler Exp $")
+           "$Id: interstellar.f90,v 1.134 2006-08-23 16:53:31 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -711,7 +711,7 @@ module Interstellar
 !
 !  26-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       integer :: inamev
@@ -788,7 +788,7 @@ module Interstellar
       use Cdata
       use General, only: chn
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       logical :: lnothing=.true.
       character (len=4) :: iinit_str
@@ -919,7 +919,7 @@ module Interstellar
       use Sub, only: max_mn_name, sum_mn_name
       use EquationOfState, only: gamma, gamma11, eoscalc
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       
       real, dimension (nx) :: heat,cool,lnTT, lnrho
       real, dimension (nx) :: damp_profile
@@ -995,7 +995,7 @@ module Interstellar
       use Sub, only: max_mn_name, sum_mn_name, smooth_kernel, despike
       use EquationOfState, only: gamma, gamma11
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case) :: p
       
@@ -1197,7 +1197,7 @@ cool_loop: do i=1,ncool
 !
     use Cdata, only: headtt, t
 !
-    real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
     logical :: l_SNI=.false.   !only allow SNII if no SNI this step
                                !(may not be worth keeping)
@@ -1225,7 +1225,7 @@ cool_loop: do i=1,ncool
 !
     use Cdata, only: headtt, lroot, t
 !
-    real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
     logical :: l_SNI
     integer :: try_count, iSNR
@@ -1295,7 +1295,7 @@ cool_loop: do i=1,ncool
     use Mpicomm, only: mpireduce_sum, mpibcast_real
     use EquationOfState, only: eoscalc
 ! 
-    real, dimension(mx,my,mz,mvar+maux) :: f
+    real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
     real, dimension(nx) :: rho,rho_cloud,ss,lnTT,TT,yH
     real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII,dv
@@ -1390,7 +1390,7 @@ cool_loop: do i=1,ncool
     use Cdata, only: headtt, dx, dy, dz, lroot, lperi, xyz0
 !    use General
 !
-    real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+    real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 
     real :: z00, x00, y00
@@ -1445,7 +1445,7 @@ cool_loop: do i=1,ncool
 !    use Mpicomm
 !    use General
 !
-    real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+    real, intent(in), dimension(mx,my,mz,mfarray) :: f
     real, intent(in) :: h_SN
     type (SNRemnant), intent(inout) :: SNR
 !
@@ -1516,7 +1516,7 @@ cool_loop: do i=1,ncool
 !    use Mpicomm
 !    use General
 !
-    real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+    real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 !
     real :: z00, x00, y00
@@ -1571,7 +1571,7 @@ cool_loop: do i=1,ncool
 !    use Mpicomm
     use EquationOfState, only: eoscalc
 !
-    real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+    real, intent(in), dimension(mx,my,mz,mfarray) :: f
     real, intent(in) , dimension(ncpus) :: cloud_mass_byproc
     type (SNRemnant), intent(inout) :: SNR
 !
@@ -1662,7 +1662,7 @@ find_SN: do n=n1,n2
     use General, only: random_number_wrapper
 !    use EquationOfState
 !
-    real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+    real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 !
     real, dimension(nx) :: rho_test, lnTT_test, TT_test
@@ -1754,7 +1754,7 @@ find_SN: do n=n1,n2
     use EquationOfState, only: eoscalc,ilnrho_lnTT
     use Mpicomm, only: mpibcast_int, mpibcast_real
 !      
-    real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+    real, intent(in), dimension(mx,my,mz,mfarray) :: f
     type (SNRemnant), intent(inout) :: SNR
 !    
     real, dimension(nx) :: lnTT
@@ -1835,7 +1835,7 @@ find_SN: do n=n1,n2
 !      use Sub, only: update_snaptime
 !      use Slices, only: tvid, nvid
 !
-      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, intent(inout), dimension(mx,my,mz,mvar) :: df
       type (SNRemnant), intent(inout) :: SNR
 !
@@ -2182,7 +2182,7 @@ find_SN: do n=n1,n2
 !!
 !      use Cdata
 !!
-!      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+!      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !      real, dimension(nx) :: ee, rho, profile_smooth
 !      real, dimension(nx) :: ee_new, rho_new
 !      real, dimension(nx,3) :: uu, uu_new
@@ -2230,7 +2230,7 @@ find_SN: do n=n1,n2
       use Mpicomm
       use Sub
 !
-      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       integer, dimension(3) :: worst
       real, dimension(nx,3) :: r_vec, r_hat, uu
       real, dimension(nx) :: uur, ttc
@@ -2285,7 +2285,7 @@ find_SN: do n=n1,n2
 !
       use Cdata
 !
-!      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+!      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !      integer, intent(in) :: ivar
       real, dimension(mx), intent(inout) :: penc
       real, dimension(mx) :: dr2_SN_mx
@@ -2306,7 +2306,7 @@ find_SN: do n=n1,n2
       use Cdata
       use Sub, only: multsv, multsv_add, dot
 !
-!      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+!      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
 !      integer, intent(in) :: ivar
       type (pencil_case) :: p
       real, dimension(nx) :: profile
@@ -2376,7 +2376,7 @@ find_SN: do n=n1,n2
       use Sub, only: multsv, multsv_add
       use EquationOfState, only: eoscalc, eosperturb
 !
-      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx) :: profile, ee_old, rho, lnrho
       real :: factor
       real, dimension(1) :: fmpi, fmpi_tmp
@@ -2421,7 +2421,7 @@ find_SN: do n=n1,n2
       use Sub
       use Mpicomm
 !
-      real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant) :: remnant
       double precision :: radius2
       double precision :: rhom, ekintot
@@ -2474,7 +2474,7 @@ find_SN: do n=n1,n2
       use Cdata, only: ilnrho,m,n
       use Mpicomm
 !
-      real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: SNR
       double precision, intent(in) :: radius
       real, intent(out) :: rho_lowest
@@ -2599,7 +2599,7 @@ find_SN: do n=n1,n2
       use Cdata, only: dx,dy,dz,ilnrho,m,n
       use Mpicomm, only: mpibcast_double, mpireduce_sum_double
 !
-      real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
+      real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(in) :: SNR
       double precision, intent(in) :: width, depth
       double precision, intent(out) :: mass_removed

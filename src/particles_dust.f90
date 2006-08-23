@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.135 2006-08-23 05:59:39 ajohan Exp $
+! $Id: particles_dust.f90,v 1.136 2006-08-23 16:53:32 mee Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -110,7 +110,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.135 2006-08-23 05:59:39 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.136 2006-08-23 16:53:32 mee Exp $")
 !
 !  Indices for particle position.
 !
@@ -251,7 +251,7 @@ module Particles
       use Mpicomm, only: stop_it
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -715,7 +715,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use General, only: random_number_wrapper
 !      
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: eta_glnrho, v_Kepler, ampluug, dxp, dzp
       integer :: i, i1, i2, j, k, npar_loc_x, npar_loc_z
@@ -829,7 +829,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use General, only: random_number_wrapper
 !      
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: eta_glnrho, v_Kepler, kx, kz
       real :: r, p, xprob, zprob, dzprob, fprob, dfprob
@@ -937,7 +937,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use General, only: random_number_wrapper
 !      
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       integer, parameter :: nz_inc=10
       real, dimension (nz_inc*nz) :: z_dense, eps
@@ -1139,7 +1139,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  16-feb-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       if (lpencil(i_np)) p%np=f(l1:l2,m,n,inp)
@@ -1162,7 +1162,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  25-apr-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
@@ -1184,7 +1184,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Particles_number, only: get_nptilde
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (mpar_loc,mpvar) :: fp, dfp
@@ -1481,7 +1481,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use General, only: random_number_wrapper, random_seed_wrapper
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1539,7 +1539,7 @@ k_loop:   do while (.not. (k>npar_loc))
       use Particles_number, only: get_nptilde
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1670,7 +1670,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Calculate the friction time.
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       real :: tausp1_point
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -1761,7 +1761,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Power_spectrum, only: power_1d
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lpar_spec) call power_1d(f,'p',0,irhop)
 !

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.119 2006-08-03 07:07:27 ajohan Exp $
+! $Id: boundcond.f90,v 1.120 2006-08-23 16:53:30 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -34,7 +34,7 @@ module Boundcond
 !
       use Cparam
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2
@@ -67,7 +67,7 @@ module Boundcond
       use Radiation
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real, dimension (mcom) :: fbcx12
@@ -182,7 +182,7 @@ module Boundcond
       use Special, only: special_boundconds
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real, dimension (mcom) :: fbcy12
@@ -283,7 +283,7 @@ module Boundcond
       use Density
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
       real, dimension (mx,my,mz,mvar), optional :: df
 !
@@ -438,7 +438,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -464,7 +464,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -490,7 +490,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -522,7 +522,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
@@ -571,7 +571,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
@@ -620,7 +620,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mcom), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
@@ -664,7 +664,7 @@ module Boundcond
       use Cdata
 !
       character (len=3), intent (in) :: topbot
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
 
@@ -694,7 +694,7 @@ module Boundcond
       use Cdata
 !
       character (len=3), intent (in) :: topbot
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
 
@@ -724,7 +724,7 @@ module Boundcond
       use Cdata
 !
       character (len=3), intent (in) :: topbot
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       integer, intent (in) :: j
       real, intent (in) :: val
 
@@ -755,7 +755,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 
       select case(topbot)
@@ -787,7 +787,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 
       select case(topbot)
@@ -819,7 +819,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j
 
       select case(topbot)
@@ -851,7 +851,7 @@ module Boundcond
     use Cdata
 !
     character (len=3) :: topbot
-    real, dimension (mx,my,mz,mvar+maux) :: f
+    real, dimension (mx,my,mz,mfarray) :: f
     real, dimension (mx,my) :: cpoly0,cpoly1,cpoly2
     integer :: i,j
 
@@ -892,7 +892,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: Nyquist=impossible
       integer :: j
 !
@@ -934,7 +934,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,j,k
 !
       select case(topbot)
@@ -981,7 +981,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
       select case(topbot)
@@ -1014,7 +1014,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
       select case(topbot)
@@ -1047,7 +1047,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
       select case(topbot)
@@ -1081,7 +1081,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,n1p4,n2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -1121,7 +1121,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,l1p4,l2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -1161,7 +1161,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,m1p4,m2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -1200,7 +1200,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
       select case(topbot)
@@ -1263,7 +1263,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
 !
       select case(topbot)
@@ -1300,7 +1300,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j,n1p4,n2m4
 !
 !  abbreviations, because otherwise the ifc compiler complains
@@ -1347,7 +1347,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: fder
       integer :: i,j
 !
@@ -1390,7 +1390,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (my,mz) :: fder
       integer :: i,j
 !
@@ -1431,7 +1431,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: sgn,i,j
 !
       select case(topbot)
@@ -1493,7 +1493,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz,j
       real :: kx,ky
 !
@@ -1520,7 +1520,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: idz,j
       real :: kx,ky
 !
@@ -1541,14 +1541,14 @@ module Boundcond
     subroutine bc_force_kepler(f,idz,j)
 
       use Cdata, only: x,y,iux,iuy,iuz,pi, &
-                       mx,my,mz,m1,m2,l1,l2,mvar,maux,nx
+                       mx,my,mz,m1,m2,l1,l2,mfarray,nx
       use Mpicomm, only: stop_it
       use Global, only: get_global
       use Hydro, only: kep_cutoff_pos_ext,kep_cutoff_width_ext
       use Hydro, only: kep_cutoff_pos_int,kep_cutoff_width_int
       use Hydro, only: u_out_kep
 
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: idz,j
       real, dimension (nx,3) :: gg
       real, dimension (nx) :: r,g_r
@@ -1619,7 +1619,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -1646,7 +1646,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -1673,7 +1673,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -1769,7 +1769,7 @@ module Boundcond
       use Cparam
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mvar+maux) :: a
+      real, dimension (mx,my,mz,mfarray) :: a
 !
       call boundconds_x(a)
       call initiate_isendrcv_bdry(a)
@@ -1789,7 +1789,7 @@ module Boundcond
        Use Sub
        Use Cdata
 
-       real, dimension (mx,my,mz,mvar+maux) :: f
+       real, dimension (mx,my,mz,mfarray) :: f
        real, dimension (nx,ny*nprocy) :: uxd,uyd,uxl,uxr,uyl,uyr
        integer :: lend,iostat=0,i=0,j
        real :: tl=0.,tr=0.,delta_t

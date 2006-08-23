@@ -1,4 +1,4 @@
-! $Id: particles_selfgravity.f90,v 1.9 2006-08-03 07:07:28 ajohan Exp $
+! $Id: particles_selfgravity.f90,v 1.10 2006-08-23 16:53:32 mee Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -54,7 +54,7 @@ module Particles_selfgravity
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_selfgravity.f90,v 1.9 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: particles_selfgravity.f90,v 1.10 2006-08-23 16:53:32 mee Exp $")
 !
 !  Index for gradient for the self-potential and for the smooth particle
 !  density field.
@@ -101,7 +101,7 @@ module Particles_selfgravity
 !
 !  13-jun-06/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
       real :: rhs_poisson_const
       logical :: lcontinued
@@ -155,7 +155,7 @@ module Particles_selfgravity
 !
 !  02-jul-06/anders: adapted
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
@@ -171,7 +171,7 @@ module Particles_selfgravity
       use Messages, only: fatal_error
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
@@ -196,7 +196,7 @@ module Particles_selfgravity
       use Messages, only: fatal_error
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid

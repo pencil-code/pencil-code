@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.31 2006-08-22 12:07:08 mee Exp $
+! $Id: deriv.f90,v 1.32 2006-08-23 16:53:31 mee Exp $
 
 module Deriv
   
@@ -41,7 +41,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
 !
@@ -146,7 +146,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
 !
@@ -208,7 +208,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx
@@ -287,7 +287,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df
       real :: fac
       integer :: j,k
@@ -375,7 +375,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx
@@ -454,7 +454,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx,upwind
@@ -635,7 +635,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
@@ -735,7 +735,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
       integer :: j,k,l

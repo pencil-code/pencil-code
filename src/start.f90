@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.161 2006-08-18 12:45:40 mee Exp $
+! $Id: start.f90,v 1.162 2006-08-23 16:53:32 mee Exp $
 !
 !***********************************************************************
       program start
@@ -56,7 +56,7 @@
         integer :: i,ifilter,stat
         logical :: lnoerase=.false.
         real :: x00,y00,z00
-!        real, dimension (mx,my,mz,mvar+maux) :: f
+!        real, dimension (mx,my,mz,mfarray) :: f
 !        real, dimension (mx,my,mz,mvar) :: df
 !        real, dimension (mx,my,mz) :: xx,yy,zz
         real, allocatable, dimension (:,:,:,:) :: f,df
@@ -78,7 +78,7 @@
         allocate(xx(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for xx")
         allocate(yy(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for yy")
         allocate(zz(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for zz")
-        allocate( f(mx,my,mz,mvar+maux),STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for f ")
+        allocate( f(mx,my,mz,mfarray),STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for f ")
         allocate(df(mx,my,mz,mvar)     ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for df")
 !
         call register_modules()         ! register modules, etc.
@@ -91,7 +91,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.161 2006-08-18 12:45:40 mee Exp $")
+             "$Id: start.f90,v 1.162 2006-08-23 16:53:32 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !

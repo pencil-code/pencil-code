@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.59 2006-08-22 23:54:01 wlyra Exp $
+! $Id: planet.f90,v 1.60 2006-08-23 16:53:32 mee Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.59 2006-08-22 23:54:01 wlyra Exp $")
+           "$Id: planet.f90,v 1.60 2006-08-23 16:53:32 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -97,7 +97,7 @@ module Planet
 !
       use Mpicomm, only : stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       if (lroot) print*, 'initialize_planet'
@@ -125,7 +125,7 @@ module Planet
 !
 ! 28-mar-06/wlad : coded 
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f

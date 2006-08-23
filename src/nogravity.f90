@@ -1,4 +1,4 @@
-! $Id: nogravity.f90,v 1.2 2006-08-18 19:54:07 joishi Exp $
+! $Id: nogravity.f90,v 1.3 2006-08-23 16:53:32 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nogravity.f90,v 1.2 2006-08-18 19:54:07 joishi Exp $")
+           "$Id: nogravity.f90,v 1.3 2006-08-23 16:53:32 mee Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -129,7 +129,7 @@ module Gravity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
 ! Not doing anything (this might change if we decide to store gg)
@@ -166,7 +166,7 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f
@@ -184,7 +184,7 @@ module Gravity
 !
 ! 28-mar-02/axel: adapted from grav_z
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !

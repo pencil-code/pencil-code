@@ -1,4 +1,4 @@
-! $Id: nocosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $
+! $Id: nocosmicrayflux.f90,v 1.5 2006-08-23 16:53:32 mee Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -37,13 +37,13 @@ module Cosmicrayflux
       first = .false.
 
       if (lroot) call cvs_id( &
-           "$Id: nocosmicrayflux.f90,v 1.4 2005-07-05 16:21:42 mee Exp $")
+           "$Id: nocosmicrayflux.f90,v 1.5 2006-08-23 16:53:32 mee Exp $")
 
     endsubroutine register_cosmicrayflux
 !***********************************************************************
     subroutine initialize_cosmicrayflux(f)
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*,'f=',f
 !
@@ -89,7 +89,7 @@ module Cosmicrayflux
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if (NO_WARN) print*,f,xx,yy,zz !(prevent compiler warnings)
@@ -112,7 +112,7 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine calc_pencils_cosmicrayflux(f,p)
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -123,7 +123,7 @@ module Cosmicrayflux
 !***********************************************************************
     subroutine dfcr_dt(f,df,p)
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !

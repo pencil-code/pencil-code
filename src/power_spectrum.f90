@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.56 2006-07-30 19:46:12 ajohan Exp $
+! $Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -33,7 +33,7 @@ module  power_spectrum
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.56 2006-07-30 19:46:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -131,7 +131,7 @@ module  power_spectrum
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.56 2006-07-30 19:46:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -230,7 +230,7 @@ module  power_spectrum
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi,jji
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
@@ -243,7 +243,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.56 2006-07-30 19:46:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -373,7 +373,7 @@ module  power_spectrum
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nxgrid) :: kx
@@ -384,7 +384,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.56 2006-07-30 19:46:12 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -468,7 +468,7 @@ module  power_spectrum
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
 !
-    real, dimension (mx,my,mz,mvar+maux) :: f
+    real, dimension (mx,my,mz,mfarray) :: f
     character (len=1) :: sp
     integer :: ivec
     integer, optional :: ivar
@@ -485,7 +485,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.56 2006-07-30 19:46:12 ajohan Exp $")
+        "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -693,7 +693,7 @@ module  power_spectrum
 !
   integer :: i,l,i_pdf
   integer, parameter :: n_pdf=3001
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (nx,3) :: gcc
   real, dimension (nx) :: pdf_var,gcc2
   real, dimension(n_pdf) :: pdf_xx

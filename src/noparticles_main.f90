@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.19 2006-08-03 07:07:28 ajohan Exp $
+! $Id: noparticles_main.f90,v 1.20 2006-08-23 16:53:32 mee Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -53,7 +53,7 @@ module Particles_main
 !
 !  22-aug-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*, f
 !
@@ -133,7 +133,7 @@ module Particles_main
 !
 !  16-feb-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !      
       if (NO_WARN) print*, f
 !
@@ -165,7 +165,7 @@ module Particles_main
 !
 !  16-feb-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
@@ -178,7 +178,7 @@ module Particles_main
 !
 !  13-jun-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny,nz) :: rhs_poisson
       real :: rhs_poisson_const
       logical :: lcontinued
@@ -193,7 +193,7 @@ module Particles_main
 !
 !  22-aug-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
       if (NO_WARN) print*, f, df
@@ -206,7 +206,7 @@ module Particles_main
 !
 !  20-apr-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -254,7 +254,7 @@ module Particles_main
 !
 !  01-jan-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*, f
 !
@@ -266,7 +266,7 @@ module Particles_main
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       if (NO_WARN) print*, f, slices%ready

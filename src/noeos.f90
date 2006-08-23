@@ -1,4 +1,4 @@
-! $Id: noeos.f90,v 1.28 2006-08-01 10:10:39 ajohan Exp $
+! $Id: noeos.f90,v 1.29 2006-08-23 16:53:32 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -80,7 +80,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noeos.f90,v 1.28 2006-08-01 10:10:39 ajohan Exp $')
+           '$Id: noeos.f90,v 1.29 2006-08-23 16:53:32 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -168,7 +168,7 @@ module EquationOfState
 !
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f
@@ -180,7 +180,7 @@ module EquationOfState
 !***********************************************************************
     subroutine ioninit(f)
 !   
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !   
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -188,7 +188,7 @@ module EquationOfState
 !***********************************************************************
     subroutine ioncalc(f)
 !
-    real, dimension (mx,my,mz,mvar+maux) :: f
+    real, dimension (mx,my,mz,mfarray) :: f
 !
     if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -225,7 +225,7 @@ module EquationOfState
 !   02-apr-04/tony: implemented dummy
 !
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
 !
 !
@@ -263,7 +263,7 @@ module EquationOfState
 !   02-apr-04/tony: implemented dummy
 !
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
@@ -283,7 +283,7 @@ module EquationOfState
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
 !
@@ -301,7 +301,7 @@ module EquationOfState
 !
 !   13-may-04/tony: adapted from idealgas dummy
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3) :: hlnTT
 !
@@ -314,7 +314,7 @@ module EquationOfState
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp)
       
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp
 
@@ -328,7 +328,7 @@ module EquationOfState
 !
 !   02-apr-04/tony: implemented dummy
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,kapparho
 !
@@ -460,7 +460,7 @@ module EquationOfState
 !  17-oct-03/nils: works also with leos_ionization=T
 !  18-oct-03/tobi: distributed across ionization modules
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
       real, dimension(nx) :: lnrho,ss
       real :: ss_offset=0.
@@ -493,7 +493,7 @@ module EquationOfState
 !
 !  Currently only implemented for ionization_fixed.
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
       if (NO_WARN) print*,f,T0,rho0
@@ -516,7 +516,7 @@ module EquationOfState
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
       
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
       
@@ -608,7 +608,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
@@ -674,7 +674,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -735,7 +735,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -794,7 +794,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -852,7 +852,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -931,7 +931,7 @@ module EquationOfState
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
@@ -1032,7 +1032,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -1087,7 +1087,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
@@ -1136,7 +1136,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
@@ -1186,7 +1186,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
@@ -1233,7 +1233,7 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: cs2_2d
       integer :: i
 !
@@ -1279,7 +1279,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f,topbot
@@ -1291,7 +1291,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar), optional :: df
 !
       call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
@@ -1304,7 +1304,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN NOEOS")
       if (NO_WARN) print*,f,topbot

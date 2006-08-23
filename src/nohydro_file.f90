@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.24 2006-03-30 09:20:28 ajohan Exp $
+! $Id: nohydro_file.f90,v 1.25 2006-08-23 16:53:32 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.24 $", &
-           "$Date: 2006-03-30 09:20:28 $")
+           "$Revision: 1.25 $", &
+           "$Date: 2006-08-23 16:53:32 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -72,7 +72,7 @@ module Hydro
 !
 !  24-nov-02/tony: coded 
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
 !  do nothing
@@ -110,7 +110,7 @@ module Hydro
       use Sub
       use IO
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: uu,glnrho,gshock

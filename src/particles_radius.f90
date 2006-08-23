@@ -1,4 +1,4 @@
-! $Id: particles_radius.f90,v 1.15 2006-04-17 15:28:34 ajohan Exp $
+! $Id: particles_radius.f90,v 1.16 2006-08-23 16:53:32 mee Exp $
 !
 !  This module takes care of everything related to particle radius.
 !
@@ -50,7 +50,7 @@ module Particles_radius
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_radius.f90,v 1.15 2006-04-17 15:28:34 ajohan Exp $")
+           "$Id: particles_radius.f90,v 1.16 2006-08-23 16:53:32 mee Exp $")
 !
 !  Index for particle radius.
 !
@@ -93,7 +93,7 @@ module Particles_radius
 !  22-aug-05/anders: coded
 !
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
       integer :: j
@@ -125,7 +125,7 @@ module Particles_radius
       use Particles_number
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid

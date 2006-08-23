@@ -1,4 +1,4 @@
-! $Id: gross_pitaevskii.f90,v 1.7 2006-07-29 18:06:33 mee Exp $
+! $Id: gross_pitaevskii.f90,v 1.8 2006-08-23 16:53:33 mee Exp $
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
@@ -183,10 +183,10 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.7 2006-07-29 18:06:33 mee Exp $ 
+!  CVS should automatically update everything between $Id: gross_pitaevskii.f90,v 1.8 2006-08-23 16:53:33 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
-      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.7 2006-07-29 18:06:33 mee Exp $")
+      if (lroot) call cvs_id( "$Id: gross_pitaevskii.f90,v 1.8 2006-08-23 16:53:33 mee Exp $")
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
 !  been configured in a custom module but they do no harm)
@@ -621,6 +621,40 @@ endsubroutine read_special_run_pars
 
 
     endsubroutine rprint_special
+!***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of gross_pitaevskii variables.
+!
+!  26-jul-06/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      type (slice_data) :: slices
+!
+      integer :: inamev
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  psi2 - Absolute value of the wave function squared
+!
+        case ('psi2')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,ipsi_real)**2 &
+                  + f(ix_loc,m1:m2,n1:n2,ipsi_imag)**2 
+          slices%xz=f(l1:l2,iy_loc,n1:n2,ipsi_real)**2 &
+                  + f(l1:l2,iy_loc,n1:n2,ipsi_imag)**2 
+          slices%xy=f(l1:l2,m1:m2,iz_loc,ipsi_real)**2 &
+                  + f(l1:l2,m1:m2,iz_loc,ipsi_imag)**2
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipsi_real)**2 &
+                  + f(l1:l2,m1:m2,iz2_loc,ipsi_imag)**2 
+          slices%ready = .true.
+!
+      endselect
+!
+    endsubroutine get_slices_special
 !***********************************************************************
     subroutine special_calc_density(df,p)
 !

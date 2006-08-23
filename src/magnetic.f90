@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.315 2006-08-22 12:05:25 theine Exp $
+! $Id: magnetic.f90,v 1.316 2006-08-23 16:53:31 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -204,7 +204,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.315 2006-08-22 12:05:25 theine Exp $")
+           "$Id: magnetic.f90,v 1.316 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -235,7 +235,7 @@ module Magnetic
       use Cdata
       use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
       integer :: i      
 !
@@ -367,7 +367,7 @@ module Magnetic
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
@@ -496,7 +496,7 @@ module Magnetic
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       xx=spread(spread(x,2,my),3,mz)
@@ -730,7 +730,7 @@ module Magnetic
       use Deriv
       use Global, only: get_global
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f       
       type (pencil_case) :: p
 !      
       real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
@@ -937,7 +937,7 @@ module Magnetic
       use Mpicomm, only: stop_it
       use EquationOfState, only: eoscalc,gamma1
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
@@ -1389,7 +1389,7 @@ module Magnetic
       use Cdata
       use BorderProfiles, only: border_driving
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       integer :: ju,j
@@ -1530,7 +1530,7 @@ module Magnetic
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: scl
       integer :: j
 !
@@ -1562,7 +1562,7 @@ module Magnetic
       use Cdata
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: scl
       integer :: j
@@ -1589,7 +1589,7 @@ module Magnetic
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
       intent(in) :: f
@@ -1983,7 +1983,7 @@ module Magnetic
 !
 !  26-jul-06/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices
@@ -2152,7 +2152,7 @@ module Magnetic
 !
 !   8-nov-03/axel: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx
       real :: ampl,kx
       integer :: iuu,iaa,ilnrho
@@ -2179,7 +2179,7 @@ module Magnetic
 !
 !  18-aug-02/axel: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: zz
       real :: ampl,kz,mu0
       integer :: iuu,iaa
@@ -2207,7 +2207,7 @@ module Magnetic
 !
       use Cdata, only: lroot
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: zz
       real :: ampl,kz,O,fac
       integer :: iuu,iaa
@@ -2239,7 +2239,7 @@ module Magnetic
 !
       use Cdata, only: lroot
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: zz
       real :: ampl,kz,O
       complex :: fac
@@ -2274,7 +2274,7 @@ module Magnetic
 !
       use Cdata, only: lroot, epsi
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3)    :: tmpv
       real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
       real, dimension(3) :: axis,disp
@@ -2511,7 +2511,7 @@ module Magnetic
                        r_int,r_ext
       use Sub, only: calc_unitvects_sphere
 !
-      real, intent(inout), dimension (mx,my,mz,mvar+maux) :: f
+      real, intent(inout), dimension (mx,my,mz,mfarray) :: f
       real, intent(in), dimension (mx,my,mz) :: xx,yy,zz
       real, intent(in) :: ampl,inclaa
       real, dimension (nx) :: r_1_mn,r_2_mn,sigma0,sigma1
@@ -2568,7 +2568,7 @@ module Magnetic
       use Sub, only: calc_unitvects_sphere
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f     
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f     
       real, dimension(nx) :: theta_mn,ar,atheta,aphi
       real :: C_int,C_ext,A_int,A_ext
       integer :: j
@@ -2703,7 +2703,7 @@ module Magnetic
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,ny) :: f2,f3
       real, dimension (nx,ny,nghost+1) :: fz
       integer :: j
@@ -2939,7 +2939,7 @@ module Magnetic
 !
       use Cdata
 
-      real, dimension (mx,my,mz,mvar+maux), intent (in) :: f
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,3), intent (out) :: bb_hat
 
       !Tobi: Not sure about this value

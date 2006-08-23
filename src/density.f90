@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.271 2006-08-22 12:24:40 mee Exp $
+! $Id: density.f90,v 1.272 2006-08-23 16:53:31 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -104,7 +104,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.271 2006-08-22 12:24:40 mee Exp $")
+           "$Id: density.f90,v 1.272 2006-08-23 16:53:31 mee Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -124,7 +124,7 @@ module Density
       use CData, only: lfreeze_varext,lfreeze_varint,lreloading,ilnrho
       use EquationOfState, only: select_eos_variable
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       integer :: i
@@ -284,7 +284,7 @@ module Density
       use Sub
       use EquationOfState
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
@@ -793,7 +793,7 @@ module Density
       use Sub, only: step
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
@@ -844,7 +844,7 @@ module Density
       use Sub, only: step
       use Gravity, only: gravz, nu_epicycle
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint,nu_epicycle2
@@ -885,7 +885,7 @@ module Density
       use Gravity, only: g0,potential
       use Sub, only: calc_unitvects_sphere
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: pot
       real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
 !
@@ -930,7 +930,7 @@ module Density
       use Global, only: set_global
       use IO
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: lnrho,cs2
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,3) :: gg_mn
@@ -1049,7 +1049,7 @@ module Density
       use Global, only: set_global,global_derivs
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       integer :: i, mm, nn
@@ -1176,7 +1176,7 @@ module Density
       use Special, only: special_calc_density
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
@@ -1308,7 +1308,7 @@ module Density
 !
       use BorderProfiles, only: border_driving
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
 !
@@ -1451,7 +1451,7 @@ module Density
 !
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,tmp
 !
 !  Stratification depends on the gravity potential
@@ -1495,7 +1495,7 @@ module Density
       use Gravity, only: grav_profile,gravz,zinfty,zref,zgrav,  &
                              potential
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
       real :: ggamma,ztop,zbot,zinfty2,pot_ext,lnrho_ref
 !
@@ -1618,7 +1618,7 @@ module Density
       use Sub, only: step
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: fint,fext,pdamp
 !

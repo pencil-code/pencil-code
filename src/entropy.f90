@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.427 2006-08-20 22:19:56 wlyra Exp $
+! $Id: entropy.f90,v 1.428 2006-08-23 16:53:31 mee Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -161,7 +161,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.427 2006-08-20 22:19:56 wlyra Exp $")
+           "$Id: entropy.f90,v 1.428 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -203,7 +203,7 @@ module Entropy
 !AB: beginning of the module (as is done now already), or should we do it
 !AB: again in each routine?
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       real :: beta1,cp1tilde,lnrho_dummy=0.
@@ -561,7 +561,7 @@ module Entropy
                                 rho0, lnrho0, isothermal_entropy, &
                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
       real, dimension (nx) :: pp,lnrho,ss
       real, dimension (mx) :: lnTT_convert 
@@ -923,7 +923,7 @@ module Entropy
       use Sub, only: step
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint
@@ -978,7 +978,7 @@ module Entropy
       use Sub, only: step
       use Gravity, only: gravz, nu_epicycle
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
@@ -1033,7 +1033,7 @@ module Entropy
       use EquationOfState, only: pressure_gradient
       use Gravity, only: gravz
 
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: lnrho_bot,ss_const
       real :: cs2,cp1tilde,lnrho,lnrho_m
 
@@ -1094,7 +1094,7 @@ module Entropy
 !--   use EquationOfState, only: mpoly1
       use EquationOfState, only: gamma, gamma1, cs2top
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nzgrid) :: cs2m,lnrhom,ssm
       real :: zm,ztop,cs2cool,mixinglength_flux
       real :: zbot,rbot,rt_old,rt_new,rb_old,rb_new,crit, &
@@ -1185,7 +1185,7 @@ module Entropy
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly,pressure_gradient
       use Sub, only: calc_unitvects_sphere
 
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
       real :: beta1,cp1tilde,lnrho_dummy=0.
 !
@@ -1258,7 +1258,7 @@ module Entropy
       use Gravity, only: gravz
       use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, pressure_gradient
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss
       real :: beta1,cp1tilde,lnrho_dummy=0.
 !
@@ -1299,7 +1299,7 @@ module Entropy
       use Mpicomm, only: mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_pp, pressure_gradient, getmu,rho0, eosperturb
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
       double precision, dimension(nx) :: n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
@@ -1420,7 +1420,7 @@ module Entropy
 !          year="1993",
 !          pages="1394-1414" }
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (4) :: rpp,rpr,rpu,rpv
 !
@@ -1632,7 +1632,7 @@ module Entropy
       use EquationOfState
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f
@@ -1662,7 +1662,7 @@ module Entropy
       use Global
       use Special, only: special_calc_entropy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -1868,7 +1868,7 @@ module Entropy
 !
       use BorderProfiles, only: border_driving
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
 !
@@ -3085,7 +3085,7 @@ module Entropy
                                  pressure_gradient, lnrho0
       use Sub, only: calc_unitvects_sphere
 
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss
 !     real :: beta0,beta1,TT_crit,r_bcz
       real :: beta0,beta1,TT_crit

@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.14 2006-08-03 07:07:28 ajohan Exp $
+! $Id: nopower_spectrum.f90,v 1.15 2006-08-23 16:53:32 mee Exp $
 !
 module  power_spectrum
   !
@@ -13,7 +13,7 @@ module  power_spectrum
 !***********************************************************************
   subroutine power(f,sp)
 !
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   character (len=1) :: sp
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
@@ -22,7 +22,7 @@ module  power_spectrum
 !***********************************************************************
     subroutine power_2d(f,sp)
 !
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   character (len=1) :: sp
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
@@ -31,7 +31,7 @@ module  power_spectrum
 !***********************************************************************
   subroutine powerhel(f,sp)
 !
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   character (len=3) :: sp
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
@@ -40,7 +40,7 @@ module  power_spectrum
 !***********************************************************************
   subroutine powerscl(f,sp)
 !
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   character (len=2) :: sp
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
@@ -49,7 +49,7 @@ module  power_spectrum
 !***********************************************************************
     subroutine power_1d(f,sp,ivec,ivar)
 !
-    real, dimension (mx,my,mz,mvar+maux) :: f
+    real, dimension (mx,my,mz,mfarray) :: f
     character (len=1) :: sp
     integer :: ivec
     integer, optional :: ivar
@@ -62,7 +62,7 @@ module  power_spectrum
 !***********************************************************************
     subroutine pdf(f,variabl,pdf_mean,pdf_rms)
 !
-  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (mx,my,mz,mfarray) :: f
   real :: pdf_mean,pdf_rms
   character (len=*) :: variabl
 !

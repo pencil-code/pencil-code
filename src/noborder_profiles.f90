@@ -1,4 +1,4 @@
-! $Id: noborder_profiles.f90,v 1.3 2006-08-20 22:19:56 wlyra Exp $ 
+! $Id: noborder_profiles.f90,v 1.4 2006-08-23 16:53:32 mee Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -36,7 +36,7 @@ module BorderProfiles
 !***********************************************************************
     subroutine border_driving(f,df,f_target,j)
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: f_target
       integer :: j

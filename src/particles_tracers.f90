@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.26 2006-08-03 07:07:28 ajohan Exp $
+! $Id: particles_tracers.f90,v 1.27 2006-08-23 16:53:32 mee Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -58,7 +58,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.26 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: particles_tracers.f90,v 1.27 2006-08-23 16:53:32 mee Exp $")
 !
 !  Indices for particle position.
 !
@@ -139,7 +139,7 @@ module Particles
       use Mpicomm, only: stop_it
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
@@ -307,7 +307,7 @@ module Particles
 !
 !  15-feb-06/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 ! rhop
       if (lpencil(i_rhop)) p%rhop=rhop_tilde*f(l1:l2,m,n,inp)
@@ -324,7 +324,7 @@ module Particles
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (mpar_loc,mpvar) :: fp, dfp
@@ -374,7 +374,7 @@ module Particles
 !
 !  20-apr-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
@@ -392,7 +392,7 @@ module Particles
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -422,7 +422,7 @@ module Particles
 !
 !  22-aug-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -502,7 +502,7 @@ module Particles
 !
 !  01-jan-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*, f
 !

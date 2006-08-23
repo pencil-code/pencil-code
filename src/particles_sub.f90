@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.81 2006-08-10 12:57:41 ajohan Exp $
+! $Id: particles_sub.f90,v 1.82 2006-08-23 16:53:32 mee Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -755,7 +755,7 @@ module Particles_sub
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: xxp
       integer, dimension (3) :: inear
       integer :: ivar1, ivar2
@@ -913,7 +913,7 @@ module Particles_sub
       use Cdata
       use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: xxp
       integer, dimension (3) :: inear
       integer :: ivar1, ivar2
@@ -995,7 +995,7 @@ module Particles_sub
       use Cdata
       use Messages, only: fatal_error
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: xxp
       integer, dimension (3) :: inear
       integer :: ivar1, ivar2
@@ -1353,7 +1353,7 @@ module Particles_sub
       use Cdata
       use GhostFold, only: fold_f
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
 !

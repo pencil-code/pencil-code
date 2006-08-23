@@ -1,4 +1,4 @@
-! $Id: cosmicrayflux.f90,v 1.7 2006-05-30 23:44:42 theine Exp $
+! $Id: cosmicrayflux.f90,v 1.8 2006-08-23 16:53:31 mee Exp $
 
 !  Cosmic Ray Flux
 !  
@@ -79,7 +79,7 @@ module Cosmicrayflux
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicrayflux.f90,v 1.7 2006-05-30 23:44:42 theine Exp $")
+           "$Id: cosmicrayflux.f90,v 1.8 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -109,7 +109,7 @@ module Cosmicrayflux
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 
       if(tau /= 0.) tau1=1./tau
       
@@ -132,7 +132,7 @@ module Cosmicrayflux
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !,tmp,prof
 !      real, dimension (nx,3) :: bb
@@ -188,7 +188,7 @@ module Cosmicrayflux
       use Deriv
       use Global, only: get_global
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f       
       type (pencil_case) :: p
 !      
 !      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
@@ -217,7 +217,7 @@ module Cosmicrayflux
       use Mpicomm, only: stop_it
 !      use EquationOfState, only: eoscalc,gamma1
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: BuiBujgecr, b2, b21, bunit
       real, dimension (nx) :: tmp

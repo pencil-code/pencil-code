@@ -84,7 +84,7 @@ subroutine make_calc_body(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_body(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   call declare_facefactors(unitno)
   write(unitno,"(a)") "    if (.not.lgauss_integral_comm_uu) call fatal_error( &"
   write(unitno,"(a)") "      'shock_calc_body', &"
@@ -120,7 +120,7 @@ subroutine make_calc_internalboundary(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_internalboundary(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
 
   write(unitno,"(a)") "      call stop_it('shock_calc_internalboundary: Should not used in communicated uu shock')"
   write(unitno,"(a)") "      if (NO_WARN) print*,f"
@@ -144,7 +144,7 @@ subroutine make_calc_externalboundary(unitno)
   write(unitno,"(a)") "  subroutine shock_calc_externalboundary(f)"
   write(unitno,"(a)") "    use Cdata"
   write(unitno,"(a)") "    use Mpicomm, only: stop_it"
-  write(unitno,"(a)") "    real, dimension (mx,my,mz,mvar+maux) :: f"
+  write(unitno,"(a)") "    real, dimension (mx,my,mz,mfarray) :: f"
   write(unitno,"(a)") "      call stop_it('shock_calc_externalboundary: Should not used in communicated uu shock')"
   write(unitno,"(a)") "      if (NO_WARN) print*,f"
 

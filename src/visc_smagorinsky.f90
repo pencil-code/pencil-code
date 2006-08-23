@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.10 2005-10-01 08:26:59 ajohan Exp $
+! $Id: visc_smagorinsky.f90,v 1.11 2006-08-23 16:53:33 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.10 2005-10-01 08:26:59 ajohan Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.11 2006-08-23 16:53:33 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -170,7 +170,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -189,7 +189,7 @@ module Viscosity
       use Mpicomm
       use Sub, only: sum_mn_name
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,2) :: tmp
       real, dimension (nx,ny,nz) :: sij2
       real, dimension (nx) :: nu_smag
@@ -307,7 +307,7 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx)   :: rho1,TT1,cs2,Hmax
       real, dimension (nx)   :: sij2, divu,shock
@@ -335,7 +335,7 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: glnrho,del2u,del6u,graddivu,fvisc,sglnrho

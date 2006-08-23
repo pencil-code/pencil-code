@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $
+! $Id: nospecial.f90,v 1.23 2006-08-23 16:53:32 mee Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -136,11 +136,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.23 2006-08-23 16:53:32 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.22 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: nospecial.f90,v 1.23 2006-08-23 16:53:32 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -166,7 +166,7 @@ module Special
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !!
 !!  Initialize any module variables which are parameter dependant  
 !!
@@ -185,7 +185,7 @@ module Special
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       intent(in) :: xx,yy,zz
@@ -238,7 +238,7 @@ module Special
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f       
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -267,7 +267,7 @@ module Special
       use Sub
       use Global
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df     
       type (pencil_case) :: p
 
@@ -363,6 +363,19 @@ module Special
 
     endsubroutine rprint_special
 !***********************************************************************
+    subroutine get_slices_special(f,slices)
+!
+!  Write slices for animation of special variables.
+!
+!  26-jun-06/tony: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (slice_data) :: slices
+!
+      if (NO_WARN) print*, f(1,1,1,1), slices%ready
+!
+    endsubroutine get_slices_special
+!***********************************************************************
     subroutine special_calc_density(f,df,p)
 !
 !   calculate a additional 'special' term on the right hand side of the 
@@ -375,7 +388,7 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -405,7 +418,7 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -437,7 +450,7 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -469,7 +482,7 @@ module Special
 !
       use Cdata
       
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 
@@ -499,7 +512,7 @@ module Special
 !
       use Cdata
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
       type (boundary_condition) :: bc
 !
       if (NO_WARN) print*,f,bc%bcname
@@ -518,7 +531,7 @@ module Special
 !
       use Cdata
 !      
-      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       if (NO_WARN) print*,f
 !

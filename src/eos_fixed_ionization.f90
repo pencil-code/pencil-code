@@ -1,4 +1,4 @@
-! $Id: eos_fixed_ionization.f90,v 1.25 2006-08-01 10:10:39 ajohan Exp $
+! $Id: eos_fixed_ionization.f90,v 1.26 2006-08-23 16:53:31 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -104,7 +104,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: eos_fixed_ionization.f90,v 1.25 2006-08-01 10:10:39 ajohan Exp $")
+          "$Id: eos_fixed_ionization.f90,v 1.26 2006-08-23 16:53:31 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -401,7 +401,7 @@ module EquationOfState
 !
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f
@@ -460,7 +460,7 @@ module EquationOfState
 !***********************************************************************
     subroutine ioninit(f)
 !
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -468,7 +468,7 @@ module EquationOfState
 !***********************************************************************
     subroutine ioncalc(f)
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -497,7 +497,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss,lnTT
 !
@@ -541,7 +541,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
       integer :: j
@@ -562,7 +562,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
 !
@@ -582,7 +582,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
       integer :: i,j
@@ -597,7 +597,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !***********************************************************************
     subroutine eosperturb(f,psize,ee,pp)
       
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee,pp
 
@@ -619,7 +619,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Sub
       use Mpicomm, only: stop_it
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss,yH,lnTT
       real, dimension(psize), intent(out), optional :: ee,pp,kapparho
@@ -868,7 +868,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
       real, dimension(nx) :: lnrho,ss
 !
@@ -900,7 +900,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Gravity, only: grav_profile
       use Mpicomm, only: stop_it
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
       real, dimension(nx) :: lnrho,ss,lnTT
 !
@@ -945,7 +945,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
       
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_flux: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
       if (NO_WARN) print*,f,hcond0,hcond1,Fbot, FbotKbot, chi,lmultilayer,lcalc_heatcond_constchi,topbot
@@ -965,7 +965,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -982,7 +982,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -999,7 +999,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -1016,7 +1016,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -1035,7 +1035,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_temp_z: NOT IMPLEMENTED IN EOS_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -1052,7 +1052,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_pressure_z: NOT IMPLEMENTED IN EOS_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -1070,7 +1070,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_temp2_z: NOT IMPLEMENTED IN EOS_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -1087,7 +1087,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -1104,7 +1104,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
         call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -1121,7 +1121,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
       if (NO_WARN) print*,f,topbot
@@ -1139,7 +1139,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: cs2_2d
       integer :: i
 !
@@ -1157,7 +1157,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f,topbot
@@ -1169,7 +1169,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar), optional :: df
 !
       call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
@@ -1182,7 +1182,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_lnrho_hydrostatic_z: NOT IMPLEMENTED IN EOS_FIXED")
       if (NO_WARN) print*,f,topbot

@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.17 2006-08-03 07:07:28 ajohan Exp $
+! $Id: noparticles.f90,v 1.18 2006-08-23 16:53:32 mee Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -50,7 +50,7 @@ module Particles
 !
 !  22-aug-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
 !
       if (NO_WARN) print*, f, fp
@@ -84,7 +84,7 @@ module Particles
 !
 !  16-feb-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       if (NO_WARN) print*, f, p
@@ -97,7 +97,7 @@ module Particles
 !
 !  25-apr-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
@@ -113,7 +113,7 @@ module Particles
 !
 !  20-apr-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       type (pencil_case) :: p
@@ -129,7 +129,7 @@ module Particles
 !
 !  22-aug-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -144,7 +144,7 @@ module Particles
 !
 !  22-aug-05/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -211,7 +211,7 @@ module Particles
 !
 !  01-jan-06/anders: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if (NO_WARN) print*, f
 !

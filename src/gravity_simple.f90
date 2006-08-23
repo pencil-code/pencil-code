@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.11 2006-08-22 14:44:05 theine Exp $
+! $Id: gravity_simple.f90,v 1.12 2006-08-23 16:53:31 mee Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -101,7 +101,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.11 2006-08-22 14:44:05 theine Exp $")
+           "$Id: gravity_simple.f90,v 1.12 2006-08-23 16:53:31 mee Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -289,7 +289,7 @@ module Gravity
 ! 
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
 !  Don't do anything
@@ -328,7 +328,7 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f
@@ -350,7 +350,7 @@ module Gravity
 !
 !  12-nov-04/anders: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !

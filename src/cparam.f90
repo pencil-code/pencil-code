@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.52 2006-08-22 12:24:40 mee Exp $
+! $Id: cparam.f90,v 1.53 2006-08-23 16:53:31 mee Exp $
 
 module Cparam
 
@@ -25,7 +25,7 @@ module Cparam
 !
 !  derived and fixed parameters
 !
-  integer, parameter :: mfarray=mvar+maux+mglobal
+  integer, parameter :: mfarray=mvar+maux+mglobal+mscratch
   integer, parameter :: mcom=mvar+maux_com
 !
   integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind

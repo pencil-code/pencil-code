@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.62 2006-08-20 22:15:00 mee Exp $
+! $Id: eos_idealgas.f90,v 1.63 2006-08-23 16:53:31 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.62 2006-08-20 22:15:00 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.63 2006-08-23 16:53:31 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -504,7 +504,7 @@ module EquationOfState
       use Global, only: get_global
       use Sub
 !      
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f
@@ -629,7 +629,7 @@ module EquationOfState
 !***********************************************************************
     subroutine ioninit(f)
 !   
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !   
       if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -637,7 +637,7 @@ module EquationOfState
 !***********************************************************************
     subroutine ioncalc(f)
 !
-    real, dimension (mx,my,mz,mvar+maux) :: f
+    real, dimension (mx,my,mz,mfarray) :: f
 !
     if(NO_WARN) print*,f  !(keep compiler quiet)
 !
@@ -672,7 +672,7 @@ module EquationOfState
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss
 !
@@ -742,7 +742,7 @@ module EquationOfState
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
@@ -770,7 +770,7 @@ module EquationOfState
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(in) :: del2lnrho,del2ss
       real, dimension(nx), intent(out) :: del2lnTT
 !
@@ -797,7 +797,7 @@ module EquationOfState
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx,3,3), intent(in) :: hlnrho,hss
       real, dimension(nx,3,3), intent(out) :: hlnTT
 !
@@ -819,7 +819,7 @@ module EquationOfState
 !  Set f(l1:l2,m,n,iss), depending on the valyes of ee and pp
 !  Adding pressure perturbations is not implemented
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(in), optional :: ee, pp
       real, dimension(psize) :: lnrho_
@@ -857,7 +857,7 @@ module EquationOfState
       use Cdata
       use Sub, only: max_mn_name, sum_mn_name
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
       real, dimension(psize), intent(out), optional :: lnTT
@@ -1205,7 +1205,7 @@ module EquationOfState
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0
       real, dimension(nx) :: lnrho,ss,lnTT
 !      real :: ss_offset=0.
@@ -1239,7 +1239,7 @@ module EquationOfState
 !
 !  Currently only implemented for ionization_fixed.
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: T0,rho0
 !
       if (NO_WARN) print*,f,T0,rho0
@@ -1252,7 +1252,7 @@ module EquationOfState
 !
 !  03-apr-2004/tobi: coded
 !
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz), intent(out) :: kapparho
 
       call fatal_error('Hminus_opacity',"opacity_type='Hminus' may not be used with noionization")
@@ -1281,7 +1281,7 @@ module EquationOfState
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
       
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
       
@@ -1375,7 +1375,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
@@ -1442,7 +1442,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -1502,7 +1502,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -1562,7 +1562,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -1621,7 +1621,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -1700,7 +1700,7 @@ module EquationOfState
       use Gravity, only: lnrho_bot,lnrho_top,ss_bot,ss_top
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
@@ -1802,7 +1802,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
       integer :: i
 !
@@ -1858,7 +1858,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
@@ -1908,7 +1908,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
@@ -1959,7 +1959,7 @@ module EquationOfState
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: i
 !
       if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
@@ -2008,7 +2008,7 @@ module EquationOfState
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my) :: cs2_2d
       integer :: i
 !
@@ -2053,7 +2053,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       call stop_it("bc_stellar_surface: NOT IMPLEMENTED IN EOS_IDEALGAS")
       if (NO_WARN) print*,f,topbot
@@ -2065,7 +2065,7 @@ module EquationOfState
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar), optional :: df
 !
       call stop_it("bc_stellar_surface_2: NOT IMPLEMENTED IN EOS_IDEALGAS")
@@ -2093,7 +2093,7 @@ module EquationOfState
       use Cdata
       use Gravity
 
-      real, dimension (mx,my,mz,mvar+maux), intent (inout) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
       real :: dlnrhodz, dssdz
       integer :: i

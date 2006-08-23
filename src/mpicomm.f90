@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.186 2006-08-03 07:07:28 ajohan Exp $
+! $Id: mpicomm.f90,v 1.187 2006-08-23 16:53:31 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -314,7 +314,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
@@ -404,7 +404,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j
@@ -504,7 +504,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, nbufy, nbufz, nbufyz
@@ -594,7 +594,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       integer :: ivar1, ivar2, j
@@ -702,7 +702,7 @@ module Mpicomm
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
@@ -805,7 +805,7 @@ module Mpicomm
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer, optional :: ivar1_opt, ivar2_opt
 !
       real, dimension (nghost,2*my-2*nghost,mz,mcom) :: fa, fb

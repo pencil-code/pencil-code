@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.282 2006-08-22 20:24:55 wlyra Exp $
+! $Id: hydro.f90,v 1.283 2006-08-23 16:53:31 mee Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -167,7 +167,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.282 2006-08-22 20:24:55 wlyra Exp $")
+           "$Id: hydro.f90,v 1.283 2006-08-23 16:53:31 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -199,7 +199,7 @@ module Hydro
       use Mpicomm, only: stop_it
       use CData,   only: r_int,r_ext,lfreeze_varint,lfreeze_varext,epsi,leos,iux,iuy,iuz
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !  
 ! Check any module dependencies
@@ -294,7 +294,7 @@ module Hydro
       use Mpicomm, only: stop_it
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       real :: kabs,crit
       integer :: j,i,l
@@ -675,7 +675,7 @@ module Hydro
       use Deriv
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f       
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: gui
@@ -786,7 +786,7 @@ module Hydro
       use Global, only: get_global
 !ajwm QUICK FIX.... Shouldn't be here!
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
@@ -1076,7 +1076,7 @@ module Hydro
       use Gravity, only: g0,r0_pot
       use BorderProfiles, only: border_driving
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: OO
@@ -1202,7 +1202,7 @@ module Hydro
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: rho,ux
       real, dimension(1) :: fsum_tmp,fsum
@@ -1241,7 +1241,7 @@ module Hydro
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: rho,uy
       real, dimension(1) :: fsum_tmp,fsum
@@ -1278,7 +1278,7 @@ module Hydro
       use Mpicomm, only: stop_it
       use Sub, only: step,sum_mn_name
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
       real, dimension(nx) :: pdamp,fint_work,fext_work
@@ -1736,7 +1736,7 @@ module Hydro
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
 !  Loop over slices

@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.25 2006-07-30 19:46:12 ajohan Exp $
+! $Id: struct_func.f90,v 1.26 2006-08-23 16:53:32 mee Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -41,7 +41,7 @@ module struct_func
       integer, parameter :: qmax=8+1 ! the extrta 1 is for unsigned 3. moment.
       integer, parameter :: imax=lb_nxgrid*2-2
       integer, parameter :: n_pdf=101
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (:,:,:,:), allocatable :: flux_vec
       real, dimension (nx,ny,nz) :: vect,vectb,b_vec
       real, dimension (imax,qmax,3) :: sf,sf_sum

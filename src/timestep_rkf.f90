@@ -1,4 +1,4 @@
-! $Id: timestep_rkf.f90,v 1.2 2006-06-23 15:52:01 mee Exp $
+! $Id: timestep_rkf.f90,v 1.3 2006-08-23 16:53:33 mee Exp $
 
 module Timestep
 
@@ -42,7 +42,7 @@ module Timestep
 !!      use Interstellar, only: calc_snr_damp_int
 !!      use Shear, only: advance_shear
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: ds

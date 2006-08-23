@@ -1,4 +1,4 @@
-! $Id: border_profiles.f90,v 1.7 2006-08-20 22:19:56 wlyra Exp $ 
+! $Id: border_profiles.f90,v 1.8 2006-08-23 16:53:30 mee Exp $ 
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -104,7 +104,7 @@ module BorderProfiles
 !  Position-dependent driving term that attempts to drive pde
 !  the variable toward some target solution on the boundary.
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target,pborder,drive_time
       integer :: j

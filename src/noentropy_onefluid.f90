@@ -1,4 +1,4 @@
-! $Id: noentropy_onefluid.f90,v 1.3 2006-04-05 16:10:39 wlyra Exp $
+! $Id: noentropy_onefluid.f90,v 1.4 2006-08-23 16:53:32 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy_onefluid.f90,v 1.3 2006-04-05 16:10:39 wlyra Exp $")
+           "$Id: noentropy_onefluid.f90,v 1.4 2006-08-23 16:53:32 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -72,7 +72,7 @@ module Entropy
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, cs0
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !
       if (ip == 0) print*,f,lstarting ! keep compiler quiet
@@ -96,7 +96,7 @@ module Entropy
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
@@ -157,7 +157,7 @@ module Entropy
       use EquationOfState, only: gamma,gamma1,cs20,lnrho0
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: tmp
       type (pencil_case) :: p
 !
@@ -211,7 +211,7 @@ module Entropy
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      

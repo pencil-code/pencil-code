@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.335 2006-08-23 11:37:17 mee Exp $
+! ! $Id: cdata.f90,v 1.336 2006-08-23 16:53:30 mee Exp $
 
 module Cdata
 
@@ -139,7 +139,7 @@ module Cdata
 ! for optimisation purposes.  To use uncomment the array and
 ! set optimise_ders=.true.
 !
-!debug  integer, dimension(mvar+maux,8,3,3) :: der_call_count=0 !DERCOUNT
+!debug  integer, dimension(mfarray,8,3,3) :: der_call_count=0 !DERCOUNT
 !debug  logical, parameter :: loptimise_ders=.true.             !DERCOUNT
 !
 !  coordinates of the point where some quantities can be printed
@@ -278,7 +278,7 @@ module Cdata
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
-!  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
+!  logical, dimension(mfarray) :: lsnap ! flag which variables should be written
                                              ! to the snapshots
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
@@ -293,7 +293,7 @@ module Cdata
 
   character (len=2*bclen+1), dimension(mcom) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mcom) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
-  character (len=10), dimension(mvar+maux) :: varname
+  character (len=10), dimension(mfarray) :: varname
   character (len=labellen) :: force_lower_bound='',force_upper_bound=''
   character (len=120) :: datadir='data' ! default; may be overwritten in
                                         ! Register.initialize()

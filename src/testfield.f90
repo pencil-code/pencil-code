@@ -1,4 +1,4 @@
-! $Id: testfield.f90,v 1.23 2006-02-08 02:45:49 dobler Exp $
+! $Id: testfield.f90,v 1.24 2006-08-23 16:53:33 mee Exp $
 
 !  This modules deals with all aspects of testfield fields; if no
 !  testfield fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Testfield
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: testfield.f90,v 1.23 2006-02-08 02:45:49 dobler Exp $")
+           "$Id: testfield.f90,v 1.24 2006-08-23 16:53:33 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -139,7 +139,7 @@ module Testfield
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
 !  set to zero and then rescale the testfield
 !  (in future, could call something like init_aa_simple)
@@ -175,7 +175,7 @@ module Testfield
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
@@ -271,7 +271,7 @@ module Testfield
       use Sub
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 
@@ -448,7 +448,7 @@ module Testfield
       use Hydro, only: calc_pencils_hydro
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (nx,3) :: btest,uxbtest
       integer :: jtest,j,nxy=nx*ny

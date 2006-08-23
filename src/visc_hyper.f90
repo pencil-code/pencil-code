@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.24 2006-03-11 21:47:01 brandenb Exp $
+! $Id: visc_hyper.f90,v 1.25 2006-08-23 16:53:33 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -71,7 +71,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.24 2006-03-11 21:47:01 brandenb Exp $")
+           "$Id: visc_hyper.f90,v 1.25 2006-08-23 16:53:33 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -213,7 +213,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -232,7 +232,7 @@ module Viscosity
       use Mpicomm
       use CData, only: lfirst
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: tmp
       real, dimension (nx,ny,nz) :: sij2,del2divu
       integer :: i,j
@@ -318,7 +318,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: df
       real :: fac
 !
@@ -379,7 +379,7 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,TT1,cs2,Hmax
       real, dimension (nx) :: sij2, divu,shock
@@ -410,7 +410,7 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: hyper
@@ -538,7 +538,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: del2f
       real, dimension (mx,my,mz) :: tmp
       integer :: i,k,k1
@@ -565,7 +565,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: del2f,d2fd
       integer :: i,k,k1
 !
@@ -612,7 +612,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: der2f
       integer :: i,j
 !
@@ -749,7 +749,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,3) :: divgradf
       real, dimension (mx,my,mz) :: tmp,tmp2
       integer :: k,k1

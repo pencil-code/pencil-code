@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.28 2006-08-03 07:07:28 ajohan Exp $
+! $Id: viscosity.f90,v 1.29 2006-08-23 16:53:33 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -83,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.28 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: viscosity.f90,v 1.29 2006-08-23 16:53:33 mee Exp $")
 
       ivisc(1)='nu-const'
 
@@ -391,7 +391,7 @@ module Viscosity
       use Sub
       use Interstellar, only: calc_snr_damping
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension (nx,3) :: tmp,tmp2
       real, dimension (nx) :: murho1,nu_smag
@@ -579,7 +579,7 @@ module Viscosity
 !***********************************************************************
     subroutine calc_viscosity(f)
 !    
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f  !(to keep compiler quiet)
 !

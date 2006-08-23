@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.6 2006-08-03 07:07:28 ajohan Exp $
+! $Id: snapshot.f90,v 1.7 2006-08-23 16:53:32 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -40,7 +40,7 @@ contains
       use Sub
       use IO
 !
-!  the dimension msnap can either be mvar+maux (for f-array in run.f90)
+!  the dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
 !
       integer :: msnap
@@ -101,7 +101,7 @@ contains
       use Mpicomm
       use Magnetic, only: pert_aa
 !
-!  the dimension msnap can either be mvar+maux (for f-array in run.f90)
+!  the dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90
 !
       integer :: msnap
@@ -168,7 +168,7 @@ contains
       use Struct_func
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: a
+      real, dimension (mx,my,mz,mfarray) :: a
       real, dimension (nx,ny,nz) :: b_vec
       character (len=135) :: file
       character (len=4) :: ch

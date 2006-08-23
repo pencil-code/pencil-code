@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.9 2006-07-30 21:26:47 mee Exp $
+! $Id: entropy_const.f90,v 1.10 2006-08-23 16:53:31 mee Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -80,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.9 2006-07-30 21:26:47 mee Exp $")
+           "$Id: entropy_const.f90,v 1.10 2006-08-23 16:53:31 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -132,7 +132,7 @@ module Entropy
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       intent(in) :: xx,yy,zz
@@ -159,7 +159,7 @@ module Entropy
       use Sub
       Use EquationOfState, only: pressure_gradient
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: uu,glnrho,gshock,bb

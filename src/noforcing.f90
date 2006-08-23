@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.18 2006-07-18 21:50:03 brandenb Exp $
+! $Id: noforcing.f90,v 1.19 2006-08-23 16:53:32 mee Exp $
 
 module Forcing
 
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.18 2006-07-18 21:50:03 brandenb Exp $")
+           "$Id: noforcing.f90,v 1.19 2006-08-23 16:53:32 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -62,7 +62,7 @@ module Forcing
 !
 !  add forcing in timestep()
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(ip==1) print*,f !(to remove compiler warnings)
     endsubroutine addforce

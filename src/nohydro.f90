@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.60 2006-08-03 07:07:28 ajohan Exp $
+! $Id: nohydro.f90,v 1.61 2006-08-23 16:53:32 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.60 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.61 2006-08-23 16:53:32 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -83,7 +83,7 @@ module Hydro
 !
       use Cdata, only: kinflow
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
 !      
       if (kinflow=='KS') then
@@ -140,7 +140,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(NO_WARN) print*,f,xx,yy,zz  !(keep compiler quiet)
@@ -196,7 +196,7 @@ module Hydro
       use Sub, only: dot2_mn, sum_mn_name, max_mn_name, integrate_mn_name
       use Magnetic, only: ABC_A,ABC_B,ABC_C,kx_aa,ky_aa,kz_aa
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (mx,my,mz,mfarray) :: f       
       type (pencil_case) :: p
 !
       real, dimension(nx) :: kdotxwt,cos_kdotxwt,sin_kdotxwt
@@ -307,7 +307,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
@@ -845,7 +845,7 @@ module Hydro
 !
 !  26-jun-06/tony: dummy
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
       if (NO_WARN) print*, f(1,1,1,1), slices%ready

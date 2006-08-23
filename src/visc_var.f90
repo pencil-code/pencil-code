@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.31 2005-07-06 19:03:50 dobler Exp $
+! $Id: visc_var.f90,v 1.32 2006-08-23 16:53:33 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -65,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.31 2005-07-06 19:03:50 dobler Exp $")
+           "$Id: visc_var.f90,v 1.32 2006-08-23 16:53:33 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -171,7 +171,7 @@ module Viscosity
     endsubroutine rprint_viscosity
 !!***********************************************************************
     subroutine calc_viscosity(f)
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       if(NO_WARN) print*,f  !(to keep compiler quiet)
     endsubroutine calc_viscosity
 !***********************************************************************
@@ -185,7 +185,7 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx)   :: rho1,TT1,cs2
       real, dimension (nx)   :: sij2, divu, shock
@@ -222,7 +222,7 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: glnrho,del2u, graddivu,fvisc,sglnrho,gshock

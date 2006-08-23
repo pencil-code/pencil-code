@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.61 2006-08-01 10:10:39 ajohan Exp $
+! $Id: pscalar.f90,v 1.62 2006-08-23 16:53:32 mee Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -85,7 +85,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.61 2006-08-01 10:10:39 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.62 2006-08-23 16:53:32 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -117,7 +117,7 @@ module Pscalar
 !
 !  24-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 ! 
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -137,7 +137,7 @@ module Pscalar
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
       select case(initlncc)
@@ -240,7 +240,7 @@ module Pscalar
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !      
       intent(in) :: f
@@ -270,7 +270,7 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !      
@@ -491,7 +491,7 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real :: tensor_pscalar_diff

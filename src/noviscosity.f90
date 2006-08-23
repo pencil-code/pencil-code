@@ -1,4 +1,4 @@
-! $Id: noviscosity.f90,v 1.7 2006-08-03 07:07:28 ajohan Exp $
+! $Id: noviscosity.f90,v 1.8 2006-08-23 16:53:32 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -61,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noviscosity.f90,v 1.7 2006-08-03 07:07:28 ajohan Exp $")
+           "$Id: noviscosity.f90,v 1.8 2006-08-23 16:53:32 mee Exp $")
 
     endsubroutine register_viscosity
 !***********************************************************************
@@ -148,7 +148,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
@@ -166,7 +166,7 @@ module Viscosity
 !
 !
 !    
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
 !
       if(NO_WARN) print*,f  !(to keep compiler quiet)
 !
