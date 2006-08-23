@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.134 2006-08-22 14:30:18 ajohan Exp $
+! $Id: particles_dust.f90,v 1.135 2006-08-23 05:59:39 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -110,7 +110,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.134 2006-08-22 14:30:18 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.135 2006-08-23 05:59:39 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -185,7 +185,7 @@ module Particles
 !
       if (rhop_tilde==0.0) then
 ! For stratification, take into account gas present outside the simulation box.
-        if (lgravz .and. lgravz_gas) then
+        if ( (lgravz .and. lgravz_gas) .or. gravz_profile=='linear') then
           rhom=sqrt(2*pi)*1.0*1.0/Lz  ! rhom = Sigma/Lz, Sigma=sqrt(2*pi)*H*rho1
         else
           rhom=1.0
