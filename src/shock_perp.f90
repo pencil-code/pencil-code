@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.5 2006-08-23 18:30:33 theine Exp $
+! $Id: shock_perp.f90,v 1.6 2006-08-23 20:10:19 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -119,7 +119,7 @@ module Shock
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.5 2006-08-23 18:30:33 theine Exp $")
+           "$Id: shock_perp.f90,v 1.6 2006-08-23 20:10:19 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -550,6 +550,11 @@ module Shock
           call calc_shock_profile_external(f,ishock,tmp,lperp=.false.)
 
 !
+!  Scale with dxmin**2.
+!
+          f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
+
+!
 !  Calculate `perpendicular' shock profile
 !  (both in the internal and the external region)
 !
@@ -557,14 +562,6 @@ module Shock
             f(:,:,:,ishock_perp)=0.
             call calc_shock_profile_internal(f,ishock_perp,tmp,lperp=.true.)
             call calc_shock_profile_external(f,ishock_perp,tmp,lperp=.true.)
-          endif
-
-!
-!  Scale with dxmin**2.
-!
-          f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
-
-          if (ldivu_perp) then
             f(:,:,:,ishock_perp) = f(:,:,:,ishock_perp) * dxmin**2
           endif
 
@@ -1411,13 +1408,6 @@ module Shock
 
       real :: fac
       real, dimension (mx,3) :: bb_hat,duu
-      integer, dimension (mx-2) :: l
-      integer :: i
-      
-!
-!  Define (very convenient) array index.
-!
-      l = (/(i,i=l1-2,l2+2)/)
 
 !
 !  Get unit magnetic field vector.
@@ -1433,24 +1423,30 @@ module Shock
 !  Compute terms involving x-, y-, and z-derivatives separately.
 !
       if (nxgrid/=1) then
-         duu(l,:) = (f(l+1,m  ,n  ,iux:iuz)-f(l-1,m  ,n  ,iux:iuz))/(2*dx)
-         df(l) = df(l) + ( 1 - bb_hat(l,1)*bb_hat(l,1) ) * duu(l,1) &
-                             - bb_hat(l,1)*bb_hat(l,2)   * duu(l,2) &
-                             - bb_hat(l,1)*bb_hat(l,3)   * duu(l,3)
+         duu(l1-2:l2+2,:) = (f(l1-1:l2+3,m  ,n  ,iux:iuz) &
+                            -f(l1-3:l2+1,m  ,n  ,iux:iuz))/(2*dx)
+         df(l1-2:l2+2) = df(l1-2:l2+2)                                      &
+           + (1 - bb_hat(l1-2:l2+2,1)*bb_hat(l1-2:l2+2,1))*duu(l1-2:l2+2,1) &
+                - bb_hat(l1-2:l2+2,1)*bb_hat(l1-2:l2+2,2) *duu(l1-2:l2+2,2) &
+                - bb_hat(l1-2:l2+2,1)*bb_hat(l1-2:l2+2,3) *duu(l1-2:l2+2,3)
       endif
 
       if (nygrid/=1) then
-         duu(l,:) = (f(l  ,m+1,n  ,iux:iuz)-f(l  ,m-1,n  ,iux:iuz))/(2*dy)
-         df(l) = df(l) + ( 1 - bb_hat(l,2)*bb_hat(l,2) ) * duu(l,2) &
-                             - bb_hat(l,2)*bb_hat(l,3)   * duu(l,3) &
-                             - bb_hat(l,2)*bb_hat(l,1)   * duu(l,1)
+         duu(l1-2:l2+2,:) = (f(l1-2:l2+2,m+1,n  ,iux:iuz) &
+                            -f(l1-2:l2+2,m-1,n  ,iux:iuz))/(2*dy)
+         df(l1-2:l2+2) = df(l1-2:l2+2)                                      &
+           + (1 - bb_hat(l1-2:l2+2,2)*bb_hat(l1-2:l2+2,2))*duu(l1-2:l2+2,2) &
+                - bb_hat(l1-2:l2+2,2)*bb_hat(l1-2:l2+2,3) *duu(l1-2:l2+2,3) &
+                - bb_hat(l1-2:l2+2,2)*bb_hat(l1-2:l2+2,1) *duu(l1-2:l2+2,1)
       endif
 
       if (nzgrid/=1) then
-         duu(l,:) = (f(l  ,m  ,n+1,iux:iuz)-f(l  ,m  ,n-1,iux:iuz))/(2*dz)
-         df(l) = df(l) + ( 1 - bb_hat(l,3)*bb_hat(l,3) ) * duu(l,3) &
-                             - bb_hat(l,3)*bb_hat(l,1)   * duu(l,1) &
-                             - bb_hat(l,3)*bb_hat(l,2)   * duu(l,2)
+         duu(l1-2:l2+2,:) = (f(l1-2:l2+2,m  ,n+1,iux:iuz) &
+                            -f(l1-2:l2+2,m  ,n-1,iux:iuz))/(2*dz)
+         df(l1-2:l2+2) = df(l1-2:l2+2)                                      &
+           + (1 - bb_hat(l1-2:l2+2,3)*bb_hat(l1-2:l2+2,3))*duu(l1-2:l2+2,3) &
+                - bb_hat(l1-2:l2+2,3)*bb_hat(l1-2:l2+2,1) *duu(l1-2:l2+2,1) &
+                - bb_hat(l1-2:l2+2,3)*bb_hat(l1-2:l2+2,2) *duu(l1-2:l2+2,2)
       endif
 
     endsubroutine shock_divu_perp_pencil
