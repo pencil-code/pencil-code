@@ -4,7 +4,7 @@
 !  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2005-06-26 17:34:19 eos_merger_tony Exp $'
+  cvsid='$Id: run.in,v 1.4 2006-08-23 14:01:27 theine Exp $'
   nt=5000, it1=10, cdt=0.4, cdtv=0.20, isave=50, itorder=3,
   dsnap=20., dvid=1., tmax=30.
   bcx = 's','s','s','s','s','s','a2','a2'
@@ -12,15 +12,19 @@
   lrmwig_full=.true., iwig=200
   lpencil_check=T
 /
+&eos_run_pars
+/
 &hydro_run_pars
-  nu=2.0
 /
 &density_run_pars
   cdiffrho=0.,  !(mass diffusion not currently used)
 /
 &entropy_run_pars
-  lcalc_heatcond_constchi=T,chi=2.0
+  iheatcond='chi-const',chi=2.0
 /
 &magnetic_run_pars
   eta=2.0, B_ext=2.0,0.,0.
+/
+&viscosity_run_pars
+  nu=2.0
 /

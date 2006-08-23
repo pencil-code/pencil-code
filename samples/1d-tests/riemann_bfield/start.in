@@ -4,10 +4,12 @@
 !  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2005-06-26 17:34:19 eos_merger_tony Exp $'
+  cvsid='$Id: start.in,v 1.4 2006-08-23 14:01:27 theine Exp $'
   xyz0  =-280., 0.0, 0.0,      ! first corner of box
   xyz1  = 220., 1.0, 1.0,      ! box size
   lperi = F , T , T,          ! periodic direction?
+/
+&eos_init_pars
 /
 &hydro_init_pars
   inituu='xjump', uu_left=0., uu_right=-10., widthuu=1.
