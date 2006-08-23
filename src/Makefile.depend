@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.47 2006-08-23 17:29:52 mee Exp $
+### $Id: Makefile.depend,v 1.48 2006-08-23 18:05:51 mee Exp $
 ### Makefile dependencies for modular pencil code
 
 ## ---------------------------------------------------------------------- #
@@ -41,7 +41,7 @@ shock$(PC_META_TYPE).o:           shock.h          shock.f90 shock_profile.inc c
 shock_perp$(PC_META_TYPE).o:      shock.h          shock_perp.f90 shock_profile.inc cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o sub$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o
 noshock$(PC_META_TYPE).o:         shock.h          noshock.f90 cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o sub$(PC_META_TYPE).o
 
-slices$(PC_META_TYPE).o:    slices.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o
+slices$(PC_META_TYPE).o:    slices.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(CHIRAL)$(PC_META_TYPE).o
 deriv$(PC_META_TYPE).o:     deriv.f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o
 $(BORDER_PROF)$(PC_META_TYPE).o:  $(BORDER_PROF).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o
 sub$(PC_META_TYPE).o:       sub.f90 cdata$(PC_META_TYPE).o deriv$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o
