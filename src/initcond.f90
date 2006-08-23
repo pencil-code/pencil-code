@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.164 2006-08-22 20:24:55 wlyra Exp $ 
+! $Id: initcond.f90,v 1.165 2006-08-23 00:12:16 wlyra Exp $ 
 
 module Initcond 
  
@@ -1435,6 +1435,14 @@ module Initcond
       real :: g0,r0_pot
       integer :: n_pot,mcount,ncount
 !
+      if (n_pot.ne.2) then
+         print*,'initcond.f90: You are trying to model a protoplanetary disk'
+         print*,'with smoothed gravity but the smoothing lenght is not equal'
+         print*,'to 2. Better stop and change, since it will lead to boundary'
+         print*,'troubles as Omega does not flatten properly.'
+         call stop_it('')
+      endif
+!
 !  Angular velocity for centrifugally supported disc in given potential.
 !  Subtract angular velocity of the reference frame, if Omega is non-zero 
 !
@@ -2510,15 +2518,13 @@ module Initcond
 
       use Cdata
       use Mpicomm, only: stop_it
-      use Gravity, only: g0,r0_pot,n_pot
       use General
-      use Global
+      use Gravity, only: r0_pot,n_pot
+      use EquationOfState, only:cs0
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,H2 
-      real, dimension (nx) :: cs2_mn,Omega2_mn
-      real :: lnrho_const,plaw,Mach
-      integer :: mcount,ncount
+      real :: lnrho_const,plaw
 !
       if (n_pot.ne.2) then
          print*,'initcond.f90: You are trying to model a protoplanetary disk' 
@@ -2528,31 +2534,20 @@ module Initcond
          call stop_it('')
       endif
 !
-      Mach=20.
       rr_cyl   = sqrt(xx**2 + yy**2) + epsi
 !
       if ((nzgrid==1).or.(lcylindrical)) then
 !
 ! Radial stratification
 !
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) !- 0.5*(0.01**2 * Mach**2 / (rr_cyl**2 + r0_pot**2))
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl)
 
       else 
 !
-! Vertical stratification
+! Vertical stratification - H2 is the square of the pressure scale height
 !        
-         do mcount=m1,m2
-            do ncount=n1,n2
-               call get_global(cs2_mn,mcount,ncount,'cs2')
-!
-               Omega2_mn = g0*(rr_cyl(l1:l2,mcount,ncount)**2+r0_pot**2)**(-1.5)
-               H2(l1:l2,mcount,ncount) = cs2_mn/Omega2_mn
-!
-            enddo
-         enddo
-!
-         !f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) !- 0.5*(zz**2/H2) 
-         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) !- 0.5*(zz**2 * Mach**2 / (rr_cyl**2 + r0_pot**2))
+         H2 = (rr_cyl**2 + r0_pot**2)*cs0**2
+         f(:,:,:,ilnrho) = lnrho_const - plaw*alog(rr_cyl) - 0.5*(zz**2/H2) 
 !
       endif
 !    
