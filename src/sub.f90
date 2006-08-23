@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.250 2006-08-18 12:47:46 mee Exp $ 
+! $Id: sub.f90,v 1.251 2006-08-23 11:36:12 mee Exp $ 
 
 module Sub 
 
@@ -1494,6 +1494,8 @@ module Sub
             call der(f,k1+i,tmp,j)
           elseif (nder == 2) then
             call der2(f,k1+i,tmp,j)
+          elseif (nder == 3) then
+            call der3(f,k1+i,tmp,j)
           elseif (nder == 4) then
             call der4(f,k1+i,tmp,j)
           elseif (nder == 5) then
