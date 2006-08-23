@@ -8,6 +8,10 @@ save_state
 !p.multi=[0,2,2]
 !x.title='!8z!X'
 
+pc_read_param,obj=par 
+pc_read_var,obj=data,/trimall,variables=['rho','pp','cs2'],/magic,/add
+gamma=par.gamma
+gamma1=par.gamma-1
 ss_left=par.ss_left & ss_right=par.ss_right
 rho_left=par.rho_left & rho_right=par.rho_right
 p_left=exp(gamma*(ss_left+alog(rho_left)))/gamma
@@ -15,13 +19,14 @@ p_right=exp(gamma*(ss_right+alog(rho_right)))/gamma
 ;
 ;  exclude ghost zones
 ;
-zzz=z(n1:n2)
-uuu=uu(l1:l2,m1:m2,n1:n2,2)
-sss=ss(l1:l2,m1:m2,n1:n2)
-llnrho=lnrho(l1:l2,m1:m2,n1:n2)
-cs2=cs20*exp(gamma1*llnrho+gamma*sss)
-rho=exp(llnrho)
-ppp=rho*cs2/gamma
+zzz=data.z
+uuu=data.uu[*,*,*,1]
+sss=data.ss
+llnrho=data.lnrho
+cs2=data.cs2
+rho=data.rho
+ppp=data.pp
+
 ;
 ;  get exact solution
 ;

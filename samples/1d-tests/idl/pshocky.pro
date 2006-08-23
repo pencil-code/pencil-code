@@ -8,6 +8,10 @@ save_state
 !p.multi=[0,2,2]
 !x.title='!8y!X'
 
+pc_read_param,obj=par 
+pc_read_var,obj=data,/trimall,variables=['rho','pp','cs2'],/magic,/add
+gamma=par.gamma
+gamma1=par.gamma-1
 ss_left=par.ss_left & ss_right=par.ss_right
 rho_left=par.rho_left & rho_right=par.rho_right
 p_left=exp(gamma*(ss_left+alog(rho_left)))/gamma
@@ -15,17 +19,18 @@ p_right=exp(gamma*(ss_right+alog(rho_right)))/gamma
 ;
 ;  exclude ghost zones
 ;
-yyy=y(m1:m2)
-uuu=uu(l1:l2,m1:m2,n1:n2,1)
-sss=ss(l1:l2,m1:m2,n1:n2)
-llnrho=lnrho(l1:l2,m1:m2,n1:n2)
-cs2=cs20*exp(gamma1*llnrho+gamma*sss)
-rho=exp(llnrho)
-ppp=rho*cs2/gamma
+yyy=data.y
+uuu=data.uu[*,1]
+sss=data.ss
+llnrho=data.lnrho
+cs2=data.cs2
+rho=data.rho
+ppp=data.pp
+
 ;
 ;  get exact solution
 ;
-shocktube,yyy,t,p,rho,u,[0.,p_left,rho_left],[0.,p_right,rho_right],gamma
+shocktube,yyy,data.t,p,rho,u,[0.,p_left,rho_left],[0.,p_right,rho_right],gamma
 circ_sym,.6,0
 ps=8
 thi=1
@@ -43,7 +48,7 @@ oplot,yyy,u,col=122,li=li,thi=thi
 ;  pressure
 ;
 plot_io,yyy,ppp,TITLE='!6Pressure!X',PSYM=ps,col=1, $
-    YRANGE=stretchrange(minmax(p),.1,/log)
+    YRANGE=stretchrange(minmax(ppp),.1,/log)
 oplot,yyy,p,col=122,li=li,thi=thi
 ;
 ;  density
