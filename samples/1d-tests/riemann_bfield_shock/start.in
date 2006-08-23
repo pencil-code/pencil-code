@@ -1,0 +1,27 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  Initialisation parameters for Riemann problem with magnetic field
+!  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-08-23 15:13:16 theine Exp $'
+  xyz0  =-280., 0.0, 0.0,      ! first corner of box
+  xyz1  = 220., 1.0, 1.0,      ! box size
+  lperi = F , T , T,          ! periodic direction?
+  lwrite_aux=T
+/
+&eos_init_pars
+/
+&hydro_init_pars
+  inituu='xjump', uu_left=0., uu_right=-10., widthuu=1.
+  uy_left=2., uy_right=0.,
+/
+&density_init_pars
+  initlnrho='xjump', rho_left=.5, rho_right=.1, widthlnrho=1.
+/
+&entropy_init_pars
+  initss='xjump', ss_left=2.38119, ss_right=1.22753, widthss=1.
+/
+&magnetic_init_pars
+  initaa='xjump', by_left=2.5, by_right=2.0, widthaa=1.
+/

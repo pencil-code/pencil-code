@@ -1,0 +1,39 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  sample file for Riemann problem with magnetic field
+!  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2006-08-23 15:13:16 theine Exp $'
+  nt=5000, it1=10, isave=50, itorder=3,
+  dsnap=100., dvid=1., tmax=30.
+  bcx = 's','s','s','s','s','s','a2','a2'
+  bcx = 's','s','s','s','s','a2','a2','a2'
+  lwrite_aux=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&entropy_run_pars
+  iheatcond='chi-const',chi=2.
+  lupw_ss=T
+/
+&magnetic_run_pars
+  !iresistivity='eta-const',eta=2.
+  iresistivity='eta-const','shock_perp'
+  eta=.5,eta_shock=1.
+  B_ext=2.,0.,0.
+/
+&viscosity_run_pars
+  !ivisc='nu-const',nu=1.
+  ivisc='nu-const','nu-shock'
+  nu=.5,nu_shock=1.
+/
+&shock_run_pars
+  lshock_max5=F
+  ldivu_perp=T
+/
