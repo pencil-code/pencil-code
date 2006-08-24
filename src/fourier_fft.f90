@@ -1,4 +1,4 @@
-! $Id: fourier_fft.f90,v 1.2 2006-07-30 19:46:12 ajohan Exp $
+! $Id: fourier_fft.f90,v 1.3 2006-08-24 21:37:12 bingert Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -31,8 +31,6 @@ module Fourier
       real, dimension(nx,ny,nz) :: a_re,a_im
       integer, optional :: direction
 !
-      real,dimension(nx,ny,nz) :: a_re,a_im
-
       if (lroot .and. ip<10) print*,'transform_i: doing three FFTs'
       call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
       call transp(a_re,nx,'y')
@@ -81,6 +79,9 @@ module Fourier
     subroutine fourier_transform_shear(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
+!
+      real, dimension(nx,ny,nz) :: a_re,a_im
+      integer, optional :: direction
 !
       call fatal_error('fourier_transform_shear', &
           'this sub is not available in fourier_fft.f90!')
