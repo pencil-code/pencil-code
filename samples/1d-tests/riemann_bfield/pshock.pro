@@ -1,4 +1,4 @@
-; $Id: pshock.pro,v 1.1 2006-08-24 13:04:12 mee Exp $
+; $Id: pshock.pro,v 1.2 2006-08-24 13:57:22 mee Exp $
 ;
 ;  expansion shock, to be compared with Fig 1 of S.A.E.G. Falle (2002)
 ;  ApJL 577, L123-L126 "Rarefaction shocks, shock errors, and low
@@ -19,7 +19,7 @@ exact=[[0.52,  0.4993], $
 
 
 !p.multi=0
-!p.multi=[0,2,2,0,0]
+!p.multi=[0,2,3,0,0]
 !p.charsize=1.5
 !p.title='t=30'
 !x.title='x'
@@ -33,14 +33,19 @@ x0=0
 ;
 ;  exclude ghost zones
 ;
-pc_read_var,obj=data,variables=['rho','tt','uu','pp'],/magic,/trimall
+pc_init
+pc_read_var,obj=data,variables=['rho','tt','uu','pp','bb'],/magic,/trimall
 ;
 plot,data.x,data.rho,yst=3,ps=8,back=255,col=1,ytitle='rho'
 oplot,exact[0,*]*1E3-800,exact[1,*],col=122
 
 plot,data.x,data.tt,yst=3,ps=8,back=255,col=1, ytitle='T'
 plot,data.x,data.uu[*,0],yst=3,ps=8,back=255,col=1, ytitle='ux'
-plot,data.x,data.pp,yst=3,ps=8,back=255,col=1, ytitle='pp
+plot,data.x,data.pp,yst=3,ps=8,back=255,col=1, ytitle='P'
+
+bb=data.bb
+bb[*,0]=bb[*,0]+2.
+plot,data.x,dot2(bb),yst=3,ps=8,back=255,col=1, ytitle='B!U2!6'
 ;
 print,'import riemann_bfield.gif'
 END
