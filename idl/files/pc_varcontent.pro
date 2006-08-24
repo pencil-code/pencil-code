@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.29 2006-07-20 11:14:29 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.30 2006-08-24 23:00:49 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim, $
                        param=param,quiet=quiet,scalar=scalar
 COMPILE_OPT IDL2,HIDDEN
@@ -8,6 +8,7 @@ COMPILE_OPT IDL2,HIDDEN
 default,ifcr,0
 
 ishock=0
+ishock_perp=0
 inp=0
 ivpxsum=0
 irhop=0
@@ -339,12 +340,25 @@ if (param.lwrite_aux ne 0) then begin
   varcontent[ishock].idlvarloc= 'shock_loc'
   varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
 
+  varcontent[ishock_perp].variable = 'B-Perp Shock Profile (shock_perp)'
+  varcontent[ishock_perp].idlvar   = 'shock_perp'
+  varcontent[ishock_perp].idlinit    = INIT_SCALAR
+  varcontent[ishock_perp].idlvarloc= 'shock_perp_loc'
+  varcontent[ishock_perp].idlinitloc = INIT_SCALAR_LOC
+
   default,icooling,0
   varcontent[icooling].variable = 'Cooling Term (cooling)'
   varcontent[icooling].idlvar   = 'cooling'
   varcontent[icooling].idlinit    = INIT_SCALAR
   varcontent[icooling].idlvarloc= 'cooling_loc'
   varcontent[icooling].idlinitloc = INIT_SCALAR_LOC
+
+  default,icooling2,0
+  varcontent[icooling2].variable = 'Applied Cooling Term (cooling)'
+  varcontent[icooling2].idlvar   = 'cooling2'
+  varcontent[icooling2].idlinit    = INIT_SCALAR
+  varcontent[icooling2].idlvarloc= 'cooling2_loc'
+  varcontent[icooling2].idlinitloc = INIT_SCALAR_LOC
 
   varcontent[inp].variable   = 'Particle number (np)'
   varcontent[inp].idlvar     = 'np'
