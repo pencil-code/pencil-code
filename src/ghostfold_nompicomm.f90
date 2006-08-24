@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.3 2006-08-23 16:53:31 mee Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.4 2006-08-24 22:37:02 bingert Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -157,7 +157,7 @@ module GhostFold
 !
 !  19-jul-06/anders: coded
 !
-      use Cdata, only: ky_fft
+      use Cdata, only: ky_fft,ipy
       use Fourier
 !
       real, dimension (ny,nz) :: a_re
@@ -165,7 +165,7 @@ module GhostFold
 !
       real, dimension(ny,nz) :: a_im
       complex, dimension(ny) :: a_cmplx
-      complex, dimension(ny) :: cmplx_shift
+      complex, dimension(nygrid) :: cmplx_shift
       integer :: n
 !
       a_im=0.0
@@ -176,7 +176,7 @@ module GhostFold
       do n=1,nz
         call fourier_transform_other(a_re(:,n),a_im(:,n),+1)
         a_cmplx=cmplx(a_re(:,n),a_im(:,n))
-        a_cmplx=a_cmplx*cmplx_shift
+        a_cmplx=a_cmplx*cmplx_shift(ipy*ny:(ipy+1)*ny)
         a_re(:,n)=real(a_cmplx)
         a_im(:,n)=aimag(a_cmplx)
       enddo
