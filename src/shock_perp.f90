@@ -1,4 +1,4 @@
-! $Id: shock_perp.f90,v 1.6 2006-08-23 20:10:19 theine Exp $
+! $Id: shock_perp.f90,v 1.7 2006-08-24 22:40:25 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity
@@ -89,6 +89,7 @@ module Shock
 !  24-jan-05/tony: modified from visc_shock.f90
 !
       use Cdata
+      use FArrayManager
       use Mpicomm
       use Sub
 !
@@ -97,51 +98,14 @@ module Shock
       if (.not. first) call stop_it('register_shock called twice')
       first = .false.
 !
-      ishock = mvar + naux_com + 1
-      naux = naux + 1
-      naux_com = naux_com + 1
-!
-      ishock_perp = mvar + naux_com + 1
-      naux = naux + 1
-      naux_com = naux_com + 1
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_shock: shock viscosity nvar = ', nvar
-        print*, 'ishock = ', ishock
-        print*, 'ishock_perp = ', ishock_perp
-      endif
-!
-!  Put variable name in array
-!
-      varname(ishock) = 'shock'
-      varname(ishock_perp) = 'shock_perp'
+      call farray_register_auxilliary('shock',ishock,communicated=.true.) 
+      call farray_register_auxilliary('shock_perp',ishock_perp, &
+                                                     communicated=.true.) 
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shock_perp.f90,v 1.6 2006-08-23 20:10:19 theine Exp $")
-!
-! Check we aren't registering too many auxiliary variables
-!
-      if (naux > maux) then
-        if (lroot) write(0,*) 'naux = ', naux, ', maux= ', maux
-        call stop_it('register_shock: naux > maux')
-      endif
-      if (naux_com > maux_com) then
-        if (lroot) write(0,*) 'naux_com = ', naux_com, ', maux_com = ', maux_com
-        call stop_it('register_shock: naux_com > maux_com')
-      endif
-!
-!  Writing files for use with IDL
-!
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',shock $'
-      if (naux+naux_com  == maux+maux_com) aux_var(aux_count)=',shock'
-      aux_count=aux_count+1
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',shock_perp $'
-      if (naux+naux_com  == maux+maux_com) aux_var(aux_count)=',shock_perp'
-      aux_count=aux_count+1
-      if (lroot) write(15,*) 'shock = fltarr(mx,my,mz)*one'
-      if (lroot) write(15,*) 'shock_perp = fltarr(mx,my,mz)*one'
+           "$Id: shock_perp.f90,v 1.7 2006-08-24 22:40:25 mee Exp $")
 !
     endsubroutine register_shock
 !***********************************************************************
@@ -1408,17 +1372,14 @@ module Shock
 
       real :: fac
       real, dimension (mx,3) :: bb_hat,duu
-
 !
 !  Get unit magnetic field vector.
 !
       call bb_unitvec_shock(f,bb_hat)
-
 !
 !  Initialize.
 !
       df = 0
-
 !
 !  Compute terms involving x-, y-, and z-derivatives separately.
 !
