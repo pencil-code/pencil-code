@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.135 2006-08-24 20:42:37 bingert Exp $
+! $Id: interstellar.f90,v 1.136 2006-08-24 22:45:10 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -119,13 +119,14 @@ module Interstellar
 ! If this is not reached then consider moving mass to acheive this.
 !
   real, parameter :: TT_SN_min_cgs=1.e7
+  real :: uu_sedov_max=0.
   real :: TT_SN_min=impossible
   real :: TT_cutoff_cgs=100.
   real :: TT_cutoff=impossible
 !
 ! SNe placement limitations (for code stability)
 !
-  double precision, parameter :: rho_SN_min_cgs=1E-28 
+  double precision, parameter :: rho_SN_min_cgs=1e-28
   real, parameter :: TT_SN_max_cgs=5E8
   real :: rho_SN_min=impossible, TT_SN_max=impossible
 !
@@ -275,6 +276,10 @@ module Interstellar
   real :: center_SN_y = impossible
   real :: center_SN_z = impossible 
 !
+! Volume element
+!
+  real :: dv
+!
 ! Cooling time diagnostic
 !
   integer :: idiag_taucmin=0
@@ -310,7 +315,7 @@ module Interstellar
       thermal_profile,velocity_profile, mass_profile, &
       center_SN_x, center_SN_y, center_SN_z, &
       t_next_SNI, &
-      SNR_damping, &
+      SNR_damping, uu_sedov_max, &
       cooling_select, heating_select, heating_rate
 !
 ! run parameters
@@ -325,7 +330,7 @@ module Interstellar
       h_SNI, h_SNII, &
       thermal_profile,velocity_profile, mass_profile, &
       t_next_SNI, &
-      SNR_damping, &
+      SNR_damping, uu_sedov_max, &
       mass_SN_progenitor,cloud_tau, &
       lSNI, lSNII, &
       laverage_SN_heating, coolingfunction_scalefactor, &
@@ -358,7 +363,7 @@ module Interstellar
         print*, 'register_interstellar: ENTER'
       endif
 !
-      icooling = mvar+naux_com+1        ! indices to access uu
+      icooling  = mvar+naux_com+1       ! indices to access uu
       icooling2 = mvar+naux+2           ! indices to access uu
       naux_com = naux_com+1             ! added 1 variables
       naux = naux+2                     ! added 2 variables
@@ -377,7 +382,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.135 2006-08-24 20:42:37 bingert Exp $")
+           "$Id: interstellar.f90,v 1.136 2006-08-24 22:45:10 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -412,7 +417,7 @@ module Interstellar
       use Cdata, only: datadir, directory, seed, nseed, lroot, pi, Lxyz, &
                        unit_energy, unit_density, unit_length, unit_mass, &
                        unit_temperature, unit_time, unit_velocity, unit_system, &
-                       dxmax
+                       dxmax, dx, dy, dz
       use General, only: random_seed_wrapper
       use Sub, only: inpui,inpup
       use Mpicomm, only: stop_it
@@ -429,6 +434,10 @@ module Interstellar
          print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
 !
+      dv=1.
+      if (nxgrid/=1) dv=dv*dx
+      if (nygrid/=1) dv=dv*dy
+      if (nzgrid/=1) dv=dv*dz
 !
       call getmu(mu) 
       if (unit_system=='cgs') then
@@ -569,7 +578,7 @@ module Interstellar
         print*,'initialize_interstellar: finished'
       endif
 !
-      if (lroot) then
+      if (lroot.and.lstarting) then
          open(1,file=trim(datadir)//'/sn_series.dat',position='append')
          write(1,'("#",3A)')  &
           '---it-----t----------itype---iproc----l--m--n----', &
@@ -827,6 +836,29 @@ module Interstellar
           center_SN_x=0.
           center_SN_y=0.
           center_SN_z=0.
+          call position_SN_testposition(f,SNRs(iSNR))
+          call explode_SN(f,df,SNRs(iSNR))
+          lSNI=.false.
+          lSNII=.false.
+        case('courant-friedricks')
+          iSNR=get_free_SNR()
+          SNRs(iSNR)%site%TT=1E20
+          SNRs(iSNR)%site%rho=0.
+          SNRs(iSNR)%t=t
+          SNRs(iSNR)%radius=width_SN
+          center_SN_x=0.
+          center_SN_y=0.
+          center_SN_z=-0.015
+          call position_SN_testposition(f,SNRs(iSNR))
+          call explode_SN(f,df,SNRs(iSNR))
+          iSNR=get_free_SNR()
+          SNRs(iSNR)%site%TT=1E20
+          SNRs(iSNR)%site%rho=0.
+          SNRs(iSNR)%t=t
+          SNRs(iSNR)%radius=width_SN
+          center_SN_x=0.
+          center_SN_y=0.
+          center_SN_z=0.015
           call position_SN_testposition(f,SNRs(iSNR))
           call explode_SN(f,df,SNRs(iSNR))
           lSNI=.false.
@@ -1298,7 +1330,7 @@ cool_loop: do i=1,ncool
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
     real, dimension(nx) :: rho,rho_cloud,ss,lnTT,TT,yH
-    real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII,dv
+    real :: cloud_mass,cloud_mass_dim,freq_SNII,prob_SNII
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
     real, dimension(ncpus) :: cloud_mass_byproc
     integer :: icpu, m, n, iSNR
@@ -1336,10 +1368,6 @@ cool_loop: do i=1,ncool
 !       print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
     call mpireduce_sum(fsum1_tmp,fsum1,1) 
     call mpibcast_real(fsum1,1)
-    dv=1.
-    if (nxgrid/=1) dv=dv*dx
-    if (nygrid/=1) dv=dv*dy
-    if (nzgrid/=1) dv=dv*dz
     cloud_mass_dim=fsum1(1)*dv/solar_mass
     if (lroot .and. ip < 14) &
           print*,'check_SNII: cloud_mass_dim,fsum(1),dv,solar_mass:',cloud_mass_dim,fsum1(1),dv,solar_mass
@@ -1826,10 +1854,10 @@ find_SN: do n=n1,n2
       !  ??-nov-02/grs : coded from GalaxyCode                        
       !  20-may-03/tony: pencil formulation and broken into subroutines
       !
-      use Cdata, only: lroot,dx,dy,dz,dimensionality, &
+      use Cdata, only: lroot,dimensionality, &
                        ilnrho,iecr,ilntt,iyh, &
                        iuu, iux, iuy, iuz, &
-                       it,t,datadir,m,n, pi
+                       it,t,datadir,m,n, pi, dxmax
       use EquationOfState, only: ilnrho_ee, eoscalc, getdensity, eosperturb
       use Mpicomm, only: mpireduce_max, mpibcast_real, mpibcast_double, mpireduce_sum_double
 !      use Sub, only: update_snaptime
@@ -1846,7 +1874,7 @@ find_SN: do n=n1,n2
       double precision :: cavity_depth, r_cavity, rhom, ekintot
       double precision ::  rhom_new, ekintot_new
       real :: rho_SN_new,lnrho_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new
-      real :: TT_SN_new,dv, uu_sedov
+      real :: TT_SN_new, uu_sedov
 !      
       double precision, dimension(nx) :: deltarho, deltaEE
       double precision, dimension(nx,3) :: deltauu
@@ -1855,33 +1883,52 @@ find_SN: do n=n1,n2
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old
       real, dimension(nx,3) :: uu
       character (len=4) :: ch
+      real :: radiusA, radiusB
+      integer :: i
 !
       logical :: lmove_mass=.false.
-!!
-!! For taking video slices centred on the most recent SN explosion.
-!! DOES NOT WORK FOR PARALLEL JOBS - so outcommented
-!!
-!!      ! If slices are following the SN explosions then set the slice position
-!!      ! and take a snapshot now.
-!!      if (slice_position=='S') theN
-!!        ix=SNR%l
-!!        iy=SNR%m
-!!        iz=SNR%n
-!!        iz2=n2
-!!        lwrite_slice_xy2=(SNR%ipz==ipz)
-!!        lwrite_slice_xy=(SNR%ipz==ipz)
-!!        lwrite_slice_xz=(SNR%ipy==ipy)
-!!        lwrite_slice_yz=.true.
-!!        ! And do a snapshot immediately! 
-!!        call update_snaptime(trim(datadir)//'/tvid.dat',tvid,nvid,dvid,t,lvid,ch,ENUM=.false.)
-!!      endif
-!!      !
       !  identifier
 !
       SNR%state=SNstate_exploding
 !
       if(lroot.and.ip<12) print*,'explode_SN: SN type =',SNR%SN_type
-      !
+
+!
+!  Calculate explosion site mean density
+!
+      call get_properties(f,SNR,rhom,ekintot)
+      SNR%rhom=rhom
+!
+!  Calculate effective Sedov evolution time
+!
+      SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
+      uu_sedov = 0.4*SNR%radius/SNR%t_sedov
+
+      if ((uu_sedov_max > 0.).and.(uu_sedov > uu_sedov_max)) then
+        do i=1,10
+          radiusA=SNR%radius
+          radiusB=(0.16/uu_sedov_max**2*xsi_sedov**5*ampl_SN/SNR%rhom)**(1./3.)
+
+          if (abs(radiusB-radiusA) < dxmax) then
+            SNR%radius=max(radiusA,radiusB)
+            call get_properties(f,SNR,rhom,ekintot)
+            SNR%rhom=rhom
+            SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
+            uu_sedov = 0.4*SNR%radius/SNR%t_sedov
+            exit
+          endif
+
+          SNR%radius=0.5*(radiusA+radiusB)
+          call get_properties(f,SNR,rhom,ekintot)
+          SNR%rhom=rhom
+          SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
+          uu_sedov = 0.4*SNR%radius/SNR%t_sedov
+        enddo
+        if (lroot) print*,"explode_SN: Tweaked width ",SNR%radius
+      endif
+!
+!
+!
       width_energy   = SNR%radius*energy_width_ratio
       width_mass     = SNR%radius*mass_width_ratio
       width_velocity = SNR%radius*velocity_width_ratio
@@ -1943,11 +1990,6 @@ find_SN: do n=n1,n2
       if (lroot) print*,'explode_SN: shell_(inner, outer)_prop.=',inner_shell_proportion,outer_shell_proportion
 !
 !
-      dv=1.
-      if (nxgrid/=1) dv=dv*dx
-      if (nygrid/=1) dv=dv*dy
-      if (nzgrid/=1) dv=dv*dz
-      if (lroot) print*,'explode_SN: dv=',dv
 
       if (lroot.and.ip<14) print*,'explode_SN: width_energy,c_SN,SNR%site%rho=', width_energy,c_SN,SNR%site%rho
         
@@ -1961,16 +2003,6 @@ find_SN: do n=n1,n2
       call eoscalc(ilnrho_ee,real(log(SNR%site%rho+cmass_SN)),ee_SN_new, &
                               lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
-!
-!  Calculate explosion site mean density
-!
-      call get_properties(f,SNR,rhom,ekintot)
-      SNR%rhom=rhom
-!
-!  Calculate effective Sedov evolution time
-!
-      SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
-      uu_sedov = 0.4*SNR%radius/SNR%t_sedov
 !
 ! Velocity insertion normalization 
 !
@@ -1998,7 +2030,7 @@ find_SN: do n=n1,n2
          ! ASSUME: SN will fully ionize the gas at its centre
          if (lmove_mass) then
            if (lroot) print*,'explode_SN: moving mass to compensate.'
-           call getdensity(real((SNR%site%ee*SNR%site%rho)+c_SN),TT_SN_min,1.,rho_SN_new)
+           call getdensity(real((SNR%site%ee*SNR%site%rho)+frac_eth*c_SN),TT_SN_min,1.,rho_SN_new)
            if (mass_movement=='rho-cavity') then 
              call get_lowest_rho(f,SNR,r_cavity,rho_SN_lowest)
              cavity_depth=SNR%site%rho-rho_SN_new
@@ -2159,13 +2191,12 @@ find_SN: do n=n1,n2
         print*, 'explode_SN:    Total mass = ', SNR%MM
         print*, 'explode_SN:    Sedov time = ', SNR%t_sedov
         print*, 'explode_SN:    Shell velocity  = ', uu_sedov
-        write(1,'(i10,e13.5,2i4,3i10,6e13.5)')  &
-          it, &
-          t, &
-          SNR%SN_type,SNR%iproc, &
-          SNR%l,SNR%m,SNR%n, &
+         write(1,'(i10,e13.5,2i4,3i10,7e13.5)')  &
+          it,t, &
+          SNR%SN_type, &
+          SNR%iproc, SNR%l,SNR%m,SNR%n, &
           SNR%x,SNR%y,SNR%z, &
-          SNR%site%rho,SNR%site%TT,SNR%EE!, SNR%t_sedov
+          SNR%site%rho,SNR%site%TT,SNR%EE, SNR%t_sedov
         close(1)
       endif
 
@@ -2356,11 +2387,6 @@ find_SN: do n=n1,n2
       real :: int_dt, dv
       integer :: i,iSNR
 !
-      dv=1.
-      if (nxgrid/=1) dv=dv*dx
-      if (nygrid/=1) dv=dv*dy
-      if (nzgrid/=1) dv=dv*dz
-!
       do i=1,nSNR
         iSNR=SNR_index(i)
         if (SNRs(iSNR)%state/=SNstate_damping) cycle
@@ -2429,14 +2455,8 @@ find_SN: do n=n1,n2
       real, dimension(nx) :: rho, u2
       integer, dimension(nx) :: mask
       double precision, dimension(3) :: tmp,tmp2
-      real :: dv 
 !
 !  Obtain distance to SN
-!
-      dv=1.
-      if (nxgrid/=1) dv=dv*dx
-      if (nygrid/=1) dv=dv*dy
-      if (nzgrid/=1) dv=dv*dz
 !
 !  Sum all points inside 1.5 * SNR radius and divide by number of points 
 !
@@ -2607,14 +2627,9 @@ find_SN: do n=n1,n2
       real, dimension(nx) :: rho
       double precision, dimension(1) :: dmpi1, dmpi1_tmp
       double precision, dimension(nx) :: profile_cavity
-      real :: dv
 !
 !  Obtain distance to SN
 !
-      dv=1.
-      if (nxgrid/=1) dv=dv*dx
-      if (nygrid/=1) dv=dv*dy
-      if (nzgrid/=1) dv=dv*dz
 
       !mass_start=0.
       !mass_end=0.
