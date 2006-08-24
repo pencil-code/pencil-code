@@ -1,4 +1,4 @@
-! $Id: gravity_simple.f90,v 1.12 2006-08-23 16:53:31 mee Exp $
+! $Id: gravity_simple.f90,v 1.13 2006-08-24 20:57:44 bingert Exp $
 
 !
 !  This module takes care of simple types of gravity, i.e. where
@@ -101,7 +101,7 @@ module Gravity
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: gravity_simple.f90,v 1.12 2006-08-23 16:53:31 mee Exp $")
+           "$Id: gravity_simple.f90,v 1.13 2006-08-24 20:57:44 bingert Exp $")
 !
 !  Set lgrav and lgravz (the latter for backwards compatibility)
 !
@@ -121,17 +121,6 @@ module Gravity
       use Sub, only: notanumber, sine_step
 !
       real :: ztop, prof  
-!
-!  Set up physical units.
-!
-      if (unit_system=='cgs') then
-          g_A = g_A_cgs/unit_velocity*unit_time
-          g_B = g_B_cgs/unit_length
-          g_C = g_C_cgs/unit_velocity*unit_time
-          g_D = g_D_cgs/unit_length
-      else if (unit_system=='SI') then
-        call stop_it('initialize_gravity: SI unit conversions not inplemented')
-      endif
 !
 !  Different x-gravity profiles
 !
@@ -244,6 +233,17 @@ module Gravity
         gravz_zpencil = -gravz/z(n1:n2)**2
 
       case('Ferriere')
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+          g_A = g_A_cgs/unit_velocity*unit_time
+          g_B = g_B_cgs/unit_length
+          g_C = g_C_cgs/unit_velocity*unit_time
+          g_D = g_D_cgs/unit_length
+      else if (unit_system=='SI') then
+        call stop_it('initialize_gravity: SI unit conversions not inplemented')
+      endif
 !
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !   at solar radius.  (for interstellar runs)
