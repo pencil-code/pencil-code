@@ -4,7 +4,7 @@
 !  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2006-08-23 14:01:27 theine Exp $'
+  cvsid='$Id: run.in,v 1.5 2006-08-24 13:06:26 mee Exp $'
   nt=5000, it1=10, cdt=0.4, cdtv=0.20, isave=50, itorder=3,
   dsnap=20., dvid=1., tmax=30.
   bcx = 's','s','s','s','s','s','a2','a2'
@@ -20,11 +20,11 @@
   cdiffrho=0.,  !(mass diffusion not currently used)
 /
 &entropy_run_pars
-  iheatcond='chi-const',chi=2.0
+  iheatcond='chi-const',chi=1E-9, chi_t=.1
 /
 &magnetic_run_pars
   eta=2.0, B_ext=2.0,0.,0.
 /
 &viscosity_run_pars
-  nu=2.0
+  nu=1.2
 /
