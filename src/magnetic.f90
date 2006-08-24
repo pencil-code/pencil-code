@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.317 2006-08-24 13:27:27 mee Exp $
+! $Id: magnetic.f90,v 1.318 2006-08-24 13:52:43 bingert Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -204,7 +204,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.317 2006-08-24 13:27:27 mee Exp $")
+           "$Id: magnetic.f90,v 1.318 2006-08-24 13:52:43 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1063,8 +1063,7 @@ module Magnetic
 !  processor and in bottommost pencils
 !
         if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
-          fres(:,1) = 0.
-          fres(:,2) = 0.
+           fres(:,:)=0.      
         endif
       endif
 !
