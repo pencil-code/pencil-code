@@ -1,6 +1,6 @@
 PRO find_SN_shock,var,x,pnts=pnts,leftpnt=leftpnt,rightpnt=rightpnt,tol=tol
 ;
-; $Id: find_sn_shock.pro,v 1.1 2004-05-24 19:06:46 mee Exp $
+; $Id: find_sn_shock.pro,v 1.2 2006-08-24 23:03:22 mee Exp $
 ;
 ; Routine to find shock front by finding points within a given
 ; tolerance of the maximum
@@ -9,17 +9,17 @@ PRO find_SN_shock,var,x,pnts=pnts,leftpnt=leftpnt,rightpnt=rightpnt,tol=tol
 default,tol,0.000000001
 
 pnts = x[where(abs(var - max(var)) le tol)]
-rightpnts = where(pnts gt 0.)
-leftpnts = where(pnts lt 0.)
+rightpnts = where(pnts gt 0.,nrightpnts)
+leftpnts = where(pnts lt 0.,nleftpnts)
 print,abs(var - max(var))
-if n_elements(rightpnts) gt 1 then begin
+if (nrightpnts gt 1 ) then begin
   rightpnt = mean(pnts[rightpnts])
 endif else begin
   if rightpnts eq -1 then rightpnt=-9999999. else rightpnt=pnts[rightpnts]
 endelse
 
 
-if n_elements(leftpnts) gt 1 then begin
+if (nleftpnts gt 1) then begin
   leftpnt = mean(pnts[leftpnts])
 endif else begin
   if leftpnts eq -1 then leftpnt=-9999999. else leftpnt=pnts[leftpnts]
