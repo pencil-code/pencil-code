@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.134 2006-08-23 16:53:31 mee Exp $
+! $Id: interstellar.f90,v 1.135 2006-08-24 20:42:37 bingert Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -377,7 +377,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.134 2006-08-23 16:53:31 mee Exp $")
+           "$Id: interstellar.f90,v 1.135 2006-08-24 20:42:37 bingert Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -630,7 +630,7 @@ module Interstellar
       write (lun) nSNR
       do i=1,nSNR
         iSNR=SNR_index(i)
-        write (lun), SNRs(iSNR)
+        write (lun) SNRs(iSNR)
       enddo 
 !
     endsubroutine output_persistent_interstellar
