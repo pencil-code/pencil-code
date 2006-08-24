@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.324 2006-08-23 16:53:31 mee Exp $
+! $Id: equ.f90,v 1.325 2006-08-24 13:07:46 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -375,7 +375,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.324 2006-08-23 16:53:31 mee Exp $")
+           "$Id: equ.f90,v 1.325 2006-08-24 13:07:46 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -792,32 +792,32 @@ module Equ
 !
 !  exclude the frozen zones from the time-step calculation
 !
-          if (any(lfreeze_varint)) then                                                            
-             if (lcylindrical) then                                                                
-                where (rcyl_mn .le. rfreeze_int)                                                   
-                   maxadvec=0.                                                                     
-                   maxdiffus=0.                                                                    
-                endwhere                                                                           
-             else                                                                                  
-                where (r_mn .le. rfreeze_int)                                                      
-                   maxadvec=0.                                                                     
-                   maxdiffus=0.                                                                    
-                endwhere                                                                           
-             endif                                                                                 
-          endif                                                                                    
-!                                                                                                   
-          if (any(lfreeze_varext)) then                                                            
-             if (lcylindrical) then                                                                
-                where (rcyl_mn .ge. rfreeze_ext)                                                   
-                   maxadvec=0.                                                                     
-                   maxdiffus=0.                                                                    
-                endwhere                                                                           
-             else                                                                                  
-                where (r_mn .ge. rfreeze_ext)                                                      
-                   maxadvec=0.                                                                     
-                   maxdiffus=0.                                                                    
-                endwhere                                                                           
-             endif                                                                                 
+          if (any(lfreeze_varint)) then
+             if (lcylindrical) then
+                where (rcyl_mn .le. rfreeze_int)
+                   maxadvec=0.
+                   maxdiffus=0.
+                endwhere
+             else
+                where (r_mn .le. rfreeze_int)
+                   maxadvec=0.
+                   maxdiffus=0.
+                endwhere
+             endif
+          endif
+!
+          if (any(lfreeze_varext)) then
+             if (lcylindrical) then
+                where (rcyl_mn .ge. rfreeze_ext)
+                   maxadvec=0.
+                   maxdiffus=0.
+                endwhere
+             else
+                where (r_mn .ge. rfreeze_ext)
+                   maxadvec=0.
+                   maxdiffus=0.
+                endwhere
+             endif
           endif                                    
 !
           dt1_advec=maxadvec/cdt
