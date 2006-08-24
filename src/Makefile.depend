@@ -1,12 +1,143 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.48 2006-08-23 18:05:51 mee Exp $
+### $Id: Makefile.depend,v 1.49 2006-08-24 13:20:30 mee Exp $
 ### Makefile dependencies for modular pencil code
+
+#
+#
+# Unswitchable Modules
+#
+CPARAM_OBJ=cparam$(PC_META_TYPE).o
+CPARAM_SRC=cparam.f90
+
+CDATA_OBJ=cdata$(PC_META_TYPE).o
+CDATA_SRC=cdata.f90
+
+SUB_OBJ=sub$(PC_META_TYPE).o
+SUB_SRC=sub.f90
+
+GENERAL_OBJ=general$(PC_META_TYPE).o
+GENERAL_SRC=general.f90
+
+MESSAGES_OBJ=messages$(PC_META_TYPE).o
+MESSAGES_SRC=messages.f90
+
+DERIV_OBJ=deriv$(PC_META_TYPE).o
+DERIV_SRC=deriv.f90
+
+SHARED_VARIABLES_OBJ=shared_variables$(PC_META_TYPE).o
+SHARED_VARIABLES_SRC=shared_variables.f90
+
+EQU_OBJ=equ$(PC_META_TYPE).o
+EQU_SRC=equ.f90
+
+INITCOND_OBJ=initcond$(PC_META_TYPE).o
+INITCOND_SRC=initcond.f90
+
+GHOSTFOLD_OBJ=ghostfold_$(MPICOMM)$(PC_META_TYPE).o
+GHOSTFOLD_SRC=ghostfold_$(MPICOMM).f90
+
+PARTICLES_CDATA_OBJ=particles_cdata$(PC_META_TYPE).o
+PARTICLES_CDATA_SRC=particles_cdata.f90
+
+
+#
+# Switchable Modules
+#
+HYDRO_OBJ=$(HYDRO)$(PC_META_TYPE).o
+HYDRO_SRC=$(HYDRO).f90
+GLOBAL_OBJ=$(GLOBAL)$(PC_META_TYPE).o
+GLOBAL_SRC=$(GLOBAL).f90
+INITCOND_SPEC_OBJ=$(INITCOND_SPEC)$(PC_META_TYPE).o
+INITCOND_SPEC_SRC=$(INITCOND_SPEC).f90
+VISCOSITY_OBJ=$(VISCOSITY)$(PC_META_TYPE).o
+VISCOSITY_SRC=$(VISCOSITY).f90
+HYDRO_OBJ=$(HYDRO)$(PC_META_TYPE).o
+HYDRO_SRC=$(HYDRO).f90
+ENTROPY_OBJ=$(ENTROPY)$(PC_META_TYPE).o
+ENTROPY_SRC=$(ENTROPY).f90
+FOURIER_OBJ=$(FOURIER)$(PC_META_TYPE).o
+FOURIER_SRC=$(FOURIER).f90
+SHOCK_OBJ=$(SHOCK)$(PC_META_TYPE).o
+SHOCK_SRC=$(SHOCK).f90
+MAGNETIC_OBJ=$(MAGNETIC)$(PC_META_TYPE).o
+MAGNETIC_SRC=$(MAGNETIC).f90
+EOS_OBJ=$(EOS)$(PC_META_TYPE).o
+EOS_SRC=$(EOS).f90
+SHOCK_FINDER_OBJ=$(SHOCK_FINDER)$(PC_META_TYPE).o
+SHOCK_FINDER_SRC=$(SHOCK_FINDER).f90
+GRID_OBJ=$(GRID)$(PC_META_TYPE).o
+GRID_SRC=$(GRID).f90
+TIMESTEP_OBJ=$(TIMESTEP)$(PC_META_TYPE).o
+TIMESTEP_SRC=$(TIMESTEP).f90
+RADIATION_OBJ=$(RADIATION)$(PC_META_TYPE).o
+RADIATION_SRC=$(RADIATION).f90
+GRAVITY_OBJ=$(GRAVITY)$(PC_META_TYPE).o
+GRAVITY_SRC=$(GRAVITY).f90
+DENSITY_OBJ=$(DENSITY)$(PC_META_TYPE).o
+DENSITY_SRC=$(DENSITY).f90
+STRUCT_FUNC_OBJ=$(STRUCT_FUNC)$(PC_META_TYPE).o
+STRUCT_FUNC_SRC=$(STRUCT_FUNC).f90
+POISSON_OBJ=$(POISSON)$(PC_META_TYPE).o
+POISSON_SRC=$(POISSON).f90
+SELFGRAVITY_OBJ=$(SELFGRAVITY)$(PC_META_TYPE).o
+SELFGRAVITY_SRC=$(SELFGRAVITY).f90
+MPICOMM_OBJ=$(MPICOMM_FIX)$(PC_META_TYPE).o
+MPICOMM_SRC=$(MPICOMM_FIX).f90
+PSCALAR_OBJ=$(PSCALAR)$(PC_META_TYPE).o
+PSCALAR_SRC=$(PSCALAR).f90
+COSMICRAY_OBJ=$(COSMICRAY)$(PC_META_TYPE).o
+COSMICRAY_SRC=$(COSMICRAY).f90
+COSMICRAYFLUX_OBJ=$(COSMICRAYFLUX)$(PC_META_TYPE).o
+COSMICRAYFLUX_SRC=$(COSMICRAYFLUX).f90
+POWER_OBJ=$(POWER)$(PC_META_TYPE).o
+POWER_SRC=$(POWER).f90
+DEBUG_OBJ=$(DEBUG)$(PC_META_TYPE).o
+DEBUG_SRC=$(DEBUG).f90
+CHIRAL_OBJ=$(CHIRAL)$(PC_META_TYPE).o
+CHIRAL_SRC=$(CHIRAL).f90
+FORCING_OBJ=$(FORCING)$(PC_META_TYPE).o
+FORCING_SRC=$(FORCING).f90
+DUSTVELOCITY_OBJ=$(DUSTVELOCITY)$(PC_META_TYPE).o
+DUSTVELOCITY_SRC=$(DUSTVELOCITY).f90
+DUSTDENSITY_OBJ=$(DUSTDENSITY)$(PC_META_TYPE).o
+DUSTDENSITY_SRC=$(DUSTDENSITY).f90
+TESTFIELD_OBJ=$(TESTFIELD)$(PC_META_TYPE).o
+TESTFIELD_SRC=$(TESTFIELD).f90
+IO_OBJ=$(IO)$(PC_META_TYPE).o
+IO_SRC=$(IO).f90
+POWER_OBJ=$(POWER)$(PC_META_TYPE).o
+POWER_SRC=$(POWER).f90
+SHEAR_OBJ=$(SHEAR)$(PC_META_TYPE).o
+SHEAR_SRC=$(SHEAR).f90
+PLANET_OBJ=$(PLANET)$(PC_META_TYPE).o
+PLANET_SRC=$(PLANET).f90
+INTERSTELLAR_OBJ=$(INTERSTELLAR)$(PC_META_TYPE).o
+INTERSTELLAR_SRC=$(INTERSTELLAR).f90
+BORDER_PROF_OBJ=$(BORDER_PROF)$(PC_META_TYPE).o
+BORDER_PROF_SRC=$(BORDER_PROF).f90
+TIMEAVG_OBJ=$(TIMEAVG)$(PC_META_TYPE).o
+TIMEAVG_SRC=$(TIMEAVG).f90
+SPECIAL_OBJ=$(SPECIAL)$(PC_META_TYPE).o
+SPECIAL_SRC=$(SPECIAL).f90
+PARTICLES_OBJ=$(PARTICLES)$(PC_META_TYPE).o
+PARTICLES_SRC=$(PARTICLES).f90
+PARTICLES_MAIN_OBJ=$(PARTICLES_MAIN)$(PC_META_TYPE).o
+PARTICLES_MAIN_SRC=$(PARTICLES_MAIN).f90
+PARTICLES_SUB_OBJ=$(PARTICLES_SUB)$(PC_META_TYPE).o
+PARTICLES_SUB_SRC=$(PARTICLES_SUB).f90
+PARTICLES_RADIUS_OBJ=$(PARTICLES_RADIUS)$(PC_META_TYPE).o
+PARTICLES_RADIUS_SRC=$(PARTICLES_RADIUS).f90
+PARTICLES_NUMBER_OBJ=$(PARTICLES_NUMBER)$(PC_META_TYPE).o
+PARTICLES_NUMBER_SRC=$(PARTICLES_NUMBER).f90
+PARTICLES_SELFGRAVITY_OBJ=$(PARTICLES_SELFGRAVITY)$(PC_META_TYPE).o
+PARTICLES_SELFGRAVITY_SRC=$(PARTICLES_SELFGRAVITY).f90
 
 ## ---------------------------------------------------------------------- #
 ## Non-F90 / undetectable dependencies
 ## ---------------------------------------------------------------------- #
 #
-nodebug$(PC_META_TYPE).o:            nodebug.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
+nodebug$(PC_META_TYPE).o:            nodebug.f90 $(CDATA_OBJ) $(MPICOMM_FIX)$(PC_META_TYPE).o
+$(DEBUG_OBJ):                        debug_c.c Makefile.src Makefile.local
 #$(TIMEAVG)$(PC_META_TYPE).o:        ctimeavg.local
 #axeltest $(INITCOND_SPEC)$(PC_META_TYPE).o:$(INITCOND_SPEC).f90
 
@@ -20,10 +151,10 @@ read_videofiles$(PC_META_TYPE).o: read_videofiles.f90 $(read_videofiles_deps)
 read_vectorfiles$(PC_META_TYPE).o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #merge_tony var2ascii$(PC_META_TYPE).o: var2ascii.f90 $(var2ascii_deps)
 #
-cparam$(PC_META_TYPE).o:    cparam.f90 cparam$(PC_META_TYPE).local cparam$(PC_META_TYPE).inc
-cdata$(PC_META_TYPE).o:     cdata.f90 cparam$(PC_META_TYPE).o
-$(GRID)$(PC_META_TYPE).o:   $(GRID).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
-general$(PC_META_TYPE).o:   general.f90 messages$(PC_META_TYPE).o cparam$(PC_META_TYPE).o cdata$(PC_META_TYPE).o
+$(CPARAM_OBJ):    $(CPARAM_SRC)  cparam$(PC_META_TYPE).local cparam$(PC_META_TYPE).inc
+$(CDATA_OBJ):     $(CDATA_SRC)   $(CPARAM_OBJ)
+$(GRID_OBJ):      $(GRID_SRC)    $(CDATA_OBJ) $(MPICOMM_OBJ)
+$(GENERAL_OBJ):   $(GENERAL_SRC) $(MESSAGES_OBJ) $(CPARAM_OBJ) $(CDATA_OBJ)
 
 #
 # Explict dependencies for the Fourier routines to allow them to pull in
@@ -31,77 +162,82 @@ general$(PC_META_TYPE).o:   general.f90 messages$(PC_META_TYPE).o cparam$(PC_MET
 #
 fft.o :      fft.f
 fftpack.o :  fftpack.f
-nofourier$(PC_META_TYPE).o:       nofourier.f90 fourier.h messages$(PC_META_TYPE).o $(MPICOMM_FIX).o cparam.o cdata.o
-fourier_fft$(PC_META_TYPE).o:     fourier_fft.f90 fft.o fourier.h messages$(PC_META_TYPE).o $(MPICOMM_FIX).o cparam.o cdata.o
-fourier_fftpack$(PC_META_TYPE).o: fourier_fftpack.f90 fftpack.o fourier.h messages$(PC_META_TYPE).o $(MPICOMM_FIX).o cparam.o cdata.o
-#
-# Explict dependencies for the Shock routines to prevent over use of the shock_finder code
-#
-shock$(PC_META_TYPE).o:           shock.h          shock.f90 shock_profile.inc cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o sub$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o
-shock_perp$(PC_META_TYPE).o:      shock.h          shock_perp.f90 shock_profile.inc cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o sub$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o
-noshock$(PC_META_TYPE).o:         shock.h          noshock.f90 cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o sub$(PC_META_TYPE).o
+nofourier$(PC_META_TYPE).o:       nofourier.f90 fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+fourier_fft$(PC_META_TYPE).o:     fourier_fft.f90 fft.o fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
+fourier_fftpack$(PC_META_TYPE).o: fourier_fftpack.f90 fftpack.o fourier.h $(MESSAGES_OBJ) $(MPICOMM_FIX).o cparam.o cdata.o
 
-slices$(PC_META_TYPE).o:    slices.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(SHOCK)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(CHIRAL)$(PC_META_TYPE).o
-deriv$(PC_META_TYPE).o:     deriv.f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o
-$(BORDER_PROF)$(PC_META_TYPE).o:  $(BORDER_PROF).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o
-sub$(PC_META_TYPE).o:       sub.f90 cdata$(PC_META_TYPE).o deriv$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o
-param_io$(PC_META_TYPE).o:  param_io.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(TIMESTEP)$(PC_META_TYPE).o $(TIMEAVG)$(PC_META_TYPE).o $(physics) $(PARTICLES_MAIN)$(PC_META_TYPE).o
-register$(PC_META_TYPE).o:  register.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o param_io$(PC_META_TYPE).o $(physics) $(TIMEAVG)$(PC_META_TYPE).o prints$(PC_META_TYPE).o equ$(PC_META_TYPE).o
-prints$(PC_META_TYPE).o:    prints.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o param_io$(PC_META_TYPE).o $(physics)
-equ$(PC_META_TYPE).o:       equ.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o ghostfold_$(MPICOMM)$(PC_META_TYPE).o messages$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(physics) boundcond$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o
-boundcond$(PC_META_TYPE).o: boundcond.f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(ENTROPY)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
-filter$(PC_META_TYPE).o:    filter.f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o
-initcond$(PC_META_TYPE).o:  initcond.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o
-noinitcond_spec$(PC_META_TYPE).o: noinitcond_spec.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o
-$(TIMESTEP)$(PC_META_TYPE).o:  $(TIMESTEP).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o equ$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o $(BORDER_PROF)$(PC_META_TYPE).o
-persist$(PC_META_TYPE).o:    persist.f90 cdata$(PC_META_TYPE).o general$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(FORCING)$(PC_META_TYPE).o
-snapshot$(PC_META_TYPE).o:    snapshot.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o boundcond$(PC_META_TYPE).o $(POWER)$(PC_META_TYPE).o $(STRUCT_FUNC)$(PC_META_TYPE).o $(RADIATION)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o persist$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o
-messages$(PC_META_TYPE).o:    messages.f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
-shared_variables$(PC_META_TYPE).o:    shared_variables.f90 messages$(PC_META_TYPE).o 
-farray$(PC_META_TYPE).o:    farray.f90  cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o general$(PC_META_TYPE).o
-ghostfold_$(MPICOMM)$(PC_META_TYPE).o: ghostfold_$(MPICOMM).f90 messages$(PC_META_TYPE).o cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o
 #
-$(MPICOMM_FIX)$(PC_META_TYPE).o:  mpicomm.h        $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o
-$(GLOBAL)$(PC_META_TYPE).o:       global.h         $(GLOBAL).f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o sub$(PC_META_TYPE).o
-$(VISCOSITY)$(PC_META_TYPE).o:    viscosity.h      $(VISCOSITY).f90 cdata$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o
+# Explict dependencies for the Shock routines
+# different library routines
+#
+shock$(PC_META_TYPE).o:       shock.h   shock.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(DENSITY_OBJ) $(SUB_OBJ) boundcond$(PC_META_TYPE).o farray$(PC_META_TYPE).o
+shock_perp$(PC_META_TYPE).o:  shock.h   shock_perp.f90 shock_profile.inc $(CDATA_OBJ) $(CPARAM_OBJ) $(DENSITY_OBJ) $(SUB_OBJ) boundcond$(PC_META_TYPE).o farray$(PC_META_TYPE).o
+noshock$(PC_META_TYPE).o:     shock.h   noshock.f90 $(CDATA_OBJ) $(CPARAM_OBJ) $(SUB_OBJ) farray$(PC_META_TYPE).o
 
-$(SHEAR)$(PC_META_TYPE).o:        shear.h          $(SHEAR).f90 $(MPICOMM_FIX)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
-$(GRAVITY)$(PC_META_TYPE).o:      gravity.h        $(GRAVITY).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o
-$(SELFGRAVITY)$(PC_META_TYPE).o:  selfgravity.h    $(SELFGRAVITY).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(POISSON)$(PC_META_TYPE).o $(PARTICLES_MAIN)$(PC_META_TYPE).o shared_variables$(PC_META_TYPE).o
-$(POISSON)$(PC_META_TYPE).o:      poisson.h        $(POISSON).f90 $(FOURIER)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o
-$(FORCING)$(PC_META_TYPE).o:      forcing.h        $(FORCING).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o
-$(ENTROPY)$(PC_META_TYPE).o:      entropy.h        $(ENTROPY).f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(INTERSTELLAR)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(PLANET)$(PC_META_TYPE).o $(BORDER_PROF)$(PC_META_TYPE).o
-$(MAGNETIC)$(PC_META_TYPE).o:     magnetic.h       $(MAGNETIC).f90 cdata$(PC_META_TYPE).o $(FOURIER).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(BORDER_PROF)$(PC_META_TYPE).o
-$(RADIATION)$(PC_META_TYPE).o:    radiation.h      $(RADIATION).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC$(PC_META_TYPE).o) $(DENSITY)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o
-$(HYDRO)$(PC_META_TYPE).o:        hydro.h          $(HYDRO).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o $(MAGNETIC)$(PC_META_TYPE).o $(VISCOSITY)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(COSMICRAY)$(PC_META_TYPE).o $(BORDER_PROF)$(PC_META_TYPE).o
-$(DENSITY)$(PC_META_TYPE).o:      density.h        $(DENSITY).f90 cdata$(PC_META_TYPE).o messages$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o $(SELFGRAVITY)$(PC_META_TYPE).o $(SPECIAL)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(BORDER_PROF)$(PC_META_TYPE).o
-$(COSMICRAY)$(PC_META_TYPE).o:    cosmicray.h      $(COSMICRAY).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o
-$(COSMICRAYFLUX)$(PC_META_TYPE).o:    cosmicrayflux.h      $(COSMICRAYFLUX).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(COSMICRAY)$(PC_META_TYPE).o
-$(PSCALAR)$(PC_META_TYPE).o:      pscalar.h        $(PSCALAR).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o
-$(CHIRAL)$(PC_META_TYPE).o:       chiral.h         $(CHIRAL).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o
-$(DUSTVELOCITY)$(PC_META_TYPE).o: dustvelocity.h   $(DUSTVELOCITY).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o $(PSCALAR)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o
-$(DUSTDENSITY)$(PC_META_TYPE).o:  dustdensity.h    $(DUSTDENSITY).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(DUSTVELOCITY)$(PC_META_TYPE).o
-$(TESTFIELD)$(PC_META_TYPE).o:    testfield.h      $(TESTFIELD).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o $(HYDRO)$(PC_META_TYPE).o initcond$(PC_META_TYPE).o $(DENSITY)$(PC_META_TYPE).o
-$(INTERSTELLAR)$(PC_META_TYPE).o: interstellar.h   $(INTERSTELLAR).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(EOS)$(PC_META_TYPE).o
-$(EOS)$(PC_META_TYPE).o:          eos.h            $(EOS).f90 cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o messages$(PC_META_TYPE).o sub$(PC_META_TYPE).o   $(INITCOND_SPEC)$(PC_META_TYPE).o $(GRAVITY)$(PC_META_TYPE).o
-$(IO)$(PC_META_TYPE).o:           io.h             $(IO).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o sub$(PC_META_TYPE).o
-#$(TIMEAVG)$(PC_META_TYPE).o:         $(TIMEAVG).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o ctimeavg.local
-$(TIMEAVG)$(PC_META_TYPE).o:      timeavg.h        $(TIMEAVG).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(IO)$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o
-$(POWER)$(PC_META_TYPE).o:        power_spectrum.h $(POWER).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o $(FOURIER)$(PC_META_TYPE).o
-$(STRUCT_FUNC)$(PC_META_TYPE).o:  struct_func.h    $(STRUCT_FUNC).f90 cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o general$(PC_META_TYPE).o
-$(SPECIAL)$(PC_META_TYPE).o:      special.h        $(SPECIAL).f90 special_dummies.inc cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(INITCOND_SPEC)$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o
-$(PLANET)$(PC_META_TYPE).o:       planet.h	    cdata$(PC_META_TYPE).o sub$(PC_META_TYPE).o general$(PC_META_TYPE).o cparam$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o
+deriv$(PC_META_TYPE).o:     deriv.f90            $(CDATA_OBJ) $(MESSAGES_OBJ)
+farray$(PC_META_TYPE).o:    farray.f90           $(CDATA_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ)
+$(SHARED_VARIABLES_OBJ):    shared_variables.f90 $(MESSAGES_OBJ) 
+$(BORDER_PROF_OBJ):                              $(CDATA_OBJ) $(BORDER_PROF_SRC) $(SUB_OBJ)
+slices$(PC_META_TYPE).o:    slices.f90           $(CDATA_OBJ) $(SUB_OBJ) $(EOS_OBJ) $(PARTICLES_MAIN_OBJ) $(SHOCK_OBJ) $(INTERSTELLAR_OBJ) $(HYDRO_OBJ) $(RADIATION_OBJ) $(MAGNETIC_OBJ) $(SPECIAL_OBJ) $(CHIRAL_OBJ)
+$(SUB_OBJ):                 sub.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) deriv$(PC_META_TYPE).o $(MESSAGES_OBJ) $(GENERAL_OBJ)
+param_io$(PC_META_TYPE).o:  param_io.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(TIMESTEP_OBJ) $(TIMEAVG_OBJ) $(physics) $(PARTICLES_MAIN_OBJ)  
+register$(PC_META_TYPE).o:  register.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(IO_OBJ) $(physics) $(TIMEAVG_OBJ) prints$(PC_META_TYPE).o equ$(PC_META_TYPE).o
+equ$(PC_META_TYPE).o:       equ.f90              $(CDATA_OBJ) $(MPICOMM_OBJ) $(GHOSTFOLD_OBJ) $(MESSAGES_OBJ) $(SUB_OBJ) $(physics) boundcond$(PC_META_TYPE).o $(GLOBAL_OBJ) $(PARTICLES_MAIN_OBJ) $(INTERSTELLAR_OBJ)
+boundcond$(PC_META_TYPE).o: boundcond.f90        $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(ENTROPY_OBJ) $(MAGNETIC_OBJ) $(DENSITY_OBJ) $(RADIATION_OBJ) $(HYDRO_OBJ)
+$(INITCOND_OBJ):            initcond.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(GENERAL_OBJ) $(FOURIER_OBJ) $(SUB_OBJ) $(EOS_OBJ)
+$(TIMESTEP_OBJ):            $(TIMESTEP).f90      $(CDATA_OBJ) $(MPICOMM_OBJ) equ$(PC_META_TYPE).o $(FORCING_OBJ) $(BORDER_PROF_OBJ)
+snapshot$(PC_META_TYPE).o:  snapshot.f90         $(CDATA_OBJ) $(MPICOMM_OBJ) $(IO_OBJ) boundcond$(PC_META_TYPE).o $(POWER_OBJ) $(STRUCT_FUNC_OBJ) $(RADIATION_OBJ) $(EOS_OBJ) $(MAGNETIC_OBJ) persist$(PC_META_TYPE).o $(PARTICLES_MAIN_OBJ)
+$(MESSAGES_OBJ):            messages.f90         $(CDATA_OBJ) $(MPICOMM_OBJ)
+$(GHOSTFOLD_OBJ):           $(GHOSTFOLD_SRC)     $(CDATA_OBJ) $(MPICOMM_OBJ) $(MESSAGES_OBJ) $(FOURIER_OBJ)
+persist$(PC_META_TYPE).o:   persist.f90          $(CDATA_OBJ) $(GENERAL_OBJ) $(INTERSTELLAR_OBJ) $(FORCING_OBJ)
+filter$(PC_META_TYPE).o:    filter.f90           $(CDATA_OBJ) $(SUB_OBJ) boundcond$(PC_META_TYPE).o
+prints$(PC_META_TYPE).o:    prints.f90           $(CDATA_OBJ) $(SUB_OBJ) param_io$(PC_META_TYPE).o $(physics)
+noinitcond_spec$(PC_META_TYPE).o: noinitcond_spec.f90 $(CDATA_OBJ) $(GENERAL_OBJ)
 
-$(DEBUG)$(PC_META_TYPE).o:        debug_c.c Makefile.src Makefile.local
+#
+# Shorthand for the most common dependencies
+#
+COMMON_DEPS=$(CDATA_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) $(MESSAGES_OBJ)
+
+$(MPICOMM_OBJ):      mpicomm.h       $(MPICOMM_SRC)       $(CDATA_OBJ)
+$(GLOBAL_OBJ):       global.h        $(GLOBAL_SRC)        $(COMMON_DEPS) $(IO_OBJ)
+$(VISCOSITY_OBJ):    viscosity.h     $(VISCOSITY_SRC)     $(CDATA_OBJ)   $(CPARAM_OBJ) $(SUB_OBJ) $(DENSITY_OBJ) $(INTERSTELLAR_OBJ)
+$(SHEAR_OBJ):        shear.h         $(SHEAR_SRC)         $(COMMON_DEPS) $(CPARAM_OBJ) $(HYDRO_OBJ)
+$(GRAVITY_OBJ):      gravity.h       $(GRAVITY_SRC)       $(COMMON_DEPS) $(GLOBAL_OBJ)
+$(SELFGRAVITY_OBJ):  selfgravity.h   $(SELFGRAVITY_SRC)   $(CDATA_OBJ)   $(SUB_OBJ) $(POISSON_OBJ) $(PARTICLES_MAIN_OBJ) $(SHARED_VARIABLES_OBJ)
+$(POISSON_OBJ):      poisson.h       $(POISSON_SRC)       $(CDATA_OBJ)   $(FOURIER_OBJ) $(SUB_OBJ)
+$(FORCING_OBJ):      forcing.h       $(FORCING_SRC)       $(COMMON_DEPS) $(HYDRO_OBJ)
+$(ENTROPY_OBJ):      entropy.h       $(ENTROPY_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(BORDER_PROF_OBJ) $(SPECIAL_OBJ) $(EOS_OBJ) $(GLOBAL_OBJ) $(VISCOSITY_OBJ) $(INTERSTELLAR_OBJ)
+$(MAGNETIC_OBJ):     magnetic.h      $(MAGNETIC_SRC)      $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(BORDER_PROF_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(FOURIER_OBJ) $(DENSITY_OBJ)
+$(HYDRO_OBJ):        hydro.h         $(HYDRO_SRC)         $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(BORDER_PROF_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(VISCOSITY_OBJ) $(DENSITY_OBJ) $(MAGNETIC_OBJ) $(COSMICRAY_OBJ)
+$(DENSITY_OBJ):      density.h       $(DENSITY_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(BORDER_PROF_OBJ) $(SPECIAL_OBJ) $(GRAVITY_OBJ) $(IO_OBJ) $(EOS_OBJ) $(SELFGRAVITY_OBJ)
+$(RADIATION_OBJ):    radiation.h     $(RADIATION_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ) $(EOS_OBJ)
+$(COSMICRAY_OBJ):    cosmicray.h     $(COSMICRAY_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ)
+$(COSMICRAYFLUX_OBJ):cosmicrayflux.h $(COSMICRAYFLUX_SRC) $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(COSMICRAY_OBJ)
+$(PSCALAR_OBJ):      pscalar.h       $(PSCALAR_SRC)       $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
+$(CHIRAL_OBJ):       chiral.h        $(CHIRAL_SRC)        $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(DENSITY_OBJ)
+$(DUSTVELOCITY_OBJ): dustvelocity.h  $(DUSTVELOCITY_SRC)  $(COMMON_DEPS) $(INITCOND_OBJ) $(INITCOND_SPEC_OBJ) $(GENERAL_OBJ) $(EOS_OBJ) $(HYDRO_OBJ) $(PSCALAR_OBJ) $(GRAVITY_OBJ)
+$(DUSTDENSITY_OBJ):  dustdensity.h   $(DUSTDENSITY_SRC)   $(COMMON_DEPS) $(INITCOND_OBJ) $(DUSTVELOCITY_OBJ)
+$(TESTFIELD_OBJ):    testfield.h     $(TESTFIELD_SRC)     $(COMMON_DEPS) $(INITCOND_OBJ) $(IO_OBJ) $(HYDRO_OBJ) $(DENSITY_OBJ)
+$(INTERSTELLAR_OBJ): interstellar.h  $(INTERSTELLAR_SRC)  $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(EOS_OBJ)
+$(EOS_OBJ):          eos.h           $(EOS_SRC)           $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(GRAVITY_OBJ)
+$(IO_OBJ):           io.h            $(IO_SRC)            $(COMMON_DEPS) $(GENERAL_OBJ) $(SUB_OBJ)
+#$(TIMEAVG_OBJ):         $(TIMEAVG_SRC) $(CDATA_OBJ) $(SUB_OBJ) $(IO_OBJ) $(MPICOMM_OBJ) ctimeavg.local
+$(TIMEAVG_OBJ):      timeavg.h        $(TIMEAVG_SRC)      $(COMMON_DEPS) $(IO_OBJ)
+$(POWER_OBJ):        power_spectrum.h $(POWER_SRC)        $(COMMON_DEPS) $(GENERAL_OBJ) $(FOURIER_OBJ)
+$(STRUCT_FUNC_OBJ):  struct_func.h    $(STRUCT_FUNC_SRC)  $(COMMON_DEPS) $(GENERAL_OBJ)
+$(PLANET_OBJ):       planet.h	      $(PLANET_SRC)       $(COMMON_DEPS) $(GENERAL_OBJ) $(CPARAM_OBJ) $(GLOBAL_OBJ) $(PARTICLES_CDATA_OBJ)
+$(SPECIAL_OBJ): special.h  $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ)
+
 #
 #  Particle modules
 #
-particles_cdata$(PC_META_TYPE).o :    particles_cdata.f90 cdata$(PC_META_TYPE).o
-$(PARTICLES_MAIN)$(PC_META_TYPE).o:   particles_main.h $(PARTICLES)$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o $(PARTICLES_RADIUS)$(PC_META_TYPE).o $(PARTICLES_NUMBER)$(PC_META_TYPE).o $(PARTICLES_SELFGRAVITY)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o
-$(PARTICLES_SUB)$(PC_META_TYPE).o:    $(PARTICLES_SUB).f90 cdata$(PC_META_TYPE).o  ghostfold_$(MPICOMM)$(PC_META_TYPE).o particles_cdata$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o messages$(PC_META_TYPE).o
-$(PARTICLES)$(PC_META_TYPE).o:        particles.h particles_cdata$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o $(PARTICLES_NUMBER)$(PC_META_TYPE).o cdata$(PC_META_TYPE).o $(MPICOMM_FIX)$(PC_META_TYPE).o sub$(PC_META_TYPE).o $(GLOBAL)$(PC_META_TYPE).o $(POWER)$(PC_META_TYPE).o $(PLANET)$(PC_META_TYPE).o
-$(PARTICLES_RADIUS)$(PC_META_TYPE).o: particles_radius.h particles_cdata$(PC_META_TYPE).o $(PARTICLES_NUMBER)$(PC_META_TYPE).o
-$(PARTICLES_NUMBER)$(PC_META_TYPE).o: particles_number.h particles_cdata$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o
-$(PARTICLES_SELFGRAVITY)$(PC_META_TYPE).o: particles_selfgravity.h particles_cdata$(PC_META_TYPE).o $(PARTICLES_SUB)$(PC_META_TYPE).o
+$(PARTICLES_CDATA_OBJ):  particles_cdata.f90 $(CDATA_OBJ)
+$(PARTICLES_MAIN_OBJ):   particles_main.h             $(PARTICLES_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(PARTICLES_RADIUS_OBJ) $(PARTICLES_SELFGRAVITY_OBJ) $(CDATA_OBJ)
+$(PARTICLES_SUB_OBJ):                                 $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_SRC) $(CDATA_OBJ) $(GHOSTFOLD_OBJ) $(GLOBAL_OBJ) $(MESSAGES_OBJ)
+$(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(POWER_OBJ) $(PLANET_OBJ)
+$(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
+$(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
+$(PARTICLES_RADIUS_OBJ): particles_radius.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_NUMBER_OBJ)
 
 # DO NOT DELETE
