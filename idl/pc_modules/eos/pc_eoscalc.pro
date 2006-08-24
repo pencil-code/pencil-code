@@ -95,7 +95,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       gamma1=gamma-1.     
 ;      R_cgs=8.3144D7
 
-      cp=1.
+      cp=param.cp
 ;      if (param.lcalc_cp) then begin
 ;        ;cp=k_B/(param.mu*m_H)
 ;        cp=float(R_cgs*gamma/(gamma1*mu_tmp)/units.velocity^2)
