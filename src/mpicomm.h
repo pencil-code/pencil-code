@@ -10,7 +10,7 @@
   public :: mpirecv_real, mpirecv_int
   public :: mpisend_real, mpisend_int
   public :: mpireduce_sum, mpireduce_max, mpireduce_min
-  public :: mpiallreduce_max
+  public :: mpireduce_sum_scl, mpiallreduce_max
   public :: mpireduce_sum_int, mpireduce_sum_double
   public :: mpireduce_or
   public :: mpibcast_real,mpibcast_logical

@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.8 2006-08-25 14:50:52 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.9 2006-08-25 15:57:57 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.8 2006-08-25 14:50:52 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.9 2006-08-25 15:57:57 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -377,9 +377,9 @@ module Particles
                grav_gas=0.
             endwhere
 !
-            sumx_loc(1) = sum(grav_gas * (x(l1:l2) - fp(k,ixp))*re1)
-            sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))*re1)        
-            sumz_loc(1) = sum(grav_gas * (z(  n  ) - fp(k,izp))*re1)        
+            sumx_loc = sum(grav_gas * (x(l1:l2) - fp(k,ixp))*re1)
+            sumy_loc = sum(grav_gas * (y(  m  ) - fp(k,iyp))*re1)        
+            sumz_loc = sum(grav_gas * (z(  n  ) - fp(k,izp))*re1)        
 !                                                                      
             call mpireduce_sum_scl(sumx_loc,sumx)
             call mpireduce_sum_scl(sumy_loc,sumy)
