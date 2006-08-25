@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.6 2006-08-23 16:53:32 mee Exp $
+! $Id: particles_nbody.f90,v 1.7 2006-08-25 14:39:40 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -42,7 +42,6 @@ module Particles
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
-  integer :: idiag_smap=0,idiag_eccp=0
   integer :: idiag_xstar=0,idiag_ystar=0,idiag_zstar=0
   integer :: idiag_vxstar=0,idiag_vystar=0,idiag_vzstar=0
   integer :: idiag_vxplanet=0,idiag_vyplanet=0,idiag_vzplanet=0
@@ -66,7 +65,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.6 2006-08-23 16:53:32 mee Exp $")
+           "$Id: particles_nbody.f90,v 1.7 2006-08-25 14:39:40 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -139,7 +138,7 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
-      real :: gp,gs,mdot,m2dot,gp_init
+      real :: gp,gs,gp_init
       real :: r, p
       integer :: k
 !
@@ -165,7 +164,7 @@ module Particles
 !
 ! center of mass fixed on center of grid
 !
-         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
+         call get_ramped_mass(gp,gs,g0)
          fp(2,ixp)=gp 
          fp(2,iyp)=0.
          fp(2,izp)=0.
@@ -224,7 +223,7 @@ module Particles
          fp(1:npar_loc,ivpz)=vpz0
 
       case ('fixed-cm')
-         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
+         call get_ramped_mass(gp,gs,g0)
 !
          fp(2,ivpx)=0.
          fp(2,ivpy)=gp
@@ -318,17 +317,85 @@ module Particles
 !***********************************************************************
     subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Evolution of dust particle velocity (called from main pencil loop).
+!  Evolution of sink particles velocity due to gas gravity
+!  These particle are way to big and massive to be influenced
+!  by gas drag
 !
-!  20-apr-06/anders: dummy
+!  24-aug-06/wlad: coded
+!
+      use Mpicomm
+      use Gravity, only: g0,r0_pot
+      use Planet, only: Gvalue,b_pot,lmigrate
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      real, dimension(nx) :: re,grav_gas,re1
+      real, dimension(1) :: sumx_loc,sumy_loc,sumz_loc
+      real, dimension(1) :: sumx,sumy,sumz
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: k
+      real :: r_smooth,dv
+      logical :: lheader,lfirstcall=.true.    
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+! Header information
+!
+      lheader=lfirstcall .and. lroot
+!
+! Exclude the gas away from the accretion radius of the particle
+! For the planet, the accretion radius is the Roche Lobe...
+! And in the case of the star, what would it be?
+! Shouldn't it be general? Like.... a pre-set accretion radius?
+!
+!
+      if (lmigrate) then
+         if (lheader) print*,'adding gas gravity to particles!'
+!
+         do k=1,npar
+!
+            if (k==2) then
+               r_smooth = r0_pot     !star
+            else if (k==1) then
+               r_smooth = b_pot      !planet
+            else                                                           
+               call stop_it('gravity_gas - more than 2 planet particles?')
+            endif
+!
+            re = sqrt((x(l1:l2) - fp(k,ixp))**2 &
+                 +    (y(  m  ) - fp(k,iyp))**2 &
+                 +    (z(  n  ) - fp(k,izp))**2)
+!
+            dv = dx*dy
+            if (nzgrid/=1) dv = dv*dz
+!                                                                      
+! Gas gravity
+!
+            grav_gas = Gvalue*p%rho*dv*re*(re**2 + r_smooth**2)**(-1.5)
+            re1=1./re
+!
+            where (re.le.r_smooth)
+               grav_gas=0.
+            endwhere
+!
+            sumx_loc(1) = sum(grav_gas * (x(l1:l2) - fp(k,ixp))*re1)
+            sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))*re1)        
+            sumz_loc(1) = sum(grav_gas * (z(  n  ) - fp(k,izp))*re1)        
+!                                                                      
+            call mpireduce_sum(sumx_loc,sumx,1)
+            call mpireduce_sum(sumy_loc,sumy,1)
+            call mpireduce_sum(sumz_loc,sumz,1)
+!
+            if (lroot) then
+               dfp(k,ivpx) = dfp(k,ivpx) + sumx(1)
+               dfp(k,ivpy) = dfp(k,ivpy) + sumy(1)
+               dfp(k,ivpz) = dfp(k,ivpz) + sumz(1)
+            endif
+!
+         enddo
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dvvp_dt_pencil
 !***********************************************************************
@@ -383,6 +450,11 @@ module Particles
       if (lshear.and.nygrid/=0) dfp(1:npar_loc,iyp) = &
           dfp(1:npar_loc,iyp) - qshear*Omega*fp(1:npar_loc,ixp)
 !
+!  With masses and disk gravity, the torques of the disk must be 
+!  counter-balanced to keep the center of mass fixed in space
+!
+      !if (lmigrate) call reset_center_of_mass(fp,dfp,gp,gs)
+!
       if (lfirstcall) lfirstcall=.false.
 !
     endsubroutine dxxp_dt
@@ -394,7 +466,6 @@ module Particles
 !  17-nov-05/anders+wlad: coded
 !
       use Cdata
-      use EquationOfState, only: cs20, gamma
       use Mpicomm, only: stop_it
       use Sub
       use Gravity, only: g0
@@ -403,18 +474,15 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (mpar_loc) :: sma_planet,ecc_planet
-      real, dimension (mpar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
-      real, dimension (mpar_loc) :: xplanet,yplanet,zplanet,vxplanet,vyplanet,vzplanet
-      real :: sma,ecc,rv,rrdot,w2,mdot,m2dot,extra_accx,extra_accy,extra_accz
-      real :: vx,vy,vz,axr,ayr,azr,vxr,vyr,vzr,vxs,vys,vzs,mu,tcut,gp_d
       integer, dimension (mpar_loc,3) :: ineargrid
-!
-      real, dimension (nx) :: re, grav_gas
+      real, dimension (mpar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
+      real, dimension (mpar_loc) :: xplanet,yplanet,zplanet
+      real, dimension (mpar_loc) :: vxplanet,vyplanet,vzplanet
       real :: Omega2,rsep,gs,gp,gs_acc,gp_acc,r1sep
-      integer :: i, k, ix0, iy0, iz0,mg,ng
+      real :: ax,ay,az,axs,ays,azs,vx,vy,vz,vxs,vys,vzs
+      real :: axr,ayr,azr,vxr,vyr,vzr
+      integer :: i, k
       logical :: lheader, lfirstcall=.true.
-      real :: ax,ay,az,axs,ays,azs
 !
       intent (in) :: f, fp, ineargrid
       intent (inout) :: df, dfp
@@ -463,30 +531,29 @@ module Particles
 !      
 !  Planet's gravity on star - must use ramp up as well
 !        
-         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
-!
-         extra_accx = m2dot*cos(t) - 2*mdot*sin(t)
-         extra_accy = m2dot*sin(t) + 2*mdot*cos(t)
-         extra_accz = 0. 
+         call get_ramped_mass(gp,gs,g0)
 !
          gs_acc = -gs*r1sep**2
          gp_acc = gs_acc * gp/gs
 !
-         dfp(2,ivpx) = dfp(2,ivpx) + gp_acc*r1sep*(axs-ax) + extra_accx 
-         dfp(2,ivpy) = dfp(2,ivpy) + gp_acc*r1sep*(ays-ay) + extra_accy
-         dfp(2,ivpz) = dfp(2,ivpz) + gp_acc*r1sep*(azs-az) + extra_accz
+         dfp(2,ivpx) = dfp(2,ivpx) + gp_acc*r1sep*(axs-ax)
+         dfp(2,ivpy) = dfp(2,ivpy) + gp_acc*r1sep*(ays-ay)
+         dfp(2,ivpz) = dfp(2,ivpz) + gp_acc*r1sep*(azs-az)
 !
 !  Star's gravity on planet
 !
-         dfp(1,ivpx) = dfp(1,ivpx) + gs_acc*r1sep*(ax-axs) + extra_accx
-         dfp(1,ivpy) = dfp(1,ivpy) + gs_acc*r1sep*(ay-ays) + extra_accy
-         dfp(1,ivpz) = dfp(1,ivpz) + gs_acc*r1sep*(az-azs) + extra_accz
+         dfp(1,ivpx) = dfp(1,ivpx) + gs_acc*r1sep*(ax-axs)
+         dfp(1,ivpy) = dfp(1,ivpy) + gs_acc*r1sep*(ay-ays)
+         dfp(1,ivpz) = dfp(1,ivpz) + gs_acc*r1sep*(az-azs)
+!
+         call reset_center_of_mass(fp,dfp,gp,gs)
 !
       endif
 !
-! Add gravity from the gas
-!      
-      if (lmigrate) call gravity_gas(fp,dfp,f)
+! At the end of the time-step, check the position of the center of
+! mass and update the positions of all particles to keep it at rest
+! It shouldn't move much, though. Just that the disk gravity inserts
+! some small torques that make it move.      
 !
       if (lcalc_orbit) then
          xstar(1:npar_loc) = axs  ; vxstar(1:npar_loc) = vxs
@@ -536,70 +603,30 @@ module Particles
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-   subroutine gravity_gas(fp,dfp,f)
+    subroutine reset_center_of_mass(fp,dfp,gp,gs)
 !
-! This routine takes care of the migration process, calculating
-! the backreaction of the disk onto planet and star.
+! If it was accelerated, reset its position!
 !
-! 01-feb-06/wlad+anders: coded
+      real, dimension (mpar_loc,mpvar) :: fp,dfp
+      real :: gs,gp,invtotmass,vx_cm,vy_cm,vz_cm
 !
-! WL: Apparently, there is a difference between a real number and
-! an array of dimension=1. As mpireduce deals with arrays, I
-! have to define the sums as arrays as well.
+      invtotmass = 1./(gp+gs)
 !
-     use Mpicomm
-     use Gravity, only: g0,r0_pot
-     use Planet, only: Gvalue,b_pot
+      vx_cm = invtotmass * (gp*fp(1,ivpx) + gs*fp(2,ivpx))
+      vy_cm = invtotmass * (gp*fp(1,ivpy) + gs*fp(2,ivpy))
+      vz_cm = invtotmass * (gp*fp(1,ivpz) + gs*fp(2,ivpz))
 !
-     real, dimension (mx,my,mz,mfarray) :: f 
-     real, dimension (mpar_loc,mpvar) :: fp, dfp
-     real, dimension(nx) :: re,grav_gas,dens
-     real, dimension(1) :: sumx_loc,sumy_loc,sumz_loc
-     real, dimension(1) :: sumx,sumy,sumz
-     integer :: k
-     real :: r_smooth,dv
+      dfp(1,ixp) = dfp(1,ixp) - vx_cm
+      dfp(2,ixp) = dfp(2,ixp) - vx_cm
+!     
+      dfp(1,iyp) = dfp(1,iyp) - vy_cm
+      dfp(2,iyp) = dfp(2,iyp) - vy_cm
 !
-     dens = f(l1:l2,m,n,ilnrho)
+      dfp(1,izp) = dfp(1,izp) - vz_cm
+      dfp(2,izp) = dfp(2,izp) - vz_cm
 !
-     do k=1,npar
-        if (k==2) then
-           r_smooth = r0_pot         !star
-        else if (k==1) then
-           r_smooth = b_pot      !planet
-        else
-           call stop_it('gravity_gas - more than 2 planet particles?')
-        endif
-!
-        re = sqrt((x(l1:l2) - fp(k,ixp))**2 &
-             +    (y(  m  ) - fp(k,iyp))**2 &
-             +    (z(  n  ) - fp(k,izp))**2)
-!
-        dv = dx*dy
-        if (nzgrid/=1) dv = dv*dz
-!
-! Multiply this by G_newton 
-!
-        grav_gas = Gvalue*dens*dv*re/ &
-             (re**2 + r_smooth**2)**(-1.5)
-!
-        sumx_loc(1) = sum(grav_gas * (x(l1:l2) - fp(k,ixp))/re)
-        sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))/re)
-        sumz_loc(1) = sum(grav_gas * (z(  n  ) - fp(k,izp))/re)
-!
-        call mpireduce_sum(sumx_loc,sumx,1)
-        call mpireduce_sum(sumy_loc,sumy,1)
-        call mpireduce_sum(sumz_loc,sumz,1)
-!
-        if (lroot) then
-           dfp(k,ivpx) = dfp(k,ivpx) + sumx(1)
-           dfp(k,ivpy) = dfp(k,ivpy) + sumy(1)
-           dfp(k,ivpz) = dfp(k,ivpz) + sumz(1)
-        endif
-!
-     enddo
-!
-   endsubroutine gravity_gas
-!**********************************************************************
+     endsubroutine reset_center_of_mass
+!***********************************************************************
     subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
 !
 ! 18-jul-06/wlad: coded
@@ -727,8 +754,7 @@ module Particles
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
-        idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
-        idiag_smap=0; idiag_eccp=0 
+        idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0 
         idiag_xstar=0; idiag_ystar=0; idiag_zstar=0
         idiag_vxstar=0; idiag_vystar=0; idiag_vzstar=0
         idiag_xplanet=0; idiag_yplanet=0; idiag_zplanet=0
@@ -751,8 +777,6 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpx2m',idiag_vpx2m)
         call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
         call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
-        call parse_name(iname,cname(iname),cform(iname),'smap',idiag_smap)
-        call parse_name(iname,cname(iname),cform(iname),'eccp',idiag_eccp)
         call parse_name(iname,cname(iname),cform(iname),'xstar',idiag_xstar)
         call parse_name(iname,cname(iname),cform(iname),'ystar',idiag_ystar)
         call parse_name(iname,cname(iname),cform(iname),'zstar',idiag_zstar)
