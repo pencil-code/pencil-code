@@ -32,7 +32,8 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
   ENDIF
 
   pc_check_math
-  default, datadir, 'data'
+; default, datadir, 'data'
+  IF (not keyword_set(datadir)) THEN datadir='data'
   ; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
   ;
@@ -77,7 +78,12 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       lnrho=var1
       ss=var2
 
-      @data/pc_constants.pro
+;     @data/pc_constants.pro
+      cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/pc_constants.pro'
+      spawn, cmd, result
+      res = flatten_strings(result)
+      if (execute(res) ne 1) then $
+        message, 'There was a problem with pc_constants.pro', /INFO
       impossible=3.9085e37
       pc_check_math,location='pc_eoscalc - ideal gas constants from code'
  
@@ -171,7 +177,12 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       lnrho=var1
       ss=var2
 
-      @data/pc_constants.pro
+;     @data/pc_constants.pro
+      cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/pc_constants.pro'
+      spawn, cmd, result
+      res = flatten_strings(result)
+      if (execute(res) ne 1) then $
+        message, 'There was a problem with pc_constants.pro', /INFO
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
       TT=exp(lnTT)
     
@@ -222,7 +233,12 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,lntt=lntt,cs2=cs2, $
       lnrho=var1
       ss=var2
 
-      @data/pc_constants.pro
+;     @data/pc_constants.pro
+      cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/pc_constants.pro'
+      spawn, cmd, result
+      res = flatten_strings(result)
+      if (execute(res) ne 1) then $
+        message, 'There was a problem with pc_constants.pro', /INFO
     
       if keyword_set(pp) then begin
 

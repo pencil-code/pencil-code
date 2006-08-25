@@ -51,7 +51,7 @@
 ;       pc_read_var,obj=mydata,variables=['tt'],/magic,/add,/trimall
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.41 2006-07-28 17:05:30 mee Exp $
+;       $Id: pc_read_var.pro,v 1.42 2006-08-25 16:46:16 dintrans Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -86,7 +86,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default data directory
 ;
-  default, datadir, 'data'
+; default, datadir, 'data'
+  IF (not keyword_set(datadir)) THEN datadir='data'
 ;
 ; Name and path of varfile to read
 ;  

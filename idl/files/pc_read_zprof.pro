@@ -1,14 +1,14 @@
-; $Id: pc_read_zprof.pro,v 1.1 2005-07-11 12:33:12 brandenb Exp $
+; $Id: pc_read_zprof.pro,v 1.2 2006-08-25 16:46:17 dintrans Exp $
 ;
 ;  read zprofile file
 ;
 function pc_read_zprof, varname , datadir=datadir, debug=debug
 ;
-default, datadir, 'data'
+IF (not keyword_set(datadir)) THEN datadir='data'
 ;
 ;  read expected dimension and processor number
 ;
-pc_read_dim,nzgrid=nzgrid,nprocz=nprocz
+pc_read_dim,nzgrid=nzgrid,nprocz=nprocz,datadir=datadir
 nz=nzgrid/nprocz
 if keyword_set(debug) then print,'nzgrid,nprocz=',nzgrid,nprocz
 ;
@@ -31,7 +31,7 @@ for iprocz=0,nprocz-1 do begin
       izcount=izcount+1
     endfor
   close,1
-  return,afull
 endfor
+return,afull
 ;
 end

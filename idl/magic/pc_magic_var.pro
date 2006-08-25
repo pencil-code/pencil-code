@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.19 2006-07-03 11:24:18 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.20 2006-08-25 16:46:17 dintrans Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-07-03 11:24:18 $
-;  $Revision: 1.19 $
+;  $Date: 2006-08-25 16:46:17 $
+;  $Revision: 1.20 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -73,7 +73,8 @@
 ;
 pro pc_magic_var,variables,tags,param=param,datadir=datadir
 
-  default, datadir, 'data'
+; default, datadir, 'data'
+  IF (not keyword_set(datadir)) THEN datadir='data'
 ; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
 
@@ -166,7 +167,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 
     ; ln Temperature
