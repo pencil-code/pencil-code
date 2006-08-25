@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2006-07-13 15:56:06 $
-# $Revision: 1.27 $
+# $Date: 2006-08-25 23:37:02 $
+# $Revision: 1.28 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -34,6 +34,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -D <DIR>, --pencil-home=<DIR>
 #                          -- set PENCIL_HOME directory to DIR
 #   -N <N>, --nice=<N>     -- Run tests with nice value of <N>
+#   -i <file>,
+#       --infofile=<file>  -- After last test, print content of <file>
 #   -p <PP>,
 #       --postproc=<PP>    -- Use postprocessor <PP> for output from make
 #   -m <emaillist>,
@@ -68,6 +70,7 @@ GetOptions(\%opts,
 	       -c   --clean
 	       -D=s --pencil-home=s
 	       -N=s --nice=s
+               -i=s --infofile=s
 	       -m=s --mail=s
 	       -M=s --Mailer=s
 	       -p=s --postproc=s
@@ -81,6 +84,7 @@ my $html        = ($opts{'H'} || $opts{'html'}        || 0 );
 my $clean       = ($opts{'c'} || $opts{'clean'}       || 0 );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || '$PENCIL_HOME' );
 my $nice        = ($opts{'N'} || $opts{'nice'}        || 0 );
+my $infofile    = ($opts{'i'} || $opts{'infofile'}    || '' );
 my $update      = ($opts{'u'} || $opts{'update'}      || 0 );
 my $UPDATE      = ($opts{'U'} || $opts{'UPDATE'}      || 0 );
 my $tag_stable  = (              $opts{'tag-stable'}  || 0 );
@@ -125,12 +129,15 @@ foreach my $host (@ARGV) {
     # Construct and execute remote command
     my @cmd = ("ssh", "-n", "$host");
     my $remcmd = "cd $pencil_home";
-    if ($update)   { $remcmd .= "; cvs update >& /dev/null" };
-    if ($UPDATE)   { $remcmd .= "; cvs update -d samples bin >& /dev/null" };
+    if ($update)         { $remcmd .= "; cvs update >& /dev/null" };
+    if ($UPDATE)         { $remcmd .=
+                             "; cvs update -d samples bin >& /dev/null"
+                         };
     $remcmd .= "; env PENCIL_HOME=$pencil_home ./bin/auto-test -t";
-    if ($clean)    { $remcmd .= " --clean" };
-    if ($nice)     { $remcmd .= " --nice=$nice" };
-    if ($postproc) { $remcmd .= " --postproc=\"$postproc\"" };
+    if ($clean)          { $remcmd .= " --clean" };
+    if ($nice)           { $remcmd .= " --nice=$nice" };
+    if ($infofile ne '') { $remcmd .= " --infofile=$infofile" };
+    if ($postproc)       { $remcmd .= " --postproc=\"$postproc\"" };
 #    push @cmd, $remcmd;
 #    system("@cmd |");
     if ($debug) { print STDERR "open(POUT, \"@cmd '$remcmd' |\"\n" };

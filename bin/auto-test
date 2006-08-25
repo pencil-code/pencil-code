@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.76 2006-07-29 06:03:32 dobler Exp $
+# CVS: $Id: auto-test,v 1.77 2006-08-25 23:37:02 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -96,6 +96,7 @@ Options:
   -n,  --norun             \tTest compilation and starting only
   -l,  --list              \tList test directories (don't run any tests)
   -t,  --time              \tPrint CPU time used
+  -i,  --infofile=<file>   \tAfter last test, print content of <file>
   -D,  --pencil-home=<dir> \tSet PENCIL_HOME directory to <dir>
   -N,  --nice=<n>          \tRun tests with nice value <n>
   -j,  --jobs=<n>          \tPass through -j option to make
@@ -122,7 +123,8 @@ GetOptions(\%opts,
 	       -n   --norun
 	       -l   --list
 	       -t   --time
-               -D=s --pencil-home=s
+	       -i=s --infofile=s
+	       -D=s --pencil-home=s
 	       -N=s --nice=s
 	       -j=n --jobs=n
 	       -d   --datadir
@@ -137,7 +139,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.76 2006-07-29 06:03:32 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.77 2006-08-25 23:37:02 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -145,6 +147,7 @@ my $debug       = (              $opts{'debug'}       || 0    );
 my $clean       = ($opts{'C'} || $opts{'clean'}       || 0    );
 my $list_only   = ($opts{'l'} || $opts{'list'}        || 0    );
 my $time        = ($opts{'t'} || $opts{'time'}        || 0    );
+my $infofile    = ($opts{'i'} || $opts{'infofile'}    || ''   );
 my $pencil_home = ($opts{'D'} || $opts{'pencil-home'} || "$ENV{PENCIL_HOME}"
                    || '');
 my $niceval     = ($opts{'N'} || $opts{'nice'}        || 0    );
@@ -678,7 +681,6 @@ sub compare_numbers_fuzzily {
     }
 }
 # ---------------------------------------------------------------------- #
-
 sub test_rundir {
 # Test compilation, starting, running and results
     my $dir = shift;
@@ -816,7 +818,7 @@ END {
     unless ($help || $nosummary || $list_only) {
 	print "\n" . "-" x 70 . "\n";
 
-        # Print failure header that can be idedntified by pencil-test
+        # Print failure header that can be identified by pencil-test
         if ($failed || %failed) {
             print "### auto-test failed ###\n";
         }
@@ -843,12 +845,23 @@ END {
                 print "There was no test to run???\n";
             }
 	}
+
+        # Print timing numbers
 	if ($time) {
 	    my @t = times();
 	    print "\nCPU time (including compilation): ",
 	          s_to_hms($t[2]) . "u ",
                   s_to_hms($t[3]) . "s\n";
 	}
+
+        # Print info from file
+        if (-r $infofile) {
+            print "\n------------  Other info:  ------------\n";
+            open(INFO,"< $infofile") or warn "Couldn't open $infofile\n";
+            print while (<INFO>);
+            close(INFO);
+        }
+
     }
 
     # Remove lock file
