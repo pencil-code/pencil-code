@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2006-08-25 23:37:02 $
-# $Revision: 1.28 $
+# $Date: 2006-08-25 23:50:37 $
+# $Revision: 1.29 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -64,6 +64,8 @@ eval {
 };
 GetOptions(\%opts,
 	   qw( -h   --help
+	            --debug
+	       -v   --version
 	       -H   --html
 	       -u   --update
 	       -U   --up-d-samples
@@ -76,9 +78,10 @@ GetOptions(\%opts,
 	       -p=s --postproc=s
 	            --tag-stable=s
 	            --tag-broken=s
-	            --debug
-	       ));
-die usage() if ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
+	       )) or die "$!\n";
+die '$Id: pencil-test,v 1.29 2006-08-25 23:50:37 dobler Exp $ ' . "\n"
+            if    ($opts{'v'} || $opts{'version'});
+die usage() if    ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
 my $debug       = (              $opts{'debug'}       || 0 );
 my $html        = ($opts{'H'} || $opts{'html'}        || 0 );
 my $clean       = ($opts{'c'} || $opts{'clean'}       || 0 );
