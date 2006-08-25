@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.28 2006-08-23 16:53:32 mee Exp $
+! $Id: noplanet.f90,v 1.29 2006-08-25 14:41:04 wlyra Exp $
 !
 !  Dummy module
 !
@@ -49,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.28 2006-08-23 16:53:32 mee Exp $")
+           "$Id: noplanet.f90,v 1.29 2006-08-25 14:41:04 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -193,17 +193,17 @@ module Planet
 !
     endsubroutine planet_phiavg
 !***************************************************************
-    subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot)
+    subroutine get_ramped_mass(gp,gs,g0)
 !
 ! 03-mar-06/wlad :: dummy
 !
       use Mpicomm, only: stop_it
 !     
-      real :: gs,gp,g0,mdot,m2dot
+      real :: gs,gp,g0
 !
-      intent(out) :: gs,gp,mdot,m2dot
+      intent(out) :: gs,gp
 !
-      gs=1. ; gp=0. ; mdot=0. ; m2dot = 0.
+      gs=1. ; gp=0. 
 !
       call stop_it("noplanet.f90 - get_ramped_mass")
 !

@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.61 2006-08-23 20:33:23 wlyra Exp $
+! $Id: planet.f90,v 1.62 2006-08-25 14:41:04 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.61 2006-08-23 20:33:23 wlyra Exp $")
+           "$Id: planet.f90,v 1.62 2006-08-25 14:41:04 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -193,7 +193,7 @@ module Planet
       real, dimension (nx) :: g_companion,g_star
       real, dimension (nx) :: rrs,rrs1,rrc,rrc1
       real :: Omega_inertial,ax,ay,az,gtc
-      real :: axs,ays,azs,g0,gp,gs,r0_pot,mdot,m2dot
+      real :: axs,ays,azs,g0,gp,gs,r0_pot
       integer :: n_pot
       logical :: lheader,lfirstcall=.true.
       type (pencil_case) :: p
@@ -222,7 +222,7 @@ module Planet
 !
       ggc=0.
       if (gc.ne.0) then 
-         call get_ramped_mass(gp,gs,g0,mdot,m2dot)
+         call get_ramped_mass(gp,gs,g0)
 !
 !  Planet's gravity field - always spherical
 !
@@ -319,7 +319,7 @@ module Planet
 !
     endsubroutine calc_torque
 !***********************************************************************
-    subroutine get_ramped_mass(gp,gs,g0,mdot,m2dot) 
+    subroutine get_ramped_mass(gp,gs,g0) 
 !      
 ! Ramps up the mass of the planet from 0 to gc over
 ! n_periods orbits. If lramp=.false., will return gc.
@@ -329,7 +329,6 @@ module Planet
 ! 03-mar-06/wlad : coded
 !
       real :: fgp,gp,gs,g0,tcut
-      real :: mdot,m2dot
       intent(out) :: gp,gs,mdot,m2dot
 !
       fgp = 0.5*(1 - sqrt(1-4*gc))
@@ -341,10 +340,6 @@ module Planet
          tcut = n_periods * 2*pi
          if (t .le. tcut) then
             gp = fgp* (sin(pi/2. * t/tcut))**2
-!            
-            mdot  = 0.5*fgp* pi/tcut      * sin(pi*t/tcut)
-            m2dot = 0.5*fgp*(pi/tcut)**2  * cos(pi*t/tcut)
-!
          endif
       endif      
 !
@@ -361,7 +356,7 @@ module Planet
      real, dimension (nx), intent(out) :: g_r
      real, dimension (nx) :: rr_mn
      integer :: i,n_pot
-     real :: g0,r0_pot,gp,gs,mdot,m2dot
+     real :: g0,r0_pot,gp,gs
 !
      if (n_pot.ne.2) then
         print*,'planet: smoothed gravity used for star but smoothing lenght'
@@ -370,7 +365,7 @@ module Planet
         call stop_it('')
      endif
 !
-     call get_ramped_mass(gp,gs,g0,mdot,m2dot)
+     call get_ramped_mass(gp,gs,g0)
 !
      g_r=-gs*rr_mn*(rr_mn*rr_mn+r0_pot*r0_pot)**(-1.5)
 !   
