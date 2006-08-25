@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.62 2006-08-25 14:41:04 wlyra Exp $
+! $Id: planet.f90,v 1.63 2006-08-25 15:40:00 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.62 2006-08-25 14:41:04 wlyra Exp $")
+           "$Id: planet.f90,v 1.63 2006-08-25 15:40:00 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,12 +329,10 @@ module Planet
 ! 03-mar-06/wlad : coded
 !
       real :: fgp,gp,gs,g0,tcut
-      intent(out) :: gp,gs,mdot,m2dot
+      intent(out) :: gp,gs
 !
       fgp = 0.5*(1 - sqrt(1-4*gc))
       gp = fgp
-!
-      mdot=0. ; m2dot=0.
 !
       if (lramp) then
          tcut = n_periods * 2*pi
