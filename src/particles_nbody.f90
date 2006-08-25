@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.7 2006-08-25 14:39:40 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.8 2006-08-25 14:50:52 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.7 2006-08-25 14:39:40 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.8 2006-08-25 14:50:52 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -331,8 +331,7 @@ module Particles
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension(nx) :: re,grav_gas,re1
-      real, dimension(1) :: sumx_loc,sumy_loc,sumz_loc
-      real, dimension(1) :: sumx,sumy,sumz
+      real :: sumx_loc,sumy_loc,sumz_loc,sumx,sumy,sumz
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
@@ -382,14 +381,14 @@ module Particles
             sumy_loc(1) = sum(grav_gas * (y(  m  ) - fp(k,iyp))*re1)        
             sumz_loc(1) = sum(grav_gas * (z(  n  ) - fp(k,izp))*re1)        
 !                                                                      
-            call mpireduce_sum(sumx_loc,sumx,1)
-            call mpireduce_sum(sumy_loc,sumy,1)
-            call mpireduce_sum(sumz_loc,sumz,1)
+            call mpireduce_sum_scl(sumx_loc,sumx)
+            call mpireduce_sum_scl(sumy_loc,sumy)
+            call mpireduce_sum_scl(sumz_loc,sumz)
 !
             if (lroot) then
-               dfp(k,ivpx) = dfp(k,ivpx) + sumx(1)
-               dfp(k,ivpy) = dfp(k,ivpy) + sumy(1)
-               dfp(k,ivpz) = dfp(k,ivpz) + sumz(1)
+               dfp(k,ivpx) = dfp(k,ivpx) + sumx
+               dfp(k,ivpy) = dfp(k,ivpy) + sumy
+               dfp(k,ivpz) = dfp(k,ivpz) + sumz
             endif
 !
          enddo
