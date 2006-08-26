@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.4 2006-08-23 16:47:47 mee Exp $ 
+! $Id: farray.f90,v 1.5 2006-08-26 14:36:43 mee Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -702,7 +702,7 @@ module FArrayManager
 !***********************************************************************
     function farray_type_by_name(varname) 
       character (len=*) :: varname
-      integer, pointer :: farray_type_by_name
+      integer :: farray_type_by_name
       type (farray_contents_list), pointer :: item
 !
       item=>find_by_name(varname)
