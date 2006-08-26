@@ -1,5 +1,5 @@
-#!/bin/csh
-#$Id: copy-proc-to-proc,v 1.5 2005-06-26 17:34:16 eos_merger_tony Exp $
+#!/bin/sh
+#$Id: copy-proc-to-proc,v 1.6 2006-08-26 16:39:10 mee Exp $
 #
 #  Example:
 #     copy-proc-to-proc grid.dat ../hydro256e
@@ -11,8 +11,9 @@
 #  Used for restarting in a different directory.
 #  Target dir tree needs to exist already.
 
-set procdirs  =  `\ls data | grep proc `
-foreach proc ($procdirs)
+procdirs=`\ls data | grep proc `
+for proc in $procdirs
+do
   echo "cp data/$proc/$1 $2/data/$proc/"
   cp data/$proc/$1 $2/data/$proc/
-end
+done
