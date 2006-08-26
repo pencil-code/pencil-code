@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.318 2006-08-24 13:52:43 bingert Exp $
+! $Id: magnetic.f90,v 1.319 2006-08-26 18:40:57 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -120,6 +120,7 @@ module Magnetic
   real :: alphaSSm=0.
   logical :: lfreeze_aint=.false.,lfreeze_aext=.false.
   logical :: llarge_scale_Bz=.false.
+  logical :: lweyl_gauge=.false.
 
   namelist /magnetic_run_pars/ &
        eta,eta_hyper2,eta_hyper3,B_ext,omega_Bz_ext,nu_ni,hall_term, &
@@ -129,7 +130,7 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
-       iresistivity, &
+       iresistivity,lweyl_gauge, &
        alphaSSm, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_jxb,va2max_jxb,va2power_jxb,llorentzforce,linduction, &
@@ -204,7 +205,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.318 2006-08-24 13:52:43 bingert Exp $")
+           "$Id: magnetic.f90,v 1.319 2006-08-26 18:40:57 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -530,13 +531,21 @@ module Magnetic
             lpenc_requested(i_del2a)=.true.
       if (lresi_eta_shock) then
         lpenc_requested(i_shock)=.true.
-        lpenc_requested(i_gshock)=.true.
-        lpenc_requested(i_diva)=.true.
+        if (lweyl_gauge) then
+          lpenc_requested(i_graddiva)=.true.
+        else
+          lpenc_requested(i_gshock)=.true.
+          lpenc_requested(i_diva)=.true.
+        endif
       endif
       if (lresi_eta_shock_perp) then
         lpenc_requested(i_shock_perp)=.true.
-        lpenc_requested(i_gshock_perp)=.true.
-        lpenc_requested(i_diva)=.true.
+        if (lweyl_gauge) then
+          lpenc_requested(i_graddiva)=.true.
+        else
+          lpenc_requested(i_gshock_perp)=.true.
+          lpenc_requested(i_diva)=.true.
+        endif
       endif
       if (lresi_shell) lpenc_requested(i_diva)=.true.
       if (lresi_smagorinsky_cross) lpenc_requested(i_jo)=.true.
@@ -1020,19 +1029,33 @@ module Magnetic
       endif
 !
       if (lresi_eta_shock) then
-        do i=1,3
-          fres(:,i) = fres(:,i) &
-                    + eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
-        enddo
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i) = fres(:,i) &
+                      + eta_shock*p%shock*(p%del2a(:,i)-p%graddiva(:,i))
+          enddo
+        else
+          do i=1,3
+            fres(:,i) = fres(:,i) &
+                      + eta_shock*(p%shock*p%del2a(:,i)+p%diva*p%gshock(:,i))
+          enddo
+        endif
         etatotal=etatotal+eta_shock*p%shock
       endif
 !
       if (lresi_eta_shock_perp) then
-        do i=1,3
-          fres(:,i) = fres(:,i) &
-                    + eta_shock*(p%shock_perp*p%del2a(:,i) &
-                                +p%diva*p%gshock_perp(:,i))
-        enddo
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i) = fres(:,i) &
+                      + eta_shock*p%shock_perp*(p%del2a(:,i)-p%graddiva(:,i))
+          enddo
+        else
+          do i=1,3
+            fres(:,i) = fres(:,i) &
+                      + eta_shock*(p%shock_perp*p%del2a(:,i) &
+                                  +p%diva*p%gshock_perp(:,i))
+          enddo
+        endif
         etatotal=etatotal+eta_shock*p%shock_perp
       endif
 !
