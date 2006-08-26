@@ -1,5 +1,5 @@
-#!/bin/csh
-#$Id: copy-VARN-to-var,v 1.7 2005-12-06 14:20:57 ajohan Exp $
+#!/bin/sh
+#$Id: copy-VARN-to-var,v 1.8 2006-08-26 16:38:10 mee Exp $
 #
 #  Examples:
 #     nohup copy-VAR-to-var 10 .
@@ -18,21 +18,22 @@
 #  14-nov-02/axel: coded
 #  16-nov-02/axel: enhanced comments
 
-/bin/pwd >>! $2/data/copied_from.dir
-/bin/date >>! $2/data/copied_from.dir
+/bin/pwd >> $2/data/copied_from.dir
+/bin/date >> $2/data/copied_from.dir
 
-set procdirs  =  `\ls data | grep ^proc `
+procdirs="`\ls data | grep ^proc `"
 echo $procdirs
-foreach proc ($procdirs)
+for proc in $procdirs
+do
   echo "cp data/$proc/VAR$1 $2/data/$proc/var.dat"
-  \cp data/$proc/VAR$1 $2/data/$proc/var.dat
-  if ( -e "data/$proc/PVAR$1" ) then
+  cp data/$proc/VAR$1 $2/data/$proc/var.dat
+  if [ -e "data/$proc/PVAR$1" ]; then
     echo "cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat"
-    \cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat
-  endif
-end
+    cp data/$proc/PVAR$1 $2/data/$proc/pvar.dat
+  fi
+done
 #
 # Some output and a warning.
 #
-echo Finished... Remember that you may now have to change the files
-echo tsnap.dat, move-me.list, moved-files.list and time_series.dat manually!
+echo "Finished... Remember that you may now have to change the files"
+echo "tsnap.dat, move-me.list, moved-files.list and time_series.dat manually!"
