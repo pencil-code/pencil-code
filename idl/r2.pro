@@ -1,4 +1,4 @@
-; $Id: r2.pro,v 1.4 2003-12-30 13:17:54 dobler Exp $
+; $Id: r2.pro,v 1.5 2006-08-26 16:40:01 mee Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r2.pro,v 1.4 2003-12-30 13:17:54 dobler Exp $
+;;; $Id: r2.pro,v 1.5 2006-08-26 16:40:01 mee Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -24,8 +24,30 @@ undefine, read_all
 default, datadir, 'data'
 default, varfile, 'var.dat'
 ;
+;  Read data
+;
+varcontent=pc_varcontent(QUIET=quiet)
+totalvars=(size(varcontent))[1]-1L
+; Prepare for read
+res=''
+content=''
+for iv=1L,totalvars do begin
+  res     = res + ',' + varcontent[iv].idlvar
+  content = content + ', ' + varcontent[iv].variable
+  ; Initialise variable
+  if (varcontent[iv].variable eq 'UNKNOWN') then $
+           message, 'Unknown variable at position ' + str(iv)  $
+                    + ' needs declaring in pc_varcontent.pro', /INFO   
+  cmd = varcontent[iv].idlvar + '='+varcontent[iv].idlinit
+  if (execute(cmd) ne 1) then $
+      message, 'Error initialising ' + varcontent[iv].variable $
+                                     +' - '+ varcontent[iv].idlvar, /INFO
+  ; For vector quantities skip the required number of elements
+  iv=iv+varcontent[iv].skip
+end
 
-@data/def_var
+content = strmid(content,2)
+if (quiet le 2) then print,'File '+varfile+' contains: ', content
 
 
 ;
