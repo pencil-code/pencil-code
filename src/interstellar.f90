@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.136 2006-08-24 22:45:10 mee Exp $
+! $Id: interstellar.f90,v 1.137 2006-08-26 14:35:42 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -382,7 +382,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.136 2006-08-24 22:45:10 mee Exp $")
+           "$Id: interstellar.f90,v 1.137 2006-08-26 14:35:42 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -2384,7 +2384,7 @@ find_SN: do n=n1,n2
       use Sub, only: multsv, multsv_add
       use EquationOfState, only: eoscalc, eosperturb
 !
-      real :: int_dt, dv
+      real :: int_dt
       integer :: i,iSNR
 !
       do i=1,nSNR
