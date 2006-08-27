@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.64 2006-08-27 16:05:52 bingert Exp $
+! $Id: eos_idealgas.f90,v 1.65 2006-08-27 16:20:26 bingert Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.64 2006-08-27 16:05:52 bingert Exp $')
+           '$Id: eos_idealgas.f90,v 1.65 2006-08-27 16:20:26 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -154,7 +154,7 @@ module EquationOfState
 !
       if (unit_system == 'cgs') then
          Rgas_unit_sys = k_B_cgs/m_u_cgs
-      elseif (unit_system == 'SI')  
+      elseif (unit_system == 'SI') then  
          Rgas_unit_sys = k_B_cgs/m_u_cgs*1.e-4
       endif
 !      
