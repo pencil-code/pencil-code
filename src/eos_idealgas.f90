@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.63 2006-08-23 16:53:31 mee Exp $
+! $Id: eos_idealgas.f90,v 1.64 2006-08-27 16:05:52 bingert Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.63 2006-08-23 16:53:31 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.64 2006-08-27 16:05:52 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -127,7 +127,7 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
-      real :: Rgas_cgs, cp_reference
+      real :: Rgas_unit_sys=1., cp_reference
 !
 !  set gamma1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)
@@ -152,7 +152,12 @@ module EquationOfState
 !    but it may still be correct, so this will be checked here.
 !  When gamma=1. (gamma1=0.), write Rgas=mu*cp or cp=Rgas/mu.
 !
-      Rgas_cgs=k_B_cgs/m_u_cgs
+      if (unit_system == 'cgs') then
+         Rgas_unit_sys = k_B_cgs/m_u_cgs
+      elseif (unit_system == 'SI')  
+         Rgas_unit_sys = k_B_cgs/m_u_cgs*1.e-4
+      endif
+!      
       if (unit_temperature == impossible) then
         if (cp == impossible) cp=1.
         if (gamma1 == 0.) then
@@ -160,9 +165,9 @@ module EquationOfState
         else
           Rgas=mu*gamma1*gamma11*cp
         endif
-        unit_temperature=unit_velocity**2*Rgas/Rgas_cgs
+        unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
       else
-        Rgas=Rgas_cgs*unit_temperature/unit_velocity**2
+        Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
         if (cp == impossible) then
           if (gamma1 == 0.) then
             cp=Rgas/mu
