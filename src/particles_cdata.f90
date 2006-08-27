@@ -1,4 +1,4 @@
-! $Id: particles_cdata.f90,v 1.15 2006-06-19 20:25:23 ajohan Exp $
+! $Id: particles_cdata.f90,v 1.16 2006-08-27 20:33:37 wlyra Exp $
 !!
 !! Global particle variables
 !!
@@ -21,5 +21,6 @@ module Particles_cdata
   logical :: lcalc_np=.false.
   logical :: lparticlemesh_cic=.false., lparticlemesh_tsc=.false.
   character (len=2*bclen+1) :: bcpx='p',bcpy='p',bcpz='p'
+  character (len=2*bclen+1) :: bcspx='p',bcspy='p',bcspz='p'
 
 endmodule Particles_cdata
