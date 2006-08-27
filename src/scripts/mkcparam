@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.36 2006-08-23 16:47:48 mee Exp $
+# CVS: $Id: mkcparam,v 1.37 2006-08-27 20:17:28 wlyra Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -429,13 +429,16 @@ close CPARAM;
 
 my $mpar_loc=0;
 my $npar_mig=0;
+my $nspar=0;
 foreach my $line (@cparam) {
   if ($line=~ 'mpar_loc') {$mpar_loc=1;}
   if ($line=~ 'npar_mig') {$npar_mig=1;}
+  if ($line=~ 'nspar')    {$nspar=1;}
   }
 
 if ($mpar_loc eq 0) {print OUT "integer, parameter :: mpar_loc=npar\n";}
 if ($npar_mig eq 0) {print OUT "integer, parameter :: npar_mig=1\n";}
+if ($nspar eq 0)    {print OUT "integer, parameter :: nspar=1\n";}
 
 # Insert all CPARAM lines
 $,="\n";
