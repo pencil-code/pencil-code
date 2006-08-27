@@ -1,4 +1,4 @@
-! $Id: noparticles.f90,v 1.18 2006-08-23 16:53:32 mee Exp $
+! $Id: noparticles.f90,v 1.19 2006-08-27 20:16:33 wlyra Exp $
 !
 !  This module takes care of everything related to no particles.
 !
@@ -8,7 +8,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles=.false.
-! CPARAM logical, parameter :: lparticles_nbody=.false.
 !
 !***************************************************************
 module Particles
@@ -152,24 +151,6 @@ module Particles
       if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dvvp_dt
-!***********************************************************************
-    subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
-!
-! 18-jul-06/wlad: dummy routine 
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
-      integer :: k
-!
-      intent(out) :: rp_mn,rpcyl_mn
-       do k=1,mpar_loc
-          rp_mn(:,k)    = 0. 
-          rpcyl_mn(:,k) = 0. 
-       enddo
-!
-       if (NO_WARN) print*, fp
-!
-     endsubroutine get_particles_interdistances
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    
