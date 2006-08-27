@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.1 2006-08-27 20:14:19 wlyra Exp $
+! $Id: noparticles_nbody.f90,v 1.2 2006-08-27 22:37:47 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -185,6 +185,25 @@ module Particles_nbody
       if (NO_WARN) print*,unit
     endsubroutine write_particles_nbody_run_pars
 !******************************************************
+    subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
+!
+! 18-jul-06/wlad: dummy subroutine
+!
+      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      integer :: k
+!
+      intent(out) :: rp_mn,rpcyl_mn
+!
+       do k=1,nspar
+          rp_mn(:,k)    = 0.
+          rpcyl_mn(:,k) = 0.
+       enddo
+!
+       if (NO_WARN) print*, fp
+!
+     endsubroutine get_particles_interdistances
+!************************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !   
 !  Read and register print parameters relevant for particle self-gravity.

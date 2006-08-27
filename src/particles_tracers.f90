@@ -1,4 +1,4 @@
-! $Id: particles_tracers.f90,v 1.28 2006-08-27 20:19:48 wlyra Exp $
+! $Id: particles_tracers.f90,v 1.29 2006-08-27 22:37:47 wlyra Exp $
 !  This module takes care of everything related to tracer particles
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -57,7 +57,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_tracers.f90,v 1.28 2006-08-27 20:19:48 wlyra Exp $")
+           "$Id: particles_tracers.f90,v 1.29 2006-08-27 22:37:47 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -429,25 +429,6 @@ module Particles
       if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dvvp_dt
-!***********************************************************************
-    subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
-!
-! 18-jul-06/wlad: dummy subroutine
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
-      integer :: k
-!
-      intent(out) :: rp_mn,rpcyl_mn
-!
-       do k=1,mpar_loc
-          rp_mn(:,k)    = 0.
-          rpcyl_mn(:,k) = 0.
-       enddo
-!
-       if (NO_WARN) print*, fp
-!
-     endsubroutine get_particles_interdistances
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    

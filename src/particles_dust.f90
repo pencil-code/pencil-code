@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.137 2006-08-27 20:19:48 wlyra Exp $
+! $Id: particles_dust.f90,v 1.138 2006-08-27 22:37:47 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -109,7 +109,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.137 2006-08-27 20:19:48 wlyra Exp $")
+           "$Id: particles_dust.f90,v 1.138 2006-08-27 22:37:47 wlyra Exp $")
 !
 !  Indices for particle position.
 !
@@ -1686,25 +1686,6 @@ k_loop:   do while (.not. (k>npar_loc))
       if (NO_WARN) print*, f, ineargrid
 !
     endsubroutine get_frictiontime
-!***********************************************************************
-    subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
-!
-! 18-jul-06/wlad: dummy routine
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
-      integer :: k
-!
-      intent(out) :: rp_mn,rpcyl_mn
-!
-      do k=1,mpar_loc
-         rp_mn(:,k)    = 0.
-         rpcyl_mn(:,k) = 0.
-      enddo
-!
-      if (NO_WARN) print*, fp
-!
-    endsubroutine get_particles_interdistances
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    
