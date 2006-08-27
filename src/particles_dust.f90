@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.136 2006-08-23 16:53:32 mee Exp $
+! $Id: particles_dust.f90,v 1.137 2006-08-27 20:19:48 wlyra Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -10,7 +10,6 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
-! CPARAM logical, parameter :: lparticles_nbody=.false.
 !
 ! PENCILS PROVIDED np, rhop, epsp
 !
@@ -110,7 +109,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.136 2006-08-23 16:53:32 mee Exp $")
+           "$Id: particles_dust.f90,v 1.137 2006-08-27 20:19:48 wlyra Exp $")
 !
 !  Indices for particle position.
 !
