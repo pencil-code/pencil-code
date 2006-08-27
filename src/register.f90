@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.183 2006-08-23 16:53:32 mee Exp $
+! $Id: register.f90,v 1.184 2006-08-27 15:57:16 bingert Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -359,7 +359,7 @@ module Register
 !  12-jul-06/axel: adapted from units_eos
 !
       use Cdata, only: G_Newton,c_light,hbar,lroot, &
-        unit_length,unit_velocity,unit_density
+        unit_length,unit_velocity,unit_density,unit_system
       use Cparam, only: G_Newton_cgs,c_light_cgs,hbar_cgs,impossible
       use Mpicomm, only: stop_it
 !
@@ -373,11 +373,19 @@ module Register
         if (unit_density == impossible) unit_density=1.
         if (unit_length == impossible) unit_length=1.
       else
-        unit_velocity=c_light_cgs/c_light
-        unit_density=unit_velocity**5/((G_Newton_cgs/G_Newton)**2 &
-                    *(hbar_cgs/hbar))
-        unit_length=sqrt((G_Newton_cgs/G_Newton) &
-                   *(hbar_cgs/hbar)/unit_velocity**3)
+        if (unit_system == 'cgs') then
+           unit_velocity=c_light_cgs/c_light
+           unit_density=unit_velocity**5/((G_Newton_cgs/G_Newton)**2 &
+                *(hbar_cgs/hbar))
+           unit_length=sqrt((G_Newton_cgs/G_Newton) &
+                *(hbar_cgs/hbar)/unit_velocity**3)
+        elseif (unit_system == 'SI') then
+           unit_velocity=c_light_cgs*1e-2/c_light
+           unit_density=unit_velocity**5/((G_Newton_cgs*1e-3/G_Newton)**2 &
+                *(hbar_cgs*1e-7/hbar))
+           unit_length=sqrt((G_Newton_cgs*1e-3/G_Newton) &
+                *(hbar_cgs*1e-7/hbar)/unit_velocity**3)
+        endif
       endif
 !
 !  check that everything is OK
