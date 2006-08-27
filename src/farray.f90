@@ -1,4 +1,4 @@
-! $Id: farray.f90,v 1.5 2006-08-26 14:36:43 mee Exp $ 
+! $Id: farray.f90,v 1.6 2006-08-27 12:04:34 mee Exp $ 
 !
 !  This module allocates and manages indices in the f-array
 !  in a controlled way.  THis includes handling different 
@@ -94,7 +94,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_pde(varname,ivar,vector,ierr) 
       character (len=*) :: varname
-      integer, target  :: ivar
+      integer  :: ivar
       type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_PDE
@@ -115,7 +115,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_global(varname,ivar,vector,ierr) 
       character (len=*) :: varname
-      integer, target  :: ivar
+      integer  :: ivar
       type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer, parameter :: vartype = iFARRAY_TYPE_GLOBAL
@@ -136,7 +136,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_auxilliary(varname,ivar,communicated,vector,ierr) 
       character (len=*) :: varname
-      integer, target  :: ivar
+      integer :: ivar
       type (farray_contents_list), pointer :: item
       integer :: ncomponents
       integer :: vartype
