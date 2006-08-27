@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.63 2006-08-25 15:40:00 wlyra Exp $
+! $Id: planet.f90,v 1.64 2006-08-27 20:20:36 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.63 2006-08-25 15:40:00 wlyra Exp $")
+           "$Id: planet.f90,v 1.64 2006-08-27 20:20:36 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -188,7 +188,7 @@ module Planet
       use Mpicomm
 !     
       real, dimension (mpar_loc,mpvar) :: fp,dfp 
-      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
+      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,g_star
       real, dimension (nx) :: rrs,rrs1,rrc,rrc1
@@ -201,9 +201,9 @@ module Planet
 !  Position of the particles
 !  1 is planet, 2 is star
 !
-      ax = fp(1,ixp) ; axs = fp(2,ixp) 
-      ay = fp(1,iyp) ; ays = fp(2,iyp) 
-      az = fp(1,izp) ; azs = fp(2,izp) 
+      ax = fp(1,ixp) ; axs = fp(2,ixp)
+      ay = fp(1,iyp) ; ays = fp(2,iyp)
+      az = fp(1,izp) ; azs = fp(2,izp)
 !
       lheader = lfirstcall .and. headtt .and. lroot
 !
@@ -378,7 +378,7 @@ module Planet
 !
      use Sub
 ! 
-     real, dimension(nx,mpar_loc) :: rpcyl_mn
+     real, dimension(nx,nspar) :: rpcyl_mn
      real, dimension(nx) :: rs,rp,r,uphi
      real, dimension(nx) :: angular_momentum
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
