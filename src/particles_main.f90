@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.43 2006-08-23 16:53:32 mee Exp $
+! $Id: particles_main.f90,v 1.44 2006-08-27 20:23:42 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -11,6 +11,7 @@ module Particles_main
   use Particles_radius
   use Particles_number
   use Particles_selfgravity
+  use Particles_nbody
   use Messages
 
   implicit none
@@ -33,6 +34,7 @@ module Particles_main
       call register_particles_radius  ()
       call register_particles_number  ()
       call register_particles_selfgrav()
+      call register_particles_nbody   ()
 !
     endsubroutine particles_register_modules
 !***********************************************************************
@@ -50,6 +52,7 @@ module Particles_main
       call rprint_particles_radius  (lreset,LWRITE=lroot)
       call rprint_particles_number  (lreset,LWRITE=lroot)
       call rprint_particles_selfgrav(lreset,LWRITE=lroot)
+      call rprint_particles_nbody   (lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine particles_rprint_list
@@ -80,6 +83,7 @@ module Particles_main
       call initialize_particles_radius  (lstarting)
       call initialize_particles_number  (lstarting)
       call initialize_particles_selfgrav(lstarting)
+      call initialize_particles_nbody   (lstarting)
 !
     endsubroutine particles_initialize_modules
 !***********************************************************************
@@ -96,6 +100,7 @@ module Particles_main
       call init_particles(f,fp,ineargrid)
       if (lparticles_radius) call init_particles_radius(f,fp)
       if (lparticles_number) call init_particles_number(f,fp)
+      if (lparticles_nbody)  call init_particles_nbody(f,fp)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -210,8 +215,7 @@ module Particles_main
 !
 !  Sort particles so that they can be accessed contiguously in the memory.
 !      
-      if (.not.lparticles_nbody) &
-           call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+      call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
 !
     endsubroutine particles_boundconds
 !***********************************************************************
@@ -289,6 +293,8 @@ module Particles_main
 !      if (lparticles_number) call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lparticles_nbody) &
+          call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
     endsubroutine particles_pde_pencil
 !***********************************************************************
@@ -310,6 +316,7 @@ module Particles_main
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
+      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
     endsubroutine particles_pde
 !***********************************************************************
@@ -323,6 +330,8 @@ module Particles_main
       if (lparticles_number) call read_particles_num_init_pars(unit,iostat)
       if (lparticles_selfgravity) &
           call read_particles_selfg_init_pars(unit,iostat)
+      if (lparticles_nbody) &
+          call read_particles_nbody_init_pars(unit,iostat)
 !
     endsubroutine read_particles_init_pars_wrap
 !***********************************************************************
@@ -335,6 +344,8 @@ module Particles_main
       if (lparticles_number) call write_particles_num_init_pars(unit)
       if (lparticles_selfgravity) &
           call write_particles_selfg_init_pars(unit)
+      if (lparticles_nbody) &
+          call write_particles_nbody_init_pars(unit) 
 !
     endsubroutine write_particles_init_pars_wrap
 !***********************************************************************
@@ -348,6 +359,8 @@ module Particles_main
       if (lparticles_number) call read_particles_num_run_pars(unit,iostat)
       if (lparticles_selfgravity) &
           call read_particles_selfg_run_pars(unit,iostat)
+      if (lparticles_nbody) &
+          call read_particles_nbody_run_pars(unit,iostat) 
 !
     endsubroutine read_particles_run_pars_wrap
 !***********************************************************************
@@ -360,6 +373,8 @@ module Particles_main
       if (lparticles_number) call write_particles_num_run_pars(unit)
       if (lparticles_selfgravity) &
           call write_particles_selfg_run_pars(unit)
+      if (lparticles_nbody) &
+           call write_particles_nbody_run_pars(unit)
 !
     endsubroutine write_particles_run_pars_wrap
 !***********************************************************************
@@ -433,8 +448,6 @@ module Particles_main
       real :: g0,r0_pot
       integer :: n_pot
       type (pencil_case) :: p
-!
-      
 !
       call get_particles_interdistances(fp,rp_mn,rpcyl_mn)
       call gravity_companion(fp,dfp,rp_mn,rpcyl_mn,g0,r0_pot,n_pot,p)
