@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.339 2006-08-14 13:16:30 ajohan Exp $
+%%  CVS: $Id: manual.tex,v 1.340 2006-08-27 22:28:01 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-08-14 13:16:30 $ $,~ $ $Revision: 1.339 $ $}
+%\date{$ $Date: 2006-08-27 22:28:01 $ $,~ $ $Revision: 1.340 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-08-14 13:16:30 $ $,~ $ $Revision: 1.339 $ $}\\
+  \emph{$ $Date: 2006-08-27 22:28:01 $ $,~ $ $Revision: 1.340 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5427,7 +5427,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-08-14 13:16:30 $ $,~ $ $Revision: 1.339 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-08-27 22:28:01 $ $,~ $ $Revision: 1.340 $ $}
 
 \section{Timings}
 
@@ -5883,7 +5883,47 @@ of variables they are as follows:
 \item unit_ -- Denotes conversion code/physics unit conversion parameters.
 \end{itemize}
 
+\subsubsection{Emacs settings}
+Here are some settings from wd's \file[.emacs]{\~{}/.emacs} file:
+\begin{Verbatim}
+  ;;; ~/.f90.emacs
+  ;;; Set up indentation and similar things for coding the Pencil Code.
+  ;;; Most of this can probably be set through Emacs' Customize interface
+  ;;; as well.
+  ;;; To automatically load this file, put the lines
+  ;;;   (if (file-readable-p "~/.f90.emacs")
+  ;;;       (load-file "~/.f90.emacs"))
+  ;;; into your ~/.emacs file.
 
+  ;; F90-mode indentation widths
+  (setq f90-beginning-ampersand nil) ; no 2nd ampersand at continuation line
+  (setq f90-do-indent           2)
+  (setq f90-if-indent           2)
+  (setq f90-type-indent         2)
+  (setq f90-continuation-indent 4)
+
+  ;; Don't use any tabs for indentation (with TAB key).
+  ;; This is actually already set for F90-mode.
+  (setq-default indent-tabs-mode nil)
+
+  ;; Ensure Emacs uses F90-mode (and not Fortran-mode) for F90 files: 
+  (setq auto-mode-alist
+        (append
+         '(
+           ("\\.[fF]90$"   . f90-mode)
+           ("\\.inc$"      . f90-mode)
+          )
+         auto-mode-alist))
+
+  ;; Make M-Backspace behave in Xemacs as it does in GNU Emacs. The default
+  ;; behaviour is apparently a long-known bug the fix for which wasn't
+  ;; propagated from fortran.el to f90.el.
+  ;; (http://list-archive.xemacs.org/xemacs-patches/200109/msg00026.html):
+  (add-hook 'f90-mode-hook
+            (function (lambda ()
+               (define-key f90-mode-map [(meta backspace)] 'backward-kill-word)
+  )))
+\end{Verbatim}
 
 
 % ====================================================================== %
@@ -8732,7 +8772,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.339 2006-08-14 13:16:30 ajohan Exp $ $}
+$ $Id: manual.tex,v 1.340 2006-08-27 22:28:01 dobler Exp $ $}
 
 
 \end{document}
