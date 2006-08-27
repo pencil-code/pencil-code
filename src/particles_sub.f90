@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.82 2006-08-23 16:53:32 mee Exp $
+! $Id: particles_sub.f90,v 1.83 2006-08-27 20:32:54 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -311,15 +311,11 @@ module Particles_sub
 !  Redistribute particles among processors (internal boundary conditions).
 !
       if (lmpicomm) then
-        if (lparticles_nbody) then
-          call share_allparticles_procs(fp)
-        else
-          if (present(dfp)) then
+         if (present(dfp)) then
             call redist_particles_procs(fp,npar_loc,ipar,dfp)
-          else
+         else
             call redist_particles_procs(fp,npar_loc,ipar)
-          endif
-        endif
+         endif
       endif
 !
     endsubroutine boundconds_particles
@@ -344,7 +340,7 @@ module Particles_sub
       integer, dimension (0:ncpus-1,npar_mig) :: ipar_mig
       integer, dimension (0:ncpus-1,0:ncpus-1) :: nmig
       integer :: i, j, k, iproc_rec, ipy_rec, ipz_rec
-      logical :: lredo, lredo_all
+      logical :: lredo, lredo_all, lsink_particle
 !
       intent (inout) :: fp, npar_loc, ipar, dfp
 !
@@ -382,7 +378,14 @@ module Particles_sub
           endif
 !  Calculate serial index of receiving processor.
           iproc_rec=ipy_rec+nprocy*ipz_rec
-!  Migrate particle if it is no longer at the current processor.        
+!  Migrate particle if it is no longer at the current processor.     
+!
+!  Must avoid migration of sink particles
+!
+          lsink_particle = ((lparticles_nbody).and.(lroot).and.(ipar(k).le.nspar))
+!
+          if (.not.lsink_particle) then !do not allow root processor to migrate a sink
+!
           if (iproc_rec/=iproc) then
             if (ip<=7) print '(a,i7,a,i3,a,i3)', &
                 'redist_particles_procs: Particle ', ipar(k), &
@@ -431,6 +434,9 @@ module Particles_sub
 !  Reduce the number of particles by one.
             npar_loc=npar_loc-1
           endif
+
+          endif !end do not allow sink particles to migrate from root
+
         enddo
 !
 !  Print out information about number of migrating particles.
@@ -564,23 +570,6 @@ module Particles_sub
       enddo
 !
     endsubroutine dist_particles_evenly_procs
-!***********************************************************************
-    subroutine share_allparticles_procs(fp)
-!
-!  For N-body runs (few sink particles), keep particles at root
-!  processor and inform other processors of positions and velocities.
-!
-      use Mpicomm
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-!
-      integer :: k
-!
-      do k=1,npar
-        call mpibcast_real(fp(k,:),mpvar)      
-      enddo
-!
-    endsubroutine share_allparticles_procs
 !***********************************************************************
     subroutine sum_par_name(a,iname,lsqrt)
 !
@@ -1196,7 +1185,7 @@ module Particles_sub
       integer, dimension (3) :: ineargrid_tmp
       integer, dimension (ny*nz) :: kk
       integer :: ilmn_par_tmp, ipark_sorted_tmp, ipar_tmp
-      integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted
+      integer, dimension (mpar_loc) :: ilmn_par, ipark_sorted, ipark_orig
       integer :: j, k, ix0, iy0, iz0, ih, lun
       integer, save :: ncount=-1, isorttype=3
       integer, parameter :: nshellsort=21
@@ -1209,6 +1198,8 @@ module Particles_sub
       intent(inout)  :: fp, ineargrid, ipar, dfp
 !
 !  Determine beginning and ending index of particles in pencil (m,n).
+!
+      ipark_orig = ipar
 !
       call particle_pencil_index(ineargrid)
 !
@@ -1320,11 +1311,16 @@ module Particles_sub
       endif
 !
       if ( (.not. lrunningsort) .and. (ncount/=0) ) then
-        fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
-        if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
-        ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
-        ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
+         fp(1:npar_loc,:)=fp(ipark_sorted(1:npar_loc),:)
+         if (present(dfp)) dfp(1:npar_loc,:)=dfp(ipark_sorted(1:npar_loc),:)
+         ineargrid(1:npar_loc,:)=ineargrid(ipark_sorted(1:npar_loc),:)
+         ipar(1:npar_loc)=ipar(ipark_sorted(1:npar_loc))
       endif
+!
+!  Swap the sink particles back to their original place
+!      
+      if ((lparticles_nbody).and.(lroot)) &
+           call unsort_sink_particles(fp,ineargrid,ipar,ipark_sorted,ipark_orig,dfp)
 !
 !  Write some info about the sorting to a file.
 !
@@ -1565,4 +1561,49 @@ module Particles_sub
 !
     endsubroutine find_closest_gridpoint
 !***********************************************************************
+    subroutine unsort_sink_particles(fp,ineargrid,ipar,ipark_sorted,ipark_orig,dfp)
+!
+      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension (mpar_loc,mpvar), optional :: dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc) :: ipar,ipark_sorted, ipark_orig
+      integer :: k,ks
+!
+      intent(inout)  :: fp, ineargrid, ipar, dfp
+!
+ !     print*,&
+  !         'root processor: index and position of particles - orig,sorted,ipar'
+      do k=1,npar_loc
+   !      print*,ipark_orig(k),ipark_sorted(k),ipar(k),&
+    !          fp(ipark_orig(k),ixp),fp(ipark_sorted(k),ixp),fp(ipar(k),ixp)
+!
+!  Swap the sink particle and the particle that was placed there
+!
+         do ks=1,nspar
+            if (ipark_orig(ks)==ipark_sorted(k)) then
+!              
+               fp(ks,:) = fp(ipark_sorted(k),:)
+               if (present(dfp)) dfp(ks,:)=dfp(ipark_sorted(k),:)
+               ineargrid(ks,:)=ineargrid(ipark_sorted(k),:)
+               ipar(ks) = ipark_sorted(k)
+!
+               fp(k,:) = fp(ipark_sorted(ks),:)
+               if (present(dfp)) dfp(k,:)=dfp(ipark_sorted(ks),:)
+               ineargrid(k,:)=ineargrid(ipark_sorted(ks),:)
+               ipar(k) = ipark_sorted(ks)
+!
+            endif
+         enddo
+!
+      enddo
+!
+!      print*,''
+!      print*,'ended sorting and swapping - orig, sorted, ipar'
+!      do k=1,npar_loc
+!         print*,ipark_orig(k),ipark_sorted(k),ipar(k),&
+!              fp(ipark_orig(k),ixp),fp(ipark_sorted(k),ixp),fp(ipar(k),ixp)
+!      enddo
+!
+    endsubroutine unsort_sink_particles
+!************************************************************************
 endmodule Particles_sub
