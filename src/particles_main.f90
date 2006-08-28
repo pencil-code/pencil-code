@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.44 2006-08-27 20:23:42 wlyra Exp $
+! $Id: particles_main.f90,v 1.45 2006-08-28 20:35:03 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -19,6 +19,7 @@ module Particles_main
   include 'particles_main.h'
 
   real, dimension (mpar_loc,mpvar) :: fp, dfp
+  real, dimension (nspar,mpvar) :: fsp,dfsp
   integer, dimension (mpar_loc,3) :: ineargrid
 
   contains
@@ -100,7 +101,7 @@ module Particles_main
       call init_particles(f,fp,ineargrid)
       if (lparticles_radius) call init_particles_radius(f,fp)
       if (lparticles_number) call init_particles_number(f,fp)
-      if (lparticles_nbody)  call init_particles_nbody(f,fp)
+      if (lparticles_nbody)  call init_particles_nbody(f,fp,fsp)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -207,6 +208,11 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
 !      
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
+!
+!  Sink particles should be communicated to all processors
+!
+      if (lparticles_nbody) &
+           call share_sinkparticles(fp,fsp,dfp=dfp,dfsp=dfsp)
 !
 !  Map the particle positions on the grid for later use.
 !
@@ -316,7 +322,7 @@ module Particles_main
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
-      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,fsp,dfsp,ineargrid)
 !
     endsubroutine particles_pde
 !***********************************************************************
@@ -444,13 +450,15 @@ module Particles_main
 !
       use Planet, only : gravity_companion
 !
-      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
-      real :: g0,r0_pot
+      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      real :: g0,r0_pot,ax,axs,ay,ays
       integer :: n_pot
       type (pencil_case) :: p
 !
-      call get_particles_interdistances(fp,rp_mn,rpcyl_mn)
-      call gravity_companion(fp,dfp,rp_mn,rpcyl_mn,g0,r0_pot,n_pot,p)
+      call get_particles_interdistances(fsp,rp_mn,rpcyl_mn)
+      ax = fsp(1,ixp) ; axs = fsp(2,ixp)
+      ay = fsp(1,iyp) ; ays = fsp(2,iyp)
+      call gravity_companion(rp_mn,rpcyl_mn,ax,ay,axs,ays,g0,r0_pot,n_pot,p)
 !
     endsubroutine auxcall_gravcomp
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.2 2006-08-27 22:37:47 wlyra Exp $
+! $Id: noparticles_nbody.f90,v 1.3 2006-08-28 20:35:03 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -46,6 +46,21 @@ module Particles_nbody
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************
+    subroutine init_particles_nbody(f,fp,fsp)
+!
+! Initial positions and velocities of sink particles
+! Overwrite the position asserted by the dust module
+!
+! 28-aug-06/wlad: dummy
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(nspar,mpvar) :: fsp
+!
+      if (NO_WARN) print*,f,fp,fsp
+!
+    endsubroutine init_particles_nbody
+!***********************************************************************
     subroutine pencil_criteria_par_nbody()
 !   
 !  All pencils that the Particles_nbody module depends on are specified here.
@@ -80,36 +95,6 @@ module Particles_nbody
 !   
     endsubroutine calc_pencils_par_nbody
 !***********************************************************************
-    subroutine init_particles_nbody(f,fp)
-!
-!  Initial positions and velocities of sink particles.
-!
-!  17-nov-05/anders+wlad: adapted
-!
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mpvar) :: fp
-!
-      if (NO_WARN) print*,f,fp
-!
-    endsubroutine init_particles_nbody
-!***********************************************************************
-    subroutine dxxp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Evolution of sink particles' position (called from main pencil loop).
-!
-!  25-apr-06/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
-!
-    endsubroutine dxxp_dt_nbody_pencil
-!**********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Evolution of sink particles' velocities (called from main pencil loop)
@@ -131,22 +116,7 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
-    subroutine dxxp_dt_nbody(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of sink particles position.
-!
-!  17-nov-05/anders+wlad: adapted
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
-!
-    endsubroutine dxxp_dt_nbody
-!***********************************************************************
-    subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt_nbody(f,df,fp,dfp,fsp,dfsp,ineargrid)
 !
 !  Evolution of sink particles velocities
 !
@@ -155,9 +125,10 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      real, dimension (nspar,mpvar) :: fsp,dfsp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
+      if (NO_WARN) print*, f, df, fp, dfp, fsp, dfsp, ineargrid
 !
     endsubroutine dvvp_dt_nbody
 !***********************************************************************
@@ -184,12 +155,12 @@ module Particles_nbody
       integer, intent(in) :: unit
       if (NO_WARN) print*,unit
     endsubroutine write_particles_nbody_run_pars
-!******************************************************
-    subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
+!***********************************************************************
+    subroutine get_particles_interdistances(fsp,rp_mn,rpcyl_mn)
 !
 ! 18-jul-06/wlad: dummy subroutine
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (nspar,mpvar) :: fsp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
       integer :: k
 !
@@ -200,7 +171,7 @@ module Particles_nbody
           rpcyl_mn(:,k) = 0.
        enddo
 !
-       if (NO_WARN) print*, fp
+       if (NO_WARN) print*, fsp
 !
      endsubroutine get_particles_interdistances
 !************************************************************************

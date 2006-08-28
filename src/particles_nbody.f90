@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.10 2006-08-27 20:13:58 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.11 2006-08-28 20:35:03 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -8,8 +8,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lparticles_nbody=.true.
-!
-! MPVAR CONTRIBUTION 6
 !
 !***************************************************************
 module Particles_nbody
@@ -32,7 +30,6 @@ module Particles_nbody
   real :: gc=0.
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.
-  integer, dimension(nspar) :: ispar
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
@@ -70,7 +67,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.10 2006-08-27 20:13:58 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.11 2006-08-28 20:35:03 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -97,14 +94,15 @@ module Particles_nbody
 !
       !call get_shared_variable('tstart_nbody',tstart_nbody,ierr)
 !
-! Tag the sink particles -- The first particles on root are the sink ones
-! ipar was initialized on initialize_particles
+! Tag the sink particles  - equal to the first ipars
 !
-      if (lroot) then
-         do k=1,nspar
-            ispar(k)=ipar(k)
-         enddo
-      endif
+      if (lroot) &
+           print*,'particles_nbody: Initialize ispar array'
+!
+      do k=1,nspar
+         ispar(k)=ipar(k)
+         print*,k,ispar(k)
+      enddo
 !
       if (ierr/=0) then
         if (lroot) print*, 'initialize_particles_nbody: '// &
@@ -148,9 +146,10 @@ module Particles_nbody
 !   
     endsubroutine calc_pencils_par_nbody
 !***********************************************************************
-    subroutine init_particles_nbody(f,fp)
+    subroutine init_particles_nbody(f,fp,fsp)
 !
 !  Initial positions and velocities of sink particles.
+!  Overwrite the position asserted by the dust module
 !
 !  17-nov-05/anders+wlad: adapted
 !
@@ -162,6 +161,7 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (nspar,mpvar) :: fsp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
@@ -220,7 +220,8 @@ module Particles_nbody
 !
 !  Redistribute particles among processors (now that positions are determined).
 !
-      call boundconds_sink_particles(fp)
+      call boundconds_particles(fp,npar_loc,ipar)
+      call share_sinkparticles(fp,fsp)
 !
 !  Initial particle velocity.
 !
@@ -260,24 +261,12 @@ module Particles_nbody
 
       endselect
 !
+! Broadcast the velocities as well
+!
+      call share_sinkparticles(fp,fsp)
+!
     endsubroutine init_particles_nbody
 !***********************************************************************
-    subroutine dxxp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Evolution of particle position (called from main pencil loop).
-!
-!  25-apr-06/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
-!
-    endsubroutine dxxp_dt_nbody_pencil
-!**********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
 !  Add self-gravity to particle equation of motion.
@@ -299,67 +288,7 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
-    subroutine dxxp_dt_nbody(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of sink particles position.
-!
-!  17-nov-05/anders+wlad: adapted
-!
-      use General, only: random_number_wrapper, random_seed_wrapper
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mpvar) :: fp, dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      real :: ran_xp, ran_yp, ran_zp
-      integer, dimension (mseed) :: iseed_org
-      integer :: k
-      logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
-!
-!  Print out header information in first time step.
-!
-      lheader=lfirstcall .and. lroot
-!
-!  Identify module and boundary conditions.
-!
-      if (lheader) print*,'dxxp_dt: Calculate dxxp_dt'
-      if (lheader) then
-        print*, 'dxxp_dt_nbody: Particles boundary condition bcpx=', bcspx
-        print*, 'dxxp_dt_nbody: Particles boundary condition bcpy=', bcspy
-        print*, 'dxxp_dt_nbody: Particles boundary condition bcpz=', bcspz
-      endif
-!
-      if (lheader) print*, 'dxxp_dt: Set rate of change of particle '// &
-          'position equal to particle velocity.'
-!
-!  The rate of change of a particle's position is the particle's velocity.
-!
-      if (nxgrid/=1) &
-          dfp(1:nspar,ixp) = dfp(1:nspar,ixp) + fp(1:nspar,ivpx)
-      if (nygrid/=1) &
-          dfp(1:nspar,iyp) = dfp(1:nspar,iyp) + fp(1:nspar,ivpy)
-      if (nzgrid/=1) &
-          dfp(1:nspar,izp) = dfp(1:nspar,izp) + fp(1:nspar,ivpz)
-!
-!  With shear there is an extra term due to the background shear flow.
-!
-      if (lshear.and.nygrid/=0) dfp(1:nspar,iyp) = &
-          dfp(1:nspar,iyp) - qshear*Omega*fp(1:nspar,ixp)
-!
-!  With masses and disk gravity, the torques of the disk must be
-!  counter-balanced to keep the center of mass fixed in space
-!
-      !if (lmigrate) call reset_center_of_mass(fp,dfp,gp,gs)
-!
-      if (lfirstcall) lfirstcall=.false.
-!
-    endsubroutine dxxp_dt_nbody
-!***********************************************************************
-    subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+    subroutine dvvp_dt_nbody(f,df,fp,dfp,fsp,dfsp,ineargrid)
 !
 !  Evolution of sink particles velocities
 !
@@ -374,6 +303,7 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      real, dimension (nspar,mpvar) :: fsp,dfsp
       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension (npar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
       real, dimension (npar_loc) :: xplanet,yplanet,zplanet
@@ -384,8 +314,8 @@ module Particles_nbody
       integer :: i, k
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
+      intent (in) ::     f,  fp,  fsp, ineargrid
+      intent (inout) :: df, dfp, dfsp
 !
 !  Print out header information in first time step.
 !
@@ -397,70 +327,69 @@ module Particles_nbody
 !
 !  Add Coriolis force from rotating coordinate frame.
 !
-      if (Omega/=0.) then
-         if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-         Omega2=2*Omega
-         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-         dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+      !if (Omega/=0.) then
+      !   if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
+      !   Omega2=2*Omega
+      !   dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+      !   dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-         if (lshear) dfp(1:npar_loc,ivpy) = &
-              dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
-      endif
+      !   if (lshear) dfp(1:npar_loc,ivpy) = &
+      !        dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
+      !endif
 !
 !  More readable variables names
 !
-      ax = fp(1,ixp)  ; axs = fp(2,ixp)
-      ay = fp(1,iyp)  ; ays = fp(2,iyp)
-      az = fp(1,izp)  ; azs = fp(2,izp)
+      ax = fsp(1,ixp)  ; axs = fsp(2,ixp)
+      ay = fsp(1,iyp)  ; ays = fsp(2,iyp)
+      az = fsp(1,izp)  ; azs = fsp(2,izp)
 !
-!
-      vx = fp(1,ivpx) ; vxs = fp(2,ivpx)
-      vy = fp(1,ivpy) ; vys = fp(2,ivpy)
-      vz = fp(1,ivpz) ; vzs = fp(2,ivpz)
+      vx = fsp(1,ivpx) ; vxs = fsp(2,ivpx)
+      vy = fsp(1,ivpy) ; vys = fsp(2,ivpy)
+      vz = fsp(1,ivpz) ; vzs = fsp(2,ivpz)
 !
 !  Relative positions and velocities
 !
       axr = ax - axs ; ayr = ay - ays ; azr = az - azs
       vxr = vx - vxs ; vyr = vy - vys ; vzr = vz - vzs
-!                                                                               
-      if (lroot) then
-!                                                                               
-         rsep = sqrt(axr**2 + ayr**2 + azr**2)
-         r1sep = 1./rsep
+!
+      rsep = sqrt(axr**2 + ayr**2 + azr**2)
+      r1sep = 1./rsep
 !
 !  Planet's gravity on star - must use ramp up as well
 !
-         call get_ramped_mass(gp,gs,g0)
+      call get_ramped_mass(gp,gs,g0)
 !
-         gs_acc = -gs*r1sep**2
-         gp_acc = gs_acc * gp/gs
+      gs_acc = -gs*r1sep**2
+      gp_acc = gs_acc * gp/gs
 !
-         dfp(2,ivpx) = dfp(2,ivpx) + gp_acc*r1sep*(axs-ax)
-         dfp(2,ivpy) = dfp(2,ivpy) + gp_acc*r1sep*(ays-ay)
-         dfp(2,ivpz) = dfp(2,ivpz) + gp_acc*r1sep*(azs-az)
+      dfsp(2,ivpx) = dfsp(2,ivpx) + gp_acc*r1sep*(axs-ax)
+      dfsp(2,ivpy) = dfsp(2,ivpy) + gp_acc*r1sep*(ays-ay)
+      dfsp(2,ivpz) = dfsp(2,ivpz) + gp_acc*r1sep*(azs-az)
 !
 !  Star's gravity on planet
 !
-         dfp(1,ivpx) = dfp(1,ivpx) + gs_acc*r1sep*(ax-axs)
-         dfp(1,ivpy) = dfp(1,ivpy) + gs_acc*r1sep*(ay-ays)
-         dfp(1,ivpz) = dfp(1,ivpz) + gs_acc*r1sep*(az-azs)
+      dfsp(1,ivpx) = dfsp(2,ivpx) + gs_acc*r1sep*(ax-axs)
+      dfsp(1,ivpy) = dfsp(2,ivpy) + gs_acc*r1sep*(ay-ays)
+      dfsp(1,ivpz) = dfsp(2,ivpz) + gs_acc*r1sep*(az-azs)
 !
-         call reset_center_of_mass(fp,dfp,gp,gs)
+! Check the position of the center of mass of the sink 
+! particles, and reset it to the center of the grid
 !
-      endif
+      call reset_center_of_mass(fsp,dfsp,gp,gs)
 !
-! At the end of the time-step, check the position of the center of
-! mass and update the positions of all particles to keep it at rest
-! It shouldn't move much, though. Just that the disk gravity inserts
-! some small torques that make it move.
+!  Put it back on the dfp array
+!
+      do k=1,nspar
+         dfp(ispar(k),:) = dfp(ispar(k),:) + dfsp(k,:)
+      enddo
 !
       if (lcalc_orbit) then
          xstar(1:npar_loc) = axs  ; vxstar(1:npar_loc) = vxs
          ystar(1:npar_loc) = ays  ; vystar(1:npar_loc) = vys
          zstar(1:npar_loc) = azs  ; vzstar(1:npar_loc) = vzs
-!                                                                               
+!
          xplanet(1:npar_loc) = ax ; vxplanet(1:npar_loc) = vx
          yplanet(1:npar_loc) = ay ; vyplanet(1:npar_loc) = vy
          zplanet(1:npar_loc) = az ; vzplanet(1:npar_loc) = vz
@@ -624,208 +553,61 @@ module Particles_nbody
 !
     endsubroutine rprint_particles_nbody
 !***********************************************************************
-    subroutine boundconds_sink_particles(fp,dfp)
-!
-!  Global boundary conditions for particles.
-!
-!  27-aug-06/wlad: adapted
-!
-      use Messages, only: fatal_error_local
-      use Mpicomm
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (mpar_loc,mpvar), optional :: dfp
-      integer :: k
-!
-      intent (inout) :: fp,dfp
-!
-!  Boundary condition in the x-direction.
-!
-      if (nxgrid/=1) then
-         if (bcspx=='p') then
-            do k=1,nspar
-!  xp < x0
-               if (fp(k,ixp)< xyz0(1)) then
-                  fp(k,ixp)=fp(k,ixp)+Lxyz(1)
-!
-!  Particle position must never need more than one addition of Lx to get back
-!  in the box. Often a NaN or Inf in the particle position will show up as a
-!  problem here.
-!
-                  if (fp(k,ixp)< xyz0(1)) then
-                     print*, 'boundconds_sink_particles: ERROR - sink particle ', &
-                          ispar(k), ' was further than Lx outside the simulation box!'
-                     print*, 'This must never happen.'
-                     print*, 'iproc, ispar, xxp=', iproc, ispar(k), fp(k,ixp:izp)
-                     call fatal_error_local('boundconds_sink_particles','')
-                  endif
-               endif
-!  xp > x1
-            if (fp(k,ixp)>=xyz1(1)) then
-              fp(k,ixp)=fp(k,ixp)-Lxyz(1)
-              if (fp(k,ixp)>=xyz1(1)) then
-                print*, 'boundconds_sink_particles: ERROR - sink particle ', &
-                     ispar(k), ' was further than Lx outside the simulation box!'
-                print*, 'This must never happen.'
-                print*, 'iproc, ispar, xxp=', iproc, ispar(k), fp(k,ixp:izp)
-                call fatal_error_local('boundconds_particles','')
-              endif
-            endif
-          enddo
-        else
-          print*, 'boundconds_particles: No such boundary condition bcpx=', bcspx
-          call stop_it('boundconds_particles')
-        endif
-      endif
-!
-!  Boundary condition in the y-direction.
-!
-      if (nygrid/=1) then
-        if (bcspy=='p') then
-!  yp < y0
-          do k=1,nspar
-            if (fp(k,iyp)< xyz0(2)) then
-              fp(k,iyp)=fp(k,iyp)+Lxyz(2)
-              if (fp(k,iyp)< xyz0(2)) then
-                print*, 'boundconds_particles: ERROR - particle ', ispar(k), &
-                    ' was further than Ly outside the simulation box!'
-                print*, 'This must never happen.'
-                print*, 'iproc, ispar, xxp=', iproc, ispar(k), fp(k,ixp:izp)
-                call fatal_error_local('boundconds_particles','')
-              endif
-            endif
-!  yp > y1
-            if (fp(k,iyp)>=xyz1(2)) then
-              fp(k,iyp)=fp(k,iyp)-Lxyz(2)
-              if (fp(k,iyp)>=xyz1(2)) then
-                print*, 'boundconds_particles: ERROR - particle ', ispar(k), &
-                    ' was further than Ly outside the simulation box!'
-                print*, 'This must never happen.'
-                print*, 'iproc, ispar, xxp=', iproc, ispar(k), fp(k,ixp:izp)
-                call fatal_error_local('boundconds_particles','')
-              endif
-            endif
-          enddo
-        else
-          print*, 'boundconds_particles: No such boundary condition bcpy=', bcspy
-          call stop_it('boundconds_particles')
-        endif
-      endif
-!
-!  Boundary condition in the z-direction.
-!
-      if (nzgrid/=1) then
-        if (bcspz=='p') then
-          do k=1,nspar
-!  zp < z0
-            if (fp(k,izp)< xyz0(3)) then
-              fp(k,izp)=fp(k,izp)+Lxyz(3)
-              if (fp(k,izp)< xyz0(3)) then
-                print*, 'boundconds_particles: ERROR - particle ', ispar(k), &
-                    ' was further than Lz outside the simulation box!'
-                print*, 'This must never happen.'
-                print*, 'iproc, ipar, xxp=', iproc, ispar(k), fp(k,ixp:izp)
-                call fatal_error_local('boundconds_particles','')
-              endif
-            endif
-!  zp > z1
-            if (fp(k,izp)>=xyz1(3)) then
-              fp(k,izp)=fp(k,izp)-Lxyz(3)
-              if (fp(k,izp)>=xyz1(3)) then
-                print*, 'boundconds_particles: ERROR - particle ', ispar(k), &
-                    ' was further than Lz outside the simulation box!'
-                print*, 'This must never happen.'
-                print*, 'iproc, ispar, xxp=', iproc, ispar(k), fp(k,ixp:izp)
-                call fatal_error_local('boundconds_particles','')
-              endif
-            endif
-          enddo
-        else
-          print*, 'boundconds_particles: No such boundary condition bcpz=', bcspz
-          call stop_it('boundconds_particles')
-        endif
-      endif
-!
-!  Share all sink particles among processors (internal boundary conditions).
-!
-      call share_allparticles_procs(fp)
-!
-    endsubroutine boundconds_sink_particles
-!***********************************************************************
-    subroutine share_allparticles_procs(fp)
-!
-!  For N-body runs (few sink particles), keep particles at root
-!  processor and inform other processors of positions and velocities.
-!
-!  27-aug-06/wlad: coded
-!
-      use Mpicomm
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-!
-      integer :: k,nspar
-!
-      do k=1,nspar
-        call mpibcast_real(fp(k,:),mpvar)
-      enddo
-!
-    endsubroutine share_allparticles_procs
-!***********************************************************************
-    subroutine reset_center_of_mass(fp,dfp,gp,gs)
+    subroutine reset_center_of_mass(fsp,dfsp,gp,gs)
 !
 !  If the center of mass was accelerated, reset its position
 !  to the center of the grig
 !
 !  27-aug-06/wlad: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp,dfp
+      real, dimension (nspar,mpvar) :: fsp,dfsp
       real :: gs,gp,invtotmass,vx_cm,vy_cm,vz_cm
+!
+      intent (in)    ::  fsp,gs,gp
+      intent (inout) :: dfsp
 !
       invtotmass = 1./(gp+gs)
 !
-      vx_cm = invtotmass * (gp*fp(1,ivpx) + gs*fp(2,ivpx))
-      vy_cm = invtotmass * (gp*fp(1,ivpy) + gs*fp(2,ivpy))
-      vz_cm = invtotmass * (gp*fp(1,ivpz) + gs*fp(2,ivpz))
+      vx_cm = invtotmass * (gp*fsp(1,ivpx) + gs*fsp(2,ivpx))
+      vy_cm = invtotmass * (gp*fsp(1,ivpy) + gs*fsp(2,ivpy))
+      vz_cm = invtotmass * (gp*fsp(1,ivpz) + gs*fsp(2,ivpz))
 !
-      dfp(1,ixp) = dfp(1,ixp) - vx_cm
-      dfp(2,ixp) = dfp(2,ixp) - vx_cm
-!
-      dfp(1,iyp) = dfp(1,iyp) - vy_cm
-      dfp(2,iyp) = dfp(2,iyp) - vy_cm
-!
-      dfp(1,izp) = dfp(1,izp) - vz_cm
-      dfp(2,izp) = dfp(2,izp) - vz_cm
+      dfsp(1,ixp) = dfsp(1,ixp) - vx_cm
+      dfsp(2,ixp) = dfsp(2,ixp) - vx_cm
+!                        
+      dfsp(1,iyp) = dfsp(1,iyp) - vy_cm
+      dfsp(2,iyp) = dfsp(2,iyp) - vy_cm
+!                        
+      dfsp(1,izp) = dfsp(1,izp) - vz_cm
+      dfsp(2,izp) = dfsp(2,izp) - vz_cm
 !
      endsubroutine reset_center_of_mass
 !***********************************************************************
-    subroutine get_particles_interdistances(fp,rp_mn,rpcyl_mn)
+    subroutine get_particles_interdistances(fsp,rp_mn,rpcyl_mn)
 !
 !  Should be pencils of dimension (nx,nspar)
 !  because they will be used by planet and gravity
 !
 !  18-jul-06/wlad: coded
 !
-      real, dimension (mpar_loc,mpvar) :: fp
+      real, dimension (nspar,mpvar) :: fsp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      integer :: i
+      integer :: k
 !
       intent(out) :: rp_mn,rpcyl_mn
 !
 ! more readable variable names
 !
-      do i=1,nspar
+      do k=1,nspar
 !
 ! Spherical and cylindrical distances
 !
-         rp_mn(:,i)    = &
-              sqrt((x(l1:l2)-fp(i,ixp))**2 + (y(m)-fp(i,iyp))**2 &
-              + (z(n)-fp(i,izp))**2) + tini
-         rp_mn(:,i)    = &
-              sqrt((x(l1:l2)-fp(i,ixp))**2 + (y(m)-fp(i,iyp))**2  &
-              + (z(n)-fp(i,izp))**2) + tini
+         rp_mn(:,ispar(k))    = &
+              sqrt((x(l1:l2)-fsp(k,ixp))**2 + (y(m)-fsp(k,iyp))**2  &
+              + (z(n)-fsp(k,izp))**2) + tini
 !
-         rpcyl_mn(:,i) = &
-              sqrt((x(l1:l2)-fp(i,ixp))**2 + (y(m)-fp(i,iyp))**2) + tini
+         rpcyl_mn(:,ispar(k)) = &
+              sqrt((x(l1:l2)-fsp(k,ixp))**2 + (y(m)-fsp(k,iyp))**2) + tini
 !
       enddo
 !
