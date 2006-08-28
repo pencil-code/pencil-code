@@ -15,4 +15,6 @@ GRAVITY   =   gravity_simple
 FORCING   = noforcing
 SHEAR     = noshear
 SHOCK	  =   shock
+
+FFT       =   fft
 FOURIER   =   fourier_fftpack
