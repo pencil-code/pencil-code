@@ -3,6 +3,7 @@
 # Usage:
 #  make
 #  make manual.ps
+#  make manual.pdf
 #  make body.ps      (excludes appendix and indexes)
 #  make appendix.ps  (appendix and indexes only)
 #  make faq          (html version of Frequently Asked Questions)
@@ -13,8 +14,8 @@
 	dvips $* -o $*.ps
 .ps.pdf:
 	ps2pdf $*.ps $*.pdf
-#.dvi.pdf:
-#	dvipdf $*.dvi $*.pdf
+.dvi.pdf:
+	dvipdfm $*.dvi $*.pdf
 
 # ------------------
 
@@ -42,6 +43,7 @@ manual.dvi: manual.tex
 # 	if [ -z $TEXINPUTS ]; then TEXINPUTS=":./texinputs"; else TEXINPUTS="$(TEXINPUTS):./texinputs"; fi; export TEXINPUTS; pdflatex manual; makeindex manual; pdflatex manual
 manual.pdf: manual.dvi
 	dvipdfm -p a4 manual.dvi
+	rm -f manual.dvi
 
 # To generate manual.ps, we need to temporarily replace
 # `\usepackage[dvipdfm]{hyperref' by `\usepacakge{hyperref}':
