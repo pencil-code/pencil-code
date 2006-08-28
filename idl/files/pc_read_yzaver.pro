@@ -1,4 +1,4 @@
-;; $Id: pc_read_yzaver.pro,v 1.2 2006-03-15 15:29:45 ajohan Exp $
+;; $Id: pc_read_yzaver.pro,v 1.3 2006-08-28 11:09:00 ajohan Exp $
 ;;
 ;;   Read yz-averages from file
 ;;
@@ -25,7 +25,8 @@ nx=dim.nx
 ;;
 ;;  Read variables from xyaver.in
 ;;
-spawn, "echo "+datadir+" | sed -e 's/data$//g'", datatopdir
+spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
+print, datatopdir
 spawn, 'cat '+datatopdir+'/yzaver.in', varnames
 if (not quiet) then print, 'Preparing to read yz-averages ', $
     arraytostring(varnames,quote="'",/noleader)

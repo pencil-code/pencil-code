@@ -1,4 +1,4 @@
-;; $Id: pc_read_zaver.pro,v 1.7 2006-08-08 14:10:15 ajohan Exp $
+;; $Id: pc_read_zaver.pro,v 1.8 2006-08-28 11:09:00 ajohan Exp $
 ;;
 ;;   Read z-averages from file.
 ;;   Default is to only plot the data (with tvscl), not to save it in memory.
@@ -60,7 +60,7 @@ x0=xax[0] & x1=xax[nx-1] & y0=yax[0] & y1=yax[ny-1]
 ;;
 ;;  Read variables from zaver.in
 ;;
-spawn, "echo "+datadir+" | sed -e 's/data$//g'", datatopdir
+spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 spawn, 'cat '+datatopdir+'/zaver.in', varnames
 if (not quiet) then print, 'Preparing to read z-averages ', $
     arraytostring(varnames,quote="'",/noleader)

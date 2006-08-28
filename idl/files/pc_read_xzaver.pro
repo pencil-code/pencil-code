@@ -1,4 +1,4 @@
-;; $Id: pc_read_xzaver.pro,v 1.2 2006-03-15 15:29:45 ajohan Exp $
+;; $Id: pc_read_xzaver.pro,v 1.3 2006-08-28 11:09:00 ajohan Exp $
 ;;
 ;;   Read xz-averages from file
 ;;
@@ -25,7 +25,7 @@ ny=dim.ny
 ;;
 ;;  Read variables from xzaver.in
 ;;
-spawn, "echo "+datadir+" | sed -e 's/data$//g'", datatopdir
+spawn, "echo "+datadir+" | sed -e 's/data\/*$//g'", datatopdir
 spawn, 'cat '+datatopdir+'/xzaver.in', varnames
 if (not quiet) then print, 'Preparing to read xz-averages ', $
     arraytostring(varnames,quote="'",/noleader)
