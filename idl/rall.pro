@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.45 2006-05-17 17:26:16 theine Exp $
+;;;  $Id: rall.pro,v 1.46 2006-08-28 20:55:31 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -69,6 +69,11 @@ default, ldustdensity, 0
 ;
 x=fltarr(mx)*ONE & y=fltarr(my)*ONE & z=fltarr(mz)*ONE
 xloc=fltarr(mxloc)*ONE & yloc=fltarr(myloc)*ONE & zloc=fltarr(mzloc)*ONE
+;
+dx_1=fltarr(mx)*zero & dy_1=fltarr(my)*zero & dz_1=fltarr(mz)*zero
+dx_1_loc=fltarr(mxloc)*zero & dy_1_loc=fltarr(myloc)*zero & dz_1_loc=fltarr(mzloc)*zero
+dx_tilde=fltarr(mx)*zero & dy_tilde=fltarr(my)*zero & dz_tilde=fltarr(mz)*zero
+dx_tilde_loc=fltarr(mxloc)*zero & dy_tilde_loc=fltarr(myloc)*zero & dz_tilde_loc=fltarr(mzloc)*zero
 
 ;
 ;  Read data
@@ -131,6 +136,24 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   end
 
   close,1
+  if (any(lequidist eq 0)) then begin
+    openr,1,gridfile,/F77
+    point_lun,1,pos
+    readu,1, dx_1_loc,     dy_1_loc,     dz_1_loc
+    readu,1, dx_tilde_loc, dy_tilde_loc, dz_tilde_loc
+    close,1
+  endif else begin
+    ;
+    ;  Ensure we don't use these values
+    ;
+    dx_1_loc = dx_1_loc*!values.f_nan
+    dy_1_loc = dy_1_loc*!values.f_nan
+    dz_1_loc = dz_1_loc*!values.f_nan
+    dx_tilde_loc = dx_tilde_loc*!values.f_nan
+    dy_tilde_loc = dy_tilde_loc*!values.f_nan
+    dz_tilde_loc = dz_tilde_loc*!values.f_nan
+  endelse
+
   ;
   ;  Don't overwrite ghost zones of processor to the left (and
   ;  accordingly in y and z direction makes a difference on the
@@ -163,6 +186,14 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   x[i0x:i1x] = xloc[i0xloc:i1xloc]
   y[i0y:i1y] = yloc[i0yloc:i1yloc]
   z[i0z:i1z] = zloc[i0zloc:i1zloc]
+  ;
+  dx_1[i0x:i1x] = dx_1_loc[i0xloc:i1xloc]
+  dy_1[i0y:i1y] = dy_1_loc[i0yloc:i1yloc]
+  dz_1[i0z:i1z] = dz_1_loc[i0zloc:i1zloc]
+  ;
+  dx_tilde[i0x:i1x] = dx_tilde_loc[i0xloc:i1xloc]
+  dy_tilde[i0y:i1y] = dy_tilde_loc[i0yloc:i1yloc]
+  dz_tilde[i0z:i1z] = dz_tilde_loc[i0zloc:i1zloc]
 
   for iv=1L,totalvars do begin
     if (varcontent[iv].variable eq 'UNKNOWN') then continue
