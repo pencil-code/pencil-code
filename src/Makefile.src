@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.238 2006-08-28 16:52:50 dobler Exp $
+### $Id: Makefile.src,v 1.239 2006-08-28 19:50:45 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -911,12 +911,20 @@ l:
 # Needed for the underscore trick:
 mpicomm_.f90:      mpicomm.f90
 
-# Use sloppier compiler for MPICOMM if specified:
-$(MPICOMM).o:
+# Use sloppier compiler for MPICOMM and fftpack if specified:
+# If set, FFLAGS_SLOPPY overrides '$(FFLAGS) $(F90FLAGS)'. Use like this:
+#   FFLAGS_SLOPPY=-O4 -Wall
+#   F90FLAGS=$(FFLAGS_SLOPPY) -Werror
+#   F77FLAGS=$(FFLAGS_SLOPPY)
+# to restrict `-Werror' to F90 files other than MPICOMM.
+$(MPICOMM_FIX)$(PC_META_TYPE).o: mpicomm.h $(MPICOMM_FIX).f90 cdata$(PC_META_TYPE).o
 	@fflags="$(FFLAGS_SLOPPY)"; \
-	if [ -z "$$fflags" ]; then fflags="$(FFLAGS)"; fi; \
-	echo $(FC) $$fflags $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(MPICOMM).o -c $(MPICOMM).f90; \
-	$(FC) $$fflags $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) -o $(MPICOMM).o -c $(MPICOMM).f90
+	if [ -z "$$fflags" ]; then fflags="$(FFLAGS) $(F90FLAGS)"; fi; \
+	echo $(FC) $$fflags $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) \
+	    -o $(MPICOMM_FIX)$(PC_META_TYPE).o -c $(MPICOMM_FIX).f90; \
+	$(FC) $$fflags $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) \
+	    -o $(MPICOMM_FIX)$(PC_META_TYPE).o -c $(MPICOMM_FIX).f90
+#
 
 # Shortcut for debugging radiation:
 rad:
