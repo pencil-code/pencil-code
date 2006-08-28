@@ -1,0 +1,46 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for corona 
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-08-28 13:34:17 bingert Exp $'
+  xyz0 = 0., 0., 0.
+  Lxyz = 5.e4, 5.e4 , 3.e4  
+  unit_system  ='SI'
+  unit_length  =1e3
+  unit_velocity=1e6
+  unit_density =1e-8
+  lperi = T,    T,   F,
+  grid_func  =  ,  , 'sinh'
+  coeff_grid =  ,  , 1.5e-4 
+  xyz_star   =  ,  , 5e3    
+  !
+  bcx = 'p' ,'p' ,'p','p', 'p', 'p', 'p','p'
+  bcy = 'p' ,'p' ,'p','p', 'p', 'p', 'p','p'
+  bcz = 'a2','a2','a','a2','a2:s','a2','a2','a2'
+/
+&eos_init_pars
+  cs0   = 0.01,   ! cs0*unit_velocity = 10 km/s
+  gamma = 1.6666666,
+  rho0  = 3.e4    ! rho0*unit_density = 3e-4 kg/m^3
+  mu    = 0.667
+  cp    = 1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='corona' 
+  ! This will compute density and entropy
+  ! for a given temperature profile
+/
+&grav_init_pars
+  gravz_profile='const'
+  zref = 0
+  gravz=-2.74e-7 ! gravz * unit_velocity^2 / unit_length = 274 m/s
+/
+&entropy_init_pars
+  initss='nothing'
+  ! entropy will be set together with density
+/
+&magnetic_init_pars
+  initaa='magnetogram'
+/
