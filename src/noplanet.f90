@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.29 2006-08-25 14:41:04 wlyra Exp $
+! $Id: noplanet.f90,v 1.30 2006-08-28 20:36:03 wlyra Exp $
 !
 !  Dummy module
 !
@@ -49,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.29 2006-08-25 14:41:04 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.30 2006-08-28 20:36:03 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -123,8 +123,8 @@ module Planet
     endsubroutine write_planet_run_pars
 !***********************************************************************
     subroutine pencil_criteria_planet()
-      !
-      !
+!
+!
     endsubroutine pencil_criteria_planet
 !***********************************************************************
     subroutine calc_pencils_planet(f,p)
@@ -140,22 +140,21 @@ module Planet
 !
     endsubroutine calc_pencils_planet
 !***********************************************************************
-    subroutine gravity_companion(fp,dfp,rp_mn,rpcyl_mn,gs,r0_pot,n_pot,p)
+    subroutine gravity_companion(rp_mn,rpcyl_mn,ax,ay,axs,ays,gs,r0_pot,n_pot,p)
 !      
-!8-nov-05/wlad : dummy      
+! 08-nov-05/wlad : dummy      
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (mpar_loc,mpvar) :: fp,dfp
-      real, dimension (nx,mpar_loc) :: rp_mn,rpcyl_mn
+      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
       type (pencil_case) :: p
-      real :: gs,r0_pot
+      real :: gs,r0_pot,ax,axs,ay,ays
       integer :: n_pot
 !
       call stop_it("noplanet.f90 - gravity_companion")
 !
-      if (NO_WARN) print*, fp,dfp,rp_mn,rpcyl_mn,gs,r0_pot,n_pot,p
+      if (NO_WARN) print*, rp_mn,rpcyl_mn,ax,axs,ay,ays,gs,r0_pot,n_pot,p
 !
     endsubroutine gravity_companion
 !***********************************************************************
