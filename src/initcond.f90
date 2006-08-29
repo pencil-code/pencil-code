@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.166 2006-08-23 16:53:31 mee Exp $ 
+! $Id: initcond.f90,v 1.167 2006-08-29 05:32:24 ajohan Exp $ 
 
 module Initcond 
  
@@ -2691,7 +2691,6 @@ module Initcond
       ! Fourier Transform of Bz0:
       !
       call fourier_transform_other(Bz0_r,Bz0_i,1)
-      call fourier_transform_other(Bz0_r,Bz0_i,1)
       !
       Bz0_i = Bz0_i/sqrt_nxy
       Bz0_r = Bz0_r/sqrt_nxy
@@ -2715,12 +2714,10 @@ module Initcond
          endwhere
          !
          call fourier_transform_other(Ax_r,Ax_i,-1)
-         call fourier_transform_other(Ax_r,Ax_i,-1)
          !
          Ax_r = Ax_r/sqrt_nxy
          Ax_i = Ax_i/sqrt_nxy
          !
-         call fourier_transform_other(Ay_r,Ay_i,-1)
          call fourier_transform_other(Ay_r,Ay_i,-1)
          !
          Ay_r = Ay_r/sqrt_nxy
