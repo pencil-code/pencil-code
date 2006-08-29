@@ -1,0 +1,204 @@
+#!/usr/bin/perl -w
+
+# Name:   g95_quick_and_dirty
+# Author: wd (Wolfgang.Dobler@ucalgary.ca)
+# Date:   28-Aug-2006
+# Synopsis:
+#   Use a really nasty trick to accelerate re-compilation of the Pencil Code.
+# Usage:
+#   g95_quick_and_dirty <g95-arguments>  # (i.e. use as drop-in replacement)
+#
+#   ln -s g95_quick_and_dirty ifort_quick_and_dirty
+#   ifort_quick_and_dirty <g95-arguments>
+#
+# Description:
+#   This is designed to work with a Makefile that bases dependencies on .o
+#   files (not really logical for module dependencies, but the only portable
+#   option, as some compilers do not produce .mod files at all).
+#
+#   Currently, g95 and ifort (>=8.0) are supported; to add other
+#   compilers, we need to know where the time stamp is located in the .mod
+#   files, so we can mask it out before calculationg MD5 sums.
+#
+#   The trick (inspired by g95's `smart compilation feature') is to avoid
+#   unnecessary recompilation based on the following scheme:
+#   If
+#   (a) the module info file <file>.mod existed before, and has not
+#       changed after compilation of <file>.f90,
+#   or
+#   (b) there was no <file>.mod before, and there is none after compilation
+#       (i.e. the .f or .f90 file defines no module)
+#   then the time stamps for <file>.{f90,mod,o}, are re-set to the creation
+#   time of the original <file.mod>, and all *.x are removed (to ensure they
+#   get re-linked).
+#     Thus, if a detail in <file>.f90 is changed that does not affect
+#   the interface to other files, none of the other files is re-compiled,
+#   and only the executables are re-linked against the new <file>.o.
+#
+# Sort me out:
+# - What to do when one source file creates different modules (some old,
+#   some new, ...)
+# - What to do in the absence of modules (thing ifc v.6 or 7, but also our
+#   .f  and main program files)
+# - The description isn't correct: we have (e.g.) nompicomm.{f90,o} with
+#   mpicomm.mod (or MPICOMM.mod)
+
+use strict;
+use Digest::MD5 qw(md5_hex);
+
+my $debug=1;
+if ($debug) {
+    eval "use Data::Dumper";    # Needed later
+    print "=" x 70, "\n" if ($debug); # Visually separate our invocations
+}
+
+my ($fc, @fcargs, $src, $obj);
+
+
+## 1. Dissect name to find out which compiler to run
+my $cmdname = (split('/', $0))[-1];
+if ($cmdname =~ /(.*)_quick_and_dirty/) {
+    $fc     = $1;
+    @fcargs = @ARGV;
+} else {
+    die "I ought to be called <...>_quick_and_dirty, but you call me `$0'\n";
+}
+
+## 2. Get time stamps and hash of MD5 digests of all .mod files
+my @mod_files = <*.mod>;
+my %ts_before  = get_ts_hash(@mod_files);
+my %md5_before = get_md5_hash(@mod_files);
+if ($debug) {
+    print STDERR "Before: ", Dumper(\%ts_before);
+    print STDERR "Before: ", Dumper(\%md5_before);
+}
+
+## 3. Get file name of source file *.f90 or *.f
+my @srcfiles = grep /(.*\.f(?:90)?)$/, @fcargs ;
+if (@srcfiles ne 1) {
+    die "$cmdname: Cannot handle multiple source files yet (@srcfiles)\n"
+      . "  -- and does this make sense?.\n";
+}
+$src = $srcfiles[0];
+my ($base,$suf) = ($src =~ /(.*)\.(f(?:90)?)/);
+$obj = "$base.o";
+
+## 4. Compile
+print STDERR "Compiling...\n" if ($debug);
+my $retval = system($fc, @fcargs);
+if ($retval ne 0) {
+    die "Error during compilation: $fc returned $retval (\$\!=`$!')\n";
+}
+print STDERR "..done.\n" if ($debug);
+system('touch', 'general.mod');
+
+## 5. Get updated MD5 hash
+@mod_files = <*.mod>;
+my %ts_after  = get_ts_hash(@mod_files);
+my %md5_after = get_md5_hash(@mod_files);
+if ($debug) {
+    print STDERR "After: ", Dumper(\%ts_before);
+    print STDERR "After: ", Dumper(\%md5_before);
+}
+
+## 6. Compare
+my @changed = get_updated_files(\%ts_before,\%ts_after); # compare mtimes
+foreach my $file (@changed) {
+    # Now compare MD5 hashes
+    my $old_md5 = ($md5_before{$file} || 'none');
+    my $new_md5 = ($md5_after{$file}  || 'New');
+    if ($new_md5 ne $old_md5) {
+        print STDERR "$file: has changed\n" if ($debug);
+    } else {
+        print STDERR "$file: updated, but not changed\n" if ($debug);
+
+        # Change atime and mtime for .mod, .f90 and .o files
+        my $fake_time= $ts_before{$file};
+        print STDERR "Touching $file, $src, $obj to $fake_time\n" if ($debug);
+        utime
+          $fake_time, $fake_time,
+          ($file, $src, $obj)
+              or die "Couldn't touch ($file, $src, $obj)\n";
+
+        # Delete any .x files to enforce re-linking
+        my @x_files = <*.x>;
+        if (@x_files) {
+            print STDERR "Unlinking @x_files\n" if ($debug);
+            unlink @x_files or die "Couldn't remove @x_files\n";
+        }
+    }
+}
+
+
+
+# ---------------------------------------------------------------------- #
+sub get_ts_hash {
+# Takes a list of file names,
+# returns hash of modification time stamps for all files in list.
+     my @files = @_;
+     my %ts_hash;
+
+     foreach my $file (@files) {
+         #   dev   ino   mode  nlink uid   gid   rdev  size  atime mtime
+         my (undef,undef,undef,undef,undef,undef,undef,undef,undef,$mtime)
+             = stat($file) or die "Cannot stat file $file\n";
+         $ts_hash{$file} = $mtime;
+     }
+
+     return %ts_hash;
+}
+# ---------------------------------------------------------------------- #
+sub get_md5_hash {
+# Takes a list of file names,
+# returns hash of MD5 sums of all files in list.
+    my @files = @_;
+    my %mod_hash;
+
+    foreach my $file (@files) {
+        local $/=undef;
+        open(FILE, "< $file") or die "Cannot open file $file for reading\n";
+        my $data = <FILE>;
+
+        # Eliminate time stamp from ASCII-formatted g95 module file:
+        if ($fc eq 'g95') {
+            $data =~ s{(G95 module created on) .* (from) }
+              {$1 [removed timestamp] $2}m;
+        }
+        # Eliminate time stamp from binary ifort (>=8) module file:
+        if ($fc eq 'ifort') {
+            # We know that bytes 45 and 46 depend on compile time (45
+            # counts faster [seconds, I guess], 46 slower). Most likely,
+            # the bytes 45..48 contain the seconds of epoch (or whatever
+            # the reference is), so we just null them out
+            substr($data,45,4) = "\0\0\0\0";
+        }
+
+        $mod_hash{$file} = md5_hex($data);
+    }
+
+    return %mod_hash;
+}
+# ---------------------------------------------------------------------- #
+sub get_updated_files {
+# Takes two hash refs { filename => mtime },
+# returns list of all files that have obtained newer mtime in hash 2, or
+# are not in hash 1.
+    my $href1 = shift;
+    my $href2 = shift;
+    my %mtime1 = %$href1;
+    my %mtime2 = %$href2;
+    my @changed;
+
+    foreach my $file (keys %mtime2) {
+        my $t1 = ( $mtime1{$file} || 0 ); # mtime cannot be zero
+        my $t2 =   $mtime2{$file};
+        push @changed, $file if ($t2 > $t1);
+    }
+
+    return @changed;
+}
+# ---------------------------------------------------------------------- #
+
+
+
+# End of file g95_quick_and_dirty
