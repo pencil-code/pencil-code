@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.61 2006-08-23 16:53:32 mee Exp $
+! $Id: nohydro.f90,v 1.62 2006-08-29 20:08:06 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.61 2006-08-23 16:53:32 mee Exp $")
+           "$Id: nohydro.f90,v 1.62 2006-08-29 20:08:06 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -585,6 +585,7 @@ module Hydro
 !  never set, so we better abort
 !
       call error('random_isotropic_KS_setup', 'Using uninitialized dk')
+      dk=0.                     ! to make compiler happy
 
       ps=sqrt(2.*energy*dk)   !/3.0) 
 !
