@@ -86,7 +86,10 @@ while expr "$1" : '\-' >/dev/null; do
   case $1 in
     -a) 
       include_rundirs=1
-      shift
+    ;;
+    -A) 
+      EXTRA_ARGS=-A
+      echo "Found STICKY CLEANER"
     ;;
     -A) 
       EXTRA_ARGS=-A
@@ -95,8 +98,10 @@ while expr "$1" : '\-' >/dev/null; do
     ;;
     --all)
       include_rundirs=1
-      shift
   esac
+# catch other arguments
+  EXTRA_ARGS=$1
+  shift
 done
 cd ${PENCIL_HOME}
 
