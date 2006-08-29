@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.46 2006-08-28 20:55:31 dobler Exp $
+;;;  $Id: rall.pro,v 1.47 2006-08-29 19:34:42 bingert Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -136,6 +136,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   end
 
   close,1
+  gridfile=datadir+'/'+'grid.dat'
   if (any(lequidist eq 0)) then begin
     openr,1,gridfile,/F77
     point_lun,1,pos
