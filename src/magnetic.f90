@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.319 2006-08-26 18:40:57 theine Exp $
+! $Id: magnetic.f90,v 1.320 2006-08-29 15:24:31 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -205,7 +205,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.319 2006-08-26 18:40:57 theine Exp $")
+           "$Id: magnetic.f90,v 1.320 2006-08-29 15:24:31 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -527,12 +527,12 @@ module Magnetic
       if (dvid/=0.) lpenc_video(i_jb)=.true.
       if (lresi_eta_const .or. lresi_shell .or. &
           lresi_eta_shock .or. lresi_smagorinsky .or. &
-          lresi_smagorinsky_cross .or. lresi_eta_shock_perp) &
+          lresi_smagorinsky_cross) &
             lpenc_requested(i_del2a)=.true.
       if (lresi_eta_shock) then
         lpenc_requested(i_shock)=.true.
         if (lweyl_gauge) then
-          lpenc_requested(i_graddiva)=.true.
+          lpenc_requested(i_jj)=.true.
         else
           lpenc_requested(i_gshock)=.true.
           lpenc_requested(i_diva)=.true.
@@ -541,7 +541,7 @@ module Magnetic
       if (lresi_eta_shock_perp) then
         lpenc_requested(i_shock_perp)=.true.
         if (lweyl_gauge) then
-          lpenc_requested(i_graddiva)=.true.
+          lpenc_requested(i_jj)=.true.
         else
           lpenc_requested(i_gshock_perp)=.true.
           lpenc_requested(i_diva)=.true.
@@ -987,6 +987,18 @@ module Magnetic
 !
 !  Restivivity term
 !
+!  Because of gauge invariance, we can add the gradient of an arbitrary scalar
+!  field Phi to the induction equation without changing the magnetic field,
+!    dA/dt = u x B - eta j + grad(Phi).
+!
+!  If lweyl_gauge=T, we choose Phi = const. and solve
+!    dA/dt = u x B - eta j.
+!  Else, if lweyl_gauge=F, we make the gauge choice Phi = eta div(A)
+!  and thus solve
+!    dA/dt = u x B + eta laplace(A) + div(A) grad(eta).
+!
+!  Note: lweyl_gauge=T is so far only implemented for shock resistivity.
+!
       fres=0.0
       etatotal=0.0
 !
@@ -1031,8 +1043,7 @@ module Magnetic
       if (lresi_eta_shock) then
         if (lweyl_gauge) then
           do i=1,3
-            fres(:,i) = fres(:,i) &
-                      + eta_shock*p%shock*(p%del2a(:,i)-p%graddiva(:,i))
+            fres(:,i) = fres(:,i) - eta_shock*p%shock*p%jj(:,i)
           enddo
         else
           do i=1,3
@@ -1046,8 +1057,7 @@ module Magnetic
       if (lresi_eta_shock_perp) then
         if (lweyl_gauge) then
           do i=1,3
-            fres(:,i) = fres(:,i) &
-                      + eta_shock*p%shock_perp*(p%del2a(:,i)-p%graddiva(:,i))
+            fres(:,i) = fres(:,i) - eta_shock*p%shock_perp*p%jj(:,i)
           enddo
         else
           do i=1,3
