@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.340 2006-08-27 22:28:01 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.341 2006-08-29 00:04:53 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-08-27 22:28:01 $ $,~ $ $Revision: 1.340 $ $}
+%\date{$ $Date: 2006-08-29 00:04:53 $ $,~ $ $Revision: 1.341 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-08-27 22:28:01 $ $,~ $ $Revision: 1.340 $ $}\\
+  \emph{$ $Date: 2006-08-29 00:04:53 $ $,~ $ $Revision: 1.341 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1682,7 +1682,8 @@ Each of the directories can contain the following files:
 \item[\file{dim.dat}] ASCII file containing the array dimensions as seen
   by the given processor;
 \item[\file{time.dat}] ASCII file containing the time corresponding to
-  \file{var.dat};
+  \file{var.dat} (not actually \emph{used} by the code, unless you use the
+  \name{io_mpiodist.f90} module);
 \item[\file{grid.dat}] binary file containing the part of the grid seen by
   the given processor;
 \item[\file{seed.dat}] the random seed for the next time step (saved for
@@ -2920,8 +2921,8 @@ Check for file size and date, and restart from a good \file{VAR}$N$
 file instead.
 
 If you want to run on a different machine, you just need to copy the
-\file[var.dat]{data/proc*/var.dat} and
-\file[time.dat]{data/proc*/time.dat} files into a new directory tree.
+\file[var.dat]{data/proc*/var.dat} (and, just to be sure)
+\file[time.dat]{data/proc*/time.dat}) files into a new directory tree.
 You may also need the \file[seed.dat]{data/proc*/seed.dat}
 files for the random number generator. The easiest way to get all these
 other files is to run \cmd{start.csh} again on the new machine (or in
@@ -5427,7 +5428,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-08-27 22:28:01 $ $,~ $ $Revision: 1.340 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-08-29 00:04:53 $ $,~ $ $Revision: 1.341 $ $}
 
 \section{Timings}
 
@@ -8772,7 +8773,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.340 2006-08-27 22:28:01 dobler Exp $ $}
+$ $Id: manual.tex,v 1.341 2006-08-29 00:04:53 dobler Exp $ $}
 
 
 \end{document}

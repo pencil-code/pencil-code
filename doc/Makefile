@@ -8,14 +8,20 @@
 #  make appendix.ps  (appendix and indexes only)
 #  make faq          (html version of Frequently Asked Questions)
 
+LATEX = latex -src
+MAY_HAVE_CHANGED='may have changed. Rerun to get'
+
+.SUFFIXES:            # clear all generic rules and suffixes
 .SUFFIXES: .tex .dvi .ps .pdf
 
+.tex.dvi:
+	dvips $* -o $*.ps
 .dvi.ps:
 	dvips $* -o $*.ps
 .ps.pdf:
 	ps2pdf $*.ps $*.pdf
-.dvi.pdf:
-	dvipdfm $*.dvi $*.pdf
+#.dvi.pdf:
+#	dvipdfm $*.dvi $*.pdf
 
 # ------------------
 
@@ -27,17 +33,21 @@ pdffigs:
 	cd figs; make pdf
 
 manual.dvi: manual.tex
-	if [ -z $TEXINPUTS ]; then \
+	@if [ -z $${TEXINPUTS} ]; then \
 	    TEXINPUTS="./texinputs:"; \
 	else \
 	    TEXINPUTS="./texinputs:$(TEXINPUTS)"; \
 	fi; \
 	export TEXINPUTS; \
-	latex manual \
+	echo "TEXINPUTS=$${TEXINPUTS}"; \
+	$(LATEX) manual \
 	    && makeindex -s dotted.idxsty manual \
 	    && makeindex -s dotted.idxsty manual.vidx -o manual.vind \
 	    && makeindex -s dotted.idxsty manual.fidx -o manual.find \
-	    && latex manual
+	    && $(LATEX) manual \
+	    && if ( fgrep -q $(MAY_HAVE_CHANGED) manual.log ); then \
+	           latex $*; \
+	       fi
 
 # manual.pdf: manual.tex pdffigs
 # 	if [ -z $TEXINPUTS ]; then TEXINPUTS=":./texinputs"; else TEXINPUTS="$(TEXINPUTS):./texinputs"; fi; export TEXINPUTS; pdflatex manual; makeindex manual; pdflatex manual
@@ -47,7 +57,7 @@ manual.pdf: manual.dvi
 
 # To generate manual.ps, we need to temporarily replace
 # `\usepackage[dvipdfm]{hyperref' by `\usepacakge{hyperref}':
-# [A really ugly hack..]
+# [A really ugly hack -- this should be done using am dynamic include file]
 manual.ps: manual.tex
 	perl -i.bak1 -0777 -pe \
 	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
