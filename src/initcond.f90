@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.168 2006-08-29 11:33:06 bingert Exp $ 
+! $Id: initcond.f90,v 1.169 2006-08-29 20:13:30 bingert Exp $ 
 
 module Initcond 
  
@@ -2688,29 +2688,29 @@ module Initcond
       !
       ! Fourier Transform of Bz0:
       !
-      call fourier_transform_other(Bz0_r,Bz0_i,-1)
+      call fourier_transform_other(Bz0_r,Bz0_i,1)
       !
       do i=n1,n2
          !
          !  Calculate transformed vector potential at "each height"
          !
          where (k2 .ne. 0 ) 
-            Ax_r =  Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) ) 
-            Ax_i = -Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
+            Ax_r = -Bz0_i*ky/k2*exp(-sqrt(k2)*z(i) ) 
+            Ax_i =  Bz0_r*ky/k2*exp(-sqrt(k2)*z(i) )
             !
-            Ay_r = -Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
-            Ay_i =  Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
+            Ay_r =  Bz0_i*kx/k2*exp(-sqrt(k2)*z(i) )
+            Ay_i = -Bz0_r*kx/k2*exp(-sqrt(k2)*z(i) )
          elsewhere
-            Ax_r =  Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) ) 
-            Ax_i = -Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
+            Ax_r = -Bz0_i*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) ) 
+            Ax_i =  Bz0_r*ky/ky(1,idy2)*exp(-sqrt(k2)*z(i) )
             !
-            Ay_r = -Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
-            Ay_i =  Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+            Ay_r =  Bz0_i*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
+            Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
          endwhere
          !
-         call fourier_transform_other(Ax_r,Ax_i,1)
+         call fourier_transform_other(Ax_r,Ax_i,-1)
          !
-         call fourier_transform_other(Ay_r,Ay_i,1)
+         call fourier_transform_other(Ay_r,Ay_i,-1)
          !
          f(l1:l2,m1:m2,i,iax) = Ax_r(:,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iay) = Ay_r(:,ipy*ny+1:(ipy+1)*ny+1)
