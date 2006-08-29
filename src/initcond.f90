@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.167 2006-08-29 05:32:24 ajohan Exp $ 
+! $Id: initcond.f90,v 1.168 2006-08-29 11:33:06 bingert Exp $ 
 
 module Initcond 
  
@@ -2655,20 +2655,18 @@ module Initcond
       real, dimension(nx) :: kxp
       real, dimension(nygrid) :: kyp
       
-      real :: mu0_SI,u_b,sqrt_nxy
-      integer :: i,idx2,idy2,nxygrid
+      real :: mu0_SI,u_b
+      integer :: i,idx2,idy2
  
       ! Auxiliary quantities:
       !
-      nxygrid = nxgrid*nygrid
-      sqrt_nxy = sqrt(1.*nxygrid)
       ! idx2 and idy2 are essentially =2, but this makes compilers
       ! complain if nygrid=1 (in which case this is highly unlikely to be
       ! correct anyway), so we try to do this better:
       idx2 = min(2,nxgrid)
       idy2 = min(2,nygrid)
-
-      ! Magnetic field strength [B] = u_b 
+      !
+      ! Magnetic field strength unit [B] = u_b 
       !
       mu0_SI = 4.*pi*1.e-7         
       u_b = unit_velocity*sqrt(mu0_SI/mu0*unit_density)
@@ -2690,10 +2688,7 @@ module Initcond
       !
       ! Fourier Transform of Bz0:
       !
-      call fourier_transform_other(Bz0_r,Bz0_i,1)
-      !
-      Bz0_i = Bz0_i/sqrt_nxy
-      Bz0_r = Bz0_r/sqrt_nxy
+      call fourier_transform_other(Bz0_r,Bz0_i,-1)
       !
       do i=n1,n2
          !
@@ -2713,15 +2708,9 @@ module Initcond
             Ay_i =  Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
          endwhere
          !
-         call fourier_transform_other(Ax_r,Ax_i,-1)
+         call fourier_transform_other(Ax_r,Ax_i,1)
          !
-         Ax_r = Ax_r/sqrt_nxy
-         Ax_i = Ax_i/sqrt_nxy
-         !
-         call fourier_transform_other(Ay_r,Ay_i,-1)
-         !
-         Ay_r = Ay_r/sqrt_nxy
-         Ay_i = Ay_i/sqrt_nxy
+         call fourier_transform_other(Ay_r,Ay_i,1)
          !
          f(l1:l2,m1:m2,i,iax) = Ax_r(:,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iay) = Ay_r(:,ipy*ny+1:(ipy+1)*ny+1)
