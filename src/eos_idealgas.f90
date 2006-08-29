@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.65 2006-08-27 16:20:26 bingert Exp $
+! $Id: eos_idealgas.f90,v 1.66 2006-08-29 17:12:02 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.65 2006-08-27 16:20:26 bingert Exp $')
+           '$Id: eos_idealgas.f90,v 1.66 2006-08-29 17:12:02 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -819,14 +819,14 @@ module EquationOfState
       if (NO_WARN) print*,f !(keep compiler quiet)
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp)
+    subroutine eosperturb(f,psize,ee,pp,ss)
 !
 !  Set f(l1:l2,m,n,iss), depending on the valyes of ee and pp
 !  Adding pressure perturbations is not implemented
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee, pp
+      real, dimension(psize), intent(in), optional :: ee, pp, ss
       real, dimension(psize) :: lnrho_
 
       if (psize==nx) then
@@ -843,7 +843,36 @@ module EquationOfState
           else
             f(l1:l2,m,n,iss)=cv*(log(gamma*pp/gamma1)-gamma*lnrho_-gamma1*lnrho0-lnTT0)
           endif
+        elseif (present(ss)) then
+          if (pretend_lnTT) then
+            f(l1:l2,m,n,iss)=lnTT0+cv1*ss+gamma1*(lnrho_-lnrho0)
+          else
+            f(l1:l2,m,n,iss)=ss
+          endif
         endif
+
+      elseif (psize==mx) then
+        lnrho_=f(:,m,n,ilnrho)
+        if (present(ee)) then
+          if (pretend_lnTT) then
+            f(:,m,n,iss)=log(cv1*ee)
+          else
+            f(:,m,n,iss)=cv*(log(cv1*ee)-lnTT0-gamma1*(lnrho_-lnrho0))
+          endif
+        elseif (present(pp)) then
+          if (pretend_lnTT) then
+            f(:,m,n,iss)=log(gamma*pp/(gamma1*lnrho_))
+          else
+            f(:,m,n,iss)=cv*(log(gamma*pp/gamma1)-gamma*lnrho_-gamma1*lnrho0-lnTT0)
+          endif
+        elseif (present(ss)) then
+          if (pretend_lnTT) then
+            f(:,m,n,iss)=lnTT0+cv1*ss+gamma1*(lnrho_-lnrho0)
+          else
+            f(:,m,n,iss)=ss
+          endif
+        endif
+    
       else
         call not_implemented("eosperturb")
       endif

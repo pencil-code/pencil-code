@@ -1,4 +1,4 @@
-! $Id: eos_ionization.f90,v 1.37 2006-08-23 16:53:31 mee Exp $
+! $Id: eos_ionization.f90,v 1.38 2006-08-29 17:12:02 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -114,7 +114,7 @@ module EquationOfState
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: eos_ionization.f90,v 1.37 2006-08-23 16:53:31 mee Exp $")
+           "$Id: eos_ionization.f90,v 1.38 2006-08-29 17:12:02 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -685,11 +685,11 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp)
+    subroutine eosperturb(f,psize,ee,pp,ss)
       
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee,pp
+      real, dimension(psize), intent(in), optional :: ee,pp,ss
 
       call not_implemented("eosperturb")
 

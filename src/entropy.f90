@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.428 2006-08-23 16:53:31 mee Exp $
+! $Id: entropy.f90,v 1.429 2006-08-29 17:12:02 mee Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -161,7 +161,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.428 2006-08-23 16:53:31 mee Exp $")
+           "$Id: entropy.f90,v 1.429 2006-08-29 17:12:02 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -559,12 +559,13 @@ module Entropy
       use EquationOfState,  only: mpoly, isothtop, &
                                 mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
                                 rho0, lnrho0, isothermal_entropy, &
-                                isothermal_lnrho_ss, eoscalc, ilnrho_pp
+                                isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
+                                eosperturb
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
       real, dimension (nx) :: pp,lnrho,ss
-      real, dimension (mx) :: lnTT_convert 
+      real, dimension (mx) :: ss_mx 
       real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
       logical :: lnothing=.true., save_pretend_lnTT
 !
@@ -890,14 +891,12 @@ module Entropy
 !  replace ss by lnTT when pretend_lnTT is true
 !
       if (save_pretend_lnTT) then
+        pretend_lnTT=.true.
         do m=1,my
         do n=1,mz
-          call eoscalc(f,mx,lnTT=lnTT_convert)
-!
-          f(:,m,n,iss)=lnTT_convert
-        enddo
-        enddo
-        pretend_lnTT=.true.
+          ss_mx=f(:,m,n,iss)
+          call eosperturb(f,mx,ss=ss_mx)
+        enddo; enddo
       endif
 !
       if (NO_WARN) print*,xx,yy  !(to keep compiler quiet)

@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.43 2006-08-23 16:53:31 mee Exp $
+! $Id: eos_temperature_ionization.f90,v 1.44 2006-08-29 17:12:02 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -122,7 +122,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.43 2006-08-23 16:53:31 mee Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.44 2006-08-29 17:12:02 mee Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -468,11 +468,11 @@ module EquationOfState
 
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine eosperturb(f,psize,ee,pp)
+    subroutine eosperturb(f,psize,ee,pp,ss)
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: psize
-      real, dimension(psize), intent(in), optional :: ee,pp
+      real, dimension(psize), intent(in), optional :: ee,pp,ss
 
       call not_implemented("eosperturb")
 
