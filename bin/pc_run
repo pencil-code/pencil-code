@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: pc_run,v 1.5 2006-02-22 17:03:31 mee Exp $
+# CVS: $Id: pc_run,v 1.6 2006-08-29 19:06:16 theine Exp $
 #                       pc_run
 #                      ---------
 #   Run src/run.x (timestepping for src/run.x).
@@ -26,7 +26,7 @@
 # Determine whether this is MPI, how many CPUS etc.
 # This implicitly sources pc_functions.sh too.
 debug=yes
-source pc_config.sh
+. pc_config.sh
 
 # Prevent code from running twice (and removing files by accident)
 check_not_locked

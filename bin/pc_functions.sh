@@ -181,7 +181,7 @@ pencil_code_start()
   echo "$mpirun $mpirunops $npops $start_x $x_ops"
   echo "$mpirun $mpirunops $npops $start_x $x_ops" > run_command.log
   time $mpirun $mpirunops $npops $start_x $x_ops
-  set start_status=$?		# save for exit
+  start_status=$?		# save for exit
   date
 }
 
@@ -192,7 +192,7 @@ pencil_code_run()
   echo "$mpirun $mpirunops $npops $run_x $x_ops" 
   echo "$mpirun $mpirunops $npops $run_x $x_ops" > run_command.log
   time $mpirun $mpirunops $npops $run_x $x_ops
-  set run_status=$?		# save for exit
+  run_status=$?		# save for exit
   date
 }
 
