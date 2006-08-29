@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.70 2006-08-23 16:53:32 mee Exp $
+! $Id: slices.f90,v 1.71 2006-08-29 17:18:03 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -21,17 +21,37 @@ module Slices
 
 !!! LEGACY SLICE VARIABLES FOLLOW
 !  Code variables
-  real, public, dimension (nx,ny,3) :: uud_xy,vvp_xy
-  real, public, dimension (nx,ny) :: lnrho_xy,ss_xy,cc_xy,lncc_xy
 
+!
+! Density SLices
+!
+  real, public, dimension (nx,ny) :: lnrho_xy
+
+!
+! EOS Slices
+!
+  real, public, dimension (nx,ny) :: ss_xy
+  real, public, dimension (nx,ny) :: yH_xy
+  real, public, dimension (nx,ny) :: lnTT_xy
+  real, public, dimension (nx,ny) :: pp_xy
+
+!
+! Pscalar Slices
+!
+  real, public, dimension (nx,ny) :: cc_xy,lncc_xy
+
+!
+! Dust slices
+!
   real, public, dimension (nx,ny) :: nd_xy
   real, public, dimension (nx,ny,ndustspec) :: md_xy
-!  Auxiliary variables  
-  real, public, dimension (nx,ny) :: yH_xy,ecr_xy
+  real, public, dimension (nx,ny,3) :: uud_xy,vvp_xy
+!
+!  Cosmic Ray slices
+!
+  real, public, dimension (nx,ny) :: ecr_xy
 !  Derived variables
-  real, public, dimension (nx,ny) :: lnTT_xy
   real, public, dimension (nx,ny) :: epsd_xy
-  real, public, dimension (nx,ny) :: pp_xy
 !  Variables for xy2 slices start here
 !  Code variables
   real, public, dimension (nx,ny,3) :: uud_xy2,vvp_xy2
