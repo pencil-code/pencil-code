@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.429 2006-08-29 17:12:02 mee Exp $
+! $Id: entropy.f90,v 1.430 2006-08-29 17:14:39 mee Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -141,6 +141,7 @@ module Entropy
 !
 !  6-nov-01/wolf: coded
 !
+      use FArrayManager
       use Cdata
       use Sub
 !
@@ -149,40 +150,14 @@ module Entropy
       if (.not. first) call fatal_error('register_entropy','module registration called twice')
       first = .false.
 !
-      iss = nvar+1             ! index to access entropy
-      nvar = nvar+1
+      call farray_register_pde('ss',iss)
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_entropy: nvar = ', nvar
-        print*, 'register_entropy: iss = ', iss
-      endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.429 2006-08-29 17:12:02 mee Exp $")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call fatal_error('register_entropy','nvar > mvar')
-      endif
-!
-!  Put variable name in array
-!
-      varname(iss) = 'ss'
-!
-!  Writing files for use with IDL
-!
-      if (lroot) then
-        if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',ss $'
-          if (nvar == mvar) write(4,*) ',ss'
-        else
-          write(4,*) ',ss $'
-        endif
-        write(15,*) 'ss = fltarr(mx,my,mz)*one'
-      endif
+           "$Id: entropy.f90,v 1.430 2006-08-29 17:14:39 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
