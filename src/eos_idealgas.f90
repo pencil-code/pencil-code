@@ -1,4 +1,4 @@
-! $Id: eos_idealgas.f90,v 1.66 2006-08-29 17:12:02 mee Exp $
+! $Id: eos_idealgas.f90,v 1.67 2006-08-29 17:16:42 mee Exp $
 
 !  Dummy routine for ideal gas
 
@@ -107,7 +107,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_idealgas.f90,v 1.66 2006-08-29 17:12:02 mee Exp $')
+           '$Id: eos_idealgas.f90,v 1.67 2006-08-29 17:16:42 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -945,16 +945,13 @@ module EquationOfState
       case (ilnrho_lnTT,irho_lnTT)
         select case (psize)
         case (nx)
-          if (ieosvars==ilnrho_lnTT) then
-            lnrho_=f(l1:l2,m,n,ieosvar1)
-          else
-            lnrho_=alog(f(l1:l2,m,n,ieosvar1))
-          endif
+          lnrho_=f(l1:l2,m,n,ieosvar1)
           if (leos_isentropic) then
-            ss_=0
+            lnTT_=lnTT0+(cp-cv)*(lnrho_-lnrho0)
           elseif (leos_isothermal) then
+            lnTT_=lnTT0
           else
-            ss_=f(l1:l2,m,n,ieosvar2)
+            lnTT_=f(l1:l2,m,n,ieosvar2)
           endif
         case (mx)
           lnrho_=f(:,m,n,ieosvar1)
@@ -971,7 +968,11 @@ module EquationOfState
 !
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cv*exp(lnTT_)
-        if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
+        if (ieosvars==ilnrho_lnTT) then
+          if (present(pp)) pp=(cp-cv)*exp(lnTT_+lnrho_)
+        else
+          if (present(pp)) pp=(cp-cv)*exp(lnTT_)*lnrho_
+        endif
 !
 ! Log rho and cs2
 !
