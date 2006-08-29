@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.341 2006-08-29 00:04:53 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.342 2006-08-29 21:40:40 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -55,12 +55,16 @@
 %     \acronym: An acronym (hardly ever used here):
 %                   should we call the code \acronym{PROMPT}?
 
+\input{driver_switch}              % sets \mydriver, set up by Makefile
+
 \RequirePackage{ifpdf}
 \ifpdf
-  \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
-\else                           % running pdflatex
-  \documentclass[12pt,twoside,notitlepage,a4paper]{article}
+  \def\mydriver{pdftex}         % anything else make no sense
+\else
 \fi
+
+\documentclass[\mydriver,12pt,twoside,notitlepage,a4paper]{article}
+
 
 %\usepackage{url} %(do we not need this; but it's not working anyway)
 %\usepackage{german,a4}
@@ -105,7 +109,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage[dvipdfm]{hyperref}
+\usepackage[\mydriver]{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -371,7 +375,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2006-08-29 00:04:53 $ $,~ $ $Revision: 1.341 $ $}
+%\date{$ $Date: 2006-08-29 21:40:40 $ $,~ $ $Revision: 1.342 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +412,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2006-08-29 00:04:53 $ $,~ $ $Revision: 1.341 $ $}\\
+  \emph{$ $Date: 2006-08-29 21:40:40 $ $,~ $ $Revision: 1.342 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -5428,7 +5432,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2006-08-29 00:04:53 $ $,~ $ $Revision: 1.341 $ $}
+  \hfill\normalsize\rm$ $Date: 2006-08-29 21:40:40 $ $,~ $ $Revision: 1.342 $ $}
 
 \section{Timings}
 
@@ -8773,7 +8777,7 @@ Snodin, A. P., Brandenburg, A., Mee, A. J., \& Shukurov, A.\smn{2005}
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.341 2006-08-29 00:04:53 dobler Exp $ $}
+$ $Id: manual.tex,v 1.342 2006-08-29 21:40:40 dobler Exp $ $}
 
 
 \end{document}

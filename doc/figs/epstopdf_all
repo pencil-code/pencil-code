@@ -4,10 +4,12 @@
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   29-Aug-2002
 # Description:
-#   Run epstopdf on all input files
+#   Run epstopdf, and produce a .bb file for all input files
 
 foreach f ($*)
+  set base = $f:r
   epstopdf $f
+  grep '^%%BoundingBox' $f > $base.bb
 end
 
 # End of file epstopdf_all

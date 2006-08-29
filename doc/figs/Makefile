@@ -11,13 +11,13 @@
 default: pdf
 
 
-pdf: *.eps
+pdf: *.eps *.ps
 	epstopdf_all $?
 
 
 # Clean up
 clean:
-	rm -f *.pdf
+	rm -f *.pdf *.bb
 
 # End of file
 

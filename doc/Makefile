@@ -9,30 +9,37 @@
 #  make faq          (html version of Frequently Asked Questions)
 
 LATEX = latex -src
+DVIPS = dvips -Ppdf -G0
+PS2PDF = ps2pdf14 -sPAPERSIZE=a4
+DVIPDFM = dvipdfm -p a4
+
 MAY_HAVE_CHANGED='may have changed. Rerun to get'
 
 .SUFFIXES:            # clear all generic rules and suffixes
 .SUFFIXES: .tex .dvi .ps .pdf
 
 .tex.dvi:
-	dvips $* -o $*.ps
+	$(LATEX) $*
+	if ( fgrep -q $(MAY_HAVE_CHANGED) $*.log ); then \
+	    $(LATEX) $*; \
+	fi
 .dvi.ps:
-	dvips $* -o $*.ps
+	$(DVIPS) $* -o $*.ps
 .ps.pdf:
-	ps2pdf $*.ps $*.pdf
+	$(PS2PDF) $*.ps $*.pdf
 #.dvi.pdf:
-#	dvipdfm $*.dvi $*.pdf
+#	$(DVIPDFM) $*.dvi $*.pdf
 
 # ------------------
 
 default: manual.dvi
 
-all: manual.dvi manual.ps.gz manual.pdf
+all:  manual.pdf manual.dvi manual.ps.gz
 
 pdffigs:
 	cd figs; make pdf
 
-manual.dvi: manual.tex
+manual_dvi:
 	@if [ -z $${TEXINPUTS} ]; then \
 	    TEXINPUTS="./texinputs:"; \
 	else \
@@ -46,48 +53,58 @@ manual.dvi: manual.tex
 	    && makeindex -s dotted.idxsty manual.fidx -o manual.find \
 	    && $(LATEX) manual \
 	    && if ( fgrep -q $(MAY_HAVE_CHANGED) manual.log ); then \
-	           latex $*; \
+	           $(LATEX) manual; \
 	       fi
 
-# manual.pdf: manual.tex pdffigs
-# 	if [ -z $TEXINPUTS ]; then TEXINPUTS=":./texinputs"; else TEXINPUTS="$(TEXINPUTS):./texinputs"; fi; export TEXINPUTS; pdflatex manual; makeindex manual; pdflatex manual
-manual.pdf: manual.dvi
-	dvipdfm -p a4 manual.dvi
-	rm -f manual.dvi
+manual.dvi: driver_dvi manual_dvi
 
-# To generate manual.ps, we need to temporarily replace
-# `\usepackage[dvipdfm]{hyperref' by `\usepacakge{hyperref}':
-# [A really ugly hack -- this should be done using am dynamic include file]
-manual.ps: manual.tex
-	perl -i.bak1 -0777 -pe \
-	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
-	$(MAKE) manual.dvi
-	perl -i.bak2 -0777 -pe \
-	  's/^(\s*\\usepackage)(\{hyperref\})/$$1\[dvipdfm\]$$2/m' manual.tex
+manual.pdf: driver_ manual_dvi	# don't use driver_dvipdfm...
+	dvipdfm -p a4 manual.dvi
+
+#manual.pdf: driver_ps2pdf manual.ps
+#	$(PS2PDF) manual.ps
+
+manual.ps: driver_ps2pdf manual_dvi
 	dvips -Ppdf -G0 manual -o manual.ps
-	rm -f manual.dvi	# or it might get used by next `make manual.pdf'
 
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
 
-# To generate body/appendix.ps, we need to temporarily replace
-# `\usepackage[dvipdfm]{hyperref' by `\usepacakge{hyperref}':
+driver_:
+	@printf "%s\n" \
+	    '% Auto-generated file' \
+	    '\def\mydriver{}' \
+	    > driver_switch.tex
+driver_dvi:
+	@printf "%s\n" \
+	    '% Auto-generated file' \
+	    '\def\mydriver{dvips}' \
+	    > driver_switch.tex
+driver_ps2pdf:
+	@printf "%s\n" \
+	    '% Auto-generated file' \
+	    '\def\mydriver{ps2pdf}' \
+	    > driver_switch.tex
+driver_dvips:
+	@printf "%s\n" \
+	    '% Auto-generated file' \
+	    '\def\mydriver{dvips}' \
+	    > driver_switch.tex
+driver_dvipdfm:
+	@printf "%s\n" \
+	    '% Auto-generated file' \
+	    '\def\mydriver{dvipdfm}' \
+	    > driver_switch.tex
+
+
 body.ps: manual.tex
-	perl -i.bak1 -0777 -pe \
-	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
 	$(MAKE) manual.dvi
-	perl -i.bak2 -0777 -pe \
-	  's/^(\s*\\usepackage)(\{hyperref\})/$$1\[dvipdfm\]$$2/m' manual.tex
 	last=`perl -000 -ne 'print $$1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
 	dvips -l "$$last" manual.dvi -o body.ps
 	rm -f manual.dvi	# or it might get used by next `make manual.pdf'
 
 appendix.ps: manual.tex
-	perl -i.bak1 -0777 -pe \
-	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
 	$(MAKE) manual.dvi
-	perl -i.bak2 -0777 -pe \
-	  's/^(\s*\\usepackage)(\{hyperref\})/$$1\[dvipdfm\]$$2/m' manual.tex
 	first=`perl -000 -ne 'print $$1+1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
 	echo "first = <$$first>"; \
 	dvips -p "$$first" manual.dvi -o appendix.ps
@@ -122,6 +139,7 @@ clean:
 	rm -f manual.ps* body.ps* appendix.ps* manual.dvi *.aux *.toc *.log \
 	*.idx *.ind *.ilg *.out *.vidx *.vind *.fidx *.find manual.image.*
 # same, but including image directory
+cleanall: cleann
 cleann: clean
 	rm -f *.pdf
 	cd figs; make clean
