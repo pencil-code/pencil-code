@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.65 2006-08-28 20:36:03 wlyra Exp $
+! $Id: planet.f90,v 1.66 2006-08-29 12:30:06 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.65 2006-08-28 20:36:03 wlyra Exp $")
+           "$Id: planet.f90,v 1.66 2006-08-29 12:30:06 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -170,7 +170,7 @@ module Planet
 !
     endsubroutine write_planet_run_pars
 !***********************************************************************
-    subroutine gravity_companion(rp_mn,rpcyl_mn,ax,ay,axs,ays,g0,r0_pot,n_pot,p)
+    subroutine gravity_companion(rp_mn,rpcyl_mn,ax,ay,g0,r0_pot,n_pot,p)
 !
 !  calculate the gravity of a companion offcentered by (Rx,Ry,Rz)
 !
@@ -188,8 +188,9 @@ module Planet
       real, dimension (nx,3) :: ggc,ggs
       real, dimension (nx) :: g_companion,g_star
       real, dimension (nx) :: rrs,rrs1,rrc,rrc1,rs,rp
-      real :: Omega_inertial,ax,ay,az,gtc
-      real :: axs,ays,azs,g0,gp,gs,r0_pot
+      real, dimension (nspar) :: ax,ay
+      real :: Omega_inertial,azp,gtc
+      real :: axp,ayp,axs,ays,azs,g0,gp,gs,r0_pot
       integer :: n_pot
       logical :: lheader,lfirstcall=.true.
       type (pencil_case) :: p
@@ -197,13 +198,15 @@ module Planet
 !  Position of the particles
 !  ipar(1) is planet, ipar(2) is star
 !
-      az=0.;azs=0
+      axp=ax(1); ayp=ay(1)
+      axs=ax(2); ays=ax(2)
+      azp=0.;azs=0
 !
       lheader = lfirstcall .and. headtt .and. lroot
 !
       if (headtt) print*,&
            'gravity_companion: Adding gravity of companion located at x,y,z=',&
-           ax,ay,az
+           axp,ayp,azp
       if (lheader) print*,&
            'gravity_companion: Mass ratio of secondary-to-primary = ',gc/g0
 !
@@ -225,9 +228,9 @@ module Planet
 !           
          g_companion=-gp*rrc*(rrc*rrc+b_pot*b_pot)**(-1.5)
 !
-         ggc(:,1) = (x(l1:l2)-ax)*rrc1*g_companion 
-         ggc(:,2) = (y(  m  )-ay)*rrc1*g_companion
-         ggc(:,3) = (z(  n  )-az)*rrc1*g_companion
+         ggc(:,1) = (x(l1:l2)-axp)*rrc1*g_companion 
+         ggc(:,2) = (y(  m  )-ayp)*rrc1*g_companion
+         ggc(:,3) = (z(  n  )-azp)*rrc1*g_companion
 !
       endif
 !
@@ -262,10 +265,10 @@ module Planet
 !
       if (ldiagnos) then
          if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
-              call calc_torque(p%rho,gp,ax,ay,rpcyl_mn(:,ispar(1)))
+              call calc_torque(p%rho,gp,axp,ayp,rpcyl_mn(:,ispar(1)))
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0)) &
-              call calc_monitored(rs,rp,axs,ays,ax,ay,gs,gp,r0_pot,p)
+              call calc_monitored(rs,rp,axs,ays,axp,ayp,gs,gp,r0_pot,p)
       endif
       lfirstcall=.false.
 !

@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.45 2006-08-28 20:35:03 wlyra Exp $
+! $Id: particles_main.f90,v 1.46 2006-08-29 12:30:06 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -310,6 +310,8 @@ module Particles_main
 !
 !  07-jan-05/anders: coded
 !
+      use Mpicomm
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
@@ -451,14 +453,15 @@ module Particles_main
       use Planet, only : gravity_companion
 !
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real :: g0,r0_pot,ax,axs,ay,ays
+      real, dimension(nspar) :: ax,ay
+      real :: g0,r0_pot
       integer :: n_pot
       type (pencil_case) :: p
 !
       call get_particles_interdistances(fsp,rp_mn,rpcyl_mn)
-      ax = fsp(1,ixp) ; axs = fsp(2,ixp)
-      ay = fsp(1,iyp) ; ays = fsp(2,iyp)
-      call gravity_companion(rp_mn,rpcyl_mn,ax,ay,axs,ays,g0,r0_pot,n_pot,p)
+      ax=fsp(1:nspar,ixp)
+      ay=fsp(1:nspar,iyp)
+      call gravity_companion(rp_mn,rpcyl_mn,ax,ay,g0,r0_pot,n_pot,p)
 !
     endsubroutine auxcall_gravcomp
 !***********************************************************************

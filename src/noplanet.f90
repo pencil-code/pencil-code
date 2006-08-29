@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.30 2006-08-28 20:36:03 wlyra Exp $
+! $Id: noplanet.f90,v 1.31 2006-08-29 12:30:06 wlyra Exp $
 !
 !  Dummy module
 !
@@ -49,7 +49,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.30 2006-08-28 20:36:03 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.31 2006-08-29 12:30:06 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -140,7 +140,7 @@ module Planet
 !
     endsubroutine calc_pencils_planet
 !***********************************************************************
-    subroutine gravity_companion(rp_mn,rpcyl_mn,ax,ay,axs,ays,gs,r0_pot,n_pot,p)
+    subroutine gravity_companion(rp_mn,rpcyl_mn,ax,ay,gs,r0_pot,n_pot,p)
 !      
 ! 08-nov-05/wlad : dummy      
 !
@@ -149,12 +149,13 @@ module Planet
 !
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
       type (pencil_case) :: p
-      real :: gs,r0_pot,ax,axs,ay,ays
+      real, dimension (nspar) :: ax,ay
+      real :: gs,r0_pot
       integer :: n_pot
 !
       call stop_it("noplanet.f90 - gravity_companion")
 !
-      if (NO_WARN) print*, rp_mn,rpcyl_mn,ax,axs,ay,ays,gs,r0_pot,n_pot,p
+      if (NO_WARN) print*, rp_mn,rpcyl_mn,ax,ay,gs,r0_pot,n_pot,p
 !
     endsubroutine gravity_companion
 !***********************************************************************

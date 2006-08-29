@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.11 2006-08-28 20:35:03 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.12 2006-08-29 12:30:06 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -22,7 +22,7 @@ module Particles_nbody
   include 'particles_nbody.h'
   
   real :: dummy
-  !real, pointer :: tstart_nbody
+  real, pointer :: tstart_nbody
   logical :: lnbody_particles=.true.
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
@@ -67,7 +67,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.11 2006-08-28 20:35:03 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.12 2006-08-29 12:30:06 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -85,14 +85,14 @@ module Particles_nbody
 ! 
 !  27-aug-06/wlad: adapted
 !
-      !use SharedVariables
+      use SharedVariables
 !
       integer :: k,ierr
       logical :: lstarting
 !
       if (NO_WARN) print*, lstarting
 !
-      !call get_shared_variable('tstart_nbody',tstart_nbody,ierr)
+      call get_shared_variable('tstart_nbody',tstart_nbody,ierr)
 !
 ! Tag the sink particles  - equal to the first ipars
 !
@@ -101,7 +101,6 @@ module Particles_nbody
 !
       do k=1,nspar
          ispar(k)=ipar(k)
-         print*,k,ispar(k)
       enddo
 !
       if (ierr/=0) then
