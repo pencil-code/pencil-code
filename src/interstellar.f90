@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.137 2006-08-26 14:35:42 mee Exp $
+! $Id: interstellar.f90,v 1.138 2006-08-29 17:20:58 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -181,8 +181,8 @@ module Interstellar
   real :: energy_width_ratio=1. !308533
   real :: mass_width_ratio=2.
   real :: velocity_width_ratio=1.
-  real :: outer_shell_proportion = 2.
-  real :: inner_shell_proportion = 1.5
+  real :: outer_shell_proportion = 1.2
+  real :: inner_shell_proportion = 1.
   real :: width_SN=impossible
 !
 ! Parameters for 'averaged'-SN heating
@@ -382,7 +382,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.137 2006-08-26 14:35:42 mee Exp $")
+           "$Id: interstellar.f90,v 1.138 2006-08-29 17:20:58 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -1441,7 +1441,7 @@ cool_loop: do i=1,ncool
       else
         i=int((center_SN_x-x00)/dx)
       endif
-      SNR%l=i+nghost
+      SNR%l=i+nghost+1
 !
       if (center_SN_y.eq.impossible) then
         i=max(int(nygrid/2)+1,1)
@@ -1449,7 +1449,7 @@ cool_loop: do i=1,ncool
         i=int((center_SN_y-y00)/dy)
       endif
       SNR%ipy=(i-1)/ny  ! uses integer division
-      SNR%m=i-(SNR%ipy*ny)+nghost
+      SNR%m=i-(SNR%ipy*ny)+nghost+1
 !
       if (center_SN_z.eq.impossible) then
         i=max(int(nzgrid/2)+1,1)
@@ -1457,7 +1457,7 @@ cool_loop: do i=1,ncool
         i=int((center_SN_z-z00)/dz)
       endif
       SNR%ipz=(i-1)/nz   ! uses integer division
-      SNR%n=i-(SNR%ipz*nz)+nghost
+      SNR%n=i-(SNR%ipz*nz)+nghost+1
       SNR%iproc=SNR%ipz*nprocy + SNR%ipy
     endif
     call share_SN_parameters(f,SNR)
@@ -1811,9 +1811,9 @@ find_SN: do n=n1,n2
       call eoscalc(f,nx,lnTT=lnTT)
       SNR%site%lnTT=lnTT(SNR%l-l1+1)
       SNR%x=0.; SNR%y=0.; SNR%z=0.
-      if (nxgrid/=1) SNR%x=x(SNR%l)+dx/2.
-      if (nygrid/=1) SNR%y=y(SNR%m)+dy/2.
-      if (nzgrid/=1) SNR%z=z(SNR%n)+dz/2.
+      if (nxgrid/=1) SNR%x=x(SNR%l) !+dx/2.
+      if (nygrid/=1) SNR%y=y(SNR%m) !+dy/2.
+      if (nzgrid/=1) SNR%z=z(SNR%n) !+dz/2.
     print*, &
  'share_SN_parameters: (MY SNe) SNR%iproc,x_SN,y_SN,z_SN,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT = ' &
           ,SNR%iproc,SNR%x,SNR%y,SNR%z,SNR%l,SNR%m,SNR%n,SNR%site%rho,SNR%site%lnTT
@@ -2353,18 +2353,26 @@ find_SN: do n=n1,n2
         profile = SNRs(iSNR)%damping_factor*exp(-(dr2_SN/SNRs(iSNR)%radius**2))
         gprofile = -SNRs(iSNR)%damping_factor &
                     * spread( &
-                          x(l1:l2) &
-                          * (dr2_SN)**2 &
+                          (dr2_SN)**2 &
                           / (SNRs(iSNR)%radius**(2.5)) &
                           * exp(-(dr2_SN/SNRs(iSNR)%radius**2)) &
                       ,2,3)
+        gprofile(:,1)= gprofile(:,1) * x(l1:l2) 
+        gprofile(:,2)= gprofile(:,2) * y(m)
+        gprofile(:,3)= gprofile(:,3) * z(n)
         if (ldensity) then
           call multsv(p%divu,p%glnrho,tmp2)
           tmp=tmp2 + p%graddivu
           call multsv(profile,tmp,tmp2)
           call multsv_add(tmp2,p%divu,gprofile,tmp)
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+sum(profile)
-          SNRs(iSNR)%energy_loss=SNRs(iSNR)%energy_loss-sum(profile*p%rho*p%divu**2)
+          SNRs(iSNR)%energy_loss=SNRs(iSNR)%energy_loss-sum(profile*p%divu**2)
+
+!          !tmp=p%graddivu
+!          call multsv(profile*p%rho1,p%graddivu,tmp2)
+!          call multsv_add(tmp2,p%divu,gprofile,tmp)
+!          if (lfirst.and.ldt) p%diffus_total=p%diffus_total+sum(profile*p%rho1)
+!          SNRs(iSNR)%energy_loss=SNRs(iSNR)%energy_loss-sum(profile*p%rho1*p%divu**2)
           
           p%fvisc=p%fvisc+tmp
         endif
