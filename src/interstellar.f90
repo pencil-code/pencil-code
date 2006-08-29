@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.138 2006-08-29 17:20:58 mee Exp $
+! $Id: interstellar.f90,v 1.139 2006-08-29 18:30:01 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -57,6 +57,13 @@ module Interstellar
   integer, parameter :: SNstate_exploding = 2
   integer, parameter :: SNstate_damping   = 3
   integer, parameter :: SNstate_finished  = 4
+!
+! Enumeration of Explosion Errors
+!
+  integer, parameter :: iEXPLOSION_OK           = 0
+  integer, parameter :: iEXPLOSION_TOO_HOT      = 1
+  integer, parameter :: iEXPLOSION_TOO_RARIFIED = 2
+  integer, parameter :: iEXPLOSION_TOO_UNEVEN   = 3
 !
 !
   real :: xsi_sedov=1.17   ! Estimated value for the similarity variable at shock
@@ -382,7 +389,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.138 2006-08-29 17:20:58 mee Exp $")
+           "$Id: interstellar.f90,v 1.139 2006-08-29 18:30:01 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -1260,7 +1267,7 @@ cool_loop: do i=1,ncool
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
     logical :: l_SNI
-    integer :: try_count, iSNR
+    integer :: try_count, iSNR, ierr
 !
     intent(inout) :: f,l_SNI
 !
@@ -1276,8 +1283,10 @@ cool_loop: do i=1,ncool
       SNRs(iSNR)%t=t
       SNRs(iSNR)%SN_type=1
       SNRs(iSNR)%radius=width_SN
-      try_count=100
-      do while ((SNRs(iSNR)%site%rho .lt. rho_SN_min) .or. (SNRs(iSNR)%site%TT .gt. TT_SN_max))
+      try_count=200
+      do while (try_count>0)
+        try_count=try_count-1
+
         if (uniform_zdist_SNI) then
           call position_SN_uniformz(f,SNRs(iSNR))
         else
@@ -1290,16 +1299,21 @@ cool_loop: do i=1,ncool
           call find_nearest_SNI(f,SNRs(iSNR))
         endif
 
-        try_count=try_count-1
-        if (try_count.eq.0) then
-          if (lroot) print*,"check_SNI: 100 RETRIES OCCURED - skipping SNI insertion"
+        if ((SNRs(iSNR)%site%rho .lt. rho_SN_min) .or. &
+            (SNRs(iSNR)%site%TT .gt. TT_SN_max)) then
+          cycle
+        endif
+
+        call explode_SN(f,df,SNRs(iSNR),ierr)
+        if (ierr==iEXPLOSION_OK) then
+          call set_next_SNI
+          l_SNI=.true.
           exit
         endif
       enddo
-       if (try_count.ne.0) then
-          call explode_SN(f,df,SNRs(iSNR))
-          call set_next_SNI
-       l_SNI=.true.
+
+      if (try_count.eq.0) then
+        if (lroot) print*,"check_SNI: 200 RETRIES OCCURED - skipping SNI insertion"
       endif
     endif
 !
@@ -1846,7 +1860,7 @@ find_SN: do n=n1,n2
 !
     endsubroutine share_SN_parameters
 !***********************************************************************
-    subroutine explode_SN(f,df,SNR)
+    subroutine explode_SN(f,df,SNR,ierr)
       !
       !  Implement SN (of either type), at pre-calculated position
       !  (This can all be made more efficient, after debugging.)
@@ -1866,7 +1880,8 @@ find_SN: do n=n1,n2
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       real, intent(inout), dimension(mx,my,mz,mvar) :: df
       type (SNRemnant), intent(inout) :: SNR
-!
+      integer, optional :: ierr
+
       double precision :: c_SN,cmass_SN,cvelocity_SN
       double precision :: mass_shell
       real :: rho_SN_lowest
@@ -1883,6 +1898,7 @@ find_SN: do n=n1,n2
       real, dimension(nx) ::  lnrho, yH, lnTT, TT, rho_old, ee_old
       real, dimension(nx,3) :: uu
       character (len=4) :: ch
+      real :: maxlnTT
       real :: radiusA, radiusB
       integer :: i
 !
@@ -1924,6 +1940,12 @@ find_SN: do n=n1,n2
           SNR%t_sedov = sqrt((SNR%radius/xsi_sedov)**5*SNR%rhom/ampl_SN)
           uu_sedov = 0.4*SNR%radius/SNR%t_sedov
         enddo
+        if (SNR%radius>2*width_SN) then
+          if (present(ierr)) then
+            ierr=iEXPLOSION_TOO_RARIFIED
+          endif
+          return
+        endif
         if (lroot) print*,"explode_SN: Tweaked width ",SNR%radius
       endif
 !
@@ -2082,6 +2104,72 @@ find_SN: do n=n1,n2
          endif
       endif
       
+!
+! Validate the explosion
+!
+      do n=n1,n2
+        do m=m1,m2
+          SNR%state=SNstate_waiting
+          ! Calculate the distances to the SN origin for all points
+          ! in the current pencil and store in the dr2_SN global array
+          call proximity_SN(SNR)        
+          ! Get the old energy
+          lnrho=f(l1:l2,m,n,ilnrho)
+          rho_old=exp(lnrho) 
+          deltarho=0.
+
+          call eoscalc(f,nx,yH=yH,lnTT=lnTT,ee=ee_old)
+          TT=exp(lnTT)
+
+          ! Apply perturbations
+          call injectenergy_SN(deltaEE,width_energy,c_SN,SNR%EE)
+          if (lmove_mass) then
+            if (mass_movement=='rho_cavity') then 
+              if (lSN_mass) then
+                call make_cavity_rho(deltarho,width_energy,cavity_depth, &
+                          cnorm_SN(dimensionality),SNR%MM)
+              else
+                call make_cavity_rho(deltarho,width_energy,cavity_depth, &
+                          cnorm_SN(dimensionality),SNR%MM)
+              endif
+              lnrho=log(rho_old(1:nx)+deltarho(1:nx))
+            elseif (mass_movement=='Galaxycode') then 
+              if (lSN_mass) then
+                call make_cavity_lnrho(lnrho,width_energy,cavity_depth, &
+                    (mass_shell+mass_SN),cnorm_SN(dimensionality),SNR%MM)
+              else
+                call make_cavity_lnrho(lnrho,width_energy,cavity_depth, &
+                      mass_shell,cnorm_SN(dimensionality),SNR%MM)
+              endif
+            elseif (mass_movement=='constant') then 
+              call make_cavity_lnrho(lnrho,width_mass,cmass_SN, &
+                    mass_shell,cnorm_SN(dimensionality),SNR%MM)
+            endif
+          else
+            if (lSN_mass) then
+              call injectmass_SN(deltarho,width_mass,cmass_SN,SNR%MM)
+              lnrho=log(rho_old(1:nx)+deltarho(1:nx))
+            endif
+          endif
+
+          if (lSN_eth) then
+            call eoscalc(ilnrho_ee,lnrho,real((ee_old*rho_old+deltaEE*frac_eth) &
+                                                  /exp(lnrho)), lnTT=lnTT)
+            maxlnTT=maxval(lnTT)
+            if (maxlnTT>alog(2.*TT_SN_new)) then 
+              if (present(ierr)) then
+                ierr=iEXPLOSION_TOO_UNEVEN
+              endif 
+              return
+            endif
+            if (maxlnTT>alog(TT_SN_max)) then 
+              if (present(ierr)) then
+                ierr=iEXPLOSION_TOO_HOT
+              endif 
+              return
+            endif
+          endif
+      enddo; enddo
 
       SNR%EE=0. 
       SNR%MM=0.
@@ -2205,6 +2293,10 @@ find_SN: do n=n1,n2
         SNR%t_damping=SNR_damping_time-SNR%t_sedov+t
       else
         SNR%state=SNstate_finished
+      endif
+ 
+      if (present(ierr)) then
+        ierr=iEXPLOSION_OK
       endif
 
     endsubroutine explode_SN
