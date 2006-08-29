@@ -1,4 +1,4 @@
-! $Id: eos_temperature_ionization.f90,v 1.44 2006-08-29 17:12:02 mee Exp $
+! $Id: eos_temperature_ionization.f90,v 1.45 2006-08-29 18:14:59 theine Exp $
 
 !  Dummy routine for ideal gas
 
@@ -122,7 +122,7 @@ module EquationOfState
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: eos_temperature_ionization.f90,v 1.44 2006-08-29 17:12:02 mee Exp $')
+           '$Id: eos_temperature_ionization.f90,v 1.45 2006-08-29 18:14:59 theine Exp $')
 !
     endsubroutine register_eos
 !***********************************************************************
@@ -1636,7 +1636,7 @@ module EquationOfState
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       character (len=3), intent (in) :: topbot
 
-      real, dimension (mx,my) :: rho1,TT1
+      real, dimension (mx,my) :: lnrho,lnTT,rho1,TT1
       real, dimension (mx,my) :: rhs,sqrtrhs,yH
       real, dimension (mx,my) :: mu1,rho1pp
       real, dimension (mx,my) :: yH_term_cv,yH_term_cp
@@ -1667,13 +1667,15 @@ module EquationOfState
 !
 !  Get variables from f-array
 !
-        rho1 = exp(-f(:,:,n1,ilnrho))
-        TT1 = exp(-f(:,:,n1,ilnTT))
+        lnrho = f(:,:,n1,ilnrho)
+        lnTT = f(:,:,n1,ilnTT)
+        rho1 = exp(-lnrho)
+        TT1 = exp(-lnTT)
 
 !
 !  Hydrogen ionization fraction
 !
-        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        rhs = exp(lnrho_e-lnrho + 1.5*(lnTT-lnTT_ion) - TT_ion*TT1)
         sqrtrhs = sqrt(rhs)
         yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
@@ -1750,13 +1752,15 @@ module EquationOfState
 !
 !  Get variables from f-array
 !
-        rho1 = exp(-f(:,:,n2,ilnrho))
-        TT1 = exp(-f(:,:,n2,ilnTT))
+        lnrho = f(:,:,n2,ilnrho)
+        lnTT = f(:,:,n2,ilnTT)
+        rho1 = exp(-lnrho)
+        TT1 = exp(-lnTT)
 
 !
 !  `Effective' gravitational acceleration (geff = gravz - rho1*dz1ppm)
 !
-        if (grav_profile=='reduced') then
+        if (grav_profile=='reduced_top') then
           fac = reduced_top
         else
           fac = 1.0
@@ -1765,7 +1769,7 @@ module EquationOfState
 !
 !  Hydrogen ionization fraction
 !
-        rhs = rho_e*rho1*(TT1*TT_ion)**(-1.5)*exp(-TT_ion*TT1)
+        rhs = exp(lnrho_e-lnrho + 1.5*(lnTT-lnTT_ion) - TT_ion*TT1)
         sqrtrhs = sqrt(rhs)
         yH = 2*sqrtrhs/(sqrtrhs+sqrt(4+rhs))
 
@@ -1839,7 +1843,7 @@ module EquationOfState
       real, dimension (mx,my) :: dlnpp,dss
       real, dimension (mx,my) :: cv,cp,cs2,nabla_ad,alpha,delta,gamma
       real, dimension (mx,my) :: lnpp,ss,tmp
-      integer, dimension (3) :: coeffs
+      real, dimension (3) :: coeffs
       integer :: i,j,k
 
       select case (topbot)
