@@ -1,4 +1,4 @@
-! $Id: snapshot.f90,v 1.7 2006-08-23 16:53:32 mee Exp $
+! $Id: snapshot.f90,v 1.8 2006-08-30 13:28:40 dintrans Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -293,7 +293,16 @@ contains
 !
       if (lserial_io) call start_serialize()
       open(lun_output,FILE=file,FORM='unformatted')
-      write(lun_output) a
+      if (lwrite_2d) then
+        if (ny==1) then
+          write(lun_output) a(:,4,:,:)
+        else
+          write(lun_output) a(:,:,4,:)
+        endif
+      else
+        write(lun_output) a
+      endif
+!     write(lun_output) a(:,4,:,:)
       if (lshear) then
         write(lun_output) t,x,y,z,dx,dy,dz,deltay
       else
@@ -318,11 +327,25 @@ contains
       character (len=*) :: file
       integer :: nv,mode
       real, dimension (mx,my,mz,nv) :: a
+      real, allocatable, dimension (:,:,:) :: aa
 !
       if (lserial_io) call start_serialize()
       open(1,FILE=file,FORM='unformatted')
       if (ip<=8) print*,'input_snap: open, mx,my,mz,nv=',mx,my,mz,nv
-      read(1) a
+      if (lwrite_2d) then
+        if (ny==1) then
+          allocate(aa(mx,mz,nv))
+          read(1) aa
+          a(:,4,:,:)=aa
+        else
+          allocate(aa(mx,my,nv))
+          read(1) aa
+          a(:,:,4,:)=aa
+        endif
+        deallocate(aa)
+      else
+        read(1) a
+      endif
       if (ip<=8) print*,'input_snap: read ',file
       if (mode==1) then
 !

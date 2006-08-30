@@ -44,6 +44,7 @@
 ;                                                                               
 ;   /NOSTATS: don't print any summary statistics for the returned fields        
 ;     /STATS: force printing of summary statistics even if quiet is set         
+;     /RUN2D: read a 2D-snapshot written only in a (x,y) or (x,z) plane
 ;     /QUIET: instruction not to print any 'helpful' information                
 ;      /HELP: display this usage information, and exit
 ;
@@ -51,7 +52,7 @@
 ;       pc_read_var,obj=mydata,variables=['tt'],/magic,/add,/trimall
 ;
 ; MODIFICATION HISTORY:
-;       $Id: pc_read_var.pro,v 1.42 2006-08-25 16:46:16 dintrans Exp $
+;       $Id: pc_read_var.pro,v 1.43 2006-08-30 13:28:37 dintrans Exp $
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
 ;-
@@ -66,7 +67,7 @@ pro pc_read_var, t=t,                                            $
             nxrange=nxrange,nyrange=nyrange,nzrange=nzrange,     $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP,   $
             SWAP_ENDIAN=SWAP_ENDIAN,varcontent=varcontent,       $
-            scalar=scalar
+            scalar=scalar,run2D=run2D
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -161,7 +162,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read meta data and set up variable/tag lists
 ;
   default,varcontent,pc_varcontent(datadir=datadir,dim=dim, $
-                         param=param,quiet=quiet,scalar=scalar)
+                         param=param,quiet=quiet,scalar=scalar,run2D=run2D)
   totalvars=(size(varcontent))[1]-1L
 ;
   if n_elements(variables) ne 0 then begin
@@ -341,10 +342,27 @@ COMPILE_OPT IDL2,HIDDEN
       for iv=1L,totalvars do begin
         if (varcontent[iv].variable eq 'UNKNOWN') then continue
   ;DEBUG: tmp=execute("print,'Minmax of "+varcontent[iv].variable+" = ',minmax("+varcontent[iv].idlvarloc+")")
-        cmd =   varcontent[iv].idlvar $
+        if (not keyword_set(run2D)) then begin
+          ; classical 3D-run (x,y,z)
+          cmd =   varcontent[iv].idlvar $
               + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
               + varcontent[iv].idlvarloc $
               +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
+        endif else begin
+          if (ny eq 1) then begin
+            ; 2D-run in plane (x,z)
+            cmd =   varcontent[iv].idlvar $
+                + "[i0x:i1x,i0z:i1z,*,*]=" $
+                + varcontent[iv].idlvarloc $
+                +"[i0xloc:i1xloc,i0zloc:i1zloc,*,*]"
+           endif else begin
+             ; 2D-run in plane (x,y)
+             cmd =   varcontent[iv].idlvar $
+                 + "[i0x:i1x,i0y:i1y,*,*]=" $
+                 + varcontent[iv].idlvarloc $
+                 +"[i0xloc:i1xloc,i0yloc:i1yloc,*,*]"
+           endelse
+        endelse
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
   
@@ -415,7 +433,7 @@ COMPILE_OPT IDL2,HIDDEN
   
   if keyword_set(TRIMALL) then begin
   ;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
-    variables = 'pc_noghost('+variables+',dim=dim)'
+    variables = 'pc_noghost('+variables+',dim=dim,run2D=run2D)'
   endif
 ;
   makeobject = "object = "+ $

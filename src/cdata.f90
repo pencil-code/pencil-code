@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.336 2006-08-23 16:53:30 mee Exp $
+! ! $Id: cdata.f90,v 1.337 2006-08-30 13:28:39 dintrans Exp $
 
 module Cdata
 
@@ -242,6 +242,7 @@ module Cdata
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
   logical :: lcylindrical=.false.
+  logical :: lwrite_2d=.false.
 
 !!
 !! The following have been replaces with CPARAM header definitions making them

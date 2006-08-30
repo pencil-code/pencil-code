@@ -4,9 +4,10 @@
 ! Initialisation parameters for a MLT stratification
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1.1.1 2006-05-04 14:41:33 dintrans Exp $',
+  cvsid='$Id: start.in,v 1.2 2006-08-30 13:28:39 dintrans Exp $',
   ip=14,                         ! debugging parameter
   lwrite_ic = T,                 ! write the initial setup in VAR0
+  lwrite_2D = T,                 ! write snapshots in the (x,z) plane ONLY
   xyz0  = -2., -0.5, -2.,        ! first corner of box
   xyz1  =  2.,  0.5,  1.2,       ! second corner of box
   lperi =  T ,   T ,   F,        ! periodic direction?
