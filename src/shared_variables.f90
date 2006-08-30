@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.8 2006-08-22 12:21:48 mee Exp $ 
+! $Id: shared_variables.f90,v 1.9 2006-08-30 02:47:01 dobler Exp $ 
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -34,6 +34,7 @@ module SharedVariables
   public :: initialize_shared_variables
   public :: put_shared_variable
   public :: get_shared_variable
+  public :: sharedvars_error_string
 !
   interface get_shared_variable
     module procedure get_variable_real0d
@@ -428,4 +429,26 @@ module SharedVariables
       if (present(new)) new=>new_ 
     endsubroutine new_item_atstart
 !***********************************************************************
+    function sharedvars_error_string(ierr) result(string)
+!
+!  Tell what went wrong
+! 
+!  29-aug-06/wolf: adapted
+!
+      use Cparam, only: labellen
+!
+      character(len=labellen) :: string
+      integer                 :: ierr
+!
+      select case (ierr)
+      case(iSHVAR_ERR_NOSUCHVAR);     string='SHVAR_ERR_NOSUCHVAR'
+      case(iSHVAR_ERR_WRONGTYPE);     string='SHVAR_ERR_WRONGTYPE'
+      case(iSHVAR_ERR_DUPLICATE);     string='SHVAR_ERR_DUPLICATE'
+      case(iSHVAR_ERR_NOTASSOCIATED); string='SHVAR_ERR_NOTASSOCIATED'
+      case default;                   string='Undocumented ierr!'
+      endselect
+!
+    endfunction sharedvars_error_string
+!***********************************************************************
+
 endmodule SharedVariables

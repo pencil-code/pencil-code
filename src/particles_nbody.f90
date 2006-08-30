@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.12 2006-08-29 12:30:06 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.13 2006-08-30 02:47:01 dobler Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -67,7 +67,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.12 2006-08-29 12:30:06 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.13 2006-08-30 02:47:01 dobler Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -106,7 +106,8 @@ module Particles_nbody
       if (ierr/=0) then
         if (lroot) print*, 'initialize_particles_nbody: '// &
             'there was a problem when getting tstart_nbody!'
-        call fatal_error('initialize_particles_nbody','')
+        call fatal_error('initialize_particles_nbody',&
+                         trim(sharedvars_error_string(ierr)))
       endif
 !
     endsubroutine initialize_particles_nbody
