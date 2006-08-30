@@ -12,7 +12,7 @@
 #  - The poor buggers under Solaris should use `gmake' instead of
 #    `make', as the latter behaves completely crazy.
 #  - If dvipdfm does a bad job for you (e.g. omits all graphics),
-#    switch the `manual.pdf' rule below to ps2pdf.
+#    run `make manual_pdf' instead of `make manual.pdf'
 
 LATEX = latex -src
 DVIPS = dvips -Ppdf -G0
@@ -67,6 +67,9 @@ manual.pdf: driver_ manual_dvi	# don't use driver_dvipdfm...
 # If dvipdfm does not work well for you, use this instead:
 #manual.pdf: driver_ps2pdf manual.ps
 #	$(PS2PDF) manual.ps
+
+manual_pdf:driver_ps2pdf manual.ps
+	$(PS2PDF) manual.ps
 
 manual.ps: driver_ps2pdf manual_dvi
 	$(DVIPS) manual -o manual.ps
