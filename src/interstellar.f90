@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.139 2006-08-29 18:30:01 mee Exp $
+! $Id: interstellar.f90,v 1.140 2006-08-30 13:32:40 mee Exp $
 !
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -389,7 +389,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.139 2006-08-29 18:30:01 mee Exp $")
+           "$Id: interstellar.f90,v 1.140 2006-08-30 13:32:40 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -2388,7 +2388,9 @@ find_SN: do n=n1,n2
           call dot2(r_vec,r2)
 !          r_hat=r_vec/spread(sqrt(r2),2,3)
           call dot(r_vec,uu,uur)
-          uur=-uur/r2
+          where (uur .gt. 0.)
+            uur=-uur/r2
+          endwhere
           where (r2 .gt. radius2)
             uur=0.
           endwhere 
