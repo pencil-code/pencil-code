@@ -26,7 +26,7 @@ MAY_HAVE_CHANGED='may have changed. Rerun to get'
 
 .tex.dvi:
 	$(LATEX) $*
-	if [ `fgrep -c $(MAY_HAVE_CHANGED) $*.log` -ne '' ]; then \
+	if [ `fgrep -c $(MAY_HAVE_CHANGED) $*.log` != '' ]; then \
 	    $(LATEX) $*; \
 	fi
 .dvi.ps:
@@ -54,7 +54,7 @@ manual_dvi:
 	    && makeindex -s dotted.idxsty manual.vidx -o manual.vind \
 	    && makeindex -s dotted.idxsty manual.fidx -o manual.find \
 	    && $(LATEX) manual \
-	    && if [ `fgrep -c $(MAY_HAVE_CHANGED) manual.log` -ne '' ]; then \
+	    && if [ `fgrep -c $(MAY_HAVE_CHANGED) manual.log` != '' ]; then \
 	           $(LATEX) manual; \
 	       fi
 
