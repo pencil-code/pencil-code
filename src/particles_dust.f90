@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.140 2006-08-30 07:16:07 ajohan Exp $
+! $Id: particles_dust.f90,v 1.141 2006-08-30 13:22:44 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -29,7 +29,7 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: taus1max=0.0, cdtp=0.2
+  real :: tausg_min=0.0, tausg1_max, cdtp=0.2
   real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
   real :: Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
@@ -68,7 +68,7 @@ module Particles
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, lcollisional_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling, l_hole, m_hole, n_hole
+      tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -79,7 +79,7 @@ module Particles
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling
+      tstart_collisional_cooling, tausg_min
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -112,7 +112,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.140 2006-08-30 07:16:07 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.141 2006-08-30 13:22:44 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -210,6 +210,10 @@ module Particles
         gravz_profile='linear'
         nu_epicycle2=nu_epicycle**2
       endif
+!
+!  Inverse of minimum gas friction time (time-step control).
+!      
+      if (tausg_min/=0.0) tausg1_max=1.0/tausg_min
 !
 !  Set minimum collisional time-scale so that time-step is not affected.
 !
@@ -1205,9 +1209,10 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx,3) :: vvpm
-      real, dimension (nx) :: tausg1, dt1_drag, vpm, tau_coll1
+      real, dimension (nx) :: vpm, tau_coll1
+      real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (3) :: uup, dragforce
-      real :: rho_point, rho1_point, tausp1_point, up2
+      real :: rho_point, rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: dt1_advpx, dt1_advpy, dt1_advpz
       integer :: k, l, ix0, iy0, iz0
@@ -1221,9 +1226,15 @@ k_loop:   do while (.not. (k>npar_loc))
       if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
         if (npar_imn(imn)/=0) then
+!
+          if (lfirst .and. ldt) then
+            dt1_drag_dust=0.0
+            if (ldragforce_gas_par) dt1_drag_gas=0.0
+          endif
+!
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            call get_frictiontime(f,fp,ineargrid,k,tausp1_point)
+            call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
 !  Use interpolation to calculate gas velocity at position of particles.
             if (lhydro) then
               if (lparticlemesh_cic) then
@@ -1243,7 +1254,7 @@ k_loop:   do while (.not. (k>npar_loc))
             else
               uup=0.0
             endif
-            dragforce = -tausp1_point*(fp(k,ivpx:ivpz)-uup)
+            dragforce = -tausp1_par*(fp(k,ivpx:ivpz)-uup)
             dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
 !
 !  Drag force diagnostics
@@ -1252,10 +1263,10 @@ k_loop:   do while (.not. (k>npar_loc))
               if (idiag_dedragp/=0) then
                 if (ldragforce_gas_par) then
                   up2=sum((fp(k,ivpx:ivpz)-uup)**2)
-                  call sum_par_name((/-rhop_tilde*tausp1_point*up2/),idiag_dedragp)
+                  call sum_par_name((/-rhop_tilde*tausp1_par*up2/),idiag_dedragp)
                 else
                   up2=sum(fp(k,ivpx:ivpz)*(fp(k,ivpx:ivpz)-uup))
-                  call sum_par_name((/-rhop_tilde*tausp1_point*up2/),idiag_dedragp)
+                  call sum_par_name((/-rhop_tilde*tausp1_par*up2/),idiag_dedragp)
                 endif
               endif
             endif
@@ -1387,17 +1398,35 @@ k_loop:   do while (.not. (k>npar_loc))
                     rhop_tilde*p%rho1(l-nghost)*dragforce
               endif
             endif
+!
+!  The minimum friction time of particles in a grid cell sets the local friction
+!  time-step when there is only drag force on the dust,
+!    dt1_drag = max(1/tausp)
+!
+!  With drag force on the gas as well, the maximum time-step is set as
+!    dt1_drag = Sum_k[eps_k/tau_k]
+!
+            if (lfirst .and. ldt) then
+              dt1_drag_dust(ix0-nghost)= &
+                  max(dt1_drag_dust(ix0-nghost),tausp1_par)
+              if (ldragforce_gas_par) then
+                dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
+                    rhop_tilde*p%rho1(ix0-nghost)*tausp1_par
+              endif
+            endif
           enddo
 !          
-!  Contribution of friction force to time-step.
+!  Contribution of friction force to time-step. Dust and gas inverse friction
+!  time-steps are added up to give a valid expression even when the two are
+!  of similar magnitude.
 !
           if (lfirst.and.ldt) then
             if (ldragforce_gas_par) then
-              tausg1  =p%epsp*tausp1_point
-              dt1_drag=(tausp1_point+tausg1)/cdtp
+              dt1_drag=dt1_drag_dust+dt1_drag_gas
             else
-              dt1_drag=tausp1_point/cdtp
+              dt1_drag=dt1_drag_dust
             endif
+            dt1_drag=dt1_drag/cdtp
             dt1_max=max(dt1_max,dt1_drag)
             if (ldiagnos.and.idiag_dtdragp/=0) &
                 call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
@@ -1686,22 +1715,34 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_point)
+    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
 !
 !  Calculate the friction time.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
-      real :: tausp1_point
+      type (pencil_case) :: p
+      real :: tausp1_par
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
 !
+      real :: tausg1_point
+!
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          tausp1_point=1/(fp(k,iap)*rhops)
+          tausp1_par=1/(fp(k,iap)*rhops)
         else
-          tausp1_point=tausp1
+          tausp1_par=tausp1
         endif
+      endif
+!
+!  Increase friction time to avoid very small time-steps where the
+!  dust-to-gas ratio is high.
+!
+      if (tausg_min/=0.0) then
+        tausg1_point=tausp1_par*p%epsp(ineargrid(k,1)-nghost)
+        if (tausg1_point>tausg1_max) &
+            tausp1_par=tausg1_max/p%epsp(ineargrid(k,1)-nghost)
       endif
 !
       if (NO_WARN) print*, f, ineargrid
