@@ -7,6 +7,12 @@
 #  make body.ps      (excludes appendix and indexes)
 #  make appendix.ps  (appendix and indexes only)
 #  make faq          (html version of Frequently Asked Questions)
+#
+# Notes:
+#  - The poor buggers under Solaris should use `gmake' instead of
+#    `make', as the latter behaves completely crazy.
+#  - If dvipdfm does a bad job for you (e.g. omits all graphics),
+#    switch the `manual.pdf' rule below to ps2pdf.
 
 LATEX = latex -src
 DVIPS = dvips -Ppdf -G0
@@ -20,7 +26,7 @@ MAY_HAVE_CHANGED='may have changed. Rerun to get'
 
 .tex.dvi:
 	$(LATEX) $*
-	if ( fgrep -q $(MAY_HAVE_CHANGED) $*.log ); then \
+	if [ `fgrep -c $(MAY_HAVE_CHANGED) $*.log` -ne '' ]; then \
 	    $(LATEX) $*; \
 	fi
 .dvi.ps:
@@ -40,11 +46,7 @@ pdffigs:
 	cd figs; make pdf
 
 manual_dvi:
-	@if [ -z $${TEXINPUTS} ]; then \
-	    TEXINPUTS="./texinputs:"; \
-	else \
-	    TEXINPUTS="./texinputs:$(TEXINPUTS)"; \
-	fi; \
+	@TEXINPUTS="./texinputs:${TEXINPUTS}"; \
 	export TEXINPUTS; \
 	echo "TEXINPUTS=$${TEXINPUTS}"; \
 	$(LATEX) manual \
@@ -52,20 +54,22 @@ manual_dvi:
 	    && makeindex -s dotted.idxsty manual.vidx -o manual.vind \
 	    && makeindex -s dotted.idxsty manual.fidx -o manual.find \
 	    && $(LATEX) manual \
-	    && if ( fgrep -q $(MAY_HAVE_CHANGED) manual.log ); then \
+	    && if [ `fgrep -c $(MAY_HAVE_CHANGED) manual.log` -ne '' ]; then \
 	           $(LATEX) manual; \
 	       fi
 
 manual.dvi: driver_dvi manual_dvi
+	@true  # dummy cmd, so make won't apply generic rule at end
 
 manual.pdf: driver_ manual_dvi	# don't use driver_dvipdfm...
 	dvipdfm -p a4 manual.dvi
 
+# If dvipdfm does not work well for you, use this instead:
 #manual.pdf: driver_ps2pdf manual.ps
 #	$(PS2PDF) manual.ps
 
 manual.ps: driver_ps2pdf manual_dvi
-	dvips -Ppdf -G0 manual -o manual.ps
+	$(DVIPS) manual -o manual.ps
 
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
