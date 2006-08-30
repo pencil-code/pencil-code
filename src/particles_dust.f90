@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.139 2006-08-30 06:05:55 ajohan Exp $
+! $Id: particles_dust.f90,v 1.140 2006-08-30 07:16:07 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -40,11 +40,13 @@ module Particles
   real :: phase_vpx=0.0, phase_vpy=0.0, phase_vpz=0.0
   real :: tstart_dragforce_par=0.0, tstart_grav_par=0.0
   real :: tstart_collisional_cooling=0.0
+  real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, coll_geom_fac=0.40528473  ! (2/pi)^2
   complex, dimension (7) :: coeff=(0.0,0.0)
   integer :: l_hole=0, m_hole=0, n_hole=0
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
-  logical :: lpar_spec=.false., lcollisional_cooling=.false.
+  logical :: lpar_spec=.false.
+  logical :: lcollisional_cooling=.false., ltau_coll_min_courant=.true.
   logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
   logical, parameter :: ldraglaw_epstein=.true.
@@ -65,8 +67,8 @@ module Particles
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, lcollisional_cooling, &
-      coeff_restitution, tstart_collisional_cooling, &
-      l_hole, m_hole, n_hole
+      tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
+      tstart_collisional_cooling, l_hole, m_hole, n_hole
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -76,7 +78,8 @@ module Particles
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling, &
-      coeff_restitution, tstart_collisional_cooling
+      tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
+      tstart_collisional_cooling
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -109,7 +112,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.139 2006-08-30 06:05:55 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.140 2006-08-30 07:16:07 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -207,6 +210,18 @@ module Particles
         gravz_profile='linear'
         nu_epicycle2=nu_epicycle**2
       endif
+!
+!  Set minimum collisional time-scale so that time-step is not affected.
+!
+      if ((.not. lstarting) .and. ltau_coll_min_courant) then
+        tau_coll_min=2*dx/cs0
+        if (lroot) print*, 'initialize particles: set minimum collisional '// &
+            'time-scale equal to two times the Courant time-step.'
+      endif
+!
+!  Inverse of minimum collisional time-scale.
+!
+      if ((.not. lstarting) .and. tau_coll_min>0.0) tau_coll1_max=1/tau_coll_min
 !
 !  Gas density is needed for back-reaction friction force.
 !
@@ -1421,8 +1436,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
           tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1
-!  Make sure that collisional time-scale is longer than the time-step.
-          where (tau_coll1/cdtp>dt1_max) tau_coll1=cdtp*dt1_max
+!  Limit inverse time-step of collisional cooling if requested.
+          if (tau_coll_min>0.0) then 
+            where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
+          endif
+          dt1_max=max(dt1_max,tau_coll1/cdtp)
 !
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
