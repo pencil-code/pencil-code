@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $
+! $Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -243,7 +243,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -310,8 +310,8 @@ module  power_spectrum
 !
 !  Doing the Fourier transform
 !
-      call fourier_transform(a_re,a_im)
-      call fourier_transform(b_re,b_im)
+    call fourier_transform(a_re,a_im)
+    call fourier_transform(b_re,b_im)
 !
 !  integration over shells
 !
@@ -384,7 +384,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -421,7 +421,7 @@ module  power_spectrum
 !
 !  Doing the Fourier transform
 !
-    call fourier_transform(a_re,a_im)
+  call fourier_transform(a_re,a_im)
 !
 !  integration over shells
 !
@@ -485,7 +485,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.57 2006-08-23 16:53:32 mee Exp $")
+        "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero

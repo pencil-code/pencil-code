@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.38 2006-08-23 16:53:31 mee Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.39 2006-08-31 06:00:35 ajohan Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -107,7 +107,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.38 2006-08-23 16:53:31 mee Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.39 2006-08-31 06:00:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1102,11 +1102,11 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform
 !
-      call fourier_transform(f2r,f2i,-1) ! x-direction
-      call fourier_transform(f2r,f2i,-1) ! y-direction
+      call fourier_transform(f2r,f2i) ! x-direction
+      call fourier_transform(f2r,f2i) ! y-direction
 !
-      call fourier_transform(f3r,f3i,-1) ! x-direction
-      call fourier_transform(f3r,f3i,-1) ! y-direction
+      call fourier_transform(f3r,f3i) ! x-direction
+      call fourier_transform(f3r,f3i) ! y-direction
 !
 !  define wave vector
 !
@@ -1133,8 +1133,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform back
 !
-        call fourier_transform(g1r,g1i,+1) ! x-direction
-        call fourier_transform(g1r,g1i,+1) ! y-direction
+        call fourier_transform(g1r,g1i,linv=.true.) ! x-direction
+        call fourier_transform(g1r,g1i,linv=.true.) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
@@ -1168,11 +1168,11 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform
 !
-      call fourier_transform(f2r,f2i,-1) ! x-direction
-      call fourier_transform(f2r,f2i,-1) ! y-direction
+      call fourier_transform(f2r,f2i) ! x-direction
+      call fourier_transform(f2r,f2i) ! y-direction
 !
-      call fourier_transform(f3r,f3i,-1) ! x-direction
-      call fourier_transform(f3r,f3i,-1) ! y-direction
+      call fourier_transform(f3r,f3i) ! x-direction
+      call fourier_transform(f3r,f3i) ! y-direction
 !
 !  define wave vector
 !
@@ -1204,8 +1204,8 @@ if(NO_WARN) print*,shock,gshock                !(keep compiler quiet)
 !
 !  Transform back
 !
-        call fourier_transform(g1r,g1i,+1) ! x-direction
-        call fourier_transform(g1r,g1i,+1) ! y-direction
+        call fourier_transform(g1r,g1i,linv=.true.) ! x-direction
+        call fourier_transform(g1r,g1i,linv=.true.) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !

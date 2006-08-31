@@ -1,4 +1,4 @@
-! $Id: ghostfold_mpicomm.f90,v 1.8 2006-08-23 16:53:31 mee Exp $
+! $Id: ghostfold_mpicomm.f90,v 1.9 2006-08-31 06:00:35 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -362,7 +362,7 @@ module GhostFold
 !  Transform to Fourier space.
 !
       do n=1,nz_new
-        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),+1)
+        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n))
         a_cmplx=cmplx(a_re_new(:,n),a_im_new(:,n))
         a_cmplx=a_cmplx*cmplx_shift
         a_re_new(:,n)=real(a_cmplx)
@@ -372,7 +372,7 @@ module GhostFold
 !  Back to real space.
 !
       do n=1,nz_new
-        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),-1)
+        call fourier_transform_other(a_re_new(:,n),a_im_new(:,n),linv=.true.)
       enddo
 !
 !  Reinstate original division of yz-plane.

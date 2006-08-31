@@ -1,4 +1,4 @@
-! $Id: ghostfold_nompicomm.f90,v 1.6 2006-08-25 07:39:29 ajohan Exp $
+! $Id: ghostfold_nompicomm.f90,v 1.7 2006-08-31 06:00:35 ajohan Exp $
 !
 !  This module performs some special mpifunctions that 
 !  also require the Fourier routines. 
@@ -174,7 +174,7 @@ module GhostFold
 !  Transform to Fourier space.
 !
       do n=1,nz
-        call fourier_transform_other(a_re(:,n),a_im(:,n),+1)
+        call fourier_transform_other(a_re(:,n),a_im(:,n))
         a_cmplx=cmplx(a_re(:,n),a_im(:,n))
         a_cmplx=a_cmplx*cmplx_shift
         a_re(:,n)=real(a_cmplx)
@@ -184,7 +184,7 @@ module GhostFold
 !  Back to real space.
 !
       do n=1,nz
-        call fourier_transform_other(a_re(:,n),a_im(:,n),-1)
+        call fourier_transform_other(a_re(:,n),a_im(:,n),linv=.true.)
       enddo
 !
     endsubroutine fourier_shift_yz

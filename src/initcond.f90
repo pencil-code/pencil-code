@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.169 2006-08-29 20:13:30 bingert Exp $ 
+! $Id: initcond.f90,v 1.170 2006-08-31 06:00:35 ajohan Exp $ 
 
 module Initcond 
  
@@ -2275,7 +2275,7 @@ module Initcond
             u_re=f(l1:l2,m1:m2,n1:n2,i)
             u_im=0. 
             !  fft of gausian noise w/ k^2 spectrum
-            call fourier_transform(u_re,u_im,1)
+            call fourier_transform(u_re,u_im)
             ! change to k^n spectrum
             u_re =(k2)**(.25*initpower-.5)*u_re 
             u_im =(k2)**(.25*initpower-.5)*u_im 
@@ -2285,7 +2285,7 @@ module Initcond
               u_im = u_im*exp(-(k2/cutoff**2.)**2) 
             endif   
             ! back to real space 
-            call fourier_transform(u_re,u_im,-1)
+            call fourier_transform(u_re,u_im,linv=.true.)
             f(l1:l2,m1:m2,n1:n2,i)=u_re
             
             if (lroot .and. (cutoff.eq.0)) then 
@@ -2356,7 +2356,7 @@ module Initcond
             u_im = u_im*exp(-(k2/cutoff**2.)**2) 
           endif   
           ! back to real space 
-          call fourier_transform(u_re,u_im,-1)
+          call fourier_transform(u_re,u_im,linv=.true.)
           f(l1:l2,m1:m2,n1:n2,i)=u_re
           
           if (lroot .and. (cutoff.eq.0)) then 
@@ -2688,7 +2688,7 @@ module Initcond
       !
       ! Fourier Transform of Bz0:
       !
-      call fourier_transform_other(Bz0_r,Bz0_i,1)
+      call fourier_transform_other(Bz0_r,Bz0_i)
       !
       do i=n1,n2
          !
@@ -2708,9 +2708,9 @@ module Initcond
             Ay_i = -Bz0_r*kx/kx(idx2,1)*exp(-sqrt(k2)*z(i) )
          endwhere
          !
-         call fourier_transform_other(Ax_r,Ax_i,-1)
+         call fourier_transform_other(Ax_r,Ax_i,linv=.true.)
          !
-         call fourier_transform_other(Ay_r,Ay_i,-1)
+         call fourier_transform_other(Ay_r,Ay_i,linv=.true.)
          !
          f(l1:l2,m1:m2,i,iax) = Ax_r(:,ipy*ny+1:(ipy+1)*ny+1)
          f(l1:l2,m1:m2,i,iay) = Ay_r(:,ipy*ny+1:(ipy+1)*ny+1)

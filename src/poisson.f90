@@ -1,4 +1,4 @@
-! $Id: poisson.f90,v 1.15 2006-08-17 12:37:33 ajohan Exp $
+! $Id: poisson.f90,v 1.16 2006-08-31 06:00:35 ajohan Exp $
 
 !
 !  This module solves the Poisson equation
@@ -48,16 +48,16 @@ module Poisson
 !  identify version
 !
       if (lroot .and. ip<10) call cvs_id( &
-        "$Id: poisson.f90,v 1.15 2006-08-17 12:37:33 ajohan Exp $")
+        "$Id: poisson.f90,v 1.16 2006-08-31 06:00:35 ajohan Exp $")
 !
 !  The right-hand-side of the Poisson equation is purely real.
 !
       b1 = 0.0
 !  Forward transform (to k-space).
       if (lshear) then
-        call fourier_transform_shear(a1,b1,1)
+        call fourier_transform_shear(a1,b1)
       else
-        call fourier_transform(a1,b1,1)
+        call fourier_transform(a1,b1)
       endif
 !
 !  FT(phi) = -rhs_poisson_const*FT(rho)/k^2
@@ -111,9 +111,9 @@ module Poisson
       enddo; enddo; enddo
 !  Inverse transform (to real space).
       if (lshear) then
-        call fourier_transform_shear(a1,b1,-1)
+        call fourier_transform_shear(a1,b1,linv=.true.)
       else
-        call fourier_transform(a1,b1,-1)
+        call fourier_transform(a1,b1,linv=.true.)
       endif
 !
     endsubroutine poisson_solver_fft

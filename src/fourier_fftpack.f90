@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.4 2006-08-03 07:07:27 ajohan Exp $
+! $Id: fourier_fftpack.f90,v 1.5 2006-08-31 06:00:35 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -21,7 +21,7 @@ module Fourier
   contains
 
 !***********************************************************************
-    subroutine fourier_transform(a_re,a_im,direction)
+    subroutine fourier_transform(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in 3-D.
 !  The routine overwrites the input data.
@@ -31,19 +31,16 @@ module Fourier
 !  27-oct-02/axel: adapted from transform_i, for fftpack
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
-      integer,optional :: direction
+      logical, optional :: linv
 !
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
       integer :: l,m,n
-      logical :: lforward=.true.
+      logical :: lforward
 !
-      if (present(direction)) then
-        if (direction==-1) then
-          lforward=.false.
-        else
-          lforward=.true.
-        endif
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
       endif
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid
@@ -174,7 +171,7 @@ module Fourier
 !
     endsubroutine fourier_transform
 !***********************************************************************
-    subroutine fourier_transform_xz(a_re,a_im,direction)
+    subroutine fourier_transform_xz(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in the x- and z-directions.
 !  The routine overwrites the input data.
@@ -184,16 +181,16 @@ module Fourier
 !  27-oct-02/axel: adapted from transform_fftpack
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
       integer :: l,m,n
 !
-      if (present(direction)) then
-        if (direction/=1) then
+      if (present(linv)) then
+        if (linv) then
           if (lroot) print*, 'fourier_transform_xz: only implemented for '// &
-              'direction=1'
+              'forwards transform!'
           call fatal_error('fourier_transform_xz','')
         endif
       endif
@@ -238,7 +235,7 @@ module Fourier
 !
     endsubroutine fourier_transform_xz
 !***********************************************************************
-    subroutine fourier_transform_x(a_re,a_im,direction)
+    subroutine fourier_transform_x(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in the x-direction.
 !  WARNING: It is not cache efficient to Fourier transform in any other
@@ -251,16 +248,16 @@ module Fourier
 !  06-feb-03/nils: adapted from transform_fftpack
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       complex, dimension(nx) :: ax
       real, dimension(4*nx+15) :: wsavex
       integer :: m,n
 !
-      if (present(direction)) then
-        if (direction/=1) then
+      if (present(linv)) then
+        if (linv) then
           if (lroot) print*, 'fourier_transform_x: only implemented for '// &
-              'direction=1'
+              'forwards transform!'
           call fatal_error('fourier_transform_x','')
         endif
       endif
@@ -294,7 +291,7 @@ module Fourier
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
-    subroutine fourier_transform_shear(a_re,a_im,direction)
+    subroutine fourier_transform_shear(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
 !  The routine overwrites the input data
@@ -333,7 +330,7 @@ module Fourier
       use Cdata, only: pi, Lx, x0, x, deltay, ky_fft
 !
       real, dimension (nx,ny,nz) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       complex, dimension (nxgrid) :: ax
       complex, dimension (nxgrid) :: ay
@@ -341,10 +338,15 @@ module Fourier
       real, dimension (4*nxgrid+15) :: wsave
       real :: deltay_x
       integer :: l,m,n
-      logical :: lforward=.true.
+      logical :: lforward
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
 !
 !  if nxgrid/=nygrid/=nzgrid, stop.
-
+!
       if (nygrid/=nxgrid .and. nygrid /= 1) then
         print*, 'fourier_transform_shear: '// &
             'need to have nygrid=nxgrid if nygrid/=1.'
@@ -354,14 +356,6 @@ module Fourier
         print*,'fourier_transform_shear: '// &
             'need to have nzgrid=nxgrid if nzgrid/=1.'
         call fatal_error('fourier_transform_shear','')
-      endif
-!
-      if (present(direction)) then
-        if (direction==-1) then
-          lforward=.false.
-        else
-          lforward=.true.
-        endif
       endif
 !
 !  Need to initialize cfft only once, because we require nxgrid=nygrid=nzgrid.
@@ -480,7 +474,7 @@ module Fourier
 !
     endsubroutine fourier_transform_shear
 !***********************************************************************
-    subroutine fourier_transform_other_1(a_re,a_im,direction)
+    subroutine fourier_transform_other_1(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform on a 1-D array of arbitrary size.
 !  The routine overwrites the input data.
@@ -488,22 +482,19 @@ module Fourier
 !  28-jul-2006/anders: adapted from fourier_transform
 !
       real, dimension(:) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       complex, dimension(size(a_re,1)) :: ax
       real, dimension(4*size(a_re,1)+15) :: wsavex
       integer :: nx_other
-      logical :: lforward=.true.
+      logical :: lforward
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
 !
       nx_other=size(a_re,1)
-!
-      if (present(direction)) then
-        if (direction==-1) then
-          lforward=.false.
-        else
-          lforward=.true.
-        endif
-      endif
 !
 !  Initialize fftpack.
 !
@@ -542,7 +533,7 @@ module Fourier
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
-    subroutine fourier_transform_other_2(a_re,a_im,direction)
+    subroutine fourier_transform_other_2(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
 !  The routine overwrites the input data.
@@ -550,24 +541,21 @@ module Fourier
 !  28-jul-2006/anders: adapted from fourier_transform_1
 !
       real, dimension(:,:) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       complex, dimension(size(a_re,1)) :: ax
       complex, dimension(size(a_re,2)) :: ay
       real, dimension(4*size(a_re,1)+15) :: wsavex
       real, dimension(4*size(a_re,2)+15) :: wsavey
       integer :: l, m, nx_other, ny_other
-      logical :: lforward=.true.
+      logical :: lforward
+!
+      lforward=.true.
+      if (present(linv)) then
+        if (linv) lforward=.false.
+      endif
 !
       nx_other=size(a_re,1); ny_other=size(a_re,2)
-!
-      if (present(direction)) then
-        if (direction==-1) then
-          lforward=.false.
-        else
-          lforward=.true.
-        endif
-      endif
 !
       if (lforward) then
 !

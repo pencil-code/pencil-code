@@ -1,4 +1,4 @@
-! $Id: fourier_fft.f90,v 1.3 2006-08-24 21:37:12 bingert Exp $
+! $Id: fourier_fft.f90,v 1.4 2006-08-31 06:00:35 ajohan Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -21,7 +21,7 @@ module Fourier
   contains
 
 !***********************************************************************
-    subroutine fourier_transform(a_re,a_im,direction)
+    subroutine fourier_transform(a_re,a_im,linv)
 !
 !  Subroutine to do fourier transform
 !  The routine overwrites the input data
@@ -29,7 +29,15 @@ module Fourier
 !  22-oct-02/axel+tarek: adapted from transform
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
+!
+      if (present(linv)) then
+        if (linv) then
+          if (lroot) print*, 'fourier_transform: only implemented for '// &
+              'forwards transform!'
+          call fatal_error('fourier_transform','')
+        endif
+      endif
 !
       if (lroot .and. ip<10) print*,'transform_i: doing three FFTs'
       call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
@@ -48,54 +56,54 @@ module Fourier
 !
     endsubroutine fourier_transform
 !***********************************************************************
-    subroutine fourier_transform_xz(a_re,a_im,direction)
+    subroutine fourier_transform_xz(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in the x- and z-directions
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       call fatal_error('fourier_transform_xz', &
           'this sub is not available in fourier_fft.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, direction
+      if (NO_WARN) print*, a_re, a_im, linv
 !
     endsubroutine fourier_transform_xz
 !***********************************************************************
-    subroutine fourier_transform_x(a_re,a_im,direction)
+    subroutine fourier_transform_x(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in the x-direction.
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       call fatal_error('fourier_transform_x', &
           'this sub is not available in fourier_fft.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, direction
+      if (NO_WARN) print*, a_re, a_im, linv
 !
     endsubroutine fourier_transform_x
 !***********************************************************************
-    subroutine fourier_transform_shear(a_re,a_im,direction)
+    subroutine fourier_transform_shear(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform in shearing coordinates.
 !
       real, dimension(nx,ny,nz) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       call fatal_error('fourier_transform_shear', &
           'this sub is not available in fourier_fft.f90!')
 !
-      if (NO_WARN) print*, a_re, a_im, direction
+      if (NO_WARN) print*, a_re, a_im, linv
 !
     endsubroutine fourier_transform_shear
 !***********************************************************************
-    subroutine fourier_transform_other_1(a_re,a_im,direction)
+    subroutine fourier_transform_other_1(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform on a 1-D array of arbitrary size.
 !
       real, dimension(:) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       call fatal_error('fourier_transform_other_1', &
           'this sub is not available in fourier_fft.f90!')
@@ -104,12 +112,12 @@ module Fourier
 !
     endsubroutine fourier_transform_other_1
 !***********************************************************************
-    subroutine fourier_transform_other_2(a_re,a_im,direction)
+    subroutine fourier_transform_other_2(a_re,a_im,linv)
 !
 !  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
 !
       real, dimension(:,:) :: a_re,a_im
-      integer, optional :: direction
+      logical, optional :: linv
 !
       call fatal_error('fourier_transform_other_2', &
           'this sub is not available in fourier_fft.f90!')

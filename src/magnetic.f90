@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.320 2006-08-29 15:24:31 theine Exp $
+! $Id: magnetic.f90,v 1.321 2006-08-31 06:00:35 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -205,7 +205,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.320 2006-08-29 15:24:31 theine Exp $")
+           "$Id: magnetic.f90,v 1.321 2006-08-31 06:00:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2810,11 +2810,11 @@ module Magnetic
 !
 !  Transform
 !
-      call fourier_transform_other(f2r,f2i,-1) ! x-direction
-      call fourier_transform_other(f2r,f2i,-1) ! y-direction
+      call fourier_transform_other(f2r,f2i) ! x-direction
+      call fourier_transform_other(f2r,f2i) ! y-direction
 !
-      call fourier_transform_other(f3r,f3i,-1) ! x-direction
-      call fourier_transform_other(f3r,f3i,-1) ! y-direction
+      call fourier_transform_other(f3r,f3i) ! x-direction
+      call fourier_transform_other(f3r,f3i) ! y-direction
 !
 !  define wave vector
 !
@@ -2841,8 +2841,8 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_other(g1r,g1i,+1) ! x-direction
-        call fourier_transform_other(g1r,g1i,+1) ! y-direction
+        call fourier_transform_other(g1r,g1i,linv=.true.) ! x-direction
+        call fourier_transform_other(g1r,g1i,linv=.true.) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
@@ -2876,11 +2876,11 @@ module Magnetic
 !
 !  Transform
 !
-      call fourier_transform_other(f2r,f2i,-1) ! x-direction
-      call fourier_transform_other(f2r,f2i,-1) ! y-direction
+      call fourier_transform_other(f2r,f2i) ! x-direction
+      call fourier_transform_other(f2r,f2i) ! y-direction
 !
-      call fourier_transform_other(f3r,f3i,-1) ! x-direction
-      call fourier_transform_other(f3r,f3i,-1) ! y-direction
+      call fourier_transform_other(f3r,f3i) ! x-direction
+      call fourier_transform_other(f3r,f3i) ! y-direction
 !
 !  define wave vector
 !
@@ -2912,8 +2912,8 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_other(g1r,g1i,+1) ! x-direction
-        call fourier_transform_other(g1r,g1i,+1) ! y-direction
+        call fourier_transform_other(g1r,g1i,linv=.true.) ! x-direction
+        call fourier_transform_other(g1r,g1i,linv=.true.) ! y-direction
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
