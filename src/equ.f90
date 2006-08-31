@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.325 2006-08-24 13:07:46 ajohan Exp $
+! $Id: equ.f90,v 1.326 2006-08-31 16:41:19 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -375,7 +375,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.325 2006-08-24 13:07:46 ajohan Exp $")
+           "$Id: equ.f90,v 1.326 2006-08-31 16:41:19 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -636,9 +636,8 @@ module Equ
 !
 !  Add planet gravity
 !
-        if (lplanet) then
-           call auxcall_gravcomp(g0,r0_pot,n_pot,p)
-        endif
+        if (lplanet.and.lparticles) & 
+             call auxcall_gravcomp(g0,r0_pot,n_pot,p)
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
 !
