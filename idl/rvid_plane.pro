@@ -8,7 +8,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                nsmooth=nsmooth, $
                _extra=_extra
 ;
-; $Id: rvid_plane.pro,v 1.24 2006-08-27 11:13:09 mee Exp $
+; $Id: rvid_plane.pro,v 1.25 2006-08-31 13:34:43 ajohan Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -294,11 +294,11 @@ while (not eof(1)) do begin
   planesize=size(plane)
   nx_plane=planesize[1]
   ny_plane=planesize[2]
-  if keyword_set(exponential) then begin
+  if (keyword_set(exponential)) then begin
     plane2=rebin(exp(plane),zoom*[nx_plane,ny_plane])
-  endif else if keyword_set(nsmooth) then begin
+  endif else if (keyword_set(nsmooth)) then begin
     plane2=rebin(smooth(plane,nsmooth),zoom*[nx_plane,ny_plane])
-  endif else if keyword_set(sqroot) then begin
+  endif else if (keyword_set(sqroot)) then begin
     plane2=rebin(sqrt(plane),zoom*[nx_plane,ny_plane])
   endif else begin
     plane2=rebin(plane,zoom*[nx_plane,ny_plane])
@@ -339,7 +339,7 @@ while (not eof(1)) do begin
 ;  show image scaled between amin and amax and filling whole screen
 ;
         if (keyword_set(contourplot)) then begin
-          contourfill, plane, levels=grange(amin,amax,60),_extra=_extra
+          contourfill, plane, levels=grange(amin,amax,60), _extra=_extra
         endif else begin
 ;          plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
@@ -352,7 +352,6 @@ while (not eof(1)) do begin
 ;
 ;  make background white, and write png file
 ;
-          imgdir='.'
           ;bad=where(image eq 0) & image(bad)=255
           tvlct, red, green, blue, /GET
           imgname = imgdir+'/img_'+istr2+'.png'
