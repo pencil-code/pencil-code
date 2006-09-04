@@ -1,4 +1,4 @@
-! $Id: shared_variables.f90,v 1.9 2006-08-30 02:47:01 dobler Exp $ 
+! $Id: shared_variables.f90,v 1.10 2006-09-04 10:34:20 mee Exp $ 
 !
 !  This module is an interface to allow modules
 !  to register pointers to their internal variables so that
@@ -298,7 +298,9 @@ module SharedVariables
 !
       if (present(ierr)) ierr=0
 !
-      if (variable_exists(varname)) then
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%int0d,target=variable)) return
         if (present(ierr)) then
           ierr=iSHVAR_ERR_DUPLICATE
           return
@@ -322,7 +324,9 @@ module SharedVariables
 !
       if (present(ierr)) ierr=0
 !
-      if (variable_exists(varname)) then
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%int1d,target=variable)) return
         if (present(ierr)) then
           ierr=iSHVAR_ERR_DUPLICATE
           return
@@ -348,7 +352,9 @@ module SharedVariables
 !
       if (present(ierr)) ierr=0
 !
-      if (variable_exists(varname)) then
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%real0D,target=variable)) return
         if (present(ierr)) then
           ierr=iSHVAR_ERR_DUPLICATE
           return
@@ -372,7 +378,9 @@ module SharedVariables
 !
       if (present(ierr)) ierr=0
 !
-      if (variable_exists(varname)) then
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%real1D,target=variable)) return
         if (present(ierr)) then
           ierr=iSHVAR_ERR_DUPLICATE
           return
@@ -388,23 +396,21 @@ module SharedVariables
 !    
     endsubroutine put_variable_real1d
 !***********************************************************************
-    function variable_exists(varname) 
+    function find_variable(varname) 
       character (len=*) :: varname
-      logical :: variable_exists
-      type (shared_variable_list), pointer :: item
+      type (shared_variable_list), pointer :: find_variable
 !
-      item=>thelist
-      do while (associated(item))
-        if (item%varname==varname) then
-          variable_exists=.true.
+      find_variable=>thelist
+      do while (associated(find_variable))
+        if (find_variable%varname==varname) then
           return
         endif
-        item=>item%next
+        find_variable=>find_variable%next
       enddo
-      variable_exists=.false.
+      nullify(find_variable)
       return
 !    
-    endfunction variable_exists
+    endfunction find_variable
 !***********************************************************************
     subroutine free_list(list) 
       type (shared_variable_list), pointer :: list
