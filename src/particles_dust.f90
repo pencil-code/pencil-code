@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.142 2006-09-04 09:10:28 ajohan Exp $
+! $Id: particles_dust.f90,v 1.143 2006-09-04 12:25:12 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -112,7 +112,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.142 2006-09-04 09:10:28 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.143 2006-09-04 12:25:12 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1121,8 +1121,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       use Cdata
 !
-      if (ldragforce_gas_par.or.lcollisional_cooling) &
-          lpenc_requested(i_epsp)=.true.
+      if (ldragforce_gas_par) then
+        lpenc_requested(i_epsp)=.true.
+        lpenc_requested(i_np)=.true.
+      endif
+      if (lcollisional_cooling) lpenc_requested(i_epsp)=.true.
       if (lcollisional_cooling) &
           lpenc_requested(i_np)=.true.
 !
@@ -1410,7 +1413,8 @@ k_loop:   do while (.not. (k>npar_loc))
               dt1_drag_dust(ix0-nghost)= &
                   max(dt1_drag_dust(ix0-nghost),tausp1_par)
               if (ldragforce_gas_par) then
-                dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
+                if (p%np(ix0-nghost)/=0.0) &
+                    dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
                     p%epsp(ix0-nghost)/p%np(ix0-nghost)*tausp1_par
               endif
             endif
