@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.141 2006-08-30 13:22:44 ajohan Exp $
+! $Id: particles_dust.f90,v 1.142 2006-09-04 09:10:28 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -112,7 +112,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.141 2006-08-30 13:22:44 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.142 2006-09-04 09:10:28 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1227,7 +1227,7 @@ k_loop:   do while (.not. (k>npar_loc))
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
         if (npar_imn(imn)/=0) then
 !
-          if (lfirst .and. ldt) then
+          if (lfirst.and.ldt) then
             dt1_drag_dust=0.0
             if (ldragforce_gas_par) dt1_drag_gas=0.0
           endif
@@ -1406,12 +1406,12 @@ k_loop:   do while (.not. (k>npar_loc))
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
-            if (lfirst .and. ldt) then
+            if (lfirst.and.ldt) then
               dt1_drag_dust(ix0-nghost)= &
                   max(dt1_drag_dust(ix0-nghost),tausp1_par)
               if (ldragforce_gas_par) then
                 dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
-                    rhop_tilde*p%rho1(ix0-nghost)*tausp1_par
+                    p%epsp(ix0-nghost)/p%np(ix0-nghost)*tausp1_par
               endif
             endif
           enddo
