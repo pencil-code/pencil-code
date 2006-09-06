@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.51 2006-08-29 17:19:22 mee Exp $
+### $Id: Makefile.depend,v 1.52 2006-09-06 17:56:45 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -231,7 +231,7 @@ $(IO_OBJ):           io.h            $(IO_SRC)            $(COMMON_DEPS) $(GENER
 $(TIMEAVG_OBJ):      timeavg.h        $(TIMEAVG_SRC)      $(COMMON_DEPS) $(IO_OBJ)
 $(POWER_OBJ):        power_spectrum.h $(POWER_SRC)        $(COMMON_DEPS) $(GENERAL_OBJ) $(FOURIER_OBJ)
 $(STRUCT_FUNC_OBJ):  struct_func.h    $(STRUCT_FUNC_SRC)  $(COMMON_DEPS) $(GENERAL_OBJ)
-$(PLANET_OBJ):       planet.h	      $(PLANET_SRC)       $(COMMON_DEPS) $(GENERAL_OBJ) $(CPARAM_OBJ) $(GLOBAL_OBJ) $(PARTICLES_CDATA_OBJ)
+$(PLANET_OBJ):       planet.h	      $(PLANET_SRC)       $(COMMON_DEPS) $(GENERAL_OBJ) $(CPARAM_OBJ) $(GLOBAL_OBJ)
 $(SPECIAL_OBJ): special.h  $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(INITCOND_SPEC_OBJ) $(GLOBAL_OBJ)
 
 #
@@ -243,7 +243,7 @@ $(PARTICLES_SUB_OBJ):                                 $(PARTICLES_CDATA_OBJ) $(P
 $(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(POWER_OBJ)
 $(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
-$(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PLANET_OBJ)
+$(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_RADIUS_OBJ): particles_radius.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_NUMBER_OBJ)
 
 # DO NOT DELETE
