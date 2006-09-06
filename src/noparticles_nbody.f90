@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.3 2006-08-28 20:35:03 wlyra Exp $
+! $Id: noparticles_nbody.f90,v 1.4 2006-09-06 18:02:16 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -46,7 +46,7 @@ module Particles_nbody
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************
-    subroutine init_particles_nbody(f,fp,fsp)
+    subroutine init_particles_nbody(f,fp)
 !
 ! Initial positions and velocities of sink particles
 ! Overwrite the position asserted by the dust module
@@ -55,9 +55,8 @@ module Particles_nbody
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(nspar,mpvar) :: fsp
 !
-      if (NO_WARN) print*,f,fp,fsp
+      if (NO_WARN) print*,f,fp
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -116,7 +115,7 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
-    subroutine dvvp_dt_nbody(f,df,fp,dfp,fsp,dfsp,ineargrid)
+    subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of sink particles velocities
 !
@@ -125,10 +124,9 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (nspar,mpvar) :: fsp,dfsp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      if (NO_WARN) print*, f, df, fp, dfp, fsp, dfsp, ineargrid
+      if (NO_WARN) print*, f, df, fp, dfp, ineargrid
 !
     endsubroutine dvvp_dt_nbody
 !***********************************************************************
@@ -156,24 +154,30 @@ module Particles_nbody
       if (NO_WARN) print*,unit
     endsubroutine write_particles_nbody_run_pars
 !***********************************************************************
-    subroutine get_particles_interdistances(fsp,rp_mn,rpcyl_mn)
+    subroutine get_particles_interdistances(rp_mn,rpcyl_mn,ax,ay)
 !
 ! 18-jul-06/wlad: dummy subroutine
 !
-      real, dimension (nspar,mpvar) :: fsp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension (nspar) :: ax,ay
       integer :: k
 !
       intent(out) :: rp_mn,rpcyl_mn
 !
-       do k=1,nspar
-          rp_mn(:,k)    = 0.
-          rpcyl_mn(:,k) = 0.
-       enddo
+      rp_mn=0.;rpcyl_mn=0.;ax=0.;ay=0
 !
-       if (NO_WARN) print*, fsp
+      if (NO_WARN) print*, rp_mn,rpcyl_mn,ax,ay
 !
-     endsubroutine get_particles_interdistances
+    endsubroutine get_particles_interdistances
+!************************************************************************
+    subroutine share_sinkparticles(fp,dfp)
+!       
+      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(mpar_loc,mpvar), optional :: dfp
+!
+      if (NO_WARN) print*, fp
+!
+    endsubroutine share_sinkparticles
 !************************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !   
