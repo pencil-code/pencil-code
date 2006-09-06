@@ -7,8 +7,8 @@
   public :: die_gracefully
   public :: check_emergency_brake
 
-  public :: mpirecv_real, mpirecv_int
-  public :: mpisend_real, mpisend_int
+  public :: mpirecv_logical, mpirecv_real, mpirecv_int
+  public :: mpisend_logical, mpisend_real, mpisend_int
   public :: mpireduce_sum, mpireduce_max, mpireduce_min
   public :: mpireduce_sum_scl, mpiallreduce_max
   public :: mpireduce_sum_int, mpireduce_sum_double

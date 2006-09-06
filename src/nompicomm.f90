@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.139 2006-08-23 16:53:32 mee Exp $
+! $Id: nompicomm.f90,v 1.140 2006-09-06 17:57:47 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -19,6 +19,11 @@ module Mpicomm
 
   include 'mpicomm.h'
 
+  interface mpirecv_logical
+     module procedure mpirecv_logical_scl
+     module procedure mpirecv_logical_arr
+  endinterface
+
   interface mpirecv_real
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
@@ -30,6 +35,11 @@ module Mpicomm
     module procedure mpirecv_int_arr
   endinterface
   
+  interface mpisend_logical
+     module procedure mpisend_logical_scl
+     module procedure mpisend_logical_arr
+  endinterface
+
   interface mpisend_real
     module procedure mpisend_real_scl
     module procedure mpisend_real_arr
@@ -340,6 +350,34 @@ module Mpicomm
 
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
+    subroutine mpirecv_logical_scl(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive logical scalar from other processor.
+!
+!  04-sep-06/wlyra: dummy
+!
+      integer :: nbcast_array                                           
+      logical :: bcast_array                                               
+      integer :: proc_src, tag_id                                       
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id  
+!
+    endsubroutine mpirecv_logical_scl                                      
+!***********************************************************************
+    subroutine mpirecv_logical_arr(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive logical array from other processor.
+!
+!  04-sep-06/wlyra: dummy
+!
+      integer :: nbcast_array                                           
+      logical, dimension(nbcast_array) :: bcast_array                      
+      integer :: proc_src, tag_id                                       
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id  
+!
+    endsubroutine mpirecv_logical_arr                                      
+!***********************************************************************
     subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
 !   
 !  Receive real scalar from other processor.
@@ -409,6 +447,34 @@ module Mpicomm
       if (NO_WARN) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
     endsubroutine mpirecv_int_arr
+!***********************************************************************
+    subroutine mpisend_logical_scl(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send logical scalar to other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array                                           
+      logical :: bcast_array                                               
+      integer :: proc_rec, tag_id                                       
+!                                                                       
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id  
+!                                                                       
+    endsubroutine mpisend_logical_scl                                      
+!***********************************************************************
+    subroutine mpisend_logical_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Receive logical array from other processor.
+!
+!  02-jul-05/anders: dummy
+!
+      integer :: nbcast_array                                           
+      logical, dimension(nbcast_array) :: bcast_array                      
+      integer :: proc_rec, tag_id                                       
+!
+      if (NO_WARN) print*, bcast_array, nbcast_array, proc_rec, tag_id  
+!
+    endsubroutine mpisend_logical_arr
 !***********************************************************************
     subroutine mpisend_real_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !

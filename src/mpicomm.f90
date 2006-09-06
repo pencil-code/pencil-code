@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.187 2006-08-23 16:53:31 mee Exp $
+! $Id: mpicomm.f90,v 1.188 2006-09-06 17:57:47 wlyra Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -59,6 +59,11 @@ module Mpicomm
 
   include 'mpicomm.h'
 
+  interface mpirecv_logical
+     module procedure mpirecv_logical_scl
+     module procedure mpirecv_logical_arr
+  endinterface
+
   interface mpirecv_real
     module procedure mpirecv_real_scl
     module procedure mpirecv_real_arr
@@ -70,6 +75,11 @@ module Mpicomm
   interface mpirecv_int
     module procedure mpirecv_int_scl
     module procedure mpirecv_int_arr
+  endinterface
+
+  interface mpisend_logical
+     module procedure mpisend_logical_scl
+     module procedure mpisend_logical_arr
   endinterface
 
   interface mpisend_real
@@ -1047,6 +1057,38 @@ module Mpicomm
 
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
+    subroutine mpirecv_logical_scl(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive logical scalar from other processor.
+!
+!  04-sep-06/wlad: coded
+!
+      integer :: nbcast_array
+      logical :: bcast_array
+      integer :: proc_src, tag_id
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      call MPI_RECV(bcast_array, nbcast_array, MPI_LOGICAL, proc_src, &
+          tag_id, MPI_COMM_WORLD, stat, ierr)
+!
+    endsubroutine mpirecv_logical_scl
+!***********************************************************************
+    subroutine mpirecv_logical_arr(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive logical array from other processor.
+!
+!  04-sep-06/anders: coded
+!
+      integer :: nbcast_array
+      real, dimension(nbcast_array) :: bcast_array
+      integer :: proc_src, tag_id
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      call MPI_RECV(bcast_array, nbcast_array, MPI_LOGICAL, proc_src, &
+          tag_id, MPI_COMM_WORLD, stat, ierr)
+!
+    endsubroutine mpirecv_logical_arr
+!***********************************************************************    
     subroutine mpirecv_real_scl(bcast_array,nbcast_array,proc_src,tag_id)
 !
 !  Receive real scalar from other processor.
@@ -1167,6 +1209,36 @@ module Mpicomm
 !
     endsubroutine mpirecv_int_arr
 !***********************************************************************
+    subroutine mpisend_logical_scl(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send logical scalar to other processor.
+!
+!  04-sep-06/wlad: coded
+!
+      integer :: nbcast_array
+      logical :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      call MPI_SEND(bcast_array, nbcast_array, MPI_LOGICAL, proc_rec, &
+          tag_id, MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpisend_logical_scl
+!***********************************************************************
+    subroutine mpisend_logical_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send logical array to other processor.
+!
+!  04-sep-06/wlad: coded
+!
+      integer :: nbcast_array
+      logical, dimension(nbcast_array) :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      call MPI_SEND(bcast_array, nbcast_array, MPI_LOGICAL, proc_rec, &
+          tag_id, MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpisend_logical_arr
+!***********************************************************************   
     subroutine mpisend_real_scl(bcast_array,nbcast_array,proc_rec,tag_id)
 !
 !  Send real scalar to other processor.
@@ -1184,7 +1256,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_real_arr(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Receive real array from other processor.
+!  Send real array to other processor.
 !
 !  02-jul-05/anders: coded
 !
@@ -1199,7 +1271,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpisend_real_arr2(bcast_array,nbcast_array,proc_rec,tag_id)
 !
-!  Receive real array(:,:) from other processor.
+!  Send real array(:,:) to other processor.
 !
 !  02-jul-05/anders: coded
 !
