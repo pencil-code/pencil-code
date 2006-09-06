@@ -8,9 +8,9 @@
   public :: pencil_criteria_planet,calc_pencils_planet
   
   public :: gravity_companion
-  public :: gravity_star,get_ramped_mass
+  public :: gravity_star
   public :: planet_phiavg
 
 !logicals to use "abroad"
-  public :: llocal_iso,lmigrate,Gvalue,b_pot
+  public :: llocal_iso
   

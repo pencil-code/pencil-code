@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.66 2006-08-29 12:30:06 wlyra Exp $
+! $Id: planet.f90,v 1.67 2006-09-06 18:06:01 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.66 2006-08-29 12:30:06 wlyra Exp $")
+           "$Id: planet.f90,v 1.67 2006-09-06 18:06:01 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +181,6 @@ module Planet
 !
       use Sub
       use Global
-      use Particles_Cdata
       use Mpicomm
 !     
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
@@ -223,8 +222,8 @@ module Planet
 !
 !  Planet's gravity field - always spherical
 !
-         rrc =rp_mn(:,ispar(1)) 
-         rrc1=1./rp_mn(:,ispar(1))
+         rrc =rp_mn(:,1) 
+         rrc1=1./rp_mn(:,1)
 !           
          g_companion=-gp*rrc*(rrc*rrc+b_pot*b_pot)**(-1.5)
 !
@@ -237,9 +236,9 @@ module Planet
 !  Star's gravity field
 !
       if (lcylindrical) then
-         rrs=rpcyl_mn(:,ispar(2)) 
+         rrs=rpcyl_mn(:,2) 
       else
-         rrs=rp_mn(:,ispar(2)) 
+         rrs=rp_mn(:,2) 
       endif
 !
       rrs1=1./rrs
@@ -260,12 +259,12 @@ module Planet
 !      
 !  Stuff for calc_torque. Should maybe change it to particles_nbody
 !
-      rs = rpcyl_mn(:,ispar(2))
-      rp = rpcyl_mn(:,ispar(1))
+      rs = rpcyl_mn(:,2)
+      rp = rpcyl_mn(:,1)
 !
       if (ldiagnos) then
          if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
-              call calc_torque(p%rho,gp,axp,ayp,rpcyl_mn(:,ispar(1)))
+              call calc_torque(p%rho,gp,axp,ayp,rpcyl_mn(:,1))
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0)) &
               call calc_monitored(rs,rp,axs,ays,axp,ayp,gs,gp,r0_pot,p)

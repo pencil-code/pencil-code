@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.31 2006-08-29 12:30:06 wlyra Exp $
+! $Id: noplanet.f90,v 1.32 2006-09-06 18:06:01 wlyra Exp $
 !
 !  Dummy module
 !
@@ -20,12 +20,7 @@ module Planet
 
   include 'planet.h'
 
-  real :: gc=0.          !location and mass
-  real :: b_pot=0.,Gvalue=0. !peak radius for potential
-  integer :: nc=2        !exponent of smoothed potential 
-  integer :: n_periods=5. !periods for ramping
-  logical :: lramp=.false.,llocal_iso=.false.
-  logical :: lmigrate=.false.
+  logical :: llocal_iso=.false.
 
   !namelist /planet_init_pars/ dummy
   !namelist /planet_run_pars/ dummy
@@ -49,7 +44,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.31 2006-08-29 12:30:06 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.32 2006-09-06 18:06:01 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -192,23 +187,5 @@ module Planet
       if (NO_WARN) print*, p
 !
     endsubroutine planet_phiavg
-!***************************************************************
-    subroutine get_ramped_mass(gp,gs,g0)
-!
-! 03-mar-06/wlad :: dummy
-!
-      use Mpicomm, only: stop_it
-!     
-      real :: gs,gp,g0
-!
-      intent(out) :: gs,gp
-!
-      gs=1. ; gp=0. 
-!
-      call stop_it("noplanet.f90 - get_ramped_mass")
-!
-      if (NO_WARN) print*, g0
-!
-    endsubroutine get_ramped_mass
 !***************************************************************
   endmodule Planet
