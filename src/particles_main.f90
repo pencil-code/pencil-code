@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.46 2006-08-29 12:30:06 wlyra Exp $
+! $Id: particles_main.f90,v 1.47 2006-09-06 18:00:29 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -19,7 +19,6 @@ module Particles_main
   include 'particles_main.h'
 
   real, dimension (mpar_loc,mpvar) :: fp, dfp
-  real, dimension (nspar,mpvar) :: fsp,dfsp
   integer, dimension (mpar_loc,3) :: ineargrid
 
   contains
@@ -101,7 +100,7 @@ module Particles_main
       call init_particles(f,fp,ineargrid)
       if (lparticles_radius) call init_particles_radius(f,fp)
       if (lparticles_number) call init_particles_number(f,fp)
-      if (lparticles_nbody)  call init_particles_nbody(f,fp,fsp)
+      if (lparticles_nbody)  call init_particles_nbody(f,fp)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -209,11 +208,6 @@ module Particles_main
 !      
       call boundconds_particles(fp,npar_loc,ipar,dfp=dfp)
 !
-!  Sink particles should be communicated to all processors
-!
-      if (lparticles_nbody) &
-           call share_sinkparticles(fp,fsp,dfp=dfp,dfsp=dfsp)
-!
 !  Map the particle positions on the grid for later use.
 !
       call map_nearest_grid(fp,ineargrid)
@@ -222,6 +216,11 @@ module Particles_main
 !  Sort particles so that they can be accessed contiguously in the memory.
 !      
       call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
+!
+!  Sink particles should be communicated to all processors
+!
+      if (lparticles_nbody) &
+           call share_sinkparticles(fp,dfp=dfp)
 !
     endsubroutine particles_boundconds
 !***********************************************************************
@@ -324,7 +323,7 @@ module Particles_main
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
-      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,fsp,dfsp,ineargrid)
+      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
     endsubroutine particles_pde
 !***********************************************************************
@@ -453,14 +452,12 @@ module Particles_main
       use Planet, only : gravity_companion
 !
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension(nspar) :: ax,ay
+      real, dimension (nspar) :: ax,ay
       real :: g0,r0_pot
       integer :: n_pot
       type (pencil_case) :: p
 !
-      call get_particles_interdistances(fsp,rp_mn,rpcyl_mn)
-      ax=fsp(1:nspar,ixp)
-      ay=fsp(1:nspar,iyp)
+      call get_particles_interdistances(rp_mn,rpcyl_mn,ax,ay)
       call gravity_companion(rp_mn,rpcyl_mn,ax,ay,g0,r0_pot,n_pot,p)
 !
     endsubroutine auxcall_gravcomp
