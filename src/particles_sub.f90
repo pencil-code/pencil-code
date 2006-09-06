@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.84 2006-08-28 20:35:04 wlyra Exp $
+! $Id: particles_sub.f90,v 1.85 2006-09-06 17:59:53 wlyra Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -19,7 +19,6 @@ module Particles_sub
   public :: interpolate_quadratic, interpolate_quadratic_spline
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index, find_closest_gridpoint
-  public :: share_sinkparticles
 
   contains
 
@@ -1542,38 +1541,5 @@ module Particles_sub
       if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
 !
     endsubroutine find_closest_gridpoint
-!***********************************************************************
-    subroutine share_sinkparticles(fp,fsp,dfp,dfsp)
-!
-!  Set fsp, dfsp and the ispar array for single processor runs.
-!  Broadcast them to all processors for mpi runs.
-!
-!  28-aug-06/wlad : coded
-!
-      use Mpicomm
-!
-      real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (nspar,mpvar) :: fsp
-      real, dimension (mpar_loc,mpvar), optional :: dfp
-      real, dimension (nspar,mpvar), optional :: dfsp
-      integer :: k
-      logical :: ldf
-!
-      ldf = (present(dfsp)).and.(present(dfp))
-!
-      ispar = ipar(1:nspar)
-      if (lmpicomm) call mpibcast_int(ispar,nspar)
-!
-      do k=1,nspar
-         fsp(k,:) = fp(ispar(k),:)
-         if (ldf) dfsp(k,:) = dfp(ispar(k),:)
-!
-         if (lmpicomm) then 
-            call mpibcast_real(fsp(k,:),mpvar)
-            if (ldf) call mpibcast_real(dfsp(k,:),mpvar)
-         endif
-      enddo
-!
-    endsubroutine share_sinkparticles
 !***********************************************************************
 endmodule Particles_sub
