@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.14 2006-08-31 01:46:41 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.15 2006-09-06 18:11:52 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -25,18 +25,20 @@ module Particles_nbody
   logical :: lnbody_particles=.true.
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
+  real, dimension(nspar,mpvar) :: fsp,dfsp
   real :: delta_vsp0=1.0
-  real :: gc=0.
+  real :: g0=1.,n_periods=5,gc=0.
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.
+  logical :: lramp=.false.
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
-       bcspx, bcspy, bcspz
+       bcspx, bcspy, bcspz, g0, gc, lramp
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
-       lcalc_orbit
+       lcalc_orbit, g0, gc, lramp
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -66,7 +68,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.14 2006-08-31 01:46:41 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.15 2006-09-06 18:11:52 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -88,15 +90,6 @@ module Particles_nbody
       logical :: lstarting
 !
       if (NO_WARN) print*, lstarting
-!
-! Tag the sink particles  - equal to the first ipars
-!
-      if (lroot) &
-           print*,'particles_nbody: Initialize ispar array'
-!
-      do k=1,nspar
-         ispar(k)=ipar(k)
-      enddo
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************
@@ -134,7 +127,7 @@ module Particles_nbody
 !   
     endsubroutine calc_pencils_par_nbody
 !***********************************************************************
-    subroutine init_particles_nbody(f,fp,fsp)
+    subroutine init_particles_nbody(f,fp)
 !
 !  Initial positions and velocities of sink particles.
 !  Overwrite the position asserted by the dust module
@@ -144,18 +137,16 @@ module Particles_nbody
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
       use Sub
-      use Gravity, only: g0
-      use Planet,  only: get_ramped_mass
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
-      real, dimension (nspar,mpvar) :: fsp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
+      real, dimension(nspar) :: mass
       real :: gp,gs,gp_init
       real :: r, p
-      integer :: k
+      integer :: k,ks,ipos
 !
       intent (in) :: f
       intent (out) :: fp
@@ -165,32 +156,58 @@ module Particles_nbody
       select case(initxxsp)
 
       case ('origin')
-        if (lroot) print*, 'init_particles_nbody: All sink particles at origin'
-        fp(1:nspar,ixp:izp)=0.
+        if (lroot) then
+           print*, 'init_particles_nbody: All sink particles at origin'
+           fp(1:nspar,ixp:izp)=0.
+        endif
 
       case('constant')
-         if (lroot) &
-              print*, 'init_particles_nbody: All sink particles at x,y,z=', xsp0, ysp0, zsp0
-         fp(1:nspar,ixp)=xsp0
-         fp(1:nspar,iyp)=ysp0
-         fp(1:nspar,izp)=zsp0
+         if (lroot) then
+            print*, 'init_particles_nbody: All sink particles at x,y,z=', xsp0, ysp0, zsp0
+            fp(1:nspar,ixp)=xsp0
+            fp(1:nspar,iyp)=ysp0
+            fp(1:nspar,izp)=zsp0
+         endif
 
       case ('fixed-cm')
 !
 ! center of mass fixed on center of grid
 !
          call get_ramped_mass(gp,gs,g0)
-         print*,'initparticles_nbody . ispar(1) and ispar(2) equal to positions=',ispar(1),ispar(2)
-         fp(ispar(2),ixp)=gp
-         fp(ispar(2),iyp)=0.
-         fp(ispar(2),izp)=0.
 !
-         fp(ispar(1),ixp) = -gs
-         fp(ispar(1),iyp) = 0.
-         fp(ispar(1),izp) = 0.
+         mass(1) = gp
+         mass(2) = gs
 !
-         if (lroot) &
-              print*, 'init_particles_nbody: All sink particles at x=', fp(ispar(1),ixp), fp(ispar(2),ixp)
+!loop through ipar to allocate the sink particles
+!
+         do k=1,npar_loc
+            do ks=1,nspar
+               if (ipar(k)==ks) then
+!
+                  print*,&
+                       'initparticles_nbody. Slot for sink particle ',ks,&
+                       ' was at fp position ',k,&
+                       ' at processor ',iproc
+!
+                  if (ks==1) ipos=2
+                  if (ks==2) ipos=1
+!
+                  fp(k,ixp)=mass(ipos) * (-1)**ks
+                  fp(k,iyp)=0.
+                  fp(k,izp)=0.
+!
+! Correct for non-existing dimensions (not really needed, I think)
+!
+                  if (nxgrid==1) fp(k,ixp)=x(nghost+1)
+                  if (nygrid==1) fp(k,iyp)=y(nghost+1)
+                  if (nzgrid==1) fp(k,izp)=z(nghost+1)
+!               
+                  print*,&
+                       'initparticles_nbody. Sink particle ',ks,&
+                       ' located at ixp=',fp(k,ixp)
+               endif
+            enddo
+         enddo
 
       case default
         if (lroot) print*, 'init_particles: No such such value for initxxsp: ', &
@@ -199,17 +216,10 @@ module Particles_nbody
 
       endselect
 !
-!  Particles are not allowed to be present in non-existing dimensions.
-!  This would give huge problems with interpolation later.
-!
-      if (nxgrid==1) fp(1:nspar,ixp)=x(nghost+1)
-      if (nygrid==1) fp(1:nspar,iyp)=y(nghost+1)
-      if (nzgrid==1) fp(1:nspar,izp)=z(nghost+1)
-!
 !  Redistribute particles among processors (now that positions are determined).
 !
       call boundconds_particles(fp,npar_loc,ipar)
-      call share_sinkparticles(fp,fsp)
+      call share_sinkparticles(fp)
 !
 !  Initial particle velocity.
 !
@@ -218,40 +228,60 @@ module Particles_nbody
       case ('nothing')
         if (lroot) print*, 'init_particles: No particle velocity set'
       case ('zero')
-        if (lroot) print*, 'init_particles: Zero particle velocity'
-        fp(1:nspar,ivpx:ivpz)=0.
-
+        if (lroot) then
+           print*, 'init_particles: Zero particle velocity'
+           fp(1:nspar,ivpx:ivpz)=0.
+        endif
+        
       case ('constant')
-         if (lroot) print*, 'init_particles: Constant particle velocity'
-         if (lroot) print*, 'init_particles: vspx0, vspy0, vspz0=', vspx0, vspy0, vspz0
-         fp(1:nspar,ivpx)=vspx0
-         fp(1:nspar,ivpy)=vspy0
-         fp(1:nspar,ivpz)=vspz0
+         if (lroot) then
+            print*, 'init_particles: Constant particle velocity'
+            print*, 'init_particles: vspx0, vspy0, vspz0=', vspx0, vspy0, vspz0
+            fp(1:nspar,ivpx)=vspx0
+            fp(1:nspar,ivpy)=vspy0
+            fp(1:nspar,ivpz)=vspz0
+         endif
 
       case ('fixed-cm')
          call get_ramped_mass(gp,gs,g0)
 !
-         fp(ispar(2),ivpx)=0.
-         fp(ispar(2),ivpy)=gp
-         fp(ispar(2),ivpz)=0.
+         mass(1) = gp
+         mass(2) = gs
 !
-         fp(ispar(1),ivpx) = 0.
-         fp(ispar(1),ivpy) = -gs
-         fp(ispar(1),ivpz) = 0.
+!loop through ipar to allocate the sink particles
 !
-         if (lroot) &
-              print*, 'init_particles: All particles at vy=', fp(ispar(1),ivpy), fp(ispar(2),ivpy)
-
-       case default
-        if (lroot) print*, 'init_particles: No such such value for initvvsp: ', &
-            trim(initvvsp)
+         do k=1,npar_loc
+            do ks=1,nspar
+               if (ipar(k)==ks) then
+                  print*,&
+                       'initparticles_nbody. Slot for sink particle ',ks,&
+                       ' was at fp position ',k,&
+                       ' at processor ',iproc
+!
+                  if (ks==1) ipos=2
+                  if (ks==2) ipos=1
+!
+                  fp(k,ivpx) = 0.
+                  fp(k,ivpy) = mass(ipos) * (-1)**ks
+                  fp(k,ivpz) = 0.
+!
+                  print*,'initparticles_nbody. Sink particle ',ks,&
+                       ' has velocity y=',fp(k,ivpy)
+!
+               endif
+            enddo
+         enddo
+!
+      case default
+         if (lroot) print*, 'init_particles: No such such value for initvvsp: ', &
+                       trim(initvvsp)
         call stop_it("")
 
       endselect
 !
 ! Broadcast the velocities as well
 !
-      call share_sinkparticles(fp,fsp)
+      call share_sinkparticles(fp)
 !
     endsubroutine init_particles_nbody
 !***********************************************************************
@@ -276,34 +306,31 @@ module Particles_nbody
 !
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
-    subroutine dvvp_dt_nbody(f,df,fp,dfp,fsp,dfsp,ineargrid)
+    subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
 !  Evolution of sink particles velocities
 !
 !  27-aug-06/wlad: coded
 !
       use Cdata
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: mpibcast_real,stop_it
       use Sub
-      use Gravity, only: g0
-      use Planet,only: get_ramped_mass,lmigrate
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-      real, dimension (nspar,mpvar) :: fsp,dfsp
-      integer, dimension (mpar_loc,3) :: ineargrid
+       integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension (npar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
       real, dimension (npar_loc) :: xplanet,yplanet,zplanet
       real, dimension (npar_loc) :: vxplanet,vyplanet,vzplanet
       real :: Omega2,rsep,gs,gp,gs_acc,gp_acc,r1sep
       real :: ax,ay,az,axs,ays,azs,vx,vy,vz,vxs,vys,vzs
       real :: axr,ayr,azr,vxr,vyr,vzr
-      integer :: i, k
+      integer :: i, k, ks
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) ::     f,  fp,  fsp, ineargrid
-      intent (inout) :: df, dfp, dfsp
+      intent (in) ::     f,  fp,  ineargrid
+      intent (inout) :: df, dfp
 !
 !  Print out header information in first time step.
 !
@@ -329,6 +356,8 @@ module Particles_nbody
 !
 !  More readable variables names
 !
+      call share_sinkparticles(fp,dfp)
+!
       ax = fsp(1,ixp)  ; axs = fsp(2,ixp)
       ay = fsp(1,iyp)  ; ays = fsp(2,iyp)
       az = fsp(1,izp)  ; azs = fsp(2,izp)
@@ -352,25 +381,36 @@ module Particles_nbody
       gs_acc = -gs*r1sep**2
       gp_acc = gs_acc * gp/gs
 !
-      dfsp(2,ivpx) = dfsp(2,ivpx) + gp_acc*r1sep*(axs-ax)
-      dfsp(2,ivpy) = dfsp(2,ivpy) + gp_acc*r1sep*(ays-ay)
-      dfsp(2,ivpz) = dfsp(2,ivpz) + gp_acc*r1sep*(azs-az)
+      !dfsp(2,ivpx) = dfsp(2,ivpx)+gp_acc*r1sep*(axs-ax)
+      !dfsp(2,ivpy) = dfsp(2,ivpy)+gp_acc*r1sep*(ays-ay)
+      !dfsp(2,ivpz) = dfsp(2,ivpz)+gp_acc*r1sep*(azs-az)
 !
-!  Star's gravity on planet
+!  Star's gravity on 
 !
-      dfsp(1,ivpx) = dfsp(2,ivpx) + gs_acc*r1sep*(ax-axs)
-      dfsp(1,ivpy) = dfsp(2,ivpy) + gs_acc*r1sep*(ay-ays)
-      dfsp(1,ivpz) = dfsp(2,ivpz) + gs_acc*r1sep*(az-azs)
+      !dfsp(1,ivpx) = dfsp(2,ivpx)+gs_acc*r1sep*(ax-axs)
+      !dfsp(1,ivpy) = dfsp(2,ivpy)+gs_acc*r1sep*(ay-ays)
+      !dfsp(1,ivpz) = dfsp(2,ivpz)+gs_acc*r1sep*(az-azs)
 !
 ! Check the position of the center of mass of the sink 
 ! particles, and reset it to the center of the grid
 !
-      call reset_center_of_mass(fsp,dfsp,gp,gs)
+      !call reset_center_of_mass(gp,gs)
 !
 !  Put it back on the dfp array
 !
-      do k=1,nspar
-         dfp(ispar(k),:) = dfp(ispar(k),:) + dfsp(k,:)
+      do ks=1,nspar
+         do k=1,npar_loc
+            if (ks==ipar(k)) then
+               if (ks==1) then
+                  dfp(k,ivpx) = dfp(k,ivpx) + gs_acc*r1sep*(ax-axs)
+                  dfp(k,ivpy) = dfp(k,ivpy) + gs_acc*r1sep*(ay-ays)
+               endif
+               if (ks==2) then
+                  dfp(k,ivpx) = dfp(k,ivpx) + gp_acc*r1sep*(axs-ax)
+                  dfp(k,ivpy) = dfp(k,ivpy) + gp_acc*r1sep*(ays-ay)
+               endif
+            endif
+         enddo
       enddo
 !
       if (lcalc_orbit) then
@@ -541,18 +581,16 @@ module Particles_nbody
 !
     endsubroutine rprint_particles_nbody
 !***********************************************************************
-    subroutine reset_center_of_mass(fsp,dfsp,gp,gs)
+    subroutine reset_center_of_mass(gp,gs)
 !
 !  If the center of mass was accelerated, reset its position
 !  to the center of the grig
 !
 !  27-aug-06/wlad: coded
 !
-      real, dimension (nspar,mpvar) :: fsp,dfsp
       real :: gs,gp,invtotmass,vx_cm,vy_cm,vz_cm
 !
-      intent (in)    ::  fsp,gs,gp
-      intent (inout) :: dfsp
+      intent (in)    ::  gs,gp
 !
       invtotmass = 1./(gp+gs)
 !
@@ -569,36 +607,190 @@ module Particles_nbody
       dfsp(1,izp) = dfsp(1,izp) - vz_cm
       dfsp(2,izp) = dfsp(2,izp) - vz_cm
 !
-     endsubroutine reset_center_of_mass
+    endsubroutine reset_center_of_mass
 !***********************************************************************
-    subroutine get_particles_interdistances(fsp,rp_mn,rpcyl_mn)
+    subroutine get_particles_interdistances(rp_mn,rpcyl_mn,ax,ay)
 !
 !  Should be pencils of dimension (nx,nspar)
 !  because they will be used by planet and gravity
 !
 !  18-jul-06/wlad: coded
 !
-      real, dimension (nspar,mpvar) :: fsp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension(nspar) :: ax,ay
       integer :: k
 !
-      intent(out) :: rp_mn,rpcyl_mn
-!
-! more readable variable names
+      intent(out) :: rp_mn,rpcyl_mn,ax,ay
 !
       do k=1,nspar
 !
 ! Spherical and cylindrical distances
 !
-         rp_mn(:,ispar(k))    = &
+         rp_mn(:,k)    = &
               sqrt((x(l1:l2)-fsp(k,ixp))**2 + (y(m)-fsp(k,iyp))**2  &
               + (z(n)-fsp(k,izp))**2) + tini
 !
-         rpcyl_mn(:,ispar(k)) = &
+         rpcyl_mn(:,k) = &
               sqrt((x(l1:l2)-fsp(k,ixp))**2 + (y(m)-fsp(k,iyp))**2) + tini
 !
       enddo
 !
+      ax=fsp(:,ixp) 
+      ay=fsp(:,iyp) 
+!
     endsubroutine get_particles_interdistances
 !***********************************************************************
-endmodule Particles_nbody
+    subroutine share_sinkparticles(fp,dfp)
+!
+! Broadcast sink particles across processors
+! The non-root processors, if the find a sink particle in their
+! fp array, they:
+!    send it to root with a true logical
+!    else send a false logical
+!
+! The root processor receives all the logicals, and if
+! they are true, then receives the value, broadcasting it
+!
+      use Mpicomm
+!
+      real, dimension(mpar_loc,mpvar) :: fp
+      real, dimension(mpar_loc,mpvar), optional :: dfp
+      logical, dimension(nspar) :: lsink
+      integer :: ks,k,tag,j,tag2
+!
+      if (lmpicomm) then
+         do ks=1,nspar
+!
+! look for the sink particles in this processor
+!
+            do k=1,mpar_loc
+!
+! check if a sink particle was found
+!
+               if (ks.eq.ipar(k)) then
+!
+! Copy it to fsp in this processor
+!
+                  if (ip<=6) print*,'share_sinkparticles:',&
+                       'The sink particle ',ks,&
+                       ' is at the slot,',k,&
+                       ' of processor ',iproc,'.',&
+                       ' And it is at position x=',fp(k,ixp)
+!  
+                  fsp(ks,:) = fp(k,ixp:ivpz)
+                  if (present(dfp)) dfsp(ks,:) = dfp(k,ixp:ivpz)
+!
+! if this is not root, send it to root
+!
+                  if (.not.lroot) then
+                     tag = (mpar_loc**2)*iproc + mpar_loc*ks + k
+                     lsink(ks)=.true.
+                     call mpisend_logical(lsink(ks),1,root,tag)
+                     call mpisend_real(fsp(ks,:),mpvar,root,tag)
+                     if (present(dfp)) &
+                          call mpisend_real(dfsp(ks,:),mpvar,root,-tag)
+                  endif
+               else
+!
+! if we didn't find a sink particle and if we are not root,
+! send a false logical
+!
+                  if (.not.lroot) then
+                     tag = (mpar_loc**2)*iproc + mpar_loc*ks + k
+                     lsink(ks)=.false.
+                     call mpisend_logical(lsink(ks),1,root,tag)
+                  endif
+!
+               endif
+!
+!  still in the big double loop
+!  just the root receives
+!
+               if (lroot) then
+!
+! receive ALL the sends in the root processor
+! starts with one because the root does not need to send
+!
+                  do j=1,ncpus-1
+                     tag2 = (mpar_loc**2)*j + mpar_loc*ks + k  !same tag
+                     call mpirecv_logical(lsink(ks),1,j,tag2)
+!
+! if the logical is true, get fsp
+!
+                     if (lsink(ks)) then
+                        call mpirecv_real(fsp(ks,:),mpvar,j,tag2)
+                        if (present(dfp)) &
+                             call mpirecv_real(dfsp(ks,:),mpvar,j,-tag2)
+                     endif
+!
+                  enddo
+               endif
+!
+! finish loop through npar_loc
+!
+            enddo
+!
+! broadcast the properties of this sink particle fsp(ks,:)
+!
+            call mpibcast_real(fsp(ks,:),mpvar)
+            if (present(dfp)) &
+                 call mpibcast_real(dfsp(ks,:),mpvar)
+!
+! finish loop through sink particles
+!
+         enddo
+!
+! print the result in all processors
+!
+         if (ip<=8) then
+            do ks=1,nspar
+               print *,'share_sinkparticles: ',&
+                    'P:',iproc,' after broadcast, ks, fsp(ks,ixp) is ',&
+                    ks,fsp(ks,1)
+            enddo
+         endif
+!         
+      else
+!
+! no mpicomm
+!
+         do ks=1,nspar
+            do k=1,npar_loc
+               if (ks.eq.ipar(k)) then
+                  fsp(ks,:) = fp(k,ixp:ivpz)
+                  if (present(dfp)) &
+                       dfsp(ks,:) = dfp(k,ixp:ivpz)
+               endif
+            enddo
+         enddo
+      endif
+!
+    endsubroutine share_sinkparticles
+!***********************************************************************
+     subroutine get_ramped_mass(gp,gs,g0)
+!
+! Ramps up the mass of the planet from 0 to gc over
+! n_periods orbits. If lramp=.false., will return gc.
+! Currently just used for the comparison
+! project. Called by both gravity_companion and dvvp_dt
+!
+! 03-mar-06/wlad : coded
+!
+      real :: fgp,gp,gs,g0,tcut
+      intent(out) :: gp,gs
+!
+      fgp = 0.5*(1 - sqrt(1-4*gc))
+      gp = fgp
+!
+      if (lramp) then
+         tcut = n_periods * 2*pi
+         if (t .le. tcut) then
+            gp = fgp* (sin(pi/2. * t/tcut))**2
+         endif
+      endif
+!
+      gs = g0 - gp
+!
+    endsubroutine get_ramped_mass
+!************************************************************************
+  endmodule Particles_nbody
