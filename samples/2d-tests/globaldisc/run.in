@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.25 2006-09-06 18:28:03 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.26 2006-09-07 05:53:24 ajohan Exp $',
   ip=14,
   nt=100, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -47,7 +47,6 @@ rho0= 1.
   nu_shock=1.0
 /
 &particles_run_pars
-  ldragforce_dust_par=F
 /
 &particles_nbody_run_pars
  lramp=F
