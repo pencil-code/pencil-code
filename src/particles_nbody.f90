@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.16 2006-09-07 10:11:49 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.17 2006-09-07 15:40:37 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -68,7 +68,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.16 2006-09-07 10:11:49 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.17 2006-09-07 15:40:37 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -143,10 +143,10 @@ module Particles_nbody
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
-      real, dimension(nspar) :: mass
+      real, dimension(nspar) :: pmass
       real :: gp,gs,gp_init
       real :: r, p
-      integer :: k,ks,ipos
+      integer :: k,ipos
 !
       intent (in) :: f
       intent (out) :: fp
@@ -173,40 +173,35 @@ module Particles_nbody
 !
 ! center of mass fixed on center of grid
 !
-         call get_ramped_mass(gp,gs,g0)
-!
-         mass(1) = gp
-         mass(2) = gs
+         call get_particle_masses(pmass)
 !
 !loop through ipar to allocate the sink particles
 !
          do k=1,npar_loc
-            do ks=1,nspar
-               if (ipar(k)==ks) then
+            if (ipar(k) <= nspar) then
 !
-                  print*,&
-                       'initparticles_nbody. Slot for sink particle ',ks,&
-                       ' was at fp position ',k,&
-                       ' at processor ',iproc
+               print*,&
+                    'initparticles_nbody. Slot for sink particle ',ipar(k),&
+                    ' was at fp position ',k,&
+                    ' at processor ',iproc
 !
-                  if (ks==1) ipos=2
-                  if (ks==2) ipos=1
+               if (ipar(k)==1) ipos=2
+               if (ipar(k)==2) ipos=1
 !
-                  fp(k,ixp)=mass(ipos) * (-1)**ks
-                  fp(k,iyp)=0.
-                  fp(k,izp)=0.
+               fp(k,ixp)=pmass(ipos) * (-1)**ipar(k)
+               fp(k,iyp)=0.
+               fp(k,izp)=0.
 !
 ! Correct for non-existing dimensions (not really needed, I think)
 !
-                  if (nxgrid==1) fp(k,ixp)=x(nghost+1)
-                  if (nygrid==1) fp(k,iyp)=y(nghost+1)
-                  if (nzgrid==1) fp(k,izp)=z(nghost+1)
+               if (nxgrid==1) fp(k,ixp)=x(nghost+1)
+               if (nygrid==1) fp(k,iyp)=y(nghost+1)
+               if (nzgrid==1) fp(k,izp)=z(nghost+1)
 !               
-                  print*,&
-                       'initparticles_nbody. Sink particle ',ks,&
-                       ' located at ixp=',fp(k,ixp)
-               endif
-            enddo
+               print*,&
+                    'initparticles_nbody. Sink particle ',ipar(k),&
+                    ' located at ixp=',fp(k,ixp)
+            endif
          enddo
 
       case default
@@ -219,6 +214,7 @@ module Particles_nbody
 !  Redistribute particles among processors (now that positions are determined).
 !
       call boundconds_particles(fp,npar_loc,ipar)
+!
       call share_sinkparticles(fp)
 !
 !  Initial particle velocity.
@@ -243,33 +239,28 @@ module Particles_nbody
          endif
 
       case ('fixed-cm')
-         call get_ramped_mass(gp,gs,g0)
-!
-         mass(1) = gp
-         mass(2) = gs
+         call get_particle_masses(pmass)
 !
 !loop through ipar to allocate the sink particles
 !
          do k=1,npar_loc
-            do ks=1,nspar
-               if (ipar(k)==ks) then
-                  print*,&
-                       'initparticles_nbody. Slot for sink particle ',ks,&
-                       ' was at fp position ',k,&
-                       ' at processor ',iproc
+            if (ipar(k)<=nspar) then
+               print*,&
+                    'initparticles_nbody. Slot for sink particle ',ipar(k),&
+                    ' was at fp position ',k,&
+                    ' at processor ',iproc
 !
-                  if (ks==1) ipos=2
-                  if (ks==2) ipos=1
+               if (ipar(k)==1) ipos=2
+               if (ipar(k)==2) ipos=1
 !
-                  fp(k,ivpx) = 0.
-                  fp(k,ivpy) = mass(ipos) * (-1)**ks
-                  fp(k,ivpz) = 0.
+               fp(k,ivpx) = 0.
+               fp(k,ivpy) = pmass(ipos) * (-1)**ipar(k)
+               fp(k,ivpz) = 0.
 !
-                  print*,'initparticles_nbody. Sink particle ',ks,&
-                       ' has velocity y=',fp(k,ivpy)
+               print*,'initparticles_nbody. Sink particle ',ipar(k),&
+                    ' has velocity y=',fp(k,ivpy)
 !
-               endif
-            enddo
+            endif
          enddo
 !
       case default
@@ -319,14 +310,14 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
-       integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (mpar_loc,3) :: ineargrid
       real, dimension (npar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
       real, dimension (npar_loc) :: xplanet,yplanet,zplanet
       real, dimension (npar_loc) :: vxplanet,vyplanet,vzplanet
-      real :: Omega2,rsep,gs,gp,gs_acc,gp_acc,r1sep
-      real :: ax,ay,az,axs,ays,azs,vx,vy,vz,vxs,vys,vzs
-      real :: axr,ayr,azr,vxr,vyr,vzr
-      integer :: i, k, ks
+      real, dimension (nspar) :: pmass
+      real, dimension (nspar,3) :: acc
+      real :: Omega2,invr3_ij
+      integer :: i, k, ks, ki, kj
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) ::     f,  fp,  ineargrid
@@ -342,85 +333,80 @@ module Particles_nbody
 !
 !  Add Coriolis force from rotating coordinate frame.
 !
-      !if (Omega/=0.) then
-      !   if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
-      !   Omega2=2*Omega
-      !   dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
-      !   dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
+      if (Omega/=0.) then
+         if (lheader) print*,'dvvp_dt: Add Coriolis force; Omega=', Omega
+         Omega2=2*Omega
+         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + Omega2*fp(1:npar_loc,ivpy)
+         dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - Omega2*fp(1:npar_loc,ivpx)
 !
 !  With shear there is an extra term due to the background shear flow.
 !
-      !   if (lshear) dfp(1:npar_loc,ivpy) = &
-      !        dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
-      !endif
-!
-!  More readable variables names
+         if (lshear) dfp(1:npar_loc,ivpy) = &
+              dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
+      endif
 !
       call share_sinkparticles(fp,dfp)
 !
-      ax = fsp(1,ixp)  ; axs = fsp(2,ixp)
-      ay = fsp(1,iyp)  ; ays = fsp(2,iyp)
-      az = fsp(1,izp)  ; azs = fsp(2,izp)
+      call get_particle_masses(pmass)
 !
-      vx = fsp(1,ivpx) ; vxs = fsp(2,ivpx)
-      vy = fsp(1,ivpy) ; vys = fsp(2,ivpy)
-      vz = fsp(1,ivpz) ; vzs = fsp(2,ivpz)
+! Evolve the position of the sink particles due to their mutual gravity
 !
-!  Relative positions and velocities
+      do ki=1,nspar
 !
-      axr = ax - axs ; ayr = ay - ays ; azr = az - azs
-      vxr = vx - vxs ; vyr = vy - vys ; vzr = vz - vzs
+! Calculate in the root only, then broadcast
 !
-      rsep = sqrt(axr**2 + ayr**2 + azr**2)
-      r1sep = 1./rsep
+         if (lroot) then
+            acc(ki,:) = 0.
+            do kj=1,nspar
+               if (kj/=ki) then
 !
-!  Planet's gravity on star - must use ramp up as well
+!  Particles relative distance from each other
 !
-      call get_ramped_mass(gp,gs,g0)
+!  axr = fsp(ki,ixp) - fsp(kj,ixp)
 !
-      gs_acc = -gs*r1sep**2
-      gp_acc = gs_acc * gp/gs
+!  r_ij = sqrt(axr**2 + ayr**2 + azr**2)
+!  invr3_ij = r_ij**(-3)
+! 
+                  invr3_ij = (  (fsp(ki,ixp) - fsp(kj,ixp))**2           &
+                       +        (fsp(ki,iyp) - fsp(kj,iyp))**2           &
+                       +        (fsp(ki,izp) - fsp(kj,izp))**2  )**(-1.5)
 !
-      !dfsp(2,ivpx) = dfsp(2,ivpx)+gp_acc*r1sep*(axs-ax)
-      !dfsp(2,ivpy) = dfsp(2,ivpy)+gp_acc*r1sep*(ays-ay)
-      !dfsp(2,ivpz) = dfsp(2,ivpz)+gp_acc*r1sep*(azs-az)
+!  Gravitational acceleration
 !
-!  Star's gravity on 
+                  acc(ki,1) = acc(ki,1) - pmass(kj)*invr3_ij*(fsp(ki,ixp) - fsp(kj,ixp)) 
+                  acc(ki,2) = acc(ki,2) - pmass(kj)*invr3_ij*(fsp(ki,iyp) - fsp(kj,iyp)) 
+                  acc(ki,3) = acc(ki,3) - pmass(kj)*invr3_ij*(fsp(ki,izp) - fsp(kj,izp)) 
+!             
+               endif
+            enddo
+         endif
 !
-      !dfsp(1,ivpx) = dfsp(2,ivpx)+gs_acc*r1sep*(ax-axs)
-      !dfsp(1,ivpy) = dfsp(2,ivpy)+gs_acc*r1sep*(ay-ays)
-      !dfsp(1,ivpz) = dfsp(2,ivpz)+gs_acc*r1sep*(az-azs)
+!  Broadcast particle acceleration
+!
+         call mpibcast_real(acc(ki,:),3)
+!
+!  Put it back on the dfp array on his processor
+!
+         do k=1,npar_loc
+            if (ipar(k)==ki) &
+                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ki,1:3)
+         enddo
+!
+      enddo
 !
 ! Check the position of the center of mass of the sink 
 ! particles, and reset it to the center of the grid
 !
       !call reset_center_of_mass(gp,gs)
 !
-!  Put it back on the dfp array
-!
-      do ks=1,nspar
-         do k=1,npar_loc
-            if (ks==ipar(k)) then
-               if (ks==1) then
-                  dfp(k,ivpx) = dfp(k,ivpx) + gs_acc*r1sep*(ax-axs)
-                  dfp(k,ivpy) = dfp(k,ivpy) + gs_acc*r1sep*(ay-ays)
-               endif
-               if (ks==2) then
-                  dfp(k,ivpx) = dfp(k,ivpx) + gp_acc*r1sep*(axs-ax)
-                  dfp(k,ivpy) = dfp(k,ivpy) + gp_acc*r1sep*(ays-ay)
-               endif
-            endif
-         enddo
-      enddo
-!
       if (lcalc_orbit) then
-         xstar(1:npar_loc) = axs  ; vxstar(1:npar_loc) = vxs
-         ystar(1:npar_loc) = ays  ; vystar(1:npar_loc) = vys
-         zstar(1:npar_loc) = azs  ; vzstar(1:npar_loc) = vzs
+         xstar(1:npar_loc) = fsp(2,ixp) ; vxstar(1:npar_loc) = fsp(2,ixp)
+         ystar(1:npar_loc) = fsp(2,iyp) ; vystar(1:npar_loc) = fsp(2,iyp)
+         zstar(1:npar_loc) = fsp(2,izp) ; vzstar(1:npar_loc) = fsp(2,izp)
 !
-         xplanet(1:npar_loc) = ax ; vxplanet(1:npar_loc) = vx
-         yplanet(1:npar_loc) = ay ; vyplanet(1:npar_loc) = vy
-         zplanet(1:npar_loc) = az ; vzplanet(1:npar_loc) = vz
+         xplanet(1:npar_loc) = fsp(1,ixp) ; vxplanet(1:npar_loc) = fsp(1,ixp)
+         yplanet(1:npar_loc) = fsp(1,iyp) ; vyplanet(1:npar_loc) = fsp(1,iyp)
+         zplanet(1:npar_loc) = fsp(1,izp) ; vzplanet(1:npar_loc) = fsp(1,izp)
       endif
 !
 !  Diagnostic output
@@ -676,7 +662,7 @@ module Particles_nbody
                        ' is at the slot,',k,&
                        ' of processor ',iproc,'.',&
                        ' And it is at position x=',fp(k,ixp)
-!  
+!
                   fsp(ks,:) = fp(k,ixp:ivpz)
                   if (present(dfp)) dfsp(ks,:) = dfp(k,ixp:ivpz)
 !
@@ -688,7 +674,7 @@ module Particles_nbody
                      call mpisend_logical(lsink(ks),1,root,tag)
                      call mpisend_real(fsp(ks,:),mpvar,root,tag)
                      if (present(dfp)) then
-                        maxtag = (mpar_loc**2)*(ncpus-1) + mpar_loc*nspar + mpar_loc
+                        maxtag = (mpar_loc**2)*ncpus + mpar_loc*nspar + mpar_loc
                         dtag = maxtag + tag
                         call mpisend_real(dfsp(ks,:),mpvar,root,dtag)
                      endif
@@ -723,7 +709,7 @@ module Particles_nbody
                      if (lsink(ks)) then
                         call mpirecv_real(fsp(ks,:),mpvar,j,tag2)
                         if (present(dfp)) then
-                           maxtag = (mpar_loc**2)*(ncpus-1) + mpar_loc*nspar + mpar_loc
+                           maxtag = (mpar_loc**2)*ncpus + mpar_loc*nspar + mpar_loc
                            dtag2=maxtag + tag2
                            call mpirecv_real(dfsp(ks,:),mpvar,j,dtag2)
                         endif
@@ -755,7 +741,7 @@ module Particles_nbody
                     ks,fsp(ks,1)
             enddo
          endif
-!         
+!
       else
 !
 ! no mpicomm
@@ -773,17 +759,17 @@ module Particles_nbody
 !
     endsubroutine share_sinkparticles
 !***********************************************************************
-     subroutine get_ramped_mass(gp,gs,g0)
+    subroutine get_particle_masses(pmass)
 !
 ! Ramps up the mass of the planet from 0 to gc over
 ! n_periods orbits. If lramp=.false., will return gc.
 ! Currently just used for the comparison
-! project. Called by both gravity_companion and dvvp_dt
+! project.
 !
 ! 03-mar-06/wlad : coded
 !
-      real :: fgp,gp,gs,g0,tcut
-      intent(out) :: gp,gs
+      real :: fgp,tcut,gp,gs
+      real, dimension(nspar), intent(out) :: pmass
 !
       fgp = 0.5*(1 - sqrt(1-4*gc))
       gp = fgp
@@ -797,6 +783,12 @@ module Particles_nbody
 !
       gs = g0 - gp
 !
-    endsubroutine get_ramped_mass
+      do ks=1,nspar
+         pmass(ks) = 0.
+         if (ks==1)  pmass(ks) = gp
+         if (ks==2)  pmass(ks) = gs
+      enddo
+!
+    endsubroutine get_particle_masses
 !************************************************************************
   endmodule Particles_nbody
