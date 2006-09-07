@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.17 2006-09-07 15:40:37 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.18 2006-09-07 17:06:56 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -21,24 +21,21 @@ module Particles_nbody
 
   include 'particles_nbody.h'
   
-  real :: dummy
-  logical :: lnbody_particles=.true.
+  real, dimension(nspar,mpvar) :: fsp
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real, dimension(nspar,mpvar) :: fsp,dfsp
+  real, dimension(nspar) :: pmass,position
   real :: delta_vsp0=1.0
-  real :: g0=1.,n_periods=5,gc=0.
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.
-  logical :: lramp=.false.
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
-       bcspx, bcspy, bcspz, g0, gc, lramp
+       bcspx, bcspy, bcspz, pmass, position
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
-       lcalc_orbit, g0, gc, lramp
+       lcalc_orbit
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -68,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.17 2006-09-07 15:40:37 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.18 2006-09-07 17:06:56 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -141,12 +138,11 @@ module Particles_nbody
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(nspar) :: velocity
 !
       real, dimension (3) :: uup
-      real, dimension(nspar) :: pmass
-      real :: gp,gs,gp_init
-      real :: r, p
-      integer :: k,ipos
+      real :: aux,aux2
+      integer :: k,ks
 !
       intent (in) :: f
       intent (out) :: fp
@@ -171,11 +167,28 @@ module Particles_nbody
 
       case ('fixed-cm')
 !
-! center of mass fixed on center of grid
+! Ok, I have the masses and the positions of all sinks except the last, which will
+! have a position determined to fix the center of mass on the center of the grid
 !
-         call get_particle_masses(pmass)
+         if (lroot) then 
+            print*,'fixed-cm: redefining the mass of the last sink particle' 
+            print*,'fixed-cm: it assumed that the sum of the mass of the particles is always 1.'
+         endif
 !
-!loop through ipar to allocate the sink particles
+         aux = 0. ; aux2=0.
+         do ks=1,nspar-1
+            aux  = aux  + pmass(ks)
+            aux2 = aux2 + pmass(ks)*position(ks)
+         enddo
+
+!
+         pmass(nspar)    =  1. - aux
+         position(nspar) = -1. * aux2 / pmass(nspar)
+!
+         print*,'pmass = ',pmass
+         print*,'position =',position
+!
+! Loop through ipar to allocate the sink particles
 !
          do k=1,npar_loc
             if (ipar(k) <= nspar) then
@@ -185,10 +198,7 @@ module Particles_nbody
                     ' was at fp position ',k,&
                     ' at processor ',iproc
 !
-               if (ipar(k)==1) ipos=2
-               if (ipar(k)==2) ipos=1
-!
-               fp(k,ixp)=pmass(ipos) * (-1)**ipar(k)
+               fp(k,ixp)=position(ipar(k))
                fp(k,iyp)=0.
                fp(k,izp)=0.
 !
@@ -239,9 +249,20 @@ module Particles_nbody
          endif
 
       case ('fixed-cm')
-         call get_particle_masses(pmass)
 !
-!loop through ipar to allocate the sink particles
+! Keplerian velocities for the planets, GM=sum(pmass)=1
+!
+         aux = 0.
+         do ks=1,nspar-1 
+            velocity(ks) = sign(1.,position(ks))* abs(position(ks))**(-1.5)
+            aux = aux - pmass(ks)*velocity(ks)
+         enddo
+!
+! The last one (star) fixes the CM also with velocity zero
+!         
+         velocity(nspar) = aux / pmass(nspar)
+!
+! Loop through ipar to allocate the sink particles
 !
          do k=1,npar_loc
             if (ipar(k)<=nspar) then
@@ -250,11 +271,8 @@ module Particles_nbody
                     ' was at fp position ',k,&
                     ' at processor ',iproc
 !
-               if (ipar(k)==1) ipos=2
-               if (ipar(k)==2) ipos=1
-!
                fp(k,ivpx) = 0.
-               fp(k,ivpy) = pmass(ipos) * (-1)**ipar(k)
+               fp(k,ivpy) = velocity(ipar(k))
                fp(k,ivpz) = 0.
 !
                print*,'initparticles_nbody. Sink particle ',ipar(k),&
@@ -314,7 +332,6 @@ module Particles_nbody
       real, dimension (npar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
       real, dimension (npar_loc) :: xplanet,yplanet,zplanet
       real, dimension (npar_loc) :: vxplanet,vyplanet,vzplanet
-      real, dimension (nspar) :: pmass
       real, dimension (nspar,3) :: acc
       real :: Omega2,invr3_ij
       integer :: i, k, ks, ki, kj
@@ -345,9 +362,7 @@ module Particles_nbody
               dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
       endif
 !
-      call share_sinkparticles(fp,dfp)
-!
-      call get_particle_masses(pmass)
+      call share_sinkparticles(fp)
 !
 ! Evolve the position of the sink particles due to their mutual gravity
 !
@@ -397,7 +412,7 @@ module Particles_nbody
 ! Check the position of the center of mass of the sink 
 ! particles, and reset it to the center of the grid
 !
-      !call reset_center_of_mass(gp,gs)
+      !call reset_center_of_mass
 !
       if (lcalc_orbit) then
          xstar(1:npar_loc) = fsp(2,ixp) ; vxstar(1:npar_loc) = fsp(2,ixp)
@@ -567,31 +582,25 @@ module Particles_nbody
 !
     endsubroutine rprint_particles_nbody
 !***********************************************************************
-    subroutine reset_center_of_mass(gp,gs)
+    subroutine reset_center_of_mass
 !
 !  If the center of mass was accelerated, reset its position
 !  to the center of the grig
 !
+!  Assumes that the total mass of the particles is one.  
+!
 !  27-aug-06/wlad: coded
 !
-      real :: gs,gp,invtotmass,vx_cm,vy_cm,vz_cm
+      real, dimension(3) :: vcm
+      integer :: ks
 !
-      intent (in)    ::  gs,gp
+      vcm(1) = sum(pmass*fsp(:,ivpx))
+      vcm(2) = sum(pmass*fsp(:,ivpy))
+      vcm(3) = sum(pmass*fsp(:,ivpz))
 !
-      invtotmass = 1./(gp+gs)
-!
-      vx_cm = invtotmass * (gp*fsp(1,ivpx) + gs*fsp(2,ivpx))
-      vy_cm = invtotmass * (gp*fsp(1,ivpy) + gs*fsp(2,ivpy))
-      vz_cm = invtotmass * (gp*fsp(1,ivpz) + gs*fsp(2,ivpz))
-!
-      dfsp(1,ixp) = dfsp(1,ixp) - vx_cm
-      dfsp(2,ixp) = dfsp(2,ixp) - vx_cm
-!                        
-      dfsp(1,iyp) = dfsp(1,iyp) - vy_cm
-      dfsp(2,iyp) = dfsp(2,iyp) - vy_cm
-!                        
-      dfsp(1,izp) = dfsp(1,izp) - vz_cm
-      dfsp(2,izp) = dfsp(2,izp) - vz_cm
+      do ks=1,nspar
+         fsp(ks,ivpx:ivpz) = fsp(ks,ivpx:ivpz) - vcm(1:3)
+      enddo
 !
     endsubroutine reset_center_of_mass
 !***********************************************************************
@@ -626,7 +635,7 @@ module Particles_nbody
 !
     endsubroutine get_particles_interdistances
 !***********************************************************************
-    subroutine share_sinkparticles(fp,dfp)
+    subroutine share_sinkparticles(fp)
 !
 ! Broadcast sink particles across processors
 ! The non-root processors, if the find a sink particle in their
@@ -640,9 +649,8 @@ module Particles_nbody
       use Mpicomm
 !
       real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(mpar_loc,mpvar), optional :: dfp
       logical, dimension(nspar) :: lsink
-      integer :: ks,k,tag,j,tag2,dtag,dtag2,maxtag
+      integer :: ks,k,tag,j,tag2
 !
       if (lmpicomm) then
          do ks=1,nspar
@@ -664,7 +672,6 @@ module Particles_nbody
                        ' And it is at position x=',fp(k,ixp)
 !
                   fsp(ks,:) = fp(k,ixp:ivpz)
-                  if (present(dfp)) dfsp(ks,:) = dfp(k,ixp:ivpz)
 !
 ! if this is not root, send it to root
 !
@@ -673,11 +680,6 @@ module Particles_nbody
                      lsink(ks)=.true.
                      call mpisend_logical(lsink(ks),1,root,tag)
                      call mpisend_real(fsp(ks,:),mpvar,root,tag)
-                     if (present(dfp)) then
-                        maxtag = (mpar_loc**2)*ncpus + mpar_loc*nspar + mpar_loc
-                        dtag = maxtag + tag
-                        call mpisend_real(dfsp(ks,:),mpvar,root,dtag)
-                     endif
                   endif
                else
 !
@@ -706,14 +708,8 @@ module Particles_nbody
 !
 ! if the logical is true, get fsp
 !
-                     if (lsink(ks)) then
-                        call mpirecv_real(fsp(ks,:),mpvar,j,tag2)
-                        if (present(dfp)) then
-                           maxtag = (mpar_loc**2)*ncpus + mpar_loc*nspar + mpar_loc
-                           dtag2=maxtag + tag2
-                           call mpirecv_real(dfsp(ks,:),mpvar,j,dtag2)
-                        endif
-                     endif
+                     if (lsink(ks)) &
+                          call mpirecv_real(fsp(ks,:),mpvar,j,tag2)
 !
                   enddo
                endif
@@ -725,8 +721,6 @@ module Particles_nbody
 ! broadcast the properties of this sink particle fsp(ks,:)
 !
             call mpibcast_real(fsp(ks,:),mpvar)
-            if (present(dfp)) &
-                 call mpibcast_real(dfsp(ks,:),mpvar)
 !
 ! finish loop through sink particles
 !
@@ -748,47 +742,12 @@ module Particles_nbody
 !
          do ks=1,nspar
             do k=1,npar_loc
-               if (ks.eq.ipar(k)) then
-                  fsp(ks,:) = fp(k,ixp:ivpz)
-                  if (present(dfp)) &
-                       dfsp(ks,:) = dfp(k,ixp:ivpz)
-               endif
+               if (ks.eq.ipar(k)) &
+                    fsp(ks,:) = fp(k,ixp:ivpz)
             enddo
          enddo
       endif
 !
     endsubroutine share_sinkparticles
 !***********************************************************************
-    subroutine get_particle_masses(pmass)
-!
-! Ramps up the mass of the planet from 0 to gc over
-! n_periods orbits. If lramp=.false., will return gc.
-! Currently just used for the comparison
-! project.
-!
-! 03-mar-06/wlad : coded
-!
-      real :: fgp,tcut,gp,gs
-      real, dimension(nspar), intent(out) :: pmass
-!
-      fgp = 0.5*(1 - sqrt(1-4*gc))
-      gp = fgp
-!
-      if (lramp) then
-         tcut = n_periods * 2*pi
-         if (t .le. tcut) then
-            gp = fgp* (sin(pi/2. * t/tcut))**2
-         endif
-      endif
-!
-      gs = g0 - gp
-!
-      do ks=1,nspar
-         pmass(ks) = 0.
-         if (ks==1)  pmass(ks) = gp
-         if (ks==2)  pmass(ks) = gs
-      enddo
-!
-    endsubroutine get_particle_masses
-!************************************************************************
   endmodule Particles_nbody
