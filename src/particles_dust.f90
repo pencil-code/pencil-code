@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.143 2006-09-04 12:25:12 ajohan Exp $
+! $Id: particles_dust.f90,v 1.144 2006-09-07 05:53:00 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -112,7 +112,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.143 2006-09-04 12:25:12 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.144 2006-09-07 05:53:00 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -171,7 +171,14 @@ module Particles
 !  The inverse stopping time is needed for drag force.
 !
       tausp1=0.0
-      if (tausp/=0.) tausp1=1/tausp
+      if (tausp/=0.) then
+        tausp1=1/tausp
+      else
+        ldragforce_dust_par=.false.
+        ldragforce_gas_par=.false.
+        if (lroot) print*, 'initialize_particles: tausp=0, so drag force '// &
+            'was turned off!'
+      endif
 !
       if (beta_dPdr_dust/=0.0) then
         beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
