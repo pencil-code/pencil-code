@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.15 2006-09-06 18:11:52 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.16 2006-09-07 10:11:49 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -68,7 +68,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.15 2006-09-06 18:11:52 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.16 2006-09-07 10:11:49 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -656,7 +656,7 @@ module Particles_nbody
       real, dimension(mpar_loc,mpvar) :: fp
       real, dimension(mpar_loc,mpvar), optional :: dfp
       logical, dimension(nspar) :: lsink
-      integer :: ks,k,tag,j,tag2
+      integer :: ks,k,tag,j,tag2,dtag,dtag2,maxtag
 !
       if (lmpicomm) then
          do ks=1,nspar
@@ -687,8 +687,11 @@ module Particles_nbody
                      lsink(ks)=.true.
                      call mpisend_logical(lsink(ks),1,root,tag)
                      call mpisend_real(fsp(ks,:),mpvar,root,tag)
-                     if (present(dfp)) &
-                          call mpisend_real(dfsp(ks,:),mpvar,root,-tag)
+                     if (present(dfp)) then
+                        maxtag = (mpar_loc**2)*(ncpus-1) + mpar_loc*nspar + mpar_loc
+                        dtag = maxtag + tag
+                        call mpisend_real(dfsp(ks,:),mpvar,root,dtag)
+                     endif
                   endif
                else
 !
@@ -719,8 +722,11 @@ module Particles_nbody
 !
                      if (lsink(ks)) then
                         call mpirecv_real(fsp(ks,:),mpvar,j,tag2)
-                        if (present(dfp)) &
-                             call mpirecv_real(dfsp(ks,:),mpvar,j,-tag2)
+                        if (present(dfp)) then
+                           maxtag = (mpar_loc**2)*(ncpus-1) + mpar_loc*nspar + mpar_loc
+                           dtag2=maxtag + tag2
+                           call mpirecv_real(dfsp(ks,:),mpvar,j,dtag2)
+                        endif
                      endif
 !
                   enddo
