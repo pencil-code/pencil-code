@@ -1,8 +1,8 @@
-; $Id: pc_read_pvar.pro,v 1.22 2006-08-07 11:36:38 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.23 2006-09-07 21:08:29 joishi Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
-pro pc_read_pvar, object=object, varfile=varfile, datadir=datadir, $
+pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, quiet=quiet, qquiet=qquiet,SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
@@ -10,9 +10,17 @@ COMMON pc_precision, zero, one
 ;  Defaults.
 ;
 default, datadir, 'data'
-default, varfile, 'pvar.dat'
 default, quiet, 0
 default, qquiet, 0
+
+if n_elements(ivar) eq 1 then begin
+    default,varfile_,'PVAR'
+    varfile=varfile_+strcompress(string(ivar),/remove_all)
+endif else begin
+    default,varfile_,'pvar.dat'
+    varfile=varfile_
+endelse
+
 if (qquiet) then quiet=1
 ;
 ;  Get necessary dimensions.
