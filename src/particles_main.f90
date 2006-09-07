@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.47 2006-09-06 18:00:29 wlyra Exp $
+! $Id: particles_main.f90,v 1.48 2006-09-07 17:01:57 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -219,8 +219,7 @@ module Particles_main
 !
 !  Sink particles should be communicated to all processors
 !
-      if (lparticles_nbody) &
-           call share_sinkparticles(fp,dfp=dfp)
+      if (lparticles_nbody) call share_sinkparticles(fp)
 !
     endsubroutine particles_boundconds
 !***********************************************************************

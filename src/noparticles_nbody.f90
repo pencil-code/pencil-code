@@ -1,4 +1,4 @@
-! $Id: noparticles_nbody.f90,v 1.4 2006-09-06 18:02:16 wlyra Exp $
+! $Id: noparticles_nbody.f90,v 1.5 2006-09-07 17:01:57 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -170,10 +170,9 @@ module Particles_nbody
 !
     endsubroutine get_particles_interdistances
 !************************************************************************
-    subroutine share_sinkparticles(fp,dfp)
+    subroutine share_sinkparticles(fp)
 !       
       real, dimension(mpar_loc,mpvar) :: fp
-      real, dimension(mpar_loc,mpvar), optional :: dfp
 !
       if (NO_WARN) print*, fp
 !
