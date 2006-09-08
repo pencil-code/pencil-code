@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.48 2006-09-07 17:01:57 wlyra Exp $
+! $Id: particles_main.f90,v 1.49 2006-09-08 10:46:02 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -217,10 +217,6 @@ module Particles_main
 !      
       call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
 !
-!  Sink particles should be communicated to all processors
-!
-      if (lparticles_nbody) call share_sinkparticles(fp)
-!
     endsubroutine particles_boundconds
 !***********************************************************************
     subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
@@ -323,6 +319,7 @@ module Particles_main
       if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
       if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+      if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
 !
     endsubroutine particles_pde
 !***********************************************************************
@@ -440,25 +437,5 @@ module Particles_main
       endselect
 !
     endsubroutine get_slices_particles
-!***********************************************************************
-    subroutine auxcall_gravcomp(g0,r0_pot,n_pot,p)
-!
-!  Auxiliary call to gravity_companion in order 
-!  to fetch the array fp inside the mn loop  
-!
-!  01-feb-06/wlad : coded 
-!
-      use Planet, only : gravity_companion
-!
-      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nspar) :: ax,ay
-      real :: g0,r0_pot
-      integer :: n_pot
-      type (pencil_case) :: p
-!
-      call get_particles_interdistances(rp_mn,rpcyl_mn,ax,ay)
-      call gravity_companion(rp_mn,rpcyl_mn,ax,ay,g0,r0_pot,n_pot,p)
-!
-    endsubroutine auxcall_gravcomp
 !***********************************************************************
 endmodule Particles_main

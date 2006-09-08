@@ -15,4 +15,3 @@
   public :: read_particles_run_pars_wrap
   public :: write_particles_run_pars_wrap
   public :: particles_powersnap, get_slices_particles
-  public :: auxcall_gravcomp
