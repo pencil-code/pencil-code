@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.18 2006-09-07 17:06:56 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.19 2006-09-08 10:41:41 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -24,18 +24,20 @@ module Particles_nbody
   real, dimension(nspar,mpvar) :: fsp
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real, dimension(nspar) :: pmass,position
+  real, dimension(nspar) :: pmass,position,r_smooth
   real :: delta_vsp0=1.0
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
-  logical :: lcalc_orbit=.true.
+  logical :: lcalc_orbit=.true.,lreset_cm=.true.,lnogravz_star=.false.
+  logical, dimension(nspar) :: lcylindrical_gravity=.false.
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
-       bcspx, bcspy, bcspz, pmass, position
+       bcspx, bcspy, bcspz, pmass, r_smooth, position, lcylindrical_gravity
+  
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
-       lcalc_orbit
+       lcalc_orbit,lreset_cm,lnogravz_star
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -65,7 +67,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.18 2006-09-07 17:06:56 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.19 2006-09-08 10:41:41 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -225,8 +227,6 @@ module Particles_nbody
 !
       call boundconds_particles(fp,npar_loc,ipar)
 !
-      call share_sinkparticles(fp)
-!
 !  Initial particle velocity.
 !
       select case(initvvsp)
@@ -288,32 +288,97 @@ module Particles_nbody
 
       endselect
 !
-! Broadcast the velocities as well
-!
-      call share_sinkparticles(fp)
-!
     endsubroutine init_particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
-!  Add self-gravity to particle equation of motion.
+! Add gravity from the particles to the gas
+! Add backreaction from the gas onto the particles
 !
-!  14-jun-06/anders: coded
+!  07-sep-06/wlad: coded
 !
       use Messages, only: fatal_error
+      use Planet, only: disk_diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
+      real, dimension (nx,3) :: ggp
+      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension (nx) :: rrp,rrp1
+      real, dimension (nx) :: grav_particle
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
+      integer :: ks
 !
-      intent (in) :: f, df, p, fp, dfp, ineargrid
+      intent (in) :: f, p, fp, ineargrid
+      intent (inout) :: df,dfp
 !
-      if (NO_WARN) print*, f, df, fp, dfp, p, ineargrid
+! Get the positions of all particles
 !
+      if (lhydro) then
+!
+         call share_sinkparticles(fp)
+!
+! Calculate gas-particles distances
+!
+         do ks=1,nspar
+!
+! Spherical and cylindrical distances
+!
+            rp_mn(:,ks) = &
+                 sqrt((x(l1:l2)-fsp(ks,ixp))**2 + (y(m)-fsp(ks,iyp))**2  &
+                 + (z(n)-fsp(ks,izp))**2) + tini
+!
+            rpcyl_mn(:,ks) = &
+                 sqrt((x(l1:l2)-fsp(ks,ixp))**2 + (y(m)-fsp(ks,iyp))**2) + tini
+!
+! Check which particle has cylindrical gravity switched on
+!
+            if (lcylindrical_gravity(ks)) then
+               rrp = rpcyl_mn(:,ks)
+            else
+               rrp = rp_mn(:,ks)
+            endif
+!
+! Invert it
+!
+            rrp1=1./rrp
+!
+! Gravity field from the particle ks
+!
+            grav_particle =-pmass(ks)*rrp*(rrp**2+r_smooth(ks)**2)**(-1.5)
+!
+            ggp(:,1) = (x(l1:l2)-fsp(ks,ixp))*rrp1*grav_particle
+            ggp(:,2) = (y(  m  )-fsp(ks,iyp))*rrp1*grav_particle
+            ggp(:,3) = (z(  n  )-fsp(ks,izp))*rrp1*grav_particle
+!
+            if ((ks==nspar).and.lnogravz_star) &
+                 ggp(:,3) = 0.
+!
+! Add this acceleration to the gas 
+!
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggp
+!
+         enddo
+!
+         call disk_diagnostics(p,pmass,fsp,rpcyl_mn)
+!
+! Now has to calculate the back-reaction of the gas onto the particles
+!
+      endif
+
     endsubroutine dvvp_dt_nbody_pencil
+!***********************************************************************
+    subroutine dxxp_dt_nbody(dfp)
+!
+      real, dimension (mpar_loc,mpvar) :: dfp
+!
+      if (lreset_cm) &
+           call reset_center_of_mass(dfp)
+!
+    endsubroutine dxxp_dt_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
@@ -411,8 +476,6 @@ module Particles_nbody
 !
 ! Check the position of the center of mass of the sink 
 ! particles, and reset it to the center of the grid
-!
-      !call reset_center_of_mass
 !
       if (lcalc_orbit) then
          xstar(1:npar_loc) = fsp(2,ixp) ; vxstar(1:npar_loc) = fsp(2,ixp)
@@ -582,24 +645,26 @@ module Particles_nbody
 !
     endsubroutine rprint_particles_nbody
 !***********************************************************************
-    subroutine reset_center_of_mass
+    subroutine reset_center_of_mass(dfp)
 !
 !  If the center of mass was accelerated, reset its position
-!  to the center of the grig
+!  to the center of the grid. Must be called by a dxxp_dt_nbody?
 !
 !  Assumes that the total mass of the particles is one.  
 !
 !  27-aug-06/wlad: coded
 !
+      real, dimension(mpar_loc,mpvar),intent(inout) :: dfp
       real, dimension(3) :: vcm
-      integer :: ks
+      integer :: k
 !
       vcm(1) = sum(pmass*fsp(:,ivpx))
       vcm(2) = sum(pmass*fsp(:,ivpy))
       vcm(3) = sum(pmass*fsp(:,ivpz))
 !
-      do ks=1,nspar
-         fsp(ks,ivpx:ivpz) = fsp(ks,ivpx:ivpz) - vcm(1:3)
+      do k=1,npar_loc
+         if (ipar(k)<=nspar) &
+              dfp(k,ixp:izp) = dfp(k,ixp:izp) - vcm
       enddo
 !
     endsubroutine reset_center_of_mass
