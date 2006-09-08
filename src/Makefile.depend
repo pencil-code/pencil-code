@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.52 2006-09-06 17:56:45 wlyra Exp $
+### $Id: Makefile.depend,v 1.53 2006-09-08 10:47:43 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -238,12 +238,12 @@ $(SPECIAL_OBJ): special.h  $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(I
 #  Particle modules
 #
 $(PARTICLES_CDATA_OBJ):  particles_cdata.f90 $(CDATA_OBJ)
-$(PARTICLES_MAIN_OBJ):   particles_main.h             $(PARTICLES_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(PARTICLES_RADIUS_OBJ) $(PARTICLES_SELFGRAVITY_OBJ) $(PARTICLES_NBODY_OBJ) $(PLANET_OBJ) $(CDATA_OBJ)
+$(PARTICLES_MAIN_OBJ):   particles_main.h             $(PARTICLES_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(PARTICLES_RADIUS_OBJ) $(PARTICLES_SELFGRAVITY_OBJ) $(PARTICLES_NBODY_OBJ) $(CDATA_OBJ)
 $(PARTICLES_SUB_OBJ):                                 $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_SRC) $(CDATA_OBJ) $(GHOSTFOLD_OBJ) $(GLOBAL_OBJ) $(MESSAGES_OBJ)
 $(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(POWER_OBJ)
 $(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
-$(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
+$(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PLANET_OBJ)
 $(PARTICLES_RADIUS_OBJ): particles_radius.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_NUMBER_OBJ)
 
 # DO NOT DELETE
