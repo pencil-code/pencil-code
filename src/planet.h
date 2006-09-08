@@ -7,8 +7,7 @@
   public :: read_planet_run_pars,  write_planet_run_pars
   public :: pencil_criteria_planet,calc_pencils_planet
   
-  public :: gravity_companion
-  public :: gravity_star
+  public :: disk_diagnostics
   public :: planet_phiavg
 
 !logicals to use "abroad"

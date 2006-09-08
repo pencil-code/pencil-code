@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.32 2006-09-06 18:06:01 wlyra Exp $
+! $Id: noplanet.f90,v 1.33 2006-09-08 10:45:05 wlyra Exp $
 !
 !  Dummy module
 !
@@ -44,7 +44,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.32 2006-09-06 18:06:01 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.33 2006-09-08 10:45:05 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -135,49 +135,24 @@ module Planet
 !
     endsubroutine calc_pencils_planet
 !***********************************************************************
-    subroutine gravity_companion(rp_mn,rpcyl_mn,ax,ay,gs,r0_pot,n_pot,p)
+    subroutine disk_diagnostics(p,mass,pos,dist)
 !      
 ! 08-nov-05/wlad : dummy      
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
+      real, dimension (nx,nspar) :: dist
+      real, dimension (nspar,mpvar) :: pos
+      real, dimension (nspar) :: mass
       type (pencil_case) :: p
-      real, dimension (nspar) :: ax,ay
-      real :: gs,r0_pot
-      integer :: n_pot
-!
+!                                                
       call stop_it("noplanet.f90 - gravity_companion")
 !
-      if (NO_WARN) print*, rp_mn,rpcyl_mn,ax,ay,gs,r0_pot,n_pot,p
+      if (NO_WARN) print*,p,mass,pos,dist
 !
-    endsubroutine gravity_companion
+    endsubroutine disk_diagnostics
 !***********************************************************************
-    subroutine calc_torque(unit)
-      integer, intent(in) :: unit
-      if (NO_WARN) print*,unit
-    endsubroutine calc_torque
-!**********************************************************************
-   subroutine gravity_star(gs,r0_pot,n_pot,g_r,xstar,ystar)
-!
-!8-nov-05/wlad : dummy  
-!
-     use Cdata
-     use Mpicomm, only: stop_it
-!
-     real, dimension (nx), intent(out) :: g_r
-     real, optional :: xstar,ystar !initial position of star
-     real :: gs,r0_pot
-     integer :: n_pot
-!
-     g_r=0.
-     call stop_it("noplanet.f90 - gravity_star")
-!
-     if (NO_WARN) print*, gs,r0_pot,n_pot,g_r,xstar,ystar
-!
-   endsubroutine gravity_star
-!***************************************************************
     subroutine planet_phiavg(p)
 !
 ! 02-03-06/wlad : dummy

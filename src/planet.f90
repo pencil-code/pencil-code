@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.67 2006-09-06 18:06:01 wlyra Exp $
+! $Id: planet.f90,v 1.68 2006-09-08 10:45:05 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -76,7 +76,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.67 2006-09-06 18:06:01 wlyra Exp $")
+           "$Id: planet.f90,v 1.68 2006-09-08 10:45:05 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -170,108 +170,27 @@ module Planet
 !
     endsubroutine write_planet_run_pars
 !***********************************************************************
-    subroutine gravity_companion(rp_mn,rpcyl_mn,ax,ay,g0,r0_pot,n_pot,p)
+    subroutine disk_diagnostics(p,mass,pos,dist)
 !
-!  calculate the gravity of a companion offcentered by (Rx,Ry,Rz)
+!  Give the diagnostic of the disk - energy, momentum, etc
+!  It was the gravity_companion subroutine, now it is 
+!  all dead and the planet code soon will be extinguished!
+!  
 !
-!  12-aug-05/wlad       : coded
-!  08-nov-05/wlad       : moved here (previously in Gravity Module)
-!  21-nov-05/wlad+anders: changed orbital elements approach to
-!                         particles' positions and velocities   
-!
-      use Sub
-      use Global
-      use Mpicomm
-!     
-      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nx,3) :: ggc,ggs
-      real, dimension (nx) :: g_companion,g_star
-      real, dimension (nx) :: rrs,rrs1,rrc,rrc1,rs,rp
-      real, dimension (nspar) :: ax,ay
-      real :: Omega_inertial,azp,gtc
-      real :: axp,ayp,axs,ays,azs,g0,gp,gs,r0_pot
-      integer :: n_pot
-      logical :: lheader,lfirstcall=.true.
+      real, dimension (nx,nspar) :: dist
+      real, dimension (nspar,mpvar) :: pos
+      real, dimension (nspar) :: mass
       type (pencil_case) :: p
-!
-!  Position of the particles
-!  ipar(1) is planet, ipar(2) is star
-!
-      axp=ax(1); ayp=ay(1)
-      axs=ax(2); ays=ax(2)
-      azp=0.;azs=0
-!
-      lheader = lfirstcall .and. headtt .and. lroot
-!
-      if (headtt) print*,&
-           'gravity_companion: Adding gravity of companion located at x,y,z=',&
-           axp,ayp,azp
-      if (lheader) print*,&
-           'gravity_companion: Mass ratio of secondary-to-primary = ',gc/g0
-!
-      if (lheader.and.(Omega.eq.0)) print*,'gravity_companion: inertial frame'
-!
-      if (Omega/=0) &
-           call stop_it('gravity_companion: Corotation not implemented')
-!
-!  Ramp up the mass of the planet for 5 periods
-!
-      ggc=0.
-      if (gc.ne.0) then 
-         call get_ramped_mass(gp,gs,g0)
-!
-!  Planet's gravity field - always spherical
-!
-         rrc =rp_mn(:,1) 
-         rrc1=1./rp_mn(:,1)
-!           
-         g_companion=-gp*rrc*(rrc*rrc+b_pot*b_pot)**(-1.5)
-!
-         ggc(:,1) = (x(l1:l2)-axp)*rrc1*g_companion 
-         ggc(:,2) = (y(  m  )-ayp)*rrc1*g_companion
-         ggc(:,3) = (z(  n  )-azp)*rrc1*g_companion
-!
-      endif
-!
-!  Star's gravity field
-!
-      if (lcylindrical) then
-         rrs=rpcyl_mn(:,2) 
-      else
-         rrs=rp_mn(:,2) 
-      endif
-!
-      rrs1=1./rrs
-!      
-!  gravity_star will call the ramped mass from inside again
-!
-      ggs = 0.                  ! or ggs(:,3) might be uninitialized in
-                                !  cylindrical case 
-      call gravity_star(g0,r0_pot,n_pot,g_star,rrs)
-!
-      ggs(:,1) = (x(l1:l2)-axs)*rrs1*g_star
-      ggs(:,2) = (y(  m  )-ays)*rrs1*g_star
-      if (.not.lcylindrical) ggs(:,3) = (z(n)-azs)*rrs1*g_star
-!
-!  Reset gravity as global variable 
-!      
-      call set_global(ggs+ggc,m,n,'gg',nx)
-!      
-!  Stuff for calc_torque. Should maybe change it to particles_nbody
-!
-      rs = rpcyl_mn(:,2)
-      rp = rpcyl_mn(:,1)
 !
       if (ldiagnos) then
          if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
-              call calc_torque(p%rho,gp,axp,ayp,rpcyl_mn(:,1))
+              call calc_torque(p%rho,mass(1),pos(1,1),pos(1,2),dist(:,1))
          
          if ((idiag_totenergy/=0).or.(idiag_totangmom/=0)) &
-              call calc_monitored(rs,rp,axs,ays,axp,ayp,gs,gp,r0_pot,p)
+              call calc_monitored(dist,mass,p)
       endif
-      lfirstcall=.false.
 !
-    endsubroutine gravity_companion
+    endsubroutine disk_diagnostics
 !***********************************************************************
     subroutine calc_torque(dens,gp,ax,ay,rp)
 !
@@ -318,71 +237,21 @@ module Planet
 !
     endsubroutine calc_torque
 !***********************************************************************
-    subroutine get_ramped_mass(gp,gs,g0) 
-!      
-! Ramps up the mass of the planet from 0 to gc over
-! n_periods orbits. If lramp=.false., will return gc.
-! Currently just used for the comparison
-! project. Called by both gravity_companion and dvvp_dt 
+   subroutine calc_monitored(dist,mass,p)
 !
-! 03-mar-06/wlad : coded
-!
-      real :: fgp,gp,gs,g0,tcut
-      intent(out) :: gp,gs
-!
-      fgp = 0.5*(1 - sqrt(1-4*gc))
-      gp = fgp
-!
-      if (lramp) then
-         tcut = n_periods * 2*pi
-         if (t .le. tcut) then
-            gp = fgp* (sin(pi/2. * t/tcut))**2
-         endif
-      endif      
-!
-      gs = g0 - gp
-!
-    endsubroutine get_ramped_mass
-!***********************************************************
-   subroutine gravity_star(g0,r0_pot,n_pot,g_r,rr_mn)
-!
-! 08-nov-05/wlad : coded
-!
-     use Mpicomm, only : stop_it
-!
-     real, dimension (nx), intent(out) :: g_r
-     real, dimension (nx) :: rr_mn
-     integer :: i,n_pot
-     real :: g0,r0_pot,gp,gs
-!
-     if (n_pot.ne.2) then
-        print*,'planet: smoothed gravity used for star but smoothing lenght'
-        print*,'is not equal to 2. Better stop and change, since it will lead'
-        print*,'to boundary troubles as omega does not flatten properly.'
-        call stop_it('')
-     endif
-!
-     call get_ramped_mass(gp,gs,g0)
-!
-     g_r=-gs*rr_mn*(rr_mn*rr_mn+r0_pot*r0_pot)**(-1.5)
-!   
-   endsubroutine gravity_star
-!***************************************************************
-   subroutine calc_monitored(rs,rp,xs,ys,xp,yp,gs,gp,r0,p)
-
 ! calculate total energy and angular momentum
 ! and output their evolution as monitored variables
 !
 ! 10-nov-05/wlad   : coded
 !
      use Sub
-! 
-     real, dimension(nx) :: rs,rp,r,uphi
+!
+     real, dimension (nx,nspar) :: dist
+     real, dimension (nspar) :: mass
+     real, dimension(nx) :: rs,rp,uphi
      real, dimension(nx) :: angular_momentum
      real, dimension(nx) :: kin_energy,pot_energy,total_energy
-     real :: xs,ys,xp,yp  ! position of star and planet
-     real :: gs,gp,r0     ! star's and planet's mass
-     integer :: i
+     real :: gs,gp,r0=0.1     ! star's and planet's mass
      type (pencil_case) :: p
 !
      if (headtt) print*,'planet : calculate total energy'
@@ -391,6 +260,9 @@ module Planet
 ! Calculate the total energy and integrate it
 !
 ! Kinetic energy
+!
+     gs = mass(2)   ; gp = mass(1)
+     rs = dist(:,2) ; rp = dist(:,1)
 !
      kin_energy = p%rho * p%u2/2.
 !     

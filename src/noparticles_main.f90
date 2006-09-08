@@ -1,4 +1,4 @@
-! $Id: noparticles_main.f90,v 1.20 2006-08-23 16:53:32 mee Exp $
+! $Id: noparticles_main.f90,v 1.21 2006-09-08 10:45:05 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -272,20 +272,5 @@ module Particles_main
       if (NO_WARN) print*, f, slices%ready
 !
     endsubroutine get_slices_particles
-!***********************************************************************
-    subroutine auxcall_gravcomp(g0,r0_pot,n_pot,p)
-!
-!  Auxiliary call to gravity_companion in order 
-!  to fetch the array fp inside the mn loop  
-!
-!  01-feb-06/wlad : dummy
-!
-      real :: g0,r0_pot
-      integer :: n_pot
-      type (pencil_case) :: p
-!
-      if (NO_WARN) print*, g0, r0_pot, n_pot, p
-!
-    endsubroutine auxcall_gravcomp
 !***********************************************************************
 endmodule Particles_main
