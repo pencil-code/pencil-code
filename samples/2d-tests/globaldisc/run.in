@@ -3,9 +3,9 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.26 2006-09-07 05:53:24 ajohan Exp $',
+  cvsid='$Id: run.in,v 1.27 2006-09-08 11:05:47 wlyra Exp $',
   ip=14,
-  nt=100, it1=5, isave=100, itorder=3, ialive=1
+  nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
   cdtv=0.8, 
   dtmin=1e-6,
@@ -37,20 +37,16 @@ rho0= 1.
   diffrho_hyper3=5E-11, idiff='hyper3'
   borderlnrho='constant'
 /
-&grav_run_pars
-  ipotential='smoothed-newton', 
-  g0=1.,r0_pot=0.1,n_pot=2 
- /
 &viscosity_run_pars
   ivisc='nu-const','nu-shock'
   nu=1e-5
   nu_shock=1.0
 /
 &particles_run_pars
+  ldragforce_dust_par=F
 /
 &particles_nbody_run_pars
- lramp=F
- gc=1e-4
+  lnogravz_star=T
 /
 &shock_run_pars
   lshock_first=T
