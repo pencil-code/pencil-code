@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.170 2006-08-31 06:00:35 ajohan Exp $ 
+! $Id: initcond.f90,v 1.171 2006-09-08 10:53:43 wlyra Exp $ 
 
 module Initcond 
  
@@ -1420,7 +1420,7 @@ module Initcond
 !
     endsubroutine vortex_2d
 !***********************************************************************
-    subroutine keplerian(f,g0,r0_pot,n_pot,xx,yy)
+    subroutine keplerian(f,xx,yy)
 !
 !  Keplerian initial condition
 !
@@ -1432,8 +1432,9 @@ module Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz) :: xx,yy,rr_cyl,OO,cs2
-      real :: g0,r0_pot
-      integer :: n_pot,mcount,ncount
+      integer ::mcount,ncount
+      real :: g0=1.,r0_pot=0.1
+      integer :: n_pot=2
 !
       if (n_pot.ne.2) then
          print*,'initcond.f90: You are trying to model a protoplanetary disk'
@@ -2519,12 +2520,12 @@ module Initcond
       use Cdata
       use Mpicomm, only: stop_it
       use General
-      use Gravity, only: r0_pot,n_pot
       use EquationOfState, only:cs0
 
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz) :: xx,yy,zz,rr_cyl,H2 
       real :: lnrho_const,plaw
+      real :: r0_pot=0.1,n_pot=2
 !
       if (n_pot.ne.2) then
          print*,'initcond.f90: You are trying to model a protoplanetary disk' 

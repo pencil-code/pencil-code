@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.283 2006-08-23 16:53:31 mee Exp $
+! $Id: hydro.f90,v 1.284 2006-09-08 10:53:44 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -167,7 +167,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.283 2006-08-23 16:53:31 mee Exp $")
+           "$Id: hydro.f90,v 1.284 2006-09-08 10:53:44 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -289,7 +289,7 @@ module Hydro
       use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use General
       use Global
-      use Gravity, only: grav_const,z1,g0,r0_pot,n_pot
+      use Gravity, only: grav_const,z1
       use Initcond
       use Mpicomm, only: stop_it
       use Sub
@@ -311,7 +311,7 @@ module Hydro
           ! Ensure really is zero, as may have used lread_oldsnap
           f(:,:,:,iux:iuz)=0. 
         case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
-        case('keplerian'); call keplerian(f,g0,r0_pot,n_pot,xx,yy)
+        case('keplerian'); call keplerian(f,xx,yy)
         case('mode'); call modev(ampluu(j),coefuu,f,iuu,kx_uu,ky_uu,kz_uu,xx,yy,zz)
         case('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
@@ -1073,13 +1073,13 @@ module Hydro
 !  28-jul-06/wlad: coded
 !
       use Cdata
-      use Gravity, only: g0,r0_pot
       use BorderProfiles, only: border_driving
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
       real, dimension(nx) :: OO
+      real :: g0=1.,r0_pot=0.1
       integer :: ju,j
 !
       select case(borderuu)
