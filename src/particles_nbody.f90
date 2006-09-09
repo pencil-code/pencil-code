@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.19 2006-09-08 10:41:41 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.20 2006-09-09 13:56:21 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -29,6 +29,7 @@ module Particles_nbody
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lreset_cm=.true.,lnogravz_star=.false.
   logical, dimension(nspar) :: lcylindrical_gravity=.false.
+  logical, dimension(nspar) :: lfollow_particle=.false.
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
@@ -37,17 +38,9 @@ module Particles_nbody
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
-       lcalc_orbit,lreset_cm,lnogravz_star
+       lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle
 
-  integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
-  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
-  integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
-  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0
-  integer :: idiag_xstar=0,idiag_ystar=0,idiag_zstar=0
-  integer :: idiag_vxstar=0,idiag_vystar=0,idiag_vzstar=0
-  integer :: idiag_vxplanet=0,idiag_vyplanet=0,idiag_vzplanet=0
-  integer :: idiag_xplanet=0,idiag_yplanet=0,idiag_zplanet=0
-
+  integer, dimension(nspar,3) :: idiag_xxspar,idiag_vvspar
 
   contains
 
@@ -67,7 +60,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.19 2006-09-08 10:41:41 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.20 2006-09-09 13:56:21 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -398,8 +391,11 @@ module Particles_nbody
       real, dimension (npar_loc) :: xplanet,yplanet,zplanet
       real, dimension (npar_loc) :: vxplanet,vyplanet,vzplanet
       real, dimension (nspar,3) :: acc
+!
+      real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
+!
       real :: Omega2,invr3_ij
-      integer :: i, k, ks, ki, kj
+      integer :: i, k, ks, ki, kj, j, jp, jx
       logical :: lheader, lfirstcall=.true.
 !
       intent (in) ::     f,  fp,  ineargrid
@@ -431,31 +427,31 @@ module Particles_nbody
 !
 ! Evolve the position of the sink particles due to their mutual gravity
 !
-      do ki=1,nspar
+      do ks=1,nspar
 !
 ! Calculate in the root only, then broadcast
 !
          if (lroot) then
-            acc(ki,:) = 0.
+            acc(ks,:) = 0.
             do kj=1,nspar
-               if (kj/=ki) then
+               if (kj/=ks) then
 !
 !  Particles relative distance from each other
 !
-!  axr = fsp(ki,ixp) - fsp(kj,ixp)
+!  axr = fsp(ks,ixp) - fsp(kj,ixp)
 !
 !  r_ij = sqrt(axr**2 + ayr**2 + azr**2)
 !  invr3_ij = r_ij**(-3)
 ! 
-                  invr3_ij = (  (fsp(ki,ixp) - fsp(kj,ixp))**2           &
-                       +        (fsp(ki,iyp) - fsp(kj,iyp))**2           &
-                       +        (fsp(ki,izp) - fsp(kj,izp))**2  )**(-1.5)
+                  invr3_ij = (  (fsp(ks,ixp) - fsp(kj,ixp))**2           &
+                       +        (fsp(ks,iyp) - fsp(kj,iyp))**2           &
+                       +        (fsp(ks,izp) - fsp(kj,izp))**2  )**(-1.5)
 !
 !  Gravitational acceleration
 !
-                  acc(ki,1) = acc(ki,1) - pmass(kj)*invr3_ij*(fsp(ki,ixp) - fsp(kj,ixp)) 
-                  acc(ki,2) = acc(ki,2) - pmass(kj)*invr3_ij*(fsp(ki,iyp) - fsp(kj,iyp)) 
-                  acc(ki,3) = acc(ki,3) - pmass(kj)*invr3_ij*(fsp(ki,izp) - fsp(kj,izp)) 
+                  acc(ks,1) = acc(ks,1) - pmass(kj)*invr3_ij*(fsp(ks,ixp) - fsp(kj,ixp)) 
+                  acc(ks,2) = acc(ks,2) - pmass(kj)*invr3_ij*(fsp(ks,iyp) - fsp(kj,iyp)) 
+                  acc(ks,3) = acc(ks,3) - pmass(kj)*invr3_ij*(fsp(ks,izp) - fsp(kj,izp)) 
 !             
                endif
             enddo
@@ -463,63 +459,34 @@ module Particles_nbody
 !
 !  Broadcast particle acceleration
 !
-         call mpibcast_real(acc(ki,:),3)
+         call mpibcast_real(acc(ks,:),3)
 !
 !  Put it back on the dfp array on his processor
 !
          do k=1,npar_loc
-            if (ipar(k)==ki) &
-                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ki,1:3)
+            if (ipar(k)==ks) &
+                 dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + acc(ks,1:3)
          enddo
 !
+!  Position and velocity diagnostics (per sink particle)
+!
+
+         if (ldiagnos) then
+            if (lfollow_particle(ks)) then
+               do j=1,3
+                  jx=j+ixp-1 ; jp=j+ivpx-1
+                  xxspar(1:npar_loc,ks,j) = fsp(ks,jx) 
+                  vvspar(1:npar_loc,ks,j) = fsp(ks,jp)
+!            
+                  if (idiag_xxspar(ks,j)/=0) &
+                       call sum_par_name(xxspar(1:npar_loc,ks,j),idiag_xxspar(ks,j))
+                  if (idiag_vvspar(ks,j)/=0) &
+                       call sum_par_name(vvspar(1:npar_loc,ks,j),idiag_vvspar(ks,j))
+               enddo
+            endif
+         endif
+!
       enddo
-!
-! Check the position of the center of mass of the sink 
-! particles, and reset it to the center of the grid
-!
-      if (lcalc_orbit) then
-         xstar(1:npar_loc) = fsp(2,ixp) ; vxstar(1:npar_loc) = fsp(2,ixp)
-         ystar(1:npar_loc) = fsp(2,iyp) ; vystar(1:npar_loc) = fsp(2,iyp)
-         zstar(1:npar_loc) = fsp(2,izp) ; vzstar(1:npar_loc) = fsp(2,izp)
-!
-         xplanet(1:npar_loc) = fsp(1,ixp) ; vxplanet(1:npar_loc) = fsp(1,ixp)
-         yplanet(1:npar_loc) = fsp(1,iyp) ; vyplanet(1:npar_loc) = fsp(1,iyp)
-         zplanet(1:npar_loc) = fsp(1,izp) ; vzplanet(1:npar_loc) = fsp(1,izp)
-      endif
-!
-!  Diagnostic output
-!
-      if (ldiagnos) then
-        if (idiag_xpm/=0)  call sum_par_name(fp(1:npar_loc,ixp),idiag_xpm)
-        if (idiag_ypm/=0)  call sum_par_name(fp(1:npar_loc,iyp),idiag_ypm)
-        if (idiag_zpm/=0)  call sum_par_name(fp(1:npar_loc,izp),idiag_zpm)
-        if (idiag_xp2m/=0) call sum_par_name(fp(1:npar_loc,ixp)**2,idiag_xp2m)
-        if (idiag_yp2m/=0) call sum_par_name(fp(1:npar_loc,iyp)**2,idiag_yp2m)
-        if (idiag_zp2m/=0) call sum_par_name(fp(1:npar_loc,izp)**2,idiag_zp2m)
-        if (idiag_vpxm/=0) call sum_par_name(fp(1:npar_loc,ivpx),idiag_vpxm)
-        if (idiag_vpym/=0) call sum_par_name(fp(1:npar_loc,ivpy),idiag_vpym)
-        if (idiag_vpzm/=0) call sum_par_name(fp(1:npar_loc,ivpz),idiag_vpzm)
-!
-        if (idiag_xstar/=0)    call sum_par_name(xstar(1:npar_loc),idiag_xstar)
-        if (idiag_ystar/=0)    call sum_par_name(ystar(1:npar_loc),idiag_ystar)
-        if (idiag_zstar/=0)    call sum_par_name(zstar(1:npar_loc),idiag_zstar)
-        if (idiag_xplanet/=0)  call sum_par_name(xplanet(1:npar_loc),idiag_xplanet)
-        if (idiag_yplanet/=0)  call sum_par_name(yplanet(1:npar_loc),idiag_yplanet)
-        if (idiag_zplanet/=0)  call sum_par_name(zplanet(1:npar_loc),idiag_zplanet)
-        if (idiag_vxstar/=0)   call sum_par_name(vxstar(1:npar_loc),idiag_vxstar)
-        if (idiag_vystar/=0)   call sum_par_name(vystar(1:npar_loc),idiag_vystar)
-        if (idiag_vzstar/=0)   call sum_par_name(vzstar(1:npar_loc),idiag_vzstar)
-        if (idiag_vxplanet/=0) call sum_par_name(vxplanet(1:npar_loc),idiag_vxplanet)
-        if (idiag_vyplanet/=0) call sum_par_name(vyplanet(1:npar_loc),idiag_vyplanet)
-        if (idiag_vzplanet/=0) call sum_par_name(vzplanet(1:npar_loc),idiag_vzplanet)
-!
-        if (idiag_vpx2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpx)**2,idiag_vpx2m)
-        if (idiag_vpy2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpy)**2,idiag_vpy2m)
-        if (idiag_vpz2m/=0) &
-            call sum_par_name(fp(1:npar_loc,ivpz)**2,idiag_vpz2m)
-      endif
 !
       if (lfirstcall) lfirstcall=.false.
 !
@@ -570,80 +537,6 @@ module Particles_nbody
       write(unit,NML=particles_nbody_run_pars)
 !
     endsubroutine write_particles_nbody_run_pars
-!***********************************************************************
-    subroutine rprint_particles_nbody(lreset,lwrite)
-!
-!  Read and register print parameters relevant for sink particles.
-!
-!  17-nov-05/anders+wlad: adapted
-!
-      use Cdata
-      use Sub, only: parse_name
-!
-      logical :: lreset
-      logical, optional :: lwrite
-!
-      integer :: iname
-      logical :: lwr
-!
-!  Write information to index.pro
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-
-      if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
-      endif
-!
-!  Reset everything in case of reset
-!
-      if (lreset) then
-        idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
-        idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0
-        idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
-        idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0
-        idiag_xstar=0; idiag_ystar=0; idiag_zstar=0
-        idiag_vxstar=0; idiag_vystar=0; idiag_vzstar=0
-        idiag_xplanet=0; idiag_yplanet=0; idiag_zplanet=0
-        idiag_vxplanet=0; idiag_vyplanet=0; idiag_vzplanet=0
-      endif
-!
-!  Run through all possible names that may be listed in print.in
-!
-      if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
-        call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
-        call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
-        call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
-        call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
-        call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
-        call parse_name(iname,cname(iname),cform(iname),'vpxm',idiag_vpxm)
-        call parse_name(iname,cname(iname),cform(iname),'vpym',idiag_vpym)
-        call parse_name(iname,cname(iname),cform(iname),'vpzm',idiag_vpzm)
-        call parse_name(iname,cname(iname),cform(iname),'vpx2m',idiag_vpx2m)
-        call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
-        call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
-        call parse_name(iname,cname(iname),cform(iname),'xstar',idiag_xstar)
-        call parse_name(iname,cname(iname),cform(iname),'ystar',idiag_ystar)
-        call parse_name(iname,cname(iname),cform(iname),'zstar',idiag_zstar)
-        call parse_name(iname,cname(iname),cform(iname),'xplanet',idiag_xplanet)
-        call parse_name(iname,cname(iname),cform(iname),'yplanet',idiag_yplanet)
-        call parse_name(iname,cname(iname),cform(iname),'zplanet',idiag_zplanet)
-        call parse_name(iname,cname(iname),cform(iname),'vxplanet',idiag_vxplanet)
-        call parse_name(iname,cname(iname),cform(iname),'vyplanet',idiag_vyplanet)
-        call parse_name(iname,cname(iname),cform(iname),'vzplanet',idiag_vzplanet)
-        call parse_name(iname,cname(iname),cform(iname),'vxstar',idiag_vxstar)
-        call parse_name(iname,cname(iname),cform(iname),'vystar',idiag_vystar)
-        call parse_name(iname,cname(iname),cform(iname),'vzstar',idiag_vzstar)
-      enddo
-!
-    endsubroutine rprint_particles_nbody
 !***********************************************************************
     subroutine reset_center_of_mass(dfp)
 !
@@ -815,4 +708,61 @@ module Particles_nbody
 !
     endsubroutine share_sinkparticles
 !***********************************************************************
+    subroutine rprint_particles_nbody(lreset,lwrite)
+!
+!  Read and register print parameters relevant for sink particles.
+!
+!  17-nov-05/anders+wlad: adapted
+!
+      use Cdata
+      use Sub, only: parse_name
+      use General, only: chn
+!
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      integer :: iname,ks,j
+      character :: str
+      character (len=4) :: sks
+!
+!  Write information to index.pro
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  Reset everything in case of reset
+!
+      if (lreset) then
+         idiag_xxspar=0;idiag_vvspar=0
+      endif
+!
+!  Run through all possible names that may be listed in print.in
+!
+      if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
+!
+!  Now check diagnostics for specific particles
+!
+     do ks=1,nspar
+        call chn(ks,sks)
+        do j=1,3
+           if (j==1) str='x';if (j==2) str='y';if (j==3)  str='z'
+           do iname=1,nname 
+              call parse_name(iname,cname(iname),cform(iname),&
+                   trim(str)//'par'//trim(sks),idiag_xxspar(ks,j))
+              call parse_name(iname,cname(iname),cform(iname),&
+                   'v'//trim(str)//'par'//trim(sks),idiag_vvspar(ks,j))
+           enddo
+!
+!  Run through parse list again
+!
+           if (lwr) then
+              write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',idiag_xxspar(ks,j)
+              write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',idiag_vvspar(ks,j)
+           endif
+!
+        enddo
+     enddo
+!
+    endsubroutine rprint_particles_nbody
+!***********************************************************************              
   endmodule Particles_nbody
