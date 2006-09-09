@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.20 2006-09-09 13:56:21 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.21 2006-09-09 14:06:55 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -60,7 +60,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.20 2006-09-09 13:56:21 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.21 2006-09-09 14:06:55 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -561,37 +561,6 @@ module Particles_nbody
       enddo
 !
     endsubroutine reset_center_of_mass
-!***********************************************************************
-    subroutine get_particles_interdistances(rp_mn,rpcyl_mn,ax,ay)
-!
-!  Should be pencils of dimension (nx,nspar)
-!  because they will be used by planet and gravity
-!
-!  18-jul-06/wlad: coded
-!
-      real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension(nspar) :: ax,ay
-      integer :: k
-!
-      intent(out) :: rp_mn,rpcyl_mn,ax,ay
-!
-      do k=1,nspar
-!
-! Spherical and cylindrical distances
-!
-         rp_mn(:,k)    = &
-              sqrt((x(l1:l2)-fsp(k,ixp))**2 + (y(m)-fsp(k,iyp))**2  &
-              + (z(n)-fsp(k,izp))**2) + tini
-!
-         rpcyl_mn(:,k) = &
-              sqrt((x(l1:l2)-fsp(k,ixp))**2 + (y(m)-fsp(k,iyp))**2) + tini
-!
-      enddo
-!
-      ax=fsp(:,ixp) 
-      ay=fsp(:,iyp) 
-!
-    endsubroutine get_particles_interdistances
 !***********************************************************************
     subroutine share_sinkparticles(fp)
 !
