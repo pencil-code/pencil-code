@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.27 2006-09-08 11:05:47 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.28 2006-09-09 13:58:03 wlyra Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -47,6 +47,7 @@ rho0= 1.
 /
 &particles_nbody_run_pars
   lnogravz_star=T
+  lfollow_particle=T,T
 /
 &shock_run_pars
   lshock_first=T
