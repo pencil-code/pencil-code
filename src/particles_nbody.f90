@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.21 2006-09-09 14:06:55 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.22 2006-09-11 17:58:55 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -27,7 +27,7 @@ module Particles_nbody
   real, dimension(nspar) :: pmass,position,r_smooth
   real :: delta_vsp0=1.0
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
-  logical :: lcalc_orbit=.true.,lreset_cm=.true.,lnogravz_star=.false.
+  logical :: lcalc_orbit=.true.,lreset_cm=.false.,lnogravz_star=.false.
   logical, dimension(nspar) :: lcylindrical_gravity=.false.
   logical, dimension(nspar) :: lfollow_particle=.false.
 
@@ -60,7 +60,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.21 2006-09-09 14:06:55 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.22 2006-09-11 17:58:55 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -312,7 +312,12 @@ module Particles_nbody
 !
       if (lhydro) then
 !
-         call share_sinkparticles(fp)
+         if (headtt) then
+            print*,'dvvp_dt_nbody_pencil: Add particles gravity to the gas' 
+            if (nxgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(x)=',fsp(:,ixp)
+            if (nygrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(y)=',fsp(:,iyp)
+            if (nzgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(z)=',fsp(:,izp)
+         endif
 !
 ! Calculate gas-particles distances
 !
@@ -422,8 +427,6 @@ module Particles_nbody
          if (lshear) dfp(1:npar_loc,ivpy) = &
               dfp(1:npar_loc,ivpy) + qshear*Omega*fp(1:npar_loc,ivpx)
       endif
-!
-      call share_sinkparticles(fp)
 !
 ! Evolve the position of the sink particles due to their mutual gravity
 !
@@ -565,7 +568,7 @@ module Particles_nbody
     subroutine share_sinkparticles(fp)
 !
 ! Broadcast sink particles across processors
-! The non-root processors, if the find a sink particle in their
+! The non-root processors, if they find a sink particle in their
 ! fp array, they:
 !    send it to root with a true logical
 !    else send a false logical
@@ -577,102 +580,84 @@ module Particles_nbody
 !
       real, dimension(mpar_loc,mpvar) :: fp
       logical, dimension(nspar) :: lsink
-      integer :: ks,k,tag,j,tag2
+      integer :: ks,k,tagsend,j,tagrecv
 !
       if (lmpicomm) then
+!
+! Loop through the sink particles
+!
          do ks=1,nspar
 !
-! look for the sink particles in this processor
+! Set the logical to false initially
 !
-            do k=1,mpar_loc
+            lsink(ks)=.false.
 !
-! check if a sink particle was found
+! Loop through the particles on this processor
 !
-               if (ks.eq.ipar(k)) then
+            do k=1,npar_loc
+               if (ks==ipar(k)) then
 !
-! Copy it to fsp in this processor
+! A sink was found here. Turn the logical true and copy fp to fsp
 !
-                  if (ip<=6) print*,'share_sinkparticles:',&
-                       'The sink particle ',ks,&
-                       ' is at the slot,',k,&
-                       ' of processor ',iproc,'.',&
-                       ' And it is at position x=',fp(k,ixp)
+                  lsink(ks) = .true.
+                  fsp(ks,:) = fp(k,:) 
 !
-                  fsp(ks,:) = fp(k,ixp:ivpz)
+! Send it to root. As there will be just nspar calls to 
+! mpisend, the tag can be ipar itself
 !
-! if this is not root, send it to root
-!
-                  if (.not.lroot) then
-                     tag = (mpar_loc**2)*iproc + mpar_loc*ks + k
-                     lsink(ks)=.true.
-                     call mpisend_logical(lsink(ks),1,root,tag)
-                     call mpisend_real(fsp(ks,:),mpvar,root,tag)
-                  endif
-               else
-!
-! if we didn't find a sink particle and if we are not root,
-! send a false logical
-!
-                  if (.not.lroot) then
-                     tag = (mpar_loc**2)*iproc + mpar_loc*ks + k
-                     lsink(ks)=.false.
-                     call mpisend_logical(lsink(ks),1,root,tag)
-                  endif
-!
+                  call mpisend_real(fsp(ks,:),mpvar,root,ks)
+                  if (ip<=6) print*,'logical for particle ',ks,&
+                       ' set to true on processor ',iproc, &
+                       ' with tag=',ks
                endif
-!
-!  still in the big double loop
-!  just the root receives
-!
-               if (lroot) then
-!
-! receive ALL the sends in the root processor
-! starts with one because the root does not need to send
-!
-                  do j=1,ncpus-1
-                     tag2 = (mpar_loc**2)*j + mpar_loc*ks + k  !same tag
-                     call mpirecv_logical(lsink(ks),1,j,tag2)
-!
-! if the logical is true, get fsp
-!
-                     if (lsink(ks)) &
-                          call mpirecv_real(fsp(ks,:),mpvar,j,tag2)
-!
-                  enddo
-               endif
-!
-! finish loop through npar_loc
-!
             enddo
+!          
+! Send the logicals from each processor. As all processors send nspar calls,
+! the tags are now in base nspar. It assures that two logicals will not have
+! the same tag.
+!  
+            if (.not.lroot) then
+               tagsend = nspar*iproc + ks
+               call mpisend_logical(lsink(ks),1,root,tagsend)
+            else
 !
-! broadcast the properties of this sink particle fsp(ks,:)
+! The root receives all logicals. Same tag.
+!
+               do j=1,ncpus-1
+                  tagrecv = nspar*j + ks
+                  call mpirecv_logical(lsink(ks),1,j,tagrecv)
+!
+! Test the received logicals
+!
+                  if (lsink(ks)) then
+!
+! Found a sink particle. Get the value of fsp
+!
+                     call mpirecv_real(fsp(ks,:),mpvar,j,ks)
+                     if (ip<=6) print*,'logical for particle ',ks,&
+                          ' is true on processor ',j, &
+                          ' with tag=',ks,' on root'
+                  endif
+               enddo
+            endif
+!
+! Broadcast the received fsp
 !
             call mpibcast_real(fsp(ks,:),mpvar)
 !
-! finish loop through sink particles
+! Print the result in all processors
 !
+            if (ip<=8)  print*,'share_sinkparticles: finished loop. sink particles in proc ',iproc,&
+                 ' are fsp(ks,:)=',fsp(ks,:)
          enddo
-!
-! print the result in all processors
-!
-         if (ip<=8) then
-            do ks=1,nspar
-               print *,'share_sinkparticles: ',&
-                    'P:',iproc,' after broadcast, ks, fsp(ks,ixp) is ',&
-                    ks,fsp(ks,1)
-            enddo
-         endif
-!
       else
 !
-! no mpicomm
+! Non-parallel. Just copy fp to fsp
 !
-         do ks=1,nspar
-            do k=1,npar_loc
-               if (ks.eq.ipar(k)) &
-                    fsp(ks,:) = fp(k,ixp:ivpz)
-            enddo
+         do k=1,npar_loc
+            if (ipar(k)<=nspar) fsp(ipar(k),:) = fp(k,:)
          enddo
+!
       endif
 !
     endsubroutine share_sinkparticles
