@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.49 2006-09-08 10:46:02 wlyra Exp $
+! $Id: particles_main.f90,v 1.50 2006-09-11 17:59:59 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -217,6 +217,8 @@ module Particles_main
 !      
       call sort_particles_imn(fp,ineargrid,ipar,dfp=dfp)
 !
+      if (lparticles_nbody) call share_sinkparticles(fp)
+!
     endsubroutine particles_boundconds
 !***********************************************************************
     subroutine particles_calc_selfpotential(f,rhs_poisson,rhs_poisson_const,lcontinued)
@@ -318,8 +320,10 @@ module Particles_main
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_number)      call dnptilde_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
-      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
-      if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
+      if (lparticles_nbody) then
+         call dxxp_dt_nbody(dfp)
+         call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+      endif
 !
     endsubroutine particles_pde
 !***********************************************************************
