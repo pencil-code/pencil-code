@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.92 2006-08-23 16:53:31 mee Exp $
+! $Id: forcing.f90,v 1.93 2006-09-14 20:42:17 brandenb Exp $
 
 module Forcing
 
@@ -72,7 +72,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.92 2006-08-23 16:53:31 mee Exp $")
+           "$Id: forcing.f90,v 1.93 2006-09-14 20:42:17 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -791,7 +791,7 @@ module Forcing
       real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx,ruf,rho
       real, dimension (mz) :: tmpz
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,bb,fxb
       real, dimension (mx), save :: sinx,cosx
       real, dimension (my), save :: siny,cosy
       real, dimension (mz), save :: sinz,cosz
@@ -867,6 +867,15 @@ module Forcing
           !
           fname(idiag_rufm)=irufm
           itype_name(idiag_rufm)=ilabel_sum
+        endif
+        if (lmagnetic) then
+          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then 
+            call curl(f,iaa,bb)
+            call cross(forcing_rhs,bb,fxb)
+            call sum_mn_name(fxb(:,1),idiag_fxbxm)
+            call sum_mn_name(fxb(:,2),idiag_fxbym)
+            call sum_mn_name(fxb(:,3),idiag_fxbzm)
+          endif
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.321 2006-08-31 06:00:35 ajohan Exp $
+! $Id: magnetic.f90,v 1.322 2006-09-14 20:42:17 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -57,6 +57,7 @@ module Magnetic
   real, dimension(3) :: B_ext=(/0.,0.,0./),B_ext_tmp
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
+  real, dimension(nx,3) :: uxbb !(temporary)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: radius=.1,epsilonaa=1e-2,widthaa=.5,x0aa=0.,z0aa=0.
@@ -205,7 +206,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.321 2006-08-31 06:00:35 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.322 2006-09-14 20:42:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -798,10 +799,11 @@ module Magnetic
         endif
       endif
 ! ab
-      if (lpencil(i_ab)) call dot_mn(p%aa,p%bb,p%ab)
+      if (lpencil(i_ab)) call dot_mn(p%aa,p%bbb,p%ab)
 ! uxb
       if (lpencil(i_uxb)) then
         call cross_mn(p%uu,p%bb,p%uxb)
+        call cross_mn(p%uu,p%bbb,uxbb)
         if (lee_ext) then
           call get_global(ee_ext,m,n,'ee_ext')
           p%uxB=p%uxb+ee_ext
@@ -828,7 +830,7 @@ module Magnetic
 ! j2
       if (lpencil(i_j2)) call dot2_mn(p%jj,p%j2)
 ! jb
-      if (lpencil(i_jb)) call dot_mn(p%jj,p%bb,p%jb)
+      if (lpencil(i_jb)) call dot_mn(p%jj,p%bbb,p%jb)
 ! va2
       if (lpencil(i_va2)) p%va2=p%b2*mu01*p%rho1
 ! jxb
@@ -1299,9 +1301,12 @@ module Magnetic
           uxb_dotB0=B_ext(1)*p%uxb(:,1)+B_ext(2)*p%uxb(:,2)+B_ext(3)*p%uxb(:,3)
           uxb_dotB0=uxb_dotB0*B_ext21
           if (idiag_uxbm/=0) call sum_mn_name(uxb_dotB0,idiag_uxbm)
-          if (idiag_uxbmx/=0) call sum_mn_name(p%uxb(:,1),idiag_uxbmx)
-          if (idiag_uxbmy/=0) call sum_mn_name(p%uxb(:,2),idiag_uxbmy)
-          if (idiag_uxbmz/=0) call sum_mn_name(p%uxb(:,3),idiag_uxbmz)
+          !if (idiag_uxbmx/=0) call sum_mn_name(p%uxb(:,1),idiag_uxbmx)
+          !if (idiag_uxbmy/=0) call sum_mn_name(p%uxb(:,2),idiag_uxbmy)
+          !if (idiag_uxbmz/=0) call sum_mn_name(p%uxb(:,3),idiag_uxbmz)
+          if (idiag_uxbmx/=0) call sum_mn_name(uxbb(:,1),idiag_uxbmx)
+          if (idiag_uxbmy/=0) call sum_mn_name(uxbb(:,2),idiag_uxbmy)
+          if (idiag_uxbmz/=0) call sum_mn_name(uxbb(:,3),idiag_uxbmz)
         endif
 !
 !  calculate <uxj>.B0/B0^2
