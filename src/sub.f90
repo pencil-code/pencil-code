@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.252 2006-08-23 16:53:32 mee Exp $ 
+! $Id: sub.f90,v 1.253 2006-09-15 22:24:34 theine Exp $ 
 
 module Sub 
 
@@ -198,30 +198,30 @@ module Sub
     module procedure sine_step_mn
     module procedure sine_step_global
   endinterface
-!!
-!!  extended intrinsic operators to do some scalar/vector pencil arithmetic
-!!
-!  public :: operator(*),operator(+),operator(/),operator(-)
 !
-!  interface operator (*)
-!    module procedure pencil_multiply1
-!    module procedure pencil_multiply2
-!  endinterface
+!  extended intrinsic operators to do some scalar/vector pencil arithmetic
 !
-!  interface operator (+)
-!    module procedure pencil_add1
-!    module procedure pencil_add2
-!  endinterface
-!
-!  interface operator (/)
-!    module procedure pencil_divide1
-!    module procedure pencil_divide2
-!  endinterface
-!
-!  interface operator (-)
-!    module procedure pencil_substract1
-!    module procedure pencil_substract2
-!  endinterface
+  public :: operator(*),operator(+),operator(/),operator(-)
+
+  interface operator (*)
+    module procedure pencil_multiply1
+    module procedure pencil_multiply2
+  endinterface
+
+  interface operator (+)
+    module procedure pencil_add1
+    module procedure pencil_add2
+  endinterface
+
+  interface operator (/)
+    module procedure pencil_divide1
+    module procedure pencil_divide2
+  endinterface
+
+  interface operator (-)
+    module procedure pencil_substract1
+    module procedure pencil_substract2
+  endinterface
 
 !ajwm Commented pending a C replacement
 !  INTERFACE getenv

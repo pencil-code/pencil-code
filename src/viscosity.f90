@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.29 2006-08-23 16:53:33 mee Exp $
+! $Id: viscosity.f90,v 1.30 2006-09-15 22:24:35 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -83,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.29 2006-08-23 16:53:33 mee Exp $")
+           "$Id: viscosity.f90,v 1.30 2006-09-15 22:24:35 theine Exp $")
 
       ivisc(1)='nu-const'
 
@@ -464,10 +464,11 @@ module Viscosity
 !
       if (lvisc_nu_shock) then
         if (ldensity) then
-          call multsv(p%divu,p%glnrho,tmp2)
-          tmp=tmp2 + p%graddivu
-          call multsv(nu_shock*p%shock,tmp,tmp2)
-          call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
+          tmp=nu_shock*(p%shock*(p%divu*p%glnrho+p%graddivu)+p%divu*p%gshock)
+          !call multsv(p%divu,p%glnrho,tmp2)
+          !tmp=tmp2 + p%graddivu
+          !call multsv(nu_shock*p%shock,tmp,tmp2)
+          !call multsv_add(tmp2,nu_shock*p%divu,p%gshock,tmp)
           if (lfirst.and.ldt) p%diffus_total=p%diffus_total+(nu_shock*p%shock)
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat + &
                                                  nu_shock*p%shock*p%divu**2
