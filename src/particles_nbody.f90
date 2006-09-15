@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.22 2006-09-11 17:58:55 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.23 2006-09-15 12:53:57 wlyra Exp $
 !
 !  This module takes care of everything related to particle self-gravity.
 !
@@ -25,20 +25,23 @@ module Particles_nbody
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass,position,r_smooth
-  real :: delta_vsp0=1.0
+  real :: delta_vsp0=1.0,disk_mass, Gvalue
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
-  logical :: lcalc_orbit=.true.,lreset_cm=.false.,lnogravz_star=.false.
+  logical :: lcalc_orbit=.true.,lmigrate=.false.
+  logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.true.
   logical, dimension(nspar) :: lcylindrical_gravity=.false.
   logical, dimension(nspar) :: lfollow_particle=.false.
 
   namelist /particles_nbody_init_pars/ &
        initxxsp, initvvsp, xsp0, ysp0, zsp0, vspx0, vspy0, vspz0, delta_vsp0, &
-       bcspx, bcspy, bcspz, pmass, r_smooth, position, lcylindrical_gravity
+       bcspx, bcspy, bcspz, pmass, r_smooth, position, lcylindrical_gravity, &
+       lexclude_frozen, disk_mass
   
 
   namelist /particles_nbody_run_pars/ &
        bcspx, bcspy, bcspz, dsnap_par_minor, linterp_reality_check, &
-       lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle
+       lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle,  &
+       lmigrate, lexclude_frozen, disk_mass
 
   integer, dimension(nspar,3) :: idiag_xxspar,idiag_vvspar
 
@@ -47,7 +50,7 @@ module Particles_nbody
 !***********************************************************************
     subroutine register_particles_nbody()
 !
-!  Set up indices for access to the f, fsp and dfsp arrays.
+!  Set up indices for access to the f and fsp
 !
 !  27-aug-06/wlad: adapted
 !
@@ -60,7 +63,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.22 2006-09-11 17:58:55 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.23 2006-09-15 12:53:57 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -81,7 +84,7 @@ module Particles_nbody
       integer :: k
       logical :: lstarting
 !
-      if (NO_WARN) print*, lstarting
+      Gvalue = disk_mass/(pi*(r_ext**2 - r_int**2))
 !
     endsubroutine initialize_particles_nbody
 !***********************************************************************
@@ -127,18 +130,16 @@ module Particles_nbody
 !  17-nov-05/anders+wlad: adapted
 !
       use General, only: random_number_wrapper
-      use Mpicomm, only: stop_it
       use Sub
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension(nspar) :: velocity
-!
-      real, dimension (3) :: uup
+      real, dimension(nspar) :: kep_vel,velocity
       real :: aux,aux2
       integer :: k,ks
-!
+
       intent (in) :: f
       intent (out) :: fp
 !
@@ -245,9 +246,10 @@ module Particles_nbody
 !
 ! Keplerian velocities for the planets, GM=sum(pmass)=1
 !
-         aux = 0.
+         aux=0.
          do ks=1,nspar-1 
-            velocity(ks) = sign(1.,position(ks))* abs(position(ks))**(-1.5)
+            kep_vel(ks) = abs(position(ks))**(-1.5) 
+            velocity(ks) = sign(1.,position(ks))* (kep_vel(ks)) 
             aux = aux - pmass(ks)*velocity(ks)
          enddo
 !
@@ -286,7 +288,7 @@ module Particles_nbody
     subroutine dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !
 ! Add gravity from the particles to the gas
-! Add backreaction from the gas onto the particles
+! and the backreaction from the gas onto the particles
 !
 !  07-sep-06/wlad: coded
 !
@@ -299,11 +301,11 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (nx,3) :: ggp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nx) :: rrp,rrp1
-      real, dimension (nx) :: grav_particle
+      real, dimension (nx) :: grav_particle,rrp
+      real, dimension (3) :: xxpar,accg
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: ks
+      integer :: ks,k
 !
       intent (in) :: f, p, fp, ineargrid
       intent (inout) :: df,dfp
@@ -340,17 +342,13 @@ module Particles_nbody
                rrp = rp_mn(:,ks)
             endif
 !
-! Invert it
-!
-            rrp1=1./rrp
-!
 ! Gravity field from the particle ks
 !
-            grav_particle =-pmass(ks)*rrp*(rrp**2+r_smooth(ks)**2)**(-1.5)
+            grav_particle =-pmass(ks)*(rrp**2+r_smooth(ks)**2)**(-1.5)
 !
-            ggp(:,1) = (x(l1:l2)-fsp(ks,ixp))*rrp1*grav_particle
-            ggp(:,2) = (y(  m  )-fsp(ks,iyp))*rrp1*grav_particle
-            ggp(:,3) = (z(  n  )-fsp(ks,izp))*rrp1*grav_particle
+            ggp(:,1) = (x(l1:l2)-fsp(ks,ixp))*grav_particle
+            ggp(:,2) = (y(  m  )-fsp(ks,iyp))*grav_particle
+            ggp(:,3) = (z(  n  )-fsp(ks,izp))*grav_particle
 !
             if ((ks==nspar).and.lnogravz_star) &
                  ggp(:,3) = 0.
@@ -359,14 +357,30 @@ module Particles_nbody
 !
             df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + ggp
 !
+! Backreaction of the gas onto the particles
+!
+            if (lmigrate) then
+!
+! Get the acceleration particle ks suffers due to gas gravity 
+!
+               xxpar = fsp(ks,ixp:izp)
+               call gas_gravity(rrp,p%rho,xxpar,accg,r_smooth(ks))
+!
+! Add it to its dfp
+!
+               do k=1,npar_loc
+                  if (ipar(k)==ks) &
+                       dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg(1:3)
+               enddo
+            endif
          enddo
+!
+! Output diagnostics
 !
          call disk_diagnostics(p,pmass,fsp,rpcyl_mn)
 !
-! Now has to calculate the back-reaction of the gas onto the particles
-!
       endif
-
+!
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
     subroutine dxxp_dt_nbody(dfp)
@@ -380,7 +394,8 @@ module Particles_nbody
 !***********************************************************************
     subroutine dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
-!  Evolution of sink particles velocities
+!  Evolution of sink particles velocities due to 
+!  particle-particle interaction only
 !
 !  27-aug-06/wlad: coded
 !
@@ -464,7 +479,7 @@ module Particles_nbody
 !
          call mpibcast_real(acc(ks,:),3)
 !
-!  Put it back on the dfp array on his processor
+!  Put it back on the dfp array on this processor
 !
          do k=1,npar_loc
             if (ipar(k)==ks) &
@@ -564,6 +579,75 @@ module Particles_nbody
       enddo
 !
     endsubroutine reset_center_of_mass
+!***********************************************************************
+    subroutine gas_gravity(rrp,dens,xxpar,accg,rp0)
+!
+! Calculates acceleration on the point (x,y,z)=xxpar
+! due to the gravity of the gas. 
+!
+! 15-sep-06/wlad : coded
+!
+      use Mpicomm
+!
+      real, dimension(nx,3) :: xxgas
+      real, dimension(nx) :: rrp,grav_gas,dens
+      real, dimension(3) :: accg,sum_loc,xxpar
+      real :: dv,rp0
+      integer :: k,j
+      type (pencil_case) :: p
+!
+      intent(out) :: accg
+!
+      if (headtt) &
+           print*,'Adding gas gravity to particles'
+!
+      if (nzgrid==1) then
+         dv=dx*dy
+      else
+         dv=dx*dy*dz
+      endif
+!
+! The gravity of every single gas particle - should exclude inner and outer radii...
+!
+! grav_gas = G*(rho*dv)*mass*r*(r**2 + r0**2)**(-1.5)
+! gx = grav_gas * r\hat dot x\hat
+! -> gx = grav_gas * (x-x0)/r = G*(rho*dv)*mass*(r**2+r0**2)**(-1.5) * (x-x0)
+!
+      grav_gas = Gvalue*dens*dv*(rrp**2 + rp0**2)**(-1.5)
+!
+! Everything outside the accretion radius of the particle should not exert gravity
+!
+      where (rrp.le.rp0)
+         grav_gas = 0
+      endwhere
+!
+      if (lexclude_frozen) then
+         if (lcylindrical) then
+            where ((rcyl_mn.le.r_int).or.(rcyl_mn.ge.r_ext))
+               grav_gas = 0
+            endwhere
+         else
+            where ((r_mn.le.r_int).or.(r_mn.ge.r_ext))
+               grav_gas = 0
+            endwhere
+         endif
+      endif
+!
+! Sum the accelerations on this processor
+! And the over processors with mpireduce
+!
+      xxgas(:,1) = x(l1:l2) ; xxgas(:,2) = y(m) ; xxgas(:,3) = z(n)
+!
+      do j=1,3
+         sum_loc(j) = sum(grav_gas * (xxgas(:,j) - xxpar(j)))
+         call mpireduce_sum_scl(sum_loc(j),accg(j))
+      enddo
+!
+!  Broadcast particle acceleration
+!
+      call mpibcast_real(accg,3)
+!
+    endsubroutine gas_gravity
 !***********************************************************************
     subroutine share_sinkparticles(fp)
 !
