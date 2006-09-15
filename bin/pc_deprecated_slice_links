@@ -24,7 +24,7 @@ new=$2
 datadir=$3
 [ $datadir ] || datadir=data/
 
-slices=`find $datadir -name "slice_$new.*" -print0 -type f | xargs -0 2> /dev/null`
+slices=`find $datadir -name "slice_$new.*" -type f 2> /dev/null`
 
 make_links $old $new $slices
 }
