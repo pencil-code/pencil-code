@@ -1,6 +1,6 @@
-! $Id: particles_nbody.f90,v 1.23 2006-09-15 12:53:57 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.24 2006-09-16 12:33:10 wlyra Exp $
 !
-!  This module takes care of everything related to particle self-gravity.
+!  This module takes care of everything related to sink particles.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 !
@@ -25,7 +25,7 @@ module Particles_nbody
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
   real, dimension(nspar) :: pmass,position,r_smooth
-  real :: delta_vsp0=1.0,disk_mass, Gvalue
+  real :: delta_vsp0=1.0,disk_mass=0., Gvalue=0.
   character (len=labellen) :: initxxsp='origin', initvvsp='nothing'
   logical :: lcalc_orbit=.true.,lmigrate=.false.
   logical :: lreset_cm=.false.,lnogravz_star=.false.,lexclude_frozen=.true.
@@ -63,7 +63,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.23 2006-09-15 12:53:57 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.24 2006-09-16 12:33:10 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
