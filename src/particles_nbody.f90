@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.24 2006-09-16 12:33:10 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.25 2006-09-16 17:44:53 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -63,7 +63,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.24 2006-09-16 12:33:10 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.25 2006-09-16 17:44:53 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -248,7 +248,7 @@ module Particles_nbody
 !
          aux=0.
          do ks=1,nspar-1 
-            kep_vel(ks) = abs(position(ks))**(-1.5) 
+            kep_vel(ks) = abs(position(ks))**(-0.5) 
             velocity(ks) = sign(1.,position(ks))* (kep_vel(ks)) 
             aux = aux - pmass(ks)*velocity(ks)
          enddo
