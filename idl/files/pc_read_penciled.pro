@@ -17,10 +17,11 @@
 ;
 ; CALLING SEQUENCE:
 ;       PC_READ_PENCILED, datafile=datafile, field=field, vec=vec, $
-;                         TRIMALL=TRIMALL, dim=dim, HELP=HELP
+;          TRIMALL=TRIMALL, dim=dim, datadir=datadir, HELP=HELP
 ;
 ; KEYWORD PARAMETERS:    
 ;  datafile: name for the data file [string]
+;    datadir: specify the root data directory. Default is './data' [string]
 ;     field: the returned array; it can be a scalar (the default) 
 ;            or a vector [array]
 ;       vec: put vec=1 if you want to read a vector field (vec=0 by
@@ -31,27 +32,26 @@
 ;
 ;-
 pro pc_read_penciled,datafile=datafile,field=field, vec=vec, $
-TRIMALL=TRIMALL,dim=dim,HELP=HELP
+TRIMALL=TRIMALL,dim=dim,HELP=HELP,datadir=datadir
 ;
-IF ( keyword_set(HELP) ) THEN BEGIN
+IF (keyword_set(HELP)) THEN BEGIN
   doc_library,'pc_read_penciled'
   return
 ENDIF
+IF (not keyword_set(datadir)) THEN datadir='./data'
 ;
-default, datatopdir, 'data'
 ; - assume by default that we want to read a scalar
 if (n_elements(vec) eq 0)   then vec=0
 if (datafile eq 'glhc.dat') then vec=1
 if (datafile eq 'gg.dat')   then vec=1
 ;
-if (n_elements(dim) eq 0) then pc_read_dim,obj=dim
+if (n_elements(dim) eq 0) then pc_read_dim,obj=dim,datadir=datadir
 ;
 ;  read local sizes
 ;
-datadir=datatopdir+'/proc0'
 mxloc=0L & myloc=0L & mzloc=0L
 close,1
-openr,1,datadir+'/dim.dat'
+openr,1,datadir+'/proc0/dim.dat'
 readf,1,mxloc,myloc,mzloc
 close,1
 if (vec eq 0) then begin
@@ -72,12 +72,12 @@ dimfile='dim.dat'
 ; -- loop on all processors
 for i=0,ncpus-1 do begin        ; read data from individual files
   tag='proc'+str(i)
-  datadir=datatopdir+'/proc'+strtrim(i,2)
+  localdir=datadir+'/proc'+strtrim(i,2)
   ; read processor position
   dummy=''
   ipx=0L &ipy=0L &ipz=0L
   close,1
-  openr,1,datadir+'/'+dimfile
+  openr,1,localdir+'/'+dimfile
   readf,1, dummy
   readf,1, dummy
   readf,1, dummy
@@ -109,8 +109,8 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   endelse
 ; -- put the local data in the global array
   close,1
-  print,'Reading '+datadir+'/'+datafile
-  openr,1,datadir+'/'+datafile,/f77
+  print,'Reading '+localdir+'/'+datafile
+  openr,1,localdir+'/'+datafile,/f77
   readu,1,floc
   close,1
   if (vec eq 0) then begin

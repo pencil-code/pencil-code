@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.20 2006-08-25 16:46:17 dintrans Exp $
+; $Id: pc_magic_var.pro,v 1.21 2006-09-18 15:55:02 dintrans Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2006-08-25 16:46:17 $
-;  $Revision: 1.20 $
+;  $Date: 2006-09-18 15:55:02 $
+;  $Revision: 1.21 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -147,18 +147,18 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     endif else if variables[iv] eq 'cs2' then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/cs2,/lnrho_lnTT,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,lnTT,/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/cs2,/lnrho_ss,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 
     ; Specific energy
     endif else if variables[iv] eq 'ee' then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/ee,/lnrho_lnTT,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,lnTT,/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/ee,/lnrho_ss,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 
     ; Temperature
@@ -176,16 +176,16 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       if (lionization and not lionization_fixed) then begin
         variables[iv]='lnTT'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/lntt,/lnrho_ss,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 
     ; Pressure
     endif else if variables[iv] eq 'pp' then begin
       tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss,dim=dim,param=param)'
+        variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 
     ; Divergence of dust velocity
