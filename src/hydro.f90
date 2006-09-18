@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.284 2006-09-08 10:53:44 wlyra Exp $
+! $Id: hydro.f90,v 1.285 2006-09-18 06:49:40 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED divu,oo,o2,ou,u2,uij,uu,sij,sij2,uij5,ugu
-! PENCILS PROVIDED u2u13,del2u,del4u,del6u,graddivu,del6u_bulk
+! PENCILS PROVIDED u3u21,u1u32,u2u13,del2u,del4u,del6u,graddivu,del6u_bulk
 !
 !***************************************************************
 module Hydro
@@ -75,9 +75,11 @@ module Hydro
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
+  real :: k1_ff=1.,ampl_ff=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
+  logical :: lforcing_continuous=.false.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -87,8 +89,8 @@ module Hydro
        xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
-       lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity
-
+       lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
+       lforcing_continuous,k1_ff,ampl_ff
 
 ! end geodynamo
 
@@ -116,7 +118,7 @@ module Hydro
   integer :: idiag_umz=0,idiag_uxmxy=0,idiag_uymxy=0,idiag_uzmxy=0
   integer :: idiag_uxmx=0,idiag_uymx=0,idiag_uzmx=0
   integer :: idiag_Marms=0,idiag_Mamax=0,idiag_divum=0,idiag_divu2m=0
-  integer :: idiag_u2u13m=0,idiag_oumphi=0
+  integer :: idiag_u3u21m=0,idiag_u1u32m=0,idiag_u2u13m=0,idiag_oumphi=0
   integer :: idiag_urmphi=0,idiag_upmphi=0,idiag_uzmphi=0,idiag_u2mphi=0
   integer :: idiag_fintm=0,idiag_fextm=0
   integer :: idiag_duxdzma=0,idiag_duydzma=0
@@ -126,6 +128,9 @@ module Hydro
   integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0
   integer :: idiag_uzupm=0,idiag_uruzm=0,idiag_urupm=0
   integer :: idiag_totmass=0,idiag_reyalphass=0
+  integer :: idiag_rufm=0
+  integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
+
   contains
 
 !***********************************************************************
@@ -167,7 +172,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.284 2006-09-08 10:53:44 wlyra Exp $")
+           "$Id: hydro.f90,v 1.285 2006-09-18 06:49:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -618,6 +623,8 @@ module Hydro
           lpenc_diagnos(i_o2)=.true.
       if (idiag_oum/=0) lpenc_diagnos(i_ou)=.true.
       if (idiag_Marms/=0 .or. idiag_Mamax/=0) lpenc_diagnos(i_Ma2)=.true.
+      if (idiag_u3u21m/=0) lpenc_diagnos(i_u3u21)=.true.
+      if (idiag_u1u32m/=0) lpenc_diagnos(i_u1u32)=.true.
       if (idiag_u2u13m/=0) lpenc_diagnos(i_u2u13)=.true.
       if (idiag_urms/=0 .or. idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_u2m/=0 .or. idiag_um2/=0) lpenc_diagnos(i_u2)=.true.
@@ -656,7 +663,9 @@ module Hydro
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
       endif
-      if (lpencil_in(i_u2u13)) then
+      if (lpencil_in(i_u3u21) .or. &
+          lpencil_in(i_u1u32) .or. &
+          lpencil_in(i_u2u13)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_uij)=.true.
       endif
@@ -738,8 +747,13 @@ module Hydro
           p%ugu(:,3) = ugui
         endif
       endif
-! u2u13
+!
+! u3u21, u1u32, u2u13
+!
+      if (lpencil(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
+      if (lpencil(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
       if (lpencil(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
+!
 ! del4u
       if (lpencil(i_del4u)) call del4v(f,iuu,p%del4u)
 ! del6u
@@ -864,6 +878,10 @@ module Hydro
                                    abs(p%uu(:,2))*dy_1(  m  )+ &
                                    abs(p%uu(:,3))*dz_1(  n  )
       if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+!
+!  add possibility of forcing that is not delta-correlated in time
+!
+      if (lforcing_continuous) call forcing_continuous(df,p)
 !
 !  damp motions in some regions for some time spans if desired
 !
@@ -1046,8 +1064,10 @@ module Hydro
         if (idiag_Marms/=0) call sum_mn_name(p%Ma2,idiag_Marms,lsqrt=.true.)
         if (idiag_Mamax/=0) call max_mn_name(p%Ma2,idiag_Mamax,lsqrt=.true.)
 !
-!  < u2 u1,3 >
+!  alp11=<u3*u2,1>,  alp22=<u1*u3,2>,  alp33=<u2*u1,3>
 !
+        if (idiag_u3u21m/=0) call sum_mn_name(p%u3u21,idiag_u3u21m)
+        if (idiag_u1u32m/=0) call sum_mn_name(p%u1u32,idiag_u1u32m)
         if (idiag_u2u13m/=0) call sum_mn_name(p%u2u13,idiag_u2u13m)
 !
       endif
@@ -1438,6 +1458,74 @@ module Hydro
 !
     endsubroutine udamping
 !***********************************************************************
+    subroutine forcing_continuous(df,p)
+!
+!  add a continuous forcing term (here currently only for ABC flow)
+!
+!  17-sep-06/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: forcing_rhs,fxb
+      real, dimension (nx) :: uf
+      real, dimension (mx), save :: sinx,cosx
+      real, dimension (my), save :: siny,cosy
+      real, dimension (mz), save :: sinz,cosz
+      type (pencil_case) :: p
+      integer, save :: ifirst
+      integer :: j,jf,ifff
+      real :: fact
+!
+!  at the first step, the sin and cos functions are calculated for all
+!  x,y,z points and are then saved and used for all subsequent steps
+!  and pencils
+!
+      if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
+      if (ifirst==0) then
+        if (lroot) print*,'forcing_continuous: calc sinx, cosx, etc'
+        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+      endif
+      ifirst=ifirst+1
+      if(ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
+!
+!  calculate forcing
+!
+      fact=ampl_ff/sqrt(3.)
+      forcing_rhs(:,1)=fact*(sinz(n    )+cosy(m)    )
+      forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
+      forcing_rhs(:,3)=fact*(siny(m    )+cosx(l1:l2))
+!
+!  apply forcing in momentum equation
+!
+      ifff=iux
+      do j=1,3
+        jf=j+ifff-1
+        df(l1:l2,m,n,jf)=df(l1:l2,m,n,jf)+forcing_rhs(:,j)
+      enddo
+!
+!  diagnostics
+!
+      if (ldiagnos) then
+        if (idiag_rufm/=0) then
+          call dot_mn(p%uu,forcing_rhs,uf)
+          call sum_mn_name(p%rho*uf,idiag_rufm)
+        endif
+        if (lmagnetic) then
+          if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then
+            call cross(forcing_rhs,p%bb,fxb)
+            call sum_mn_name(fxb(:,1),idiag_fxbxm)
+            call sum_mn_name(fxb(:,2),idiag_fxbym)
+            call sum_mn_name(fxb(:,3),idiag_fxbzm)
+          endif
+        endif
+      endif
+!
+    endsubroutine forcing_continuous
+!***********************************************************************
     subroutine rprint_hydro(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
@@ -1473,7 +1561,8 @@ module Hydro
         idiag_ozm=0; idiag_oxoym=0; idiag_oxozm=0; idiag_oyozm=0
         idiag_umx=0; idiag_umy=0; idiag_umz=0
         idiag_Marms=0; idiag_Mamax=0; idiag_divum=0; idiag_divu2m=0
-        idiag_u2u13m=0; idiag_oumphi=0; idiag_fintm=0; idiag_fextm=0
+        idiag_u3u21m=0; idiag_u1u32m=0; idiag_u2u13m=0
+        idiag_oumphi=0; idiag_fintm=0; idiag_fextm=0
         idiag_urmphi=0; idiag_upmphi=0; idiag_uzmphi=0; idiag_u2mphi=0
         idiag_duxdzma=0; idiag_duydzma=0
         idiag_ekin=0; idiag_ekintot=0; idiag_ekinz=0
@@ -1485,6 +1574,8 @@ module Hydro
         idiag_urm=0; idiag_upm=0; idiag_uzzm=0
         idiag_uzupm=0; idiag_uruzm=0; idiag_urupm=0
         idiag_totmass=0; idiag_reyalphass=0
+        idiag_rufm=0
+        idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1536,6 +1627,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'Mamax',idiag_Mamax)
         call parse_name(iname,cname(iname),cform(iname),'divum',idiag_divum)
         call parse_name(iname,cname(iname),cform(iname),'divu2m',idiag_divu2m)
+        call parse_name(iname,cname(iname),cform(iname),'u3u21m',idiag_u3u21m)
+        call parse_name(iname,cname(iname),cform(iname),'u1u32m',idiag_u1u32m)
         call parse_name(iname,cname(iname),cform(iname),'u2u13m',idiag_u2u13m)
         call parse_name(iname,cname(iname),cform(iname),'uxpt',idiag_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',idiag_uypt)
@@ -1554,6 +1647,10 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uzupm',idiag_uzupm)
         call parse_name(iname,cname(iname),cform(iname),'uruzm',idiag_uruzm)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
+        call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
+        call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
+        call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
+        call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
         call parse_name(iname,cname(iname),cform(iname),'reyalphass',idiag_reyalphass)
       enddo
 !
@@ -1688,6 +1785,8 @@ module Hydro
         write(3,*) 'i_Mamax=',idiag_Mamax
         write(3,*) 'i_divum=',idiag_divum
         write(3,*) 'i_divu2m=',idiag_divu2m
+        write(3,*) 'i_u3u21m=',idiag_u3u21m
+        write(3,*) 'i_u1u32m=',idiag_u1u32m
         write(3,*) 'i_u2u13m=',idiag_u2u13m
         write(3,*) 'i_uxpt=',idiag_uxpt
         write(3,*) 'i_uypt=',idiag_uypt
@@ -1718,6 +1817,10 @@ module Hydro
         write(3,*) 'i_uzz2m=',idiag_uzz2m
         write(3,*) 'i_urupm=',idiag_urupm
         write(3,*) 'totmass=',idiag_totmass
+        write(3,*) 'rufm=',idiag_rufm
+        write(3,*) 'i_fxbxm=',idiag_fxbxm
+        write(3,*) 'i_fxbym=',idiag_fxbym
+        write(3,*) 'i_fxbzm=',idiag_fxbzm
         write(3,*) 'reyalphass=',idiag_reyalphass
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu

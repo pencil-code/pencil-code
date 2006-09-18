@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.93 2006-09-14 20:42:17 brandenb Exp $
+! $Id: forcing.f90,v 1.94 2006-09-18 06:49:39 brandenb Exp $
 
 module Forcing
 
@@ -72,7 +72,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.93 2006-09-14 20:42:17 brandenb Exp $")
+           "$Id: forcing.f90,v 1.94 2006-09-18 06:49:39 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -806,12 +806,9 @@ module Forcing
       if(ip<=6) print*,'forcing_ABC: ifirst=',ifirst
       if (ifirst==0) then
         if (lroot) print*,'forcing_ABC: calculate sinx,cosx,siny,cosy,sinz,cosz'
-        sinx=sin(k1_ff*x)
-        cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y)
-        cosy=cos(k1_ff*y)
-        sinz=sin(k1_ff*z)
-        cosz=cos(k1_ff*z)
+        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
       endif
       ifirst=ifirst+1
       if(ip<=6) print*,'forcing_ABC: dt, ifirst=',dt,ifirst

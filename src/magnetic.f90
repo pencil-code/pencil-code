@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.323 2006-09-18 05:54:52 dobler Exp $
+! $Id: magnetic.f90,v 1.324 2006-09-18 06:49:40 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -157,7 +157,8 @@ module Magnetic
   integer :: idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
   integer :: idiag_bxmxz=0,idiag_bymxz=0,idiag_bzmxz=0
   integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_gpxbm=0
-  integer :: idiag_uxDxuxbm=0,idiag_b2b13m=0,idiag_jbmphi=0,idiag_dteta=0
+  integer :: idiag_uxDxuxbm=0,idiag_jbmphi=0,idiag_dteta=0
+  integer :: idiag_b3b21m=0,idiag_b1b32m=0,idiag_b2b13m=0
   integer :: idiag_uxbmx=0,idiag_uxbmy=0,idiag_uxbmz=0,idiag_uxjm=0
   integer :: idiag_brmphi=0,idiag_bpmphi=0,idiag_bzmphi=0,idiag_b2mphi=0
   integer :: idiag_uxbrmphi=0,idiag_uxbpmphi=0,idiag_uxbzmphi=0,idiag_ujxbm=0
@@ -206,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.323 2006-09-18 05:54:52 dobler Exp $")
+           "$Id: magnetic.f90,v 1.324 2006-09-18 06:49:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -575,7 +576,8 @@ module Magnetic
       if (idiag_aybym2/=0 .or. idiag_exaym2/=0) lpenc_diagnos(i_aa)=.true.
       if (idiag_arms/=0 .or. idiag_amax/=0) lpenc_diagnos(i_a2)=.true.
       if (idiag_abm/=0) lpenc_diagnos(i_ab)=.true.
-      if (idiag_djuidjbim/=0 .or. idiag_b2b13m/=0) &
+      if (idiag_djuidjbim/=0 .or. idiag_b3b21m/=0 .or. &
+          idiag_b1b32m/=0 .or.  idiag_b2b13m/=0) &
           lpenc_diagnos(i_bij)=.true.
       if (idiag_j2m/=0 .or. idiag_jm2/=0 .or. idiag_jrms/=0 .or. &
           idiag_jmax/=0 .or. idiag_epsM/=0 .or. idiag_epsM_LES/=0) &
@@ -954,7 +956,7 @@ module Magnetic
 !      
       real, dimension (nx,3) :: geta,uxDxuxb,fres
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b2b13,sign_jo,rho1_jxb
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,b3b21,b1b32,b2b13,sign_jo,rho1_jxb
       real, dimension (nx) :: eta_mn,eta_smag,etatotal,fres2,etaSS
       real :: tmp,eta_out1,OmegaSS=1.
       integer :: i,j
@@ -1371,7 +1373,21 @@ module Magnetic
           call sum_mn_name(uxDxuxb_dotB0,idiag_uxDxuxbm)
         endif
 !
-!  < b2 b1,3 >
+!  alpM11=<b3*b2,1>
+!
+        if (idiag_b3b21m/=0) then
+          b3b21=p%bb(:,3)*p%bij(:,2,1)
+          call sum_mn_name(b3b21,idiag_b3b21m)
+        endif
+!
+!  alpM22=<b1*b3,2>
+!
+        if (idiag_b1b32m/=0) then
+          b1b32=p%bb(:,1)*p%bij(:,3,2)
+          call sum_mn_name(b1b32,idiag_b1b32m)
+        endif
+!
+!  alpM33=<b2*b1,3>
 !
         if (idiag_b2b13m/=0) then
           b2b13=p%bb(:,2)*p%bij(:,1,3)
@@ -1792,7 +1808,7 @@ module Magnetic
         idiag_bmz=0; idiag_bxmxy=0; idiag_bymxy=0; idiag_bzmxy=0
         idiag_uxbm=0; idiag_oxuxbm=0; idiag_jxbxbm=0.; idiag_gpxbm=0.
         idiag_uxDxuxbm=0.; idiag_uxbmx=0; idiag_uxbmy=0; idiag_uxbmz=0
-        idiag_uxjm=0; idiag_ujxbm=0; idiag_b2b13m=0
+        idiag_uxjm=0; idiag_ujxbm=0; idiag_b3b21m=0; idiag_b1b32m=0; idiag_b2b13m=0
         idiag_brmphi=0; idiag_bpmphi=0; idiag_bzmphi=0; idiag_b2mphi=0
         idiag_jbmphi=0; idiag_uxbrmphi=0; idiag_uxbpmphi=0; idiag_uxbzmphi=0;
         idiag_dteta=0; idiag_uxBrms=0; idiag_Bresrms=0; idiag_Rmrms=0
@@ -1853,6 +1869,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'gpxbm',idiag_gpxbm)
         call parse_name(iname,cname(iname),cform(iname),&
             'uxDxuxbm',idiag_uxDxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'b3b21m',idiag_b3b21m)
+        call parse_name(iname,cname(iname),cform(iname),'b1b32m',idiag_b1b32m)
         call parse_name(iname,cname(iname),cform(iname),'b2b13m',idiag_b2b13m)
         call parse_name(iname,cname(iname),cform(iname),'bmx',idiag_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',idiag_bmy)
@@ -1967,6 +1985,8 @@ module Magnetic
         write(3,*) 'i_jxbxbm=',idiag_jxbxbm
         write(3,*) 'i_gpxbm=',idiag_gpxbm
         write(3,*) 'i_uxDxuxbm=',idiag_uxDxuxbm
+        write(3,*) 'i_b3b21m=',idiag_b3b21m
+        write(3,*) 'i_b1b32m=',idiag_b1b32m
         write(3,*) 'i_b2b13m=',idiag_b2b13m
         write(3,*) 'i_bxmz=',idiag_bxmz
         write(3,*) 'i_bymz=',idiag_bymz
