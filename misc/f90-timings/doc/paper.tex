@@ -1,6 +1,6 @@
-% $Id: paper.tex,v 1.2 2006-09-18 10:50:54 mee Exp $
+% $Id: paper.tex,v 1.3 2006-09-18 10:54:54 mee Exp $
 
-\documentclass[a4paper,twoside,12pt]{article}
+\documentclass[a4paper,twoside,11pt]{article}
 
 \usepackage[round]{natbib}              % BiBTeX style
 \usepackage{newlfont}                   % Special fonts
@@ -24,6 +24,7 @@
 \usepackage{ulem}
 \usepackage{bm}
 \usepackage{url}
+\usepackage{hyperref}
 \topmargin -18mm
 \headheight 14.5pt
 
@@ -37,7 +38,7 @@
 
 \title{Array-valued Functions vs. Subroutines} % Title
 \author{The Pencil Coders}          % Author
-\date{\today,~ $ $Revision: 1.2 $ $}            % Date
+\date{\today,~ $ $Revision: 1.3 $ $}            % Date
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \maketitle
@@ -49,8 +50,7 @@
 %%\tableofcontents
 
 \pagenumbering{arabic}
-\chapter{Results} 
-\section{wormhole.ncl.ac.uk}
+\section{Results for wormhole.ncl.ac.uk}
 wormhole is an Intel Core Duo (2Ghz) machine with 2GB of RAM.  The Intel
 Core processors are in fact Pentium III based chips but with many of the
 technology improvements developed for the Pentium 4 series.  In particular
