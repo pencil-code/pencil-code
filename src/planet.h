@@ -9,7 +9,3 @@
   
   public :: disk_diagnostics
   public :: planet_phiavg
-
-!logicals to use "abroad"
-  public :: llocal_iso
-  

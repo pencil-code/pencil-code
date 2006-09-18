@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.33 2006-09-08 10:45:05 wlyra Exp $
+! $Id: noplanet.f90,v 1.34 2006-09-18 15:37:00 wlyra Exp $
 !
 !  Dummy module
 !
@@ -19,8 +19,6 @@ module Planet
   implicit none
 
   include 'planet.h'
-
-  logical :: llocal_iso=.false.
 
   !namelist /planet_init_pars/ dummy
   !namelist /planet_run_pars/ dummy
@@ -44,7 +42,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.33 2006-09-08 10:45:05 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.34 2006-09-18 15:37:00 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.337 2006-08-30 13:28:39 dintrans Exp $
+! ! $Id: cdata.f90,v 1.338 2006-09-18 15:37:00 wlyra Exp $
 
 module Cdata
 
@@ -22,7 +22,7 @@ module Cdata
 
 !  coordinate system (alternatives: spherical, cylindric)
   character (len=9) :: coord_system='cartesian'
-  logical :: lspherical=.false.,lcylindric=.false.
+  logical :: lspherical=.false.,lcylindrical=.false.
   real, dimension (nx) :: r1_mn
 
 !  timestep related:
@@ -83,7 +83,6 @@ module Cdata
   real :: nu=0.,cmu,cnu2
 !ajwm moved here from hydro to remove dependence of entropy on Hydro
   real :: tdiagnos,t2davgfirst
-
 !! not used?  real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum,epsK_hyper
   real :: UUmax=0.
@@ -238,10 +237,10 @@ module Cdata
   logical :: leos=.false., leos_idealgas=.false.
   logical :: leos_ionization=.false.,leos_fixed_ionization=.false.
   logical :: leos_temperature_ionization=.false.
+  logical :: llocal_iso=.false.
   logical :: pretend_lnTT=.false.
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
-  logical :: lcylindrical=.false.
   logical :: lwrite_2d=.false.
 
 !!

@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.68 2006-09-08 10:45:05 wlyra Exp $
+! $Id: planet.f90,v 1.69 2006-09-18 15:37:00 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -35,22 +35,13 @@ module Planet
 !
 ! things needed for companion
 !
-  real :: gc=0. !planet's mass
   real :: b_pot=0.           !peak radius for potential
-  integer :: nc=2        !exponent of smoothed potential 
-  integer :: n_periods=5 !periods for ramping
-  logical :: lramp=.false.,llocal_iso=.false.
-  logical :: lmigrate=.false.!,lnorm=.false.
-  real :: Gvalue=1. !gravity constant in same unit as density
   logical :: lcalc_turb=.false.
-  integer :: nr=10
+  integer :: nr=10,dummy=0
 !
-  namelist /planet_init_pars/ gc,nc,b_pot,&
-       llocal_iso,lramp
+  namelist /planet_init_pars/ dummy
 !
-  namelist /planet_run_pars/ gc,nc,b_pot,lramp, &
-       llocal_iso,lmigrate,Gvalue,n_periods,nr,&
-       lcalc_turb
+  namelist /planet_run_pars/ b_pot, nr,lcalc_turb
 ! 
   integer :: idiag_torqint=0,idiag_torqext=0
   integer :: idiag_totenergy=0,idiag_totangmom=0
@@ -76,7 +67,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.68 2006-09-08 10:45:05 wlyra Exp $")
+           "$Id: planet.f90,v 1.69 2006-09-18 15:37:00 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
