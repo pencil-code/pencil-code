@@ -3,7 +3,7 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.21 2006-09-08 11:06:22 wlyra Exp $',
+  cvsid='$Id: start.in,v 1.22 2006-09-18 16:45:57 wlyra Exp $',
   ip=6,                        ! debugging parameter
   xyz0  = -2.6,-2.6,-0.26,       ! first corner of box
   xyz1  =  2.6, 2.6, 0.26,       ! second corner of box
@@ -17,6 +17,7 @@
   r_int=0.4,                   ! radius of interior spherical boundary
   r_ext=2.5,                   ! radius of exterior spherical boundary
   lcylindrical=T
+  llocal_iso=T
 /
 &eos_init_pars
   cs0=0.05 
@@ -42,8 +43,6 @@
   lcylindrical_gravity=F,T
 /
 &planet_init_pars
-  llocal_iso=T
-  lramp=F
-  gc=1e-4
+
 /
 
