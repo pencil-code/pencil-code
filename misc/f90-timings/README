@@ -1,0 +1,22 @@
+${PENCIL_HOME}/misc/f90-timings/
+--------------------------------
+
+This directory is for comparing timings for certain F90 constructs and
+idioms on a multidtude of architectures and compilers, so we are sure we
+the best variants in the code.
+
+The timing tests here use some parts of the Pencil Code infrastructure
+(like adapt-mkfile), but no code from Pencil.
+
+If the tests involve arrays, we are rypically only interested in 1-d
+arrays, as the Pencil Code operates on one pencil at a time. In order to
+test for various array length, we use the file `param.inc'.
+
+Usage:
+
+  make code
+  make timings
+
+
+
+$Id: README,v 1.1 2006-09-18 08:18:39 dobler Exp $
