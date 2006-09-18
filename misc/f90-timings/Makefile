@@ -26,7 +26,7 @@ EXE = array-val-funcs.x
 ## Explicit rules:
 ##
 
-defaul: test
+default: test
 
 code: $(EXE)
 
