@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.322 2006-09-14 20:42:17 brandenb Exp $
+! $Id: magnetic.f90,v 1.323 2006-09-18 05:54:52 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -206,7 +206,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.322 2006-09-14 20:42:17 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.323 2006-09-18 05:54:52 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1095,7 +1095,7 @@ module Magnetic
       if (lfrozen_bz_z_bot) then
 !
 !  Only need to do this for nonperiodic z direction, on bottommost
-!  processor and in bottommost pencils
+!  processors and in bottommost pencils
 !
         if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
            fres(:,:)=0.      
