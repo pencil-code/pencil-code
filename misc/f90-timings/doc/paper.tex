@@ -1,4 +1,4 @@
-% $Id: paper.tex,v 1.1 2006-09-18 10:41:54 mee Exp $
+% $Id: paper.tex,v 1.2 2006-09-18 10:50:54 mee Exp $
 
 \documentclass[a4paper,twoside,12pt]{article}
 
@@ -37,7 +37,7 @@
 
 \title{Array-valued Functions vs. Subroutines} % Title
 \author{The Pencil Coders}          % Author
-\date{\today,~ $ $Revision: 1.1 $ $}            % Date
+\date{\today,~ $ $Revision: 1.2 $ $}            % Date
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \maketitle
@@ -91,7 +91,7 @@ comparing the -O0 and -O3 results, the optimizer seems to have considerably
 more freedom to improve the array-valued function form.
 
 \chapter{Possible Issues with the present test}
-\section{niter is constant}
+\section{niter is a compile-time constant}
 niter is a constant and as such the optimizer may be being able to optimise
 the data handling (expecially in the subtoutine case) much more efficiently
 than is fair.  In our real code the looping is much more complex.  There are
@@ -103,12 +103,12 @@ It seems far from trivial that that would be the case.
 \section{The function usage is unfair}
 Using subroutine calls makes the operation in the test necessarily a 2 step
 operation.  However, it may be expressed as a one liner in functional form.
-I believe sub3() has precisely the same impact and sub1() and
-sub2().  sub3() however expresses the problem at hand in a way that is fair
+I believe sub3() has precisely the same impact as sub1() and
+sub2().  sub3() however expresses the problem in a way that is fair
 to the functional form and impossible in the "simple" subroutine
 form\footnote{one could introduce a new subroutine which handles a
 scalar*scalar*vector though (scalar*scalar) is intrinsically a
-scalar and as such a hybrid subroutine/functional for could be created}
+scalar and as such a hybrid subroutine/functional form could be created}
 
 Running on wormhole.ncl.ac.uk (as above) with the "fair" functional form:
 
