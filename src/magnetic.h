@@ -12,7 +12,7 @@
   public :: calc_pencils_magnetic
 
   public :: calc_mfield
-  public :: bc_aa_pot, bc_frozen_in_bb_z
+  public :: bc_aa_pot, bc_frozen_in_bb
   public :: pert_aa, rescaling
   public :: bb_unitvec_shock
 

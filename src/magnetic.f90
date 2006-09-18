@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.324 2006-09-18 06:49:40 brandenb Exp $
+! $Id: magnetic.f90,v 1.325 2006-09-18 21:31:14 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -85,7 +85,8 @@ module Magnetic
   logical :: lresi_shell=.false.
   logical :: lresi_smagorinsky=.false.
   logical :: lresi_smagorinsky_cross=.false.
-  logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
+  logical, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
+  logical, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
   logical :: reinitalize_aa=.false.
   logical :: lB_ext_pot=.false.
   logical :: lforce_free_test=.false.
@@ -207,7 +208,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.324 2006-09-18 06:49:40 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.325 2006-09-18 21:31:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1007,7 +1008,11 @@ module Magnetic
       etatotal=0.0
 !
       if (lresi_eta_const) then
-        fres=fres+eta*p%del2a
+        if (lweyl_gauge) then
+          fres = fres - eta*p%jj
+        else
+          fres = fres + eta*p%del2a
+        endif
         etatotal=etatotal+eta
       endif
 !
@@ -1091,18 +1096,15 @@ module Magnetic
 !
       if (headtt) print*,'daa_dt: iresistivity=',iresistivity
 !
-!  Switch off diffusion of horizontal components in boundary slice if
-!  requested by boundconds
+!  Switch off diffusion in boundary slice if requested by boundconds
 !
-      if (lfrozen_bz_z_bot) then
+!  Only need to do this on bottommost (topmost) processors
+!  and in bottommost (topmost) pencils
 !
-!  Only need to do this for nonperiodic z direction, on bottommost
-!  processors and in bottommost pencils
-!
-        if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
-           fres(:,:)=0.      
-        endif
-      endif
+      do j=1,3
+        if (lfrozen_bb_bot(j).and.ipz==0       .and.n==n1) fres(:,j)=0.
+        if (lfrozen_bb_top(j).and.ipz==nprocz-1.and.n==n2) fres(:,j)=0.
+      enddo
 !
 !  Induction equation
 !
@@ -2727,7 +2729,7 @@ module Magnetic
     endsubroutine geo_benchmark_B
     
 !***********************************************************************
-    subroutine bc_frozen_in_bb_z(topbot)
+    subroutine bc_frozen_in_bb(topbot,j)
 !
 !  Set flags to indicate that magnetic flux is frozen-in at the
 !  z boundary. The implementation occurs in daa_dt where magnetic
@@ -2736,17 +2738,18 @@ module Magnetic
       use Cdata
 !
       character (len=3) :: topbot
+      integer :: j
 !
       select case(topbot)
       case('bot')               ! bottom boundary
-        lfrozen_bz_z_bot = .true.    ! set flag
+        lfrozen_bb_bot(j) = .true.    ! set flag
       case('top')               ! top boundary
-        lfrozen_bz_z_top = .true.    ! set flag
+        lfrozen_bb_top(j) = .true.    ! set flag
       case default
-        print*, "bc_frozen_in_bb_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_frozen_in_bb: ", topbot, " should be `top' or `bot'"
       endselect
 !
-    endsubroutine bc_frozen_in_bb_z
+    endsubroutine bc_frozen_in_bb
 !***********************************************************************
       subroutine bc_aa_pot(f,topbot)
 !
