@@ -28,7 +28,12 @@ program Array_val_funcs
     module procedure pencil_multiply1
   endinterface
 
-  real :: t0,t1,t2
+  interface operator (/)
+    module procedure pencil_divide1
+  endinterface
+
+
+  real :: t0,t1,t2,t3,t4
 
   call init()
 
@@ -37,10 +42,15 @@ program Array_val_funcs
   t1 = mpiwtime()
   call sub2()
   t2 = mpiwtime()
+  call sub3()
+  t3 = mpiwtime()
+  call sub4()
+  t4 = mpiwtime()
 
   call report_timings(&
-      (/ 'Subroutine', 'Array-valued function' /) , &
-      (/ t1-t0       , t2-t1                   /) &
+      (/ 'Subroutine', 'Array-valued fn',  'Fair array-valued fn', &
+                  'Hybrid w/ intrinsic vector operator'/) , &
+      (/ t1-t0       , t2-t1, t3-t2, t4-t3         /) &
   )
 
 contains
@@ -77,6 +87,38 @@ contains
     call dummy_use(vect_field2)
 !
   endsubroutine sub2
+!***********************************************************************
+  subroutine sub3()
+!
+    integer :: i
+!
+    do i=1,niter
+      !
+      ! Mutliply first by scal1, then by scal2=1/scal1 to avoid over/underflow
+      !
+      vect_field1 = scal_field2 * scal_field1 * vect_field1
+    enddo
+    vect_field2 = vect_field1/scal_field2
+
+    call dummy_use(vect_field2)
+!
+  endsubroutine sub3
+!***********************************************************************
+  subroutine sub4()
+!
+    integer :: i
+!
+    do i=1,niter
+      !
+      ! Mutliply first by scal1, then by scal2=1/scal1 to avoid over/underflow
+      !
+      call multsv_mn(scal_field1*scal_field2, vect_field1, vect_field1)
+    enddo
+    call multsv_mn(1./scal_field2, vect_field1, vect_field2)
+
+    call dummy_use(vect_field2)
+!
+  endsubroutine sub4
 !***********************************************************************
   subroutine multsv_mn(a,b,c)
 !
@@ -119,6 +161,27 @@ contains
     enddo
 
   endfunction pencil_multiply1
+!***********************************************************************
+  function pencil_divide1(v,s)
+!
+!  The `*' operator may be extended through this function to allow
+!  elementwise multiplication of a `pencil-scalar' with a `pencil-vector'
+!
+!   18-Sep-05/tony: coded
+!
+!    use Cdata
+
+    real, dimension(nx), intent(in) :: s
+    real, dimension(nx,3), intent(in) :: v
+    real, dimension(nx,3) :: pencil_divide1
+
+    integer :: i
+
+    do i=1,3
+      pencil_divide1(:,i) = v(:,i) / s(:)
+    enddo
+
+  endfunction pencil_divide1
 !***********************************************************************
 
 
