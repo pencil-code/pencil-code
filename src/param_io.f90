@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.253 2006-08-30 13:28:40 dintrans Exp $ 
+! $Id: param_io.f90,v 1.254 2006-09-18 15:58:02 wlyra Exp $ 
 
 module Param_IO
 
@@ -66,7 +66,7 @@ module Param_IO
        mu0,force_lower_bound,force_upper_bound, &
        fbcx1,fbcx2,fbcy1,fbcy2,fbcz1,fbcz2,fbcz1_1,fbcz1_2,fbcz2_1,fbcz2_2, &
        xyz_step,xi_step_frac,xi_step_width, &
-       lcylindrical,init_loops,lwrite_2d
+       lcylindrical,llocal_iso,init_loops,lwrite_2d
  !      lextrapolate_bot_density,ltop_velocity_kep,laccelerat_zone, &
  !      ldecelerat_zone,lsurface_zone,lnstar_entropy,lnstar_T_const,lnstar_1D, T_disk
   namelist /run_pars/ &
