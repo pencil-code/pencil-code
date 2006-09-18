@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.89 2006-08-23 16:53:32 mee Exp $
+! $Id: noentropy.f90,v 1.90 2006-09-18 15:41:18 wlyra Exp $
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.89 2006-08-23 16:53:32 mee Exp $")
+           "$Id: noentropy.f90,v 1.90 2006-09-18 15:41:18 wlyra Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -73,7 +73,6 @@ module Entropy
 !
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
                                  cs0, select_eos_variable
-      use Planet, only: llocal_iso
 !
       real, dimension (mx,my,mz,mfarray) :: f
       logical :: lstarting
