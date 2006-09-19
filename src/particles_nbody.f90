@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.25 2006-09-16 17:44:53 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.26 2006-09-19 16:46:05 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -44,6 +44,8 @@ module Particles_nbody
        lmigrate, lexclude_frozen, disk_mass
 
   integer, dimension(nspar,3) :: idiag_xxspar,idiag_vvspar
+  integer, dimension(nspar) :: idiag_torqint,idiag_torqext
+  integer :: idiag_totenergy,idiag_totangmom
 
   contains
 
@@ -63,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.25 2006-09-16 17:44:53 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.26 2006-09-19 16:46:05 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -293,7 +295,6 @@ module Particles_nbody
 !  07-sep-06/wlad: coded
 !
       use Messages, only: fatal_error
-      use Planet, only: disk_diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -301,7 +302,8 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (nx,3) :: ggp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nx) :: grav_particle,rrp
+      real, dimension (nx) :: grav_particle,rrp,tmp
+      real, dimension (nx) :: kin_energy,pot_energy
       real, dimension (3) :: xxpar,accg
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -322,6 +324,8 @@ module Particles_nbody
          endif
 !
 ! Calculate gas-particles distances
+!
+         pot_energy=0.
 !
          do ks=1,nspar
 !
@@ -373,11 +377,27 @@ module Particles_nbody
                        dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accg(1:3)
                enddo
             endif
+!
+! Calculate torques for output, if needed
+!
+            if (ldiagnos) then
+               if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
+                    call calc_torque(p%rho,rpcyl_mn(:,ks),ks)
+!
+! Total energy. Must be here because needs gas-particle distances
+!
+               if (idiag_totenergy/=0) then
+! Get potential energy due to particle ks
+                  pot_energy = pot_energy - pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
+                  if (ks==nspar) then
+! On the last loop, the sum is finished. Calculate kinetic and total energy
+                     kin_energy = p%rho * 0.5*p%u2
+                     call sum_lim_mn_name(kin_energy+pot_energy,idiag_totenergy)
+                  endif
+               endif
+            endif
+!
          enddo
-!
-! Output diagnostics
-!
-         call disk_diagnostics(p,pmass,fsp,rpcyl_mn)
 !
       endif
 !
@@ -746,6 +766,58 @@ module Particles_nbody
 !
     endsubroutine share_sinkparticles
 !***********************************************************************
+    subroutine calc_torque(dens,dist,ks)
+!
+! Output torque diagnostic for sink particle ks
+! 05-nov-05/wlad : coded
+!
+      use Sub
+      use Mpicomm, only: stop_it
+!
+      real, dimension(nx) :: torque,torqint,torqext
+      real, dimension(nx) :: dist,rpre,dens
+      real :: rr,w2,smap,hills
+      integer :: ks,i
+!
+
+      if (ks==nspar) &
+           call stop_it("Nonsense to calculate torques for the star")
+
+      rr    = sqrt(fsp(ks,ixp)**2 + fsp(ks,iyp)**2 + fsp(ks,izp)**2)
+      w2    = fsp(ks,ivpx)**2 + fsp(ks,ivpy)**2 + fsp(ks,ivpz)**2
+      smap  = 1./(2./rr - w2)
+      hills = smap*(pmass(ks)/3.)**(1./3.)
+!
+      rpre  = fsp(ks,ixp)*y(m) - fsp(ks,iyp)*x(l1:l2)
+      torque = pmass(ks)*dens*rpre*&
+           (dist**2 + r_smooth(ks)**2)**(-1.5)
+!
+      torqext=0.
+      torqint=0.
+!
+      do i=1,nx
+!
+! Exclude material from inside the Roche Lobe
+!
+         if (dist(i).ge.hills) then
+!
+! External torque
+!
+            if (rcyl_mn(i).ge.rr) torqext(i) = torque(i)
+!
+! Internal torque
+!
+            if (rcyl_mn(i).le.rr) torqint(i) = torque(i)
+!
+         endif
+!
+      enddo
+!
+      call sum_lim_mn_name(torqext,idiag_torqext(ks))
+      call sum_lim_mn_name(torqint,idiag_torqint(ks))
+!
+    endsubroutine calc_torque
+!***********************************************************************
     subroutine rprint_particles_nbody(lreset,lwrite)
 !
 !  Read and register print parameters relevant for sink particles.
@@ -772,6 +844,8 @@ module Particles_nbody
 !
       if (lreset) then
          idiag_xxspar=0;idiag_vvspar=0
+         idiag_torqint=0;idiag_torqext=0
+         idiag_totenergy=0;idiag_totangmom=0
       endif
 !
 !  Run through all possible names that may be listed in print.in
@@ -796,11 +870,36 @@ module Particles_nbody
            if (lwr) then
               write(3,*) ' i_'//trim(str)//'par'//trim(sks)//'=',idiag_xxspar(ks,j)
               write(3,*) 'i_v'//trim(str)//'par'//trim(sks)//'=',idiag_vvspar(ks,j)
+              
            endif
 !
         enddo
+!
+        do iname=1,nname
+           call parse_name(iname,cname(iname),cform(iname),&
+              'torqint_'//trim(sks),idiag_torqint(ks))
+           call parse_name(iname,cname(iname),cform(iname),&
+              'torqext_'//trim(sks),idiag_torqext(ks))
+        enddo
+!
+        if (lwr) then
+           write(3,*) 'i_torqint_'//trim(sks)//'=',idiag_torqint(ks)
+           write(3,*) 'i_torqext_'//trim(sks)//'=',idiag_torqext(ks)
+        endif
+     enddo
+!     
+     do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),&
+             'totenergy',idiag_totenergy)
+        call parse_name(iname,cname(iname),cform(iname),&
+             'totangmom',idiag_totangmom)
      enddo
 !
+     if (lwr) then
+        write(3,*) 'i_totenergy=',idiag_totenergy
+        write(3,*) 'i_totangmom=',idiag_totangmom
+     endif
+!
     endsubroutine rprint_particles_nbody
-!***********************************************************************              
+!***********************************************************************       
   endmodule Particles_nbody

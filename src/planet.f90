@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.69 2006-09-18 15:37:00 wlyra Exp $
+! $Id: planet.f90,v 1.70 2006-09-19 16:46:05 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -43,9 +43,6 @@ module Planet
 !
   namelist /planet_run_pars/ b_pot, nr,lcalc_turb
 ! 
-  integer :: idiag_torqint=0,idiag_torqext=0
-  integer :: idiag_totenergy=0,idiag_totangmom=0
-!
   contains
 !
 !***********************************************************************
@@ -67,7 +64,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.69 2006-09-18 15:37:00 wlyra Exp $")
+           "$Id: planet.f90,v 1.70 2006-09-19 16:46:05 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,120 +158,6 @@ module Planet
 !
     endsubroutine write_planet_run_pars
 !***********************************************************************
-    subroutine disk_diagnostics(p,mass,pos,dist)
-!
-!  Give the diagnostic of the disk - energy, momentum, etc
-!  It was the gravity_companion subroutine, now it is 
-!  all dead and the planet code soon will be extinguished!
-!  
-!
-      real, dimension (nx,nspar) :: dist
-      real, dimension (nspar,mpvar) :: pos
-      real, dimension (nspar) :: mass
-      type (pencil_case) :: p
-!
-      if (ldiagnos) then
-         if ((idiag_torqint/=0) .or. (idiag_torqext/=0)) &
-              call calc_torque(p%rho,mass(1),pos(1,1),pos(1,2),dist(:,1))
-         
-         if ((idiag_totenergy/=0).or.(idiag_totangmom/=0)) &
-              call calc_monitored(dist,mass,p)
-      endif
-!
-    endsubroutine disk_diagnostics
-!***********************************************************************
-    subroutine calc_torque(dens,gp,ax,ay,rp)
-!
-! 05-nov-05/wlad : coded
-!
-      use Sub
-!
-      real, dimension(nx) :: torque,torqint,torqext
-      real, dimension(nx) :: rp,rpre,dens
-      real :: ax,ay,Rc,roche,gp
-      integer :: i
-!
-! Planet's hills radius
-!
-      Rc = sqrt(ax*ax + ay*ay)
-      roche = Rc*(gp/3.)**(1./3.)
-!
-      rpre = ax*y(m) - ay*x(l1:l2)
-!
-      torque = gp*dens*rpre*(rp*rp+b_pot*b_pot)**(-1.5)
-!
-      torqext=0.
-      torqint=0.
-!
-      do i=1,nx
-!
-! Exclude material from inside the Roche Lobe
-!
-         if (rp(i).ge.roche) then
-!
-! External torque
-!
-            if (rcyl_mn(i).ge.Rc) torqext(i) = torque(i)
-!
-! Internal torque
-!
-            if (rcyl_mn(i).le.Rc) torqint(i) = torque(i)
-!
-         endif
-      enddo
-!
-      call sum_lim_mn_name(torqext,idiag_torqext)
-      call sum_lim_mn_name(torqint,idiag_torqint)
-!
-    endsubroutine calc_torque
-!***********************************************************************
-   subroutine calc_monitored(dist,mass,p)
-!
-! calculate total energy and angular momentum
-! and output their evolution as monitored variables
-!
-! 10-nov-05/wlad   : coded
-!
-     use Sub
-!
-     real, dimension (nx,nspar) :: dist
-     real, dimension (nspar) :: mass
-     real, dimension(nx) :: rs,rp,uphi
-     real, dimension(nx) :: angular_momentum
-     real, dimension(nx) :: kin_energy,pot_energy,total_energy
-     real :: gs,gp,r0=0.1     ! star's and planet's mass
-     type (pencil_case) :: p
-!
-     if (headtt) print*,'planet : calculate total energy'
-     if (headtt) print*,'planet : calculate total angular momentum'
-!
-! Calculate the total energy and integrate it
-!
-! Kinetic energy
-!
-     gs = mass(2)   ; gp = mass(1)
-     rs = dist(:,2) ; rp = dist(:,1)
-!
-     kin_energy = p%rho * p%u2/2.
-!     
-! Potential energy - uses smoothed potential
-!
-     pot_energy = -1.*(gs*(rs*rs+r0*r0)**(-0.5) &
-          + gp*(rp*rp+b_pot*b_pot)**(-0.5))*p%rho
-!     
-     total_energy = kin_energy + pot_energy  
-!
-     call sum_lim_mn_name(total_energy,idiag_totenergy)
-!
-! Angular momentum
-!
-     uphi = (-p%uu(:,1)*y(m) + p%uu(:,2)*x(l1:l2))/rcyl_mn
-     angular_momentum = p%rho*rcyl_mn*uphi
-!
-     call sum_lim_mn_name(angular_momentum,idiag_totangmom)
-!
-   endsubroutine calc_monitored
-!***************************************************************
     subroutine planet_phiavg(p)
 !
       type (pencil_case) :: p
@@ -522,46 +405,11 @@ module Planet
 !
       use Sub
 !
-      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-         idiag_torqint=0
-         idiag_torqext=0
-         idiag_totenergy=0
-         idiag_totangmom=0
-      endif
-!
-!  iname runs through all possible names that may be listed in print.in
-!
-      if(lroot.and.ip<14) print*,'rprint_gravity: run through parse list'
-      do iname=1,nname
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqint',idiag_torqint)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'torqext',idiag_torqext)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'totenergy',idiag_totenergy)
-         call parse_name(iname,cname(iname),cform(iname),&
-              'totangmom',idiag_totangmom)
-      enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
-!
-      if (lwr) then
-        write(3,*) 'i_torqint=',idiag_torqint
-        write(3,*) 'i_torqext=',idiag_torqext
-        write(3,*) 'i_totenergy=',idiag_totenergy
-        write(3,*) 'i_totangmom=',idiag_totangmom
-      endif
 !
       if (NO_WARN) print*,lreset  !(to keep compiler quiet)
 !

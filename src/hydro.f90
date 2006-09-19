@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.285 2006-09-18 06:49:40 brandenb Exp $
+! $Id: hydro.f90,v 1.286 2006-09-19 16:46:05 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -127,7 +127,7 @@ module Hydro
   integer :: idiag_ur2m=0,idiag_up2m=0,idiag_uzz2m=0
   integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0
   integer :: idiag_uzupm=0,idiag_uruzm=0,idiag_urupm=0
-  integer :: idiag_totmass=0,idiag_reyalphass=0
+  integer :: idiag_totmass=0,idiag_reyalphass=0,idiag_totangmom=0
   integer :: idiag_rufm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 
@@ -172,7 +172,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.285 2006-09-18 06:49:40 brandenb Exp $")
+           "$Id: hydro.f90,v 1.286 2006-09-19 16:46:05 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -994,6 +994,9 @@ module Hydro
             call integrate_mn_name(.5*p%rho*p%u2,idiag_ekintot)
         if (idiag_ekinz/=0) call xysum_mn_name_z(.5*p%rho*p%u2,idiag_ekinz)
         if (idiag_totmass/=0) call sum_lim_mn_name(p%rho,idiag_totmass)
+        if (idiag_totangmom/=0) &
+             call sum_lim_mn_name(p%rho*(p%uu(:,2)*x(l1:l2)-p%uu(:,1)*y(m)),&
+             idiag_totangmom)
 !
 !  cylindrical stresses for global disk
 !
@@ -1573,7 +1576,7 @@ module Hydro
         idiag_ur2m=0; idiag_up2m=0; idiag_uzz2m=0
         idiag_urm=0; idiag_upm=0; idiag_uzzm=0
         idiag_uzupm=0; idiag_uruzm=0; idiag_urupm=0
-        idiag_totmass=0; idiag_reyalphass=0
+        idiag_totmass=0; idiag_reyalphass=0; idiag_totangmom=0
         idiag_rufm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
@@ -1647,6 +1650,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uzupm',idiag_uzupm)
         call parse_name(iname,cname(iname),cform(iname),'uruzm',idiag_uruzm)
         call parse_name(iname,cname(iname),cform(iname),'totmass',idiag_totmass)
+        call parse_name(iname,cname(iname),cform(iname),'totangmom',idiag_totangmom)
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
         call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
@@ -1816,12 +1820,13 @@ module Hydro
         write(3,*) 'i_up2m=',idiag_up2m
         write(3,*) 'i_uzz2m=',idiag_uzz2m
         write(3,*) 'i_urupm=',idiag_urupm
-        write(3,*) 'totmass=',idiag_totmass
+        write(3,*) 'i_totmass=',idiag_totmass
+        write(3,*) 'i_totangmom=',idiag_totangmom
         write(3,*) 'rufm=',idiag_rufm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
         write(3,*) 'i_fxbym=',idiag_fxbym
         write(3,*) 'i_fxbzm=',idiag_fxbzm
-        write(3,*) 'reyalphass=',idiag_reyalphass
+        write(3,*) 'i_reyalphass=',idiag_reyalphass
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux

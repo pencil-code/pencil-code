@@ -1,4 +1,4 @@
-! $Id: noplanet.f90,v 1.34 2006-09-18 15:37:00 wlyra Exp $
+! $Id: noplanet.f90,v 1.35 2006-09-19 16:46:05 wlyra Exp $
 !
 !  Dummy module
 !
@@ -42,7 +42,7 @@ module Planet
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noplanet.f90,v 1.34 2006-09-18 15:37:00 wlyra Exp $")
+           "$Id: noplanet.f90,v 1.35 2006-09-19 16:46:05 wlyra Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,24 +132,6 @@ module Planet
       if (NO_WARN) print*, f, p
 !
     endsubroutine calc_pencils_planet
-!***********************************************************************
-    subroutine disk_diagnostics(p,mass,pos,dist)
-!      
-! 08-nov-05/wlad : dummy      
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-!
-      real, dimension (nx,nspar) :: dist
-      real, dimension (nspar,mpvar) :: pos
-      real, dimension (nspar) :: mass
-      type (pencil_case) :: p
-!                                                
-      call stop_it("noplanet.f90 - gravity_companion")
-!
-      if (NO_WARN) print*,p,mass,pos,dist
-!
-    endsubroutine disk_diagnostics
 !***********************************************************************
     subroutine planet_phiavg(p)
 !
