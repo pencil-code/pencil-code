@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.depend,v 1.53 2006-09-08 10:47:43 wlyra Exp $
+### $Id: Makefile.depend,v 1.54 2006-09-19 16:48:05 wlyra Exp $
 ### Makefile dependencies for modular pencil code
 
 #
@@ -243,7 +243,7 @@ $(PARTICLES_SUB_OBJ):                                 $(PARTICLES_CDATA_OBJ) $(P
 $(PARTICLES_OBJ):        particles.h                  $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PARTICLES_NUMBER_OBJ) $(COMMON_DEPS) $(GLOBAL_OBJ) $(POWER_OBJ)
 $(PARTICLES_NUMBER_OBJ): particles_number.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_SELFGRAVITY_OBJ): particles_selfgravity.h $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
-$(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ) $(PLANET_OBJ)
+$(PARTICLES_NBODY_OBJ): particles_nbody.h             $(PARTICLES_CDATA_OBJ) $(PARTICLES_SUB_OBJ)
 $(PARTICLES_RADIUS_OBJ): particles_radius.h           $(PARTICLES_CDATA_OBJ) $(PARTICLES_NUMBER_OBJ)
 
 # DO NOT DELETE
