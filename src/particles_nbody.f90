@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.26 2006-09-19 16:46:05 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.27 2006-09-20 16:43:12 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.26 2006-09-19 16:46:05 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.27 2006-09-20 16:43:12 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -427,9 +427,6 @@ module Particles_nbody
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real, dimension (npar_loc) :: xstar,ystar,zstar,vxstar,vystar,vzstar
-      real, dimension (npar_loc) :: xplanet,yplanet,zplanet
-      real, dimension (npar_loc) :: vxplanet,vyplanet,vzplanet
       real, dimension (nspar,3) :: acc
 !
       real, dimension (npar_loc,nspar,3) :: xxspar,vvspar
