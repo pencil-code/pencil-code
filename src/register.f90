@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.185 2006-09-18 15:44:31 wlyra Exp $
+! $Id: register.f90,v 1.186 2006-09-21 23:19:17 wlyra Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -53,7 +53,6 @@ module Register
       use Shear,           only: register_shear
       use Viscosity,       only: register_viscosity
       use Special,         only: register_special
-      use Planet,          only: register_planet
 !
       logical :: ioerr
 !
@@ -107,7 +106,6 @@ module Register
       call register_interstellar
       call register_shear
       call register_special
-      call register_planet
 !
 !  Writing files for use with IDL
 !
@@ -181,7 +179,6 @@ module Register
       use Shear,           only: initialize_shear
       use Viscosity,       only: initialize_viscosity
       use Special,         only: initialize_special
-      use Planet,          only: initialize_planet
       use BorderProfiles,  only: initialize_border_profiles
 
       real, dimension(mx,my,mz,mfarray) :: f
@@ -276,7 +273,6 @@ module Register
       call initialize_shock(lstarting)
       call initialize_viscosity(lstarting)
       call initialize_special(f)
-      call initialize_planet(f,lstarting) !will need f for torque
       call initialize_border_profiles() 
 !
 ! Store the value of impossible for use in IDL
@@ -590,7 +586,6 @@ module Register
       use Shock,           only: rprint_shock
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
-      use Planet,          only: rprint_planet
       use Mpicomm
 !
       integer :: iname,inamev,inamez,inamey,inamex,inamexy,inamexz,inamerz
@@ -755,7 +750,6 @@ module Register
       call rprint_shock        (lreset,LWRITE=lroot)
       call rprint_viscosity    (lreset,LWRITE=lroot)
       call rprint_shear        (lreset,LWRITE=lroot)
-      call rprint_planet       (lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine rprint_list

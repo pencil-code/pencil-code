@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.70 2006-09-19 16:46:05 wlyra Exp $
+! $Id: planet.f90,v 1.71 2006-09-21 23:19:17 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -25,69 +25,12 @@ module Planet
 !  
   implicit none
 !  
-  include 'planet.h' 
-!  
-! initialize variables needed for the planet module
+  public :: runtime_phiavg
 !
-!
-! start and run parameters
-!
-!
-! things needed for companion
-!
-  real :: b_pot=0.           !peak radius for potential
-  logical :: lcalc_turb=.false.
-  integer :: nr=10,dummy=0
-!
-  namelist /planet_init_pars/ dummy
-!
-  namelist /planet_run_pars/ b_pot, nr,lcalc_turb
+  integer :: nr=10
 ! 
   contains
 !
-!***********************************************************************
-    subroutine register_planet()
-!
-!  06-nov-05/wlad: coded
-!
-      use Mpicomm, only: stop_it
-!
-      logical, save :: first=.true.
-!
-      if (.not. first) call stop_it('register_planet called twice')
-      first = .false.
-!
-      if ((ip<=8) .and. lroot) then
-        print*, 'register_planet: ENTER'
-      endif
-!
-!  identify version number
-!
-      if (lroot) call cvs_id( &
-           "$Id: planet.f90,v 1.70 2006-09-19 16:46:05 wlyra Exp $")
-!
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('register_planet: nvar > mvar')
-      endif
-!
-    endsubroutine register_planet
-!***********************************************************************
-    subroutine initialize_planet(f,lstarting)
-!
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
-!
-!  08-nov-05/wlad: coded
-!
-      use Mpicomm, only : stop_it
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      logical :: lstarting
-!
-      if (lroot) print*, 'initialize_planet'
-!
-    endsubroutine initialize_planet
 !***********************************************************************
     subroutine pencil_criteria_planet()
 ! 
@@ -103,66 +46,11 @@ module Planet
 !
     endsubroutine pencil_criteria_planet
 !***********************************************************************
-    subroutine calc_pencils_planet(f,p)
-!
-! calculate keplerian velocity as a pencil, so I don't
-! have to recalculate it on other routines from f,g0 and r0_pot
-!
-! 28-mar-06/wlad : coded 
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
-!   
-    endsubroutine calc_pencils_planet
-!***********************************************************************
-    subroutine read_planet_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!            
-      if (present(iostat)) then
-        read(unit,NML=planet_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=planet_init_pars,ERR=99)
-      endif
-!
-99    return
-    endsubroutine read_planet_init_pars
-!***********************************************************************
-    subroutine write_planet_init_pars(unit)
-      integer, intent(in) :: unit
-!
-      write(unit,NML=planet_init_pars)
-!                                                                         
-    endsubroutine write_planet_init_pars
-!***********************************************************************
-    subroutine read_planet_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
-!
-      if (present(iostat)) then
-        read(unit,NML=planet_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=planet_run_pars,ERR=99)
-      endif
-!
-99    return
-    endsubroutine read_planet_run_pars
-!***********************************************************************
-    subroutine write_planet_run_pars(unit)
-      integer, intent(in) :: unit
-!
-      write(unit,NML=planet_run_pars)
-!
-    endsubroutine write_planet_run_pars
-!***********************************************************************
-    subroutine planet_phiavg(p)
+    subroutine runtime_phiavg(p)
 !
       type (pencil_case) :: p
 !
-      if (lcalc_turb) then
+      if (lfirst) then
 !
 ! get the previous average to use in this timestep
 !
@@ -174,7 +62,7 @@ module Planet
 !
       endif
 !
-    endsubroutine planet_phiavg
+    endsubroutine runtime_phiavg
 !*******************************************************************
     subroutine get_old_average(p)
 !
@@ -396,24 +284,6 @@ module Planet
        endif  
 !       
      endsubroutine set_new_average
-!***************************************************************
-    subroutine rprint_planet(lreset,lwrite)
-!
-!  reads and registers monitoring quantities for planet-disk
-!
-!  06-nov-05/wlad: coded
-!
-      use Sub
-!
-      logical :: lreset,lwr
-      logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (NO_WARN) print*,lreset  !(to keep compiler quiet)
-!
-    endsubroutine rprint_planet
 !***************************************************************
   endmodule Planet
   

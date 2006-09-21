@@ -1,5 +1,5 @@
 
-! $Id: equ.f90,v 1.327 2006-09-08 10:46:02 wlyra Exp $
+! $Id: equ.f90,v 1.328 2006-09-21 23:19:17 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -375,7 +375,7 @@ module Equ
 !
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.327 2006-09-08 10:46:02 wlyra Exp $")
+           "$Id: equ.f90,v 1.328 2006-09-21 23:19:17 wlyra Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -555,18 +555,11 @@ module Equ
         if (lchiral)        call calc_pencils_chiral(f,p)
         if (lradiation)     call calc_pencils_radiation(f,p)
         if (lspecial)       call calc_pencils_special(f,p)
-        if (lplanet)        call calc_pencils_planet(f,p)
         if (lparticles)     call particles_calc_pencils(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
 !  --------------------------------------------------------
-!
-!  Average of phi-variables to remove mean flow
-!  and calculate stresses
-!
-        if ((lplanet).and.(lfirst)) &
-             call planet_phiavg(p)
 !
 !  hydro, density, and entropy evolution
 !
@@ -635,6 +628,8 @@ module Equ
         if (lshear)                      call shearing(f,df)
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
+!
+        if (lplanet) call runtime_phiavg(p)
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
