@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.174 2006-09-13 16:22:39 ajohan Exp $
+# $Id: getconf.csh,v 1.175 2006-09-22 17:15:18 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -777,6 +777,17 @@ else if ($hn =~ ra*) then
     set nprocpernode = 1
     set mpi_suffix="$nodelist"
   endif
+
+else if ($hn =~ *.pdc.kth.se) then
+  echo "Linux cluster at KTH ain Stockholm"
+  module load lam
+  module load easy
+  if ($mpi) echo "Use mpirun"
+  set mpirun = mpirun
+  #if ($?SP_HOSTFILE) then
+  #  cat $SP_HOSTFILE >! lamhosts
+  #  lamboot -v
+  #endif
 
 else
   echo "Generic setup; hostname is <$hn>"
