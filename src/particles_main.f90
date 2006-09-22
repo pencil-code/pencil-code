@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.50 2006-09-11 17:59:59 wlyra Exp $
+! $Id: particles_main.f90,v 1.51 2006-09-22 00:15:48 wlyra Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -244,6 +244,7 @@ module Particles_main
 !
       call pencil_criteria_particles()
       if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
+      if (lparticles_nbody) call pencil_criteria_par_nbody()
 !
     endsubroutine particles_pencil_criteria
 !***********************************************************************
@@ -257,6 +258,7 @@ module Particles_main
 !
       call pencil_interdep_particles(lpencil_in)
       if (lparticles_selfgravity) call pencil_interdep_par_selfgrav(lpencil_in)
+      if (lparticles_nbody) call pencil_interdep_par_nbody(lpencil_in)
 !
     endsubroutine particles_pencil_interdep
 !***********************************************************************
@@ -271,6 +273,7 @@ module Particles_main
 !
       call calc_pencils_particles(f,p)
       if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
+      if (lparticles_nbody) call calc_pencils_par_nbody(f,p)
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************

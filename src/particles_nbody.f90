@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.27 2006-09-20 16:43:12 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.28 2006-09-22 00:15:48 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.27 2006-09-20 16:43:12 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.28 2006-09-22 00:15:48 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -94,7 +94,10 @@ module Particles_nbody
 !   
 !  All pencils that the Particles_nbody module depends on are specified here.
 !         
-!  02-jul-06/anders: adapted
+!  22-sep-06/wlad: adapted
+!
+      lpenc_requested(i_rho)=.true.
+      if (idiag_totenergy/=0) lpenc_diagnos(i_u2)=.true.
 !
     endsubroutine pencil_criteria_par_nbody
 !***********************************************************************
@@ -103,7 +106,7 @@ module Particles_nbody
 !  Interdependency among pencils provided by the Particles_nbody module
 !  is specified here.
 !         
-!  02-jul-06/anders: adapted
+!  22-sep-06/wlad: adapted
 !
       logical, dimension(npencils) :: lpencil_in
 !
@@ -113,9 +116,9 @@ module Particles_nbody
 !***********************************************************************
     subroutine calc_pencils_par_nbody(f,p)
 !   
-!  Calculate particle pencils.
+!  Calculate sink particle pencils
 !
-!  02-jul-06/anders: adapted
+!  22-sep-06/wlad: adapted
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -302,8 +305,7 @@ module Particles_nbody
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       real, dimension (nx,3) :: ggp
       real, dimension (nx,nspar) :: rp_mn,rpcyl_mn
-      real, dimension (nx) :: grav_particle,rrp,tmp
-      real, dimension (nx) :: kin_energy,pot_energy
+      real, dimension (nx) :: grav_particle,rrp,pot_energy
       real, dimension (3) :: xxpar,accg
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
@@ -323,9 +325,11 @@ module Particles_nbody
             if (nzgrid/=1) print*,'dvvp_dt_nbody_pencil: Particles located at fsp(z)=',fsp(:,izp)
          endif
 !
-! Calculate gas-particles distances
+! Initialize tmp for potential energy
 !
-         pot_energy=0.
+         if (idiag_totenergy/=0) pot_energy=0.
+!
+! Calculate gas-particles distances
 !
          do ks=1,nspar
 !
@@ -384,19 +388,16 @@ module Particles_nbody
                if ((idiag_torqext(ks)/=0).or.(idiag_torqint(ks)/=0)) &
                     call calc_torque(p%rho,rpcyl_mn(:,ks),ks)
 !
-! Total energy. Must be here because needs gas-particle distances
+! Total energy 
 !
-               if (idiag_totenergy/=0) then
-! Get potential energy due to particle ks
-                  pot_energy = pot_energy - pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
-                  if (ks==nspar) then
-! On the last loop, the sum is finished. Calculate kinetic and total energy
-                     kin_energy = p%rho * 0.5*p%u2
-                     call sum_lim_mn_name(kin_energy+pot_energy,idiag_totenergy)
-                  endif
+               if (idiag_totenergy) then
+                  !potential energy
+                  pot_energy = pot_energy - &
+                       pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
+                  if (ks==nspar) &
+                       call sum_lim_mn_name(p%rho*0.5*p%u2 + pot_energy,idiag_totenergy)
                endif
             endif
-!
          enddo
 !
       endif
@@ -404,6 +405,11 @@ module Particles_nbody
     endsubroutine dvvp_dt_nbody_pencil
 !***********************************************************************
     subroutine dxxp_dt_nbody(dfp)
+!
+!  If the center of mass of the sink particles was moved from the 
+!  center of the grid, reset it. 
+!
+!  22-sep-06/wlad: coded
 !
       real, dimension (mpar_loc,mpvar) :: dfp
 !
