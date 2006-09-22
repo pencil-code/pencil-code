@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.28 2006-09-22 00:15:48 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.29 2006-09-22 12:29:06 wlyra Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.28 2006-09-22 00:15:48 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.29 2006-09-22 12:29:06 wlyra Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
@@ -390,7 +390,7 @@ module Particles_nbody
 !
 ! Total energy 
 !
-               if (idiag_totenergy) then
+               if (idiag_totenergy/=0) then
                   !potential energy
                   pot_energy = pot_energy - &
                        pmass(ks)*(rpcyl_mn(:,ks)**2+r_smooth(ks)**2)**(-0.5)
