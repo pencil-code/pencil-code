@@ -17,7 +17,6 @@ GRAVITY   = nogravity
 FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock
-PLANET    =   planet
 
 PARTICLES       = particles_dust
 PARTICLES_NBODY = particles_nbody

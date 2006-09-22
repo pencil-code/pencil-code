@@ -3,7 +3,7 @@
 !  Run parameters!
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.29 2006-09-18 16:45:57 wlyra Exp $',
+  cvsid='$Id: run.in,v 1.30 2006-09-22 00:17:57 wlyra Exp $',
   ip=14,
   nt=50, it1=5, isave=100, itorder=3, ialive=1
   cdt=0.4, 
@@ -52,7 +52,4 @@ rho0= 1.
 &shock_run_pars
   lshock_first=T
   lshock_max5=T
-/
-&planet_run_pars
-  b_pot=0.03
 /
