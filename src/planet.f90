@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.71 2006-09-21 23:19:17 wlyra Exp $
+! $Id: planet.f90,v 1.72 2006-09-22 00:16:48 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -38,10 +38,8 @@ module Planet
 ! 
 !  06-nov-05/wlad: coded
 !
-      lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho)=.true.
       lpenc_requested(i_uu)=.true.
-      lpenc_requested(i_u2)=.true.
       lpenc_requested(i_bb)=.true.
 !
     endsubroutine pencil_criteria_planet
