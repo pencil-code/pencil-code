@@ -1,4 +1,4 @@
-! $Id: particles_nbody.f90,v 1.29 2006-09-22 12:29:06 wlyra Exp $
+! $Id: particles_nbody.f90,v 1.30 2006-09-23 00:25:08 dobler Exp $
 !
 !  This module takes care of everything related to sink particles.
 !
@@ -43,9 +43,9 @@ module Particles_nbody
        lcalc_orbit,lreset_cm,lnogravz_star,lfollow_particle,  &
        lmigrate, lexclude_frozen, disk_mass
 
-  integer, dimension(nspar,3) :: idiag_xxspar,idiag_vvspar
-  integer, dimension(nspar) :: idiag_torqint,idiag_torqext
-  integer :: idiag_totenergy,idiag_totangmom
+  integer, dimension(nspar,3) :: idiag_xxspar=0,idiag_vvspar=0
+  integer, dimension(nspar)   :: idiag_torqint=0,idiag_torqext=0
+  integer                     :: idiag_totenergy=0,idiag_totangmom=0
 
   contains
 
@@ -65,7 +65,7 @@ module Particles_nbody
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_nbody.f90,v 1.29 2006-09-22 12:29:06 wlyra Exp $")
+           "$Id: particles_nbody.f90,v 1.30 2006-09-23 00:25:08 dobler Exp $")
 !
 !  Check that we aren't registering too many auxiliary variables
 !
