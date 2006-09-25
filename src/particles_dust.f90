@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.145 2006-09-25 14:34:16 ajohan Exp $
+! $Id: particles_dust.f90,v 1.146 2006-09-25 16:51:35 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -25,6 +25,8 @@ module Particles
 
   include 'particles.h'
 
+  complex, dimension (7) :: coeff=(0.0,0.0)
+  real, dimension (npar_species) :: tausp_species, tausp1_species
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -42,8 +44,8 @@ module Particles
   real :: tstart_collisional_cooling=0.0
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, coll_geom_fac=0.40528473  ! (2/pi)^2
-  complex, dimension (7) :: coeff=(0.0,0.0)
   integer :: l_hole=0, m_hole=0, n_hole=0
+  integer, dimension (npar_species) :: ipar_fence_species
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
@@ -69,7 +71,7 @@ module Particles
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
       tstart_dragforce_par, tstart_grav_par, lcollisional_cooling_rms, &
-      lcollisional_cooling_twobody, &
+      lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole
 
@@ -116,7 +118,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.145 2006-09-25 14:34:16 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.146 2006-09-25 16:51:35 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -164,6 +166,7 @@ module Particles
 !
       use EquationOfState, only: cs0
 !
+      integer :: jspec
       logical :: lstarting
 !
       real :: rhom
@@ -183,6 +186,10 @@ module Particles
         if (lroot) print*, 'initialize_particles: tausp=0, so drag force '// &
             'was turned off!'
       endif
+      do jspec=1,npar_species
+        if (tausp_species(jspec)/=0.0) &
+            tausp1_species(jspec)=1/tausp_species(jspec)
+      enddo
 !
       if (beta_dPdr_dust/=0.0) then
         beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
@@ -1714,12 +1721,26 @@ k_loop:   do while (.not. (k>npar_loc))
       integer :: k
 !
       real :: tausg1_point
+      integer :: jspec
+!
+!  Epstein drag law.
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
           tausp1_par=1/(fp(k,iap)*rhops)
         else
-          tausp1_par=tausp1
+          if (npar_species>1) then
+!  Multiple dust particle species.
+            do jspec=1,npar_species
+              if (ipar(k)<=ipar_fence_species(jspec)) then
+                tausp1_par=tausp1_species(jspec)
+                exit
+              endif
+            enddo
+          else
+!  Single species of dust particles.
+            tausp1_par=tausp1
+          endif
         endif
       endif
 !
