@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.430 2006-08-29 17:14:39 mee Exp $
+! $Id: entropy.f90,v 1.431 2006-09-25 11:51:59 bingert Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -37,7 +37,7 @@ module Entropy
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,chi_hyper3=0.
-  real :: Kgperp=0.,Kgpara=0.,tdown=1,allp=2
+  real :: Kgperp=0.,Kgpara=0.,tdown=0,allp=2
   real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: pp_const=0.
@@ -157,7 +157,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.430 2006-08-29 17:14:39 mee Exp $")
+           "$Id: entropy.f90,v 1.431 2006-09-25 11:51:59 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2925,52 +2925,69 @@ module Entropy
 !***********************************************************************
     subroutine newton_cool(df,p)
 !
-!  Keeps the temperature in the lower chromosphere and the upper corona
+!  Keeps the temperature in the lower chromosphere 
 !  at a constant level using newton cooling
 !
 !  15-dec-2004/bing: coded
+!  25-sep-2006/bing: updated, using external data
 !
-      use EquationOfState, only: rho0
+      use EquationOfState, only: lnrho0,gamma
 
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: newton
-      real :: lnTTor,xil,unit_temp
-      real :: p0,p1,p2,p3,p4
+      real, dimension (150), save :: b_lnT,b_z  
+      real :: lnTTor
+      integer :: i,lend
       type (pencil_case) :: p
 !
+      intent(in) :: p
+      intent(out) :: df
+!
+      if (tdown .eq. 0) call fatal_error("newton_cool","tdown=0 not allowed")
       if (pretend_lnTT) call fatal_error("newton_cool","not implemented when pretend_lnTT = T")
-!    
-!     Initial temperature profile is given in ln(T) over z in Mm
-!     It is independent of grid and unit system
-!     Since I do not change initial condition this works fine
 !
-      p0 = 2.47955
-      p1 = 4.45524
-      p2 = 1.51496
-      p3 = 4.44825
-      p4 = 2.89396e-03
+!  Initial temperature profile is given in ln(T) in [K] over z in [Mm] 
 !
-!     Get the heigth in Mm
+      if (it .eq. 1) then
+         inquire(IOLENGTH=lend) lnTTor
+         open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150,access='direct')
+         read (10,rec=1) b_lnT
+         read (10,rec=2) b_z
+         close (10) 
+         !
+         b_lnT = b_lnT - alog(real(unit_temperature))
+         if (unit_system == 'SI') then
+           b_z(:) = b_z(:) * 1.e6 / unit_length 
+         elseif (unit_system == 'cgs') then
+           b_z(:) = b_z(:) * 1.e8 / unit_length 
+         endif
+      endif
 !
-      xil =  z(n) * unit_length * 1e-6 
+!  Get reference temperature
 !
-!     Calculate ln(T) in SI
+      if (z(n) .lt. b_z(1) ) then
+        lnTTor = b_lnT(1)
+      elseif (z(n) .ge. b_z(150)) then
+        lnTTor = b_lnT(150)
+      else
+        do i=1,149
+          if (z(n) .ge. b_z(i) .and. z(n) .lt. b_z(i+1)) then 
+            !
+            ! linear interpolation
+            !
+            lnTTor = (b_lnT(i)*(b_z(i+1) - z(n)) +   &
+                b_lnT(i+1)*(z(n) - b_z(i)) ) / (b_z(i+1)-b_z(i))
+            exit
+          endif
+        enddo
+      endif
 !
-      lnTTor = p0*(tanh((xil-p1)/p2) +p3 +p4*xil)
+      newton = tdown/gamma*((lnTTor - p%lnTT) + gamma1*df(l1:l2,m,n,ilnrho))
+      newton = newton * exp(allp*(-abs(p%lnrho-lnrho0)))
 !
-!AB: also strange hack, I guess
+!  Add newton cooling term to entropy
 !
-      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
-!
-      lnTTor = lnTTor - alog(unit_temp) 
-!
-      newton = (p%rho/rho0) ** allp  * tdown / gamma 
-!
-      newton = newton * (p%lnTT-lnTTor)
-!      
-!     Add cooling term to entropy
-!
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - newton
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + newton
 !
     endsubroutine newton_cool
 !***********************************************************************
