@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.144 2006-09-07 05:53:00 ajohan Exp $
+! $Id: particles_dust.f90,v 1.145 2006-09-25 14:34:16 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -46,7 +46,9 @@ module Particles
   integer :: l_hole=0, m_hole=0, n_hole=0
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false.
-  logical :: lcollisional_cooling=.false., ltau_coll_min_courant=.true.
+  logical :: lcollisional_cooling_rms=.false.
+  logical :: lcollisional_cooling_twobody=.false.
+  logical :: ltau_coll_min_courant=.true.
   logical :: lsmooth_dragforce_dust=.false., lsmooth_dragforce_gas=.false.
   logical :: ldragforce_equi_global_eps=.false.
   logical, parameter :: ldraglaw_epstein=.true.
@@ -66,7 +68,8 @@ module Particles
       kx_vpx, kx_vpy, kx_vpz, ky_vpx, ky_vpy, ky_vpz, kz_vpx, kz_vpy, kz_vpz, &
       phase_vpx, phase_vpy, phase_vpz, lcoldstart_amplitude_correction, &
       lparticlemesh_cic, lparticlemesh_tsc, linterpolate_spline, &
-      tstart_dragforce_par, tstart_grav_par, lcollisional_cooling, &
+      tstart_dragforce_par, tstart_grav_par, lcollisional_cooling_rms, &
+      lcollisional_cooling_twobody, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole
 
@@ -77,7 +80,8 @@ module Particles
       linterp_reality_check, nu_epicycle, &
       gravx_profile, gravz_profile, gravx, gravz, kx_gg, kz_gg, &
       lmigration_redo, tstart_dragforce_par, tstart_grav_par, &
-      lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling, &
+      lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
+      lcollisional_cooling_twobody, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min
 
@@ -112,7 +116,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.144 2006-09-07 05:53:00 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.145 2006-09-25 14:34:16 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -263,6 +267,8 @@ module Particles
         close (1)
       endif
 !
+      if (lcollisional_cooling_twobody) allocate(kneighbour(mpar_loc))
+!
     endsubroutine initialize_particles
 !***********************************************************************
     subroutine init_particles(f,fp,ineargrid)
@@ -273,7 +279,7 @@ module Particles
 !
       use EquationOfState, only: gamma, beta_glnrho_global, cs20
       use General, only: random_number_wrapper
-      use Mpicomm, only: stop_it
+      use Mpicomm, only: stop_it, mpireduce_sum_scl
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -281,6 +287,7 @@ module Particles
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: uup
+      real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, px, py, pz, eps, cs, k2_xxp
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       integer :: l, j, k, ix0, iy0, iz0
@@ -616,6 +623,15 @@ k_loop:   do while (.not. (k>npar_loc))
           fp(1:npar_loc,ivpx) = -delta_vp0 + fp(1:npar_loc,ivpx)*2*delta_vp0
           fp(1:npar_loc,ivpy) = -delta_vp0 + fp(1:npar_loc,ivpy)*2*delta_vp0
           fp(1:npar_loc,ivpz) = -delta_vp0 + fp(1:npar_loc,ivpz)*2*delta_vp0
+
+        case ('average-to-zero')
+          call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpx)),vpx_sum)
+          print*, 'AAA', vpx_sum, sum(fp(1:npar_loc,ivpx))
+          fp(1:npar_loc,ivpx)=fp(1:npar_loc,ivpx)-vpx_sum/npar
+          call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpy)),vpy_sum)
+          fp(1:npar_loc,ivpy)=fp(1:npar_loc,ivpy)-vpy_sum/npar
+          call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpz)),vpz_sum)
+          fp(1:npar_loc,ivpz)=fp(1:npar_loc,ivpz)-vpz_sum/npar
  
         case ('follow-gas')
           if (lroot) &
@@ -1132,9 +1148,10 @@ k_loop:   do while (.not. (k>npar_loc))
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
       endif
-      if (lcollisional_cooling) lpenc_requested(i_epsp)=.true.
-      if (lcollisional_cooling) &
-          lpenc_requested(i_np)=.true.
+      if (lcollisional_cooling_rms) then
+        lpenc_requested(i_epsp)=.true.
+        lpenc_requested(i_np)=.true.
+      endif
 !
       lpenc_diagnos(i_np)=.true.
       lpenc_diagnos(i_rhop)=.true.
@@ -1218,8 +1235,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mpvar) :: fp, dfp
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx,3) :: vvpm
-      real, dimension (nx) :: vpm, tau_coll1
       real, dimension (nx) :: dt1_drag, dt1_drag_gas, dt1_drag_dust
       real, dimension (3) :: uup, dragforce
       real :: rho_point, rho1_point, tausp1_par, up2
@@ -1445,50 +1460,11 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
-!  Add collisional cooling of the rms speed.
+!  Collisional cooling is in a separate subroutine.
 !
-      if (lcollisional_cooling .and. t>=tstart_collisional_cooling) then
-        if (npar_imn(imn)/=0) then
-!  Need vpm=<|vvp-<vvp>|> to calculate the collisional time-scale.
-          vvpm=0.0; vpm=0.0
-          do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1)
-            vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
-          enddo
-          do l=1,nx
-            if (p%np(l)>1.0) then
-              vvpm(l,:)=vvpm(l,:)/p%np(l)
-            endif
-          enddo
-!  vpm
-          do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1)
-            vpm(ix0-nghost) = vpm(ix0-nghost) + &
-                sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
-                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
-                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
-          enddo
-          do l=1,nx
-            if (p%np(l)>1.0) then
-              vpm(l)=vpm(l)/p%np(l)
-            endif
-          enddo
-!  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
-!  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
-          tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1
-!  Limit inverse time-step of collisional cooling if requested.
-          if (tau_coll_min>0.0) then 
-            where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
-          endif
-          dt1_max=max(dt1_max,tau_coll1/cdtp)
-!
-          do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1)
-            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
-                tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
-          enddo
-        endif
-      endif
+      if (lcollisional_cooling_rms .or. lcollisional_cooling_twobody .and. &
+          t>=tstart_collisional_cooling) &
+          call collisional_cooling(f,fp,dfp,p,ineargrid)
 !
 !  Contribution of dust particles to time step.
 !
@@ -1759,6 +1735,123 @@ k_loop:   do while (.not. (k>npar_loc))
       if (NO_WARN) print*, f, ineargrid
 !
     endsubroutine get_frictiontime
+!***********************************************************************
+    subroutine collisional_cooling(f,fp,dfp,p,ineargrid)
+!
+!  Reduce relative speed between particles due to inelastic collisions.
+!
+!  23-sep-06/anders: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp, dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      real, dimension (nx,3) :: vvpm
+      real, dimension (nx) :: vpm, tau_coll1
+      real, dimension (3) :: deltavp_vec, vbar_jk
+      real :: deltavp, tau_cool1_par, dt1_cool
+      real :: tausp1_par, tausp1_parj, tausp1_park, tausp_parj, tausp_park
+      real :: tausp_parj3, tausp_park3
+      integer :: j, k, l, ix0
+!
+!  Add collisional cooling of the rms speed.
+!
+      if (lcollisional_cooling_rms) then
+        if (npar_imn(imn)/=0) then
+!  Need vpm=<|vvp-<vvp>|> to calculate the collisional time-scale.
+          vvpm=0.0; vpm=0.0
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
+          enddo
+          do l=1,nx
+            if (p%np(l)>1.0) then
+              vvpm(l,:)=vvpm(l,:)/p%np(l)
+            endif
+          enddo
+!  vpm
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            vpm(ix0-nghost) = vpm(ix0-nghost) + &
+                sqrt( (fp(k,ivpx)-vvpm(ix0-nghost,1))**2 + &
+                      (fp(k,ivpy)-vvpm(ix0-nghost,2))**2 + &
+                      (fp(k,ivpz)-vvpm(ix0-nghost,3))**2 )
+          enddo
+          do l=1,nx
+            if (p%np(l)>1.0) then
+              vpm(l)=vpm(l)/p%np(l)
+            endif
+          enddo
+!  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
+!  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
+          tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1
+!  Limit inverse time-step of collisional cooling if requested.
+          if (tau_coll_min>0.0) then 
+            where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
+          endif
+          dt1_max=max(dt1_max,tau_coll1/cdtp)
+!
+          do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
+                tau_coll1(ix0-nghost)*(fp(k,ivpx:ivpz)-vvpm(ix0-nghost,:))
+          enddo
+        endif
+      endif
+!
+!  More advanced collisional cooling model. Collisions are considered for
+!  every possible two-body process in a grid cell.
+!
+      if (lcollisional_cooling_twobody) then
+        do l=1,nx
+! Collisions between particle k and all other particles in the grid cell.
+          k=kshepherd(l)
+          if (k>0) then
+!  Limit inverse time-step of collisional cooling if requested.
+            do while (k/=0)
+              dt1_cool=0.0
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_park)
+              tausp_park=1/tausp1_park
+              tausp_park3=tausp_park**3
+              j=k
+              do while (kneighbour(j)/=0)
+!  Collide with the neighbours of k and their neighbours.                
+                j=kneighbour(j)
+                call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj)
+                tausp_parj=1/tausp1_parj
+                tausp_parj3=tausp_parj**3
+!  Collision velocity.
+                deltavp_vec=fp(k,ivpx:ivpz)-fp(j,ivpx:ivpz)
+                deltavp=sqrt( deltavp_vec(1)**2 + deltavp_vec(2)**2 + &
+                              deltavp_vec(3)**2 )
+                vbar_jk= &
+                    (tausp_parj3*fp(k,ivpx:ivpz)+tausp_park3*fp(j,ivpx:ivpz))/ &
+                    (tausp_parj3+tausp_park3)
+!  Cooling time-scale.                
+                tau_cool1_par= &
+                    0.75*coll_geom_fac*(1.0-coeff_restitution)* &
+                    rhop_tilde*deltavp*(tausp_parj+tausp_park)**2/ &
+                    (tausp_parj3+tausp_park3)
+                dt1_cool=dt1_cool+tau_cool1_par
+!                if (tau_coll_min>0.0) then 
+!                  if (tau_cool1_par>tau_coll1_max) tau_cool1_par=tau_coll1_max
+!                endif
+                dfp(j,ivpx:ivpz) = dfp(j,ivpx:ivpz) - &
+                    tau_cool1_par*(fp(j,ivpx:ivpz)-vbar_jk)
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) - &
+                    tau_cool1_par*(fp(k,ivpx:ivpz)-vbar_jk)
+              enddo
+              dt1_max=max(dt1_max(l),dt1_cool/cdtp)
+!  Go through all possible k.              
+              k=kneighbour(k)
+            enddo
+          endif
+        enddo
+!
+      endif
+!
+    endsubroutine collisional_cooling
 !***********************************************************************
     subroutine read_particles_init_pars(unit,iostat)
 !    

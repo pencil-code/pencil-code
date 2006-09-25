@@ -1,4 +1,4 @@
-! $Id: particles_main.f90,v 1.51 2006-09-22 00:15:48 wlyra Exp $
+! $Id: particles_main.f90,v 1.52 2006-09-25 14:34:16 ajohan Exp $
 !
 !  This module contains all the main structure needed for particles.
 !
@@ -289,6 +289,11 @@ module Particles_main
 !
       intent (in) :: p
       intent (inout) :: f, df
+!
+!  Create shepherd/neighbour list of required.
+!
+      if (allocated(kneighbour)) &
+          call shepherd_neighbour(f,fp,ineargrid,kshepherd,kneighbour)
 !
 !  Dynamical equations.
 !

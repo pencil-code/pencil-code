@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.85 2006-09-06 17:59:53 wlyra Exp $
+! $Id: particles_sub.f90,v 1.86 2006-09-25 14:34:16 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -19,6 +19,7 @@ module Particles_sub
   public :: interpolate_quadratic, interpolate_quadratic_spline
   public :: map_nearest_grid, map_xxp_grid, sort_particles_imn
   public :: particle_pencil_index, find_closest_gridpoint
+  public :: shepherd_neighbour
 
   contains
 
@@ -1541,5 +1542,34 @@ module Particles_sub
       if (nzgrid/=1) iz0 = nint((xxp(3)-z(1))*dz1) + 1
 !
     endsubroutine find_closest_gridpoint
+!***********************************************************************
+    subroutine shepherd_neighbour(f,fp,ineargrid,kshepherd,kneighbour)
+!
+!  Create a shepherd/neighbour list of particles in the pencil.
+!
+!  24-oct-05/anders: coded
+!
+      use Cdata, only: nghost
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mpvar) :: fp
+      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension (nx) :: kshepherd
+      integer, allocatable, dimension (:) :: kneighbour
+!
+      integer :: k, ix0
+!
+      kshepherd=0
+      kneighbour=0
+!
+      if (npar_imn(imn)/=0) then
+        do k=k1_imn(imn),k2_imn(imn)
+          ix0=ineargrid(k,1)
+          kneighbour(k)=kshepherd(ix0-nghost)
+          kshepherd(ix0-nghost)=k
+        enddo
+      endif
+!    
+    endsubroutine shepherd_neighbour
 !***********************************************************************
 endmodule Particles_sub
