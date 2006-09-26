@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.146 2006-09-25 16:51:35 ajohan Exp $
+! $Id: particles_dust.f90,v 1.147 2006-09-26 06:11:11 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -45,7 +45,7 @@ module Particles
   real :: tau_coll_min=0.0, tau_coll1_max=0.0
   real :: coeff_restitution=0.5, coll_geom_fac=0.40528473  ! (2/pi)^2
   integer :: l_hole=0, m_hole=0, n_hole=0
-  integer, dimension (npar_species) :: ipar_fence_species
+  integer, dimension (npar_species) :: ipar_fence_species=0
   logical :: ldragforce_gas_par=.false., ldragforce_dust_par=.true.
   logical :: lpar_spec=.false.
   logical :: lcollisional_cooling_rms=.false.
@@ -118,7 +118,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.146 2006-09-25 16:51:35 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.147 2006-09-26 06:11:11 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -170,6 +170,7 @@ module Particles
       logical :: lstarting
 !
       real :: rhom
+      integer :: npar_per_species
 !
 !  Distribute particles evenly among processors to begin with.
 !
@@ -186,10 +187,35 @@ module Particles
         if (lroot) print*, 'initialize_particles: tausp=0, so drag force '// &
             'was turned off!'
       endif
-      do jspec=1,npar_species
-        if (tausp_species(jspec)/=0.0) &
-            tausp1_species(jspec)=1/tausp_species(jspec)
-      enddo
+!
+!  If not explicitly set in start.in, the index fence between the particle
+!  species is set automatically here.
+!
+      if (npar_species>1) then
+        if (lroot) print*, &
+            'initialize_particles: Number of particle species = ', npar_species
+        if (maxval(ipar_fence_species)==0) then
+          npar_per_species=npar/npar_species
+          ipar_fence_species(1)=npar_per_species
+          ipar_fence_species(npar_species)=npar
+          do jspec=2,npar_species-1
+            ipar_fence_species(jspec)= &
+                ipar_fence_species(jspec-1)+npar_per_species
+          enddo
+          if (lroot) print*, &
+              'initialize_particles: Equally many particles in each species'
+        endif
+        if (lroot) print*, &
+            'initialize_particles: Species fences at particle index ', &
+            ipar_fence_species
+!
+        do jspec=1,npar_species
+          if (tausp_species(jspec)/=0.0) &
+              tausp1_species(jspec)=1/tausp_species(jspec)
+        enddo
+      endif
+!
+!  Global gas pressure gradient seen from the perspective of the dust.
 !
       if (beta_dPdr_dust/=0.0) then
         beta_dPdr_dust_scaled=beta_dPdr_dust*Omega/cs0
@@ -1769,7 +1795,7 @@ k_loop:   do while (.not. (k>npar_loc))
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (nx,3) :: vvpm
-      real, dimension (nx) :: vpm, tau_coll1
+      real, dimension (nx) :: vpm, tau_coll1, tausp1m
       real, dimension (3) :: deltavp_vec, vbar_jk
       real :: deltavp, tau_cool1_par, dt1_cool
       real :: tausp1_par, tausp1_parj, tausp1_park, tausp_parj, tausp_park
@@ -1785,10 +1811,15 @@ k_loop:   do while (.not. (k>npar_loc))
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
+            if (npar_species>1) then
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
+              tausp1m(ix0-nghost) = tausp1m(ix0-nghost) + tausp1_par
+            endif
           enddo
           do l=1,nx
             if (p%np(l)>1.0) then
               vvpm(l,:)=vvpm(l,:)/p%np(l)
+              if (npar_species>1) tausp1m=tausp1m/p%np
             endif
           enddo
 !  vpm
@@ -1806,7 +1837,11 @@ k_loop:   do while (.not. (k>npar_loc))
           enddo
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
-          tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1
+          if (npar_species>1) then
+            tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1m
+          else
+            tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1
+          endif
 !  Limit inverse time-step of collisional cooling if requested.
           if (tau_coll_min>0.0) then 
             where (tau_coll1>tau_coll1_max) tau_coll1=tau_coll1_max
