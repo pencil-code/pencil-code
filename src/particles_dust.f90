@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.147 2006-09-26 06:11:11 ajohan Exp $
+! $Id: particles_dust.f90,v 1.148 2006-09-26 09:38:32 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -118,7 +118,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.147 2006-09-26 06:11:11 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.148 2006-09-26 09:38:32 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -1495,7 +1495,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Collisional cooling is in a separate subroutine.
 !
-      if (lcollisional_cooling_rms .or. lcollisional_cooling_twobody .and. &
+      if ( (lcollisional_cooling_rms .or. lcollisional_cooling_twobody) .and. &
           t>=tstart_collisional_cooling) &
           call collisional_cooling(f,fp,dfp,p,ineargrid)
 !
@@ -1806,6 +1806,9 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       if (lcollisional_cooling_rms) then
         if (npar_imn(imn)/=0) then
+!  When multiple friction times are present, the average is used for the
+!  number density in each superparticle.
+          if (npar_species>1) tausp1m=0.0
 !  Need vpm=<|vvp-<vvp>|> to calculate the collisional time-scale.
           vvpm=0.0; vpm=0.0
           do k=k1_imn(imn),k2_imn(imn)
