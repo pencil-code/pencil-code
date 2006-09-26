@@ -1,11 +1,18 @@
+;$Id: generate_kvectors.pro,v 1.8 2006-09-26 07:06:05 brandenb Exp $
 ;
-;  gwav.pro
+;  generate_kvectors.pro (formerly called gwav.pro)
 ;
 ;  generate table of wave numbers in a given range for helical (and
-;  non-helical) forcing of the velocity field
+;  non-helical if relhel=0) forcing of the velocity or magnetic field.
+;  For details see Brandenburg (2001, ApJ 550, 824).
+;
+;  Some precalculated files wave vectors are checked in under
+;     pencil-code/samples/helical-MHDturb/K_VECTORS
+;  To get forcing at kf=5, for example, say
+;     cp $PENCIL_HOME/samples/helical-MHDturb/K_VECTORS/k5.dat k.dt
 ;
 ;  Author: axel
-;  CVS: $Id: generate_kvectors.pro,v 1.7 2003-03-15 18:18:33 brandenb Exp $
+;  CVS: $Id: generate_kvectors.pro,v 1.8 2006-09-26 07:06:05 brandenb Exp $
 ;
 ; Wave vectors are located in a subvolume of the box
 ;   -kmax <= kk:=(kx,ky,kz) <= kmax
