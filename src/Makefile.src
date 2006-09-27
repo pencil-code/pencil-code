@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.241 2006-09-13 16:22:39 ajohan Exp $
+### $Id: Makefile.src,v 1.242 2006-09-27 16:53:22 wlyra Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile$(PC_META_TYPE).local
@@ -473,17 +473,12 @@ LD_FFTW2=
 #FFLAGS=-O3 -I/opt/scali/include #(gwdu102)
 #LD_MPI=-L/opt/scali/lib -lmpi -lfmpi #(gwdu102)
 ##
-## Uppsala cluster - (nut is RA's front node)
+## Uppsala cluster (wlad)
 ## www.uppmax.uu.se
-#FC=pgf90 #(nut)
-#MPI_HOME= /opt/scali#(nut)
-#MPI_LDLIBS= -lmpi -lfmpi #(nut)
-#F90=$(FC) #(nut)
-#F95=$(FC) #(nut)
-#CC=mpicc #(nut)
-#FFLAGS=-D_REENTRANT -I$(MPI_HOME)/include -O3 -tp k8-64 #(nut)
-#CFLAGS=-D_REENTRANT -I$(MPI_HOME)/include -DFUNDERSC=1 -O3 -tp k8-64 #(nut)
-#LD_MPI= -L$(MPI_HOME)/lib64 $(MPI_LDLIBS)  #(nut)
+#FC=mpif90 #(ra[1-99]*)
+#F90=$(FC) #(ra[1-99]*)
+#F95=$(FC) #(ra[1-99]*)
+#CC=mpicc  #(ra[1-99]*)
 ##
 ##
 ## CSC cluster - (Espoo, Finland)
