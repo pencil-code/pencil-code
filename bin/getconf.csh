@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.175 2006-09-22 17:15:18 brandenb Exp $
+# $Id: getconf.csh,v 1.176 2006-09-27 16:50:17 wlyra Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -751,31 +751,6 @@ else if ($hn =~ rio* || $hn =~ pia*) then
       echo $SSH $node '\rm -rf /var/tmp/'$USER'/*'
       $SSH $node '\rm -rf /var/tmp/$USER/*'
     end
-  endif
-
-else if ($hn =~ nut.uppmax.uu.se) then
-  echo "NUT - primary node of RA, Uppsala"
-  #http://www.uppmax.uu.se/ComputerSystems/Ra/Ra.html  
-  set mpirun = /opt/scali/bin/mpimon
-  set mpi_suffix = "$nodelist $nprocpernode"
-  setenv SCRATCH_DIR data/scratch
-
-else if ($hn =~ ra*) then
-  #copied these lines from Ander's rio & pia, 
-  #which also use the portland compilers.
-  echo "RA Linux cluster at Uppmax with SGE queue - Uppsala."
-  #http://www.uppmax.uu.se/ComputerSystems/Ra/Ra.html  
-  set mpirun = /opt/scali/bin/mpimon
-  setenv SCRATCH_DIR data/scratch
-  if ($#nodelist == 1) then
-    echo "Apparently an interactive run."
-    set nodelist = `repeat $ncpus echo $nodelist`
-    set mpi_suffix = "$nodelist"
-  else
-    set nodelist = `cat $TMPDIR/machines`
-    echo $nodelist
-    set nprocpernode = 1
-    set mpi_suffix="$nodelist"
   endif
 
 else if ($hn =~ *.pdc.kth.se) then
