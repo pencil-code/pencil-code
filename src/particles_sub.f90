@@ -1,4 +1,4 @@
-! $Id: particles_sub.f90,v 1.86 2006-09-25 14:34:16 ajohan Exp $
+! $Id: particles_sub.f90,v 1.87 2006-09-27 05:20:51 ajohan Exp $
 !
 !  This module contains subroutines useful for the Particle module.
 !
@@ -1555,7 +1555,7 @@ module Particles_sub
       real, dimension (mpar_loc,mpvar) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer, dimension (nx) :: kshepherd
-      integer, allocatable, dimension (:) :: kneighbour
+      integer, dimension (:) :: kneighbour
 !
       integer :: k, ix0
 !
