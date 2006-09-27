@@ -1,5 +1,5 @@
 
-! $Id: viscosity.f90,v 1.30 2006-09-15 22:24:35 theine Exp $
+! $Id: viscosity.f90,v 1.31 2006-09-27 05:39:35 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -28,7 +28,7 @@ module Viscosity
 
   integer, parameter :: nvisc_max = 4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
-  real :: nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
+  real :: nu=0., nu_mol=0., nu_hyper2=0., nu_hyper3=0., nu_shock=0.
 
   ! dummy logical
   logical :: lvisc_first=.false.
@@ -83,7 +83,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: viscosity.f90,v 1.30 2006-09-15 22:24:35 theine Exp $")
+           "$Id: viscosity.f90,v 1.31 2006-09-27 05:39:35 brandenb Exp $")
 
       ivisc(1)='nu-const'
 

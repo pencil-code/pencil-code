@@ -1,4 +1,4 @@
-! ! $Id: cdata.f90,v 1.338 2006-09-18 15:37:00 wlyra Exp $
+! ! $Id: cdata.f90,v 1.339 2006-09-27 05:39:35 brandenb Exp $
 
 module Cdata
 
@@ -20,12 +20,12 @@ module Cdata
   real, dimension (nzgrid) :: kz_fft
   real :: kx_ny,ky_ny,kz_ny
 
-!  coordinate system (alternatives: spherical, cylindric)
+! coordinate system (alternatives: spherical, cylindric)
   character (len=9) :: coord_system='cartesian'
   logical :: lspherical=.false.,lcylindrical=.false.
   real, dimension (nx) :: r1_mn
 
-!  timestep related:
+! timestep related:
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall
   real, dimension (nx) :: advec_cs2,advec_va2,advec_crad2,advec_uud
   real, dimension (nx) :: diffus_pscalar
@@ -51,7 +51,7 @@ module Cdata
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_ref=0.
   
-!  parameter for freezing
+! parameter for freezing
   real :: xfreeze_square=impossible,yfreeze_square=impossible
   real :: rfreeze_int=-impossible,rfreeze_ext=-impossible
   real :: wfreeze=0.,wfreeze_int=0.,wfreeze_ext=0.
@@ -64,26 +64,23 @@ module Cdata
   real, dimension(3) :: border_frac=0.0
   real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0
 
-  !  units (need to be in double precision)
+! units (need to be in double precision)
   character (len=3) :: unit_system='cgs'
   double precision :: unit_length=impossible,unit_velocity=impossible
   double precision :: unit_density=impossible,unit_temperature=impossible
-  ! Derived units
+! Derived units
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   
   double precision :: k_B,m_u,m_p,m_e,m_H,m_He,eV, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
   double precision :: c_light=impossible,G_Newton=impossible,hbar=impossible
 
-  ! magnetic permeability
+! magnetic permeability
   real :: mu0=1., mu01=0.
 
-!ajwm nu moved to viscosity module
-!ajwm replaced nu, causes error in forcing to resolve
-  real :: nu=0.,cmu,cnu2
-!ajwm moved here from hydro to remove dependence of entropy on Hydro
+! shock viscosity parameters
+  real :: cmu,cnu2
   real :: tdiagnos,t2davgfirst
-!! not used?  real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum,epsK_hyper
   real :: UUmax=0.
   real :: x0,y0,z0,Lx,Ly,Lz
@@ -120,7 +117,9 @@ module Cdata
   integer :: ix_loc=-1,iy_loc=-1,iz_loc=-1,iz2_loc=-1
   integer :: icc=0,ilncc=0,ialpm=0
   integer :: iproc,ipx,ipy,ipz,root=0
-
+!
+! MPI related parameters
+!
   integer :: ylneigh,zlneigh ! `lower' processor neighbours
   integer :: yuneigh,zuneigh ! `upper' processor neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
@@ -181,17 +180,17 @@ module Cdata
   character (LEN=30) :: cnamex(mnamex),cformx(mnamex)
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
-  ! other variables (needs to be consistent with reset list in register.90)
+! other variables (needs to be consistent with reset list in register.90)
   integer :: idiag_t=0,idiag_it=0,idiag_dt=0
   integer :: idiag_walltime=0,idiag_timeperstep=0
   integer :: idiag_rcylmphi=0,idiag_phimphi=0,idiag_zmphi=0,idiag_rmphi=0
   integer :: idiag_dtv=0
   integer :: idiag_nu_LES=0
-
-  !  initialization of various switches; actual settings depends on the
-  !  modules that are linked in (see Makefile.local) and can, in some cases,
-  !  be reset also via appropriate namelist entries.
-
+!
+!  initialization of various switches; actual settings depends on the
+!  modules that are linked in (see Makefile.local) and can, in some cases,
+!  be reset also via appropriate namelist entries.
+!
   logical :: lstart=.false., lrun=.false., lreloading=.false.
 !
 ! Emergency brake
@@ -243,18 +242,6 @@ module Cdata
   logical :: lcopysnapshots_exp=.false.
   logical :: lwrite_2d=.false.
 
-!!
-!! The following have been replaces with CPARAM header definitions making them
-!! parameters (ajwm)
-!!
-!!  logical :: lhydro=.false.,ldensity=.false.,lentropy=.false.
-!!  logical :: lcosmicrayflux=.false.
-!!  logical :: lcosmicray=.false.
-!!  logical :: lmagnetic=.false.
-!!  logical :: linterstellar=.false.
-!!
-!!
-
 ! Constant 'parameters' cannot occur in namelists, so inorder to get the now constant module
 ! logicals into the lphysics name list... We have some proxies that are used to initialise
 ! private local variables called lhydro etc, in the lphysics namelist!
@@ -278,8 +265,9 @@ module Cdata
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lsfflux=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
-!  logical, dimension(mfarray) :: lsnap ! flag which variables should be written
-                                             ! to the snapshots
+!
+! logical, dimension(mfarray) :: lsnap ! flag which variables should be written
+!                                      ! to the snapshots
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
@@ -287,7 +275,7 @@ module Cdata
   logical, dimension(mcom) :: lfreeze_varsquare=.false.
   logical, dimension(mcom) :: lfreeze_varint=.false.,lfreeze_varext=.false.
 
-  ! possibility to set boundary values
+! possibility to set boundary values
   real, dimension(mcom) :: fbcx1=0.,fbcy1=0.,fbcz1=0., fbcz1_1=0., fbcz1_2=0.
   real, dimension(mcom) :: fbcx2=0.,fbcy2=0.,fbcz2=0., fbcz2_1=0., fbcz2_2=0.
 
@@ -306,7 +294,7 @@ module Cdata
   character (len=10), dimension(maux) :: aux_var
   integer :: aux_count=1
 
-  ! run parameters
+! run parameters
   real :: tmax=1e33,awig=1.
   real :: max_walltime=0.0  ! in seconds
   integer :: isave=100,iwig=0,ialive=0,nfilter=0,isaveglobal=0

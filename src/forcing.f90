@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.95 2006-09-27 04:45:03 brandenb Exp $
+! $Id: forcing.f90,v 1.96 2006-09-27 05:39:35 brandenb Exp $
 
 module Forcing
 
@@ -72,7 +72,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.95 2006-09-27 04:45:03 brandenb Exp $")
+           "$Id: forcing.f90,v 1.96 2006-09-27 05:39:35 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1427,7 +1427,13 @@ module Forcing
 !
       where(z<0) ss=-1.
       gz1=-ss*gz !!(negative for z>0)
-      ffnorm=fountain*nu*dt
+!
+!AB: removed nu dependence here. This whole routine is probably not
+!AB: needed at the moment, because it is superseded by continuous forcing
+!AB: in hydro.f90
+!
+      !ffnorm=fountain*nu*dt
+      ffnorm=fountain*dt
 !
 !  set forcing function
 !
@@ -1497,7 +1503,13 @@ module Forcing
 !
       where(z<0) ss=-1.
       gz1=-ss*gz !!(negative for z>0)
-      ffnorm=fountain*nu*kfountain**2*dt
+!
+!AB: removed nu dependence here. This whole routine is probably not
+!AB: needed at the moment, because it should be superseded by continuous
+!AB: forcing in hydro.f90
+!
+      !ffnorm=fountain*nu*kfountain**2*dt
+      ffnorm=fountain*kfountain**2*dt
 !
 !  set forcing function
 !
@@ -1632,7 +1644,12 @@ module Forcing
 !  this forcing term is balanced by diffusion operator;
 !  need to multiply by nu*k^2, but k=sqrt(1+1) for the forcing
 !
-      ffnorm2=ffnorm*nu*2
+!AB: removed nu dependence here. This whole routine is probably not
+!AB: needed at the moment, because it should be superseded by continuous
+!AB: forcing in hydro.f90
+!
+      !ffnorm2=ffnorm*nu*2
+      ffnorm2=ffnorm*2
       tmp=ffnorm2*fx*fz
 !
 !  add
