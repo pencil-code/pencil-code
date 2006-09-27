@@ -1,4 +1,4 @@
-! $Id: particles_dust.f90,v 1.148 2006-09-26 09:38:32 ajohan Exp $
+! $Id: particles_dust.f90,v 1.149 2006-09-27 12:44:33 ajohan Exp $
 !
 !  This module takes care of everything related to dust particles
 !
@@ -31,7 +31,7 @@ module Particles
   real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, eps_dtog=0.01
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
-  real :: tausg_min=0.0, tausg1_max, cdtp=0.2
+  real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=0.0, cdtp=0.2
   real :: gravx=0.0, gravz=0.0, kx_gg=1.0, kz_gg=1.0
   real :: Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
@@ -73,7 +73,8 @@ module Particles
       tstart_dragforce_par, tstart_grav_par, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, ipar_fence_species, tausp_species, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole
+      tstart_collisional_cooling, tausg_min, l_hole, m_hole, n_hole, &
+      epsp_friction_increase
 
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -85,7 +86,7 @@ module Particles
       lparticlemesh_cic, lparticlemesh_tsc, lcollisional_cooling_rms, &
       lcollisional_cooling_twobody, &
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling, tausg_min
+      tstart_collisional_cooling, tausg_min, epsp_friction_increase
 
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -118,7 +119,7 @@ module Particles
       first = .false.
 !
       if (lroot) call cvs_id( &
-           "$Id: particles_dust.f90,v 1.148 2006-09-26 09:38:32 ajohan Exp $")
+           "$Id: particles_dust.f90,v 1.149 2006-09-27 12:44:33 ajohan Exp $")
 !
 !  Indices for particle position.
 !
@@ -659,7 +660,6 @@ k_loop:   do while (.not. (k>npar_loc))
 
         case ('average-to-zero')
           call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpx)),vpx_sum)
-          print*, 'AAA', vpx_sum, sum(fp(1:npar_loc,ivpx))
           fp(1:npar_loc,ivpx)=fp(1:npar_loc,ivpx)-vpx_sum/npar
           call mpireduce_sum_scl(sum(fp(1:npar_loc,ivpy)),vpy_sum)
           fp(1:npar_loc,ivpy)=fp(1:npar_loc,ivpy)-vpy_sum/npar
@@ -1735,7 +1735,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine dvvp_dt
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
+    subroutine get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,nochange_opt)
 !
 !  Calculate the friction time.
 !
@@ -1745,9 +1745,23 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: tausp1_par
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
+      logical, optional :: nochange_opt
 !
       real :: tausg1_point
-      integer :: jspec
+      integer :: ix0, jspec
+      logical :: nochange=.false.
+!
+      if (present(nochange_opt)) then
+        if (nochange_opt) then
+          nochange=.true.
+        else
+          nochange=.false.
+        endif
+      else
+        nochange=.false.
+      endif
+!
+      ix0=ineargrid(k,1)      
 !
 !  Epstein drag law.
 !
@@ -1770,13 +1784,28 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       endif
 !
+!  Change friction time artificially.
+!
+      if (.not. nochange) then
+!
 !  Increase friction time to avoid very small time-steps where the
 !  dust-to-gas ratio is high.
 !
-      if (tausg_min/=0.0) then
-        tausg1_point=tausp1_par*p%epsp(ineargrid(k,1)-nghost)
-        if (tausg1_point>tausg1_max) &
-            tausp1_par=tausg1_max/p%epsp(ineargrid(k,1)-nghost)
+        if (tausg_min/=0.0) then
+          tausg1_point=tausp1_par*p%epsp(ix0-nghost)
+          if (tausg1_point>tausg1_max) &
+              tausp1_par=tausg1_max/p%epsp(ix0-nghost)
+        endif
+!
+!  Increase friction time linearly with dust density where the dust-to-gas
+!  ratio is higher than a chosen value. Supposed to mimick decreased cooling
+!  when the gas follows the dust.
+!
+        if (epsp_friction_increase/=0.0) then
+          if (p%epsp(ix0-nghost)>epsp_friction_increase) &
+              tausp1_par=tausp1_par/(p%epsp(ix0-nghost)/epsp_friction_increase)
+        endif
+!
       endif
 !
       if (NO_WARN) print*, f, ineargrid
@@ -1808,14 +1837,20 @@ k_loop:   do while (.not. (k>npar_loc))
         if (npar_imn(imn)/=0) then
 !  When multiple friction times are present, the average is used for the
 !  number density in each superparticle.
-          if (npar_species>1) tausp1m=0.0
+          if (npar_species>1) then
+            tausp1m=0.0
+          else
+            call get_frictiontime(f,fp,p,ineargrid,1,tausp1_par, &
+                nochange_opt=.true.)
+          endif
 !  Need vpm=<|vvp-<vvp>|> to calculate the collisional time-scale.
           vvpm=0.0; vpm=0.0
           do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             vvpm(ix0-nghost,:) = vvpm(ix0-nghost,:) + fp(k,ivpx:ivpz)
             if (npar_species>1) then
-              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par, &
+                  nochange_opt=.true.)
               tausp1m(ix0-nghost) = tausp1m(ix0-nghost) + tausp1_par
             endif
           enddo
@@ -1838,12 +1873,13 @@ k_loop:   do while (.not. (k>npar_loc))
               vpm(l)=vpm(l)/p%np(l)
             endif
           enddo
+          print*, 1/tausp1_par
 !  The collisional time-scale is 1/tau_coll=nd*vrms*sigma_coll.
 !  Inserting Epstein friction time gives 1/tau_coll=3*rhod/rho*vprms/tauf.
           if (npar_species>1) then
             tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1m
           else
-            tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1
+            tau_coll1=(1.0-coeff_restitution)*coll_geom_fac*3*p%epsp*vpm*tausp1_par
           endif
 !  Limit inverse time-step of collisional cooling if requested.
           if (tau_coll_min>0.0) then 
@@ -1870,14 +1906,16 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Limit inverse time-step of collisional cooling if requested.
             do while (k/=0)
               dt1_cool=0.0
-              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_park)
+              call get_frictiontime(f,fp,p,ineargrid,k,tausp1_park, &
+                  nochange_opt=.true.)
               tausp_park=1/tausp1_park
               tausp_park3=tausp_park**3
               j=k
               do while (kneighbour(j)/=0)
 !  Collide with the neighbours of k and their neighbours.                
                 j=kneighbour(j)
-                call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj)
+                call get_frictiontime(f,fp,p,ineargrid,j,tausp1_parj, &
+                    nochange_opt=.true.)
                 tausp_parj=1/tausp1_parj
                 tausp_parj3=tausp_parj**3
 !  Collision velocity.
