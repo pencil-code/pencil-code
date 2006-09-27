@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.286 2006-09-19 16:46:05 wlyra Exp $
+! $Id: hydro.f90,v 1.287 2006-09-27 04:45:03 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -80,6 +80,7 @@ module Hydro
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
   logical :: lforcing_continuous=.false.
+  character (len=labellen) :: iforcing_continuous='ABC'
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -90,7 +91,7 @@ module Hydro
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        borderuu, lfreeze_uint, &
        lfreeze_uext,lcoriolis_force,lcentrifugal_force,ladvection_velocity, &
-       lforcing_continuous,k1_ff,ampl_ff
+       lforcing_continuous,iforcing_continuous,k1_ff,ampl_ff
 
 ! end geodynamo
 
@@ -172,7 +173,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.286 2006-09-19 16:46:05 wlyra Exp $")
+           "$Id: hydro.f90,v 1.287 2006-09-27 04:45:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1487,20 +1488,33 @@ module Hydro
 !
       if(ip<=6) print*,'forcing_continuous: ifirst=',ifirst
       if (ifirst==0) then
-        if (lroot) print*,'forcing_continuous: calc sinx, cosx, etc'
-        sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
-        siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
-        sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+        if (iforcing_continuous=='ABC') then
+          if (lroot) print*,'forcing_continuous: ABC--calc sinx, cosx, etc'
+          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+          sinz=sin(k1_ff*z); cosz=cos(k1_ff*z)
+        elseif (iforcing_continuous=='RobertsFlow') then
+          if (lroot) print*,'forcing_continuous: RobertsFlow'
+          sinx=sin(k1_ff*x); cosx=cos(k1_ff*x)
+          siny=sin(k1_ff*y); cosy=cos(k1_ff*y)
+        endif
       endif
       ifirst=ifirst+1
       if(ip<=6) print*,'forcing_continuous: dt, ifirst=',dt,ifirst
 !
 !  calculate forcing
 !
-      fact=ampl_ff/sqrt(3.)
-      forcing_rhs(:,1)=fact*(sinz(n    )+cosy(m)    )
-      forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
-      forcing_rhs(:,3)=fact*(siny(m    )+cosx(l1:l2))
+      if (iforcing_continuous=='ABC') then
+        fact=ampl_ff/sqrt(3.)
+        forcing_rhs(:,1)=fact*(sinz(n    )+cosy(m)    )
+        forcing_rhs(:,2)=fact*(sinx(l1:l2)+cosz(n)    )
+        forcing_rhs(:,3)=fact*(siny(m    )+cosx(l1:l2))
+      elseif (iforcing_continuous=='RobertsFlow') then
+        fact=ampl_ff
+        forcing_rhs(:,1)=-fact*cosx(l1:l2)*siny(m)
+        forcing_rhs(:,2)=+fact*sinx(l1:l2)*cosy(m)
+        forcing_rhs(:,3)=+fact*cosx(l1:l2)*cosy(m)*sqrt(2.)
+      endif
 !
 !  apply forcing in momentum equation
 !

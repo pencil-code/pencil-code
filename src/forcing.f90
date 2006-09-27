@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.94 2006-09-18 06:49:39 brandenb Exp $
+! $Id: forcing.f90,v 1.95 2006-09-27 04:45:03 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
        iforce_profile,lscale_kvector_tobox
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0
+  integer :: idiag_rufm=0, idiag_ufm=0, idiag_ofm=0, idiag_ffm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 
   contains
@@ -72,7 +72,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.94 2006-09-18 06:49:39 brandenb Exp $")
+           "$Id: forcing.f90,v 1.95 2006-09-27 04:45:03 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -298,7 +298,7 @@ module Forcing
       real, save :: kav
       real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ruf,uf,of,rho
+      real, dimension (nx) :: radius,tmpx,rho1,ff,ruf,uf,of,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all,uu,oo,bb,fxb
       real, dimension (mx,my,mz,mfarray) :: f
@@ -559,6 +559,10 @@ module Forcing
           call curl(f,iuu,oo)
           call dot(oo,forcing_rhs,of)
           call sum_mn_name(of,idiag_ofm)
+        endif
+        if (idiag_ffm/=0) then
+          call dot2(forcing_rhs,ff)
+          call sum_mn_name(ff,idiag_ffm)
         endif
         if (lmagnetic) then
           if (idiag_fxbxm/=0.or.idiag_fxbym/=0.or.idiag_fxbzm/=0) then 
@@ -2139,7 +2143,7 @@ module Forcing
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rufm=0; idiag_ufm=0; idiag_ofm=0
+        idiag_rufm=0; idiag_ufm=0; idiag_ofm=0; idiag_ffm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
 !
@@ -2150,6 +2154,7 @@ module Forcing
         call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
         call parse_name(iname,cname(iname),cform(iname),'ufm',idiag_ufm)
         call parse_name(iname,cname(iname),cform(iname),'ofm',idiag_ofm)
+        call parse_name(iname,cname(iname),cform(iname),'ffm',idiag_ffm)
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
         call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
         call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
@@ -2161,6 +2166,7 @@ module Forcing
         write(3,*) 'i_rufm=',idiag_rufm
         write(3,*) 'i_ufm=',idiag_ufm
         write(3,*) 'i_ofm=',idiag_ofm
+        write(3,*) 'i_ffm=',idiag_ffm
         write(3,*) 'i_fxbxm=',idiag_fxbxm
         write(3,*) 'i_fxbym=',idiag_fxbym
         write(3,*) 'i_fxbzm=',idiag_fxbzm
