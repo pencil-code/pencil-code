@@ -1,0 +1,19 @@
+!                                  -*-f90-*-
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2006-09-29 21:46:53 brandenb Exp $',
+  xyz0  = -3.14159, -3.14159, -0.5
+  xyz1  =  3.14159,  3.14159,  0.5
+  lperi =  T ,   T ,   F
+/
+&eos_init_pars
+  gamma=1.
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&magnetic_init_pars
+  initaa='sinxsinz', amplaa=1e-2, kx_aa=1., ky_aa=0., kz_aa=0.
+/
