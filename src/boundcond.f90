@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.121 2006-09-18 21:31:14 theine Exp $
+! $Id: boundcond.f90,v 1.122 2006-09-29 21:59:37 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -407,7 +407,7 @@ module Boundcond
                 endif
               case ('set')      ! set boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz12)
-              case ('')         ! do nothing; assume that everything is set
+              case ('nil')      ! do nothing; assume that everything is set
               case default
                 bc%bcname=bc12(j)
                 bc%ivar=j

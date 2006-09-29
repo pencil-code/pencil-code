@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.325 2006-09-18 21:31:14 theine Exp $
+! $Id: magnetic.f90,v 1.326 2006-09-29 21:59:38 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -208,7 +208,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.325 2006-09-18 21:31:14 theine Exp $")
+           "$Id: magnetic.f90,v 1.326 2006-09-29 21:59:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2776,9 +2776,9 @@ module Magnetic
 !  pontential field condition at the bottom
 !
       case('bot')
-        if (headtt) print*,'bc_aa_pot: potential field boundary condition at the bottom'
+        if (headtt) print*,'bc_aa_pot: pot-field bdry cond at bottom'
         if (nprocy/=1) &
-             call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")
+             call stop_it("bc_aa_pot: pot-field doesn't work with nprocy/=1")
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -2794,9 +2794,9 @@ module Magnetic
 !  pontential field condition at the top
 !
       case('top')
-        if (headtt) print*,'bc_aa_pot: potential field boundary condition at the top'
+        if (headtt) print*,'bc_aa_pot: pot-field bdry cond at top'
         if (nprocy/=1) &
-             call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")
+             call stop_it("bc_aa_pot: pot-field doesn't work with nprocy/=1")
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
@@ -2822,6 +2822,7 @@ module Magnetic
 !
 !  20-jan-00/axel+wolf: coded
 !  22-mar-00/axel: corrected sign (it is the same on both sides)
+!  29-sep-06/axel: removed multiple calls, removed normalization, non-para
 !
       use Cdata
       use Fourier
@@ -2833,16 +2834,15 @@ module Magnetic
       real :: delz
       integer :: i,irev
 !
+!  initialize workspace
+!
       f2r=f2; f2i=0
       f3r=f3; f3i=0
 !
-!  Transform
+!  Transform; real and imaginary parts
 !
-      call fourier_transform_other(f2r,f2i) ! x-direction
-      call fourier_transform_other(f2r,f2i) ! y-direction
-!
-      call fourier_transform_other(f3r,f3i) ! x-direction
-      call fourier_transform_other(f3r,f3i) ! y-direction
+      call fourier_transform_other(f2r,f2i)
+      call fourier_transform_other(f3r,f3i)
 !
 !  define wave vector
 !
@@ -2869,13 +2869,12 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_other(g1r,g1i,linv=.true.) ! x-direction
-        call fourier_transform_other(g1r,g1i,linv=.true.) ! y-direction
+        call fourier_transform_other(g1r,g1i,linv=.true.)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
-        if (irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if (irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==+1) fz(:,:,       i+1) = g1r
+        if (irev==-1) fz(:,:,nghost-i+1) = g1r
       enddo
 !
     endsubroutine potential_field
@@ -2888,6 +2887,7 @@ module Magnetic
 !  subroutine above, but this is now easier
 !
 !  22-mar-02/axel: coded
+!  29-sep-06/axel: removed multiple calls, removed normalization, non-para
 !
       use Cdata
       use Fourier
@@ -2904,11 +2904,8 @@ module Magnetic
 !
 !  Transform
 !
-      call fourier_transform_other(f2r,f2i) ! x-direction
-      call fourier_transform_other(f2r,f2i) ! y-direction
-!
-      call fourier_transform_other(f3r,f3i) ! x-direction
-      call fourier_transform_other(f3r,f3i) ! y-direction
+      call fourier_transform_other(f2r,f2i)
+      call fourier_transform_other(f3r,f3i)
 !
 !  define wave vector
 !
@@ -2940,13 +2937,12 @@ module Magnetic
 !
 !  Transform back
 !
-        call fourier_transform_other(g1r,g1i,linv=.true.) ! x-direction
-        call fourier_transform_other(g1r,g1i,linv=.true.) ! y-direction
+        call fourier_transform_other(g1r,g1i,linv=.true.)
 !
 !  reverse order if irev=-1 (if we are at the bottom)
 !
-        if (irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if (irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if (irev==+1) fz(:,:,       i+1) = g1r
+        if (irev==-1) fz(:,:,nghost-i+1) = g1r
       enddo
 !
     endsubroutine potentdiv
