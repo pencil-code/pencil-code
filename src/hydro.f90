@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.287 2006-09-27 04:45:03 brandenb Exp $
+! $Id: hydro.f90,v 1.288 2006-09-30 04:08:05 brandenb Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -173,7 +173,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.287 2006-09-27 04:45:03 brandenb Exp $")
+           "$Id: hydro.f90,v 1.288 2006-09-30 04:08:05 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -908,7 +908,7 @@ module Hydro
                           cos(z(n))*pdamp)
       endif
 !
-!  add the possibility of removing a mean flow in the y-direction
+!  add the possibility of removing a mean flow in the x and y directions
 !
       if (tau_damp_ruxm/=0.) call damp_ruxm(f,df,p%rho)
       if (tau_damp_ruym/=0.) call damp_ruym(f,df,p%rho)
