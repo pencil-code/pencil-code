@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.171 2006-09-08 10:53:43 wlyra Exp $ 
+! $Id: initcond.f90,v 1.172 2006-10-03 14:48:09 bingert Exp $ 
 
 module Initcond 
  
@@ -2557,83 +2557,52 @@ module Initcond
     subroutine corona_init(f)
 !
 ! 07-dec-05/bing : coded.
-! intialize the density for given temperprofile in vertical 
-! z direction by solving hydrostatic equilibrium.
-! Temperatur is hard coded as three polynoms.
+!      intialize the density for given temperprofile in vertical 
+!      z direction by solving hydrostatic equilibrium.
+!      Temperatur is hard coded as three polynoms.
 !      
       use Cdata
       use EquationOfState, only: lnrho0,gamma,gamma1,cs20
       
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: g,lnrho1,lnrho2,lnTT1,lnTT2,zp1,zp2
-      real :: unit_temp
-      real, dimension(5) :: p1
-      real, dimension(4) :: p2
-      real, dimension(4) :: p3
-      integer :: i
-      !
-      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
-      !
-      !mp = 1.6725000e-27   ! [ kg ]       mass proton
-      !kB = 1.3804000e-23   ! [ J/K ]      Boltzmann constant
-      !g  = 274.            ! [ m/s^2 ]    gravitational acceleration 
-      !mus =0.677
-      !
-      g =  2.24e-2 ! = g*mp*mus/kB
+      real :: tmp
+      real, dimension(150) :: b_lnT,b_lnrho,b_z
+      integer :: i,lend,j
       !
       ! temperature given as function lnT(z) in SI units
+      ! [T] = K   &   [z] = Mm   & [rho] = kg/m^3
+      !      
+      inquire(IOLENGTH=lend) tmp
+      open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
+      read (10) b_lnT
+      read (10) b_z
+      close (10) 
       !
-      ! RANGE = [0,4] Mm
-      p1(1)=  8.65
-      p1(2)= -7.93e-01
-      p1(3)=  1.07
-      p1(4)= -4.35e-01
-      p1(5)=  6.07e-02
+      open (10,file='driver/b_lnrho.dat',form='unformatted',status='unknown',recl=lend*150)
+      read (10) b_lnrho
+      close (10)
       !
-      ! RANGE = [4,9] Mm
-      p2(1)= -6.46
-      p2(2)=  6.90
-      p2(3)= -7.97e-01
-      p2(4)=  3.08e-02
+      b_z = b_z*1.e6/unit_length
+      b_lnT = b_lnT - alog(real(unit_temperature))
+      b_lnrho = b_lnrho - alog(real(unit_density))
       !
-      ! RANGE = [9,35] Mm
-      p3(1)=  1.34e+01
-      p3(2)=  1.57e-02
-      p3(3)= -2.46e-04
-      p3(4)=  8.92e-07
+      ! simple linear interpolation
       !
-      lnTT2 = p1(1)
-      zp2 =  0.
-      lnrho2= lnrho0 + alog(real(unit_density)) 
-      !
-      do while ( zp2 .le. lz*unit_length*1.e-6)
-         lnTT1  = lnTT2
-         zp1    = zp2
-         lnrho1 = lnrho2
-         !
-         zp2 = zp1 + 0.01
-         !
-         if (zp2 .le. 4.) then
-            lnTT2 = p1(1) +p1(2)*zp2 +p1(3)*zp2**2 +p1(4)*zp2**3 +p1(5)*zp2**4
-         elseif (zp2 .le. 9. .and. zp2 .gt. 4.) then
-            lnTT2 = p2(1) +p2(2)*zp2 +p2(3)*zp2**2 +p2(4)*zp2**3 
-         elseif (zp2 .le. 35. .and. zp2 .gt. 9.) then
-            lnTT2 = p3(1) +p3(2)*zp2 +p3(3)*zp2**2 +p3(4)*zp2**3
-         elseif (zp2 .ge. 35.) then  
-            lnTT2 = p3(1) +p3(2)*35. +p3(3)*35.**2 +p3(4)*35.**3
-         endif
-         !
-         lnrho2 = (lnTT1-lnTT2) - g*exp(-lnTT1)*(zp2-zp1)*1.e6 +lnrho1
-         !
-         do i=n1,n2 
-            if (zp1 .le. z(i)*unit_length*1.e-6 .and. z(i)*unit_length*1.e-6 .lt. zp2) then
-               f(l1:l2,m1:m2,i,ilnrho) = lnrho1-alog(real(unit_density))            
-               f(l1:l2,m1:m2,i,iss) = ( alog(gamma1/cs20)+lnTT1-alog(unit_temp)- &
-                    gamma1*(lnrho1-lnrho0-alog(real(unit_density))) )/gamma
+      do j=n1,n2 
+         do i=1,149 
+            if (z(j) .ge. b_z(i) .and. z(j) .lt. b_z(i+1) ) then
+               f(:,:,j,ilnrho) = (b_lnrho(i)*(b_z(i+1) - z(j)) +   &
+                    b_lnrho(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
+               !
+               tmp =  (b_lnT(i)*(b_z(i+1) - z(j)) +   &
+                    b_lnT(i+1)*(z(j)-b_z(i)) ) / (b_z(i+1)-b_z(i))
+               !
+               f(:,:,j,iss) = (alog(gamma1/cs20)+tmp- &
+                    gamma1*(f(l1,m1,j,ilnrho)-lnrho0))/gamma
+               exit            
             endif
          enddo
       enddo
-      !
     endsubroutine corona_init
 !*********************************************************
     subroutine mdi_init(f)
@@ -2690,6 +2659,16 @@ module Initcond
       ! Fourier Transform of Bz0:
       !
       call fourier_transform_other(Bz0_r,Bz0_i)
+! NEU
+!      print*,maxval(Bz0_r)
+!      Bz0_i = 0.
+!      Bz0_r = Bz0 * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
+!
+!      call fft(Bz0_r,Bz0_i,nxgrid*nygrid,nxgrid,nxgrid,1)
+!      call fft(Bz0_r,Bz0_i,nxgrid*nygrid,nygrid,nxgrid*nygrid,1)
+!      Bz0_r = Bz0_r/sqrt(1.*nxgrid*nygrid)
+!      print*,maxval(Bz0_r)
+! NEU
       !
       do i=n1,n2
          !
