@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.253 2006-09-15 22:24:34 theine Exp $ 
+! $Id: sub.f90,v 1.254 2006-10-03 14:44:26 bingert Exp $ 
 
 module Sub 
 
@@ -4414,14 +4414,15 @@ nameloop: do
 !
 !  calculate (Gi*ni)^2 needed for lnecr form; also add into tmp
 !
+      gecr2=0.
       if (present(llog)) then
         call dot_mn(gecr,bunit,tmpi)
         tmp=tmp+tmpi**2
-      endif
 !
 !  calculate gecr2 - needed for lnecr form
 !  
-      call dot2_mn(gecr,gecr2)
+        call dot2_mn(gecr,gecr2)
+      endif
 !
 !  if variable tensor, add extra terms and add result into decr/dt 
 !

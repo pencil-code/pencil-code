@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.431 2006-09-25 11:51:59 bingert Exp $
+! $Id: entropy.f90,v 1.432 2006-10-03 14:44:27 bingert Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -157,7 +157,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.431 2006-09-25 11:51:59 bingert Exp $")
+           "$Id: entropy.f90,v 1.432 2006-10-03 14:44:27 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -1510,7 +1510,9 @@ module Entropy
       endif
       if (lheatc_spitzer) then 
         lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_TT)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true.
@@ -1519,7 +1521,9 @@ module Entropy
       endif
       if (lheatc_corona) then
         lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_lnrho)=.true.
         lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_TT)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_hlnTT)=.true. 
@@ -2154,7 +2158,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gvKpara,gvKperp
       real, dimension (nx,3) :: tmpv1,tmpv2,tmpv3
-      real, dimension (nx) :: TT,bb2,thdiff,b1
+      real, dimension (nx) :: bb2,thdiff,b1
       real, dimension (nx) :: tmps,quenchfactor,vKpara,vKperp
       integer ::i,j
       type (pencil_case) :: p
@@ -2164,22 +2168,20 @@ module Entropy
 !
       if (pretend_lnTT) call fatal_error("calc_heatcond_spitzer","not implemented when pretend_lnTT = T")
 !
-!ajwm this should be p%TT
-!AB: yes, I agree
-      TT = exp(p%lnTT)
-!        
 !     Calculate variable diffusion coefficients along pencils
 !
       call dot2_mn(p%bb,bb2)
       b1=1./max(tiny(bb2),bb2)
 !
-      vKpara = Kgpara * TT**2.5 /p%rho       != Kgpara* T^3.5              /(rho*T)
-      vKperp = Kgperp * (b1*p%rho)/sqrt(TT)  != Kgperp* rho^2 sqrt(T)/B^2  /(rho*T)
+      vKpara = Kgpara * p%TT**3.5
+      vKperp = Kgperp * b1*exp(2*p%lnrho+0.5*p%lnTT)
 !
 !     limit perpendicular diffusion 
 !
-      quenchfactor = vKpara/(vKpara+vKperp)
-      vKperp=vKperp*quenchfactor
+      if (maxval(abs(vKpara+vKperp)) .gt. tini) then         
+         quenchfactor = vKpara/(vKpara+vKperp)
+         vKperp=vKperp*quenchfactor
+      endif
 !
 !     Calculate gradient of variable diffusion coefficients
 !      
@@ -2188,15 +2190,16 @@ module Entropy
       tmps(:) = 2.
       call multsv_mn(tmps,p%glnrho,tmpv1)
       tmps(:) = 0.5
-      call multsv_mn(tmps, p%glnTT,tmpv2)
+      call multsv_mn(tmps,p%glnTT,tmpv2)
       do i=1,3
+         tmpv3(:,i)=0.
          do j=1,3
-            tmpv3(:,i)=2*p%bb(:,j)*p%bij(:,j,i)
+            tmpv3(:,i)=tmpv3(:,i) + p%bb(:,j)*p%bij(:,j,i)
          end do
       end do
 !
-      call multsv_mn(b1,tmpv3,tmpv3)
-      tmpv1=tmpv1+tmpv2+tmpv3
+      call multsv_mn(2*b1*b1,tmpv3,tmpv3)
+      tmpv1=tmpv1+tmpv2-tmpv3
       call multsv_mn(vKperp,tmpv1,gvKperp)
       gvKperp=gvKperp*spread(quenchfactor,2,3)
 !
@@ -2204,19 +2207,13 @@ module Entropy
 !
       call  tensor_diffusion_coef(p%glnTT,p%hlnTT,p%bij,p%bb,vKperp,vKpara,thdiff,GVKPERP=gvKperp,GVKPARA=gvKpara)
 !
-!    (thdiff = thdiff/(rho*TT) is included in vKperp and vKpara)
+      thdiff = thdiff*exp(-p%lnrho-p%lnTT) 
 ! 
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) + thdiff 
 !
-!   check maximum diffusion from thermal diffusion
-!   With heat conduction, the second-order term for entropy is
-!   gamma*chi*del2ss
-!
       if (lfirst.and.ldt) then
-         diffus_chi=max(diffus_chi,(gamma*Kgpara/p%rho*TT**2.5+chi_t)*dxyz_2)
-         if (ldiagnos.and.idiag_dtchi/=0) then
-            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-         endif
+         !
+         dt1_max=max(dt1_max,maxval(abs(thdiff)*gamma)/(cdts))
       endif
 !      
     endsubroutine calc_heatcond_spitzer
@@ -2563,9 +2560,9 @@ module Entropy
       use IO
 !     
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lncool,rtv_cool,lnTT_SI
+      real, dimension (nx) :: lnQ,rtv_cool,lnTT_SI,lnneni
       integer :: i,imax
-      real :: unit_temp,unit_Q
+      real :: unit_lnQ
       type (pencil_case) :: p
 !
       intent(in) :: p
@@ -2573,59 +2570,60 @@ module Entropy
 !
       if (pretend_lnTT) call fatal_error("calc_heat_cool_RTV","not implemented when pretend_lnTT = T")
 !
-!AB: looks like a strange hack to me
-!
 !     All is in SI units and has to be rescaled to PENCIL units
 !
-      unit_temp = (0.667 * gamma1 * unit_velocity**2 )/8.3144e3 /gamma
-      unit_Q =  unit_velocity**3 / unit_length / unit_density
+      unit_lnQ=3*alog(real(unit_velocity))-alog(real(unit_length))-alog(real(unit_density))
+      if (unit_system .eq. 'cgs') unit_lnQ = unit_lnQ+alog(1.e7)
 !
-      lnTT_SI = p%lnTT + alog(unit_temp) 
+      lnTT_SI = p%lnTT + alog(real(unit_temperature)) 
 !
+!     calculate ln(ne*ni) :
+!          ln(ne*ni) = ln( 1.2*rho^2/(1.4*mp)^2)
+      lnneni = 2*p%lnrho + alog(1.2) - 2*alog(1.4*real(m_p))
+!      
+!     rtv_cool=exp(lnneni+lnQ-unit_lnQ-lnrho-lnTT)
+!   
 ! First set of parameters
       if (cool_RTV .gt. 0.) then
-         imax = size(intlnT_1,1)       
-         lncool(:)=0.0
-         do i=1,imax-1
-            where (( intlnT_1(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
-               lncool=lncool + lnH_1(i) + B_1(i)*lnTT_SI
-            endwhere
-         enddo
-         where (lnTT_SI >= intlnT_1(imax) )
-            lncool = lncool + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax)
-         endwhere
-      endif
-
+        imax = size(intlnT_1,1)       
+        lnQ(:)=0.0
+        do i=1,imax-1
+          where (( intlnT_1(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_1(i+1) )
+            lnQ=lnQ + lnH_1(i) + B_1(i)*lnTT_SI
+          endwhere
+        enddo
+        where (lnTT_SI >= intlnT_1(imax) )
+          lnQ = lnQ + lnH_1(imax-1) + B_1(imax-1)*intlnT_1(imax)
+        endwhere
+        rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
+      elseif (cool_RTV .lt. 0) then
 ! Second set of parameters      
-      if (cool_RTV .lt. 0) then
-         cool_RTV = cool_RTV*(-1.)
+        cool_RTV = cool_RTV*(-1.)
         imax = size(intlnT_2,1)       
-        lncool(:)=0.0
+        lnQ(:)=0.0
         do i=1,imax-1
           where (( intlnT_2(i) <= lnTT_SI .or. i==1 ) .and. lnTT_SI < intlnT_2(i+1) )
-            lncool=lncool + lnH_2(i) + B_2(i)*lnTT_SI
+            lnQ=lnQ + lnH_2(i) + B_2(i)*lnTT_SI
           endwhere
         enddo
         where (lnTT_SI >= intlnT_2(imax) )
-          lncool = lncool + lnH_2(imax-1) + B_2(imax-1)*intlnT_2(imax)
+          lnQ = lnQ + lnH_2(imax-1) + B_2(imax-1)*intlnT_2(imax)
         endwhere
-     endif
+        rtv_cool=exp(lnneni+lnQ-unit_lnQ-p%lnTT-p%lnrho)
+      else
+        rtv_cool(:)=0.
+      endif
 !
-!     calculate ln(ne*ni) :
-!          mp = 1.673*1e-27
-!          ln(ne*ni) = ln( 1.2*rho^2/(1.4*mp)^2)
-!          lnneni   = 2*lnrho + alog(1.2) - 2*alog(1.4*1.673*1e-27)
-!          lnneni = 2*lnrho + 122.82     
-!      
-!    rtv_cool=exp(lnneni+lncool-lnrho-lnTT)/unit_power
-!    =>
-     rtv_cool=exp(lncool-p%lnTT+122.82)*p%rho / unit_Q
-!     
-     rtv_cool=rtv_cool * cool_RTV  ! just for adjusting by setting cool_RTV in run.in
+      rtv_cool=rtv_cool * cool_RTV  ! for adjusting by setting cool_RTV in run.in
 !
 !     add to entropy equation
 !
-     df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool 
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool 
+!
+      if (lfirst.and.ldt) then
+         !
+         dt1_max=max(dt1_max,maxval(rtv_cool*gamma)/(cdts))
+      endif
 !
     endsubroutine calc_heat_cool_RTV
 !***********************************************************************
@@ -2988,6 +2986,11 @@ module Entropy
 !  Add newton cooling term to entropy
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + newton
+!
+      if (lfirst.and.ldt) then
+         !
+         dt1_max=max(dt1_max,maxval(abs(newton)*gamma)/(cdts))
+      endif      
 !
     endsubroutine newton_cool
 !***********************************************************************
