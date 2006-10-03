@@ -1,4 +1,4 @@
-! $Id: neutron_star.f90,v 1.13 2006-07-29 18:06:34 mee Exp $
+! $Id: neutron_star.f90,v 1.14 2006-10-03 15:00:07 nbabkovs Exp $
 !
 !  This module incorporates all the modules used for Natalia's
 !  neutron star -- disk coupling simulations (referred to as nstar)
@@ -182,11 +182,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.13 2006-07-29 18:06:34 mee Exp $ 
+!  CVS should automatically update everything between $Id: neutron_star.f90,v 1.14 2006-10-03 15:00:07 nbabkovs Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: neutron_star.f90,v 1.13 2006-07-29 18:06:34 mee Exp $")
+           "$Id: neutron_star.f90,v 1.14 2006-10-03 15:00:07 nbabkovs Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -1052,8 +1052,12 @@ endsubroutine read_special_run_pars
 !   heating in 1D case 
 !
     if (l1D_heating) then
-
-      thdiff_1D =p%rho*nu*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
+!
+!  commented out reference to nu for the time being.
+!  This line should really be in the viscosity module,
+!  but this is currently not used anyway.
+!
+!     thdiff_1D =p%rho*nu*(1.5*f(l1:l2,m,n,iuy)/xyz0(3))**2
       
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff_1D
 
