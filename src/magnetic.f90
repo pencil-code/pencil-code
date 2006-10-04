@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.327 2006-10-04 08:47:09 wlyra Exp $
+! $Id: magnetic.f90,v 1.328 2006-10-04 10:45:36 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -208,7 +208,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.327 2006-10-04 08:47:09 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.328 2006-10-04 10:45:36 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2750,6 +2750,132 @@ module Magnetic
       endselect
 !
     endsubroutine bc_frozen_in_bb
+!***********************************************************************
+    subroutine bc_aa_pot2(f,topbot)
+!
+!  pontential field condition
+!
+      use Fourier, only: fourier_transform_other
+
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      character (len=3), intent (in) :: topbot
+
+      real, dimension (nx,ny) :: kx,ky,kappa,kappa1
+      real, dimension (nx,ny) :: aa_re,aa_im,az_re,az_im,daadz_re,daadz_im
+      integer :: i,j
+!
+!  define wave vector
+!
+      kx = spread(cshift((/(i-nx/2,i=0,nx-1)/),+nx/2),2,ny)
+      ky = spread(cshift((/(i-ny/2,i=0,ny-1)/),+ny/2),1,nx)
+!
+!  calculate 1/k^2, zero mean
+!
+      kappa = sqrt(kx**2+ky**2)
+      kappa(1,1) = 1.0
+      kappa1 = 1.0/kappa
+      kappa1(1,1) = 0.0
+!
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  pontential field condition at the bottom
+!
+      case('bot')
+
+        az_re = 0.0
+        az_im = 0.0
+
+        do i=iax,iaz
+
+          aa_re = f(l1:l2,m1:m2,n1,i)
+          aa_im = 0.0
+
+          call fourier_transform_other(aa_re,aa_im)
+
+          if (i==iax.or.i==iay) then
+            daadz_re = -kappa*aa_re
+            daadz_im = -kappa*aa_im
+            ! Compute az from ax and ay to ensure grad div A = 0
+            ! on the boundary
+            az_re = az_re - merge(kx,ky,i==iax)*aa_im  ! Scaled with kappa
+            az_im = az_im + merge(kx,ky,i==iax)*aa_re  ! Scaled with kappa
+          endif
+
+          if (i==iaz) then
+            daadz_re = -az_re
+            daadz_im = -az_im
+          endif
+
+          call fourier_transform_other(daadz_re,daadz_im,linv=.true.)
+
+          ! Set first derivative by filling the ghost zones
+          do j=1,nghost
+            f(l1:l2,m1:m2,n1-j,i) = f(l1:l2,m1:m2,n1+j,i) + 2*j*dz*daadz_re
+          enddo
+
+        enddo
+
+        az_re = kappa1*az_re  ! Rescale with kappa
+        az_im = kappa1*az_im  ! Rescale with kappa
+
+        call fourier_transform_other(az_re,az_im,linv=.true.)
+
+        f(l1:l2,m1:m2,n1,iaz) = az_re
+
+!
+!  pontential field condition at the top
+!
+      case('top')
+
+        az_re = 0.0
+        az_im = 0.0
+
+        do i=iax,iaz
+
+          aa_re = f(l1:l2,m1:m2,n2,i)
+          aa_im = 0.0
+
+          call fourier_transform_other(aa_re,aa_im)
+
+          if (i==iax.or.i==iay) then
+            daadz_re = -kappa*aa_re
+            daadz_im = -kappa*aa_im
+            ! Compute az from ax and ay to ensure grad div A = 0
+            ! on the boundary
+            az_re = az_re - merge(kx,ky,i==iax)*aa_im  ! Scaled with kappa
+            az_im = az_im + merge(kx,ky,i==iax)*aa_re  ! Scaled with kappa
+          endif
+
+          if (i==iaz) then
+            daadz_re = -az_re
+            daadz_im = -az_im
+          endif
+
+          call fourier_transform_other(daadz_re,daadz_im,linv=.true.)
+
+          ! Set first derivative by filling the ghost zones
+          do j=1,nghost
+            f(l1:l2,m1:m2,n2+j,i) = f(l1:l2,m1:m2,n2-j,i) + 2*j*dz*daadz_re
+          enddo
+
+        enddo
+
+        az_re = kappa1*az_re  ! Rescale with kappa
+        az_im = kappa1*az_im  ! Rescale with kappa
+
+        call fourier_transform_other(az_re,az_im,linv=.true.)
+
+        f(l1:l2,m1:m2,n2,iaz) = az_re
+
+      case default
+
+        if (lroot) print*,"bc_aa_pot: invalid argument"
+
+      endselect
+
+    endsubroutine bc_aa_pot2
 !***********************************************************************
       subroutine bc_aa_pot(f,topbot)
 !

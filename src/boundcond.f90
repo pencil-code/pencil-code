@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.122 2006-09-29 21:59:37 brandenb Exp $
+! $Id: boundcond.f90,v 1.123 2006-10-04 10:45:36 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -353,6 +353,8 @@ module Boundcond
                 if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Ftopbot,FtopbotK,chi, &
                                   lmultilayer,lheatc_chiconst)
                 if (j==iaa) call bc_aa_pot(f,topbot)
+              case ('pot')
+                if (j==iaa) call bc_aa_pot2(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)   call bc_ss_temp_z(f,topbot)
