@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.172 2006-10-03 14:48:09 bingert Exp $ 
+! $Id: initcond.f90,v 1.173 2006-10-04 14:18:25 bingert Exp $ 
 
 module Initcond 
  
@@ -2659,16 +2659,6 @@ module Initcond
       ! Fourier Transform of Bz0:
       !
       call fourier_transform_other(Bz0_r,Bz0_i)
-! NEU
-!      print*,maxval(Bz0_r)
-!      Bz0_i = 0.
-!      Bz0_r = Bz0 * 1e-4 / u_b ! Gauss to Tesla  and SI to PENCIL units
-!
-!      call fft(Bz0_r,Bz0_i,nxgrid*nygrid,nxgrid,nxgrid,1)
-!      call fft(Bz0_r,Bz0_i,nxgrid*nygrid,nygrid,nxgrid*nygrid,1)
-!      Bz0_r = Bz0_r/sqrt(1.*nxgrid*nygrid)
-!      print*,maxval(Bz0_r)
-! NEU
       !
       do i=n1,n2
          !
