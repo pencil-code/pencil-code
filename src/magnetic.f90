@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.326 2006-09-29 21:59:38 brandenb Exp $
+! $Id: magnetic.f90,v 1.327 2006-10-04 08:47:09 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -208,7 +208,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.326 2006-09-29 21:59:38 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.327 2006-10-04 08:47:09 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -2972,14 +2972,17 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: bbs,uus
+      real, dimension(nx) :: rcyl_mn1
 !
       intent(inout) :: df
 !
       call get_global(bbs,m,n,'bbs')
       call get_global(uus,m,n,'uus')
 !     
-      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - uus(:,2)*bbs(:,3)*x(l1:l2)/rcyl_mn 
-      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - uus(:,2)*bbs(:,3)*y(  m  )/rcyl_mn
+      rcyl_mn1=1./rcyl_mn
+!
+      df(l1:l2,m,n,iax) = df(l1:l2,m,n,iax) - uus(:,2)*bbs(:,3)*x(l1:l2)*rcyl_mn1 
+      df(l1:l2,m,n,iay) = df(l1:l2,m,n,iay) - uus(:,2)*bbs(:,3)*y(  m  )*rcyl_mn1
 !
     endsubroutine subtract_mean_lorentz
 !************************************************************************
