@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.288 2006-09-30 04:08:05 brandenb Exp $
+! $Id: hydro.f90,v 1.289 2006-10-04 13:18:11 wlyra Exp $
 !
 !  This module takes care of everything related to velocity
 !
@@ -128,7 +128,7 @@ module Hydro
   integer :: idiag_ur2m=0,idiag_up2m=0,idiag_uzz2m=0
   integer :: idiag_urm=0,idiag_upm=0,idiag_uzzm=0
   integer :: idiag_uzupm=0,idiag_uruzm=0,idiag_urupm=0
-  integer :: idiag_totmass=0,idiag_reyalphass=0,idiag_totangmom=0
+  integer :: idiag_totmass=0,idiag_totangmom=0
   integer :: idiag_rufm=0
   integer :: idiag_fxbxm=0, idiag_fxbym=0, idiag_fxbzm=0
 
@@ -173,7 +173,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.288 2006-09-30 04:08:05 brandenb Exp $")
+           "$Id: hydro.f90,v 1.289 2006-10-04 13:18:11 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1153,7 +1153,7 @@ module Hydro
       real, dimension (nx,3) :: uus
       real, dimension (nx) :: ur,up,uz
 !
-! from the planet phi-average
+! from the runtime phi-average
 !
       call get_global(uus,m,n,'uus')
 !
@@ -1170,9 +1170,6 @@ module Hydro
       if (idiag_urupm/=0)  call sum_lim_mn_name(p%rho*ur*up,idiag_urupm)
       if (idiag_uzupm/=0)  call sum_lim_mn_name(p%rho*uz*up,idiag_uzupm)
       if (idiag_uruzm/=0)  call sum_lim_mn_name(p%rho*ur*uz,idiag_uruzm)
-!
-      if (idiag_reyalphass/=0) &
-           call sum_lim_mn_name(ur*up/(p%rho*p%cs2),idiag_reyalphass)
 !
     endsubroutine calc_hydro_stress
 !***********************************************************************
@@ -1590,7 +1587,7 @@ module Hydro
         idiag_ur2m=0; idiag_up2m=0; idiag_uzz2m=0
         idiag_urm=0; idiag_upm=0; idiag_uzzm=0
         idiag_uzupm=0; idiag_uruzm=0; idiag_urupm=0
-        idiag_totmass=0; idiag_reyalphass=0; idiag_totangmom=0
+        idiag_totmass=0; idiag_totangmom=0
         idiag_rufm=0
         idiag_fxbxm=0; idiag_fxbym=0; idiag_fxbzm=0
       endif
@@ -1669,7 +1666,6 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'fxbxm',idiag_fxbxm)
         call parse_name(iname,cname(iname),cform(iname),'fxbym',idiag_fxbym)
         call parse_name(iname,cname(iname),cform(iname),'fxbzm',idiag_fxbzm)
-        call parse_name(iname,cname(iname),cform(iname),'reyalphass',idiag_reyalphass)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -1840,7 +1836,6 @@ module Hydro
         write(3,*) 'i_fxbxm=',idiag_fxbxm
         write(3,*) 'i_fxbym=',idiag_fxbym
         write(3,*) 'i_fxbzm=',idiag_fxbzm
-        write(3,*) 'i_reyalphass=',idiag_reyalphass
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
