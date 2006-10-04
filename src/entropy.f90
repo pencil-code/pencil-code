@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.432 2006-10-03 14:44:27 bingert Exp $
+! $Id: entropy.f90,v 1.433 2006-10-04 14:51:53 bingert Exp $
 
 
 !  This module takes care of entropy (initial condition
@@ -78,8 +78,8 @@ module Entropy
   double precision, parameter, dimension (10) :: & 
        intlnT_1 =(/4.605, 8.959, 9.906, 10.534, 11.283, 12.434, 13.286, 14.541, 17.51, 20.723 /) 
   double precision, parameter, dimension (9) :: &
-       lnH_1 = (/ -190.884,  -141.165, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
-       B_1   = (/     11.7,      6.15,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)  
+       lnH_1 = (/ -220.884,  -141.165, -80.245, -101.314, -78.748, -53.88, -80.452, -70.758, -91.182/), &
+       B_1   = (/     15.,      6.15,      0.,      2.0,      0.,    -2.,      0., -0.6667,    0.5 /)  
   !
   ! A second set of parameters for cool_RTV (from interstellar.f90)
   !
@@ -157,7 +157,7 @@ module Entropy
 !
       if (lroot) call cvs_id( &
 
-           "$Id: entropy.f90,v 1.432 2006-10-03 14:44:27 bingert Exp $")
+           "$Id: entropy.f90,v 1.433 2006-10-04 14:51:53 bingert Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -2156,8 +2156,7 @@ module Entropy
       use IO
 !       
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gvKpara,gvKperp
-      real, dimension (nx,3) :: tmpv1,tmpv2,tmpv3
+      real, dimension (nx,3) :: gvKpara,gvKperp,tmpv
       real, dimension (nx) :: bb2,thdiff,b1
       real, dimension (nx) :: tmps,quenchfactor,vKpara,vKperp
       integer ::i,j
@@ -2187,20 +2186,16 @@ module Entropy
 !      
       tmps = 3.5 * vKpara 
       call multsv_mn(tmps,p%glnTT,gvKpara)
-      tmps(:) = 2.
-      call multsv_mn(tmps,p%glnrho,tmpv1)
-      tmps(:) = 0.5
-      call multsv_mn(tmps,p%glnTT,tmpv2)
+!
       do i=1,3
-         tmpv3(:,i)=0.
+         tmpv(:,i)=0.
          do j=1,3
-            tmpv3(:,i)=tmpv3(:,i) + p%bb(:,j)*p%bij(:,j,i)
+            tmpv(:,i)=tmpv(:,i) + p%bb(:,j)*p%bij(:,j,i)
          end do
       end do
-!
-      call multsv_mn(2*b1*b1,tmpv3,tmpv3)
-      tmpv1=tmpv1+tmpv2-tmpv3
-      call multsv_mn(vKperp,tmpv1,gvKperp)
+      call multsv_mn(2*b1*b1,tmpv,tmpv)
+      tmpv=2.*p%glnrho+0.5*p%glnTT-tmpv
+      call multsv_mn(vKperp,tmpv,gvKperp)
       gvKperp=gvKperp*spread(quenchfactor,2,3)
 !
 !     Calculate diffusion term
@@ -2948,9 +2943,9 @@ module Entropy
 !
       if (it .eq. 1) then
          inquire(IOLENGTH=lend) lnTTor
-         open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150,access='direct')
-         read (10,rec=1) b_lnT
-         read (10,rec=2) b_z
+         open (10,file='driver/b_lnT.dat',form='unformatted',status='unknown',recl=lend*150)
+         read (10) b_lnT
+         read (10) b_z
          close (10) 
          !
          b_lnT = b_lnT - alog(real(unit_temperature))
