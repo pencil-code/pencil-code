@@ -1,4 +1,4 @@
-! $Id: planet.f90,v 1.72 2006-09-22 00:16:48 wlyra Exp $
+! $Id: planet.f90,v 1.73 2006-10-04 08:46:06 wlyra Exp $
 !
 !  This modules contains the routines for accretion disk and planet
 !  building simulations. 
@@ -48,8 +48,6 @@ module Planet
 !
       type (pencil_case) :: p
 !
-      if (lfirst) then
-!
 ! get the previous average to use in this timestep
 !
          call get_old_average(p) 
@@ -57,8 +55,6 @@ module Planet
 ! calculate the new average to use in next timestep
 !
          call set_new_average(p)
-!
-      endif
 !
     endsubroutine runtime_phiavg
 !*******************************************************************
