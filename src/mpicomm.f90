@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.188 2006-09-06 17:57:47 wlyra Exp $
+! $Id: mpicomm.f90,v 1.189 2006-10-04 23:55:10 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1898,6 +1898,9 @@ module Mpicomm
 !  03-sep-02/nils: coded
 !  26-oct-02/axel: comments added
 !   6-jun-03/axel: works now also in 2-D (need only nxgrid=nygrid)
+!   5-oct-06/tobi: generalized to nxgrid = n*nygrid
+!
+! TODO: Implement nxgrid = n*nzgrid
 !
       real, dimension(nx,ny,nz) :: a
       integer :: nx_transp
@@ -1905,27 +1908,30 @@ module Mpicomm
 !
       real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y
       real, dimension(nz,ny,nz) :: send_buf_z, recv_buf_z
-      real, dimension(nx_transp/nprocy,nx_transp/nprocy) :: a_tmp_xy
-      real, dimension(nx_transp/nprocz,nx_transp/nprocz) :: a_tmp_xz
+      real, dimension(:,:), allocatable :: tmp
       integer, dimension(MPI_STATUS_SIZE) :: stat
       integer :: sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ytag=101,ztag=102,partner,ierr
-      integer :: m,n
-!
-!  Calculate the size of buffers.
-!  Buffers used for the y-transpose have the same size in y and z.
-!  Buffers used for the z-transpose have the same size in z and x.
-!
-      sendc_y=ny*ny*nz; recvc_y=sendc_y
-      sendc_z=nz*ny*nz; recvc_z=sendc_z
+      integer :: m,n,ibox,ix
 !
 !  Doing x-y transpose if var='y'
 !
       if (var=='y') then
-        if (nxgrid/=nygrid) then
-          print*,'transp: need to have nxgrid=nygrid for var==y'
-          call stop_it('Inconsistency: nxgrid/=nygrid')
+
+        if (mod(nxgrid,nygrid)/=0) then
+          print*,'transp: nxgrid needs to be an integer multiple of '//&
+                 'nygrid for var==y'
+          call stop_it('Inconsistency: mod(nxgrid,nygrid)/=0')
         endif
+!
+!  Allocate temporary scratch array
+!
+        allocate (tmp(ny,ny))
+!
+!  Calculate the size of buffers.
+!  Buffers used for the y-transpose have the same size in y and z.
+!
+        sendc_y=ny*ny*nz; recvc_y=sendc_y
 !
 !  Send information to different processors (x-y transpose)
 !  Divide x-range in as many intervals as we have processors in y.
@@ -1953,6 +1959,10 @@ module Mpicomm
 !  if ipy=1,px=0, then exchange block A with A' on partner=0
 !  if ipy=1,px=2, then exchange block C' with C on partner=2
 !
+!  if nxgrid is an integer multiple of nygrid, we divide the whole domain
+!  into nxgrid/nygrid boxes (indexed by ibox below) of unit aspect ratio
+!  (grid point wise) and only transpose within those boxes.
+!
 !  The following communication patterns is kind of self-regulated. It
 !  avoids deadlock, because there will always be at least one matching
 !  pair of processors; the others will have to wait until their partner
@@ -1962,19 +1972,22 @@ module Mpicomm
 !  with only send_buf and recv_buf as buffers
 !
         do px=0,nprocy-1
-          if (px/=ipy) then
-            partner=px+ipz*nprocy ! = iproc + (px-ipy)
-            if (ip<=6) print*,'transp: MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
-            send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
-            if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
-            elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+          do ibox=0,nxgrid/nygrid-1
+            if (px/=ipy) then
+              partner=px+ipz*nprocy ! = iproc + (px-ipy)
+              if (ip<=6) print*,'transp: MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
+              ix=ibox*nprocy*ny+px*ny
+              send_buf_y=a(ix+1:ix+ny,:,:)
+              if (px<ipy) then      ! above diagonal: send first, receive then
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              elseif (px>ipy) then  ! below diagonal: receive first, send then
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+              endif
+              a(ix+1:ix+ny,:,:)=recv_buf_y
             endif
-            a(px*ny+1:(px+1)*ny,:,:)=recv_buf_y
-          endif
+          enddo
         enddo
 !
 !  Transposing the received data (x-y transpose)
@@ -1989,19 +2002,36 @@ module Mpicomm
 !                       transposed         transposed
 !
         do px=0,nprocy-1
-          do n=1,nz
-            a_tmp_xy=transpose(a(px*ny+1:(px+1)*ny,:,n))
-            a(px*ny+1:(px+1)*ny,:,n)=a_tmp_xy
+          do ibox=0,nxgrid/nygrid-1
+            ix=ibox*nprocy*ny+px*ny
+            do n=1,nz
+              tmp=transpose(a(ix+1:ix+ny,:,n)); a(ix+1:ix+ny,:,n)=tmp
+            enddo
           enddo
         enddo
+!
+!  Deallocate temporary scratch array
+!
+        deallocate (tmp)
+
 !
 !  Doing x-z transpose if var='z'
 !
       elseif (var=='z') then
+
         if (nzgrid/=nxgrid) then
           if (lroot) print*, 'transp: need to have nzgrid=nxgrid for var==z'
           call stop_it('transp: inconsistency - nzgrid/=nxgrid')
         endif
+!
+!  Calculate the size of buffers.
+!  Buffers used for the z-transpose have the same size in z and x.
+!
+        sendc_z=nz*ny*nz; recvc_z=sendc_z
+!
+!  Allocate temporary scratch array
+!
+        allocate (tmp(nz,nz))
 !
 !  Send information to different processors (x-z transpose)
 !  See the discussion above for why we use this communication pattern
@@ -2024,8 +2054,8 @@ module Mpicomm
 !
         do px=0,nprocz-1
           do m=1,ny
-            a_tmp_xz=transpose(a(px*nz+1:(px+1)*nz,m,:))
-            a(px*nz+1:(px+1)*nz,m,:)=a_tmp_xz
+            tmp=transpose(a(px*nz+1:(px+1)*nz,m,:))
+            a(px*nz+1:(px+1)*nz,m,:)=tmp
           enddo
         enddo
 !
