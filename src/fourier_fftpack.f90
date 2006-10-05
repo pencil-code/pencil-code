@@ -1,4 +1,4 @@
-! $Id: fourier_fftpack.f90,v 1.6 2006-10-05 15:42:24 theine Exp $
+! $Id: fourier_fftpack.f90,v 1.7 2006-10-05 15:56:42 theine Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -625,102 +625,102 @@ module Fourier
 !
     endsubroutine fourier_transform_other_2
 !***********************************************************************
-    subroutine fourier_transform_xy_parallel(a_re,a_im,linv)
-!
-!  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
-!  The routine overwrites the input data.
-!
-!  28-jul-2006/anders: adapted from fourier_transform_1
-!
-      real, dimension(nx,ny) :: a_re,a_im
-      logical, optional :: linv
-!
-      complex, dimension(nxgrid) :: ax
-      complex, dimension(nygrid) :: ay
-      real, dimension(4*nxgrid+15) :: wsavex
-      real, dimension(4*nygrid+15) :: wsavey
-      integer :: l,m
-      logical :: lforward
-
-      if (mod(nxgrid,nygrid)/=0) then
-        call fatal_error('fourier_transform_xy_parallel', &
-                         'nxgrid needs to be an integer multiple of nygrid.')
-      endif
-
-      lforward=.true.
-      if (present(linv)) then
-        if (linv) lforward=.false.
-      endif
-
-      if (lforward) then
-!
-!  Transform x-direction.
-!      
-        call cffti(nxgrid,wsavex)
-
-        do m=1,ny
-          ax=cmplx(a_re(:,m),a_im(:,m))
-          call cfftf(nxgrid,ax,wsavex)
-          a_re(:,m)=real(ax)
-          a_im(:,m)=aimag(ax)
-        enddo
-!
-!  Transform y-direction.
-!      
-        call transp(a_re,'y')
-        call transp(a_im,'y')
-
-        call cffti(nygrid,wsavey)
-
-        do ibox=0,nxgrid/nygrid-1
-          iy=ibox*nygrid
-          do l=1,ny
-            ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
-            call cfftf(nygrid,ay,wsavey)
-            a_re(iy+1:iy+nygrid,l)=real(ay)
-            a_im(iy+1:iy+nygrid,l)=aimag(ay)
-          enddo
-        enddo
-
-      else
-!
-!  Transform y-direction back.
-!      
-        call cffti(nygrid,wsavey)
-
-        do ibox=0,nxgrid/nygrid-1
-          iy=ibox*nygrid
-          do l=1,ny
-            ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
-            call cfftb(nygrid,ay,wsavey)
-            a_re(iy+1:iy+nygrid,l)=real(ay)
-            a_im(iy+1:iy+nygrid,l)=aimag(ay)
-          enddo
-        enddo
-!
-!  Transform x-direction back.
-!      
-        call transp(a_re,'y')
-        call transp(a_im,'y')
-
-        call cffti(nxgrid,wsavex)
-
-        do m=1,ny
-          ax=cmplx(a_re(:,m),a_im(:,m))
-          call cfftb(nxgrid,ax,wsavex)
-          a_re(:,m)=real(ax)
-          a_im(:,m)=aimag(ax)
-        enddo
-
-      endif
-!
-!  Normalize
-!
-      if (lforward) then
-        a_re=a_re/(nx_other*ny_other)
-        a_im=a_im/(nx_other*ny_other)
-      endif
-
-    endsubroutine fourier_transform_xy_parallel
+!      subroutine fourier_transform_xy_parallel(a_re,a_im,linv)
+!  !
+!  !  Subroutine to do Fourier transform of a 2-D array of arbitrary size.
+!  !  The routine overwrites the input data.
+!  !
+!  !  28-jul-2006/anders: adapted from fourier_transform_1
+!  !
+!        real, dimension(nx,ny) :: a_re,a_im
+!        logical, optional :: linv
+!  !
+!        complex, dimension(nxgrid) :: ax
+!        complex, dimension(nygrid) :: ay
+!        real, dimension(4*nxgrid+15) :: wsavex
+!        real, dimension(4*nygrid+15) :: wsavey
+!        integer :: l,m
+!        logical :: lforward
+!  
+!        if (mod(nxgrid,nygrid)/=0) then
+!          call fatal_error('fourier_transform_xy_parallel', &
+!                           'nxgrid needs to be an integer multiple of nygrid.')
+!        endif
+!  
+!        lforward=.true.
+!        if (present(linv)) then
+!          if (linv) lforward=.false.
+!        endif
+!  
+!        if (lforward) then
+!  !
+!  !  Transform x-direction.
+!  !      
+!          call cffti(nxgrid,wsavex)
+!  
+!          do m=1,ny
+!            ax=cmplx(a_re(:,m),a_im(:,m))
+!            call cfftf(nxgrid,ax,wsavex)
+!            a_re(:,m)=real(ax)
+!            a_im(:,m)=aimag(ax)
+!          enddo
+!  !
+!  !  Transform y-direction.
+!  !      
+!          call transp(a_re,'y')
+!          call transp(a_im,'y')
+!  
+!          call cffti(nygrid,wsavey)
+!  
+!          do ibox=0,nxgrid/nygrid-1
+!            iy=ibox*nygrid
+!            do l=1,ny
+!              ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
+!              call cfftf(nygrid,ay,wsavey)
+!              a_re(iy+1:iy+nygrid,l)=real(ay)
+!              a_im(iy+1:iy+nygrid,l)=aimag(ay)
+!            enddo
+!          enddo
+!  
+!        else
+!  !
+!  !  Transform y-direction back.
+!  !      
+!          call cffti(nygrid,wsavey)
+!  
+!          do ibox=0,nxgrid/nygrid-1
+!            iy=ibox*nygrid
+!            do l=1,ny
+!              ay=cmplx(a_re(iy+1:iy+nygrid,l),a_im(iy+1:iy+nygrid,l))
+!              call cfftb(nygrid,ay,wsavey)
+!              a_re(iy+1:iy+nygrid,l)=real(ay)
+!              a_im(iy+1:iy+nygrid,l)=aimag(ay)
+!            enddo
+!          enddo
+!  !
+!  !  Transform x-direction back.
+!  !      
+!          call transp(a_re,'y')
+!          call transp(a_im,'y')
+!  
+!          call cffti(nxgrid,wsavex)
+!  
+!          do m=1,ny
+!            ax=cmplx(a_re(:,m),a_im(:,m))
+!            call cfftb(nxgrid,ax,wsavex)
+!            a_re(:,m)=real(ax)
+!            a_im(:,m)=aimag(ax)
+!          enddo
+!  
+!        endif
+!  !
+!  !  Normalize
+!  !
+!        if (lforward) then
+!          a_re=a_re/(nx_other*ny_other)
+!          a_im=a_im/(nx_other*ny_other)
+!        endif
+!  
+!      endsubroutine fourier_transform_xy_parallel
 !***********************************************************************
 endmodule Fourier
