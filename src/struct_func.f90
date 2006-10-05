@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.26 2006-08-23 16:53:32 mee Exp $
+! $Id: struct_func.f90,v 1.27 2006-10-05 15:42:25 theine Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -249,11 +249,11 @@ module struct_func
         if (nr_directions .gt. 1) then
           if (direction .eq. 1) then
             !Doing transpose of y direction
-            call transp(vect(:,:,:),nx,'y')
+            call transp(vect,'y')
           endif
           if (direction .eq. 2) then
             !Doing transpose of z direction
-            call transp(vect(:,:,:),nx,'z')
+            call transp(vect,'z')
           endif
         endif
       enddo

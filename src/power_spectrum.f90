@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $
+! $Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -45,7 +45,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -243,7 +243,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -384,7 +384,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
+       "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -485,7 +485,7 @@ module  power_spectrum
 !  identify version
 !
     if (lroot .AND. ip<10) call cvs_id( &
-        "$Id: power_spectrum.f90,v 1.58 2006-08-31 06:00:35 ajohan Exp $")
+        "$Id: power_spectrum.f90,v 1.59 2006-10-05 15:42:25 theine Exp $")
 !
 !  In fft, real and imaginary parts are handled separately.
 !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -570,7 +570,7 @@ module  power_spectrum
       if (nygrid/=1) then
         a1=a2
         b1=0
-        call transp(a1,nx,'y')
+        call transp(a1,'y')
         call fourier_transform_x(a1,b1)
         do iky=1,nk; do ix=1,nxgrid/nprocy; do iz=1,nz
           spectrumy(iky) = spectrumy(iky) + &
@@ -585,7 +585,7 @@ module  power_spectrum
       if (nzgrid/=1) then
         a1=a2
         b1=0
-        call transp(a1,nx,'z')
+        call transp(a1,'z')
         call fourier_transform_x(a1,b1)
         do ikz=1,nk; do ix=1,nxgrid/nprocz; do iy=1,ny
           spectrumz(ikz) = spectrumz(ikz) + &

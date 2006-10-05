@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.189 2006-10-04 23:55:10 theine Exp $
+! $Id: mpicomm.f90,v 1.190 2006-10-05 15:42:24 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1888,7 +1888,7 @@ module Mpicomm
 !
     endsubroutine check_emergency_brake
 !***********************************************************************
-    subroutine transp(a,nx_transp,var)
+    subroutine transp(a,var)
 !
 !  Doing the transpose of information distributed on several processors
 !  Used for doing FFTs in the y and z directions.
@@ -1903,7 +1903,6 @@ module Mpicomm
 ! TODO: Implement nxgrid = n*nzgrid
 !
       real, dimension(nx,ny,nz) :: a
-      integer :: nx_transp
       character :: var
 !
       real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y

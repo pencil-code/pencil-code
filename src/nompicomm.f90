@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.140 2006-09-06 17:57:47 wlyra Exp $
+! $Id: nompicomm.f90,v 1.141 2006-10-05 15:42:25 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -861,15 +861,14 @@ module Mpicomm
 !
     endsubroutine check_emergency_brake
 !***********************************************************************
-    subroutine transp(a,nx_transp,var)
+    subroutine transp(a,var)
 !
 !  Doing a transpose (dummy version for single processor)
 !
 !   5-sep-02/axel: adapted from version in mpicomm.f90
 !
-      integer :: nx_transp
       real, dimension(nx,ny,nz) :: a
-      real, dimension(nx_transp,nx_transp) :: a_tmp
+      real, dimension(:,:), allocatable :: tmp
       character :: var
 !
       integer :: m, n
@@ -885,11 +884,14 @@ module Mpicomm
             if (lroot) print*, 'transp: works only for nx=ny!'
             call stop_it('transp')
           endif
-!
+
+          allocate (tmp(nx,ny))
           do n=1,nz
-            a_tmp=transpose(a(:,:,n))
-            a(:,:,n)=a_tmp
+            tmp=transpose(a(:,:,n))
+            a(:,:,n)=tmp
           enddo
+          deallocate (tmp)
+
         endif
 !   
 !  Doing x-z transpose if var='z'
@@ -902,10 +904,13 @@ module Mpicomm
             call stop_it('transp')
           endif
 !
+          allocate (tmp(nx,nz))
           do m=1,ny
-            a_tmp=transpose(a(:,m,:))
-            a(:,m,:)=a_tmp
+            tmp=transpose(a(:,m,:))
+            a(:,m,:)=tmp
           enddo
+          deallocate (tmp)
+
         endif
 !
       endif

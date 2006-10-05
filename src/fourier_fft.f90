@@ -1,4 +1,4 @@
-! $Id: fourier_fft.f90,v 1.4 2006-08-31 06:00:35 ajohan Exp $
+! $Id: fourier_fft.f90,v 1.5 2006-10-05 15:42:24 theine Exp $
 !
 !  This module contains FFT wrapper subroutines.
 !
@@ -41,11 +41,11 @@ module Fourier
 !
       if (lroot .and. ip<10) print*,'transform_i: doing three FFTs'
       call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
-      call transp(a_re,nx,'y')
-      call transp(a_im,nx,'y')
+      call transp(a_re,'y')
+      call transp(a_im,'y')
       call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
-      call transp(a_re,nx,'z')
-      call transp(a_im,nx,'z')
+      call transp(a_re,'z')
+      call transp(a_im,'z')
       call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
 !
 !  Normalize
