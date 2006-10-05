@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.329 2006-10-04 13:18:11 wlyra Exp $
+! $Id: magnetic.f90,v 1.330 2006-10-05 18:39:59 wlyra Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -207,7 +207,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.329 2006-10-04 13:18:11 wlyra Exp $")
+           "$Id: magnetic.f90,v 1.330 2006-10-05 18:39:59 wlyra Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -424,6 +424,8 @@ module Magnetic
          case('crazy', '5'); call crazy(amplaa(j),f,iaa)
          case('Alfven-x'); call alfven_x(amplaa(j),f,iuu,iaa,ilnrho,xx,kx_aa(j))
          case('Alfven-z'); call alfven_z(amplaa(j),f,iuu,iaa,zz,kz_aa(j),mu0)
+         case('Alfven-rphi'); call alfven_rphi(amplaa(j),f,iaa,xx,yy,rmode)   
+         case('Alfven-rz'); call alfven_rz(amplaa(j),f,iaa,xx,yy,rmode)   
          case('Alfvenz-rot'); call alfvenz_rot(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa(j),f,iuu,iaa,zz,kz_aa(j),Omega)
          case('piecewise-dipole'); call piecew_dipole_aa (amplaa(j),inclaa,f,iaa,xx,yy,zz)
@@ -1442,17 +1444,34 @@ module Magnetic
 !
       use Cdata
       use BorderProfiles, only: border_driving
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: f_target
+      real, dimension(nx) :: Aphi,rcyl_mn1
+      real :: kr,kr1
       integer :: ju,j
 !
       select case(borderaa)
       case('zero','0')
          f_target=0.
-!      case('initial-condition')
-!         f_target=f(l1:l2,m,n,iax:iaz)
+      case('toroidal')
+         kr = 2*pi*rmode/(r_ext-r_int)
+         kr1 = 1./kr
+         f_target(:,1) = 0.
+         f_target(:,2) = 0.
+         f_target(:,3) = -amplaa(1)*kr1*sin(kr*(rcyl_mn-r_int))
+      case('Alfven-rz')
+         kr = 2*pi*rmode/(r_ext-r_int)
+         kr1 = 1./kr
+         rcyl_mn1=1./rcyl_mn
+         Aphi =  amplaa(1)*kr1 * sin(kr*(rcyl_mn-r_int)) + &
+              amplaa(1)*kr1**2*rcyl_mn1*cos(kr*(rcyl_mn-r_int))
+!
+         f_target(:,1) = Aphi * (-y(  m  )*rcyl_mn1)
+         f_target(:,2) = Aphi * ( x(l1:l2)*rcyl_mn1)
+         f_target(:,3) = 0.
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_magnetic: borderaa='nothing'"
@@ -2242,6 +2261,56 @@ module Magnetic
       f(:,:,:,iaa+1)=+ampl*sin(kz*zz)*sqrt(mu0)
 !
     endsubroutine alfven_z
+!***********************************************************************
+    subroutine alfven_rphi(B0,f,iaa,xx,yy,mode)
+!
+!  Alfven wave propagating on radial direction with
+!  field pointing to the phi direction.
+!
+!  Bphi = B0 cos(k r) ==> Az = -1/k B0 sin(k r)
+!  
+!  04-oct-06/wlad: coded
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz) :: xx,yy,rrcyl
+      real :: B0,kr,mode
+      integer :: iaa
+!
+      kr = 2*pi*mode/(r_ext-r_int)
+      rrcyl = sqrt(xx**2 + yy**2)
+!
+      f(:,:,:,iaa+2) =  -B0/kr*sin(kr*(rrcyl-r_int))
+!
+    endsubroutine alfven_rphi
+!***********************************************************************
+    subroutine alfven_rz(B0,f,iaa,xx,yy,mode)
+!
+!  Alfven wave propagating on radial direction with
+!  field pointing to the z direction.
+!
+!  Bz = B0 cos(k r) ==> Aphi = B0/k sin(k r) + B0/(k2*r)*cos(k r)
+!      
+!  04-oct-06/wlad: coded
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz) :: xx,yy,rrcyl,Aphi
+      real :: B0,kr,mode
+      integer :: iaa
+!
+      kr = 2*pi*mode/(r_ext-r_int)
+      rrcyl = sqrt(xx**2 + yy**2) + tini
+!
+      Aphi =  B0/kr * sin(kr*(rrcyl-r_int)) + &
+           B0/(kr**2*rrcyl)*cos(kr*(rrcyl-r_int))
+!   
+      f(:,:,:,iaa+0) = Aphi * (-yy/rrcyl) 
+      f(:,:,:,iaa+1) = Aphi * ( xx/rrcyl)
+!
+    endsubroutine alfven_rz
 !***********************************************************************
     subroutine alfvenz_rot(ampl,f,iuu,iaa,zz,kz,O)
 !
