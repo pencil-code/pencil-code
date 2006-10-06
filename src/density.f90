@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.272 2006-08-23 16:53:31 mee Exp $
+! $Id: density.f90,v 1.273 2006-10-06 19:06:56 wlyra Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -104,7 +104,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.272 2006-08-23 16:53:31 mee Exp $")
+           "$Id: density.f90,v 1.273 2006-10-06 19:06:56 wlyra Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -1307,10 +1307,13 @@ module Density
 !  28-jul-06/wlad: coded
 !
       use BorderProfiles, only: border_driving
+      use EquationOfState, only: cs0
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx) :: f_target
+      real, dimension(nx) :: f_target,hh
+      real :: rsmooth
+      integer :: i
 !
       select case(borderlnrho)
 !
@@ -1318,8 +1321,16 @@ module Density
          f_target=0.
       case('constant')
          f_target=lnrho_const
-!      case('initial-condition')
-!         f_target=f(l1:l2,m,n,ilnrho)
+      case('stratification')
+         rsmooth=0.75*r_int
+         do i=1,nx
+            if (rcyl_mn(i) .ge. rsmooth) then
+               hh(i)=rcyl_mn(i)*cs0
+            else
+               hh(i)=rsmooth*cs0
+            endif
+         enddo
+         f_target=lnrho_const - plaw*alog(rcyl_mn) - 0.5*z(n)/hh
       case('nothing')
          if (lroot.and.ip<=5) &
               print*,"set_border_lnrho: borderlnrho='nothing'"
